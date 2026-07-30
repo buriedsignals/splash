@@ -22,6 +22,7 @@ import {
 } from "./symbol-labels";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame, labelTextSize } from "./core/map-format";
+import { endLabelGutterPx } from "../../../lib/core/text-fit";
 import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
 import { resolveMapStyle } from "./route-geo";
@@ -137,6 +138,22 @@ export const SymbolMap: React.FC<Props> = ({
 
   const geo = symbolGeometry({ points: config.points }, MAX_RADIUS_PX);
 
+  // The legend gutter is MEASURED on the strings this legend will actually draw, not fixed at
+  // 60px. lib/core/text-fit.ts:234-236 names this exact failure mode: "A hardcoded gutter is the
+  // recurring failure: it fits the sample's labels, then overflows once the data's are longer."
+  // chart-native has used this since the stacked-area clip; map-native never imported it.
+  const legendLabels = geo.legend.map((s) =>
+    labelWithUnit(
+      formatLocaleNumber(s.value, config.lang),
+      config.valueUnit,
+      config.lang,
+    ),
+  );
+  const legendGutter = endLabelGutterPx(legendLabels, 11, {
+    gapPx: 10,
+    floorPx: 60, // the historical width — short labels are byte-identical
+  });
+
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const theme = legendTheme(
     dark,
@@ -172,7 +189,7 @@ export const SymbolMap: React.FC<Props> = ({
     const FRAME_OPTS = {
       titleLines: 2,
       hasDescription: !!config.description,
-      labelOverhang: 80,
+      labelOverhang: Math.max(80, legendGutter),
       legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
       get titleHeightPx() {
         return titleHeightPxRef.current;
@@ -530,13 +547,13 @@ export const SymbolMap: React.FC<Props> = ({
           `<text x="${max * 2 + 10}" y="${h - s.radius * 2 - 2 + 4}" font-size="11" fill="${theme.ink}">${labelWithUnit(formatLocaleNumber(s.value, config.lang), config.valueUnit, config.lang)}</text>`,
       )
       .join("");
-    el.innerHTML = `<svg width="${max * 2 + 70}" height="${h}">${rows}</svg>`;
+    el.innerHTML = `<svg width="${max * 2 + legendGutter}" height="${h}">${rows}</svg>`;
   }
 
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {
     titleLines: 2,
     hasDescription: !!config.description,
-    labelOverhang: 80,
+    labelOverhang: Math.max(80, legendGutter),
     legendHeight: (geo.legend[0]?.radius ?? 0) * 2 + 28,
     titleHeightPx,
     filterBarHeight: interactive && filterOptions.length ? barHeightPx : 0,
