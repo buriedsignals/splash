@@ -45,3 +45,51 @@ describe("every shipped fixture resolves", () => {
     }, 30_000); // real bunx mapshaper, two passes now (filter+measure, then simplify+encode)
   }
 });
+
+// Every shipped sample-data fixture uses basemap: "world" — not one exercises the OTHER
+// shipped basemap, which is why us-states was dead for the whole branch and nothing noticed
+// (task-14-brief.md). This case builds a us-states choropleth config by hand rather than adding
+// a sample-data fixture, so it exercises the exact geometry that was broken regardless of
+// whether a future fixture file changes.
+describe("the other shipped basemap (us-states) resolves too", () => {
+  it("resolves a us-states choropleth joining on postal, with zero null shapes and surviving properties.name", async () => {
+    const config = {
+      type: "choropleth",
+      basemap: "us-states",
+      regionKey: "code",
+      valueField: "value",
+      rows: [
+        { code: "AK", value: 1 },
+        { code: "CA", value: 2 },
+        { code: "NY", value: 3 },
+      ],
+    };
+    const wrote = await resolveGeometryForProduce({
+      config,
+      assetsGeoDir: ASSETS,
+      renderWidthPx: 1200,
+    });
+    expect(wrote).toBe(true);
+    const topo = config.geometry as {
+      objects: Record<
+        string,
+        {
+          geometries: {
+            type?: string | null;
+            properties?: Record<string, unknown>;
+          }[];
+        }
+      >;
+    };
+    const geometries = Object.values(topo.objects).flatMap((o) => o.geometries);
+    expect(geometries.length).toBe(3);
+    const nulls = geometries.filter((g) => g.type == null);
+    expect(nulls).toHaveLength(0);
+    // us-states' real join key is "postal", not "name" — this assertion genuinely breaks the
+    // joinKey: "name" coincidence world.geojson happened to share (Task 6's review gap).
+    for (const g of geometries) {
+      expect(typeof g.properties?.name).toBe("string");
+      expect(g.properties?.name).not.toBe("");
+    }
+  }, 30_000);
+});
