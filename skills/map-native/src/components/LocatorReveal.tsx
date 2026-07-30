@@ -21,10 +21,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { locatorGeometry } from "../locator-geo";
-import {
-  placeLabels,
-  labelRadialOffset,
-} from "../locator-labels";
+import { placeLabels, labelRadialOffset } from "../locator-labels";
 import { locatorLabelPlacement } from "../locator-label-placement";
 import { resolveMapStyle } from "../route-geo";
 import type { LocatorConfigShape } from "../validate-config";
@@ -102,9 +99,9 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         color: mk.color,
         labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
         __showLabel: true, // recomputed by declutter
-          // MapLibre text-anchor — recomputed per frame from the projected position so a
-          // marker near the frame edge flips instead of running its label off canvas.
-          anchor: "left",
+        // MapLibre text-anchor — recomputed per frame from the projected position so a
+        // marker near the frame edge flips instead of running its label off canvas.
+        anchor: "left",
       },
       geometry: { type: "Point", coordinates: [mk.lon, mk.lat] },
     }));
@@ -263,6 +260,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         title={config.title ?? ""}
         description={config.description}
         source={{ name: config.source?.name ?? "", url: config.source?.url }}
+        geoCredit={config.geoCredit}
         width={width}
         height={height}
         responsive={false}

@@ -57,6 +57,9 @@ export interface ChoroplethConfig extends ChoroplethData {
   unit?: string; // the long legend label, e.g. "share of electricity… (%)"
   valueUnit?: string; // the SHORT value suffix for tooltips, e.g. "%"
   source?: { name: string; url: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   cameraMode?: CameraMode;
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
@@ -595,6 +598,7 @@ export const ChoroplethMap: React.FC<Props> = ({
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={containerSize.w}
         height={containerSize.h}
         responsive

@@ -62,6 +62,9 @@ export interface SymbolConfig extends SymbolData {
   valueUnit?: string;
   insight?: string;
   source?: { name: string; url: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   maxReveals?: number;
   cameraMode?: CameraMode;
   /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
@@ -623,6 +626,7 @@ export const SymbolMap: React.FC<Props> = ({
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={containerSize.w}
         height={containerSize.h}
         responsive

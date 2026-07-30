@@ -440,6 +440,7 @@ export const HexGridMap: React.FC<Props> = ({
         title={config.title ?? ""}
         description={config.description}
         source={{ name: config.source?.name ?? "", url: config.source?.url }}
+        geoCredit={config.geoCredit}
         width={containerSize.w}
         height={containerSize.h}
         responsive
