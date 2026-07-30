@@ -13,6 +13,10 @@ export const BASEMAPS: Record<string, BasemapMeta> = {
     joinKey: "postal",
     label: "US states (2-letter postal codes)",
   },
+  "natural-earth-admin-1": {
+    joinKey: "name",
+    label: "Sub-national admin-1 (cantons, départements, states, provinces)",
+  },
 };
 
 export const BASEMAP_NAMES = Object.keys(BASEMAPS);
@@ -40,6 +44,14 @@ export type GeographyRef = {
   level: string;
   joinKey: string;
   joinKeyFamily: string;
+  /** The shipped asset's actual file format on disk — "geojson" (world, us-states) or
+   *  "topojson" (the much larger ADM1 index, arc-shared to stay well under a GeoJSON encoding
+   *  of the same geometry). Optional: a ref built outside this registry (matchAdm1Index's own
+   *  literal in skills/map-native/src/geo-match.ts, or any DECLARED geometry, whose file lives
+   *  wherever its own sourcePath says) carries no opinion here — fileExtensionFor's own registry
+   *  lookup is what resolves those. Never guessed at produce time: that guess (always ".geojson")
+   *  is exactly what produced an ENOENT against the real ADM1 asset (Task 8). */
+  fileExtension?: "geojson" | "topojson";
 };
 
 const SHIPPED_REFS: Record<string, GeographyRef> = {
@@ -49,6 +61,7 @@ const SHIPPED_REFS: Record<string, GeographyRef> = {
     level: "country",
     joinKey: "iso_a3",
     joinKeyFamily: "iso_a3",
+    fileExtension: "geojson",
   },
   "us-states": {
     origin: "shipped",
@@ -56,6 +69,15 @@ const SHIPPED_REFS: Record<string, GeographyRef> = {
     level: "state",
     joinKey: "postal",
     joinKeyFamily: "postal",
+    fileExtension: "geojson",
+  },
+  "natural-earth-admin-1": {
+    origin: "shipped",
+    set: "natural-earth-admin-1",
+    level: "admin-1",
+    joinKey: "name",
+    joinKeyFamily: "name",
+    fileExtension: "topojson",
   },
 };
 
@@ -81,4 +103,18 @@ export function basemapKeyFor(ref: GeographyRef): string {
   for (const [key, shipped] of Object.entries(SHIPPED_REFS))
     if (shipped.set === ref.set) return key;
   return ref.set;
+}
+
+// basemapKeyFor's sibling — which file EXTENSION the shipped asset behind a GeographyRef
+// actually has on disk (Task 8, C6). A `ref` built via resolveGeographyRef already carries its
+// own `fileExtension` and is returned unchanged; a `ref` built elsewhere (matchAdm1Index's own
+// literal — it has no reason to know this registry's file layout) is looked up here by `set`,
+// the same bridge basemapKeyFor already makes for the registry KEY. Falls back to "geojson" —
+// the previous universal assumption — for a set this registry does not recognise at all, never
+// throwing (mirrors basemapKeyFor's own never-throws discipline, matchGeography's I1).
+export function fileExtensionFor(ref: GeographyRef): "geojson" | "topojson" {
+  if (ref.fileExtension) return ref.fileExtension;
+  for (const shipped of Object.values(SHIPPED_REFS))
+    if (shipped.set === ref.set) return shipped.fileExtension ?? "geojson";
+  return "geojson";
 }

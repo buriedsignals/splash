@@ -12,7 +12,12 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { subsetGeometry } from "./subset";
 import { assertGeoCreditPresent, type GeographyLicenceInfo } from "./policy";
-import { basemapKeyFor, resolveGeographyRef, type GeographyRef } from "./ref";
+import {
+  basemapKeyFor,
+  fileExtensionFor,
+  resolveGeographyRef,
+  type GeographyRef,
+} from "./ref";
 
 export type ResolveForProduceInput = {
   config: Record<string, unknown>; // parsed config, MUTATED in place
@@ -168,13 +173,17 @@ export async function resolveGeometryForProduce(
     // no code in this tree sets it yet, on any config, for any origin — a genuine, documented
     // pipeline gap this task does not close). A shipped basemap has no such field (the
     // assembler never sets it, and never will — it's not a per-run fact); its file is the
-    // registry asset this skill already ships under assets/geo/<basemapKey>.geojson, the
-    // exact asset geo-match.ts itself reads to measure join candidates
-    // (skills/map-native/src/geo-match.ts:8-10).
+    // registry asset this skill already ships under assets/geo/<basemapKey>.<fileExtension> —
+    // the extension comes from the registry (fileExtensionFor), never guessed: a hardcoded
+    // ".geojson" here is exactly what produced a raw mapshaper ENOENT against the real ADM1
+    // asset, which ships as topojson (Task 8, C6).
     const sourcePath =
       geography.sourcePath ??
       (geography.origin === "shipped"
-        ? join(input.assetsGeoDir, `${basemapKeyFor(geography)}.geojson`)
+        ? join(
+            input.assetsGeoDir,
+            `${basemapKeyFor(geography)}.${fileExtensionFor(geography)}`,
+          )
         : undefined);
     if (!sourcePath)
       throw new Error(

@@ -4,7 +4,7 @@ import { CAMERA_MODES, type CameraMode } from "./camera-mode";
 import { MAP_STYLES } from "./map-styles";
 import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
-import { BASEMAP_NAMES } from "./basemaps";
+import { BASEMAP_NAMES, basemapKeyFor, type GeographyRef } from "./basemaps";
 import { validateMapFilters, type MapFilter } from "./core/map-filter";
 import {
   mapArcErrors,
@@ -884,6 +884,21 @@ export function validateCartogramConfig(
   // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
   // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
   errors.push(...unsupportedArcBeatsErrors(s, "cartogram"));
+
+  // Task 8 (C6): every sibling validator requires a registered basemap (validateBasemap
+  // above) — this one never called it at all, so an unresolvable geography (an ADM1 match, a
+  // typo) sailed straight past validate() into produce's raw mapshaper ENOENT. UNLIKE every
+  // sibling branch, the assembler's cartogram branch (lib/loop/assemble/map-native.ts) sets
+  // `geography` but never also sets a literal `basemap` — so the key to validate is derived
+  // the same way basemapKeyFor's own callers already do, falling back to a literal `basemap`
+  // field for a config that (someday) sets one directly.
+  const basemapKey =
+    typeof s.basemap === "string"
+      ? s.basemap
+      : s.geography
+        ? basemapKeyFor(s.geography as GeographyRef)
+        : undefined;
+  validateBasemap(basemapKey, errors);
 
   if (
     s.mapStyle !== undefined &&

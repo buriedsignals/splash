@@ -493,6 +493,7 @@ describe("validateCartogramConfig — filters wiring", () => {
     title: "Germany outweighs France in population share",
     description: "Population by country, 2024",
     source: { name: "Source 2025", url: "https://example.org/x" },
+    basemap: "world",
   };
   it("rejects a filter referencing an absent field and accepts one referencing 'value'", () => {
     expect(
@@ -516,6 +517,66 @@ describe("validateCartogramConfig — filters wiring", () => {
     expect(bad.ok).toBe(false);
     if (!bad.ok)
       expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
+  });
+});
+
+// Task 8 (C6): the cartogram validator never called validateBasemap at all, so an unresolvable
+// geography sailed straight past validate() into produce's raw mapshaper ENOENT. The real
+// assembler branch (lib/loop/assemble/map-native.ts) sets `geography`, never a literal
+// `basemap` field — the base fixture above (`basemap: "world"`) exercises the literal path for
+// the other cartogram tests; these exercise both paths validateCartogramConfig must now accept
+// or refuse.
+describe("validateCartogramConfig — basemap validation (was entirely absent)", () => {
+  const base = {
+    type: "cartogram",
+    values: [
+      { id: "FRA", value: 68 },
+      { id: "DEU", value: 84 },
+    ],
+    title: "Germany outweighs France in population share",
+    description: "Population by country, 2024",
+    source: { name: "Source 2025", url: "https://example.org/x" },
+  };
+
+  it("rejects an unknown literal basemap (it did not before this fix)", () => {
+    const bad = validateCartogramConfig({ ...base, basemap: "atlantis" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /basemap/.test(e))).toBe(true);
+  });
+
+  it("rejects a config with neither a basemap nor a resolvable geography", () => {
+    const bad = validateCartogramConfig(base);
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /basemap/.test(e))).toBe(true);
+  });
+
+  it("accepts the real assembler shape — `geography` set, no literal `basemap` field", () => {
+    const r = validateCartogramConfig({
+      ...base,
+      geography: {
+        origin: "shipped",
+        set: "natural-earth-admin-0",
+        level: "country",
+        joinKey: "iso_a3",
+        joinKeyFamily: "iso_a3",
+      },
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects a `geography` whose set names no registered basemap", () => {
+    const bad = validateCartogramConfig({
+      ...base,
+      geography: {
+        origin: "shipped",
+        set: "some-future-unregistered-set",
+        level: "region",
+        joinKey: "name",
+        joinKeyFamily: "name",
+      },
+    });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.some((e) => /basemap/.test(e))).toBe(true);
   });
 });
 
