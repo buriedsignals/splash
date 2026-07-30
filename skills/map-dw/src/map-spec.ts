@@ -6,6 +6,7 @@ import {
 } from "../../dw-chart/src/chart-spec";
 import { validJoinKeysFor, regionCountFor } from "./basemap-keys";
 import { columnValues } from "./join-match";
+import { SYMBOL_LABELS_INTERACTIVE } from "../../map-native/src/feature-limits";
 
 export interface GradientStop {
   color: string; // hex
@@ -427,11 +428,20 @@ export function validateMapSpec(
     // symbol map can ONLY ship mute, unlabeled circles — no place identifiable, no value
     // readable without hover — which violates the project rule "the data must be legible WITHOUT
     // hover" (render-confirmed on aeroports-trafic + frontaliers-dots: not one symbol labeled).
-    // It is therefore NOT a producible map-dw output: route it to map-native, whose
-    // proportional-symbol renderer directly labels the top-N circles by name + value and whose
-    // conformance asserts `labeled` (skills/map-native/src/conformance.ts checkSymbolConformance).
+    // It is therefore NOT a producible map-dw output: route it to map-native, whose STATIC
+    // symbol render directly labels its circles by name + value and whose conformance asserts
+    // `labeled` (skills/map-native/src/conformance.ts checkSymbolConformance, wired at produce
+    // since 2026-07-29). The INTERACTIVE map-native render is hover-only — that limit is
+    // declared once, in map-native's own words (feature-limits.ts), and quoted here rather
+    // than restated: this refusal used to promise a per-circle labeling behaviour no code
+    // implements.
     errors.push(
-      'symbol maps are not producible by map-dw: Datawrapper draws proportional circles with values on HOVER only (no always-visible data-value labels on symbols — Datawrapper Academy), so the owned static PNG ships mute, unlabeled circles that cannot carry the claim without interaction; route to map-native instead (producer:"map-native", type:"symbol"), which directly labels the top-N circles by name + value',
+      "symbol maps are not producible by map-dw: Datawrapper draws proportional circles with " +
+        "values on HOVER only (no always-visible data-value labels on symbols — Datawrapper " +
+        "Academy), so the owned static PNG ships mute, unlabeled circles that cannot carry the " +
+        'claim without interaction; route to map-native instead (producer:"map-native", ' +
+        'type:"symbol"), whose STATIC render labels every circle by name + value. Note: ' +
+        SYMBOL_LABELS_INTERACTIVE,
     );
   } else {
     // locator
