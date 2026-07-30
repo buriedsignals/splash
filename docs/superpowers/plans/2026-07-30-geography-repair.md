@@ -998,6 +998,16 @@ Add a case that resolves a `us-states` choropleth (`rows` with `AK`, `CA`, `NY` 
 joining on `postal`) through `resolveGeometryForProduce`, asserting real geometry with zero null
 shapes — the same shape as the existing world assertions.
 
+**Also assert `properties.name` survives on that case.** This carries a finding routed here from
+Task 6's review: the brief for Task 6 required verifying the property-pruning fix against **both**
+shipped assets, and only `world.geojson` ended up with committed, reproducible coverage — the
+`us-states` check existed as an uncommitted ad-hoc script that was deleted after use. That is the
+same shape of gap Task 6 was created to close for the first asset ("no test caught this because both
+fixtures joined on `name`"), reproduced on the second. It could not be closed inside Task 6 because
+this asset does not resolve at all until Step 3 below lands. So it closes here, in the one test that
+is about to make `us-states` resolvable — and `us-states`' real join key is `postal`, so the
+assertion genuinely breaks the `joinKey: "name"` coincidence rather than passing by accident.
+
 - [ ] **Step 2: Run it and watch it fail**
 
 Run: `cd skills/map-native && bun test tests/resolve-all-fixtures.test.ts`
