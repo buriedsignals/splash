@@ -302,6 +302,87 @@ structurally always empty. Nothing pins that either way.
 
 ---
 
+## Documentation, licensing and merge (fourth lens)
+
+### C8 — The "three pieces of furniture" count broke, on this very branch
+
+`skills/map-native/SKILL.md:131` states verbatim: *"Every map module carries **three pieces of
+furniture** — insight title, description, and source — each appearing exactly once."* Commit
+`5b2bf09e` added a **fourth** (`geoCredit`, `MapFrame.tsx:20-26`), deliberately not merged into
+`source`, with its own element and testid. `grep -rn "geoCredit" --include="*.md" .` (excluding
+`docs/superpowers`) returns **zero** — undocumented everywhere.
+
+This is the "Four rules survived a fifth" class, reproduced live: **the heading pins a number, the
+parity check pins strings, so the number rots silently.** The branch invented the correct antidote
+for *code* (`schema-version-drift.test.ts` forbids bare `schemaVersion` literals because
+"exporting a constant does not, by itself, stop a future call site from writing a bare literal")
+and never applied that instinct to prose.
+
+Why the parity checks were structurally blind, not accidentally so:
+
+- `skills/splash/tests/skill-doc-parity.test.ts` — 48 pass / 131 assertions, run live — is 100 %
+  `expect(md).toContain("<literal>")`. It reads five `SKILL.md` files and **never `map-native` or
+  `scrolly`**, the two skills this branch rewrote. Zero geography/basemap/credit pins. It *cannot*
+  fail on this branch.
+- `lib/core/guardrails-doc-parity.test.ts:17-23` asserts doc → code (every path named in
+  `guardrails.md` exists), never code → doc. The branch adds three guards and deletes nothing, so
+  it stays green by construction.
+
+### C9 — `docs/splash/guardrails.md` is three guards short of the code
+
+The page opens by promising "Every row was verified against its named file — no guard is
+documented from memory." `grep -ncE "geo|geometry|crs|credit"` returns 1 (a pre-existing map-dw
+row). Missing: `assertGeoCreditPresent`, the unresolved-geo-join refusal (`lib/loop/produce.ts:186`),
+the missing-geometry guard (8 components). Same shape at `skills/splash/SKILL.md:667`, whose closed
+list of `initRun` refusals omits all four new geography refusals — including the CRS
+coordinate-range one (`lib/loop/init.ts:248`), the most journalist-visible refusal the branch adds.
+
+### Licensing — `SKILL.md` advertises MIT-incompatible data with a "just drop it in" recipe
+
+`skills/map-native/SKILL.md:328-329` lists `fr-departments` / `fr-regions` sourced from **Eurostat
+NUTS**, then `:332-333` tells the reader to add them "by dropping their simplified GeoJSON into
+`assets/geo/` … no engine change." The plan's own settled constraint (`:37-38`): *"GADM and
+Eurostat GISCO are disqualified — non-commercial terms, MIT-incompatible."* For a branch whose
+deliverable is an MIT release to newsrooms, the skill doc is a standing invitation to ship data
+the project has ruled out. Pre-existing prose, but this is the branch that made geography its
+subject and touched no docs.
+
+### The plan forbade C5 in advance
+
+Plan `:38-40`: *"the OSM credit is carried IN the produced file — never a README, never optional.
+A task that drops or defaults the credit is wrong regardless of how clean the diff."* `geoCredit`
+is optional, defaults to absent, and is passed by no production caller. The plan named the failure
+mode and it landed anyway.
+
+### Task 21 was never executed
+
+The plan carries **0 of 131** checkboxes ticked and no gate commit exists. The stray-`?raw` sweep
+it specified never ran — consistent with I1 (the video path's static imports going unnoticed).
+
+### Other prose defects that will rot fastest
+
+- `skills/map-native/SKILL.md:206-207` keeps a correct rule with a now-false justification ("drags
+  a Vite `?raw` import into the Remotion/webpack bundle and crashes the render"). An orchestrator
+  will verify the hazard is gone and "fix" the rule away — the rule still matters for other
+  reasons.
+- `skills/scrolly/SKILL.md:141` still lists `assets/geo/world.geojson` as reused, while
+  `skills/scrolly/tests/no-static-geojson-imports.test.ts` now pins its absence and
+  `ls skills/scrolly/assets/` shows only `sample-data`. The doc names an import the suite forbids.
+- `geo-match.ts:127` and `geo-match.test.ts:142` attribute `geoRefusal` to "Task 13"; it is Task 12
+  (`a94a18c5`). `geo-match.ts:162` says "Task 13 refines this" about a field the adjacent line
+  admits is currently wrong ("a coincidence, not a real level lookup") — pointing at a task now
+  ruled out of scope. A knowingly-wrong shipped field whose named fix will never come.
+- The `it.skip` at `lib/loop/assemble/map-native.test.ts:434-466` asserts future behaviour and sits
+  55 lines from `:355-379`, which asserts its literal negation. `31 pass, 1 skip, 0 fail` — CI will
+  never surface the open work.
+
+### Merge collision with main — mechanically easy
+
+Four contended files, all textually auto-mergeable; the schema migration is clean. The gap on this
+branch is between substrate and delivery, not in the merge.
+
+---
+
 ## Not verified
 
 `interactive` and `video` were not rendered (slow, and the machine was shared). They use the same
