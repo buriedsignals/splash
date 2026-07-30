@@ -461,3 +461,26 @@ describe("INPUT readiness comes from the loop (bridge, 2026-07-30)", () => {
     expect(splash).toContain("Then one line on PUBLISHING");
   });
 });
+
+// Feedback from a real manual run, 2026-07-30. Three of its eight points were rules that already
+// existed and were simply not applied — those got mechanical checks in the harness instead of more
+// prose. These three had no rule at all, or one too weak to bind, so they are stated here. The
+// distinction matters: restating a rule that is already ignored is how a document grows without
+// changing anything.
+describe("what the journalist reads at PROPOSITION (manual-run feedback, 2026-07-30)", () => {
+  it("each option must say what it SHOWS, not only what it is", () => {
+    expect(splash).toContain("what it SHOWS that the others do not");
+    // The failure it replaces: two options described correctly and indistinguishably.
+    expect(splash).toContain("A description is not a reason");
+  });
+  it("a narrative format is offered on the same footing, not as an afterthought", () => {
+    expect(splash).toContain("A narrative format is an option, not an afterthought");
+    expect(splash).toContain("ON THE SAME FOOTING");
+  });
+  it("a ruled-out narrative is said, not silently dropped", () => {
+    expect(splash).toContain("If narrative was ruled out, say so");
+  });
+  it("INPUT says the key check RAN, not only what it found", () => {
+    expect(splash).toContain("Say that the check RAN");
+  });
+});

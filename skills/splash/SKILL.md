@@ -139,6 +139,11 @@ count:
 > des **cartes** (idem), un **scrolly** qui se déroule au défilement, et un **récit photo** si tu
 > as les images. »
 
+**Say that the check RAN, not only what it found.** Observed: a journalist who could not tell whether
+the keys had been verified at all. One clause is enough and it belongs in the same breath as the
+capability line — « j'ai vérifié tes accès : … ». A silent check and an absent check read identically
+from the outside, and the whole point of doing it at INPUT is that he stops worrying about it.
+
 **Then one line on PUBLISHING, from the same answer** — the six delivery capabilities, grouped the
 same way and never listed one by one: `zip` ⇒ « un paquet à télécharger » · `embed-cloudflare` /
 `embed-fly` / `embed-s3` ⇒ « un lien intégrable » · `embed-cms` ⇒ « directement dans We.Publish ».
@@ -471,6 +476,26 @@ within an offered producer stays caught by the render review + GUARD 4/5.) The O
 the DIRECT branch (journalist NAMED the visual) — declare it with
 `skillsInvoked: ["splash:cadrage-direct", …]` on that proposal (5b). Never satisfy the gate by
 faking a candidate or a direct declaration.
+**★ Each option says what it SHOWS that the others do not — never only what it is.** Observed on a
+real run: two options, each described correctly (« nuage de points, 12 communes, km en x, €/m² en
+y ») and neither saying why a journalist would pick it. A description is not a reason. The `why`
+already travels on every candidate (§5b, `candidates.json`) and was simply not rendered — the same
+shape as a placement the code emits and the prose drops. Give each option ONE clause of editorial
+consequence, and make them comparable: « celui-ci montre que le prix décroche avec la distance ;
+celui-là, que ce sont les communes les plus lointaines qui grossissent le plus vite. Le premier
+explique, le second surprend. » A journalist choosing between two scatter plots described
+identically is choosing at random.
+
+**★ A narrative format is an option, not an afterthought.** When the material carries a sequence — a
+before/after, a threshold crossed, a geography walked, a claim needing two steps to land — scrolly
+and video belong in the list ON THE SAME FOOTING as the static and interactive ones: same one-clause
+why, same visual weight. Do not bury them in a trailing sentence, and do not present three variants
+of one static idea as if that were the whole space. `candidates.json` already carries either a
+narrative candidate or an explicit `narrativeRuledOut` reason — `check:narrative-not-considered`
+enforces that in the DATA. This rule is about the MESSAGE: the journalist must SEE the option the
+data already knows about. If narrative was ruled out, say so in one clause with its reason rather
+than silently listing only what remains.
+
 Present ALL opportunities' candidate lists in ONE batched message — never a per-opportunity question loop
 — and let the journalist answer per opportunity (pick a candidate, or « aucun » = veto; a
 vetoed opportunity emits `no-chart` with the reason). Each kept opportunity remains its OWN
