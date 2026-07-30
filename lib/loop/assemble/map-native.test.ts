@@ -406,12 +406,32 @@ test("a dot-density against any basemap but world is refused, not silently rende
 // 3 exactly as written — unconditionally returning `ok(...)` once a non-world geography is
 // matched — would be UNSAFE: a "us-states" dot-density would clear the refusal and then render
 // SILENTLY WRONG (state postal codes joined against the still-hardcoded country ISO-A3 key),
-// exactly the failure class this refusal exists to prevent. This is not a simple "wait for Task
-// 17" sequencing gap anymore — it is a genuine, currently-unresolved design gap: no task in this
-// plan actually specifies how DotDensityMap.tsx should derive its join key from
-// `config.geography`. Whoever picks this up must resolve that design question first, not just
-// delete the refusal.
-it('dot-density accepts a non-world geography once DotDensityMap.tsx re-derives its join key (post Task 13 join-key re-derivation — expected RED until DotDensityMap.tsx stops hard-coding "iso_a3")', () => {
+// exactly the failure class this refusal exists to prevent.
+//
+// RULING (2026-07-30, after Task 20 landed): Task 20's own implementer confirmed produce.mjs now
+// resolves config.geography (correct joinKey) for dot-density too, and sized what Task 13 would
+// actually need: (1) DotDensityMap.tsx reading `config.geography?.joinKey ?? JOIN_KEY` instead of
+// the hard-coded literal — genuinely small, mirrors ChoroplethMap.tsx's already-proven Task 16
+// pattern; BUT (2) removing THIS refusal in map-native.ts, plus (3) a real, rendered, visually
+// inspected proof that a non-world dot-density (e.g. us-states) has no OTHER hidden world/iso_a3
+// assumption inside computeDotDensity/dot-scatter.ts — unverified, and this plan's own testing
+// culture explicitly does not treat "probably fine" as sufficient here: Task 20 found a real,
+// previously-unreachable vendor-level rendering crash in RouteMap.tsx the moment that sibling
+// component (same "never exercised against real geometry" history) was finally given real,
+// full-scale data. Attempting (2)+(3) without an independent review available to catch an
+// equivalent surprise here would be exactly that same risk, blind.
+// Decision: ruled OUT OF THIS PLAN'S SCOPE. This is not a stalled sequencing wait — it is a
+// deliberate, documented exclusion. The refusal in map-native.ts (the sibling test above) stays
+// in place and correct. This test is skipped, not left "expected red": a red test with an
+// explanation nobody re-reads is exactly the failure mode this ruling exists to avoid (a gate
+// reporting a failure that is neither ambient nor understood by whoever next reads it).
+// FOLLOW-UP, named precisely so nothing here needs re-deriving: (a) add `geography?: GeographyRef`
+// to `DotDensityConfigShape` (validate-config.ts) — one line, mirrors ChoroplethConfig; (b) change
+// DotDensityMap.tsx's two JOIN_KEY use-sites to `config.geography?.joinKey ?? JOIN_KEY`; (c) remove
+// this file's dot-density `basemapKey !== "world"` refusal and un-skip this test; (d) render a real
+// non-world (e.g. us-states) dot-density end-to-end and visually inspect the PNG before considering
+// the refusal's removal safe — do not skip step (d) on the assumption that (a)+(b) alone are enough.
+it.skip("dot-density accepts a non-world geography once DotDensityMap.tsx re-derives its join key — RULED OUT OF THIS PLAN'S SCOPE 2026-07-30, see the follow-up named in the comment above", () => {
   const r = assembleMapNative({
     ...REGION_BRIEF,
     nativeType: "dot-density",
