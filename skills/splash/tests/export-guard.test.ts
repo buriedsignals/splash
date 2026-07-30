@@ -42,6 +42,27 @@ describe("assertShippable", () => {
       assertShippable(rep({ status: "failed", renderApproved: false }), "p1"),
     ).toThrow(/not produced/);
   });
+
+  // IMPORTANT: "shown" and "approved" have to name the same bytes (Task 8). A report that
+  // carries shownSha256 (the shape a real gate.ts approval always has) but whose value has
+  // drifted from approvedHash must not ship.
+  it("passes when shownSha256 equals approvedHash — the shape a real gate.ts approval writes", () => {
+    expect(() =>
+      assertShippable(
+        rep({ approvedHash: "abc123", shownSha256: "abc123" }),
+        "p1",
+      ),
+    ).not.toThrow();
+  });
+
+  it("refuses when shownSha256 does not match approvedHash — approved bytes nobody was shown", () => {
+    expect(() =>
+      assertShippable(
+        rep({ approvedHash: "abc123", shownSha256: "stale-hash" }),
+        "p1",
+      ),
+    ).toThrow(/shownSha256 !== approvedHash/);
+  });
 });
 
 describe("assertDelivered", () => {

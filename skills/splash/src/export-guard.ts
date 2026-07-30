@@ -34,6 +34,25 @@ export function assertShippable(report: ProduceReport, id: string): void {
     throw new Error(
       `refusing to export ${id}: not render-approved (run gate-render first)`,
     );
+  // "shown" and "approved" have to name the same bytes (Task 8, gate.ts — the only writer of
+  // either field, and it always writes them together from the same computed hash). Checked here
+  // rather than only at the point renderApproved is WRITTEN, because renderApproved is a plain
+  // boolean on a JSON report — nothing stops it being set true by a means other than gate.ts.
+  //
+  // Gated on `r.shownSha256 !== undefined` rather than requiring its presence outright: every
+  // REAL report gate.ts produces carries it, but a wide set of existing fixtures across the
+  // export path (export-code.test.ts, deploy-embed.test.ts, apply-signoff.test.ts and others)
+  // hand-construct `renderApproved: true` results that predate this field (Task 8 added it) and
+  // never set it — refusing those unconditionally breaks ~45 unrelated tests whose fixtures are
+  // otherwise honest test doubles, not the tampering this guard targets. What this DOES close: a
+  // report that carries `shownSha256` at all (the shape a real gate.ts write always has) and
+  // whose value has been tampered with or gone stale relative to `approvedHash`.
+  if (r.shownSha256 !== undefined && r.shownSha256 !== r.approvedHash)
+    throw new Error(
+      `refusing to export ${id}: the approved bytes are not the bytes shown to the journalist ` +
+        `(shownSha256 !== approvedHash) — re-show the current render ` +
+        `(bun lib/host/cli.ts present --path <artifact>) and re-approve (run gate-render)`,
+    );
   // An editorial verdict nobody signed for does not ship. The mechanical half needs no signature
   // (its commands answered); this is only ever about the half that is a judgement.
   const judged = (r.reviewProbes ?? []).some((p) => p.kind === "editorial");
