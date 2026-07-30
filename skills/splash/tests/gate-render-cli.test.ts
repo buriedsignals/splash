@@ -4,8 +4,11 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { REVIEW_ARTIFACTS_DIR } from "../src/render-provenance";
+import { presentArtifact } from "../../../lib/loop/presentation";
+import { NO_VIEWER_VAR } from "../../../lib/loop/preview";
 
 const CWD = join(import.meta.dir, "..");
+const SHOWN_ENV = { [NO_VIEWER_VAR]: "1" };
 
 // Runs the REAL gate-render CLI; returns { code, stderr }.
 function runGate(
@@ -59,6 +62,7 @@ describe("gate-render CLI — provenance of the approved file", () => {
       renderApproved: false,
       outputs: [still],
     });
+    presentArtifact(still, SHOWN_ENV);
     const { code } = runGate(reportPath, "p1", still);
     expect(code).toBe(0);
     const written = JSON.parse(readFileSync(reportPath, "utf8"));
@@ -146,6 +150,7 @@ describe("gate-render CLI — provenance of the approved file", () => {
     );
     const capture = join(reviewDir, "hosted-embed-reviewed.html");
     writeFileSync(capture, "<html>captured from the live embed</html>");
+    presentArtifact(capture, SHOWN_ENV);
     const { code } = runGate(reportPath, "p1", capture);
     expect(code).toBe(0);
     const written = JSON.parse(readFileSync(reportPath, "utf8"));

@@ -106,6 +106,11 @@ export interface ProposalResult {
   reviewProbes?: ReviewProbe[]; // the review's probes ledger (Gate 3a), set by review-gate
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
+  /** sha256 of the artifact as it was SHOWN to the journalist, read from the presentation
+   *  receipt beside it (lib/loop/presentation.ts) — never reported by the step asking for the
+   *  approval. Equal to approvedHash on every approval this gate writes; recorded separately so
+   *  a report says out loud that the two were compared rather than assumed. */
+  shownSha256?: string;
   /** verified human editorial sign-offs over approvedHash (S4d); undefined = none */
   editorialSignoffs?: {
     signerId: string;
