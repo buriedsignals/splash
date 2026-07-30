@@ -3389,3 +3389,189 @@ written). Report the failure. Revert before continuing.
 git add skills/splash/scripts/bundle-source.mjs skills/splash/scripts/bundle-source-geometry.test.ts
 git commit -m "test(splash): prove the exported code-source bundle ships resolved geometry via config.json"
 ```
+
+### Task 20: `produce.mjs` resolves the geometry descriptor to bytes, and refuses a missing credit (D5, D7)
+
+**Files:**
+- Modify: `skills/map-native/scripts/produce.mjs` — insert after `mediaSize = renderSize(channel)`
+  (`:132`, verified while writing this plan), before the config is finalized and handed to Vite
+  (find that exact hand-off point by reading the file's full config-assembly section — only
+  lines `44-79` and `~122-132` were read while writing this plan; the config-write/Vite-invoke
+  section past line 132 was not, and this task's implementer must read it before inserting code,
+  not guess the insertion point from this plan alone).
+- Test: `skills/map-native/tests/produce-geometry.test.ts` (new).
+
+**Interfaces:**
+- Consumes: `subsetGeometry`, `toleranceMetersFor` (Task 6), `assertGeoCreditPresent` (Task 3),
+  `renderSize` (already imported at `produce.mjs:44`, verified while writing this plan).
+- Produces: no new exported symbol — `produce.mjs` is a script, not a module others import. Its
+  OBSERVABLE contract widens: the config object it writes to `config.json` (and bakes into
+  `__CONFIG__`) gains a `geometry: Topology` field whenever `config.geography` is present.
+
+**Design call — where the "which features are actually drawn" feature-id list comes from,**
+since D5 says the assembler already decides this but `assembleMapNative` (Task 12/13) does not
+currently emit an explicit `featureIds` array: derive it from the config's own data at this
+point, per shape —
+`choropleth`/`dot-density`: `config.rows.map(r => String(r[config.regionKey]))`;
+`cartogram`: `config.values.map(v => v.id)`.
+This mirrors exactly what `computeChoropleth`/the cartogram equivalent already do internally to
+find which polygons have data — recomputing it here from the same config fields, rather than
+threading a NEW field back through `ProductionBrief`/`GeoMatch` (which would touch the
+already-landed Task 9 manifest schema again), is the smaller, self-contained change.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// skills/map-native/tests/produce-geometry.test.ts
+import { describe, it, expect } from "bun:test";
+import { mkdtempSync, writeFileSync, readFileSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+
+// This suite runs produce.mjs directly, on a config that declares a geography — no mock, per
+// repo convention. It does NOT need VITE_MAPTILER_KEY (the geometry-resolution step this task
+// adds runs BEFORE the MapLibre render, and this test only exercises that step, not a full
+// render) — confirm this ordering assumption once the exact insertion point (Step 3) is chosen;
+// if geometry resolution ends up needing to run AFTER a MapTiler-gated step for some reason not
+// visible from the lines read while writing this plan, this suite's self-skip condition must be
+// widened to match Global Constraints' skip-count-diff discipline.
+
+describe("produce.mjs resolves a declared geography's subset into config.geometry", () => {
+  it("writes a Topology into config.json for a choropleth against a declared file — the fixture: 2 Swiss cantons out of a 3-canton source", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "produce-geo-test-"));
+    const sourcePath = join(runDir, "cantons.geojson");
+    writeFileSync(
+      sourcePath,
+      JSON.stringify({
+        type: "FeatureCollection",
+        features: [
+          { type: "Feature", properties: { name: "Genève" }, geometry: { type: "Polygon", coordinates: [[[6, 46], [6, 47], [7, 47], [7, 46], [6, 46]]] } },
+          { type: "Feature", properties: { name: "Vaud" }, geometry: { type: "Polygon", coordinates: [[[6.5, 46.5], [6.5, 47.5], [7.5, 47.5], [7.5, 46.5], [6.5, 46.5]]] } },
+          { type: "Feature", properties: { name: "Zurich" }, geometry: { type: "Polygon", coordinates: [[[8, 47], [8, 48], [9, 48], [9, 47], [8, 47]]] } },
+        ],
+      }),
+    );
+    const config = {
+      type: "choropleth",
+      regionKey: "canton",
+      valueField: "v",
+      rows: [{ canton: "Genève", v: 1 }, { canton: "Vaud", v: 2 }], // Zurich NOT drawn
+      geography: {
+        origin: "declared", set: "declared", level: "canton",
+        joinKey: "name", joinKeyFamily: "name",
+        sourcePath, // this task's own addition to the config shape — the produce-time-only
+        // field naming WHERE to read the frozen file from; never sent to the browser.
+      },
+      geoCredit: { name: "swisstopo" },
+      title: "t", description: "d", source: { name: "s" },
+    };
+    // ... invoke produce.mjs's geometry-resolution step directly, or via its CLI, per the
+    // exact call shape found once Step 3's insertion point is read — this test asserts on
+    // config.json's FINAL written content, not on produce.mjs's internals.
+    const outDir = join(runDir, "out");
+    mkdirSync(outDir, { recursive: true });
+    // <call the resolution step here, writing outDir/config.json>
+    const written = JSON.parse(readFileSync(join(outDir, "config.json"), "utf8"));
+    expect(written.geometry.type).toBe("Topology");
+    const objName = Object.keys(written.geometry.objects)[0];
+    expect(written.geometry.objects[objName].geometries).toHaveLength(2); // Zurich excluded
+  }, 30_000);
+
+  it("refuses (throws) when config.geography is present and config.geoCredit is missing — D7", () => {
+    const config = {
+      type: "choropleth",
+      geography: { origin: "declared", set: "declared", level: "canton", joinKey: "name", joinKeyFamily: "name", sourcePath: "/does/not/matter/for/this/assertion" },
+      // geoCredit deliberately omitted
+    };
+    // <call the same resolution entry point> — expect it to throw/exit non-zero, naming "credit"
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd skills/map-native && bun test tests/produce-geometry.test.ts`
+Expected: FAIL — `produce.mjs` does not yet resolve `config.geography` into `config.geometry` at
+all, and does not call `assertGeoCreditPresent`.
+
+- [ ] **Step 3: Implement**
+
+Read `produce.mjs` from line 132 to its config-write/Vite-invoke call (not shown in full here —
+read it before writing this step's real code). Insert, once `mediaSize` is known (needed for
+`toleranceMetersFor`) and before the config is finalized:
+
+```js
+import { subsetGeometry, toleranceMetersFor } from "../../../lib/geo/subset.mjs"; // or .ts per
+  // this repo's actual module resolution for scripts — confirm .ts vs a built .mjs by checking
+  // how produce.mjs already imports OTHER lib/ TypeScript modules (it does — e.g. channel.ts at
+  // :44 — so lib/geo/subset.ts should import the same way, adjust the extension accordingly).
+import { assertGeoCreditPresent } from "../../../lib/geo/policy.ts";
+
+if (config.geography) {
+  assertGeoCreditPresent(config.geography, config.geoCredit);
+
+  const featureIds =
+    config.type === "cartogram"
+      ? config.values.map((v) => String(v.id))
+      : config.rows.map((r) => String(r[config.regionKey]));
+
+  // Rough map-extent estimate for the tolerance rule (D5): the channel's own render width is
+  // known (mediaSize.width); the map's real geographic extent in metres is not measured here —
+  // use a documented, named placeholder constant until a real per-geography extent is
+  // threaded through (a genuine follow-up, not invented by this plan): WORLD-SCALE fallback
+  // 40,075,000m (Earth's circumference) for a "world"/"natural-earth-admin-0" set, and a
+  // country-scale fallback of 1,000,000m otherwise. This is a coarser tolerance than the
+  // spec's own per-country measurements (D5's Swiss-cantons 288 m/px was computed against the
+  // REAL Swiss extent), so simplification will be slightly more conservative (more vertices
+  // kept) than optimal until that follow-up lands — never LESS conservative, which is the safe
+  // direction to be wrong in.
+  const extentMeters = config.geography.set.startsWith("natural-earth-admin-0")
+    ? 40_075_000
+    : 1_000_000;
+  const toleranceMeters = toleranceMetersFor(extentMeters, mediaSize.width);
+
+  const geomOutPath = join(outDir, "geometry.topojson");
+  await subsetGeometry({
+    sourcePath: config.geography.sourcePath, // Task 10's frozen path, or the shipped asset path
+    outPath: geomOutPath,
+    featureIds,
+    idProperty: config.geography.joinKey,
+    keepProperties: [config.geography.joinKey],
+    toleranceMeters,
+  });
+  config.geometry = JSON.parse(readFileSync(geomOutPath, "utf8"));
+  delete config.geography.sourcePath; // produce-time-only field — never reaches the browser
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd skills/map-native && bun test tests/produce-geometry.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Mutation — prove the credit refusal test depends on `assertGeoCreditPresent`
+  actually being called from `produce.mjs`, not just existing in `lib/geo/policy.ts`**
+
+Temporarily comment out the `assertGeoCreditPresent(config.geography, config.geoCredit);` call.
+
+Run: `cd skills/map-native && bun test tests/produce-geometry.test.ts`
+Expected: "refuses (throws) when config.geography is present and config.geoCredit is missing"
+FAILS (no throw). This is exactly the class of gap Global Constraints warns about — a guard that
+exists as a function but is never called from the path that matters. Report the count. Revert
+before continuing.
+
+- [ ] **Step 6: Live-render skip-count diff (Global Constraints — required whenever a task
+  touches the MapTiler-gated path)**
+
+Run `cd skills/map-native && bun test tests/produce-geometry.test.ts` twice: once with
+`VITE_MAPTILER_KEY` unset (record the skip message/count, if this suite ends up needing the key
+after Step 3's real insertion point is read), once with it exported from the root `.env`. Report
+both counts as the diff — do not report only the keyless run as "green."
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add skills/map-native/scripts/produce.mjs skills/map-native/tests/produce-geometry.test.ts
+git commit -m "feat(map-native): produce.mjs resolves declared geography to a metric-tolerance subset (D5, D7)"
+```
