@@ -3575,3 +3575,72 @@ both counts as the diff — do not report only the keyless run as "green."
 git add skills/map-native/scripts/produce.mjs skills/map-native/tests/produce-geometry.test.ts
 git commit -m "feat(map-native): produce.mjs resolves declared geography to a metric-tolerance subset (D5, D7)"
 ```
+
+---
+
+## Phase F — the full gate
+
+### Task 21: `bun run check` — the one full-repo gate run
+
+**Files:** none modified — this task only runs and reports.
+
+- [ ] **Step 1: Run the full gate from the repo root**
+
+Run: `bun run check`
+Expected: every entry in `TSC_DIRS`/`TEST_DIRS` (`scripts/check.mjs`, verified while writing this
+plan) reports PASS, including `lib`, `skills/map-native`, `skills/scrolly`, `skills/splash`. Do
+not hand-wave this — paste the actual `<passed>/<total> checks passed.` line into the task's
+completion note.
+
+- [ ] **Step 2: Live-MapTiler skip-count diff, repo-wide**
+
+Per Global Constraints: run `bun run check` once with `VITE_MAPTILER_KEY` unset (the default,
+clean-checkout state — record which suites self-skip and their printed skip messages), then once
+with `VITE_MAPTILER_KEY`/`REMOTION_MAPTILER_KEY` exported from the root `.env` into the shell
+before invoking `bun run check` again. Report the pass-count diff between the two runs — this is
+the only honest evidence that Task 20's geometry-resolution step (and every existing
+MapTiler-gated map-native/produce suite) actually exercises a live render, not just a self-skip
+that happens to exit 0.
+
+- [ ] **Step 3: Confirm no stray `?raw` geojson import remains anywhere in the repo**
+
+Run: `grep -rn "\.geojson?raw\|\.geojson\"?raw" --include="*.tsx" --include="*.ts" . | grep -v node_modules`
+Expected: zero hits outside `skills/splash/scripts/bundle-source.test.ts`'s own unit test fixture
+string (verified while writing this plan that this one hit is a test fixture, not a real import
+— `stripQuery("../assets/world.geojson?raw")`, exercising the query-stripping helper itself, not
+importing anything). Any other hit means a task in this plan was not fully applied.
+
+- [ ] **Step 4: Confirm no mention of Claude, Anthropic, or any AI tool was introduced**
+
+Run: `git log main..HEAD --oneline` then `git diff main...HEAD | grep -in "claude\|anthropic"`
+Expected: zero hits. Per Global Constraints, this is non-negotiable.
+
+- [ ] **Step 5: Commit** (only if Step 1-4 produced any final cleanup — otherwise this task is a
+  report, not a diff, and there is nothing to commit)
+
+```bash
+git status --short  # confirm clean or list what Step 1-4 touched
+```
+
+---
+
+## Self-review notes (kept for whoever executes this plan)
+
+- **Spec coverage:** D1 (Task 9/10), D1b (Task 10), D2 (Task 2), D3 (no task — GeoJSON/TopoJSON
+  acceptance is enforced by `GeographyInputSchema`'s `encoding` enum, Task 2; Shapefile/GeoPackage/
+  KML are explicitly deferred by the spec itself, no task needed), D4 (Task 1, wired at Task 10
+  Step 3), D5 (Tasks 6, 20), D6 (Tasks 5, 7, 8, 14), D7 (Tasks 3, 15, 20), D8 (Tasks 3, 16), D9
+  (Task 11), D10 (Tasks 4, 8, 9, 12, 13).
+- **Contended files:** none of the 21 tasks touches `skills/splash/src/producer-spec.ts`,
+  `skills/splash/SKILL.md`, or `skills/splash/tests/skill-doc-parity.test.ts` — confirmed by
+  re-reading every task's Files section above. Task 5's scope note explicitly avoids `SKILL.md`
+  for exactly this reason.
+- **Known gap, stated rather than hidden:** Task 5 (join ledger) delivers the DATA STRUCTURE and
+  the produce-time GATE, not the journalist-facing dialogue that POPULATES `pending`/`decisions`
+  (spec D6's "Splash measures, shows, and lets the journalist decide"). That dialogue is host/
+  driver-layer work this plan does not scope — flagged explicitly in Task 5 and repeated here so
+  it is not mistaken for an oversight during review.
+- **Known gap, Task 20:** the map-extent-in-metres input to `toleranceMetersFor` is a coarse
+  world/country-scale constant, not the spec's own per-geography measured extent — documented in
+  Task 20 as a safe-direction approximation (more vertices kept than strictly needed, never
+  fewer) with a named follow-up, not silently invented as if it were the spec's precise figure.
