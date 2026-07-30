@@ -20,6 +20,7 @@ import {
   collectFurnitureI18n,
   furnitureGateApplies,
 } from "./lib/furniture-i18n.mjs";
+import { lateRefusalSentence, recordLateRefusal } from "../../splash/src/late-refusal.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -106,7 +107,17 @@ if (concerns.length) {
   );
 }
 if (violations.length) {
-  console.error(`[snap-contrast ${chart}] ${violations.length} text label(s) below ${MIN_CONTRAST}:1 WCAG contrast`);
+  const r = {
+    guard: "snap-contrast",
+    subject: `${chart}/static`,
+    reason: `${violations.length} text label(s) below ${MIN_CONTRAST}:1 WCAG contrast`,
+    deviation:
+      "raise the contrast of the failing label (a darker/lighter ink, or a different house " +
+      "ground), then produce again — this is measured on the render, so it cannot be told at the offer",
+  };
+  console.error(lateRefusalSentence(r));
+  for (const v of violations) console.error(`  ✗ ${v}`);
+  if (process.env.OUTDIR) recordLateRefusal(process.env.OUTDIR, r);
   process.exit(1);
 }
 if (i18nViolations.length) {
