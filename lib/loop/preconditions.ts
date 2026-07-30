@@ -38,7 +38,8 @@ export function productionPrecondition(runDir: string): RoutedRefusal | null {
   if (existsSync(join(runDir, CANDIDATES_FILE))) return null;
   return routed(
     "no-candidates-menu",
-    `no ranked list of visuals was ever written down for this story (${join(runDir, CANDIDATES_FILE)} does not exist), so nothing produced here was chosen from one`,
+    `no ranked list of visuals was ever written down for this story (${join(runDir, CANDIDATES_FILE)} does not exist), so nothing produced here was chosen from one` +
+      ` — if the journalist NAMED this visual, mark the proposal direct (skillsInvoked: ["splash:cadrage-direct"]) and it needs no menu`,
   );
 }
 

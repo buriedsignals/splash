@@ -37,6 +37,75 @@ test("production stage: a directory with the menu answers ok, saying what it che
   }
 });
 
+// CRITICAL 2 regression: produce-all.mjs exempts the direct branch (a proposal the journalist
+// NAMED, skillsInvoked: ["splash:cadrage-direct"]) from the ranked-menu precondition — this
+// façade must agree, or a legitimate direct-branch run refuses here and nowhere else.
+test("production stage: a direct-branch accepted.json passes with NO menu at all — the exemption produce-all.mjs applies", () => {
+  const dir = tmp();
+  try {
+    writeFileSync(
+      join(dir, "accepted.json"),
+      JSON.stringify([
+        {
+          id: "p1",
+          producer: "chart-native",
+          format: "static",
+          skillsInvoked: ["splash:cadrage-direct"],
+          spec: {},
+        },
+      ]),
+    );
+    const r = describePrecheck({ stage: "production", dir });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value).toEqual({ stage: "production", dir, passed: true });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("production stage: a NON-direct accepted.json with no menu still refuses, and names the direct-branch escape hatch", () => {
+  const dir = tmp();
+  try {
+    writeFileSync(
+      join(dir, "accepted.json"),
+      JSON.stringify([
+        { id: "p1", producer: "chart-native", format: "static", spec: {} },
+      ]),
+    );
+    const r = describePrecheck({ stage: "production", dir });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("no ranked list of visuals");
+    expect(r.message).toContain("splash:cadrage-direct");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("production stage: a mixed accepted.json (one direct, one not) with no menu still refuses — the exemption is all-or-nothing per produce-all's own .some()", () => {
+  const dir = tmp();
+  try {
+    writeFileSync(
+      join(dir, "accepted.json"),
+      JSON.stringify([
+        {
+          id: "p1",
+          producer: "chart-native",
+          format: "static",
+          skillsInvoked: ["splash:cadrage-direct"],
+          spec: {},
+        },
+        { id: "p2", producer: "chart-native", format: "static", spec: {} },
+      ]),
+    );
+    const r = describePrecheck({ stage: "production", dir });
+    expect(r.ok).toBe(false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("export stage: the build folder is refused, and every planted file is named", () => {
   const dir = tmp();
   try {

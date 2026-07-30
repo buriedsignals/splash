@@ -8,7 +8,8 @@
 // A refused precondition is `step-refused` — the code cli.ts already maps to exit 1 — because
 // that is exactly what it is: a well-formed request the loop declined. An unreadable directory is
 // `usage` (exit 2), the same split every other acting command draws.
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { refusalSentence } from "../core/routed-refusal";
 import { VISUAL_FORMATS, isVisualFormat } from "../core/vocabulary";
 import {
@@ -18,6 +19,8 @@ import {
 } from "../loop/preconditions";
 import { presentArtifact } from "../loop/presentation";
 import { runProbes, type ProbeSpec } from "../loop/probe-run";
+import { isDirectBranch } from "../../skills/splash/src/candidate-provenance";
+import type { AcceptedProposal } from "../../skills/splash/src/producer-spec";
 import type { HostResponse } from "./state";
 
 const HANDOVER_FORMS: readonly string[] = ["html", "code-source", "embed"];
@@ -34,6 +37,30 @@ export type PrecheckArgs = {
 };
 
 /**
+ * THE SAME DIRECT-BRANCH EXEMPTION `produce-all.mjs` already applies (`accepted.some((p) =>
+ * !isDirectBranch(p))`, `skills/splash/scripts/produce-all.mjs`) — read here from the same
+ * `accepted.json` beside `dir`, because a proposal the journalist NAMED needs no menu, and this
+ * façade must agree with the caller that actually matters or a legitimate direct-branch run
+ * refuses here and only here. An unreadable/malformed/absent `accepted.json`, or an empty list,
+ * is NOT exempt-by-omission (mirrors `.some()` on an empty array being vacuously false only when
+ * there IS an array to read) — anything that cannot be read as "every proposal is direct" falls
+ * through to the ordinary menu check below.
+ */
+function isExemptDirectRun(dir: string): boolean {
+  const acceptedPath = join(dir, "accepted.json");
+  if (!existsSync(acceptedPath)) return false;
+  try {
+    const accepted = JSON.parse(readFileSync(acceptedPath, "utf8"));
+    return (
+      Array.isArray(accepted) &&
+      !(accepted as AcceptedProposal[]).some((p) => !isDirectBranch(p))
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * IS THIS DIRECTORY ALLOWED TO BE WHAT THE CALLER IS ABOUT TO CALL IT?
  *
  * `production` — may production start here (is there a ranked menu at all)?
@@ -44,6 +71,11 @@ export type PrecheckArgs = {
  */
 export function describePrecheck(args: PrecheckArgs): HostResponse {
   if (args.stage === "production") {
+    if (isExemptDirectRun(args.dir))
+      return {
+        ok: true,
+        value: { stage: "production", dir: args.dir, passed: true },
+      };
     const refusal = productionPrecondition(args.dir);
     return refusal
       ? { ok: false, code: "step-refused", message: refusalSentence(refusal) }
