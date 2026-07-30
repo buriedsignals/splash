@@ -47,4 +47,20 @@ describe("GeographyInputSchema", () => {
     const r = GeographyInputSchema.safeParse(withoutJoinKey);
     expect(r.success).toBe(true);
   });
+
+  it("refuses an empty edition string — edition must be non-empty, never a silent placeholder", () => {
+    // Ensures .min(1) is enforced, not just that the field is present.
+    const r = GeographyInputSchema.safeParse({ ...valid, edition: "" });
+    expect(r.success).toBe(false);
+  });
+
+  it("accepts EPSG:4258 as a valid crs — one of the three approved values", () => {
+    const r = GeographyInputSchema.safeParse({ ...valid, crs: "EPSG:4258" });
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts EPSG:4269 as a valid crs — one of the three approved values", () => {
+    const r = GeographyInputSchema.safeParse({ ...valid, crs: "EPSG:4269" });
+    expect(r.success).toBe(true);
+  });
 });
