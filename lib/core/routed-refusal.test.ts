@@ -57,12 +57,22 @@ test("late-render-refusal has a step and no command — its real route is guard-
   expect(REFUSAL_ROUTES["late-render-refusal"]!.command).toBeUndefined();
 });
 
-test("no route's command is a shell string — a route is run, not interpolated", () => {
+test("no route's command chains a second command — a route is one call, not interpolated", () => {
+  // `&&`/`|` are the actual risk this test guards: a chained/piped command smuggles a SECOND,
+  // unaudited operation past whoever reads route.command as "the thing that resolves this
+  // refusal." A shell REDIRECT (a bare `<` with whitespace either side, as opposed to a
+  // `<placeholder>` argument like `<outDir>`) is different in kind — `probe-not-run`'s command
+  // reads its ledger from stdin on purpose (cli.ts's probe command has no --spec flag), and
+  // `< probes.json` is a single static redirect into a fixed, literal filename baked into this
+  // table, not a shell operator an untrusted value could ride in on. It stays allowed; `&&`/`|`
+  // (and a real `<` outside this one route) do not.
   for (const route of Object.values(REFUSAL_ROUTES)) {
     if (!route?.command) continue;
     expect(route.command.startsWith("bun ")).toBe(true);
     expect(route.command).not.toContain("&&");
     expect(route.command).not.toContain("|");
+    if (/\s<\s/.test(route.command))
+      expect(route.command).toBe("bun lib/host/cli.ts probe < probes.json");
   }
 });
 

@@ -91,4 +91,18 @@ describe("produce-all — the ranked menu is a precondition, not a per-proposal 
       rmSync(f.dir, { recursive: true, force: true });
     }
   });
+
+  it("a malformed accepted.json (not an array) is a clean usage error, not an uncaught TypeError", () => {
+    const f = fixture();
+    try {
+      writeFileSync(f.accepted, JSON.stringify({ id: "p1" }));
+      const p = Bun.spawnSync(["bun", CLI, f.accepted, f.outDir, f.dir]);
+      expect(p.exitCode).toBe(1);
+      const err = p.stderr.toString();
+      expect(err).toContain("must hold a JSON array");
+      expect(err).not.toContain("TypeError");
+    } finally {
+      rmSync(f.dir, { recursive: true, force: true });
+    }
+  });
 });

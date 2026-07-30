@@ -48,9 +48,10 @@ export function productionPrecondition(runDir: string): RoutedRefusal | null {
  *  half is the definition, because it is the half both sides may import. */
 export type HandoverForm = "html" | "code-source" | "embed" | null;
 
-// The files a PRODUCTION directory carries and an export never does. Not a guess: the first two
-// are exactly what export-code.mjs:296-302 looks for to decide a build folder can yield a source
-// bundle, and the last three are the spine's own bookkeeping.
+// The files a PRODUCTION directory carries and an export never does. Not a guess: the first
+// three (config.json, and either native-source.json for chart-native or source-manifest.json for
+// map-native/scrolly) are exactly what export-code.mjs:296-302/409-416 looks for to decide a
+// build folder can yield a source bundle, and the last three are the spine's own bookkeeping.
 export const PRODUCTION_MARKERS = [
   "config.json",
   "native-source.json",

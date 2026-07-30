@@ -38,6 +38,12 @@ try {
   );
   process.exit(1);
 }
+if (!Array.isArray(accepted)) {
+  console.error(
+    `${acceptedPath} must hold a JSON array of accepted proposals, got ${typeof accepted}`,
+  );
+  process.exit(1);
+}
 const profile = loadNewsroomProfile(projectDir);
 
 // Candidate-provenance context: the ranked candidates the suggester persisted MUST sit beside

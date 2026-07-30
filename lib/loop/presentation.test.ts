@@ -69,7 +69,6 @@ test("an artifact that CHANGED since it was shown is refused as a different subj
   try {
     presentArtifact(a.path, ENV);
     writeFileSync(a.path, "<html>two</html>");
-    const after = Bun.hash; // not used — recompute through the module under test
     const r = shownCovers(a.path, shownReceipt(a.path)!.sha256);
     // The receipt still covers the OLD bytes, so a caller asking about the OLD digest passes;
     // what must refuse is asking about the CURRENT ones.
@@ -81,7 +80,6 @@ test("an artifact that CHANGED since it was shown is refused as a different subj
     expect(r2).not.toBeNull();
     expect(r2!.code).toBe("approval-subject-mismatch");
     expect(r2!.message).toContain("changed");
-    void after;
   } finally {
     rmSync(a.dir, { recursive: true, force: true });
   }
