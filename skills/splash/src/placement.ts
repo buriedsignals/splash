@@ -12,6 +12,7 @@
 // assertChainProvenance has already proved present and parseable), so every branch below is
 // exercised by a plain unit test.
 import type { PlacementCopy } from "../../../lib/newsroom/ui-copy";
+import { routed, refusalSentence } from "../../../lib/core/routed-refusal";
 
 /** What the delivery is able to say about this element's place in the article.
  *  `undeclared` is deliberately distinct from `free-standing`: "nobody said" is not "it belongs
@@ -90,4 +91,58 @@ export function placementBlock(
     ...lines,
     "END_SPLASH_PLACEMENT",
   ].join("\n");
+}
+
+/** Whether this run read an ARTICLE — the condition that makes stating the placement obligatory
+ *  (spec § 6). Two signals, and the refusal always names the one that fired:
+ *    HARD     — opportunities.json in the run directory (suggest-article persisted its set).
+ *    DECLARED — skillsInvoked lists suggest-article (producer-spec.ts:53, already validated by
+ *               GUARD 5 in validate-gate.ts).
+ *  A bare-topic run trips neither, and owes nothing. */
+export type ArticleEvidence =
+  { existed: false } | { existed: true; why: string };
+
+export const SUGGEST_ARTICLE_SKILL = "suggest-article";
+
+export function articleEvidence(opts: {
+  opportunitiesPresent: boolean;
+  skillsInvoked?: string[];
+}): ArticleEvidence {
+  if (opts.opportunitiesPresent)
+    return {
+      existed: true,
+      why: "opportunities.json is present in the run directory (suggest-article read an article and persisted its opportunities)",
+    };
+  if (
+    Array.isArray(opts.skillsInvoked) &&
+    opts.skillsInvoked.includes(SUGGEST_ARTICLE_SKILL)
+  )
+    return {
+      existed: true,
+      why: `skillsInvoked lists "${SUGGEST_ARTICLE_SKILL}" on this proposal`,
+    };
+  return { existed: false };
+}
+
+/** The refusal, or null when there is nothing to refuse. Returned rather than thrown so the
+ *  caller keeps its own refusal shape (export-code.mjs's fail() → stderr + non-zero, before any
+ *  write). What is refused is SILENCE, never a placement the journalist chose: an anchor and an
+ *  explicit free-standing declaration both pass. Rendered via routed-refusal.ts's
+ *  refusalSentence() — export-code.mjs is a script whose stderr the orchestrator reads, so this
+ *  gets the rendering that carries the re-run command, not the journalist-only one. */
+export function undeclaredPlacementRefusal(
+  proposalId: string,
+  evidence: ArticleEvidence,
+  placement: Placement,
+): string | null {
+  if (!evidence.existed) return null;
+  if (placement.kind !== "undeclared") return null;
+  return refusalSentence(
+    routed(
+      "placement-undeclared",
+      `refusing to deliver ${proposalId}: this run read an article (${evidence.why}), but the ` +
+        `accepted proposal declares no placement — so the hand-over could not tell the ` +
+        `journalist WHERE this element goes in their piece`,
+    ),
+  );
 }

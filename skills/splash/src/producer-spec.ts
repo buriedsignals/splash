@@ -62,13 +62,20 @@ export interface AcceptedProposal {
   // what the sub-skill owns.
   skillsInvoked?: string[];
   // Placement anchor (suggest-article's `anchor: { paragraphIndex, quote }`) — WHERE in the
-  // article this element serves the narrative. Carried here so EXPORT can tell the journalist,
-  // at hand-over, where to place each delivered element (« à placer autour du §N, près de
-  // « quote » »). Advisory by design — the journalist does the final placement in their CMS.
-  // Copied across at §5b like sourceHint/confirmedTakeaway (prose-enforced; no script transforms
-  // the in-context ProposalSet). OPTIONAL: absent ⇒ no placement stated at delivery, no error
-  // (a bare-topic run, or an opportunity suggest-article bound to no specific passage).
+  // article this element serves the narrative. READ AT EXPORT: skills/splash/src/placement.ts
+  // resolves it and export-code.mjs prints the placement block at hand-over, so the sentence no
+  // longer depends on the orchestrator remembering an article read dozens of turns earlier.
+  // Advisory by design — the journalist does the final placement in their CMS — but SAYING it is
+  // not: once a run has read an article, the export refuses an entry that declares neither
+  // `anchor` nor `freeStanding` (undeclaredPlacementRefusal). Of the two grains the QUOTE is
+  // authoritative: a paragraph index rots when the article is edited between analysis and
+  // delivery. Copied across at §5b like sourceHint/confirmedTakeaway.
   anchor?: { paragraphIndex?: number; quote?: string };
+  // The OTHER valid placement declaration: this element is bound to no passage of the article
+  // (suggest-article proposed it against no specific quote). Set it explicitly — silence is not a
+  // valid hand-over on an article run, because nothing distinguishes "no passage" from "the
+  // anchor was dropped at §5b". Meaningless without an article; harmless on a bare-topic run.
+  freeStanding?: true;
 }
 
 export type ProduceStatus =
