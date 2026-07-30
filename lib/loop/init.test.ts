@@ -356,6 +356,47 @@ test("writes no lang field at all when nothing was declared and no profile was g
   expect(raw).not.toContain('"lang"');
 });
 
+// --- geography input (D1, D1b): frozen like data/article, a HashRef plus the editorial facts
+// GeographyInputSchema carries.
+
+test("accepts a run declaring input.geography and freezes it", () => {
+  const { dir, csv } = scene();
+  const geoFixture = join(dir, "cantons.geojson");
+  writeFileSync(
+    geoFixture,
+    JSON.stringify({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: {},
+          geometry: { type: "Point", coordinates: [7.4474, 46.9481] },
+        },
+      ],
+    }),
+  );
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: {
+      data: csv,
+      geography: {
+        path: geoFixture,
+        encoding: "geojson",
+        crs: "EPSG:4326",
+        level: "cantons",
+        licence: "swisstopo",
+        edition: "2024",
+        credit: { name: "swisstopo" },
+      },
+    },
+  });
+  expect(result.ok).toBe(true);
+  if (result.ok) {
+    expect(result.value.input.geography?.sha256).toBeDefined();
+    expect(result.value.input.geography?.level).toBe("cantons");
+  }
+});
+
 test("initRun freezes an article input too, and declares it", () => {
   const { dir, csv } = scene();
   const article = join(dir, "piece.txt");

@@ -8,14 +8,16 @@ import { join, extname } from "node:path";
 export function freezeInput(
   runDir: string,
   srcPath: string,
-  kind: "data" | "article",
+  kind: "data" | "article" | "geography",
 ): { path: string; sha256: string } {
   if (!existsSync(srcPath))
     throw new Error(`freezeInput: source not found: ${srcPath}`);
   const bytes = readFileSync(srcPath);
   const hash = Buffer.from(sha256(bytes)).toString("hex");
   const sourceExt = extname(srcPath).slice(1).toLowerCase();
-  const ext = sourceExt || (kind === "data" ? "csv" : "txt");
+  const ext =
+    sourceExt ||
+    (kind === "data" ? "csv" : kind === "geography" ? "geojson" : "txt");
   const rel = join("input", `${kind}-${hash.slice(0, 16)}.${ext}`);
   const dest = join(runDir, rel);
   mkdirSync(join(runDir, "input"), { recursive: true });

@@ -12,7 +12,7 @@
 // NOTHING is written until every refusal has passed. That second half is not free here — freezing
 // writes files — so the order of operations below is load-bearing, and its reasoning is recorded
 // where it happens.
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { fail, ok, type VerbResult } from "../core/verbs/types";
@@ -22,6 +22,8 @@ import {
   DESTINATIONS,
   MEDIA_ASPECTS,
 } from "../core/vocabulary";
+import { coordinateRangeVerdict } from "../geo/crs";
+import { GeographyInputSchema } from "../geo/declaration";
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger, EN_SOURCE_QUESTIONS } from "../source/policy";
 import { freezeInput } from "./freeze";
@@ -66,6 +68,10 @@ export const RunDeclarationSchema = z.strictObject({
     /** The journalist's own photographs — declared here verbatim (dir + per-frame alt and
      *  credit), never generated and never defaulted. See ImageInputSchema's own header. */
     images: ImageInputSchema.optional(),
+    /** The geography this run maps against — declared here, frozen like data/article (a
+     *  HashRef), unlike images (never frozen). See GeographyInputSchema's own header (Task 2)
+     *  and GeographyRecordSchema's (manifest.ts). */
+    geography: GeographyInputSchema.optional(),
   }),
   sources: SourceLedgerSchema.optional(),
   elements: z
@@ -188,10 +194,16 @@ export function initRun(
   }
 
   // 5. Every declared input must exist and be a file. freezeInput throws on a missing source;
-  //    checking here means the FIRST missing path is refused before the SECOND one is copied.
+  //    checking here means the FIRST missing path is refused before the SECOND one is copied. A
+  //    declared geography path is checked the SAME way — and, before a single byte is frozen,
+  //    its coordinates are range-checked against the declared `crs` (lib/geo/crs.ts, D4): a
+  //    projected CRS mistaken for WGS84 is refused here, mirroring the order the source ledger
+  //    is already judged in above (step 4) — never freeze bytes for a declaration that is going
+  //    to be refused anyway.
   for (const [slot, path] of [
     ["data", decl.input.data],
     ["article", decl.input.article],
+    ["geography", decl.input.geography?.path],
   ] as const) {
     if (!path) continue;
     if (!existsSync(path))
@@ -204,6 +216,21 @@ export function initRun(
         "invalid-request",
         `init: the ${slot} input ${JSON.stringify(path)} is not a file`,
       );
+    if (slot === "geography") {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(readFileSync(path, "utf8"));
+      } catch (e) {
+        return fail(
+          "invalid-request",
+          `init: the geography input ${JSON.stringify(path)} is not valid JSON — ${(e as Error).message}`,
+        );
+      }
+      const verdict = coordinateRangeVerdict(
+        parsed as GeoJSON.Geometry | GeoJSON.FeatureCollection,
+      );
+      if (!verdict.ok) return fail("invalid-request", verdict.message);
+    }
   }
 
   // 6. Freeze, then write. Both can still fail for reasons of the disk's own, and a verb never
@@ -215,6 +242,22 @@ export function initRun(
         : {}),
       ...(decl.input.article
         ? { article: freezeInput(runDir, decl.input.article, "article") }
+        : {}),
+      ...(decl.input.geography
+        ? {
+            geography: {
+              ...freezeInput(runDir, decl.input.geography.path, "geography"),
+              encoding: decl.input.geography.encoding,
+              crs: decl.input.geography.crs,
+              level: decl.input.geography.level,
+              licence: decl.input.geography.licence,
+              edition: decl.input.geography.edition,
+              credit: decl.input.geography.credit,
+              ...(decl.input.geography.joinKey
+                ? { joinKey: decl.input.geography.joinKey }
+                : {}),
+            },
+          }
         : {}),
       // NOT frozen — see ImageInputSchema's own header (manifest.ts): an image folder stays
       // where the journalist keeps it, declared verbatim, never copied or hashed.
