@@ -87,6 +87,7 @@ export function propose(
       whySource: o.whySource,
       ...(o.requires ? { requires: o.requires } : {}),
       ...(o.readiness ? { readiness: o.readiness } : {}),
+      ...(o.limits ? { limits: o.limits } : {}),
     })),
     excluded: offer.excluded,
     // Carried through, not dropped: the brain names the exact reason a requested format was
