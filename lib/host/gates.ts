@@ -16,6 +16,7 @@ import {
   productionPrecondition,
   type HandoverForm,
 } from "../loop/preconditions";
+import { presentArtifact } from "../loop/presentation";
 import type { HostResponse } from "./state";
 
 const HANDOVER_FORMS: readonly string[] = ["html", "code-source", "embed"];
@@ -95,4 +96,21 @@ export function describePrecheck(args: PrecheckArgs): HostResponse {
           passed: true,
         },
       };
+}
+
+/**
+ * SHOW THE ARTIFACT — the act, performed, with what it did reported back.
+ *
+ * The `env` parameter is threaded rather than read here so a test can suppress the viewer
+ * honestly (SPLASH_NO_VIEWER makes `present` record a printed path and WHY), and so this file
+ * stays the same shape as the rest of the façade: values in, values out.
+ */
+export function presentIn(
+  path: string,
+  env: Record<string, string | undefined> = process.env,
+): HostResponse {
+  const shown = presentArtifact(path, env);
+  return shown.ok
+    ? { ok: true, value: shown.value }
+    : { ok: false, code: shown.code, message: shown.message };
 }

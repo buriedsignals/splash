@@ -16,14 +16,15 @@ Three rules hold for every command:
   are strictly read-only — they never write a byte into the run directory, not even to
   migrate an old manifest (see `stale-schema` below). A host keeps nothing between calls; the
   run's `run.json` is the only source of truth.
-- **Eight commands write, and each writes one thing.** `verb` writes inside the paths its own
+- **Nine commands write, and each writes one thing.** `verb` writes inside the paths its own
   request names. `init` creates the `run.json` of a directory that held none (plus the frozen
   copies of the inputs it declared). `advance`, `confirm-angle`, `phrase`, `choose-form`,
   `approve` and `request-delivery` write the `run.json` of the run they were pointed at (and,
   for `advance`, whatever the loop's own step produces beneath it — a render, a review still, a
-  published package; `approve` also writes the sign-off document it points at). Nothing else on
-  disk is touched, and a REFUSED command writes nothing at all — a refusal always leaves the run
-  byte-identical, which is what makes it safe to retry.
+  published package; `approve` also writes the sign-off document it points at). `present` writes
+  the receipt beside the artifact it opened — the one file this façade ever writes outside a
+  run.json. Nothing else on disk is touched, and a REFUSED command writes nothing at all — a
+  refusal always leaves the run byte-identical, which is what makes it safe to retry.
 
 ## Exit codes
 
@@ -37,10 +38,11 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The fourteen commands
+## The fifteen commands
 
 Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `precheck`. Acting: `init`,
-`advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`.
+`advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
+`present`.
 
 The whole journey, in the order a host walks it — every step is one of these commands, and none
 of them needs a run.json written by hand:
@@ -1372,6 +1374,66 @@ rather than guessing one:
 ```
 
 Exit `2`, same as an unreadable `--dir`: an input problem, never a silent pass.
+
+### `present --path <file>`
+
+Opens the artifact and answers with the receipt: what was opened, and which bytes. This is how
+the prose chain — the part of Splash that runs by Bash calls, not JavaScript imports — reaches
+`lib/loop/presentation.ts`'s `presentArtifact` without going through a run at all: a described
+render is not a shown one, and until this command existed the prose chain had no way to make that
+distinction stick outside `advance`'s own `preview` step.
+
+The opening itself is not reimplemented here — `lib/loop/preview.ts`'s `present` resolves the
+platform's viewer, honours `SPLASH_PREVIEW_OPENER` and `SPLASH_NO_VIEWER` (documented above, under
+"Presenting the deliverable: two settings"), and deduces a headless Linux session. What this
+command adds is the receipt, written beside the artifact (`_shown/<file>.json`), and a path the
+prose chain can reach without a manifest.
+
+```
+$ SPLASH_NO_VIEWER=1 bun lib/host/cli.ts present --path /tmp/host-readme-present/static.png
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "path": "/tmp/host-readme-present/static.png",
+    "sha256": "2d4566582844690f8634a8b2534ea5221560038c6c0650c99140759bad603ae2",
+    "presentedAt": "2026-07-30T05:50:22.183Z",
+    "presentedAs": "path-printed",
+    "fallbackReason": "SPLASH_NO_VIEWER is set: the host presents the deliverable itself, or this machine has no viewer — the absolute path is the presentation"
+  }
+}
+```
+
+Exit `0`. `sha256` is re-read and re-hashed from the file on disk **at the moment of showing**,
+never taken from an argument — the receipt cannot describe bytes other than the ones a viewer was
+actually pointed at. `presentedAs` is `"opened"` only when a viewer really ran and exited `0`;
+otherwise it is `"path-printed"` **with the reason**, exactly as it is for the `approve` gate's own
+`preview` step, because it is the same function underneath.
+
+A path that cannot be read is refused rather than silently presenting nothing:
+
+```json
+{
+  "ok": false,
+  "code": "engine-failed",
+  "message": "present: cannot read /tmp/host-readme-present/nope.png: ENOENT: no such file or directory, open '/tmp/host-readme-present/nope.png'"
+}
+```
+
+Exit `1` — no receipt is written for a path that was never opened. A missing `--path` is a usage
+refusal:
+
+```json
+{
+  "ok": false,
+  "code": "usage",
+  "message": "present needs --path <file> — the artifact to open. A described render is not a shown one"
+}
+```
+
+Exit `2`.
 
 #### What a failure message may contain
 

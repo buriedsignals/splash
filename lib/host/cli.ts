@@ -33,7 +33,7 @@ import {
   phraseOfferIn,
   requestDeliveryIn,
 } from "./drive";
-import { describePrecheck } from "./gates";
+import { describePrecheck, presentIn } from "./gates";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
 import { describeIntentQuestion } from "./suggest-intent";
@@ -423,6 +423,20 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "present") {
+    // The one command on this surface whose POINT is a side effect outside the run directory: it
+    // launches a viewer. It writes exactly one file — the receipt, beside the artifact it opened.
+    const parsed = parseFlags(rest, ["--path"]);
+    if (!parsed.ok) usage(parsed.message);
+    const path = parsed.flags["--path"];
+    if (!path)
+      usage(
+        "present needs --path <file> — the artifact to open. A described render is not a shown one",
+      );
+    const r = presentIn(path);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "verb") {
     const name = rest[0];
     if (!name || name.startsWith("--"))
@@ -474,7 +488,7 @@ async function main(): Promise<never> {
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
       `advance, suggest-intent, confirm-angle, phrase, choose-form, author-beats, approve, ` +
-      `request-delivery, verb, newsroom or precheck`,
+      `request-delivery, verb, newsroom, precheck or present`,
   );
 }
 
