@@ -146,35 +146,58 @@ apart in the record so a reader can tell what was eyeballed from what was exerci
 
 ## Probing a published Datawrapper chart — propagation lag is not a data defect
 A freshly published DW chart can 404 its `dataset.csv` (and lag its published HTML) for a short
-CDN-propagation window right after publish. A probe that hits a 404 there MUST **retry once after
-`DW_DATASET_PROPAGATION_RETRY_MS` (30 000 ms, `src/review-gate.ts`)** before treating it as a data
-defect. Only a 404 that SURVIVES the retry is a real fidelity/source concern — record it as a
-`concern` probe and surface it as its own concern quoting the probe's `check` (see "Record it",
-below); a 404 that clears on retry is recorded as a `resolved` probe with
-that evidence ("first GET 404, retried after the propagation delay, 200 OK").
+CDN-propagation window right after publish. A `mechanical` probe that hits this MUST retry once,
+**inside its own command**, after `DW_DATASET_PROPAGATION_RETRY_MS` (30 000 ms, `src/review-gate.ts`)
+before answering — the retry has to live in the argv you hand `--probes`, because `review-gate.mjs`
+runs that command exactly once and reads its exit code; it does not retry anything on your behalf.
+Only a 404 that SURVIVES the retry (the command still exits non-zero) is a real fidelity/source
+concern — record it as a `concern` and surface it as its own concern quoting the probe's `check`
+(see "Record it", below). A 404 that clears on retry (the command exits 0) is recorded as `pass` —
+not `resolved` — because the gate derives `mechanical` outcomes from the exit code it just observed,
+never from what the plan claims. `resolved` is reachable only for an `editorial` probe (a judgement,
+never run) or a caller that bypasses this CLI entirely — through the real `--probes` path, a
+recovered mechanical check is a clean `pass`, and its `note` is the evidence trail ("first run 404,
+retried after the propagation delay, second run 200 OK").
 
 ## Record it (this is what makes export possible)
 ```bash
 bun skills/splash/scripts/review-gate.mjs exports/<slug>/report.json <id> \
-  --probes '[{"check":"...","outcome":"pass"}, ...]' [concern...]
+  --probes '[{"kind":"mechanical","check":"...","command":["bun","scripts/snap.mjs"]},
+             {"kind":"editorial","check":"...","outcome":"pass","note":"..."}]' \
+  --reviewer desk-reader@1.0.0 [concern...]
 ```
-Each trailing arg is one concern; no concern args = a clean review. **`--probes` is REQUIRED — the
-LEDGER of every probe/check the review actually RAN**, as a JSON array (inline, or a path to a
-`.json` file): each entry is `{check, outcome, note?}` with `outcome` one of
-- `pass` — probed and clean;
-- `concern` — probed and failing; `note` says WHAT failed, and the same finding MUST also be one of
-  the surfaced concern args, worded so it **quotes the probe's `check` verbatim** — write it as
-  `"<check>: <what failed>"` (e.g. `"dataset.csv on the published chart: GET returned 404 twice,
-  survives the propagation retry"`). The gate matches MECHANICALLY (case/whitespace-insensitive
-  containment of the check text), per probe: a probed failure is never silently dropped, and an
-  UNRELATED concern ("the title is slightly long") never accounts for it — every concern-outcome
-  probe must be referenced by its own concern, or re-run to `resolved` with evidence;
-- `resolved` — probed, initially failing, explicitly resolved; `note` says HOW, with evidence (e.g.
-  the propagation retry above).
+Each trailing arg is one concern; no concern args = a clean review. **`--probes` is REQUIRED — a
+PLAN of every check the review runs**, as a JSON array (inline, or a path to a `.json` file), one
+entry per check, tagged by `kind`:
+- `{"kind":"mechanical", "check", "command"}` — a check a COMMAND answers. `command` is argv (never
+  a shell string), the exact invocation you would run yourself to probe it (a snap script, a `curl`
+  wrapper, whatever answers `check`). **You do not set the outcome** — `review-gate.mjs` runs every
+  `mechanical` command itself (`lib/loop/probe-run.ts`) and records what it actually returned: exit
+  0 → `pass`, anything else → `concern`, with the command's own tail output as the `note`. Anything
+  you write for `outcome`/`note` on a `mechanical` entry is overwritten by the real run.
+- `{"kind":"editorial", "check", "outcome", "note?"}` — a judgement no command can answer (does the
+  title carry the confirmed takeaway? does the encoding mislead?). It carries no command, passes
+  through UNTOUCHED, and its `outcome` is one of `pass` (probed and clean), `concern` (probed and
+  failing — `note` says WHAT failed, and the same finding MUST also be one of the surfaced concern
+  args, quoting the probe's `check` verbatim — write it as `"<check>: <what failed>"`), or `resolved`
+  (probed, initially failing, then explicitly resolved — `note` says HOW, with evidence).
 
-The gate mechanically refuses: an EMPTY ledger; a `concern`/`resolved` probe without a `note`; a
-`concern` probe that no surfaced concern references by quoting its `check` (per probe — unrelated
-concern text does not account for it); and a
+**The moment the plan carries even ONE `editorial` probe, `--reviewer <name>@<version>` is
+REQUIRED** (e.g. `desk-reader@1.0.0`) — it names WHO made that judgement, and a review with an
+editorial probe and no `--reviewer` is refused outright (`src/review-gate.ts`). A plan of ONLY
+`mechanical` probes needs no `--reviewer` — there is no unattributed opinion to name.
+
+The gate matches concerns to probes MECHANICALLY (case/whitespace-insensitive containment of the
+`check` text), per probe: a probed failure is never silently dropped, and an UNRELATED concern ("the
+title is slightly long") never accounts for it — every concern-outcome probe must be referenced by
+its own concern, or re-run to `resolved` with evidence (editorial only — a `mechanical` probe is
+re-run by re-invoking the gate, not by hand-editing its outcome).
+
+The gate mechanically refuses: an EMPTY ledger; a probe declaring no `kind`; a `mechanical` probe
+with no `command`; a `mechanical` outcome that disagrees with its real exit code; an `editorial`
+plan with no `--reviewer`; a `concern`/`resolved` probe without a `note`; a `concern` probe that no
+surfaced concern references by quoting its `check` (per probe — unrelated concern text does not
+account for it); and a
 **failure keyword** (`404`, `absent`, `missing`, `mismatch`, `not found` + FR equivalents — see
 `FAILURE_KEYWORDS` in `src/review-gate.ts`) appearing in the recorded narrative (a concern, or a
 pass-probe's own text) that no `concern`/`resolved` probe reflects. The tripwire is deliberately
