@@ -278,9 +278,10 @@ switch (format) {
     // snap-contrast.mjs's header for why a plain DOM background read cannot see this).
     // Upgrades the config-time conformance gate above (a drift-defense on pre-vetted
     // tokens against an assumed-opaque backdrop) to a live render-time fail.
-    // No OUTDIR here (mirrors chart-native's own snap-contrast.mjs call): the debug
-    // screenshot this snap writes (contrast-static.png) is a byproduct for a human to
-    // inspect, not part of the delivery, and passing outDir put it beside static.png —
+    // No OUTDIR here (unlike chart-native's snap-contrast.mjs, which now passes OUTDIR
+    // since it writes no debug artifact — task 23): this snap's own debug screenshot
+    // (contrast-static.png) is a byproduct for a human to inspect, not part of the
+    // delivery, and passing outDir put it beside static.png —
     // the loop's own render() collects the WHOLE outDir as the delivery's files
     // (lib/core/verbs/exec.ts's collectOutputs), so a "static" produce found TWO image
     // files and assertFileMedia refused it (task-7, first real call through render()).
