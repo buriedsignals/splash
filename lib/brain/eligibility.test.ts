@@ -745,3 +745,54 @@ test("real KB: marimekko (deferred) also counts its series from numeric columns,
   expect(why?.reason).toMatch(/categories/);
   expect(why?.reason).not.toMatch(/series/);
 });
+
+// ── The debt imageWalkMark's header named, paid ────────────────────────────────────────────────
+// The mark used to be UNCONDITIONAL, and the header spelled out the cost: `missing` is the worst
+// of four severities, rank.ts sorts on it, offer.ts caps the offer at three rows — so a newsroom
+// that HAD declared its photographs still could not be offered the only format image-native
+// builds. Marked meant unreachable, for everyone, always. What made it unconditional was that
+// eligible() could not see the run's inputs; `declaredPhotographs` is that fact, in the same sense
+// `requestedFormat` already is — counted from what was handed over, never inferred from prose.
+describe("image-scrolly is reachable for a run that has photographs", () => {
+  const imageFacts = () =>
+    deriveFacts({
+      columns: ["step", "note", "alt"],
+      numericColumns: ["step", "note", "alt"],
+      rowCount: 4,
+    });
+
+  test("with photographs declared, the form is offered CLEAN — no photographs mark", () => {
+    const { eligible: ok } = eligible({
+      facts: imageFacts(),
+      channel: "article-web",
+      declaredPhotographs: 4,
+    });
+    const scrolly = ok.find((c) => c.id === "image-scrolly");
+    expect(scrolly).toBeDefined();
+    // The whole point: not merely a softer mark — no photographs mark at all, so it ranks with the
+    // ready forms instead of below every one of them.
+    expect(scrolly!.readiness?.reason ?? "").not.toMatch(/photograph/i);
+  });
+
+  test("with none declared, the mark is exactly what it always was", () => {
+    const { eligible: ok } = eligible({
+      facts: imageFacts(),
+      channel: "article-web",
+      declaredPhotographs: 0,
+    });
+    const scrolly = ok.find((c) => c.id === "image-scrolly");
+    expect(scrolly!.readiness?.status).toBe("missing");
+    expect(scrolly!.readiness!.reason).toMatch(/photograph/i);
+  });
+
+  // Absent must behave as 0, not as "some": a caller that has not been wired yet must keep the old
+  // safe behaviour rather than start offering a form that would strand the run.
+  test("absent behaves as none — an unwired caller cannot accidentally unlock the form", () => {
+    const { eligible: ok } = eligible({
+      facts: imageFacts(),
+      channel: "article-web",
+    });
+    const scrolly = ok.find((c) => c.id === "image-scrolly");
+    expect(scrolly!.readiness?.status).toBe("missing");
+  });
+});

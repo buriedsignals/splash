@@ -68,6 +68,12 @@ export type EligibilityInput = {
    *  prose — so it constrains legality, not order (CLAUDE.md, Wave 7: "an explicit journalist
    *  format signal WINS"). Absent ⇒ no constraint. */
   requestedFormat?: VisualFormat;
+  /** How many photographs the journalist declared WITH this run. A FACT of the run in the same
+   *  sense as `requestedFormat` — counted from what was handed over, never inferred from prose —
+   *  which is why it may constrain legality. image-native builds one beat per photograph, so with
+   *  none its only format cannot be offered without stranding the run; with some, it can. Absent
+   *  or 0 ⇒ the image-walk mark fires, exactly as it always did. */
+  declaredPhotographs?: number;
   /** The deliverable's CONTENT language (lib/newsroom/language.ts's `content`, not `ui`) — the
    *  language its furniture (numbers, "Source:") would be rendered in. Absent ⇒ no constraint;
    *  a run that has not declared one yet is not a run in a fifth language (isCoveredLang treats
@@ -438,8 +444,22 @@ export function buildabilityMark(
  */
 function imageWalkMark(
   engine: string,
+  declaredPhotographs: number | undefined,
 ): { status: CapabilityReadiness["status"]; reason: string } | null {
   if (engine !== "image-native") return null;
+  // The debt named in the block above is paid here. The mark used to be UNCONDITIONAL, and the
+  // block spelled out what that cost: `missing` is the worst of the four severities, rank.ts's
+  // second tier sorts on it, and offer.ts caps the offer at three rows — so a newsroom that HAD
+  // declared its photographs still could not be offered the only format image-native builds.
+  // Marked meant unreachable, for everyone, always.
+  //
+  // What made it unconditional was that `eligible()` could not see the run's inputs. It can now:
+  // `declaredPhotographs` is a FACT of the run in exactly the sense `requestedFormat` already is —
+  // counted from what the journalist handed over, never inferred from prose — so it constrains
+  // legality without letting a mis-read intent do so. A run with photographs gets the form clean;
+  // a run without still gets the drafter's own sentence, so the mark and the refusal it would
+  // eventually meet stay one wording.
+  if ((declaredPhotographs ?? 0) > 0) return null;
   return { status: "missing", reason: IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED };
 }
 
@@ -449,7 +469,7 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   // marks can share it. The photographs mark leads because it is the one a journalist can ACT
   // on; the engine-wiring reason below is about what production cannot do for them.
   const marks: { status: CapabilityReadiness["status"]; reason: string }[] = [];
-  const walkMark = imageWalkMark(c.engine);
+  const walkMark = imageWalkMark(c.engine, input.declaredPhotographs);
   if (walkMark) marks.push(walkMark);
   // The engine exists and renders this type — but the loop's produce verb cannot assemble a
   // spec for it yet, so choosing it would dead-end. MARKED, exactly like a missing capability:
