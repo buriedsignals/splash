@@ -138,7 +138,10 @@ Scrolly.tsx  (scaffold)
 ## Reused from map-native (relative import, never copied)
 
 `computeChoropleth` + `ChoroplethLayout`, `deriveMapStory` + `Beat`, `theme/colors`, the BLUES/DIVERGING
-scales, `assets/geo/world.geojson`, and the on-map annotation visual language. (The `CountryLabel` is
+scales, and the on-map annotation visual language. Geometry itself is NOT a reused static asset — every
+geometry-joining renderer (`ScrollyMap`, `ScrollyDotDensityMap`, `ScrollyCartogramMap`, `Scrolly`) takes
+`config.geometry`, injected by produce, same contract as map-native's own components (D5); there is no
+bundled fallback geometry, and `assets/geo/` here holds only `sample-data`. (The `CountryLabel` is
 re-implemented inline because map-native's is Remotion-coupled; a shared remotion-free label is a future
 refactor.)
 

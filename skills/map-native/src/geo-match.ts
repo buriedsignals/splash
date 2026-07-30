@@ -124,8 +124,8 @@ function matchShippedBasemaps(
 /** The ADM1-index candidate (D10.2, new in this task) — the mechanism that makes a Swiss-canton
  *  or French-département column matchable at all. Only a WIN (matched > 0) is returned; a column
  *  that finds nothing here (e.g. an ADM0 name like "Suisse" — spec's own rule-3 fixture) is not
- *  reported as a failed ADM1 match, it simply does not win this candidate — geoRefusal (Task 13)
- *  is where "no geography at all" is said. */
+ *  reported as a failed ADM1 match, it simply does not win this candidate — geoRefusal (Task 12,
+ *  `lib/loop/assemble/map-native.ts`) is where "no geography at all" is said. */
 function matchAdm1Index(
   columns: string[],
   rows: Record<string, string | number>[],
@@ -159,7 +159,8 @@ function matchAdm1Index(
         origin: "shipped",
         set: "natural-earth-admin-1",
         level: column, // no per-feature "level" name is threaded to this fixture-free path yet —
-        // Task 13 refines this with the real per-country admin level label carried by the index.
+        // and no task is currently scheduled to add the real per-country admin-level label the
+        // index carries — this is a placeholder until one is.
         // FLAGGED (see task-8-report.md): this happens to equal "canton" only because the test
         // fixture's own CSV column is named "canton" — a coincidence, not a real level lookup.
         joinKey: winningFamily,
