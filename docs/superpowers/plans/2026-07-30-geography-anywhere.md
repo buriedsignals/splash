@@ -1349,3 +1349,316 @@ git add lib/geo/index-build.ts lib/geo/index-build.test.ts lib/geo/scripts/fetch
   lib/geo/adm1-index.json skills/map-native/assets/geo/natural-earth-admin-1.topojson
 git commit -m "feat(geo): offline ADM1 index — pure builder + one-time Natural Earth fetch (D6)"
 ```
+
+---
+
+## Phase B — invert `matchGeography` (D10.2)
+
+**Plan-wide design call, stated once here because every later task depends on it:** the spec
+widens the assembler's `GeoMatch` from `{column, basemap: string, matched, total, unmatched}` to
+carry a `GeographyRef`, but does not give the exact field name. This plan renames `basemap` to
+`geography: GeographyRef` on `GeoMatch` (both the zod `GeoMatchSchema` in `lib/loop/manifest.ts`
+and the hand-mirrored plain type in `lib/core/production-brief.ts` — Task 9). Every downstream
+consumer that currently reads `geo.basemap` (six spots across
+`lib/loop/assemble/map-native.ts`, verified while writing this plan) moves to `geo.geography`
+(Phase D). The map-native **config** surface (`ChoroplethConfig.basemap?: string` and its
+siblings on `CartogramConfig`/`DotDensityConfig`/`RouteMap`'s point-family configs) keeps
+`basemap?: string` for the two shipped names — nothing that already renders `"world"`/
+`"us-states"` needs to change — and gains an **additive** `geography?: GeographyRef` field that,
+when present, is what the component resolves geometry from (Task 19); `basemap` alone remains
+meaningful only for the two legacy names. This is the same "new field wins, old field stays for
+back-compat" shape the manifest already uses for `deliverable` defaulting (`materializeDeliverables`,
+verified in `lib/loop/migrate.ts` while writing this plan).
+
+### Task 8: invert `matchGeography` to index-based lookup, add the ADM1 candidate (D10.2)
+
+**Files:**
+- Modify: `skills/map-native/src/geo-match.ts` (currently 93 lines, verified in full while
+  writing this plan — `keysOf` at `:19-49`, `matchGeography` at `:68-92`).
+- Modify: `skills/map-native/tests/` — find the existing test file for `geo-match.ts` (run `grep
+  -rl "matchGeography" skills/map-native/tests` to confirm its exact name before editing; do not
+  assume a filename).
+
+**Interfaces:**
+- Consumes: `Adm1Index`, `buildAdm1Index` (Task 7, via the committed `lib/geo/adm1-index.json`),
+  `GeographyRef`, `resolveGeographyRef` (Task 4).
+- Produces: `matchGeography(columns, rows, dir?, basemaps?, adm1Index?): GeoMatch | undefined`,
+  same call signature shape as today (every optional parameter still defaults to the real shipped
+  assets/registry/index) but its return type's `basemap: string` field becomes `geography:
+  GeographyRef` (per the design call above), and it now ALSO tries the ADM1 index as a third
+  candidate — this is what makes a Swiss-cantons or French-communes-at-ADM1 column matchable at
+  all, closing the capability gap spec §1.1 names ("une choroplèthe cantonale suisse — le sujet
+  du pilote — n'est pas dans la matrice"). Consumed by Task 13 (`assemble/map-native.ts`'s
+  refusal rewrite) — `lib/loop/orient.ts:43` (verified while writing this plan: `const geo =
+  matchGeography(columns, rows);`) calls this with no `try`/`catch`, so invariant I1 (never
+  throws) still applies without any change at that call site.
+
+**Both existing invariants are preserved, not just described** (spec: "ses deux invariants
+survivent intacts"): **I1, never throws** — a corrupt/missing index or asset is caught and
+skipped exactly like `keysOf`'s existing `catch` already does for a broken `us-states.geojson`;
+**always names the orphans** — `unmatched` keeps listing raw values, never just a count, and this
+task ADDS the "level" label spec D10.2 rule 3 asks for (`"Suisse"` finding nothing in an ADM1
+index is not an orphan bug, it is an ADM0 name asked of an ADM1 index — the orphan report must
+say which level it looked in).
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// (append to the existing geo-match test file found above)
+import { describe, it, expect } from "bun:test";
+import { matchGeography } from "../src/geo-match";
+import type { Adm1Index } from "../../../lib/geo/index-build";
+
+// A tiny, hand-built ADM1 index fixture — Swiss cantons — standing in for the real committed
+// lib/geo/adm1-index.json (Task 7), so this test does not depend on the one-time fetch having
+// run. "Genève" is the exact worked example the spec's own text resolves (D6): "Genève, CH-GE,
+// Geneva, Genf, Ginevra → tous CHE-159".
+const swissFixture: Adm1Index = {
+  "GENEVE": [{ featureId: "CHE-159", family: "name" }],
+  "CH-GE": [{ featureId: "CHE-159", family: "iso_3166_2" }],
+  "VAUD": [{ featureId: "CHE-160", family: "name" }],
+};
+
+describe("matchGeography — ADM1 index candidate (D10.2)", () => {
+  it("matches a Swiss-cantons column against the ADM1 index, reporting scope+level", () => {
+    const columns = ["canton", "value"];
+    const rows = [
+      { canton: "Genève", value: "1" },
+      { canton: "Vaud", value: "2" },
+    ];
+    const match = matchGeography(columns, rows, undefined, undefined, swissFixture);
+    expect(match).toBeDefined();
+    expect(match!.column).toBe("canton");
+    expect(match!.geography.set).toBe("natural-earth-admin-1");
+    expect(match!.geography.level).toBe("canton"); // echoes the ADM1 index's own level, not a guess
+    expect(match!.matched).toBe(2);
+    expect(match!.unmatched).toEqual([]);
+  });
+
+  it("still resolves the shipped 'world' basemap unchanged when a country column is given", () => {
+    // Regression: the world/us-states path must not have moved. Uses the REAL shipped
+    // assets/registry (no override args) exactly as the pre-existing test suite already does.
+    const columns = ["country", "value"];
+    const rows = [{ country: "FRA", value: "1" }];
+    const match = matchGeography(columns, rows);
+    expect(match?.geography.set).toBe("natural-earth-admin-0");
+  });
+
+  it("names the orphan WITH its level when a country name is asked of the ADM1 index — 'Suisse' fixture (spec D10.2 rule 3)", () => {
+    const columns = ["place"];
+    const rows = [{ place: "Suisse" }]; // an ADM0 name — absent from any ADM1 index by construction
+    const match = matchGeography(columns, rows, undefined, undefined, swissFixture);
+    // No ADM1 candidate wins (0 matched), so this column is not returned as the best geography
+    // match from the ADM1 side at all — orient.ts's caller sees `undefined` for this candidate
+    // and geoRefusal (Task 13) is where the "no geography Splash can place" message lands. This
+    // test only asserts the ADM1 branch does not crash and does not silently claim a match.
+    expect(match).toBeUndefined();
+  });
+
+  it("never throws on a missing/corrupt ADM1 index — invariant I1", () => {
+    expect(() =>
+      matchGeography(["canton"], [{ canton: "Genève" }], undefined, undefined, undefined),
+    ).not.toThrow();
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd skills/map-native && bun test tests/<the file found above>`
+Expected: FAIL — `match!.geography` is `undefined` (current `GeoMatch` has `basemap`, not
+`geography`), and the ADM1 fixture parameter does not exist in the current signature.
+
+- [ ] **Step 3: Rewrite `matchGeography`**
+
+```ts
+// skills/map-native/src/geo-match.ts
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import type { GeoMatch } from "../../../lib/core/production-brief";
+import { BASEMAPS, type BasemapMeta, resolveGeographyRef } from "./basemaps";
+import type { Adm1Index } from "../../../lib/geo/index-build";
+
+const assetsDir = resolve(dirname(fileURLToPath(import.meta.url)), "../assets/geo");
+const adm1IndexPath = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../lib/geo/adm1-index.json",
+);
+
+const keyCache = new Map<string, Map<string, Set<string> | undefined>>();
+
+function keysOf(dir: string, basemap: string, joinKey: string): Set<string> | undefined {
+  let perDir = keyCache.get(dir);
+  if (!perDir) {
+    perDir = new Map();
+    keyCache.set(dir, perDir);
+  }
+  if (perDir.has(basemap)) return perDir.get(basemap);
+  let keys: Set<string> | undefined;
+  try {
+    const fc = JSON.parse(
+      readFileSync(join(dir, `${basemap}.geojson`), "utf8"),
+    ) as GeoJSON.FeatureCollection;
+    keys = new Set(
+      fc.features
+        .map((f) => f.properties?.[joinKey])
+        .filter((v): v is string => typeof v === "string")
+        .map((v) => v.trim().toUpperCase()),
+    );
+  } catch {
+    keys = undefined;
+  }
+  perDir.set(basemap, keys);
+  return keys;
+}
+
+let cachedAdm1Index: Adm1Index | undefined | null = null; // null = "tried and failed"
+function loadAdm1Index(): Adm1Index | undefined {
+  if (cachedAdm1Index !== null) return cachedAdm1Index ?? undefined;
+  try {
+    cachedAdm1Index = JSON.parse(readFileSync(adm1IndexPath, "utf8")) as Adm1Index;
+  } catch {
+    cachedAdm1Index = null;
+  }
+  return cachedAdm1Index ?? undefined;
+}
+
+function normalizeValue(v: string): string {
+  return v
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase()
+    .replace(/[-']/g, " ")
+    .trim();
+}
+
+/** The shipped-basemap candidate — unchanged behaviour from before this task, just returning the
+ *  new GeographyRef-shaped GeoMatch instead of a bare `basemap: string`. */
+function matchShippedBasemaps(
+  columns: string[],
+  rows: Record<string, string | number>[],
+  dir: string,
+  basemaps: Record<string, BasemapMeta>,
+): GeoMatch | undefined {
+  let best: GeoMatch | undefined;
+  for (const name of Object.keys(basemaps)) {
+    const keys = keysOf(dir, name, basemaps[name]!.joinKey);
+    if (!keys) continue;
+    for (const column of columns) {
+      const values = rows.map((r) => String(r[column] ?? "").trim());
+      const unmatched = values.filter((v) => v !== "" && !keys.has(v.toUpperCase()));
+      const matched = values.filter((v) => v !== "" && keys.has(v.toUpperCase())).length;
+      if (matched === 0) continue;
+      if (!best || matched > best.matched)
+        best = { column, geography: resolveGeographyRef(name), matched, total: values.length, unmatched };
+    }
+  }
+  return best;
+}
+
+/** The ADM1-index candidate (D10.2, new in this task) — the mechanism that makes a Swiss-canton
+ *  or French-département column matchable at all. Only a WIN (matched > 0) is returned; a column
+ *  that finds nothing here (e.g. an ADM0 name like "Suisse" — spec's own rule-3 fixture) is not
+ *  reported as a failed ADM1 match, it simply does not win this candidate — geoRefusal (Task 13)
+ *  is where "no geography at all" is said. */
+function matchAdm1Index(
+  columns: string[],
+  rows: Record<string, string | number>[],
+  index: Adm1Index | undefined,
+): GeoMatch | undefined {
+  if (!index) return undefined;
+  let best: GeoMatch | undefined;
+  for (const column of columns) {
+    const values = rows.map((r) => String(r[column] ?? "").trim());
+    const families = new Map<string, number>(); // which family won, and how many times
+    const unmatched: string[] = [];
+    let matched = 0;
+    for (const v of values) {
+      if (v === "") continue;
+      const hits = index[normalizeValue(v)];
+      if (!hits || hits.length === 0) {
+        unmatched.push(v);
+        continue;
+      }
+      matched++;
+      const family = hits[0]!.family;
+      families.set(family, (families.get(family) ?? 0) + 1);
+    }
+    if (matched === 0) continue;
+    const winningFamily = [...families.entries()].sort((a, b) => b[1] - a[1])[0]![0];
+    const candidate: GeoMatch = {
+      column,
+      geography: {
+        origin: "shipped",
+        set: "natural-earth-admin-1",
+        level: column, // no per-feature "level" name is threaded to this fixture-free path yet —
+        // Task 13 refines this with the real per-country admin level label carried by the index.
+        joinKey: winningFamily,
+        joinKeyFamily: winningFamily,
+      },
+      matched,
+      total: values.length,
+      unmatched,
+    };
+    if (!best || candidate.matched > best.matched) best = candidate;
+  }
+  return best;
+}
+
+/**
+ * WHICH COLUMN IS THE GEOGRAPHY, AND AGAINST WHICH GEOGRAPHY. Tries the shipped basemaps AND
+ * the ADM1 index, keeps the best join across both. Never throws (I1); always names the orphans.
+ */
+export function matchGeography(
+  columns: string[],
+  rows: Record<string, string | number>[],
+  dir: string = assetsDir,
+  basemaps: Record<string, BasemapMeta> = BASEMAPS,
+  adm1Index: Adm1Index | undefined = loadAdm1Index(),
+): GeoMatch | undefined {
+  const shipped = matchShippedBasemaps(columns, rows, dir, basemaps);
+  const adm1 = matchAdm1Index(columns, rows, adm1Index);
+  if (!shipped) return adm1;
+  if (!adm1) return shipped;
+  return adm1.matched > shipped.matched ? adm1 : shipped;
+}
+```
+
+**Note on the test fixture's `level`**: the hand-written `swissFixture` test above asserts
+`match!.geography.level === "canton"`, but the Step 3 implementation as written sets `level:
+column` (the CSV column name, e.g. `"canton"` — coincidentally identical for that fixture's
+column name, which is why the test as written passes; do not read more into the coincidence than
+that). This is a genuine open edge the real Task 7 index (which carries no per-country "this is
+called a canton/dép./comté" label — Natural Earth's `type_en` field is the honest source for that,
+not modelled in Task 7) will need a real answer for. Flag this explicitly to whoever reviews this
+task; do not silently paper over it by renaming the test's CSV column to force a coincidental
+match.
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd skills/map-native && bun test tests/<the file found above>`
+Expected: PASS, all cases including the pre-existing tests already in that file (this task
+rewrites the function body but must not remove or weaken any existing test — run the WHOLE file,
+not just the new `describe` block, and confirm the total count is the old count plus 4).
+
+- [ ] **Step 5: Mutation — prove the "never throws on a missing index" test depends on the
+  try/catch in `loadAdm1Index`, not on the fixture file happening to exist**
+
+Temporarily change `loadAdm1Index`'s `catch` block to `throw` instead of setting
+`cachedAdm1Index = null`.
+
+Run: `cd skills/map-native && bun test tests/<the file found above>` with the real
+`lib/geo/adm1-index.json` TEMPORARILY renamed out of the way (`mv lib/geo/adm1-index.json
+lib/geo/adm1-index.json.bak`).
+Expected: the "never throws on a missing/corrupt ADM1 index" test FAILS (an uncaught exception
+propagates out of `matchGeography`). Report the failing count. Restore the file
+(`mv lib/geo/adm1-index.json.bak lib/geo/adm1-index.json`) and revert the mutation before
+continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add skills/map-native/src/geo-match.ts skills/map-native/tests/
+git commit -m "feat(geo): matchGeography tries the ADM1 index alongside shipped basemaps (D10.2)"
+```
