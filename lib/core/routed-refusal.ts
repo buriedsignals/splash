@@ -23,6 +23,7 @@ export const REFUSAL_CODES = [
   "approval-subject-mismatch",
   "probe-not-run",
   "reviewer-not-attributed",
+  "late-render-refusal",
 ] as const;
 
 export type RefusalCode = (typeof REFUSAL_CODES)[number];
@@ -78,6 +79,13 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
     step: "have the editorial pass done by someone who did not write this visual, and record who did it",
     command:
       "bun skills/splash/scripts/review-gate.mjs <report.json> <id> --probes <probes.json> --reviewer <name@version> --reviewer-output <findings.json>",
+  },
+  // No command: unlike the routes above, this one is never looked up through routed() — a late
+  // refusal's real route is the guard-specific step supplied at its call site (see
+  // skills/splash/src/late-refusal.ts), measured only at render. This entry exists solely to
+  // keep REFUSAL_ROUTES exhaustive over REFUSAL_CODES.
+  "late-render-refusal": {
+    step: "read the guard's own message for the fix — it is measured per-guard at render, not a single fixed command",
   },
 };
 

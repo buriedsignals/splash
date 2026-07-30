@@ -49,6 +49,12 @@ test("a route with a step and no command renders the step alone, never a danglin
   ).toBe(true);
 });
 
+test("late-render-refusal has a step and no command — its real route is guard-specific, supplied at the call site, not this catalogue entry", () => {
+  expect(REFUSAL_ROUTES["late-render-refusal"]).not.toBeNull();
+  expect(REFUSAL_ROUTES["late-render-refusal"]!.step.length).toBeGreaterThan(0);
+  expect(REFUSAL_ROUTES["late-render-refusal"]!.command).toBeUndefined();
+});
+
 test("no route's command is a shell string — a route is run, not interpolated", () => {
   for (const route of Object.values(REFUSAL_ROUTES)) {
     if (!route?.command) continue;
