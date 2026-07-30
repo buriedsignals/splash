@@ -1053,3 +1053,68 @@ git status --short
 git add lib/geo/subset.ts lib/geo/subset.test.ts skills/map-native/tests/resolve-all-fixtures.test.ts
 git commit -m "fix(geo): us-states could not be simplified at all — express the tolerance in source units"
 ```
+
+---
+
+### Task 15: an admin-1 join colours the wrong country's territory
+
+Found by Task 8 **while looking at a rendered map** — the exit condition that exists precisely because
+this class of defect is invisible to tests. A 26-canton Swiss choropleth was produced, opened and
+inspected; a Swiss row named `Jura` also coloured **France's Jura département**. Confirmed
+programmatically afterwards and isolated with a 25-canton control render.
+
+The mechanism: the admin-1 join matches on a bare `name`, with no country scoping. `natural-earth-admin-1`
+is a world-wide admin-1 set, so any name shared across borders collides — `Jura` (CH/FR) is the case
+that surfaced, and it will not be the only one.
+
+Why nothing caught it: the subset's post-conditions ask whether every requested id came back, never
+whether **more** came back than were asked for. A superset passes both.
+
+**The fix is already reachable.** `GeographyRef` carries `scope?: string` — "the ISO-A3 country scope of
+an admin-1 subset, absent for a global set" (`lib/geo/ref.ts:38-43`). `lib/geo/subset.ts` does not
+mention `scope` at all (grep: zero hits). So the descriptor already knows the country; the filter simply
+never asks.
+
+**Files:**
+- Modify: `lib/geo/subset.ts` (thread the scope into the filter expression)
+- Modify: `lib/geo/resolve-for-produce.ts` (pass `geography.scope` through)
+- Modify: `lib/geo/subset.test.ts`
+- Verify: `skills/map-native/src/geo-match.ts` actually populates `scope` on an ADM1 match — **check this
+  first**; if it does not, populating it is part of this task and the fix is worthless without it.
+
+- [ ] **Step 1: Establish whether `scope` is populated**
+
+Read `matchAdm1Index` (`skills/map-native/src/geo-match.ts:129-175`) and confirm whether the returned ref
+sets `scope`. Report what you find before changing anything — the rest of this task depends on it.
+
+- [ ] **Step 2: Write the failing test**
+
+A subset request for a Swiss `Jura` against the ADM1 asset, scoped to `CHE`, must retain **exactly one**
+feature. Assert the count *and* the identity — a count alone would pass on the wrong single feature.
+
+- [ ] **Step 3: Run it and watch it fail** — expected: two features, or the French one.
+
+- [ ] **Step 4: Add the scope to the filter, and a post-condition for the superset case**
+
+Thread `scope` into `subsetGeometry` and add it to the mapshaper filter expression, addressed the same
+bracketed way the join key is (`this.properties[…]`) so a country column with a space in its name cannot
+break it. Then add the missing post-condition: **the retained count must not exceed the requested count**.
+That guard is the general form of this defect — it catches every future name collision, not just this one.
+
+- [ ] **Step 5: Prove the world path is untouched**
+
+`cd skills/map-native && bun test tests/resolve-all-fixtures.test.ts` — the world fixtures carry no
+`scope`, so the filter must be byte-identical for them. Report the vertex floor's number alongside.
+
+- [ ] **Step 6: Mutation-verify** — drop the scope from the filter, confirm the Jura test reddens; restore.
+
+- [ ] **Step 7: Re-render the Swiss choropleth and look at it.** The French Jura must be gone. Report what
+you saw, not that a test passed.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git status --short
+git add lib/geo/subset.ts lib/geo/resolve-for-produce.ts lib/geo/subset.test.ts
+git commit -m "fix(geo): an admin-1 join is scoped to its country, and a subset may no longer return more than it asked for"
+```
