@@ -395,7 +395,23 @@ test("a dot-density against any basemap but world is refused, not silently rende
 // tell "join key not yet re-derived" (this failure) apart from "re-derived but broken" (any
 // other failure). Do not remove the sibling refusal above, and do not make this test pass, until
 // Task 13 Steps 3-6 have actually re-derived DotDensityMap.tsx's join key on this branch.
-it("dot-density accepts a non-world geography once DotDensityMap.tsx reads injected config (post Task 17 — expected RED until then)", () => {
+//
+// PLAN GAP (found 2026-07-30, after Task 17 landed): Task 13's own plan text (task-13-brief.md,
+// Step 3) assumes Task 17 ALSO un-hardcodes DotDensityMap.tsx's join key — its Step-3 code
+// comment reads "Task 17 ... made DotDensityMap.tsx read its geometry from the injected config's
+// `geography` descriptor instead of a hard-imported world.geojson + hard-coded 'iso_a3'". That
+// assumption is wrong: Task 17's actual brief never mentions JOIN_KEY at all (verified by reading
+// its full text), and this file's own component still hard-codes `const JOIN_KEY = "iso_a3";`
+// (skills/map-native/src/DotDensityMap.tsx) after Task 17 landed. So implementing Task 13's Step
+// 3 exactly as written — unconditionally returning `ok(...)` once a non-world geography is
+// matched — would be UNSAFE: a "us-states" dot-density would clear the refusal and then render
+// SILENTLY WRONG (state postal codes joined against the still-hardcoded country ISO-A3 key),
+// exactly the failure class this refusal exists to prevent. This is not a simple "wait for Task
+// 17" sequencing gap anymore — it is a genuine, currently-unresolved design gap: no task in this
+// plan actually specifies how DotDensityMap.tsx should derive its join key from
+// `config.geography`. Whoever picks this up must resolve that design question first, not just
+// delete the refusal.
+it('dot-density accepts a non-world geography once DotDensityMap.tsx re-derives its join key (post Task 13 join-key re-derivation — expected RED until DotDensityMap.tsx stops hard-coding "iso_a3")', () => {
   const r = assembleMapNative({
     ...REGION_BRIEF,
     nativeType: "dot-density",
