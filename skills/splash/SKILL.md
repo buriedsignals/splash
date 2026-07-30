@@ -96,7 +96,22 @@ Accept: an article (URL / file / pasted text), data (CSV / file / pasted table),
 topic. Normalise to `{ article?, data?, topic? }`. Do not proceed until you have at least one.
 
 **Keys are a PREREQUISITE — collected in the flow, never a mid-production crash.** Run
-`bun skills/splash/scripts/preflight.mjs` at INPUT. When the report shows key-less engines on a
+`bun lib/host/cli.ts newsroom` at INPUT. It answers with `capabilities` (each `id`, `label`,
+`status`, and a `reason` carrying the get-it URL), plus `language`, `publisher` and `blockers`.
+
+**Why that command and not `preflight.mjs`:** measured, the loop's readiness knows strictly more.
+Preflight reports SIX production engines and nothing else. `newsroom` reports **twelve**
+capabilities — those six engines PLUS the six delivery routes (`embed-cloudflare`, `zip`,
+`embed-cms`, `embed-s3`, `embed-fly`, `embed-hosted`), each with its own status. It also resolves
+env alternative groups, non-secret settings from `newsroom.json`, installed npm dependencies, and
+probes the headless browser Remotion needs against a 1 MB floor.
+
+That difference is not cosmetic: with preflight alone, INPUT can tell the journalist what he can
+MAKE and says nothing about how he can PUBLISH — so he discovers at EXPORT that his route was
+never configured, on a finished visual. The loop knew at INPUT. Say it at INPUT.
+(`preflight.mjs` still exists and still works; it is simply the narrower of the two.)
+
+When the report shows key-less engines on a
 fresh install (no `.env`, or every engine yellow), tell the journalist what each missing key
 unlocks (the `reason` strings carry the get-it URLs) and COLLECT them — one free-text prompt per
 key, then save via `bun skills/splash/scripts/save-key.mjs <NAME> <value>` (the ONLY sanctioned
@@ -123,6 +138,16 @@ count:
 > « Tout est en place : je peux te faire des **graphiques** (statiques, interactifs ou en vidéo),
 > des **cartes** (idem), un **scrolly** qui se déroule au défilement, et un **récit photo** si tu
 > as les images. »
+
+**Then one line on PUBLISHING, from the same answer** — the six delivery capabilities, grouped the
+same way and never listed one by one: `zip` ⇒ « un paquet à télécharger » · `embed-cloudflare` /
+`embed-fly` / `embed-s3` ⇒ « un lien intégrable » · `embed-cms` ⇒ « directement dans We.Publish ».
+Say what is `ready`, and name a `disabled` route only when he asks for it or when it is the one he
+will want. This is the line preflight could never produce, and its absence is why a journalist
+could reach EXPORT with a finished visual and no way to ship it:
+
+> « Pour la diffusion : paquet téléchargeable et lien intégrable disponibles ; le CMS n'est pas
+> branché. »
 
 Then say the same for what is NOT available and what it costs him — « la carte demande une clé
 MapTiler (gratuite, 2 min) ; sans elle je reste sur les graphiques » — and move on. It is an

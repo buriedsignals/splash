@@ -434,3 +434,30 @@ describe("Task 12 — the flow calls the gates instead of restating them", () =>
     expect(splash).toContain('kind: "mechanical"');
   });
 });
+
+// The bridge between the two chains, first production segment beyond the guarantees family A laid.
+// INPUT's readiness now comes from the LOOP (`lib/host/cli.ts newsroom`) rather than from
+// `preflight.mjs`, because the loop's answer is strictly larger and the difference is one the
+// journalist feels: preflight reports six production engines, `newsroom` reports twelve
+// capabilities — the same six PLUS the six delivery routes, each with a status. Without that, INPUT
+// could say what he can MAKE and nothing about how he can PUBLISH, so a missing delivery route
+// surfaced at EXPORT, on a finished visual.
+//
+// Key COLLECTION deliberately stays in the prose: the loop has no command for it (measured in
+// docs/splash/two-chains-gap-2026-07-28.md, "INPUT — collecter une clé manquante: aucune commande").
+// The skin stays where it is better; only the gate descends.
+describe("INPUT readiness comes from the loop (bridge, 2026-07-30)", () => {
+  it("names the loop command, not preflight, as the readiness source", () => {
+    expect(splash).toContain("bun lib/host/cli.ts newsroom");
+  });
+  it("states the measured reason — twelve capabilities against six engines", () => {
+    expect(splash).toContain("twelve");
+    expect(splash).toContain("embed-cloudflare");
+  });
+  it("still collects keys through save-key.mjs, which the loop cannot do", () => {
+    expect(splash).toContain("save-key.mjs");
+  });
+  it("says the publishing line at INPUT, not at EXPORT", () => {
+    expect(splash).toContain("Then one line on PUBLISHING");
+  });
+});
