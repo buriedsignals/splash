@@ -23,7 +23,7 @@ describe("resolveGeometryForProduce", () => {
     expect(wrote).toBe(true);
     expect((config.geometry as { type: string }).type).toBe("Topology");
     expect((config.geography as { origin: string }).origin).toBe("shipped");
-  });
+  }, 30_000); // real bunx mapshaper, two passes now (filter+measure, then simplify+encode)
 
   it("should return false and leave the config alone when there is no geography", async () => {
     const config: Record<string, unknown> = { type: "line", rows: [] };
