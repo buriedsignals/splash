@@ -72,7 +72,17 @@ function keywordRegex(keyword: string): RegExp {
   return new RegExp(`\\b${escaped}\\b`, "i");
 }
 
+// The tripwire scans REVIEWER-AUTHORED text, never a mechanical probe's `note`. A mechanical
+// probe's note is not reviewer prose — review-gate.mjs (the only production writer) overwrites
+// it with the command's own stdout/stderr tail (lib/loop/probe-run.ts), so a probe that EXITS 0
+// printing `{"rows":12,"missing":0}` would otherwise trip the "missing" keyword on its own
+// harmless output, blocking a PASSING review with no reachable remedy (the note cannot be
+// caller-supplied for a mechanical probe, and "resolved" is unreachable for one — validateProbes
+// above). `check` stays in scope on every kind: it is always what the REVIEWER named as the
+// thing being probed, mechanical or not. An editorial probe's `note` stays in scope too — it is
+// the judgement's own words, the one case this tripwire exists to catch.
 function probeText(p: ReviewProbe): string {
+  if (p.kind === "mechanical") return p.check;
   return `${p.check} ${p.note ?? ""}`;
 }
 
@@ -166,6 +176,16 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
   // ("the title is slightly long") never accounts for a probed 404. Matching is
   // mechanical: case-insensitive, whitespace-collapsed containment of the check text.
   const normalizedConcerns = concerns.map(normalizeForMatch);
+  // The concern (if any) that accounts for a concern-outcome probe — reviewer-authored, and
+  // already required (by the loop right below) to quote the probe's `check` verbatim. Reused by
+  // the keyword tripwire below: it is the legitimate reviewer-authored evidence for a mechanical
+  // concern-probe, standing in for the machine-generated `note` the tripwire deliberately never
+  // scans (see probeText above).
+  function accountedConcern(p: ReviewProbe): string | undefined {
+    if (p.outcome !== "concern") return undefined;
+    const check = normalizeForMatch(p.check);
+    return concerns.find((c) => normalizeForMatch(c).includes(check));
+  }
   for (const p of probes) {
     if (p.outcome !== "concern") continue;
     const check = normalizeForMatch(p.check);
@@ -181,12 +201,16 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
   }
   // Keyword tripwire: a failure keyword in the recorded narrative (a concern, or a
   // PASS probe's own text) must be reflected by a concern/resolved probe that carries
-  // the same keyword. Conservative by design — see the header comment.
+  // the same keyword. Conservative by design — see the header comment. Both sides scan
+  // REVIEWER-authored text only (concerns, a probe's own `check`, an editorial probe's `note`);
+  // a mechanical probe's machine-generated `note` never counts on either side.
   const narrative = [
     ...concerns,
     ...probes.filter((p) => p.outcome === "pass").map(probeText),
   ];
-  const nonPass = probes.filter((p) => p.outcome !== "pass").map(probeText);
+  const nonPass = probes
+    .filter((p) => p.outcome !== "pass")
+    .map((p) => `${probeText(p)} ${accountedConcern(p) ?? ""}`);
   for (const keyword of FAILURE_KEYWORDS) {
     const re = keywordRegex(keyword);
     if (!narrative.some((t) => re.test(t))) continue;

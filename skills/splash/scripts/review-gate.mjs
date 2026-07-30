@@ -100,7 +100,11 @@ probes = probes.map((p) =>
         command: p.command,
         exitCode: answered[i]?.exitCode ?? null,
         outcome: answered[i]?.outcome ?? "concern",
-        note: answered[i++]?.note || p.note,
+        // `??`, not `||`: a passing command with NO output yields `tail("") === ""`, an empty
+        // but DEFINED string — the real, honest note ("this command produced nothing"). `||`
+        // would treat that falsy-but-true value as absent and let the caller's self-attested
+        // note survive underneath it, exactly the silent pass-through this gate exists to stop.
+        note: answered[i++]?.note ?? p.note,
       }
     : p,
 );

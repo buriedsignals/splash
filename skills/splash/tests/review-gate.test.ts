@@ -172,6 +172,12 @@ describe("applyReviewGate — probes ledger integrity", () => {
   });
 });
 
+// A mechanical probe's `note` below is written the way `review-gate.mjs` (the only production
+// writer) actually writes it — the command's own stdout/stderr tail via `lib/loop/probe-run.ts`
+// (`"the check exited <code>: <output>"` on failure, the raw tail on a pass) — never
+// reviewer-authored evidence prose. The gate no longer reads a mechanical probe's note for
+// anything but non-emptiness (see review-gate.ts's `probeText`), so these fixtures now match
+// what the only reachable entry point can actually produce.
 describe("applyReviewGate — per-probe concern accounting", () => {
   it("REFUSES a concern-probe accounted for only by an UNRELATED concern (the reviewer's repro)", () => {
     // The adversarial repro: the 404 concern-probe was silently droppable as long as ANY
@@ -188,7 +194,7 @@ describe("applyReviewGate — per-probe concern accounting", () => {
             command: ["false"],
             exitCode: 1,
             outcome: "concern",
-            note: "GET returned 404 twice, survives retry",
+            note: "the check exited 22: curl: (22) The requested URL returned error: 404",
           },
         ],
       ),
@@ -208,7 +214,7 @@ describe("applyReviewGate — per-probe concern accounting", () => {
             command: ["false"],
             exitCode: 1,
             outcome: "concern",
-            note: "GET returned 404 twice, survives retry",
+            note: "the check exited 22: curl: (22) The requested URL returned error: 404",
           },
           {
             kind: "mechanical",
@@ -216,7 +222,7 @@ describe("applyReviewGate — per-probe concern accounting", () => {
             command: ["false"],
             exitCode: 1,
             outcome: "concern",
-            note: "the value is absent from the rendered HTML",
+            note: "the check exited 1: grep: no match for 42400 in interactive.html",
           },
         ],
       ),
@@ -238,7 +244,7 @@ describe("applyReviewGate — per-probe concern accounting", () => {
           command: ["false"],
           exitCode: 1,
           outcome: "concern",
-          note: "GET returned 404 twice, survives retry",
+          note: "the check exited 22: curl: (22) The requested URL returned error: 404",
         },
       ],
     );
@@ -258,7 +264,7 @@ describe("applyReviewGate — per-probe concern accounting", () => {
           command: ["false"],
           exitCode: 1,
           outcome: "concern",
-          note: "GET returned 404 twice, survives retry",
+          note: "the check exited 22: curl: (22) The requested URL returned error: 404",
         },
       ],
     );
@@ -277,7 +283,7 @@ describe("applyReviewGate — per-probe concern accounting", () => {
           command: ["true"],
           exitCode: 0,
           outcome: "resolved",
-          note: "first GET returned 404 (fresh publish propagation); retried after the delay, 200 OK with the full data",
+          note: "200 OK, 118 rows",
         },
       ],
     );
@@ -316,20 +322,27 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
     ).toThrow(/absent/);
   });
 
-  it("ACCEPTS the keyword when a resolved probe carries it with evidence", () => {
+  it("ACCEPTS the keyword when a resolved probe's own (reviewer-authored) check names it", () => {
+    // A mechanical probe's `note` is machine output and never scanned (see review-gate.ts's
+    // probeText) — so what has to carry the keyword on the resolved side is the probe's `check`,
+    // which the reviewer wrote. `note` here is realistic: the raw pass-tail review-gate.mjs would
+    // actually record, not evidence prose.
     const out = applyReviewGate(
       rep(),
       "p1",
-      [],
+      [
+        "dataset.csv previously 404'd right after publish — retried and confirmed fixed",
+      ],
       [
         ...passProbes,
         {
           kind: "mechanical",
-          check: "dataset.csv on the published chart",
+          check:
+            "dataset.csv 404-after-publish propagation resolves within the retry window",
           command: ["true"],
           exitCode: 0,
           outcome: "resolved",
-          note: "first GET returned 404 (fresh publish propagation); retried after the delay, 200 OK with the full data",
+          note: "200 OK, 118 rows",
         },
       ],
       reviewer,
@@ -350,13 +363,38 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
           command: ["false"],
           exitCode: 1,
           outcome: "concern",
-          note: "GET returned 404 twice, after the propagation retry too",
+          note: "the check exited 22: curl: (22) The requested URL returned error: 404",
         },
       ],
       reviewer,
     );
     expect(out.results[0].reviewed).toBe(true);
     expect(out.results[0].reviewConcerns).toHaveLength(1);
+  });
+
+  // CRITICAL regression: review-gate.mjs (the only production entry point) overwrites a
+  // mechanical probe's `note` with the command's own stdout/stderr tail — so a probe that EXITS
+  // 0 (a genuine pass) can still print a failure keyword in its own harmless output. Before this
+  // fix that blocked a PASSING review with no reachable remedy: the note is never
+  // caller-writable for a mechanical probe, and "resolved" is unreachable for one. The exit code
+  // alone is the verdict; the tripwire must not read machine output as if it were reviewer prose.
+  it("does NOT trip when a PASSING mechanical probe's own command output contains a failure keyword", () => {
+    const out = applyReviewGate(
+      rep(),
+      "p1",
+      [],
+      [
+        {
+          kind: "mechanical",
+          check: "dataset row count matches the source",
+          command: ["true"],
+          exitCode: 0,
+          outcome: "pass",
+          note: '{"rows":12,"missing":0}',
+        },
+      ],
+    );
+    expect(out.results[0].reviewed).toBe(true);
   });
 
   it("does not trip on an unrelated clean narrative", () => {
