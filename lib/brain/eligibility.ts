@@ -27,6 +27,9 @@ import {
   type TypeSheet,
 } from "./typology";
 import type { Facts } from "./facts";
+// The measured render limits of a (engine, type, format) pairing (task 19), fed by each engine's
+// own registration (map-native's is task 20). Read here, never restated — see Candidate.limits.
+import { featureLimits } from "../core/feature-reach";
 
 export type Candidate = {
   id: string;
@@ -36,6 +39,11 @@ export type Candidate = {
   sheet: TypeSheet;
   readiness?: { status: CapabilityReadiness["status"]; reason: string };
   requires?: string[];
+  /** Render limits this pairing DECLARES, in the journalist's words (lib/core/feature-reach.ts).
+   *  Distinct from `readiness` on purpose: a mark drives rank.ts's severity tier and, with the
+   *  3-row cap in offer.ts, makes a form unreachable in practice (see imageWalkMark's header).
+   *  A declared limit must INFORM the choice, never remove the row. */
+  limits?: string[];
   /** How full this form is against its own cap, 0..1 (0 when the sheet declares no cap).
    *  Computed here because this is where both the facts and the limits are in hand; the
    *  ranking consumes the number without needing either. */
@@ -436,11 +444,17 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   for (const r of input.readiness ?? [])
     if (requires.includes(r.id) && r.status !== "ready")
       marks.push({ status: r.status, reason: markReason(r) });
-  if (marks.length === 0) return { ...c, requires };
+  // The measured render limits of THIS pairing. Read, never restated: the offer shows the same
+  // sentence a later refusal would (lib/core/feature-reach.ts).
+  const declared = featureLimits(c.engine, c.key, c.format).map(
+    (l) => l.sentence,
+  );
+  const withLimits = declared.length > 0 ? { ...c, limits: declared } : c;
+  if (marks.length === 0) return { ...withLimits, requires };
   const worst = marks.reduce((a, b) =>
     SEVERITY[b.status] > SEVERITY[a.status] ? b : a,
   );
-  return { ...c, requires, readiness: worst };
+  return { ...withLimits, requires, readiness: worst };
 }
 
 // The house ground is "light", "dark", or any #rrggbb (skills/splash/src/brand-profile.ts:35)

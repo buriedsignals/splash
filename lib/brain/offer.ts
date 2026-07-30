@@ -24,6 +24,9 @@ export type OfferOption = {
   intent: Intent[];
   requires?: string[];
   readiness?: { status: ReadinessStatus; reason: string };
+  /** Render limits this pairing DECLARES (see Candidate.limits) — carried through unchanged so
+   *  the offer shows the same sentence the journalist would meet at a later refusal. */
+  limits?: string[];
   whySource: {
     sheet: string;
     fragments: string[];
@@ -90,6 +93,7 @@ function toOption(c: Candidate, input: EligibilityInput): OfferOption {
     intent: c.sheet.intent,
     ...(c.requires ? { requires: c.requires } : {}),
     ...(c.readiness ? { readiness: c.readiness } : {}),
+    ...(c.limits ? { limits: c.limits } : {}),
     whySource: {
       sheet: c.sheet.sheetPath,
       // The ONLY prose the model may draw on: the sheet's own words for what this form is

@@ -306,6 +306,12 @@ describe("journalist-facing voice (2026-07-28)", () => {
   });
 });
 
+describe("declared render limits reach the offer (2026-07-29)", () => {
+  it("should document the declared-limit rule in the phrasing contract", () => {
+    expect(splash).toContain("limitsAcknowledged");
+  });
+});
+
 describe("survivor rules — load-bearing, no mechanical backstop, MUST survive any slim", () => {
   // Each pin asserts the ACTIONABLE CLAUSE of the rule, not a lone keyword whose token recurs
   // elsewhere — a gutted rule whose keyword survives in a comment/reference would keep a weak

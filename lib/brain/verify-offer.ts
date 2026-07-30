@@ -37,6 +37,7 @@ export type PhrasedOption = {
   id: string;
   why: string;
   markAcknowledged?: true;
+  limitsAcknowledged?: true;
 };
 
 export function verifyOffer(phrased: PhrasedOption[], offer: Offer): void {
@@ -83,6 +84,19 @@ export function verifyOffer(phrased: PhrasedOption[], offer: Offer): void {
     if (!option.readiness && p.markAcknowledged)
       throw new Error(
         `verifyOffer: "${p.id}" is not marked, so there is no mark for it to acknowledge`,
+      );
+    // Same discipline as a readiness mark, for a DIFFERENT thing: a mark says the form may not
+    // be buildable; a limit says the form IS buildable and will not do one specific thing. Both
+    // must be shown, and the guard can only check that structurally — so the reason itself is
+    // printed by code, never left to the model to restate.
+    if (option.limits?.length && p.limitsAcknowledged !== true)
+      throw new Error(
+        `verifyOffer: "${p.id}" declares a render limit and the phrasing does not set ` +
+          "limitsAcknowledged — print the limit beside the why",
+      );
+    if (!option.limits?.length && p.limitsAcknowledged)
+      throw new Error(
+        `verifyOffer: "${p.id}" declares no render limit, so limitsAcknowledged must not be set`,
       );
   }
 }

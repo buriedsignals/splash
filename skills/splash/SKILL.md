@@ -626,6 +626,13 @@ Four rules, all mechanical:
    marked form and the choice stands. The one exception is a form nothing can build —
    `chooseForm` refuses it in the words the offer displayed, and the loop routes back to the
    choice rather than looping on a refusal. Say so plainly and offer the ranked alternatives again.
+5. **Une limite DÉCLARÉE est imprimée, pas résumée.** Une option peut porter `limits` : ce que la
+   forme, une fois construite, **ne fera pas** (« cette carte interactive ne sera pas navigable au
+   clavier »). Ce n'est pas une marque de readiness — la forme est constructible, elle est classée
+   normalement, et elle reste choisissable. Poser `limitsAcknowledged: true` sur le phrasage de
+   chaque option qui en porte une (le garde refuse le phrasage sinon, et refuse également le
+   drapeau sur une option qui n'en porte aucune), et **imprimer chaque phrase de `limits` à côté
+   du `why`** — les mots sont émis par le code, jamais restitués par le modèle.
 
 **★ THE DECISIONS ARE MECHANICAL — never hand-edit `run.json`.** A decision the journalist makes
 is written by CODE, with its own refusals, exactly like the offer is built by code. Editing the

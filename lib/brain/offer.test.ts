@@ -18,6 +18,30 @@ const INPUT = {
   intents: ["change-over-time" as const],
 };
 
+// A real KB, spatial+magnitude dataset — this intent pair ranks map-native's own sheets
+// (hex-grid, choropleth, cartogram…) ahead of every chart-native sheet (only "magnitude" among
+// their intents), so an interactive map-native row lands in the top-3 offer, carrying the
+// keyboard limit map-native declares (skills/map-native/src/feature-limits.ts) on every
+// interactive/scrolly pairing.
+function inputForMapSymbolInteractive() {
+  return {
+    facts: deriveFacts({
+      columns: ["city", "population"],
+      numericColumns: ["population"],
+      rowCount: 10,
+    }),
+    channel: "article-web" as const,
+    intents: ["spatial" as const, "magnitude" as const],
+  };
+}
+
+// Task 21 — a declared render limit reaches the OFFERED option, not just the eligible one.
+test("should surface the limit on the offered option", () => {
+  const o = buildOffer(inputForMapSymbolInteractive());
+  const row = o.options.find((x) => x.engine === "map-native");
+  expect(row?.limits?.join(" ")).toContain("keyboard");
+});
+
 test("it offers at most three forms", () => {
   expect(buildOffer(INPUT).options.length).toBeLessThanOrEqual(3);
 });
