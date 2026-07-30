@@ -433,8 +433,10 @@ export function validateMapSpec(
     // `labeled` (skills/map-native/src/conformance.ts checkSymbolConformance, wired at produce
     // since 2026-07-29). The INTERACTIVE map-native render is hover-only — that limit is
     // declared once, in map-native's own words (feature-limits.ts), and quoted here rather
-    // than restated: this refusal used to promise a per-circle labeling behaviour no code
-    // implements.
+    // than restated: this refusal used to promise the render selectively labels a top-ranked
+    // subset of circles — no such ranking/limiting exists anywhere (symbol-geo.ts maps every
+    // point); the truth is binary, not selective: ALL circles labeled (static) or NONE
+    // always-visible (interactive, hover-only).
     errors.push(
       "symbol maps are not producible by map-dw: Datawrapper draws proportional circles with " +
         "values on HOVER only (no always-visible data-value labels on symbols — Datawrapper " +

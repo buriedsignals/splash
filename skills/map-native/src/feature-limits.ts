@@ -27,10 +27,11 @@ const SYMBOL_LABELS: FeatureLimit = {
   feature: "direct-labels",
   sentence: SYMBOL_LABELS_INTERACTIVE,
   measuredBy:
-    "SymbolMap.tsx:324-327 mounts symbol-labels only when !interactive || staticFallbackLabels; " +
-    "the flag is set by the capture harness alone (symbol-labels.ts:53-55). No top-N exists: " +
-    "symbol-geo.ts:87-89 maps every point, and SymbolMap.tsx:346-347 lets MapLibre drop labels " +
-    "on collision (text-allow-overlap:false, text-optional:true)",
+    "SymbolMap.tsx:344-346 mounts symbol-labels only when !interactive || staticFallbackLabels; " +
+    "the flag is set by the capture harness alone (symbol-labels.ts:53-55). No selective " +
+    "top-ranked subset exists: symbol-geo.ts:97-99 sorts then maps every point (no `.slice()`), " +
+    "and SymbolMap.tsx:365-366 lets MapLibre drop labels on collision " +
+    "(text-allow-overlap:false, text-optional:true)",
 };
 
 export function mapNativeLimits(
