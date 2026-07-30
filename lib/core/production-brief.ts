@@ -17,6 +17,9 @@ import type { ArcRole } from "./claim-arc";
 // (bundle-source.mjs does not distinguish a type-only import), so a schema-carrying import here
 // would hand every map-native download the zod dependency it never runs.
 import type { SourceKind } from "../source/vocabulary";
+// GeographyRef is a PLAIN type (never z.infer, lib/geo/ref.ts has zero zod dependency) — safe
+// under the same zod-free constraint as SourceKind above.
+import type { GeographyRef } from "../geo/ref";
 
 /** A narrative beat in the shape the engines want: the anchor's KIND picks the field, so a
  *  plan drafted for a line (x) can never arrive shaped like a bar walk (category). */
@@ -27,11 +30,24 @@ export type BriefBeat = {
   text: string;
 };
 
-/** What the data's geography turned out to be, measured against the shipped basemaps.
- *  `unmatched` is the point of the type: a partial join is SHOWN, never silently mapped. */
+/** What the data's geography turned out to be, measured against the shipped basemaps AND the
+ *  offline ADM1 index (D10.2). `unmatched` is the point of the type: a partial join is SHOWN,
+ *  never silently mapped.
+ *  `basemap` and `geography` are BOTH carried, deliberately redundant, for this task: `basemap`
+ *  is the pre-existing string identifier every consumer (`assemble/map-native.ts`,
+ *  `assemble/map-dw.ts`, `lib/loop/manifest.ts`'s `GeoMatchSchema`) still reads today; `geography`
+ *  is the richer `GeographyRef` this task adds so a journalist can be told WHICH geography a
+ *  column matched (world vs. an ADM1 subset) and at what level. `geography` is OPTIONAL here —
+ *  not just additive on this type but genuinely absent whenever a `GeoMatch` round-trips through
+ *  the persisted manifest, since `lib/loop/manifest.ts`'s `GeoMatchSchema` (zod) does not carry
+ *  it yet and silently strips unknown keys on parse (Task 9 adds it there, bundled with the
+ *  migration its sequencing-hazard note describes — that is NOT an additive schema change, unlike
+ *  this plain-type field). `matchGeography` (this task) always populates it fresh; only a
+ *  manifest-sourced `GeoMatch` can lack it. */
 export type GeoMatch = {
   column: string;
   basemap: string;
+  geography?: GeographyRef;
   matched: number;
   total: number;
   unmatched: string[];
