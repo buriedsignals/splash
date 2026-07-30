@@ -2836,3 +2836,214 @@ continuing.
 git add skills/map-native/src/core/MapFrame.tsx skills/map-native/tests/
 git commit -m "feat(map-native): MapFrame renders geoCredit beside source, ALWAYS incl. video (D7)"
 ```
+
+### Task 16: `ChoroplethMap.tsx` — geometry from injected config, join via feature-state not properties (D5 + D8's second point)
+
+**Files:**
+- Modify: `skills/map-native/src/choropleth-geo.ts` — add `applyChoroplethJoin` beside
+  `computeChoropleth` (verified in full while writing this plan, `:72-191`).
+- Modify: `skills/map-native/src/choropleth-paint.ts` — `choroplethFillColor`/
+  `choroplethFillOpacity` (verified in full while writing this plan, the whole file: currently
+  read `["get", "__hasData"]`/`["get", "__value"]` — its own header says it is "the SINGLE source
+  of truth... used by BOTH the interactive/video ChoroplethMap and the scrolly ScrollyMap", so
+  this one file's change propagates to both engines automatically).
+- Modify: `skills/map-native/src/ChoroplethMap.tsx` — remove the `?raw` imports (`:10-11`) and
+  `GEOJSON_BY_BASEMAP` (`:19-22`); replace the basemap-resolution/join block (`:245-289`,
+  verified in full while writing this plan — `coloredWorld`'s properties-merge is exactly D8's
+  second point, located here, NOT in `computeChoropleth` as spec D8 cites — flag this as a spec
+  citation correction: `computeChoropleth` (`choropleth-geo.ts:110-114`) never touches feature
+  properties at all, it only returns a `joined` table; the actual merge the spec describes
+  happens downstream, in this component, at `ChoroplethMap.tsx:263-284`).
+- Modify: `skills/map-native/package.json` — add `topojson-client` (dependency) and
+  `@types/topojson-client` (devDependency); none of the shipped dependencies today decode
+  TopoJSON (verified with `grep -rn topojson skills/map-native/package.json` while writing this
+  plan — no hits).
+- Test: `skills/map-native/tests/choropleth-geo.test.ts` (append; confirm exact filename first),
+  a new `skills/map-native/tests/choropleth-map-imports.test.ts` (structural, grep-based).
+
+**Interfaces:**
+- Consumes: `Topology` (from `topojson-client`), config's new `geometry: Topology` field
+  (produced by Task 20's `produce.mjs`), `GeographyRef` (Task 4/9).
+- Produces: `applyChoroplethJoin(features, layout, joinKey): { features: GeoJSON.
+  FeatureCollection; states: ChoroplethFeatureState }` (pure). Consumed directly by
+  `ChoroplethMap.tsx`; `ScrollyMap.tsx` (Task 18) reuses the SAME function and the SAME
+  `choropleth-paint.ts` expressions, since both currently share `computeChoropleth` too.
+
+**Spec citation correction, stated because Global Constraints require verifying every citation
+against the tree:** spec D8's second point cites `skills/map-native/src/choropleth-geo.
+ts:110-114` as where `computeChoropleth` "builds a FeatureCollection by merging the journalist's
+values into the features' properties." Read in full while writing this plan, `computeChoropleth`
+does no such thing — it returns `{ joined: {key,value}[], bins, bounds, noData, unmatched,
+scaleType, labels? }`, never touching `features.properties`. The merge the spec describes is real,
+but it lives in `ChoroplethMap.tsx`'s `coloredWorld` construction (`:263-284`), the component that
+CALLS `computeChoropleth` and then does its own merge before calling `map.addSource`. This task
+targets the real location.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// skills/map-native/tests/choropleth-geo.test.ts (append)
+import { describe, it, expect } from "bun:test";
+import { computeChoropleth, applyChoroplethJoin } from "../src/choropleth-geo";
+
+describe("applyChoroplethJoin — table alongside geometry, never merged into properties (D8)", () => {
+  const features: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: [
+      { type: "Feature", properties: { iso_a3: "CHE" }, geometry: { type: "Point", coordinates: [0, 0] } },
+      { type: "Feature", properties: { iso_a3: "FRA" }, geometry: { type: "Point", coordinates: [1, 1] } },
+    ],
+  };
+  const data = { regionKey: "iso_a3", valueField: "v", rows: [{ iso_a3: "CHE", v: 5 }] };
+  const layout = computeChoropleth(data, features, "iso_a3");
+
+  it("returns features with NO extra properties beyond the source's own", () => {
+    const { features: out } = applyChoroplethJoin(features, layout, "iso_a3");
+    for (const f of out.features) {
+      // The fixture element carrying the claim: CHE has a joined value (5) — if the merge
+      // regressed to the old properties-mutation, CHE's properties would gain __value/__hasData.
+      expect(Object.keys(f.properties ?? {})).toEqual(Object.keys(
+        features.features.find((s) => s.properties?.iso_a3 === f.properties?.iso_a3)!.properties!,
+      ));
+    }
+  });
+
+  it("puts the joined value/hasData in a SEPARATE states table, keyed by the join value", () => {
+    const { states } = applyChoroplethJoin(features, layout, "iso_a3");
+    expect(states["CHE"]).toEqual({ value: 5, hasData: true });
+    expect(states["FRA"]).toEqual({ value: null, hasData: false });
+  });
+});
+```
+
+```ts
+// skills/map-native/tests/choropleth-map-imports.test.ts (new)
+import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
+
+// Structural, not behavioural — but real: the nine `?raw` geojson imports (spec §1.2) are the
+// thing this whole phase removes. This test targets the four files Task 16-18 close, one at a
+// time; only ChoroplethMap.tsx's two are asserted here, the rest join as their own tasks land.
+describe("no static geojson import in ChoroplethMap.tsx", () => {
+  it("ChoroplethMap.tsx does not import world.geojson or us-states.geojson as ?raw", () => {
+    const src = readFileSync("skills/map-native/src/ChoroplethMap.tsx", "utf8");
+    expect(src).not.toMatch(/\.geojson\?raw/);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd skills/map-native && bun test tests/choropleth-geo.test.ts tests/choropleth-map-imports.test.ts`
+Expected: FAIL — `applyChoroplethJoin` does not exist; `ChoroplethMap.tsx` still imports
+`world.geojson?raw`/`us-states.geojson?raw`.
+
+- [ ] **Step 3: Implement**
+
+`choropleth-geo.ts` — add:
+
+```ts
+export type ChoroplethFeatureState = Record<
+  string,
+  { value: number | null; hasData: boolean; label?: string }
+>;
+
+/** The join, kept OUT of the geometry's own properties (D8's second point) — spec's own
+ *  reasoning: under an ODbL-licensed geometry, the OSMF's "Collective Database" guidance ties
+ *  share-alike only to what stays structurally separate; merging a journalist's values into an
+ *  OSM feature's properties is exactly the act that would extend it. The returned `states` table
+ *  is applied to the map via MapLibre `setFeatureState` (ChoroplethMap.tsx), never written back
+ *  onto `features`. */
+export function applyChoroplethJoin(
+  features: GeoJSON.FeatureCollection,
+  layout: ChoroplethLayout,
+  joinKey: string,
+): { features: GeoJSON.FeatureCollection; states: ChoroplethFeatureState } {
+  const states: ChoroplethFeatureState = {};
+  features.features.forEach((f, i) => {
+    const joined = layout.joined[i]!;
+    const key = String(f.properties?.[joinKey]);
+    states[key] = {
+      value: joined.value,
+      hasData: joined.value !== null,
+      ...(layout.labels?.[joined.key] ? { label: layout.labels[joined.key]! } : {}),
+    };
+  });
+  return { features, states }; // features returned UNCHANGED — no properties merge
+}
+```
+
+`choropleth-paint.ts` — change both expressions from `["get", "__hasData"]`/`["get", "__value"]`
+to `["feature-state", "hasData"]`/`["feature-state", "value"]` (two occurrences each, four total
+edits across `choroplethFillColor` and `choroplethFillOpacity`). Update the file's own header
+comment (`:9-11`) to describe feature-state instead of "enriched-feature contract" properties.
+
+`ChoroplethMap.tsx` — remove lines `10-11` (the two `?raw` imports) and `19-22`
+(`GEOJSON_BY_BASEMAP`); add `import { feature as topoFeature } from "topojson-client";` and
+`import type { Topology } from "topojson-specification";`. Replace the basemap-resolution block
+(`:245-289`):
+
+```ts
+      // Geometry arrives through the injected config now (produce.mjs, Task 20) — never a
+      // static bundle import. `config.geography` names WHICH set/scope/joinKey this is
+      // (GeographyRef); `config.geometry` is the actual subset TopoJSON, decoded here.
+      const geography = config.geography ?? { joinKey: resolveBasemapMeta(config.basemap ?? "world").joinKey };
+      const joinKey = geography.joinKey;
+      const topology = config.geometry as Topology;
+      const objectName = Object.keys(topology.objects)[0]!;
+      const world = topoFeature(topology, topology.objects[objectName]!) as GeoJSON.FeatureCollection;
+
+      const layout = computeChoropleth(config, world, joinKey, {
+        bins: NUM_BINS,
+        scaleType: config.scaleType ?? "sequential",
+        palette: config.palette,
+        labelField: config.labelField,
+      });
+
+      const { features: sourceFeatures, states } = applyChoroplethJoin(world, layout, joinKey);
+
+      map.addSource("choropleth-world", {
+        type: "geojson",
+        data: sourceFeatures,
+        promoteId: joinKey, // required for setFeatureState below — MapLibre needs a stable id
+      });
+      for (const [key, state] of Object.entries(states))
+        map.setFeatureState({ source: "choropleth-world", id: key }, state);
+```
+
+(Import `applyChoroplethJoin` from `./choropleth-geo` alongside the existing `computeChoropleth`
+import at `:23`. Remove the now-unused `resolveBasemapMeta` import if the fallback branch above
+ends up unneeded once Task 20 always supplies `config.geometry` — decide this once Task 20's
+exact config shape is implemented; leave the fallback in if any test fixture still constructs a
+`basemap`-only config without `geometry`.)
+
+Add to `skills/map-native/package.json`'s `dependencies`: `"topojson-client": "3.1.0"`; to
+`devDependencies`: `"@types/topojson-client": "3.1.5"`, `"topojson-specification": "1.0.2"`
+(verify these are the current published versions with `npm view topojson-client version` /
+`npm view @types/topojson-client version` before pinning — do not assume the plan's numbers are
+still current when this task is implemented).
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd skills/map-native && bun install && bunx tsc --noEmit && bun test tests/choropleth-geo.test.ts tests/choropleth-map-imports.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Mutation — prove the "no extra properties" test depends on `applyChoroplethJoin`
+  actually staying pure**
+
+Temporarily add `f.properties = { ...f.properties, __value: joined.value };` inside the
+`forEach` in `applyChoroplethJoin` (the exact regression this task removes).
+
+Run: `cd skills/map-native && bun test tests/choropleth-geo.test.ts`
+Expected: "returns features with NO extra properties..." FAILS (`Object.keys(f.properties)` now
+includes `__value` for CHE, which the source feature never had). Report the count. Revert before
+continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add skills/map-native/src/choropleth-geo.ts skills/map-native/src/choropleth-paint.ts \
+  skills/map-native/src/ChoroplethMap.tsx skills/map-native/package.json \
+  skills/map-native/tests/choropleth-geo.test.ts skills/map-native/tests/choropleth-map-imports.test.ts
+git commit -m "feat(map-native): ChoroplethMap reads injected geometry; join via feature-state, never properties (D5, D8)"
+```
