@@ -2,7 +2,7 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { describePrecheck, presentIn } from "./gates";
+import { describePrecheck, describeProbeRun, presentIn } from "./gates";
 import { NO_VIEWER_VAR } from "../loop/preview";
 
 const CLI = resolve(import.meta.dir, "./cli.ts");
@@ -139,4 +139,14 @@ test("the CLI opens the artifact and prints the receipt as its whole answer", ()
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("probe refuses a ledger whose commands are prose, before running any of it", () => {
+  const r = describeProbeRun(
+    [{ check: "x", command: "rm -rf /" }],
+    process.cwd(),
+  );
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.code).toBe("usage");
 });

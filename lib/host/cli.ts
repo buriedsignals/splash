@@ -33,7 +33,7 @@ import {
   phraseOfferIn,
   requestDeliveryIn,
 } from "./drive";
-import { describePrecheck, presentIn } from "./gates";
+import { describePrecheck, describeProbeRun, presentIn } from "./gates";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
 import { describeIntentQuestion } from "./suggest-intent";
@@ -437,6 +437,18 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "probe") {
+    // A DOCUMENT on stdin, like `phrase` and `author-beats`: a list whose length is the review's,
+    // one command per check. And a document rather than flags for a second reason here — an argv
+    // array has no shape in a flag, and flattening it into one would be exactly the string a
+    // shell then re-splits.
+    const parsed = parseFlags(rest, ["--cwd"]);
+    if (!parsed.ok) usage(parsed.message);
+    const specs = await readJsonRequest("probe", "probe < probes.json");
+    const r = describeProbeRun(specs, parsed.flags["--cwd"] ?? process.cwd());
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "verb") {
     const name = rest[0];
     if (!name || name.startsWith("--"))
@@ -488,7 +500,7 @@ async function main(): Promise<never> {
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
       `advance, suggest-intent, confirm-angle, phrase, choose-form, author-beats, approve, ` +
-      `request-delivery, verb, newsroom, precheck or present`,
+      `request-delivery, verb, newsroom, precheck, present or probe`,
   );
 }
 

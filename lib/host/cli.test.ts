@@ -90,7 +90,7 @@ describe("the CLI façade — JSON in, JSON out, stable exit codes", () => {
     expect(body.message).toBe(
       'unknown command "explode" — expected verbs, state, next, init, advance, ' +
         "suggest-intent, confirm-angle, phrase, choose-form, author-beats, approve, " +
-        "request-delivery, verb, newsroom, precheck or present",
+        "request-delivery, verb, newsroom, precheck, present or probe",
     );
     // The real assertion: the DOCUMENT the host reads carries no stack trace either. stderr
     // being empty on this path made the old `r.err` version trivially true.

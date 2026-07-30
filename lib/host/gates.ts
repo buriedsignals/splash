@@ -17,6 +17,7 @@ import {
   type HandoverForm,
 } from "../loop/preconditions";
 import { presentArtifact } from "../loop/presentation";
+import { runProbes, type ProbeSpec } from "../loop/probe-run";
 import type { HostResponse } from "./state";
 
 const HANDOVER_FORMS: readonly string[] = ["html", "code-source", "embed"];
@@ -113,4 +114,31 @@ export function presentIn(
   return shown.ok
     ? { ok: true, value: shown.value }
     : { ok: false, code: shown.code, message: shown.message };
+}
+
+/**
+ * RUN THE MECHANICAL CHECKS AND REPORT WHAT THEY ANSWERED.
+ *
+ * The façade's contribution is the shape gate: a caller that hands over anything other than a
+ * list of {check, command:[…]} is refused here rather than having its prose executed.
+ */
+export function describeProbeRun(specs: unknown, cwd: string): HostResponse {
+  if (
+    !Array.isArray(specs) ||
+    specs.some(
+      (s) =>
+        s == null ||
+        typeof s !== "object" ||
+        typeof (s as { check?: unknown }).check !== "string" ||
+        !Array.isArray((s as { command?: unknown }).command),
+    )
+  )
+    return {
+      ok: false,
+      code: "usage",
+      message:
+        'probe reads a LIST on stdin: [{"check": "<what is probed>", "command": ["bun", "<script>", "<arg>"]}] — ' +
+        "the command is argv, never a shell line",
+    };
+  return { ok: true, value: runProbes(specs as ProbeSpec[], { cwd }) };
 }

@@ -38,10 +38,10 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The fifteen commands
+## The sixteen commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `precheck`. Acting: `init`,
-`advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
+Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `precheck`, `probe`. Acting:
+`init`, `advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
 `present`.
 
 The whole journey, in the order a host walks it — every step is one of these commands, and none
@@ -1446,6 +1446,87 @@ stripping them would leave a host with an opaque failure and nothing to act on. 
 asserted as a contract in `lib/host/cli.test.ts` rather than left as an accident. A host that
 relays messages to a third party should treat `message` as diagnostic output, not as
 user-facing copy.
+
+### `probe [--cwd <dir>]`
+
+Runs the review's mechanical checks and reads their exit codes — the third of the three
+guarantees ("des refus qui mordent"). The 2026-07-28 sweep found ten review runs where the gate
+graded itself, and two of those recorded a `pass` on a check that had crashed or never run at
+all: that is possible for exactly one reason, which is that the outcome was a field the reviewing
+step filled in by hand. `probe` closes it by making the gate the one that launches the check and
+reads what actually happened — `lib/loop/probe-run.ts`'s `runProbes`, called with `Bun.spawnSync`
+on the command **as an argv array**, never a string handed to a shell and never interpolated into
+a `-c`. A probe whose command is not a non-empty array of non-empty strings is refused by shape,
+before anything is executed.
+
+The request is a DOCUMENT on stdin, like `phrase` and `author-beats`, and for the same reason: the
+list's length is the review's own, one command per check, and an argv array has no shape in a
+flag — flattening it into one would be exactly the string a shell then re-splits.
+
+```
+$ echo '[{"check": "the file is there", "command": ["true"]}]' | bun lib/host/cli.ts probe
+```
+
+```json
+{
+  "ok": true,
+  "value": [
+    {
+      "check": "the file is there",
+      "command": [
+        "true"
+      ],
+      "outcome": "pass",
+      "exitCode": 0,
+      "note": ""
+    }
+  ]
+}
+```
+
+Exit `0` — `probe` itself never fails because a probe failed; it answers `ok: true` with the
+ledger of what each probe found, `"concern"` where a check exited non-zero or could not be run at
+all, `"pass"` only where the exit code was zero:
+
+```
+$ echo '[{"check": "the dataset answers", "command": ["false"]}]' | bun lib/host/cli.ts probe
+```
+
+```json
+{
+  "ok": true,
+  "value": [
+    {
+      "check": "the dataset answers",
+      "command": [
+        "false"
+      ],
+      "outcome": "concern",
+      "exitCode": 1,
+      "note": "the check exited 1: "
+    }
+  ]
+}
+```
+
+Every probe runs regardless of the others' outcome — cutting the ledger short at the first
+failure would make the record describe how far the review got, not what the artifact is like. A
+ledger whose commands are prose rather than argv is refused before any of it runs:
+
+```
+$ echo '[{"check": "x", "command": "rm -rf /"}]' | bun lib/host/cli.ts probe
+```
+
+```json
+{
+  "ok": false,
+  "code": "usage",
+  "message": "probe reads a LIST on stdin: [{\"check\": \"<what is probed>\", \"command\": [\"bun\", \"<script>\", \"<arg>\"]}] — the command is argv, never a shell line"
+}
+```
+
+Exit `2`. `--cwd` is optional and defaults to the façade's own working directory — the directory
+the checks run in, not a run directory; `probe` never reads or writes a `run.json`.
 
 ## Why a CLI and not MCP
 
