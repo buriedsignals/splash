@@ -10,6 +10,25 @@ import {
   type RunElement,
 } from "./manifest";
 
+// The v2-through-v5 leg of the chain, and ONLY that leg: migrateV2toV3, migrateV3toV4 and
+// migrateV4toV5 are pure object transforms — no filesystem access anywhere in them. v1 is the
+// odd one out (migrateV1toV2 calls freezeInput, which WRITES the frozen input file into the run
+// directory) and is deliberately excluded here, which is what lets a caller that must not write
+// — lib/host/state.ts's loadRun, read-only by promise — migrate a stale manifest in memory
+// without checking each step's purity itself. Returns undefined for a v1 manifest, a manifest
+// already current, or a version this build does not know, so a caller can tell "migrated" apart
+// from "nothing to do here" without inspecting `schemaVersion` a second time.
+export function migrateWriteFree(raw: unknown): RunManifest | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const obj = raw as { schemaVersion?: number };
+  if (obj.schemaVersion === 4) return parseManifest(migrateV4toV5(raw));
+  if (obj.schemaVersion === 3)
+    return parseManifest(migrateV4toV5(migrateV3toV4(raw)));
+  if (obj.schemaVersion === 2)
+    return parseManifest(migrateV4toV5(migrateV3toV4(migrateV2toV3(raw))));
+  return undefined;
+}
+
 // Upgrade an on-disk manifest to the current schema. v1 stored inline CSV content and a
 // single top-level element; v2 freezes the content (path+hash) and wraps it in elements[];
 // v3 drops the dormant, unconvertible v2 delivery slot; v4 adds the run's route and channel
@@ -21,11 +40,8 @@ export function migrate(raw: unknown, runDir: string): RunManifest {
     throw new Error("migrate: manifest is not an object");
   const obj = raw as { schemaVersion?: number };
   if (obj.schemaVersion === 5) return parseManifest(raw);
-  if (obj.schemaVersion === 4) return parseManifest(migrateV4toV5(raw));
-  if (obj.schemaVersion === 3)
-    return parseManifest(migrateV4toV5(migrateV3toV4(raw)));
-  if (obj.schemaVersion === 2)
-    return parseManifest(migrateV4toV5(migrateV3toV4(migrateV2toV3(raw))));
+  const writeFree = migrateWriteFree(raw);
+  if (writeFree) return writeFree;
   if (obj.schemaVersion !== 1)
     throw new Error(`migrate: unsupported schemaVersion ${obj.schemaVersion}`);
   return parseManifest(

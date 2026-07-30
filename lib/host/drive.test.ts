@@ -311,11 +311,14 @@ describe("advanceRun — one deterministic step, through the run directory", () 
     expect(r).toMatchObject({ ok: false, code: "no-run" });
   });
 
-  it("refuses a manifest written against an older schema rather than migrating it", async () => {
+  // schemaVersion 2 through 4 now migrate in memory (lib/host/state.ts's loadRun) — only a v1
+  // manifest still refuses, because its sole migration path writes a frozen input file into the
+  // run directory, and advanceRun follows loadRun's rule exactly like state/next do.
+  it("refuses a manifest whose migration would write, rather than migrating it", async () => {
     const dir = emptyDir("drive-stale-");
     writeFileSync(
       join(dir, "run.json"),
-      JSON.stringify({ runId: "old", schemaVersion: 3, elements: [] }),
+      JSON.stringify({ runId: "old", schemaVersion: 1, elements: [] }),
     );
     const r = await advanceRun(dir);
     expect(r).toMatchObject({ ok: false, code: "stale-schema" });
