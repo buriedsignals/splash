@@ -123,6 +123,40 @@ la phrase fautive comme contre-exemple. Détail et chiffres : mémoire `resume-2
 dépôt EST un plugin (`.claude-plugin/plugin.json`). Article de test :
 `/Users/rmdms/Sites/Professional/splash-test-article/`.
 
+**★ Follow-ups NOMMÉS le 2026-07-30, écrits ici parce que les ledgers de worktree sont supprimables :**
+
+1. **Bug produit jamais corrigé, trouvé en run manuel réel** : `chart-native` reçoit bien
+   `kind: "synthetic"` dans son `config.json` mais **ne passe jamais la source par
+   `publishedSourceFor`**, donc la mention obligatoire (« données de démonstration ») n'est composée
+   nulle part et n'apparaît sur aucun graphique. `map-dw` et `dw-chart` sont à vérifier sur le même
+   point. C'est un défaut de conformité, pas un détail : un visuel de démo sort sans sa mention.
+2. **`assertShippable` ne vérifie rien d'utile** (famille A, nommé dans le code) : la comparaison
+   `shownSha256` vs `approvedHash` est **tautologique** — `gate.ts:38-49` écrit les deux champs depuis
+   la même variable et en est le seul écrivain. Elle n'attrape qu'une retouche manuelle partielle, pas
+   l'absence, et reste contournable par omission. Vraie fermeture : re-vérifier contre le reçu de
+   présentation via `shownCovers(path, r.approvedHash)` (`lib/loop/presentation.ts:105`, chemins dans
+   `r.outputs`), et exiger la présence avec le raisonnement-par-forme de `lib/loop/deliver.ts:147-157`.
+3. **`map-native` n'enregistre AUCUN refus tardif** (chart-native oui depuis la famille C). Cause :
+   son snap de contraste écrit un PNG de debug que `collectOutputs` ramasserait avec `static.png` si
+   `OUTDIR` était threadé — l'incident `assertFileMedia` « deux fichiers image » de la tâche 7. Fix :
+   threader `OUTDIR` **et** rediriger le PNG hors du dossier de livraison (il tombe par défaut dans
+   `output-proof/contrast/`).
+4. **Un garde correct dont le message n'atteint personne** (géographie) : le contrôle de géométrie se
+   déclenche bien — vérifié par une sonde `page.on("pageerror")` — mais `snap-static.mjs` et
+   `smoke-filters.mjs` ne capturent pas les erreurs de page, donc un vrai run affiche un **timeout
+   Playwright de 30 s** au lieu du message. Même classe pour les `TypeError` nus sur
+   `undefined.objects` là où un import `?raw` a été retiré. L'information existe, est juste, et
+   n'arrive jamais.
+5. **`DotDensityMap.tsx:41` code encore `JOIN_KEY = "iso_a3"`** — donc un dot-density non-monde est
+   refusé. Écarté du plan géographie avec sa mesure : l'édition est petite, mais la fermeture complète
+   (retirer le refus de `map-native.ts` + une preuve rendue et inspectée qu'aucune autre hypothèse
+   monde/iso_a3 ne s'y cache) est un lot à part — et la tâche 20 venait de découvrir un **crash de
+   rendu vendor dans `RouteMap.tsx`** au moment exact où ce composant frère recevait pour la première
+   fois de vraies données à pleine échelle.
+6. **Le compte de règles numérotées de `SKILL.md` n'a toujours aucun garde-fou** — un en-tête « Four
+   rules » a survécu à l'ajout d'une cinquième jusqu'à ce qu'un humain le lise ; `skill-doc-parity`
+   épingle des chaînes, jamais un COMPTE.
+
 **Discipline mesurée, à reconduire** : commiter AVANT toute vérification longue (toutes les pertes de
 ces deux jours ont été des arbres non commités) · lire `lib` UNIQUEMENT via `cd lib && bun test`
 (depuis la racine, l'invocation est sensible au cwd et fabrique 5 faux échecs) · un gate complet exige
