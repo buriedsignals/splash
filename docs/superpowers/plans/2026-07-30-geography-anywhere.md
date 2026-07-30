@@ -593,3 +593,220 @@ blank"). Report the exact failing count (2/6 overall). Revert the mutation befor
 git add lib/geo/policy.ts lib/geo/policy.test.ts
 git commit -m "feat(geo): inline policy (D8) and mandatory geo-credit assertion (D7)"
 ```
+
+### Task 4: `lib/geo/ref.ts` — `GeographyRef`, the resolver, and the `basemaps.ts` shim (D10.1)
+
+**Files:**
+- Create: `lib/geo/ref.ts`
+- Create: `lib/geo/ref.test.ts`
+- Modify: `skills/map-native/src/basemaps.ts` — becomes a thin re-export (see Step 5).
+
+**Interfaces:**
+- Produces: `GeographyRef` (plain type, per Global Constraints — never `z.infer`), `BasemapMeta`,
+  `BASEMAPS`, `BASEMAP_NAMES`, `resolveBasemapMeta(name: string): BasemapMeta` (unchanged
+  signature — every existing caller keeps compiling), and new `resolveGeographyRef(name: string):
+  GeographyRef`. Consumed by Task 8 (`geo-match.ts`'s inversion) and Task 13
+  (`assemble/map-native.ts`'s refusal rewrite).
+
+This task **moves** `skills/map-native/src/basemaps.ts`'s current content
+(`BasemapMeta`/`BASEMAPS`/`BASEMAP_NAMES`/`resolveBasemapMeta`, verified in full while writing
+this plan — the file is exactly 34 lines today) into `lib/geo/ref.ts`, and turns
+`skills/map-native/src/basemaps.ts` into a re-export, the same move
+`skills/map-native/src/theme/house-ramp.ts` already made for `lib/core/house-ramp.ts` (verified
+while writing this plan: `export * from "../../../../lib/core/house-ramp";` plus one named
+re-export for `relativeLuminance`). This keeps `skills/map-native/src/validate-config.ts`'s six
+`validateBasemap` call sites (verified while writing this plan: `validate-config.ts:158, 289,
+413, 501, 627, 744` — **the spec's own count of "4 sites" is stale; six is the current, grep-
+verified number**, run `grep -n "validateBasemap(s.basemap" skills/map-native/src/
+validate-config.ts` to reconfirm) and `lib/loop/assemble/map-native.ts:13`'s `import {
+BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps"` compiling untouched.
+
+`GeographyRef` is the plain type from spec D10, verbatim:
+
+```ts
+export type GeographyRef = {
+  origin: "shipped" | "declared";
+  set: string;
+  scope?: string;
+  level: string;
+  joinKey: string;
+  joinKeyFamily: string;
+};
+```
+
+Design call (spec D10 does not give the exact `resolveGeographyRef` values for `world`/
+`us-states` — only that they "survive as names, resolved by the resolver"): `world` resolves to
+`{origin:"shipped", set:"natural-earth-admin-0", level:"country", joinKey:"iso_a3",
+joinKeyFamily:"iso_a3"}`; `us-states` resolves to `{origin:"shipped", set:"us-states",
+level:"state", joinKey:"postal", joinKeyFamily:"postal"}` — `joinKey` and `joinKeyFamily` are
+identical for both today because neither shipped basemap has a "family of candidates" yet (that
+distinction becomes real once the ADM1 index of Task 7 offers 9 candidate identifiers per
+feature).
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/geo/ref.test.ts
+import { describe, it, expect } from "bun:test";
+import { BASEMAPS, BASEMAP_NAMES, resolveBasemapMeta, resolveGeographyRef } from "./ref";
+
+describe("resolveBasemapMeta — unchanged behaviour, moved source of truth", () => {
+  it("resolves 'world' to its existing joinKey/label — regression fixture copied from the pre-move file", () => {
+    expect(resolveBasemapMeta("world")).toEqual({
+      joinKey: "iso_a3",
+      label: "World countries (ISO-A3 codes)",
+    });
+  });
+
+  it("resolves 'us-states' to its existing joinKey/label", () => {
+    expect(resolveBasemapMeta("us-states")).toEqual({
+      joinKey: "postal",
+      label: "US states (2-letter postal codes)",
+    });
+  });
+
+  it("throws loudly, naming both valid basemaps, on an unknown name", () => {
+    expect(() => resolveBasemapMeta("cantons")).toThrow(/world.*us-states|us-states.*world/);
+  });
+});
+
+describe("resolveGeographyRef", () => {
+  it("resolves 'world' to a GeographyRef whose joinKeyFamily matches its joinKey today", () => {
+    const ref = resolveGeographyRef("world");
+    expect(ref.origin).toBe("shipped");
+    expect(ref.set).toBe("natural-earth-admin-0");
+    expect(ref.joinKey).toBe("iso_a3");
+    expect(ref.joinKeyFamily).toBe("iso_a3");
+  });
+
+  it("resolves 'us-states' with scope absent (global set, not a subset)", () => {
+    const ref = resolveGeographyRef("us-states");
+    expect(ref.set).toBe("us-states");
+    expect(ref.scope).toBeUndefined();
+  });
+
+  it("BASEMAP_NAMES still lists exactly the two shipped names", () => {
+    expect(BASEMAP_NAMES.sort()).toEqual(["us-states", "world"]);
+    expect(Object.keys(BASEMAPS).sort()).toEqual(["us-states", "world"]);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test geo/ref.test.ts`
+Expected: FAIL — `./ref` does not exist yet.
+
+- [ ] **Step 3: Write the minimal implementation**
+
+```ts
+// lib/geo/ref.ts
+// The basemap registry — moved here from skills/map-native/src/basemaps.ts (D10), which is now
+// a thin re-export of this file, the same move house-ramp.ts already made for lib/core/
+// house-ramp.ts. GeographyRef is a PLAIN type (never z.infer) — see this plan's Global
+// Constraints on why lib/geo/*'s runtime-reachable exports must stay zod-free.
+export interface BasemapMeta {
+  joinKey: string; // the geojson feature property region values match against
+  label: string;
+}
+
+export const BASEMAPS: Record<string, BasemapMeta> = {
+  world: { joinKey: "iso_a3", label: "World countries (ISO-A3 codes)" },
+  "us-states": { joinKey: "postal", label: "US states (2-letter postal codes)" },
+};
+
+export const BASEMAP_NAMES = Object.keys(BASEMAPS);
+
+// Resolve a basemap's metadata, failing LOUDLY (with the valid list) on an unknown
+// name — never a silent fallback to world or a mystery render.
+export function resolveBasemapMeta(name: string): BasemapMeta {
+  const meta = BASEMAPS[name];
+  if (!meta)
+    throw new Error(
+      `unknown basemap "${name}" — valid basemaps: ${BASEMAP_NAMES.join(", ")}`,
+    );
+  return meta;
+}
+
+/** What a resolved geography IS — the descriptor produce needs to subset (Task 6) and the
+ *  journalist needs to read ("joint sur ISO 3166-2" vs "joint sur le nom français" — spec D10).
+ *  `origin` distinguishes a shipped default from a journalist-declared file (Task 9's
+ *  input.geography); `scope` is the ISO-A3 country scope of an admin-1 subset, absent for a
+ *  global set. */
+export type GeographyRef = {
+  origin: "shipped" | "declared";
+  set: string;
+  scope?: string;
+  level: string;
+  joinKey: string;
+  joinKeyFamily: string;
+};
+
+const SHIPPED_REFS: Record<string, GeographyRef> = {
+  world: {
+    origin: "shipped",
+    set: "natural-earth-admin-0",
+    level: "country",
+    joinKey: "iso_a3",
+    joinKeyFamily: "iso_a3",
+  },
+  "us-states": {
+    origin: "shipped",
+    set: "us-states",
+    level: "state",
+    joinKey: "postal",
+    joinKeyFamily: "postal",
+  },
+};
+
+export function resolveGeographyRef(name: string): GeographyRef {
+  const ref = SHIPPED_REFS[name];
+  if (!ref)
+    throw new Error(
+      `unknown basemap "${name}" — valid basemaps: ${BASEMAP_NAMES.join(", ")}`,
+    );
+  return ref;
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test geo/ref.test.ts`
+Expected: PASS, 6/6.
+
+- [ ] **Step 5: Turn `skills/map-native/src/basemaps.ts` into a thin re-export**
+
+Replace its entire content:
+
+```ts
+// skills/map-native/src/basemaps.ts — thin re-export shim. The basemap registry moved to
+// lib/geo/ref.ts (geography-anywhere design D10) so it can be shared with the loop's manifest
+// and produce-time subset pipeline without a skills/ → skills/ reach. This shim exists only so
+// this package's own importers (validate-config.ts's six validateBasemap call sites, geo-match.ts,
+// ChoroplethMap.tsx and its siblings) keep their import path unchanged. Same move
+// theme/house-ramp.ts already made for lib/core/house-ramp.ts.
+export * from "../../../lib/geo/ref";
+```
+
+- [ ] **Step 6: Run the map-native suite to confirm nothing that imports `./basemaps` broke**
+
+Run: `cd skills/map-native && bunx tsc --noEmit && bun test`
+Expected: PASS, same count as before this task (the shim is a pure re-export; every existing
+importer of `BASEMAPS`/`BASEMAP_NAMES`/`resolveBasemapMeta`/`BasemapMeta` resolves identically).
+Record the pass count before and after this step as the proof the move is behaviour-preserving.
+
+- [ ] **Step 7: Mutation — prove the "us-states scope absent" test depends on the real value, not
+  on `toBeUndefined()` being vacuously true**
+
+Temporarily add `scope: "USA"` to `SHIPPED_REFS["us-states"]`.
+
+Run: `cd lib && bun test geo/ref.test.ts`
+Expected: "resolves 'us-states' with scope absent" FAILS (`ref.scope` is `"USA"`, not
+`undefined`) — 1/6 reddens. Revert the mutation before continuing.
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add lib/geo/ref.ts lib/geo/ref.test.ts skills/map-native/src/basemaps.ts
+git commit -m "feat(geo): GeographyRef resolver; basemaps.ts becomes a thin re-export (D10)"
+```
