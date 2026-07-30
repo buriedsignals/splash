@@ -625,6 +625,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={width}
         height={height}
         responsive={false}

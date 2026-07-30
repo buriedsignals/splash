@@ -537,6 +537,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         title={config.title ?? ""}
         description={config.description}
         source={{ name: config.source?.name ?? "", url: config.source?.url }}
+        geoCredit={config.geoCredit}
         width={width}
         height={height}
         responsive={false}

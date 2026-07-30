@@ -51,6 +51,9 @@ export interface RouteConfig {
   title?: string;
   description?: string;
   source?: { name: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes the "Source" furniture label. Default English. */
   lang?: string;
   palette?: string[];

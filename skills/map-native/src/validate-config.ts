@@ -476,6 +476,9 @@ export type LocatorConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
@@ -604,6 +607,9 @@ export type DotDensityConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
@@ -726,6 +732,9 @@ export type HexGridConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
@@ -864,6 +873,9 @@ export type CartogramConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];

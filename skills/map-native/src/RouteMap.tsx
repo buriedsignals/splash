@@ -607,6 +607,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={containerSize.w}
         height={containerSize.h}
         responsive

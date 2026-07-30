@@ -40,6 +40,9 @@ export type ChoroplethRevealProps = {
     title?: string;
     unit?: string;
     valueUnit?: string;
+    /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+     *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+    geoCredit?: { name: string; url?: string };
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
     mapStyle?: string;
@@ -260,6 +263,7 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
         title={(config as any).title ?? ""}
         description={(config as any).description}
         source={(config as any).source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={width}
         height={height}
         responsive={false}
