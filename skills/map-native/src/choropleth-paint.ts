@@ -21,17 +21,31 @@ export interface ChoroplethBin {
   color: string;
 }
 
+// A feature whose join-key property is falsy (missing/null/""/0) never gets an entry in
+// MapLibre's per-source feature-state table — the SDK's own setFeatureState/getFeatureState
+// machinery is gated on `if (id && ...)`, so a falsy id is silently never promoted. Reading
+// ["feature-state", "hasData"] on such a feature returns `null`, and a bare `["==", null,
+// false]` evaluates to `false` — NOT the no-data branch. `["<", ["feature-state", "value"],
+// n]` then compares `null` against a number, which MapLibre's evaluator catches internally and
+// falls back to the property's OWN spec default — `#000000` (opaque black) for fill-color, the
+// "has data" numeric branch for fill-opacity. Net effect: a feature with a falsy join key
+// renders as an opaque black fill instead of invisible/no-data. Invisible on world.geojson
+// (every iso_a3 is truthy) but real for sub-national geometry-anywhere datasets, which
+// routinely carry null/blank/zero admin codes. `["boolean", <value>, <default>]` is the
+// style-spec's own documented safe-read idiom: it evaluates <value>, and substitutes <default>
+// when the value is missing/not-a-boolean — never throws, never falls through to the property
+// spec's own default. Verified against the real bundled MapLibre expression evaluator (not
+// just asserted) — see choropleth-paint-feature-state-safety.test.ts.
+const SAFE_HAS_DATA = ["boolean", ["feature-state", "hasData"], false];
+const SAFE_VALUE = ["number", ["feature-state", "value"], NaN];
+
 // fill-color expression: no-data → NO_DATA_COLOR (never shown, opacity 0 hides it,
 // but kept as a defined fallback), otherwise the bin colour for the feature-state value.
 export function choroplethFillColor(bins: ChoroplethBin[]): unknown[] {
   const sorted = [...bins].sort((a, b) => a.min - b.min);
-  const expr: unknown[] = [
-    "case",
-    ["==", ["feature-state", "hasData"], false],
-    NO_DATA_COLOR,
-  ];
+  const expr: unknown[] = ["case", ["==", SAFE_HAS_DATA, false], NO_DATA_COLOR];
   for (let i = 0; i < sorted.length - 1; i++) {
-    expr.push(["<", ["feature-state", "value"], sorted[i].max]);
+    expr.push(["<", SAFE_VALUE, sorted[i].max]);
     expr.push(sorted[i].color);
   }
   expr.push(sorted[sorted.length - 1].color);
@@ -42,7 +56,7 @@ export function choroplethFillColor(bins: ChoroplethBin[]): unknown[] {
 // shows through (identical treatment to the ocean); data-bearing regions use the
 // supplied resting opacity (a scalar, or later overridden by a reveal progress).
 export function choroplethFillOpacity(dataOpacity: number): unknown[] {
-  return ["case", ["==", ["feature-state", "hasData"], false], 0, dataOpacity];
+  return ["case", ["==", SAFE_HAS_DATA, false], 0, dataOpacity];
 }
 
 // The full fill-layer paint object — fill-color + no-data-aware fill-opacity.

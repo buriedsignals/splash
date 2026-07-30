@@ -2,7 +2,10 @@
 // now read the join via ["feature-state", ...] instead of ["get", "__..."] — the brief's own
 // Files list omitted this pre-existing test file even though it directly asserts the exact
 // expressions being changed; updated here so it keeps testing the real (new) contract instead
-// of going stale/red.
+// of going stale/red. Updated AGAIN in Fix round 1 (Finding 1) — hasData/value reads are now
+// wrapped in ["boolean"/"number", ..., default] for a safe default when a feature's join-key
+// property is falsy and MapLibre never populated its feature-state at all (see
+// choropleth-paint-feature-state-safety.test.ts for the runtime proof of why this matters).
 import { describe, it, expect } from "bun:test";
 import {
   choroplethFillColor,
@@ -21,7 +24,11 @@ describe("choroplethFillColor", () => {
   it("paints no-data regions with NO_DATA_COLOR as the first case", () => {
     const expr = choroplethFillColor(bins) as unknown[];
     expect(expr[0]).toBe("case");
-    expect(expr[1]).toEqual(["==", ["feature-state", "hasData"], false]);
+    expect(expr[1]).toEqual([
+      "==",
+      ["boolean", ["feature-state", "hasData"], false],
+      false,
+    ]);
     expect(expr[2]).toBe(NO_DATA_COLOR);
   });
 
@@ -34,7 +41,11 @@ describe("choroplethFillColor", () => {
     const shuffled = [bins[2], bins[0], bins[1]];
     const expr = choroplethFillColor(shuffled) as unknown[];
     // First threshold compares against the LOWEST bin max (10), lowest colour.
-    expect(expr[3]).toEqual(["<", ["feature-state", "value"], 10]);
+    expect(expr[3]).toEqual([
+      "<",
+      ["number", ["feature-state", "value"], NaN],
+      10,
+    ]);
     expect(expr[4]).toBe("#aaa");
   });
 });
@@ -43,7 +54,11 @@ describe("choroplethFillOpacity", () => {
   it("forces no-data regions to opacity 0 (default basemap shows through)", () => {
     const expr = choroplethFillOpacity(0.85) as unknown[];
     expect(expr[0]).toBe("case");
-    expect(expr[1]).toEqual(["==", ["feature-state", "hasData"], false]);
+    expect(expr[1]).toEqual([
+      "==",
+      ["boolean", ["feature-state", "hasData"], false],
+      false,
+    ]);
     expect(expr[2]).toBe(0);
   });
 

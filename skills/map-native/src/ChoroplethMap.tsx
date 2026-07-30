@@ -17,6 +17,7 @@ import {
   type ChoroplethFeatureState,
 } from "./choropleth-geo";
 import { choroplethFillColor, choroplethFillOpacity } from "./choropleth-paint";
+import { resolveChoroplethFilterExpression } from "./choropleth-filter";
 import type { CameraMode } from "./camera-mode";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
@@ -24,10 +25,8 @@ import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
 import {
   deriveFilterOptions,
-  filterStateToExpression,
   activeTimeStep,
   type FilterState,
-  type FilterOption,
 } from "./core/map-filter";
 import type { MapFilter } from "./core/map-filter";
 import { resolveMapStyle } from "./route-geo";
@@ -83,66 +82,6 @@ const NUM_BINS = 5;
 
 // Exported so tests can assert colour distinctness
 export { NO_DATA_COLOR } from "./theme/colors";
-
-// DEVIATION (not in the task brief, found necessary while wiring feature-state): filterStateToExpression
-// (core/map-filter.ts) compiles ["get", field] against the geojson SOURCE's `properties`. The
-// choropleth's joined value never lands there anymore (D8 — feature-state only, see
-// applyChoroplethJoin) and MapLibre's style-spec explicitly restricts `["feature-state", ...]`
-// to paint/layout properties — it is NOT valid inside a `setFilter` expression. Without this,
-// a filter whose field equals `valueField` (real, shipped, exercised live by
-// assets/sample-data/filter-choropleth.json + scripts/smoke-filters.mjs) would silently match
-// nothing once the properties merge is removed. Resolved here in JS against this component's
-// own join table (`states`), then applied as an id-membership filter on the geometry's OWN
-// join-key property (e.g. "iso_a3") — never the journalist's value itself, so D8 still holds.
-function resolveChoroplethFilterExpression(
-  filterState: FilterState,
-  filterOptions: FilterOption[],
-  states: ChoroplethFeatureState,
-  valueField: string,
-  joinKey: string,
-): unknown[] {
-  const valueOption = filterOptions.find(
-    (o): o is Extract<FilterOption, { kind: "category" | "range" }> =>
-      o.field === valueField && o.kind !== "time",
-  );
-  const otherOptions = filterOptions.filter((o) => o.field !== valueField);
-  // Reuse the shared expression builder for every field EXCEPT valueField — those still read
-  // properties correctly (unaffected by this task; unrelated to the D8 join).
-  const baseClauses = (
-    filterStateToExpression(filterState, otherOptions) as unknown[]
-  ).slice(1); // drop the leading "all"
-
-  if (!valueOption) return ["all", ...baseClauses];
-
-  const passingKeys = Object.entries(states)
-    .filter(([, s]) => {
-      if (s.value === null) return false;
-      const v = s.value;
-      if (valueOption.kind === "category") {
-        const visible =
-          (filterState[valueOption.field] as string[] | undefined) ??
-          valueOption.values;
-        return visible.includes(String(v));
-      }
-      // range
-      if (valueOption.mode === "between") {
-        const [lo, hi] = (filterState[valueOption.field] as
-          [number, number] | undefined) ?? [valueOption.min, valueOption.max];
-        return v >= lo && v <= hi;
-      }
-      const t =
-        (filterState[valueOption.field] as number | undefined) ??
-        (valueOption.mode === "atMost" ? valueOption.max : valueOption.min);
-      return valueOption.mode === "atMost" ? v <= t : v >= t;
-    })
-    .map(([key]) => key);
-
-  return [
-    "all",
-    ...baseClauses,
-    ["in", ["get", joinKey], ["literal", passingKeys]],
-  ];
-}
 
 export const ChoroplethMap: React.FC<Props> = ({
   config,
@@ -323,6 +262,17 @@ export const ChoroplethMap: React.FC<Props> = ({
           joinKey: resolveBasemapMeta(config.basemap ?? "world").joinKey,
         } as Pick<GeographyRef, "joinKey">);
       const joinKey = geography.joinKey;
+      // Loud, named failure instead of a bare TypeError inside this async load handler (Finding
+      // 3, Task 16 review) — with GEOJSON_BY_BASEMAP removed there is no bundled fallback
+      // geometry anymore, so an absent config.geometry must fail here, not 60s later as an
+      // unexplained Playwright timeout in scripts/snap-static.mjs/smoke-filters.mjs (neither
+      // script is in the gate, so nothing would otherwise go red). Real today for every caller
+      // until Task 20 lands config.geometry injection in produce.mjs — the plan's own designed
+      // sequencing (see Task 16 report), not something this throw is meant to close.
+      if (!config.geometry)
+        throw new Error(
+          "choropleth: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+        );
       const topology = config.geometry as Topology;
       const objectName = Object.keys(topology.objects)[0]!;
       const world = topoFeature(
@@ -493,10 +443,15 @@ export const ChoroplethMap: React.FC<Props> = ({
     if (!map) return;
     if (!map.getLayer("choropleth-fill")) return;
     // Only data-bearing regions reveal; no-data stays unpainted (default basemap).
-    // hasData lives in feature-state now (D8), never in properties.
+    // hasData lives in feature-state now (D8), never in properties. Guarded with
+    // ["boolean", ..., false] (not a bare ["feature-state", "hasData"] read) — a feature
+    // whose join-key property is falsy never gets a feature-state entry at all (MapLibre's
+    // own setFeatureState/getFeatureState are gated on a truthy id), and a bare read would
+    // silently take the "has data" branch instead of hiding it (Finding 1, Task 16 review;
+    // see choropleth-paint.ts's SAFE_HAS_DATA for the full mechanism trace).
     map.setPaintProperty("choropleth-fill", "fill-opacity", [
       "case",
-      ["==", ["feature-state", "hasData"], false],
+      ["==", ["boolean", ["feature-state", "hasData"], false], false],
       0,
       progress,
     ] as never);
