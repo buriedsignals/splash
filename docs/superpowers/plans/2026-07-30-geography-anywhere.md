@@ -3271,3 +3271,121 @@ git add skills/scrolly/src/ScrollyDotDensityMap.tsx skills/scrolly/src/ScrollyCa
   skills/scrolly/tests/no-static-geojson-imports.test.ts
 git commit -m "feat(scrolly): four cross-skill geojson ?raw imports removed, same de-inlining as map-native"
 ```
+
+### Task 19: `bundle-source.mjs` — verify the exported "code source" bundle still ships its map, document why no code change is needed
+
+**Files:**
+- Modify: `skills/splash/scripts/bundle-source.mjs` — ONE comment added (see Step 3); NO
+  functional change (see the finding below).
+- Create: `skills/splash/scripts/bundle-source-geometry.test.ts` (a real, if slow, integration
+  test — no mock, per repo convention).
+
+**Finding, established while writing this plan by reading `bundle-source.mjs` in full — this
+changes what this task does, and it must not be skipped when implementing:** the spec (D5's last
+paragraph) worries that `bundle-source.mjs` "treats `.geojson` as a leaf import (`:30`
+`RESOLVE_EXTS`, `:87` the `.geojson`/`.json`/`.css` skip) and must learn geometry is no longer a
+static import, or the exported bundle will build without its map." Reading the file in full: it
+does NOT discover `config.json` by tracing imports at all — `config.json` is an explicit CLI
+argument (`bun bundle-source.mjs <source-manifest.json> <config.json> <destDir>`, verified at
+`:15`), copied into the bundle verbatim (`:357`) and baked into the Vite build via `define: {
+__CONFIG__: JSON.stringify(injectedConfig) }` reading `./config.json` (`:163-168`, explicitly
+NOT `process.env.CONFIG` — the comment there says so). **Once Task 20 makes `produce.mjs` write
+the resolved `geometry` bytes INTO `config.json` (the same file this mechanism already ships
+verbatim), the map travels with the bundle automatically — `RESOLVE_EXTS`'s `.geojson` entry and
+the `:87` leaf-skip branch become dead for this concern (nothing imports `.geojson` any more,
+after Tasks 16-18), not broken.** This task is therefore a VERIFICATION, not a rewrite — do not
+invent a code change bundle-source.mjs does not need.
+
+- [ ] **Step 1: Write the failing test — an end-to-end proof, not a unit test**
+
+```ts
+// skills/splash/scripts/bundle-source-geometry.test.ts
+import { describe, it, expect } from "bun:test";
+import { mkdtempSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { spawnSync } from "node:child_process";
+
+describe("bundle-source.mjs ships a DECLARED (non-shipped) geography inside config.json", () => {
+  it("the exported bundle's config.json carries real geometry bytes, and `bun install && bun run build` succeeds", () => {
+    // A tiny, hand-built Topology standing in for Task 20's real produce.mjs output — the
+    // fixture element under test: `geometry` is a real Topology object, not a string reference
+    // to a file path (which would be exactly the "builds without its map" failure this task
+    // guards against — an exported bundle has no access to the original run's frozen input dir).
+    const config = {
+      type: "choropleth",
+      regionKey: "canton",
+      valueField: "v",
+      rows: [{ canton: "Genève", v: 1 }],
+      geography: {
+        origin: "declared", set: "declared", level: "canton",
+        joinKey: "name", joinKeyFamily: "name",
+      },
+      geometry: {
+        type: "Topology",
+        objects: { data: { type: "GeometryCollection", geometries: [] } },
+        arcs: [],
+      },
+      title: "t", description: "d", source: { name: "s" },
+    };
+    const runDir = mkdtempSync(join(tmpdir(), "bundle-source-geo-test-"));
+    const configPath = join(runDir, "config.json");
+    writeFileSync(configPath, JSON.stringify(config));
+    // ...build/point at a minimal real source-manifest.json for choropleth (find the fixture
+    // this script's OWN existing tests already use — grep -rn "source-manifest" skills/splash/
+    // scripts/*.test.ts before writing this fixture from scratch) and run:
+    const destDir = join(runDir, "bundle");
+    const r = spawnSync("bun", ["skills/splash/scripts/bundle-source.mjs", "<the fixture manifest>", configPath, destDir], { encoding: "utf8" });
+    expect(r.status).toBe(0);
+    const bundledConfig = JSON.parse(readFileSync(join(destDir, "config.json"), "utf8"));
+    expect(bundledConfig.geometry.type).toBe("Topology"); // the map travelled with the bundle
+    const build = spawnSync("bun", ["install"], { cwd: destDir, encoding: "utf8" });
+    expect(build.status).toBe(0);
+    const built = spawnSync("bun", ["run", "build"], { cwd: destDir, encoding: "utf8" });
+    expect(built.status).toBe(0);
+  }, 180_000); // real installs + a real Vite build — slow, expected
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails BEFORE Task 20 has landed**
+
+Run: `cd skills/splash && bun test scripts/bundle-source-geometry.test.ts`
+Expected (pre-Task-20): the config fixture above is hand-built to already include `geometry` —
+so this specific test may already pass once bundle-source.mjs's existing passthrough is
+confirmed. If it passes without any code change, that IS this task's finding — do not force a
+code change to make a test "fail first" when the honest answer is "this already works." Record
+the actual result rather than assuming red.
+
+- [ ] **Step 3: Add the documentation comment (the one real edit this task makes)**
+
+At `bundle-source.mjs:30` (`RESOLVE_EXTS`) and `:87` (the leaf-skip), add:
+
+```js
+// `.geojson` stays in this list for any FUTURE static geojson import this repo might add, but
+// as of the geography-anywhere design (D5), no map-native/scrolly component imports one any
+// more — a map's geometry arrives already-resolved inside config.json (an explicit CLI arg,
+// copied verbatim at writeFileSync below, never discovered by import-tracing). This comment
+// exists so a future reader does not "fix" an apparent dead branch without checking config.json
+// first.
+```
+
+- [ ] **Step 4: Confirm the test passes**
+
+Run: `cd skills/splash && bun test scripts/bundle-source-geometry.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Mutation — prove the test depends on `config.json` actually being copied, not on
+  a coincidence of the fixture**
+
+Temporarily comment out the `writeFileSync(join(abs, "config.json"), ...)` line (`:357`).
+
+Run: `cd skills/splash && bun test scripts/bundle-source-geometry.test.ts`
+Expected: FAILS — `readFileSync(join(destDir, "config.json"))` throws ENOENT (the file was never
+written). Report the failure. Revert before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add skills/splash/scripts/bundle-source.mjs skills/splash/scripts/bundle-source-geometry.test.ts
+git commit -m "test(splash): prove the exported code-source bundle ships resolved geometry via config.json"
+```
