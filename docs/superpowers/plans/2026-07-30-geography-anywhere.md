@@ -810,3 +810,165 @@ Expected: "resolves 'us-states' with scope absent" FAILS (`ref.scope` is `"USA"`
 git add lib/geo/ref.ts lib/geo/ref.test.ts skills/map-native/src/basemaps.ts
 git commit -m "feat(geo): GeographyRef resolver; basemaps.ts becomes a thin re-export (D10)"
 ```
+
+### Task 5: `lib/geo/join.ts` — the join ledger and its staleness rule (D6)
+
+**Files:**
+- Create: `lib/geo/join.ts`
+- Create: `lib/geo/join.test.ts`
+
+**Interfaces:**
+- Produces: `GeoJoinDecision`, `GeoJoinLedger` (plain types, per spec D6, with one addition —
+  `pending: string[]`, see the design call below), `unresolvedGeoJoins(ledger: GeoJoinLedger |
+  undefined): string[]`, `staleGeoJoinDecisions(ledger: GeoJoinLedger | undefined,
+  currentGeographySha256: string): boolean`. Consumed by Task 11 (manifest wiring) and Task 15
+  (produce refusal).
+
+**Scope note, stated explicitly because it is a call this plan makes, not something the spec
+hands over as code:** spec D6 describes a full journalist-facing flow — "Splash measures, shows,
+and lets the journalist decide, then remembers the correspondence." That flow is a **host-level
+dialogue** (asking a question, recording the answer through a driver), the same shape as CADRAGE's
+Gate 1b. Building that dialogue would touch `skills/splash/SKILL.md` and driver/host code — the
+former is explicitly contended by another plan in flight (Global Constraints), and the latter is
+a different layer of the codebase than "geography enters a run." **This plan delivers the ledger
+data structure, the pure functions over it, and the mechanical produce-time gate that blocks on
+an unresolved entry — mirroring `unauthoredBeats`'s shape exactly.** Populating `pending` (which
+values are still ambiguous) and `decisions` (what the journalist picked) from an actual dialogue
+is out of this plan's scope; the gate is ready for that follow-up to call into.
+
+Design call, for the same reason: the spec's `unresolvedGeoJoins(run)` signature takes the whole
+`RunManifest`. Taking `RunManifest` directly from `lib/geo/` would create a `lib/geo` → `lib/loop`
+dependency the architecture table does not otherwise need (every other `lib/geo/*` file is either
+standalone or, like `ref.ts`, consumed BY `lib/loop`, never the reverse). Instead,
+`unresolvedGeoJoins` here takes the ledger alone (`GeoJoinLedger | undefined`); Task 11's manifest
+wiring adds the `run`-level wrapper `unresolvedGeoJoins` is mirrored from, calling this one with
+`run.orient?.geoJoin`, exactly the way `lib/loop/manifest.ts`'s existing `unauthoredBeats(el)`
+takes `RunElement`, not the ledger's raw array.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/geo/join.test.ts
+import { describe, it, expect } from "bun:test";
+import { unresolvedGeoJoins, staleGeoJoinDecisions, type GeoJoinLedger } from "./join";
+
+describe("unresolvedGeoJoins", () => {
+  it("returns an empty list when there is no ledger at all (nothing pending yet)", () => {
+    expect(unresolvedGeoJoins(undefined)).toEqual([]);
+  });
+
+  it("lists the pending values by name — the fixture: 'Buenos Aires', ambiguous between the province and the autonomous city (spec D6, measured)", () => {
+    const ledger: GeoJoinLedger = {
+      column: "region",
+      geographySha256: "abc123",
+      decisions: [],
+      pending: ["Buenos Aires"],
+    };
+    expect(unresolvedGeoJoins(ledger)).toEqual(["Buenos Aires"]);
+  });
+
+  it("drops a value once it has a decision recorded", () => {
+    const ledger: GeoJoinLedger = {
+      column: "region",
+      geographySha256: "abc123",
+      decisions: [{ value: "Buenos Aires", featureId: "ARG-buenosaires-city", basis: "journalist" }],
+      pending: [],
+    };
+    expect(unresolvedGeoJoins(ledger)).toEqual([]);
+  });
+});
+
+describe("staleGeoJoinDecisions", () => {
+  it("is false when there is no ledger yet — nothing to be stale", () => {
+    expect(staleGeoJoinDecisions(undefined, "abc123")).toBe(false);
+  });
+
+  it("is false when the ledger's geographySha256 matches the current file's hash", () => {
+    const ledger: GeoJoinLedger = {
+      column: "region",
+      geographySha256: "abc123",
+      decisions: [],
+      pending: [],
+    };
+    expect(staleGeoJoinDecisions(ledger, "abc123")).toBe(false);
+  });
+
+  it("is true when the geometry file changed under an already-decided ledger — the PH-13 fixture (spec D6): a code REASSIGNED to a different region must not silently replay", () => {
+    const ledger: GeoJoinLedger = {
+      column: "region",
+      geographySha256: "hash-of-2019-boundaries",
+      decisions: [{ value: "PH-13", featureId: "old-region-13", basis: "journalist" }],
+      pending: [],
+    };
+    expect(staleGeoJoinDecisions(ledger, "hash-of-2024-boundaries")).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test geo/join.test.ts`
+Expected: FAIL — `./join` does not exist yet.
+
+- [ ] **Step 3: Write the minimal implementation**
+
+```ts
+// lib/geo/join.ts
+// The join ledger — spec D6. `pending` is this task's addition to the spec's own type sketch:
+// the raw values a below-ADM1 join found ambiguous and has not yet resolved. Populating it (and
+// `decisions`) from an actual journalist dialogue is out of this task's scope — see this task's
+// header in the plan.
+export type GeoJoinDecision = {
+  value: string; // the raw value in the journalist's column
+  featureId: string; // the polygon it was bound to
+  basis: "unambiguous" | "journalist";
+};
+
+export type GeoJoinLedger = {
+  column: string;
+  geographySha256: string; // WHICH file these decisions were taken against (D1b)
+  decisions: GeoJoinDecision[];
+  pending: string[]; // values still awaiting a decision
+};
+
+/** Mirrors lib/loop/manifest.ts's unauthoredBeats(el) exactly: a list of what is still owed,
+ *  never a count. Empty ⇒ produce may proceed (Task 15's gate). */
+export function unresolvedGeoJoins(ledger: GeoJoinLedger | undefined): string[] {
+  if (!ledger) return [];
+  const decided = new Set(ledger.decisions.map((d) => d.value));
+  return ledger.pending.filter((v) => !decided.has(v));
+}
+
+/** A decision taken against one file must not be replayed against a different one — spec D6's
+ *  PH-13 case: a code reassigned to a different region under a newer boundary release is
+ *  EXACTLY the mechanism of a wrong map with no error. True ⇒ the caller re-poses the decisions
+ *  as new questions rather than trusting `decisions` as-is. */
+export function staleGeoJoinDecisions(
+  ledger: GeoJoinLedger | undefined,
+  currentGeographySha256: string,
+): boolean {
+  if (!ledger) return false;
+  return ledger.geographySha256 !== currentGeographySha256;
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test geo/join.test.ts`
+Expected: PASS, 6/6.
+
+- [ ] **Step 5: Mutation — prove `staleGeoJoinDecisions`'s PH-13 test depends on the hash
+  comparison actually running**
+
+Temporarily change the function body to `return false;` unconditionally.
+
+Run: `cd lib && bun test geo/join.test.ts`
+Expected: the "PH-13 fixture" test FAILS (`staleGeoJoinDecisions(...)` returns `false`, expected
+`true`) — 1/6 reddens. Revert the mutation before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/geo/join.ts lib/geo/join.test.ts
+git commit -m "feat(geo): join ledger — unresolvedGeoJoins + staleness-by-hash (D6)"
+```
