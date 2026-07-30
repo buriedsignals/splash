@@ -27,6 +27,12 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = resolve(scriptDir, "..", "..", ".."); // skills/splash/scripts → repo root
 
+// `.geojson` stays in this list for any FUTURE static geojson import this repo might add, but
+// as of the geography-anywhere design (D5), no map-native/scrolly component imports one any
+// more — a map's geometry arrives already-resolved inside config.json (an explicit CLI arg,
+// copied verbatim at writeFileSync below, never discovered by import-tracing). This comment
+// exists so a future reader does not "fix" an apparent dead branch without checking config.json
+// first.
 const RESOLVE_EXTS = [".ts", ".tsx", ".js", ".jsx", ".json", ".geojson"];
 
 // Strip a Vite query suffix (?raw, ?url) so the underlying file resolves.
@@ -61,6 +67,26 @@ export function importSpecifiers(src) {
   return [...specs];
 }
 
+// Specifiers pulled in by a WHOLESALE `import type …`/`export type …` (not an inline `{ type
+// Foo }` modifier on an otherwise-value import, which still needs the package at runtime). These
+// are erased by the bundler before it ever runs, so a package reached ONLY this way — e.g.
+// "topojson-specification", which ships type declarations only and has no npm package of that
+// name to install, satisfied instead via @types/topojson-specification — must not be forced into
+// the dependency-version lookup in `traceClosure` below.
+function typeOnlyImportSpecifiers(src) {
+  const code = stripComments(src);
+  const specs = new Set();
+  for (const m of code.matchAll(
+    /\bimport\s+type\s+(?:\*\s*as\s+[\w$]+|[\w$]+|\{[^}]*\})\s*from\s*["']([^"']+)["']/g,
+  ))
+    specs.add(stripQuery(m[1]));
+  for (const m of code.matchAll(
+    /\bexport\s+type\s+(?:\*(?:\s+as\s+[\w$]+)?|\{[^}]*\})\s*from\s*["']([^"']+)["']/g,
+  ))
+    specs.add(stripQuery(m[1]));
+  return specs;
+}
+
 // Resolve a RELATIVE specifier to an absolute file, trying extensions + /index.*, honouring
 // an explicit extension (.json/.geojson/.css) and stripping ?raw/?url first.
 export function resolveRelative(fromFileAbs, spec) {
@@ -84,8 +110,15 @@ export function traceClosure(entryAbs) {
     const f = stack.pop();
     if (files.has(f)) continue;
     files.add(f);
+    // `.geojson` stays a leaf here for any FUTURE static geojson import this repo might add, but
+    // as of the geography-anywhere design (D5), no map-native/scrolly component imports one any
+    // more — a map's geometry arrives already-resolved inside config.json (an explicit CLI arg,
+    // copied verbatim at writeFileSync below, never discovered by import-tracing). This comment
+    // exists so a future reader does not "fix" an apparent dead branch without checking
+    // config.json first.
     if (/\.(json|geojson|css)$/i.test(f)) continue; // leaf asset — no imports to follow
     const src = readFileSync(f, "utf8");
+    const typeOnlyHere = typeOnlyImportSpecifiers(src);
     for (const spec of importSpecifiers(src)) {
       if (spec.startsWith(".") || spec.startsWith("/")) {
         const r = resolveRelative(f, spec);
@@ -95,7 +128,11 @@ export function traceClosure(entryAbs) {
           );
         stack.push(r);
       } else {
-        bare.add(stripQuery(spec));
+        const clean = stripQuery(spec);
+        // Only count it as a real dependency if it's reached for its VALUE somewhere in the
+        // closure — a spec that is type-only in THIS file may still be value-imported by
+        // another file in the closure, in which case a later iteration adds it here too.
+        if (!typeOnlyHere.has(clean)) bare.add(clean);
       }
     }
   }
