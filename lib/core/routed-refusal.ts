@@ -24,6 +24,7 @@ export const REFUSAL_CODES = [
   "probe-not-run",
   "reviewer-not-attributed",
   "late-render-refusal",
+  "placement-undeclared",
 ] as const;
 
 export type RefusalCode = (typeof REFUSAL_CODES)[number];
@@ -94,6 +95,20 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
   // keep REFUSAL_ROUTES exhaustive over REFUSAL_CODES.
   "late-render-refusal": {
     step: "read the guard's own message for the fix — it is measured per-guard at render, not a single fixed command",
+  },
+  "placement-undeclared": {
+    step:
+      "add an anchor (`anchor: { paragraphIndex, quote }`, copied from suggest-article's " +
+      "opportunity) or `freeStanding: true` to this entry in accepted.json, then re-run the " +
+      "export — never invent a paragraph: if the article bound this element to no passage, " +
+      "say so with freeStanding",
+    // Same shape as production-folder-handed-over's command, re-verified against
+    // export-code.mjs's own usage comment: <outDir> <exportDir> positionals,
+    // --results/--id flags. The fix here is an entry-level field on accepted.json (no
+    // re-produce, the chain hash is over `spec` alone), so re-running THIS exact command is
+    // all it takes.
+    command:
+      "bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <form>]",
   },
 };
 

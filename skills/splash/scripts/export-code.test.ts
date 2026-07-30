@@ -1476,3 +1476,113 @@ describe("placement at hand-over", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 });
+
+describe("placement is mandatory once an article existed", () => {
+  it("refuses to deliver an undeclared placement when opportunities.json is in the run dir", () => {
+    const dir = mkdtempSync(join(tmpdir(), "placement-required-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "static.png"), "png");
+    const rep = report(dir, "e1", "static", {
+      outputs: [join(outDir, "static.png")],
+    });
+    const resultsPath = join(dir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(rep));
+    writeFileSync(
+      join(dir, "opportunities.json"),
+      JSON.stringify({
+        opportunities: [
+          {
+            anchor: { paragraphIndex: 3, quote: "q" },
+            claim: "c",
+            intent: "i",
+          },
+        ],
+      }),
+    );
+
+    // exportDir must NOT be a subdir of `dir` (which sits under tmpdir()) — isEphemeralPath
+    // refuses any export target under tmpdir(), same reason every other test in this file keeps
+    // exportDir separate, under import.meta.dir — otherwise the ephemeral-path gate would fire
+    // first and this test would exercise the wrong refusal. And exportDir itself must NOT be
+    // pre-created (mkdtempSync creates its argument) — the assertion below is that the export
+    // NEVER creates it, so only its parent may exist beforehand.
+    const exportParent = mkdtempSync(
+      join(import.meta.dir, "export-placement-required-"),
+    );
+    const exportDir = join(exportParent, "e1-export");
+    let failed = false;
+    let stderr = "";
+    try {
+      run(outDir, exportDir, resultsPath, "e1");
+    } catch (e) {
+      failed = true;
+      stderr = String((e as { stderr?: Buffer }).stderr ?? "");
+    }
+    expect(failed).toBe(true);
+    expect(stderr).toContain("freeStanding");
+    // Refused BEFORE any write: the journalist's folder is untouched, exactly like the
+    // requiredSigners refusal discipline.
+    expect(existsSync(exportDir)).toBe(false);
+    rmSync(exportParent, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("refuses when the proposal declares suggest-article but no placement", () => {
+    const dir = mkdtempSync(join(tmpdir(), "placement-required-skills-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "static.png"), "png");
+    const rep = report(dir, "e1", "static", {
+      outputs: [join(outDir, "static.png")],
+    });
+    const resultsPath = join(dir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(rep));
+    patchAcceptedEntry(dir, "e1", {
+      skillsInvoked: [
+        "splash:cadrage-guided",
+        "suggest-article",
+        "suggest-chart",
+      ],
+    });
+
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-placement-required-skills-"),
+    );
+    let failed = false;
+    try {
+      run(outDir, exportDir, resultsPath, "e1");
+    } catch {
+      failed = true;
+    }
+    expect(failed).toBe(true);
+    rmSync(exportDir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("delivers when the same run declares the element free-standing", () => {
+    const dir = mkdtempSync(join(tmpdir(), "placement-freestanding-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "static.png"), "png");
+    const rep = report(dir, "e1", "static", {
+      outputs: [join(outDir, "static.png")],
+    });
+    const resultsPath = join(dir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(rep));
+    writeFileSync(
+      join(dir, "opportunities.json"),
+      JSON.stringify({ opportunities: [{ claim: "c", intent: "i" }] }),
+    );
+    patchAcceptedEntry(dir, "e1", { freeStanding: true });
+
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-placement-freestanding-"),
+    );
+    const out = run(outDir, exportDir, resultsPath, "e1");
+    expect(out).toContain("EXPORT_CODE_RESULT");
+    expect(parsePlacement(out).placement).toEqual({ kind: "free-standing" });
+    rmSync(exportDir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+});

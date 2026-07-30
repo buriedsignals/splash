@@ -45,7 +45,12 @@ import {
 import { assertChainProvenance } from "../src/render-provenance.ts";
 import { embedDeliveryStatus } from "../src/preflight.ts";
 import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
-import { resolvePlacement, placementBlock } from "../src/placement.ts";
+import {
+  resolvePlacement,
+  placementBlock,
+  articleEvidence,
+  undeclaredPlacementRefusal,
+} from "../src/placement.ts";
 import { readDecorState } from "../../../lib/newsroom/decor.ts";
 import { resolveLanguage } from "../../../lib/newsroom/language.ts";
 import {
@@ -222,6 +227,21 @@ function main() {
     acceptedEntry = null;
   }
   const placement = resolvePlacement(acceptedEntry);
+
+  // Spec § 6: once a run has read an article, stating the placement is REQUIRED — the element is
+  // fine, but a hand-over that says nothing about where it goes is not a hand-over. Refused HERE,
+  // before any mkdir/copy, so a refusal leaves the journalist's export folder untouched (the same
+  // discipline as the S4d editorial gate below). The fix is an entry-level field, so it costs no
+  // re-produce: the chain hash is over `spec` (render-provenance.ts), not over the entry.
+  const evidence = articleEvidence({
+    opportunitiesPresent: existsSync(join(runDir, "opportunities.json")),
+    skillsInvoked: acceptedEntry?.skillsInvoked,
+  });
+  const placementRefusal = undeclaredPlacementRefusal(id, evidence, placement);
+  if (placementRefusal) {
+    console.error(placementRefusal);
+    process.exit(1);
+  }
 
   const format = result.format;
   if (!format) {

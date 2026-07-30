@@ -104,6 +104,17 @@ test("probe-not-run's command matches what lib/host/cli.ts actually implements",
   expect(command).not.toContain("--spec");
 });
 
+// placement-undeclared arrived without this lock while its three siblings had one — and the reason
+// they have one is that two of them once shipped a command the script did not implement. Same
+// export-code.mjs contract as production-folder-handed-over: <outDir> <exportDir> as positionals,
+// --results/--id as flags, never the two-positional shape.
+test("placement-undeclared's command matches what export-code.mjs actually implements", () => {
+  const command = REFUSAL_ROUTES["placement-undeclared"]!.command!;
+  expect(command).toContain("--results <report.json>");
+  expect(command).toContain("--id <proposalId>");
+  expect(command).not.toContain("export-code.mjs <report.json> <id>");
+});
+
 test("the register lists every refusal the code can emit — a route nobody wrote down is a route nobody maintains", () => {
   const register = readFileSync(
     join(import.meta.dir, "../../docs/splash/refusal-routes.md"),

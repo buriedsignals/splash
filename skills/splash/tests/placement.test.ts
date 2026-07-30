@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import {
+  articleEvidence,
   placementBlock,
   placementLines,
   resolvePlacement,
+  undeclaredPlacementRefusal,
 } from "../src/placement";
 import { placementCopy } from "../../../lib/newsroom/ui-copy";
 
@@ -67,11 +69,43 @@ describe("resolvePlacement", () => {
     });
   });
 
-  it("an anchor with nothing usable in it is NOT a placement", () => {
-    expect(resolvePlacement({ anchor: {} })).toEqual({ kind: "undeclared" });
-    expect(resolvePlacement({ anchor: { quote: "" } })).toEqual({
+  // An anchor that parses to nothing is not a placement — but it is not SILENCE either, and the two
+  // must stay distinguishable: the remedy for silence (`freeStanding: true`) would, applied here,
+  // discard the passage somebody had already identified and mis-typed.
+  it("an anchor with nothing usable in it is malformed, not undeclared", () => {
+    expect(resolvePlacement({ anchor: {} })).toEqual({
+      kind: "malformed-anchor",
+    });
+    expect(resolvePlacement({ anchor: { quote: "   " } })).toEqual({
+      kind: "malformed-anchor",
+    });
+    expect(resolvePlacement({ anchor: { paragraphIndex: 0 } })).toEqual({
+      kind: "malformed-anchor",
+    });
+    expect(resolvePlacement({ anchor: { paragraphIndex: "4" } })).toEqual({
+      kind: "malformed-anchor",
+    });
+  });
+
+  it("no anchor key at all is undeclared — genuine silence", () => {
+    expect(resolvePlacement({})).toEqual({ kind: "undeclared" });
+    expect(resolvePlacement({ freeStanding: false })).toEqual({
       kind: "undeclared",
     });
+  });
+
+  it("a malformed anchor is refused, and the refusal says REPAIR, never freeStanding", () => {
+    const msg = undeclaredPlacementRefusal(
+      "p1",
+      { existed: true, why: "opportunities.json" },
+      { kind: "malformed-anchor" },
+    );
+    expect(msg).not.toBeNull();
+    expect(msg!).toContain("REPAIR");
+    expect(msg!).toContain("do not replace it with");
+    // The distinguishing assertion: it must NOT tell the reader they declared nothing, which is the
+    // sentence that invites the destructive fix.
+    expect(msg!).not.toContain("declares no placement");
   });
 
   it("declaring both an anchor and free-standing keeps the anchor (the more specific claim)", () => {
@@ -142,5 +176,86 @@ describe("placementBlock", () => {
 
   it("is the empty string when there is nothing to say", () => {
     expect(placementBlock("e1", { kind: "undeclared" }, en)).toBe("");
+  });
+});
+
+describe("articleEvidence", () => {
+  it("takes the file as the hard signal and names it", () => {
+    const e = articleEvidence({ opportunitiesPresent: true });
+    expect(e.existed).toBe(true);
+    expect(e.existed && e.why).toContain("opportunities.json");
+  });
+
+  it("takes skillsInvoked as the declared signal and names it", () => {
+    const e = articleEvidence({
+      opportunitiesPresent: false,
+      skillsInvoked: [
+        "splash:cadrage-guided",
+        "suggest-article",
+        "suggest-chart",
+      ],
+    });
+    expect(e.existed).toBe(true);
+    expect(e.existed && e.why).toContain("skillsInvoked");
+  });
+
+  it("prefers the file when both fire — a refusal names the evidence that cannot be argued with", () => {
+    const e = articleEvidence({
+      opportunitiesPresent: true,
+      skillsInvoked: ["suggest-article"],
+    });
+    expect(e.existed && e.why).toContain("opportunities.json");
+  });
+
+  it("sees no article on a bare-topic run", () => {
+    expect(articleEvidence({ opportunitiesPresent: false })).toEqual({
+      existed: false,
+    });
+    expect(
+      articleEvidence({
+        opportunitiesPresent: false,
+        skillsInvoked: ["splash:cadrage-direct", "suggest-chart"],
+      }),
+    ).toEqual({ existed: false });
+  });
+});
+
+describe("undeclaredPlacementRefusal", () => {
+  const evidence = articleEvidence({ opportunitiesPresent: true });
+
+  it("refuses an undeclared placement when an article existed, naming both ways out", () => {
+    const msg = undeclaredPlacementRefusal("e1", evidence, {
+      kind: "undeclared",
+    });
+    expect(msg).toBeTruthy();
+    expect(msg!).toContain("e1");
+    expect(msg!).toContain("opportunities.json");
+    expect(msg!).toContain("anchor");
+    expect(msg!).toContain("freeStanding");
+  });
+
+  it("accepts an anchored placement", () => {
+    expect(
+      undeclaredPlacementRefusal("e1", evidence, {
+        kind: "anchored",
+        quote: "q",
+      }),
+    ).toBeNull();
+  });
+
+  it("accepts an explicit free-standing declaration — the article had no passage for it", () => {
+    expect(
+      undeclaredPlacementRefusal("e1", evidence, { kind: "free-standing" }),
+    ).toBeNull();
+  });
+
+  it("never refuses when no article is evidenced", () => {
+    expect(
+      undeclaredPlacementRefusal(
+        "e1",
+        { existed: false },
+        { kind: "undeclared" },
+      ),
+    ).toBeNull();
   });
 });
