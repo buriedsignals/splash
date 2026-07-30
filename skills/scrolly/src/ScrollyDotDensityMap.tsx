@@ -8,6 +8,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import { flyToBeat } from "./scrolly-camera";
 import {
   computeDotDensity,
@@ -26,12 +28,6 @@ import type { Beat } from "../../map-native/src/map-story";
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
-
-// ---------------------------------------------------------------------------
-// World GeoJSON — same asset as map-native, imported via ?raw.
-// ---------------------------------------------------------------------------
-import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
-const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 // ---------------------------------------------------------------------------
 // Layer IDs — kept stable so the smoke gate in Task 4 can target them.
@@ -56,6 +52,10 @@ export interface ScrollyDotDensityConfig extends DotDensityData {
   source?: { name: string; url: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
+  /** The actual subset TopoJSON for this map, injected by produce. There is no bundled
+   *  fallback geometry anymore (D5) — mirrors ChoroplethConfig/DotDensityConfigShape's
+   *  `geometry` field in map-native. */
+  geometry?: Topology;
 }
 
 interface CameraPoint {
@@ -92,28 +92,47 @@ export const ScrollyDotDensityMap: React.FC<{
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const outlineColor = dark ? "#5a5a63" : "#9aa0a6";
 
-  // Precompute geometry and beats outside the effect (pure, stable).
-  const layout = computeDotDensity(config, world, JOIN_KEY);
-  const meta = {
-    title: config.title ?? "",
-    description: config.description,
-    insight:
-      ((config as unknown as Record<string, unknown>).insight as string) ??
-      config.title ??
-      "",
-    unit:
-      ((config as unknown as Record<string, unknown>).valueUnit as string) ??
-      "",
-    lang: config.lang,
-  };
-  const beats = deriveDotDensityStory(layout, meta);
-
   // ---------------------------------------------------------------------------
   // Init map ONCE — ref guard prevents double-init in React Strict Mode.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
+
+    // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+    // import (D5, mirrors DotDensityMap.tsx in map-native). Loud, named failure instead of a
+    // bare TypeError on `undefined.objects` — with the `?raw` import removed there is no
+    // bundled fallback geometry anymore, so an absent config.geometry must fail here, not as an
+    // unexplained downstream error. Decoded inside this mount effect (not at top-level render)
+    // so an SSR pass over a fixture without `geometry` never trips this throw — mirrors the
+    // client-only mount timing every map-native component uses (deferred to `map.on("load")`
+    // there; deferred to this effect here because layout.bounds is needed for the map's
+    // initial `center`, computed once, before "load" fires).
+    if (!config.geometry)
+      throw new Error(
+        "scrolly dot-density: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+      );
+    const topology = config.geometry as Topology;
+    const objectName = Object.keys(topology.objects)[0]!;
+    const world = topoFeature(
+      topology,
+      topology.objects[objectName]!,
+    ) as unknown as GeoJSON.FeatureCollection;
+
+    const layout = computeDotDensity(config, world, JOIN_KEY);
+    const meta = {
+      title: config.title ?? "",
+      description: config.description,
+      insight:
+        ((config as unknown as Record<string, unknown>).insight as string) ??
+        config.title ??
+        "",
+      unit:
+        ((config as unknown as Record<string, unknown>).valueUnit as string) ??
+        "",
+      lang: config.lang,
+    };
+    const beats = deriveDotDensityStory(layout, meta);
 
     const style =
       resolveMapStyle(config.mapStyle) === "dataviz-dark"

@@ -5,9 +5,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import { flyToBeat } from "./scrolly-camera";
 import {
   computeChoropleth,
+  applyChoroplethJoin,
   type ChoroplethData,
 } from "../../map-native/src/choropleth-geo";
 import { deriveFurniture, bgIsDark } from "../../../lib/core/theme";
@@ -31,12 +34,6 @@ import { pointOnFeature } from "@turf/turf";
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
 maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
-
-// ---------------------------------------------------------------------------
-// World GeoJSON — same asset as map-native, imported via ?raw.
-// ---------------------------------------------------------------------------
-import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
-const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -74,6 +71,10 @@ export interface ScrollyMapConfig extends ChoroplethData {
   /** Journalist-confirmed claim-arc (S2), region-anchored on the join key — validated by
    *  validateChoroplethConfig and honoured by deriveMapStory. Absent ⇒ the salience walk. */
   arcBeats?: MapArcBeat[];
+  /** The actual subset TopoJSON for this map, injected by produce. There is no bundled
+   *  fallback geometry anymore (D5) — mirrors ChoroplethConfig's `geometry` field in
+   *  map-native. */
+  geometry?: Topology;
 }
 
 interface CameraPoint {
@@ -85,36 +86,15 @@ interface MapState {
   map: InstanceType<typeof maptilersdk.Map>;
   beats: Beat[];
   sortedBins: { min: number; max: number; color: string }[];
-  joined: { key: string; value: number | null }[];
+  // The join-key values feature-state was set for at load — the second effect (on currentStep
+  // change) walks this list to resolve highlight membership in JS and write it to feature-state,
+  // never back into the source features' own `properties` (D8's second point, see
+  // applyChoroplethJoin's doc comment in choropleth-geo.ts).
+  regionKeys: string[];
   cameras: (CameraPoint | null)[];
 }
 
-// ---------------------------------------------------------------------------
-// Enriched GeoJSON — adds __highlight, __value, __hasData per beat.
-// ---------------------------------------------------------------------------
-function enrichWorld(
-  worldGeoJson: GeoJSON.FeatureCollection,
-  joined: { key: string; value: number | null }[],
-  beat: Beat,
-): GeoJSON.FeatureCollection {
-  return {
-    type: "FeatureCollection",
-    features: worldGeoJson.features.map((f, i) => {
-      const key = String(f.properties?.["iso_a3"]);
-      const j = joined[i];
-      const isHighlight = beat.highlight.includes(key) ? 1 : 0;
-      return {
-        ...f,
-        properties: {
-          ...f.properties,
-          __value: j.value,
-          __hasData: j.value !== null,
-          __highlight: isHighlight,
-        },
-      };
-    }),
-  };
-}
+const JOIN_KEY = "iso_a3";
 
 // ---------------------------------------------------------------------------
 // ScrollyMap
@@ -200,8 +180,28 @@ export const ScrollyMap: React.FC<{
       // the default basemap, identical to map-native's ChoroplethMap. Do NOT
       // recolour water.
 
+      // Geometry arrives through the injected config now (produce.mjs) — never a static
+      // bundle import (D5, mirrors ChoroplethMap.tsx in map-native — same deferred-to-"load"
+      // timing). Loud, named failure instead of a bare TypeError on `undefined.objects` —
+      // with the `?raw` import removed there is no bundled fallback geometry anymore, so an
+      // absent config.geometry must fail here, not as an unexplained downstream error. Decoded
+      // inside `map.on("load")` (not at top-level render) so an SSR pass over a fixture
+      // without `geometry` never trips this throw — in practice unreachable anyway when
+      // rendered through Scrolly.tsx (its own story-track decode already guards this before
+      // ScrollyMap ever mounts), but this keeps the component safe to render standalone too.
+      if (!config.geometry)
+        throw new Error(
+          "scrolly choropleth: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+        );
+      const topology = config.geometry as Topology;
+      const objectName = Object.keys(topology.objects)[0]!;
+      const world = topoFeature(
+        topology,
+        topology.objects[objectName]!,
+      ) as unknown as GeoJSON.FeatureCollection;
+
       // Compute choropleth layout.
-      const layout = computeChoropleth(config, world, "iso_a3", {
+      const layout = computeChoropleth(config, world, JOIN_KEY, {
         bins: 5,
         scaleType: config.scaleType ?? "sequential",
         palette: config.palette,
@@ -222,7 +222,7 @@ export const ScrollyMap: React.FC<{
         // the reader a different region than the caption above it names.
         arcBeats: config.arcBeats,
       };
-      const beats = deriveMapStory(layout, world, "iso_a3", meta);
+      const beats = deriveMapStory(layout, world, JOIN_KEY, meta);
 
       // Precompute cameras — cameraForBounds + padding per beat.
       const cameras: (CameraPoint | null)[] = beats.map((b) => {
@@ -238,12 +238,30 @@ export const ScrollyMap: React.FC<{
         };
       });
 
-      // Add the choropleth source — enriched for beat 0.
-      const initialWorld = enrichWorld(world, layout.joined, beats[0]);
+      // Add the choropleth source — geometry UNCHANGED (D5 + D8's second point: the join
+      // stays a table applied via setFeatureState, never merged into the geometry's own
+      // properties, so a licensed geometry's "Collective Database" boundary stays intact —
+      // same reasoning as ChoroplethMap.tsx / applyChoroplethJoin's own doc comment).
+      const { features: sourceFeatures, states } = applyChoroplethJoin(
+        world,
+        layout,
+        JOIN_KEY,
+      );
+      const regionKeys = Object.keys(states);
       map.addSource("choropleth-world", {
         type: "geojson",
-        data: initialWorld,
+        data: sourceFeatures,
+        promoteId: JOIN_KEY, // required for setFeatureState below — MapLibre needs a stable id
       });
+      // hasData/value/label (+ the initial highlight membership for beat 0) applied via
+      // feature-state — never written back into `properties`.
+      const highlightSet0 = new Set(beats[0]?.highlight ?? []);
+      for (const [key, state] of Object.entries(states)) {
+        map.setFeatureState(
+          { source: "choropleth-world", id: key },
+          { ...state, highlighted: highlightSet0.has(key) },
+        );
+      }
 
       // Fill — shared no-data-aware paint (see choropleth-paint.ts). No-data
       // regions get opacity 0 so the default basemap shows through (identical to
@@ -307,7 +325,13 @@ export const ScrollyMap: React.FC<{
         },
       });
 
-      // Highlight stroke — data-driven width, no per-step setPaintProperty needed.
+      // Highlight stroke — data-driven width, no per-step setPaintProperty needed on the
+      // LAYER itself (only the per-feature `highlighted` state changes, in the currentStep
+      // effect below). Safe-read idiom (["boolean", <feature-state>, false]), not a bare
+      // ["get", ...]/["feature-state", ...] read — mirrors choropleth-paint.ts's SAFE_HAS_DATA
+      // (Finding 1, Task 16 review): a feature whose join-key property is falsy never gets a
+      // feature-state entry promoted by MapLibre's own setFeatureState machinery, and a bare
+      // read would misbehave instead of just defaulting to "not highlighted".
       map.addLayer({
         id: "choropleth-highlight-stroke",
         type: "line",
@@ -315,7 +339,7 @@ export const ScrollyMap: React.FC<{
         paint: {
           "line-width": [
             "case",
-            ["==", ["get", "__highlight"], 1],
+            ["boolean", ["feature-state", "highlighted"], false],
             2.5,
             0,
           ] as never,
@@ -324,7 +348,11 @@ export const ScrollyMap: React.FC<{
         },
       });
 
-      // Hover popup — data-only (only __hasData regions).
+      // Hover popup — data-only (only hasData regions). The joined value/label live in
+      // feature-state now (D8), never in `properties` — MapLibre's queryRenderedFeatures
+      // result carries the live state on `f.state` (mirrors ChoroplethMap.tsx's mousemove
+      // handler). `f.properties` still carries the geometry's OWN unmodified properties
+      // (name/iso_a3), untouched by the join.
       const popup = new maptilersdk.Popup({
         closeButton: false,
         closeOnClick: false,
@@ -334,14 +362,18 @@ export const ScrollyMap: React.FC<{
       map.on("mousemove", "choropleth-fill", (e) => {
         const f = e.features?.[0];
         if (!f) return;
-        if (f.properties?.["__hasData"] !== true) {
+        if (f.state?.hasData !== true) {
           map.getCanvas().style.cursor = "";
           popup.remove();
           return;
         }
         map.getCanvas().style.cursor = "pointer";
-        const name = f.properties?.["name"] ?? f.properties?.["iso_a3"] ?? "—";
-        const value = f.properties?.["__value"];
+        const name =
+          f.state?.label ??
+          f.properties?.["name"] ??
+          f.properties?.["iso_a3"] ??
+          "—";
+        const value = f.state?.value;
         const valueUnit = config.valueUnit ?? "";
         const shownValue =
           typeof value === "number"
@@ -373,7 +405,7 @@ export const ScrollyMap: React.FC<{
         map,
         beats,
         sortedBins,
-        joined: layout.joined,
+        regionKeys,
         cameras,
       });
     });
@@ -390,7 +422,7 @@ export const ScrollyMap: React.FC<{
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!mapState) return;
-    const { map, beats, joined, cameras } = mapState;
+    const { map, beats, regionKeys, cameras } = mapState;
 
     const step = Math.max(0, Math.min(currentStep, beats.length - 1));
     const beat = beats[step];
@@ -398,11 +430,17 @@ export const ScrollyMap: React.FC<{
     // Expose current step for the smoke test.
     (window as unknown as Record<string, unknown>)["__scrolly_step__"] = step;
 
-    // Update __highlight on the source — only the highlighted region gets 1.
-    const source = map.getSource("choropleth-world") as
-      maptilersdk.GeoJSONSource | undefined;
-    if (source) {
-      source.setData(enrichWorld(world, joined, beat));
+    // Highlight membership resolved in JS from the beat's region-key list, then written to
+    // feature-state per key — never merged back into the source's own `properties` (D8's
+    // second point; mirrors the join itself in applyChoroplethJoin). Cheaper than the old
+    // approach too: no FeatureCollection rebuild + source.setData() every step, just a
+    // feature-state write per region.
+    const highlightSet = new Set(beat.highlight);
+    for (const key of regionKeys) {
+      map.setFeatureState(
+        { source: "choropleth-world", id: key },
+        { highlighted: highlightSet.has(key) },
+      );
     }
 
     // Move camera — shared peak-bounded flight (stays tight between reveals).

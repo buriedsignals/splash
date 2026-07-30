@@ -8,6 +8,8 @@
 // per-step visual kind.
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import { computeChoropleth } from "../../map-native/src/choropleth-geo";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { computeDotDensity } from "../../map-native/src/dot-density-geo";
@@ -42,10 +44,30 @@ import {
   type ScrollyCartogramConfig,
 } from "./ScrollyCartogramMap";
 
-import worldRaw from "../../map-native/assets/geo/world.geojson?raw";
 import { sourceLabel } from "../../../lib/core/locale";
 import { storyCopy } from "../../../lib/core/story-copy";
-const world = JSON.parse(worldRaw) as GeoJSON.FeatureCollection;
+
+// Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+// import (D5, mirrors ChoroplethMap.tsx/ScrollyMap.tsx's own decode). Loud, named failure
+// instead of a bare TypeError on `undefined.objects` — with the `?raw` import removed there is
+// no bundled fallback geometry anymore, so an absent config.geometry must fail here, not as an
+// unexplained downstream error. `label` identifies WHICH story branch failed (this module has
+// three call sites — dot-density/cartogram/choropleth — each needing its own basemap decode for
+// the STORY/prose track, independent of the sticky map component's own decode below).
+function decodeWorldGeometry(
+  geometry: Topology | undefined,
+  label: string,
+): GeoJSON.FeatureCollection {
+  if (!geometry)
+    throw new Error(
+      `scrolly story (${label}): config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)`,
+    );
+  const objectName = Object.keys(geometry.objects)[0]!;
+  return topoFeature(
+    geometry,
+    geometry.objects[objectName]!,
+  ) as unknown as GeoJSON.FeatureCollection;
+}
 
 // The types each track actually hosts, defined in a leaf module (imports nothing) so they can be
 // read without pulling in ScrollyMap.tsx's module-scope VITE_MAPTILER_KEY throw. Re-exported here
@@ -220,6 +242,7 @@ export const Scrolly: React.FC<{
     }
 
     if (config.type === "dot-density") {
+      const world = decodeWorldGeometry(config.geometry, "dot-density");
       const layout = computeDotDensity(config, world, "iso_a3");
       const beats = deriveDotDensityStory(layout, {
         title: config.title ?? "",
@@ -267,6 +290,7 @@ export const Scrolly: React.FC<{
     }
 
     if (config.type === "cartogram") {
+      const world = decodeWorldGeometry(config.geometry, "cartogram");
       const layout = computeCartogram(config, world);
       const beats = deriveCartogramStory(layout, {
         title: config.title ?? "",
@@ -282,6 +306,11 @@ export const Scrolly: React.FC<{
       });
     }
 
+    const world = decodeWorldGeometry(
+      (config as unknown as Record<string, unknown>).geometry as
+        Topology | undefined,
+      "choropleth",
+    );
     const layout = computeChoropleth(config, world, "iso_a3", {
       bins: 5,
       scaleType:

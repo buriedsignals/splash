@@ -6,9 +6,11 @@
 // fill layer id "cartogram-cells" + outline. applyCartogramBasemap called on load (grid → neutral,
 // scaled → basemap). Per-step __id dim-emphasis via setPaintProperty. Bin legend overlay.
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import { flyToBeat } from "./scrolly-camera";
 import { fmtBin } from "../../map-native/src/core/legend-format";
 import { computeCartogram } from "../../map-native/src/cartogram-geo";
@@ -16,9 +18,6 @@ import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { applyCartogramBasemap } from "../../map-native/src/theme/cartogram-basemap";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
 import type { Beat } from "../../map-native/src/map-story";
-
-import worldGeoJsonRaw from "../../map-native/assets/geo/world.geojson?raw";
-const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -52,6 +51,10 @@ export interface ScrollyCartogramConfig {
   source?: { name: string; url: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
+  /** The actual subset TopoJSON for this map, injected by produce. There is no bundled
+   *  fallback geometry anymore (D5) — mirrors ChoroplethConfig's `geometry` field in
+   *  map-native. */
+  geometry?: Topology;
 }
 
 interface CameraPoint {
@@ -90,27 +93,37 @@ export const ScrollyCartogramMap: React.FC<{
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const outlineColor = dark ? "#1c1c1f" : "#ffffff";
 
-  // Memoize geometry and beats — recompute only when config changes.
-  const layout = useMemo(
-    () => computeCartogram(config, worldGeoJson),
-    [config],
-  );
-  const beats = useMemo(
-    () =>
-      deriveCartogramStory(layout, {
-        title: config.title ?? "",
-        insight: config.insight ?? config.title ?? "",
-        lang: config.lang,
-      }),
-    [layout, config.lang],
-  );
-
   // ---------------------------------------------------------------------------
   // Init map ONCE — ref guard prevents double-init in React Strict Mode.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
+
+    // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+    // import (D5, mirrors CartogramMap.tsx in map-native). Loud, named failure instead of a
+    // bare TypeError on `undefined.objects` — with the `?raw` import removed there is no
+    // bundled fallback geometry anymore, so an absent config.geometry must fail here, not as an
+    // unexplained downstream error. Decoded inside this mount effect (not at top-level render)
+    // so an SSR pass over a fixture without `geometry` never trips this throw — mirrors the
+    // client-only mount timing every map-native component uses.
+    if (!config.geometry)
+      throw new Error(
+        "scrolly cartogram: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+      );
+    const topology = config.geometry as Topology;
+    const objectName = Object.keys(topology.objects)[0]!;
+    const worldGeoJson = topoFeature(
+      topology,
+      topology.objects[objectName]!,
+    ) as unknown as GeoJSON.FeatureCollection;
+
+    const layout = computeCartogram(config, worldGeoJson);
+    const beats = deriveCartogramStory(layout, {
+      title: config.title ?? "",
+      insight: config.insight ?? config.title ?? "",
+      lang: config.lang,
+    });
 
     const style =
       resolveMapStyle(config.mapStyle) === "dataviz-dark"
