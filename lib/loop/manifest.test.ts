@@ -14,6 +14,7 @@ import {
   type RunManifest,
   type RunElement,
 } from "./manifest";
+import { migrate } from "./migrate";
 
 function base(): RunManifest {
   return {
@@ -674,6 +675,11 @@ describe("provenance covers the deliverable", () => {
       // here on the same terms — null for an element that carries no plan, which is what keeps
       // this test's own invariant (the deliverable keys re-value nothing) legible.
       narrative: m.elements[0]!.narrative ?? null,
+      // Added by geography-anywhere (D9), for the same reason as `sources`/`narrative`: the
+      // declared geography's credit/edition and the join decisions are rendered INTO the
+      // artifact. Listed here on the same terms — null for a run that declares neither.
+      geography: m.input.geography ?? null,
+      geoJoin: m.orient?.geoJoin ?? null,
     });
     expect(provenanceHash(m, m.elements[0]!)).toBe(expected);
   });
@@ -1587,5 +1593,113 @@ describe("RunManifestSchema v5 — geography", () => {
       },
     });
     expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+});
+
+describe("provenanceHash — geography (D9)", () => {
+  function withGeographyCredit(creditName: string): RunManifest {
+    const m = base();
+    m.input.geography = {
+      path: "input/geography-def.geojson",
+      sha256: "d".repeat(64),
+      encoding: "geojson",
+      crs: "EPSG:4326",
+      level: "communes de Haute-Savoie",
+      licence: "Licence Ouverte 2.0",
+      edition: "2024",
+      credit: { name: creditName },
+    };
+    return m;
+  }
+
+  it("changes when input.geography's credit changes, even though the frozen file's sha256 does not", () => {
+    const runWithoutCredit = withGeographyCredit("IGN");
+    const runWithFixedCredit = {
+      ...runWithoutCredit,
+      input: {
+        ...runWithoutCredit.input,
+        geography: {
+          ...runWithoutCredit.input.geography!,
+          credit: { name: "IGN — corrected" },
+        },
+      },
+    };
+    const el = runWithoutCredit.elements[0];
+    expect(provenanceHash(runWithoutCredit, el)).not.toBe(
+      provenanceHash(runWithFixedCredit, el),
+    );
+  });
+
+  it("is null-stable (unchanged) for a run declaring no geography at all — the migration-neutral property D9 requires", () => {
+    const run = base();
+    const el = run.elements[0];
+    // Calling twice must be stable, and must not throw on the absent fields.
+    expect(provenanceHash(run, el)).toBe(provenanceHash(run, el));
+  });
+
+  it("changes when orient.geoJoin's decisions change", () => {
+    const run = base();
+    const withDecision: RunManifest = {
+      ...run,
+      orient: {
+        ...run.orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [
+            {
+              value: "Buenos Aires",
+              featureId: "ARG-caba",
+              basis: "journalist",
+            },
+          ],
+          pending: [],
+        },
+      },
+    };
+    const el = run.elements[0];
+    expect(provenanceHash(run, el)).not.toBe(provenanceHash(withDecision, el));
+  });
+
+  it("hashes identically before and after a JSON round-trip for a migrated v4 manifest", () => {
+    const v4 = {
+      runId: "r1",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
+      orient: {
+        profile: { columns: ["country"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+        geo: {
+          column: "country",
+          basemap: "world",
+          matched: 1,
+          total: 1,
+          unmatched: [],
+        },
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
+          proposal: {
+            options: [{ id: "slope", nativeType: "slope", why: "w" }],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+      events: [],
+    };
+    const migrated = migrate(
+      v4,
+      "/tmp/geography-provenance-hash-does-not-matter",
+    );
+    const el = migrated.elements[0]!;
+    const h1 = provenanceHash(migrated, el);
+    const roundTripped = JSON.parse(JSON.stringify(migrated)) as RunManifest;
+    const h2 = provenanceHash(roundTripped, roundTripped.elements[0]!);
+    expect(h1).toBe(h2);
   });
 });

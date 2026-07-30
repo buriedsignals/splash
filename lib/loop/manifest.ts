@@ -615,6 +615,15 @@ export function provenanceHash(run: RunManifest, el: RunElement): string {
     // sentence it already replaced. `null` for every element that carries no plan, so the value
     // stays stable rather than moving for an embeddable element that never had one.
     narrative: el.narrative ?? null,
+    // The declared geography's credit/edition are RENDERED into the artefact (D7) — without
+    // this line, correcting a credit leaves a stale one on an artefact that reports itself
+    // fresh, the exact defect `sources` already closes for data attribution (see the comment
+    // above). The WHOLE record, not just the credit: the licence and edition are just as
+    // artefact-determining. `null` when a run declares no geography, so the value stays stable.
+    geography: run.input.geography ?? null,
+    // The join decisions decide which polygon receives which value — the single most
+    // determining fact about a below-ADM1 map (D9). `null` when nothing has been decided yet.
+    geoJoin: run.orient?.geoJoin ?? null,
   });
 }
 
