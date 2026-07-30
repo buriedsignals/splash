@@ -1101,6 +1101,21 @@ bracketed way the join key is (`this.properties[…]`) so a country column with 
 break it. Then add the missing post-condition: **the retained count must not exceed the requested count**.
 That guard is the general form of this defect — it catches every future name collision, not just this one.
 
+- [ ] **Step 4b: A drift guard on the degrees path too** (routed here from Task 14's review)
+
+Task 14 split the tolerance into two paths: metres for sources mapshaper reads as lat-long, degrees for
+sources whose coordinates fall outside ±180. The metre path is defended by the Norway vertex floor
+(`lib/geo/subset.test.ts`, baseline 1238, floor 800). **The degrees path is defended by nothing** — the
+`us-states` case asserts only a feature count and zero null shapes, so short of total annihilation,
+silent drift there fails no test. The +60% divergence that drove Task 14's narrow ruling was itself
+measured by an ad-hoc script that was deleted, so that number is neither reproducible nor re-checked.
+
+Add a vertex-count floor for the `us-states` case, in the same shape as the Norway one: measure the real
+baseline, choose the floor with recorded headroom, and write both numbers and the reasoning into the
+test's comment. While you are in that comment, add the line Task 12's review asked for and did not get —
+that the Norway floor is tied to the shipped `world.geojson`'s exact geometry and must be re-measured if
+that asset is regenerated. A maintainer reading the test alone currently cannot know that.
+
 - [ ] **Step 5: Prove the world path is untouched**
 
 `cd skills/map-native && bun test tests/resolve-all-fixtures.test.ts` — the world fixtures carry no
