@@ -57,6 +57,36 @@ test("a malformed command is refused by SHAPE, before anything is executed", () 
   expect(r!.exitCode).toBeNull();
 });
 
+test("an argv element containing shell metacharacters is never interpreted — spawned as a literal argument, not a shell line", () => {
+  // The header comment's guarantee: a probe is an ARGV ARRAY, spawned as-is, never handed to a
+  // shell. If runProbes ever regressed to `Bun.spawnSync(spec.command.join(" "), {shell:true})`,
+  // `$(whoami)` would be shell-expanded to the current user's name; spawned as argv, `echo`
+  // receives it as one opaque string and prints it back literally.
+  const [r] = runProbes(
+    [
+      {
+        check: "argv is never shell-interpolated",
+        command: ["echo", "$(whoami)"],
+      },
+    ],
+    { cwd: process.cwd() },
+  );
+  expect(r!.outcome).toBe("pass");
+  expect(r!.note).toBe("$(whoami)");
+});
+
+test("a probe that outlives its timeout is a concern, not a hang", () => {
+  const start = Date.now();
+  const [r] = runProbes([{ check: "a hung probe", command: ["sleep", "5"] }], {
+    cwd: process.cwd(),
+    timeoutMs: 200,
+  });
+  expect(Date.now() - start).toBeLessThan(4000);
+  expect(r!.outcome).toBe("concern");
+  expect(r!.exitCode).toBeNull();
+  expect(r!.note).toContain("timed out");
+});
+
 test("every probe runs — one failure does not cut the ledger short", () => {
   const out = runProbes(
     [

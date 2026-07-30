@@ -93,7 +93,12 @@ export function runProbes(
         command: spec.command,
         outcome: "concern",
         exitCode: run.exitCode,
-        note: `the check exited ${run.exitCode}: ${output}`,
+        // `null` means the process was killed before it ever exited (the timeout) — "the check
+        // exited null" reads as a nonsensical exit code rather than what actually happened.
+        note:
+          run.exitCode === null
+            ? `the check timed out: ${output}`
+            : `the check exited ${run.exitCode}: ${output}`,
       };
     } catch (e) {
       return {
