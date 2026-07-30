@@ -41,10 +41,13 @@ export type PrecheckArgs = {
  * !isDirectBranch(p))`, `skills/splash/scripts/produce-all.mjs`) — read here from the same
  * `accepted.json` beside `dir`, because a proposal the journalist NAMED needs no menu, and this
  * façade must agree with the caller that actually matters or a legitimate direct-branch run
- * refuses here and only here. An unreadable/malformed/absent `accepted.json`, or an empty list,
- * is NOT exempt-by-omission (mirrors `.some()` on an empty array being vacuously false only when
- * there IS an array to read) — anything that cannot be read as "every proposal is direct" falls
- * through to the ordinary menu check below.
+ * refuses here and only here. An unreadable/malformed/absent `accepted.json` is NOT
+ * exempt-by-omission — anything that cannot be read as "every proposal is direct" falls through
+ * to the ordinary menu check below. An EMPTY accepted list, by contrast, DOES pass here:
+ * `[].some(...)` is vacuously false, so `!false` is true, exactly mirroring `produce-all.mjs`'s
+ * own `accepted.some((p) => !isDirectBranch(p))` guard (an empty array short-circuits that
+ * refusal too). Harmless either way — an empty accepted list has nothing to produce, so there is
+ * nothing for the menu precondition to protect.
  */
 function isExemptDirectRun(dir: string): boolean {
   const acceptedPath = join(dir, "accepted.json");
