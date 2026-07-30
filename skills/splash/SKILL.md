@@ -591,7 +591,7 @@ unrecorded signal is a signal the offer never sees. (This pipeline is the one wi
 to write it onto; Stage 2's `suggest-chart` above has none — its own format announcement is pinned
 straight onto that spec instead.)
 
-Four rules, all mechanical:
+Five rules, all mechanical:
 
 1. **`why` is rendered, not inherited.** A brain-built option arrives with `why: ""` — deliberately
    empty, because `whySource.fragments` are the KB's ENGLISH sentences and the journalist reads
