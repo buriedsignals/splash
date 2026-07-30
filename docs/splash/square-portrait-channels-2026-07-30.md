@@ -26,8 +26,9 @@ bytes, or `ffprobe`/frame extraction for video) — never from a log line.
 | 4 | chart-native | bar | video | social-vertical | 1080x1920 | 1080x1920 (`ffprobe`) | match |
 | 5 | chart-native | line | video | social-feed | 1080x1080 | 1080x1080 (`ffprobe`) | match |
 | 6 | chart-native | bar | interactive | social-vertical | n/a (must be refused) | refused: `format "interactive" is not allowed for channel "social-vertical"` | correct fail-closed behavior |
+| 7 | map-native | symbol | static | social-vertical | 1080x1920 | 1080x1920 (PNG IHDR) — the delivered `static.png` was always correct | match, BUT see defect below: the guard that is supposed to verify this rendered the wrong geometry |
 
-(more cases below as runs complete — map-native, dw-chart, scrolly)
+(more cases below as runs complete — map-native video/other types, dw-chart, scrolly)
 
 ## Defects found
 
@@ -48,7 +49,49 @@ with 58 on-page text labels, several below the historical 560px cutoff) and it c
 false positives. So for **chart-native static**, the bug is confirmed fixed, not confirmed present.
 
 Open question carried to Phase 3: whether the fix reaches every snap that samples pixels/DOM
-against a fixed box, or only the two contrast snaps eb81c1ee touched. See below.
+against a fixed box, or only the two contrast snaps eb81c1ee touched. Answer: no — see below,
+map-native's own furniture-contrast guard had the SAME class of bug, unfixed, and worse in kind.
+
+### Real defect, FIXED in this pass — map-native's static contrast guard checked the wrong geometry entirely
+
+`skills/map-native/scripts/snap-contrast.mjs` always opened a **fixed 1200x700 viewport**
+(landscape) and took a `page.screenshot()` (viewport-clipped, no `fullPage`), completely
+ignoring `SPLASH_CHANNEL`/`MAP_WIDTH`/`MAP_HEIGHT` — unlike its sibling `snap-static.mjs`,
+which already threads the channel's exact box (that's how `static.png` itself came out
+correctly-sized in case 7). Unlike chart-native's chart, the map app's CSS lays out
+`width:100%; height:100vh` — it is **not** a fixed-size card independent of the viewport — so
+opening the guard at 1200x700 doesn't just crop a tall page, it renders a **different layout
+altogether**.
+
+Evidence (case 7, symbol map, social-vertical, before the fix): the guard's own debug capture
+(`skills/map-native/output-proof/contrast/contrast-static.png`, not committed) came back
+**2400x1400** (the fixed 1200x700 box at its hardcoded deviceScaleFactor 2) — a landscape
+choropleth-shaped page — while the channel's real delivered `static.png` was 1080x1920 portrait
+with circle symbols. The guard reported "7 furniture labels checked, 0 violations" — checked
+against furniture that was never actually delivered.
+
+This is the mirror image of the chart-native bug the task named, and worse in kind: chart-native's
+`elementsFromPoint` bug produced a **false positive** — a loud failure on a real deliverable,
+impossible to miss. This one is a **false negative** — a guard that stays green because it never
+looked at the real render at all. Confirmed live, not inferred from a comment.
+
+**Fixed** (`c8d10540`): extracted `contrastViewportFor(mapWidth, mapHeight)` into
+`skills/map-native/scripts/lib/contrast-viewport.mjs` (mirrors chart-native's
+`snap-viewport.mjs`) and threaded `MAP_WIDTH`/`MAP_HEIGHT` into the static-case
+`snap-contrast.mjs` call in `produce.mjs`, exactly as `snap-static.mjs` already receives them.
+Re-running case 7 after the fix: the debug capture now comes back **1080x1920** — the real
+delivered geometry — and the guard still reports 0 violations (the map's real furniture is
+legible; this was never a live contrast defect, only an unverified one). `MODE=interactive` is
+untouched (no fixed per-channel box exists for it — `interactiveAspect` is `"responsive"`, and
+`produce.mjs` never threads `MAP_WIDTH`/`MAP_HEIGHT` for that call), so manual/no-env runs and
+the interactive guard keep the historical 1200x700 @2x byte-identical.
+
+Mutation proof: `skills/map-native/tests/contrast-viewport.test.ts`, 4 tests. Reverting
+`contrastViewportFor` to always return the fixed 1200x700 box reddens 1/4 (the test asserting the
+channel-sized box for a 1080x1920/1080x1080 input); restoring the fix returns 4/4 green. Full
+`skills/map-native` suite after the fix: 901 pass / 0 fail / 6 skip (skips are a pre-existing,
+unrelated `VITE_MAPTILER_KEY not set` guard in one live-e2e test file when `bun test` is run
+without the root `.env` loaded — environmental, not caused by this change).
 
 ## Could not run
 
