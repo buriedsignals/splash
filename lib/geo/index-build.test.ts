@@ -20,7 +20,7 @@ describe("buildAdm1Index", () => {
       }),
     ]);
     expect(idx["CH-GE"]).toEqual([
-      { featureId: "CHE-159", family: "iso_3166_2" },
+      { featureId: "CHE-159", family: "iso_3166_2", country: "CHE" },
     ]);
   });
 
@@ -52,5 +52,20 @@ describe("buildAdm1Index", () => {
       feature({ adm0_a3: "XYZ", adm1_code: "", name: "Somewhere" }),
     ]);
     expect(idx["SOMEWHERE"]![0]!.featureId).toBe("XYZ-0");
+  });
+
+  // Task 15's own fixture: a cross-border name collision, the exact shape of the real "Jura"
+  // (CH/FR) bug — each hit carries ITS OWN country, read straight off that feature's adm0_a3,
+  // so a caller resolving a country scope (skills/map-native/src/geo-match.ts) can tell the two
+  // apart without parsing featureId's own "ADM0-number" convention (unreliable — see the
+  // top-of-file comment on this file's own Adm1IndexEntry type).
+  it("carries each hit's own country under a name collision across a border — the 'Jura' (CH/FR) fixture", () => {
+    const idx = buildAdm1Index([
+      feature({ adm1_code: "CHE-160", adm0_a3: "CHE", name: "Jura" }),
+      feature({ adm1_code: "FRA-5312", adm0_a3: "FRA", name: "Jura" }),
+    ]);
+    expect(idx["JURA"]).toHaveLength(2);
+    const countries = idx["JURA"]!.map((m) => m.country).sort();
+    expect(countries).toEqual(["CHE", "FRA"]);
   });
 });

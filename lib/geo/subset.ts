@@ -84,6 +84,13 @@ export function bboxOf(geometries: unknown[]): {
   return { minLon, minLat, maxLon, maxLat };
 }
 
+// The property natural-earth-admin-1's own asset carries the feature's country code under
+// (verified by direct inspection of skills/map-native/assets/geo/natural-earth-admin-1.topojson
+// — Natural Earth's admin-1 layer names it "adm0_a3", not "iso_a2" or the world basemap's own
+// "iso_a3"). This is a property of the SET, not of any one join — fixed regardless of which
+// name family (name, name_fr, iso_3166_2...) actually won the join key.
+const ADM1_COUNTRY_PROPERTY = "adm0_a3";
+
 export type SubsetInput = {
   sourcePath: string;
   outPath: string;
@@ -91,6 +98,11 @@ export type SubsetInput = {
   idProperty: string;
   keepProperties: string[];
   renderWidthPx: number;
+  // The ISO-A3 country to additionally restrict the join to (Task 15) — set only for an
+  // admin-1 join (GeographyRef.scope), absent for a global set (world, us-states). Without it,
+  // a name shared across a border (e.g. "Jura", CH/FR) joins to every country's feature of that
+  // name, not just the one the data actually meant.
+  scope?: string;
 };
 
 function mapshaper(args: string[]): void {
@@ -107,10 +119,17 @@ export async function subsetGeometry(
   const idList = JSON.stringify(input.featureIds);
   // The property is addressed, never interpolated as a bare identifier: a join key is
   // ordinary shapefile prose ("code insee", "NUTS-2 code") and a bare identifier makes those
-  // a SyntaxError inside mapshaper's expression evaluator.
-  const filterExpr = `${idList}.includes(String(this.properties[${JSON.stringify(
+  // a SyntaxError inside mapshaper's expression evaluator. The country column (when `scope` is
+  // set) is addressed the exact same bracketed way, for the exact same reason — a country
+  // column with a space in its name would be no safer than a join key with one.
+  const idFilterExpr = `${idList}.includes(String(this.properties[${JSON.stringify(
     input.idProperty,
   )}]))`;
+  const filterExpr = input.scope
+    ? `${idFilterExpr} && String(this.properties[${JSON.stringify(
+        ADM1_COUNTRY_PROPERTY,
+      )}]) === ${JSON.stringify(input.scope)}`
+    : idFilterExpr;
   const tmp = mkdtempSync(join(tmpdir(), "geo-subset-"));
   try {
     // Pass 1 — filter, no simplification, to GeoJSON we can measure. Field pruning happens in
@@ -144,6 +163,42 @@ export async function subsetGeometry(
         `subsetGeometry: ${missing.length} of ${input.featureIds.length} requested regions ` +
           `are absent from ${input.sourcePath} on join key "${input.idProperty}" — ` +
           `first missing: ${missing.slice(0, 5).join(", ")}`,
+      );
+    // POST-CONDITION 3 (Task 15) — no single requested id may come back with MORE features
+    // than it was asked for. A silently-EXTRA region is the mirror image of POST-CONDITION 1's
+    // silently-missing one, and until this task nothing checked for it: a join key value shared
+    // across a border (any world-wide admin-1 name — "Jura" CH/FR is the one that surfaced, it
+    // will not be the only one) returns every feature with that value, not just the one the
+    // data meant, and a count alone (POST-CONDITION 1 above) still passes on a superset. This is
+    // the GENERAL guard — it is not specific to admin-1 or to `scope` below, which only fixes
+    // the one collision this task found; this is what catches the next one.
+    //
+    // Counted PER ID (a multiset), not as a blunt total-vs-distinct comparison: the "route" type
+    // (resolve-for-produce.ts) asks for EVERY id in the source file, duplicates and all — a
+    // country legitimately split across several disjoint Features that all share one iso_a3
+    // code requests that same id more than once and is meant to retain every one of them
+    // (confirmed live: world.geojson resolves 241 features off 236 distinct iso_a3 values, a
+    // real repeated-id source, not a collision). What must never happen is a single id — even
+    // one requested only once, like `featureIds: ["Jura"]` — coming back with more matches than
+    // it was asked for; that per-id shape is exactly the Jura (CH/FR) collision this task found.
+    const requestedCounts = new Map<string, number>();
+    for (const id of input.featureIds)
+      requestedCounts.set(id, (requestedCounts.get(id) ?? 0) + 1);
+    const gotCounts = new Map<string, number>();
+    for (const f of features) {
+      const id = String(f.properties?.[input.idProperty]);
+      gotCounts.set(id, (gotCounts.get(id) ?? 0) + 1);
+    }
+    const oversupplied = [...gotCounts.entries()].filter(
+      ([id, count]) => count > (requestedCounts.get(id) ?? 0),
+    );
+    if (oversupplied.length)
+      throw new Error(
+        `subsetGeometry: on join key "${input.idProperty}" in ${input.sourcePath}, ` +
+          `${oversupplied.length} id(s) matched more features than requested — a join-key ` +
+          `value is colliding with another region's (e.g. an admin-1 name shared across a ` +
+          `border); scope the request to a single country or use a less ambiguous join key. ` +
+          `First: "${oversupplied[0]![0]}" wanted ${requestedCounts.get(oversupplied[0]![0]) ?? 0}, got ${oversupplied[0]![1]}`,
       );
     // Prune properties to the intersection of `keepProperties` and the fields actually present
     // on the filtered features — never pass a field mapshaper doesn't have, and never assume a

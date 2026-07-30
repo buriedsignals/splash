@@ -91,9 +91,21 @@ test("an unparseable basemap asset is skipped, not thrown — undefined, not a c
 // run. "Genève" is the exact worked example the spec's own text resolves (D6): "Genève, CH-GE,
 // Geneva, Genf, Ginevra → tous CHE-159".
 const swissFixture: Adm1Index = {
-  GENEVE: [{ featureId: "CHE-159", family: "name" }],
-  "CH-GE": [{ featureId: "CHE-159", family: "iso_3166_2" }],
-  VAUD: [{ featureId: "CHE-160", family: "name" }],
+  GENEVE: [{ featureId: "CHE-159", family: "name", country: "CHE" }],
+  "CH-GE": [{ featureId: "CHE-159", family: "iso_3166_2", country: "CHE" }],
+  VAUD: [{ featureId: "CHE-160", family: "name", country: "CHE" }],
+};
+
+// A hand-built fixture reproducing the real "Jura" collision (Task 15): the exact same name
+// hits BOTH a Swiss canton and a French département — standing in for the real committed
+// index (which carries the identical shape) so this test does not depend on the one-time
+// fetch having run.
+const swissWithCollisionFixture: Adm1Index = {
+  ...swissFixture,
+  JURA: [
+    { featureId: "CHE-160-JURA", family: "name", country: "CHE" },
+    { featureId: "FRA-5312", family: "name", country: "FRA" },
+  ],
 };
 
 describe("matchGeography — ADM1 index candidate (D10.2)", () => {
@@ -113,9 +125,29 @@ describe("matchGeography — ADM1 index candidate (D10.2)", () => {
     expect(match).toBeDefined();
     expect(match!.column).toBe("canton");
     expect(match!.geography.set).toBe("natural-earth-admin-1");
+    expect(match!.geography.scope).toBe("CHE"); // Task 15: the country every row resolved to
     expect(match!.geography.level).toBe("canton"); // echoes the ADM1 index's own level, not a guess
     expect(match!.matched).toBe(2);
     expect(match!.unmatched).toEqual([]);
+  });
+
+  it("still resolves scope to CHE when one row's name also collides with France (the real 'Jura' case, Task 15) — the other unambiguous cantons carry the vote", () => {
+    const columns = ["canton", "value"];
+    const rows = [
+      { canton: "Genève", value: "1" },
+      { canton: "Vaud", value: "2" },
+      { canton: "Jura", value: "3" }, // ambiguous alone: hits both CHE and FRA
+    ];
+    const match = matchGeography(
+      columns,
+      rows,
+      undefined,
+      undefined,
+      swissWithCollisionFixture,
+    );
+    expect(match).toBeDefined();
+    expect(match!.matched).toBe(3);
+    expect(match!.geography.scope).toBe("CHE");
   });
 
   it("still resolves the shipped 'world' basemap unchanged when a country column is given", () => {

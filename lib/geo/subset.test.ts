@@ -310,7 +310,7 @@ describe("subsetGeometry — a vertex floor defends the MEASURED tolerance, not 
     return topo.arcs.reduce((sum, arc) => sum + arc.length, 0);
   }
 
-  it("keeps a real fraction of Norway's coastline detail at 1200px — measured baseline 1238 vertices; floor set at 800 (~65%), well above the 44 vertices a reverted 40_075_000m placeholder produces on this exact fixture (measured, see Task 12 report for the mutation run)", async () => {
+  it("keeps a real fraction of Norway's coastline detail at 1200px — measured baseline 1238 vertices; floor set at 800 (~65%), well above the 44 vertices a reverted 40_075_000m placeholder produces on this exact fixture (measured, see Task 12 report for the mutation run). NOTE (Task 12 review, answered by Task 15): this baseline is tied to the shipped world.geojson's exact committed coastline geometry — if that asset is ever regenerated (a new Natural Earth pull, a different simplify pass), this number must be re-measured, not assumed to still hold.", async () => {
     const outPath = join(dir, "norway.topojson");
     const result = await subsetGeometry({
       sourcePath: worldPath,
@@ -376,5 +376,161 @@ describe("subsetGeometry — the other shipped basemap (us-states) is readable a
     // Task 6's review: only world.geojson had committed property-pruning coverage).
     const names = geoms.map((g) => g.properties.name).sort();
     expect(names).toEqual(["Alaska", "California", "New York"]);
+  }, 30_000);
+
+  // Task 14 split the tolerance into two paths (metres for a source mapshaper reads as
+  // lat-long, degrees for one whose bbox falls outside +/-180, like this one) but only the
+  // metre path got a vertex floor (the Norway test above) — the degrees path was defended by
+  // nothing sharper than "zero null shapes", which a total-annihilation regression would still
+  // trip but a silent coarsening would not (routed in from Task 14's review, Task 15's Step 4b).
+  //
+  // Measured baseline (this exact AK/CA/NY fixture, 1200px, current formula): 593 vertices.
+  // Floor set at 385 (~65% of baseline — the same headroom ratio as the Norway floor above).
+  // Headroom checked, not assumed: multiplying the real computed interval by 1.5x alone drops
+  // this fixture to 348 vertices (measured) — already under the 385 floor — and 5x/10x drop it
+  // to 85/30. A floor at 65% catches even a mild drift on the degrees path, the same way the
+  // Norway floor catches one on the metres path.
+  // NOTE: like the Norway floor, this baseline is tied to the shipped us-states.geojson's exact
+  // committed geometry — re-measure it if that asset is ever regenerated.
+  it("keeps a real fraction of Alaska/California/New York's coastline detail at 1200px on the degrees path — measured baseline 593 vertices; floor set at 385 (~65%)", async () => {
+    const outPath = join(dir, "us-states-vertexfloor.topojson");
+    const result = await subsetGeometry({
+      sourcePath: usStatesPath,
+      outPath,
+      featureIds: ["AK", "CA", "NY"],
+      idProperty: "postal",
+      keepProperties: ["postal", "name"],
+      renderWidthPx: 1200,
+    });
+    expect(result.featureCount).toBe(3);
+    const topo = JSON.parse(readFileSync(outPath, "utf8")) as {
+      arcs: unknown[][];
+    };
+    const vertices = topo.arcs.reduce((sum, arc) => sum + arc.length, 0);
+    expect(vertices).toBeGreaterThan(385);
+  }, 30_000);
+});
+
+describe("subsetGeometry — an admin-1 join is scoped to its country (Task 15)", () => {
+  // The real bug, on the real committed asset (not a fixture — the whole defect was that
+  // natural-earth-admin-1 is a WORLD-WIDE set, so a small hand-built fixture could not have
+  // reproduced the collision at all). "Jura" names both a Swiss canton (adm0_a3 "CHE",
+  // adm1_code "CHE-160") and a French département (adm0_a3 "FRA", adm1_code "FRA-5312") —
+  // confirmed by direct inspection of the asset while implementing this task.
+  const dir = mkdtempSync(join(tmpdir(), "geo-subset-scope-test-"));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  const adm1Path = join(
+    import.meta.dir,
+    "../../skills/map-native/assets/geo/natural-earth-admin-1.topojson",
+  );
+
+  it("retains exactly the Swiss Jura, not France's, when the request is scoped to CHE — asserts identity, not just count", async () => {
+    const outPath = join(dir, "jura-scoped.topojson");
+    const result = await subsetGeometry({
+      sourcePath: adm1Path,
+      outPath,
+      featureIds: ["Jura"],
+      idProperty: "name",
+      keepProperties: ["name", "adm0_a3", "adm1_code"],
+      renderWidthPx: 1200,
+      scope: "CHE",
+    });
+    expect(result.featureCount).toBe(1);
+
+    const topo = JSON.parse(readFileSync(outPath, "utf8")) as {
+      objects: Record<
+        string,
+        { geometries: { properties: Record<string, unknown> }[] }
+      >;
+    };
+    const layerKey = Object.keys(topo.objects)[0]!;
+    const geoms = topo.objects[layerKey]!.geometries;
+    expect(geoms).toHaveLength(1);
+    // Identity, not just count: a count of 1 alone would pass just as well on the wrong
+    // (French) feature — this checks it is specifically the Swiss one.
+    expect(geoms[0]!.properties.adm0_a3).toBe("CHE");
+    expect(geoms[0]!.properties.adm1_code).toBe("CHE-160");
+  }, 30_000);
+
+  it("throws — the general superset guard — when an unscoped request on a colliding name would return more features than asked for", async () => {
+    const outPath = join(dir, "jura-unscoped.topojson");
+    // No `scope` at all: the exact shape of the original bug — a bare name join against a
+    // world-wide admin-1 set, with no country to disambiguate "Jura". Before this task, this
+    // silently produced a 2-feature result for a 1-feature request; POST-CONDITION 3 in
+    // subset.ts is what makes that a loud failure instead.
+    await expect(
+      subsetGeometry({
+        sourcePath: adm1Path,
+        outPath,
+        featureIds: ["Jura"],
+        idProperty: "name",
+        keepProperties: ["name", "adm0_a3"],
+        renderWidthPx: 1200,
+      }),
+    ).rejects.toThrow(/more|exceed|2 features/i);
+  }, 30_000);
+});
+
+describe("subsetGeometry — the superset guard is general, not admin-1-specific (Task 15, POST-CONDITION 3)", () => {
+  // A minimal, geography-agnostic fixture: two features that both carry the SAME join-key
+  // value — a stand-in for ANY future name collision, not just "Jura" — proving the guard
+  // fires on the shape of the defect (more retained than requested) rather than on anything
+  // ADM1-specific.
+  const dir = mkdtempSync(join(tmpdir(), "geo-subset-superset-test-"));
+  const sourcePath = join(dir, "dup-source.geojson");
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  const fixture: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { id: "dup", name: "First" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [0, 0],
+              [0, 1],
+              [1, 1],
+              [1, 0],
+              [0, 0],
+            ],
+          ],
+        },
+      },
+      {
+        type: "Feature",
+        properties: { id: "dup", name: "Second" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [2, 0],
+              [2, 1],
+              [3, 1],
+              [3, 0],
+              [2, 0],
+            ],
+          ],
+        },
+      },
+    ],
+  };
+  writeFileSync(sourcePath, JSON.stringify(fixture));
+
+  it("throws when 1 requested id matches 2 features — no scope involved, no admin-1 asset involved", async () => {
+    const outPath = join(dir, "dup-out.topojson");
+    await expect(
+      subsetGeometry({
+        sourcePath,
+        outPath,
+        featureIds: ["dup"],
+        idProperty: "id",
+        keepProperties: ["id", "name"],
+        renderWidthPx: 1200,
+      }),
+    ).rejects.toThrow(/more|exceed|2 features/i);
   }, 30_000);
 });

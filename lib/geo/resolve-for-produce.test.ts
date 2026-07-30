@@ -36,6 +36,37 @@ describe("resolveGeometryForProduce", () => {
     expect(config.geometry).toBeUndefined();
   });
 
+  it("should thread geography.scope through to the geometry subset, so an admin-1 join scoped to CHE does not also pick up France's 'Jura' (Task 15)", async () => {
+    const config: Record<string, unknown> = {
+      type: "choropleth",
+      regionKey: "canton",
+      rows: [{ canton: "Jura", value: 1 }],
+      geography: {
+        origin: "shipped",
+        set: "natural-earth-admin-1",
+        scope: "CHE",
+        level: "canton",
+        joinKey: "name",
+        joinKeyFamily: "name",
+      },
+    };
+    const wrote = await resolveGeometryForProduce({
+      config,
+      assetsGeoDir: ASSETS,
+      renderWidthPx: 1200,
+    });
+    expect(wrote).toBe(true);
+    const geometry = config.geometry as {
+      objects: Record<
+        string,
+        { geometries: { properties: Record<string, unknown> }[] }
+      >;
+    };
+    const layerKey = Object.keys(geometry.objects)[0]!;
+    const geoms = geometry.objects[layerKey]!.geometries;
+    expect(geoms).toHaveLength(1); // not 2 — France's Jura is scoped out
+  }, 30_000);
+
   it("should refuse a declared geography in the video format rather than render another map", async () => {
     const config: Record<string, unknown> = {
       type: "choropleth",

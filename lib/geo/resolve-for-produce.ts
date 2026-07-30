@@ -232,6 +232,12 @@ export async function resolveGeometryForProduce(
           ),
         ],
         renderWidthPx: input.renderWidthPx,
+        // Task 15: an admin-1 join (matchAdm1Index) carries the country it resolved to on
+        // `geography.scope` — threaded straight through so subsetGeometry restricts the join to
+        // that one country and a name shared across a border (e.g. "Jura", CH/FR) does not also
+        // colour the neighbour. Absent for every non-admin-1 geography (world, us-states,
+        // declared), exactly as `scope` itself is.
+        scope: geography.scope,
       });
       config.geometry = JSON.parse(readFileSync(geomOutPath, "utf8"));
     } finally {

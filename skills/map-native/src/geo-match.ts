@@ -136,6 +136,14 @@ function matchAdm1Index(
   for (const column of columns) {
     const values = rows.map((r) => String(r[column] ?? "").trim());
     const families = new Map<string, number>(); // which family won, and how many times
+    // Country votes (Task 15) — which country this admin-1 column's subset should be scoped
+    // to, so an unscoped "Jura" (CH/FR) does not also colour France's Jura département
+    // (lib/geo/subset.ts is where that scope is applied). Every hit of a matched value votes
+    // for its OWN country — not just hits[0] — so a value that itself collides across a
+    // border (like "Jura") votes for BOTH countries rather than arbitrarily crediting only
+    // whichever the index happens to list first; the column's unambiguous rows (every other
+    // canton, matching only Switzerland) still settle the outcome.
+    const countries = new Map<string, number>();
     const unmatched: string[] = [];
     let matched = 0;
     for (const v of values) {
@@ -148,16 +156,29 @@ function matchAdm1Index(
       matched++;
       const family = hits[0]!.family;
       families.set(family, (families.get(family) ?? 0) + 1);
+      for (const country of new Set(hits.map((h) => h.country)))
+        countries.set(country, (countries.get(country) ?? 0) + 1);
     }
     if (matched === 0) continue;
     const winningFamily = [...families.entries()].sort(
       (a, b) => b[1] - a[1],
     )[0]![0];
+    // scope is set only when one country strictly outpolls every other — a tie (a column
+    // genuinely split between two countries, not just one colliding name) has no honest single
+    // scope to report, so it is left undefined rather than a coin flip that would silently drop
+    // half the data at subset time.
+    const countryVotes = [...countries.entries()].sort((a, b) => b[1] - a[1]);
+    const scope =
+      countryVotes.length > 0 &&
+      (countryVotes.length === 1 || countryVotes[0]![1] > countryVotes[1]![1])
+        ? countryVotes[0]![0]
+        : undefined;
     const candidate: GeoMatch = {
       column,
       geography: {
         origin: "shipped",
         set: "natural-earth-admin-1",
+        scope,
         level: column, // no per-feature "level" name is threaded to this fixture-free path yet —
         // and no task is currently scheduled to add the real per-country admin-level label the
         // index carries — this is a placeholder until one is.

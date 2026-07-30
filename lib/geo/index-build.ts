@@ -1,7 +1,17 @@
 // The offline ADM1 index — built ONCE (Step 6's fetch script), committed, never inlined (spec
 // D6/R6: the source is frozen since 2022, so a refresh cadence would be theatre). This file is
 // the PURE indexing logic only; the download/convert/write is a separate script.
-export type Adm1IndexEntry = { featureId: string; family: string };
+//
+// `country` (Task 15) is the feature's own ISO-A3 (Natural Earth's `adm0_a3`) — carried on
+// every entry, not just the featureId, because a colliding name (e.g. "Jura", CH/FR) needs its
+// country resolvable per HIT, not parsed back out of featureId's own "ADM0-number" convention:
+// that convention is not reliable enough to parse (measured: 40 of 4596 real features have an
+// adm1_code prefix that does not match their own adm0_a3, e.g. disputed/dependent territories).
+export type Adm1IndexEntry = {
+  featureId: string;
+  family: string;
+  country: string;
+};
 export type Adm1Index = Record<string, Adm1IndexEntry[]>;
 
 // The identifier families the spec measured (D6): 5 codes + 12 name fields + every name_alt
@@ -72,16 +82,19 @@ export function buildAdm1Index(features: GeoJSON.Feature[]): Adm1Index {
       p.adm1_code && p.adm1_code.trim() !== ""
         ? p.adm1_code
         : `${p.adm0_a3 ?? "UNK"}-${i}`;
+    // country is read straight off adm0_a3, independently of featureId — see the top-of-file
+    // comment on why featureId's own prefix cannot be parsed back into a country instead.
+    const country = p.adm0_a3 && p.adm0_a3.trim() !== "" ? p.adm0_a3 : "UNK";
 
     for (const family of CODE_FAMILIES)
-      add(index, p[family], { featureId, family }, "code");
+      add(index, p[family], { featureId, family, country }, "code");
     for (const field of NAME_FIELDS)
-      add(index, p[field], { featureId, family: field }, "name");
+      add(index, p[field], { featureId, family: field, country }, "name");
     // name_alt is a pipe-delimited alias list on Natural Earth's real files — split it, but the
     // family stays "name_alt" for every alias (the spec reports it as one family).
     if (p.name_alt)
       for (const alias of p.name_alt.split("|"))
-        add(index, alias, { featureId, family: "name_alt" }, "name");
+        add(index, alias, { featureId, family: "name_alt", country }, "name");
   });
   return index;
 }
