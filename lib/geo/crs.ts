@@ -28,15 +28,32 @@ function walk(
   return undefined;
 }
 
+function flattenGeometries(
+  geometry: GeoJSON.Geometry | GeoJSON.FeatureCollection,
+): GeoJSON.Geometry[] {
+  if (geometry.type === "FeatureCollection") {
+    const result: GeoJSON.Geometry[] = [];
+    for (const feature of geometry.features) {
+      if (feature.geometry) {
+        result.push(...flattenGeometries(feature.geometry));
+      }
+    }
+    return result;
+  }
+  if (geometry.type === "GeometryCollection") {
+    const result: GeoJSON.Geometry[] = [];
+    for (const geom of geometry.geometries) {
+      result.push(...flattenGeometries(geom));
+    }
+    return result;
+  }
+  return [geometry];
+}
+
 export function coordinateRangeVerdict(
   geometry: GeoJSON.Geometry | GeoJSON.FeatureCollection,
 ): CrsVerdict {
-  const geometries: GeoJSON.Geometry[] =
-    geometry.type === "FeatureCollection"
-      ? geometry.features
-          .map((f) => f.geometry)
-          .filter((g): g is GeoJSON.Geometry => g != null)
-      : [geometry];
+  const geometries = flattenGeometries(geometry);
 
   for (const g of geometries) {
     const bad = walk((g as { coordinates?: unknown }).coordinates, ([x, y]) => {

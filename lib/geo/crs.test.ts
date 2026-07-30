@@ -64,4 +64,24 @@ describe("coordinateRangeVerdict", () => {
     };
     expect(coordinateRangeVerdict(geom)).toEqual({ ok: true });
   });
+
+  it("rejects an out-of-range coordinate nested in a GeometryCollection", () => {
+    // GeometryCollection has no .coordinates field — it has a .geometries array instead. The
+    // guard must flatten the collection and walk its nested geometries to catch out-of-range
+    // coordinates inside. This is the fixture proving the guard does not silently miss LV95
+    // coordinates buried in a geometry collection.
+    const geom: GeoJSON.GeometryCollection = {
+      type: "GeometryCollection",
+      geometries: [
+        { type: "Point", coordinates: [7.4474, 46.9481] }, // valid Bern
+        { type: "Point", coordinates: [2600000, 1200000] }, // LV95 mistaken for WGS84
+      ],
+    };
+    const verdict = coordinateRangeVerdict(geom);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.code).toBe("coordinate-out-of-range");
+      expect(verdict.message).toContain("2600000");
+    }
+  });
 });
