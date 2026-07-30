@@ -2720,3 +2720,119 @@ refusal but does not actually block the verb. Report the count. Revert before co
 git add lib/loop/produce.ts lib/loop/manifest.ts lib/loop/produce.test.ts lib/loop/manifest.test.ts
 git commit -m "feat(produce): refuse an unresolved geo-join, mirroring unauthoredBeats (D6)"
 ```
+
+---
+
+## Phase E — the credit renders, and the nine `?raw` imports disappear
+
+### Task 15: `MapFrame.tsx` — `geoCredit`, rendered beside `source`, always (D7)
+
+**Files:**
+- Modify: `skills/map-native/src/core/MapFrame.tsx` — `MapFrameProps` (`:17-30`) and the source
+  band JSX (`:171-201`, verified while writing this plan — `data-testid="map-source"`).
+- Test: find the existing test file for `MapFrame.tsx` (`grep -rl "MapFrame" skills/map-native/
+  tests` — confirm its name before editing).
+
+**Interfaces:**
+- Produces: `MapFrameProps.geoCredit?: { name: string; url?: string }`, rendered under
+  `data-testid="map-geo-credit"` whenever present. Consumed by Task 17 (Cartogram/DotDensity/
+  Route + Choropleth threading) and Task 20 (produce.mjs assembling the config that reaches this
+  prop).
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// (append to the MapFrame test file found above — adjust render harness to match its existing
+// pattern; this file already renders MapFrame with a `source` prop for its own tests, copy that
+// scaffolding)
+it("renders geoCredit under its own testid, beside the data source, when present", () => {
+  const { getByTestId, queryByTestId } = renderMapFrame({
+    source: { name: "INSEE" },
+    geoCredit: { name: "© OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" },
+  });
+  expect(getByTestId("map-geo-credit").textContent).toContain("OpenStreetMap contributors");
+});
+
+it("renders nothing under map-geo-credit when geoCredit is absent — the shipped-basemap case", () => {
+  const { queryByTestId } = renderMapFrame({ source: { name: "INSEE" } });
+  expect(queryByTestId("map-geo-credit")).toBeNull();
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd skills/map-native && bun test tests/<the MapFrame test file>`
+Expected: FAIL — `MapFrameProps` has no `geoCredit`, and no `data-testid="map-geo-credit"` exists.
+
+- [ ] **Step 3: Implement**
+
+Add to `MapFrameProps` (`:17-30`):
+
+```ts
+  /** The geography file's own credit — spec D7. Rendered beside `source`, never merged into it:
+   *  a data attribution and a boundary-file attribution are two different facts, and a
+   *  newsroom correcting one must not silently touch the other. Absent for a shipped basemap
+   *  (world/us-states) — those carry no attribution obligation (Natural Earth is public
+   *  domain, "crediting is unnecessary"). */
+  geoCredit?: { name: string; url?: string };
+```
+
+Add, immediately after the existing source band (`:171-201`, inside the same returned fragment):
+
+```tsx
+      {geoCredit && (
+        <div
+          data-testid="map-geo-credit"
+          style={{
+            position: "absolute",
+            bottom: m,
+            right: m,
+            zIndex: 10,
+            opacity: furnitureOpacity,
+            fontSize: frame.type.source,
+            color: colors.muted,
+            ...pillStyle,
+          }}
+        >
+          {responsive && geoCredit.url ? (
+            <a
+              href={geoCredit.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: colors.muted }}
+            >
+              {geoCredit.name}
+            </a>
+          ) : (
+            geoCredit.name
+          )}
+        </div>
+      )}
+```
+
+(Destructure `geoCredit` from `props` alongside the existing `source` at this component's top —
+find the exact destructuring line while implementing; it is not shown in the excerpt read while
+writing this plan.)
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd skills/map-native && bun test tests/<the MapFrame test file>`
+Expected: PASS.
+
+- [ ] **Step 5: Mutation — prove the "renders nothing when absent" test depends on the
+  conditional, not on a coincidence**
+
+Temporarily change `{geoCredit && (...)}` to always render (drop the `geoCredit &&` guard, using
+`geoCredit ?? { name: "" }` as a fallback so the JSX still type-checks).
+
+Run: `cd skills/map-native && bun test tests/<the MapFrame test file>`
+Expected: "renders nothing under map-geo-credit when geoCredit is absent" FAILS
+(`queryByTestId("map-geo-credit")` is no longer `null`). Report the count. Revert before
+continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add skills/map-native/src/core/MapFrame.tsx skills/map-native/tests/
+git commit -m "feat(map-native): MapFrame renders geoCredit beside source, ALWAYS incl. video (D7)"
+```
