@@ -69,11 +69,43 @@ describe("resolvePlacement", () => {
     });
   });
 
-  it("an anchor with nothing usable in it is NOT a placement", () => {
-    expect(resolvePlacement({ anchor: {} })).toEqual({ kind: "undeclared" });
-    expect(resolvePlacement({ anchor: { quote: "" } })).toEqual({
+  // An anchor that parses to nothing is not a placement — but it is not SILENCE either, and the two
+  // must stay distinguishable: the remedy for silence (`freeStanding: true`) would, applied here,
+  // discard the passage somebody had already identified and mis-typed.
+  it("an anchor with nothing usable in it is malformed, not undeclared", () => {
+    expect(resolvePlacement({ anchor: {} })).toEqual({
+      kind: "malformed-anchor",
+    });
+    expect(resolvePlacement({ anchor: { quote: "   " } })).toEqual({
+      kind: "malformed-anchor",
+    });
+    expect(resolvePlacement({ anchor: { paragraphIndex: 0 } })).toEqual({
+      kind: "malformed-anchor",
+    });
+    expect(resolvePlacement({ anchor: { paragraphIndex: "4" } })).toEqual({
+      kind: "malformed-anchor",
+    });
+  });
+
+  it("no anchor key at all is undeclared — genuine silence", () => {
+    expect(resolvePlacement({})).toEqual({ kind: "undeclared" });
+    expect(resolvePlacement({ freeStanding: false })).toEqual({
       kind: "undeclared",
     });
+  });
+
+  it("a malformed anchor is refused, and the refusal says REPAIR, never freeStanding", () => {
+    const msg = undeclaredPlacementRefusal(
+      "p1",
+      { existed: true, why: "opportunities.json" },
+      { kind: "malformed-anchor" },
+    );
+    expect(msg).not.toBeNull();
+    expect(msg!).toContain("REPAIR");
+    expect(msg!).toContain("do not replace it with");
+    // The distinguishing assertion: it must NOT tell the reader they declared nothing, which is the
+    // sentence that invites the destructive fix.
+    expect(msg!).not.toContain("declares no placement");
   });
 
   it("declaring both an anchor and free-standing keeps the anchor (the more specific claim)", () => {

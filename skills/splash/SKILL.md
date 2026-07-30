@@ -1040,9 +1040,19 @@ article-web is the one channel that can host it**:
   a render whose size ≠ the channel). Native chart-native/map-native now render **true 9:16** for
   social-vertical (Slice 2 repointed the portrait comps 1080×1350 → 1080×1920), matching `dw-chart`'s
   static portrait — no more 4:5 caveat.
+  **Run the hand-over script even though there is no delivery menu** — it is what PRINTS the placement
+  block, and §6 forbids you to compose one yourself:
+  `bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results exports/<slug>/report.json --id <id>`.
+  Without it nothing states where the video goes, and the placement guard never runs either, because it
+  lives inside this script.
 - **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly, at the channel's size
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
-  article-web) — no delivery menu, just the file. `precheck --stage export --dir <dir> --format static`
+  article-web) — no delivery menu, just the file.
+  **Run the hand-over script anyway**, for the same reason as VIDEO: it prints the placement block, and
+  §6 forbids composing one by hand —
+  `bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results exports/<slug>/report.json --id <id>`.
+  Skipping it is how a static or video delivery silently loses its placement while interactive keeps one.
+  `precheck --stage export --dir <dir> --format static`
   is not documented as a required step here the way it is for interactive/scrolly above (the mechanism is
   format-agnostic, but coverage is uneven across producers: chart-native's static/video build subdir always
   carries `config.json` so the check is meaningful there, map-native's does not plant a marker in every

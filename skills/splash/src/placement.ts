@@ -16,10 +16,19 @@ import { routed, refusalSentence } from "../../../lib/core/routed-refusal";
 
 /** What the delivery is able to say about this element's place in the article.
  *  `undeclared` is deliberately distinct from `free-standing`: "nobody said" is not "it belongs
- *  nowhere", and collapsing the two is how a dropped anchor would disappear silently. */
+ *  nowhere", and collapsing the two is how a dropped anchor would disappear silently.
+ *
+ *  `malformed-anchor` is a THIRD state for the same reason, and it earns its place: an entry that
+ *  carries an `anchor` whose fields are unusable (an empty quote, a `paragraphIndex` of 0 or a
+ *  string) is NOT silence — somebody wrote down a passage and the copy slipped. Reporting it as
+ *  "declares no placement" would be true of the parse and false about the intent, and the cheapest
+ *  way out of that refusal — adding `freeStanding: true` — would convert a real, mis-typed anchor
+ *  into "belongs to no passage", losing the paragraph the article actually had. The upstream twin
+ *  already draws this line (`skills/suggest-article/scripts/save-opportunities.mjs`). */
 export type Placement =
   | { kind: "anchored"; paragraphIndex?: number; quote?: string }
   | { kind: "free-standing" }
+  | { kind: "malformed-anchor" }
   | { kind: "undeclared" };
 
 function usableQuote(v: unknown): string | undefined {
@@ -52,6 +61,9 @@ export function resolvePlacement(entry: unknown): Placement {
       ...(quote !== undefined ? { quote } : {}),
     };
   if (e.freeStanding === true) return { kind: "free-standing" };
+  // An `anchor` OBJECT was written and nothing in it survived `usableQuote`/`usableIndex`. That is a
+  // slip to repair, not a silence to fill — see the type's note on why the two must not collapse.
+  if (anchor !== undefined) return { kind: "malformed-anchor" };
   return { kind: "undeclared" };
 }
 
@@ -62,7 +74,10 @@ export function placementLines(
   placement: Placement,
   copy: PlacementCopy,
 ): string[] {
-  if (placement.kind === "undeclared") return [];
+  // Both silences print nothing. A malformed anchor is refused upstream at hand-over, but if it ever
+  // reaches here it must stay mute rather than guess at the paragraph somebody mis-typed.
+  if (placement.kind === "undeclared" || placement.kind === "malformed-anchor")
+    return [];
   if (placement.kind === "free-standing")
     return [copy.intro, copy.freeStanding, copy.advisory];
   const { paragraphIndex, quote } = placement;
@@ -136,6 +151,19 @@ export function undeclaredPlacementRefusal(
   placement: Placement,
 ): string | null {
   if (!evidence.existed) return null;
+  // A malformed anchor is refused too, but NEVER with the same sentence: the fix is to repair the
+  // field, and telling someone they "declared no placement" invites them to add `freeStanding: true`
+  // — which passes every gate and quietly throws away the passage they had already identified.
+  if (placement.kind === "malformed-anchor")
+    return refusalSentence(
+      routed(
+        "placement-undeclared",
+        `refusing to deliver ${proposalId}: this run read an article (${evidence.why}) and the ` +
+          `accepted proposal HAS an \`anchor\`, but neither a non-empty \`quote\` nor a positive ` +
+          `integer \`paragraphIndex\` — REPAIR the field, do not replace it with ` +
+          `\`freeStanding: true\`, which would discard the passage this element was written for`,
+      ),
+    );
   if (placement.kind !== "undeclared") return null;
   return refusalSentence(
     routed(
