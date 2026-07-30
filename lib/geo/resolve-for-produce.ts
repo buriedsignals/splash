@@ -11,13 +11,47 @@ import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { subsetGeometry, toleranceMetersFor } from "./subset";
-import { assertGeoCreditPresent } from "./policy";
-import { basemapKeyFor, resolveGeographyRef } from "./ref";
+import { assertGeoCreditPresent, type GeographyLicenceInfo } from "./policy";
+import { basemapKeyFor, resolveGeographyRef, type GeographyRef } from "./ref";
 
 export type ResolveForProduceInput = {
   config: Record<string, unknown>; // parsed config, MUTATED in place
   assetsGeoDir: string; // absolute path to the skill's assets/geo
   renderWidthPx: number;
+};
+
+// The GeographyRef this block actually handles at runtime, widened with the two fields the
+// moved logic reads off it that GeographyRef itself does not declare — `sourcePath` (see the
+// comment on `sourcePath` below: "this task's own addition to the config shape ... a genuine,
+// documented pipeline gap") and `licence` (read only by assertGeoCreditPresent's own error
+// message). Both stay optional/undefined exactly as they always were at runtime — this is a
+// type declaration for the existing gap, not a fix for it.
+type ResolvedGeography = GeographyRef & {
+  sourcePath?: string;
+  licence?: string;
+};
+
+// The moved block's real config shape varies per map type (choropleth/cartogram/dot-density/
+// route) and was always untyped JS before this move (produce.mjs). A local narrowing type —
+// the same idiom already used elsewhere in this codebase for bridging an untyped-at-the-boundary
+// object into typed code (e.g. lib/core/verbs/publish.ts, lib/host/drive.ts's `as Record<string,
+// unknown>` casts) — declares only the fields this function actually reads or writes.
+type LooseMapConfig = Record<string, unknown> & {
+  geography?: ResolvedGeography;
+  basemap?: string;
+  geoCredit?: { name: string; url?: string };
+  type?: string;
+  values?: { id: unknown }[];
+  rows?: Record<string, unknown>[];
+  regionKey?: string;
+  geometry?: unknown;
+};
+
+// The minimal shape the route branch reads off a parsed GeoJSON source file — just enough to
+// scan every feature's join-key property (see the "route" branch below).
+type RouteGeoJSONSource = {
+  type: string;
+  features: { properties?: Record<string, unknown> }[];
 };
 
 /** Resolves config.geography into config.geometry. Returns true when it wrote geometry,
@@ -26,10 +60,11 @@ export async function resolveGeometryForProduce(
   input: ResolveForProduceInput,
 ): Promise<boolean> {
   // input.config's real shape varies per map type (choropleth/cartogram/dot-density/route) and
-  // was always untyped JS before this move (produce.mjs) — one alias, typed loosely, rather than
-  // scattering casts through logic this task must not alter. `config` IS `input.config` (same
-  // object reference), so mutations below still land on the caller's object.
-  const config = input.config as any;
+  // was always untyped JS before this move (produce.mjs) — one alias, narrowed to the fields
+  // this block reads/writes (LooseMapConfig above), rather than scattering casts through logic
+  // this task must not alter. `config` IS `input.config` (same object reference), so mutations
+  // below still land on the caller's object.
+  const config = input.config as LooseMapConfig;
 
   // Geometry resolution (D5, D7) — resolve the geometry DESCRIPTOR (which source, which
   // features are actually drawn) into actual bytes, and refuse a missing OSM credit. Runs
@@ -54,7 +89,7 @@ export async function resolveGeometryForProduce(
   // change. Resolved by falling back to `resolveGeographyRef(config.basemap)` — the EXACT
   // fallback ChoroplethMap.tsx's own render code already applies — whenever `config.geography`
   // is absent but `config.basemap` names a shipped registry entry.
-  const geography =
+  const geography: ResolvedGeography | undefined =
     config.geography ??
     (config.basemap ? resolveGeographyRef(config.basemap) : undefined);
 
@@ -68,7 +103,9 @@ export async function resolveGeometryForProduce(
     // would fail-hard on every existing shipped-basemap map, none of which the assembler (or
     // any sample fixture) populates a `geoCredit` for today. Gated on `origin` instead.
     assertGeoCreditPresent(
-      geography.origin === "declared" ? geography : undefined,
+      geography.origin === "declared"
+        ? (geography as unknown as GeographyLicenceInfo)
+        : undefined,
       config.geoCredit,
     );
 
@@ -87,10 +124,10 @@ export async function resolveGeometryForProduce(
     // per-feature filtering step is a no-op for this one type.
     let featureIds =
       config.type === "cartogram"
-        ? config.values.map((v: any) => String(v.id))
+        ? config.values!.map((v) => String(v.id))
         : config.type === "route"
           ? null // resolved below, once sourcePath is known
-          : config.rows.map((r: any) => String(r[config.regionKey]));
+          : config.rows!.map((r) => String(r[config.regionKey as string]));
 
     // WHERE to read the frozen source from: a declared file names its own frozen path
     // (`geography.sourcePath` — this task's own addition to the config shape, threaded by a
@@ -114,14 +151,16 @@ export async function resolveGeometryForProduce(
       );
 
     if (featureIds === null) {
-      const sourceRaw = JSON.parse(readFileSync(sourcePath, "utf8"));
+      const sourceRaw = JSON.parse(
+        readFileSync(sourcePath, "utf8"),
+      ) as RouteGeoJSONSource;
       if (sourceRaw.type !== "FeatureCollection")
         throw new Error(
           `produce: route geometry source "${sourcePath}" is not a GeoJSON FeatureCollection ` +
             `(got type "${sourceRaw.type}") — the whole-source id scan a route needs only ` +
             `understands GeoJSON today`,
         );
-      featureIds = sourceRaw.features.map((f: any) =>
+      featureIds = sourceRaw.features.map((f) =>
         String(f.properties?.[geography.joinKey]),
       );
     }

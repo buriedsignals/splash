@@ -175,9 +175,14 @@ const wroteGeometry = await resolveGeometryForProduce({
 });
 if (wroteGeometry) {
   // Persist the resolved config to outDir/config.json — never back to the caller's own
-  // configPath (see the comment on resolvedConfigPath above) — and repoint
-  // resolvedConfigPath there so vite.config.ts's CONFIG= re-read below picks up the
-  // resolved geometry for every build.
+  // `configPath` (see the comment on `resolvedConfigPath` above) — and repoint
+  // `resolvedConfigPath` there so vite.config.ts's `CONFIG=` re-read below picks up the
+  // resolved geometry for every build. Written now, before any build/snap step that may
+  // need VITE_MAPTILER_KEY/REMOTION_MAPTILER_KEY, so the resolved geometry is observable
+  // on disk even if a later step fails for an unrelated reason. The "interactive" branch's
+  // own config.json copy further down is skipped when it would be a same-path no-op (see
+  // that branch) — tolerated by every format's delivery contract either way
+  // (lib/core/contract.ts: "config.json ... legitimately sit beside the deliverable").
   resolvedConfigPath = join(outDir, "config.json");
   writeFileSync(resolvedConfigPath, JSON.stringify(parsedConfig, null, 2) + "\n");
 }
