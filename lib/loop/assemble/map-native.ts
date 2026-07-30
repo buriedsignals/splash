@@ -14,7 +14,7 @@ import { BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps";
 // The renderer's own basemap-registry key, recovered from GeoMatch's GeographyRef (Task 9 —
 // GeoMatch stopped carrying that raw key when it widened from `basemap: string`). See
 // lib/geo/ref.ts's own doc comment for why `geography.set` is not usable directly here.
-import { basemapKeyFor } from "../../geo/ref";
+import { basemapKeyFor, resolveGeographyRef } from "../../geo/ref";
 
 const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 const POINT_TYPES = new Set(["symbol", "hex-grid", "locator", "route"]);
@@ -294,6 +294,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
       type: "route",
       route,
       basemap,
+      geography: resolveGeographyRef(basemap), // basemap is the literal "world" set above
       title,
       description,
       source,

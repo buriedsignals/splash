@@ -1,6 +1,7 @@
 import { test, expect, describe, it } from "bun:test";
 import { assembleMapNative } from "./map-native";
 import { mapNativeConfigErrors } from "../../../skills/map-native/src/validate-config";
+import { resolveGeographyRef } from "../../geo/ref";
 import type { ProductionBrief } from "../../core/production-brief";
 
 const REGION_BRIEF: ProductionBrief = {
@@ -241,6 +242,19 @@ test("a route is the ordered coordinates, as pairs", () => {
     [-71.62, -33.05],
     [140.87, 38.26],
   ]);
+});
+
+// Task 17 (RouteMap.tsx reads injected geometry, mirroring ChoroplethMap.tsx/CartogramMap.tsx)
+// — route's config now carries `geography` alongside its literal `basemap: "world"`, the same
+// GeographyRef shape the region family already emits, so the renderer can resolve a join key
+// from `config.geography` the same way ChoroplethMap.tsx does instead of a bare string.
+test("a route config names its geography (always world — point family has no basemap match)", () => {
+  const r = assembleMapNative({ ...POINT_BRIEF, nativeType: "route" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const cfg = r.value as { basemap: string; geography: unknown };
+  expect(cfg.basemap).toBe("world");
+  expect(cfg.geography).toEqual(resolveGeographyRef("world"));
 });
 
 test("a hex-grid's points carry an optional value, resolved the same way as symbol", () => {

@@ -7,8 +7,8 @@ import React, {
 } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
-const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import { computeDotDensity, univariateAccent } from "./dot-density-geo";
 import { scatterInPolygon } from "./dot-scatter";
 import { resolveMapStyle } from "./route-geo";
@@ -189,7 +189,22 @@ export const DotDensityMap: React.FC<Props> = ({
         if (layer.type === "symbol") map.removeLayer(layer.id);
       }
 
-      const world = worldGeoJson as GeoJSON.FeatureCollection;
+      // Geometry arrives through the injected config now (produce.mjs, Task 20) — never a
+      // static bundle import (D5, mirrors ChoroplethMap.tsx). Loud, named failure instead of a
+      // bare TypeError on `undefined.objects` — with the `?raw` import removed there is no
+      // bundled fallback geometry anymore, so an absent config.geometry must fail here, not as
+      // an unexplained timeout downstream.
+      if (!config.geometry)
+        throw new Error(
+          "dot-density: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+        );
+      const topology = config.geometry as Topology;
+      const objectName = Object.keys(topology.objects)[0]!;
+      const world = topoFeature(
+        topology,
+        topology.objects[objectName]!,
+      ) as unknown as GeoJSON.FeatureCollection;
+
       const layout = computeDotDensity(config, world, JOIN_KEY, dark);
 
       // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.

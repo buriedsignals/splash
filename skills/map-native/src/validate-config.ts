@@ -1,3 +1,4 @@
+import type { Topology } from "topojson-specification";
 import type { ChoroplethData } from "./choropleth-geo";
 import { CAMERA_MODES, type CameraMode } from "./camera-mode";
 import { MAP_STYLES } from "./map-styles";
@@ -588,6 +589,11 @@ export type DotDensityConfigShape = {
   categories?: { field: string; label: string; color?: string }[];
   dotValue?: number;
   basemap: string;
+  /** The actual world TopoJSON, injected by produce (Task 20) — same contract as
+   *  ChoroplethConfig's `geometry` (D5): there is no bundled fallback geometry anymore, so
+   *  this is required at render time even though the type stays optional for configs
+   *  assembled before Task 20 lands. */
+  geometry?: Topology;
   mapStyle?: string;
   /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
    * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
@@ -835,6 +841,11 @@ export type CartogramConfigShape = {
   palette?: string | string[];
   bins?: number;
   valueLabel?: string;
+  /** The actual world TopoJSON, injected by produce (Task 20) — same contract as
+   *  ChoroplethConfig's `geometry` (D5): there is no bundled fallback geometry anymore, so
+   *  this is required at render time even though the type stays optional for configs
+   *  assembled before Task 20 lands. */
+  geometry?: Topology;
   // The short value suffix for callouts (e.g. "%") — mirrors ChoroplethConfigShape's
   // `valueUnit`.
   valueUnit?: string;

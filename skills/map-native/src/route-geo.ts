@@ -1,5 +1,7 @@
 import * as turf from "@turf/turf";
+import type { Topology } from "topojson-specification";
 import { TITLE_SCENE_FRAMES } from "./scene-constants";
+import type { GeographyRef } from "./basemaps";
 
 // ---------------------------------------------------------------------------
 // Map style option space — lives in map-styles.ts (runtime-free, see that file's
@@ -33,6 +35,16 @@ export interface RouteConfig {
   type: "route";
   route: [number, number][];
   basemap?: string;
+  /** Which geography `basemap` names (GeographyRef, Task 4/9/10) — mirrors ChoroplethConfig's
+   *  `geography`. The point family never geo-matches (a lat/lon pair anchors every mark
+   *  directly, see map-native.ts's assemblePointFamily header comment), so `basemap` is always
+   *  the literal "world" and this is always `resolveGeographyRef("world")`. Optional for
+   *  back-compat with configs assembled before Task 17 landed this field. */
+  geography?: GeographyRef;
+  /** The actual world TopoJSON, injected by produce (Task 20) — same contract as
+   *  ChoroplethConfig's `geometry` (D5): there is no bundled fallback geometry, so this is
+   *  required at render time even though the type stays optional for pre-Task-20 configs. */
+  geometry?: Topology;
   mapStyle?: string;
   /** Newsroom house ground — themes the frame + legend furniture. Basemap stays light/dark. */
   themeBg?: string;
