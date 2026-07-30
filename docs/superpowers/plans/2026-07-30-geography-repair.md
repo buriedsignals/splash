@@ -941,3 +941,105 @@ git commit -m "docs(review): what a keyless gate actually exercises on this bran
 ## After the plan
 
 A **fresh whole-branch review** — not a per-task one — before the merge. That is the step this branch skipped, and it is what found all seven of these. Its brief should be the four lenses recorded in `docs/splash/geography-final-review-2026-07-30.md`, with the seven Criticals named as things to re-verify closed rather than as things to rediscover.
+
+---
+
+### Task 14: `us-states` — the shipped basemap that cannot be resolved at all
+
+Found by this repair, missed by all four review lenses, and invisible to every existing test because
+**every fixture in `assets/sample-data` uses `basemap: "world"`** — not one exercises the other shipped
+basemap.
+
+Controller-reproduced:
+
+```
+us-states.geojson  lon range −188.90 … −65.63   lat 17.93 … 71.35   no `crs` member
+resolveGeometryForProduce({ basemap: "us-states" })
+  → subsetGeometry: bunx mapshaper failed (exit 1):
+    [simplify] Unable to convert meters to unknown coordinates
+```
+
+Alaska's Aleutians are encoded **past the antimeridian** (−188.9°) so the state stays contiguous
+rather than being split across the map. mapshaper sees coordinates outside ±180, concludes the
+dataset is not lat-long, and refuses a metre-denominated tolerance. This predates Task 3 —
+`-simplify interval=<N>m` has been there since the original plan's Task 20 — so `us-states` has
+been dead for the whole branch.
+
+Note the internal contradiction this exposes, and record it in the report: `lib/geo/crs.ts`'s
+`coordinateRangeVerdict` refuses coordinates outside ±180, so **the shipped asset violates the guard
+this same branch introduced**. Do not "fix" the asset to satisfy the guard — wrapping the longitudes
+would split Alaska in two, which is exactly what the −188.9 encoding exists to prevent. The guard's
+scope (a journalist's *declared* file) and the shipped asset's encoding are simply different
+concerns; say so where the guard is defined.
+
+**Two candidates were probed by the controller before this task was written. Do not re-litigate them:**
+
+```
+A  bunx mapshaper us-states.geojson -simplify visvalingam interval=0.3 keep-shapes -o out.topojson
+   → WROTE the file.  (0.3 is 33395 m / 111320 — the metre tolerance expressed in degrees)
+B  bunx mapshaper us-states.geojson -proj wgs84 -simplify … interval=33395m
+   → Error: [proj] Unable to project -- source coordinate system is unknown
+```
+
+So the fix is A: when the source is one mapshaper will not read as lat-long, express the tolerance in
+**source units** instead of metres.
+
+**Files:**
+- Modify: `lib/geo/subset.ts`
+- Modify: `lib/geo/subset.test.ts`
+- Modify: `skills/map-native/tests/resolve-all-fixtures.test.ts` (or add a sibling) so a `us-states`
+  config is exercised at all
+
+**Interfaces:** no signature change. The unit decision is internal to `subsetGeometry`.
+
+- [ ] **Step 1: Write the failing test**
+
+Add a case that resolves a `us-states` choropleth (`rows` with `AK`, `CA`, `NY` on `regionKey: "code"`,
+joining on `postal`) through `resolveGeometryForProduce`, asserting real geometry with zero null
+shapes — the same shape as the existing world assertions.
+
+- [ ] **Step 2: Run it and watch it fail**
+
+Run: `cd skills/map-native && bun test tests/resolve-all-fixtures.test.ts`
+Expected: FAIL with `[simplify] Unable to convert meters to unknown coordinates`.
+
+- [ ] **Step 3: Express the tolerance in the source's own units**
+
+`subsetGeometry` already measures the bbox in pass 1 to derive the extent. Derive the tolerance
+**in degrees directly from that same bbox** rather than converting metres back:
+
+```ts
+// Tolerance in the SOURCE's own units. mapshaper only accepts a metre-denominated interval for a
+// dataset it can read as lat-long, and it refuses any file whose coordinates fall outside ±180 —
+// which the shipped us-states asset does, deliberately: Alaska's Aleutians are encoded past the
+// antimeridian (−188.9°) so the state stays contiguous instead of being split across the map.
+// Deriving degrees from the bbox we already measured avoids the unit conversion entirely and is
+// exactly equivalent: extentMetersFor is that same span scaled by metres-per-degree.
+const spanDegrees = Math.max(bbox.maxLon - bbox.minLon, bbox.maxLat - bbox.minLat);
+const toleranceDegrees = spanDegrees / input.renderWidthPx;
+```
+
+Pass `interval=${toleranceDegrees}` (no `m` suffix) to pass 2. Decide and **document in a comment**
+whether this replaces the metre path everywhere or only for out-of-range sources; prefer replacing it
+everywhere if the rendered results match, because one code path cannot drift against another.
+
+- [ ] **Step 4: Run the test** — Expected: PASS, zero null shapes.
+
+- [ ] **Step 5: Prove the world basemap did not regress**
+
+Run the full `tests/resolve-all-fixtures.test.ts` (15 cases, all world) and confirm they still pass
+with the same feature counts. If the counts move, the unit change altered simplification for the
+world path too — report the before/after numbers rather than accepting them.
+
+- [ ] **Step 6: Mutation-verify**
+
+Revert to `interval=${toleranceMeters}m` and confirm the new `us-states` case reddens with the real
+mapshaper error; restore; confirm green. Record both.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git status --short
+git add lib/geo/subset.ts lib/geo/subset.test.ts skills/map-native/tests/resolve-all-fixtures.test.ts
+git commit -m "fix(geo): us-states could not be simplified at all — express the tolerance in source units"
+```
