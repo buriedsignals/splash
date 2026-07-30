@@ -35,4 +35,29 @@ describe("resolveGeometryForProduce", () => {
     expect(wrote).toBe(false);
     expect(config.geometry).toBeUndefined();
   });
+
+  it("should refuse a declared geography in the video format rather than render another map", async () => {
+    const config: Record<string, unknown> = {
+      type: "choropleth",
+      regionKey: "code",
+      rows: [{ code: "GE", value: 1 }],
+      geography: {
+        origin: "declared",
+        set: "ch-cantons",
+        level: "canton",
+        joinKey: "name",
+        joinKeyFamily: "name",
+        sourcePath: "/tmp/nope.geojson",
+      },
+      geoCredit: { name: "swisstopo" },
+    };
+    await expect(
+      resolveGeometryForProduce({
+        config,
+        assetsGeoDir: ASSETS,
+        renderWidthPx: 1200,
+        format: "video",
+      }),
+    ).rejects.toThrow(/video/i);
+  });
 });

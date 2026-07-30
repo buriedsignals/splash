@@ -172,6 +172,7 @@ const wroteGeometry = await resolveGeometryForProduce({
   config: parsedConfig,
   assetsGeoDir: join(root, "assets", "geo"),
   renderWidthPx: mediaSize.width,
+  format,
 });
 if (wroteGeometry) {
   // Persist the resolved config to outDir/config.json — never back to the caller's own

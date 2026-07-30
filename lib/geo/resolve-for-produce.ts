@@ -18,6 +18,11 @@ export type ResolveForProduceInput = {
   config: Record<string, unknown>; // parsed config, MUTATED in place
   assetsGeoDir: string; // absolute path to the skill's assets/geo
   renderWidthPx: number;
+  // The single VisualFormat this call is producing (map-native's and scrolly's own CLI
+  // argument, threaded through — never a second source of truth). Optional: every caller
+  // written before Task 7 has no reason to know about the video refusal below, and absent
+  // means "not a video", the behaviour every existing caller already had.
+  format?: string;
 };
 
 // The GeographyRef this block actually handles at runtime, widened with the two fields the
@@ -109,6 +114,19 @@ export async function resolveGeometryForProduce(
   if (!joins) return false;
 
   if (geography) {
+    // The video family reads staticFile("geo/world.geojson") directly and never looks at
+    // config.geometry (grep: zero hits for config.geometry under src/components). For a SHIPPED
+    // basemap that is merely redundant. For a DECLARED geometry it renders a different map than
+    // the one the credit names — the worst available outcome — so it refuses here, by name,
+    // until the video path reads injected geometry.
+    if (geography.origin === "declared" && input.format === "video")
+      throw new Error(
+        `produce: a declared geography ("${geography.set}") cannot be rendered as video yet — ` +
+          `the video compositions read the shipped world basemap directly, so the output would ` +
+          `show a different map from the one the credit names. Choose static, interactive or ` +
+          `scrolly for this geography`,
+      );
+
     // D7's credit obligation applies ONLY to a DECLARED geometry (a shipped basemap —
     // Natural Earth `world.geojson`, US Census `us-states.geojson` — is public domain, no
     // credit owed). assertGeoCreditPresent's own contract treats a present first argument as
