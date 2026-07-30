@@ -1024,7 +1024,12 @@ article-web is the one channel that can host it**:
   static portrait — no more 4:5 caveat.
 - **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly, at the channel's size
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
-  article-web) — no delivery menu, just the file.
+  article-web) — no delivery menu, just the file. `precheck --stage export --dir <dir> --format static`
+  is not documented as a required step here the way it is for interactive/scrolly above (the mechanism is
+  format-agnostic, but coverage is uneven across producers: chart-native's static/video build subdir always
+  carries `config.json` so the check is meaningful there, map-native's does not plant a marker in every
+  case, so a clean check is not yet a reliable "this folder is safe to hand over" signal for it — a
+  follow-up, not resolved here).
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`, article-web only):**
   splash **PROPOSES three delivery forms and the journalist CHOOSES one — and ONLY the chosen form is built
   (LAZILY, on demand)**. There is no "produce all forms unconditionally": the React bundle and the Cloudflare
