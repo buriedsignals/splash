@@ -8,7 +8,13 @@
 // the real extent simplifies HARDER, which is the unsafe direction — the opposite of what the
 // placeholder's own comment claimed.
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -107,14 +113,16 @@ export async function subsetGeometry(
   )}]))`;
   const tmp = mkdtempSync(join(tmpdir(), "geo-subset-"));
   try {
-    // Pass 1 — filter and prune, no simplification, to GeoJSON we can measure.
+    // Pass 1 — filter, no simplification, to GeoJSON we can measure. Field pruning happens in
+    // JS below, NOT via `-filter-fields` here: mapshaper's `-filter-fields` throws when a named
+    // field is absent from the source table, and `keepProperties` may now name `name` (or a
+    // config's `labelField`) that a given source lacks — this repo ships two geometry assets,
+    // and only one guarantee holds across both: the join key itself is always present.
     const filtered = join(tmp, "filtered.geojson");
     mapshaper([
       input.sourcePath,
       "-filter",
       filterExpr,
-      "-filter-fields",
-      `fields=${input.keepProperties.join(",")}`,
       "-o",
       filtered,
       "format=geojson",
@@ -137,6 +145,23 @@ export async function subsetGeometry(
           `are absent from ${input.sourcePath} on join key "${input.idProperty}" — ` +
           `first missing: ${missing.slice(0, 5).join(", ")}`,
       );
+    // Prune properties to the intersection of `keepProperties` and the fields actually present
+    // on the filtered features — never pass a field mapshaper doesn't have, and never assume a
+    // requested field (e.g. a declared file lacking `name`) exists just because it was asked
+    // for. Union across all features, not just the first: a source's schema is not guaranteed
+    // uniform per-feature.
+    const presentFields = new Set(
+      features.flatMap((f) => Object.keys(f.properties ?? {})),
+    );
+    const fieldsToKeep = new Set(
+      input.keepProperties.filter((f) => presentFields.has(f)),
+    );
+    for (const f of features) {
+      if (!f.properties) continue;
+      for (const key of Object.keys(f.properties))
+        if (!fieldsToKeep.has(key)) delete f.properties[key];
+    }
+    writeFileSync(filtered, JSON.stringify(parsed));
     const toleranceMeters = toleranceMetersFor(
       extentMetersFor(bboxOf(features.map((f) => f.geometry))),
       input.renderWidthPx,

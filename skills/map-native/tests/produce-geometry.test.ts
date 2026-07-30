@@ -19,10 +19,12 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, ".."); // skills/map-native
 const PRODUCE = join(root, "scripts", "produce.mjs");
+const ASSETS = join(root, "assets", "geo");
 
 function runProduceRaw(configPath: string, outDir: string, format = "static") {
   return spawnSync("bun", [PRODUCE, configPath, outDir, format], {
@@ -262,4 +264,31 @@ describe("produce.mjs resolves a declared geography's subset into config.geometr
     expect(written.geometry.type).toBe("Topology");
     expect(written.geography.origin).toBe("shipped");
   }, 60_000);
+
+  it("should keep the human label when the join key is not the label", async () => {
+    const config: Record<string, unknown> = {
+      type: "choropleth",
+      basemap: "world",
+      regionKey: "code",
+      rows: [
+        { code: "FRA", value: 1 },
+        { code: "DEU", value: 2 },
+      ],
+    };
+    await resolveGeometryForProduce({
+      config,
+      assetsGeoDir: ASSETS,
+      renderWidthPx: 1200,
+    });
+    const topo = config.geometry as {
+      objects: Record<
+        string,
+        { geometries: { properties?: Record<string, unknown> }[] }
+      >;
+    };
+    const props = Object.values(topo.objects).flatMap((o) => o.geometries)[0]!
+      .properties!;
+    expect(props.iso_a3).toBeDefined();
+    expect(props.name).toBeDefined(); // the popup, the callout and the route label all read this
+  }, 30_000);
 });

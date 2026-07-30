@@ -188,7 +188,22 @@ export async function resolveGeometryForProduce(
         outPath: geomOutPath,
         featureIds,
         idProperty: geography.joinKey,
-        keepProperties: [geography.joinKey],
+        // The join key alone is not enough: seven consumers read `properties.name` for the
+        // label a reader actually sees (hover popup, video callout, cartogram cell, route
+        // territory). Both of this suite's fixtures happened to join ON `name`, which is why
+        // pruning to the join key alone looked harmless. `labelField` joins the list when the
+        // config names one.
+        keepProperties: [
+          ...new Set(
+            [
+              geography.joinKey,
+              "name",
+              typeof input.config.labelField === "string"
+                ? input.config.labelField
+                : undefined,
+            ].filter((k): k is string => Boolean(k)),
+          ),
+        ],
         renderWidthPx: input.renderWidthPx,
       });
       config.geometry = JSON.parse(readFileSync(geomOutPath, "utf8"));
