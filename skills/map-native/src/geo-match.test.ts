@@ -139,8 +139,9 @@ describe("matchGeography — ADM1 index candidate (D10.2)", () => {
     );
     // No ADM1 candidate wins (0 matched), so this column is not returned as the best geography
     // match from the ADM1 side at all — orient.ts's caller sees `undefined` for this candidate
-    // and geoRefusal (Task 13) is where the "no geography Splash can place" message lands. This
-    // test only asserts the ADM1 branch does not crash and does not silently claim a match.
+    // and geoRefusal (Task 12, `lib/loop/assemble/map-native.ts`) is where the "no geography
+    // Splash can place" message lands. This test only asserts the ADM1 branch does not crash and
+    // does not silently claim a match.
     expect(match).toBeUndefined();
   });
 

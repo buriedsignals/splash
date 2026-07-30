@@ -1,6 +1,6 @@
 ---
 name: map-native
-description: Use when you need a native (non-Datawrapper) map that ships ALL THREE formats from ONE React+MapTiler component — a static PNG, a self-contained interactive HTML (pan/zoom/hover/legend, responsive), and a Remotion mp4 motion build. The native map engine — 9 MapTiler 2D types covering the FT "MAP" group + Cesium 3D flyover as a separate engine. The premium path for stories that want a motion reveal or rich interactivity on a map. Keywords choropleth, proportional symbol, flow route, explainer beat, dot density, hex grid, spatial bins, cartogram, contour isoline, locator markers, 3D terrain flyover, MapTiler, Remotion, Cesium, geojson, choropleth, sequential scale, diverging scale, CVD-safe, basemap-fit, fitBounds, region shading, data join, ISO-A3, world, fr-departments, fr-regions, us-states, legend, no-data, static PNG, interactive HTML, video mp4, animation, reveal, progress, react, native map.
+description: Use when you need a native (non-Datawrapper) map that ships ALL THREE formats from ONE React+MapTiler component — a static PNG, a self-contained interactive HTML (pan/zoom/hover/legend, responsive), and a Remotion mp4 motion build. The native map engine — 9 MapTiler 2D types covering the FT "MAP" group + Cesium 3D flyover as a separate engine. The premium path for stories that want a motion reveal or rich interactivity on a map. Keywords choropleth, proportional symbol, flow route, explainer beat, dot density, hex grid, spatial bins, cartogram, contour isoline, locator markers, 3D terrain flyover, MapTiler, Remotion, Cesium, geojson, choropleth, sequential scale, diverging scale, CVD-safe, basemap-fit, fitBounds, region shading, data join, ISO-A3, world, us-states, legend, no-data, static PNG, interactive HTML, video mp4, animation, reveal, progress, react, native map.
 ---
 
 # Map Native — the native map engine (one component per type → three formats)
@@ -128,7 +128,7 @@ For each new map type, in order:
 
 ## Module furniture
 
-Every map module carries three pieces of furniture — **insight title**, **description** (subtitle elaborating the insight), and **source** — each appearing exactly once. Overlays use `min()`/`clamp()`/`vw` units so they stay readable from 390 px mobile up to 1280 px desktop without breakpoints. The video title card inherits `title` and `description` from the shared config (same JSON drives all three formats). The interactive scrolly inherits the same values via the shared config. See `docs/splash/embeddable-module-best-practices.md` for the full responsive overlay contract.
+Every map module carries four pieces of furniture — **insight title**, **description** (subtitle elaborating the insight), **source**, and, when the geometry came from a DECLARED file (spec D7), **`geoCredit`** — each appearing exactly once. `geoCredit` (`{ name, url? }`, `MapFrame.tsx`'s own props) renders bottom-right, distinct from `source`: a data attribution and a boundary-file attribution are two different facts, and a newsroom correcting one must not silently touch the other. It is absent for a shipped basemap (Natural Earth `world`, US Census `us-states`) — those carry no attribution obligation — and its presence is enforced at produce time (see `docs/splash/guardrails.md`'s Geography credit guard). Overlays use `min()`/`clamp()`/`vw` units so they stay readable from 390 px mobile up to 1280 px desktop without breakpoints. The video title card inherits `title` and `description` from the shared config (same JSON drives all three formats). The interactive scrolly inherits the same values via the shared config. See `docs/splash/embeddable-module-best-practices.md` for the full responsive overlay contract.
 
 ## Overview
 
@@ -203,8 +203,10 @@ the interactive scrolly play through the same beats. This is the difference betw
   fading its neighbours.
 - **Consistent basemap colours** — water blue + no-data grey come from `src/theme/colors.ts`
   (`WATER_COLOR`/`NO_DATA_COLOR`), the SAME constants the interactive uses, so the two formats match.
-  (Import colours from `theme/colors`, NEVER from `ChoroplethMap` — that drags a Vite `?raw` import into
-  the Remotion/webpack bundle and crashes the render.)
+  (Import colours from `theme/colors`, NEVER from `ChoroplethMap` — `ChoroplethMap.tsx` throws at
+  module-load time when `VITE_MAPTILER_KEY` is unset, and the Remotion build only ever sets
+  `REMOTION_MAPTILER_KEY`, so pulling anything from it — even a shared constant — crashes the
+  Remotion bundle before a single frame renders.)
 - **Words integrated on the map** — the data value is an on-map annotation anchored to the region
   (`CountryLabel` = NAME + large value, e.g. `NORWAY` / `99%`), NOT a lower-third subtitle. The value uses
   a SHORT `valueUnit` (e.g. `%`), never the long legend label. The lower-third caption is reserved for the
@@ -320,18 +322,22 @@ S/I/V = which formats fit (Static / Interactive / Video):
 
 The first nine ride the one `map-native` engine. The 3D flyover is a separate engine (`cesium-flyover`).
 
-## Boundary presets (slice 1: `world` only)
+## Boundary presets (shipped: `world` and `us-states`)
 
 | Preset | Boundary | Join key | Source |
 | --- | --- | --- | --- |
 | `world` | Natural Earth admin-0 | `iso_a3` (ISO-A3) | Natural Earth |
-| `fr-departments` | French departments | dept code `01`–`95`/`2A`/`2B` | Eurostat NUTS |
-| `fr-regions` | French regions (2016) | region code | Eurostat NUTS |
 | `us-states` | US states | 2-letter postal code | US Census |
 
-Slice 1 ships only `world`. The others are added by dropping their simplified GeoJSON into
-`assets/geo/` and declaring their join key — no engine change. Every preset credits its source
-(per data-to-viz norms).
+Both are public domain — no credit obligation, no licence to track (`lib/geo/ref.ts`'s
+`BASEMAPS` registry). These two stay the ONLY shipped presets: the obvious next entries —
+French departments/regions — are sourced from Eurostat NUTS, which this project's own licence
+audit disqualified as non-commercial and MIT-incompatible, alongside GADM
+(`docs/superpowers/specs/2026-07-28-geography-anywhere-design.md` §2.3/§2.4b). Dropping a
+Eurostat or GADM GeoJSON into `assets/geo/` would ship data this project has ruled it cannot
+ship. Coverage below `world`/`us-states` is added per-run instead, through the journalist's own
+DECLARED geometry file (`input.geography` on `initRun`, spec D1/D1b — credited via `geoCredit`,
+see "Module furniture" above), never by adding a new shipped preset.
 
 ## Produce — format selector from one config
 
