@@ -540,8 +540,10 @@ describe("map furniture stands on a ground, not on a basemap tile", () => {
       join(import.meta.dir, "..", "src", "core", "MapFrame.tsx"),
       "utf8",
     );
-    // two spreads of pillStyle now: the title band and the source band
-    expect(src.match(/\.\.\.pillStyle/g)?.length).toBe(2);
+    // three spreads of pillStyle now: the title band, the source band, and the geoCredit
+    // band (Task 15, D7) — the geo-file attribution overlays the map exactly like the data
+    // source does, so it needs the same ground for the same contrast reasons.
+    expect(src.match(/\.\.\.pillStyle/g)?.length).toBe(3);
   });
 });
 

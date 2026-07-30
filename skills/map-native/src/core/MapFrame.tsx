@@ -18,6 +18,12 @@ export interface MapFrameProps {
   title: string;
   description?: string;
   source: { name: string; url?: string };
+  /** The geography file's own credit — spec D7. Rendered beside `source`, never merged into it:
+   *  a data attribution and a boundary-file attribution are two different facts, and a
+   *  newsroom correcting one must not silently touch the other. Absent for a shipped basemap
+   *  (world/us-states) — those carry no attribution obligation (Natural Earth is public
+   *  domain, "crediting is unnecessary"). */
+  geoCredit?: { name: string; url?: string };
   width: number;
   height: number;
   responsive: boolean;
@@ -54,6 +60,7 @@ export function MapFrame({
   title,
   description,
   source,
+  geoCredit,
   width,
   height,
   responsive,
@@ -199,6 +206,34 @@ export function MapFrame({
           source.name
         )}
       </div>
+      {geoCredit && (
+        <div
+          data-testid="map-geo-credit"
+          style={{
+            position: "absolute",
+            bottom: m,
+            right: m,
+            zIndex: 10,
+            opacity: furnitureOpacity,
+            fontSize: frame.type.source,
+            color: colors.muted,
+            ...pillStyle,
+          }}
+        >
+          {responsive && geoCredit.url ? (
+            <a
+              href={geoCredit.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: colors.muted }}
+            >
+              {geoCredit.name}
+            </a>
+          ) : (
+            geoCredit.name
+          )}
+        </div>
+      )}
     </div>
   );
 }
