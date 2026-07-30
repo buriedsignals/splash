@@ -163,6 +163,7 @@ export const Scrolly: React.FC<{
       return chartStoryToChapters(beats, {
         title: (config as { title?: string }).title ?? "",
         description: (config as { description?: string }).description,
+        opening: (config as { opening?: string }).opening,
         source: (config as { source?: { name: string; url: string } }).source,
       });
     }
