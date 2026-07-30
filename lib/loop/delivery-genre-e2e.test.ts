@@ -81,7 +81,7 @@ function seedRun(runDir: string): RunManifest {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   return {
     runId: "s3-e2e",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "social-feed",
     input: { data: freezeInput(runDir, src, "data") },

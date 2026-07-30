@@ -1,6 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { nextActions, parseManifest, type RunManifest } from "../loop/manifest";
+import {
+  nextActions,
+  parseManifest,
+  CURRENT_SCHEMA_VERSION,
+  type RunManifest,
+} from "../loop/manifest";
 import { orderingIntents } from "../loop/propose";
 import { resumeReport } from "../loop/resume";
 import { installRoot, loadDecor } from "../newsroom/decor";
@@ -70,16 +75,21 @@ export function loadRun(
     raw && typeof raw === "object"
       ? (raw as { schemaVersion?: unknown }).schemaVersion
       : undefined;
-  if (declared !== 4)
+  // Read from lib/loop/manifest.ts's CURRENT_SCHEMA_VERSION, never restated — a hand-copied
+  // literal here is exactly what let this gate drift silently behind RunManifestSchema's own
+  // version for as long as it did (found via a live CLI subprocess, not tsc: this is a runtime
+  // literal, invisible to the type checker). If you are bumping CURRENT_SCHEMA_VERSION, this
+  // gate follows automatically — nothing to edit here.
+  if (declared !== CURRENT_SCHEMA_VERSION)
     return {
       fail: {
         ok: false,
         code: "stale-schema",
         message:
           `${manifestPath} declares schemaVersion ${JSON.stringify(declared ?? null)}, ` +
-          `not 4 — state and next are read-only and will not migrate it, because ` +
-          `migrating writes a frozen input file into the run directory. Run the migration ` +
-          `explicitly, then read the run again`,
+          `not ${CURRENT_SCHEMA_VERSION} — state and next are read-only and will not migrate ` +
+          `it, because migrating writes a frozen input file into the run directory. Run the ` +
+          `migration explicitly, then read the run again`,
       },
     };
   try {

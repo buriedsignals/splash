@@ -231,7 +231,7 @@ export function initRun(
     }).content;
     const run: RunManifest = {
       runId: decl.runId.trim(),
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: decl.route,
       channel: decl.channel,
       // Written only once a language was actually ESTABLISHED by someone — an article language

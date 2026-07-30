@@ -16,7 +16,7 @@ function runWith(sources?: unknown): { run: RunManifest; path: string } {
   writeFileSync(join(dir, "data.csv"), "city,value\nGenève,449\n");
   const run = {
     runId: "r1",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "data.csv", sha256: "a".repeat(64) } },
@@ -81,7 +81,7 @@ test("should refuse an unknown field inside a recorded declaration", () => {
     path,
     JSON.stringify({
       runId: "r1",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: {},

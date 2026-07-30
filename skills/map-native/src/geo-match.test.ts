@@ -14,7 +14,7 @@ test("an ISO-A3 column matches the world basemap and reports a full join", () =>
   const m = matchGeography(["country", "value"], rows);
   expect(m).toBeDefined();
   expect(m!.column).toBe("country");
-  expect(m!.basemap).toBe("world");
+  expect(m!.geography.set).toBe("natural-earth-admin-0");
   expect(m!.matched).toBe(3);
   expect(m!.total).toBe(3);
   expect(m!.unmatched).toEqual([]);
@@ -26,7 +26,7 @@ test("two-letter US postal codes match us-states, not world", () => {
     { state: "TX", v: "2" },
   ];
   const m = matchGeography(["state", "v"], rows);
-  expect(m!.basemap).toBe("us-states");
+  expect(m!.geography.set).toBe("us-states");
   expect(m!.matched).toBe(2);
 });
 
@@ -73,7 +73,7 @@ test("an absent basemap asset is skipped, not thrown — and a sibling basemap s
   ).not.toThrow();
   const m = matchGeography(["country", "value"], rows, dir, basemaps);
   expect(m).toBeDefined();
-  expect(m!.basemap).toBe("world");
+  expect(m!.geography.set).toBe("natural-earth-admin-0");
   expect(m!.matched).toBe(1);
 });
 

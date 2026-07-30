@@ -67,3 +67,18 @@ export function resolveGeographyRef(name: string): GeographyRef {
     );
   return ref;
 }
+
+// The inverse of resolveGeographyRef — the BASEMAPS registry KEY a renderer's `config.basemap`
+// (or `config.boundaries`) field needs to load the right geojson asset (validateBasemap,
+// ChoroplethMap.tsx's resolveBasemapMeta). Needed because GeoMatch stopped carrying that raw key
+// once GeoMatch.basemap widened to GeoMatch.geography (Task 9) — a GeographyRef's own `set` is
+// NOT that key for every shipped geography ("world"'s set is "natural-earth-admin-0", not
+// "world"). Falls back to `ref.set` unchanged when it names no shipped basemap (an ADM1 match,
+// e.g.) — the renderer's own validateBasemap is what refuses that name; this function never
+// throws (matchGeography's own I1 discipline), so a config-writer downstream can still compose
+// a (refusable) config rather than crash while assembling one.
+export function basemapKeyFor(ref: GeographyRef): string {
+  for (const [key, shipped] of Object.entries(SHIPPED_REFS))
+    if (shipped.set === ref.set) return key;
+  return ref.set;
+}

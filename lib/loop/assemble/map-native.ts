@@ -11,6 +11,10 @@ import { fail, ok, type VerbResult } from "../../core/verbs";
 import type { ProductionBrief, GeoMatch } from "../../core/production-brief";
 import { parseCsvRows } from "../profile";
 import { BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps";
+// The renderer's own basemap-registry key, recovered from GeoMatch's GeographyRef (Task 9 —
+// GeoMatch stopped carrying that raw key when it widened from `basemap: string`). See
+// lib/geo/ref.ts's own doc comment for why `geography.set` is not usable directly here.
+import { basemapKeyFor } from "../../geo/ref";
 
 const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 const POINT_TYPES = new Set(["symbol", "hex-grid", "locator", "route"]);
@@ -121,7 +125,7 @@ function geoRefusal(geo: GeoMatch | undefined): string | undefined {
     );
   if (geo.matched * 2 < geo.total)
     return (
-      `only ${geo.matched} of ${geo.total} rows match the ${geo.basemap} basemap — ` +
+      `only ${geo.matched} of ${geo.total} rows match the ${basemapKeyFor(geo.geography)} basemap — ` +
       `unmatched: ${geo.unmatched.join(", ")}`
     );
   return undefined;
@@ -199,11 +203,16 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     // Refused here, at the one place that knows which basemap this geography actually matched,
     // rather than shipping a config that looks truthful and renders false. See
     // task-7-report.md for the fix-the-component alternative this defers.
-    if (geo.basemap !== "world")
+    //
+    // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` directly —
+    // "world"'s own set is "natural-earth-admin-0", not "world" (see lib/geo/ref.ts's doc
+    // comment), so this guard reads the same identifier the config below writes.
+    const basemapKey = basemapKeyFor(geo.geography);
+    if (basemapKey !== "world")
       return fail(
         "invalid-request",
         `dot-density only renders against the world basemap today — its component joins ` +
-          `against world.geojson unconditionally, so a "${geo.basemap}" join would render ` +
+          `against world.geojson unconditionally, so a "${basemapKey}" join would render ` +
           `silently wrong rather than merely fail`,
       );
     return ok({
@@ -212,10 +221,10 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       // No validator branch checks this field (DotDensityConfigShape types it `string` with
       // no format constraint) — the matched basemap name is the only value on hand that names
       // the geography this join happened against. See task-5-report.md for the open question.
-      boundaries: geo.basemap,
+      boundaries: basemapKey,
       rows: typedRows(rows, numeric),
       valueField,
-      basemap: geo.basemap,
+      basemap: basemapKey,
       title,
       description,
       source,
@@ -229,7 +238,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     regionKey: geo.column,
     valueField,
     rows: typedRows(rows, numeric),
-    basemap: geo.basemap,
+    basemap: basemapKeyFor(geo.geography),
     title,
     description,
     source,

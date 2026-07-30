@@ -30,7 +30,7 @@ function freshRun(): string {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
   const run: RunManifest = {
     runId: "drive",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
@@ -48,7 +48,7 @@ function proposedRun(over: Partial<RunElement> = {}): string {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
   const run: RunManifest = {
     runId: "drive-proposed",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
@@ -346,7 +346,7 @@ describe("chooseFormIn — the journalist's choice, persisted", () => {
     const dir = emptyDir("drive-noel-");
     writeManifest(join(dir, "run.json"), {
       runId: "empty",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: {},
@@ -699,7 +699,7 @@ describe("advanceRun — the human turn it cannot perform", () => {
     writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
     const run: RunManifest = {
       runId: "approve-owed",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(dir, src, "data") },
@@ -789,7 +789,7 @@ describe("advanceRun — the human turn it cannot perform", () => {
     const renderedTitle = "Rents rose fastest in Geneva";
     const run: RunManifest = {
       runId: "approve-partial-title",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(dir, src, "data") },

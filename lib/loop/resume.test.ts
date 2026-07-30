@@ -19,7 +19,7 @@ function seed(): { run: RunManifest; runDir: string } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583");
   const run: RunManifest = {
     runId: "r1",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -113,7 +113,7 @@ it("names the destination and shape of every deliverable in the run", () => {
   const angle = { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" };
   const run: RunManifest = {
     runId: "r-deliv",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

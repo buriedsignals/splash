@@ -20,7 +20,13 @@ const REGION_BRIEF: ProductionBrief = {
   sourceUrl: "https://data.worldbank.org",
   geo: {
     column: "country",
-    basemap: "world",
+    geography: {
+      origin: "shipped",
+      set: "natural-earth-admin-0",
+      level: "country",
+      joinKey: "iso_a3",
+      joinKeyFamily: "iso_a3",
+    },
     matched: 4,
     total: 4,
     unmatched: [],
@@ -129,7 +135,10 @@ test("no geography measured — the refusal names the geographies map-dw can pla
 test("a geography with no honest Datawrapper basemap is refused, not guessed", () => {
   const r = assembleMapDw({
     ...REGION_BRIEF,
-    geo: { ...REGION_BRIEF.geo!, basemap: "mars" },
+    geo: {
+      ...REGION_BRIEF.geo!,
+      geography: { ...REGION_BRIEF.geo!.geography, set: "mars" },
+    },
   });
   expect(r.ok).toBe(false);
   if (r.ok) return;
@@ -142,7 +151,13 @@ test("fewer than half the rows join — refused, and every orphan is named", () 
     ...REGION_BRIEF,
     geo: {
       column: "country",
-      basemap: "world",
+      geography: {
+        origin: "shipped",
+        set: "natural-earth-admin-0",
+        level: "country",
+        joinKey: "iso_a3",
+        joinKeyFamily: "iso_a3",
+      },
       matched: 1,
       total: 4,
       unmatched: ["Genève", "Vaud", "Valais"],

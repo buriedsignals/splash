@@ -47,7 +47,7 @@ function decorFor(root: string): Decor {
 function approvedHostedRun(): RunManifest {
   const run: RunManifest = {
     runId: "r-hosted-delivery",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "a".repeat(64) } },

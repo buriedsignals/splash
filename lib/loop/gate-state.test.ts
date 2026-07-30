@@ -15,7 +15,7 @@ import {
 function run(el: RunElement): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },
@@ -37,7 +37,7 @@ const proposal = {
 test("element with no run-orient is 'empty'", () => {
   const r: RunManifest = {
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },

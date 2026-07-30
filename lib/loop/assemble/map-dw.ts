@@ -2,11 +2,12 @@
 // (skills/map-dw/src/map-spec.ts) and not a component config. Two things make it different
 // from its native sibling, and both are the whole job:
 //
-//   1. THE BASEMAP IS A TRANSLATION, not a pass-through. `brief.geo.basemap` is map-native's
-//      vocabulary ("world", "us-states") because orient measured the join against map-native's
-//      shipped basemaps. Datawrapper has its own basemap ids and its own join-key names, and a
-//      wrong key does not fail — it ships a fully grey, DATALESS map that Datawrapper happily
-//      publishes (skills/map-dw/src/basemap-keys.ts's header records the ISO_A3-on-world-2019
+//   1. THE BASEMAP IS A TRANSLATION, not a pass-through. `basemapKeyFor(brief.geo.geography)`
+//      recovers map-native's own vocabulary ("world", "us-states") because orient measured the
+//      join against map-native's shipped basemaps. Datawrapper has its own basemap ids and its
+//      own join-key names, and a wrong key does not fail — it ships a fully grey, DATALESS map
+//      that Datawrapper happily publishes (skills/map-dw/src/basemap-keys.ts's header records
+//      the ISO_A3-on-world-2019
 //      case). So the translation is an explicit table below, one entry per geography whose CODE
 //      SPACE was verified to be the same on both sides, and a geography absent from it is
 //      REFUSED rather than mapped onto the nearest-looking id.
@@ -27,6 +28,10 @@ import { valueFieldFor } from "./map-native";
 // having fetched the live basemap geometry, so refusing here is the same decision taken
 // earlier and offline.
 import { MIN_JOIN_MATCH_RATE } from "../../../skills/map-dw/src/join-match";
+// map-native's basemap-registry key, recovered from GeoMatch's GeographyRef (Task 9 — GeoMatch
+// stopped carrying that raw key when it widened from `basemap: string`). DW_BASEMAPS below is
+// keyed by that same registry vocabulary ("world", "us-states"), not by a GeographyRef's `set`.
+import { basemapKeyFor } from "../../geo/ref";
 
 /** map-native's basemap name → the Datawrapper basemap that carries the SAME geography in the
  *  SAME code space. Both entries were probed live (2026-07-28, `GET /v3/basemaps/{id}`, the
@@ -111,15 +116,16 @@ function geoRefusal(geo: GeoMatch | undefined): string | undefined {
       `region column against a basemap, and the geographies map-dw can place are ` +
       `${placeableGeographies()}; no column matched either`
     );
-  if (!DW_BASEMAPS[geo.basemap])
+  const basemapKey = basemapKeyFor(geo.geography);
+  if (!DW_BASEMAPS[basemapKey])
     return (
-      `no Datawrapper basemap carries the "${geo.basemap}" geography in a code space Splash ` +
+      `no Datawrapper basemap carries the "${basemapKey}" geography in a code space Splash ` +
       `has verified — map-dw can place ${placeableGeographies()}. map-native ships the ` +
-      `"${geo.basemap}" basemap itself`
+      `"${basemapKey}" basemap itself`
     );
   if (geo.matched < geo.total * MIN_JOIN_MATCH_RATE)
     return (
-      `only ${geo.matched} of ${geo.total} rows match the ${geo.basemap} basemap — ` +
+      `only ${geo.matched} of ${geo.total} rows match the ${basemapKey} basemap — ` +
       `unmatched: ${geo.unmatched.join(", ")}`
     );
   return undefined;
@@ -132,7 +138,7 @@ export function assembleMapDw(brief: ProductionBrief): VerbResult<unknown> {
   const refusal = geoRefusal(brief.geo);
   if (refusal) return fail("invalid-request", refusal);
   const geo = brief.geo!;
-  const dw = DW_BASEMAPS[geo.basemap]!;
+  const dw = DW_BASEMAPS[basemapKeyFor(geo.geography)]!;
 
   const { columns, numericColumns } = parseCsvRows(brief.dataCsv);
   const numeric = numericColumns.filter((c) => c !== geo.column);

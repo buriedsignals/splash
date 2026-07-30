@@ -87,9 +87,8 @@ function normalizeValue(v: string): string {
     .trim();
 }
 
-/** The shipped-basemap candidate — unchanged behaviour from before this task, just returning the
- *  new GeographyRef-shaped `geography` field alongside the pre-existing `basemap: string` (see
- *  production-brief.ts's GeoMatch doc comment for why both coexist through this task). */
+/** The shipped-basemap candidate — returns the GeographyRef-shaped `geography` field (Task 9
+ *  replaced the earlier bare `basemap: string`; see production-brief.ts's GeoMatch doc comment). */
 function matchShippedBasemaps(
   columns: string[],
   rows: Record<string, string | number>[],
@@ -112,7 +111,6 @@ function matchShippedBasemaps(
       if (!best || matched > best.matched)
         best = {
           column,
-          basemap: name,
           geography: resolveGeographyRef(name),
           matched,
           total: values.length,
@@ -157,7 +155,6 @@ function matchAdm1Index(
     )[0]![0];
     const candidate: GeoMatch = {
       column,
-      basemap: "natural-earth-admin-1",
       geography: {
         origin: "shipped",
         set: "natural-earth-admin-1",

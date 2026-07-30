@@ -17,7 +17,13 @@ const REGION_BRIEF: ProductionBrief = {
   sourceUrl: "https://data.worldbank.org",
   geo: {
     column: "country",
-    basemap: "world",
+    geography: {
+      origin: "shipped",
+      set: "natural-earth-admin-0",
+      level: "country",
+      joinKey: "iso_a3",
+      joinKeyFamily: "iso_a3",
+    },
     matched: 4,
     total: 4,
     unmatched: [],
@@ -69,7 +75,13 @@ test("fewer than half the rows join — refused, and every orphan is named", () 
     ...REGION_BRIEF,
     geo: {
       column: "country",
-      basemap: "world",
+      geography: {
+        origin: "shipped",
+        set: "natural-earth-admin-0",
+        level: "country",
+        joinKey: "iso_a3",
+        joinKeyFamily: "iso_a3",
+      },
       matched: 1,
       total: 4,
       unmatched: ["Genève", "Vaud", "Valais"],
@@ -331,7 +343,13 @@ test("a dot-density against any basemap but world is refused, not silently rende
     dataCsv: "state,access\nCA,100\nTX,90",
     geo: {
       column: "state",
-      basemap: "us-states",
+      geography: {
+        origin: "shipped",
+        set: "us-states",
+        level: "state",
+        joinKey: "postal",
+        joinKeyFamily: "postal",
+      },
       matched: 2,
       total: 2,
       unmatched: [],

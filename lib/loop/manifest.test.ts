@@ -18,7 +18,7 @@ import {
 function base(): RunManifest {
   return {
     runId: "r1",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
@@ -252,14 +252,14 @@ test("nextActions off-ramps ([]) when data supports no visual", () => {
 });
 
 test("parseManifest rejects a manifest missing elements", () => {
-  const bad = { runId: "r", schemaVersion: 4, input: {}, events: [] };
+  const bad = { runId: "r", schemaVersion: 5, input: {}, events: [] };
   expect(() => parseManifest(bad)).toThrow();
 });
 
 test("a stored proposal from before the capability axis still parses", () => {
   const raw = {
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     elements: [
       {
@@ -277,7 +277,7 @@ test("a stored proposal from before the capability axis still parses", () => {
 describe("the delivery slot", () => {
   const base = (): RunManifest => ({
     runId: "r1",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
@@ -517,7 +517,7 @@ describe("the delivery slot", () => {
 test("v4 carries the route and the channel at run level", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -531,7 +531,7 @@ test("v4 carries the route and the channel at run level", () => {
 test("a proposal records what was discarded, with its reason", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -590,7 +590,7 @@ test("an unknown channel is refused", () => {
   expect(() =>
     parseManifest({
       runId: "r",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "billboard",
       input: {},
@@ -1496,5 +1496,96 @@ describe("RunManifestSchema.lang — the run's own recorded language", () => {
     const parsed = RunManifestSchema.safeParse(base());
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.lang).toBeUndefined();
+  });
+});
+
+function baseManifestV5(overrides: Record<string, unknown> = {}) {
+  return {
+    runId: "r1",
+    schemaVersion: 5,
+    route: "embed",
+    channel: "article-web",
+    input: { data: { path: "input/data-abc.csv", sha256: "abc" } },
+    elements: [],
+    events: [],
+    ...overrides,
+  };
+}
+
+describe("RunManifestSchema v5 — geography", () => {
+  it("parses a manifest declaring input.geography with every required editorial fact", () => {
+    const m = baseManifestV5({
+      input: {
+        data: { path: "input/data-abc.csv", sha256: "abc" },
+        geography: {
+          path: "input/geography-def.geojson",
+          sha256: "def",
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "communes de Haute-Savoie",
+          licence: "Licence Ouverte 2.0",
+          edition: "2024",
+          credit: { name: "IGN — Admin Express" },
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+
+  it("refuses input.geography missing edition — same discipline as GeographyInputSchema", () => {
+    const m = baseManifestV5({
+      input: {
+        geography: {
+          path: "input/geography-def.geojson",
+          sha256: "def",
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "communes",
+          licence: "Licence Ouverte 2.0",
+          credit: { name: "IGN" },
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(false);
+  });
+
+  it("orient.geo carries a GeographyRef, not a bare basemap string", () => {
+    const m = baseManifestV5({
+      orient: {
+        profile: { columns: ["canton"], numericColumns: [], rowCount: 2 },
+        supportsPoint: false,
+        geo: {
+          column: "canton",
+          geography: {
+            origin: "shipped",
+            set: "natural-earth-admin-1",
+            scope: "CHE",
+            level: "canton",
+            joinKey: "name",
+            joinKeyFamily: "name",
+          },
+          matched: 2,
+          total: 2,
+          unmatched: [],
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+
+  it("orient.geoJoin carries a GeoJoinLedger — the fixture: one unresolved 'Buenos Aires'", () => {
+    const m = baseManifestV5({
+      orient: {
+        profile: { columns: ["region"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+        geoJoin: {
+          column: "region",
+          geographySha256: "def",
+          decisions: [],
+          pending: ["Buenos Aires"],
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
   });
 });

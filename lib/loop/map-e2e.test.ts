@@ -40,7 +40,13 @@ const FIXTURE_BRIEF: ProductionBrief = {
   sourceUrl: "https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS",
   geo: {
     column: "country",
-    basemap: "world",
+    geography: {
+      origin: "shipped",
+      set: "natural-earth-admin-0",
+      level: "country",
+      joinKey: "iso_a3",
+      joinKeyFamily: "iso_a3",
+    },
     matched: 4,
     total: 4,
     unmatched: [],
@@ -67,7 +73,7 @@ proof(
       // that refusal is the source policy working, not this proof failing.
       const run: RunManifest = {
         runId: "map-e2e",
-        schemaVersion: 4,
+        schemaVersion: 5,
         route: "embed",
         channel: "article-web",
         input: { data: freezeInput(runDir, src, "data") },
@@ -88,7 +94,13 @@ proof(
           supportsPoint: false,
           geo: {
             column: "country",
-            basemap: "world",
+            geography: {
+              origin: "shipped",
+              set: "natural-earth-admin-0",
+              level: "country",
+              joinKey: "iso_a3",
+              joinKeyFamily: "iso_a3",
+            },
             matched: 4,
             total: 4,
             unmatched: [],
