@@ -1152,3 +1152,200 @@ Expected: the "filters... prunes... encodes" test FAILS on `expect(g.properties.
 git add lib/geo/subset.ts lib/geo/subset.test.ts
 git commit -m "feat(geo): subset pipeline — filter/prune/simplify/encode, metric tolerance only (D5)"
 ```
+
+### Task 7: `lib/geo/index-build.ts` — the offline ADM1 index (D6), plus the one-time fetch script
+
+**Files:**
+- Create: `lib/geo/index-build.ts`
+- Create: `lib/geo/index-build.test.ts`
+- Create: `lib/geo/scripts/fetch-natural-earth-admin1.mjs` (one-time build script, NOT part of
+  `bun run check` — see Step 6, and R6 in the spec: "a refresh cadence would be theatre" because
+  the source has been frozen since 2022).
+- Create (committed build artifacts, produced by Step 6, sizes will differ from the spec's
+  measurements — see the note there): `skills/map-native/assets/geo/natural-earth-admin-1.
+  topojson`, `lib/geo/adm1-index.json`.
+
+**Interfaces:**
+- Produces: `buildAdm1Index(features: GeoJSON.Feature[]): Adm1Index`, where `Adm1Index = Record<
+  string, { featureId: string; family: string }[]>` — a NORMALIZED key to every feature that
+  claims it (an array, not a single winner, so ambiguity is visible rather than silently
+  first-wins). Pure, no network, no filesystem — the download/convert/write is a separate,
+  un-tested one-time script (Step 6). Consumed by Task 8 (`matchGeography`'s inversion).
+
+**Design calls this task makes, spelled out because the spec describes the index's CONTENT (9
+identifier fields + 12 name fields + `name_alt` aliases, normalized: NFD, uppercase, dash/
+apostrophe → space) without giving `buildAdm1Index`'s exact signature:**
+1. **`featureId`** — Natural Earth's admin-1 layer has no field that is both globally unique and
+   always non-empty (the spec's own admin-0 example: 6 features carry `iso_a3 = "-99"`). This
+   task uses `adm1_code` when present (Natural Earth's own per-feature identifier, e.g.
+   `"USA-3510"`) and falls back to a synthetic `${properties.adm0_a3}-${index}` when it is
+   blank — same "fail loud only when nothing usable exists" posture `resolveBasemapMeta` already
+   uses.
+2. **Collision preserved as an array**, not resolved to a "best" match — resolving it here would
+   be exactly the silent mis-join D6 exists to prevent one layer up.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/geo/index-build.test.ts
+import { describe, it, expect } from "bun:test";
+import { buildAdm1Index } from "./index-build";
+
+function feature(props: Record<string, string | undefined>): GeoJSON.Feature {
+  return { type: "Feature", properties: props, geometry: { type: "Point", coordinates: [0, 0] } };
+}
+
+describe("buildAdm1Index", () => {
+  it("indexes iso_3166_2 under its own family, normalized to uppercase", () => {
+    const idx = buildAdm1Index([
+      feature({ adm1_code: "CHE-159", adm0_a3: "CHE", iso_3166_2: "ch-ge", name: "Genève" }),
+    ]);
+    expect(idx["CH-GE"]).toEqual([{ featureId: "CHE-159", family: "iso_3166_2" }]);
+  });
+
+  it("indexes the accented French name and its unaccented form under the SAME normalized key — the fixture: 'Genève' vs 'Geneve'", () => {
+    const idx = buildAdm1Index([
+      feature({ adm1_code: "CHE-159", adm0_a3: "CHE", name: "Genève" }),
+    ]);
+    // NFD-decompose + strip diacritics + uppercase: "Genève" -> "GENEVE".
+    expect(idx["GENEVE"]).toBeDefined();
+    expect(idx["GENEVE"]!.some((m) => m.featureId === "CHE-159")).toBe(true);
+  });
+
+  it("keeps BOTH features under a colliding key — the fixture: two 'Buenos Aires' (spec D6, measured)", () => {
+    const idx = buildAdm1Index([
+      feature({ adm1_code: "ARG-buenosaires-prov", adm0_a3: "ARG", name: "Buenos Aires" }),
+      feature({ adm1_code: "ARG-caba", adm0_a3: "ARG", name: "Buenos Aires" }),
+    ]);
+    expect(idx["BUENOS AIRES"]).toHaveLength(2);
+    const ids = idx["BUENOS AIRES"]!.map((m) => m.featureId).sort();
+    expect(ids).toEqual(["ARG-buenosaires-prov", "ARG-caba"]);
+  });
+
+  it("falls back to a synthetic id when adm1_code is blank, rather than dropping the feature", () => {
+    const idx = buildAdm1Index([feature({ adm0_a3: "XYZ", adm1_code: "", name: "Somewhere" })]);
+    expect(idx["SOMEWHERE"]![0]!.featureId).toBe("XYZ-0");
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test geo/index-build.test.ts`
+Expected: FAIL — `./index-build` does not exist yet.
+
+- [ ] **Step 3: Write the minimal implementation**
+
+```ts
+// lib/geo/index-build.ts
+// The offline ADM1 index — built ONCE (Step 6's fetch script), committed, never inlined (spec
+// D6/R6: the source is frozen since 2022, so a refresh cadence would be theatre). This file is
+// the PURE indexing logic only; the download/convert/write is a separate script.
+export type Adm1IndexEntry = { featureId: string; family: string };
+export type Adm1Index = Record<string, Adm1IndexEntry[]>;
+
+// The identifier families the spec measured (D6): 5 codes + 12 name fields + every name_alt
+// alias. Field names as Natural Earth's admin_1 shapefile ships them.
+const CODE_FAMILIES = ["iso_3166_2", "code_hasc", "postal", "fips", "wikidataid"] as const;
+const NAME_FIELDS = [
+  "name", "name_alt", "name_local", "name_en", "name_fr", "name_de", "name_es",
+  "name_it", "name_pt", "name_ru", "name_zh", "name_ar",
+] as const;
+
+function normalize(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // strip combining diacritics after NFD decomposition
+    .toUpperCase()
+    .replace(/[-']/g, " ")
+    .trim();
+}
+
+function add(index: Adm1Index, rawKey: string | undefined, entry: Adm1IndexEntry): void {
+  if (!rawKey) return;
+  const key = normalize(rawKey);
+  if (!key) return;
+  const existing = index[key] ?? (index[key] = []);
+  if (!existing.some((e) => e.featureId === entry.featureId)) existing.push(entry);
+}
+
+export function buildAdm1Index(features: GeoJSON.Feature[]): Adm1Index {
+  const index: Adm1Index = {};
+  features.forEach((f, i) => {
+    const p = (f.properties ?? {}) as Record<string, string | undefined>;
+    const featureId = p.adm1_code && p.adm1_code.trim() !== ""
+      ? p.adm1_code
+      : `${p.adm0_a3 ?? "UNK"}-${i}`;
+
+    for (const family of CODE_FAMILIES) add(index, p[family], { featureId, family });
+    for (const field of NAME_FIELDS) add(index, p[field], { featureId, family: field });
+    // name_alt is a pipe-delimited alias list on Natural Earth's real files — split it, but the
+    // family stays "name_alt" for every alias (the spec reports it as one family).
+    if (p.name_alt)
+      for (const alias of p.name_alt.split("|"))
+        add(index, alias, { featureId, family: "name_alt" });
+  });
+  return index;
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test geo/index-build.test.ts`
+Expected: PASS, 4/4.
+
+- [ ] **Step 5: Mutation — prove the accent-fold test depends on NFD normalization actually
+  running**
+
+Temporarily change `normalize` to skip the NFD/diacritic-strip step:
+
+```ts
+// MUTATION
+function normalize(raw: string): string {
+  return raw.toUpperCase().replace(/[-']/g, " ").trim();
+}
+```
+
+Run: `cd lib && bun test geo/index-build.test.ts`
+Expected: the "accented French name" test FAILS — `idx["GENEVE"]` is `undefined` because
+`"Genève".toUpperCase()` is `"GENÈVE"` (the `È` never folds to plain `E`), so the key the test
+looks up was never written. 1/4 reddens. Revert the mutation before continuing.
+
+- [ ] **Step 6: The one-time fetch + build script (NOT unit-tested, NOT part of `bun run check`)**
+
+Write `lib/geo/scripts/fetch-natural-earth-admin1.mjs`. This is a manual, one-time build step —
+R6 in the spec is explicit that an automatic refresh cadence would be theatre, since the source
+(Natural Earth v5.1.1/v5.1.2, last commit 2022-06-02) is frozen. The script:
+
+1. Downloads `https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_1_states_provinces.zip`
+   (the URL cited in the research doc's measurement appendix — verify it still resolves before
+   relying on it; Natural Earth's CDN has been stable but this plan does not re-verify it today).
+2. Unzips it to a scratch directory and converts the shapefile to GeoJSON with
+   `bunx mapshaper ne_10m_admin_1_states_provinces.shp -o admin1.geojson format=geojson`.
+3. Reads `admin1.geojson`, calls `buildAdm1Index` (this task's function) on its features, and
+   writes the result to `lib/geo/adm1-index.json`.
+4. Subsets/re-encodes the same source to TopoJSON with `subsetGeometry`-equivalent flags at
+   500m Visvalingam tolerance (spec D10's ~500m figure for the whole-world natural-earth-admin-1
+   set) via `bunx mapshaper admin1.geojson -simplify visvalingam interval=500m -o
+   skills/map-native/assets/geo/natural-earth-admin-1.topojson format=topojson
+   quantization=1e5`.
+5. **Prints, and does not assert, the resulting counts** — distinct keys, keys with more than one
+   feature, byte size of both committed files. **Do not hardcode the spec's own measured numbers
+   (47,231 keys / 1,651 ambiguous / 1,369,563 B) as a pass/fail assertion anywhere in this
+   repo.** Those numbers came from Natural Earth v5.1.1 fetched during the spec's research; this
+   script's own run is the one true measurement for what actually gets committed, and it may
+   differ by a handful of features if the CDN serves a patched point release. Report the real
+   numbers this script prints in the task's completion note instead.
+
+Run it once by hand: `bun lib/geo/scripts/fetch-natural-earth-admin1.mjs`. Confirm both output
+files exist and are non-empty, and that `lib/geo/adm1-index.json` parses as valid JSON with
+`buildAdm1Index`'s shape (a spot check: `jq '.["CH-GE"]' lib/geo/adm1-index.json` should list a
+Geneva-shaped entry).
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add lib/geo/index-build.ts lib/geo/index-build.test.ts lib/geo/scripts/fetch-natural-earth-admin1.mjs \
+  lib/geo/adm1-index.json skills/map-native/assets/geo/natural-earth-admin-1.topojson
+git commit -m "feat(geo): offline ADM1 index — pure builder + one-time Natural Earth fetch (D6)"
+```
