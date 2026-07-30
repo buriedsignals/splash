@@ -33,6 +33,7 @@ import {
   phraseOfferIn,
   requestDeliveryIn,
 } from "./drive";
+import { describePrecheck } from "./gates";
 import { describeNewsroom } from "./newsroom";
 import { outDirRefusal } from "./path-safety";
 import { describeIntentQuestion } from "./suggest-intent";
@@ -402,6 +403,26 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : 2);
   }
 
+  if (command === "precheck") {
+    // READ-ONLY, and deliberately without --run: the chain that runs today has no run.json
+    // (two-chains-gap-2026-07-28.md §1.1), and requiring one would make the check unaskable at
+    // the only moment it is useful — the turn before a folder is named to a journalist.
+    const parsed = parseFlags(rest, ["--stage", "--dir", "--format", "--form"]);
+    if (!parsed.ok) usage(parsed.message);
+    const stage = parsed.flags["--stage"];
+    if (stage !== "production" && stage !== "export")
+      usage("precheck needs --stage <production|export>");
+    const dir = parsed.flags["--dir"];
+    if (!dir) usage("precheck needs --dir <dir>");
+    const r = describePrecheck({
+      stage,
+      dir,
+      ...(parsed.flags["--format"] ? { format: parsed.flags["--format"] } : {}),
+      ...(parsed.flags["--form"] ? { form: parsed.flags["--form"] } : {}),
+    });
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "verb") {
     const name = rest[0];
     if (!name || name.startsWith("--"))
@@ -453,7 +474,7 @@ async function main(): Promise<never> {
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
       `advance, suggest-intent, confirm-angle, phrase, choose-form, author-beats, approve, ` +
-      `request-delivery, verb or newsroom`,
+      `request-delivery, verb, newsroom or precheck`,
   );
 }
 

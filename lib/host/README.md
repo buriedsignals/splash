@@ -37,10 +37,10 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The thirteen commands
+## The fourteen commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`. Acting: `init`, `advance`,
-`confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`.
+Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `precheck`. Acting: `init`,
+`advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`.
 
 The whole journey, in the order a host walks it — every step is one of these commands, and none
 of them needs a run.json written by hand:
@@ -1280,6 +1280,98 @@ behaviour. (A `NEWSROOM-PROFILE.md`, if one is present in the directory read, re
 own `brand.json` cache beside it — `loadNewsroomProfile`'s long-standing best-effort
 behaviour, and the one write `--dir` can still reach, into a directory that already exists
 and already holds the profile it caches.)
+
+### `precheck --stage <production|export> --dir <dir> [--format <f>] [--form <f>]`
+
+Answers one question, on disk facts alone: **is this directory allowed to be what the caller is
+about to call it?** `lib/loop/preconditions.ts`'s two hard preconditions — `productionPrecondition`
+and `exportPrecondition` — are already wired into the scripts that produce and export a visual
+(`produce-all.mjs`, `export-guard.ts`); this command is how the same two checks reach the one
+gesture that has no script to intercept it. A 2026-07-28 sweep found 36 cases of a journalist
+being told about a folder no script ever produced — the folder was simply *named*, in prose, and
+nothing ran to stop it. `precheck` is what the prose chain calls **before** naming the folder.
+
+Read-only and deliberately without `--run`: the chain that runs today has no `run.json`, and
+requiring one would make the check unaskable at the only moment it is useful.
+
+**`--stage production`** — may production start in this directory at all, i.e. is there a ranked
+menu (`candidates.json`) anything could have been chosen from?
+
+```
+$ bun lib/host/cli.ts precheck --stage production --dir /tmp/host-readme-precheck
+```
+
+```json
+{
+  "ok": false,
+  "code": "step-refused",
+  "message": "no ranked list of visuals was ever written down for this story (/tmp/host-readme-precheck/candidates.json does not exist), so nothing produced here was chosen from one — ask the suggester for the ranked list of visuals and keep the list it returns, then choose from it"
+}
+```
+
+Exit `1`. Once `candidates.json` exists, the same call answers `ok: true` with what it checked:
+
+```json
+{
+  "ok": true,
+  "value": {
+    "stage": "production",
+    "dir": "/tmp/host-readme-precheck",
+    "passed": true
+  }
+}
+```
+
+Exit `0`.
+
+**`--stage export`** — is this folder an export, or the directory the build worked in? It needs
+`--format`, because what the folder is supposed to BE decides which shape it has to have; `--form`
+is optional (`html`, `code-source` or `embed` — omit it for a static or video hand-over). A folder
+that still carries the build's own bookkeeping (`config.json`, `native-source.json`,
+`source-manifest.json`, `report.json`, `accepted.json`, `candidates.json`) is refused, every
+planted file named — with the one exemption `code-source` carries, because a runnable source
+bundle plants `config.json` at its own root by design:
+
+```
+$ bun lib/host/cli.ts precheck --stage export --dir /tmp/host-readme-precheck-export \
+    --format interactive --form html
+```
+
+```json
+{
+  "ok": false,
+  "code": "step-refused",
+  "message": "the folder being handed over still holds config.json — those are files the build leaves behind, so this is the working directory and not the finished interactive the newsroom was promised — hand over the export, not the folder the build left behind: bun skills/splash/scripts/export-code.mjs <report.json> <id> --form <form>"
+}
+```
+
+Exit `1`. A clean export folder answers `ok: true`:
+
+```json
+{
+  "ok": true,
+  "value": {
+    "stage": "export",
+    "dir": "/tmp/host-readme-precheck-export-ok",
+    "format": "interactive",
+    "form": "html",
+    "passed": true
+  }
+}
+```
+
+Exit `0`. A missing or unrecognised `--format` is a usage refusal that names the real vocabulary
+rather than guessing one:
+
+```json
+{
+  "ok": false,
+  "code": "usage",
+  "message": "precheck --stage export needs --format <static|interactive|video|scrolly> — what the folder is supposed to BE decides which shape it has to have"
+}
+```
+
+Exit `2`, same as an unreadable `--dir`: an input problem, never a silent pass.
 
 #### What a failure message may contain
 
