@@ -121,9 +121,28 @@ normalise to English.
 5. **Write the intent.** For each kept claim, write a one-line editorial question the visual answers
    ("How did cross-border worker numbers grow since 2015?"). This is handed to `suggest-chart` verbatim —
    do NOT name a chart type in it.
-6. **Anchor + confidence.** Set `anchor = { paragraphIndex, quote }` (advisory — the journalist places
-   the visual). Set `confidence` (high/medium/low) by editorial strength of the opportunity. Write a
-   one-line `rationale`.
+6. **Anchor + confidence.** Set `anchor = { paragraphIndex, quote }` — WHERE in the article this
+   visual serves the narrative. The journalist does the final placing (advisory), but SAYING where
+   is not optional downstream: splash's EXPORT states it at hand-over, from this field. Record the
+   quote VERBATIM and prefer it to the number — a paragraph index rots the moment the article is
+   edited between this analysis and the delivery, and a quotation survives a reorganisation. Omit
+   `anchor` ENTIRELY for an opportunity bound to no specific passage; never emit a half-anchor
+   (an empty quote, a `paragraphIndex` of 0) and never guess a paragraph. Set `confidence`
+   (high/medium/low) by editorial strength of the opportunity. Write a one-line `rationale`.
+
+   **Then PERSIST the set — the analysis must leave a record on disk, not only in this
+   conversation.** Once the ProposalSet is written, run the sanctioned writer:
+
+   ```bash
+   bun skills/suggest-article/scripts/save-opportunities.mjs <runDir> --payload '<the ProposalSet JSON>'
+   ```
+
+   `<runDir>` is the run directory (`exports/<slug>`) — the one that will hold `candidates.json`
+   and `accepted.json`. The writer VERIFIES before writing (a set with no proposals, a proposal
+   with no claim, a half-anchor are all refused) and creates nothing: point it at a run directory
+   that exists. `opportunities.json` is what lets the delivery prove an article was read and an
+   anchor was available — without it, a dropped anchor is indistinguishable from an article that
+   never had one.
 7. **Self-check (provenance).** For every proposal, confirm each `data` column appears in its
    `dataSource.table` and the subset parses as CSV with ≥1 numeric column. Drop any proposal that fails.
 8. **Narrative potential — ACROSS MODES (a story can be TOLD, not just charted).** The narrative
