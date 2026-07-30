@@ -25,6 +25,7 @@ test("the assembled spec is exactly the shape produce has always rendered", () =
     nativeType: "line",
     title: "Summer sea ice has lost a third of its extent",
     altInsight: "A line falling from 7 to 4.3 million square kilometres",
+    description: "A line falling from 7 to 4.3 million square kilometres",
     unit: "million km²",
     source: {
       name: "NSIDC Sea Ice Index",
@@ -74,6 +75,7 @@ test("the moved assembler produces the spec the pre-move code produced, field fo
       nativeType: "line",
       title: "Summer sea ice has lost a third of its extent",
       altInsight: "A line falling from 7 to 4.3 million square kilometres",
+      description: "A line falling from 7 to 4.3 million square kilometres",
       unit: "million km²",
       source: {
         name: "NSIDC Sea Ice Index",
@@ -84,4 +86,28 @@ test("the moved assembler produces the spec the pre-move code produced, field fo
       data: "year,extent\n1979,7.0\n2025,4.3",
     }),
   );
+});
+
+test("the scrolly opens on the framing deck, not on its own closing takeaway", () => {
+  // Title and description must be deliberately, unmistakably different strings — sharing no
+  // words — so this test cannot pass by accident the way a "some opening card exists" test
+  // would (that would also pass on the D09 bug this guards against, where the opening card
+  // wrongly fell back to the title).
+  const r = assembleChartNative({
+    ...BRIEF,
+    angle: {
+      confirmedTakeaway: "Rents in Annemasse outpaced wages for a decade",
+      altInsight:
+        "Monthly listings scraped from three portals, January to June",
+      unit: "million km²",
+      emphasis: "2007",
+    },
+  });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const spec = r.value as { description?: string; title?: string };
+  expect(spec.description).toBe(
+    "Monthly listings scraped from three portals, January to June",
+  );
+  expect(spec.description).not.toBe(spec.title);
 });

@@ -19,6 +19,13 @@ export function assembleChartNative(
     nativeType: brief.nativeType,
     title: brief.angle.confirmedTakeaway,
     altInsight: brief.angle.altInsight,
+    // The scrolly's opening-card deck (chartStoryToChapters reads config.description
+    // directly — no intermediate mapping on the scrolly track, lib/loop/assemble/scrolly.ts:69).
+    // Same source value as altInsight, a second, independent consumer: altInsight is the WCAG
+    // alt text ChartFrame renders; description is the what/when/where deck the scrolly opens
+    // on. map-native and image-native already feed this from the same property — chart-native
+    // alone did not, leaving every loop-assembled chart scrolly with no opening card at all.
+    description: brief.angle.altInsight,
     unit: brief.angle.unit ?? "",
     source: {
       name: brief.attribution,
