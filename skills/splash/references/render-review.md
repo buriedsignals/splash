@@ -199,13 +199,24 @@ plan with no `--reviewer`; a `concern`/`resolved` probe without a `note`; a `con
 surfaced concern references by quoting its `check` (per probe — unrelated concern text does not
 account for it); and a
 **failure keyword** (`404`, `absent`, `missing`, `mismatch`, `not found` + FR equivalents — see
-`FAILURE_KEYWORDS` in `src/review-gate.ts`) appearing in the recorded narrative (a concern, or a
-pass-probe's own text) that no `concern`/`resolved` probe reflects. The tripwire is deliberately
-CONSERVATIVE — it may over-ask, never under-ask: a pass-probe worded "no value is missing" trips it.
-That false positive costs one rewording ("all values present"), or an explicit `resolved` probe
-quoting the keyword with its evidence — an accepted tolerance, because the failure mode it kills
-(probing FOUND a missing value and a dataset 404, and the summary silently asserted full fidelity)
-shipped for real. Then show the render to the journalist **together with** these concerns, and
+`FAILURE_KEYWORDS` in `src/review-gate.ts`) appearing in REVIEWER-authored text (a concern, a
+probe's own `check`, or an editorial probe's `note`) that no `concern`/`resolved` probe reflects.
+The tripwire scans reviewer-authored text only — a mechanical probe's `note` is machine-generated
+(the command's own stdout/stderr tail, `lib/loop/probe-run.ts`) and is never scanned, on either
+side. That means a mechanical probe whose command **exits 0 while its own output reports a
+failure is not caught** — the exit code is taken as the verdict, by design. Authoring a probe
+whose command fails loudly (non-zero exit) on failure is the reviewer's responsibility: the
+`curl` wrapper this doc suggests above as a `mechanical` command (`-i`/`-o`/`-w` and friends) is
+the realistic trap — `curl -s -o /dev/null -w '%{http_code}'` exits 0 on a 404, so that response
+code has to be checked and turned into a real exit code by the wrapper, not left to `curl`'s own
+exit status. On reviewer-authored text the tripwire still bites: a pass-probe's own `check`
+worded "no value is missing" still trips it. That false positive costs one rewording ("all values
+present"), or — for an `editorial` probe only, `resolved` is unreachable for a `mechanical` one,
+whose outcome is always derived from its real exit code (`pass`/`concern` — see "You do not set
+the outcome" above) — an explicit `resolved` probe quoting the keyword with its evidence. An
+accepted tolerance, because the failure mode this half kills (probing FOUND a missing value and a
+dataset 404, and the summary silently asserted full fidelity) shipped for real. Then show the
+render to the journalist **together with** these concerns, and
 proceed to the "ship it" approval (`gate-render.mjs`). The concerns never hard-block — the
 journalist is the editor.
 

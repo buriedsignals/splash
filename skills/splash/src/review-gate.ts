@@ -28,13 +28,22 @@ import type { Finding } from "../../../lib/verify/types";
 //     chart HTML and a dataset.csv 404, yet the summary silently dropped both and
 //     asserted full data fidelity; and (adversarial repro) a 404 concern-probe was
 //     still droppable as long as ANY unrelated concern text existed;
-//   - a FAILURE KEYWORD (FAILURE_KEYWORDS below) in the recorded narrative (concerns,
-//     or a pass-probe's own text) that no concern/resolved probe reflects — the
-//     tripwire is deliberately CONSERVATIVE: it may over-ask (e.g. a pass-probe worded
-//     "no value is missing" trips it), never under-ask. A false positive costs one
-//     rewording, or an explicit "resolved" probe quoting the keyword with its
-//     evidence; an unresolved true failure must become a "concern" probe + a surfaced
-//     concern (still advisory — the journalist stays the editor) or the review fails.
+//   - a FAILURE KEYWORD (FAILURE_KEYWORDS below) in REVIEWER-authored text (concerns, a
+//     probe's own `check`, or an editorial probe's `note`) that no concern/resolved probe
+//     reflects — measured live: `sh -c "printf '404 not found\n'; exit 0"` as a mechanical
+//     probe's command records {outcome:"pass", note:"404 not found"} and does NOT trip this,
+//     because a mechanical probe's `note` is machine-generated (the command's own
+//     stdout/stderr tail, lib/loop/probe-run.ts) and is deliberately never scanned — scanning
+//     it used to block reviews whose probes had PASSED, with no reachable remedy, and fired on
+//     the GREEN success message a shipped pipeline script prints (smoke.mjs). The exit code IS
+//     the verdict for a mechanical probe; a probe whose command exits 0 while its own output
+//     reports a failure (a `curl -w '%{http_code}'` wrapper on a 404, say) is not caught by this
+//     tripwire — authoring a probe that fails loudly (non-zero exit) on failure is the
+//     reviewer's job, not this gate's. On reviewer-authored text the tripwire still bites: a
+//     pass-probe's own `check` worded "no value is missing" still trips it, and the remedy
+//     (reword, or an explicit "resolved" probe quoting the keyword with its evidence — editorial
+//     only, unreachable for a mechanical probe since its outcome is derived from the real exit
+//     code) is reachable there.
 //
 // Honest scope: the ledger makes WHAT WAS RUN and WHAT IT FOUND mechanical; the
 // substance of each probe still comes from an INDEPENDENT reviewer, per
