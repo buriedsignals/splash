@@ -34,6 +34,14 @@ export function assertShippable(report: ProduceReport, id: string): void {
     throw new Error(
       `refusing to export ${id}: not render-approved (run gate-render first)`,
     );
+  // An editorial verdict nobody signed for does not ship. The mechanical half needs no signature
+  // (its commands answered); this is only ever about the half that is a judgement.
+  const judged = (r.reviewProbes ?? []).some((p) => p.kind === "editorial");
+  if (judged && r.reviewer?.independentSemanticReview !== "available")
+    throw new Error(
+      `refusing to export ${id}: the editorial read of this visual does not say who did it — ` +
+        `have it done by someone who did not write this visual, and record who did it`,
+    );
 }
 
 /**

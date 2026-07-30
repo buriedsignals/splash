@@ -1,6 +1,12 @@
 import { describe, it, expect } from "bun:test";
 import { applyReviewGate } from "../src/review-gate";
+import { assertShippable } from "../src/export-guard";
 import type { ProduceReport, ReviewProbe } from "../src/producer-spec";
+
+// A reviewer fixture for every test whose ledger carries an editorial probe — passing it is
+// what distinguishes "this is a review-gate/probes-ledger test" from "this is an attribution
+// test" (the latter deliberately omits it; see the "the editorial half is attributed" block).
+const reviewer = { name: "desk-reader", version: "1.0.0" };
 
 const rep = (
   over: Partial<ProduceReport["results"][0]> = {},
@@ -53,6 +59,7 @@ describe("applyReviewGate — records the review", () => {
         "value 42400 present in the published chart HTML: absent from the render",
       ],
       probes,
+      reviewer,
     );
     expect(out.results[0].reviewed).toBe(true);
     expect(out.results[0].reviewConcerns).toEqual([
@@ -62,7 +69,7 @@ describe("applyReviewGate — records the review", () => {
   });
 
   it("records a clean review (no concerns) when the probes all pass", () => {
-    const out = applyReviewGate(rep(), "p1", [], passProbes);
+    const out = applyReviewGate(rep(), "p1", [], passProbes, reviewer);
     expect(out.results[0].reviewed).toBe(true);
     expect(out.results[0].reviewConcerns).toEqual([]);
   });
@@ -72,24 +79,30 @@ describe("applyReviewGate — records the review", () => {
       generatedAt: "2026-07-12T08:00:00.000Z",
       ...rep(),
     };
-    const out = applyReviewGate(r, "p1", [], passProbes);
+    const out = applyReviewGate(r, "p1", [], passProbes, reviewer);
     expect(out.generatedAt).toBe("2026-07-12T08:00:00.000Z");
   });
 
   it("refuses to review a proposal that was not produced", () => {
     expect(() =>
-      applyReviewGate(rep({ status: "failed" }), "p1", [], passProbes),
+      applyReviewGate(
+        rep({ status: "failed" }),
+        "p1",
+        [],
+        passProbes,
+        reviewer,
+      ),
     ).toThrow(/not produced/);
   });
 
   it("throws on an unknown proposal id", () => {
-    expect(() => applyReviewGate(rep(), "nope", [], passProbes)).toThrow(
-      /unknown proposal/,
-    );
+    expect(() =>
+      applyReviewGate(rep(), "nope", [], passProbes, reviewer),
+    ).toThrow(/unknown proposal/);
   });
 
   it("leaves renderApproved untouched (review is a distinct gate)", () => {
-    const out = applyReviewGate(rep(), "p1", [], passProbes);
+    const out = applyReviewGate(rep(), "p1", [], passProbes, reviewer);
     expect(out.results[0].renderApproved).toBe(false);
   });
 });
@@ -319,6 +332,7 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
           note: "first GET returned 404 (fresh publish propagation); retried after the delay, 200 OK with the full data",
         },
       ],
+      reviewer,
     );
     expect(out.results[0].reviewed).toBe(true);
   });
@@ -339,6 +353,7 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
           note: "GET returned 404 twice, after the propagation retry too",
         },
       ],
+      reviewer,
     );
     expect(out.results[0].reviewed).toBe(true);
     expect(out.results[0].reviewConcerns).toHaveLength(1);
@@ -350,6 +365,7 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
       "p1",
       ["the title narrows the confirmed takeaway"],
       passProbes,
+      reviewer,
     );
     expect(out.results[0].reviewed).toBe(true);
   });
@@ -476,7 +492,87 @@ describe("applyReviewGate — a mechanical outcome is read, never reported", () 
           note: "the confirmed claim has two parts; the title states one",
         },
       ] as never,
+      reviewer,
     );
     expect(out.results[0]!.reviewProbes).toHaveLength(2);
+  });
+});
+
+describe("applyReviewGate — the editorial half is attributed", () => {
+  const mech = [
+    {
+      kind: "mechanical",
+      check: "the file renders",
+      command: ["true"],
+      exitCode: 0,
+      outcome: "pass",
+      note: "",
+    },
+  ] as never;
+
+  it("refuses an editorial judgement with no reviewer named", () => {
+    expect(() =>
+      applyReviewGate(
+        rep(),
+        "p1",
+        ["the title states one half of the confirmed claim"],
+        [
+          ...(mech as never[]),
+          {
+            kind: "editorial",
+            check: "the title states one half of the confirmed claim",
+            outcome: "concern",
+            note: "two parts, one stated",
+          },
+        ] as never,
+        undefined,
+      ),
+    ).toThrow(/who did it/);
+  });
+
+  it("records the reviewer, and the fingerprint of what it returned", () => {
+    const out = applyReviewGate(
+      rep(),
+      "p1",
+      ["the title states one half of the confirmed claim"],
+      [
+        ...(mech as never[]),
+        {
+          kind: "editorial",
+          check: "the title states one half of the confirmed claim",
+          outcome: "concern",
+          note: "two parts, one stated",
+        },
+      ] as never,
+      { name: "desk-reader", version: "1.0.0" },
+    );
+    const r = out.results[0]!;
+    expect(r.reviewer?.name).toBe("desk-reader");
+    expect(r.reviewer?.independentSemanticReview).toBe("available");
+    expect(r.reviewer?.outputHash).toHaveLength(64);
+  });
+
+  it("a purely mechanical review needs no reviewer, and says so honestly", () => {
+    const out = applyReviewGate(rep(), "p1", [], mech, undefined);
+    expect(out.results[0]!.reviewer?.independentSemanticReview).toBe(
+      "unavailable",
+    );
+  });
+});
+
+describe("assertShippable — an unattributed editorial verdict does not ship", () => {
+  it("refuses to export a visual whose editorial verdicts nobody signed for", () => {
+    const r = rep();
+    r.results[0]!.reviewed = true;
+    r.results[0]!.renderApproved = true;
+    r.results[0]!.reviewProbes = [
+      {
+        kind: "editorial",
+        check: "the colour serves the subject",
+        outcome: "pass",
+        note: "n/a",
+      },
+    ] as never;
+    expect(() => assertShippable(r, "p1")).toThrow(/who did it/);
   });
 });

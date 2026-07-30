@@ -106,6 +106,17 @@ export interface EditorialProbe {
 
 export type ReviewProbe = MechanicalProbe | EditorialProbe;
 
+/** WHO conducted the editorial half, and the fingerprint of what it returned. The same
+ *  vocabulary lib/verify/review.ts records (`independentSemanticReview`), because it is the same
+ *  fact: a review that claims independence must name the actor and produce its output, and the
+ *  absence of one is RECORDED rather than converted into a pass. */
+export interface ReviewerAttribution {
+  name: string;
+  version: string;
+  outputHash: string;
+  independentSemanticReview: "available" | "unavailable" | "declined";
+}
+
 export interface ProposalResult {
   id: string;
   producer: Producer; // the producer the accepted proposal COMMITTED to (declared)
@@ -122,6 +133,7 @@ export interface ProposalResult {
   reviewed?: boolean; // render-review ran (Layer 2); export is refused until it has
   reviewConcerns?: string[]; // advisory editorial concerns from the review, shown at Gate 3
   reviewProbes?: ReviewProbe[]; // the review's probes ledger (Gate 3a), set by review-gate
+  reviewer?: ReviewerAttribution; // set by review-gate; absent on reports written before this
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
   /** sha256 of the artifact as it was SHOWN to the journalist, read from the presentation

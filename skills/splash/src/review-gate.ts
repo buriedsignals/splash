@@ -1,4 +1,11 @@
-import type { ProduceReport, ReviewProbe } from "./producer-spec";
+import type {
+  EditorialProbe,
+  ProduceReport,
+  ReviewerAttribution,
+  ReviewProbe,
+} from "./producer-spec";
+import { hashReviewerOutput } from "../../../lib/verify/redact";
+import type { Finding } from "../../../lib/verify/types";
 
 // The ONLY writer of the render-review record (Layer 2 — the editorial "second pair of
 // eyes"). A produced visual must be reviewed against its ACTUAL render + the article/data
@@ -196,13 +203,60 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
   }
 }
 
+// hashReviewerOutput (lib/verify/redact.ts) is the ONE definition of "the fingerprint of what a
+// reviewer returned" — it takes Finding[], the vocabulary lib/verify/review.ts already reviews
+// against. An editorial probe is not a Finding (no criterion/severity/status/evidence/provenance
+// — those belong to the review REGISTRY, not to this ledger's plan/outcome shape), so it is
+// projected rather than hashed directly. The projected fields are placeholders picked only to
+// satisfy the shared type — `provenance: "independent"` is the one field that is not arbitrary:
+// it is exactly what an editorial probe claims to be.
+function editorialAsFinding(p: EditorialProbe): Finding {
+  return {
+    id: p.check,
+    criterion: "craft",
+    severity: "warning",
+    status: "open",
+    summary: p.note ?? "",
+    evidence: [],
+    provenance: "independent",
+  };
+}
+
 export function applyReviewGate(
   report: ProduceReport,
   id: string,
   concerns: string[],
   probes: ReviewProbe[],
+  reviewer?: { name: string; version: string },
 ): ProduceReport {
   validateProbes(probes, concerns);
+  // ③ NOBODY GRADES THEIR OWN WORK. An editorial judgement is an opinion, and an opinion whose
+  // author is not named is indistinguishable from the authoring step's own. Requiring the name
+  // does not make the judgement better (spec §6 says so plainly) — it makes it someone's.
+  const hasEditorial = probes.some((p) => p.kind === "editorial");
+  if (hasEditorial && !reviewer)
+    throw new Error(
+      "review rejected: this review carries editorial judgements and does not say who did it — " +
+        "have the editorial pass done by someone who did not write this visual, and record who did it",
+    );
+  const attribution: ReviewerAttribution = reviewer
+    ? {
+        name: reviewer.name,
+        version: reviewer.version,
+        outputHash: hashReviewerOutput(
+          probes
+            .filter((p): p is EditorialProbe => p.kind === "editorial")
+            .map(editorialAsFinding),
+        ),
+        independentSemanticReview: "available",
+      }
+    : {
+        name: "",
+        version: "",
+        outputHash: "",
+        // Honest, not a pass: the mechanical half ran and nothing judged the editorial one.
+        independentSemanticReview: "unavailable",
+      };
   let found = false;
   const results = report.results.map((r) => {
     if (r.id !== id) return r;
@@ -216,6 +270,7 @@ export function applyReviewGate(
       reviewed: true,
       reviewConcerns: concerns,
       reviewProbes: probes,
+      reviewer: attribution,
     };
   });
   if (!found) throw new Error(`unknown proposal ${id}`);

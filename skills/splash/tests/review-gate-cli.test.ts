@@ -111,7 +111,14 @@ describe("review-gate CLI — probes ledger", () => {
     ]);
     // No concerns on argv at all — the whole point: the concern reaches the report from
     // the FILE produce.mjs already wrote, not from a hand-typed CLI argument.
-    const { code } = runReviewGate([reportPath, "p1", "--probes", probes]);
+    const { code } = runReviewGate([
+      reportPath,
+      "p1",
+      "--probes",
+      probes,
+      "--reviewer",
+      "desk-reader@1.0.0",
+    ]);
     expect(code).toBe(0);
     const written = JSON.parse(readFileSync(reportPath, "utf8"));
     expect(written.results[0].reviewConcerns).toHaveLength(1);
@@ -147,7 +154,14 @@ describe("review-gate CLI — probes ledger", () => {
         outcome: "pass",
       },
     ]);
-    const { code } = runReviewGate([reportPath, "p1", "--probes", probes]);
+    const { code } = runReviewGate([
+      reportPath,
+      "p1",
+      "--probes",
+      probes,
+      "--reviewer",
+      "desk-reader@1.0.0",
+    ]);
     expect(code).toBe(0);
     const written = JSON.parse(readFileSync(reportPath, "utf8"));
     expect(written.results[0].reviewConcerns).toHaveLength(1);
@@ -201,11 +215,109 @@ describe("review-gate CLI — probes ledger", () => {
         note: "first check hit a fresh-publish CDN propagation delay; retried once after the delay and got a clean response with the full data",
       },
     ]);
-    const { code } = runReviewGate([reportPath, "p1", "--probes", probes]);
+    const { code } = runReviewGate([
+      reportPath,
+      "p1",
+      "--probes",
+      probes,
+      "--reviewer",
+      "desk-reader@1.0.0",
+    ]);
     expect(code).toBe(0);
     const written = JSON.parse(readFileSync(reportPath, "utf8"));
     expect(written.results[0].reviewed).toBe(true);
     expect(written.results[0].reviewProbes).toHaveLength(2);
     expect(written.generatedAt).toBeString();
+  });
+});
+
+describe("review-gate CLI — editorial attribution (--reviewer)", () => {
+  it("refuses an editorial probe with no --reviewer named", () => {
+    const reportPath = freshReport();
+    const probes = JSON.stringify([
+      {
+        kind: "editorial",
+        check: "title matches the confirmed takeaway",
+        outcome: "pass",
+      },
+    ]);
+    const { code, stderr } = runReviewGate([
+      reportPath,
+      "p1",
+      "--probes",
+      probes,
+    ]);
+    expect(code).not.toBe(0);
+    expect(stderr).toContain("who did it");
+    const written = JSON.parse(readFileSync(reportPath, "utf8"));
+    expect(written.results[0].reviewed).toBeUndefined();
+  });
+
+  it("refuses a malformed --reviewer (no @version) with a usage-shaped error, never a silent default", () => {
+    const reportPath = freshReport();
+    const probes = JSON.stringify([
+      {
+        kind: "editorial",
+        check: "title matches the confirmed takeaway",
+        outcome: "pass",
+      },
+    ]);
+    const { code, stderr } = runReviewGate([
+      reportPath,
+      "p1",
+      "--probes",
+      probes,
+      "--reviewer",
+      "desk-reader",
+    ]);
+    expect(code).not.toBe(0);
+    expect(stderr).toContain("--reviewer");
+    expect(stderr).toContain("<name>@<version>");
+  });
+
+  it("records the named reviewer and a fingerprint of the editorial output on a well-formed --reviewer", () => {
+    const reportPath = freshReport();
+    const probes = JSON.stringify([
+      {
+        kind: "editorial",
+        check: "title matches the confirmed takeaway",
+        outcome: "pass",
+      },
+    ]);
+    const { code } = runReviewGate([
+      reportPath,
+      "p1",
+      "--probes",
+      probes,
+      "--reviewer",
+      "desk-reader@1.0.0",
+    ]);
+    expect(code).toBe(0);
+    const written = JSON.parse(readFileSync(reportPath, "utf8"));
+    expect(written.results[0].reviewer).toEqual({
+      name: "desk-reader",
+      version: "1.0.0",
+      outputHash: expect.any(String),
+      independentSemanticReview: "available",
+    });
+    expect(written.results[0].reviewer.outputHash).toHaveLength(64);
+  });
+
+  it("a purely mechanical plan (no editorial probes) needs no --reviewer, and ships honestly unattributed", () => {
+    const reportPath = freshReport();
+    const probes = JSON.stringify([
+      {
+        kind: "mechanical",
+        check: "the file renders",
+        command: ["true"],
+      },
+    ]);
+    const { code } = runReviewGate([reportPath, "p1", "--probes", probes]);
+    expect(code).toBe(0);
+    const written = JSON.parse(readFileSync(reportPath, "utf8"));
+    expect(written.results[0].reviewed).toBe(true);
+    expect(written.results[0].reviewer.independentSemanticReview).toBe(
+      "unavailable",
+    );
   });
 });
