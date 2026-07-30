@@ -1365,7 +1365,7 @@ consumer that currently reads `geo.basemap` (six spots across
 siblings on `CartogramConfig`/`DotDensityConfig`/`RouteMap`'s point-family configs) keeps
 `basemap?: string` for the two shipped names — nothing that already renders `"world"`/
 `"us-states"` needs to change — and gains an **additive** `geography?: GeographyRef` field that,
-when present, is what the component resolves geometry from (Task 19); `basemap` alone remains
+when present, is what the component resolves geometry from (Tasks 16–17); `basemap` alone remains
 meaningful only for the two legacy names. This is the same "new field wins, old field stays for
 back-compat" shape the manifest already uses for `deliverable` defaulting (`materializeDeliverables`,
 verified in `lib/loop/migrate.ts` while writing this plan).
@@ -2396,7 +2396,7 @@ being the only question" the spec asks for.
 map-native's `ChoroplethConfig`/`CartogramConfig`/`DotDensityConfig` keep `basemap?: string` for
 back-compat and gain `geography?: GeographyRef`. This task emits BOTH: `basemap:
 geo.geography.set` (a readable string a legacy consumer can still log) AND `geography:
-geo.geography` (what Task 19's de-inlined component actually resolves geometry from).
+geo.geography` (what Tasks 16–17's de-inlined components actually resolve geometry from).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2519,31 +2519,31 @@ git commit -m "feat(assemble): geoRefusal and emitted config speak GeographyRef,
 - Modify: `lib/loop/assemble/map-native.ts` — the `dot-density` refusal (`:202-208`, verified
   while writing this plan; the comment there cites "task-7-report.md" and "verified 2026-07-28,
   task-7" as the prior investigation that `DotDensityMap.tsx` hard-imports `world.geojson` and
-  hard-codes `iso_a3` — that hard-coding is what Task 19/20 (Phase E) removes).
+  hard-codes `iso_a3` — that hard-coding is what Task 17/20 (Phase E) removes).
 - Test: `lib/loop/assemble/map-native.test.ts`.
 
 **Interfaces:**
-- Consumes: nothing new — this task only re-derives an existing refusal against Task 19's
+- Consumes: nothing new — this task only re-derives an existing refusal against Task 17's
   post-condition.
 
-**This task is SEQUENCED AFTER Task 19** (`DotDensityMap.tsx` stops hard-importing
+**This task is SEQUENCED AFTER Task 17** (`DotDensityMap.tsx` stops hard-importing
 `world.geojson`), even though it is written here for narrative order alongside its sibling
-refusal-rewrite tasks. Do not implement this task until Task 19 has landed — the refusal this
+refusal-rewrite tasks. Do not implement this task until Task 17 has landed — the refusal this
 task re-derives is only re-derivable once the component it describes has actually changed. The
 spec is explicit about this shape: "ce refus... devient mort ou faux dès que la géométrie arrive
 par la configuration... il doit être ré-écrit contre la nouvelle réalité, pas effacé au passage."
 
 - [ ] **Step 1: Write the failing test** (write this now; it will fail for the RIGHT reason —
-  "not yet re-derived" — until Task 19 lands, then fail for the WRONG reason if left unimplemented,
+  "not yet re-derived" — until Task 17 lands, then fail for the WRONG reason if left unimplemented,
   which is the signal to come back and finish this task)
 
 ```ts
 // lib/loop/assemble/map-native.test.ts (append)
-it("dot-density accepts a non-world geography once DotDensityMap.tsx reads injected config (post Task 19)", () => {
+it("dot-density accepts a non-world geography once DotDensityMap.tsx reads injected config (post Task 17)", () => {
   const brief = /* dot-density brief with brief.geo.geography.set = "us-states" */;
   const result = assembleMapNative(brief);
-  // Pre-Task-19: this MUST still fail (the component cannot render it yet) — this assertion is
-  // written to hold POST-Task-19. If Task 19 has not landed, this test is expected red; that is
+  // Pre-Task-17: this MUST still fail (the component cannot render it yet) — this assertion is
+  // written to hold POST-Task-17. If Task 17 has not landed, this test is expected red; that is
   // the correct state, not a bug in this task.
   expect(result.ok).toBe(true);
 });
@@ -2552,17 +2552,17 @@ it("dot-density accepts a non-world geography once DotDensityMap.tsx reads injec
 - [ ] **Step 2: Run the test to verify it fails for the documented reason**
 
 Run: `cd lib && bun test loop/assemble/map-native.test.ts`
-Expected (pre-Task-19): FAIL — `result.ok` is `false`, refusal message names the old
+Expected (pre-Task-17): FAIL — `result.ok` is `false`, refusal message names the old
 `world.geojson`-hardcoding reason. This is the expected, correct failure at this point in the
 plan's sequencing.
 
-- [ ] **Step 3: Implement (only once Task 19 has landed)**
+- [ ] **Step 3: Implement (only once Task 17 has landed)**
 
 Replace the refusal (`:193-208`):
 
 ```ts
   if (brief.nativeType === "dot-density") {
-    // Task 19 (skills/map-native geometry de-inlining) made DotDensityMap.tsx read its geometry
+    // Task 17 (skills/map-native geometry de-inlining) made DotDensityMap.tsx read its geometry
     // from the injected config's `geography` descriptor instead of a hard-imported
     // world.geojson + hard-coded "iso_a3" — this refusal is dead now, and removing it (rather
     // than leaving a permanently-true no-op check) is what the spec's own end-note demands.
