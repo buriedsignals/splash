@@ -226,6 +226,20 @@ export function initRun(
           `init: the geography input ${JSON.stringify(path)} is not valid JSON — ${(e as Error).message}`,
         );
       }
+      // JSON.parse succeeds on more than objects — "null", "42", "[1,2]" are all valid JSON —
+      // and coordinateRangeVerdict assumes a Geometry/FeatureCollection object (it reads
+      // `.type` unconditionally). Refusing the shape here, before the guard ever runs, is what
+      // keeps the "never throws" invariant this function documents true for a malformed file,
+      // not just an unparseable one.
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        Array.isArray(parsed)
+      )
+        return fail(
+          "invalid-request",
+          `init: the geography input ${JSON.stringify(path)} is not a GeoJSON geometry or FeatureCollection object`,
+        );
       const verdict = coordinateRangeVerdict(
         parsed as GeoJSON.Geometry | GeoJSON.FeatureCollection,
       );

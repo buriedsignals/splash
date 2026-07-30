@@ -397,6 +397,97 @@ test("accepts a run declaring input.geography and freezes it", () => {
   }
 });
 
+// Mirrors "initRun refuses an input path that does not exist, before freezing anything" (above)
+// for the geography slot — the same existence check, extended to a third input.
+test("initRun refuses a geography path that does not exist, before freezing anything", () => {
+  const { dir, csv } = scene();
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: {
+      data: csv,
+      geography: {
+        path: join(dir, "nope.geojson"),
+        encoding: "geojson",
+        crs: "EPSG:4326",
+        level: "cantons",
+        licence: "swisstopo",
+        edition: "2024",
+        credit: { name: "swisstopo" },
+      },
+    },
+  });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("nope.geojson");
+  expect(existsSync(join(dir, "input"))).toBe(false);
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+});
+
+// The CRS guard (lib/geo/crs.ts, Task 1) runs before a single byte is frozen — same fixture
+// crs.test.ts uses (spec D4's own measured case: Bern in LV95 mistaken for WGS84).
+test("initRun refuses a geography file whose coordinates fail the CRS guard, before freezing anything", () => {
+  const { dir, csv } = scene();
+  const badGeo = join(dir, "lv95.geojson");
+  writeFileSync(
+    badGeo,
+    JSON.stringify({ type: "Point", coordinates: [2600000, 1200000] }),
+  );
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: {
+      data: csv,
+      geography: {
+        path: badGeo,
+        encoding: "geojson",
+        crs: "EPSG:4326",
+        level: "cantons",
+        licence: "swisstopo",
+        edition: "2024",
+        credit: { name: "swisstopo" },
+      },
+    },
+  });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("2600000");
+  expect(result.message).toContain("re-export");
+  expect(existsSync(join(dir, "input"))).toBe(false);
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+});
+
+// JSON.parse("null") succeeds — "null" is valid JSON — so the try/catch around the parse alone
+// does not stop a degenerate-but-valid-JSON geography file from reaching coordinateRangeVerdict,
+// which assumes a Geometry/FeatureCollection object and reads `.type` unconditionally. This is
+// the regression test for that: initRun must REFUSE, never throw.
+test("initRun refuses a geography file whose content is valid JSON but not a geometry object, instead of throwing", () => {
+  const { dir, csv } = scene();
+  const nullGeo = join(dir, "null.geojson");
+  writeFileSync(nullGeo, "null");
+  let result: ReturnType<typeof initRun> | undefined;
+  expect(() => {
+    result = initRun(dir, {
+      ...declaration(csv),
+      input: {
+        data: csv,
+        geography: {
+          path: nullGeo,
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "cantons",
+          licence: "swisstopo",
+          edition: "2024",
+          credit: { name: "swisstopo" },
+        },
+      },
+    });
+  }).not.toThrow();
+  expect(result?.ok).toBe(false);
+  if (!result || result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("null.geojson");
+  expect(existsSync(join(dir, "input"))).toBe(false);
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+});
+
 test("initRun freezes an article input too, and declares it", () => {
   const { dir, csv } = scene();
   const article = join(dir, "piece.txt");
