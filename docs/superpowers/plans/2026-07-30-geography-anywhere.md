@@ -1662,3 +1662,574 @@ continuing.
 git add skills/map-native/src/geo-match.ts skills/map-native/tests/
 git commit -m "feat(geo): matchGeography tries the ADM1 index alongside shipped basemaps (D10.2)"
 ```
+
+---
+
+## Phase C — manifest / init / migrate wiring (schemaVersion 4 → 5)
+
+**Sequencing hazard, stated up front:** `GeoMatchSchema` (`lib/loop/manifest.ts:197-203`, verified
+while writing this plan — currently `z.object({column, basemap: z.string(), matched, total,
+unmatched})`) drops `basemap` for a required `geography: GeographyRefSchema` in this phase. That
+is NOT an additive change — an existing on-disk v4 manifest with `orient.geo.basemap = "world"`
+would fail to parse the moment the schema changes, unless the migration lands in the SAME commit.
+Task 9 below therefore bundles the schema change and `migrateV4toV5` into one task — do not split
+them across two commits, and do not merge Task 9 to `main` without both halves passing together.
+Tasks 10 and 11 (`init.ts`, `provenanceHash`) ARE purely additive/optional and are safe as
+standalone commits.
+
+### Task 9: `RunManifestSchema` v5 — `input.geography`, `GeoMatchSchema` → `GeographyRef`, `orient.geoJoin`, and `migrateV4toV5`
+
+**Files:**
+- Modify: `lib/loop/manifest.ts` — `GeoMatchSchema` (`:197-203`), the `input` object
+  (`:361-365`), the `orient` object (`:374-381`), `schemaVersion: z.literal(4)` (`:332`),
+  `readManifest`'s version gate (`raw.schemaVersion !== 4`, `:595`).
+- Modify: `lib/loop/migrate.ts` — `migrate()` dispatcher (`:17-30`), add `migrateV4toV5`.
+- Modify: `lib/core/production-brief.ts` — `GeoMatch` plain type (`:32-38`): `basemap: string` →
+  `geography: GeographyRef` (imported type-only from `lib/geo/ref.ts` — zod-free, per Global
+  Constraints).
+- Find and modify: existing manifest test fixtures that construct an `orient.geo` object with a
+  `basemap` field — run `grep -rln "basemap:" lib/loop/*.test.ts lib/loop/**/*.test.ts` to find
+  them before editing (do not assume which files these are; the spec does not name them and this
+  plan has not enumerated them by hand).
+- Test: `lib/loop/manifest.test.ts` (append), `lib/loop/migrate.test.ts` (append — confirm this
+  file exists with `ls lib/loop/migrate.test.ts` before assuming its name).
+
+**Interfaces:**
+- Consumes: `GeographyRef` (Task 4), `GeographyCreditSchema` (Task 2), `GeoJoinLedger`'s shape
+  (Task 5, hand-mirrored as a zod schema here — see design call below).
+- Produces: `GeographyRecordSchema` (new, this task — see design call), the widened
+  `RunManifestSchema` (schemaVersion 5), `migrateV4toV5(raw: unknown): unknown`. Consumed by Task
+  10 (`init.ts`), Task 11 (`provenanceHash`), Task 15 (produce refusal).
+
+**Design call — `GeographyRecordSchema` is not `GeographyInputSchema` (Task 2) reused verbatim.**
+Spec D1b says the geography file is FROZEN like `data`/`article` (a `HashRef`), unlike `images`
+(never frozen). So the manifest's `input.geography` needs `path`+`sha256` (the frozen copy) PLUS
+the editorial facts `GeographyInputSchema` carries (`encoding`, `crs`, `level`, `licence`,
+`edition`, `credit`, `joinKey`) — but NOT `GeographyInputSchema`'s own `path` field, which named
+the journalist's ORIGINAL location, discarded once frozen (exactly like `data`/`article`'s
+original path is discarded in favour of `HashRef.path`, the frozen relative path). This task
+defines a second, manifest-local schema rather than reusing `GeographyInputSchema` for the
+frozen record — the same relationship `HashRef` already has to the declaration schemas in
+`lib/loop/init.ts`.
+
+**Design call — `GeoMatchSchema.geography` and `orient.geoJoin` are hand-written zod schemas,
+not `z.infer` reuse of the Task 4/Task 5 plain types.** Reusing them via import would create a
+`lib/loop` → `lib/geo` zod dependency that is fine here (manifest.ts already imports zod
+directly), but the PLAIN types in `lib/geo/ref.ts`/`lib/geo/join.ts` must stay independently
+importable by `production-brief.ts` without zod riding along (Global Constraints) — keeping the
+zod schema's definition local to `manifest.ts`, hand-synced by comment, is the same discipline
+`ImageFrameSchema`/`ImageInput` already use for exactly this reason (verified while writing this
+plan, `manifest.ts:109-119`'s own comment on `ImageFrameSchema`).
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/loop/manifest.test.ts (append)
+import { describe, it, expect } from "bun:test";
+import { parseManifest, RunManifestSchema } from "./manifest"; // adjust to this file's real exports
+
+function baseManifest(overrides: Record<string, unknown> = {}) {
+  return {
+    runId: "r1",
+    schemaVersion: 5,
+    route: "embed",
+    channel: "article-web",
+    input: { data: { path: "input/data-abc.csv", sha256: "abc" } },
+    elements: [],
+    events: [],
+    ...overrides,
+  };
+}
+
+describe("RunManifestSchema v5 — geography", () => {
+  it("parses a manifest declaring input.geography with every required editorial fact", () => {
+    const m = baseManifest({
+      input: {
+        data: { path: "input/data-abc.csv", sha256: "abc" },
+        geography: {
+          path: "input/geography-def.geojson",
+          sha256: "def",
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "communes de Haute-Savoie",
+          licence: "Licence Ouverte 2.0",
+          edition: "2024",
+          credit: { name: "IGN — Admin Express" },
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+
+  it("refuses input.geography missing edition — same discipline as GeographyInputSchema", () => {
+    const m = baseManifest({
+      input: {
+        geography: {
+          path: "input/geography-def.geojson",
+          sha256: "def",
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "communes",
+          licence: "Licence Ouverte 2.0",
+          credit: { name: "IGN" },
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(false);
+  });
+
+  it("orient.geo carries a GeographyRef, not a bare basemap string", () => {
+    const m = baseManifest({
+      orient: {
+        profile: { columns: ["canton"], numericColumns: [], rowCount: 2 },
+        supportsPoint: false,
+        geo: {
+          column: "canton",
+          geography: {
+            origin: "shipped",
+            set: "natural-earth-admin-1",
+            scope: "CHE",
+            level: "canton",
+            joinKey: "name",
+            joinKeyFamily: "name",
+          },
+          matched: 2,
+          total: 2,
+          unmatched: [],
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+
+  it("orient.geoJoin carries a GeoJoinLedger — the fixture: one unresolved 'Buenos Aires'", () => {
+    const m = baseManifest({
+      orient: {
+        profile: { columns: ["region"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+        geoJoin: {
+          column: "region",
+          geographySha256: "def",
+          decisions: [],
+          pending: ["Buenos Aires"],
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+});
+```
+
+```ts
+// lib/loop/migrate.test.ts (append)
+import { describe, it, expect } from "bun:test";
+import { migrate } from "./migrate";
+
+describe("migrateV4toV5", () => {
+  it("translates orient.geo.basemap 'world' into a GeographyRef — the exact translation the spec names", () => {
+    const v4 = {
+      runId: "r1",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: { path: "input/data-abc.csv", sha256: "abc" } },
+      orient: {
+        profile: { columns: ["country"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+        geo: { column: "country", basemap: "world", matched: 1, total: 1, unmatched: [] },
+      },
+      elements: [],
+      events: [],
+    };
+    const migrated = migrate(v4, "/tmp/does-not-matter");
+    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.orient?.geo?.geography).toEqual({
+      origin: "shipped",
+      set: "natural-earth-admin-0",
+      level: "country",
+      joinKey: "iso_a3",
+      joinKeyFamily: "iso_a3",
+    });
+    expect((migrated.orient?.geo as unknown as { basemap?: string }).basemap).toBeUndefined();
+  });
+
+  it("translates 'us-states' the same way", () => {
+    const v4 = {
+      runId: "r1",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: {},
+      orient: {
+        profile: { columns: ["state"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+        geo: { column: "state", basemap: "us-states", matched: 1, total: 1, unmatched: [] },
+      },
+      elements: [],
+      events: [],
+    };
+    const migrated = migrate(v4, "/tmp/does-not-matter");
+    expect(migrated.orient?.geo?.geography.set).toBe("us-states");
+  });
+
+  it("passes through a v4 manifest with no orient.geo at all, unaltered but at v5", () => {
+    const v4 = {
+      runId: "r1",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: {},
+      elements: [],
+      events: [],
+    };
+    const migrated = migrate(v4, "/tmp/does-not-matter");
+    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.orient).toBeUndefined();
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test loop/manifest.test.ts loop/migrate.test.ts`
+Expected: FAIL — `schemaVersion: z.literal(4)` rejects `5`; `GeoMatchSchema` has no `geography`
+key; `migrateV4toV5` does not exist.
+
+- [ ] **Step 3: Implement**
+
+In `lib/loop/manifest.ts`, replace `GeoMatchSchema` (`:197-203`):
+
+```ts
+const GeographyRefSchema = z.strictObject({
+  origin: z.enum(["shipped", "declared"]),
+  set: z.string(),
+  scope: z.string().optional(),
+  level: z.string(),
+  joinKey: z.string(),
+  joinKeyFamily: z.string(),
+});
+const GeoMatchSchema = z.object({
+  column: z.string(),
+  geography: GeographyRefSchema,
+  matched: z.number(),
+  total: z.number(),
+  unmatched: z.array(z.string()),
+});
+const GeoJoinDecisionSchema = z.object({
+  value: z.string(),
+  featureId: z.string(),
+  basis: z.enum(["unambiguous", "journalist"]),
+});
+const GeoJoinLedgerSchema = z.object({
+  column: z.string(),
+  geographySha256: z.string(),
+  decisions: z.array(GeoJoinDecisionSchema),
+  pending: z.array(z.string()),
+});
+const GeographyRecordSchema = z.strictObject({
+  path: z.string(),
+  sha256: z.string(),
+  encoding: z.enum(["geojson", "topojson"]),
+  crs: z.enum(["EPSG:4326", "EPSG:4258", "EPSG:4269"]),
+  level: z.string().min(1),
+  licence: z.string().min(1),
+  edition: z.string().min(1),
+  credit: z.strictObject({ name: z.string().min(1), url: z.string().optional() }),
+  joinKey: z.string().min(1).optional(),
+});
+```
+
+Change `schemaVersion: z.literal(4)` (`:332`) to `z.literal(5)`.
+
+Change `input` (`:361-365`):
+
+```ts
+  input: z.object({
+    data: HashRef.optional(),
+    article: HashRef.optional(),
+    images: ImageInputSchema.optional(),
+    geography: GeographyRecordSchema.optional(),
+  }),
+```
+
+Change `orient` (`:374-381`):
+
+```ts
+  orient: z
+    .object({
+      profile: DataProfileSchema,
+      supportsPoint: z.boolean(),
+      note: z.string().optional(),
+      geo: GeoMatchSchema.optional(),
+      geoJoin: GeoJoinLedgerSchema.optional(),
+    })
+    .optional(),
+```
+
+Change `readManifest`'s gate (`:595`): `(raw as { schemaVersion?: number }).schemaVersion !== 5`.
+
+In `lib/loop/migrate.ts`, add (mirroring `migrateV3toV4`'s shape exactly, verified in full while
+writing this plan):
+
+```ts
+const SHIPPED_GEOGRAPHY_REFS: Record<string, unknown> = {
+  world: {
+    origin: "shipped",
+    set: "natural-earth-admin-0",
+    level: "country",
+    joinKey: "iso_a3",
+    joinKeyFamily: "iso_a3",
+  },
+  "us-states": {
+    origin: "shipped",
+    set: "us-states",
+    level: "state",
+    joinKey: "postal",
+    joinKeyFamily: "postal",
+  },
+};
+
+// v4's orient.geo carried a bare `basemap: string`; v5 carries a GeographyRef (geography-anywhere
+// design D10). Translates the two shipped names the same way lib/geo/ref.ts's
+// resolveGeographyRef does — duplicated here (not imported) because migrate.ts must keep working
+// against every past schema shape even if lib/geo/ref.ts's own defaults ever change; a migration
+// is a snapshot of what a name meant AT THAT VERSION, not a live lookup.
+function migrateV4toV5(v4: unknown): unknown {
+  const m = v4 as { orient?: { geo?: { basemap?: string } & Record<string, unknown> } };
+  if (!m.orient?.geo) return { ...(v4 as object), schemaVersion: 5 };
+  const { basemap, ...rest } = m.orient.geo;
+  const geography = basemap ? SHIPPED_GEOGRAPHY_REFS[basemap] : undefined;
+  return {
+    ...(v4 as object),
+    schemaVersion: 5,
+    orient: { ...m.orient, geo: { ...rest, ...(geography ? { geography } : {}) } },
+  };
+}
+```
+
+Wire it into `migrate()` (`:17-30`):
+
+```ts
+export function migrate(raw: unknown, runDir: string): RunManifest {
+  if (!raw || typeof raw !== "object")
+    throw new Error("migrate: manifest is not an object");
+  const obj = raw as { schemaVersion?: number };
+  if (obj.schemaVersion === 5) return parseManifest(raw);
+  if (obj.schemaVersion === 4) return parseManifest(migrateV4toV5(raw));
+  if (obj.schemaVersion === 3) return parseManifest(migrateV4toV5(migrateV3toV4(raw)));
+  if (obj.schemaVersion === 2)
+    return parseManifest(migrateV4toV5(migrateV3toV4(migrateV2toV3(raw))));
+  if (obj.schemaVersion !== 1)
+    throw new Error(`migrate: unsupported schemaVersion ${obj.schemaVersion}`);
+  return parseManifest(
+    migrateV4toV5(migrateV3toV4(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir)))),
+  );
+}
+```
+
+In `lib/core/production-brief.ts`, change `GeoMatch` (`:32-38`):
+
+```ts
+import type { GeographyRef } from "../geo/ref";
+// ...
+export type GeoMatch = {
+  column: string;
+  geography: GeographyRef;
+  matched: number;
+  total: number;
+  unmatched: string[];
+};
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test loop/manifest.test.ts loop/migrate.test.ts`
+Expected: PASS, all cases (7 new: 4 in manifest.test.ts, 3 in migrate.test.ts).
+
+- [ ] **Step 5: Fix every fixture the schema change broke**
+
+Run: `cd lib && bunx tsc --noEmit && bun test`
+Any pre-existing fixture literal with `orient.geo.basemap` will now fail to typecheck or to parse
+(this is the "sequencing hazard" named above, now made concrete). Update each to the new
+`geography: GeographyRef` shape, or — if the fixture is deliberately exercising OLD-shape input
+through `migrate()` — leave it as raw `unknown` input to `migrate()`, not to `parseManifest()`
+directly. Report the exact count of fixtures touched (do not guess a number in advance; this plan
+does not know it without running the command).
+
+- [ ] **Step 6: Mutation — prove `migrateV4toV5`'s test depends on the real translation table, not
+  on the fixture happening to already be v5-shaped**
+
+Temporarily change `SHIPPED_GEOGRAPHY_REFS.world.joinKey` to `"wrong"`.
+
+Run: `cd lib && bun test loop/migrate.test.ts`
+Expected: "translates orient.geo.basemap 'world'..." FAILS (`joinKey` mismatch in the `toEqual`).
+1/3 reddens in that file. Revert the mutation before continuing.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add lib/loop/manifest.ts lib/loop/migrate.ts lib/core/production-brief.ts \
+  lib/loop/manifest.test.ts lib/loop/migrate.test.ts
+git commit -m "feat(manifest): schemaVersion 5 — input.geography, GeoMatch.geography, orient.geoJoin, migrateV4toV5"
+```
+
+### Task 10: `init.ts` — declare and freeze `input.geography` (D1, D1b)
+
+**Files:**
+- Modify: `lib/loop/init.ts` — `RunDeclarationSchema` (`:52-75`), `initRun`'s freeze block
+  (`:209-222`).
+- Modify: `lib/loop/freeze.ts` — `freezeInput`'s `kind` parameter (currently `"data" | "article"`,
+  `:11`, and its extension fallback at `:18`, `ext = sourceExt || (kind === "data" ? "csv" :
+  "txt")`).
+- Test: `lib/loop/init.test.ts`, `lib/loop/freeze.test.ts` (confirm both exist with `ls` before
+  editing).
+
+**Interfaces:**
+- Consumes: `GeographyInputSchema` (Task 2).
+- Produces: `RunDeclarationSchema` accepting `input.geography: GeographyInputSchema.optional()`;
+  `freezeInput(runDir, srcPath, kind: "data" | "article" | "geography")`.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/loop/freeze.test.ts (append)
+import { describe, it, expect } from "bun:test";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { freezeInput } from "./freeze";
+
+describe("freezeInput — geography kind", () => {
+  it("freezes a .geojson file under input/geography-<hash>.geojson", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "freeze-geo-test-"));
+    const src = join(runDir, "cantons.geojson");
+    writeFileSync(src, '{"type":"FeatureCollection","features":[]}');
+    const frozen = freezeInput(runDir, src, "geography");
+    expect(frozen.path).toMatch(/^input\/geography-[0-9a-f]{16}\.geojson$/);
+    expect(frozen.sha256).toHaveLength(64);
+  });
+
+  it("falls back to a .geojson extension when the source file has none", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "freeze-geo-test-"));
+    const src = join(runDir, "cantons"); // no extension
+    writeFileSync(src, '{"type":"FeatureCollection","features":[]}');
+    const frozen = freezeInput(runDir, src, "geography");
+    expect(frozen.path).toMatch(/\.geojson$/);
+  });
+});
+```
+
+```ts
+// lib/loop/init.test.ts (append) — adjust the exact call shape to this file's own
+// existing pattern for calling initRun once you have read it; this snippet shows the
+// declaration and the assertion, not necessarily the exact scaffolding (temp dirs, etc.)
+// that the surrounding file already sets up for its other initRun tests — copy that
+// scaffolding rather than reinventing it.
+it("accepts a run declaring input.geography and freezes it", () => {
+  // ... build a real geojson fixture file on disk, then:
+  const result = initRun(runDir, {
+    runId: "r1",
+    input: {
+      data: dataPath,
+      geography: {
+        path: geoFixturePath,
+        encoding: "geojson",
+        crs: "EPSG:4326",
+        level: "cantons",
+        licence: "swisstopo",
+        edition: "2024",
+        credit: { name: "swisstopo" },
+      },
+    },
+  });
+  expect(result.ok).toBe(true);
+  if (result.ok) {
+    expect(result.value.input.geography?.sha256).toBeDefined();
+    expect(result.value.input.geography?.level).toBe("cantons");
+  }
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test loop/freeze.test.ts loop/init.test.ts`
+Expected: FAIL — `freezeInput`'s `kind` type rejects `"geography"`; `RunDeclarationSchema` has no
+`input.geography`.
+
+- [ ] **Step 3: Implement**
+
+`lib/loop/freeze.ts`:
+
+```ts
+export function freezeInput(
+  runDir: string,
+  srcPath: string,
+  kind: "data" | "article" | "geography",
+): { path: string; sha256: string } {
+  if (!existsSync(srcPath))
+    throw new Error(`freezeInput: source not found: ${srcPath}`);
+  const bytes = readFileSync(srcPath);
+  const hash = Buffer.from(sha256(bytes)).toString("hex");
+  const sourceExt = extname(srcPath).slice(1).toLowerCase();
+  const ext = sourceExt || (kind === "data" ? "csv" : kind === "geography" ? "geojson" : "txt");
+  const rel = join("input", `${kind}-${hash.slice(0, 16)}.${ext}`);
+  const dest = join(runDir, rel);
+  mkdirSync(join(runDir, "input"), { recursive: true });
+  if (!existsSync(dest)) writeFileSync(dest, bytes);
+  return { path: rel, sha256: hash };
+}
+```
+
+`lib/loop/init.ts` — add to `RunDeclarationSchema`'s `input` (`:58-69`):
+
+```ts
+    geography: GeographyInputSchema.optional(),
+```
+
+(import `GeographyInputSchema` from `../geo/declaration`). In the freeze block (`:211-222`), add:
+
+```ts
+      ...(decl.input.geography
+        ? {
+            geography: {
+              ...freezeInput(runDir, decl.input.geography.path, "geography"),
+              encoding: decl.input.geography.encoding,
+              crs: decl.input.geography.crs,
+              level: decl.input.geography.level,
+              licence: decl.input.geography.licence,
+              edition: decl.input.geography.edition,
+              credit: decl.input.geography.credit,
+              ...(decl.input.geography.joinKey ? { joinKey: decl.input.geography.joinKey } : {}),
+            },
+          }
+        : {}),
+```
+
+Also extend Step 5 of `initRun` (the existence/is-a-file check at `:190-207`) to loop over
+`["data", decl.input.data], ["article", decl.input.article], ["geography",
+decl.input.geography?.path]` instead of just the first two — a declared geography path that does
+not exist must refuse the SAME way a missing data/article path already does, before any byte is
+frozen (mirrors the CRS guard's own "before a single byte is frozen" ordering from Task 1 — wire
+`coordinateRangeVerdict` here too: parse the file's JSON, run the guard, and `fail(
+"invalid-request", verdict.message)` on a bad verdict, in the SAME step, before the freeze call).
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test loop/freeze.test.ts loop/init.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Mutation — prove the geography-extension fallback test depends on the new branch**
+
+Temporarily change the fallback to `kind === "data" ? "csv" : "txt"` (dropping the `geography`
+branch, restoring the pre-task behaviour).
+
+Run: `cd lib && bun test loop/freeze.test.ts`
+Expected: "falls back to a .geojson extension..." FAILS — the frozen path ends in `.txt`, not
+`.geojson`. Report the count. Revert before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/loop/init.ts lib/loop/freeze.ts lib/loop/init.test.ts lib/loop/freeze.test.ts
+git commit -m "feat(loop): declare and freeze input.geography, CRS-guarded before freezing (D1, D1b)"
+```
