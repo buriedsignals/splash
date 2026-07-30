@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test";
+import { test, expect, describe, it } from "bun:test";
 import { assembleMapNative } from "./map-native";
 import { mapNativeConfigErrors } from "../../../skills/map-native/src/validate-config";
 import type { ProductionBrief } from "../../core/production-brief";
@@ -399,3 +399,45 @@ for (const nativeType of ["dot-density", "route", "locator"]) {
     expect((r.value as { valueUnit?: string }).valueUnit).toBe("km");
   });
 }
+
+describe("geoRefusal — ADM1-aware wording", () => {
+  it("does not claim only 'world'/'us-states' are the shipped basemaps when geo is undefined", () => {
+    const brief: ProductionBrief = { ...REGION_BRIEF, geo: undefined };
+    const result = assembleMapNative(brief);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      // the old wording named exactly "world and us-states" — the ADM1 index is a third,
+      // real candidate now, and the message must not claim otherwise.
+      expect(result.message).not.toMatch(
+        /the shipped basemaps are world and us-states/,
+      );
+    }
+  });
+
+  it("emits geo.geography.set as the config's basemap string, and geography wholesale, for an ADM1 match", () => {
+    const brief: ProductionBrief = {
+      ...REGION_BRIEF,
+      geo: {
+        column: "country",
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-1",
+          scope: "CHE",
+          level: "canton",
+          joinKey: "name",
+          joinKeyFamily: "name",
+        },
+        matched: 2,
+        total: 2,
+        unmatched: [],
+      },
+    };
+    const result = assembleMapNative(brief);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const cfg = result.value as { basemap: string; geography: unknown };
+      expect(cfg.basemap).toBe("natural-earth-admin-1");
+      expect(cfg.geography).toEqual(brief.geo!.geography);
+    }
+  });
+});

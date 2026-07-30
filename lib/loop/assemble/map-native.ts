@@ -120,13 +120,13 @@ export function valueFieldFor(
 function geoRefusal(geo: GeoMatch | undefined): string | undefined {
   if (!geo)
     return (
-      `this data carries no geography Splash can place — the shipped basemaps are ` +
-      `${BASEMAP_NAMES.join(" and ")}, and no column matched either of them`
+      `this data carries no geography Splash can place — tried the shipped basemaps ` +
+      `(${BASEMAP_NAMES.join(", ")}) and the built-in admin-1 index, and no column matched any of them`
     );
   if (geo.matched * 2 < geo.total)
     return (
-      `only ${geo.matched} of ${geo.total} rows match the ${basemapKeyFor(geo.geography)} basemap — ` +
-      `unmatched: ${geo.unmatched.join(", ")}`
+      `only ${geo.matched} of ${geo.total} rows match ${geo.geography.set}` +
+      `${geo.geography.scope ? ` (${geo.geography.scope})` : ""} — unmatched: ${geo.unmatched.join(", ")}`
     );
   return undefined;
 }
@@ -186,6 +186,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     return ok({
       type: "cartogram",
       values,
+      geography: geo.geography,
       title,
       description,
       source,
@@ -225,6 +226,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       rows: typedRows(rows, numeric),
       valueField,
       basemap: basemapKey,
+      geography: geo.geography,
       title,
       description,
       source,
@@ -239,6 +241,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     valueField,
     rows: typedRows(rows, numeric),
     basemap: basemapKeyFor(geo.geography),
+    geography: geo.geography,
     title,
     description,
     source,
