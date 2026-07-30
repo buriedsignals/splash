@@ -2233,3 +2233,130 @@ Expected: "falls back to a .geojson extension..." FAILS — the frozen path ends
 git add lib/loop/init.ts lib/loop/freeze.ts lib/loop/init.test.ts lib/loop/freeze.test.ts
 git commit -m "feat(loop): declare and freeze input.geography, CRS-guarded before freezing (D1, D1b)"
 ```
+
+### Task 11: `provenanceHash` gains `geography` and `geoJoin` (D9)
+
+**Files:**
+- Modify: `lib/loop/manifest.ts` — `provenanceHash` (`:518-561`, verified in full while writing
+  this plan — the `canonicalHash({...})` object literal).
+- Test: `lib/loop/manifest.test.ts` (append).
+
+**Interfaces:**
+- Consumes: `run.input.geography` and `run.orient?.geoJoin` (Task 9's schema fields).
+- Produces: no new exported symbol — `provenanceHash`'s signature is unchanged, only its hashed
+  payload widens. Consumed indirectly by every existing caller of `provenanceHash`/`stalenessOf`.
+
+Two lines added, per the spec's own reasoning (D9, which reuses `sources`' existing rationale
+verbatim): the declared credit/edition are RENDERED into the artefact, so correcting a credit
+must invalidate a stale artefact's freshness; the join decisions decide which polygon receives
+which value, the single most determining fact about the map.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/loop/manifest.test.ts (append)
+import { describe, it, expect } from "bun:test";
+import { provenanceHash } from "./manifest";
+// import whatever this file's existing tests use to build a minimal RunManifest/RunElement —
+// copy that scaffolding rather than reinventing it.
+
+describe("provenanceHash — geography (D9)", () => {
+  it("changes when input.geography's credit changes, even though the frozen file's sha256 does not", () => {
+    const runWithoutCredit = /* minimal run fixture, run.input.geography.credit.name = "IGN" */;
+    const runWithFixedCredit = {
+      ...runWithoutCredit,
+      input: {
+        ...runWithoutCredit.input,
+        geography: { ...runWithoutCredit.input.geography, credit: { name: "IGN — corrected" } },
+      },
+    };
+    const el = /* the fixture's element */;
+    expect(provenanceHash(runWithoutCredit, el)).not.toBe(provenanceHash(runWithFixedCredit, el));
+  });
+
+  it("is null-stable (unchanged) for a run declaring no geography at all — the migration-neutral property D9 requires", () => {
+    const run = /* minimal run fixture with no input.geography and no orient.geoJoin */;
+    const el = /* the fixture's element */;
+    // Calling twice must be stable, and must not throw on the absent fields.
+    expect(provenanceHash(run, el)).toBe(provenanceHash(run, el));
+  });
+
+  it("changes when orient.geoJoin's decisions change", () => {
+    const base = /* minimal run fixture */;
+    const withDecision = {
+      ...base,
+      orient: {
+        ...base.orient,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [{ value: "Buenos Aires", featureId: "ARG-caba", basis: "journalist" }],
+          pending: [],
+        },
+      },
+    };
+    const el = /* the fixture's element */;
+    expect(provenanceHash(base, el)).not.toBe(provenanceHash(withDecision, el));
+  });
+});
+```
+
+(The three fixtures above are written as comments describing intent because this file's exact
+`RunManifest`/`RunElement` fixture-building helper is not yet read at plan-writing time — before
+implementing, run `grep -n "function.*[Rr]un\(Fixture\|Manifest\)\|minimalRun\|makeRun" lib/loop/
+manifest.test.ts` to find the existing helper this file already uses for its other
+`provenanceHash` tests, verified while writing this plan to exist — `provenanceHash` already has
+tests in this file, per its own doc comment about `channel`/`sources`/`narrative` being hashed —
+and reuse it rather than hand-building a `RunManifest` literal from scratch.)
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test loop/manifest.test.ts`
+Expected: FAIL — the two hashes are currently EQUAL (geography/geoJoin are not yet part of the
+hashed payload), so the `.not.toBe(...)` assertions fail.
+
+- [ ] **Step 3: Implement**
+
+In `provenanceHash`'s `canonicalHash({...})` call (`:520-560`), add two entries:
+
+```ts
+    // The declared geography's credit/edition are RENDERED into the artefact (D7) — without
+    // this line, correcting a credit leaves a stale one on an artefact that reports itself
+    // fresh, the exact defect `sources` already closes for data attribution (see the comment
+    // above). The WHOLE record, not just the credit: the licence and edition are just as
+    // artefact-determining. `null` when a run declares no geography, so the value stays stable.
+    geography: run.input.geography ?? null,
+    // The join decisions decide which polygon receives which value — the single most
+    // determining fact about a below-ADM1 map (D9). `null` when nothing has been decided yet.
+    geoJoin: run.orient?.geoJoin ?? null,
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test loop/manifest.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Confirm migration-neutrality explicitly**
+
+Run a manual check: build a v4-migrated `RunManifest` (via `migrate()`, Task 9) with an
+`orient.geo` but no `input.geography`/`orient.geoJoin`, compute `provenanceHash` on it, then
+compute it again with the object spread through `JSON.parse(JSON.stringify(...))` (simulating a
+disk round-trip). Confirm the two hashes match — this is the property `manifest.ts:501-507`
+(verified while writing this plan) already protects for the v3→v4 migration, extended here to
+v4→v5. Add this as a fourth test case, not just a manual check, before moving on: `it("hashes
+identically before and after a JSON round-trip for a migrated v4 manifest", ...)`.
+
+- [ ] **Step 6: Mutation — prove the credit test depends on `geography` actually being hashed**
+
+Temporarily remove the `geography: run.input.geography ?? null,` line.
+
+Run: `cd lib && bun test loop/manifest.test.ts`
+Expected: "changes when input.geography's credit changes..." FAILS (`provenanceHash` returns the
+same value for both runs). Report the count. Revert before continuing.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add lib/loop/manifest.ts lib/loop/manifest.test.ts
+git commit -m "feat(manifest): provenanceHash hashes geography + geoJoin (D9)"
+```
