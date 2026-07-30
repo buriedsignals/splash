@@ -1,0 +1,174 @@
+// lib/geo/static-geojson-imports.test.ts
+//
+// THIS IS A SOURCE-SCAN DRIFT LOCK, modelled line-for-line on
+// lib/loop/schema-version-drift.test.ts. It proves nothing about whether a given map component
+// correctly renders injected geometry — that is proven by execution tests elsewhere in this
+// phase. What this guard buys is narrower and purely textual: it makes it impossible to silently
+// REINTRODUCE a static `.geojson` import or a `fetch(staticFile("....geojson"))` call at a NEW
+// call site without a failing test naming the exact file.
+//
+// Why this exists: this branch removed static geojson imports from the interactive map
+// components (ChoroplethMap.tsx, CartogramMap.tsx, DotDensityMap.tsx, RouteMap.tsx and their
+// scrolly siblings) so geometry could be injected per-run instead of shipped as a bundled asset.
+// The two suites that guarded that removal (skills/map-native/tests/choropleth-map-imports.test.ts,
+// skills/scrolly/tests/no-static-geojson-imports.test.ts) banned exactly one spelling
+// (`/\.geojson\?raw/`) across a hardcoded list of seven named files — blind to the non-`?raw`
+// import form already sitting in the tree (RouteReveal.tsx, RouteScrolly.tsx), to the runtime
+// `fetch(staticFile("geo/world.geojson"))` form (nine files), and to any file added after the
+// list was written. This test replaces both with a tree walk plus two match shapes, so a new
+// static reference anywhere under lib/** or skills/** fails loud with its own file:line instead
+// of silently passing because it isn't on a list.
+//
+// Four exemption classes, and nothing else:
+//   (a) any `*.test.ts` / `*.test.tsx` file — a fixture is allowed to construct any geojson path
+//       or import real geometry to exercise the code under test (e.g.
+//       skills/map-native/tests/arc-beats-threading.test.ts imports world.geojson as sample
+//       data); that is the point of a fixture, not a drift risk.
+//   (b) any `*.d.ts` file — an ambient module declaration (`declare module "*.geojson"`,
+//       `declare module "*.geojson?raw"`) describes the TYPE of an import specifier for the
+//       bundler; it does not itself import or fetch any geometry.
+//   (c) the video family — this plan deliberately leaves ChoroplethReveal/Story/Scrolly,
+//       CartogramReveal/Story/Scrolly, DotDensityReveal/Story/Scrolly, RouteReveal, RouteScrolly
+//       and the Remotion registration root (remotion/src/Root.tsx, which wires those same
+//       compositions for preview/render) reading the shipped world.geojson asset. Task 7 makes a
+//       DECLARED geography refuse the video format instead of wiring video to injected geometry —
+//       so these are not a residual bug, they are the other side of that decision.
+//   (d) standalone dev tooling, named individually below, where the reference is either not the
+//       shipped asset or not a runtime import at all — see BUILD_TOOLING_FILES for the reason on
+//       each.
+//
+// Anything else that statically imports or fetches a `.geojson` path in lib/**/*.ts(x) or
+// skills/**/*.ts(x)/*.mjs is exactly the class of reference this test exists to catch.
+import { describe, it, expect } from "bun:test";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, relative } from "node:path";
+
+const ROOT = join(import.meta.dir, "..", "..");
+
+const SKIP_DIRS = new Set(["node_modules", "dist"]);
+
+// Walks a directory tree collecting files whose name passes `keep`, pruning SKIP_DIRS along the
+// way — same shape as lib/loop/schema-version-drift.test.ts's `walk`, widened to also keep
+// `.tsx` (unlike the schema-version guard, this one's real hits live in React components: the
+// map-native Story/Reveal/Scrolly files and RouteReveal.tsx/RouteScrolly.tsx are all `.tsx`).
+function walk(dir: string, keep: (name: string) => boolean): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    if (e.isDirectory()) {
+      if (SKIP_DIRS.has(e.name)) return [];
+      return walk(join(dir, e.name), keep);
+    }
+    return keep(e.name) ? [join(dir, e.name)] : [];
+  });
+}
+
+const IS_SOURCE_FILE = (n: string) =>
+  n.endsWith(".ts") || n.endsWith(".tsx") || n.endsWith(".mjs");
+
+const LIB_FILES = walk(join(ROOT, "lib"), IS_SOURCE_FILE);
+const SKILLS_FILES = walk(join(ROOT, "skills"), IS_SOURCE_FILE);
+const ALL_FILES = [...LIB_FILES, ...SKILLS_FILES];
+
+// Exemption class (c): the video family, per Task 7's decision (see header comment).
+const VIDEO_FAMILY_PATHS = new Set(
+  [
+    join("skills", "map-native", "src", "components", "CartogramReveal.tsx"),
+    join("skills", "map-native", "src", "components", "CartogramScrolly.tsx"),
+    join("skills", "map-native", "src", "components", "CartogramStory.tsx"),
+    join("skills", "map-native", "src", "components", "ChoroplethReveal.tsx"),
+    join("skills", "map-native", "src", "components", "ChoroplethScrolly.tsx"),
+    join("skills", "map-native", "src", "components", "ChoroplethStory.tsx"),
+    join("skills", "map-native", "src", "components", "DotDensityReveal.tsx"),
+    join("skills", "map-native", "src", "components", "DotDensityScrolly.tsx"),
+    join("skills", "map-native", "src", "components", "DotDensityStory.tsx"),
+    join("skills", "map-native", "src", "components", "RouteReveal.tsx"),
+    join("skills", "map-native", "src", "components", "RouteScrolly.tsx"),
+    join("skills", "map-native", "remotion", "src", "Root.tsx"),
+  ].map((p) => join(ROOT, p)),
+);
+
+// Exemption class (d): dev tooling. Each reference here is either not a runtime import of the
+// shipped world.geojson at all, or a script that never ships in a bundle — named individually
+// because, unlike the video family, they don't share one reason.
+const BUILD_TOOLING_REASONS = new Map<string, string>([
+  [
+    join("lib", "geo", "subset.ts"),
+    // Line 111: `const filtered = join(tmp, "filtered.geojson")` — a filename this function
+    // chooses for its OWN transient mapshaper output when subsetting a journalist-supplied
+    // geometry file. It never reads or ships the default world.geojson asset.
+    "writes its own transient subset output file; not a reference to the shipped default asset",
+  ],
+  [
+    join("lib", "geo", "scripts", "fetch-natural-earth-admin1.mjs"),
+    // Line 46: `admin1.geojson` is a scratch conversion artifact in the OS tmpdir. The script's
+    // own header documents it as "run by hand, not part of `bun run check`" — a one-time offline
+    // build step for the committed ADM1 sidecar, not shipped runtime code.
+    "one-time hand-run build script; the .geojson is its own scratch artifact, not the shipped asset",
+  ],
+  [
+    join("skills", "splash", "scripts", "bundle-source.mjs"),
+    // Line 36: `RESOLVE_EXTS` lists extensions the export bundler's dependency tracer knows how
+    // to resolve. ".geojson" here is a generic capability declaration, not an import of any
+    // specific file.
+    "extension the export bundler's dependency tracer can resolve; not an import of a specific file",
+  ],
+  [
+    join("skills", "map-native", "scripts", "audit-story.mjs"),
+    // package.json's `audit:story` script — a standalone dev check (not in the `bun run check`
+    // TEST_DIRS gate) that reads world.geojson via readFileSync to assert narrative invariants on
+    // the default-world story. Never bundled into shipped output.
+    "standalone `bun run audit:story` dev script, not part of the gate; reads via readFileSync, never bundled",
+  ],
+  [
+    join("skills", "scrolly", "scripts", "audit-scrolly.mjs"),
+    // Same as audit-story.mjs, for the scrolly sibling's `audit:scrolly` script.
+    "standalone `bun run audit:scrolly` dev script, not part of the gate; reads via readFileSync, never bundled",
+  ],
+]);
+const BUILD_TOOLING_PATHS = new Set(
+  [...BUILD_TOOLING_REASONS.keys()].map((p) => join(ROOT, p)),
+);
+
+function isExempt(file: string): boolean {
+  if (file.endsWith(".test.ts") || file.endsWith(".test.tsx")) return true; // class (a)
+  if (file.endsWith(".d.ts")) return true; // class (b)
+  if (VIDEO_FAMILY_PATHS.has(file)) return true; // class (c)
+  if (BUILD_TOOLING_PATHS.has(file)) return true; // class (d)
+  return false;
+}
+
+// A static import or re-export of a geojson module, `?raw` or not: `import x from "./y.geojson"`,
+// `import x from "./y.geojson?raw"`, `join(dir, "y.geojson")`. Deliberately does NOT match the
+// MapLibre source-type string `type: "geojson"` or the `GeoJSON.Feature`/`GeoJSON.FeatureCollection`
+// TypeScript type (no literal `.` immediately before "geojson" in either) — the interactive map
+// components use both extensively and are not the concern this guard targets.
+const STATIC_IMPORT = /\.geojson(\?raw)?["']/;
+// The runtime fetch-the-shipped-asset form: `fetch(staticFile("geo/world.geojson"))`.
+const STATIC_FETCH = /staticFile\(["'][^"']*\.geojson/;
+
+describe("static geojson reference drift lock (source-scan only, not a correctness proof)", () => {
+  it("scans a real, non-zero set of files under lib/ and skills/", () => {
+    // A guard whose scan silently comes back empty is a guard that passes for the wrong reason —
+    // the same discipline lib/loop/schema-version-drift.test.ts already holds itself to.
+    expect(ALL_FILES.length).toBeGreaterThan(500);
+  });
+
+  it("every static .geojson import or staticFile(...) fetch outside the four exempt classes is a regression", () => {
+    const offenders: string[] = [];
+    for (const file of ALL_FILES) {
+      if (isExempt(file)) continue;
+      const src = readFileSync(file, "utf8");
+      const lines = src.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        if (STATIC_IMPORT.test(lines[i]) || STATIC_FETCH.test(lines[i])) {
+          offenders.push(`${relative(ROOT, file)}:${i + 1}`);
+        }
+      }
+    }
+    expect(
+      offenders,
+      offenders.length
+        ? `static geojson reference(s) found outside the exempt classes — inject geometry instead, or add a named exemption with a written reason:\n${offenders.join("\n")}`
+        : undefined,
+    ).toEqual([]);
+  });
+});
