@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 import { writeFileSync } from "node:fs";
 import { scrollySourceManifest } from "../src/source-manifest.ts";
 import { scrollySpecErrors } from "../src/manifest.ts";
+import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce.ts";
+import { renderSize } from "../../splash/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -60,6 +62,53 @@ if (specErrors.length > 0) {
 // trace on disk at all, not even an empty directory.
 mkdirSync(outDir, { recursive: true });
 
+// Geometry resolution (D5/D7) — mirrors skills/map-native/scripts/produce.mjs's own call, the
+// step that made ChoroplethMap.tsx et al. resolvable again after their bundled `?raw` GEOJSON
+// fallback was removed. A scrolly's MAP track (choropleth/cartogram/dot-density/route) throws a
+// loud, named "config.geometry is required" (Scrolly.tsx's decodeWorldGeometry, ScrollyMap.tsx,
+// ScrollyDotDensityMap.tsx, ScrollyCartogramMap.tsx) without this — there is no bundled basemap
+// geometry left to fall back on. A CHART track config (config.type not one of the four joining
+// types) is a no-op here: resolveGeometryForProduce's own allow-list returns false and rawConfig
+// is left untouched.
+//
+// `config.type` is normalized for a MAP-track config first — Scrolly.tsx's own dispatch (see
+// its "default, un-typed" comments) treats an ABSENT `type` on a config that is neither the
+// chart track (`nativeType` present) nor the image track (`visual` present) as "choropleth,
+// the un-typed default": a real, renderer-supported shape, not an unknown one. Without this,
+// resolveGeometryForProduce's join-type allow-list reads `config.type` literally (undefined ⇒
+// not one of the four joining types) and silently skips resolution — measured against this
+// skill's own committed sample-data/scrolly.json, which predates the `type` field and is
+// exactly this shape. Left untouched for the chart/image tracks, whose configs never carry
+// `type` at all and must not be mistaken for an untyped map.
+const isMapTrackConfig =
+  !("visual" in rawConfig) && !("nativeType" in rawConfig);
+if (isMapTrackConfig && rawConfig.type === undefined) {
+  rawConfig.type = "choropleth";
+}
+
+// renderWidthPx: article-web's own mediaSize.width (skills/splash/src/channel.ts's renderSize) —
+// a scrolly is always delivered at article-web (its only host; skills/scrolly reads no channel of
+// its own, see lib/core/verbs/exec.ts's channelEnvForEngine), and this is the SAME width
+// lib/verify/viewport.ts's resolveTargets already treats as this format's PRIMARY breakpoint and
+// map-native's own produce.mjs threads as `mediaSize.width` for the identical purpose — reused,
+// not a second width source invented here.
+let resolvedConfigPath = configPath;
+const wroteGeometry = await resolveGeometryForProduce({
+  config: rawConfig,
+  assetsGeoDir: join(here, "..", "..", "map-native", "assets", "geo"),
+  renderWidthPx: renderSize("article-web").width,
+});
+if (wroteGeometry) {
+  // Persist the resolved config to THIS producer's own outDir — never back to the caller's own
+  // `configPath` (mirrors map-native's produce.mjs: a real invocation against a repo-committed
+  // sample fixture must not mutate that fixture on disk). `resolvedConfigPath` is what the Vite
+  // build below reads via CONFIG=, and what the trailing config.json copy at the bottom of this
+  // file is skipped for (already the right bytes, in the right place).
+  resolvedConfigPath = join(outDir, "config.json");
+  writeFileSync(resolvedConfigPath, JSON.stringify(rawConfig, null, 2) + "\n");
+  buildConfigPath = resolvedConfigPath;
+}
+
 if (rawConfig.visual === "image" && rawConfig.framesDir && !rawConfig.frameSrcs) {
   const { readFileSync: readBin, mkdtempSync } = await import("node:fs");
   const { tmpdir } = await import("node:os");
@@ -97,7 +146,13 @@ execFileSync("bun", ["scripts/snap-reduced-motion.mjs"], {
 
 const out = join(outDir, "scrolly.html");
 copyFileSync(join(root, "dist", "index.html"), out);
-const parsedConfig = JSON.parse(readFS(configPath, "utf8"));
+const parsedConfig = JSON.parse(readFS(resolvedConfigPath, "utf8"));
 writeFileSync(join(outDir, "source-manifest.json"), JSON.stringify(scrollySourceManifest(parsedConfig), null, 2) + "\n");
-copyFileSync(configPath, join(outDir, "config.json"));
+// Skip when geometry resolution already wrote this exact file (resolvedConfigPath IS
+// outDir/config.json in that case) — copying it onto itself is a needless self-copy at best and,
+// worse, `copyFileSync(configPath, ...)` would silently overwrite the resolved-geometry version
+// with the caller's ORIGINAL (pre-resolution) config. Mirrors map-native's produce.mjs.
+if (resolvedConfigPath !== join(outDir, "config.json")) {
+  copyFileSync(resolvedConfigPath, join(outDir, "config.json"));
+}
 console.log("PRODUCE_RESULT " + JSON.stringify({ scrolly: out }));
