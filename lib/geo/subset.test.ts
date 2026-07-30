@@ -324,3 +324,57 @@ describe("subsetGeometry — a vertex floor defends the MEASURED tolerance, not 
     expect(countVertices(outPath)).toBeGreaterThan(800);
   }, 30_000);
 });
+
+describe("subsetGeometry — the other shipped basemap (us-states) is readable at all (task-14-brief.md)", () => {
+  // us-states.geojson's Aleutians run to −188.9°: Alaska is deliberately encoded past the
+  // antimeridian so the state renders contiguous instead of splitting across the map. That
+  // pushes the source outside ±180, so mapshaper refuses to read it as lat-long and rejects a
+  // metre-denominated `-simplify interval=<N>m` ("[simplify] Unable to convert meters to
+  // unknown coordinates") — this basemap could not be resolved AT ALL before this fix, on any
+  // config, because every sample fixture in the repo uses basemap: "world" and nothing ever
+  // exercised the other shipped asset.
+  const dir = mkdtempSync(join(tmpdir(), "geo-subset-usstates-test-"));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  const usStatesPath = join(
+    import.meta.dir,
+    "../../skills/map-native/assets/geo/us-states.geojson",
+  );
+
+  it("subsets AK/CA/NY on the real join key (postal), zero null shapes, properties.name survives", async () => {
+    const outPath = join(dir, "us-states.topojson");
+    const result = await subsetGeometry({
+      sourcePath: usStatesPath,
+      outPath,
+      featureIds: ["AK", "CA", "NY"],
+      idProperty: "postal",
+      keepProperties: ["postal", "name"],
+      renderWidthPx: 1200,
+    });
+    expect(result.featureCount).toBe(3);
+
+    const topo = JSON.parse(readFileSync(outPath, "utf8")) as {
+      objects: Record<
+        string,
+        {
+          geometries: {
+            type?: string | null;
+            properties: Record<string, unknown>;
+          }[];
+        }
+      >;
+    };
+    const layerKey = Object.keys(topo.objects)[0]!;
+    const geoms = topo.objects[layerKey]!.geometries;
+    expect(geoms.length).toBe(3);
+    // POST-CONDITION 2's own check, exercised on this source: nothing was simplified out of
+    // existence — the whole point of Alaska's deliberate antimeridian encoding is that it stays
+    // one contiguous shape, not annihilated by a tolerance mapshaper could not compute.
+    expect(geoms.filter((g) => g.type == null)).toHaveLength(0);
+    // us-states' real join key is "postal" — asserting properties.name survives here genuinely
+    // breaks the joinKey: "name" coincidence world.geojson happened to share (routed in from
+    // Task 6's review: only world.geojson had committed property-pruning coverage).
+    const names = geoms.map((g) => g.properties.name).sort();
+    expect(names).toEqual(["Alaska", "California", "New York"]);
+  }, 30_000);
+});

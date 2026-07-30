@@ -162,17 +162,50 @@ export async function subsetGeometry(
         if (!fieldsToKeep.has(key)) delete f.properties[key];
     }
     writeFileSync(filtered, JSON.stringify(parsed));
-    const toleranceMeters = toleranceMetersFor(
-      extentMetersFor(bboxOf(features.map((f) => f.geometry))),
-      input.renderWidthPx,
-    );
+    const bbox = bboxOf(features.map((f) => f.geometry));
+    // mapshaper only accepts a metre-denominated `-simplify interval=<N>m` for a dataset it can
+    // read as lat-long, and it refuses ANY file whose coordinates fall outside +/-180 — which
+    // the shipped us-states asset does, deliberately: Alaska's Aleutians are encoded past the
+    // antimeridian (-188.9) so the state stays contiguous instead of being split across the map
+    // ("[simplify] Unable to convert meters to unknown coordinates" on the metre path
+    // otherwise). For that source, express the tolerance in the source's own units (degrees)
+    // instead, derived straight from the bbox already measured above — no unit conversion.
+    //
+    // DECISION (task-14-brief.md's own ask): NOT applied to every source, only to one whose
+    // bbox mapshaper would reject — narrower than the brief's stated preference ("prefer
+    // replacing it everywhere ... because one code path cannot drift against another"), and
+    // that preference was explicitly conditional on the rendered results matching. They did
+    // not: re-running the world basemap's own tests under the degrees formula moved real
+    // numbers, not just held a floor. `subset.test.ts`'s Norway vertex-count floor (800) still
+    // PASSED under the degrees path (1985 vertices), but the actual count moved from the
+    // metre-path's 1238 to 1985 — a +60% change from a formula that omits
+    // extentMetersFor's cos(mid-latitude) longitude scaling (see task-14-report.md, Step 5, for
+    // the measured before/after). A floor holding is not "matched"; the two formulas are not
+    // equivalent for a normal in-range source, only usable as a substitute for one mapshaper
+    // will not accept at all. So: metres stays the path for every source mapshaper CAN read as
+    // lat-long (zero drift, unchanged since before this task); degrees is used only when the
+    // bbox itself is already outside the range mapshaper accepts.
+    //
+    // bboxOf's own "outside +/-180" check here is a plain range comparison, not a call into
+    // lib/geo/crs.ts's coordinateRangeVerdict: that guard is scoped to a journalist's DECLARED
+    // geography input (lib/loop/init.ts, slot "geography"), not to the shipped basemap assets
+    // this module reads — wrapping us-states' Aleutians to satisfy it would split Alaska across
+    // the map, exactly what the -188.9 encoding exists to prevent.
+    const outOfRange =
+      bbox.minLon < -180 ||
+      bbox.maxLon > 180 ||
+      bbox.minLat < -90 ||
+      bbox.maxLat > 90;
+    const intervalArg = outOfRange
+      ? `interval=${Math.max(bbox.maxLon - bbox.minLon, bbox.maxLat - bbox.minLat) / input.renderWidthPx}`
+      : `interval=${toleranceMetersFor(extentMetersFor(bbox), input.renderWidthPx)}m`;
     // Pass 2 — simplify and encode. `keep-shapes` is what stops a small polygon (Luxembourg,
     // Malta, Singapore, every island state) from being annihilated into `geometry: null`.
     mapshaper([
       filtered,
       "-simplify",
       "visvalingam",
-      `interval=${toleranceMeters}m`,
+      intervalArg,
       "keep-shapes",
       "-o",
       input.outPath,
@@ -192,8 +225,7 @@ export async function subsetGeometry(
     if (nulls.length)
       throw new Error(
         `subsetGeometry: ${nulls.length} of ${geometries.length} shapes were simplified out ` +
-          `of existence at ${Math.round(toleranceMeters)} m/px — every consumer reads .type ` +
-          `on these and will throw`,
+          `of existence at ${intervalArg} — every consumer reads .type on these and will throw`,
       );
     return {
       bytes: statSync(input.outPath).size,
