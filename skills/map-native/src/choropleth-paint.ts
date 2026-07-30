@@ -7,9 +7,11 @@
 //   - only data-bearing regions are painted by the scale;
 //   - the ocean/water is left to the basemap default (this module never touches it).
 //
-// Enriched-feature contract (built identically by both engines):
-//   __hasData: boolean  — true when the region joined a data row
-//   __value:   number|null — the joined value (null for no-data regions)
+// Feature-state contract (built identically by both engines, D5 + D8's second point — the
+// join is applied via MapLibre `setFeatureState`, never merged into the geometry's own
+// `properties`, so a licensed geometry's "Collective Database" boundary stays intact):
+//   hasData: boolean  — true when the region joined a data row
+//   value:   number|null — the joined value (null for no-data regions)
 
 import { NO_DATA_COLOR } from "./theme/colors";
 
@@ -20,16 +22,16 @@ export interface ChoroplethBin {
 }
 
 // fill-color expression: no-data → NO_DATA_COLOR (never shown, opacity 0 hides it,
-// but kept as a defined fallback), otherwise the bin colour for __value.
+// but kept as a defined fallback), otherwise the bin colour for the feature-state value.
 export function choroplethFillColor(bins: ChoroplethBin[]): unknown[] {
   const sorted = [...bins].sort((a, b) => a.min - b.min);
   const expr: unknown[] = [
     "case",
-    ["==", ["get", "__hasData"], false],
+    ["==", ["feature-state", "hasData"], false],
     NO_DATA_COLOR,
   ];
   for (let i = 0; i < sorted.length - 1; i++) {
-    expr.push(["<", ["get", "__value"], sorted[i].max]);
+    expr.push(["<", ["feature-state", "value"], sorted[i].max]);
     expr.push(sorted[i].color);
   }
   expr.push(sorted[sorted.length - 1].color);
@@ -40,7 +42,7 @@ export function choroplethFillColor(bins: ChoroplethBin[]): unknown[] {
 // shows through (identical treatment to the ocean); data-bearing regions use the
 // supplied resting opacity (a scalar, or later overridden by a reveal progress).
 export function choroplethFillOpacity(dataOpacity: number): unknown[] {
-  return ["case", ["==", ["get", "__hasData"], false], 0, dataOpacity];
+  return ["case", ["==", ["feature-state", "hasData"], false], 0, dataOpacity];
 }
 
 // The full fill-layer paint object — fill-color + no-data-aware fill-opacity.

@@ -7,20 +7,15 @@ import React, {
 } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
-import usStatesGeoJsonRaw from "../assets/geo/us-states.geojson?raw";
-import { resolveBasemapMeta } from "./basemaps";
-const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
-const usStatesGeoJson = JSON.parse(
-  usStatesGeoJsonRaw,
-) as GeoJSON.FeatureCollection;
-// Registry name → the actual bundled geojson. Keep in lockstep with `BASEMAPS`
-// (src/basemaps.ts): a name valid there but missing here throws below.
-const GEOJSON_BY_BASEMAP: Record<string, GeoJSON.FeatureCollection> = {
-  world: worldGeoJson,
-  "us-states": usStatesGeoJson,
-};
-import { computeChoropleth, type ChoroplethData } from "./choropleth-geo";
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
+import { resolveBasemapMeta, type GeographyRef } from "./basemaps";
+import {
+  computeChoropleth,
+  applyChoroplethJoin,
+  type ChoroplethData,
+  type ChoroplethFeatureState,
+} from "./choropleth-geo";
 import { choroplethFillColor, choroplethFillOpacity } from "./choropleth-paint";
 import type { CameraMode } from "./camera-mode";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
@@ -32,6 +27,7 @@ import {
   filterStateToExpression,
   activeTimeStep,
   type FilterState,
+  type FilterOption,
 } from "./core/map-filter";
 import type { MapFilter } from "./core/map-filter";
 import { resolveMapStyle } from "./route-geo";
@@ -45,6 +41,15 @@ maptilersdk.config.apiKey = import.meta.env.VITE_MAPTILER_KEY as string;
 
 export interface ChoroplethConfig extends ChoroplethData {
   basemap?: string;
+  /** Which geography (set/scope/joinKey) this map's geometry names (GeographyRef, Task 4/9/10).
+   *  Optional for back-compat with configs that still only carry `basemap` — the join key then
+   *  falls back to `resolveBasemapMeta(basemap)`. */
+  geography?: GeographyRef;
+  /** The actual subset TopoJSON for this map, injected by produce (Task 20). There is no
+   *  bundled fallback geometry anymore (D5) — the component no longer ships
+   *  `world.geojson`/`us-states.geojson` itself, so this is required at render time even
+   *  though the type stays optional for configs assembled before Task 20 lands. */
+  geometry?: Topology;
   mapStyle?: string;
   /** Newsroom house ground — themes the frame + legend furniture. Basemap stays light/dark. */
   themeBg?: string;
@@ -79,6 +84,66 @@ const NUM_BINS = 5;
 // Exported so tests can assert colour distinctness
 export { NO_DATA_COLOR } from "./theme/colors";
 
+// DEVIATION (not in the task brief, found necessary while wiring feature-state): filterStateToExpression
+// (core/map-filter.ts) compiles ["get", field] against the geojson SOURCE's `properties`. The
+// choropleth's joined value never lands there anymore (D8 — feature-state only, see
+// applyChoroplethJoin) and MapLibre's style-spec explicitly restricts `["feature-state", ...]`
+// to paint/layout properties — it is NOT valid inside a `setFilter` expression. Without this,
+// a filter whose field equals `valueField` (real, shipped, exercised live by
+// assets/sample-data/filter-choropleth.json + scripts/smoke-filters.mjs) would silently match
+// nothing once the properties merge is removed. Resolved here in JS against this component's
+// own join table (`states`), then applied as an id-membership filter on the geometry's OWN
+// join-key property (e.g. "iso_a3") — never the journalist's value itself, so D8 still holds.
+function resolveChoroplethFilterExpression(
+  filterState: FilterState,
+  filterOptions: FilterOption[],
+  states: ChoroplethFeatureState,
+  valueField: string,
+  joinKey: string,
+): unknown[] {
+  const valueOption = filterOptions.find(
+    (o): o is Extract<FilterOption, { kind: "category" | "range" }> =>
+      o.field === valueField && o.kind !== "time",
+  );
+  const otherOptions = filterOptions.filter((o) => o.field !== valueField);
+  // Reuse the shared expression builder for every field EXCEPT valueField — those still read
+  // properties correctly (unaffected by this task; unrelated to the D8 join).
+  const baseClauses = (
+    filterStateToExpression(filterState, otherOptions) as unknown[]
+  ).slice(1); // drop the leading "all"
+
+  if (!valueOption) return ["all", ...baseClauses];
+
+  const passingKeys = Object.entries(states)
+    .filter(([, s]) => {
+      if (s.value === null) return false;
+      const v = s.value;
+      if (valueOption.kind === "category") {
+        const visible =
+          (filterState[valueOption.field] as string[] | undefined) ??
+          valueOption.values;
+        return visible.includes(String(v));
+      }
+      // range
+      if (valueOption.mode === "between") {
+        const [lo, hi] = (filterState[valueOption.field] as
+          [number, number] | undefined) ?? [valueOption.min, valueOption.max];
+        return v >= lo && v <= hi;
+      }
+      const t =
+        (filterState[valueOption.field] as number | undefined) ??
+        (valueOption.mode === "atMost" ? valueOption.max : valueOption.min);
+      return valueOption.mode === "atMost" ? v <= t : v >= t;
+    })
+    .map(([key]) => key);
+
+  return [
+    "all",
+    ...baseClauses,
+    ["in", ["get", joinKey], ["literal", passingKeys]],
+  ];
+}
+
 export const ChoroplethMap: React.FC<Props> = ({
   config,
   progress = 1,
@@ -92,6 +157,12 @@ export const ChoroplethMap: React.FC<Props> = ({
   const startedRef = useRef(false);
   const frameRef = useRef<ReturnType<typeof resolveMapFrame> | null>(null);
   const boundsRef = useRef<[number, number, number, number] | null>(null);
+  // The join table set at load time (D8's second point — never merged into properties).
+  // Read by the filter effect below to resolve a valueField-targeting filter, since
+  // MapLibre's style-spec disallows `["feature-state", ...]` inside a `setFilter` expression
+  // (paint/layout only) — the filter effect must resolve membership in JS instead.
+  const statesRef = useRef<ChoroplethFeatureState>({});
+  const joinKeyRef = useRef<string>("");
   // Holds the latest measured title height so fitToData can read it without stale closure.
   const titleHeightPxRef = useRef(0);
   // Holds the latest measured filter bar height for the same reason.
@@ -242,14 +313,22 @@ export const ChoroplethMap: React.FC<Props> = ({
         }
       }
 
-      // Select the basemap geojson + its join key from the registry (config.basemap),
-      // instead of always using world/iso_a3 — this is what lets a US-state (or any
-      // sub-national) choropleth render. Unknown basemap → a loud, listed error.
-      const basemapName = config.basemap ?? "world";
-      const { joinKey } = resolveBasemapMeta(basemapName);
-      const world = GEOJSON_BY_BASEMAP[
-        basemapName
-      ] as GeoJSON.FeatureCollection;
+      // Geometry arrives through the injected config now (produce.mjs, Task 20) — never a
+      // static bundle import. `config.geography` names WHICH set/scope/joinKey this is
+      // (GeographyRef); `config.geometry` is the actual subset TopoJSON, decoded here.
+      // Unknown basemap (legacy fallback path) → a loud, listed error, same as before.
+      const geography =
+        config.geography ??
+        ({
+          joinKey: resolveBasemapMeta(config.basemap ?? "world").joinKey,
+        } as Pick<GeographyRef, "joinKey">);
+      const joinKey = geography.joinKey;
+      const topology = config.geometry as Topology;
+      const objectName = Object.keys(topology.objects)[0]!;
+      const world = topoFeature(
+        topology,
+        topology.objects[objectName]!,
+      ) as unknown as GeoJSON.FeatureCollection;
 
       const layout = computeChoropleth(config, world, joinKey, {
         bins: NUM_BINS,
@@ -260,33 +339,23 @@ export const ChoroplethMap: React.FC<Props> = ({
         labelField: config.labelField,
       });
 
-      const coloredWorld: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features: world.features.map((f, i) => {
-          const joined = layout.joined[i];
-          return {
-            ...f,
-            properties: {
-              ...f.properties,
-              __value: joined.value,
-              __hasData: joined.value !== null,
-              // Localized data label for the popup (falls back to the basemap name below).
-              ...(layout.labels?.[joined.key]
-                ? { __label: layout.labels[joined.key] }
-                : {}),
-              // Write the valueField onto properties so setFilter can use ["get", valueField].
-              ...(joined.value !== null
-                ? { [config.valueField]: joined.value }
-                : {}),
-            },
-          };
-        }),
-      };
+      // The join stays a table alongside the geometry, never merged into `properties`
+      // (D5 + D8's second point) — applied to the map via setFeatureState below.
+      const { features: sourceFeatures, states } = applyChoroplethJoin(
+        world,
+        layout,
+        joinKey,
+      );
+      statesRef.current = states;
+      joinKeyRef.current = joinKey;
 
       map.addSource("choropleth-world", {
         type: "geojson",
-        data: coloredWorld,
+        data: sourceFeatures,
+        promoteId: joinKey, // required for setFeatureState below — MapLibre needs a stable id
       });
+      for (const [key, state] of Object.entries(states))
+        map.setFeatureState({ source: "choropleth-world", id: key }, state);
 
       map.addLayer({
         id: "choropleth-fill",
@@ -372,7 +441,9 @@ export const ChoroplethMap: React.FC<Props> = ({
           const f = e.features?.[0];
           if (!f) return;
 
-          if (f.properties?.__hasData !== true) {
+          // The joined value/label live in feature-state now (D8), never in `properties` —
+          // MapLibre's queryRenderedFeatures result carries the live state on `f.state`.
+          if (f.state?.hasData !== true) {
             map.getCanvas().style.cursor = "";
             popup.remove();
             return;
@@ -380,11 +451,8 @@ export const ChoroplethMap: React.FC<Props> = ({
 
           map.getCanvas().style.cursor = "pointer";
           const name =
-            f.properties?.__label ??
-            f.properties?.name ??
-            f.properties?.iso_a3 ??
-            "—";
-          const value = f.properties?.__value;
+            f.state?.label ?? f.properties?.name ?? f.properties?.iso_a3 ?? "—";
+          const value = f.state?.value;
           const valueUnit = config.valueUnit ?? "";
           const shownValue =
             typeof value === "number"
@@ -425,9 +493,10 @@ export const ChoroplethMap: React.FC<Props> = ({
     if (!map) return;
     if (!map.getLayer("choropleth-fill")) return;
     // Only data-bearing regions reveal; no-data stays unpainted (default basemap).
+    // hasData lives in feature-state now (D8), never in properties.
     map.setPaintProperty("choropleth-fill", "fill-opacity", [
       "case",
-      ["==", ["get", "__hasData"], false],
+      ["==", ["feature-state", "hasData"], false],
       0,
       progress,
     ] as never);
@@ -443,16 +512,19 @@ export const ChoroplethMap: React.FC<Props> = ({
     const map = mapRef.current;
     if (!interactive || !filterOptions.length || !map) return;
     if (!map.getLayer("choropleth-fill")) return;
-    map.setFilter(
-      "choropleth-fill",
-      filterStateToExpression(filterState, filterOptions) as never,
+    // resolveChoroplethFilterExpression (not filterStateToExpression directly) — the joined
+    // value is feature-state now, invalid inside a filter (see its own doc comment above).
+    const expr = resolveChoroplethFilterExpression(
+      filterState,
+      filterOptions,
+      statesRef.current,
+      config.valueField,
+      joinKeyRef.current,
     );
+    map.setFilter("choropleth-fill", expr as never);
     // Stroke layer mirrors the fill filter so strokes also disappear for filtered regions.
     if (map.getLayer("choropleth-stroke")) {
-      map.setFilter(
-        "choropleth-stroke",
-        filterStateToExpression(filterState, filterOptions) as never,
-      );
+      map.setFilter("choropleth-stroke", expr as never);
     }
     // Time filter: if a time dimension is active, expose the selected step via
     // window.__active_time_step__ for external probes (render-verify / smoke gate).

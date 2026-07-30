@@ -1,3 +1,8 @@
+// Updated for Task 16 (geography-anywhere, D5+D8): choroplethFillColor/choroplethFillOpacity
+// now read the join via ["feature-state", ...] instead of ["get", "__..."] — the brief's own
+// Files list omitted this pre-existing test file even though it directly asserts the exact
+// expressions being changed; updated here so it keeps testing the real (new) contract instead
+// of going stale/red.
 import { describe, it, expect } from "bun:test";
 import {
   choroplethFillColor,
@@ -16,7 +21,7 @@ describe("choroplethFillColor", () => {
   it("paints no-data regions with NO_DATA_COLOR as the first case", () => {
     const expr = choroplethFillColor(bins) as unknown[];
     expect(expr[0]).toBe("case");
-    expect(expr[1]).toEqual(["==", ["get", "__hasData"], false]);
+    expect(expr[1]).toEqual(["==", ["feature-state", "hasData"], false]);
     expect(expr[2]).toBe(NO_DATA_COLOR);
   });
 
@@ -29,7 +34,7 @@ describe("choroplethFillColor", () => {
     const shuffled = [bins[2], bins[0], bins[1]];
     const expr = choroplethFillColor(shuffled) as unknown[];
     // First threshold compares against the LOWEST bin max (10), lowest colour.
-    expect(expr[3]).toEqual(["<", ["get", "__value"], 10]);
+    expect(expr[3]).toEqual(["<", ["feature-state", "value"], 10]);
     expect(expr[4]).toBe("#aaa");
   });
 });
@@ -38,7 +43,7 @@ describe("choroplethFillOpacity", () => {
   it("forces no-data regions to opacity 0 (default basemap shows through)", () => {
     const expr = choroplethFillOpacity(0.85) as unknown[];
     expect(expr[0]).toBe("case");
-    expect(expr[1]).toEqual(["==", ["get", "__hasData"], false]);
+    expect(expr[1]).toEqual(["==", ["feature-state", "hasData"], false]);
     expect(expr[2]).toBe(0);
   });
 
