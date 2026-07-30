@@ -9,6 +9,11 @@ import type { NativeSpec } from "../../chart-native/src/spec-to-config";
 
 export type ChartScrollyConfig = NativeSpec & {
   description?: string;
+  /** The line the scrolly OPENS on. Its own field precisely so the opening is never the title:
+   *  a chart's title is its confirmed takeaway, so opening on it opens on the chute. Absent, the
+   *  description is used; absent both, the scrolly simply has no opening card and the title stays
+   *  in the persistent header. */
+  opening?: string;
   insight?: string;
   source?: { name: string; url?: string };
 };

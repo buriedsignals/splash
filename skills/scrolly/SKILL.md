@@ -35,8 +35,10 @@ NOT a transform of the whole article. So (grounded in `docs/splash/embeddable-mo
   rank captions derive from the real sort; a journalist-edited caption or an explicit-`beats` `text`
   gets the SAME check, and the orchestrator's render-review (splash Gate 3a) re-verifies each step
   caption against what the step visually shows.
-- **Each furniture element appears once**: the **insight title** in a persistent header, the
-  **description** (what/when/where) as the intro step caption, the **source** in the footer. The on-map
+- **Each furniture element appears once**: the **insight title** in a persistent header (never a
+  step caption — it is the chart's confirmed takeaway, so a scrolly that opened on it opened on
+  its own chute), the **opening line** as the intro step caption (`opening`, defaulting to the
+  **description** — what/when/where), the **source** in the footer. The on-map
   text label is dropped — the map is visual feedback (zoom + highlight), the captions carry the words.
 - **Short**: 3–6 steps for an embedded scrolly. `checkScrollyConformance` requires title + description +
   source (a module must stand alone when shared out of context).

@@ -69,6 +69,68 @@ export function exportProposalCopy(lang: string): ExportProposalCopy {
   return TABLE[base] ?? EN;
 }
 
+// ── Where it goes in the article ─────────────────────────────────────────────────────────────
+//
+// The hand-over's other sentence. `suggest-article` computes an anchor per opportunity
+// ({ paragraphIndex, quote }); until now nothing but the orchestrator's memory carried it to the
+// journalist, and memory is exactly what failed. export-code prints these lines from the accepted
+// proposal, beside the delivery-form block.
+//
+// TWO GRAINS, ONE AUTHORITY. Both are kept, and the copy says which one to trust: the QUOTE. A
+// paragraph number rots the moment the article is edited between the analysis and the delivery —
+// the normal life of a live article — while a quotation survives a reorganisation. So the number
+// is offered as an indication and the sentence as the thing to look for.
+export type PlacementCopy = {
+  /** Header line of the block. */
+  intro: string;
+  /** Both grains present. */
+  anchored: (paragraphIndex: number, quote: string) => string;
+  /** A quote but no paragraph number. */
+  anchoredQuoteOnly: (quote: string) => string;
+  /** A paragraph number but no quote — the weakest case, and it says so. */
+  anchoredIndexOnly: (paragraphIndex: number) => string;
+  /** The opportunity is bound to no passage. Never a made-up paragraph. */
+  freeStanding: string;
+  /** Splash says where; the journalist decides. */
+  advisory: string;
+};
+
+const EN_PLACEMENT: PlacementCopy = {
+  intro: "Where this goes in your article:",
+  anchored: (paragraphIndex, quote) =>
+    `  around §${paragraphIndex} (indicative), next to « ${quote} » — the quote is what to trust: if the article has moved since, look for that sentence, not the number.`,
+  anchoredQuoteOnly: (quote) =>
+    `  next to « ${quote} » — look for that sentence in your article; the quote is what to trust.`,
+  anchoredIndexOnly: (paragraphIndex) =>
+    `  around §${paragraphIndex} — a paragraph number from the article as it was read, and nothing quoted to confirm it: check it against your current draft.`,
+  freeStanding:
+    "  free-standing — this element is not tied to any passage; place it wherever it serves the piece.",
+  advisory: "Placement is advisory — you position it.",
+};
+
+const FR_PLACEMENT: PlacementCopy = {
+  intro: "Où placer cet élément dans votre article :",
+  anchored: (paragraphIndex, quote) =>
+    `  autour du §${paragraphIndex} (indication), près de « ${quote} » — c'est la citation qui fait foi : si l'article a bougé depuis, cherchez la phrase, pas le numéro.`,
+  anchoredQuoteOnly: (quote) =>
+    `  près de « ${quote} » — cherchez cette phrase dans votre article ; c'est la citation qui fait foi.`,
+  anchoredIndexOnly: (paragraphIndex) =>
+    `  autour du §${paragraphIndex} — un numéro de paragraphe issu de l'article tel qu'il a été lu, sans citation pour le confirmer : vérifiez-le sur votre version actuelle.`,
+  freeStanding:
+    "  élément autonome — il n'est rattaché à aucun passage ; placez-le là où il sert le récit.",
+  advisory: "Le placement est indicatif — c'est vous qui positionnez.",
+};
+
+const PLACEMENT_TABLE: Record<string, PlacementCopy> = {
+  en: EN_PLACEMENT,
+  fr: FR_PLACEMENT,
+};
+
+export function placementCopy(lang: string): PlacementCopy {
+  const base = (lang || DEFAULT_UI_LANG).toLowerCase().split("-")[0]!;
+  return PLACEMENT_TABLE[base] ?? EN_PLACEMENT;
+}
+
 // ── The source question ─────────────────────────────────────────────────────────────────────
 //
 // The question a run cannot BEGIN without an answer to: `sources` is written once, by initRun,

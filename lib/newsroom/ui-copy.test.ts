@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { exportProposalCopy, signoffCopy, sourceQuestionCopy } from "./ui-copy";
+import {
+  exportProposalCopy,
+  placementCopy,
+  signoffCopy,
+  sourceQuestionCopy,
+} from "./ui-copy";
 import { EN_SOURCE_QUESTIONS, sourceQuestion } from "../source/policy";
 
 describe("the interface-copy locale layer", () => {
@@ -126,5 +131,52 @@ describe("the source question, in the newsroom's language", () => {
     expect(sourceQuestion({ kind: "public" }, fr)).toBe(fr.label("public"));
     expect(sourceQuestion({ kind: "public", label: "OFS" }, fr)).toBe(fr.url);
     expect(sourceQuestion({ kind: "local", label: "Relevés" }, fr)).toBeNull();
+  });
+});
+
+// WHERE the element goes in the article, said to a person. Emitted by export-code beside the
+// delivery-form block, so it lives in the same locale layer as that block's copy.
+describe("the placement, said to a person", () => {
+  it("answers in English for an unknown language", () => {
+    expect(placementCopy("rm-CH").intro).toBe(placementCopy("en").intro);
+  });
+
+  it("resolves a regional tag to its base language", () => {
+    expect(placementCopy("fr-CH").intro).toBe(placementCopy("fr").intro);
+  });
+
+  it("offers the same set of lines in every language it declares", () => {
+    const en = Object.keys(placementCopy("en")).sort();
+    expect(Object.keys(placementCopy("fr")).sort()).toEqual(en);
+  });
+
+  it("names the quote as what to trust and the paragraph number as an indication", () => {
+    const en = placementCopy("en").anchored(
+      5,
+      "cross-border workers nearly doubled",
+    );
+    expect(en).toContain("5");
+    expect(en).toContain("cross-border workers nearly doubled");
+    expect(en.toLowerCase()).toContain("indicative");
+    expect(en.toLowerCase()).toContain("quote");
+    const fr = placementCopy("fr").anchored(
+      5,
+      "les frontaliers ont presque doublé",
+    );
+    expect(fr).toContain("§5");
+    expect(fr.toLowerCase()).toContain("indication");
+    expect(fr.toLowerCase()).toContain("citation");
+  });
+
+  it("says free-standing without inventing a paragraph", () => {
+    for (const lang of ["en", "fr"]) {
+      expect(placementCopy(lang).freeStanding).not.toMatch(/§|\bparagraph\b/i);
+      expect(placementCopy(lang).freeStanding.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("keeps the placement advisory — the journalist positions it", () => {
+    expect(placementCopy("en").advisory.toLowerCase()).toContain("advisory");
+    expect(placementCopy("fr").advisory.toLowerCase()).toContain("indicatif");
   });
 });
