@@ -42,9 +42,7 @@ import { runWithVideoWatchdog } from "../src/video-watchdog.ts";
 import { mapSourceManifest } from "../src/source-manifest.ts";
 import { readCompDims } from "./lib/comp-registry.mjs";
 import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../splash/src/channel.ts";
-import { subsetGeometry, toleranceMetersFor } from "../../../lib/geo/subset.ts";
-import { assertGeoCreditPresent } from "../../../lib/geo/policy.ts";
-import { basemapKeyFor, resolveGeographyRef } from "../../../lib/geo/ref.ts";
+import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -170,142 +168,16 @@ const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 // only to a location this script owns (outDir) avoids it entirely.
 let resolvedConfigPath = configPath;
 
-// Geometry resolution (D5, D7) — resolve the geometry DESCRIPTOR (which source, which
-// features are actually drawn) into actual bytes, and refuse a missing OSM credit. Runs
-// BEFORE the conformance gate and BEFORE any build step: nothing is built without a
-// resolved geometry, and (for a declared file) without its credit. ChoroplethMap.tsx /
-// CartogramMap.tsx / DotDensityMap.tsx / RouteMap.tsx all throw a loud, named
-// "config.geometry is required" today (Tasks 16/17 already removed their bundled `?raw`
-// GEOJSON_BY_BASEMAP fallback — see e.g. ChoroplethMap.tsx's own comment: "Real today for
-// every caller until Task 20 lands config.geometry injection") — this step is what makes
-// them resolvable again.
-//
-// DEVIATION from this task's own brief, found while implementing (documented in
-// task-20-report.md): the brief's D5 code sample gates this whole step on
-// `if (config.geography)` alone. In the REAL tree, `config.geography` is a GeographyRef
-// that is ALWAYS present for choropleth/cartogram/dot-density once assembled by
-// lib/loop/assemble/map-native.ts — for a SHIPPED basemap too (`origin: "shipped"`), not
-// only a declared one. Every one of this skill's own sample-data fixtures
-// (assets/sample-data/*.json, exercised by the live produce-single-format e2e suite) still
-// predates that and carries only the legacy `basemap: "world"` field, no `geography` at
-// all — so gating strictly on `config.geography` would leave every real fixture (and the
-// live e2e suite) throwing "config.geometry is required" both before AND after this
-// change. Resolved by falling back to `resolveGeographyRef(config.basemap)` — the EXACT
-// fallback ChoroplethMap.tsx's own render code already applies — whenever `config.geography`
-// is absent but `config.basemap` names a shipped registry entry.
-const geography =
-  parsedConfig.geography ??
-  (parsedConfig.basemap ? resolveGeographyRef(parsedConfig.basemap) : undefined);
-
-if (geography) {
-  // D7's credit obligation applies ONLY to a DECLARED geometry (a shipped basemap —
-  // Natural Earth `world.geojson`, US Census `us-states.geojson` — is public domain, no
-  // credit owed). assertGeoCreditPresent's own contract treats a present first argument as
-  // "this geometry needs a credit" (see its own comment: "no declared geometry (a shipped
-  // basemap) — nothing to credit here"); passing `geography` through UNCONDITIONALLY
-  // whenever it is present — as this task's own brief's D5 code sample literally does —
-  // would fail-hard on every existing shipped-basemap map, none of which the assembler (or
-  // any sample fixture) populates a `geoCredit` for today. Gated on `origin` instead.
-  assertGeoCreditPresent(
-    geography.origin === "declared" ? geography : undefined,
-    parsedConfig.geoCredit,
-  );
-
-  // The feature ids actually drawn (D5's own design call): recomputed here from the
-  // config's own data (the assembler does not thread a dedicated featureIds field back
-  // through ProductionBrief/GeoMatch — a deliberate smaller-change call this task's brief
-  // documents) rather than a NEW field on the manifest schema.
-  //
-  // "route" is NOT one of the brief's two named shapes (choropleth/dot-density vs.
-  // cartogram) — a genuine gap in the brief's own Design call, found while implementing:
-  // RouteMap.tsx does not know in advance which territories the route crosses
-  // (`computeRoute` works that out FROM the geometry, at render time), so there is no
-  // pre-known per-row id list to filter down to. Route needs every feature the source
-  // names — its "id list" is every id present in the source file (a query, not a filter);
-  // the prune/simplify/encode wins of D5 still apply in full to the result, only the
-  // per-feature filtering step is a no-op for this one type.
-  let featureIds =
-    parsedConfig.type === "cartogram"
-      ? parsedConfig.values.map((v) => String(v.id))
-      : parsedConfig.type === "route"
-        ? null // resolved below, once sourcePath is known
-        : parsedConfig.rows.map((r) => String(r[parsedConfig.regionKey]));
-
-  // WHERE to read the frozen source from: a declared file names its own frozen path
-  // (`geography.sourcePath` — this task's own addition to the config shape, threaded by a
-  // future assembler task per Task 10's freeze; confirmed by grep while implementing that
-  // no code in this tree sets it yet, on any config, for any origin — a genuine, documented
-  // pipeline gap this task does not close). A shipped basemap has no such field (the
-  // assembler never sets it, and never will — it's not a per-run fact); its file is the
-  // registry asset this skill already ships under assets/geo/<basemapKey>.geojson, the
-  // exact asset geo-match.ts itself reads to measure join candidates
-  // (skills/map-native/src/geo-match.ts:8-10).
-  const sourcePath =
-    geography.sourcePath ??
-    (geography.origin === "shipped"
-      ? join(root, "assets", "geo", `${basemapKeyFor(geography)}.geojson`)
-      : undefined);
-  if (!sourcePath)
-    throw new Error(
-      `produce: config.geography names a declared geometry (level "${geography.level}") but ` +
-        `carries no sourcePath — the assembler must thread the frozen input file's path onto ` +
-        `config.geography before produce can resolve it`,
-    );
-
-  if (featureIds === null) {
-    const sourceRaw = JSON.parse(readFileSync(sourcePath, "utf8"));
-    if (sourceRaw.type !== "FeatureCollection")
-      throw new Error(
-        `produce: route geometry source "${sourcePath}" is not a GeoJSON FeatureCollection ` +
-          `(got type "${sourceRaw.type}") — the whole-source id scan a route needs only ` +
-          `understands GeoJSON today`,
-      );
-    featureIds = sourceRaw.features.map((f) => String(f.properties?.[geography.joinKey]));
-  }
-
-  // Rough map-extent estimate for the tolerance rule (D5): the channel's own render width
-  // is known (mediaSize.width); the map's real geographic extent in metres is not measured
-  // here — use a documented, named placeholder constant until a real per-geography extent
-  // is threaded through (a genuine follow-up, not invented by this plan): WORLD-SCALE
-  // fallback 40,075,000 m (Earth's circumference) for a "world"/"natural-earth-admin-0" set,
-  // and a country-scale fallback of 1,000,000 m otherwise. This is coarser than the spec's
-  // own per-country measurements (D5's Swiss-cantons 288 m/px was computed against the REAL
-  // Swiss extent), so simplification will be slightly more conservative (more vertices kept)
-  // than optimal until that follow-up lands — never LESS conservative, the safe direction to
-  // be wrong in.
-  const extentMeters = geography.set.startsWith("natural-earth-admin-0")
-    ? 40_075_000
-    : 1_000_000;
-  const toleranceMeters = toleranceMetersFor(extentMeters, mediaSize.width);
-
-  const geomTmpDir = mkdtempSync(join(tmpdir(), "map-native-geometry-"));
-  try {
-    const geomOutPath = join(geomTmpDir, "geometry.topojson");
-    await subsetGeometry({
-      sourcePath,
-      outPath: geomOutPath,
-      featureIds,
-      idProperty: geography.joinKey,
-      keepProperties: [geography.joinKey],
-      toleranceMeters,
-    });
-    parsedConfig.geometry = JSON.parse(readFileSync(geomOutPath, "utf8"));
-  } finally {
-    rmSync(geomTmpDir, { recursive: true, force: true });
-  }
-
-  delete geography.sourcePath; // produce-time-only — never reaches the browser
-  parsedConfig.geography = geography; // observable even when synthesized from `basemap`
-
+const wroteGeometry = await resolveGeometryForProduce({
+  config: parsedConfig,
+  assetsGeoDir: join(root, "assets", "geo"),
+  renderWidthPx: mediaSize.width,
+});
+if (wroteGeometry) {
   // Persist the resolved config to outDir/config.json — never back to the caller's own
-  // `configPath` (see the comment on `resolvedConfigPath` above) — and repoint
-  // `resolvedConfigPath` there so vite.config.ts's `CONFIG=` re-read below picks up the
-  // resolved geometry for every build. Written now, before any build/snap step that may
-  // need VITE_MAPTILER_KEY/REMOTION_MAPTILER_KEY, so the resolved geometry is observable
-  // on disk even if a later step fails for an unrelated reason. The "interactive" branch's
-  // own config.json copy further down is skipped when it would be a same-path no-op (see
-  // that branch) — tolerated by every format's delivery contract either way
-  // (lib/core/contract.ts: "config.json ... legitimately sit beside the deliverable").
+  // configPath (see the comment on resolvedConfigPath above) — and repoint
+  // resolvedConfigPath there so vite.config.ts's CONFIG= re-read below picks up the
+  // resolved geometry for every build.
   resolvedConfigPath = join(outDir, "config.json");
   writeFileSync(resolvedConfigPath, JSON.stringify(parsedConfig, null, 2) + "\n");
 }
