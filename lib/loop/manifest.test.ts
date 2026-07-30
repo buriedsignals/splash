@@ -1630,6 +1630,29 @@ describe("provenanceHash — geography (D9)", () => {
     );
   });
 
+  // The credit test above cannot, by itself, tell "the whole GeographyRecord is hashed" apart
+  // from "only credit is hashed" — both would pass it, since it only ever varies credit. This
+  // test isolates a SECOND field (licence) while holding credit fixed, the same way the source
+  // ledger test above proves the CLASS moves the hash, not just the label (line ~108). Without
+  // this, `geography: run.input.geography?.credit ?? null` would silently satisfy every other
+  // test in this file while under-hashing licence/edition — exactly the defect D9 exists to
+  // close for a corrected licence, not just a corrected credit.
+  it("changes when input.geography's licence changes, even though credit does not — the whole record is hashed, not just credit", () => {
+    const run = withGeographyCredit("IGN");
+    const relicensed = {
+      ...run,
+      input: {
+        ...run.input,
+        geography: {
+          ...run.input.geography!,
+          licence: "Licence Ouverte 3.0",
+        },
+      },
+    };
+    const el = run.elements[0];
+    expect(provenanceHash(run, el)).not.toBe(provenanceHash(relicensed, el));
+  });
+
   it("is null-stable (unchanged) for a run declaring no geography at all — the migration-neutral property D9 requires", () => {
     const run = base();
     const el = run.elements[0];
@@ -1637,6 +1660,10 @@ describe("provenanceHash — geography (D9)", () => {
     expect(provenanceHash(run, el)).toBe(provenanceHash(run, el));
   });
 
+  // NOTE: this flips the whole `geoJoin` object absent → present, not just its `decisions`
+  // field — it cannot alone distinguish "the whole ledger is hashed" from "only decisions is
+  // hashed" (see the field-isolation test just below, which starts from an already-non-null
+  // `geoJoin` in both runs specifically to make that distinction).
   it("changes when orient.geoJoin's decisions change", () => {
     const run = base();
     const withDecision: RunManifest = {
@@ -1659,6 +1686,45 @@ describe("provenanceHash — geography (D9)", () => {
     };
     const el = run.elements[0];
     expect(provenanceHash(run, el)).not.toBe(provenanceHash(withDecision, el));
+  });
+
+  // Unlike the test above, both runs here already carry a non-null `geoJoin` with the SAME
+  // `decisions` — only `pending` differs. This isolates a second field the same way the
+  // licence test isolates `geography`'s: without it, `geoJoin: run.orient?.geoJoin?.decisions
+  // ?? null` would silently satisfy every other test in this file while under-hashing
+  // `pending`/`geographySha256` — a value still marked pending elsewhere in the ledger would
+  // not invalidate a stale artifact.
+  it("changes when orient.geoJoin's pending list changes, even though decisions does not — the whole ledger is hashed, not just decisions", () => {
+    const run: RunManifest = {
+      ...base(),
+      orient: {
+        ...base().orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [
+            {
+              value: "Buenos Aires",
+              featureId: "ARG-caba",
+              basis: "journalist",
+            },
+          ],
+          pending: ["Córdoba"],
+        },
+      },
+    };
+    const morePending: RunManifest = {
+      ...run,
+      orient: {
+        ...run.orient!,
+        geoJoin: {
+          ...run.orient!.geoJoin!,
+          pending: ["Córdoba", "Rosario"],
+        },
+      },
+    };
+    const el = run.elements[0];
+    expect(provenanceHash(run, el)).not.toBe(provenanceHash(morePending, el));
   });
 
   it("hashes identically before and after a JSON round-trip for a migrated v4 manifest", () => {
