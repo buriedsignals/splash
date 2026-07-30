@@ -972,3 +972,183 @@ Expected: the "PH-13 fixture" test FAILS (`staleGeoJoinDecisions(...)` returns `
 git add lib/geo/join.ts lib/geo/join.test.ts
 git commit -m "feat(geo): join ledger — unresolvedGeoJoins + staleness-by-hash (D6)"
 ```
+
+### Task 6: `lib/geo/subset.ts` — filter → prune → simplify → encode (D5)
+
+**Files:**
+- Create: `lib/geo/subset.ts`
+- Create: `lib/geo/subset.test.ts`
+
+**Interfaces:**
+- Produces: `toleranceMetersFor(mapExtentMeters: number, renderWidthPx: number): number` (pure)
+  and `subsetGeometry(input: SubsetInput): Promise<{ bytes: number }>` (spawns `bunx mapshaper`).
+  Consumed by Task 18 (`produce.mjs` wiring).
+
+CLI flags verified against the installed mapshaper while writing this plan (`bunx mapshaper -h
+simplify`, `-h filter`, `-h filter-fields`, `-h o`, run 2026-07-30):
+`-simplify visvalingam interval=<N>m` takes an ABSOLUTE metre tolerance (not a percentage —
+`-simplify 5%` is the exact anti-pattern spec D5 measures moving the Swiss border by 64px);
+`-filter '<js-expression>'` deletes features that evaluate to false; `-filter-fields
+fields=<comma-list>` retains only the named properties; `-o <path> format=topojson
+quantization=<N>` writes TopoJSON. The tolerance rule itself (D5): `tolerance ≈ (map extent in
+metres) / (render width in px)` — one pixel, never a percentage.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/geo/subset.test.ts
+import { describe, it, expect, afterAll } from "bun:test";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { toleranceMetersFor, subsetGeometry } from "./subset";
+
+describe("toleranceMetersFor", () => {
+  it("derives an absolute metre tolerance from extent/width — the spec's Swiss-cantons fixture: ~288 m/px at 1200px gives ~100m (measured 1.3px deviation, spec D5)", () => {
+    // 345,600 m extent (Switzerland's rough east-west span) at a 1200px render width.
+    expect(toleranceMetersFor(345_600, 1200)).toBeCloseTo(288, 0);
+  });
+
+  it("is never expressed as a percentage — this function has no percentage branch at all", () => {
+    // The point of this test is structural, not numeric: confirm the function's return type is
+    // always a plain metre number, so nothing downstream can be handed "5%" instead of "100".
+    expect(typeof toleranceMetersFor(100_000, 1000)).toBe("number");
+  });
+});
+
+describe("subsetGeometry — real bunx mapshaper invocation, no mock (repo convention)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "geo-subset-test-"));
+  const sourcePath = join(dir, "source.geojson");
+  const outPath = join(dir, "out.topojson");
+
+  // Three features, deliberately distinguishable: only "b" and "c" get kept by the filter, and
+  // only "keepMe" survives the property prune — "dropMe" is the fixture element that PROVES
+  // pruning ran (spec D5's biggest, cheapest win: 253kB → 93kB from property pruning alone).
+  const fixture: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { id: "a", keepMe: "A", dropMe: "verbose-a" },
+        geometry: { type: "Polygon", coordinates: [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] },
+      },
+      {
+        type: "Feature",
+        properties: { id: "b", keepMe: "B", dropMe: "verbose-b" },
+        geometry: { type: "Polygon", coordinates: [[[2, 0], [2, 1], [3, 1], [3, 0], [2, 0]]] },
+      },
+      {
+        type: "Feature",
+        properties: { id: "c", keepMe: "C", dropMe: "verbose-c" },
+        geometry: { type: "Polygon", coordinates: [[[4, 0], [4, 1], [5, 1], [5, 0], [4, 0]]] },
+      },
+    ],
+  };
+  writeFileSync(sourcePath, JSON.stringify(fixture));
+
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  it("filters to only the drawn features, prunes to only the kept property, and encodes TopoJSON", async () => {
+    const result = await subsetGeometry({
+      sourcePath,
+      outPath,
+      featureIds: ["b", "c"],
+      idProperty: "id",
+      keepProperties: ["id", "keepMe"],
+      toleranceMeters: 1, // near-lossless — this fixture's geometry is tiny, not real-world-scaled
+    });
+    expect(result.bytes).toBeGreaterThan(0);
+
+    const topo = JSON.parse(readFileSync(outPath, "utf8"));
+    expect(topo.type).toBe("Topology");
+    const layerKey = Object.keys(topo.objects)[0]!;
+    const geoms = topo.objects[layerKey].geometries as { properties: Record<string, unknown> }[];
+    expect(geoms.length).toBe(2); // only "b" and "c" — "a" was filtered out
+    for (const g of geoms) {
+      expect(g.properties.keepMe).toBeDefined();
+      expect(g.properties.dropMe).toBeUndefined(); // pruned — the fixture element under test
+    }
+  }, 30_000);
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test geo/subset.test.ts`
+Expected: FAIL — `./subset` does not exist yet (the `toleranceMetersFor` tests fail on missing
+module; the `subsetGeometry` test would also fail on missing module before it ever reaches
+mapshaper).
+
+- [ ] **Step 3: Write the minimal implementation**
+
+```ts
+// lib/geo/subset.ts
+// filter → prune → simplify → encode (D5). Every cut is a real bunx mapshaper invocation — no
+// mock, per repo convention (real APIs, real failures). Tolerance is ALWAYS an absolute metre
+// value derived from render width, never a percentage: -simplify 5% (a number that "sounds
+// prudent") moves the Swiss border by 64px at 1200px width (spec D5, measured).
+import { spawnSync } from "node:child_process";
+import { statSync } from "node:fs";
+
+export function toleranceMetersFor(mapExtentMeters: number, renderWidthPx: number): number {
+  return mapExtentMeters / renderWidthPx;
+}
+
+export type SubsetInput = {
+  sourcePath: string;
+  outPath: string;
+  featureIds: string[];
+  idProperty: string;
+  keepProperties: string[];
+  toleranceMeters: number;
+};
+
+export async function subsetGeometry(input: SubsetInput): Promise<{ bytes: number }> {
+  const idList = JSON.stringify(input.featureIds);
+  const filterExpr = `${idList}.includes(${input.idProperty})`;
+  const args = [
+    "mapshaper",
+    input.sourcePath,
+    "-filter",
+    filterExpr,
+    "-filter-fields",
+    `fields=${input.keepProperties.join(",")}`,
+    "-simplify",
+    "visvalingam",
+    `interval=${input.toleranceMeters}m`,
+    "-o",
+    input.outPath,
+    "format=topojson",
+    "quantization=1e5",
+    "force",
+  ];
+  const r = spawnSync("bunx", args, { encoding: "utf8" });
+  if (r.status !== 0)
+    throw new Error(`subsetGeometry: bunx mapshaper failed (exit ${r.status}): ${r.stderr}`);
+  return { bytes: statSync(input.outPath).size };
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test geo/subset.test.ts`
+Expected: PASS, 3/3. (The `subsetGeometry` test spawns a real subprocess and may take a few
+seconds — this is expected, matches the repo's existing live-render test class, not a hang.)
+
+- [ ] **Step 5: Mutation — prove the property-prune assertion depends on `-filter-fields`
+  actually running**
+
+Temporarily remove the `"-filter-fields", \`fields=${input.keepProperties.join(",")}\`,` two
+array entries from `args`.
+
+Run: `cd lib && bun test geo/subset.test.ts`
+Expected: the "filters... prunes... encodes" test FAILS on `expect(g.properties.dropMe
+).toBeUndefined()` — `dropMe` is present (`"verbose-b"`/`"verbose-c"`) because nothing pruned it.
+1/3 reddens. Revert the mutation before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/geo/subset.ts lib/geo/subset.test.ts
+git commit -m "feat(geo): subset pipeline — filter/prune/simplify/encode, metric tolerance only (D5)"
+```
