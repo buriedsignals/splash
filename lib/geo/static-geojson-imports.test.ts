@@ -145,6 +145,84 @@ const STATIC_IMPORT = /\.geojson(\?raw)?["']/;
 // The runtime fetch-the-shipped-asset form: `fetch(staticFile("geo/world.geojson"))`.
 const STATIC_FETCH = /staticFile\(["'][^"']*\.geojson/;
 
+// Strips `//` line comments and `/* … */` block comments (including JSDoc) from source text
+// before it is matched, replacing comment characters with spaces so line numbers and column
+// offsets are preserved. Without this, the guard fires on its own prose — this file's header
+// and the code it walks both describe past static-geojson bugs in English, and a naive scan
+// matches the sentence describing the fault as readily as the fault itself (the project's own
+// "pas de charte maison" lesson, reproduced here). String literals (single/double/backtick) are
+// tracked as opaque so a `//` inside a URL is never mistaken for the start of a comment.
+function stripComments(src: string): string {
+  let out = "";
+  let state:
+    | "code"
+    | "line-comment"
+    | "block-comment"
+    | "string-single"
+    | "string-double"
+    | "template" = "code";
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    const next = src[i + 1];
+    if (state === "code") {
+      if (c === "/" && next === "/") {
+        state = "line-comment";
+        out += "  ";
+        i++;
+      } else if (c === "/" && next === "*") {
+        state = "block-comment";
+        out += "  ";
+        i++;
+      } else if (c === "'" || c === '"' || c === "`") {
+        state =
+          c === "'"
+            ? "string-single"
+            : c === '"'
+              ? "string-double"
+              : "template";
+        out += c;
+      } else {
+        out += c;
+      }
+      continue;
+    }
+    if (state === "line-comment") {
+      if (c === "\n") {
+        state = "code";
+        out += c;
+      } else {
+        out += " ";
+      }
+      continue;
+    }
+    if (state === "block-comment") {
+      if (c === "*" && next === "/") {
+        state = "code";
+        out += "  ";
+        i++;
+      } else {
+        out += c === "\n" ? "\n" : " ";
+      }
+      continue;
+    }
+    // string-single, string-double, template: copy verbatim (preserving any `//` or `/*` inside
+    // a string literal, e.g. a URL) and honour backslash escapes so an escaped quote does not
+    // end the string early.
+    const quote =
+      state === "string-single" ? "'" : state === "string-double" ? '"' : "`";
+    if (c === "\\" && next !== undefined) {
+      out += c + next;
+      i++;
+    } else if (c === quote) {
+      state = "code";
+      out += c;
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
 describe("static geojson reference drift lock (source-scan only, not a correctness proof)", () => {
   it("scans a real, non-zero set of files under lib/ and skills/", () => {
     // A guard whose scan silently comes back empty is a guard that passes for the wrong reason —
@@ -156,7 +234,7 @@ describe("static geojson reference drift lock (source-scan only, not a correctne
     const offenders: string[] = [];
     for (const file of ALL_FILES) {
       if (isExempt(file)) continue;
-      const src = readFileSync(file, "utf8");
+      const src = stripComments(readFileSync(file, "utf8"));
       const lines = src.split("\n");
       for (let i = 0; i < lines.length; i++) {
         if (STATIC_IMPORT.test(lines[i]) || STATIC_FETCH.test(lines[i])) {
