@@ -2,7 +2,12 @@ import { describe, it, expect, afterAll } from "bun:test";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { toleranceMetersFor, subsetGeometry } from "./subset";
+import {
+  toleranceMetersFor,
+  extentMetersFor,
+  bboxOf,
+  subsetGeometry,
+} from "./subset";
 
 describe("toleranceMetersFor", () => {
   it("derives an absolute metre tolerance from extent/width — the spec's Swiss-cantons fixture: ~288 m/px at 1200px gives ~100m (measured 1.3px deviation, spec D5)", () => {
@@ -14,6 +19,34 @@ describe("toleranceMetersFor", () => {
     // The point of this test is structural, not numeric: confirm the function's return type is
     // always a plain metre number, so nothing downstream can be handed "5%" instead of "100".
     expect(typeof toleranceMetersFor(100_000, 1000)).toBe("number");
+  });
+});
+
+describe("extentMetersFor", () => {
+  it("returns the larger side of the bbox, scaling longitude by cos(mid-latitude): a 1°×1° box is ~111km tall everywhere, but only ~111km wide at the equator versus ~56km wide at 60°N — so at 60°N the height wins", () => {
+    const atEquator = extentMetersFor({
+      minLon: 0,
+      maxLon: 1,
+      minLat: 0,
+      maxLat: 1,
+    });
+    expect(atEquator).toBeCloseTo(111_320, -3);
+
+    const at60N = extentMetersFor({
+      minLon: 0,
+      maxLon: 1,
+      minLat: 60,
+      maxLat: 61,
+    });
+    expect(at60N).toBeCloseTo(111_320, -3); // the ~111km height, not the ~56km width
+  });
+});
+
+describe("bboxOf", () => {
+  it("throws on a coordinate-free input rather than silently returning an empty bbox — an empty extent would produce a nonsense tolerance", () => {
+    expect(() =>
+      bboxOf([{ type: "GeometryCollection", geometries: [] }]),
+    ).toThrow(/no coordinate/);
   });
 });
 
@@ -89,9 +122,10 @@ describe("subsetGeometry — real bunx mapshaper invocation, no mock (repo conve
       featureIds: ["b", "c"],
       idProperty: "id",
       keepProperties: ["id", "keepMe"],
-      toleranceMeters: 1, // near-lossless — this fixture's geometry is tiny, not real-world-scaled
+      renderWidthPx: 1200,
     });
     expect(result.bytes).toBeGreaterThan(0);
+    expect(result.featureCount).toBe(2);
 
     const topo = JSON.parse(readFileSync(outPath, "utf8"));
     expect(topo.type).toBe("Topology");

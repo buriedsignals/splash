@@ -10,7 +10,7 @@ import { readFileSync, rmSync } from "node:fs";
 import { mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { subsetGeometry, toleranceMetersFor } from "./subset";
+import { subsetGeometry } from "./subset";
 import { assertGeoCreditPresent, type GeographyLicenceInfo } from "./policy";
 import { basemapKeyFor, resolveGeographyRef, type GeographyRef } from "./ref";
 
@@ -180,24 +180,6 @@ export async function resolveGeometryForProduce(
       );
     }
 
-    // Rough map-extent estimate for the tolerance rule (D5): the channel's own render width
-    // is known (mediaSize.width); the map's real geographic extent in metres is not measured
-    // here — use a documented, named placeholder constant until a real per-geography extent
-    // is threaded through (a genuine follow-up, not invented by this plan): WORLD-SCALE
-    // fallback 40,075,000 m (Earth's circumference) for a "world"/"natural-earth-admin-0" set,
-    // and a country-scale fallback of 1,000,000 m otherwise. This is coarser than the spec's
-    // own per-country measurements (D5's Swiss-cantons 288 m/px was computed against the REAL
-    // Swiss extent), so simplification will be slightly more conservative (more vertices kept)
-    // than optimal until that follow-up lands — never LESS conservative, the safe direction to
-    // be wrong in.
-    const extentMeters = geography.set.startsWith("natural-earth-admin-0")
-      ? 40_075_000
-      : 1_000_000;
-    const toleranceMeters = toleranceMetersFor(
-      extentMeters,
-      input.renderWidthPx,
-    );
-
     const geomTmpDir = mkdtempSync(join(tmpdir(), "map-native-geometry-"));
     try {
       const geomOutPath = join(geomTmpDir, "geometry.topojson");
@@ -207,7 +189,7 @@ export async function resolveGeometryForProduce(
         featureIds,
         idProperty: geography.joinKey,
         keepProperties: [geography.joinKey],
-        toleranceMeters,
+        renderWidthPx: input.renderWidthPx,
       });
       config.geometry = JSON.parse(readFileSync(geomOutPath, "utf8"));
     } finally {
