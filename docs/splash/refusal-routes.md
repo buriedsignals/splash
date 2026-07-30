@@ -52,9 +52,13 @@ All three are corrected above and locked with a test each in `lib/core/routed-re
 Four things this sub-project measured and chose not to close, on purpose — closing any of them
 would be a new guard, and the spec (§5) is explicit that this plan does not add one:
 
-- **The direct-branch exemption** (`isDirectBranch`, `candidate-provenance.ts:74`) — a run can
+- **The direct-branch exemption** (`isDirectBranch`, `candidate-provenance.ts:76`) — a run can
   still declare that the journalist named the visual directly and skip the menu. Tightening this
-  would be a new guard; it is a candidate for the family C follow-up.
+  would be a new guard; it is a candidate for the family C follow-up. Both readers of the
+  no-candidates-menu precondition (`produce-all.mjs` and `describePrecheck({stage:"production"})`)
+  apply the SAME exemption, reading it from the same `accepted.json` — this was a coverage gap
+  fixed on this branch (the checker had it, the standalone `precheck` command did not), not a new
+  guard.
 - **`candidates.json` is written by hand** (`two-chains-gap-2026-07-28.md` §1.1) — its presence is
   fabricable. The precondition makes the lie visible, not impossible.
 - **The presentation receipt is fabricable** — a hand-written JSON file dropped under `_shown/`

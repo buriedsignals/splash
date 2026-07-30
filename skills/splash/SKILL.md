@@ -806,7 +806,10 @@ standalone, so a missing menu is caught before the heavier script even runs:
 bun lib/host/cli.ts precheck --stage production --dir exports/<slug>
 ```
 A non-zero exit means `candidates.json` is absent (PROPOSITION's Stage-1 write never happened, or
-happened somewhere else) — production does not start, for anything, until it exists.
+happened somewhere else) — production does not start until it exists, for every proposal EXCEPT
+the direct branch: an `accepted.json` where every proposal is `skillsInvoked: ["splash:cadrage-direct"]`
+(the journalist NAMED the visual) needs no menu, and `precheck` reads that same file beside `--dir`
+to grant the same exemption `produce-all` itself applies.
 
 **5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
 ```bash
