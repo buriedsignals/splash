@@ -300,3 +300,296 @@ continuing.
 git add lib/geo/crs.ts lib/geo/crs.test.ts lib/tsconfig.json
 git commit -m "feat(geo): CRS range guard — per-coordinate, antimeridian-safe, no winding check"
 ```
+
+### Task 2: `lib/geo/declaration.ts` — `GeographyInputSchema` (D1, D2)
+
+**Files:**
+- Create: `lib/geo/declaration.ts`
+- Create: `lib/geo/declaration.test.ts`
+
+**Interfaces:**
+- Produces: `GeographyCreditSchema`, `GeographyInputSchema`, and their inferred types
+  `GeographyCredit`, `GeographyInput` (`z.infer`). Consumed by Task 9 (manifest wiring) and
+  Task 10 (init.ts wiring) — this task does not wire either.
+
+This is the schema quoted verbatim in spec D1. `z.strictObject`, for the exact reason
+`lib/source/kinds.ts`'s header states about `SourceLedgerSchema` (verified while writing this
+plan): a permissive object lets an unrelated shape parse as "declares nothing", and the refusal
+that follows blames a field the caller thinks it supplied.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/geo/declaration.test.ts
+import { describe, it, expect } from "bun:test";
+import { GeographyInputSchema } from "./declaration";
+
+const valid = {
+  path: "communes-haute-savoie.geojson",
+  encoding: "geojson" as const,
+  crs: "EPSG:4326" as const,
+  level: "communes de Haute-Savoie",
+  licence: "Licence Ouverte 2.0",
+  edition: "2024",
+  credit: { name: "IGN — Admin Express" },
+};
+
+describe("GeographyInputSchema", () => {
+  it("parses a fully declared geography", () => {
+    const r = GeographyInputSchema.safeParse(valid);
+    expect(r.success).toBe(true);
+  });
+
+  it("refuses a declaration with no edition — the field Splash refuses to guess", () => {
+    // The spec is explicit this is the field Splash refuses most firmly to invent: three of
+    // five real licences read (IGN, ONS, swisstopo) require a year or vintage nowhere in the
+    // file, and the mtime cannot supply it (a 2026 re-download of a 2021 edition has a 2026
+    // mtime). Omitting it must fail the parse, not silently default to "".
+    const { edition, ...withoutEdition } = valid;
+    const r = GeographyInputSchema.safeParse(withoutEdition);
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues.some((i) => i.path[0] === "edition")).toBe(true);
+  });
+
+  it("refuses an unknown field — strict, like SourceLedgerSchema", () => {
+    const r = GeographyInputSchema.safeParse({ ...valid, mapType: "choropleth" });
+    expect(r.success).toBe(false);
+  });
+
+  it("refuses a crs outside the three accepted values", () => {
+    const r = GeographyInputSchema.safeParse({ ...valid, crs: "EPSG:2056" });
+    expect(r.success).toBe(false);
+  });
+
+  it("accepts a declaration with no joinKey — Splash measures instead of demanding one (R3)", () => {
+    const { joinKey, ...withoutJoinKey } = { ...valid, joinKey: "INSEE_COM" };
+    const r = GeographyInputSchema.safeParse(withoutJoinKey);
+    expect(r.success).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test geo/declaration.test.ts`
+Expected: FAIL — `./declaration` does not exist yet.
+
+- [ ] **Step 3: Write the minimal implementation**
+
+```ts
+// lib/geo/declaration.ts
+// The geography declaration — quoted verbatim from design spec D1/D2. z.strictObject for the
+// reason lib/source/kinds.ts's SourceLedgerSchema is strict: a permissive object would let a
+// declaration that names nothing pass, and the refusal that follows would blame a field the
+// caller believes it supplied.
+import { z } from "zod";
+
+export const GeographyCreditSchema = z.strictObject({
+  name: z.string().min(1),
+  url: z.string().optional(),
+});
+
+export const GeographyInputSchema = z.strictObject({
+  path: z.string().min(1),
+  encoding: z.enum(["geojson", "topojson"]),
+  // The three CRS proj4 models `+towgs84=0,0,0` — indistinguishable from WGS84 (spec D4, R4).
+  crs: z.enum(["EPSG:4326", "EPSG:4258", "EPSG:4269"]),
+  /** What this file DESCRIBES, in the journalist's own words ("cantons", "communes de
+   *  Haute-Savoie", "secteurs scolaires 2025"). Free text on purpose — "ADM1" is a dataset
+   *  convention, not a journalistic one (spec D2: Natural Earth counts 101 features for France,
+   *  the départements, not the 18 régions a French journalist means by "regions"). */
+  level: z.string().min(1),
+  licence: z.string().min(1),
+  /** The edition or vintage the licence asks to be cited. Not derivable from the file or its
+   *  mtime — see the test above. The field Splash refuses most firmly to guess. */
+  edition: z.string().min(1),
+  credit: GeographyCreditSchema,
+  /** The feature property the data joins against, when the journalist already knows it.
+   *  Absent ⇒ Splash MEASURES the candidates and asks (D6, R3). Never guessed silently. */
+  joinKey: z.string().min(1).optional(),
+});
+
+export type GeographyCredit = z.infer<typeof GeographyCreditSchema>;
+export type GeographyInput = z.infer<typeof GeographyInputSchema>;
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test geo/declaration.test.ts`
+Expected: PASS, 5/5.
+
+- [ ] **Step 5: Mutation — prove the `edition` test depends on `.min(1)`, not on the field merely
+  existing in the schema**
+
+Temporarily change `edition: z.string().min(1)` to `edition: z.string().optional()`.
+
+Run: `cd lib && bun test geo/declaration.test.ts`
+Expected: the "refuses a declaration with no edition" test FAILS (`r.success` is `true`, expected
+`false`) — 1/5 reddens. Report that exact number. Revert the mutation before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/geo/declaration.ts lib/geo/declaration.test.ts
+git commit -m "feat(geo): GeographyInputSchema — declared, strict, edition never guessed"
+```
+
+### Task 3: `lib/geo/policy.ts` — inline policy (D8) and the credit obligation (D7)
+
+**Files:**
+- Create: `lib/geo/policy.ts`
+- Create: `lib/geo/policy.test.ts`
+
+**Interfaces:**
+- Consumes: nothing from earlier tasks (this task's `GeographyLicenceInfo` is its own minimal
+  shape — see below for why it does not import `GeographyInput` from Task 2).
+- Produces: `geometryMayBeInlined(geography: GeographyLicenceInfo, format: VisualFormat):
+  boolean` and `assertGeoCreditPresent(geography: GeographyLicenceInfo | undefined, geoCredit:
+  { name: string; url?: string } | undefined): void` (throws). Consumed by Task 18 (produce.mjs
+  wiring).
+
+Design call (spec D8 gives only `geometryMayBeInlined`'s signature and says the credit
+obligation belongs in this file too, without giving its exact shape): rather than take the full
+`GeographyInput` type from Task 2 (which would pull `lib/geo/declaration.ts`'s zod import into
+`policy.ts`, and from there — once `policy.ts` is consumed by anything the map-native runtime
+bundle can reach — risk repeating the zod-leak `production-brief.ts`'s header already warns
+about), `policy.ts` takes the **narrow shape it actually needs**:
+
+```ts
+export type GeographyLicenceInfo = { licence: string };
+```
+
+`assertGeoCreditPresent` mirrors `assertRenderedSize`'s discipline (`skills/splash/src/
+channel.ts:62`, verified while writing this plan: a plain function that **throws**, not a
+`VerbResult` — produce's other hard guards already fail this way) rather than the `lib/source`
+`SourceResult<T>` pattern: `geometryMayBeInlined` answers a yes/no policy question with no failure
+mode of its own (Task 4 below calls it as a plain predicate), while `assertGeoCreditPresent` is a
+produce-time gate exactly like `assertRenderedSize`, so it should fail the same way its neighbour
+already does.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/geo/policy.test.ts
+import { describe, it, expect } from "bun:test";
+import { geometryMayBeInlined, assertGeoCreditPresent } from "./policy";
+
+describe("geometryMayBeInlined", () => {
+  it("returns true for every format today — Decision 1 (2026-07-28) written in code", () => {
+    // The fixture element carrying the claim: an ODbL-declared geometry (French communes) at
+    // the format the reserve in spec R1 is about — interactive. Decision 1 says TRUE here;
+    // the day the OSMF answers in writing that a self-contained HTML conveys a derived
+    // database, THIS is the line that flips to false for interactive/scrolly.
+    expect(
+      geometryMayBeInlined({ licence: "ODbL 1.0 (OpenStreetMap contributors)" }, "interactive"),
+    ).toBe(true);
+    expect(geometryMayBeInlined({ licence: "ODbL 1.0 (OpenStreetMap contributors)" }, "scrolly")).toBe(
+      true,
+    );
+    expect(geometryMayBeInlined({ licence: "ODbL 1.0 (OpenStreetMap contributors)" }, "static")).toBe(
+      true,
+    );
+    expect(geometryMayBeInlined({ licence: "ODbL 1.0 (OpenStreetMap contributors)" }, "video")).toBe(
+      true,
+    );
+  });
+});
+
+describe("assertGeoCreditPresent", () => {
+  it("throws when geometry is declared and geoCredit is missing — the fixture: an OSM-sourced file with no credit threaded", () => {
+    expect(() =>
+      assertGeoCreditPresent({ licence: "ODbL 1.0 (OpenStreetMap contributors)" }, undefined),
+    ).toThrow(/credit/i);
+  });
+
+  it("throws when geoCredit.name is blank", () => {
+    expect(() =>
+      assertGeoCreditPresent({ licence: "ODbL 1.0" }, { name: "   " }),
+    ).toThrow(/credit/i);
+  });
+
+  it("does not throw when geometry is declared and geoCredit is present", () => {
+    expect(() =>
+      assertGeoCreditPresent(
+        { licence: "ODbL 1.0" },
+        { name: "© OpenStreetMap contributors", url: "https://www.openstreetmap.org/copyright" },
+      ),
+    ).not.toThrow();
+  });
+
+  it("does not throw when no geometry was declared at all (a shipped basemap)", () => {
+    expect(() => assertGeoCreditPresent(undefined, undefined)).not.toThrow();
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test geo/policy.test.ts`
+Expected: FAIL — `./policy` does not exist yet.
+
+- [ ] **Step 3: Write the minimal implementation**
+
+```ts
+// lib/geo/policy.ts
+// D8's one predicate, and D7's credit obligation beside it — the spec's own grouping ("un
+// prédicat, et un seul" for D8; the credit obligation "à côté" of it for D7).
+import type { VisualFormat } from "../core/vocabulary";
+
+/** The narrow shape this file needs — NOT the full GeographyInput (lib/geo/declaration.ts):
+ *  importing that here would pull its zod schema into every caller of this file, and this
+ *  file is reachable from produce-time code that must stay light. See this task's header. */
+export type GeographyLicenceInfo = { licence: string };
+
+/** Decision 1 (design spec, 2026-07-28): a declared geometry file feeds EVERY format, interactive
+ *  included, with its credit rendered into the artefact (assertGeoCreditPresent below). Returns
+ *  true unconditionally today. The day the OSMF answers in writing that a self-contained HTML
+ *  page carrying inline GeoJSON is a "derived database" and not a "Produced Work" — spec R1 — THIS
+ *  function is the only place that changes: it starts returning false for `interactive`/`scrolly`
+ *  when `geography.licence` is ODbL, and the refusal names `static`/`video` as the paths that stay
+ *  open (ODbL §4.5.b is uncontested there). No caller of this function needs to change.
+ */
+export function geometryMayBeInlined(
+  _geography: GeographyLicenceInfo,
+  _format: VisualFormat,
+): boolean {
+  return true;
+}
+
+/** The credit is not decorative — spec D7. When a map's geometry came from a DECLARED file, an
+ *  empty or missing geoCredit makes produce fail, exactly as loudly as assertRenderedSize
+ *  (skills/splash/src/channel.ts) already fails a size mismatch. There is no code path that lets
+ *  a newsroom ship a declared-geometry artefact without its credit by omission. */
+export function assertGeoCreditPresent(
+  geography: GeographyLicenceInfo | undefined,
+  geoCredit: { name: string; url?: string } | undefined,
+): void {
+  if (!geography) return; // no declared geometry (a shipped basemap) — nothing to credit here
+  if (!geoCredit || geoCredit.name.trim() === "")
+    throw new Error(
+      `produce: this map's geometry came from a declared file (licence: "${geography.licence}"), ` +
+        `so its credit must be rendered into the artefact — geoCredit is missing or blank`,
+    );
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test geo/policy.test.ts`
+Expected: PASS, 6/6.
+
+- [ ] **Step 5: Mutation — prove the credit tests depend on the throw actually firing**
+
+Temporarily change `assertGeoCreditPresent`'s body to a no-op (`return;` as the first line).
+
+Run: `cd lib && bun test geo/policy.test.ts`
+Expected: 2 of the 4 `assertGeoCreditPresent` tests FAIL (the two `.toThrow(...)` cases —
+"throws when geometry is declared and geoCredit is missing" and "throws when geoCredit.name is
+blank"). Report the exact failing count (2/6 overall). Revert the mutation before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/geo/policy.ts lib/geo/policy.test.ts
+git commit -m "feat(geo): inline policy (D8) and mandatory geo-credit assertion (D7)"
+```
