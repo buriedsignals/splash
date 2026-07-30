@@ -4,6 +4,10 @@
 // generation — a pipeline-emitted output of this report, or (hosted embed with no local
 // render) a fresh capture under exports/<slug>/_review-artifacts/<id>/. A hand-planted
 // or stale-generation file is a hard refusal (src/render-provenance.ts).
+// SHOWN, MECHANICALLY: the artifact approved here must have been OPENED first —
+// `bun lib/host/cli.ts present --path <artifact>` — and the gate reads that receipt itself
+// from beside the artifact (lib/loop/presentation.ts). No receipt, or a receipt for different
+// bytes, is a refusal (src/gate.ts).
 import { readFileSync, writeFileSync } from "node:fs";
 import { applyRenderGate } from "../src/gate.ts";
 import { assertArtifactProvenance } from "../src/render-provenance.ts";
@@ -20,7 +24,7 @@ try {
   // refusal (not produced / unknown proposal) is the precise message.
   if (result && result.status === "produced")
     assertArtifactProvenance({ report, result, reportPath, artifactPath });
-  const next = applyRenderGate(report, id, readFileSync(artifactPath));
+  const next = applyRenderGate(report, id, readFileSync(artifactPath), artifactPath);
   writeFileSync(reportPath, JSON.stringify(next, null, 2));
 } catch (e) {
   console.error(`gate-render failed: ${e instanceof Error ? e.message : e}`);

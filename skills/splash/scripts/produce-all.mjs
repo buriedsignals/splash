@@ -16,6 +16,9 @@ import {
   applicableDecisions,
   spineAutoRecordableIds,
 } from "../src/flow-decisions.ts";
+import { productionPrecondition } from "../../../lib/loop/preconditions.ts";
+import { refusalSentence } from "../../../lib/core/routed-refusal.ts";
+import { isDirectBranch } from "../src/candidate-provenance.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -32,6 +35,12 @@ try {
 } catch (e) {
   console.error(
     `cannot read accepted proposals from ${acceptedPath}: ${e instanceof Error ? e.message : e}`,
+  );
+  process.exit(1);
+}
+if (!Array.isArray(accepted)) {
+  console.error(
+    `${acceptedPath} must hold a JSON array of accepted proposals, got ${typeof accepted}`,
   );
   process.exit(1);
 }
@@ -56,6 +65,21 @@ if (existsSync(candidatesPath)) {
     // proposal then fails provenance loudly rather than silently skipping the gate.
     candidateProvenance = { present: false, producers: new Set() };
   }
+}
+
+// ① THE RANKED MENU IS A PRECONDITION OF PRODUCTION, and the refusal is terminal for the batch.
+//
+// The same condition produceAll already checked per proposal — moved here, ahead of every engine.
+// Two things change, and neither is a new control:
+//   1. nothing is produced, so a refused run leaves no half-built artifact for a later step to
+//      hand-plant around (the sweep's most serious motif: the guard is not bypassed, it is FED);
+//   2. the refusal names the act that resolves it instead of stopping at what is missing.
+// A proposal the journalist NAMED (the direct branch) is exempt exactly as it was — this line
+// asks the same isDirectBranch candidate-provenance.ts has always asked.
+const missingMenu = productionPrecondition(dirname(acceptedPath));
+if (missingMenu && accepted.some((p) => !isDirectBranch(p))) {
+  console.error(`[produce] ${refusalSentence(missingMenu)}`);
+  process.exit(1);
 }
 
 // Flow-decision gate: decisions.jsonl sits beside accepted.json, like candidates.json. A required

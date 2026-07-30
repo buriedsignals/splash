@@ -1,4 +1,11 @@
-import type { ProduceReport, ReviewProbe } from "./producer-spec";
+import type {
+  EditorialProbe,
+  ProduceReport,
+  ReviewerAttribution,
+  ReviewProbe,
+} from "./producer-spec";
+import { hashReviewerOutput } from "../../../lib/verify/redact";
+import type { Finding } from "../../../lib/verify/types";
 
 // The ONLY writer of the render-review record (Layer 2 — the editorial "second pair of
 // eyes"). A produced visual must be reviewed against its ACTUAL render + the article/data
@@ -21,13 +28,22 @@ import type { ProduceReport, ReviewProbe } from "./producer-spec";
 //     chart HTML and a dataset.csv 404, yet the summary silently dropped both and
 //     asserted full data fidelity; and (adversarial repro) a 404 concern-probe was
 //     still droppable as long as ANY unrelated concern text existed;
-//   - a FAILURE KEYWORD (FAILURE_KEYWORDS below) in the recorded narrative (concerns,
-//     or a pass-probe's own text) that no concern/resolved probe reflects — the
-//     tripwire is deliberately CONSERVATIVE: it may over-ask (e.g. a pass-probe worded
-//     "no value is missing" trips it), never under-ask. A false positive costs one
-//     rewording, or an explicit "resolved" probe quoting the keyword with its
-//     evidence; an unresolved true failure must become a "concern" probe + a surfaced
-//     concern (still advisory — the journalist stays the editor) or the review fails.
+//   - a FAILURE KEYWORD (FAILURE_KEYWORDS below) in REVIEWER-authored text (concerns, a
+//     probe's own `check`, or an editorial probe's `note`) that no concern/resolved probe
+//     reflects — measured live: `sh -c "printf '404 not found\n'; exit 0"` as a mechanical
+//     probe's command records {outcome:"pass", note:"404 not found"} and does NOT trip this,
+//     because a mechanical probe's `note` is machine-generated (the command's own
+//     stdout/stderr tail, lib/loop/probe-run.ts) and is deliberately never scanned — scanning
+//     it used to block reviews whose probes had PASSED, with no reachable remedy, and fired on
+//     the GREEN success message a shipped pipeline script prints (smoke.mjs). The exit code IS
+//     the verdict for a mechanical probe; a probe whose command exits 0 while its own output
+//     reports a failure (a `curl -w '%{http_code}'` wrapper on a 404, say) is not caught by this
+//     tripwire — authoring a probe that fails loudly (non-zero exit) on failure is the
+//     reviewer's job, not this gate's. On reviewer-authored text the tripwire still bites: a
+//     pass-probe's own `check` worded "no value is missing" still trips it, and the remedy
+//     (reword, or an explicit "resolved" probe quoting the keyword with its evidence — editorial
+//     only, unreachable for a mechanical probe since its outcome is derived from the real exit
+//     code) is reachable there.
 //
 // Honest scope: the ledger makes WHAT WAS RUN and WHAT IT FOUND mechanical; the
 // substance of each probe still comes from an INDEPENDENT reviewer, per
@@ -65,7 +81,17 @@ function keywordRegex(keyword: string): RegExp {
   return new RegExp(`\\b${escaped}\\b`, "i");
 }
 
+// The tripwire scans REVIEWER-AUTHORED text, never a mechanical probe's `note`. A mechanical
+// probe's note is not reviewer prose — review-gate.mjs (the only production writer) overwrites
+// it with the command's own stdout/stderr tail (lib/loop/probe-run.ts), so a probe that EXITS 0
+// printing `{"rows":12,"missing":0}` would otherwise trip the "missing" keyword on its own
+// harmless output, blocking a PASSING review with no reachable remedy (the note cannot be
+// caller-supplied for a mechanical probe, and "resolved" is unreachable for one — validateProbes
+// above). `check` stays in scope on every kind: it is always what the REVIEWER named as the
+// thing being probed, mechanical or not. An editorial probe's `note` stays in scope too — it is
+// the judgement's own words, the one case this tripwire exists to catch.
 function probeText(p: ReviewProbe): string {
+  if (p.kind === "mechanical") return p.check;
   return `${p.check} ${p.note ?? ""}`;
 }
 
@@ -89,6 +115,48 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
       throw new Error(
         "review rejected: every probe needs a non-empty `check` naming what was probed",
       );
+    // ③ A MECHANICAL OUTCOME IS READ, NEVER REPORTED.
+    //
+    // The sweep recorded ten self-attested reviews, two of them a `pass` on a check that had
+    // crashed or had never run. Both are unwritable from here on: a mechanical probe carries the
+    // argv that answered it and the code that argv exited with, and the outcome has to agree
+    // with the code. Nothing here re-runs the probe — lib/loop/probe-run.ts did, and
+    // review-gate.mjs is what hands the results over.
+    if (p.kind === "mechanical") {
+      if (!Array.isArray(p.command) || p.command.length === 0)
+        throw new Error(
+          `review rejected: mechanical probe "${p.check}" carries no command — record the argv ` +
+            `that answers it and let its result decide, or record it as an editorial judgement ` +
+            `(kind: "editorial") attributed to the reviewer who made it`,
+        );
+      const answered = p.exitCode === 0 ? "pass" : "concern";
+      // "pass" and "resolved" both claim the check answers clean RIGHT NOW — "resolved" only
+      // adds that it used to fail (the note says how) — so both require the real exit code to
+      // actually be 0. Leaving "resolved" unchecked would have left exactly one of the three
+      // outcome values still self-attestable, which is the class this task exists to close.
+      if (
+        (p.outcome === "pass" || p.outcome === "resolved") &&
+        answered !== "pass"
+      )
+        throw new Error(
+          `review rejected: mechanical probe "${p.check}" is recorded as ` +
+            `${p.outcome === "pass" ? "passing" : "resolved"}, but its command exited ` +
+            `${p.exitCode === null ? "nothing at all (it never ran)" : p.exitCode} — ` +
+            `a check that did not answer clean is a concern, and a check that did not run is not a check` +
+            (p.outcome === "resolved"
+              ? ` (a "resolved" probe still has to answer clean NOW — that is what "resolved" claims)`
+              : ""),
+        );
+      // TypeScript's own discriminated-union narrowing would otherwise prove this branch
+      // unreachable (ReviewProbe only names two kinds) — but `probes` arrives here from
+      // untyped JSON at the CLI seam, so a missing/misspelled `kind` is a REAL runtime shape,
+      // not a type-system impossibility. Widen before comparing so the check actually runs.
+    } else if ((p.kind as string) !== "editorial") {
+      throw new Error(
+        `review rejected: probe "${p.check}" declares no kind — every check is either ` +
+          `"mechanical" (a command whose result decides) or "editorial" (a judgement, attributed)`,
+      );
+    }
     if (!VALID_OUTCOMES.has(p.outcome))
       throw new Error(
         `review rejected: probe "${p.check}" has invalid outcome ` +
@@ -117,6 +185,16 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
   // ("the title is slightly long") never accounts for a probed 404. Matching is
   // mechanical: case-insensitive, whitespace-collapsed containment of the check text.
   const normalizedConcerns = concerns.map(normalizeForMatch);
+  // The concern (if any) that accounts for a concern-outcome probe — reviewer-authored, and
+  // already required (by the loop right below) to quote the probe's `check` verbatim. Reused by
+  // the keyword tripwire below: it is the legitimate reviewer-authored evidence for a mechanical
+  // concern-probe, standing in for the machine-generated `note` the tripwire deliberately never
+  // scans (see probeText above).
+  function accountedConcern(p: ReviewProbe): string | undefined {
+    if (p.outcome !== "concern") return undefined;
+    const check = normalizeForMatch(p.check);
+    return concerns.find((c) => normalizeForMatch(c).includes(check));
+  }
   for (const p of probes) {
     if (p.outcome !== "concern") continue;
     const check = normalizeForMatch(p.check);
@@ -132,12 +210,16 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
   }
   // Keyword tripwire: a failure keyword in the recorded narrative (a concern, or a
   // PASS probe's own text) must be reflected by a concern/resolved probe that carries
-  // the same keyword. Conservative by design — see the header comment.
+  // the same keyword. Conservative by design — see the header comment. Both sides scan
+  // REVIEWER-authored text only (concerns, a probe's own `check`, an editorial probe's `note`);
+  // a mechanical probe's machine-generated `note` never counts on either side.
   const narrative = [
     ...concerns,
     ...probes.filter((p) => p.outcome === "pass").map(probeText),
   ];
-  const nonPass = probes.filter((p) => p.outcome !== "pass").map(probeText);
+  const nonPass = probes
+    .filter((p) => p.outcome !== "pass")
+    .map((p) => `${probeText(p)} ${accountedConcern(p) ?? ""}`);
   for (const keyword of FAILURE_KEYWORDS) {
     const re = keywordRegex(keyword);
     if (!narrative.some((t) => re.test(t))) continue;
@@ -154,13 +236,60 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
   }
 }
 
+// hashReviewerOutput (lib/verify/redact.ts) is the ONE definition of "the fingerprint of what a
+// reviewer returned" — it takes Finding[], the vocabulary lib/verify/review.ts already reviews
+// against. An editorial probe is not a Finding (no criterion/severity/status/evidence/provenance
+// — those belong to the review REGISTRY, not to this ledger's plan/outcome shape), so it is
+// projected rather than hashed directly. The projected fields are placeholders picked only to
+// satisfy the shared type — `provenance: "independent"` is the one field that is not arbitrary:
+// it is exactly what an editorial probe claims to be.
+function editorialAsFinding(p: EditorialProbe): Finding {
+  return {
+    id: p.check,
+    criterion: "craft",
+    severity: "warning",
+    status: "open",
+    summary: p.note ?? "",
+    evidence: [],
+    provenance: "independent",
+  };
+}
+
 export function applyReviewGate(
   report: ProduceReport,
   id: string,
   concerns: string[],
   probes: ReviewProbe[],
+  reviewer?: { name: string; version: string },
 ): ProduceReport {
   validateProbes(probes, concerns);
+  // ③ NOBODY GRADES THEIR OWN WORK. An editorial judgement is an opinion, and an opinion whose
+  // author is not named is indistinguishable from the authoring step's own. Requiring the name
+  // does not make the judgement better (spec §6 says so plainly) — it makes it someone's.
+  const hasEditorial = probes.some((p) => p.kind === "editorial");
+  if (hasEditorial && !reviewer)
+    throw new Error(
+      "review rejected: this review carries editorial judgements and does not say who did it — " +
+        "have the editorial pass done by someone who did not write this visual, and record who did it",
+    );
+  const attribution: ReviewerAttribution = reviewer
+    ? {
+        name: reviewer.name,
+        version: reviewer.version,
+        outputHash: hashReviewerOutput(
+          probes
+            .filter((p): p is EditorialProbe => p.kind === "editorial")
+            .map(editorialAsFinding),
+        ),
+        independentSemanticReview: "available",
+      }
+    : {
+        name: "",
+        version: "",
+        outputHash: "",
+        // Honest, not a pass: the mechanical half ran and nothing judged the editorial one.
+        independentSemanticReview: "unavailable",
+      };
   let found = false;
   const results = report.results.map((r) => {
     if (r.id !== id) return r;
@@ -174,6 +303,7 @@ export function applyReviewGate(
       reviewed: true,
       reviewConcerns: concerns,
       reviewProbes: probes,
+      reviewer: attribution,
     };
   });
   if (!found) throw new Error(`unknown proposal ${id}`);

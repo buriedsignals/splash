@@ -100,11 +100,11 @@ describe("snap-interactive-contrast.mjs — detection (real script, fixture dist
       stderr = (e as { stderr?: Buffer }).stderr?.toString("utf8") ?? "";
     }
     expect(threw).toBe(true);
-    // late-refusal wording (task 23): the guard now deviates to the unblocking step instead
-    // of just naming "WCAG contrast" — assert the floor + the routed next-step, not the old
-    // exact phrase.
+    // late-refusal wording (task 1b): renders through lib/core/routed-refusal.ts's shared
+    // refusalSentence() now (message — step), not the old "Next:" phrasing — assert the floor
+    // and the routed unblocking step it still carries, not a literal separator word.
     expect(stderr).toContain("below 4.5:1");
-    expect(stderr).toContain("Next:");
+    expect(stderr).toContain("produce again");
   }, 30_000);
 
   it("passes on a conformant label (COLORS.ink on white, ≥4.5:1)", () => {

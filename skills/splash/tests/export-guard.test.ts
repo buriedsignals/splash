@@ -42,6 +42,27 @@ describe("assertShippable", () => {
       assertShippable(rep({ status: "failed", renderApproved: false }), "p1"),
     ).toThrow(/not produced/);
   });
+
+  // IMPORTANT: "shown" and "approved" have to name the same bytes (Task 8). A report that
+  // carries shownSha256 (the shape a real gate.ts approval always has) but whose value has
+  // drifted from approvedHash must not ship.
+  it("passes when shownSha256 equals approvedHash — the shape a real gate.ts approval writes", () => {
+    expect(() =>
+      assertShippable(
+        rep({ approvedHash: "abc123", shownSha256: "abc123" }),
+        "p1",
+      ),
+    ).not.toThrow();
+  });
+
+  it("refuses when shownSha256 does not match approvedHash — approved bytes nobody was shown", () => {
+    expect(() =>
+      assertShippable(
+        rep({ approvedHash: "abc123", shownSha256: "stale-hash" }),
+        "p1",
+      ),
+    ).toThrow(/shownSha256 !== approvedHash/);
+  });
 });
 
 describe("assertDelivered", () => {
@@ -204,6 +225,59 @@ describe("assertDelivered", () => {
         form: null,
       }),
     ).toThrow(/requires a form/);
+  });
+});
+
+describe("assertDelivered — the build folder is not a delivery", () => {
+  it("refuses an html hand-over that still carries the build's own files, naming every one", () => {
+    expect(() =>
+      assertDelivered(
+        ["interactive.html", "config.json", "native-source.json"],
+        {
+          format: "interactive",
+          form: "html",
+        },
+      ),
+    ).toThrow(/config\.json/);
+    expect(() =>
+      assertDelivered(
+        ["interactive.html", "config.json", "native-source.json"],
+        {
+          format: "interactive",
+          form: "html",
+        },
+      ),
+    ).toThrow(/hand(ed)? over/);
+  });
+
+  it("accepts the sanctioned html export — exactly the html file", () => {
+    expect(() =>
+      assertDelivered(["interactive.html"], {
+        format: "interactive",
+        form: "html",
+      }),
+    ).not.toThrow();
+  });
+
+  it("accepts a runnable source bundle with its config.json — the measured exemption", () => {
+    expect(() =>
+      assertDelivered(
+        ["package.json", "vite.config.ts", "config.json", "index.html"],
+        {
+          format: "scrolly",
+          form: "code-source",
+        },
+      ),
+    ).not.toThrow();
+  });
+
+  it("keeps refusing a lone html copy as a code-source bundle — the older rule still stands", () => {
+    expect(() =>
+      assertDelivered(["interactive.html"], {
+        format: "interactive",
+        form: "code-source",
+      }),
+    ).toThrow(/package\.json/);
   });
 });
 

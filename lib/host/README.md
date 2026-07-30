@@ -16,14 +16,15 @@ Three rules hold for every command:
   are strictly read-only — they never write a byte into the run directory, not even to
   migrate an old manifest (see `stale-schema` below). A host keeps nothing between calls; the
   run's `run.json` is the only source of truth.
-- **Eight commands write, and each writes one thing.** `verb` writes inside the paths its own
+- **Nine commands write, and each writes one thing.** `verb` writes inside the paths its own
   request names. `init` creates the `run.json` of a directory that held none (plus the frozen
   copies of the inputs it declared). `advance`, `confirm-angle`, `phrase`, `choose-form`,
   `approve` and `request-delivery` write the `run.json` of the run they were pointed at (and,
   for `advance`, whatever the loop's own step produces beneath it — a render, a review still, a
-  published package; `approve` also writes the sign-off document it points at). Nothing else on
-  disk is touched, and a REFUSED command writes nothing at all — a refusal always leaves the run
-  byte-identical, which is what makes it safe to retry.
+  published package; `approve` also writes the sign-off document it points at). `present` writes
+  the receipt beside the artifact it opened — the one file this façade ever writes outside a
+  run.json. Nothing else on disk is touched, and a REFUSED command writes nothing at all — a
+  refusal always leaves the run byte-identical, which is what makes it safe to retry.
 
 ## Exit codes
 
@@ -37,10 +38,11 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The thirteen commands
+## The sixteen commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`. Acting: `init`, `advance`,
-`confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`.
+Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `precheck`, `probe`. Acting:
+`init`, `advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
+`present`.
 
 The whole journey, in the order a host walks it — every step is one of these commands, and none
 of them needs a run.json written by hand:
@@ -1281,6 +1283,158 @@ own `brand.json` cache beside it — `loadNewsroomProfile`'s long-standing best-
 behaviour, and the one write `--dir` can still reach, into a directory that already exists
 and already holds the profile it caches.)
 
+### `precheck --stage <production|export> --dir <dir> [--format <f>] [--form <f>]`
+
+Answers one question, on disk facts alone: **is this directory allowed to be what the caller is
+about to call it?** `lib/loop/preconditions.ts`'s two hard preconditions — `productionPrecondition`
+and `exportPrecondition` — are already wired into the scripts that produce and export a visual
+(`produce-all.mjs`, `export-guard.ts`); this command is how the same two checks reach the one
+gesture that has no script to intercept it. A 2026-07-28 sweep found 36 cases of a journalist
+being told about a folder no script ever produced — the folder was simply *named*, in prose, and
+nothing ran to stop it. `precheck` is what the prose chain calls **before** naming the folder.
+
+Read-only and deliberately without `--run`: the chain that runs today has no `run.json`, and
+requiring one would make the check unaskable at the only moment it is useful.
+
+**`--stage production`** — may production start in this directory at all, i.e. is there a ranked
+menu (`candidates.json`) anything could have been chosen from?
+
+```
+$ bun lib/host/cli.ts precheck --stage production --dir /tmp/host-readme-precheck
+```
+
+```json
+{
+  "ok": false,
+  "code": "step-refused",
+  "message": "no ranked list of visuals was ever written down for this story (/tmp/host-readme-precheck/candidates.json does not exist), so nothing produced here was chosen from one — ask the suggester for the ranked list of visuals and keep the list it returns, then choose from it"
+}
+```
+
+Exit `1`. Once `candidates.json` exists, the same call answers `ok: true` with what it checked:
+
+```json
+{
+  "ok": true,
+  "value": {
+    "stage": "production",
+    "dir": "/tmp/host-readme-precheck",
+    "passed": true
+  }
+}
+```
+
+Exit `0`.
+
+**`--stage export`** — is this folder an export, or the directory the build worked in? It needs
+`--format`, because what the folder is supposed to BE decides which shape it has to have; `--form`
+is optional (`html`, `code-source` or `embed` — omit it for a static or video hand-over). A folder
+that still carries the build's own bookkeeping (`config.json`, `native-source.json`,
+`source-manifest.json`, `report.json`, `accepted.json`, `candidates.json`) is refused, every
+planted file named — with the one exemption `code-source` carries, because a runnable source
+bundle plants `config.json` at its own root by design:
+
+```
+$ bun lib/host/cli.ts precheck --stage export --dir /tmp/host-readme-precheck-export \
+    --format interactive --form html
+```
+
+```json
+{
+  "ok": false,
+  "code": "step-refused",
+  "message": "the folder being handed over still holds config.json — those are files the build leaves behind, so this is the working directory and not the finished interactive the newsroom was promised — hand over the export, not the folder the build left behind: bun skills/splash/scripts/export-code.mjs <report.json> <id> --form <form>"
+}
+```
+
+Exit `1`. A clean export folder answers `ok: true`:
+
+```json
+{
+  "ok": true,
+  "value": {
+    "stage": "export",
+    "dir": "/tmp/host-readme-precheck-export-ok",
+    "format": "interactive",
+    "form": "html",
+    "passed": true
+  }
+}
+```
+
+Exit `0`. A missing or unrecognised `--format` is a usage refusal that names the real vocabulary
+rather than guessing one:
+
+```json
+{
+  "ok": false,
+  "code": "usage",
+  "message": "precheck --stage export needs --format <static|interactive|video|scrolly> — what the folder is supposed to BE decides which shape it has to have"
+}
+```
+
+Exit `2`, same as an unreadable `--dir`: an input problem, never a silent pass.
+
+### `present --path <file>`
+
+Opens the artifact and answers with the receipt: what was opened, and which bytes. This is how
+the prose chain — the part of Splash that runs by Bash calls, not JavaScript imports — reaches
+`lib/loop/presentation.ts`'s `presentArtifact` without going through a run at all: a described
+render is not a shown one, and until this command existed the prose chain had no way to make that
+distinction stick outside `advance`'s own `preview` step.
+
+The opening itself is not reimplemented here — `lib/loop/preview.ts`'s `present` resolves the
+platform's viewer, honours `SPLASH_PREVIEW_OPENER` and `SPLASH_NO_VIEWER` (documented above, under
+"Presenting the deliverable: two settings"), and deduces a headless Linux session. What this
+command adds is the receipt, written beside the artifact (`_shown/<file>.json`), and a path the
+prose chain can reach without a manifest.
+
+```
+$ SPLASH_NO_VIEWER=1 bun lib/host/cli.ts present --path /tmp/host-readme-present/static.png
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "path": "/tmp/host-readme-present/static.png",
+    "sha256": "2d4566582844690f8634a8b2534ea5221560038c6c0650c99140759bad603ae2",
+    "presentedAt": "2026-07-30T05:50:22.183Z",
+    "presentedAs": "path-printed",
+    "fallbackReason": "SPLASH_NO_VIEWER is set: the host presents the deliverable itself, or this machine has no viewer — the absolute path is the presentation"
+  }
+}
+```
+
+Exit `0`. `sha256` is re-read and re-hashed from the file on disk **at the moment of showing**,
+never taken from an argument — the receipt cannot describe bytes other than the ones a viewer was
+actually pointed at. `presentedAs` is `"opened"` only when a viewer really ran and exited `0`;
+otherwise it is `"path-printed"` **with the reason**, exactly as it is for the `approve` gate's own
+`preview` step, because it is the same function underneath.
+
+A path that cannot be read is refused rather than silently presenting nothing:
+
+```json
+{
+  "ok": false,
+  "code": "engine-failed",
+  "message": "present: cannot read /tmp/host-readme-present/nope.png: ENOENT: no such file or directory, open '/tmp/host-readme-present/nope.png'"
+}
+```
+
+Exit `1` — no receipt is written for a path that was never opened. A missing `--path` is a usage
+refusal:
+
+```json
+{
+  "ok": false,
+  "code": "usage",
+  "message": "present needs --path <file> — the artifact to open. A described render is not a shown one"
+}
+```
+
+Exit `2`.
+
 #### What a failure message may contain
 
 The façade's own refusals (`usage`, `invalid-request`, `no-run`, `stale-schema`,
@@ -1292,6 +1446,87 @@ stripping them would leave a host with an opaque failure and nothing to act on. 
 asserted as a contract in `lib/host/cli.test.ts` rather than left as an accident. A host that
 relays messages to a third party should treat `message` as diagnostic output, not as
 user-facing copy.
+
+### `probe [--cwd <dir>]`
+
+Runs the review's mechanical checks and reads their exit codes — the third of the three
+guarantees ("des refus qui mordent"). The 2026-07-28 sweep found ten review runs where the gate
+graded itself, and two of those recorded a `pass` on a check that had crashed or never run at
+all: that is possible for exactly one reason, which is that the outcome was a field the reviewing
+step filled in by hand. `probe` closes it by making the gate the one that launches the check and
+reads what actually happened — `lib/loop/probe-run.ts`'s `runProbes`, called with `Bun.spawnSync`
+on the command **as an argv array**, never a string handed to a shell and never interpolated into
+a `-c`. A probe whose command is not a non-empty array of non-empty strings is refused by shape,
+before anything is executed.
+
+The request is a DOCUMENT on stdin, like `phrase` and `author-beats`, and for the same reason: the
+list's length is the review's own, one command per check, and an argv array has no shape in a
+flag — flattening it into one would be exactly the string a shell then re-splits.
+
+```
+$ echo '[{"check": "the file is there", "command": ["true"]}]' | bun lib/host/cli.ts probe
+```
+
+```json
+{
+  "ok": true,
+  "value": [
+    {
+      "check": "the file is there",
+      "command": [
+        "true"
+      ],
+      "outcome": "pass",
+      "exitCode": 0,
+      "note": ""
+    }
+  ]
+}
+```
+
+Exit `0` — `probe` itself never fails because a probe failed; it answers `ok: true` with the
+ledger of what each probe found, `"concern"` where a check exited non-zero or could not be run at
+all, `"pass"` only where the exit code was zero:
+
+```
+$ echo '[{"check": "the dataset answers", "command": ["false"]}]' | bun lib/host/cli.ts probe
+```
+
+```json
+{
+  "ok": true,
+  "value": [
+    {
+      "check": "the dataset answers",
+      "command": [
+        "false"
+      ],
+      "outcome": "concern",
+      "exitCode": 1,
+      "note": "the check exited 1: "
+    }
+  ]
+}
+```
+
+Every probe runs regardless of the others' outcome — cutting the ledger short at the first
+failure would make the record describe how far the review got, not what the artifact is like. A
+ledger whose commands are prose rather than argv is refused before any of it runs:
+
+```
+$ echo '[{"check": "x", "command": "rm -rf /"}]' | bun lib/host/cli.ts probe
+```
+
+```json
+{
+  "ok": false,
+  "code": "usage",
+  "message": "probe reads a LIST on stdin: [{\"check\": \"<what is probed>\", \"command\": [\"bun\", \"<script>\", \"<arg>\"]}] — the command is argv, never a shell line"
+}
+```
+
+Exit `2`. `--cwd` is optional and defaults to the façade's own working directory — the directory
+the checks run in, not a run directory; `probe` never reads or writes a `run.json`.
 
 ## Why a CLI and not MCP
 

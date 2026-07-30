@@ -8,6 +8,11 @@ import { sha256Hex, verifyEditorialSignature } from "./editorial-signoff";
 // one rule (and its exact error messages) lives once, and re-exports isHostedUrl for its own
 // callers (export-code.mjs, the tests). contract.ts imports nothing FROM here — no cycle.
 import { assertFileMedia, isHostedUrl } from "../../../lib/core/contract";
+import {
+  exportPrecondition,
+  type HandoverForm,
+} from "../../../lib/loop/preconditions";
+import { refusalSentence } from "../../../lib/core/routed-refusal";
 
 export { isHostedUrl };
 
@@ -28,6 +33,45 @@ export function assertShippable(report: ProduceReport, id: string): void {
   if (!r.renderApproved)
     throw new Error(
       `refusing to export ${id}: not render-approved (run gate-render first)`,
+    );
+  // "shown" and "approved" have to name the same bytes — but this comparison does not itself
+  // verify that. gate.ts:38-49 is the only writer of either field, and it writes BOTH from the
+  // same computed `approvedHash` variable in the same object literal, so on any honestly-written
+  // report `r.shownSha256 === r.approvedHash` is TAUTOLOGICAL: it can only ever fire on a
+  // partial hand-edit (something changed one field and not the other) after the fact. It is not
+  // a re-verification against the presentation receipt — gate.ts already does that, once, via
+  // `shownCovers(artifactPath, approvedHash)` at write time; nothing re-checks it here against
+  // what is actually on disk NOW. So this catches a stale or tampered VALUE, never an absent
+  // one — and it is bypassable by omission: a report with no `shownSha256` at all still ships
+  // (see the gating condition below). The real closure, not yet done here: re-read the
+  // presentation receipt at export time via `shownCovers(path, r.approvedHash)`
+  // (`lib/loop/presentation.ts:105`; a path is available from `r.outputs`), and require
+  // `shownSha256`'s PRESENCE rather than skip when absent, reasoned about the way
+  // `lib/loop/deliver.ts:147-157` reasons about which record shapes could legitimately lack a
+  // field, rather than a blanket `!== undefined` skip.
+  //
+  // Gated on `r.shownSha256 !== undefined` rather than requiring its presence outright: gate.ts
+  // writes it unconditionally on every approval, so every REAL report carries it, but a wide set
+  // of existing fixtures across the export path (export-code.test.ts, deploy-embed.test.ts,
+  // apply-signoff.test.ts and others) hand-construct `renderApproved: true` results that predate
+  // this field (Task 8 added it) and never set it. Those ~45 failures are STALE FIXTURES, not
+  // evidence the field is ever genuinely absent from a real report — refusing them unconditionally
+  // just breaks unrelated tests whose doubles have not been updated. The scoping decision (skip
+  // rather than require) stands as a blast-radius call on that basis, not because the field is
+  // legitimately optional on a real report.
+  if (r.shownSha256 !== undefined && r.shownSha256 !== r.approvedHash)
+    throw new Error(
+      `refusing to export ${id}: the approved bytes are not the bytes shown to the journalist ` +
+        `(shownSha256 !== approvedHash) — re-show the current render ` +
+        `(bun lib/host/cli.ts present --path <artifact>) and re-approve (run gate-render)`,
+    );
+  // An editorial verdict nobody signed for does not ship. The mechanical half needs no signature
+  // (its commands answered); this is only ever about the half that is a judgement.
+  const judged = (r.reviewProbes ?? []).some((p) => p.kind === "editorial");
+  if (judged && r.reviewer?.independentSemanticReview !== "available")
+    throw new Error(
+      `refusing to export ${id}: the editorial read of this visual does not say who did it — ` +
+        `have it done by someone who did not write this visual, and record who did it`,
     );
 }
 
@@ -88,7 +132,11 @@ export function assertEditoriallyCleared(
 
 // The delivery FORM axis — orthogonal to `VisualFormat`. Only interactive/scrolly deliveries
 // choose one; static/video have exactly one shape, so `form` is always null there.
-export type DeliveryForm = "html" | "code-source" | "embed" | null;
+//
+// ALIASED rather than re-declared: lib/loop/preconditions.ts owns the union now, because the
+// same rule is read by the host façade and by this guard, and two structurally identical unions
+// in two layers is how the two readers start disagreeing about what "code-source" means.
+export type DeliveryForm = HandoverForm;
 
 // After EXPORT: a hand-over folder is a REAL delivery only if it matches the shape of the
 // spec's pinned `format` (single-format redesign — one element = one format, produced +
@@ -111,6 +159,16 @@ export function assertDelivered(
   opts: { format: VisualFormat; form: DeliveryForm; dir?: string },
 ): void {
   const { format, form, dir } = opts;
+
+  // ① A PRODUCTION FOLDER IS NOT A DELIVERY. The 16 proven non-deliveries of the 2026-07-28 sweep
+  // are all inside the 36 cases that handed this folder back, and none outside it — so this is a
+  // measured rule, not a tidiness preference. The one exemption (a runnable source bundle keeps
+  // its config.json) lives in exportPrecondition, with the line of bundle-source.mjs that earns it.
+  //
+  // FIRST, before the per-format shapes: "this is the wrong folder entirely" is a more useful
+  // thing to be told than "your static delivery has 4 files".
+  const planted = exportPrecondition(files, { format, form });
+  if (planted) throw new Error(refusalSentence(planted));
 
   if (format === "static") {
     if (form !== null)

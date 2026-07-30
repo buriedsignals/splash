@@ -1,35 +1,63 @@
-// CLI: bun scripts/review-gate.mjs <report.json> <proposalId> --probes <probes.json|inline-JSON> [concern...]
+// CLI: bun scripts/review-gate.mjs <report.json> <proposalId> --probes <probes.json|inline-JSON>
+//   [--reviewer <name>@<version>] [concern...]
 // Run AFTER the render-review — an independent editorial pass that reads the ACTUAL render
 // plus the article/data and flags what code cannot (a title that misstates the metric, a
 // fabricated source, a misleading encoding, a chart that adds nothing). Each trailing arg is
-// one advisory concern; no concerns = a clean review. --probes is REQUIRED: the ledger of
-// every probe/check the review actually RAN, each {check, outcome: pass|concern|resolved,
-// note?} — a value starting with "[" is parsed as inline JSON, anything else is read as a
-// file path. The gate refuses an empty ledger, a probed concern the review silently drops,
-// and a failure keyword (404/absent/missing/mismatch…) no probe outcome reflects
-// (src/review-gate.ts). This records that the review RAN and WHAT it ran; assertShippable
-// then refuses to export any visual with no review record.
+// one advisory concern; no concerns = a clean review. --probes is REQUIRED and now describes a
+// PLAN, not a result: [{kind:"mechanical", check, command:[…]}, {kind:"editorial", check,
+// outcome, note}] — a value starting with "[" is parsed as inline JSON, anything else is read
+// as a file path. Every mechanical probe is RUN here (lib/loop/probe-run.ts) and its recorded
+// outcome is what its command answered, never what the caller wrote; editorial probes pass
+// through untouched, and are attributed instead. The gate refuses an empty ledger, a mechanical
+// probe with no command, an outcome that disagrees with its exit code, a probed concern the
+// review silently drops, and a failure keyword (404/absent/missing/mismatch…) no probe outcome
+// reflects (src/review-gate.ts). --reviewer names WHO ran the editorial half ("<name>@<version>",
+// e.g. "desk-reader@1.0.0") — required whenever the plan carries an editorial probe; a plan of
+// only mechanical probes needs none. This records that the review RAN and WHAT it ran, and WHO
+// judged the editorial half; assertShippable then refuses to export any visual with no review
+// record, or with an editorial verdict nobody signed for.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { applyReviewGate } from "../src/review-gate.ts";
 import { isSafeId, unsafeIdMessage } from "../src/id-safety.ts";
+import { runProbes } from "../../../lib/loop/probe-run.ts";
 
 const USAGE =
-  "usage: review-gate.mjs <report.json> <proposalId> --probes <probes.json|inline-JSON-array> [concern...]\n" +
-  "  --probes is required: the ledger of every check the review ran " +
-  "([{check, outcome: pass|concern|resolved, note?}, ...])";
+  "usage: review-gate.mjs <report.json> <proposalId> --probes <probes.json|inline-JSON-array> " +
+  "[--reviewer <name>@<version>] [concern...]\n" +
+  "  --probes is required: a PLAN of every check the review ran " +
+  '([{kind:"mechanical", check, command:[…]}, {kind:"editorial", check, outcome, note}, ...])\n' +
+  "  --reviewer is required whenever the plan carries an editorial probe — WHO did the " +
+  'editorial pass, as "<name>@<version>" (e.g. "desk-reader@1.0.0")';
 
 const args = process.argv.slice(2);
 const positional = [];
 let probesArg = null;
+let reviewerArg = null;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--probes") probesArg = args[++i];
+  else if (args[i] === "--reviewer") reviewerArg = args[++i];
   else positional.push(args[i]);
 }
 const [reportPath, id, ...concerns] = positional;
 if (!reportPath || !id || probesArg == null) {
   console.error(USAGE);
   process.exit(1);
+}
+// A malformed --reviewer is refused loud, never silently dropped into "no reviewer" (which
+// applyReviewGate would then read as an unattributed review — a different, misleading failure).
+let reviewer;
+if (reviewerArg != null) {
+  const at = reviewerArg.lastIndexOf("@");
+  const name = at > 0 ? reviewerArg.slice(0, at) : "";
+  const version = at > 0 ? reviewerArg.slice(at + 1) : "";
+  if (!name || !version) {
+    console.error(
+      `review-gate failed: --reviewer must be "<name>@<version>" (e.g. "desk-reader@1.0.0"), got ${JSON.stringify(reviewerArg)}`,
+    );
+    process.exit(1);
+  }
+  reviewer = { name, version };
 }
 // The id is argv-supplied and becomes a PATH COMPONENT below (the brand-concerns.json lookup),
 // so it passes the same slug guard the rest of the spine uses before it is joined to anything.
@@ -52,6 +80,34 @@ try {
   );
   process.exit(1);
 }
+// ③ THE GATE RUNS THE MECHANICAL HALF ITSELF. What arrives on --probes is a PLAN — each check
+// with the argv that answers it — and what is recorded is what those commands answered. An
+// outcome the caller wrote for a mechanical probe is overwritten by the one its command gave;
+// editorial judgements pass through untouched, and are attributed instead (see --reviewer).
+const mechanical = Array.isArray(probes)
+  ? probes.filter((p) => p && p.kind === "mechanical")
+  : [];
+const answered = runProbes(
+  mechanical.map((p) => ({ check: p.check, command: p.command })),
+  { cwd: process.cwd() },
+);
+let i = 0;
+probes = probes.map((p) =>
+  p && p.kind === "mechanical"
+    ? {
+        kind: "mechanical",
+        check: p.check,
+        command: p.command,
+        exitCode: answered[i]?.exitCode ?? null,
+        outcome: answered[i]?.outcome ?? "concern",
+        // `??`, not `||`: a passing command with NO output yields `tail("") === ""`, an empty
+        // but DEFINED string — the real, honest note ("this command produced nothing"). `||`
+        // would treat that falsy-but-true value as absent and let the caller's self-attested
+        // note survive underneath it, exactly the silent pass-through this gate exists to stop.
+        note: answered[i++]?.note ?? p.note,
+      }
+    : p,
+);
 // THE READER brand-concerns.json never had. It sat next to the outputs, listed in a
 // delete-safety allowlist, opened by nothing — while this gate took its concerns as
 // hand-typed argv. A journalist signed "ship it" without ever learning their house colour
@@ -87,14 +143,18 @@ if (existsSync(concernsPath)) {
 const allConcerns = [...fileConcerns, ...concerns];
 try {
   const report = JSON.parse(readFileSync(reportPath, "utf8"));
-  const next = applyReviewGate(report, id, allConcerns, probes);
+  const next = applyReviewGate(report, id, allConcerns, probes, reviewer);
   writeFileSync(reportPath, JSON.stringify(next, null, 2));
 } catch (e) {
   console.error(`review-gate failed: ${e instanceof Error ? e.message : e}`);
   process.exit(1);
 }
+const editorialCount = probes.length - mechanical.length;
 console.log(
-  `render reviewed: ${id} — ${probes.length} probe(s), ` +
+  `render reviewed: ${id} — ${mechanical.length} mechanical probe(s) run, ` +
+    `${editorialCount} editorial probe(s)` +
+    (reviewer ? ` (reviewer: ${reviewer.name}@${reviewer.version})` : "") +
+    `, ` +
     (allConcerns.length
       ? `${allConcerns.length} concern(s) recorded`
       : "no concerns"),

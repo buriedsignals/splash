@@ -37,18 +37,23 @@ describe("produce-all.mjs — candidate-provenance CLI wiring", () => {
     });
     return {
       exitCode: proc.exitCode,
+      stderr: proc.stderr.toString(),
       report: JSON.parse(proc.stdout.toString() || "{}"),
     };
   }
 
-  it("fails a non-direct proposal when no candidates.json sits beside accepted.json", () => {
+  // The batch-level precondition (lib/loop/preconditions.ts's productionPrecondition, wired
+  // ahead of the flow-decision gate) now refuses this exact case — no candidates.json at all —
+  // BEFORE produceAll ever runs, so no report is printed to stdout to parse (that is the whole
+  // point: no half-built artifact, cf. produce-all-menu-precondition.test.ts). This case moved
+  // from asserting a per-proposal report entry to asserting the batch-level refusal on stderr.
+  it("refuses the whole batch — not a per-proposal report entry — when no candidates.json sits beside accepted.json", () => {
     const { dir, acceptedPath } = setup(); // no candidates.json
     try {
-      const { exitCode, report } = run(acceptedPath, join(dir, "out"));
+      const { exitCode, stderr } = run(acceptedPath, join(dir, "out"));
       expect(exitCode).not.toBe(0);
-      expect(report.results[0].status).toBe("failed");
-      expect(report.results[0].error).toContain("candidate-provenance");
-      expect(report.results[0].error).toContain("candidates.json");
+      expect(stderr).toContain("no ranked list of visuals");
+      expect(stderr).toContain("candidates.json");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

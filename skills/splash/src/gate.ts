@@ -1,17 +1,21 @@
 import { createHash } from "node:crypto";
+import { refusalSentence } from "../../../lib/core/routed-refusal";
+import { shownCovers } from "../../../lib/loop/presentation";
 import type { ProduceReport } from "./producer-spec";
 
-// The ONLY writer of renderApproved. `approvedHash` (sha256 of the approved artifact bytes)
-// is recorded as an audit marker of exactly what was approved — nothing re-reads or compares
-// it later, so it is NOT enforcement. The actual accident-resistance in this spine comes from
-// produce-all: every run writes a FRESH report with renderApproved=false for every result, so
-// a re-produce forces re-approval before export/deploy-embed will ship it. Binding the shipped
-// bytes to approvedHash at export time (to catch a produce-without-a-fresh-report edge case) is
-// a deferred follow-on — see 2026-07-06-deterministic-orchestration-design.md.
+// The ONLY writer of renderApproved.
+//
+// `approvedHash` used to be an audit marker with no reader — this file's own header said so, and
+// two-chains-gap-2026-07-28.md §3.6 measured the consequence. It now has one, at the moment it
+// is written: the bytes being approved must be the bytes a journalist was SHOWN, and the receipt
+// that says so is READ HERE from the artifact's own path, never handed in by the caller asking
+// for the approval. That is decision (b) of the 2026-07-28 spec — Splash opens, and "shown" and
+// "approved" have to name the same bytes.
 export function applyRenderGate(
   report: ProduceReport,
   id: string,
   artifactBytes: Uint8Array,
+  artifactPath: string,
 ): ProduceReport {
   const results = report.results.map((r) => {
     if (r.id !== id) return r;
@@ -34,11 +38,20 @@ export function applyRenderGate(
     const approvedHash = createHash("sha256")
       .update(artifactBytes)
       .digest("hex");
-    return { ...r, renderApproved: true, approvedHash };
+    // ORDER: after the review check, before the write. A visual nobody has seen is not a visual
+    // with a problem — it is a question nobody was in a position to answer.
+    const unshown = shownCovers(artifactPath, approvedHash);
+    if (unshown) throw new Error(refusalSentence(unshown));
+    return {
+      ...r,
+      renderApproved: true,
+      approvedHash,
+      shownSha256: approvedHash,
+    };
   });
   if (!results.some((r) => r.id === id))
     throw new Error(`unknown proposal ${id}`);
-  // Spread the incoming report so top-level fields (generatedAt — the provenance
-  // anchor gate-render checks artifacts against) survive the approval write.
+  // Spread the incoming report so top-level fields (generatedAt — the provenance anchor
+  // gate-render checks artifacts against) survive the approval write.
   return { ...report, results };
 }

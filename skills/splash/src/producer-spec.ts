@@ -82,10 +82,39 @@ export type ProduceStatus =
 // record mechanical instead of narrative: review-gate refuses an empty ledger, and a
 // failure keyword in the narrative that no non-pass probe reflects.
 export type ReviewProbeOutcome = "pass" | "concern" | "resolved";
-export interface ReviewProbe {
+
+/** A check the gate RAN and read. `outcome` is derived from `exitCode` and is re-derived at the
+ *  gate — recording it is a convenience for readers of the report, never the source of truth. */
+export interface MechanicalProbe {
+  kind: "mechanical";
   check: string; // what was probed (e.g. "GET dataset.csv on the published chart")
+  command: string[]; // argv, run by lib/loop/probe-run.ts — never a shell line
+  exitCode: number | null; // null ⇒ nothing ran, which is a concern and never a pass
   outcome: ReviewProbeOutcome;
   note?: string; // required for concern (what failed) and resolved (how, with evidence)
+}
+
+/** A judgement — the half no exit code can answer. It carries no command on purpose: demanding
+ *  one would produce a fake command, which is the lie this split exists to make expensive. Its
+ *  credibility comes from WHO made it (ProposalResult.reviewer), not from a process. */
+export interface EditorialProbe {
+  kind: "editorial";
+  check: string;
+  outcome: ReviewProbeOutcome;
+  note?: string;
+}
+
+export type ReviewProbe = MechanicalProbe | EditorialProbe;
+
+/** WHO conducted the editorial half, and the fingerprint of what it returned. The same
+ *  vocabulary lib/verify/review.ts records (`independentSemanticReview`), because it is the same
+ *  fact: a review that claims independence must name the actor and produce its output, and the
+ *  absence of one is RECORDED rather than converted into a pass. */
+export interface ReviewerAttribution {
+  name: string;
+  version: string;
+  outputHash: string;
+  independentSemanticReview: "available" | "unavailable" | "declined";
 }
 
 export interface ProposalResult {
@@ -104,8 +133,14 @@ export interface ProposalResult {
   reviewed?: boolean; // render-review ran (Layer 2); export is refused until it has
   reviewConcerns?: string[]; // advisory editorial concerns from the review, shown at Gate 3
   reviewProbes?: ReviewProbe[]; // the review's probes ledger (Gate 3a), set by review-gate
+  reviewer?: ReviewerAttribution; // set by review-gate; absent on reports written before this
   renderApproved: boolean; // Gate 3, default false
   approvedHash?: string; // sha256 of the approved artifact, set by the render gate
+  /** sha256 of the artifact as it was SHOWN to the journalist, read from the presentation
+   *  receipt beside it (lib/loop/presentation.ts) — never reported by the step asking for the
+   *  approval. Equal to approvedHash on every approval this gate writes; recorded separately so
+   *  a report says out loud that the two were compared rather than assumed. */
+  shownSha256?: string;
   /** verified human editorial sign-offs over approvedHash (S4d); undefined = none */
   editorialSignoffs?: {
     signerId: string;

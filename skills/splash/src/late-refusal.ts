@@ -4,11 +4,16 @@
 // the other direction. Two things are owed instead: the refusal DEVIATES to the step that
 // unblocks, and it is RECORDED so the declared-limit list shrinks on evidence.
 //
-// FOLLOW-UP: family A introduces lib/core/routed-refusal.ts (its task 1). When it lands,
-// lateRefusalSentence becomes one rendering of routed() and `deviation` becomes a Route — this
-// module must NOT grow into a second refusal vocabulary (spec §6).
+// Renders through lib/core/routed-refusal.ts's shared refusalSentence() now (family A's task 1
+// landed) — this module no longer has its own refusal-formatting. `deviation` stays a plain
+// string rather than becoming a full Route: a late refusal is guard-specific and measured only
+// at render, so there is no runnable command to carry — the guard's own message IS the fix.
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import {
+  refusalSentence,
+  type RoutedRefusal,
+} from "../../../lib/core/routed-refusal";
 
 export type LateRefusal = {
   guard: string;
@@ -24,7 +29,12 @@ export function lateRefusalSentence(r: Omit<LateRefusal, "at">): string {
       "late-refusal: a refusal with no deviation stops the run instead of routing it — " +
         "name the step that unblocks",
     );
-  return `${r.guard} refused ${r.subject}: ${r.reason}. Next: ${r.deviation}`;
+  const routed: RoutedRefusal = {
+    code: "late-render-refusal",
+    message: `${r.guard} refused ${r.subject}: ${r.reason}`,
+    route: { step: r.deviation },
+  };
+  return refusalSentence(routed);
 }
 
 export function recordLateRefusal(

@@ -394,3 +394,29 @@ describe("Family B — carrier/reader passages match the code", () => {
     expect(splash).toContain("family-A dependency");
   });
 });
+
+// Task 12 (2026-07-28 plan, "refusals that bite") — the prose CALLS the new commands
+// (precheck/present/probe/--reviewer) instead of restating the rules three mechanisms (Tasks
+// 3-11) now enforce on disk. These pins are the mechanical-parity test for that rewrite: a
+// SKILL.md that reverted to prose-only wording (or dropped the command names) goes red here.
+describe("Task 12 — the flow calls the gates instead of restating them", () => {
+  it("the surfacing rule names the command that performs it, not just the duty", () => {
+    expect(splash).toContain("bun lib/host/cli.ts present --path");
+  });
+
+  it("the surfacing rule no longer claims that no mechanical signal exists", () => {
+    expect(splash).not.toContain(
+      'No live mechanical "the user saw it" signal exists',
+    );
+    expect(splash).not.toContain("no live mechanical");
+  });
+
+  it("the hand-over step checks the folder before naming it to the journalist", () => {
+    expect(splash).toContain("bun lib/host/cli.ts precheck --stage export");
+  });
+
+  it("the render-review hands over commands, and names who read the editorial half", () => {
+    expect(splash).toContain("--reviewer");
+    expect(splash).toContain('kind: "mechanical"');
+  });
+});
