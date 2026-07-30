@@ -77,8 +77,11 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
   },
   "reviewer-not-attributed": {
     step: "have the editorial pass done by someone who did not write this visual, and record who did it",
+    // No --reviewer-output: review-gate.mjs only ever parses --reviewer <name>@<version> (the
+    // reviewer's own findings travel inside --probes as editorial probes, not a separate flag).
+    // A command naming a flag that does not exist is a command that fails if run verbatim.
     command:
-      "bun skills/splash/scripts/review-gate.mjs <report.json> <id> --probes <probes.json> --reviewer <name@version> --reviewer-output <findings.json>",
+      "bun skills/splash/scripts/review-gate.mjs <report.json> <id> --probes <probes.json> --reviewer <name@version>",
   },
   // No command: unlike the routes above, this one is never looked up through routed() — a late
   // refusal's real route is the guard-specific step supplied at its call site (see

@@ -1,4 +1,6 @@
 import { test, expect } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   REFUSAL_CODES,
   REFUSAL_ROUTES,
@@ -61,5 +63,33 @@ test("no route's command is a shell string — a route is run, not interpolated"
     expect(route.command.startsWith("bun ")).toBe(true);
     expect(route.command).not.toContain("&&");
     expect(route.command).not.toContain("|");
+  }
+});
+
+// reviewer-not-attributed's command used to name a --reviewer-output flag review-gate.mjs never
+// implemented (only --reviewer <name>@<version> exists) — a command that does not work if a
+// reader ran it verbatim. Locked so the registry never re-enshrines a phantom flag.
+test("reviewer-not-attributed's command matches what review-gate.mjs actually implements", () => {
+  const command = REFUSAL_ROUTES["reviewer-not-attributed"]!.command!;
+  expect(command).toContain("--reviewer <name@version>");
+  expect(command).not.toContain("--reviewer-output");
+});
+
+test("the register lists every refusal the code can emit — a route nobody wrote down is a route nobody maintains", () => {
+  const register = readFileSync(
+    join(import.meta.dir, "../../docs/splash/refusal-routes.md"),
+    "utf8",
+  );
+  for (const code of REFUSAL_CODES) expect(register).toContain(code);
+});
+
+test("the register names, out loud, the routes that have no command", () => {
+  const register = readFileSync(
+    join(import.meta.dir, "../../docs/splash/refusal-routes.md"),
+    "utf8",
+  );
+  for (const [code, route] of Object.entries(REFUSAL_ROUTES)) {
+    if (route?.command) continue;
+    expect(register).toMatch(new RegExp(`${code}[^\\n]*\\|[^\\n]*no command`));
   }
 });
