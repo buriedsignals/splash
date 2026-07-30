@@ -362,6 +362,51 @@ test("a dot-density against any basemap but world is refused, not silently rende
   expect(r.message).toContain("world");
 });
 
+// Task 13 (task-13-brief.md, Step 1) — a deliberate pre-condition breadcrumb, not a bug in this
+// task. The plan sequences Task 13's refusal rewrite AFTER Task 17 (skills/map-native geometry
+// de-inlining: DotDensityMap.tsx stops hard-importing world.geojson + hard-coding join key
+// "iso_a3"). Verified directly against the component on this branch (2026-07-30): both the
+// `worldGeoJsonRaw` import and the `iso_a3` join-key literal are still present in
+// DotDensityMap.tsx, so Task 17 has NOT landed yet — the refusal this test targets (the sibling
+// test immediately above) is still load-bearing and correct, and must stay in place. This test
+// is written now, RED, on purpose: it pins the post-Task-17 target so a future pass can tell
+// "not yet re-derived" (this failure) apart from "re-derived but broken" (any other failure).
+// Do not remove the sibling refusal above, and do not make this test pass, until Task 17 has
+// actually landed on this branch.
+it("dot-density accepts a non-world geography once DotDensityMap.tsx reads injected config (post Task 17 — expected RED until then)", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    nativeType: "dot-density",
+    dataCsv: "state,access\nCA,100\nTX,90",
+    geo: {
+      column: "state",
+      geography: {
+        origin: "shipped",
+        set: "us-states",
+        level: "state",
+        joinKey: "postal",
+        joinKeyFamily: "postal",
+      },
+      matched: 2,
+      total: 2,
+      unmatched: [],
+    },
+  });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const cfg = r.value as Record<string, unknown>;
+  // Beyond "the refusal is gone": pins the emitted config actually names the matched
+  // geography, not a vacuous ok:true a broken Step-3 implementation could also produce
+  // (e.g. one that drops the refusal but forgets to route boundaries/basemap off it).
+  expect(cfg.type).toBe("dot-density");
+  expect(cfg.regionKey).toBe("state");
+  expect(cfg.basemap).toBe("us-states");
+  expect(cfg.boundaries).toBe("us-states");
+  expect((cfg.geography as { set?: string } | undefined)?.set).toBe(
+    "us-states",
+  );
+});
+
 // § 8.8 — ChoroplethMap.tsx (skills/map-native/src/ChoroplethMap.tsx:53-54) types the two
 // fields apart: `unit` is the long legend HEADER (:341), `valueUnit` is the SHORT suffix its
 // bin ranges (:355, via fmtBinRange) and its tooltip (:388, :393) print. The assembler emitted
