@@ -34,12 +34,20 @@ export function contrastRatio(a: string, b: string): number {
 
 /**
  * WCAG SC 1.4.3 minimum contrast for text of a given rendered size (CSS px) and
- * weight. `deviceScale` is the factor the DELIVERABLE is exported at
- * (STATIC_DEVICE_SCALE = 2 for the media path, vite.config.ts:52). SC 1.4.3's
- * large-text provision is about the text the reader sees; for a fixed-size PNG that
- * is the delivered pixel, not the CSS px the layout was authored in. Defaults to 1 —
- * the interactive path is responsive, where the CSS px IS what the reader gets, so
- * every existing caller is unchanged.
+ * weight. `deviceScale` multiplies the size before the large-text provision is
+ * applied, and it defaults to 1.
+ *
+ * NO CALLER PASSES IT, deliberately. It was briefly threaded from chart-native's
+ * static snap as STATIC_DEVICE_SCALE = 2, on the premise that a ×2-exported PNG's
+ * delivered pixel is what the reader perceives — and that premise is wrong:
+ * deviceScaleFactor is a RESOLUTION factor (sharper, not bigger). Passing 2 put
+ * chart-native's entire type scale (title 22 / label 14 / axis 13 / source 12) over
+ * the threshold and so relaxed every static label from 4.5:1 to 3:1; on
+ * social-vertical a 13px label on a ~400 CSS px phone viewport is perceived at ~9px,
+ * i.e. the relaxation is wrong by ~3× in the permissive direction. Reverted after the
+ * final review of feat/family-c-capability-and-validation measured it. The parameter
+ * and its tests are kept because the arithmetic is right for a case where the export
+ * scale genuinely IS an apparent-size factor; nothing here has been shown to be one.
  */
 export function wcagMinContrast(
   fontPx: number,

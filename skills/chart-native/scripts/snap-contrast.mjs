@@ -92,7 +92,19 @@ for (const s of samples) {
   // WCAG SC 1.4.3: large text (≥24px, or ≥18.66px bold) is conformant at 3:1, not
   // 4.5:1 — the heatmap's in-cell value labels are large bold numbers on a continuous
   // ramp whose mid-tones have no 4.5:1 text colour but always clear 3:1.
-  const min = wcagMinContrast(s.fontPx ?? 0, s.bold ?? false, STATIC_DEVICE_SCALE);
+  //
+  // JUDGED IN CSS px, NOT delivered px. This briefly passed STATIC_DEVICE_SCALE as
+  // wcagMinContrast's third argument, which put the WHOLE type scale (title 22 /
+  // label 14 / axis 13 / source 12 — tokens.ts:73-77) over the large-text threshold
+  // and so dropped every static label's floor from 4.5:1 to 3:1. deviceScaleFactor is
+  // a RESOLUTION factor: a ×2 raster is sharper, not perceptually bigger. On
+  // social-vertical (1080×1920 on a ~400 CSS px phone) a 13px axis label is perceived
+  // at ~9px — SMALLER than its layout px — and lib/core/channel-policy.ts:54-58 makes
+  // the same point for print ("«Print-safe» is a density, not a word"). map-native's
+  // sibling guard never took the scale either. If a real large-label false positive
+  // shows up, it is a LAYOUT fact (a 22px label in a 540px box): move the token or
+  // widen the in-cell carve-out above — never the threshold for all text.
+  const min = wcagMinContrast(s.fontPx ?? 0, s.bold ?? false);
   if (worst >= min) continue;
   const flagged = { ...s, worst: Number(worst.toFixed(2)), min };
   // A failing label in a brand-explicit fill is downgraded to a concern (policy b).
@@ -116,7 +128,15 @@ if (violations.length) {
       "ground), then produce again — this is measured on the render, so it cannot be told at the offer",
   };
   console.error(lateRefusalSentence(r));
-  for (const v of violations) console.error(`  ✗ ${v}`);
+  // Named FIELDS, not the object: template-interpolating a sample printed
+  // "✗ [object Object]" once per violation on the journalist-facing refusal. The
+  // sampler's shape is {text, fill, bgs, fontPx, bold} + {worst, min}
+  // (scripts/lib/sample-text-contrast.mjs), so the label, its ink and the two ratios
+  // are what identifies which label to fix.
+  for (const v of violations)
+    console.error(
+      `  ✗ "${v.text}" (${v.fill}, ${v.fontPx}px${v.bold ? " bold" : ""}) — ${v.worst}:1 < ${v.min}:1`,
+    );
   if (process.env.OUTDIR) recordLateRefusal(process.env.OUTDIR, r);
   process.exit(1);
 }
