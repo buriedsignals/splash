@@ -28,7 +28,13 @@ bytes, or `ffprobe`/frame extraction for video) — never from a log line.
 | 6 | chart-native | bar | interactive | social-vertical | n/a (must be refused) | refused: `format "interactive" is not allowed for channel "social-vertical"` | correct fail-closed behavior |
 | 7 | map-native | symbol | static | social-vertical | 1080x1920 | 1080x1920 (PNG IHDR) — the delivered `static.png` was always correct | match, BUT see defect below: the guard that is supposed to verify this rendered the wrong geometry |
 
-(more cases below as runs complete — map-native video/other types, dw-chart, scrolly)
+| 8 | map-native | choropleth | static | social-feed | 1080x1080 | 1080x1080 (PNG IHDR) | match; snap-contrast (post-fix) 10 labels, 0 violations |
+| 9 | map-native | choropleth | video | social-vertical | 1080x1920 | 1080x1920 (`ffprobe`) | match |
+| 10 | map-native | symbol | video | social-feed | 1080x1080 | 1080x1080 (`ffprobe`) | match |
+| 11 | map-native | symbol | scrolly | social-vertical | n/a (must be refused) | refused: `format "scrolly" is not built by map-native — dispatch to the "scrolly" producer` | correct — routes to skills/scrolly instead |
+| 12 | map-native | symbol | interactive | social-feed | n/a (must be refused) | refused: `format "interactive" is not allowed for channel "social-feed"` | correct fail-closed behavior |
+
+(more cases below as runs complete — dw-chart, scrolly)
 
 ## Defects found
 
