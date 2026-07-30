@@ -241,6 +241,26 @@ function storyComps(config, cameraMode) {
   if (cameraMode === "route-reveal") {
     return [["RouteReveal", "landscape"], ["RouteRevealSquare", "square"], ["RouteRevealPortrait", "portrait"]];
   }
+  // The reveal kind: fixed camera, the data animates in. All 21 reveal compositions are registered
+  // (remotion/src/index.ts — 7 types x 3 aspects) and until now only route's was reachable here, so
+  // six of them rendered correctly and nothing could ask for them. `guided-tour` stays the default
+  // and the documented preference for most articles; this is the explicit opt-in, not a new default.
+  if (cameraMode === "simple") {
+    const base = isCartogramMap
+      ? "CartogramReveal"
+      : isHexGridMap
+      ? "HexGridReveal"
+      : isDotDensityMap
+      ? "DotDensityReveal"
+      : isLocatorMap
+      ? "LocatorReveal"
+      : isSymbolMap
+      ? "SymbolReveal"
+      : config.type === "route"
+      ? "RouteReveal"
+      : "ChoroplethReveal";
+    return [[base, "landscape"], [`${base}Square`, "square"], [`${base}Portrait`, "portrait"]];
+  }
   throw new Error(`camera mode '${cameraMode}' is not implemented`);
 }
 

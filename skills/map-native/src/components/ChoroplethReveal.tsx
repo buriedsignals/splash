@@ -255,7 +255,10 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
 
   return (
     <AbsoluteFill style={{ backgroundColor: dark ? "#0e0f12" : "#f4f4f4" }}>
-      <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
+      {/* The logo rule lives in MapFrame now, once, for every map. This block also hid
+       *  `.maplibregl-ctrl-bottom-right` and `.maplibregl-ctrl-attrib` — the ATTRIBUTION — which
+       *  MapTiler's terms and OSM's ODbL both require on a published map. Removed: the frame hides
+       *  the logo, the attribution stays. */}
       <MapFrame
         title={(config as any).title ?? ""}
         description={(config as any).description}

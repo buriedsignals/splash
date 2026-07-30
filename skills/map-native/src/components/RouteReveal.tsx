@@ -435,7 +435,10 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: ELECTRIC.bg }}>
-      <style>{`.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right,.maplibregl-ctrl-attrib,.maptiler-logo{display:none!important}`}</style>
+      {/* The logo rule lives in MapFrame now, once, for every map. This block also hid
+       *  `.maplibregl-ctrl-bottom-right` and `.maplibregl-ctrl-attrib` — the ATTRIBUTION — which
+       *  MapTiler's terms and OSM's ODbL both require on a published map. Removed: the frame hides
+       *  the logo, the attribution stays. */}
       <MapFrame
         title={config.title ?? ""}
         description={config.description}

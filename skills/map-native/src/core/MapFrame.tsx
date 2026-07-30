@@ -119,6 +119,19 @@ export function MapFrame({
     <div
       style={{ position: "relative", width, height, fontFamily: FRAME_FONT }}
     >
+      {/* The vendor logo and maplibre's bottom-left control sit exactly where the source band does,
+       *  and they overlap it. Every component already passes `maptilerLogo: false` at construction
+       *  and the SDK paints them anyway, so the removal has to happen in CSS.
+       *
+       *  It lives HERE, once, rather than in each component — because that is precisely how it went
+       *  wrong: all 7 interactive components carried their own copy while 11 of the 13 video ones
+       *  had none, so those 11 shipped a logo sitting on top of "Source : …". Visible in a rendered
+       *  still, invisible to every test. A rule that must hold for every map belongs in the one
+       *  frame every map renders through. */}
+      <style>{`
+        .maplibregl-ctrl-bottom-left,
+        .maptiler-logo { display: none !important; }
+      `}</style>
       {children}
       {/* Title band (top-left) */}
       <div
