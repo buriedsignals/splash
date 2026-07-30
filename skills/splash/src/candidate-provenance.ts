@@ -18,6 +18,8 @@
 // harness (check:hand-authored-spec flags any spec Write) and by GUARD 5 (skillsInvoked), and by
 // GUARD 4 (claim-grounding) for fabricated content. Type-granularity is a documented follow-up.
 import type { AcceptedProposal, Producer } from "./producer-spec";
+import { AUTHORABLE_SCROLLY_TYPES } from "../../chart-native/src/chart-story";
+import { MAP_TYPES } from "../../map-native/src/map-types";
 
 const DIRECT_BRANCH_TOKEN = "splash:cadrage-direct";
 
@@ -135,7 +137,37 @@ function nodeIsNarrativeCandidate(obj: Record<string, unknown>): boolean {
  * used to live only in the harness (check:narrative-not-considered) into the tool as an
  * observability signal; the harness verifies it. Recurses so a per-opportunity nesting works.
  */
-export function narrativeConsiderationWarning(json: unknown): string | null {
+/** The narrative form THIS element could have taken, or null when it has none. Derived from the
+ *  engines' own lists, never from a hand-kept table: a chart scrolly is authorable for
+ *  AUTHORABLE_SCROLLY_TYPES only (chart-story.ts:127), and a map track exists for MAP_TYPES. */
+function narrativeSiblingOf(
+  accepted: unknown[] | undefined,
+): { form: string; type: string } | null {
+  for (const a of accepted ?? []) {
+    const p = a as { producer?: string; spec?: Record<string, unknown> };
+    const nt =
+      typeof p.spec?.nativeType === "string" ? p.spec.nativeType : null;
+    const mt = typeof p.spec?.type === "string" ? p.spec.type : null;
+    if (
+      p.producer === "chart-native" &&
+      nt &&
+      (AUTHORABLE_SCROLLY_TYPES as readonly string[]).includes(nt)
+    )
+      return { form: "chart-scrolly", type: nt };
+    if (
+      p.producer === "map-native" &&
+      mt &&
+      (MAP_TYPES as readonly string[]).includes(mt)
+    )
+      return { form: "map-scrolly", type: mt };
+  }
+  return null;
+}
+
+export function narrativeConsiderationWarning(
+  json: unknown,
+  accepted?: unknown[],
+): string | null {
   let sawNarrativeCandidate = false;
   let sawRuledOut = false;
   const visit = (node: unknown): void => {
@@ -155,11 +187,21 @@ export function narrativeConsiderationWarning(json: unknown): string | null {
   };
   visit(json);
   if (sawNarrativeCandidate || sawRuledOut) return null;
-  return (
+  const base =
     "candidates.json considered NO narrative form and carries no explicit " +
     "`narrativeRuledOut` reason — the menu skipped the narrative family (chart-scrolly · " +
     "map-story · map-scrolly · image-scrolly · video reveal) silently. Either offer the " +
     'narrative candidate the story shape warrants, or state `narrativeRuledOut: "<reason>"` ' +
-    "(suggest-chart contract: silent narrative absence is not a valid payload)"
-  );
+    "(suggest-chart contract: silent narrative absence is not a valid payload)";
+  if (accepted === undefined) return base;
+  // SIGNAL AND PROPOSE (the form D25 took in family B): name the concrete sibling of THIS run's
+  // element, or say plainly that it has none — naming one it does not have would be the same
+  // false promise this family exists to close.
+  const sib = narrativeSiblingOf(accepted);
+  return sib
+    ? `${base}. For this run: the ${sib.type} you accepted also comes as a ${sib.form} — ` +
+        "offer it, or rule it out by name."
+    : base +
+        ". For this run: the element you accepted has no narrative form of its own, so " +
+        "`narrativeRuledOut` is the honest answer here.";
 }

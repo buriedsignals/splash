@@ -50,7 +50,7 @@ if (existsSync(candidatesPath)) {
   try {
     const parsed = JSON.parse(readFileSync(candidatesPath, "utf8"));
     candidateProvenance = { present: true, producers: extractCandidateProducers(parsed) };
-    menuNarrativeWarning = narrativeConsiderationWarning(parsed);
+    menuNarrativeWarning = narrativeConsiderationWarning(parsed, accepted);
   } catch {
     // A corrupt/unparseable candidates.json is treated as absent (present:false) — a non-direct
     // proposal then fails provenance loudly rather than silently skipping the gate.
