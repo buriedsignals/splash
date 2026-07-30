@@ -3173,3 +3173,101 @@ git add skills/map-native/src/CartogramMap.tsx skills/map-native/src/DotDensityM
   skills/map-native/tests/choropleth-map-imports.test.ts
 git commit -m "feat(map-native): Cartogram/DotDensity/Route read injected geometry, no static geojson import"
 ```
+
+### Task 18: `skills/scrolly/` — the four cross-skill `?raw` imports, same treatment
+
+**Files:**
+- Modify: `skills/scrolly/src/ScrollyDotDensityMap.tsx` (`:33`, verified while writing this plan).
+- Modify: `skills/scrolly/src/ScrollyCartogramMap.tsx` (`:20`).
+- Modify: `skills/scrolly/src/ScrollyMap.tsx` (`:38` — this is the choropleth-scrolly component;
+  it shares `computeChoropleth`/`choropleth-paint.ts` with `ChoroplethMap.tsx`, so it gets Task
+  16's `applyChoroplethJoin` + feature-state paint change for free, but its OWN `map.addSource`
+  call site still needs the `promoteId`/`setFeatureState` wiring — that call is local to this
+  file, not shared).
+- Modify: `skills/scrolly/src/Scrolly.tsx` (`:45`).
+- Modify: `skills/scrolly/vite-env.d.ts` — confirm the `declare module "*.geojson?raw"` block
+  (`:3`, verified while writing this plan) becomes dead once all four imports are gone; leave the
+  ambient declaration in place (harmless if unused) rather than deleting it speculatively — a
+  future geojson `?raw` import elsewhere in this skill would silently lose its type otherwise.
+- Test: extend `skills/map-native/tests/choropleth-map-imports.test.ts`'s pattern into a NEW file
+  `skills/scrolly/tests/no-static-geojson-imports.test.ts` (skills/scrolly has its own `tests/`
+  directory and its own `bun test` run in `TEST_DIRS` — confirm with `ls skills/scrolly/tests`
+  before writing).
+
+**Interfaces:**
+- Consumes: everything Task 16/17 already built — this task does not add new `lib/geo/` surface,
+  it applies the identical pattern across the skill boundary the spec names explicitly (D5: "les
+  quatre imports de skills/scrolly/ traversent la frontière de skill, donc les deux skills
+  bougent ensemble").
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// skills/scrolly/tests/no-static-geojson-imports.test.ts (new)
+import { describe, it, expect } from "bun:test";
+import { readFileSync } from "node:fs";
+
+describe("no static geojson import in skills/scrolly", () => {
+  for (const f of [
+    "src/ScrollyDotDensityMap.tsx",
+    "src/ScrollyCartogramMap.tsx",
+    "src/ScrollyMap.tsx",
+    "src/Scrolly.tsx",
+  ]) {
+    it(`${f} does not import world.geojson as ?raw`, () => {
+      const src = readFileSync(f, "utf8");
+      expect(src).not.toMatch(/\.geojson\?raw/);
+    });
+  }
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `cd skills/scrolly && bun test tests/no-static-geojson-imports.test.ts`
+Expected: FAIL, 4/4 — every file still imports `../../map-native/assets/geo/world.geojson?raw`.
+
+- [ ] **Step 3: Implement**
+
+For each of the four files, apply Task 16/17's identical pattern: remove the
+`../../map-native/assets/geo/world.geojson?raw` import + its `JSON.parse` line, add
+`import { feature as topoFeature } from "topojson-client";` + `import type { Topology } from
+"topojson-specification";` (add `topojson-client`/`@types/topojson-client`/
+`topojson-specification` to `skills/scrolly/package.json` too — it is a SEPARATE package from
+`skills/map-native`, verified while writing this plan that each `skills/*` directory has its own
+`package.json`; do not assume Task 16's dependency addition to `skills/map-native/package.json`
+covers this skill), and replace each file's own `worldGeoJson` usage with the same
+`topoFeature(topology, topology.objects[objectName])` decode — read each file's render/beat logic
+in full before editing (none of the four was read in full while writing this plan; only their
+import lines were grepped).
+
+`ScrollyMap.tsx` additionally needs the `promoteId`/`setFeatureState` wiring from Task 16 at its
+own `map.addSource` call site (find it with `grep -n "addSource" skills/scrolly/src/
+ScrollyMap.tsx`) — it is a SEPARATE MapLibre map instance from `ChoroplethMap.tsx`'s, so the
+source/feature-state calls must be made here too, even though the paint EXPRESSIONS come for
+free from Task 16's shared `choropleth-paint.ts` change.
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `cd skills/scrolly && bunx tsc --noEmit && bun test tests/no-static-geojson-imports.test.ts`
+Expected: PASS, 4/4.
+
+- [ ] **Step 5: Mutation — prove the loop-generated tests actually target distinct files, not
+  one shared string check**
+
+Temporarily re-add the `?raw` import to ONLY `Scrolly.tsx` (leave the other three fixed).
+
+Run: `cd skills/scrolly && bun test tests/no-static-geojson-imports.test.ts`
+Expected: exactly 1 of 4 FAILS (`Scrolly.tsx does not import world.geojson as ?raw`), the other 3
+still PASS. This proves the four `it()` blocks check four independent files, not a single
+repo-wide grep that would flip all four together. Report the exact 1/4 split. Revert before
+continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add skills/scrolly/src/ScrollyDotDensityMap.tsx skills/scrolly/src/ScrollyCartogramMap.tsx \
+  skills/scrolly/src/ScrollyMap.tsx skills/scrolly/src/Scrolly.tsx skills/scrolly/package.json \
+  skills/scrolly/tests/no-static-geojson-imports.test.ts
+git commit -m "feat(scrolly): four cross-skill geojson ?raw imports removed, same de-inlining as map-native"
+```
