@@ -34,19 +34,31 @@ export function assertShippable(report: ProduceReport, id: string): void {
     throw new Error(
       `refusing to export ${id}: not render-approved (run gate-render first)`,
     );
-  // "shown" and "approved" have to name the same bytes (Task 8, gate.ts — the only writer of
-  // either field, and it always writes them together from the same computed hash). Checked here
-  // rather than only at the point renderApproved is WRITTEN, because renderApproved is a plain
-  // boolean on a JSON report — nothing stops it being set true by a means other than gate.ts.
+  // "shown" and "approved" have to name the same bytes — but this comparison does not itself
+  // verify that. gate.ts:38-49 is the only writer of either field, and it writes BOTH from the
+  // same computed `approvedHash` variable in the same object literal, so on any honestly-written
+  // report `r.shownSha256 === r.approvedHash` is TAUTOLOGICAL: it can only ever fire on a
+  // partial hand-edit (something changed one field and not the other) after the fact. It is not
+  // a re-verification against the presentation receipt — gate.ts already does that, once, via
+  // `shownCovers(artifactPath, approvedHash)` at write time; nothing re-checks it here against
+  // what is actually on disk NOW. So this catches a stale or tampered VALUE, never an absent
+  // one — and it is bypassable by omission: a report with no `shownSha256` at all still ships
+  // (see the gating condition below). The real closure, not yet done here: re-read the
+  // presentation receipt at export time via `shownCovers(path, r.approvedHash)`
+  // (`lib/loop/presentation.ts:105`; a path is available from `r.outputs`), and require
+  // `shownSha256`'s PRESENCE rather than skip when absent, reasoned about the way
+  // `lib/loop/deliver.ts:147-157` reasons about which record shapes could legitimately lack a
+  // field, rather than a blanket `!== undefined` skip.
   //
-  // Gated on `r.shownSha256 !== undefined` rather than requiring its presence outright: every
-  // REAL report gate.ts produces carries it, but a wide set of existing fixtures across the
-  // export path (export-code.test.ts, deploy-embed.test.ts, apply-signoff.test.ts and others)
-  // hand-construct `renderApproved: true` results that predate this field (Task 8 added it) and
-  // never set it — refusing those unconditionally breaks ~45 unrelated tests whose fixtures are
-  // otherwise honest test doubles, not the tampering this guard targets. What this DOES close: a
-  // report that carries `shownSha256` at all (the shape a real gate.ts write always has) and
-  // whose value has been tampered with or gone stale relative to `approvedHash`.
+  // Gated on `r.shownSha256 !== undefined` rather than requiring its presence outright: gate.ts
+  // writes it unconditionally on every approval, so every REAL report carries it, but a wide set
+  // of existing fixtures across the export path (export-code.test.ts, deploy-embed.test.ts,
+  // apply-signoff.test.ts and others) hand-construct `renderApproved: true` results that predate
+  // this field (Task 8 added it) and never set it. Those ~45 failures are STALE FIXTURES, not
+  // evidence the field is ever genuinely absent from a real report — refusing them unconditionally
+  // just breaks unrelated tests whose doubles have not been updated. The scoping decision (skip
+  // rather than require) stands as a blast-radius call on that basis, not because the field is
+  // legitimately optional on a real report.
   if (r.shownSha256 !== undefined && r.shownSha256 !== r.approvedHash)
     throw new Error(
       `refusing to export ${id}: the approved bytes are not the bytes shown to the journalist ` +
