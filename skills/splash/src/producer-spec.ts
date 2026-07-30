@@ -82,11 +82,29 @@ export type ProduceStatus =
 // record mechanical instead of narrative: review-gate refuses an empty ledger, and a
 // failure keyword in the narrative that no non-pass probe reflects.
 export type ReviewProbeOutcome = "pass" | "concern" | "resolved";
-export interface ReviewProbe {
+
+/** A check the gate RAN and read. `outcome` is derived from `exitCode` and is re-derived at the
+ *  gate — recording it is a convenience for readers of the report, never the source of truth. */
+export interface MechanicalProbe {
+  kind: "mechanical";
   check: string; // what was probed (e.g. "GET dataset.csv on the published chart")
+  command: string[]; // argv, run by lib/loop/probe-run.ts — never a shell line
+  exitCode: number | null; // null ⇒ nothing ran, which is a concern and never a pass
   outcome: ReviewProbeOutcome;
   note?: string; // required for concern (what failed) and resolved (how, with evidence)
 }
+
+/** A judgement — the half no exit code can answer. It carries no command on purpose: demanding
+ *  one would produce a fake command, which is the lie this split exists to make expensive. Its
+ *  credibility comes from WHO made it (ProposalResult.reviewer), not from a process. */
+export interface EditorialProbe {
+  kind: "editorial";
+  check: string;
+  outcome: ReviewProbeOutcome;
+  note?: string;
+}
+
+export type ReviewProbe = MechanicalProbe | EditorialProbe;
 
 export interface ProposalResult {
   id: string;

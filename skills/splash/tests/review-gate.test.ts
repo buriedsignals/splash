@@ -17,17 +17,31 @@ const rep = (
   ],
 });
 
-// The minimal honest ledger: one probe that ran and passed.
+// The minimal honest ledger: one probe that ran and passed. "the title matches the confirmed
+// takeaway" is a JUDGEMENT (no exit code answers it), so it migrates to editorial — not because
+// this file is about mechanical/editorial specifically, but because every ReviewProbe literal
+// now has to declare a `kind` to typecheck, and this is the honest one for a title-reading check.
 const passProbes: ReviewProbe[] = [
-  { check: "title matches the confirmed takeaway verbatim", outcome: "pass" },
+  {
+    kind: "editorial",
+    check: "title matches the confirmed takeaway verbatim",
+    outcome: "pass",
+  },
 ];
 
 describe("applyReviewGate — records the review", () => {
   it("records the review (reviewed=true), the probes ledger and the advisory concerns", () => {
     const probes: ReviewProbe[] = [
-      { check: "title states a rate, data is a rate", outcome: "pass" },
       {
+        kind: "editorial",
+        check: "title states a rate, data is a rate",
+        outcome: "pass",
+      },
+      {
+        kind: "mechanical",
         check: "value 42400 present in the published chart HTML",
+        command: ["false"],
+        exitCode: 1,
         outcome: "concern",
         note: "the value is absent from the rendered HTML",
       },
@@ -35,7 +49,9 @@ describe("applyReviewGate — records the review", () => {
     const out = applyReviewGate(
       rep(),
       "p1",
-      ["value 42400 present in the published chart HTML: absent from the render"],
+      [
+        "value 42400 present in the published chart HTML: absent from the render",
+      ],
       probes,
     );
     expect(out.results[0].reviewed).toBe(true);
@@ -91,7 +107,15 @@ describe("applyReviewGate — probes ledger integrity", () => {
         rep(),
         "p1",
         ["something"],
-        [{ check: "dataset.csv reachable", outcome: "concern" }],
+        [
+          {
+            kind: "mechanical",
+            check: "dataset.csv reachable",
+            command: ["false"],
+            exitCode: 1,
+            outcome: "concern",
+          },
+        ],
       ),
     ).toThrow(/note/i);
   });
@@ -104,6 +128,7 @@ describe("applyReviewGate — probes ledger integrity", () => {
         [],
         [
           {
+            kind: "editorial",
             check: "dataset.csv reachable",
             outcome: "ok" as ReviewProbe["outcome"],
           },
@@ -121,7 +146,10 @@ describe("applyReviewGate — probes ledger integrity", () => {
         [],
         [
           {
+            kind: "mechanical",
             check: "dataset.csv on the published chart",
+            command: ["false"],
+            exitCode: 1,
             outcome: "concern",
             note: "GET returned 404",
           },
@@ -142,7 +170,10 @@ describe("applyReviewGate — per-probe concern accounting", () => {
         ["the title is slightly long"],
         [
           {
+            kind: "mechanical",
             check: "dataset.csv on the published chart",
+            command: ["false"],
+            exitCode: 1,
             outcome: "concern",
             note: "GET returned 404 twice, survives retry",
           },
@@ -159,12 +190,18 @@ describe("applyReviewGate — per-probe concern accounting", () => {
         ["dataset.csv on the published chart: GET returned 404 twice"],
         [
           {
+            kind: "mechanical",
             check: "dataset.csv on the published chart",
+            command: ["false"],
+            exitCode: 1,
             outcome: "concern",
             note: "GET returned 404 twice, survives retry",
           },
           {
+            kind: "mechanical",
             check: "value 42400 present in the published chart HTML",
+            command: ["false"],
+            exitCode: 1,
             outcome: "concern",
             note: "the value is absent from the rendered HTML",
           },
@@ -183,7 +220,10 @@ describe("applyReviewGate — per-probe concern accounting", () => {
       ],
       [
         {
+          kind: "mechanical",
           check: "dataset.csv on the published chart",
+          command: ["false"],
+          exitCode: 1,
           outcome: "concern",
           note: "GET returned 404 twice, survives retry",
         },
@@ -200,7 +240,10 @@ describe("applyReviewGate — per-probe concern accounting", () => {
       ["Dataset.csv  on the published\nchart: GET returned 404 twice"],
       [
         {
+          kind: "mechanical",
           check: "dataset.csv on the published chart",
+          command: ["false"],
+          exitCode: 1,
           outcome: "concern",
           note: "GET returned 404 twice, survives retry",
         },
@@ -216,7 +259,10 @@ describe("applyReviewGate — per-probe concern accounting", () => {
       ["the title is slightly long"],
       [
         {
+          kind: "mechanical",
           check: "dataset.csv on the published chart",
+          command: ["true"],
+          exitCode: 0,
           outcome: "resolved",
           note: "first GET returned 404 (fresh publish propagation); retried after the delay, 200 OK with the full data",
         },
@@ -246,7 +292,10 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
         [],
         [
           {
+            kind: "mechanical",
             check: "value 42400 absent from the published HTML",
+            command: ["true"],
+            exitCode: 0,
             outcome: "pass",
           },
         ],
@@ -262,7 +311,10 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
       [
         ...passProbes,
         {
+          kind: "mechanical",
           check: "dataset.csv on the published chart",
+          command: ["true"],
+          exitCode: 0,
           outcome: "resolved",
           note: "first GET returned 404 (fresh publish propagation); retried after the delay, 200 OK with the full data",
         },
@@ -279,7 +331,10 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
       [
         ...passProbes,
         {
+          kind: "mechanical",
           check: "dataset.csv on the published chart",
+          command: ["false"],
+          exitCode: 1,
           outcome: "concern",
           note: "GET returned 404 twice, after the propagation retry too",
         },
@@ -304,8 +359,99 @@ describe("applyReviewGate — failure-keyword tripwire", () => {
       rep(),
       "p1",
       [],
-      [{ check: "the 1404 data points all render", outcome: "pass" }],
+      [
+        {
+          kind: "mechanical",
+          check: "the 1404 data points all render",
+          command: ["true"],
+          exitCode: 0,
+          outcome: "pass",
+        },
+      ],
     );
     expect(out.results[0].reviewed).toBe(true);
+  });
+});
+
+describe("applyReviewGate — a mechanical outcome is read, never reported", () => {
+  it("refuses a mechanical probe that carries no command — a claim is not a result", () => {
+    expect(() =>
+      applyReviewGate(
+        rep(),
+        "p1",
+        [],
+        [
+          {
+            kind: "mechanical",
+            check: "the dataset answers",
+            outcome: "pass",
+          } as never,
+        ],
+      ),
+    ).toThrow(/command/);
+  });
+
+  it("refuses an outcome that disagrees with the exit code it was recorded beside", () => {
+    expect(() =>
+      applyReviewGate(
+        rep(),
+        "p1",
+        [],
+        [
+          {
+            kind: "mechanical",
+            check: "the dataset answers",
+            command: ["bun", "-e", "process.exit(1)"],
+            exitCode: 1,
+            outcome: "pass",
+            note: "looked fine",
+          } as never,
+        ],
+      ),
+    ).toThrow(/exited 1/);
+  });
+
+  it("records a mechanical probe whose outcome matches what its command answered", () => {
+    const out = applyReviewGate(
+      rep(),
+      "p1",
+      [],
+      [
+        {
+          kind: "mechanical",
+          check: "the dataset answers",
+          command: ["true"],
+          exitCode: 0,
+          outcome: "pass",
+          note: "",
+        } as never,
+      ],
+    );
+    expect(out.results[0]!.reviewProbes).toHaveLength(1);
+  });
+
+  it("an editorial probe needs no command — it needs a verdict and a note", () => {
+    const out = applyReviewGate(
+      rep(),
+      "p1",
+      ["the title carries only half the confirmed takeaway"],
+      [
+        {
+          kind: "mechanical",
+          check: "the file renders",
+          command: ["true"],
+          exitCode: 0,
+          outcome: "pass",
+          note: "",
+        },
+        {
+          kind: "editorial",
+          check: "the title carries only half the confirmed takeaway",
+          outcome: "concern",
+          note: "the confirmed claim has two parts; the title states one",
+        },
+      ] as never,
+    );
+    expect(out.results[0]!.reviewProbes).toHaveLength(2);
   });
 });

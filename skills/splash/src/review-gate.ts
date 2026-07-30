@@ -89,6 +89,37 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
       throw new Error(
         "review rejected: every probe needs a non-empty `check` naming what was probed",
       );
+    // ③ A MECHANICAL OUTCOME IS READ, NEVER REPORTED.
+    //
+    // The sweep recorded ten self-attested reviews, two of them a `pass` on a check that had
+    // crashed or had never run. Both are unwritable from here on: a mechanical probe carries the
+    // argv that answered it and the code that argv exited with, and the outcome has to agree
+    // with the code. Nothing here re-runs the probe — lib/loop/probe-run.ts did, and
+    // review-gate.mjs is what hands the results over.
+    if (p.kind === "mechanical") {
+      if (!Array.isArray(p.command) || p.command.length === 0)
+        throw new Error(
+          `review rejected: mechanical probe "${p.check}" carries no command — record the argv ` +
+            `that answers it and let its result decide, or record it as an editorial judgement ` +
+            `(kind: "editorial") attributed to the reviewer who made it`,
+        );
+      const answered = p.exitCode === 0 ? "pass" : "concern";
+      if (p.outcome === "pass" && answered !== "pass")
+        throw new Error(
+          `review rejected: mechanical probe "${p.check}" is recorded as passing, but its ` +
+            `command exited ${p.exitCode === null ? "nothing at all (it never ran)" : p.exitCode} — ` +
+            `a check that did not answer clean is a concern, and a check that did not run is not a check`,
+        );
+      // TypeScript's own discriminated-union narrowing would otherwise prove this branch
+      // unreachable (ReviewProbe only names two kinds) — but `probes` arrives here from
+      // untyped JSON at the CLI seam, so a missing/misspelled `kind` is a REAL runtime shape,
+      // not a type-system impossibility. Widen before comparing so the check actually runs.
+    } else if ((p.kind as string) !== "editorial") {
+      throw new Error(
+        `review rejected: probe "${p.check}" declares no kind — every check is either ` +
+          `"mechanical" (a command whose result decides) or "editorial" (a judgement, attributed)`,
+      );
+    }
     if (!VALID_OUTCOMES.has(p.outcome))
       throw new Error(
         `review rejected: probe "${p.check}" has invalid outcome ` +
