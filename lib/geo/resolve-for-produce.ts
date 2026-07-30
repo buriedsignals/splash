@@ -93,6 +93,21 @@ export async function resolveGeometryForProduce(
     config.geography ??
     (config.basemap ? resolveGeographyRef(config.basemap) : undefined);
 
+  // WHICH TYPES JOIN GEOMETRY. The point family (symbol, locator, hex-grid) draws markers at
+  // coordinates and reads no geometry at all, but it still carries `basemap: "world"` — so a
+  // gate on the presence of `geography` alone entered this block for it and then assumed
+  // `config.rows`, which the point family does not have. Listed as an allow-list of the types
+  // that DO join, never as a deny-list of the ones that do not: a new point-family type must
+  // be opted IN to resolution deliberately, not discovered by a crash.
+  const JOINING_TYPES = new Set([
+    "choropleth",
+    "cartogram",
+    "dot-density",
+    "route",
+  ]);
+  const joins = JOINING_TYPES.has(String(config.type));
+  if (!joins) return false;
+
   if (geography) {
     // D7's credit obligation applies ONLY to a DECLARED geometry (a shipped basemap —
     // Natural Earth `world.geojson`, US Census `us-states.geojson` — is public domain, no
