@@ -2603,3 +2603,120 @@ before continuing.
 git add lib/loop/assemble/map-native.ts lib/loop/assemble/map-native.test.ts
 git commit -m "feat(assemble): dot-density re-derived — no longer hard-refuses non-world geography"
 ```
+
+### Task 14: `produce()` refuses on an unresolved geo-join, mirroring `unauthoredBeats` (D6)
+
+**Files:**
+- Modify: `lib/loop/produce.ts` — insert right after the existing `unauthoredBeats` refusal block
+  (`:172-178`, verified in full while writing this plan).
+- Modify: `lib/loop/manifest.ts` — `nextActionsForElement` (the `unauthoredBeats(el).length > 0`
+  check at `:688`, verified while writing this plan) gains the mirrored `resolve-geo-join`
+  `NextAction`, in the same position relative to `produce`/`author-beats` that `unauthoredBeats`
+  already occupies.
+- Test: `lib/loop/produce.test.ts`, `lib/loop/manifest.test.ts`.
+
+**Interfaces:**
+- Consumes: `unresolvedGeoJoins(ledger)` (Task 5).
+- Produces: no new exported symbol on `produce.ts`'s side; `manifest.ts` gains
+  `"resolve-geo-join"` as a member of the `NextAction` union.
+
+As stated in Phase D's header, this is the mechanical half of D6's "below ADM1, the guard becomes
+'joined on an unambiguous key'": whatever earlier step populates `run.orient.geoJoin.pending`
+(out of this plan's scope — see Task 5's own scope note), THIS gate is what makes an unresolved
+entry actually block a build, exactly as `unauthoredBeats` already blocks an unwritten beat.
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/loop/produce.test.ts (append) — reuse this file's existing run/element fixture helper
+import { describe, it, expect } from "bun:test";
+import { produce } from "./produce"; // adjust to this file's real export name/signature
+
+it("refuses to produce while a geo-join value is unresolved — the fixture: 'Buenos Aires' pending", () => {
+  const run = /* minimal run fixture, choropleth element, chosen+narrative all satisfied,
+    orient.geoJoin = { column: "region", geographySha256: "abc", decisions: [], pending: ["Buenos Aires"] } */;
+  const result = produce(run, /* runDir */, /* elementId */);
+  expect(result.ok).toBe(false);
+  if (!result.ok) expect(result.message).toContain("Buenos Aires");
+});
+
+it("produces normally once the pending value has a decision", () => {
+  const run = /* same fixture, but geoJoin.decisions has the Buenos Aires entry and pending is empty */;
+  const result = produce(run, /* runDir */, /* elementId */);
+  expect(result.ok).toBe(true);
+});
+```
+
+```ts
+// lib/loop/manifest.test.ts (append)
+it("nextActionsForElement returns 'resolve-geo-join' when a geo-join value is unresolved", () => {
+  const run = /* fixture with orient.geoJoin.pending = ["Buenos Aires"], element otherwise ready to produce */;
+  const el = run.elements[0]!;
+  expect(nextActionsForElement(run, el)).toEqual(["resolve-geo-join"]);
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test loop/produce.test.ts loop/manifest.test.ts`
+Expected: FAIL — `produce()` currently ignores `orient.geoJoin` entirely, so both fixtures return
+`ok: true`/the un-gated next action.
+
+- [ ] **Step 3: Implement**
+
+In `lib/loop/manifest.ts`, add to the `NextAction` union (near `"author-beats"`):
+
+```ts
+  | "resolve-geo-join"
+```
+
+In `nextActionsForElement` (`:688`), add immediately after the `unauthoredBeats` check, same
+position/ordering rationale as the existing comment there (a form nothing can build must not be
+told "resolve your geo-join" before it is told it cannot be built at all — so this stays AFTER
+the beats gate, mirroring the same ordering `produce.ts` itself uses):
+
+```ts
+  if (unauthoredBeats(el).length > 0) return ["author-beats"];
+  if (unresolvedGeoJoins(run.orient?.geoJoin).length > 0) return ["resolve-geo-join"];
+  if (!el.artifact || stalenessOf(run, el)) return ["produce"];
+```
+
+(import `unresolvedGeoJoins` from `../geo/join`.)
+
+In `lib/loop/produce.ts`, right after the `unauthoredBeats` block (`:172-178`):
+
+```ts
+  const pendingGeoJoins = unresolvedGeoJoins(run.orient?.geoJoin);
+  if (pendingGeoJoins.length)
+    return fail(
+      "invalid-request",
+      `produce: ${pendingGeoJoins.join(", ")} of this map's geography ${pendingGeoJoins.length === 1 ? "is" : "are"} not resolved to a polygon — ` +
+        `Splash measures the candidates and the journalist decides, and an unresolved value is not published`,
+    );
+```
+
+(import `unresolvedGeoJoins` from `../geo/join`.)
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test loop/produce.test.ts loop/manifest.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Mutation — prove the refusal actually gates `produce()`, not just the reported
+  next action**
+
+Temporarily comment out the `pendingGeoJoins` block in `produce.ts` (keep the `manifest.ts` gate
+in place).
+
+Run: `cd lib && bun test loop/produce.test.ts`
+Expected: "refuses to produce while a geo-join value is unresolved" FAILS (`result.ok` is `true`
+— produce ran anyway). This is the exact failure mode the mutation-testing rule in Global
+Constraints is written against: a `nextActionsForElement`-only gate that LOOKS like a produce
+refusal but does not actually block the verb. Report the count. Revert before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/loop/produce.ts lib/loop/manifest.ts lib/loop/produce.test.ts lib/loop/manifest.test.ts
+git commit -m "feat(produce): refuse an unresolved geo-join, mirroring unauthoredBeats (D6)"
+```
