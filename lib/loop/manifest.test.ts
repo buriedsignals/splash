@@ -8,6 +8,7 @@ import {
   resolvedChannelForElement,
   stalenessOf,
   nextActions,
+  nextActionsForElement,
   gateStateOf,
   parseManifest,
   RunManifestSchema,
@@ -1486,6 +1487,62 @@ describe("routing a narrative page through its beats", () => {
   it("leaves an element with no plan untouched — no beats are ever asked of it", () => {
     // base() chose a static slope: the narrative slot must not appear anywhere in its routing.
     expect(nextActions(base())).toEqual(["produce"]);
+  });
+});
+
+describe("routing a below-ADM1 map through its geo-join (D6)", () => {
+  // Mirrors unauthoredBeats's own coverage shape exactly: pending blocks, resolved doesn't, and
+  // absent doesn't — the false-block risk this gate carries is a run with no geography at all,
+  // or one already fully resolved, being wrongly told to go resolve something.
+  it("returns 'resolve-geo-join' when a geo-join value is unresolved", () => {
+    const m = base();
+    const withPending: RunManifest = {
+      ...m,
+      orient: {
+        ...m.orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [],
+          pending: ["Buenos Aires"],
+        },
+      },
+    };
+    const el = withPending.elements[0]!;
+    expect(nextActionsForElement(withPending, el)).toEqual([
+      "resolve-geo-join",
+    ]);
+  });
+
+  it("routes straight to produce once the pending value has a decision", () => {
+    const m = base();
+    const resolved: RunManifest = {
+      ...m,
+      orient: {
+        ...m.orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [
+            {
+              value: "Buenos Aires",
+              featureId: "ARG-CABA",
+              basis: "journalist",
+            },
+          ],
+          pending: [],
+        },
+      },
+    };
+    const el = resolved.elements[0]!;
+    expect(nextActionsForElement(resolved, el)).toEqual(["produce"]);
+  });
+
+  it("leaves a run with no geo-join ledger at all untouched — no false block", () => {
+    // base() carries no orient.geoJoin at all: this gate must be silent for every run that
+    // never had geography, which is most runs.
+    const el = base().elements[0]!;
+    expect(nextActionsForElement(base(), el)).toEqual(["produce"]);
   });
 });
 

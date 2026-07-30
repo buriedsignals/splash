@@ -28,6 +28,10 @@ import {
 import { unbuildableFormReason } from "./buildable";
 import { isHostedUrl } from "../core/contract";
 import { ARC_ROLES } from "../core/claim-arc";
+// The gate's own answer to "what below-ADM1 value is still awaiting a decision" (Task 5) — read
+// by the routing below so the two cannot disagree, the same reason unauthoredBeats is imported
+// from nowhere else either.
+import { unresolvedGeoJoins } from "../geo/join";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
@@ -465,6 +469,10 @@ export type NextAction =
   // journalist's, like phrase: they validate or rewrite each beat, behind verifyBeats.
   | "draft-beats"
   | "author-beats"
+  // A below-ADM1 map whose join found an ambiguous value not yet resolved to a polygon (D6).
+  // Mirrors `author-beats` exactly: mechanical routing to a still-owed decision, never the
+  // dialogue that records the decision itself (out of this action's scope — see Task 5/14).
+  | "resolve-geo-join"
   | "produce"
   // The verification chain (lib/verify), on the road between a produced artifact and a
   // published one. `capture`, `review` and `preview` are DETERMINISTIC — advanceStep runs
@@ -753,6 +761,11 @@ export function nextActionsForElement(
   )
     return ["draft-beats"];
   if (unauthoredBeats(el).length > 0) return ["author-beats"];
+  // Same position/ordering rationale as the beats gate just above: a form nothing can build
+  // must not be told "resolve your geo-join" before it is told it cannot be built at all, so
+  // this stays AFTER the beats gate — mirroring the order produce.ts itself gates in.
+  if (unresolvedGeoJoins(run.orient?.geoJoin).length > 0)
+    return ["resolve-geo-join"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.

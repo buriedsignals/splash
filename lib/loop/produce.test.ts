@@ -646,6 +646,104 @@ test("produce refuses a social deliverable whose aspect has not been confirmed",
 });
 
 // ---------------------------------------------------------------------------
+// A below-ADM1 map's unresolved geo-join blocks a build (D6) — the mechanical mirror of the
+// beats gate just above. Three fixtures, sharing the same otherwise-buildable run: pending
+// (refused), fully resolved (produces), and no ledger at all (produces) — the false-block risk
+// this gate carries is that a run with NO geography, or one whose geoJoin is already resolved,
+// must never be wrongly refused, so both of those are proven to reach a real `ok: true`, not
+// merely reasoned about.
+// ---------------------------------------------------------------------------
+
+function geoJoinRun(
+  runDir: string,
+  geoJoin?: NonNullable<RunManifest["orient"]>["geoJoin"],
+): RunManifest {
+  const src = join(runDir, "src.csv");
+  writeFileSync(
+    src,
+    "canton,2015,2024\nGenève,449,583\nVaud,412,531\nAppenzell RI,289,352",
+  );
+  return {
+    runId: "t-geojoin",
+    schemaVersion: 5,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "2015", "2024"],
+        numericColumns: ["2015", "2024"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+      ...(geoJoin ? { geoJoin } : {}),
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Health premiums rose in every canton shown",
+          altInsight:
+            "Between 2015 and 2024 the adult premium rose in all three cantons shown.",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [
+            { id: "slope", nativeType: "slope", why: "two points in time" },
+          ],
+          excluded: [],
+          chosenId: "slope",
+        },
+      },
+    ],
+    events: [],
+  };
+}
+
+test("produce refuses while a geo-join value is unresolved — the fixture: 'Buenos Aires' pending", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-geojoin-pending-"));
+  const run = geoJoinRun(runDir, {
+    column: "region",
+    geographySha256: "abc",
+    decisions: [],
+    pending: ["Buenos Aires"],
+  });
+  const result = await produce(run, run.elements[0]!, runDir);
+  expect(result.ok).toBe(false);
+  if (!result.ok) {
+    expect(result.code).toBe("invalid-request");
+    expect(result.message).toContain("Buenos Aires");
+  }
+});
+
+test("produce proceeds once the pending geo-join value has a decision", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-geojoin-resolved-"));
+  const run = geoJoinRun(runDir, {
+    column: "region",
+    geographySha256: "abc",
+    decisions: [
+      { value: "Buenos Aires", featureId: "ARG-CABA", basis: "journalist" },
+    ],
+    pending: [],
+  });
+  const result = await produce(run, run.elements[0]!, runDir);
+  if (!result.ok) throw new Error(result.message);
+  expect(result.ok).toBe(true);
+}, 60000);
+
+test("produce proceeds normally for a run that carries no geo-join ledger at all", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-geojoin-absent-"));
+  const run = geoJoinRun(runDir); // orient.geoJoin left entirely unset
+  const result = await produce(run, run.elements[0]!, runDir);
+  if (!result.ok) throw new Error(result.message);
+  expect(result.ok).toBe(true);
+}, 60000);
+
+// ---------------------------------------------------------------------------
 // The narrative plan reaches the spec (article beats) — see docs/superpowers/specs/
 // 2026-07-27-article-beats-design.md
 // ---------------------------------------------------------------------------
