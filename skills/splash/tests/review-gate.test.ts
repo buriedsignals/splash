@@ -411,6 +411,31 @@ describe("applyReviewGate — a mechanical outcome is read, never reported", () 
     ).toThrow(/exited 1/);
   });
 
+  it("refuses a probe recorded as resolved whose command did not actually exit clean — resolved still claims clean NOW", () => {
+    // The agreement check only covering "pass" would leave "resolved" self-attestable — a
+    // mechanical probe could claim "I fixed it" against a command that still exits non-zero
+    // (or never ran), and nothing here would catch it. "resolved" claims the check answers
+    // clean RIGHT NOW (with the note explaining it used to fail), so it needs the same
+    // exit-code agreement as "pass".
+    expect(() =>
+      applyReviewGate(
+        rep(),
+        "p1",
+        [],
+        [
+          {
+            kind: "mechanical",
+            check: "the dataset answers",
+            command: ["bun", "-e", "process.exit(1)"],
+            exitCode: 1,
+            outcome: "resolved",
+            note: "first GET 404, retried, now fine",
+          } as never,
+        ],
+      ),
+    ).toThrow(/exited 1/);
+  });
+
   it("records a mechanical probe whose outcome matches what its command answered", () => {
     const out = applyReviewGate(
       rep(),

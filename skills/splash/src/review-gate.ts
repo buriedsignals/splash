@@ -104,11 +104,22 @@ function validateProbes(probes: ReviewProbe[], concerns: string[]): void {
             `(kind: "editorial") attributed to the reviewer who made it`,
         );
       const answered = p.exitCode === 0 ? "pass" : "concern";
-      if (p.outcome === "pass" && answered !== "pass")
+      // "pass" and "resolved" both claim the check answers clean RIGHT NOW — "resolved" only
+      // adds that it used to fail (the note says how) — so both require the real exit code to
+      // actually be 0. Leaving "resolved" unchecked would have left exactly one of the three
+      // outcome values still self-attestable, which is the class this task exists to close.
+      if (
+        (p.outcome === "pass" || p.outcome === "resolved") &&
+        answered !== "pass"
+      )
         throw new Error(
-          `review rejected: mechanical probe "${p.check}" is recorded as passing, but its ` +
-            `command exited ${p.exitCode === null ? "nothing at all (it never ran)" : p.exitCode} — ` +
-            `a check that did not answer clean is a concern, and a check that did not run is not a check`,
+          `review rejected: mechanical probe "${p.check}" is recorded as ` +
+            `${p.outcome === "pass" ? "passing" : "resolved"}, but its command exited ` +
+            `${p.exitCode === null ? "nothing at all (it never ran)" : p.exitCode} — ` +
+            `a check that did not answer clean is a concern, and a check that did not run is not a check` +
+            (p.outcome === "resolved"
+              ? ` (a "resolved" probe still has to answer clean NOW — that is what "resolved" claims)`
+              : ""),
         );
       // TypeScript's own discriminated-union narrowing would otherwise prove this branch
       // unreachable (ReviewProbe only names two kinds) — but `probes` arrives here from
