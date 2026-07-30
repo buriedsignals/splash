@@ -92,3 +92,211 @@ research it rests on: `docs/splash/geography-anywhere-research-2026-07-28.md`.
   `loop`, `host`, `delivery`, `newsroom`, `source`, `verify` — verified while writing this plan).
   The first `lib/geo/` task MUST add `"geo"` to that list or `bunx tsc --noEmit` run from `lib/`
   will silently skip the new package.
+
+---
+
+## Phase A — `lib/geo/`: pure logic, zero wiring into the loop
+
+Mirrors `lib/source/`'s shape (verified while writing this plan: `lib/source/index.ts` re-exports
+`kinds`, `result`, `requirements`, `url`, `furniture`, `prose`, `redact`, `policy` — one file, one
+responsibility, a matching `<name>.test.ts` beside each). Every task in this phase is independently
+testable with `cd lib && bun test` — nothing here is wired into the manifest, `orient`, or `produce`
+yet. That wiring is Phases C–E.
+
+### Task 1: `lib/geo/crs.ts` — the CRS range guard (D4)
+
+**Files:**
+- Create: `lib/geo/crs.ts`
+- Create: `lib/geo/crs.test.ts`
+- Modify: `lib/tsconfig.json` — add `"geo"` to the `include` array (currently `["brain", "core",
+  "loop", "host", "delivery", "newsroom", "source", "verify"]`, verified while writing this plan).
+  Without this, `cd lib && bunx tsc --noEmit` silently skips the new directory.
+
+**Interfaces:**
+- Produces: `coordinateRangeVerdict(geometry: GeoJSON.Geometry | GeoJSON.FeatureCollection):
+  CrsVerdict`, and the type `CrsVerdict = { ok: true } | { ok: false; code:
+  "coordinate-out-of-range"; message: string }`. Consumed by Task 8 (init-time refusal) — nothing
+  in this task calls it from the loop.
+
+Named verdict, never a bare boolean — the spec (D4) is explicit about this, and it mirrors the
+established pattern in `lib/source/result.ts` (`SourceResult<T> = { ok: true; value: T } | { ok:
+false; code: SourcePolicyCode; message: string }`, verified while writing this plan).
+
+The guard is a **per-coordinate range check**, never a bbox check: RFC 7946 §5.2 makes
+`bbox[0] > bbox[2]` legal for an antimeridian-crossing feature, so a bbox-based
+`minX < maxX` assertion would reject valid Fiji/Chukotka geometry (spec D4). And it carries
+**no winding-order check** — RFC 7946 §3.1.6 says parsers SHOULD NOT reject a polygon for its
+ring direction, and geojson-vt/earcut already tolerate either winding (spec D4, "a correction of
+the research not to reintroduce").
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/geo/crs.test.ts
+import { describe, it, expect } from "bun:test";
+import { coordinateRangeVerdict } from "./crs";
+
+describe("coordinateRangeVerdict", () => {
+  it("accepts a valid WGS84 point (Bern)", () => {
+    const geom: GeoJSON.Point = { type: "Point", coordinates: [7.4474, 46.9481] };
+    expect(coordinateRangeVerdict(geom)).toEqual({ ok: true });
+  });
+
+  it("rejects a Swiss LV95 pair mistaken for WGS84 — the fixture the spec measures", () => {
+    // spec D4's own measured case: Bern in LV95 is (2600000, 1200000). Fed as if it were
+    // lon/lat, |x| and |y| are both wildly out of range — this is the exact pair that, left
+    // unguarded, aliases via sin() periodicity to a plausible-looking ~57°N.
+    const geom: GeoJSON.Point = { type: "Point", coordinates: [2600000, 1200000] };
+    const verdict = coordinateRangeVerdict(geom);
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.code).toBe("coordinate-out-of-range");
+      expect(verdict.message).toContain("2600000");
+      expect(verdict.message).toContain("re-export");
+      expect(verdict.message).toContain("EPSG:4326");
+    }
+  });
+
+  it("does not flag an antimeridian-crossing polygon (Fiji-shaped) via its bbox", () => {
+    // Every individual coordinate is in-range; the bbox alone (minX=-179.9 > maxX=179.5 if
+    // computed naively) would look inverted. The guard must walk coordinates, not the bbox.
+    const geom: GeoJSON.Polygon = {
+      type: "Polygon",
+      coordinates: [
+        [
+          [179.5, -17],
+          [179.9, -16],
+          [-179.9, -16],
+          [-179.5, -17],
+          [179.5, -17],
+        ],
+      ],
+    };
+    expect(coordinateRangeVerdict(geom)).toEqual({ ok: true });
+  });
+
+  it("does not reject a clockwise (reversed) ring — no winding-order guard", () => {
+    // Same ring as a normal square, wound the OTHER way. RFC 7946 §3.1.6: parsers SHOULD NOT
+    // reject on ring direction. This fixture is the one a future contributor is most likely to
+    // "fix" by adding a signed-area check — that would be the regression this test exists for.
+    const geom: GeoJSON.Polygon = {
+      type: "Polygon",
+      coordinates: [
+        [
+          [7.0, 46.0],
+          [7.0, 47.0],
+          [8.0, 47.0],
+          [8.0, 46.0],
+          [7.0, 46.0],
+        ],
+      ],
+    };
+    expect(coordinateRangeVerdict(geom)).toEqual({ ok: true });
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test geo/crs.test.ts`
+Expected: FAIL — `coordinateRangeVerdict` is not defined (module `./crs` does not exist yet).
+
+- [ ] **Step 3: Write the minimal implementation**
+
+```ts
+// lib/geo/crs.ts
+// The CRS guard — a range check, never a bbox check, never a winding check. See D4 of the
+// design spec for the measurements this shape is built against (6,188 projected CRS scanned;
+// exactly 2 pass |x|<=180,|y|<=90; a range check alone cannot catch a bad-datum or a
+// non-Greenwich meridian, which is why `crs` stays a DECLARED field, not an inference — that
+// declaration is enforced one layer up, in lib/loop/init.ts (Task 8), not here).
+export type CrsVerdict =
+  | { ok: true }
+  | { ok: false; code: "coordinate-out-of-range"; message: string };
+
+function walk(coords: unknown, visit: (pt: [number, number]) => string | undefined): string | undefined {
+  if (
+    Array.isArray(coords) &&
+    coords.length >= 2 &&
+    typeof coords[0] === "number" &&
+    typeof coords[1] === "number"
+  ) {
+    return visit(coords as [number, number]);
+  }
+  if (Array.isArray(coords)) {
+    for (const c of coords) {
+      const bad = walk(c, visit);
+      if (bad) return bad;
+    }
+  }
+  return undefined;
+}
+
+export function coordinateRangeVerdict(
+  geometry: GeoJSON.Geometry | GeoJSON.FeatureCollection,
+): CrsVerdict {
+  const geometries: GeoJSON.Geometry[] =
+    geometry.type === "FeatureCollection"
+      ? geometry.features.map((f) => f.geometry).filter((g): g is GeoJSON.Geometry => g != null)
+      : [geometry];
+
+  for (const g of geometries) {
+    const bad = walk((g as { coordinates?: unknown }).coordinates, ([x, y]) => {
+      if (Math.abs(x) > 180 || Math.abs(y) > 90) return `${x}, ${y}`;
+      return undefined;
+    });
+    if (bad)
+      return {
+        ok: false,
+        code: "coordinate-out-of-range",
+        message:
+          `coordinate ${bad} is outside the physical globe (|lon|<=180, |lat|<=90) — this is ` +
+          `almost always a projected CRS mistaken for WGS84; re-export in EPSG:4326`,
+      };
+  }
+  return { ok: true };
+}
+```
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test geo/crs.test.ts`
+Expected: PASS, 4/4.
+
+- [ ] **Step 5: Mutation — prove the "clockwise ring" test depends on there being no
+  winding-order check**
+
+Temporarily ADD a signed-area winding-order rejection to the implementation (the exact
+anti-pattern D4 warns a future contributor is likely to add), on top of the Step 3 range check:
+
+```ts
+// MUTATION — do not keep this. Insert before the final `return { ok: true };`.
+function ringIsClockwise(ring: [number, number][]): boolean {
+  let sum = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    sum += (ring[i + 1][0] - ring[i][0]) * (ring[i + 1][1] + ring[i][1]);
+  }
+  return sum > 0;
+}
+if (
+  geometries.some(
+    (g) =>
+      g.type === "Polygon" &&
+      ringIsClockwise(g.coordinates[0] as [number, number][]),
+  )
+)
+  return { ok: false, code: "coordinate-out-of-range", message: "clockwise ring rejected" };
+```
+
+Run: `cd lib && bun test geo/crs.test.ts`
+Expected: the "clockwise ring" test FAILS — reports `expected { ok: true }, received { ok: false,
+code: "coordinate-out-of-range", message: "clockwise ring rejected" }`. This is the regression
+the test exists to catch. Revert the mutation (restore Step 3's implementation exactly) before
+continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/geo/crs.ts lib/geo/crs.test.ts lib/tsconfig.json
+git commit -m "feat(geo): CRS range guard — per-coordinate, antimeridian-safe, no winding check"
+```
