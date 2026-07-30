@@ -34,7 +34,12 @@ bytes, or `ffprobe`/frame extraction for video) — never from a log line.
 | 11 | map-native | symbol | scrolly | social-vertical | n/a (must be refused) | refused: `format "scrolly" is not built by map-native — dispatch to the "scrolly" producer` | correct — routes to skills/scrolly instead |
 | 12 | map-native | symbol | interactive | social-feed | n/a (must be refused) | refused: `format "interactive" is not allowed for channel "social-feed"` | correct fail-closed behavior |
 
-(more cases below as runs complete — dw-chart, scrolly)
+| 13 | dw-chart | column-chart (fixed-aspect) | static | social-vertical | 1080x1920 | 1080x1920 (PNG IHDR), real Datawrapper API | match |
+| 14 | dw-chart | d3-bars (row-driven) | static | social-feed | 1080x1080 width-leg only | 1080x720 (PNG IHDR), real Datawrapper API | intentional deviation, see below — NOT a defect |
+| 15 | chart-native | bar | scrolly | social-vertical | n/a (must be refused) | refused: `format "scrolly" is not built by chart-native — dispatch to the "scrolly" producer` | correct — symmetric with map-native (case 11) |
+
+Real Datawrapper charts (`DW7oN`, `KwEHZ`) were created, exported, measured, and deleted via the
+live API for cases 13-14 — no mock.
 
 ## Defects found
 
@@ -99,6 +104,48 @@ channel-sized box for a 1080x1920/1080x1080 input); restoring the fix returns 4/
 unrelated `VITE_MAPTILER_KEY not set` guard in one live-e2e test file when `bun test` is run
 without the root `.env` loaded — environmental, not caused by this change).
 
+### Not a defect — dw-chart's row-driven types deliberately don't pin height on social-feed
+
+Case 14 (`d3-bars`, `social-feed`, declared 1080x1080) measured 1080x720, not square. This is
+**intentional, documented, and mechanically guarded** — not a defect. `ROW_DRIVEN_TYPES`
+(`skills/dw-chart/src/export-aspect.ts`) covers horizontal bar/dot/arrow/range/table types whose
+natural height grows with row count; Datawrapper's PNG export CROPS rows that overflow a pinned
+height rather than scaling them, so pinning the full square height would silently drop bars. For
+these types dw-chart pins only the channel WIDTH and lets height follow content
+(`rowDrivenDeliveredHeight`: `420 + rows*60` px, here `420 + 5*60 = 720` — exactly what was
+measured). `skills/dw-chart/src/produce.ts:236-247` asserts the WIDTH leg with
+`assertRenderedSize`-equivalent tolerance even for row-driven types — it is not an unguarded
+gap, just a different, correct invariant for this type family. Worth noting because the task
+framing ("the only channels where the exact rendered size is asserted as a hard pin") is true for
+chart-native/map-native but has this one documented, load-bearing exception in dw-chart.
+
 ## Could not run
 
-(filled in as runs complete)
+- **map-dw** (the separate Datawrapper-map skill) — out of scope: the task's engine list named
+  chart-native, map-native, dw-chart, and scrolly; map-dw is a fifth skill not requested. CLAUDE.md
+  already tracks a known, separate gap there ("map-dw sur-produit encore PNG+embed quel que soit
+  le format").
+- **A produced `scrolly` HTML on `social-vertical`/`social-feed`** — not runnable by design: the
+  channel policy (`CHANNEL_POLICY.allowedFormats`) excludes `scrolly` (and `interactive`) from
+  both channels, and both chart-native and map-native fail hard on that format before building
+  anything (cases 11, 15). The correct case for these two channels IS the refusal, which is
+  measured and confirmed at both engines.
+- **map-dw / dw-chart video** — dw-chart has no video format (Datawrapper doesn't render mp4);
+  not attempted, not applicable.
+- Wider breadth (more of the 26 chart-native types, all 7 map-native types, more dw-chart
+  row-driven vs fixed-aspect combinations) was not run — 15 cases were chosen for spread across
+  engines/formats/channels per the task's "breadth over depth" instruction, not exhaustiveness.
+
+## Summary
+
+12 real produces measured (6 chart-native, 6 map-native across both channels/both formats) + 2
+real Datawrapper API produces + 3 policy-refusal checks (2 map-native, 1 chart-native) = 15 cases
+total, zero mocks. Every measured artifact's declared channel pin matched its real, independently-read
+dimensions (PNG IHDR / `ffprobe`), with one documented, correctly-guarded exception (dw-chart
+row-driven height). One real defect was found and fixed: map-native's static furniture-contrast
+guard ignored the channel and checked a fixed 1200x700 landscape layout instead of the delivered
+geometry — a false negative (silently green because it never looked), the inverse of the
+chart-native `elementsFromPoint` false positive the task named. That chart-native false positive
+was checked directly (case 3, a genuinely tall 1080x1920 portrait render with 58 labels) and found
+already fixed on this branch's base, by a same-day prior commit (`eb81c1ee`) — not fixed during
+this pass, but its fix is now render-proven rather than merely claimed.
