@@ -45,10 +45,12 @@ import {
 import { assertChainProvenance } from "../src/render-provenance.ts";
 import { embedDeliveryStatus } from "../src/preflight.ts";
 import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
+import { resolvePlacement, placementBlock } from "../src/placement.ts";
 import { readDecorState } from "../../../lib/newsroom/decor.ts";
 import { resolveLanguage } from "../../../lib/newsroom/language.ts";
 import {
   exportProposalCopy,
+  placementCopy,
   signoffCopy,
 } from "../../../lib/newsroom/ui-copy.ts";
 
@@ -200,6 +202,27 @@ function main() {
     process.exit(1);
   }
 
+  // WHERE this element goes in the article (register D03). accepted.json is guaranteed present and
+  // parseable at this point — assertChainProvenance above has just read it and would have refused
+  // the export otherwise — so this read cannot introduce a new failure mode for a legitimate
+  // delivery. It is still wrapped: a placement is a SENTENCE, and no sentence may cost a journalist
+  // an artifact that passed every gate.
+  //
+  // The run directory is dirname(report.json), NOT exportDir — the same convention
+  // assertChainProvenance documents at length (render-provenance.ts): accepted.json/candidates.json
+  // live beside report.json, never inside the delivery folder.
+  const runDir = dirname(resolve(resultsPath));
+  let acceptedEntry = null;
+  try {
+    const list = JSON.parse(readFileSync(join(runDir, "accepted.json"), "utf8"));
+    acceptedEntry = (Array.isArray(list) ? list : []).find(
+      (a) => a && typeof a === "object" && a.id === id,
+    );
+  } catch {
+    acceptedEntry = null;
+  }
+  const placement = resolvePlacement(acceptedEntry);
+
   const format = result.format;
   if (!format) {
     console.error(`report result ${id} has no pinned format`);
@@ -213,8 +236,17 @@ function main() {
     console.error(msg);
     process.exit(1);
   };
-  const done = (payload) =>
+  // EXPORT_CODE_RESULT is the machine line; the placement follows it on EVERY delivered format and
+  // form (static, video, html, code-source, embed). Wrapping `done` rather than editing each of the
+  // six hand-over sites is what keeps a future seventh from silently shipping without it.
+  const done = (payload) => {
     console.log("EXPORT_CODE_RESULT " + JSON.stringify(payload));
+    if (placement.kind === "undeclared") return;
+    console.log(
+      "PLACEMENT_JSON " + JSON.stringify({ proposalId: id, placement }),
+    );
+    console.log(placementBlock(id, placement, placementCopy(uiLang())));
+  };
 
   // S4d editorial gate: re-verify human sign-offs against the exact bytes about to ship.
   // Resolved via resolveProfile — --profile OVERRIDES, else auto-discovered from cwd (see

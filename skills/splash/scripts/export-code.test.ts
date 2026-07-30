@@ -1335,3 +1335,144 @@ describe("export-code CLI — S4d editorial sign-off gate on --form code-source 
     }
   });
 });
+
+// WHERE it goes in the article, emitted by CODE at hand-over. The anchor lives on the accepted
+// proposal (producer-spec.ts:61); until now nothing read it, so the sentence depended on the
+// orchestrator remembering, dozens of turns after the article was read.
+function parsePlacement(stdout: string) {
+  const marker = "PLACEMENT_JSON ";
+  const line = stdout.split("\n").find((l) => l.startsWith(marker));
+  if (!line) throw new Error("no PLACEMENT_JSON line in stdout:\n" + stdout);
+  return JSON.parse(line.slice(marker.length));
+}
+
+// writeChainFixture writes a minimal accepted.json; these tests need entry-level fields on it, so
+// they patch the file the fixture just wrote (the entry, never the spec — the chain hash is over
+// `spec` alone, render-provenance.ts, so patching the entry keeps the fixture legitimate).
+function patchAcceptedEntry(
+  dir: string,
+  id: string,
+  patch: Record<string, unknown>,
+) {
+  const p = join(dir, "accepted.json");
+  const list = JSON.parse(readFileSync(p, "utf8"));
+  const entry = list.find((e: { id: string }) => e.id === id);
+  Object.assign(entry, patch);
+  writeFileSync(p, JSON.stringify(list));
+}
+
+describe("placement at hand-over", () => {
+  it("states both grains on a static delivery, quote marked authoritative", () => {
+    const dir = mkdtempSync(join(tmpdir(), "placement-static-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "static.png"), "png");
+    const rep = report(dir, "e1", "static", {
+      outputs: [join(outDir, "static.png")],
+    });
+    const resultsPath = join(dir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(rep));
+    patchAcceptedEntry(dir, "e1", {
+      anchor: { paragraphIndex: 5, quote: "the shutters closed" },
+    });
+    // exportDir must NOT be a subdir of `dir` (which sits under tmpdir()) — isEphemeralPath
+    // refuses any export target under tmpdir(), same reason every other test in this file keeps
+    // exportDir separate, under import.meta.dir.
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-placement-static-"),
+    );
+
+    const out = run(outDir, exportDir, resultsPath, "e1");
+    expect(parsePlacement(out)).toEqual({
+      proposalId: "e1",
+      placement: {
+        kind: "anchored",
+        paragraphIndex: 5,
+        quote: "the shutters closed",
+      },
+    });
+    expect(out).toContain("SPLASH_PLACEMENT e1");
+    expect(out).toContain("END_SPLASH_PLACEMENT");
+    expect(out).toContain("the shutters closed");
+    rmSync(exportDir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("states free-standing on a video delivery, and invents no paragraph", () => {
+    const dir = mkdtempSync(join(tmpdir(), "placement-video-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "landscape.mp4"), "mp4");
+    const rep = report(dir, "e1", "video", {
+      outputs: [join(outDir, "landscape.mp4")],
+    });
+    const resultsPath = join(dir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(rep));
+    patchAcceptedEntry(dir, "e1", { freeStanding: true });
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-placement-video-"),
+    );
+
+    const out = run(outDir, exportDir, resultsPath, "e1");
+    expect(parsePlacement(out).placement).toEqual({ kind: "free-standing" });
+    const block = out.slice(
+      out.indexOf("SPLASH_PLACEMENT"),
+      out.indexOf("END_SPLASH_PLACEMENT"),
+    );
+    expect(block).not.toContain("§");
+    rmSync(exportDir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("emits nothing at all when no placement was declared and no article is evidenced", () => {
+    const dir = mkdtempSync(join(tmpdir(), "placement-silent-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "static.png"), "png");
+    const rep = report(dir, "e1", "static", {
+      outputs: [join(outDir, "static.png")],
+    });
+    const resultsPath = join(dir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(rep));
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-placement-silent-"),
+    );
+
+    const out = run(outDir, exportDir, resultsPath, "e1");
+    expect(out).toContain("EXPORT_CODE_RESULT");
+    expect(out).not.toContain("SPLASH_PLACEMENT");
+    expect(out).not.toContain("PLACEMENT_JSON");
+    rmSync(exportDir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("states the placement on the CHOSEN form of an interactive delivery, not at the proposal", () => {
+    const dir = mkdtempSync(join(tmpdir(), "placement-html-"));
+    const outDir = join(dir, "out");
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, "interactive.html"), "<html></html>");
+    const rep = report(dir, "e1", "interactive", {
+      outputs: [join(outDir, "interactive.html")],
+    });
+    const resultsPath = join(dir, "report.json");
+    writeFileSync(resultsPath, JSON.stringify(rep));
+    patchAcceptedEntry(dir, "e1", { anchor: { quote: "the shutters closed" } });
+    const exportDir = mkdtempSync(
+      join(import.meta.dir, "export-placement-html-"),
+    );
+
+    // Phase 1 — the a/b/c proposal builds nothing and delivers nothing: no placement yet.
+    const proposal = run(outDir, exportDir, resultsPath, "e1");
+    expect(proposal).toContain("EXPORT_FORMS_JSON");
+    expect(proposal).not.toContain("SPLASH_PLACEMENT");
+
+    // Phase 2 — the form is chosen and the element is handed over: the placement is said.
+    const delivered = run(outDir, exportDir, resultsPath, "e1", "html");
+    expect(parsePlacement(delivered).placement).toEqual({
+      kind: "anchored",
+      quote: "the shutters closed",
+    });
+    rmSync(exportDir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
