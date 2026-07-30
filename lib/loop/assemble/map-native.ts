@@ -196,14 +196,17 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   }
 
   if (brief.nativeType === "dot-density") {
-    // DotDensityMap.tsx hard-imports world.geojson and hard-codes the join key "iso_a3" — it
-    // never reads config.basemap or config.boundaries at all (verified 2026-07-28, task-7).
-    // The engine's own validator only checks that `basemap` NAMES a registered basemap, so a
-    // "us-states" dot-density would clear validate-config and then render against the WORLD
-    // map, joining state postal codes against country ISO codes — wrong silently, not missing.
-    // Refused here, at the one place that knows which basemap this geography actually matched,
-    // rather than shipping a config that looks truthful and renders false. See
-    // task-7-report.md for the fix-the-component alternative this defers.
+    // DotDensityMap.tsx hard-codes the join key "iso_a3" — it never reads config.basemap or
+    // config.boundaries at all (verified 2026-07-28, task-7). UPDATE (2026-07-30, Task 17,
+    // commit 5e4e9f71): the component no longer hard-imports world.geojson (it now decodes an
+    // injected config.geometry) — only the "iso_a3" join-key literal survives as this refusal's
+    // justification. The engine's own validator only checks that `basemap` NAMES a registered
+    // basemap, so a "us-states" dot-density would clear validate-config and then render against
+    // WORLD geometry, joining state postal codes against country ISO codes — wrong silently,
+    // not missing. Refused here, at the one place that knows which basemap this geography
+    // actually matched, rather than shipping a config that looks truthful and renders false.
+    // See task-7-report.md for the fix-the-component alternative this defers, and Task 13
+    // (task-13-brief.md Steps 3-6) for re-deriving the join key so this refusal can be lifted.
     //
     // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` directly —
     // "world"'s own set is "natural-earth-admin-0", not "world" (see lib/geo/ref.ts's doc

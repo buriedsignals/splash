@@ -344,12 +344,14 @@ test("a dot-density config against the world basemap clears the engine's own val
   expect(cfg.basemap).toBe("world");
 });
 
-// DotDensityMap.tsx hard-imports world.geojson and hard-codes the join key "iso_a3" — it never
-// reads config.basemap or config.boundaries at all (verified 2026-07-28, task-7). The engine's
-// own validate-config only checks that `basemap` NAMES a shipped basemap, so a "us-states"
-// dot-density would clear it and then render wrong (a state postal code joined against country
-// ISO codes) rather than fail loud. Refused here — the assembler is the one place that knows
-// which basemap this geography actually matched — until the component itself reads basemap.
+// DotDensityMap.tsx hard-codes the join key "iso_a3" — it never reads config.basemap or
+// config.boundaries at all (verified 2026-07-28, task-7; the component's separate hard-import of
+// world.geojson was closed by Task 17, commit 5e4e9f71 — only the join-key literal survives).
+// The engine's own validate-config only checks that `basemap` NAMES a shipped basemap, so a
+// "us-states" dot-density would clear it and then render wrong (a state postal code joined
+// against country ISO codes) rather than fail loud. Refused here — the assembler is the one
+// place that knows which basemap this geography actually matched — until the component itself
+// derives its join key from basemap/geography (Task 13, task-13-brief.md Steps 3-6).
 test("a dot-density against any basemap but world is refused, not silently rendered wrong", () => {
   const r = assembleMapNative({
     ...REGION_BRIEF,
@@ -379,14 +381,20 @@ test("a dot-density against any basemap but world is refused, not silently rende
 // Task 13 (task-13-brief.md, Step 1) — a deliberate pre-condition breadcrumb, not a bug in this
 // task. The plan sequences Task 13's refusal rewrite AFTER Task 17 (skills/map-native geometry
 // de-inlining: DotDensityMap.tsx stops hard-importing world.geojson + hard-coding join key
-// "iso_a3"). Verified directly against the component on this branch (2026-07-30): both the
-// `worldGeoJsonRaw` import and the `iso_a3` join-key literal are still present in
-// DotDensityMap.tsx, so Task 17 has NOT landed yet — the refusal this test targets (the sibling
-// test immediately above) is still load-bearing and correct, and must stay in place. This test
-// is written now, RED, on purpose: it pins the post-Task-17 target so a future pass can tell
-// "not yet re-derived" (this failure) apart from "re-derived but broken" (any other failure).
-// Do not remove the sibling refusal above, and do not make this test pass, until Task 17 has
-// actually landed on this branch.
+// "iso_a3"). UPDATE (2026-07-30, commit 5e4e9f71): Task 17 has now landed — DotDensityMap.tsx no
+// longer hard-imports `world.geojson?raw` (it decodes `config.geometry`, a TopoJSON injected by
+// produce at Task 20). But its join key is STILL hard-coded to the literal "iso_a3"
+// (`const JOIN_KEY = "iso_a3";`), never derived from `config.basemap`/`config.boundaries`/
+// `config.geography` — Task 17's own brief scoped that rewrite out (file list did not include
+// this rewire; see task-17-report.md's "deviations" section). That surviving hard-coded join key
+// is precisely what keeps THIS test red and the sibling refusal above load-bearing: a
+// "us-states" dot-density would still clear validate-config and render against the WORLD
+// geometry, joining state postal codes against country ISO codes — wrong silently, not missing.
+// This test is written RED on purpose: it pins the post-Task-13 target (Steps 3-6: re-derive the
+// join key from `config.geography.joinKey` instead of the "iso_a3" literal) so a future pass can
+// tell "join key not yet re-derived" (this failure) apart from "re-derived but broken" (any
+// other failure). Do not remove the sibling refusal above, and do not make this test pass, until
+// Task 13 Steps 3-6 have actually re-derived DotDensityMap.tsx's join key on this branch.
 it("dot-density accepts a non-world geography once DotDensityMap.tsx reads injected config (post Task 17 — expected RED until then)", () => {
   const r = assembleMapNative({
     ...REGION_BRIEF,
