@@ -1,6 +1,6 @@
 ---
 name: newsroom-charter
-description: Use when a newsroom has no NEWSROOM-PROFILE.md and the journalist does not know their own house colours — derives a proposed charter (brand colour, accent, ground, typefaces) by MEASURING the newsroom's own website, shows every value with where it was read, and writes the profile only after the journalist validates it. Refuses and falls back to asking when the site declares nothing. Keywords charte, charte graphique, house style, brand colour, couleur maison, newsroom profile, NEWSROOM-PROFILE, palette, identité visuelle, design profile, extract colours from site, theme.
+description: Use when a newsroom has no NEWSROOM-PROFILE.md and the journalist does not know their own house colours — derives a proposed charter (brand colour, ground, typefaces) by MEASURING the newsroom's own website, shows every value with where it was read, and writes the profile only after the journalist validates it. Refuses and falls back to asking when the site declares nothing. Keywords charte, charte graphique, house style, brand colour, couleur maison, newsroom profile, NEWSROOM-PROFILE, palette, identité visuelle, design profile, extract colours from site, theme.
 ---
 
 # newsroom-charter — derive a newsroom's house style from its own website
@@ -55,7 +55,7 @@ Non-negotiable, and the reason this skill exists in two halves:
 journalist gives a URL          ② newsroom-charter (THIS skill, gated)      ③ the profile
 ──────────────────────         ─────────────────────────────────────      ─────────────────
 site address            →  read: fetch page + same-host stylesheets   →  NEWSROOM-PROFILE.md
-                             → rank by HOW DELIBERATELY declared          (palette / accent /
+                             → rank by HOW DELIBERATELY declared          (palette /
                              → show every value + its receipt              source / lang / theme)
                              → MANDATORY GATE (confirm / correct / drop)
                              → write: only the values the journalist typed back
@@ -90,7 +90,6 @@ the setup page uses, so a charter-written profile and a hand-filled one are the 
      votre site déclare lui-même aux navigateurs. » / « …c'est la couleur du remplissage de votre
      logo. » / « …c'est la couleur de vos liens ; le site ne nomme aucune couleur de marque, donc
      c'est une déduction, pas une certitude. »
-   - the **accent**, when a second, genuinely different hue was found;
    - the **ground**, ONLY if a dark one was measured — and always with the caveat the extractor
      attaches to it (a page stacks backgrounds; the one on `<body>` may sit behind the white
      column the reader looks at). Ask them to confirm by eye.
@@ -116,7 +115,7 @@ the setup page uses, so a charter-written profile and a hand-filled one are the 
 6. **Write, with the confirmed values only.**
    ```bash
    bun skills/splash/scripts/propose-charter.mjs write . --confirmed \
-     --palette "#d5121e" [--accent "#…"] [--theme "#…"|dark] \
+     --palette "#d5121e" [--theme "#…"|dark] \
      --name "Heidi.news" --site-url "https://www.heidi.news" --lang fr \
      [--typeface "Publico Text"]
    ```
@@ -145,7 +144,8 @@ All in `lib/newsroom/charter.ts` unless noted.
 
 - **signal weights**: theme-color 100 · brand-property 90 · masthead 85 · link 75 ·
   accent-property 70 · control 55 · any other declared colour 8 (`WEIGHT`) — the method IS this
-  ordering
+  ordering. `accent-property` is an INPUT signal (a site's `--accent` custom property), not a
+  proposed field — the charter stopped offering an accent since nothing rendered it
 - **FREQUENCY_BONUS_CAP**: 4 — the most a colour can earn from merely being common. It is kept
   under the SMALLEST gap between two adjacent weights (5); nothing bigger is a tiebreak. The
   ordering itself does not depend on it — candidates sort lexicographically on
@@ -159,7 +159,6 @@ All in `lib/newsroom/charter.ts` unless noted.
 - **NEUTRAL_SATURATION**: 0.18 — below it, a colour is a grey and cannot be a brand hue
 - **NEUTRAL_LIGHTNESS_MIN / MAX**: 0.09 / 0.94 — the near-black and near-white cut-offs
 - **MERGE_DISTANCE**: 12 (RGB) — two readings closer than this are the same house colour
-- **ACCENT_HUE_SEPARATION**: 25° — below it, a second candidate is a tint, not an accent
 - **DARK_GROUND_LUMINANCE**: 0.2 — where a measured ground counts as dark
 - **GROUND_MIN_ALPHA**: 0.9 — a more transparent colour is a wash, never the page
 - **MAX_SHEETS / MAX_BYTES / TIMEOUT_MS**: 8 · 2 MB · 10 s (`charter-fetch.ts`)

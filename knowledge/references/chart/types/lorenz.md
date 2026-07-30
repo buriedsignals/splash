@@ -1,7 +1,7 @@
 ---
 id: lorenz
-engines:
-  chart-native: lorenz
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for lorenz (deferred: \"family-B: specialist inequality curve\", native-types.ts) — no spec can reach it today"
 intent: [distribution]
 shape: distribution
 limits: { maxSeries: 3 }

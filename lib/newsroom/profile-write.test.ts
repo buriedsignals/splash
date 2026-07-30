@@ -46,17 +46,30 @@ yours; Splash only created it. See NEWSROOM-PROFILE.example.md for every support
 });
 
 describe("profileMarkdown — what the charter path adds", () => {
-  it("should write a whole palette, an accent and a theme", () => {
+  it("should write a whole palette and a theme", () => {
     const md = profileMarkdown({
       palette: ["#d5121e", "#0a5c36"],
-      accent: "#0a5c36",
       theme: "#12161c",
       lang: "fr",
     });
     expect(md).toContain('  - "#d5121e"   # your house colour');
     expect(md).toContain('  - "#0a5c36"');
-    expect(md).toContain('accent: "#0a5c36"');
     expect(md).toContain('theme: "#12161c"');
+  });
+
+  it("should never write an accent line, even when one is handed in", () => {
+    // The charter stopped asking for an accent (no engine renders one). A caller that still
+    // passes the key must not get it back into the frontmatter — a NEWSROOM-PROFILE.md carrying
+    // `accent:` is a newsroom asked for a colour Splash never shows.
+    const md = profileMarkdown({
+      palette: ["#0072B2", "#D55E00"],
+      theme: "dark",
+      accent: "#C8102E",
+    } as unknown as Parameters<typeof profileMarkdown>[0]);
+    expect(md).toContain('  - "#0072B2"   # your house colour');
+    expect(md).toContain('  - "#D55E00"');
+    expect(md).toContain('theme: "dark"');
+    expect(md).not.toContain("accent");
   });
 
   it("should prefer an explicit palette over the single-colour field", () => {
@@ -81,7 +94,6 @@ describe("profileMarkdown — the reader must accept what the writer produces", 
   it("should round-trip every field through parseNewsroomMarkdown", () => {
     const md = profileMarkdown({
       palette: ["#d5121e", "#0a5c36"],
-      accent: "#0a5c36",
       name: "Heidi.news",
       url: "https://www.heidi.news",
       lang: "fr",
@@ -90,7 +102,6 @@ describe("profileMarkdown — the reader must accept what the writer produces", 
     });
     expect(parseNewsroomMarkdown(md)).toEqual({
       palette: ["#d5121e", "#0a5c36"],
-      accent: "#0a5c36",
       source: { name: "Heidi.news", url: "https://www.heidi.news" },
       lang: "fr",
       theme: "#12161c",

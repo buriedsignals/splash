@@ -70,6 +70,7 @@ import {
   decodeScreenshot,
   readPixelsAtPoints,
 } from "./lib/furniture-contrast-browser.mjs";
+import { lateRefusalSentence, recordLateRefusal } from "../../splash/src/late-refusal.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -81,6 +82,12 @@ await mkdir(outDir, { recursive: true });
 // "interactive" (vite-plugin-singlefile bundle, opened over file://, like snap-a11y.mjs/
 // snap-proof.mjs). Default "static" — the format produce.mjs builds first/most often.
 const mode = process.env.MODE === "interactive" ? "interactive" : "static";
+// The map archetype (choropleth/symbol/route/…) for the late-refusal subject — read off
+// the same CONFIG env produce.mjs threads to every snap (see snap-contrast.mjs's sibling
+// in chart-native, which gets it via CHART instead; map-native has no such env, only CONFIG).
+const type = process.env.CONFIG
+  ? (JSON.parse(readFileSync(process.env.CONFIG, "utf8")).type ?? "choropleth")
+  : "map";
 const serveDir =
   process.env.SERVE_DIR ?? join(root, "dist", mode === "interactive" ? "interactive" : "static");
 
@@ -211,12 +218,19 @@ console.log(
   JSON.stringify({ mode, checked: samples.length, violations }, null, 2),
 );
 if (violations.length) {
-  console.error(
-    `[snap-contrast map ${mode}] ${violations.length} furniture text label(s) below their WCAG floor (${MIN_CONTRAST}:1, or 3:1 for large-scale text):`,
-  );
+  const r = {
+    guard: "snap-contrast (map)",
+    subject: `${type}/${mode}`,
+    reason: `${violations.length} furniture text label(s) below their WCAG floor (${MIN_CONTRAST}:1, or 3:1 for large-scale text)`,
+    deviation:
+      "raise the contrast of the failing furniture label (a darker/lighter ink, or a different " +
+      "house ground), then produce again — this is measured on the render, so it cannot be told at the offer",
+  };
+  console.error(lateRefusalSentence(r));
   for (const v of violations) {
     console.error(`  ✗ "${v.text}" fill ${v.fill} worst-bg contrast ${v.worst}:1 (needs ${v.min}:1)`);
   }
+  recordLateRefusal(outDir, r);
   process.exit(1);
 }
 console.log(

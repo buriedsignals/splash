@@ -158,6 +158,12 @@ const FormOptionSchema = z.object({
       reason: z.string(),
     })
     .optional(),
+  /** Render limits this pairing DECLARES (lib/brain/offer.ts's OfferOption.limits): the form IS
+   *  buildable and will not do one specific thing. Persisted because the offer is SHOWN from the
+   *  manifest and verified from it (lib/loop/phrase.ts) — omit it here and zod strips the limit
+   *  before the journalist ever reads it, which also makes verifyOffer's limitsAcknowledged
+   *  guard unreachable on the production path. */
+  limits: z.array(z.string()).optional(),
 });
 // THE NARRATIVE PLAN of an article-branch deliverable — the beats a reader is walked through.
 //

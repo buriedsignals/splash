@@ -310,7 +310,7 @@ established.
 5. Constraint (conditional): mobile-first, deadline, house style. The mobile/deadline half fires
    only if relevant — but the **house-charter half fires whenever no `NEWSROOM-PROFILE.md` exists**
    (see ★ below): a missing file is a question owed, not a decision made.
-   - **Newsroom profile (F2):** the project's house style lives in `NEWSROOM-PROFILE.md` (palette + accent
+   - **Newsroom profile (F2):** the project's house style lives in `NEWSROOM-PROFILE.md` (palette
      + default `source` + `lang` + `credit` + `theme`; see `NEWSROOM-PROFILE.example.md`). It is **auto-applied
      at produce time** — `produce-all`'s `mergeProfileDefaults` merges it onto every spec as DEFAULTS (the
      per-element value always wins). **You do NOT load it manually; just ANNOUNCE** the house style is being
@@ -610,7 +610,7 @@ unrecorded signal is a signal the offer never sees. (This pipeline is the one wi
 to write it onto; Stage 2's `suggest-chart` above has none — its own format announcement is pinned
 straight onto that spec instead.)
 
-Four rules, all mechanical:
+Five rules, all mechanical:
 
 1. **`why` is rendered, not inherited.** A brain-built option arrives with `why: ""` — deliberately
    empty, because `whySource.fragments` are the KB's ENGLISH sentences and the journalist reads
@@ -645,6 +645,13 @@ Four rules, all mechanical:
    marked form and the choice stands. The one exception is a form nothing can build —
    `chooseForm` refuses it in the words the offer displayed, and the loop routes back to the
    choice rather than looping on a refusal. Say so plainly and offer the ranked alternatives again.
+5. **Une limite DÉCLARÉE est imprimée, pas résumée.** Une option peut porter `limits` : ce que la
+   forme, une fois construite, **ne fera pas** (« cette carte interactive ne sera pas navigable au
+   clavier »). Ce n'est pas une marque de readiness — la forme est constructible, elle est classée
+   normalement, et elle reste choisissable. Poser `limitsAcknowledged: true` sur le phrasage de
+   chaque option qui en porte une (le garde refuse le phrasage sinon, et refuse également le
+   drapeau sur une option qui n'en porte aucune), et **imprimer chaque phrase de `limits` à côté
+   du `why`** — les mots sont émis par le code, jamais restitués par le modèle.
 
 **★ THE DECISIONS ARE MECHANICAL — never hand-edit `run.json`.** A decision the journalist makes
 is written by CODE, with its own refusals, exactly like the offer is built by code. Editing the

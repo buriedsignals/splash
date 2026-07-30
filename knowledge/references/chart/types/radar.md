@@ -1,7 +1,7 @@
 ---
 id: radar
-engines:
-  chart-native: radar
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for radar (deferred: \"family-B: rare in a small newsroom\", native-types.ts) — no spec can reach it today"
 intent: [ranking]
 shape: wide
 limits: { minPoints: 3, maxSeries: 3 }

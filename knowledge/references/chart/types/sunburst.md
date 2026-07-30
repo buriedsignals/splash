@@ -1,7 +1,7 @@
 ---
 id: sunburst
-engines:
-  chart-native: sunburst
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for sunburst (deferred: \"family-B: needs a hierarchy\", native-types.ts) — no spec can reach it today"
 intent: [part-to-whole]
 shape: structural
 limits: {}

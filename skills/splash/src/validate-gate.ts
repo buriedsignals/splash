@@ -39,6 +39,21 @@ import {
   droppedSourceUrlReason,
 } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
+import { engineTypes, isRenderable } from "../../../lib/core/registry";
+// Side-effect import — the deferred-type guard below (deferredTypeError) reads the registry
+// this populates (each engine's manifest self-registers on import). This module must NOT rely
+// on some OTHER file having imported the manifests first: production is safe today only
+// because produce-all.mjs imports adapters.ts, which imports this same file (adapters.ts:33),
+// before validate-gate.ts ever runs — but that is a caller convention, not a guarantee this
+// file enforces, and a second real entry point (any process/test that imports validateAccepted
+// without going through adapters.ts) sees an EMPTY registry: engineTypes(producer) === [],
+// so the guard fails OPEN — it silently passes the exact deferred spec it exists to refuse.
+// A guard that cannot see its catalogue must fail loud, not silent; the fix is to make this
+// module self-sufficient rather than order-dependent. No cycle: none of the six manifests
+// (chart-native, map-native, scrolly, image-native, dw-chart, map-dw) import validate-gate.ts,
+// adapters.ts, or anything else in skills/splash — verified by grepping every manifest.ts's
+// import list.
+import "./register-producers";
 
 export type ValidationOutcome =
   { ok: true; warnings: string[] } | { ok: false; errors: string[] };
@@ -80,13 +95,34 @@ function validateMapNative(spec: unknown): ValidationOutcome {
 // chart-native validates by construction: specToNativeConfig runs validateShape and
 // throws UnsupportedNativeType for a type it cannot map. An unmapped type is NOT a
 // validation failure — it is the FALLBACK_TO_DW path the dispatch already handles — so it
-// passes here; only a genuinely malformed spec (bad shape) is rejected.
-function validateNative(spec: unknown): ValidationOutcome {
+// passes here; only a genuinely malformed spec (bad shape) is rejected. But a silent pass
+// is what §6④ forbids: a typo'd nativeType went through with not even a warning. NOT an
+// error — promoting this to a failure would close the measured FALLBACK_TO_DW capability —
+// so name the type and the fallback it takes, as a warning. The fallback differs by producer:
+// chart-native has an automatic Datawrapper fallback; scrolly does not.
+function validateNative(
+  spec: unknown,
+  producer: "chart-native" | "scrolly",
+): ValidationOutcome {
   try {
     specToNativeConfig(spec as NativeSpec);
     return { ok: true, warnings: [] };
   } catch (e) {
-    if (e instanceof UnsupportedNativeType) return { ok: true, warnings: [] };
+    if (e instanceof UnsupportedNativeType) {
+      const t = (spec as { nativeType?: unknown } | null)?.nativeType;
+      const warningText =
+        producer === "chart-native"
+          ? `nativeType "${String(t)}" has no chart-native mapper — this element will be ` +
+            "routed to Datawrapper instead. If that was a typo, fix it; if it was " +
+            "deliberate, nothing to do."
+          : `nativeType "${String(t)}" has no chart-native mapper — scrolly chart tracks ` +
+            "do not have an automatic Datawrapper fallback. The type must be mapped or the " +
+            "element produced differently.";
+      return {
+        ok: true,
+        warnings: [warningText],
+      };
+    }
     return { ok: false, errors: [e instanceof Error ? e.message : String(e)] };
   }
 }
@@ -104,7 +140,7 @@ function validateScrolly(spec: unknown): ValidationOutcome {
   const hasNativeType =
     typeof (spec as { nativeType?: unknown } | null)?.nativeType === "string";
   if (hasNativeType) {
-    const outcome = validateNative(spec);
+    const outcome = validateNative(spec, "scrolly");
     const beatErrors = narrativeBeatErrors(spec as NativeSpec);
     if (beatErrors.length)
       return {
@@ -594,6 +630,48 @@ function skillsInvokedIssues(p: AcceptedProposal): {
   return { errors: [], warnings: [] };
 }
 
+// GUARD — a deferred type is a MAINTAINER's door, not a journalist's (except where no such
+// door exists at all — see map-dw below). The registry already answers this (`isRenderable` =
+// declared by that engine AND not deferred, registry.ts:123); nothing consulted it on this
+// path. Most engines' own validators stay unchanged on purpose: dw-chart's manifest DECLARES
+// that deferred types remain producible "if asked for by name" (manifest.ts:18-20), and that
+// door is kept; chart-native's family-B deferred types are the same shape (declared, no
+// MAPPERS entry, `nativeSpecErrors` unchanged). What closes here is the entry a journalist
+// uses. The refusal quotes the manifest's OWN prose reason, so the offer's mark and this
+// refusal are one wording.
+// Three field names, because the three spec shapes this reads from disagree: dw-chart and
+// chart-native/scrolly key on `type`/`nativeType` respectively; map-dw keys on `mapType`
+// (map-spec.ts:57,108,151 — a THIRD, distinct field, not an alias of the other two). map-dw's
+// one deferred entry ("symbol", manifest.ts) is unlike the other two engines' deferred sets:
+// `validateMapSpec`'s OWN symbol branch unconditionally pushes an error for every symbol spec,
+// well-formed or not (map-spec.ts:433-435) — there is no maintainer door to preserve there,
+// only an earlier, more informative refusal (the manifest's reason names the map-native
+// redirect instead of a generic Datawrapper-hover-only paragraph).
+function deferredTypeError(p: AcceptedProposal): string | null {
+  const spec = p.spec as {
+    nativeType?: unknown;
+    type?: unknown;
+    mapType?: unknown;
+  } | null;
+  const typeId =
+    typeof spec?.nativeType === "string"
+      ? spec.nativeType
+      : typeof spec?.type === "string"
+        ? spec.type
+        : typeof spec?.mapType === "string"
+          ? spec.mapType
+          : null;
+  if (!typeId) return null;
+  const declared = engineTypes(p.producer).some((t) => t.id === typeId);
+  if (!declared) return null; // an undeclared type is another guard's business
+  if (isRenderable(p.producer, typeId)) return null;
+  const reason = engineTypes(p.producer).find((t) => t.id === typeId)?.deferred;
+  return (
+    `"${typeId}" is not an offerable ${p.producer} type: ${reason ?? "it is deferred"}. ` +
+    "Choose a type the knowledge base models, or ask a maintainer to call the engine directly."
+  );
+}
+
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
 // cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
 // (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
@@ -607,6 +685,8 @@ export function validateAccepted(
   p: AcceptedProposal,
   batch: AcceptedProposal[] = [],
 ): ValidationOutcome {
+  const deferred = deferredTypeError(p);
+  if (deferred) return { ok: false, errors: [deferred] };
   const outcome = validateByProducer(p);
   const extraErrors: string[] = [];
   const missingTakeaway = missingConfirmedTakeawayError(p);
@@ -685,7 +765,7 @@ function validateByProducer(p: AcceptedProposal): ValidationOutcome {
     case "scrolly":
       return validateScrolly(p.spec);
     case "chart-native":
-      return validateNative(p.spec);
+      return validateNative(p.spec, "chart-native");
     case "image-native":
       return validateImageNative(p.spec, p.format);
     default: {

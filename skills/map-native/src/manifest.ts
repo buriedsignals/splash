@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { registerProducer } from "../../../lib/core/registry";
 import { mapNativeConfigErrors } from "./validate-config";
 import { MAP_TYPES } from "./map-types";
+import "./feature-limits";
 
 const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 

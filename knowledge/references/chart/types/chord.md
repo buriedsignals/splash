@@ -1,7 +1,7 @@
 ---
 id: chord
-engines:
-  chart-native: chord
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for chord (deferred: \"family-B: needs a flow matrix\", native-types.ts) — no spec can reach it today"
 intent: [flow]
 shape: structural
 limits: { maxCategories: 8 }

@@ -16,12 +16,11 @@ import { BUMP_ACCENT_COLORS } from "./core/tokens";
  *
  *   - a SINGLE highlighted line (or none — bump-geometry marks every line highlighted
  *     when `highlight` is empty, so they share one accent) uses `baseColor` (the
- *     subject-fit hue), falling back to `seriesColors[0]`, then the brand-profile
- *     story `accent` (editorial emphasis), then the BUMP_ACCENT_COLORS default.
+ *     subject-fit hue), falling back to `seriesColors[0]`, then the BUMP_ACCENT_COLORS
+ *     default.
  *   - MULTIPLE highlighted lines use `seriesColors` in highlight order (baseColor is,
  *     by definition, a single primary hue — several distinct lines need seriesColors);
- *     uncoloured slots fall back straight to BUMP_ACCENT_COLORS, cycled by index —
- *     `accent` does not apply here, so per-slot cycling is untouched.
+ *     uncoloured slots fall back straight to BUMP_ACCENT_COLORS, cycled by index.
  *
  * The result has one entry per highlighted line; with no highlight it has a single
  * entry — the accent every line shares. Non-highlighted lines are neutral COLORS.muted
@@ -32,23 +31,18 @@ export function resolveBumpAccents(
   colors: {
     baseColor?: string;
     seriesColors?: readonly string[];
-    /** editorial-emphasis hue (brand-profile story accent). Only the SHARED/PEAK
-     *  accent slot — the single-highlight case — reads it; multi-highlight
-     *  per-slot BUMP_ACCENT_COLORS cycling is untouched. Absent → byte-identical. */
-    accent?: string;
   } = {},
 ): string[] {
   const clean = (v: unknown): string | undefined =>
     typeof v === "string" && v.trim() ? v : undefined;
   const base = clean(colors.baseColor);
-  const accent = clean(colors.accent);
   const series = (colors.seriesColors ?? [])
     .map(clean)
     .filter((c): c is string => c !== undefined);
   const count = Math.max(1, highlight?.length ?? 0);
   const fallback = (i: number) =>
     BUMP_ACCENT_COLORS[i % BUMP_ACCENT_COLORS.length];
-  if (count === 1) return [base ?? series[0] ?? accent ?? fallback(0)];
+  if (count === 1) return [base ?? series[0] ?? fallback(0)];
   return Array.from({ length: count }, (_, i) => series[i] ?? fallback(i));
 }
 

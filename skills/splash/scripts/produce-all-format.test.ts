@@ -186,6 +186,7 @@ describe("realDispatch — dw-chart threads the proposal's format into produceCh
             title: "Format-threading smoke test (produce-all-format.test.ts)",
             data: "year,value\n2020,1\n2021,2",
             altInsight: "value doubled from 2020 to 2021",
+            source: { name: "sample data" },
           },
         }),
         outDir,

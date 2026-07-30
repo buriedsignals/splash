@@ -1,6 +1,16 @@
 import { describe, expect, it } from "bun:test";
+import { execFileSync } from "node:child_process";
+import { writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { validateAccepted } from "./validate-gate";
 import type { AcceptedProposal } from "./producer-spec";
+import { validateChartSpec } from "../../dw-chart/src/chart-spec";
+import { nativeSpecErrors } from "../../chart-native/src/spec-to-config";
+import { validateMapSpec } from "../../map-dw/src/map-spec";
+// NOTE: no side-effect "./register-producers" import here on purpose — validate-gate.ts now
+// imports it itself (self-sufficient guard, see its top-of-file comment), so this test exercises
+// the same registry state a real caller gets from importing validateAccepted alone.
 
 const base = {
   id: "x",
@@ -42,10 +52,16 @@ describe("validateAccepted — the spine validation gate", () => {
     expect(r.ok).toBe(true);
   });
 
-  it("passes a chart-native spec whose type is UNMAPPED (FALLBACK_TO_DW, not a validation failure)", () => {
+  // "sankey" moved out of this test (see "the journalist spine refuses a deferred type by
+  // name" below): it is DECLARED in NATIVE_TYPES with a `deferred` reason (family-B, no
+  // MAPPERS entry) — the exact case that guard now refuses BY NAME. This test keeps the
+  // FALLBACK_TO_DW/UnsupportedNativeType pass-through for a type that is not declared AT
+  // ALL (a typo, never in NATIVE_TYPES) — the deferred guard's `declared` check is false for
+  // it, so it is untouched, someone else's business (Task 8).
+  it("passes a chart-native spec whose type is UNDECLARED (FALLBACK_TO_DW, not a validation failure)", () => {
     const r = validateAccepted(
       accept("chart-native", {
-        nativeType: "sankey",
+        nativeType: "widget-xyz",
         title: "x",
         source: { name: "s" },
         unit: "u",
@@ -412,6 +428,7 @@ describe("validateAccepted — the spine validation gate", () => {
           baseColor: "#009E73",
           data: "country,rate\nEstonia,63\nMalta,31",
           altInsight: "Estonia recycles the most packaging waste in Europe.",
+          source: { name: "Eurostat" },
         },
         "article-web",
       ),
@@ -585,5 +602,305 @@ describe("validateAccepted — the spine validation gate", () => {
           ).toHaveLength(1);
       });
     });
+  });
+});
+
+describe("the journalist spine refuses a deferred type by name", () => {
+  // `multiple-lines` EXISTS in CHART_TYPES (chart-spec.ts) — the engine validator is right
+  // to accept it. It is marked deferred in the manifest (dw-chart/src/manifest.ts) because no
+  // KB sheet models it, and `deferred` was consulted by no validator. A journalist must never
+  // receive a type the KB does not model.
+  // `multiple-lines` is also a MULTI_SERIES_TYPES entry (chart-spec.ts), which requires >=3
+  // data columns — a 2-column fixture would fail validateChartSpec on shape alone, which
+  // would mask the guard under test; the fixture below carries 3 columns so the ONLY thing
+  // that can fail it is the deferred-type guard.
+  const multipleLinesSpec = {
+    type: "multiple-lines",
+    title: "T",
+    data: "category,seriesA,seriesB\n2020,1,2\n2021,3,4",
+    altInsight: "a",
+    source: { name: "S" },
+  };
+
+  it("should refuse a dw-chart proposal for a deferred type", () => {
+    const out = validateAccepted({
+      ...accept("dw-chart", multipleLinesSpec),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.errors.join(" ")).toContain("multiple-lines");
+      // the manifest's own prose reason, not a maintainer's paraphrase
+      expect(out.errors.join(" ")).toContain("small-multiples");
+    }
+  });
+
+  // Regression for the fail-open bug a reviewer proved by measurement: a FRESH process that
+  // imports ONLY validate-gate.ts (never adapters.ts, never register-producers.ts directly)
+  // must still refuse the deferred spec. Before validate-gate.ts imported "./register-producers"
+  // itself, this exact scenario returned {"ok":true, ...} — the guard silently passed the very
+  // spec it exists to refuse, because engineTypes("dw-chart") read an empty, never-populated
+  // registry. A same-process unit test cannot catch this (module caching means once ANY earlier
+  // test in the same bun process has imported the manifests, the registry looks populated no
+  // matter what this file imports) — it requires a genuinely separate process, so this spawns
+  // one.
+  it("should refuse the deferred spec even from a process that imports validate-gate.ts alone", () => {
+    const dir = mkdtempSync(join(tmpdir(), "validate-gate-fresh-process-"));
+    const scriptPath = join(dir, "probe.mjs");
+    const validateGatePath = join(import.meta.dir, "validate-gate.ts");
+    const proposal = {
+      id: "x",
+      producer: "dw-chart",
+      format: "static",
+      confirmedTakeaway: "The confirmed takeaway for this fixture",
+      channel: "article-web",
+      spec: multipleLinesSpec,
+    };
+    const script =
+      `import { validateAccepted } from ${JSON.stringify(validateGatePath)};\n` +
+      `const out = validateAccepted(${JSON.stringify(proposal)});\n` +
+      `console.log(JSON.stringify(out));\n`;
+    writeFileSync(scriptPath, script);
+    const stdout = execFileSync("bun", [scriptPath], { encoding: "utf8" });
+    const out = JSON.parse(stdout) as
+      { ok: true; warnings: string[] } | { ok: false; errors: string[] };
+    expect(out.ok).toBe(false);
+    if (!out.ok) expect(out.errors.join(" ")).toContain("multiple-lines");
+  });
+
+  it("should leave the ENGINE validator's maintainer door open", () => {
+    // Same spec, straight to the engine: still accepted. That door is declared
+    // (dw-chart/src/manifest.ts) and is deliberately kept.
+    const r = validateChartSpec(multipleLinesSpec);
+    expect(r.ok).toBe(true);
+  });
+
+  it("should pass a non-deferred type through unchanged", () => {
+    const out = validateAccepted({
+      ...accept("dw-chart", {
+        type: "d3-lines",
+        title: "T",
+        data: "a,b\n1,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(true);
+  });
+
+  // The guard reads the shared registry (lib/core/registry.ts), not a dw-chart special case —
+  // it refuses a declared-deferred type on every engine whose manifest DECLARES one, across
+  // all three field names the codebase's spec shapes actually use (`nativeType`, `type`,
+  // `mapType` — see deferredTypeError's own comment). chart-native's own family-B entries
+  // (native-types.ts) are declared with a `deferred` reason and no MAPPERS implementation
+  // ("sankey": "family-B: needs nodes+links") — the same shape of fact dw-chart's
+  // NOT_KB_MODELED table states, on a different engine. `scrolly` is NOT a fourth engine to
+  // cover here: its manifest declares no `types` of its own on purpose (registry.ts's own
+  // "Absent/empty ⇒ the engine owns no type of its own") — a scrolly proposal's real type
+  // lives on its HOST engine's spec, dispatched by producer, not read through `producer:
+  // "scrolly"`.
+  it("should refuse a chart-native proposal for a declared, deferred nativeType (family-B)", () => {
+    const out = validateAccepted({
+      ...accept("chart-native", {
+        nativeType: "sankey",
+        title: "x",
+        source: { name: "s" },
+        unit: "u",
+        data: "a,b\n1,2",
+      }),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.errors.join(" ")).toContain("sankey");
+      expect(out.errors.join(" ")).toContain("family-B");
+    }
+  });
+
+  it("should leave chart-native's own maintainer door open for the same type", () => {
+    // nativeSpecErrors/specToNativeConfig are UNCHANGED by this task (the decision's whole
+    // point) — a maintainer calling the engine directly still gets the FALLBACK_TO_DW pass,
+    // not a validation error.
+    const errors = nativeSpecErrors({
+      nativeType: "sankey",
+      title: "x",
+      source: { name: "s" },
+      unit: "u",
+      data: "a,b\n1,2",
+    });
+    expect(errors).toEqual([]);
+  });
+
+  // map-dw keys its type on `mapType`, a THIRD field name distinct from `type`/`nativeType` —
+  // this is the field the extraction must ALSO read for the guard to be genuinely
+  // engine-agnostic rather than only covering the two engines its original test happened to
+  // exercise. `"symbol"` is map-dw's one declared-deferred entry (manifest.ts), reason:
+  // "not producible — DW symbol maps are hover-only; route to map-native".
+  const symbolSpec = {
+    mapType: "symbol",
+    basemap: "world",
+    latColumn: "lat",
+    lonColumn: "lon",
+    sizeColumn: "value",
+    data: "lat,lon,value\n48.85,2.35,100\n51.5,-0.12,80",
+    title: "T",
+    altInsight: "a",
+    source: { name: "S" },
+  };
+
+  it("should refuse a map-dw proposal for a deferred mapType (symbol), via the GUARD specifically", () => {
+    const out = validateAccepted({
+      ...accept("map-dw", symbolSpec),
+      channel: "article-web",
+    });
+    expect(out.ok).toBe(false);
+    if (!out.ok) {
+      expect(out.errors.join(" ")).toContain("symbol");
+      // the manifest's own prose reason, naming the redirect
+      expect(out.errors.join(" ")).toContain("map-native");
+      // Distinguishes the GUARD's refusal from validateMapSpec's OWN unconditional symbol
+      // rejection (map-spec.ts:433-435, "symbol maps are not producible by map-dw: ...") —
+      // map-dw is the one engine here where the underlying validator ALSO always fails this
+      // spec, so an assertion on `ok === false` alone would stay green even with the guard
+      // deleted. `"is not an offerable"` is the guard's own wording (deferredTypeError), never
+      // produced by validateMapSpec — this is what actually reddens under mutation.
+      expect(out.errors.join(" ")).toContain("is not an offerable");
+    }
+  });
+
+  it("has NO maintainer door for map-dw symbol — unlike dw-chart/chart-native, the engine's own validator ALSO rejects it unconditionally", () => {
+    // Confirms map-dw's `symbol` is architecturally different from the other two engines'
+    // deferred types: there is no direct-engine-call escape hatch to prove stays open, because
+    // none exists. validateMapSpec's own symbol branch pushes this error for every symbol
+    // spec, well-formed or not (map-spec.ts:433-435) — the guard above changes WHEN this spec
+    // is refused (earlier, with a more useful message), never WHETHER a real capability is
+    // lost.
+    const r = validateMapSpec(symbolSpec);
+    expect(r.ok).toBe(false);
+    if (!r.ok)
+      expect(r.errors.join(" ")).toContain("symbol maps are not producible");
+  });
+
+  it("should pass a non-deferred map-dw mapType through unchanged", () => {
+    const out = validateAccepted({
+      ...accept("map-dw", {
+        mapType: "choropleth",
+        basemap: "world-2019",
+        mapKeyAttr: "DW_NAME",
+        regionKey: "region",
+        valueColumn: "value",
+        data: "region,value\nNord,42\nSud,12\n",
+        title: "Unemployment by region",
+        altInsight: "Unemployment peaks at 42% in the north.",
+        source: { name: "S" },
+      }),
+      channel: "article-web",
+      confirmedTakeaway: "Unemployment peaks at 42% in the north",
+    });
+    expect(out.ok).toBe(true);
+  });
+});
+
+describe("an unknown nativeType is not a silent pass (Task 8)", () => {
+  // Fixture element carrying the failure: "bra" is a typo for "bar" — it is not in
+  // NATIVE_TYPES at all (undeclared), so deferredTypeError's `declared` check is false and
+  // this is entirely validateNative's business, never task 7's deferred-type refusal.
+  it("should warn, naming the type and the fallback it takes", () => {
+    const out = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bra", // a typo for "bar"
+        title: "T",
+        data: "a,b\n1,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+    );
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.warnings.join(" ")).toContain("bra");
+      expect(out.warnings.join(" ")).toContain("Datawrapper");
+    }
+  });
+
+  // GREEN PATH — the mutation this guard must never cause: a normal, KNOWN nativeType (the
+  // healthy path every real chart-native proposal takes) must produce NO warning at all. A
+  // warning that fires on every run trains people to ignore it. `skillsInvoked` is set here
+  // (unlike most fixtures in this file) to suppress the unrelated GUARD-5 observability
+  // warning, so the empty-array assertion below is isolated to THIS guard, not a coincidence
+  // of which other warnings happen not to fire.
+  it("does NOT warn on a normal, known nativeType (the healthy path)", () => {
+    const out = validateAccepted({
+      ...accept("chart-native", {
+        nativeType: "bar",
+        title: "T",
+        data: "category,value\nA,1\nB,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+      skillsInvoked: ["splash:cadrage-direct"],
+    });
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.warnings).toEqual([]);
+  });
+
+  // The gap Task 7 left open, ADJUDICATED here with a measurement (not assumed): a scrolly
+  // proposal carries its chart type on `spec.nativeType`, but `deferredTypeError` (Task 7)
+  // keys its `declared` check on `engineTypes(p.producer)`, and `engineTypes("scrolly")` is
+  // EMPTY by design (registry.ts — scrolly owns no type of its own) — so a scrolly whose
+  // underlying chart type is DEFERRED (declared, family-B, no MAPPERS entry — "sankey" is
+  // chart-native's own family-B example, same as the "should refuse a chart-native proposal
+  // for a declared, deferred nativeType" test above) sails past task 7's guard untouched.
+  // Measured on the unpatched base (probe script, see task-8-report.md): that scrolly
+  // returned `{ok: true, warnings: [...only the unrelated skillsInvoked warning...]}` —
+  // completely silent about "sankey". After this task's fix, validateScrolly's chart track
+  // calls validateNative (same function as the top-level chart-native producer; scrolly does
+  // NOT have its own copy), and specToNativeConfig throws UnsupportedNativeType for "sankey"
+  // exactly as it does for a genuine typo (no MAPPERS entry either way) — so THIS guard now
+  // fires and the silence is closed to a WARNING (verdict (a); it does not upgrade to task 7's
+  // hard refusal — a scrolly-embedded deferred type is not currently pinnable to that harder
+  // path without teaching deferredTypeError to look inside `producer: "scrolly"` specs, which
+  // is explicitly out of scope per this task's brief and per the "scrolly is NOT a fourth
+  // engine to cover" note above).
+  it("ADJUDICATION: closes the scrolly gap — a scrolly with a deferred chart nativeType now WARNS instead of passing in total silence", () => {
+    const out = validateAccepted(
+      accept("scrolly", {
+        nativeType: "sankey",
+        title: "x",
+        source: { name: "s" },
+        unit: "u",
+        data: "a,b\n1,2",
+      }),
+    );
+    // Still NOT a hard refusal (task 7's guard does not see it — see comment above); the gap
+    // is closed from "total silence" to "warned", not upgraded to an error.
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.warnings.join(" ")).toContain("sankey");
+      // Scrolly does NOT have an automatic Datawrapper fallback, so the warning must NOT claim one
+      expect(out.warnings.join(" ")).not.toContain(
+        "routed to Datawrapper instead",
+      );
+      // The warning should instead describe the actual constraint
+      expect(out.warnings.join(" ")).toContain("do not have an automatic");
+    }
+  });
+
+  // Regression: the chart-native path still gets the Datawrapper fallback wording
+  it("the chart-native path still promises an automatic Datawrapper fallback for an unknown type", () => {
+    const out = validateAccepted(
+      accept("chart-native", {
+        nativeType: "bra", // a typo for "bar"
+        title: "T",
+        data: "a,b\n1,2",
+        altInsight: "a",
+        source: { name: "S" },
+      }),
+    );
+    expect(out.ok).toBe(true);
+    if (out.ok) {
+      expect(out.warnings.join(" ")).toContain("bra");
+      expect(out.warnings.join(" ")).toContain("routed to Datawrapper instead");
+    }
   });
 });

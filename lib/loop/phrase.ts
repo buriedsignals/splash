@@ -34,6 +34,7 @@ function offerFromManifest(options: FormOption[]): Offer {
         intent: o.intent,
         ...(o.requires ? { requires: o.requires } : {}),
         ...(o.readiness ? { readiness: o.readiness } : {}),
+        ...(o.limits ? { limits: o.limits } : {}),
         whySource: o.whySource,
       };
     }),

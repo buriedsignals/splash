@@ -6,6 +6,7 @@ import {
 } from "../../dw-chart/src/chart-spec";
 import { validJoinKeysFor, regionCountFor } from "./basemap-keys";
 import { columnValues } from "./join-match";
+import { SYMBOL_LABELS_INTERACTIVE } from "../../map-native/src/feature-limits";
 
 export interface GradientStop {
   color: string; // hex
@@ -427,11 +428,27 @@ export function validateMapSpec(
     // symbol map can ONLY ship mute, unlabeled circles — no place identifiable, no value
     // readable without hover — which violates the project rule "the data must be legible WITHOUT
     // hover" (render-confirmed on aeroports-trafic + frontaliers-dots: not one symbol labeled).
-    // It is therefore NOT a producible map-dw output: route it to map-native, whose
-    // proportional-symbol renderer directly labels the top-N circles by name + value and whose
-    // conformance asserts `labeled` (skills/map-native/src/conformance.ts checkSymbolConformance).
+    // It is therefore NOT a producible map-dw output: route it to map-native, whose STATIC
+    // symbol renderer mounts the direct-label layer UNCONDITIONALLY (name + value per circle;
+    // SymbolMap.tsx's `if (!interactive || staticFallbackLabels)` is always taken on the static
+    // path) — that renderer, not a guard, is what makes the claim true. The conformance cannot check it today: checkSymbolConformance IS wired at produce
+    // since 2026-07-29 (skills/map-native/src/core/map-produce-conformance.ts), but it is fed
+    // `labeled: config.labeled !== false` and `labeled` is not a real config field (same status
+    // the neighbouring comment grants `maxRadius`), so the value is always true and the
+    // `!input.labeled` rule can never fire on a real config. It ASSUMES labeled; it does not
+    // assert it. The INTERACTIVE map-native render is hover-only — that limit is
+    // declared once, in map-native's own words (feature-limits.ts), and quoted here rather
+    // than restated: this refusal used to promise the render selectively labels a top-ranked
+    // subset of circles — no such ranking/limiting exists anywhere (symbol-geo.ts maps every
+    // point); the truth is binary, not selective: ALL circles labeled (static) or NONE
+    // always-visible (interactive, hover-only).
     errors.push(
-      'symbol maps are not producible by map-dw: Datawrapper draws proportional circles with values on HOVER only (no always-visible data-value labels on symbols — Datawrapper Academy), so the owned static PNG ships mute, unlabeled circles that cannot carry the claim without interaction; route to map-native instead (producer:"map-native", type:"symbol"), which directly labels the top-N circles by name + value',
+      "symbol maps are not producible by map-dw: Datawrapper draws proportional circles with " +
+        "values on HOVER only (no always-visible data-value labels on symbols — Datawrapper " +
+        "Academy), so the owned static PNG ships mute, unlabeled circles that cannot carry the " +
+        'claim without interaction; route to map-native instead (producer:"map-native", ' +
+        'type:"symbol"), whose STATIC render labels every circle by name + value. Note: ' +
+        SYMBOL_LABELS_INTERACTIVE,
     );
   } else {
     // locator

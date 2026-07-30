@@ -23,6 +23,20 @@ const BASE = {
   channel: "article-web",
 } as const;
 
+// A real KB, spatial-shaped dataset — the eligibility layer never checks geo shape, only the
+// numeric limits and format/channel legality, so a plain 2-column dataset is enough to make
+// map-native's real sheets (hex-grid, choropleth, cartogram, proportional-symbol…) legal.
+function inputForMapSymbolInteractive() {
+  return {
+    facts: deriveFacts({
+      columns: ["city", "population"],
+      numericColumns: ["population"],
+      rowCount: 10,
+    }),
+    channel: "article-web" as const,
+  };
+}
+
 // A minimal, valid TypeSheet fixture for tests that need to isolate one engine pairing from
 // the real KB's coincidences (e.g. every real dw-chart/map-dw sheet in this KB also names a
 // non-Datawrapper engine, so a real sheet alone cannot prove a Datawrapper-only refusal
@@ -45,6 +59,21 @@ function fakeSheet(
     body: "",
   };
 }
+
+// Task 21 — a declared render limit (lib/core/feature-reach.ts, task 19; fed by map-native,
+// task 20) travels onto the Candidate that carries it.
+it("should carry a measured render limit without changing what is legal", () => {
+  const { eligible: legal } = eligible(inputForMapSymbolInteractive());
+  const c = legal.find(
+    (x) => x.engine === "map-native" && x.format === "interactive",
+  );
+  expect(c).toBeDefined();
+  // declared, NOT marked: eligibility.ts's own imageWalkMark header records that a `missing`
+  // readiness makes a form unreachable (rank tier 2 + the 3-row offer cap). A keyboard limit
+  // must inform, not remove — decision 5, 2026-07-29.
+  expect(c!.readiness).toBeUndefined();
+  expect(c!.limits?.join(" ")).toContain("keyboard");
+});
 
 test("a two-point wide dataset makes slope legal", () => {
   const { eligible: ok } = eligible({ ...BASE });
@@ -588,7 +617,7 @@ function realPair(id: string) {
   return {
     sheet,
     engine: "chart-native",
-    key: sheet.engines["chart-native"][0],
+    key: sheet.id,
   };
 }
 

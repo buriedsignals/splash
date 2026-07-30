@@ -47,40 +47,68 @@ export const LIMIT_KEYS = Object.keys(LimitsSchema.shape) as (keyof z.infer<
   typeof LimitsSchema
 >)[];
 
-const HeaderSchema = z.object({
-  id: z.string().min(1),
-  engines: z
-    .record(z.string(), EngineKeys)
-    .refine((e) => Object.keys(e).length > 0, {
-      message: "engines: a sheet must name at least one engine",
-    })
-    .transform((e) =>
-      Object.fromEntries(
-        Object.entries(e).map(([engine, keys]) => [
-          engine,
-          Array.isArray(keys) ? keys : [keys],
-        ]),
+const HeaderSchema = z
+  .object({
+    id: z.string().min(1),
+    engines: z
+      .record(z.string(), EngineKeys)
+      .transform((e) =>
+        Object.fromEntries(
+          Object.entries(e).map(([engine, keys]) => [
+            engine,
+            Array.isArray(keys) ? keys : [keys],
+          ]),
+        ),
       ),
-    ),
-  intent: z.array(z.enum(INTENTS)).min(1),
-  shape: z.string().min(1),
-  // CLOSED, and closed for the same reason `intent` and `formats` are: a facet the loader
-  // accepts but nothing measures is a facet silently dropped. These six keys are exactly what
-  // eligibility.ts's limitFailure() checks, and each one is measurable from lib/brain/facts.ts
-  // — nothing else is. An open `z.record(z.string(), z.number())` let a typo (`maxSerie: 5`)
-  // or a limit measuring something the facts do not carry (`maxAxes: 3`) validate cleanly and
-  // then vanish, making the form offerable where its own sheet says it should not be. A strict
-  // object refuses the unknown key BY NAME instead. Adding a key here is a promise that
-  // limitFailure() checks it — that promise used to be held ONLY by this comment: a key added
-  // here without a matching branch in limitFailure() validated clean and then degraded in
-  // silence (the exact failure mode the strict object exists to prevent, just reached from the
-  // other side). `LIMIT_KEYS` below turns the promise into a fixture: eligibility-drift.test.ts
-  // reads it — not a hand-copied list of its own — and proves each one actually excludes.
-  limits: LimitsSchema.default({}),
-  formats: z.array(z.enum(VISUAL_FORMATS)).min(1),
-  bestFor: z.array(z.string().min(1)).min(1),
-  notFor: z.array(z.string().min(1)).min(1),
-});
+    // WHY this form reaches no engine TODAY — required exactly when `engines` is empty, and
+    // refused when it is not (enforced below in .superRefine, since it is a cross-field rule).
+    // A sheet's job is to say WHEN a form serves the story (bestFor/notFor); without this field
+    // the only way to stop a sheet from claiming a constructibility it does not have was to
+    // delete its editorial body too. Mechanical consequence of the decision that the CODE is
+    // authoritative for what is renderable, not the sheet — a sheet can now say "no engine
+    // reaches me today" without lying about having one.
+    unreachable: z.string().min(1).optional(),
+    intent: z.array(z.enum(INTENTS)).min(1),
+    shape: z.string().min(1),
+    // CLOSED, and closed for the same reason `intent` and `formats` are: a facet the loader
+    // accepts but nothing measures is a facet silently dropped. These six keys are exactly what
+    // eligibility.ts's limitFailure() checks, and each one is measurable from lib/brain/facts.ts
+    // — nothing else is. An open `z.record(z.string(), z.number())` let a typo (`maxSerie: 5`)
+    // or a limit measuring something the facts do not carry (`maxAxes: 3`) validate cleanly and
+    // then vanish, making the form offerable where its own sheet says it should not be. A strict
+    // object refuses the unknown key BY NAME instead. Adding a key here is a promise that
+    // limitFailure() checks it — that promise used to be held ONLY by this comment: a key added
+    // here without a matching branch in limitFailure() validated clean and then degraded in
+    // silence (the exact failure mode the strict object exists to prevent, just reached from the
+    // other side). `LIMIT_KEYS` below turns the promise into a fixture: eligibility-drift.test.ts
+    // reads it — not a hand-copied list of its own — and proves each one actually excludes.
+    limits: LimitsSchema.default({}),
+    formats: z.array(z.enum(VISUAL_FORMATS)).min(1),
+    bestFor: z.array(z.string().min(1)).min(1),
+    notFor: z.array(z.string().min(1)).min(1),
+  })
+  .superRefine((h, ctx) => {
+    const named = Object.keys(h.engines).length > 0;
+    if (!named && !h.unreachable)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          'engines: a sheet must name at least one engine, or state `unreachable: "<why>"`',
+      });
+    if (named && h.unreachable)
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "unreachable: contradicts the engines this sheet names — state one or the other",
+      });
+  });
+
+/** Parses a raw header object against `HeaderSchema` without touching disk — the only way to
+ *  unit-test the schema's cross-field rules (see typology.test.ts) without writing a fixture
+ *  file for every case. */
+export function parseSheetHeader(data: unknown): z.infer<typeof HeaderSchema> {
+  return HeaderSchema.parse(data);
+}
 
 export type TypeSheet = z.infer<typeof HeaderSchema> & {
   /** Repo-relative path to the sheet, e.g. "knowledge/references/chart/types/slope.md" —

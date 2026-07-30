@@ -272,3 +272,61 @@ describe("narrativeConsiderationWarning — Tom #3, surfaced by the tool (menu-l
     expect(narrativeConsiderationWarning(json)).toBeString();
   });
 });
+
+describe("the narrative warning names an alternative, not just a family", () => {
+  const menuWithoutNarrative = {
+    candidates: [{ type: "bar", producer: "chart-native" }],
+  };
+
+  it("should name the chart-scrolly a bar could have taken", () => {
+    const w = narrativeConsiderationWarning(menuWithoutNarrative, [
+      {
+        producer: "chart-native",
+        format: "static",
+        spec: { nativeType: "bar" },
+      },
+    ]);
+    expect(w).not.toBeNull();
+    expect(w!).toContain("chart-scrolly");
+    expect(w!).toContain("bar");
+  });
+
+  it("should name the map-scrolly a choropleth could have taken", () => {
+    const w = narrativeConsiderationWarning(menuWithoutNarrative, [
+      {
+        producer: "map-native",
+        format: "static",
+        spec: { type: "choropleth" },
+      },
+    ]);
+    expect(w!).toContain("map-scrolly");
+    expect(w!).toContain("choropleth");
+  });
+
+  it("should say plainly when this element has no narrative sibling", () => {
+    // A treemap has no authorable scrolly (AUTHORABLE_SCROLLY_TYPES = ["line", "bar"]).
+    // Naming one anyway would be the same false promise this family exists to close.
+    const w = narrativeConsiderationWarning(menuWithoutNarrative, [
+      {
+        producer: "chart-native",
+        format: "static",
+        spec: { nativeType: "treemap" },
+      },
+    ]);
+    expect(w!).toContain("no narrative form");
+  });
+
+  it("should stay null when narrative WAS considered", () => {
+    expect(
+      narrativeConsiderationWarning(
+        { candidates: [{ format: "scrolly" }] },
+        [],
+      ),
+    ).toBeNull();
+  });
+
+  it("should be byte-identical when called with one argument", () => {
+    const w = narrativeConsiderationWarning(menuWithoutNarrative);
+    expect(w).toContain("narrativeRuledOut");
+  });
+});

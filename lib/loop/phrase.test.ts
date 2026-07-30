@@ -4,7 +4,7 @@ import { test, expect } from "bun:test";
 import "./engines";
 import { propose } from "./propose";
 import { applyPhrasing } from "./phrase";
-import type { RunManifest, FormOption } from "./manifest";
+import { parseManifest, type RunManifest, type FormOption } from "./manifest";
 
 function run(): RunManifest {
   return {
@@ -153,4 +153,93 @@ test("applyPhrasing refuses an element that has no offer to phrase", () => {
 test("a refused offer is refused LOUD by phrasing — a refusal never travels as a why", () => {
   const run = makeRunWithProposal([]); // reuse the file's own fixture helper
   expect(() => applyPhrasing(run, "e1", [])).toThrow(/no offer to phrase/);
+});
+
+// A DECLARED RENDER LIMIT HAS TO SURVIVE THE WHOLE PRODUCTION HOP, not just lib/brain.
+//
+// buildOffer put `limits` on its OfferOption and offer.test.ts proved it there — but the offer a
+// journalist is actually shown is the one propose() persists into run.json and phrase.ts rebuilds
+// for the guard, and both rebuilt the option field by field without carrying `limits` (and
+// FormOptionSchema had no key for it, so zod stripped it on persist even when copied). The effect
+// was threefold: the keyboard limit was never shown; verifyOffer's limitsAcknowledged guard could
+// not fire in production, `option.limits` being always undefined there; and a desk that followed
+// SKILL.md's rule 5 and DID set limitsAcknowledged got hard-refused for acknowledging a limit the
+// persist had just deleted.
+//
+// So this test walks the real path — propose() → the manifest's own zod parse → applyPhrasing —
+// and each of the three carries is load-bearing: remove any one and it reddens.
+//
+// The shape is offer.test.ts's `inputForMapSymbolInteractive()` fixture expressed as a run: a
+// spatial+magnitude dataset with a declared `spatial` intent ranks map-native's own sheets ahead
+// of every chart-native one, so an interactive map-native row lands in the offer carrying the
+// keyboard limit map-native declares (skills/map-native/src/feature-limits.ts).
+function proposedMapRun(): RunManifest {
+  const m: RunManifest = {
+    runId: "r",
+    schemaVersion: 4,
+    route: "embed",
+    channel: "article-web",
+    input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
+    orient: {
+      profile: {
+        columns: ["city", "population"],
+        numericColumns: ["population"],
+        rowCount: 10,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Les grandes villes concentrent la population",
+          altInsight: "…",
+          unit: "hab.",
+          intent: "spatial",
+        },
+      },
+    ],
+    events: [],
+  };
+  const { options, excluded } = propose(m, m.elements[0]!);
+  // Through the SCHEMA, not just the object: run.json is written and read back, and a key the
+  // schema does not declare is dropped there rather than in propose().
+  return parseManifest(
+    JSON.parse(
+      JSON.stringify({
+        ...m,
+        elements: [{ ...m.elements[0], proposal: { options, excluded } }],
+      }),
+    ),
+  );
+}
+
+test("a declared render limit survives propose() and the manifest's own parse", () => {
+  const options = proposedMapRun().elements[0]!.proposal!.options;
+  const limited = options.filter((o) => o.limits?.length);
+  expect(limited.length).toBeGreaterThan(0);
+  expect(limited.some((o) => o.engine === "map-native")).toBe(true);
+  expect(limited[0]!.limits!.join(" ")).toContain("keyboard");
+});
+
+test("the persisted limit makes verifyOffer's limitsAcknowledged guard reachable in production", () => {
+  const m = proposedMapRun();
+  const options = m.elements[0]!.proposal!.options;
+  expect(options.some((o) => o.limits?.length)).toBe(true); // the offer really does carry one
+  const unacknowledged = options.map((o) => ({
+    id: o.id,
+    why: "Une forme qui tient la comparaison.",
+    ...(o.readiness ? { markAcknowledged: true as const } : {}),
+  }));
+  expect(() => applyPhrasing(m, "e1", unacknowledged)).toThrow(
+    /declares a render limit/,
+  );
+  // …and acknowledging it — what SKILL.md rule 5 tells the desk to do — passes.
+  const acknowledged = options.map((o) => ({
+    id: o.id,
+    why: "Une forme qui tient la comparaison.",
+    ...(o.readiness ? { markAcknowledged: true as const } : {}),
+    ...(o.limits?.length ? { limitsAcknowledged: true as const } : {}),
+  }));
+  expect(() => applyPhrasing(m, "e1", acknowledged)).not.toThrow();
 });

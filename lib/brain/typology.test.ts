@@ -1,8 +1,8 @@
-import { test, expect } from "bun:test";
+import { test, expect, describe, it } from "bun:test";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
-import { loadTypology } from "./typology";
+import { loadTypology, parseSheetHeader } from "./typology";
 
 function fixture(sheets: Record<string, string>): string {
   const root = mkdtempSync(join(tmpdir(), "brain-kb-"));
@@ -132,4 +132,56 @@ test("a sheet with no bestFor is a hard error — an option with no why is not o
     "",
   );
   expect(() => loadTypology(fixture({ "slope.md": bad }))).toThrow();
+});
+
+describe("HeaderSchema can express 'no reachable engine today'", () => {
+  it("should accept a sheet with no engines when it says why", () => {
+    // The KB's job is to say WHEN a form serves the story (bestFor/notFor). A sheet whose
+    // engine has no mapper must be able to keep that editorial body without CLAIMING a
+    // constructibility it does not have — otherwise the only way to stop lying is to delete
+    // the editorial knowledge too.
+    const s = parseSheetHeader({
+      id: "streamgraph",
+      engines: {},
+      unreachable: "no chart-native mapper (MAPPERS, spec-to-config.ts)",
+      intent: ["change-over-time"],
+      shape: "wide",
+      formats: ["static"],
+      bestFor: ["x"],
+      notFor: ["y"],
+    });
+    expect(s.unreachable).toContain("mapper");
+    expect(Object.keys(s.engines)).toEqual([]);
+  });
+
+  it("should still refuse a sheet with no engines and no reason", () => {
+    expect(() =>
+      parseSheetHeader({
+        id: "x",
+        engines: {},
+        intent: ["change-over-time"],
+        shape: "wide",
+        formats: ["static"],
+        bestFor: ["x"],
+        notFor: ["y"],
+      }),
+    ).toThrow();
+  });
+
+  it("should refuse `unreachable` on a sheet that DOES name an engine", () => {
+    // Two contradictory statements in one header is the drift this affordance exists to
+    // prevent, not a state to allow.
+    expect(() =>
+      parseSheetHeader({
+        id: "x",
+        engines: { "chart-native": "bar" },
+        unreachable: "…",
+        intent: ["change-over-time"],
+        shape: "wide",
+        formats: ["static"],
+        bestFor: ["x"],
+        notFor: ["y"],
+      }),
+    ).toThrow();
+  });
 });

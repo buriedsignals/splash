@@ -1,6 +1,5 @@
 import { describe, it, expect } from "bun:test";
 import {
-  accentCandidate,
   cssRules,
   firstFamily,
   groundTheme,
@@ -511,16 +510,11 @@ describe("regression — every signal a reading can carry is explainable", () =>
   });
 });
 
-describe("accentCandidate", () => {
-  it("should offer a second candidate only when its hue is genuinely different", () => {
-    const css = ":root{--brand:#0a5c36;--accent:#c8102e}";
-    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
-    expect(accentCandidate(p)?.value).toBe("#c8102e");
-  });
-
-  it("should not offer a tint of the primary as an accent", () => {
-    const css = ":root{--brand:#0a5c36;--brand-dark:#0d7345}";
-    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
-    expect(accentCandidate(p)).toBeNull();
+describe("regression — accent removed from the charter", () => {
+  it("should no longer export an accent candidate", async () => {
+    // `accent` was removed from the house charter (2026-07-29): it was the only proposal field
+    // that named a colour nothing in the product renders.
+    const mod = (await import("./charter")) as Record<string, unknown>;
+    expect(mod.accentCandidate).toBeUndefined();
   });
 });

@@ -128,7 +128,7 @@ const config = JSON.parse(readFileSync(configPath, "utf8"));
 // concern; every other colour stays hard-guarded. Empty on the auto path.
 const brandColors =
   config.brandExplicit === true
-    ? [config.baseColor, config.accent, ...(Array.isArray(config.seriesColors) ? config.seriesColors : [])].filter(
+    ? [config.baseColor, ...(Array.isArray(config.seriesColors) ? config.seriesColors : [])].filter(
         (c) => typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c),
       )
     : [];
@@ -207,8 +207,13 @@ switch (format) {
     // snap-contrast which fills are brand-explicit so a low-contrast label in the
     // newsroom's house colour is recorded as a render-review concern, not a hard
     // failure (policy b). No brand profile → empty → the auto path stays strict.
+    // OUTDIR (task 23): a HARD violation here is a late refusal (late-refusal.ts) that must
+    // be RECORDED, not just printed — this snap writes no other artifact (unlike map-native's
+    // twin, which also writes a debug screenshot and so stays unthreaded), and a failing
+    // produce never reaches collectOutputs, so the delivery-collision risk that keeps
+    // map-native's OUTDIR unthreaded does not apply here.
     console.log(`[produce ${type}] checking text contrast (snap-contrast)…`);
-    snap("scripts/snap-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
+    snap("scripts/snap-contrast.mjs", { OUTDIR: outDir, BRAND_EXPLICIT_COLORS: brandColors.join(",") });
 
     // render-time label-fit guard — every rendered text (svg labels + frame
     // furniture) must sit inside its clip bounds (card / svg viewport). The
@@ -267,8 +272,10 @@ switch (format) {
       // coverage gap left by this format no longer building the static dist: a
       // mark-coloured label would otherwise ship unguarded on the article-web
       // interactive path (the most common delivery). Fails the run before export.
+      // OUTDIR (task 23): same reasoning as the static-side call above — record the late
+      // refusal, this snap writes no other artifact so there is no delivery collision.
       console.log(`[produce ${type}] checking text contrast (snap-interactive-contrast)…`);
-      snap("scripts/snap-interactive-contrast.mjs", { BRAND_EXPLICIT_COLORS: brandColors.join(",") });
+      snap("scripts/snap-interactive-contrast.mjs", { OUTDIR: outDir, BRAND_EXPLICIT_COLORS: brandColors.join(",") });
 
       // render-time label-fit guard for the interactive dist (same guard as the
       // static path, post-reveal boxes) — a clipped label is exactly as real a

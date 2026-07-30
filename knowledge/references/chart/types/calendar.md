@@ -1,7 +1,7 @@
 ---
 id: calendar
-engines:
-  chart-native: calendar
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for calendar (deferred: \"family-B: needs a dense date grid\", native-types.ts) — no spec can reach it today"
 intent: [change-over-time]
 shape: structural
 limits: {}

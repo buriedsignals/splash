@@ -8,7 +8,6 @@
 palette:                      # your brand colours; the 1st one is the primary
   - "#0A5C36"                 # house green (primary colour of the visuals)
   - "#C8102E"                 # a 2nd series colour
-accent: "#C8102E"             # accent colour (used to highlight)
 
 source:                       # default attribution shown under each visual
   name: "Heidi.news"          # the displayed name ("Source: Heidi.news")
@@ -33,8 +32,6 @@ put here serves as the **default**.
   tool reads them straight off your logo.
   > ⚠️ If a house colour is hard to distinguish for a colour-blind reader, Splash **keeps it
   > anyway** (it's your brand) and **flags it** at review time — the call is yours.
-
-- **accent** — the colour you use to **highlight** an element.
 
 - **source** — the name of your newsroom (or of the data source) shown under the visual, plus an
   optional link. If an article cites another source, that one **takes precedence**.

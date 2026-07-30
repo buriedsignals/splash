@@ -1,7 +1,7 @@
 ---
 id: marimekko
-engines:
-  chart-native: marimekko
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for marimekko (deferred: \"family-B: 2D width×height encoding\", native-types.ts) — no spec can reach it today"
 intent: [part-to-whole]
 shape: structural
 limits: { maxSeries: 5, maxCategories: 6 }

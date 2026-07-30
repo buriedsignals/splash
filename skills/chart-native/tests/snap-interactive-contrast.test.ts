@@ -100,7 +100,11 @@ describe("snap-interactive-contrast.mjs — detection (real script, fixture dist
       stderr = (e as { stderr?: Buffer }).stderr?.toString("utf8") ?? "";
     }
     expect(threw).toBe(true);
-    expect(stderr).toContain("WCAG contrast");
+    // late-refusal wording (task 23): the guard now deviates to the unblocking step instead
+    // of just naming "WCAG contrast" — assert the floor + the routed next-step, not the old
+    // exact phrase.
+    expect(stderr).toContain("below 4.5:1");
+    expect(stderr).toContain("Next:");
   }, 30_000);
 
   it("passes on a conformant label (COLORS.ink on white, ≥4.5:1)", () => {

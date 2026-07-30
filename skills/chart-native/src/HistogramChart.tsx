@@ -43,8 +43,6 @@ export interface HistogramConfig {
   /** subject-fit hue for the distribution bars. Absent → the theme line colour
    *  (Okabe-Ito blue; skyblue on dark). */
   baseColor?: string;
-  /** subject-fit hue for the median line. Absent → the OKABE_ITO.vermillion default. */
-  accent?: string;
   rows: Record<string, string | number>[];
 }
 
@@ -294,7 +292,7 @@ function HistogramSvg({
             x2={medianX}
             y1={base}
             y2={2 * sc}
-            stroke={config.accent ?? MEDIAN}
+            stroke={MEDIAN}
             strokeWidth={2 * sc}
             strokeDasharray={`${5 * sc} ${3 * sc}`}
           />

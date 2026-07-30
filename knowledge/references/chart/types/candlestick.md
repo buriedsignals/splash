@@ -1,7 +1,7 @@
 ---
 id: candlestick
-engines:
-  chart-native: candlestick
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for candlestick (deferred: \"family-B: needs OHLC\", native-types.ts) — no spec can reach it today"
 intent: [change-over-time]
 shape: structural
 limits: {}

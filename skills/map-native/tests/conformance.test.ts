@@ -469,7 +469,11 @@ describe("per-type guards — optional format hook", () => {
 
 // FRAME_COLORS / FRAME_COLORS_DARK WCAG contrast assertions
 import { relativeLuminance, contrastRatio } from "../src/conformance";
-import { FRAME_COLORS, FRAME_COLORS_DARK } from "../src/theme/map-tokens";
+import {
+  FRAME_COLORS,
+  FRAME_COLORS_DARK,
+  resolveFrameColors,
+} from "../src/theme/map-tokens";
 
 describe("FRAME_COLORS light — WCAG contrast ≥ 4.5:1", () => {
   // pill is translucent; for contrast purposes we use its opaque solid equivalent (#ffffff)
@@ -503,6 +507,186 @@ describe("FRAME_COLORS_DARK — WCAG contrast ≥ 4.5:1", () => {
   it("FRAME_COLORS_DARK.ink luminance should be higher than pill (light text on dark)", () => {
     expect(relativeLuminance(FRAME_COLORS_DARK.ink)).toBeGreaterThan(
       relativeLuminance(pillSolid),
+    );
+  });
+});
+
+// furnitureGround — the ground the map furniture text ACTUALLY stands on (the pill,
+// composited over the worst basemap it can overlay), not an assumed themeBg.
+import { readFileSync } from "fs";
+import { join } from "path";
+import {
+  furnitureGround,
+  runProduceMapConformance,
+} from "../src/core/map-produce-conformance";
+
+describe("map furniture stands on a ground, not on a basemap tile", () => {
+  it("should keep the source text legible over the WORST basemap the pill can sit on", () => {
+    // The light pill is rgba(255,255,255,0.92): over a black tile it composites to ~#EBEBEB.
+    // muted #5f5f5f must still clear 4.5:1 THERE, not only against the assumed white.
+    const g = furnitureGround(undefined);
+    const { muted } = resolveFrameColors(undefined);
+    expect(contrastRatio(muted, g)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("should not answer plain white for the light default", () => {
+    // furnitureGround returned `resolveThemeBg(bg) ?? "#ffffff"` — the assumption, not the
+    // composite. #5f5f5f on pure white is 6.38:1 and PASSES; on a real light tile it does not.
+    expect(furnitureGround(undefined).toLowerCase()).not.toBe("#ffffff");
+  });
+
+  it("should give the responsive source band the same pill the title band has", () => {
+    const src = readFileSync(
+      join(import.meta.dir, "..", "src", "core", "MapFrame.tsx"),
+      "utf8",
+    );
+    // two spreads of pillStyle now: the title band and the source band
+    expect(src.match(/\.\.\.pillStyle/g)?.length).toBe(2);
+  });
+});
+
+// checkSymbolConformance was written and never called by anything except its own tests and
+// a COMMENT (skills/map-dw/src/map-spec.ts:432). This proves runProduceMapConformance now
+// actually asks it — a symbol map's legend/sizing/radius rules must be able to REFUSE, not
+// just silently pass because the guard was never wired.
+describe("runProduceMapConformance actually asks the symbol rules", () => {
+  const base = {
+    type: "symbol",
+    // Long enough / not ALL CAPS / not a bare year range, and carries a description — the
+    // furniture rules `checkGlobalMapConformance` already enforces for every guarded type are
+    // NOT what this task closes (they were already wired); a "well-formed" fixture has to
+    // clear them too, or the last case below could never legitimately equal [].
+    title: "Geneva outpaces Bern in this symbol comparison",
+    description:
+      "Value by point location, sample data for the conformance check",
+    altInsight: "a",
+    source: { name: "S" },
+    points: [
+      { lon: 6.1, lat: 46.2, label: "Genève", value: 100 },
+      { lon: 7.4, lat: 46.9, label: "Berne", value: 40 },
+    ],
+    maxRadius: 30,
+    format: { width: 1200, height: 675 },
+  };
+
+  // Fix-round-2 (task 17 re-review, Finding A): every case above spreads `base`, which pins
+  // BOTH `maxRadius` and `format` explicitly on every call — so the guard's DEFAULT/fallback
+  // paths (MAX_RADIUS_PX, the real per-channel `mediaSize` param, and the
+  // ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX fallback) were never exercised by any test: reverting
+  // MAX_RADIUS_PX to a stale value, or the assumed-viewport constant to something absurd, left
+  // the whole suite green. `baseNoOverrides` strips those two config-only fields (neither is a
+  // real SymbolConfigShape field anyway) so the tests below actually reach the defaults.
+  const {
+    maxRadius: _pinnedMaxRadius,
+    format: _pinnedFormat,
+    ...baseNoOverrides
+  } = base;
+
+  it("should refuse a symbol map with no legend", () => {
+    const r = runProduceMapConformance("symbol", { ...base, hasLegend: false });
+    expect(r.checked).toBe(true);
+    expect(r.violations.join(" ")).toContain("legend");
+  });
+
+  it("should refuse radius-proportional sizing", () => {
+    const r = runProduceMapConformance("symbol", {
+      ...base,
+      sizingMode: "radius",
+    });
+    expect(r.violations.join(" ")).toContain("area-proportional");
+  });
+
+  it("should refuse a symbol that swallows the map", () => {
+    // SYMBOL_MAX_VIEWPORT_FRACTION = 0.25 (conformance.ts:198): 30px max radius is fine in a
+    // 675px-tall frame, 300px is not.
+    const r = runProduceMapConformance("symbol", { ...base, maxRadius: 300 });
+    expect(r.violations.join(" ")).toContain("too large");
+  });
+
+  it("should pass a well-formed symbol config", () => {
+    const r = runProduceMapConformance("symbol", base);
+    expect(r.violations).toEqual([]);
+  });
+
+  it("should refuse a symbol map with fewer than 2 distinct locations (degenerate bounds)", () => {
+    // A single point gives symbolGeometry a zero-area bbox: MapLibre's fitBounds() zooms to
+    // max zoom on that instead of framing the phenomenon (SymbolMap.tsx's clampBounds only
+    // clamps latitude, it never expands a degenerate box) — a real, reachable refusal
+    // (review finding §5.2), locked here so it is intentional and tested, not an untested
+    // side effect of the fixture used elsewhere.
+    const r = runProduceMapConformance("symbol", {
+      ...base,
+      points: [{ lon: 6.1, lat: 46.2, label: "Genève", value: 100 }],
+    });
+    expect(r.violations.join(" ")).toContain("empty data bounds");
+    // Actionable, not just diagnostic — tells the journalist what to do instead.
+    expect(r.violations.join(" ")).toContain("locator map");
+  });
+
+  it("should default maxRadiusPx to the real MAX_RADIUS_PX (40), not a stale lower value", () => {
+    // baseNoOverrides carries no `maxRadius` — a real config never does either. A narrow
+    // 150px mediaSize makes the threshold (0.25×150=37.5) sit BETWEEN 30 and 40: the true
+    // default (40) trips "too large" here, a stale default of 30 would not — this proves
+    // the actual number in use, not just that *some* default exists (review N1.4/Finding A).
+    const r = runProduceMapConformance("symbol", baseNoOverrides, {
+      width: 150,
+      height: 150,
+    });
+    expect(r.violations.join(" ")).toContain("too large");
+  });
+
+  it("should fall back to the assumed article-web viewport when neither mediaSize nor a config format is given", () => {
+    // No 3rd `mediaSize` arg, no config `format` field — the legacy/no-data path. Must stay
+    // green: 0.25×675=168.75 comfortably clears the real 40px default.
+    const r = runProduceMapConformance("symbol", baseNoOverrides);
+    expect(r.violations).toEqual([]);
+  });
+
+  it("should refuse a maxRadius that only trips at exactly the 675 assumption (pins the VALUE, not just that some fallback exists)", () => {
+    // 170px clears MAX_RADIUS_PX(40) trivially, so the previous test alone can't tell 675
+    // from an arbitrarily large fallback — both would pass a 40px radius. 0.25×170=42.5, so
+    // 170px only refuses because the fallback is genuinely ~675 (0.25×675=168.75 < 170); a
+    // fallback of, say, 999999 (0.25×999999≈250000) would silently let this through.
+    const r = runProduceMapConformance("symbol", {
+      ...baseNoOverrides,
+      maxRadius: 170,
+    });
+    expect(r.violations.join(" ")).toContain("too large");
+  });
+
+  it("should measure against the REAL per-channel viewport when mediaSize is passed, not the 675 assumption", () => {
+    // social-vertical's real raw media size (CHANNEL_POLICY, lib/core/channel-policy.ts):
+    // 1080x1920. 0.25×1080=270, so a 200px max radius PASSES against the real 1080 min
+    // dimension — but would have WRONGLY FAILED under the old 675-only logic
+    // (0.25×675=168.75 < 200). Direct proof review finding B (viewportMinPx was reachable on
+    // EVERY channel, not just when data is missing) is closed.
+    const r = runProduceMapConformance(
+      "symbol",
+      { ...baseNoOverrides, maxRadius: 200 },
+      { width: 1080, height: 1920 },
+    );
+    expect(r.violations).toEqual([]);
+  });
+});
+
+// Fix-round-3 (task 17 re-review #2): the round-2 tests above all call
+// `runProduceMapConformance` DIRECTLY and pass `mediaSize` themselves, which locks that the
+// GUARD honors the param when given it — but nothing locked that produce.mjs's ONE real call
+// site actually PASSES it. The re-reviewer proved this: dropping the 3rd argument at that call
+// site left the full suite (880/0) fully green — the headline fix of round 2 could be silently
+// reverted at its only real integration point and nothing would notice. `runProduceMapConformance`
+// can't be executed against produce.mjs under a test (module-scope side effects — reads argv,
+// exits on bad input), so this is a textual lock on the source, same technique
+// channel-gated-interactive.test.ts and arc-beats-threading.test.ts already use for other
+// produce.mjs/component wiring facts this package can't exercise by import.
+describe("produce.mjs threads its real mediaSize into the symbol conformance guard", () => {
+  it("passes mediaSize as runProduceMapConformance's 3rd argument at its call site", () => {
+    const src = readFileSync(
+      join(import.meta.dir, "..", "scripts", "produce.mjs"),
+      "utf8",
+    );
+    expect(src).toContain(
+      "runProduceMapConformance(parsedConfig.type, parsedConfig, mediaSize)",
     );
   });
 });

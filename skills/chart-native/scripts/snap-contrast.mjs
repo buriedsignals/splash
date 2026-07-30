@@ -13,11 +13,14 @@ import { readFile } from "node:fs/promises";
 import { worstContrast, MIN_CONTRAST, wcagMinContrast } from "../src/core/contrast-scan.ts";
 import { chartDistSub } from "../src/build-paths.ts";
 import { sampleTextContrast } from "./lib/sample-text-contrast.mjs";
+import { groundOf } from "./lib/ground-of.mjs";
+import { snapViewportFor, STATIC_DEVICE_SCALE } from "./lib/snap-viewport.mjs";
 import {
   checkFurnitureI18n,
   collectFurnitureI18n,
   furnitureGateApplies,
 } from "./lib/furniture-i18n.mjs";
+import { lateRefusalSentence, recordLateRefusal } from "../../splash/src/late-refusal.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -52,7 +55,8 @@ await new Promise((r) => server.listen(0, r));
 const port = server.address().port;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });
+const viewport = snapViewportFor(process.env.SPLASH_CHANNEL);
+const page = await browser.newPage({ viewport, deviceScaleFactor: STATIC_DEVICE_SCALE });
 await page.goto(`http://localhost:${port}/`);
 await page.waitForSelector("svg");
 await page.waitForTimeout(2100); // let the reveal settle to progress=1
@@ -61,7 +65,8 @@ await page.waitForTimeout(2100); // let the reveal settle to progress=1
 // points (glyph hidden first), returning {text, fill, bgs[]}. Contrast is computed
 // in node with the shared helper. The sampler itself lives in ./lib/sample-text-
 // contrast.mjs, shared with snap-interactive-contrast.mjs (same engine, different dist).
-const samples = await page.evaluate(sampleTextContrast);
+const ground = groundOf(process.env.CONFIG);
+const samples = await page.evaluate(sampleTextContrast, ground);
 
 // i18n FURNITURE GATE (P5) — reuses THIS already-loaded page (no extra browser
 // session): when the produced config's lang renders non-English furniture, the
@@ -87,6 +92,18 @@ for (const s of samples) {
   // WCAG SC 1.4.3: large text (≥24px, or ≥18.66px bold) is conformant at 3:1, not
   // 4.5:1 — the heatmap's in-cell value labels are large bold numbers on a continuous
   // ramp whose mid-tones have no 4.5:1 text colour but always clear 3:1.
+  //
+  // JUDGED IN CSS px, NOT delivered px. This briefly passed STATIC_DEVICE_SCALE as
+  // wcagMinContrast's third argument, which put the WHOLE type scale (title 22 /
+  // label 14 / axis 13 / source 12 — tokens.ts:73-77) over the large-text threshold
+  // and so dropped every static label's floor from 4.5:1 to 3:1. deviceScaleFactor is
+  // a RESOLUTION factor: a ×2 raster is sharper, not perceptually bigger. On
+  // social-vertical (1080×1920 on a ~400 CSS px phone) a 13px axis label is perceived
+  // at ~9px — SMALLER than its layout px — and lib/core/channel-policy.ts:54-58 makes
+  // the same point for print ("«Print-safe» is a density, not a word"). map-native's
+  // sibling guard never took the scale either. If a real large-label false positive
+  // shows up, it is a LAYOUT fact (a 22px label in a 540px box): move the token or
+  // widen the in-cell carve-out above — never the threshold for all text.
   const min = wcagMinContrast(s.fontPx ?? 0, s.bold ?? false);
   if (worst >= min) continue;
   const flagged = { ...s, worst: Number(worst.toFixed(2)), min };
@@ -102,7 +119,25 @@ if (concerns.length) {
   );
 }
 if (violations.length) {
-  console.error(`[snap-contrast ${chart}] ${violations.length} text label(s) below ${MIN_CONTRAST}:1 WCAG contrast`);
+  const r = {
+    guard: "snap-contrast",
+    subject: `${chart}/static`,
+    reason: `${violations.length} text label(s) below ${MIN_CONTRAST}:1 WCAG contrast`,
+    deviation:
+      "raise the contrast of the failing label (a darker/lighter ink, or a different house " +
+      "ground), then produce again — this is measured on the render, so it cannot be told at the offer",
+  };
+  console.error(lateRefusalSentence(r));
+  // Named FIELDS, not the object: template-interpolating a sample printed
+  // "✗ [object Object]" once per violation on the journalist-facing refusal. The
+  // sampler's shape is {text, fill, bgs, fontPx, bold} + {worst, min}
+  // (scripts/lib/sample-text-contrast.mjs), so the label, its ink and the two ratios
+  // are what identifies which label to fix.
+  for (const v of violations)
+    console.error(
+      `  ✗ "${v.text}" (${v.fill}, ${v.fontPx}px${v.bold ? " bold" : ""}) — ${v.worst}:1 < ${v.min}:1`,
+    );
+  if (process.env.OUTDIR) recordLateRefusal(process.env.OUTDIR, r);
   process.exit(1);
 }
 if (i18nViolations.length) {

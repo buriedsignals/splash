@@ -10,9 +10,16 @@
 //   - Palette CVD-safety (+ a best-effort sequential/diverging semantic match) is checked
 //     for the 3 ramp-driven types (choropleth, hex-grid, cartogram) via
 //     `checkPaletteConformance`. `resolvePalette` is pure — no geometry, no basemap.
-//   - Structural rules that need the basemap GeoJSON (bounds, region-join, legend geometry,
-//     symbol max-radius, story-beat counts) are OUT of scope here — they stay covered by
-//     the existing render-time snap harnesses (snap-responsive, snap-a11y, snap-contrast).
+//   - Structural rules that need the basemap GeoJSON (region-join, story-beat counts) are OUT
+//     of scope here — they stay covered by the existing render-time snap harnesses
+//     (snap-responsive, snap-a11y, snap-contrast). Symbol's legend/bounds/sizing-mode/max-radius
+//     ARE now in scope (task 17, `checkSymbolConformance`) — `symbolGeometry` is pure (no
+//     basemap), so those are config-provable here. `viewportMinPx` is checked against
+//     `MAX_RADIUS_PX` (symbol-geo.ts, the literal every symbol renderer actually paints — not
+//     an invented config default), and measured against the REAL per-channel media size when
+//     the caller passes `mediaSize` (produce.mjs does — it already computes
+//     `renderSize(channel)` before calling this) — falling back to a conservative ASSUMED
+//     viewport only when neither `mediaSize` nor a config `format` is available.
 //   - GL-rendered labels (symbol direct-labels, dot-density dot counts) are out of scope —
 //     a separate spike, not config-time-checkable.
 //   - The furniture-contrast check here is drift-defense on the pre-vetted
@@ -26,16 +33,31 @@ import {
   resolveFrameColors,
   resolveThemeBg,
 } from "../theme/map-tokens";
+import { contrastRatio } from "../../../../lib/core/contrast";
 import { resolvePalette } from "../theme/scale";
 import { contrastOk, houseRamp } from "../theme/house-ramp";
 import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
 import {
   checkGlobalMapConformance,
   checkPaletteConformance,
+  checkSymbolConformance,
 } from "../conformance";
+import { symbolGeometry, MAX_RADIUS_PX } from "../symbol-geo";
 
 // The 3 types whose colour scale is a resolvePalette() ramp (not a fixed qualitative set).
 export const RAMP_TYPES = ["choropleth", "hex-grid", "cartogram"] as const;
+
+// Fallback ONLY for a caller that omits `runProduceMapConformance`'s optional `mediaSize`
+// param (below) and whose config carries no `format` either — e.g. a direct unit-test call.
+// produce.mjs (the real caller) already computes the real per-channel `renderSize(channel)`
+// and now passes it through, so this fallback is not on the normal path.
+// article-web (675) is CONSERVATIVE, not arbitrary: every `CHANNEL_POLICY` entry's min
+// media-size dimension is ≥ 675 (social-vertical 1080, social-feed 1080, article-web 675,
+// print-page 1748 — lib/core/channel-policy.ts) — so 675 is the smallest real viewport any
+// channel ever produces, meaning this fallback can only be too STRICT (false-refuse a large
+// symbol on a bigger real canvas), never too permissive (false-pass one that would swallow a
+// smaller real canvas).
+const ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX = 675;
 
 // Resolves the scaleType the SAME way the renderer actually paints it, per ramp type — so
 // this guard can never validate a ramp the map never renders (bug #6). hex-grid always
@@ -106,16 +128,37 @@ function paintsSingleHouseFill(
   return false;
 }
 
-// Opaque solid equivalent of the (translucent) resolveFrameColors().pill — the same convention
-// `tests/conformance.test.ts` uses for the WCAG-contrast assertions on these tokens. `contrastRatio`
-// requires a #rrggbb hex, and the pill is an `rgba(...)` string, so the opaque backdrop it visually
-// reads as (the ground itself) is what gets checked — not a literal CSS value. Resolved from the
-// SAME `furnitureBg` that resolveFrameColors derives the pill/ink from (NOT `themeBg` alone), so the
-// guard always measures the ink against the ground it is ACTUALLY painted on. A truthy-but-null-
-// resolving furnitureBg (a per-element "#FFFFFF"/"light"/malformed override) → the white light pill,
-// matching MapFrame — never a divergent dark ground that would spuriously fail a legible render.
-function furnitureGround(furnitureBg: string | undefined): string {
-  return resolveThemeBg(furnitureBg) ?? "#ffffff";
+/** The ground the furniture text actually stands on: the pill, composited over the WORST
+ *  basemap it can overlay. `resolveThemeBg(bg) ?? "#ffffff"` was the ASSUMPTION — true only
+ *  because MapFrame now gives the source band that pill (see MapFrame.tsx), and still wrong by
+ *  the pill's alpha. Measuring the composite is what makes the guard's answer the render's. */
+export function furnitureGround(
+  furnitureBg: string | undefined,
+  houseHue?: string,
+): string {
+  const { pill } = resolveFrameColors(furnitureBg, houseHue);
+  // rgba(r,g,b,a) → composite over both extremes; keep the one with the LEAST headroom.
+  const m =
+    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/.exec(
+      pill,
+    );
+  if (!m) return resolveThemeBg(furnitureBg) ?? "#ffffff";
+  const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const a = m[4] === undefined ? 1 : Number(m[4]);
+  const composite = (under: number) =>
+    `#${[r, g, b]
+      .map((c) =>
+        Math.round(a * c + (1 - a) * under)
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")}`;
+  const onBlack = composite(0);
+  const onWhite = composite(255);
+  const ink = resolveFrameColors(furnitureBg, houseHue).muted;
+  return contrastRatio(ink, onBlack) <= contrastRatio(ink, onWhite)
+    ? onBlack
+    : onWhite;
 }
 
 // Best-effort numeric-column extraction for the palette semantic check (diverging vs
@@ -147,6 +190,12 @@ function extractValues(config: Record<string, unknown>): number[] | undefined {
 export function runProduceMapConformance(
   rawType: string | undefined,
   config: Record<string, unknown>,
+  // The REAL raw pixel size for the channel this config is actually being produced for
+  // (produce.mjs's `renderSize(channel)`, e.g. social-vertical 1080×1920, article-web
+  // 1200×675). Optional — takes priority over a config `format` field (which no real
+  // SymbolConfigShape carries today) when both are present, since it is the more trustworthy
+  // source; falls back to ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX when neither is given.
+  mediaSize?: { width: number; height: number },
 ): MapConformanceRunResult {
   // CRITICAL: choropleth is the mount.tsx default (its sample configs carry no `type`
   // field at all) — without this normalization it would ship unguarded.
@@ -177,10 +226,12 @@ export function runProduceMapConformance(
   const themeBg =
     typeof config.themeBg === "string" ? config.themeBg : undefined;
   const furnitureBg = themeBg ?? (dark ? DARK_FRAME_BG : undefined);
+  const houseHue =
+    typeof config.brandHue === "string" ? config.brandHue : undefined;
   const fc = furnitureColorsFor(config);
   const textColors = {
     text: [fc.ink, fc.muted],
-    bg: furnitureGround(furnitureBg),
+    bg: furnitureGround(furnitureBg, houseHue),
   };
 
   const title = typeof config.title === "string" ? config.title : "";
@@ -188,10 +239,15 @@ export function runProduceMapConformance(
     typeof config.description === "string" ? config.description : undefined;
   const source = (config.source ?? {}) as { name?: string; url?: string };
 
-  const violations = checkGlobalMapConformance(
-    { title, description, source },
-    textColors,
-  );
+  // `checkSymbolConformance` (called below, for type "symbol" only) already composes
+  // `checkGlobalMapConformance` internally with these exact same `title`/`description`/
+  // `source`/`textColors` — calling it again here would duplicate every furniture violation
+  // verbatim (e.g. "missing source name" twice) for symbol maps only. Every other type has
+  // no per-type check in this file, so this IS their only furniture guard and must run.
+  const violations =
+    type === "symbol"
+      ? []
+      : checkGlobalMapConformance({ title, description, source }, textColors);
 
   if ((RAMP_TYPES as readonly string[]).includes(type)) {
     try {
@@ -240,8 +296,6 @@ export function runProduceMapConformance(
   // human verifies legibility at render-review. brandHue is only ever set for a genuine house
   // colour (the merge sets it with brandExplicit), so its presence is the signal.
   const concerns: string[] = [];
-  const houseHue =
-    typeof config.brandHue === "string" ? config.brandHue : undefined;
   if (houseHue && paintsSingleHouseFill(type, config)) {
     // Defense-in-depth: `contrastOk` → `relativeLuminance` THROWS on a malformed hex.
     // In the normal orchestrator flow this never fires — validate-gate's `brandHueError`
@@ -258,6 +312,74 @@ export function runProduceMapConformance(
     } catch (e) {
       violations.push(`brandHue: ${(e as Error).message}`);
     }
+  }
+
+  // SYMBOL — the per-type rules that were written and never called (the only callers were
+  // their own tests, plus a COMMENT in skills/map-dw/src/map-spec.ts:432). The geometry core
+  // is pure (symbol-geo.ts:71, no basemap, no MapTiler), so the legend stops, the max radius
+  // and the bounds are all config-provable HERE, before a render costs anything.
+  // DELIBERATELY NOT fed: `strokeContrast` and `staticFallbackLabeled`. They are render facts,
+  // and inventing them would be an unmeasured refusal — the render snaps keep them.
+  if (type === "symbol") {
+    const points = Array.isArray(config.points)
+      ? (config.points as { lon: number; lat: number; value: number }[])
+      : [];
+    const fmt = config.format as { width: number; height: number } | undefined;
+    // `config.maxRadius` is not a real SymbolConfigShape field today — no config emits it —
+    // so this default is what actually matters: MAX_RADIUS_PX (symbol-geo.ts) is the literal
+    // every symbol renderer paints (40px), not an invented config default. Checking a number
+    // the renderer never paints would be the exact "guard validates what never renders"
+    // defect `resolveRampScaleType`'s comment above already warns about.
+    const maxRadius =
+      typeof config.maxRadius === "number" ? config.maxRadius : MAX_RADIUS_PX;
+    let legendStops = 0;
+    let boundsNonEmpty = false;
+    if (points.length > 0) {
+      const geo = symbolGeometry(
+        { points } as Parameters<typeof symbolGeometry>[0],
+        maxRadius,
+      );
+      legendStops = geo.legend.length;
+      boundsNonEmpty =
+        geo.bounds[0] !== geo.bounds[2] || geo.bounds[1] !== geo.bounds[3];
+    }
+    violations.push(
+      ...checkSymbolConformance(
+        {
+          title,
+          description,
+          source,
+          sizingMode: config.sizingMode === "radius" ? "radius" : "area",
+          hasLegend: config.hasLegend !== false,
+          legendStops,
+          maxRadiusPx: maxRadius,
+          // Priority: real `mediaSize` (produce.mjs's actual renderSize(channel)) > config
+          // `format` (kept for a future caller that emits one) > the conservative ASSUMED
+          // fallback. Was `fmt ? … : ASSUMED_…` only — mediaSize is new (fix round 2, Finding B).
+          viewportMinPx: mediaSize
+            ? Math.min(mediaSize.width, mediaSize.height)
+            : fmt
+              ? Math.min(fmt.width, fmt.height)
+              : ASSUMED_ARTICLE_WEB_VIEWPORT_MIN_PX,
+          pointsWithData: points.length,
+          boundsNonEmpty,
+          // Render-only inputs: give the values the rules treat as "not my business here" —
+          // strokeContrast and staticFallbackLabeled are render facts the snap scripts own
+          // (see the file header + the brief this task follows); inventing them here would be
+          // an unmeasured refusal.
+          strokeContrast: Infinity,
+          labeled: config.labeled !== false,
+          valueUnit:
+            typeof config.valueUnit === "string" ? config.valueUnit : undefined,
+          labelHasUnit:
+            typeof config.labelHasUnit === "boolean"
+              ? config.labelHasUnit
+              : undefined,
+          ...(fmt ? { format: fmt } : {}),
+        },
+        textColors,
+      ),
+    );
   }
 
   return { checked: true, violations, concerns };

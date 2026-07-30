@@ -75,22 +75,34 @@ export function resolveGuardChannel(
   return normalizeChannel(raw);
 }
 
-// (B) chart-native furniture. scoreSpec's native branch requires a non-empty insight
-// title AND a source name; validateNative (specToNativeConfig) only checks the DATA
-// SHAPE, so a titleless / sourceless native spec passed the spine and only blew up later
-// inside produce.mjs conformance. Re-apply the presence check here so it fails cleanly at
-// the gate. (url stays optional — the honest name-only prose fallback carries no URL.)
-// Pure.
-export function nativeFurnitureViolations(spec: unknown): string[] {
+// (B) FURNITURE — an insight title AND a source name, for EVERY chart producer. The rule
+// was written for chart-native alone (scoreSpec's native branch requires both; validateNative
+// / specToNativeConfig only checks the DATA SHAPE, so a titleless / sourceless native spec
+// passed the spine and only blew up later inside produce.mjs conformance) and dispatched for
+// chart-native alone — a dw-chart proposal with no attribution passed the spine in silence
+// (the "two carriers never brought together" pattern this module exists to close). The
+// producer names itself in the message so a journalist reads which engine refused. This is
+// the SPINE-side half of the promise: dw-chart's own validateChartSpec (chart-spec.ts) also
+// shape-checks `source` at the producer layer (a stricter check — object shape, url format,
+// runs as part of the full field-by-field validation); guardrail-parity's half is the same
+// presence check re-applied uniformly BEFORE any producer-specific validator runs, so both
+// carriers clear the identical bar at the gate. (url stays optional on both — the honest
+// name-only prose fallback carries no URL.) Pure.
+export function furnitureViolations(spec: unknown, producer: string): string[] {
   const s = asObject(spec);
   const out: string[] = [];
   const title = typeof s?.["title"] === "string" ? s["title"].trim() : "";
-  if (!title) out.push("chart-native spec is missing an insight title");
+  if (!title) out.push(`${producer} spec is missing an insight title`);
   const source = asObject(s?.["source"]);
   const name =
     typeof source?.["name"] === "string" ? source["name"].trim() : "";
-  if (!name) out.push("chart-native spec is missing a source name");
+  if (!name) out.push(`${producer} spec is missing a source name`);
   return out;
+}
+
+/** chart-native's own call, kept so existing callers and their wording are unchanged. */
+export function nativeFurnitureViolations(spec: unknown): string[] {
+  return furnitureViolations(spec, "chart-native");
 }
 
 // The blue FAMILY — both hexes read as "blue" (water/cold/sky) to a reader. The library
@@ -137,9 +149,14 @@ export function guardrailParityViolations(p: AcceptedProposal): string[] {
     out.push(e instanceof Error ? e.message : String(e));
   }
   if (p.producer === "chart-native") {
-    out.push(...nativeFurnitureViolations(p.spec));
+    out.push(...furnitureViolations(p.spec, "chart-native"));
     const subjectFit = nativeSubjectFitViolation(p.spec);
     if (subjectFit) out.push(subjectFit);
+  } else if (p.producer === "dw-chart") {
+    // Same furniture promise, second carrier. dw-chart's own validateChartSpec now refuses a
+    // malformed source (task 5); this is the SPINE-side half, so the two agree before any
+    // producer runs — the parity this module exists for.
+    out.push(...furnitureViolations(p.spec, "dw-chart"));
   }
   return out;
 }

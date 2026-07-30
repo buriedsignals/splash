@@ -1,7 +1,7 @@
 ---
 id: sankey
-engines:
-  chart-native: sankey
+engines: {}
+unreachable: "chart-native has no MAPPERS entry for sankey (deferred: \"family-B: needs nodes+links\", native-types.ts) — no spec can reach it today"
 intent: [flow]
 shape: structural
 limits: {}

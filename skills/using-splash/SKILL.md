@@ -25,7 +25,7 @@ website, no backend.
   gates; it never re-decides what a sub-skill below already decides.
 
 - **`newsroom-charter`** — for a newsroom that has no `NEWSROOM-PROFILE.md` and no idea what its
-  own hex codes are: reads the newsroom's website, proposes a house colour / accent / ground /
+  own hex codes are: reads the newsroom's website, proposes a house colour / ground /
   typefaces with the origin of each value, and writes the profile only after the journalist
   validates it. Refuses and asks the question when the site declares nothing.
 

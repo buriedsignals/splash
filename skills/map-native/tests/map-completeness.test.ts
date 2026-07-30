@@ -35,6 +35,20 @@ const cleanFurniture = {
   source: { name: "Some Agency", url: "https://example.org/data" },
 };
 
+// symbol's per-type structural rule (task 17: checkSymbolConformance wired into produce) needs
+// real point data — legend stops and non-degenerate bounds cannot be defaulted the way the
+// RAMP_TYPES' palette can (resolvePalette(scaleType, undefined) has a real vetted default;
+// there is no equivalent "default" set of points). A furniture-only config is genuinely
+// incomplete for symbol, not just untested — so the "clean" fixture gets 2 distinct points.
+const TYPE_EXTRA: Partial<Record<(typeof MAP_TYPES)[number], object>> = {
+  symbol: {
+    points: [
+      { lon: 6.1, lat: 46.2, value: 100, label: "Genève" },
+      { lon: 7.4, lat: 46.9, value: 40, label: "Berne" },
+    ],
+  },
+};
+
 describe("map-native completeness invariant (reachable ⟹ guarded ∧ KB ref)", () => {
   // NOTE: `MAP_PRODUCE_GUARDED_TYPES` is currently defined as `= MAP_TYPES` (the same
   // array reference, see map-produce-conformance.ts:35) — asserting `MAP_TYPES ⊆
@@ -47,12 +61,17 @@ describe("map-native completeness invariant (reachable ⟹ guarded ∧ KB ref)",
   // both fail here. See the RED/GREEN proof in task-5-report.md.
   it("HARD: every reachable MAP_TYPES entry is genuinely produce-guarded (clean passes, broken fails)", () => {
     for (const id of MAP_TYPES) {
-      const clean = runProduceMapConformance(id, { ...cleanFurniture });
+      const extra = TYPE_EXTRA[id] ?? {};
+      const clean = runProduceMapConformance(id, {
+        ...cleanFurniture,
+        ...extra,
+      });
       expect(clean.checked).toBe(true);
       expect(clean.violations).toEqual([]);
 
       const broken = runProduceMapConformance(id, {
         ...cleanFurniture,
+        ...extra,
         source: undefined,
       });
       expect(broken.checked).toBe(true);
