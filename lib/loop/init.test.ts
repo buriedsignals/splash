@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { initRun } from "./init";
-import { nextActions, readManifest } from "./manifest";
+import { CURRENT_SCHEMA_VERSION, nextActions, readManifest } from "./manifest";
 
 // A run directory with a CSV beside it, ready to be declared. Nothing is frozen yet: freezing
 // is exactly what initRun does, and a test that pre-froze would be testing the fixture.
@@ -48,6 +48,18 @@ test("initRun defaults route, channel, one element, an empty ledger of events", 
   expect(run.channel).toBe("article-web");
   expect(run.elements).toEqual([{ id: "el1" }]);
   expect(run.events).toEqual([]);
+});
+
+// The schema's own version number, never restated as a hardcoded literal at the write site —
+// the exact defect class Task 9 closed for lib/host/state.ts's stale-schema gate. Comparing
+// against the imported constant, not a literal 5, means this test does not need editing on the
+// next schema bump AND would immediately catch init.ts falling behind if the import/usage were
+// ever reverted to a literal.
+test("initRun writes a manifest at CURRENT_SCHEMA_VERSION, not a restated literal", () => {
+  const { dir, csv } = scene();
+  expect(initRun(dir, declaration(csv)).ok).toBe(true);
+  const run = readManifest(join(dir, "run.json"), dir);
+  expect(run.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
 });
 
 test("a run initRun created owes exactly one thing: orient", () => {
@@ -395,6 +407,41 @@ test("accepts a run declaring input.geography and freezes it", () => {
     expect(result.value.input.geography?.sha256).toBeDefined();
     expect(result.value.input.geography?.level).toBe("cantons");
   }
+  // The WRITTEN file, not just the in-memory return — the same discipline every other test in
+  // this file that cares about persisted state follows (readManifest re-parses through
+  // RunManifestSchema, so a shape writeManifest let through wrong would fail here even if the
+  // in-memory `result.value` above looked fine).
+  const run = readManifest(join(dir, "run.json"), dir);
+  expect(run.input.geography?.encoding).toBe("geojson");
+  expect(run.input.geography?.crs).toBe("EPSG:4326");
+  expect(run.input.geography?.level).toBe("cantons");
+  expect(run.input.geography?.licence).toBe("swisstopo");
+  expect(run.input.geography?.edition).toBe("2024");
+  expect(run.input.geography?.credit.name).toBe("swisstopo");
+  expect(run.input.geography?.sha256).toMatch(/^[0-9a-f]{64}$/);
+  expect(run.input.geography?.path).toMatch(
+    /^input\/geography-[0-9a-f]{16}\.geojson$/,
+  );
+});
+
+// The no-geography case must stay legal AND avoid materializing a phantom record: `optional()`
+// on a zod object can, depending on how the surrounding object is built, still serialize an
+// absent key as `undefined`-but-present or even `null` rather than dropping it — this is the
+// check that the field is genuinely MISSING from the written bytes, not merely undefined in the
+// parsed TS shape.
+test("a run declared without input.geography round-trips with the field genuinely absent, not null or an empty record", () => {
+  const { dir, csv } = scene();
+  expect(initRun(dir, declaration(csv)).ok).toBe(true);
+
+  const run = readManifest(join(dir, "run.json"), dir);
+  expect(run.input.geography).toBeUndefined();
+  expect("geography" in run.input).toBe(false);
+
+  const raw = JSON.parse(readFileSync(join(dir, "run.json"), "utf8"));
+  expect("geography" in raw.input).toBe(false);
+  expect(readFileSync(join(dir, "run.json"), "utf8")).not.toContain(
+    '"geography"',
+  );
 });
 
 // Mirrors "initRun refuses an input path that does not exist, before freezing anything" (above)

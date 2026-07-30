@@ -27,7 +27,12 @@ import { GeographyInputSchema } from "../geo/declaration";
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger, EN_SOURCE_QUESTIONS } from "../source/policy";
 import { freezeInput } from "./freeze";
-import { ImageInputSchema, writeManifest, type RunManifest } from "./manifest";
+import {
+  CURRENT_SCHEMA_VERSION,
+  ImageInputSchema,
+  writeManifest,
+  type RunManifest,
+} from "./manifest";
 import { DEFAULT_UI_LANG, resolveLanguage } from "../newsroom/language";
 
 // WHAT A RUN MAY BE CREATED WITH — and, far more importantly, what it may NOT.
@@ -288,7 +293,7 @@ export function initRun(
     }).content;
     const run: RunManifest = {
       runId: decl.runId.trim(),
-      schemaVersion: 5,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       route: decl.route,
       channel: decl.channel,
       // Written only once a language was actually ESTABLISHED by someone — an article language
