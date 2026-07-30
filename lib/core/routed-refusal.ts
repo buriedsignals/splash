@@ -60,8 +60,10 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
   },
   "production-folder-handed-over": {
     step: "hand over the export, not the folder the build left behind",
+    // export-code.mjs's own header (see its usage comment) takes <outDir> <exportDir> as
+    // positionals and --results/--id as flags — not <report.json> <id> as positionals.
     command:
-      "bun skills/splash/scripts/export-code.mjs <report.json> <id> --form <form>",
+      "bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <form>]",
   },
   "render-not-shown": {
     step: "show the visual first, then ask what the journalist thinks of it",
@@ -73,7 +75,10 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
   },
   "probe-not-run": {
     step: "give each mechanical check the command that runs it, and let the result decide",
-    command: "bun lib/host/cli.ts probe --spec <probes.json>",
+    // cli.ts's probe command reads its ledger from STDIN (readJsonRequest), not a --spec flag —
+    // there is no --spec anywhere in its arg parsing. "probe < probes.json" is the exact usage
+    // hint cli.ts gives itself (readJsonRequest's second argument at its probe call site).
+    command: "bun lib/host/cli.ts probe < probes.json",
   },
   "reviewer-not-attributed": {
     step: "have the editorial pass done by someone who did not write this visual, and record who did it",

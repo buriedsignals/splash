@@ -75,6 +75,25 @@ test("reviewer-not-attributed's command matches what review-gate.mjs actually im
   expect(command).not.toContain("--reviewer-output");
 });
 
+// production-folder-handed-over's command used to read <report.json> <id> as positionals with
+// no --form-only trailing shape — export-code.mjs's own header takes <outDir> <exportDir> as
+// positionals and --results/--id as flags. Locked against the wrong two-positional shape.
+test("production-folder-handed-over's command matches what export-code.mjs actually implements", () => {
+  const command = REFUSAL_ROUTES["production-folder-handed-over"]!.command!;
+  expect(command).toContain("--results <report.json>");
+  expect(command).toContain("--id <proposalId>");
+  expect(command).not.toContain("export-code.mjs <report.json> <id>");
+});
+
+// probe-not-run's command used to name a --spec flag cli.ts's probe command never implements —
+// it reads its ledger from stdin (readJsonRequest), taking only an optional --cwd flag. Locked
+// against the phantom flag and for the real stdin-redirect form.
+test("probe-not-run's command matches what lib/host/cli.ts actually implements", () => {
+  const command = REFUSAL_ROUTES["probe-not-run"]!.command!;
+  expect(command).toContain("probe < probes.json");
+  expect(command).not.toContain("--spec");
+});
+
 test("the register lists every refusal the code can emit — a route nobody wrote down is a route nobody maintains", () => {
   const register = readFileSync(
     join(import.meta.dir, "../../docs/splash/refusal-routes.md"),
