@@ -93,6 +93,44 @@ nommés depuis avant le premier commit — non une régression ; réserve : `.en
 `bun test` par paquet, donc ce chiffre ne prouve pas que Datawrapper/MapTiler ont tourné). Détail
 et mesures : `docs/splash/CHANGELOG.md`, session 2026-07-29.
 
+## ★ État courant — 2026-07-30 (LIS CECI en priorité)
+
+`main` = `splash-merge/`, **157 commits** au-dessus de `47e83752`, arbre propre, gate **21/22** — le
+seul échec est l'ambiant `eligibility.test.ts` « a mark can never carry an empty reason
+(readiness.ts:54) », antérieur à tout ce travail.
+
+**Les quatre familles du registre de sweep sont fusionnées** (B → C → A → D), plus la mesure
+carré/portrait, le plan géographie, les trois trous de la passe de grille, et le premier segment de
+production du PONT entre les deux chaînes.
+
+**Non fusionné, prêt, mais IL LUI MANQUE SA REVUE FINALE** : `feat/geography-anywhere`
+(worktree `splash-geography`, 21 tâches, 31 commits, gate 21/22). Ne pas fusionner sans elle — sur les
+quatre plans précédents, cette étape a trouvé À CHAQUE FOIS un Critical que les revues par tâche
+avaient laissé passer, dont trois faux blocages qui auraient tué des runs réels.
+
+**★ LE CHANTIER SUIVANT EST STRUCTUREL — le découpage de `skills/splash/SKILL.md` par phase.**
+Mesuré contre les deux systèmes de référence : Superpowers découpe par PHASE (14 skills, médiane
+167 lignes, 10/14 avec une table de rationalisations) ; Spotlight garde un orchestrateur de 509 lignes
+qui fait `invoke-skill(...)` au point du flux (11 skills, médiane 159, 9/11 nommant leurs
+anti-patterns, plus une garde qui STOPPE si un skill ne se charge pas). `SKILL.md` fait **1354 lignes**
+et n'a **aucune** table d'anti-patterns : arrivé à l'EXPORT, les règles de PROPOSITION sont 900 lignes
+derrière. Splash délègue à des MOTEURS, jamais des règles de PARCOURS. C'est la cause mécanique du
+plus gros amas du registre (« les règles écrites que rien n'applique ») — démontrée le 2026-07-30 par
+un test manuel où 5 retours sur 8 portaient sur des règles déjà écrites, dont deux citant mot pour mot
+la phrase fautive comme contre-exemple. Détail et chiffres : mémoire `resume-2026-07-30`.
+
+**Pour tester à la main** : `claude --plugin-dir /Users/rmdms/Sites/Professional/splash-merge` — le
+dépôt EST un plugin (`.claude-plugin/plugin.json`). Article de test :
+`/Users/rmdms/Sites/Professional/splash-test-article/`.
+
+**Discipline mesurée, à reconduire** : commiter AVANT toute vérification longue (toutes les pertes de
+ces deux jours ont été des arbres non commités) · lire `lib` UNIQUEMENT via `cd lib && bun test`
+(depuis la racine, l'invocation est sensible au cwd et fabrique 5 faux échecs) · un gate complet exige
+une machine calme (deux gates concurrents invalident les deux) · ne jamais commiter les PNG
+`output-proof/` régénérés.
+
+---
+
 ## ★ État courant — 2026-07-28 (LIS CECI en priorité)
 
 `main` = `splash-merge/`, gate **22/22** (22 checks : 9 `tsc --noEmit` + 13 `bun test` — le compte a
