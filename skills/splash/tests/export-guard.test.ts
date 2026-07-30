@@ -207,6 +207,59 @@ describe("assertDelivered", () => {
   });
 });
 
+describe("assertDelivered — the build folder is not a delivery", () => {
+  it("refuses an html hand-over that still carries the build's own files, naming every one", () => {
+    expect(() =>
+      assertDelivered(
+        ["interactive.html", "config.json", "native-source.json"],
+        {
+          format: "interactive",
+          form: "html",
+        },
+      ),
+    ).toThrow(/config\.json/);
+    expect(() =>
+      assertDelivered(
+        ["interactive.html", "config.json", "native-source.json"],
+        {
+          format: "interactive",
+          form: "html",
+        },
+      ),
+    ).toThrow(/hand(ed)? over/);
+  });
+
+  it("accepts the sanctioned html export — exactly the html file", () => {
+    expect(() =>
+      assertDelivered(["interactive.html"], {
+        format: "interactive",
+        form: "html",
+      }),
+    ).not.toThrow();
+  });
+
+  it("accepts a runnable source bundle with its config.json — the measured exemption", () => {
+    expect(() =>
+      assertDelivered(
+        ["package.json", "vite.config.ts", "config.json", "index.html"],
+        {
+          format: "scrolly",
+          form: "code-source",
+        },
+      ),
+    ).not.toThrow();
+  });
+
+  it("keeps refusing a lone html copy as a code-source bundle — the older rule still stands", () => {
+    expect(() =>
+      assertDelivered(["interactive.html"], {
+        format: "interactive",
+        form: "code-source",
+      }),
+    ).toThrow(/package\.json/);
+  });
+});
+
 describe("isHostedUrl — a recorded embed URL must look resolvable", () => {
   it("accepts a real fly.dev host URL", () => {
     expect(

@@ -8,6 +8,11 @@ import { sha256Hex, verifyEditorialSignature } from "./editorial-signoff";
 // one rule (and its exact error messages) lives once, and re-exports isHostedUrl for its own
 // callers (export-code.mjs, the tests). contract.ts imports nothing FROM here — no cycle.
 import { assertFileMedia, isHostedUrl } from "../../../lib/core/contract";
+import {
+  exportPrecondition,
+  type HandoverForm,
+} from "../../../lib/loop/preconditions";
+import { refusalSentence } from "../../../lib/core/routed-refusal";
 
 export { isHostedUrl };
 
@@ -88,7 +93,11 @@ export function assertEditoriallyCleared(
 
 // The delivery FORM axis — orthogonal to `VisualFormat`. Only interactive/scrolly deliveries
 // choose one; static/video have exactly one shape, so `form` is always null there.
-export type DeliveryForm = "html" | "code-source" | "embed" | null;
+//
+// ALIASED rather than re-declared: lib/loop/preconditions.ts owns the union now, because the
+// same rule is read by the host façade and by this guard, and two structurally identical unions
+// in two layers is how the two readers start disagreeing about what "code-source" means.
+export type DeliveryForm = HandoverForm;
 
 // After EXPORT: a hand-over folder is a REAL delivery only if it matches the shape of the
 // spec's pinned `format` (single-format redesign — one element = one format, produced +
@@ -111,6 +120,16 @@ export function assertDelivered(
   opts: { format: VisualFormat; form: DeliveryForm; dir?: string },
 ): void {
   const { format, form, dir } = opts;
+
+  // ① A PRODUCTION FOLDER IS NOT A DELIVERY. The 16 proven non-deliveries of the 2026-07-28 sweep
+  // are all inside the 36 cases that handed this folder back, and none outside it — so this is a
+  // measured rule, not a tidiness preference. The one exemption (a runnable source bundle keeps
+  // its config.json) lives in exportPrecondition, with the line of bundle-source.mjs that earns it.
+  //
+  // FIRST, before the per-format shapes: "this is the wrong folder entirely" is a more useful
+  // thing to be told than "your static delivery has 4 files".
+  const planted = exportPrecondition(files, { format, form });
+  if (planted) throw new Error(refusalSentence(planted));
 
   if (format === "static") {
     if (form !== null)
