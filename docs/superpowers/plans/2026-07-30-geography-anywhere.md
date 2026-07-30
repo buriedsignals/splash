@@ -2360,3 +2360,246 @@ same value for both runs). Report the count. Revert before continuing.
 git add lib/loop/manifest.ts lib/loop/manifest.test.ts
 git commit -m "feat(manifest): provenanceHash hashes geography + geoJoin (D9)"
 ```
+
+---
+
+## Phase D — refusal rewrite: `assemble/map-native.ts` and `produce.ts`
+
+**Design call on where D6's "below ADM1, the guard becomes 'joined on an unambiguous key'" lands:**
+the ADM1 index (Task 7/8) is 96.5% unambiguous BY CONSTRUCTION (spec D6: 1,651 of 47,231 keys
+collide) — it is not the layer where per-value ambiguity needs a human decision. That layer is a
+DECLARED file's join, below ADM1, where no global key exists at all — exactly the domain of
+`GeoJoinLedger` (Task 5) and its `unresolvedGeoJoins` gate. So this plan implements D6's guard
+change as TWO separate, already-existing-shaped mechanisms rather than one rewritten threshold:
+`geoRefusal`'s row-count threshold (Task 12) stays exactly what it is (it is sound at ADM0/ADM1,
+per spec D6's own words — "ce seuil est sain à l'ADM0/ADM1"), and the NEW per-value ambiguity
+check is `produce()`'s `unresolvedGeoJoins` refusal (Task 14), which blocks on any pending value
+regardless of how healthy the overall match RATE looks. Together they are the "count stays, stops
+being the only question" the spec asks for.
+
+### Task 12: `geoRefusal` speaks to the ADM1 index too, not just the two shipped names
+
+**Files:**
+- Modify: `lib/loop/assemble/map-native.ts` — `geoRefusal` (`:116-128`, verified in full while
+  writing this plan), and every branch in `assembleMapNative` that reads `geo.basemap` (`:202,
+  205-207, 215, 218, 232` — six occurrences, verified by `grep -n "geo\.basemap" lib/loop/
+  assemble/map-native.ts` while writing this plan).
+- Test: `lib/loop/assemble/map-native.test.ts` (confirm exact filename with `ls` before editing).
+
+**Interfaces:**
+- Consumes: `GeoMatch.geography: GeographyRef` (Task 9).
+- Produces: no new exported symbol — `geoRefusal`'s signature and `assembleMapNative`'s output
+  shape are otherwise unchanged; only the wording of the refusal message and the source of the
+  `basemap` value written into the emitted config change.
+
+**Design call on the emitted config's `basemap` field:** per Phase B's plan-wide design call,
+map-native's `ChoroplethConfig`/`CartogramConfig`/`DotDensityConfig` keep `basemap?: string` for
+back-compat and gain `geography?: GeographyRef`. This task emits BOTH: `basemap:
+geo.geography.set` (a readable string a legacy consumer can still log) AND `geography:
+geo.geography` (what Task 19's de-inlined component actually resolves geometry from).
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+// lib/loop/assemble/map-native.test.ts (append)
+import { describe, it, expect } from "bun:test";
+import { assembleMapNative } from "./map-native";
+// reuse this file's existing ProductionBrief-building helper — find it before writing new
+// fixtures from scratch (grep -n "function.*[Bb]rief" lib/loop/assemble/map-native.test.ts).
+
+describe("geoRefusal — ADM1-aware wording", () => {
+  it("does not claim only 'world'/'us-states' are the shipped basemaps when geo is undefined", () => {
+    const brief = /* choropleth brief with brief.geo undefined */;
+    const result = assembleMapNative(brief);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      // the old wording named exactly "world and us-states" — the ADM1 index is a third,
+      // real candidate now, and the message must not claim otherwise.
+      expect(result.message).not.toMatch(/the shipped basemaps are world and us-states/);
+    }
+  });
+
+  it("emits geo.geography.set as the config's basemap string, and geography wholesale, for an ADM1 match", () => {
+    const brief = /* choropleth brief whose brief.geo.geography = {
+      origin: "shipped", set: "natural-earth-admin-1", scope: "CHE", level: "canton",
+      joinKey: "name", joinKeyFamily: "name",
+    }, matched=2, total=2, unmatched=[] */;
+    const result = assembleMapNative(brief);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const cfg = result.value as { basemap: string; geography: unknown };
+      expect(cfg.basemap).toBe("natural-earth-admin-1");
+      expect(cfg.geography).toEqual(brief.geo!.geography);
+    }
+  });
+});
+```
+
+- [ ] **Step 2: Run the tests to verify they fail**
+
+Run: `cd lib && bun test loop/assemble/map-native.test.ts`
+Expected: FAIL — `geo.basemap` does not exist on the new `GeoMatch` shape (typecheck error
+surfaces as a test failure once the fixture is built against the real type), and the emitted
+config carries no `geography` key yet.
+
+- [ ] **Step 3: Implement**
+
+Replace `geoRefusal` (`:116-128`):
+
+```ts
+function geoRefusal(geo: GeoMatch | undefined): string | undefined {
+  if (!geo)
+    return (
+      `this data carries no geography Splash can place — tried the shipped basemaps ` +
+      `(${BASEMAP_NAMES.join(", ")}) and the built-in admin-1 index, and no column matched any of them`
+    );
+  if (geo.matched * 2 < geo.total)
+    return (
+      `only ${geo.matched} of ${geo.total} rows match ${geo.geography.set}` +
+      `${geo.geography.scope ? ` (${geo.geography.scope})` : ""} — unmatched: ${geo.unmatched.join(", ")}`
+    );
+  return undefined;
+}
+```
+
+Replace every `geo.basemap` read in the three region-type branches (`choropleth`, `cartogram`,
+`dot-density`) with `geo.geography.set`, and ADD `geography: geo.geography` to each emitted
+config object literal, e.g. for `choropleth` (`:227-243`):
+
+```ts
+  return ok({
+    type: "choropleth",
+    regionKey: geo.column,
+    valueField,
+    rows: typedRows(rows, numeric),
+    basemap: geo.geography.set,
+    geography: geo.geography,
+    title,
+    // ...unchanged below
+```
+
+Apply the same two-line change (`basemap: geo.geography.set` + `geography: geo.geography`) to the
+`cartogram` branch (which today does NOT emit `basemap` at all, per the file's actual content
+verified while writing this plan — `cartogram`'s `ok({...})` at `:182-190` has no `basemap` key;
+ADD `geography: geo.geography` there, do not invent a `basemap` field it never had) and the
+`dot-density` branch (`:209-224`, which does emit `basemap: geo.basemap` twice — at `boundaries:
+geo.basemap` and `basemap: geo.basemap` — both become `geo.geography.set`, plus add `geography:
+geo.geography`). The `dot-density`-specific refusal at `:202-208` (`if (geo.basemap !== "world")`)
+is Task 13's job, not this one — leave it reading `geo.basemap` for now; Task 13 fixes it next
+and this task's typecheck will show it as the one remaining compile error to hand off.
+
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `cd lib && bun test loop/assemble/map-native.test.ts`
+Expected: PASS for the two new tests. `bunx tsc --noEmit` from `lib/` will still show ONE error
+in the `dot-density` refusal (`:202`) — expected, Task 13 fixes it next; do not paper over it in
+this task.
+
+- [ ] **Step 5: Mutation — prove the "does not claim only world/us-states" test depends on the
+  message actually changing, not on a coincidence**
+
+Temporarily revert `geoRefusal`'s undefined-branch message to the original wording (`` `this data
+carries no geography Splash can place — the shipped basemaps are ${BASEMAP_NAMES.join(" and
+")}, and no column matched either of them` ``).
+
+Run: `cd lib && bun test loop/assemble/map-native.test.ts`
+Expected: "does not claim only 'world'/'us-states'..." FAILS (the message DOES match the excluded
+pattern). Report the count. Revert the mutation before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/loop/assemble/map-native.ts lib/loop/assemble/map-native.test.ts
+git commit -m "feat(assemble): geoRefusal and emitted config speak GeographyRef, not a bare basemap string"
+```
+
+### Task 13: dot-density's refusal re-derived against the injected-geometry reality (D10, end note)
+
+**Files:**
+- Modify: `lib/loop/assemble/map-native.ts` — the `dot-density` refusal (`:202-208`, verified
+  while writing this plan; the comment there cites "task-7-report.md" and "verified 2026-07-28,
+  task-7" as the prior investigation that `DotDensityMap.tsx` hard-imports `world.geojson` and
+  hard-codes `iso_a3` — that hard-coding is what Task 19/20 (Phase E) removes).
+- Test: `lib/loop/assemble/map-native.test.ts`.
+
+**Interfaces:**
+- Consumes: nothing new — this task only re-derives an existing refusal against Task 19's
+  post-condition.
+
+**This task is SEQUENCED AFTER Task 19** (`DotDensityMap.tsx` stops hard-importing
+`world.geojson`), even though it is written here for narrative order alongside its sibling
+refusal-rewrite tasks. Do not implement this task until Task 19 has landed — the refusal this
+task re-derives is only re-derivable once the component it describes has actually changed. The
+spec is explicit about this shape: "ce refus... devient mort ou faux dès que la géométrie arrive
+par la configuration... il doit être ré-écrit contre la nouvelle réalité, pas effacé au passage."
+
+- [ ] **Step 1: Write the failing test** (write this now; it will fail for the RIGHT reason —
+  "not yet re-derived" — until Task 19 lands, then fail for the WRONG reason if left unimplemented,
+  which is the signal to come back and finish this task)
+
+```ts
+// lib/loop/assemble/map-native.test.ts (append)
+it("dot-density accepts a non-world geography once DotDensityMap.tsx reads injected config (post Task 19)", () => {
+  const brief = /* dot-density brief with brief.geo.geography.set = "us-states" */;
+  const result = assembleMapNative(brief);
+  // Pre-Task-19: this MUST still fail (the component cannot render it yet) — this assertion is
+  // written to hold POST-Task-19. If Task 19 has not landed, this test is expected red; that is
+  // the correct state, not a bug in this task.
+  expect(result.ok).toBe(true);
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails for the documented reason**
+
+Run: `cd lib && bun test loop/assemble/map-native.test.ts`
+Expected (pre-Task-19): FAIL — `result.ok` is `false`, refusal message names the old
+`world.geojson`-hardcoding reason. This is the expected, correct failure at this point in the
+plan's sequencing.
+
+- [ ] **Step 3: Implement (only once Task 19 has landed)**
+
+Replace the refusal (`:193-208`):
+
+```ts
+  if (brief.nativeType === "dot-density") {
+    // Task 19 (skills/map-native geometry de-inlining) made DotDensityMap.tsx read its geometry
+    // from the injected config's `geography` descriptor instead of a hard-imported
+    // world.geojson + hard-coded "iso_a3" — this refusal is dead now, and removing it (rather
+    // than leaving a permanently-true no-op check) is what the spec's own end-note demands.
+    return ok({
+      type: "dot-density",
+      regionKey: geo.column,
+      boundaries: geo.geography.set,
+      rows: typedRows(rows, numeric),
+      valueField,
+      basemap: geo.geography.set,
+      geography: geo.geography,
+      title,
+      description,
+      source,
+      ...(brief.lang ? { lang: brief.lang } : {}),
+      ...(unit ? { valueUnit: unit } : {}),
+    });
+  }
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `cd lib && bun test loop/assemble/map-native.test.ts`
+Expected: PASS.
+
+- [ ] **Step 5: Mutation — prove the test depends on the refusal actually being gone**
+
+Temporarily restore the old `if (geo.geography.set !== "world") return fail(...)` guard (adapted
+to the new field name).
+
+Run: `cd lib && bun test loop/assemble/map-native.test.ts`
+Expected: the dot-density test FAILS again (`result.ok` is `false`). Report the count. Revert
+before continuing.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add lib/loop/assemble/map-native.ts lib/loop/assemble/map-native.test.ts
+git commit -m "feat(assemble): dot-density re-derived — no longer hard-refuses non-world geography"
+```
