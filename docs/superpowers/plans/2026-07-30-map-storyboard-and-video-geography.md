@@ -253,7 +253,16 @@ The first of three video tasks, split by family so a reviewer can reject one wit
 
 **Files:** `lib/geo/resolve-for-produce.ts`, `lib/geo/resolve-for-produce.test.ts`.
 
-- [ ] **Step 1: Confirm Tasks 7-9 all landed** and their proofs were watched. If any did not, **stop and report** — this task must not run ahead of them.
+> **AMENDMENT (controller, after Task 9) — the default props carry no geometry.**
+> `remotion/src/Root.tsx:151`'s `routeDefaultProps` has no `config.geometry`, and the same is expected
+> for the choropleth, cartogram and dot-density families. Once Tasks 7/8/9/13 make the compositions read
+> injected geometry, **rendering from default props throws** — which breaks this task's watched render
+> AND anyone who opens Remotion Studio. Step 1 below therefore also checks every family's default props
+> and, where the geometry is missing, supplies a small real one (a two-or-three-feature subset, not the
+> full world file) so the Studio keeps working. Report what you found per family: a developer opening
+> the Studio to a throw is a regression this plan would otherwise have shipped.
+
+- [ ] **Step 1: Confirm Tasks 7, 8, 9 AND 13 all landed, and fix the default props** and their proofs were watched. If any did not, **stop and report** — this task must not run ahead of them.
 - [ ] **Step 2: Render a Swiss-canton choropleth video BEFORE touching the refusal**, by temporarily bypassing it locally (do not commit the bypass). Watch it. If the territories are wrong, that is the finding — report it and stop.
 - [ ] **Step 3: Remove the refusal** and the test that pins it; keep the `declared`-origin half if the declared path is still unwired (check `geography.sourcePath` — it was set by no production code as of `fba11075`).
 - [ ] **Step 4: Re-render and watch.** Report what you saw: the territories, the colours against the legend, the furniture, the credit.
