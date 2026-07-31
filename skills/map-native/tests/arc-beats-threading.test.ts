@@ -5,9 +5,11 @@ import {
   unsupportedArcBeatsErrors,
   ARC_CAPABLE_MAP_TYPES,
 } from "../src/map-arc";
-import { applyMapArc, deriveMapStory } from "../src/map-story";
+import { applyMapArc, deriveMapStory, type MapArcBeat } from "../src/map-story";
 import { scrollyStepCount } from "../src/route-story";
 import { computeChoropleth } from "../src/choropleth-geo";
+import { deriveLocatorStory } from "../src/locator-story";
+import type { LocatorMarker } from "../src/locator-geo";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import world from "../assets/geo/world.geojson" assert { type: "json" };
 
@@ -24,8 +26,10 @@ describe("map-native story components forward the confirmed claim-arc", () => {
   const files = [
     "components/ChoroplethStory.tsx", // video
     "components/SymbolStory.tsx", // video
+    "components/LocatorStory.tsx", // video
     "components/ChoroplethScrolly.tsx", // scrolly
     "components/SymbolScrolly.tsx", // scrolly
+    "components/LocatorScrolly.tsx", // scrolly
   ];
   for (const file of files) {
     it(`${file} puts arcBeats in the deriver meta`, () => {
@@ -132,15 +136,79 @@ describe("the composition sizers agree with the walk that renders", () => {
   });
 });
 
+// Same class of proof for locator, added when the locator deriver gained arc support
+// (map-storyboard-and-video-geography, Task 1). LocatorStory.tsx/LocatorScrolly.tsx both
+// literally call deriveLocatorStory(config.markers, meta) then mapStoryToChapters(beats, ...)
+// (see LocatorScrolly.tsx's per-beat camera-solution build) — reproduced here as
+// `renderedSteps`, exactly like the choropleth block above.
+describe("the locator sizer agrees with the walk that renders", () => {
+  const MARKERS: LocatorMarker[] = [
+    { lon: 6.1, lat: 46.2, label: "Geneva" },
+    { lon: 6.6, lat: 46.5, label: "Lausanne" },
+    { lon: 8.5, lat: 47.4, label: "Zurich" },
+    { lon: 7.4, lat: 46.9, label: "Bern" },
+    { lon: 4.8, lat: 45.7, label: "Chambéry" },
+  ];
+  const ARC: MapArcBeat[] = [
+    { region: "Zurich", role: "establish", text: "Zurich anchors it." },
+    { region: "Bern", role: "build", text: "Bern widens it." },
+    { region: "Geneva", role: "payoff", text: "Geneva closes it." },
+  ];
+  const base = {
+    type: "locator" as const,
+    title: "Five places, in the order the story needs",
+    description: "Five Swiss/French places",
+    basemap: "world",
+    markers: MARKERS,
+  };
+
+  function renderedSteps(config: Record<string, unknown>): number {
+    const beats = deriveLocatorStory(config.markers as LocatorMarker[], {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      insight:
+        (config.insight as string | undefined) ?? (config.title as string),
+      arcBeats: config.arcBeats as MapArcBeat[] | undefined,
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      regionsWithData: (config.markers as unknown[]).length,
+    }).steps.length;
+  }
+
+  const size = (config: Record<string, unknown>) =>
+    scrollyStepCount(config, world as unknown as GeoJSON.FeatureCollection);
+
+  it("sizes an ARC config for the arc's own length, not the salience walk's", () => {
+    const config = { ...base, arcBeats: ARC };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+
+  it("can go red: the arc's length differs from the salience walk's", () => {
+    // 3 confirmed reveals vs. 5 salience reveals (all 5 markers, few-annotated, default cap) —
+    // the two walks CANNOT accidentally agree here, so this is a real lever.
+    const withArc = { ...base, arcBeats: ARC };
+    const withoutArc = { ...base };
+    expect(size(withArc)).not.toBe(size(withoutArc));
+    expect(renderedSteps(withArc)).not.toBe(renderedSteps(withoutArc));
+  });
+
+  it("leaves the salience sizing untouched", () => {
+    const config = { ...base };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+});
+
 describe("Remotion's calculateMetadata sizers forward the arc too", () => {
   // Root.tsx cannot be imported under a test (remotion + module-scope MapTiler key), and what
   // went wrong is a missing property in an object literal — same guard shape as above.
-  it("storyMeta and symbolStoryMeta both put arcBeats in the deriver meta", () => {
+  it("storyMeta, symbolStoryMeta and locatorStoryMeta all put arcBeats in the deriver meta", () => {
     const source = readFileSync(
       join(import.meta.dir, "..", "remotion", "src", "Root.tsx"),
       "utf8",
     );
-    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(2);
+    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(3);
   });
 });
 
@@ -167,7 +235,7 @@ describe("applyMapArc marks its beats as authored", () => {
 describe("unsupportedArcBeatsErrors", () => {
   const plan = [{ region: "A", role: "establish" as const, text: "a" }];
 
-  it("is silent for the two arc-capable types", () => {
+  it("is silent for every arc-capable type", () => {
     for (const type of ARC_CAPABLE_MAP_TYPES)
       expect(unsupportedArcBeatsErrors({ arcBeats: plan }, type)).toEqual([]);
   });
@@ -186,8 +254,10 @@ describe("unsupportedArcBeatsErrors", () => {
   });
 
   it("refuses an EMPTY plan too — an empty array is still a field the render ignores", () => {
-    expect(unsupportedArcBeatsErrors({ arcBeats: [] }, "locator")).toHaveLength(
-      1,
-    );
+    // "locator" used to be the example here — it moved to the capable side in
+    // map-storyboard-and-video-geography Task 1, so a non-capable type stands in now.
+    expect(
+      unsupportedArcBeatsErrors({ arcBeats: [] }, "dot-density"),
+    ).toHaveLength(1);
   });
 });
