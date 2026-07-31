@@ -8,8 +8,14 @@ import {
 import { deriveSymbolStory } from "./symbol-story.ts";
 import { deriveLocatorStory } from "./locator-story.ts";
 import { deriveCartogramStory } from "./cartogram-story.ts";
-import { computeChoropleth, type ChoroplethData } from "./choropleth-geo.ts";
+import { deriveDotDensityStory } from "./dot-density-story.ts";
+import {
+  computeChoropleth,
+  regionBounds,
+  type ChoroplethData,
+} from "./choropleth-geo.ts";
 import { computeCartogram } from "./cartogram-geo.ts";
+import { computeDotDensity } from "./dot-density-geo.ts";
 import type { SymbolPoint } from "./symbol-geo.ts";
 import type { LocatorMarker } from "./locator-geo.ts";
 import { bbox } from "@turf/turf";
@@ -17,6 +23,7 @@ import {
   validateChoroplethConfig,
   validateLocatorConfig,
   validateCartogramConfig,
+  validateDotDensityConfig,
 } from "./validate-config.ts";
 
 const validRegions = ["Geneva", "Vaud", "Zurich", "Bern"];
@@ -219,6 +226,51 @@ describe("mapArcErrors wired into validateCartogramConfig", () => {
 
   it("validates exactly as today when arcBeats is absent (behaviour-preserving)", () => {
     const result = validateCartogramConfig(baseCartogramSpec);
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe("mapArcErrors wired into validateDotDensityConfig", () => {
+  const baseDotDensitySpec = {
+    type: "dot-density",
+    basemap: "world",
+    boundaries: "world",
+    regionKey: "iso_a3",
+    valueField: "value",
+    title: "Three regions dot-density with a real insight",
+    rows: [
+      { iso_a3: "FRA", value: 68 },
+      { iso_a3: "DEU", value: 84 },
+      { iso_a3: "ESP", value: 44 },
+    ],
+  };
+
+  it("passes with a well-formed arcBeats override anchored on real regionKey values", () => {
+    const result = validateDotDensityConfig({
+      ...baseDotDensitySpec,
+      arcBeats: [
+        { region: "FRA", role: "establish", text: "France starts." },
+        { region: "DEU", role: "build", text: "Germany climbs." },
+        { region: "ESP", role: "payoff", text: "Spain lands it." },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails on an arcBeats override anchored on a regionKey value not in the rows, listing the real ones", () => {
+    const result = validateDotDensityConfig({
+      ...baseDotDensitySpec,
+      arcBeats: [{ region: "Nowhere", role: "establish", text: "sets" }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.some((e) => /not found|region/i.test(e))).toBe(true);
+      expect(result.errors.some((e) => /FRA/.test(e))).toBe(true);
+    }
+  });
+
+  it("validates exactly as today when arcBeats is absent (behaviour-preserving)", () => {
+    const result = validateDotDensityConfig(baseDotDensitySpec);
     expect(result.ok).toBe(true);
   });
 });
@@ -945,6 +997,199 @@ describe("deriveCartogramStory — applyMapArc wiring", () => {
       {
         kind: "takeaway",
         camera: [0.2499880989371377, -0.8750000000000001, 3, 2],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "B has the most people",
+      },
+    ]);
+  });
+});
+
+// Four unit-square regions in a 2x2 arrangement, keyed A..D — the SAME values/layout shape
+// as cartogram-story.test.ts / the cartogram wiring block above (B=16 highest, D=9 2nd,
+// A=4 3rd, C=1 lowest), so the ARC below (C, A, D) both skips the top-ranked region (B) and
+// reorders the rest, proving it is not just a re-sorted density walk. dotValue:1 keeps each
+// region's totalCount == its raw value (no rounding), so the expected callout text is exact.
+const dotDensitySquare = (
+  id: string,
+  x: number,
+  y: number,
+): GeoJSON.Feature => ({
+  type: "Feature",
+  properties: { iso_a3: id, name: id },
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [x, y],
+        [x + 1, y],
+        [x + 1, y + 1],
+        [x, y + 1],
+        [x, y],
+      ],
+    ],
+  },
+});
+const dotDensityFeatures: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [
+    dotDensitySquare("A", 0, 1),
+    dotDensitySquare("B", 2, 1),
+    dotDensitySquare("C", 0, -1),
+    dotDensitySquare("D", 2, -1),
+  ],
+};
+const dotDensityValues = [
+  { iso_a3: "A", value: 4 },
+  { iso_a3: "B", value: 16 },
+  { iso_a3: "C", value: 1 },
+  { iso_a3: "D", value: 9 },
+];
+const dotDensityLayout = computeDotDensity(
+  {
+    regionKey: "iso_a3",
+    valueField: "value",
+    rows: dotDensityValues,
+    dotValue: 1,
+  },
+  dotDensityFeatures,
+  "iso_a3",
+);
+const dotDensityArc: MapArcBeat[] = [
+  { region: "C", role: "establish", text: "C starts the smallest." },
+  { region: "A", role: "build", text: "A grows in the middle." },
+  { region: "D", role: "payoff", text: "D closes near the top." },
+];
+
+// The reveal camera is `regionBounds(region.feature)` — the EXACT expression
+// deriveDotDensityStory's own density-ranked walk uses for a reveal's camera (no
+// frame-expand step, unlike cartogram's frameCell) — so an arc-anchored camera is pinned
+// to the SAME math a ranked reveal would produce for that region, not a bespoke shape
+// invented for the arc path.
+function expectedDotDensityCamera(
+  id: string,
+): [number, number, number, number] {
+  const region = dotDensityLayout.regions.find((r) => r.key === id)!;
+  return regionBounds(region.feature);
+}
+
+describe("deriveDotDensityStory — applyMapArc wiring", () => {
+  it("with a confirmed arcBeats: reveals follow the ARC order (not the density-ranked order), carry the claim text verbatim, and the camera frames the NAMED region's own bounds — not the map's default framing", () => {
+    const beats = deriveDotDensityStory(dotDensityLayout, {
+      title: "Four regions, in the order the story needs",
+      arcBeats: dotDensityArc,
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    // ARC order (C, A, D) — NOT density-ranked order (B, D, A, C), which the density-ranked
+    // walk below would give, and skips B entirely (the arc's own selection, not a cap).
+    expect(reveals.map((b) => b.highlight[0])).toEqual(["C", "A", "D"]);
+    expect(reveals.map((b) => b.role)).toEqual([
+      "establish",
+      "build",
+      "payoff",
+    ]);
+    expect(reveals.map((b) => b.copy)).toEqual([
+      "C starts the smallest.",
+      "A grows in the middle.",
+      "D closes near the top.",
+    ]);
+    for (const b of reveals) expect(b.callout?.text).toBe(b.copy);
+    // Camera is the NAMED region's own bounds — never the establish/title full extent, which
+    // the density-ranked walk's title/establish/takeaway beats use instead.
+    expect(reveals.map((b) => b.camera)).toEqual([
+      expectedDotDensityCamera("C"),
+      expectedDotDensityCamera("A"),
+      expectedDotDensityCamera("D"),
+    ]);
+    for (const r of reveals)
+      expect(r.camera).not.toEqual(dotDensityLayout.bounds);
+  });
+
+  it("an arcBeats naming a regionKey value that does not exist is refused by name, listing the real ones — not silently dropped", () => {
+    const result = validateDotDensityConfig({
+      type: "dot-density",
+      basemap: "world",
+      boundaries: "world",
+      regionKey: "iso_a3",
+      valueField: "value",
+      title: "Four regions dot-density with a real insight",
+      rows: dotDensityValues,
+      arcBeats: [
+        {
+          region: "Nowhere",
+          role: "establish",
+          text: "Nowhere is not on this map.",
+        },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(
+        result.errors.some((e) => /"Nowhere" not found in the data/i.test(e)),
+      ).toBe(true);
+      expect(result.errors.some((e) => /A.*B.*C.*D/.test(e))).toBe(true);
+    }
+  });
+
+  it("without arcBeats: byte-identical to the captured density-ranked baseline", () => {
+    const beats = deriveDotDensityStory(dotDensityLayout, {
+      title: "Population dot-density",
+      description: "Regions dotted by population",
+      insight: "B has the most people",
+    });
+    expect(beats).toEqual([
+      {
+        kind: "title",
+        camera: [0, -1, 3, 2],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "Population dot-density",
+      },
+      {
+        kind: "establish",
+        camera: [0, -1, 3, 2],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      {
+        kind: "reveal",
+        camera: [2, 1, 3, 2],
+        highlight: ["B"],
+        dim: true,
+        callout: { region: "B", name: "B", value: "16", text: "B — 16" },
+        copy: "B — 16",
+      },
+      {
+        kind: "reveal",
+        camera: [2, -1, 3, 0],
+        highlight: ["D"],
+        dim: true,
+        callout: { region: "D", name: "D", value: "9", text: "D — 9" },
+        copy: "D — 9",
+      },
+      {
+        kind: "reveal",
+        camera: [0, 1, 1, 2],
+        highlight: ["A"],
+        dim: true,
+        callout: { region: "A", name: "A", value: "4", text: "A — 4" },
+        copy: "A — 4",
+      },
+      {
+        kind: "reveal",
+        camera: [0, -1, 1, 0],
+        highlight: ["C"],
+        dim: true,
+        callout: { region: "C", name: "C", value: "1", text: "C — 1" },
+        copy: "C — 1",
+      },
+      {
+        kind: "takeaway",
+        camera: [0, -1, 3, 2],
         highlight: [],
         dim: false,
         callout: null,

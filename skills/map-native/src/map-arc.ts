@@ -52,16 +52,17 @@ export function mapArcErrors(
 }
 
 // The map story types whose derivers have a seam for a confirmed arc: deriveMapStory
-// (choropleth), deriveSymbolStory (symbol), deriveLocatorStory (locator) and
-// deriveCartogramStory (cartogram) all branch on `meta.arcBeats` and walk it through
-// applyMapArc. The other three (route, dot-density, hex-grid) derive their walk from the
-// data unconditionally — there is nowhere to put a plan (yet — see the plan this task
-// belongs to for the remaining types).
+// (choropleth), deriveSymbolStory (symbol), deriveLocatorStory (locator),
+// deriveCartogramStory (cartogram) and deriveDotDensityStory (dot-density) all branch on
+// `meta.arcBeats` and walk it through applyMapArc. The other two (route, hex-grid) derive
+// their walk from the data unconditionally — there is nowhere to put a plan (yet — see the
+// plan this task belongs to for the remaining types).
 export const ARC_CAPABLE_MAP_TYPES = [
   "choropleth",
   "symbol",
   "locator",
   "cartogram",
+  "dot-density",
 ] as const;
 
 // Human-readable "a X, a Y, or a Z" listing of the arc-capable types, for the refusal
@@ -120,7 +121,8 @@ export function unsupportedArcBeatsErrors(
 // own story unconditionally and is REFUSED the field outright (unsupportedArcBeatsErrors
 // above), so it never warns here. Reading the SAME list `unsupportedArcBeatsErrors` refuses
 // against means a type gaining arc support (like ARC_CAPABLE_MAP_TYPES just did for locator,
-// then cartogram) gains this nudge automatically — no second place to remember to update.
+// then cartogram, then dot-density) gains this nudge automatically — no second place to
+// remember to update.
 export function mapNarrativeFallbackWarning(config: unknown): string | null {
   const c = config as { type?: string; arcBeats?: unknown } | null;
   // Mirror the deriver's gate exactly (`meta.arcBeats?.length`): a confirmed, NON-EMPTY

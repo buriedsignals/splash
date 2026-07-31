@@ -251,6 +251,9 @@ const dotDensityStoryMeta = makeStoryMeta(
         description: cfg.description,
         insight: cfg.insight ?? cfg.title ?? "",
         unit: cfg.valueUnit ?? "",
+        // Same mirror as symbolStoryMeta/locatorStoryMeta/cartogramStoryMeta above — size
+        // the walk that will actually render.
+        arcBeats: cfg.arcBeats,
       }),
       resolveRevealMode(cfg),
     );

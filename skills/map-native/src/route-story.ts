@@ -131,6 +131,11 @@ export function scrollyStepCount(
       description: config.description,
       insight: config.insight ?? config.title ?? "",
       unit: config.valueUnit ?? "",
+      // The SIZER must derive the same walk the renderer does — same mirror as the locator/
+      // symbol/choropleth/cartogram branches above (a confirmed arc changes the beat COUNT,
+      // so a sizer blind to it sizes the composition for a different story than the one that
+      // renders).
+      arcBeats: config.arcBeats,
     });
     return mapStoryToChapters(beats, {
       title: config.title ?? "",

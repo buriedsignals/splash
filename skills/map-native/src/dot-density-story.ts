@@ -1,7 +1,12 @@
 // Beat derivation for dot-density videos — the sibling of deriveLocatorStory. title → establish
 // (all dots in view) → reveal the DENSEST regions (dots per area, descending, capped) → takeaway.
 // Same Beat shape as the other types. The dot scatter is unchanged; the video just moves the camera.
-import type { Beat, RevealMode } from "./map-story";
+import {
+  applyMapArc,
+  type Beat,
+  type MapArcBeat,
+  type RevealMode,
+} from "./map-story";
 import type { DotDensityLayout } from "./dot-density-geo";
 import type { StagedEntrance } from "./core/staged-reveal";
 import { regionBounds } from "./choropleth-geo";
@@ -14,6 +19,11 @@ export interface DotDensityStoryMeta {
   insight?: string;
   unit?: string;
   lang?: string;
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors. Anchors on
+  // `regionKey` values (rows[].{regionKey} — the same shape choropleth uses). When present +
+  // non-empty, the reveal beats follow the arc (applyMapArc) instead of the density-ranked
+  // selection below; absent/empty leaves today's density-ranked walk byte-identical.
+  arcBeats?: MapArcBeat[];
 }
 
 const DEFAULT_MAX_REVEALS = 5;
@@ -57,39 +67,67 @@ export function deriveDotDensityStory(
     copy: "",
   });
 
-  // Rank regions by dot density (total dots / area), descending. Ties broken by key for determinism.
-  const ranked = layout.regions
-    .map((r) => {
-      const totalCount = r.groups.reduce((s, g) => s + g.count, 0);
-      const a = Math.max(1e-9, area(r.feature));
-      const name = String(r.feature.properties?.name ?? r.key);
-      let dominant: string | null = null;
-      if (layout.hasCategories && r.groups.length) {
-        const top = r.groups.reduce((best, g) =>
-          g.count > best.count ? g : best,
-        );
-        dominant =
-          layout.legend.find((l) => l.color === top.color)?.category ?? null;
-      }
-      return { r, name, totalCount, density: totalCount / a, dominant };
-    })
-    .filter((x) => x.totalCount > 0)
-    .sort((a, b) => b.density - a.density || (a.r.key < b.r.key ? -1 : 1));
+  if (meta.arcBeats?.length) {
+    // Journalist-confirmed claim-arc override — the reveals follow the ARC order, not the
+    // density-ranked selection below. mapArcErrors (run at the gate) has already validated
+    // every arcBeat's region against the data rows' own regionKey values — but the gate has
+    // no basemap, and computeDotDensity permits a partial join (a row with no matching
+    // basemap feature simply never makes it into `layout.regions`, see dot-density-geo.ts).
+    // So a region present in the data but absent from `layout.regions` resolves to null here,
+    // and applyMapArc throws defensively — never a silently dropped/misplaced beat.
+    const regionByKey = new Map(layout.regions.map((r) => [r.key, r]));
+    beats.push(
+      ...applyMapArc(meta.arcBeats, (key) => {
+        const r = regionByKey.get(key);
+        if (!r) return null;
+        const totalCount = r.groups.reduce((s, g) => s + g.count, 0);
+        const name = String(r.feature.properties?.name ?? r.key);
+        // Same value formatting the density-ranked walk below uses (formatCompact + unit) —
+        // the callout's VALUE, never the callout's TEXT (that is the journalist's own claim).
+        const value = `${formatCompact(totalCount * layout.dotValue, meta.lang)}${unit ? " " + unit : ""}`;
+        return {
+          camera: regionBounds(r.feature),
+          highlight: [r.key],
+          name,
+          value,
+        };
+      }),
+    );
+  } else {
+    // Rank regions by dot density (total dots / area), descending. Ties broken by key for determinism.
+    const ranked = layout.regions
+      .map((r) => {
+        const totalCount = r.groups.reduce((s, g) => s + g.count, 0);
+        const a = Math.max(1e-9, area(r.feature));
+        const name = String(r.feature.properties?.name ?? r.key);
+        let dominant: string | null = null;
+        if (layout.hasCategories && r.groups.length) {
+          const top = r.groups.reduce((best, g) =>
+            g.count > best.count ? g : best,
+          );
+          dominant =
+            layout.legend.find((l) => l.color === top.color)?.category ?? null;
+        }
+        return { r, name, totalCount, density: totalCount / a, dominant };
+      })
+      .filter((x) => x.totalCount > 0)
+      .sort((a, b) => b.density - a.density || (a.r.key < b.r.key ? -1 : 1));
 
-  for (const x of ranked.slice(0, cap)) {
-    const valText = `${formatCompact(x.totalCount * layout.dotValue, meta.lang)}${unit ? " " + unit : ""}`;
-    const text =
-      layout.hasCategories && x.dominant
-        ? `${x.name} — ${valText}, mostly ${x.dominant}`
-        : `${x.name} — ${valText}`;
-    beats.push({
-      kind: "reveal",
-      camera: regionBounds(x.r.feature),
-      highlight: [x.r.key],
-      dim: true,
-      callout: { region: x.r.key, name: x.name, value: valText, text },
-      copy: text,
-    });
+    for (const x of ranked.slice(0, cap)) {
+      const valText = `${formatCompact(x.totalCount * layout.dotValue, meta.lang)}${unit ? " " + unit : ""}`;
+      const text =
+        layout.hasCategories && x.dominant
+          ? `${x.name} — ${valText}, mostly ${x.dominant}`
+          : `${x.name} — ${valText}`;
+      beats.push({
+        kind: "reveal",
+        camera: regionBounds(x.r.feature),
+        highlight: [x.r.key],
+        dim: true,
+        callout: { region: x.r.key, name: x.name, value: valText, text },
+        copy: text,
+      });
+    }
   }
 
   beats.push({

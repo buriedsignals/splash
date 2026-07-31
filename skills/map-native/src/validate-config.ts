@@ -640,6 +640,9 @@ export type DotDensityConfigShape = {
   brandHue?: string;
   brandPalette?: string[];
   brandExplicit?: boolean;
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors. Anchors on
+  // `regionKey` values (rows[].{regionKey}); validated by validateDotDensityConfig below.
+  arcBeats?: MapArcBeat[];
 };
 
 export function validateDotDensityConfig(
@@ -651,8 +654,11 @@ export function validateDotDensityConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
-  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  // Gate on ARC_CAPABLE_MAP_TYPES membership before validating content. A no-op today
+  // ("dot-density" is capable — see map-arc.ts) but the single lever a capability
+  // regression trips: drop "dot-density" from ARC_CAPABLE_MAP_TYPES and this refusal fires
+  // again instead of silently content-validating an arcBeats plan against a type that can no
+  // longer render it.
   errors.push(...unsupportedArcBeatsErrors(s, "dot-density"));
 
   if (typeof s.regionKey !== "string" || !s.regionKey.trim())
@@ -709,6 +715,24 @@ export function validateDotDensityConfig(
     for (const f of s.filters as MapFilter[]) {
       if (f.kind === "category")
         errors.push("category filters are not supported for dot-density maps");
+    }
+  }
+
+  if (s.arcBeats !== undefined) {
+    if (!Array.isArray(s.arcBeats)) {
+      errors.push(
+        "arcBeats override must be an ARRAY of beat objects (see MapArcBeat)",
+      );
+    } else {
+      const validRegionValues =
+        Array.isArray(s.rows) && typeof s.regionKey === "string"
+          ? (s.rows as Record<string, unknown>[]).map((r) =>
+              String(r[s.regionKey as string]),
+            )
+          : [];
+      errors.push(
+        ...mapArcErrors(s.arcBeats as MapArcBeat[], validRegionValues),
+      );
     }
   }
 

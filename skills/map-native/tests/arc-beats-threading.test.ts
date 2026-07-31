@@ -12,6 +12,8 @@ import { deriveLocatorStory } from "../src/locator-story";
 import type { LocatorMarker } from "../src/locator-geo";
 import { deriveCartogramStory } from "../src/cartogram-story";
 import { computeCartogram } from "../src/cartogram-geo";
+import { deriveDotDensityStory } from "../src/dot-density-story";
+import { computeDotDensity } from "../src/dot-density-geo";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import world from "../assets/geo/world.geojson" assert { type: "json" };
 
@@ -30,10 +32,12 @@ describe("map-native story components forward the confirmed claim-arc", () => {
     "components/SymbolStory.tsx", // video
     "components/LocatorStory.tsx", // video
     "components/CartogramStory.tsx", // video
+    "components/DotDensityStory.tsx", // video
     "components/ChoroplethScrolly.tsx", // scrolly
     "components/SymbolScrolly.tsx", // scrolly
     "components/LocatorScrolly.tsx", // scrolly
     "components/CartogramScrolly.tsx", // scrolly
+    "components/DotDensityScrolly.tsx", // scrolly
   ];
   for (const file of files) {
     it(`${file} puts arcBeats in the deriver meta`, () => {
@@ -276,15 +280,93 @@ describe("the cartogram sizer agrees with the walk that renders", () => {
   });
 });
 
+// Same class of proof for dot-density, added when the dot-density deriver gained arc support
+// (map-storyboard-and-video-geography, Task 3). DotDensityStory.tsx/DotDensityScrolly.tsx both
+// literally call deriveDotDensityStory(layout, meta) then mapStoryToChapters(beats, ...) —
+// reproduced here as `renderedSteps`, exactly like the cartogram block above. Anchored on
+// `regionKey` values in the rows, the same shape choropleth uses.
+describe("the dot-density sizer agrees with the walk that renders", () => {
+  // Real ISO codes (world.geojson's iso_a3 join, dot-density's default joinKey) — same
+  // countries the choropleth/cartogram sizer blocks above already exercise.
+  const ROWS = [
+    { iso_a3: "NOR", value: 99 },
+    { iso_a3: "SWE", value: 68 },
+    { iso_a3: "DEU", value: 59 },
+    { iso_a3: "GBR", value: 48 },
+    { iso_a3: "ESP", value: 44 },
+    { iso_a3: "ITA", value: 41 },
+    { iso_a3: "FRA", value: 27 },
+    { iso_a3: "POL", value: 21 },
+  ];
+  const ARC: MapArcBeat[] = [
+    { region: "DEU", role: "establish", text: "Germany anchors it." },
+    { region: "POL", role: "build", text: "Poland widens it." },
+    { region: "NOR", role: "payoff", text: "Norway closes it." },
+  ];
+  const base = {
+    type: "dot-density" as const,
+    title: "Eight regions, in the order the story needs",
+    description: "Eight European dot-density regions",
+    basemap: "world",
+    boundaries: "world",
+    regionKey: "iso_a3",
+    valueField: "value",
+    rows: ROWS,
+  };
+
+  function renderedSteps(config: Record<string, unknown>): number {
+    const layout = computeDotDensity(
+      config as never,
+      world as unknown as GeoJSON.FeatureCollection,
+      "iso_a3",
+    );
+    const beats = deriveDotDensityStory(layout, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      insight:
+        (config.insight as string | undefined) ?? (config.title as string),
+      unit: (config.valueUnit as string | undefined) ?? "",
+      arcBeats: config.arcBeats as MapArcBeat[] | undefined,
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      regionsWithData: layout.regions.length,
+    }).steps.length;
+  }
+
+  const size = (config: Record<string, unknown>) =>
+    scrollyStepCount(config, world as unknown as GeoJSON.FeatureCollection);
+
+  it("sizes an ARC config for the arc's own length, not the density-ranked walk's", () => {
+    const config = { ...base, arcBeats: ARC };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+
+  it("can go red: the arc's length differs from the density-ranked walk's", () => {
+    // 3 confirmed reveals vs. 5 density-ranked reveals (all 8 regions, default cap) — the two
+    // walks CANNOT accidentally agree here, so this is a real lever.
+    const withArc = { ...base, arcBeats: ARC };
+    const withoutArc = { ...base };
+    expect(size(withArc)).not.toBe(size(withoutArc));
+    expect(renderedSteps(withArc)).not.toBe(renderedSteps(withoutArc));
+  });
+
+  it("leaves the density-ranked sizing untouched", () => {
+    const config = { ...base };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+});
+
 describe("Remotion's calculateMetadata sizers forward the arc too", () => {
   // Root.tsx cannot be imported under a test (remotion + module-scope MapTiler key), and what
   // went wrong is a missing property in an object literal — same guard shape as above.
-  it("storyMeta, symbolStoryMeta, locatorStoryMeta and cartogramStoryMeta all put arcBeats in the deriver meta", () => {
+  it("storyMeta, symbolStoryMeta, locatorStoryMeta, cartogramStoryMeta and dotDensityStoryMeta all put arcBeats in the deriver meta", () => {
     const source = readFileSync(
       join(import.meta.dir, "..", "remotion", "src", "Root.tsx"),
       "utf8",
     );
-    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(4);
+    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(5);
   });
 });
 
@@ -333,9 +415,14 @@ describe("unsupportedArcBeatsErrors", () => {
 
   it("refuses an EMPTY plan too — an empty array is still a field the render ignores", () => {
     // "locator" used to be the example here — it moved to the capable side in
-    // map-storyboard-and-video-geography Task 1, so a non-capable type stands in now.
+    // map-storyboard-and-video-geography Task 1, then "dot-density" stood in — it moved to
+    // the capable side in Task 3, so a non-capable type stands in now.
+    // EXPIRES AT TASK 5: this plan makes all seven map types arc-capable, so once hex-grid
+    // (the last one) gains support, no real type is left to trigger this refusal — Task 5
+    // owns deciding whether unsupportedArcBeatsErrors becomes a guard tested with a
+    // deliberately-non-map-type string, or is retired as dead code.
     expect(
-      unsupportedArcBeatsErrors({ arcBeats: [] }, "dot-density"),
+      unsupportedArcBeatsErrors({ arcBeats: [] }, "hex-grid"),
     ).toHaveLength(1);
   });
 });
