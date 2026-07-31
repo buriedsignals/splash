@@ -86,11 +86,24 @@ describe("storyComps — every (type, cameraMode) pair resolves to its own famil
     expect(landscapeId(comps)).toBe("RouteReveal");
   });
 
-  it("route-reveal always resolves to RouteReveal, regardless of type", () => {
+  it('route-reveal on "route" resolves to RouteReveal', () => {
     expect(landscapeId(storyComps({ type: "route" }, "route-reveal"))).toBe(
       "RouteReveal",
     );
   });
+
+  // Defence in depth: validate-config.ts's cameraModeError already refuses this combination,
+  // named, before render — but storyComps must not silently hand back RouteReveal for data that
+  // was never a route if that gate is ever bypassed (a hand-edited config, a caller that skips
+  // validation). Every non-route type is covered, not just one, since each is a distinct branch
+  // in the dispatch above and a fix to one does not prove the others.
+  for (const type of STORY_TYPES) {
+    it(`route-reveal on "${type}" throws instead of silently returning RouteReveal`, () => {
+      expect(() => storyComps({ type }, "route-reveal")).toThrow(
+        `camera mode 'route-reveal' does not apply to a "${type}" map`,
+      );
+    });
+  }
 
   it("an unimplemented camera mode throws, naming the mode", () => {
     expect(() => storyComps({ type: "choropleth" }, "orbit")).toThrow(

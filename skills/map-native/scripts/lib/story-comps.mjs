@@ -45,6 +45,16 @@ export function storyComps(config, cameraMode) {
       : [["ChoroplethStory", "landscape"], ["ChoroplethStorySquare", "square"], ["ChoroplethStoryPortrait", "portrait"]];
   }
   if (cameraMode === "route-reveal") {
+    // Defence in depth: validate-config.ts's cameraModeError already refuses "route-reveal" on
+    // a non-route config, named, before render. A gate can be bypassed (a hand-edited config, a
+    // caller that skips validation) — this assertion is what stops the engine from THEN
+    // rendering a route's line-draw-on for data that was never a route, quietly. Same posture as
+    // the "not implemented" throw below: an invalid combination fails loud, never silently
+    // returns the wrong composition.
+    if (!isRouteMap)
+      throw new Error(
+        `camera mode 'route-reveal' does not apply to a "${config.type}" map — it is a route's own line draw-on`,
+      );
     return [["RouteReveal", "landscape"], ["RouteRevealSquare", "square"], ["RouteRevealPortrait", "portrait"]];
   }
   // The reveal kind: fixed camera, the data animates in. All 21 reveal compositions are registered

@@ -116,6 +116,14 @@ describe("validateChoroplethConfig", () => {
     if (!bad.ok)
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
+  it("rejects cameraMode 'route-reveal' — a valid mode that does not apply to a non-route map", () => {
+    const bad = validateChoroplethConfig({ ...ok, cameraMode: "route-reveal" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) {
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+      expect(bad.errors.some((e) => /route-reveal/.test(e))).toBe(true);
+    }
+  });
   it("accepts a known mapStyle and rejects an unknown one", () => {
     expect(
       validateChoroplethConfig({ ...ok, mapStyle: "dataviz-dark" }).ok,
@@ -180,13 +188,24 @@ describe("validateSymbolConfig", () => {
     if (!r.ok) expect(r.errors.some((e) => /title/.test(e))).toBe(true);
   });
   it("accepts a known cameraMode and rejects an unknown one", () => {
-    expect(
-      validateSymbolConfig({ ...okSymbol, cameraMode: "route-reveal" }).ok,
-    ).toBe(true);
+    expect(validateSymbolConfig({ ...okSymbol, cameraMode: "simple" }).ok).toBe(
+      true,
+    );
     const bad = validateSymbolConfig({ ...okSymbol, cameraMode: "orbit" });
     expect(bad.ok).toBe(false);
     if (!bad.ok)
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+  });
+  it("rejects cameraMode 'route-reveal' — a valid mode that does not apply to a non-route map", () => {
+    const bad = validateSymbolConfig({
+      ...okSymbol,
+      cameraMode: "route-reveal",
+    });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) {
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+      expect(bad.errors.some((e) => /route-reveal/.test(e))).toBe(true);
+    }
   });
   it("warns on missing description and source", () => {
     const r = validateSymbolConfig({
@@ -358,6 +377,14 @@ describe("validateLocatorConfig — filters wiring", () => {
     if (!bad.ok)
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
+  it("rejects cameraMode 'route-reveal' — a valid mode that does not apply to a non-route map", () => {
+    const bad = validateLocatorConfig({ ...base, cameraMode: "route-reveal" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) {
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+      expect(bad.errors.some((e) => /route-reveal/.test(e))).toBe(true);
+    }
+  });
 });
 
 describe("basemap registry — unregistered basemap is rejected by all validators", () => {
@@ -461,6 +488,17 @@ describe("validateDotDensityConfig — filters wiring", () => {
     if (!bad.ok)
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
+  it("rejects cameraMode 'route-reveal' — a valid mode that does not apply to a non-route map", () => {
+    const bad = validateDotDensityConfig({
+      ...base,
+      cameraMode: "route-reveal",
+    });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) {
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+      expect(bad.errors.some((e) => /route-reveal/.test(e))).toBe(true);
+    }
+  });
 });
 
 describe("validateHexGridConfig — filters wiring", () => {
@@ -508,6 +546,14 @@ describe("validateHexGridConfig — filters wiring", () => {
     if (!bad.ok)
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
+  it("rejects cameraMode 'route-reveal' — a valid mode that does not apply to a non-route map", () => {
+    const bad = validateHexGridConfig({ ...base, cameraMode: "route-reveal" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) {
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+      expect(bad.errors.some((e) => /route-reveal/.test(e))).toBe(true);
+    }
+  });
 });
 
 describe("validateCartogramConfig — filters wiring", () => {
@@ -553,6 +599,17 @@ describe("validateCartogramConfig — filters wiring", () => {
     expect(bad.ok).toBe(false);
     if (!bad.ok)
       expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+  });
+  it("rejects cameraMode 'route-reveal' — a valid mode that does not apply to a non-route map", () => {
+    const bad = validateCartogramConfig({
+      ...base,
+      cameraMode: "route-reveal",
+    });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) {
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+      expect(bad.errors.some((e) => /route-reveal/.test(e))).toBe(true);
+    }
   });
 });
 
