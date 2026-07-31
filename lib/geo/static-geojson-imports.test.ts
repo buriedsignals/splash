@@ -28,11 +28,14 @@
 //       `declare module "*.geojson?raw"`) describes the TYPE of an import specifier for the
 //       bundler; it does not itself import or fetch any geometry.
 //   (c) the video family — this plan deliberately leaves ChoroplethReveal/Story/Scrolly,
-//       CartogramReveal/Story/Scrolly, DotDensityReveal/Story/Scrolly, RouteReveal, RouteScrolly
-//       and the Remotion registration root (remotion/src/Root.tsx, which wires those same
-//       compositions for preview/render) reading the shipped world.geojson asset. Task 7 makes a
-//       DECLARED geography refuse the video format instead of wiring video to injected geometry —
-//       so these are not a residual bug, they are the other side of that decision.
+//       CartogramReveal/Story/Scrolly, DotDensityReveal/Story/Scrolly and the Remotion
+//       registration root (remotion/src/Root.tsx, which wires those same compositions for
+//       preview/render) reading the shipped world.geojson asset. Task 7 makes a DECLARED
+//       geography refuse the video format instead of wiring video to injected geometry — so
+//       these are not a residual bug, they are the other side of that decision. RouteReveal and
+//       RouteScrolly were exempted here for the same reason but are no longer: Task 9 wired both
+//       to decode `config.geometry` (mirroring ChoroplethMap.tsx / RouteMap.tsx), so their static
+//       import is gone and this guard now covers them like any other source file.
 //   (d) standalone dev tooling, named individually below, where the reference is either not the
 //       shipped asset or not a runtime import at all — see BUILD_TOOLING_FILES for the reason on
 //       each.
@@ -80,8 +83,6 @@ const VIDEO_FAMILY_PATHS = new Set(
     join("skills", "map-native", "src", "components", "DotDensityReveal.tsx"),
     join("skills", "map-native", "src", "components", "DotDensityScrolly.tsx"),
     join("skills", "map-native", "src", "components", "DotDensityStory.tsx"),
-    join("skills", "map-native", "src", "components", "RouteReveal.tsx"),
-    join("skills", "map-native", "src", "components", "RouteScrolly.tsx"),
     join("skills", "map-native", "remotion", "src", "Root.tsx"),
   ].map((p) => join(ROOT, p)),
 );

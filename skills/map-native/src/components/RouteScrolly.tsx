@@ -19,7 +19,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import * as turf from "@turf/turf";
-import worldGeoJsonImport from "../../assets/geo/world.geojson";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import type {
   RouteConfig,
   RouteRevealTerritory,
@@ -207,7 +207,17 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     ? maptilersdk.MapStyle.DATAVIZ.DARK
     : maptilersdk.MapStyle.DATAVIZ.LIGHT;
 
-  const world = worldGeoJsonImport as unknown as GeoJSON.FeatureCollection;
+  // Geometry arrives through the injected config now (produce.mjs) — never a bundled static
+  // import (D5, mirrors RouteMap.tsx / ChoroplethMap.tsx / ChoroplethStory.tsx). Shared with the
+  // choropleth video family (Task 7) via resolveVideoGeometry, rather than a route-local copy of
+  // the same decode — route reads only `world` off it; `joinKey` is unused here because route
+  // never threads a join key (RouteMap.tsx, the interactive sibling, hardcodes `iso_a3 ?? name`
+  // inline and `computeRoute`/`computeRouteReveal` derive the key internally — route's own
+  // established shape, not something this task changes).
+  const { world } = useMemo(
+    () => resolveVideoGeometry(config, "route-scrolly"),
+    [config],
+  );
 
   // Derive layout + draw structures from config ONCE (heavy turf geometry). Memoised on
   // config, which is stable per composition — so this does NOT re-run every frame.
@@ -249,7 +259,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         l.territories.map((t) => [t.key, buildDraw(t)]),
       ) as Record<string, DrawEntry>,
     };
-  }, [config, fps]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [config, fps, world]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Line width scales for narrow canvases
   const lw = (base: number) => (isNarrow ? base * 1.2 : base);

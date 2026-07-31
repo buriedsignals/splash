@@ -19,7 +19,7 @@ import {
   type DrawEntry,
 } from "../core/border-slice";
 import * as turf from "@turf/turf";
-import worldGeoJsonImport from "../../assets/geo/world.geojson";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import type {
   RouteConfig,
   RouteRevealTerritory,
@@ -140,7 +140,17 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
     ? maptilersdk.MapStyle.DATAVIZ.DARK
     : maptilersdk.MapStyle.DATAVIZ.LIGHT;
 
-  const world = worldGeoJsonImport as unknown as GeoJSON.FeatureCollection;
+  // Geometry arrives through the injected config now (produce.mjs) — never a bundled static
+  // import (D5, mirrors RouteMap.tsx / ChoroplethMap.tsx / ChoroplethStory.tsx). Shared with the
+  // choropleth video family (Task 7) via resolveVideoGeometry, rather than a route-local copy of
+  // the same decode — route reads only `world` off it; `joinKey` is unused here because route
+  // never threads a join key (RouteMap.tsx, the interactive sibling, hardcodes `iso_a3 ?? name`
+  // inline and `computeRoute`/`computeRouteReveal` derive the key internally — route's own
+  // established shape, not something this task changes).
+  const { world } = useMemo(
+    () => resolveVideoGeometry(config, "route-reveal"),
+    [config],
+  );
 
   // Derive layout + draw structures from config ONCE (heavy turf geometry). Memoised on
   // config, which is stable per composition — so this does NOT re-run every frame / on
@@ -158,7 +168,7 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
         terr.map((t) => [t.key, buildDraw(t.border)]),
       ) as Record<string, DrawEntry>,
     };
-  }, [config]);
+  }, [config, world]);
 
   // Trigger time for each territory (seconds into the clip)
   const trigger = (t: RouteRevealTerritory) =>
