@@ -11,6 +11,17 @@ const SAMPLES = join(import.meta.dir, "..", "assets", "sample-data");
 const ASSETS = join(import.meta.dir, "..", "assets", "geo");
 const fixtures = readdirSync(SAMPLES).filter((f) => f.endsWith(".json"));
 
+// The point family (symbol, locator, hex-grid) draws markers at coordinates and reads no
+// geometry at all — resolveGeometryForProduce's own JOINING_TYPES allow-list correctly
+// returns `wrote === false` for these, on purpose. Mirrored here (not imported: that allow-list
+// is deliberately internal to resolve-for-produce.ts) so this suite can tell "correctly skipped"
+// apart from "silently skipped by accident", which is exactly the FIX 2 gap: before this suite
+// asserted `wrote === true` explicitly, `if (!wrote) return;` treated both the same way, so a
+// type-less config (choropleth.json, filter-choropleth.json before commit 0d691b38 fixed the
+// default-typed-choropleth convention) returned `wrote === false` for the WRONG reason and this
+// suite stayed green anyway — exactly how that defect passed Task 2's own review.
+const POINT_FAMILY_TYPES = new Set(["symbol", "locator", "hex-grid"]);
+
 describe("every shipped fixture resolves", () => {
   it("should find fixtures at all (an empty scan must never pass)", () => {
     expect(fixtures.length).toBeGreaterThanOrEqual(7);
@@ -24,6 +35,20 @@ describe("every shipped fixture resolves", () => {
         assetsGeoDir: ASSETS,
         renderWidthPx: 1200,
       });
+      const carriesGeography =
+        Boolean(config.basemap) || Boolean(config.geography);
+      const effectiveType = (config.type as string | undefined) ?? "choropleth";
+      const isPointFamily = POINT_FAMILY_TYPES.has(effectiveType);
+      if (carriesGeography && !isPointFamily) {
+        // THE LEVER (FIX 2): a fixture that names a geography and is not point-family MUST
+        // actually have resolved it — asserted directly, not inferred from `if (!wrote) return`
+        // silently skipping the rest of this test.
+        expect(wrote).toBe(true);
+      } else {
+        // Point-family fixtures are the one legitimate `wrote === false` — asserted explicitly
+        // too, so this branch is a proven exclusion, not an unchecked assumption.
+        expect(wrote).toBe(false);
+      }
       if (!wrote) return;
       // A simplification that annihilates a shape hands the renderer `geometry: null`, and
       // every consumer reads `.type` on it. Assert the absence here, where the message can

@@ -161,8 +161,14 @@ export async function subsetGeometry(
     if (missing.length)
       throw new Error(
         `subsetGeometry: ${missing.length} of ${input.featureIds.length} requested regions ` +
-          `are absent from ${input.sourcePath} on join key "${input.idProperty}" — ` +
-          `first missing: ${missing.slice(0, 5).join(", ")}`,
+          `are absent from ${input.sourcePath} on join key "${input.idProperty}"` +
+          (input.scope
+            ? ` after scoping to "${input.scope}" — a "missing" region here may be a real ` +
+              `feature that belongs to a DIFFERENT country and was filtered out BY that scope ` +
+              `(not a join-key mismatch); check whether it crosses the border before assuming ` +
+              `the join key is wrong`
+            : "") +
+          ` — first missing: ${missing.slice(0, 5).join(", ")}`,
       );
     // POST-CONDITION 3 (Task 15) — no single requested id may come back with MORE features
     // than it was asked for. A silently-EXTRA region is the mirror image of POST-CONDITION 1's

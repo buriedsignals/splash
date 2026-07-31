@@ -127,16 +127,27 @@ export async function resolveGeometryForProduce(
 
   if (geography) {
     // The video family reads staticFile("geo/world.geojson") directly and never looks at
-    // config.geometry (grep: zero hits for config.geometry under src/components). For a SHIPPED
-    // basemap that is merely redundant. For a DECLARED geometry it renders a different map than
-    // the one the credit names — the worst available outcome — so it refuses here, by name,
-    // until the video path reads injected geometry.
-    if (geography.origin === "declared" && input.format === "video")
+    // config.geometry (grep: zero hits for config.geometry under src/components — confirmed
+    // across ChoroplethStory.tsx/ChoroplethReveal.tsx/CartogramStory.tsx/CartogramReveal.tsx/
+    // DotDensityStory.tsx/DotDensityReveal.tsx/RouteReveal.tsx/RouteScrolly.tsx, all hardcoded
+    // to "iso_a3" against the shipped world file). A DECLARED geometry always renders a
+    // different map than the one the credit names — the worst available outcome. But a SHIPPED
+    // basemap that is NOT "world" (us-states, natural-earth-admin-1) is just as wrong: it now
+    // resolves cleanly into config.geometry (Tasks 8/14 made that succeed), so nothing else
+    // stops the video build — the composition would silently render an EMPTY world map (every
+    // feature id from a us-states/admin-1 subset misses every iso_a3 in world.geojson), not
+    // merely a mismatched one. Refused here, by name, for both shapes, mirroring the exact
+    // precedent already applied to dot-density's own basemap check
+    // (lib/loop/assemble/map-native.ts:214-219, `basemapKeyFor(geo.geography) !== "world"`).
+    if (
+      input.format === "video" &&
+      (geography.origin === "declared" || basemapKeyFor(geography) !== "world")
+    )
       throw new Error(
-        `produce: a declared geography ("${geography.set}") cannot be rendered as video yet — ` +
+        `produce: a ${geography.origin === "declared" ? `declared geography ("${geography.set}")` : `"${basemapKeyFor(geography)}" geography`} cannot be rendered as video yet — ` +
           `the video compositions read the shipped world basemap directly, so the output would ` +
-          `show a different map from the one the credit names. Choose static, interactive or ` +
-          `scrolly for this geography`,
+          `show a different (or empty) map from the one the credit/data names. Choose static, ` +
+          `interactive or scrolly for this geography`,
       );
 
     // D7's credit obligation applies ONLY to a DECLARED geometry (a shipped basemap —

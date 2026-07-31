@@ -472,6 +472,76 @@ describe("subsetGeometry — an admin-1 join is scoped to its country (Task 15)"
   }, 30_000);
 });
 
+describe("subsetGeometry — POST-CONDITION 1's refusal names the applied scope, not just the join key (FIX 3)", () => {
+  // The failure mode this closes: a legitimately cross-border request (e.g. a column resolved
+  // to one country by majority vote elsewhere in the pipeline) asks for a region that is a REAL
+  // feature in the source — just not in the scoped country. `scope` filters it out at the
+  // mapshaper -filter step (subset.ts:128-132), so it comes back "absent" through the exact
+  // same path as a genuine join-key typo, and before this fix the message blamed "join key
+  // <idProperty>" unconditionally — false when the real cause is the scope, sending whoever
+  // reads it investigating the wrong thing.
+  const dir = mkdtempSync(join(tmpdir(), "geo-subset-scope-missing-test-"));
+  const sourcePath = join(dir, "scope-missing-source.geojson");
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  const fixture: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { id: "Alpha", adm0_a3: "AAA" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [0, 0],
+              [0, 1],
+              [1, 1],
+              [1, 0],
+              [0, 0],
+            ],
+          ],
+        },
+      },
+      {
+        type: "Feature",
+        properties: { id: "Beta", adm0_a3: "BBB" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [2, 0],
+              [2, 1],
+              [3, 1],
+              [3, 0],
+              [2, 0],
+            ],
+          ],
+        },
+      },
+    ],
+  };
+  writeFileSync(sourcePath, JSON.stringify(fixture));
+
+  it("names the scope in the refusal when the 'missing' region is a real feature that was scoped out of a different country, not a join-key mismatch", async () => {
+    const outPath = join(dir, "scope-missing-out.topojson");
+    // "Beta" is a real feature in the source (adm0_a3 "BBB") — it is absent only because the
+    // request is scoped to "AAA", the same shape as an unrequested cross-border sibling being
+    // filtered out by the majority-vote scope upstream.
+    await expect(
+      subsetGeometry({
+        sourcePath,
+        outPath,
+        featureIds: ["Alpha", "Beta"],
+        idProperty: "id",
+        keepProperties: ["id", "adm0_a3"],
+        renderWidthPx: 1200,
+        scope: "AAA",
+      }),
+    ).rejects.toThrow(/scoping to "AAA"/);
+  }, 30_000);
+});
+
 describe("subsetGeometry — the superset guard is general, not admin-1-specific (Task 15, POST-CONDITION 3)", () => {
   // A minimal, geography-agnostic fixture: two features that both carry the SAME join-key
   // value — a stand-in for ANY future name collision, not just "Jura" — proving the guard

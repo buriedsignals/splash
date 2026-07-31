@@ -141,7 +141,7 @@ Scrolly.tsx  (scaffold)
 scales, and the on-map annotation visual language. Geometry itself is NOT a reused static asset — every
 geometry-joining renderer (`ScrollyMap`, `ScrollyDotDensityMap`, `ScrollyCartogramMap`, `Scrolly`) takes
 `config.geometry`, injected by produce, same contract as map-native's own components (D5); there is no
-bundled fallback geometry, and `assets/geo/` here holds only `sample-data`. (The `CountryLabel` is
+bundled fallback geometry, and `assets/` here holds only `sample-data`. (The `CountryLabel` is
 re-implemented inline because map-native's is Remotion-coupled; a shared remotion-free label is a future
 refactor.)
 

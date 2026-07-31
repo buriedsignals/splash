@@ -322,22 +322,42 @@ S/I/V = which formats fit (Static / Interactive / Video):
 
 The first nine ride the one `map-native` engine. The 3D flyover is a separate engine (`cesium-flyover`).
 
-## Boundary presets (shipped: `world` and `us-states`)
+## Boundary presets (shipped: `world`, `us-states`, and `natural-earth-admin-1`)
 
 | Preset | Boundary | Join key | Source |
 | --- | --- | --- | --- |
-| `world` | Natural Earth admin-0 | `iso_a3` (ISO-A3) | Natural Earth |
+| `world` | Natural Earth admin-0 (countries) | `iso_a3` (ISO-A3) | Natural Earth |
 | `us-states` | US states | 2-letter postal code | US Census |
+| `natural-earth-admin-1` | Sub-national admin-1 (cantons, départements, states, provinces — world-wide, ~199 sets) | `name` (a 9-identifier join-key family, `lib/geo/ref.ts`) | Natural Earth |
 
-Both are public domain — no credit obligation, no licence to track (`lib/geo/ref.ts`'s
-`BASEMAPS` registry). These two stay the ONLY shipped presets: the obvious next entries —
-French departments/regions — are sourced from Eurostat NUTS, which this project's own licence
-audit disqualified as non-commercial and MIT-incompatible, alongside GADM
+All three are public domain — no credit obligation, no licence to track (`lib/geo/ref.ts`'s
+`BASEMAPS`/`SHIPPED_REFS` registries). The obvious next entries beyond these — French
+departments/regions sourced directly, say — would come from Eurostat NUTS, which this project's
+own licence audit disqualified as non-commercial and MIT-incompatible, alongside GADM
 (`docs/superpowers/specs/2026-07-28-geography-anywhere-design.md` §2.3/§2.4b). Dropping a
 Eurostat or GADM GeoJSON into `assets/geo/` would ship data this project has ruled it cannot
-ship. Coverage below `world`/`us-states` is added per-run instead, through the journalist's own
-DECLARED geometry file (`input.geography` on `initRun`, spec D1/D1b — credited via `geoCredit`,
-see "Module furniture" above), never by adding a new shipped preset.
+ship — `natural-earth-admin-1` is what closes that gap instead, without incurring it: **sub-national
+coverage now ships**, at the `admin-1` level, world-wide, scoped per-country on a join (Task 15,
+`lib/geo/subset.ts`'s `scope` — a name shared across a border, e.g. Swiss/French "Jura", resolves
+to the request's majority-vote country and never bleeds into the neighbour).
+
+Below `admin-1` (postal codes, communes, `code insee`…), or for a boundary this registry does not
+ship at all, the journalist's own DECLARED geometry file is the route — **but as of this branch
+that route does not yet work end to end**: `input.geography` on `initRun` (spec D1/D1b, credited
+via `geoCredit`, see "Module furniture" above) is validated and accepted, but no assembler code
+in this tree threads the frozen file's path onto `config.geography.sourcePath` before produce —
+`resolveGeometryForProduce` throws a named refusal naming exactly that gap
+(`lib/geo/resolve-for-produce.ts:206-211`) rather than silently rendering the wrong map. Treat a
+declared geography as accepted-but-not-yet-wired, not as a working shipped-preset alternative,
+until that threading lands.
+
+**Video cannot render any of `us-states` or `natural-earth-admin-1` yet, nor a declared geography —
+only `world`.** The eight video compositions (`{Choropleth,Cartogram,DotDensity}{Story,Reveal}.tsx`,
+`RouteReveal.tsx`, `RouteScrolly.tsx`) fetch `staticFile("geo/world.geojson")` directly and join on
+a hardcoded `iso_a3`, never reading the injected `config.geometry` the static/interactive/scrolly
+formats already use. `resolveGeometryForProduce` refuses any non-`world` geography for
+`format: "video"` by name, before any build step, rather than letting the render silently come out
+an empty (or wrong) world map. Choose static, interactive, or scrolly for anything below `world`.
 
 ## Produce — format selector from one config
 
@@ -414,6 +434,9 @@ best practices live in `knowledge/references/map/formats/video-reveal.md`.
 - `src/video-watchdog.ts` — bounds every Remotion render/still subprocess (default 15 min, `SPLASH_VIDEO_TIMEOUT_MS`); kills the hung process tree (seismes-class hang → clean fail-hard).
 - `src/route-geo.ts` — `computeRoute` / `computeRouteReveal`: runtime route geometry (auto-detect crossed territories + stops + borders); superseded the build-time `prep-geo.mjs` bake.
 - `assets/geo/world.geojson` — Natural Earth admin-0 boundaries (simplified).
+- `assets/geo/us-states.geojson` — US Census state boundaries, 2-letter postal join key.
+- `assets/geo/natural-earth-admin-1.topojson` — Natural Earth admin-1 (sub-national) boundaries,
+  world-wide, 15.4 MB on disk — never inlined, subset per-run by `lib/geo/subset.ts`.
 - `assets/sample-data/choropleth.json` — runnable sample (EU renewable energy share by country).
 - `tests/` — `bun:test` suites: geo core (join/bins/bounds/no-data), conformance guard, the `mapStory`
   spine (`map-story.test.ts`), and the story timeline (`story-timeline.test.ts`).
