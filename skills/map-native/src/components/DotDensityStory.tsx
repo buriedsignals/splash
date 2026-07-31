@@ -26,9 +26,8 @@
 //
 // Geometry arrives through config.geometry (injected by produce, never a bundled world.geojson
 // fetch — Task 8, D5). The join key prefers config.geography.joinKey over the world default, via
-// resolveDotDensityGeometry — mirrors ChoroplethMap.tsx's own decode/join-key resolution
-// (src/ChoroplethMap.tsx:258-284), the proven shape this file copies rather than inventing a
-// second way to do the same thing.
+// the shared resolveVideoGeometry (core/video-geometry.ts, Task 7) — the same helper the
+// choropleth video family uses, so all four families read injected geometry identically.
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -41,11 +40,9 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import { feature as topoFeature } from "topojson-client";
-import type { Topology } from "topojson-specification";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { poleOfInaccessibility } from "../core/label-anchor";
-import { resolveBasemapMeta, type GeographyRef } from "../basemaps";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { mainlandFeature } from "../choropleth-geo";
 import {
   computeDotDensity,
@@ -91,40 +88,6 @@ const DOT_RADIUS_PX = 2; // FIXED — uniform dot size, NEVER value-scaled
 const DOT_LAYER = "dot-density-dots";
 const OUTLINE_LAYER = "dot-density-outline";
 const DIM_OPACITY = 0.25; // non-highlighted regions during a reveal beat (context mode)
-
-// Decodes the geometry produce injected into config.geometry — never a bundled
-// staticFile("geo/world.geojson") fetch (Task 8, D5: there is no bundled fallback geometry
-// anymore). `config.geography` names WHICH set/scope/joinKey this is (GeographyRef);
-// `config.geometry` is the actual subset TopoJSON, decoded here. Prefers
-// config.geography.joinKey over the world default so a non-world geography (e.g. Swiss
-// cantons, joined on "name") resolves from its OWN injected geometry, not the shipped world
-// file. Mirrors ChoroplethMap.tsx's own inline decode/join-key resolution
-// (src/ChoroplethMap.tsx:258-284) — the proven shape this file copies. Exported so a unit test
-// can exercise this exact resolution without rendering the composition (this repo has no
-// harness for rendering a Remotion/maptiler composition under bun:test), and so
-// DotDensityReveal.tsx can reuse it (mirrors ChoroplethScrolly.tsx's `stepSlide` — one
-// component file exports a pure helper its sibling imports).
-export function resolveDotDensityGeometry(config: DotDensityConfigShape): {
-  world: GeoJSON.FeatureCollection;
-  joinKey: string;
-} {
-  const geography =
-    config.geography ??
-    ({
-      joinKey: resolveBasemapMeta(config.basemap).joinKey,
-    } as Pick<GeographyRef, "joinKey">);
-  if (!config.geometry)
-    throw new Error(
-      "dot-density: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
-    );
-  const topology = config.geometry as Topology;
-  const objectName = Object.keys(topology.objects)[0]!;
-  const world = topoFeature(
-    topology,
-    topology.objects[objectName]!,
-  ) as unknown as GeoJSON.FeatureCollection;
-  return { world, joinKey: geography.joinKey };
-}
 
 interface DDLegend {
   hasCategories: boolean;
@@ -224,8 +187,11 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
 
       try {
         // Geometry arrives through the injected config now (produce.mjs) — never a static
-        // bundle fetch. See resolveDotDensityGeometry above.
-        const { world, joinKey } = resolveDotDensityGeometry(config);
+        // bundle fetch. Shared with the choropleth video family (Task 7).
+        const { world, joinKey } = resolveVideoGeometry(
+          config,
+          "dot-density-story",
+        );
         const layout = computeDotDensity(config, world, joinKey);
 
         // Build the DOT GeoJSON once — one Point per dot, coloured by group, TAGGED with

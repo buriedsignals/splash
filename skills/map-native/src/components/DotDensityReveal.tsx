@@ -14,9 +14,8 @@
 //
 // Geometry arrives through config.geometry (injected by produce, never a bundled world.geojson
 // fetch — Task 8, D5). The join key prefers config.geography.joinKey over the world default, via
-// resolveDotDensityGeometry (DotDensityStory.tsx) — mirrors ChoroplethMap.tsx's own decode/
-// join-key resolution (src/ChoroplethMap.tsx:258-284), the proven shape this file copies rather
-// than inventing a second way to do the same thing.
+// the shared resolveVideoGeometry (core/video-geometry.ts, Task 7) — the same helper the
+// choropleth video family uses, so all four families read injected geometry identically.
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -33,7 +32,7 @@ import { computeDotDensity, UNIVARIATE_ACCENT } from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
 import { resolveMapStyle } from "../route-geo";
 import type { DotDensityConfigShape } from "../validate-config";
-import { resolveDotDensityGeometry } from "./DotDensityStory";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { formatLocaleNumber } from "../core/locale";
@@ -123,8 +122,11 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
 
       try {
         // Geometry arrives through the injected config now (produce.mjs) — never a static
-        // bundle fetch. See resolveDotDensityGeometry (DotDensityStory.tsx).
-        const { world, joinKey } = resolveDotDensityGeometry(config);
+        // bundle fetch. Shared with the choropleth video family (Task 7).
+        const { world, joinKey } = resolveVideoGeometry(
+          config,
+          "dot-density-reveal",
+        );
         const layout = computeDotDensity(config, world, joinKey);
 
         // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.

@@ -1,14 +1,14 @@
-// resolveCartogramGeometry (CartogramStory.tsx) is the fix for Task 8: the cartogram video
-// family used to fetch staticFile("geo/world.geojson") unconditionally and join on a hardcoded
-// "iso_a3" — a Swiss-canton (or any non-world) config silently rendered an empty world map. This
-// test proves the function now reads config.geometry (never a bundled world file) and prefers
-// config.geography.joinKey over the world default, mirroring ChoroplethMap.tsx's own proven
-// decode/join-key resolution (src/ChoroplethMap.tsx:258-284). CartogramReveal.tsx imports this
-// same function (mirrors ChoroplethScrolly.tsx's `stepSlide` — one file exports, siblings
-// import), so this test covers both CartogramStory and CartogramReveal's own resolution.
+// The cartogram video family (CartogramStory.tsx, CartogramReveal.tsx) used to fetch
+// staticFile("geo/world.geojson") unconditionally and join on a hardcoded "iso_a3" — a
+// Swiss-canton (or any non-world) config silently rendered an empty world map. Both sites now
+// call the shared resolveVideoGeometry (core/video-geometry.ts, Task 7 — reused here per the
+// controller's ruling, reconciling what was originally two independent per-family functions).
+// This test proves that call resolves config.geometry (never a bundled world file) with
+// config.geography.joinKey preferred over the world default — exercising the exact shape both
+// CartogramStory and CartogramReveal depend on, using the config fields each actually passes.
 import { describe, it, expect } from "bun:test";
 import type { Topology } from "topojson-specification";
-import { resolveCartogramGeometry } from "./CartogramStory";
+import { resolveVideoGeometry } from "../core/video-geometry.ts";
 import type { CartogramConfigShape } from "../validate-config.ts";
 import type { GeographyRef } from "../basemaps.ts";
 
@@ -110,7 +110,7 @@ const baseConfig: Pick<CartogramConfigShape, "type" | "values" | "title"> = {
   title: "Which canton emits the most?",
 };
 
-describe("resolveCartogramGeometry", () => {
+describe("resolveVideoGeometry — cartogram video sites", () => {
   it("resolves a non-world geography from its OWN injected geometry, not the shipped world file", () => {
     const config: CartogramConfigShape = {
       ...baseConfig,
@@ -118,7 +118,7 @@ describe("resolveCartogramGeometry", () => {
       geography: CANTON_GEOGRAPHY,
     };
 
-    const { world, joinKey } = resolveCartogramGeometry(config);
+    const { world, joinKey } = resolveVideoGeometry(config, "cartogram-story");
 
     expect(joinKey).toBe("name");
     expect(world.type).toBe("FeatureCollection");
@@ -137,7 +137,7 @@ describe("resolveCartogramGeometry", () => {
       basemap: "world",
     };
 
-    const { world, joinKey } = resolveCartogramGeometry(config);
+    const { world, joinKey } = resolveVideoGeometry(config, "cartogram-story");
 
     expect(joinKey).toBe("iso_a3");
     expect(world.features.length).toBe(3);
@@ -159,7 +159,7 @@ describe("resolveCartogramGeometry", () => {
       },
     };
 
-    const { world, joinKey } = resolveCartogramGeometry(config);
+    const { world, joinKey } = resolveVideoGeometry(config, "cartogram-reveal");
 
     expect(joinKey).toBe("iso_a3");
     expect(world.features.length).toBe(3);
@@ -167,7 +167,7 @@ describe("resolveCartogramGeometry", () => {
 
   it("throws a named error when config.geometry is absent (no bundled fallback geometry anymore)", () => {
     const config: CartogramConfigShape = { ...baseConfig };
-    expect(() => resolveCartogramGeometry(config)).toThrow(
+    expect(() => resolveVideoGeometry(config, "cartogram-story")).toThrow(
       /config\.geometry is required/,
     );
   });

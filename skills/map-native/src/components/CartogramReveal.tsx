@@ -14,9 +14,8 @@
 //
 // Geometry arrives through config.geometry (injected by produce, never a bundled world.geojson
 // fetch — Task 8, D5). The join key prefers config.geography.joinKey over the world default, via
-// resolveCartogramGeometry (CartogramStory.tsx) — mirrors ChoroplethMap.tsx's own decode/join-key
-// resolution (src/ChoroplethMap.tsx:258-284), the proven shape this file copies rather than
-// inventing a second way to do the same thing.
+// the shared resolveVideoGeometry (core/video-geometry.ts, Task 7) — the same helper the
+// choropleth video family uses, so all four families read injected geometry identically.
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -33,7 +32,7 @@ import { computeCartogram } from "../cartogram-geo";
 import { applyCartogramBasemap } from "../theme/cartogram-basemap";
 import { resolveMapStyle } from "../route-geo";
 import type { CartogramConfigShape } from "../validate-config";
-import { resolveCartogramGeometry } from "./CartogramStory";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { resolveMapFrame } from "../core/map-format";
 import { fmtBin } from "../core/legend-format";
 import { MapFrame } from "../core/MapFrame";
@@ -118,9 +117,11 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
     map.on("load", () => {
       try {
         // Geometry arrives through the injected config now (produce.mjs) — never a static
-        // bundle fetch. See resolveCartogramGeometry (CartogramStory.tsx).
-        const { world: worldGeoJson, joinKey } =
-          resolveCartogramGeometry(config);
+        // bundle fetch. Shared with the choropleth video family (Task 7).
+        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+          config,
+          "cartogram-reveal",
+        );
 
         // Compute cartogram layout once. joinKey is threaded onto the data object —
         // computeCartogram reads it off `data.joinKey` (never a positional arg), so this

@@ -1,14 +1,14 @@
-// resolveDotDensityGeometry (DotDensityStory.tsx) is the fix for Task 8: the dot-density video
-// family used to fetch staticFile("geo/world.geojson") unconditionally and join on a hardcoded
-// "iso_a3" — a Swiss-canton (or any non-world) config silently rendered an empty world map. This
-// test proves the function now reads config.geometry (never a bundled world file) and prefers
-// config.geography.joinKey over the world default, mirroring ChoroplethMap.tsx's own proven
-// decode/join-key resolution (src/ChoroplethMap.tsx:258-284). DotDensityReveal.tsx imports this
-// same function (mirrors ChoroplethScrolly.tsx's `stepSlide` — one file exports, siblings
-// import), so this test covers both DotDensityStory and DotDensityReveal's own resolution.
+// The dot-density video family (DotDensityStory.tsx, DotDensityReveal.tsx) used to fetch
+// staticFile("geo/world.geojson") unconditionally and join on a hardcoded "iso_a3" — a
+// Swiss-canton (or any non-world) config silently rendered an empty world map. Both sites now
+// call the shared resolveVideoGeometry (core/video-geometry.ts, Task 7 — reused here per the
+// controller's ruling, reconciling what was originally two independent per-family functions).
+// This test proves that call resolves config.geometry (never a bundled world file) with
+// config.geography.joinKey preferred over the world default — exercising the exact shape both
+// DotDensityStory and DotDensityReveal depend on, using the config fields each actually passes.
 import { describe, it, expect } from "bun:test";
 import type { Topology } from "topojson-specification";
-import { resolveDotDensityGeometry } from "./DotDensityStory";
+import { resolveVideoGeometry } from "../core/video-geometry.ts";
 import type { DotDensityConfigShape } from "../validate-config.ts";
 import type { GeographyRef } from "../basemaps.ts";
 
@@ -123,7 +123,7 @@ const baseConfig: Pick<
   title: "Where the canton's population is concentrated",
 };
 
-describe("resolveDotDensityGeometry", () => {
+describe("resolveVideoGeometry — dot-density video sites", () => {
   it("resolves a non-world geography from its OWN injected geometry, not the shipped world file", () => {
     const config: DotDensityConfigShape = {
       ...baseConfig,
@@ -131,7 +131,10 @@ describe("resolveDotDensityGeometry", () => {
       geography: CANTON_GEOGRAPHY,
     };
 
-    const { world, joinKey } = resolveDotDensityGeometry(config);
+    const { world, joinKey } = resolveVideoGeometry(
+      config,
+      "dot-density-story",
+    );
 
     expect(joinKey).toBe("name");
     expect(world.type).toBe("FeatureCollection");
@@ -150,7 +153,10 @@ describe("resolveDotDensityGeometry", () => {
       basemap: "world",
     };
 
-    const { world, joinKey } = resolveDotDensityGeometry(config);
+    const { world, joinKey } = resolveVideoGeometry(
+      config,
+      "dot-density-story",
+    );
 
     expect(joinKey).toBe("iso_a3");
     expect(world.features.length).toBe(3);
@@ -172,7 +178,10 @@ describe("resolveDotDensityGeometry", () => {
       },
     };
 
-    const { world, joinKey } = resolveDotDensityGeometry(config);
+    const { world, joinKey } = resolveVideoGeometry(
+      config,
+      "dot-density-reveal",
+    );
 
     expect(joinKey).toBe("iso_a3");
     expect(world.features.length).toBe(3);
@@ -180,7 +189,7 @@ describe("resolveDotDensityGeometry", () => {
 
   it("throws a named error when config.geometry is absent (no bundled fallback geometry anymore)", () => {
     const config: DotDensityConfigShape = { ...baseConfig };
-    expect(() => resolveDotDensityGeometry(config)).toThrow(
+    expect(() => resolveVideoGeometry(config, "dot-density-story")).toThrow(
       /config\.geometry is required/,
     );
   });
