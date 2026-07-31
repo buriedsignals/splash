@@ -7,20 +7,24 @@
 // ~0.2 (DIM_OPACITY), synced to the panel slide-in (reuse HexGridScrolly's synced approach +
 // the __id case expression from CartogramStory).
 // Overview (establish) + takeaway render NO panel (visual only) — matching established convention.
-// Harness pattern: delayRender → fetch world.geojson → jumpTo → setPaintProperty (dim by step) → idle → continueRender.
+// Geometry arrives through config.geometry (injected by produce, never a bundled world.geojson
+// fetch — Task 13, D5). The join key prefers config.geography.joinKey over the world default,
+// via resolveVideoGeometry (Task 7's shared helper) — mirrors ChoroplethMap.tsx's own
+// decode/join-key resolution, the proven shape this file copies rather than inventing one.
+// Harness pattern: delayRender → decode config.geometry → jumpTo → setPaintProperty (dim by step) → idle → continueRender.
 
 import React, { useEffect, useRef, useState } from "react";
 import {
   AbsoluteFill,
   continueRender,
   delayRender,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { computeCartogram } from "../cartogram-geo";
 import { deriveCartogramStory } from "../cartogram-story";
 import { applyCartogramBasemap } from "../theme/cartogram-basemap";
@@ -122,128 +126,136 @@ export const CartogramScrolly: React.FC<{ config: CartogramConfigShape }> = ({
     });
 
     m.on("load", () => {
-      // Fetch world GeoJSON via Remotion staticFile (served from remotion/public/).
-      // Remotion's webpack bundler cannot use Vite ?raw imports — staticFile is the correct pattern.
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
-          // Compute cartogram layout once.
-          const layout = computeCartogram(config, worldGeoJson);
+      // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+      // fetch. See resolveVideoGeometry (Task 7's shared helper).
+      try {
+        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+          config,
+          "cartogram-scrolly",
+        );
 
-          // Apply basemap treatment BEFORE adding cells:
-          //   grid variant: neutral flat canvas (hides all basemap layers).
-          //   scaled variant: keep basemap, strip symbol clutter.
-          applyCartogramBasemap(m, dark, layout.variant);
+        // Compute cartogram layout once. joinKey is threaded onto the data object —
+        // computeCartogram reads it off `data.joinKey` (never a positional arg), so this is
+        // spread rather than passed separately (mirrors its own existing contract,
+        // cartogram-geo.ts:62).
+        const layout = computeCartogram({ ...config, joinKey }, worldGeoJson);
 
-          // Build cell GeoJSON. Each feature is tagged with __id (the region id string)
-          // so a reveal step can dim non-highlighted cells via a data-driven expression.
-          // No Date.now / Math.random — fully deterministic.
-          const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
-            type: "Feature",
-            properties: {
-              __color: cell.color,
-              __id: cell.id,
-              __value: cell.value,
-            },
-            geometry: cell.feature.geometry,
-          }));
-          const cellGeoJson: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: cellFeatures,
-          };
+        // Apply basemap treatment BEFORE adding cells:
+        //   grid variant: neutral flat canvas (hides all basemap layers).
+        //   scaled variant: keep basemap, strip symbol clutter.
+        applyCartogramBasemap(m, dark, layout.variant);
 
-          m.addSource("cartogram-cell-src", {
-            type: "geojson",
-            data: cellGeoJson,
-          });
+        // Build cell GeoJSON. Each feature is tagged with __id (the region id string)
+        // so a reveal step can dim non-highlighted cells via a data-driven expression.
+        // No Date.now / Math.random — fully deterministic.
+        const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
+          type: "Feature",
+          properties: {
+            __color: cell.color,
+            __id: cell.id,
+            __value: cell.value,
+          },
+          geometry: cell.feature.geometry,
+        }));
+        const cellGeoJson: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: cellFeatures,
+        };
 
-          // Cell fill — coloured by bin via __color. Opacity starts full (establish step).
-          m.addLayer({
-            id: CELL_LAYER,
-            type: "fill",
-            source: "cartogram-cell-src",
-            paint: {
-              "fill-color": ["get", "__color"] as never,
-              "fill-opacity": FULL_OPACITY,
-            },
-          });
+        m.addSource("cartogram-cell-src", {
+          type: "geojson",
+          data: cellGeoJson,
+        });
 
-          // Thin cell outline for legibility.
-          m.addLayer({
-            id: OUTLINE_LAYER,
-            type: "line",
-            source: "cartogram-cell-src",
-            paint: {
-              "line-color": outlineColor,
-              "line-width": 0.6,
-              "line-opacity": 0.5,
-            },
-          });
+        // Cell fill — coloured by bin via __color. Opacity starts full (establish step).
+        m.addLayer({
+          id: CELL_LAYER,
+          type: "fill",
+          source: "cartogram-cell-src",
+          paint: {
+            "fill-color": ["get", "__color"] as never,
+            "fill-opacity": FULL_OPACITY,
+          },
+        });
 
-          // Derive beats — title → establish → highest-region reveals → takeaway.
-          const meta = {
-            title: config.title ?? "",
-            description: config.description,
-            insight:
-              ((config as Record<string, unknown>).insight as string) ??
-              config.title ??
-              "",
-            lang: config.lang,
-            // The confirmed walk reaches the deriver — see map-arc.ts.
-            arcBeats: config.arcBeats,
-          };
-          const beats = deriveCartogramStory(layout, meta);
+        // Thin cell outline for legibility.
+        m.addLayer({
+          id: OUTLINE_LAYER,
+          type: "line",
+          source: "cartogram-cell-src",
+          paint: {
+            "line-color": outlineColor,
+            "line-width": 0.6,
+            "line-opacity": 0.5,
+          },
+        });
 
-          // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox.
-          const solutions: CameraSolution[] = beats.map((b) => {
-            const result = m.cameraForBounds(
-              b.camera as maptilersdk.LngLatBoundsLike,
-              { padding: mapFrame.pad },
-            );
-            if (!result || !result.center) return { center: [10, 50], zoom: 4 };
-            const c = maptilersdk.LngLat.convert(result.center);
-            return {
-              center: [c.lng, c.lat],
-              zoom: result.zoom ?? 2,
-            };
-          });
+        // Derive beats — title → establish → highest-region reveals → takeaway.
+        const meta = {
+          title: config.title ?? "",
+          description: config.description,
+          insight:
+            ((config as Record<string, unknown>).insight as string) ??
+            config.title ??
+            "",
+          lang: config.lang,
+          // The confirmed walk reaches the deriver — see map-arc.ts.
+          arcBeats: config.arcBeats,
+        };
+        const beats = deriveCartogramStory(layout, meta);
 
-          // Build the scrolly story and step timeline (step 0 = title, rest = reveals).
-          const story = mapStoryToChapters(beats, {
-            title: config.title ?? "",
-            description: config.description,
-            source: config.source
-              ? { name: config.source.name ?? "", url: config.source.url }
-              : undefined,
-            regionsWithData: layout.cells.length,
-          });
-          const stepKinds = story.steps.map((_, i) =>
-            i === 0 ? "title" : "reveal",
+        // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox.
+        const solutions: CameraSolution[] = beats.map((b) => {
+          const result = m.cameraForBounds(
+            b.camera as maptilersdk.LngLatBoundsLike,
+            { padding: mapFrame.pad },
           );
-          const { phases } = buildTimeline(stepKinds, fps);
-          const stepSolutions = story.steps.map(
-            (s) => solutions[s.ref as number],
-          );
+          if (!result || !result.center) return { center: [10, 50], zoom: 4 };
+          const c = maptilersdk.LngLat.convert(result.center);
+          return {
+            center: [c.lng, c.lat],
+            zoom: result.zoom ?? 2,
+          };
+        });
 
-          m.jumpTo({
-            center: stepSolutions[0].center,
-            zoom: stepSolutions[0].zoom,
-          });
+        // Build the scrolly story and step timeline (step 0 = title, rest = reveals).
+        const story = mapStoryToChapters(beats, {
+          title: config.title ?? "",
+          description: config.description,
+          source: config.source
+            ? { name: config.source.name ?? "", url: config.source.url }
+            : undefined,
+          regionsWithData: layout.cells.length,
+        });
+        const stepKinds = story.steps.map((_, i) =>
+          i === 0 ? "title" : "reveal",
+        );
+        const { phases } = buildTimeline(stepKinds, fps);
+        const stepSolutions = story.steps.map(
+          (s) => solutions[s.ref as number],
+        );
 
-          setLegendState({
-            bins: layout.bins,
-            valueLabel: layout.valueLabel,
-          });
+        m.jumpTo({
+          center: stepSolutions[0].center,
+          zoom: stepSolutions[0].zoom,
+        });
 
-          continueWhenMapSettles(m, () => {
-            setMapState({ map: m, beats, story, phases, stepSolutions });
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("CartogramScrolly: failed to load world GeoJSON", err);
+        setLegendState({
+          bins: layout.bins,
+          valueLabel: layout.valueLabel,
+        });
+
+        continueWhenMapSettles(m, () => {
+          setMapState({ map: m, beats, story, phases, stepSolutions });
           continueRender(handle);
         });
+      } catch (err) {
+        console.error(
+          "CartogramScrolly: failed to build story from injected geometry",
+          err,
+        );
+        continueRender(handle);
+      }
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 

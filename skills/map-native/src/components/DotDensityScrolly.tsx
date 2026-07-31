@@ -14,13 +14,13 @@ import {
   AbsoluteFill,
   continueRender,
   delayRender,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { computeDotDensity, UNIVARIATE_ACCENT } from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
 import { deriveDotDensityStory } from "../dot-density-story";
@@ -51,7 +51,6 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 const DOT_RADIUS_PX = 2; // FIXED — uniform dot size, NEVER value-scaled
 const DOT_LAYER = "dot-density-dots";
 const OUTLINE_LAYER = "dot-density-outline";
-const JOIN_KEY = "iso_a3";
 const DIM_OPACITY = 0.25; // non-highlighted regions during a reveal step
 
 interface DDLegend {
@@ -131,140 +130,145 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
         if (layer.type === "symbol") m.removeLayer(layer.id);
       }
 
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((world: GeoJSON.FeatureCollection) => {
-          const layout = computeDotDensity(config, world, JOIN_KEY);
+      // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+      // fetch. See resolveVideoGeometry (Task 7's shared helper).
+      try {
+        const { world, joinKey } = resolveVideoGeometry(
+          config,
+          "dot-density-scrolly",
+        );
+        const layout = computeDotDensity(config, world, joinKey);
 
-          // Build the DOT GeoJSON once — one Point per dot, coloured by group, TAGGED with
-          // __region = the region key so a reveal step can dim non-highlighted regions.
-          const dotFeatures: GeoJSON.Feature[] = [];
-          for (const region of layout.regions) {
-            for (const group of region.groups) {
-              const pts = scatterInPolygon(
-                region.feature,
-                group.count,
-                group.seed,
-              );
-              for (const [lon, lat] of pts) {
-                dotFeatures.push({
-                  type: "Feature",
-                  properties: { color: group.color, __region: region.key },
-                  geometry: { type: "Point", coordinates: [lon, lat] },
-                });
-              }
+        // Build the DOT GeoJSON once — one Point per dot, coloured by group, TAGGED with
+        // __region = the region key so a reveal step can dim non-highlighted regions.
+        const dotFeatures: GeoJSON.Feature[] = [];
+        for (const region of layout.regions) {
+          for (const group of region.groups) {
+            const pts = scatterInPolygon(
+              region.feature,
+              group.count,
+              group.seed,
+            );
+            for (const [lon, lat] of pts) {
+              dotFeatures.push({
+                type: "Feature",
+                properties: { color: group.color, __region: region.key },
+                geometry: { type: "Point", coordinates: [lon, lat] },
+              });
             }
           }
+        }
 
-          const regionGeoJson: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: layout.regions.map((r) => r.feature),
-          };
+        const regionGeoJson: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: layout.regions.map((r) => r.feature),
+        };
 
-          m.addSource("dot-density-region-src", {
-            type: "geojson",
-            data: regionGeoJson,
-          });
-          m.addSource("dot-density-dot-src", {
-            type: "geojson",
-            data: { type: "FeatureCollection", features: dotFeatures },
-          });
+        m.addSource("dot-density-region-src", {
+          type: "geojson",
+          data: regionGeoJson,
+        });
+        m.addSource("dot-density-dot-src", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: dotFeatures },
+        });
 
-          m.addLayer({
-            id: OUTLINE_LAYER,
-            type: "line",
-            source: "dot-density-region-src",
-            paint: {
-              "line-color": outlineColor,
-              "line-width": 0.6,
-              "line-opacity": 0.5,
-            },
-          });
+        m.addLayer({
+          id: OUTLINE_LAYER,
+          type: "line",
+          source: "dot-density-region-src",
+          paint: {
+            "line-color": outlineColor,
+            "line-width": 0.6,
+            "line-opacity": 0.5,
+          },
+        });
 
-          // Dot layer — FIXED radius, colour by group. Opacity starts full (establish step).
-          m.addLayer({
-            id: DOT_LAYER,
-            type: "circle",
-            source: "dot-density-dot-src",
-            paint: {
-              "circle-radius": DOT_RADIUS_PX,
-              "circle-color": ["get", "color"],
-              "circle-opacity": 1,
-              "circle-stroke-width": 0.3,
-              "circle-stroke-color": dark
-                ? "rgba(0,0,0,0.4)"
-                : "rgba(0,0,0,0.15)",
-              "circle-stroke-opacity": 1,
-            },
-          });
+        // Dot layer — FIXED radius, colour by group. Opacity starts full (establish step).
+        m.addLayer({
+          id: DOT_LAYER,
+          type: "circle",
+          source: "dot-density-dot-src",
+          paint: {
+            "circle-radius": DOT_RADIUS_PX,
+            "circle-color": ["get", "color"],
+            "circle-opacity": 1,
+            "circle-stroke-width": 0.3,
+            "circle-stroke-color": dark
+              ? "rgba(0,0,0,0.4)"
+              : "rgba(0,0,0,0.15)",
+            "circle-stroke-opacity": 1,
+          },
+        });
 
-          // Build beats from the layout — title → establish → densest reveals → takeaway.
-          const meta = {
-            title: config.title ?? "",
-            description: config.description,
-            insight:
-              ((config as Record<string, unknown>).insight as string) ??
-              config.title ??
-              "",
-            unit:
-              ((config as Record<string, unknown>).valueUnit as string) ?? "",
-            lang: config.lang,
-            // The confirmed walk reaches the deriver — see map-arc.ts.
-            arcBeats: config.arcBeats,
-          };
-          const beats = deriveDotDensityStory(layout, meta);
+        // Build beats from the layout — title → establish → densest reveals → takeaway.
+        const meta = {
+          title: config.title ?? "",
+          description: config.description,
+          insight:
+            ((config as Record<string, unknown>).insight as string) ??
+            config.title ??
+            "",
+          unit: ((config as Record<string, unknown>).valueUnit as string) ?? "",
+          lang: config.lang,
+          // The confirmed walk reaches the deriver — see map-arc.ts.
+          arcBeats: config.arcBeats,
+        };
+        const beats = deriveDotDensityStory(layout, meta);
 
-          // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
-          const solutions: CameraSolution[] = beats.map((b) => {
-            const result = m.cameraForBounds(
-              b.camera as maptilersdk.LngLatBoundsLike,
-              { padding: mapFrame.pad },
-            );
-            if (!result || !result.center) return { center: [10, 20], zoom: 2 };
-            const c = maptilersdk.LngLat.convert(result.center);
-            return {
-              center: [c.lng, c.lat],
-              zoom: result.zoom ?? 2,
-            };
-          });
-
-          // Build the scrolly story and step timeline (step 0 = title, rest = reveal).
-          const story = mapStoryToChapters(beats, {
-            title: config.title ?? "",
-            description: config.description,
-            source: config.source
-              ? { name: config.source.name ?? "", url: config.source.url }
-              : undefined,
-            regionsWithData: layout.regions.length,
-          });
-          const stepKinds = story.steps.map((_, i) =>
-            i === 0 ? "title" : "reveal",
+        // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
+        const solutions: CameraSolution[] = beats.map((b) => {
+          const result = m.cameraForBounds(
+            b.camera as maptilersdk.LngLatBoundsLike,
+            { padding: mapFrame.pad },
           );
-          const { phases } = buildTimeline(stepKinds, fps);
-          const stepSolutions = story.steps.map(
-            (s) => solutions[s.ref as number],
-          );
+          if (!result || !result.center) return { center: [10, 20], zoom: 2 };
+          const c = maptilersdk.LngLat.convert(result.center);
+          return {
+            center: [c.lng, c.lat],
+            zoom: result.zoom ?? 2,
+          };
+        });
 
-          m.jumpTo({
-            center: stepSolutions[0].center,
-            zoom: stepSolutions[0].zoom,
-          });
+        // Build the scrolly story and step timeline (step 0 = title, rest = reveal).
+        const story = mapStoryToChapters(beats, {
+          title: config.title ?? "",
+          description: config.description,
+          source: config.source
+            ? { name: config.source.name ?? "", url: config.source.url }
+            : undefined,
+          regionsWithData: layout.regions.length,
+        });
+        const stepKinds = story.steps.map((_, i) =>
+          i === 0 ? "title" : "reveal",
+        );
+        const { phases } = buildTimeline(stepKinds, fps);
+        const stepSolutions = story.steps.map(
+          (s) => solutions[s.ref as number],
+        );
 
-          setLegendState({
-            hasCategories: layout.hasCategories,
-            dotValue: layout.dotValue,
-            legend: layout.legend,
-          });
+        m.jumpTo({
+          center: stepSolutions[0].center,
+          zoom: stepSolutions[0].zoom,
+        });
 
-          continueWhenMapSettles(m, () => {
-            setMapState({ map: m, beats, story, phases, stepSolutions });
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("DotDensityScrolly: failed to load world GeoJSON", err);
+        setLegendState({
+          hasCategories: layout.hasCategories,
+          dotValue: layout.dotValue,
+          legend: layout.legend,
+        });
+
+        continueWhenMapSettles(m, () => {
+          setMapState({ map: m, beats, story, phases, stepSolutions });
           continueRender(handle);
         });
+      } catch (err) {
+        console.error(
+          "DotDensityScrolly: failed to build story from injected geometry",
+          err,
+        );
+        continueRender(handle);
+      }
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
