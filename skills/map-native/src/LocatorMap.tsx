@@ -9,10 +9,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { locatorGeometry } from "./locator-geo";
 import type { LocatorConfigShape } from "./validate-config";
-import {
-  placeLabels,
-  labelRadialOffset,
-} from "./locator-labels";
+import { placeLabels, labelRadialOffset } from "./locator-labels";
 import { locatorLabelPlacement } from "./locator-label-placement";
 import { resolveMapStyle } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
@@ -668,6 +665,7 @@ export const LocatorMap: React.FC<Props> = ({
         title={config.title ?? ""}
         description={config.description}
         source={{ name: config.source?.name ?? "", url: config.source?.url }}
+        geoCredit={config.geoCredit}
         width={containerSize.w}
         height={containerSize.h}
         responsive

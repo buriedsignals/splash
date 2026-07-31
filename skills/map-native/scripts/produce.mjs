@@ -42,6 +42,7 @@ import { runWithVideoWatchdog } from "../src/video-watchdog.ts";
 import { mapSourceManifest } from "../src/source-manifest.ts";
 import { readCompDims } from "./lib/comp-registry.mjs";
 import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../splash/src/channel.ts";
+import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -157,6 +158,36 @@ mkdirSync(outDir, { recursive: true });
 // per-type dispatch (video comps) further down, so there is no double-read.
 const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 
+// The path handed to Vite/Remotion via `CONFIG=` below (env, :349ish) — starts as the
+// caller's own `configPath` and is repointed to the resolved outDir/config.json once
+// geometry resolution runs. NEVER overwrite `configPath` itself in place: it is a
+// caller-owned file — a real produce.mjs invocation against a repo-committed sample
+// fixture (assets/sample-data/*.json), run directly while verifying this task, mutated
+// that committed fixture on disk the first time this was tried writing back to
+// `configPath` — exactly the footgun a shared/reusable fixture path invites. Writing
+// only to a location this script owns (outDir) avoids it entirely.
+let resolvedConfigPath = configPath;
+
+const wroteGeometry = await resolveGeometryForProduce({
+  config: parsedConfig,
+  assetsGeoDir: join(root, "assets", "geo"),
+  renderWidthPx: mediaSize.width,
+  format,
+});
+if (wroteGeometry) {
+  // Persist the resolved config to outDir/config.json — never back to the caller's own
+  // `configPath` (see the comment on `resolvedConfigPath` above) — and repoint
+  // `resolvedConfigPath` there so vite.config.ts's `CONFIG=` re-read below picks up the
+  // resolved geometry for every build. Written now, before any build/snap step that may
+  // need VITE_MAPTILER_KEY/REMOTION_MAPTILER_KEY, so the resolved geometry is observable
+  // on disk even if a later step fails for an unrelated reason. The "interactive" branch's
+  // own config.json copy further down is skipped when it would be a same-path no-op (see
+  // that branch) — tolerated by every format's delivery contract either way
+  // (lib/core/contract.ts: "config.json ... legitimately sit beside the deliverable").
+  resolvedConfigPath = join(outDir, "config.json");
+  writeFileSync(resolvedConfigPath, JSON.stringify(parsedConfig, null, 2) + "\n");
+}
+
 // Dark-video gap warning: the video renderer (*Story under src/components/) does not
 // yet honor mapStyle:dark — it always renders a LIGHT basemap (a known, deferred
 // follow-up; see CLAUDE.md "parité harnais-contraste côté map"). Warn (never fail —
@@ -205,7 +236,7 @@ const isWin = process.platform === "win32";
 const SNAP = snapCommand(process.platform);
 const REMOTION = remotionCommand(process.platform);
 
-const env = { ...process.env, CONFIG: configPath };
+const env = { ...process.env, CONFIG: resolvedConfigPath };
 const run = (cmd, args, extraEnv = {}) =>
   execFileSync(cmd, args, {
     stdio: "inherit",
@@ -370,7 +401,13 @@ switch (format) {
       join(outDir, "source-manifest.json"),
       JSON.stringify(mapSourceManifest(parsedConfig), null, 2) + "\n",
     );
-    copyFileSync(configPath, join(outDir, "config.json"));
+    // Skip when geometry resolution already wrote this exact file (resolvedConfigPath IS
+    // outDir/config.json in that case) — copying it onto itself is a needless self-copy at
+    // best and, worse, `copyFileSync(configPath, ...)` would silently overwrite the
+    // resolved-geometry version with the caller's ORIGINAL (pre-resolution) config.
+    if (resolvedConfigPath !== join(outDir, "config.json")) {
+      copyFileSync(resolvedConfigPath, join(outDir, "config.json"));
+    }
 
     run("bun", ["scripts/assert-selfcontained.mjs", interactiveHtmlDest]);
 

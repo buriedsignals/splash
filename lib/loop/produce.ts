@@ -23,6 +23,7 @@ import {
   type RunManifest,
   type RunElement,
 } from "./manifest";
+import { unresolvedGeoJoins } from "../geo/join";
 // The loop's ONE CSV parser (lib/loop/profile.ts) — the same split `orient` profiled this run's
 // input with. The prose guard needs the CELLS, not the CSV text; see its call site below.
 import { parseCsvRows } from "./profile";
@@ -175,6 +176,19 @@ export async function produce(
       "invalid-request",
       `produce: ${unauthored.join(", ")} of this narrative walk ${unauthored.length === 1 ? "carries" : "carry"} no claim — ` +
         `Splash drafts the beats, the journalist writes them, and an unwritten beat is not published`,
+    );
+
+  // BELOW ADM1, THE GUARD BECOMES "JOINED ON AN UNAMBIGUOUS KEY" (spec D6). The mechanical half
+  // of it: whatever earlier step populated `run.orient.geoJoin.pending` (out of this gate's own
+  // scope — see Task 5's scope note in lib/geo/join.ts), an unresolved entry there must not reach
+  // a build any more than an unwritten beat does. Mirrors the beats refusal immediately above,
+  // same position rationale (nextActionsForElement gates it in the same relative spot).
+  const pendingGeoJoins = unresolvedGeoJoins(run.orient?.geoJoin);
+  if (pendingGeoJoins.length)
+    return fail(
+      "invalid-request",
+      `produce: ${pendingGeoJoins.join(", ")} of this map's geography ${pendingGeoJoins.length === 1 ? "is" : "are"} not resolved to a polygon — ` +
+        `Splash measures the candidates and the journalist decides, and an unresolved value is not published`,
     );
 
   // The frozen input is read from disk, and a run dir can be incomplete for reasons that

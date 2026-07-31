@@ -1,6 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { nextActions, parseManifest, type RunManifest } from "../loop/manifest";
+import {
+  nextActions,
+  parseManifest,
+  CURRENT_SCHEMA_VERSION,
+  type RunManifest,
+} from "../loop/manifest";
+import { migrateWriteFree } from "../loop/migrate";
 import { orderingIntents } from "../loop/propose";
 import { resumeReport } from "../loop/resume";
 import { installRoot, loadDecor } from "../newsroom/decor";
@@ -26,22 +32,24 @@ export type HostResponse =
 // only ever writes inside the paths a `verb` request names.
 //
 // This function therefore does NOT go through readManifest(). readManifest silently migrates
-// a pre-v2 manifest, and lib/loop/migrate.ts's migration WRITES: freezeInput creates
-// `input/` and a content-addressed data file inside the run directory. A single
-// `state --run` on a v1 run left a `input/data-<hash>.csv` behind — and the migration is not
-// even persisted to run.json, so every subsequent read redid it.
+// a stale manifest through lib/loop/migrate.ts's `migrate`, and one leg of that chain WRITES:
+// migrateV1toV2's freezeInput creates `input/` and a content-addressed data file inside the run
+// directory. A single `state --run` on a v1 run left a `input/data-<hash>.csv` behind — and the
+// migration is not even persisted to run.json, so every subsequent read redid it.
 //
-// A non-writing migration is not available from here: the v1 shape stores its CSV INLINE,
-// and v2 references input by path+hash. Producing a v2 manifest without writing that file
-// would mean handing the host a report whose `inputValidation` describes a file that does not
-// exist — a lie about the run rather than a read of it. So the honest answer is a typed
-// refusal that tells the host to run the migration explicitly, as a write it chose.
+// Every OTHER leg — v2→v3, v3→v4, v4→v5 — is a pure object transform with no filesystem access
+// at all (migrateWriteFree, lib/loop/migrate.ts). That is what lets a manifest declaring one of
+// those versions be migrated IN MEMORY here and returned as the current shape: nothing is
+// persisted, so a repeated read produces the same migration again, and the file on disk is
+// exactly what it was before this call — the promise above, kept. Only a v1 manifest (whose sole
+// path to v2 writes) still gets the typed refusal, and so does a manifest declaring a version
+// NEWER than this build knows, which genuinely cannot be handled here at all.
 //
 // Exported because the commands that DO write (lib/host/drive.ts) must load a run by exactly the
-// same rule — including the stale-schema refusal. A writing command has a weaker excuse for
-// refusing to migrate, and it refuses anyway: a host asked for one loop step, not for a migration
-// that freezes an input file into its run. One loader, one set of refusals, no second opinion
-// about what a readable run is.
+// same rule — including the write-free in-memory migration and the refusal it falls back to. A
+// writing command has a weaker excuse for refusing to migrate, and it still only migrates what is
+// write-free: a host asked for one loop step, not for a migration that freezes an input file into
+// its run. One loader, one migration rule, no second opinion about what a readable run is.
 export function loadRun(
   runDir: string,
 ): { run: RunManifest } | { fail: HostResponse } {
@@ -70,18 +78,45 @@ export function loadRun(
     raw && typeof raw === "object"
       ? (raw as { schemaVersion?: unknown }).schemaVersion
       : undefined;
-  if (declared !== 4)
+  // Read from lib/loop/manifest.ts's CURRENT_SCHEMA_VERSION, never restated — a hand-copied
+  // literal here is exactly what let this gate drift silently behind RunManifestSchema's own
+  // version for as long as it did (found via a live CLI subprocess, not tsc: this is a runtime
+  // literal, invisible to the type checker). If you are bumping CURRENT_SCHEMA_VERSION, this
+  // gate follows automatically — nothing to edit here.
+  if (declared !== CURRENT_SCHEMA_VERSION) {
+    // migrateWriteFree can throw (e.g. Zod rejecting a migrated shape that turns out to be a
+    // corrupt or incomplete manifest, not just a stale one) — caught here for the same reason
+    // the CURRENT-version parse below is: a host has no `catch`, so this loader never throws.
+    try {
+      const migrated = migrateWriteFree(raw);
+      if (migrated) return { run: migrated };
+    } catch (e) {
+      return {
+        fail: {
+          ok: false,
+          code: "invalid-run",
+          message: `cannot read a valid manifest at ${manifestPath}: ${(e as Error).message}`,
+        },
+      };
+    }
+    const newer =
+      typeof declared === "number" && declared > CURRENT_SCHEMA_VERSION;
     return {
       fail: {
         ok: false,
         code: "stale-schema",
-        message:
-          `${manifestPath} declares schemaVersion ${JSON.stringify(declared ?? null)}, ` +
-          `not 4 — state and next are read-only and will not migrate it, because ` +
-          `migrating writes a frozen input file into the run directory. Run the migration ` +
-          `explicitly, then read the run again`,
+        message: newer
+          ? `${manifestPath} declares schemaVersion ${declared}, newer than ` +
+            `${CURRENT_SCHEMA_VERSION} — this build of Splash cannot read a run written by a ` +
+            `newer version; upgrade Splash before reading this run`
+          : `${manifestPath} declares schemaVersion ${JSON.stringify(declared ?? null)}, ` +
+            `not ${CURRENT_SCHEMA_VERSION} — state and next are read-only and will not migrate ` +
+            `it, because its migration to schemaVersion 2 writes a frozen input file into the ` +
+            `run directory (lib/loop/migrate.ts's migrateV1toV2). That write has to happen ` +
+            `before state or next can read this run`,
       },
     };
+  }
   try {
     return { run: parseManifest(raw) };
   } catch (e) {

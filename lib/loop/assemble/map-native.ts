@@ -11,6 +11,10 @@ import { fail, ok, type VerbResult } from "../../core/verbs";
 import type { ProductionBrief, GeoMatch } from "../../core/production-brief";
 import { parseCsvRows } from "../profile";
 import { BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps";
+// The renderer's own basemap-registry key, recovered from GeoMatch's GeographyRef (Task 9 —
+// GeoMatch stopped carrying that raw key when it widened from `basemap: string`). See
+// lib/geo/ref.ts's own doc comment for why `geography.set` is not usable directly here.
+import { basemapKeyFor, resolveGeographyRef } from "../../geo/ref";
 
 const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 const POINT_TYPES = new Set(["symbol", "hex-grid", "locator", "route"]);
@@ -116,13 +120,13 @@ export function valueFieldFor(
 function geoRefusal(geo: GeoMatch | undefined): string | undefined {
   if (!geo)
     return (
-      `this data carries no geography Splash can place — the shipped basemaps are ` +
-      `${BASEMAP_NAMES.join(" and ")}, and no column matched either of them`
+      `this data carries no geography Splash can place — tried the shipped basemaps ` +
+      `(${BASEMAP_NAMES.join(", ")}) and the built-in admin-1 index, and no column matched any of them`
     );
   if (geo.matched * 2 < geo.total)
     return (
-      `only ${geo.matched} of ${geo.total} rows match the ${geo.basemap} basemap — ` +
-      `unmatched: ${geo.unmatched.join(", ")}`
+      `only ${geo.matched} of ${geo.total} rows match ${geo.geography.set}` +
+      `${geo.geography.scope ? ` (${geo.geography.scope})` : ""} — unmatched: ${geo.unmatched.join(", ")}`
     );
   return undefined;
 }
@@ -182,6 +186,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     return ok({
       type: "cartogram",
       values,
+      geography: geo.geography,
       title,
       description,
       source,
@@ -191,19 +196,27 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   }
 
   if (brief.nativeType === "dot-density") {
-    // DotDensityMap.tsx hard-imports world.geojson and hard-codes the join key "iso_a3" — it
-    // never reads config.basemap or config.boundaries at all (verified 2026-07-28, task-7).
-    // The engine's own validator only checks that `basemap` NAMES a registered basemap, so a
-    // "us-states" dot-density would clear validate-config and then render against the WORLD
-    // map, joining state postal codes against country ISO codes — wrong silently, not missing.
-    // Refused here, at the one place that knows which basemap this geography actually matched,
-    // rather than shipping a config that looks truthful and renders false. See
-    // task-7-report.md for the fix-the-component alternative this defers.
-    if (geo.basemap !== "world")
+    // DotDensityMap.tsx hard-codes the join key "iso_a3" — it never reads config.basemap or
+    // config.boundaries at all (verified 2026-07-28, task-7). UPDATE (2026-07-30, Task 17,
+    // commit 5e4e9f71): the component no longer hard-imports world.geojson (it now decodes an
+    // injected config.geometry) — only the "iso_a3" join-key literal survives as this refusal's
+    // justification. The engine's own validator only checks that `basemap` NAMES a registered
+    // basemap, so a "us-states" dot-density would clear validate-config and then render against
+    // WORLD geometry, joining state postal codes against country ISO codes — wrong silently,
+    // not missing. Refused here, at the one place that knows which basemap this geography
+    // actually matched, rather than shipping a config that looks truthful and renders false.
+    // See task-7-report.md for the fix-the-component alternative this defers, and Task 13
+    // (task-13-brief.md Steps 3-6) for re-deriving the join key so this refusal can be lifted.
+    //
+    // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` directly —
+    // "world"'s own set is "natural-earth-admin-0", not "world" (see lib/geo/ref.ts's doc
+    // comment), so this guard reads the same identifier the config below writes.
+    const basemapKey = basemapKeyFor(geo.geography);
+    if (basemapKey !== "world")
       return fail(
         "invalid-request",
         `dot-density only renders against the world basemap today — its component joins ` +
-          `against world.geojson unconditionally, so a "${geo.basemap}" join would render ` +
+          `against world.geojson unconditionally, so a "${basemapKey}" join would render ` +
           `silently wrong rather than merely fail`,
       );
     return ok({
@@ -212,10 +225,11 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       // No validator branch checks this field (DotDensityConfigShape types it `string` with
       // no format constraint) — the matched basemap name is the only value on hand that names
       // the geography this join happened against. See task-5-report.md for the open question.
-      boundaries: geo.basemap,
+      boundaries: basemapKey,
       rows: typedRows(rows, numeric),
       valueField,
-      basemap: geo.basemap,
+      basemap: basemapKey,
+      geography: geo.geography,
       title,
       description,
       source,
@@ -229,7 +243,8 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     regionKey: geo.column,
     valueField,
     rows: typedRows(rows, numeric),
-    basemap: geo.basemap,
+    basemap: basemapKeyFor(geo.geography),
+    geography: geo.geography,
     title,
     description,
     source,
@@ -282,6 +297,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
       type: "route",
       route,
       basemap,
+      geography: resolveGeographyRef(basemap), // basemap is the literal "world" set above
       title,
       description,
       source,

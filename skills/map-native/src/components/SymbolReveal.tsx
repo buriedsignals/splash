@@ -240,6 +240,7 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={width}
         height={height}
         responsive={false}

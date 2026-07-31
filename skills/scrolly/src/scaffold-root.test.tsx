@@ -12,6 +12,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "bun:test";
+// The map-track sample (assets/sample-data/scrolly.json) carries no `geometry` of its own
+// (Task 4, geography-anywhere repair) — production only ever supplies it through
+// skills/scrolly/scripts/produce.mjs's own resolveGeometryForProduce call, and this SSR-only
+// structural test renders Scrolly directly, never through that CLI. Resolving it here, the same
+// way the producer does, is what keeps this a real map-track render rather than reintroducing a
+// second geometry-bearing copy of the fixture that could drift from what production supplies.
+import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce";
 
 if (!process.env.VITE_MAPTILER_KEY) {
   try {
@@ -35,8 +42,31 @@ const { Scrolly } = await import("./Scrolly");
 const { renderToStaticMarkup } = await import("react-dom/server");
 const lineSample = (await import("../assets/sample-data/line-scrolly.json"))
   .default;
-const choroplethSample = (await import("../assets/sample-data/scrolly.json"))
+const choroplethSampleRaw = (await import("../assets/sample-data/scrolly.json"))
   .default;
+// A shallow copy: resolveGeometryForProduce mutates `config` IN PLACE, and the imported JSON
+// module is a shared singleton — mutating it directly would leak the resolved geometry into
+// every other test file that imports this same fixture. `type: "choropleth"` explicitly: this
+// fixture predates the `type` field (Scrolly.tsx's own dispatch already defaults an absent
+// `config.type` to "choropleth" — see its "default, un-typed" comment), but
+// resolveGeometryForProduce's join-type allow-list reads `config.type` directly and does not
+// know that renderer-side default, so it is restated here rather than left implicit.
+const choroplethSample: Record<string, unknown> = {
+  ...choroplethSampleRaw,
+  type: "choropleth",
+};
+await resolveGeometryForProduce({
+  config: choroplethSample,
+  assetsGeoDir: join(
+    import.meta.dir,
+    "..",
+    "..",
+    "map-native",
+    "assets",
+    "geo",
+  ),
+  renderWidthPx: 1200, // article-web's own mediaSize.width — see produce.mjs's own comment
+});
 
 describe("Scrolly scaffold root (A34)", () => {
   it("has exactly one data-splash-root element that contains the whole page (chart track)", () => {

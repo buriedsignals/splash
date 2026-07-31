@@ -32,7 +32,13 @@ const REGION_BRIEF: ProductionBrief = {
   sourceUrl: "https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS",
   geo: {
     column: "country",
-    basemap: "world",
+    geography: {
+      origin: "shipped",
+      set: "natural-earth-admin-0",
+      level: "country",
+      joinKey: "iso_a3",
+      joinKeyFamily: "iso_a3",
+    },
     matched: 4,
     total: 4,
     unmatched: [],

@@ -248,8 +248,8 @@ export async function advanceStep(
       return refused("deliver", result.message, live.id);
     }
     default: {
-      // confirm-angle / phrase / choose-form / confirm-aspect / author-beats / approve / show /
-      // [] are human turns —
+      // confirm-angle / phrase / choose-form / confirm-aspect / author-beats /
+      // resolve-geo-join / approve / show / [] are human turns —
       // EXCEPT one, which only looks like one. A chosen form nothing can build routes back to
       // "choose-form", and reported as a plain human turn it is indistinguishable from an offer
       // waiting to be chosen from: a runner looping on advance waits forever on a journalist who

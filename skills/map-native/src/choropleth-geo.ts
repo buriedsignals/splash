@@ -189,3 +189,34 @@ export function computeChoropleth(
     ...(labelField ? { labels } : {}),
   };
 }
+
+export type ChoroplethFeatureState = Record<
+  string,
+  { value: number | null; hasData: boolean; label?: string }
+>;
+
+/** The join, kept OUT of the geometry's own properties (D8's second point) — spec's own
+ *  reasoning: under an ODbL-licensed geometry, the OSMF's "Collective Database" guidance ties
+ *  share-alike only to what stays structurally separate; merging a journalist's values into an
+ *  OSM feature's properties is exactly the act that would extend it. The returned `states` table
+ *  is applied to the map via MapLibre `setFeatureState` (ChoroplethMap.tsx), never written back
+ *  onto `features`. */
+export function applyChoroplethJoin(
+  features: GeoJSON.FeatureCollection,
+  layout: ChoroplethLayout,
+  joinKey: string,
+): { features: GeoJSON.FeatureCollection; states: ChoroplethFeatureState } {
+  const states: ChoroplethFeatureState = {};
+  features.features.forEach((f, i) => {
+    const joined = layout.joined[i]!;
+    const key = String(f.properties?.[joinKey]);
+    states[key] = {
+      value: joined.value,
+      hasData: joined.value !== null,
+      ...(layout.labels?.[joined.key]
+        ? { label: layout.labels[joined.key]! }
+        : {}),
+    };
+  });
+  return { features, states }; // features returned UNCHANGED — no properties merge
+}

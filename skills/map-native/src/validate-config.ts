@@ -1,9 +1,10 @@
+import type { Topology } from "topojson-specification";
 import type { ChoroplethData } from "./choropleth-geo";
 import { CAMERA_MODES, type CameraMode } from "./camera-mode";
 import { MAP_STYLES } from "./map-styles";
 import type { LocatorMarker } from "./locator-geo";
 import { PALETTES, isCvdSafeRamp } from "./theme/scale";
-import { BASEMAP_NAMES } from "./basemaps";
+import { BASEMAP_NAMES, basemapKeyFor, type GeographyRef } from "./basemaps";
 import { validateMapFilters, type MapFilter } from "./core/map-filter";
 import {
   mapArcErrors,
@@ -475,6 +476,9 @@ export type LocatorConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
@@ -588,6 +592,11 @@ export type DotDensityConfigShape = {
   categories?: { field: string; label: string; color?: string }[];
   dotValue?: number;
   basemap: string;
+  /** The actual world TopoJSON, injected by produce (Task 20) — same contract as
+   *  ChoroplethConfig's `geometry` (D5): there is no bundled fallback geometry anymore, so
+   *  this is required at render time even though the type stays optional for configs
+   *  assembled before Task 20 lands. */
+  geometry?: Topology;
   mapStyle?: string;
   /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
    * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
@@ -598,6 +607,9 @@ export type DotDensityConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
@@ -720,6 +732,9 @@ export type HexGridConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
@@ -835,6 +850,11 @@ export type CartogramConfigShape = {
   palette?: string | string[];
   bins?: number;
   valueLabel?: string;
+  /** The actual world TopoJSON, injected by produce (Task 20) — same contract as
+   *  ChoroplethConfig's `geometry` (D5): there is no bundled fallback geometry anymore, so
+   *  this is required at render time even though the type stays optional for configs
+   *  assembled before Task 20 lands. */
+  geometry?: Topology;
   // The short value suffix for callouts (e.g. "%") — mirrors ChoroplethConfigShape's
   // `valueUnit`.
   valueUnit?: string;
@@ -853,6 +873,9 @@ export type CartogramConfigShape = {
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
   filters?: MapFilter[];
@@ -873,6 +896,21 @@ export function validateCartogramConfig(
   // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
   // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
   errors.push(...unsupportedArcBeatsErrors(s, "cartogram"));
+
+  // Task 8 (C6): every sibling validator requires a registered basemap (validateBasemap
+  // above) — this one never called it at all, so an unresolvable geography (an ADM1 match, a
+  // typo) sailed straight past validate() into produce's raw mapshaper ENOENT. UNLIKE every
+  // sibling branch, the assembler's cartogram branch (lib/loop/assemble/map-native.ts) sets
+  // `geography` but never also sets a literal `basemap` — so the key to validate is derived
+  // the same way basemapKeyFor's own callers already do, falling back to a literal `basemap`
+  // field for a config that (someday) sets one directly.
+  const basemapKey =
+    typeof s.basemap === "string"
+      ? s.basemap
+      : s.geography
+        ? basemapKeyFor(s.geography as GeographyRef)
+        : undefined;
+  validateBasemap(basemapKey, errors);
 
   if (
     s.mapStyle !== undefined &&

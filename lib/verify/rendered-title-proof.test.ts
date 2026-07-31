@@ -53,7 +53,7 @@ function makeRun(
   );
   return {
     runId: "verify-title-proof",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

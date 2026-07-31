@@ -47,3 +47,20 @@ test("freezeInput preserves the source file extension", () => {
   const ref = freezeInput(dir, src, "data");
   expect(ref.path.endsWith(".json")).toBe(true);
 });
+
+test("freezeInput freezes a .geojson file under input/geography-<hash>.geojson", () => {
+  const dir = runDir();
+  const src = join(dir, "cantons.geojson");
+  writeFileSync(src, '{"type":"FeatureCollection","features":[]}');
+  const frozen = freezeInput(dir, src, "geography");
+  expect(frozen.path).toMatch(/^input\/geography-[0-9a-f]{16}\.geojson$/);
+  expect(frozen.sha256).toHaveLength(64);
+});
+
+test("freezeInput falls back to a .geojson extension when the source file has none", () => {
+  const dir = runDir();
+  const src = join(dir, "cantons"); // no extension
+  writeFileSync(src, '{"type":"FeatureCollection","features":[]}');
+  const frozen = freezeInput(dir, src, "geography");
+  expect(frozen.path).toMatch(/\.geojson$/);
+});

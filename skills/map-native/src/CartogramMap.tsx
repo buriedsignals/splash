@@ -7,8 +7,8 @@ import React, {
 } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
-const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import { computeCartogram } from "./cartogram-geo";
 import { applyCartogramBasemap } from "./theme/cartogram-basemap";
 import { resolveMapStyle } from "./route-geo";
@@ -174,8 +174,24 @@ export const CartogramMap: React.FC<Props> = ({
     mapRef.current = map;
 
     map.on("load", () => {
-      // Compute cartogram layout once from world.geojson.
-      const layout = computeCartogram(config, worldGeoJson);
+      // Geometry arrives through the injected config now (produce.mjs, Task 20) — never a
+      // static bundle import (D5, mirrors ChoroplethMap.tsx). Loud, named failure instead of a
+      // bare TypeError on `undefined.objects` — with the `?raw` import removed there is no
+      // bundled fallback geometry anymore, so an absent config.geometry must fail here, not as
+      // an unexplained timeout downstream.
+      if (!config.geometry)
+        throw new Error(
+          "cartogram: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+        );
+      const topology = config.geometry as Topology;
+      const objectName = Object.keys(topology.objects)[0]!;
+      const world = topoFeature(
+        topology,
+        topology.objects[objectName]!,
+      ) as unknown as GeoJSON.FeatureCollection;
+
+      // Compute cartogram layout once from the decoded geometry.
+      const layout = computeCartogram(config, world);
 
       // Build FeatureCollection from cells — each feature carries display props.
       // Write each filter field onto cell properties so setFilter's ["get", field] works.
@@ -425,6 +441,7 @@ export const CartogramMap: React.FC<Props> = ({
         title={config.title ?? ""}
         description={config.description}
         source={{ name: config.source?.name ?? "", url: config.source?.url }}
+        geoCredit={config.geoCredit}
         width={containerSize.w}
         height={containerSize.h}
         responsive

@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { initRun } from "./init";
-import { nextActions, readManifest } from "./manifest";
+import { CURRENT_SCHEMA_VERSION, nextActions, readManifest } from "./manifest";
 
 // A run directory with a CSV beside it, ready to be declared. Nothing is frozen yet: freezing
 // is exactly what initRun does, and a test that pre-froze would be testing the fixture.
@@ -43,11 +43,23 @@ test("initRun defaults route, channel, one element, an empty ledger of events", 
   const { dir, csv } = scene();
   expect(initRun(dir, declaration(csv)).ok).toBe(true);
   const run = readManifest(join(dir, "run.json"), dir);
-  expect(run.schemaVersion).toBe(4);
+  expect(run.schemaVersion).toBe(5);
   expect(run.route).toBe("embed");
   expect(run.channel).toBe("article-web");
   expect(run.elements).toEqual([{ id: "el1" }]);
   expect(run.events).toEqual([]);
+});
+
+// The schema's own version number, never restated as a hardcoded literal at the write site —
+// the exact defect class Task 9 closed for lib/host/state.ts's stale-schema gate. Comparing
+// against the imported constant, not a literal 5, means this test does not need editing on the
+// next schema bump AND would immediately catch init.ts falling behind if the import/usage were
+// ever reverted to a literal.
+test("initRun writes a manifest at CURRENT_SCHEMA_VERSION, not a restated literal", () => {
+  const { dir, csv } = scene();
+  expect(initRun(dir, declaration(csv)).ok).toBe(true);
+  const run = readManifest(join(dir, "run.json"), dir);
+  expect(run.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
 });
 
 test("a run initRun created owes exactly one thing: orient", () => {
@@ -354,6 +366,173 @@ test("writes no lang field at all when nothing was declared and no profile was g
   if (r.ok) expect(r.value.lang).toBeUndefined();
   const raw = readFileSync(join(dir, "run.json"), "utf8");
   expect(raw).not.toContain('"lang"');
+});
+
+// --- geography input (D1, D1b): frozen like data/article, a HashRef plus the editorial facts
+// GeographyInputSchema carries.
+
+test("accepts a run declaring input.geography and freezes it", () => {
+  const { dir, csv } = scene();
+  const geoFixture = join(dir, "cantons.geojson");
+  writeFileSync(
+    geoFixture,
+    JSON.stringify({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: {},
+          geometry: { type: "Point", coordinates: [7.4474, 46.9481] },
+        },
+      ],
+    }),
+  );
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: {
+      data: csv,
+      geography: {
+        path: geoFixture,
+        encoding: "geojson",
+        crs: "EPSG:4326",
+        level: "cantons",
+        licence: "swisstopo",
+        edition: "2024",
+        credit: { name: "swisstopo" },
+      },
+    },
+  });
+  expect(result.ok).toBe(true);
+  if (result.ok) {
+    expect(result.value.input.geography?.sha256).toBeDefined();
+    expect(result.value.input.geography?.level).toBe("cantons");
+  }
+  // The WRITTEN file, not just the in-memory return — the same discipline every other test in
+  // this file that cares about persisted state follows (readManifest re-parses through
+  // RunManifestSchema, so a shape writeManifest let through wrong would fail here even if the
+  // in-memory `result.value` above looked fine).
+  const run = readManifest(join(dir, "run.json"), dir);
+  expect(run.input.geography?.encoding).toBe("geojson");
+  expect(run.input.geography?.crs).toBe("EPSG:4326");
+  expect(run.input.geography?.level).toBe("cantons");
+  expect(run.input.geography?.licence).toBe("swisstopo");
+  expect(run.input.geography?.edition).toBe("2024");
+  expect(run.input.geography?.credit.name).toBe("swisstopo");
+  expect(run.input.geography?.sha256).toMatch(/^[0-9a-f]{64}$/);
+  expect(run.input.geography?.path).toMatch(
+    /^input\/geography-[0-9a-f]{16}\.geojson$/,
+  );
+});
+
+// The no-geography case must stay legal AND avoid materializing a phantom record: `optional()`
+// on a zod object can, depending on how the surrounding object is built, still serialize an
+// absent key as `undefined`-but-present or even `null` rather than dropping it — this is the
+// check that the field is genuinely MISSING from the written bytes, not merely undefined in the
+// parsed TS shape.
+test("a run declared without input.geography round-trips with the field genuinely absent, not null or an empty record", () => {
+  const { dir, csv } = scene();
+  expect(initRun(dir, declaration(csv)).ok).toBe(true);
+
+  const run = readManifest(join(dir, "run.json"), dir);
+  expect(run.input.geography).toBeUndefined();
+  expect("geography" in run.input).toBe(false);
+
+  const raw = JSON.parse(readFileSync(join(dir, "run.json"), "utf8"));
+  expect("geography" in raw.input).toBe(false);
+  expect(readFileSync(join(dir, "run.json"), "utf8")).not.toContain(
+    '"geography"',
+  );
+});
+
+// Mirrors "initRun refuses an input path that does not exist, before freezing anything" (above)
+// for the geography slot — the same existence check, extended to a third input.
+test("initRun refuses a geography path that does not exist, before freezing anything", () => {
+  const { dir, csv } = scene();
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: {
+      data: csv,
+      geography: {
+        path: join(dir, "nope.geojson"),
+        encoding: "geojson",
+        crs: "EPSG:4326",
+        level: "cantons",
+        licence: "swisstopo",
+        edition: "2024",
+        credit: { name: "swisstopo" },
+      },
+    },
+  });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("nope.geojson");
+  expect(existsSync(join(dir, "input"))).toBe(false);
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+});
+
+// The CRS guard (lib/geo/crs.ts, Task 1) runs before a single byte is frozen — same fixture
+// crs.test.ts uses (spec D4's own measured case: Bern in LV95 mistaken for WGS84).
+test("initRun refuses a geography file whose coordinates fail the CRS guard, before freezing anything", () => {
+  const { dir, csv } = scene();
+  const badGeo = join(dir, "lv95.geojson");
+  writeFileSync(
+    badGeo,
+    JSON.stringify({ type: "Point", coordinates: [2600000, 1200000] }),
+  );
+  const result = initRun(dir, {
+    ...declaration(csv),
+    input: {
+      data: csv,
+      geography: {
+        path: badGeo,
+        encoding: "geojson",
+        crs: "EPSG:4326",
+        level: "cantons",
+        licence: "swisstopo",
+        edition: "2024",
+        credit: { name: "swisstopo" },
+      },
+    },
+  });
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("2600000");
+  expect(result.message).toContain("re-export");
+  expect(existsSync(join(dir, "input"))).toBe(false);
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
+});
+
+// JSON.parse("null") succeeds — "null" is valid JSON — so the try/catch around the parse alone
+// does not stop a degenerate-but-valid-JSON geography file from reaching coordinateRangeVerdict,
+// which assumes a Geometry/FeatureCollection object and reads `.type` unconditionally. This is
+// the regression test for that: initRun must REFUSE, never throw.
+test("initRun refuses a geography file whose content is valid JSON but not a geometry object, instead of throwing", () => {
+  const { dir, csv } = scene();
+  const nullGeo = join(dir, "null.geojson");
+  writeFileSync(nullGeo, "null");
+  let result: ReturnType<typeof initRun> | undefined;
+  expect(() => {
+    result = initRun(dir, {
+      ...declaration(csv),
+      input: {
+        data: csv,
+        geography: {
+          path: nullGeo,
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "cantons",
+          licence: "swisstopo",
+          edition: "2024",
+          credit: { name: "swisstopo" },
+        },
+      },
+    });
+  }).not.toThrow();
+  expect(result?.ok).toBe(false);
+  if (!result || result.ok) throw new Error("unreachable");
+  expect(result.message).toContain("null.geojson");
+  expect(existsSync(join(dir, "input"))).toBe(false);
+  expect(existsSync(join(dir, "run.json"))).toBe(false);
 });
 
 test("initRun freezes an article input too, and declares it", () => {

@@ -94,7 +94,7 @@ function runWith(option: {
 }): RunManifest {
   return {
     runId: "scrolly-routing",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "article",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },

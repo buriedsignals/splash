@@ -55,7 +55,7 @@ function seedRun(runDir: string): RunManifest {
   );
   return {
     runId: "deliverables-e2e",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -111,6 +111,9 @@ const ANSWERED_BY: Record<NextAction, Answerer> = {
   "confirm-angle": "unreachable",
   "draft-beats": "unreachable",
   "author-beats": "unreachable",
+  // Not reachable either: the seed declares no geography at all, so orient.geoJoin is never
+  // populated and this gate never fires for this fixture.
+  "resolve-geo-join": "unreachable",
   approve: "unreachable",
 };
 

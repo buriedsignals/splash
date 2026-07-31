@@ -62,7 +62,7 @@ const decor = () => ({
 function producedRun(): RunManifest {
   const base: RunManifest = {
     runId: "r-e2e-deliver",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "input-sha" } },

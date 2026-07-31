@@ -13,9 +13,10 @@
   "include": [
     "brain",
     "core",
-    "loop",
-    "host",
     "delivery",
+    "geo",
+    "host",
+    "loop",
     "newsroom",
     "source",
     "verify"

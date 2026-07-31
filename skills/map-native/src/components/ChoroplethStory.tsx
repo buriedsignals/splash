@@ -112,6 +112,9 @@ export type ChoroplethStoryConfig = ChoroplethData & {
   valueUnit?: string;
   insight?: string;
   source?: { name: string; url: string };
+  /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+   *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+  geoCredit?: { name: string; url?: string };
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
   /** the topic hint (e.g. "electricity access") → drives the subject-fit ramp guard. */
@@ -619,6 +622,7 @@ export const ChoroplethStory: React.FC<{
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={width}
         height={height}
         responsive={false}

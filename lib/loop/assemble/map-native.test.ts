@@ -1,6 +1,7 @@
-import { test, expect } from "bun:test";
+import { test, expect, describe, it } from "bun:test";
 import { assembleMapNative } from "./map-native";
 import { mapNativeConfigErrors } from "../../../skills/map-native/src/validate-config";
+import { resolveGeographyRef } from "../../geo/ref";
 import type { ProductionBrief } from "../../core/production-brief";
 
 const REGION_BRIEF: ProductionBrief = {
@@ -17,7 +18,13 @@ const REGION_BRIEF: ProductionBrief = {
   sourceUrl: "https://data.worldbank.org",
   geo: {
     column: "country",
-    basemap: "world",
+    geography: {
+      origin: "shipped",
+      set: "natural-earth-admin-0",
+      level: "country",
+      joinKey: "iso_a3",
+      joinKeyFamily: "iso_a3",
+    },
     matched: 4,
     total: 4,
     unmatched: [],
@@ -69,7 +76,13 @@ test("fewer than half the rows join — refused, and every orphan is named", () 
     ...REGION_BRIEF,
     geo: {
       column: "country",
-      basemap: "world",
+      geography: {
+        origin: "shipped",
+        set: "natural-earth-admin-0",
+        level: "country",
+        joinKey: "iso_a3",
+        joinKeyFamily: "iso_a3",
+      },
       matched: 1,
       total: 4,
       unmatched: ["Genève", "Vaud", "Valais"],
@@ -231,6 +244,19 @@ test("a route is the ordered coordinates, as pairs", () => {
   ]);
 });
 
+// Task 17 (RouteMap.tsx reads injected geometry, mirroring ChoroplethMap.tsx/CartogramMap.tsx)
+// — route's config now carries `geography` alongside its literal `basemap: "world"`, the same
+// GeographyRef shape the region family already emits, so the renderer can resolve a join key
+// from `config.geography` the same way ChoroplethMap.tsx does instead of a bare string.
+test("a route config names its geography (always world — point family has no basemap match)", () => {
+  const r = assembleMapNative({ ...POINT_BRIEF, nativeType: "route" });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const cfg = r.value as { basemap: string; geography: unknown };
+  expect(cfg.basemap).toBe("world");
+  expect(cfg.geography).toEqual(resolveGeographyRef("world"));
+});
+
 test("a hex-grid's points carry an optional value, resolved the same way as symbol", () => {
   const r = assembleMapNative({ ...POINT_BRIEF, nativeType: "hex-grid" });
   expect(r.ok).toBe(true);
@@ -318,12 +344,14 @@ test("a dot-density config against the world basemap clears the engine's own val
   expect(cfg.basemap).toBe("world");
 });
 
-// DotDensityMap.tsx hard-imports world.geojson and hard-codes the join key "iso_a3" — it never
-// reads config.basemap or config.boundaries at all (verified 2026-07-28, task-7). The engine's
-// own validate-config only checks that `basemap` NAMES a shipped basemap, so a "us-states"
-// dot-density would clear it and then render wrong (a state postal code joined against country
-// ISO codes) rather than fail loud. Refused here — the assembler is the one place that knows
-// which basemap this geography actually matched — until the component itself reads basemap.
+// DotDensityMap.tsx hard-codes the join key "iso_a3" — it never reads config.basemap or
+// config.boundaries at all (verified 2026-07-28, task-7; the component's separate hard-import of
+// world.geojson was closed by Task 17, commit 5e4e9f71 — only the join-key literal survives).
+// The engine's own validate-config only checks that `basemap` NAMES a shipped basemap, so a
+// "us-states" dot-density would clear it and then render wrong (a state postal code joined
+// against country ISO codes) rather than fail loud. Refused here — the assembler is the one
+// place that knows which basemap this geography actually matched — until the component itself
+// derives its join key from basemap/geography (Task 13, task-13-brief.md Steps 3-6).
 test("a dot-density against any basemap but world is refused, not silently rendered wrong", () => {
   const r = assembleMapNative({
     ...REGION_BRIEF,
@@ -331,7 +359,13 @@ test("a dot-density against any basemap but world is refused, not silently rende
     dataCsv: "state,access\nCA,100\nTX,90",
     geo: {
       column: "state",
-      basemap: "us-states",
+      geography: {
+        origin: "shipped",
+        set: "us-states",
+        level: "state",
+        joinKey: "postal",
+        joinKeyFamily: "postal",
+      },
       matched: 2,
       total: 2,
       unmatched: [],
@@ -342,6 +376,93 @@ test("a dot-density against any basemap but world is refused, not silently rende
   expect(r.code).toBe("invalid-request");
   expect(r.message).toContain("us-states");
   expect(r.message).toContain("world");
+});
+
+// Task 13 (task-13-brief.md, Step 1) — a deliberate pre-condition breadcrumb, not a bug in this
+// task. The plan sequences Task 13's refusal rewrite AFTER Task 17 (skills/map-native geometry
+// de-inlining: DotDensityMap.tsx stops hard-importing world.geojson + hard-coding join key
+// "iso_a3"). UPDATE (2026-07-30, commit 5e4e9f71): Task 17 has now landed — DotDensityMap.tsx no
+// longer hard-imports `world.geojson?raw` (it decodes `config.geometry`, a TopoJSON injected by
+// produce at Task 20). But its join key is STILL hard-coded to the literal "iso_a3"
+// (`const JOIN_KEY = "iso_a3";`), never derived from `config.basemap`/`config.boundaries`/
+// `config.geography` — Task 17's own brief scoped that rewrite out (file list did not include
+// this rewire; see task-17-report.md's "deviations" section). That surviving hard-coded join key
+// is precisely what keeps THIS test red and the sibling refusal above load-bearing: a
+// "us-states" dot-density would still clear validate-config and render against the WORLD
+// geometry, joining state postal codes against country ISO codes — wrong silently, not missing.
+// This test is written RED on purpose: it pins the post-Task-13 target (Steps 3-6: re-derive the
+// join key from `config.geography.joinKey` instead of the "iso_a3" literal) so a future pass can
+// tell "join key not yet re-derived" (this failure) apart from "re-derived but broken" (any
+// other failure). Do not remove the sibling refusal above, and do not make this test pass, until
+// Task 13 Steps 3-6 have actually re-derived DotDensityMap.tsx's join key on this branch.
+//
+// PLAN GAP (found 2026-07-30, after Task 17 landed): Task 13's own plan text (task-13-brief.md,
+// Step 3) assumes Task 17 ALSO un-hardcodes DotDensityMap.tsx's join key — its Step-3 code
+// comment reads "Task 17 ... made DotDensityMap.tsx read its geometry from the injected config's
+// `geography` descriptor instead of a hard-imported world.geojson + hard-coded 'iso_a3'". That
+// assumption is wrong: Task 17's actual brief never mentions JOIN_KEY at all (verified by reading
+// its full text), and this file's own component still hard-codes `const JOIN_KEY = "iso_a3";`
+// (skills/map-native/src/DotDensityMap.tsx) after Task 17 landed. So implementing Task 13's Step
+// 3 exactly as written — unconditionally returning `ok(...)` once a non-world geography is
+// matched — would be UNSAFE: a "us-states" dot-density would clear the refusal and then render
+// SILENTLY WRONG (state postal codes joined against the still-hardcoded country ISO-A3 key),
+// exactly the failure class this refusal exists to prevent.
+//
+// RULING (2026-07-30, after Task 20 landed): Task 20's own implementer confirmed produce.mjs now
+// resolves config.geography (correct joinKey) for dot-density too, and sized what Task 13 would
+// actually need: (1) DotDensityMap.tsx reading `config.geography?.joinKey ?? JOIN_KEY` instead of
+// the hard-coded literal — genuinely small, mirrors ChoroplethMap.tsx's already-proven Task 16
+// pattern; BUT (2) removing THIS refusal in map-native.ts, plus (3) a real, rendered, visually
+// inspected proof that a non-world dot-density (e.g. us-states) has no OTHER hidden world/iso_a3
+// assumption inside computeDotDensity/dot-scatter.ts — unverified, and this plan's own testing
+// culture explicitly does not treat "probably fine" as sufficient here: Task 20 found a real,
+// previously-unreachable vendor-level rendering crash in RouteMap.tsx the moment that sibling
+// component (same "never exercised against real geometry" history) was finally given real,
+// full-scale data. Attempting (2)+(3) without an independent review available to catch an
+// equivalent surprise here would be exactly that same risk, blind.
+// Decision: ruled OUT OF THIS PLAN'S SCOPE. This is not a stalled sequencing wait — it is a
+// deliberate, documented exclusion. The refusal in map-native.ts (the sibling test above) stays
+// in place and correct. This test is skipped, not left "expected red": a red test with an
+// explanation nobody re-reads is exactly the failure mode this ruling exists to avoid (a gate
+// reporting a failure that is neither ambient nor understood by whoever next reads it).
+// FOLLOW-UP, named precisely so nothing here needs re-deriving: (a) add `geography?: GeographyRef`
+// to `DotDensityConfigShape` (validate-config.ts) — one line, mirrors ChoroplethConfig; (b) change
+// DotDensityMap.tsx's two JOIN_KEY use-sites to `config.geography?.joinKey ?? JOIN_KEY`; (c) remove
+// this file's dot-density `basemapKey !== "world"` refusal and un-skip this test; (d) render a real
+// non-world (e.g. us-states) dot-density end-to-end and visually inspect the PNG before considering
+// the refusal's removal safe — do not skip step (d) on the assumption that (a)+(b) alone are enough.
+it.skip("dot-density accepts a non-world geography once DotDensityMap.tsx re-derives its join key — RULED OUT OF THIS PLAN'S SCOPE 2026-07-30, see the follow-up named in the comment above", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    nativeType: "dot-density",
+    dataCsv: "state,access\nCA,100\nTX,90",
+    geo: {
+      column: "state",
+      geography: {
+        origin: "shipped",
+        set: "us-states",
+        level: "state",
+        joinKey: "postal",
+        joinKeyFamily: "postal",
+      },
+      matched: 2,
+      total: 2,
+      unmatched: [],
+    },
+  });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const cfg = r.value as Record<string, unknown>;
+  // Beyond "the refusal is gone": pins the emitted config actually names the matched
+  // geography, not a vacuous ok:true a broken Step-3 implementation could also produce
+  // (e.g. one that drops the refusal but forgets to route boundaries/basemap off it).
+  expect(cfg.type).toBe("dot-density");
+  expect(cfg.regionKey).toBe("state");
+  expect(cfg.basemap).toBe("us-states");
+  expect(cfg.boundaries).toBe("us-states");
+  expect((cfg.geography as { set?: string } | undefined)?.set).toBe(
+    "us-states",
+  );
 });
 
 // § 8.8 — ChoroplethMap.tsx (skills/map-native/src/ChoroplethMap.tsx:53-54) types the two
@@ -381,3 +502,45 @@ for (const nativeType of ["dot-density", "route", "locator"]) {
     expect((r.value as { valueUnit?: string }).valueUnit).toBe("km");
   });
 }
+
+describe("geoRefusal — ADM1-aware wording", () => {
+  it("does not claim only 'world'/'us-states' are the shipped basemaps when geo is undefined", () => {
+    const brief: ProductionBrief = { ...REGION_BRIEF, geo: undefined };
+    const result = assembleMapNative(brief);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      // the old wording named exactly "world and us-states" — the ADM1 index is a third,
+      // real candidate now, and the message must not claim otherwise.
+      expect(result.message).not.toMatch(
+        /the shipped basemaps are world and us-states/,
+      );
+    }
+  });
+
+  it("emits geo.geography.set as the config's basemap string, and geography wholesale, for an ADM1 match", () => {
+    const brief: ProductionBrief = {
+      ...REGION_BRIEF,
+      geo: {
+        column: "country",
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-1",
+          scope: "CHE",
+          level: "canton",
+          joinKey: "name",
+          joinKeyFamily: "name",
+        },
+        matched: 2,
+        total: 2,
+        unmatched: [],
+      },
+    };
+    const result = assembleMapNative(brief);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const cfg = result.value as { basemap: string; geography: unknown };
+      expect(cfg.basemap).toBe("natural-earth-admin-1");
+      expect(cfg.geography).toEqual(brief.geo!.geography);
+    }
+  });
+});

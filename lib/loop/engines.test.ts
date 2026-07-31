@@ -33,7 +33,7 @@ test("produce() reaches a real engine when the ONLY import is lib/loop/produce.t
       'writeFileSync(src, "canton,2015,2024\\nGeneve,449,583\\nVaud,412,531");',
       "const run = {",
       '  runId: "standalone",',
-      "  schemaVersion: 4,",
+      "  schemaVersion: 5,",
       '  route: "embed",',
       '  channel: "article-web",',
       '  input: { data: freezeInput(runDir, src, "data") },',

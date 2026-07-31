@@ -28,6 +28,10 @@ import {
 import { unbuildableFormReason } from "./buildable";
 import { isHostedUrl } from "../core/contract";
 import { ARC_ROLES } from "../core/claim-arc";
+// The gate's own answer to "what below-ADM1 value is still awaiting a decision" (Task 5) — read
+// by the routing below so the two cannot disagree, the same reason unauthoredBeats is imported
+// from nowhere else either.
+import { unresolvedGeoJoins } from "../geo/join";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
@@ -194,12 +198,59 @@ const NarrativeBeatSchema = z.object({
 });
 const NarrativeSchema = z.object({ beats: z.array(NarrativeBeatSchema) });
 
+// GeographyRef, GeoJoinLedger's shape hand-mirrored as zod (Task 9's own design call: the PLAIN
+// types in lib/geo/ref.ts / lib/geo/join.ts must stay importable by production-brief.ts without
+// zod riding along, so this manifest-local schema is kept independent and hand-synced by comment
+// rather than built from `z.infer` of those plain types — the same discipline
+// ImageFrameSchema/ImageInput already use, manifest.ts:109-119's own comment on why).
+const GeographyRefSchema = z.strictObject({
+  origin: z.enum(["shipped", "declared"]),
+  set: z.string(),
+  scope: z.string().optional(),
+  level: z.string(),
+  joinKey: z.string(),
+  joinKeyFamily: z.string(),
+});
 const GeoMatchSchema = z.object({
   column: z.string(),
-  basemap: z.string(),
+  geography: GeographyRefSchema,
   matched: z.number(),
   total: z.number(),
   unmatched: z.array(z.string()),
+});
+// A journalist's join decision, one value at a time — the ledger's own unit of record (Task 5's
+// GeoJoinLedger, hand-mirrored here for the same reason GeoMatchSchema is above).
+const GeoJoinDecisionSchema = z.object({
+  value: z.string(),
+  featureId: z.string(),
+  basis: z.enum(["unambiguous", "journalist"]),
+});
+const GeoJoinLedgerSchema = z.object({
+  column: z.string(),
+  geographySha256: z.string(),
+  decisions: z.array(GeoJoinDecisionSchema),
+  pending: z.array(z.string()),
+});
+// THE FROZEN GEOGRAPHY RECORD — NOT GeographyInputSchema (Task 2) reused verbatim. Spec D1b: the
+// geography file is frozen like data/article (a HashRef), unlike images (never frozen). So this
+// carries path+sha256 (the frozen copy) PLUS the editorial facts GeographyInputSchema carries,
+// minus GeographyInputSchema's own `path` (which names the journalist's ORIGINAL location,
+// discarded once frozen — exactly like data/article's original path is discarded in favour of
+// HashRef.path). The same relationship HashRef already has to the declaration schemas in
+// lib/loop/init.ts.
+const GeographyRecordSchema = z.strictObject({
+  path: z.string(),
+  sha256: z.string(),
+  encoding: z.enum(["geojson", "topojson"]),
+  crs: z.enum(["EPSG:4326", "EPSG:4258", "EPSG:4269"]),
+  level: z.string().min(1),
+  licence: z.string().min(1),
+  edition: z.string().min(1),
+  credit: z.strictObject({
+    name: z.string().min(1),
+    url: z.string().optional(),
+  }),
+  joinKey: z.string().min(1).optional(),
 });
 const RunEventSchema = z.object({
   at: z.string(),
@@ -327,9 +378,18 @@ const RunElementSchema = z.object({
     })
     .optional(),
 });
+// THE single source of truth for "what schema version is current" — exported so a second reader
+// (lib/host/state.ts's `loadRun` stale-schema gate) can IMPORT this rather than restating the
+// literal. A restated literal is exactly the class of drift this task's own migrateV4toV5 exists
+// to close for run.json itself (a decision duplicated in a second place, which rots when the
+// first one moves) — the schema module owes its own version number the same discipline. Found by
+// running lib/host/cli.test.ts's real CLI subprocess against a v5 manifest and getting a live
+// `stale-schema` refusal that `tsc` could not have caught (a runtime literal, not a type).
+export const CURRENT_SCHEMA_VERSION = 5 as const;
+
 export const RunManifestSchema = z.object({
   runId: z.string(),
-  schemaVersion: z.literal(4),
+  schemaVersion: z.literal(CURRENT_SCHEMA_VERSION),
   /** The relationship to the text: an embeddable element, or the visual article itself.
    *
    *  DECLARED, REPORTED, AND ROUTED ON BY NOTHING — and that is the design, not an omission.
@@ -362,6 +422,7 @@ export const RunManifestSchema = z.object({
     data: HashRef.optional(),
     article: HashRef.optional(),
     images: ImageInputSchema.optional(),
+    geography: GeographyRecordSchema.optional(),
   }),
   // --- source policy (lib/source) ---
   // WHAT each frozen input IS, beside the path+hash of WHICH file it is: the declared source
@@ -377,6 +438,7 @@ export const RunManifestSchema = z.object({
       supportsPoint: z.boolean(),
       note: z.string().optional(),
       geo: GeoMatchSchema.optional(),
+      geoJoin: GeoJoinLedgerSchema.optional(),
     })
     .optional(),
   elements: z.array(RunElementSchema),
@@ -407,6 +469,10 @@ export type NextAction =
   // journalist's, like phrase: they validate or rewrite each beat, behind verifyBeats.
   | "draft-beats"
   | "author-beats"
+  // A below-ADM1 map whose join found an ambiguous value not yet resolved to a polygon (D6).
+  // Mirrors `author-beats` exactly: mechanical routing to a still-owed decision, never the
+  // dialogue that records the decision itself (out of this action's scope — see Task 5/14).
+  | "resolve-geo-join"
   | "produce"
   // The verification chain (lib/verify), on the road between a produced artifact and a
   // published one. `capture`, `review` and `preview` are DETERMINISTIC — advanceStep runs
@@ -557,6 +623,15 @@ export function provenanceHash(run: RunManifest, el: RunElement): string {
     // sentence it already replaced. `null` for every element that carries no plan, so the value
     // stays stable rather than moving for an embeddable element that never had one.
     narrative: el.narrative ?? null,
+    // The declared geography's credit/edition are RENDERED into the artefact (D7) — without
+    // this line, correcting a credit leaves a stale one on an artefact that reports itself
+    // fresh, the exact defect `sources` already closes for data attribution (see the comment
+    // above). The WHOLE record, not just the credit: the licence and edition are just as
+    // artefact-determining. `null` when a run declares no geography, so the value stays stable.
+    geography: run.input.geography ?? null,
+    // The join decisions decide which polygon receives which value — the single most
+    // determining fact about a below-ADM1 map (D9). `null` when nothing has been decided yet.
+    geoJoin: run.orient?.geoJoin ?? null,
   });
 }
 
@@ -592,7 +667,7 @@ export function readManifest(
   if (
     raw &&
     typeof raw === "object" &&
-    (raw as { schemaVersion?: number }).schemaVersion !== 4
+    (raw as { schemaVersion?: number }).schemaVersion !== CURRENT_SCHEMA_VERSION
   ) {
     return migrate(raw, runDir);
   }
@@ -686,6 +761,11 @@ export function nextActionsForElement(
   )
     return ["draft-beats"];
   if (unauthoredBeats(el).length > 0) return ["author-beats"];
+  // Same position/ordering rationale as the beats gate just above: a form nothing can build
+  // must not be told "resolve your geo-join" before it is told it cannot be built at all, so
+  // this stays AFTER the beats gate — mirroring the order produce.ts itself gates in.
+  if (unresolvedGeoJoins(run.orient?.geoJoin).length > 0)
+    return ["resolve-geo-join"];
   if (!el.artifact || stalenessOf(run, el)) return ["produce"];
   // `deliver` is a step a DECISION triggers, never an automatic advance — the symmetric of
   // proposal.chosenId. A fresh artifact nobody asked to publish stays on show.

@@ -56,7 +56,7 @@ function runWith(el: Partial<RunElement>): {
 } {
   const base: RunManifest = {
     runId: "r1",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
@@ -543,7 +543,7 @@ describe("deliver", () => {
     );
     const base: RunManifest = {
       runId: "reproduce-after-deliver",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(runDir, src, "data") },

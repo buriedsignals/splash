@@ -71,7 +71,13 @@ const FIXTURE_BRIEF: ProductionBrief = {
   sourceUrl: "https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS",
   geo: {
     column: "country",
-    basemap: "world",
+    geography: {
+      origin: "shipped",
+      set: "natural-earth-admin-0",
+      level: "country",
+      joinKey: "iso_a3",
+      joinKeyFamily: "iso_a3",
+    },
     matched: 12,
     total: 12,
     unmatched: [],
@@ -102,7 +108,7 @@ function runFor(runDir: string, format: "static" | "interactive"): RunManifest {
   writeFileSync(src, ACCESS_CSV);
   return {
     runId: "map-dw-e2e",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -125,7 +131,13 @@ function runFor(runDir: string, format: "static" | "interactive"): RunManifest {
       supportsPoint: false,
       geo: {
         column: "country",
-        basemap: "world",
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-0",
+          level: "country",
+          joinKey: "iso_a3",
+          joinKeyFamily: "iso_a3",
+        },
         matched: 12,
         total: 12,
         unmatched: [],

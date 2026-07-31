@@ -8,17 +8,19 @@ import {
   resolvedChannelForElement,
   stalenessOf,
   nextActions,
+  nextActionsForElement,
   gateStateOf,
   parseManifest,
   RunManifestSchema,
   type RunManifest,
   type RunElement,
 } from "./manifest";
+import { migrate } from "./migrate";
 
 function base(): RunManifest {
   return {
     runId: "r1",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
@@ -252,14 +254,14 @@ test("nextActions off-ramps ([]) when data supports no visual", () => {
 });
 
 test("parseManifest rejects a manifest missing elements", () => {
-  const bad = { runId: "r", schemaVersion: 4, input: {}, events: [] };
+  const bad = { runId: "r", schemaVersion: 5, input: {}, events: [] };
   expect(() => parseManifest(bad)).toThrow();
 });
 
 test("a stored proposal from before the capability axis still parses", () => {
   const raw = {
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     elements: [
       {
@@ -277,7 +279,7 @@ test("a stored proposal from before the capability axis still parses", () => {
 describe("the delivery slot", () => {
   const base = (): RunManifest => ({
     runId: "r1",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
@@ -517,7 +519,7 @@ describe("the delivery slot", () => {
 test("v4 carries the route and the channel at run level", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -531,7 +533,7 @@ test("v4 carries the route and the channel at run level", () => {
 test("a proposal records what was discarded, with its reason", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -590,7 +592,7 @@ test("an unknown channel is refused", () => {
   expect(() =>
     parseManifest({
       runId: "r",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "billboard",
       input: {},
@@ -674,6 +676,11 @@ describe("provenance covers the deliverable", () => {
       // here on the same terms — null for an element that carries no plan, which is what keeps
       // this test's own invariant (the deliverable keys re-value nothing) legible.
       narrative: m.elements[0]!.narrative ?? null,
+      // Added by geography-anywhere (D9), for the same reason as `sources`/`narrative`: the
+      // declared geography's credit/edition and the join decisions are rendered INTO the
+      // artifact. Listed here on the same terms — null for a run that declares neither.
+      geography: m.input.geography ?? null,
+      geoJoin: m.orient?.geoJoin ?? null,
     });
     expect(provenanceHash(m, m.elements[0]!)).toBe(expected);
   });
@@ -1483,6 +1490,62 @@ describe("routing a narrative page through its beats", () => {
   });
 });
 
+describe("routing a below-ADM1 map through its geo-join (D6)", () => {
+  // Mirrors unauthoredBeats's own coverage shape exactly: pending blocks, resolved doesn't, and
+  // absent doesn't — the false-block risk this gate carries is a run with no geography at all,
+  // or one already fully resolved, being wrongly told to go resolve something.
+  it("returns 'resolve-geo-join' when a geo-join value is unresolved", () => {
+    const m = base();
+    const withPending: RunManifest = {
+      ...m,
+      orient: {
+        ...m.orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [],
+          pending: ["Buenos Aires"],
+        },
+      },
+    };
+    const el = withPending.elements[0]!;
+    expect(nextActionsForElement(withPending, el)).toEqual([
+      "resolve-geo-join",
+    ]);
+  });
+
+  it("routes straight to produce once the pending value has a decision", () => {
+    const m = base();
+    const resolved: RunManifest = {
+      ...m,
+      orient: {
+        ...m.orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [
+            {
+              value: "Buenos Aires",
+              featureId: "ARG-CABA",
+              basis: "journalist",
+            },
+          ],
+          pending: [],
+        },
+      },
+    };
+    const el = resolved.elements[0]!;
+    expect(nextActionsForElement(resolved, el)).toEqual(["produce"]);
+  });
+
+  it("leaves a run with no geo-join ledger at all untouched — no false block", () => {
+    // base() carries no orient.geoJoin at all: this gate must be silent for every run that
+    // never had geography, which is most runs.
+    const el = base().elements[0]!;
+    expect(nextActionsForElement(base(), el)).toEqual(["produce"]);
+  });
+});
+
 describe("RunManifestSchema.lang — the run's own recorded language", () => {
   it("accepts a manifest that carries a lang", () => {
     const parsed = RunManifestSchema.safeParse({ ...base(), lang: "it" });
@@ -1496,5 +1559,270 @@ describe("RunManifestSchema.lang — the run's own recorded language", () => {
     const parsed = RunManifestSchema.safeParse(base());
     expect(parsed.success).toBe(true);
     if (parsed.success) expect(parsed.data.lang).toBeUndefined();
+  });
+});
+
+function baseManifestV5(overrides: Record<string, unknown> = {}) {
+  return {
+    runId: "r1",
+    schemaVersion: 5,
+    route: "embed",
+    channel: "article-web",
+    input: { data: { path: "input/data-abc.csv", sha256: "abc" } },
+    elements: [],
+    events: [],
+    ...overrides,
+  };
+}
+
+describe("RunManifestSchema v5 — geography", () => {
+  it("parses a manifest declaring input.geography with every required editorial fact", () => {
+    const m = baseManifestV5({
+      input: {
+        data: { path: "input/data-abc.csv", sha256: "abc" },
+        geography: {
+          path: "input/geography-def.geojson",
+          sha256: "def",
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "communes de Haute-Savoie",
+          licence: "Licence Ouverte 2.0",
+          edition: "2024",
+          credit: { name: "IGN — Admin Express" },
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+
+  it("refuses input.geography missing edition — same discipline as GeographyInputSchema", () => {
+    const m = baseManifestV5({
+      input: {
+        geography: {
+          path: "input/geography-def.geojson",
+          sha256: "def",
+          encoding: "geojson",
+          crs: "EPSG:4326",
+          level: "communes",
+          licence: "Licence Ouverte 2.0",
+          credit: { name: "IGN" },
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(false);
+  });
+
+  it("orient.geo carries a GeographyRef, not a bare basemap string", () => {
+    const m = baseManifestV5({
+      orient: {
+        profile: { columns: ["canton"], numericColumns: [], rowCount: 2 },
+        supportsPoint: false,
+        geo: {
+          column: "canton",
+          geography: {
+            origin: "shipped",
+            set: "natural-earth-admin-1",
+            scope: "CHE",
+            level: "canton",
+            joinKey: "name",
+            joinKeyFamily: "name",
+          },
+          matched: 2,
+          total: 2,
+          unmatched: [],
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+
+  it("orient.geoJoin carries a GeoJoinLedger — the fixture: one unresolved 'Buenos Aires'", () => {
+    const m = baseManifestV5({
+      orient: {
+        profile: { columns: ["region"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+        geoJoin: {
+          column: "region",
+          geographySha256: "def",
+          decisions: [],
+          pending: ["Buenos Aires"],
+        },
+      },
+    });
+    expect(RunManifestSchema.safeParse(m).success).toBe(true);
+  });
+});
+
+describe("provenanceHash — geography (D9)", () => {
+  function withGeographyCredit(creditName: string): RunManifest {
+    const m = base();
+    m.input.geography = {
+      path: "input/geography-def.geojson",
+      sha256: "d".repeat(64),
+      encoding: "geojson",
+      crs: "EPSG:4326",
+      level: "communes de Haute-Savoie",
+      licence: "Licence Ouverte 2.0",
+      edition: "2024",
+      credit: { name: creditName },
+    };
+    return m;
+  }
+
+  it("changes when input.geography's credit changes, even though the frozen file's sha256 does not", () => {
+    const runWithoutCredit = withGeographyCredit("IGN");
+    const runWithFixedCredit = {
+      ...runWithoutCredit,
+      input: {
+        ...runWithoutCredit.input,
+        geography: {
+          ...runWithoutCredit.input.geography!,
+          credit: { name: "IGN — corrected" },
+        },
+      },
+    };
+    const el = runWithoutCredit.elements[0];
+    expect(provenanceHash(runWithoutCredit, el)).not.toBe(
+      provenanceHash(runWithFixedCredit, el),
+    );
+  });
+
+  // The credit test above cannot, by itself, tell "the whole GeographyRecord is hashed" apart
+  // from "only credit is hashed" — both would pass it, since it only ever varies credit. This
+  // test isolates a SECOND field (licence) while holding credit fixed, the same way the source
+  // ledger test above proves the CLASS moves the hash, not just the label (line ~108). Without
+  // this, `geography: run.input.geography?.credit ?? null` would silently satisfy every other
+  // test in this file while under-hashing licence/edition — exactly the defect D9 exists to
+  // close for a corrected licence, not just a corrected credit.
+  it("changes when input.geography's licence changes, even though credit does not — the whole record is hashed, not just credit", () => {
+    const run = withGeographyCredit("IGN");
+    const relicensed = {
+      ...run,
+      input: {
+        ...run.input,
+        geography: {
+          ...run.input.geography!,
+          licence: "Licence Ouverte 3.0",
+        },
+      },
+    };
+    const el = run.elements[0];
+    expect(provenanceHash(run, el)).not.toBe(provenanceHash(relicensed, el));
+  });
+
+  it("is null-stable (unchanged) for a run declaring no geography at all — the migration-neutral property D9 requires", () => {
+    const run = base();
+    const el = run.elements[0];
+    // Calling twice must be stable, and must not throw on the absent fields.
+    expect(provenanceHash(run, el)).toBe(provenanceHash(run, el));
+  });
+
+  // NOTE: this flips the whole `geoJoin` object absent → present, not just its `decisions`
+  // field — it cannot alone distinguish "the whole ledger is hashed" from "only decisions is
+  // hashed" (see the field-isolation test just below, which starts from an already-non-null
+  // `geoJoin` in both runs specifically to make that distinction).
+  it("changes when orient.geoJoin's decisions change", () => {
+    const run = base();
+    const withDecision: RunManifest = {
+      ...run,
+      orient: {
+        ...run.orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [
+            {
+              value: "Buenos Aires",
+              featureId: "ARG-caba",
+              basis: "journalist",
+            },
+          ],
+          pending: [],
+        },
+      },
+    };
+    const el = run.elements[0];
+    expect(provenanceHash(run, el)).not.toBe(provenanceHash(withDecision, el));
+  });
+
+  // Unlike the test above, both runs here already carry a non-null `geoJoin` with the SAME
+  // `decisions` — only `pending` differs. This isolates a second field the same way the
+  // licence test isolates `geography`'s: without it, `geoJoin: run.orient?.geoJoin?.decisions
+  // ?? null` would silently satisfy every other test in this file while under-hashing
+  // `pending`/`geographySha256` — a value still marked pending elsewhere in the ledger would
+  // not invalidate a stale artifact.
+  it("changes when orient.geoJoin's pending list changes, even though decisions does not — the whole ledger is hashed, not just decisions", () => {
+    const run: RunManifest = {
+      ...base(),
+      orient: {
+        ...base().orient!,
+        geoJoin: {
+          column: "region",
+          geographySha256: "abc",
+          decisions: [
+            {
+              value: "Buenos Aires",
+              featureId: "ARG-caba",
+              basis: "journalist",
+            },
+          ],
+          pending: ["Córdoba"],
+        },
+      },
+    };
+    const morePending: RunManifest = {
+      ...run,
+      orient: {
+        ...run.orient!,
+        geoJoin: {
+          ...run.orient!.geoJoin!,
+          pending: ["Córdoba", "Rosario"],
+        },
+      },
+    };
+    const el = run.elements[0];
+    expect(provenanceHash(run, el)).not.toBe(provenanceHash(morePending, el));
+  });
+
+  it("hashes identically before and after a JSON round-trip for a migrated v4 manifest", () => {
+    const v4 = {
+      runId: "r1",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
+      orient: {
+        profile: { columns: ["country"], numericColumns: [], rowCount: 1 },
+        supportsPoint: false,
+        geo: {
+          column: "country",
+          basemap: "world",
+          matched: 1,
+          total: 1,
+          unmatched: [],
+        },
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: { confirmedTakeaway: "t", altInsight: "a", unit: "u" },
+          proposal: {
+            options: [{ id: "slope", nativeType: "slope", why: "w" }],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+      events: [],
+    };
+    const migrated = migrate(
+      v4,
+      "/tmp/geography-provenance-hash-does-not-matter",
+    );
+    const el = migrated.elements[0]!;
+    const h1 = provenanceHash(migrated, el);
+    const roundTripped = JSON.parse(JSON.stringify(migrated)) as RunManifest;
+    const h2 = provenanceHash(roundTripped, roundTripped.elements[0]!);
+    expect(h1).toBe(h2);
   });
 });

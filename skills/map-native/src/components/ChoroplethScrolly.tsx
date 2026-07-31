@@ -122,6 +122,9 @@ export const ChoroplethScrolly: React.FC<{
     valueUnit?: string;
     insight?: string;
     source?: { name: string; url: string };
+    /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
+     *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
+    geoCredit?: { name: string; url?: string };
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
     /** the topic hint (e.g. "electricity access") → drives the subject-fit ramp guard. */
@@ -134,9 +137,9 @@ export const ChoroplethScrolly: React.FC<{
     lang?: string;
     /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
     brandHue?: string;
-  /** Journalist-confirmed claim-arc (S2) — honoured by deriveMapStory. Dropping it here would render a
-   *  validated plan as the salience default, silently: see map-arc.ts. */
-  arcBeats?: MapArcBeat[];
+    /** Journalist-confirmed claim-arc (S2) — honoured by deriveMapStory. Dropping it here would render a
+     *  validated plan as the salience default, silently: see map-arc.ts. */
+    arcBeats?: MapArcBeat[];
     brandPalette?: string[];
   };
 }> = ({ config }) => {
@@ -461,6 +464,7 @@ export const ChoroplethScrolly: React.FC<{
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={width}
         height={height}
         responsive={false}

@@ -30,7 +30,7 @@ function freshRun(): string {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
   const run: RunManifest = {
     runId: "drive",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
@@ -48,7 +48,7 @@ function proposedRun(over: Partial<RunElement> = {}): string {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
   const run: RunManifest = {
     runId: "drive-proposed",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
@@ -311,11 +311,14 @@ describe("advanceRun — one deterministic step, through the run directory", () 
     expect(r).toMatchObject({ ok: false, code: "no-run" });
   });
 
-  it("refuses a manifest written against an older schema rather than migrating it", async () => {
+  // schemaVersion 2 through 4 now migrate in memory (lib/host/state.ts's loadRun) — only a v1
+  // manifest still refuses, because its sole migration path writes a frozen input file into the
+  // run directory, and advanceRun follows loadRun's rule exactly like state/next do.
+  it("refuses a manifest whose migration would write, rather than migrating it", async () => {
     const dir = emptyDir("drive-stale-");
     writeFileSync(
       join(dir, "run.json"),
-      JSON.stringify({ runId: "old", schemaVersion: 3, elements: [] }),
+      JSON.stringify({ runId: "old", schemaVersion: 1, elements: [] }),
     );
     const r = await advanceRun(dir);
     expect(r).toMatchObject({ ok: false, code: "stale-schema" });
@@ -346,7 +349,7 @@ describe("chooseFormIn — the journalist's choice, persisted", () => {
     const dir = emptyDir("drive-noel-");
     writeManifest(join(dir, "run.json"), {
       runId: "empty",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: {},
@@ -699,7 +702,7 @@ describe("advanceRun — the human turn it cannot perform", () => {
     writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531\n");
     const run: RunManifest = {
       runId: "approve-owed",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(dir, src, "data") },
@@ -789,7 +792,7 @@ describe("advanceRun — the human turn it cannot perform", () => {
     const renderedTitle = "Rents rose fastest in Geneva";
     const run: RunManifest = {
       runId: "approve-partial-title",
-      schemaVersion: 4,
+      schemaVersion: 5,
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(dir, src, "data") },

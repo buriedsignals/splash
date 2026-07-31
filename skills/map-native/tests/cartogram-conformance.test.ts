@@ -40,6 +40,7 @@ describe("validateCartogramConfig", () => {
       type: "cartogram",
       values,
       title: "Population cartogram by region",
+      basemap: "world",
     });
     expect(r.ok).toBe(true);
   });
@@ -54,6 +55,7 @@ describe("validateCartogramConfig", () => {
       title: "Population cartogram by region",
       description: "Proportional to 2026 census",
       source: { name: "INSEE", url: "https://x" },
+      basemap: "world",
     });
     expect(r.ok).toBe(true);
   });

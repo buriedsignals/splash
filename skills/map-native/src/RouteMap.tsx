@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
-import worldGeoJsonRaw from "../assets/geo/world.geojson?raw";
-const worldGeoJson = JSON.parse(worldGeoJsonRaw) as GeoJSON.FeatureCollection;
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import { computeRoute, resolveMapStyle, type RouteConfig } from "./route-geo";
 import { houseRouteAccent } from "./theme/house-ramp";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
@@ -172,7 +172,22 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         }
       }
 
-      const world = worldGeoJson as GeoJSON.FeatureCollection;
+      // Geometry arrives through the injected config now (produce.mjs, Task 20) — never a
+      // static bundle import (D5, mirrors ChoroplethMap.tsx). Loud, named failure instead of a
+      // bare TypeError on `undefined.objects` — with the `?raw` import removed there is no
+      // bundled fallback geometry anymore, so an absent config.geometry must fail here, not as
+      // an unexplained timeout downstream.
+      if (!config.geometry)
+        throw new Error(
+          "route: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+        );
+      const topology = config.geometry as Topology;
+      const objectName = Object.keys(topology.objects)[0]!;
+      const world = topoFeature(
+        topology,
+        topology.objects[objectName]!,
+      ) as unknown as GeoJSON.FeatureCollection;
+
       const layout = computeRoute(config, world);
 
       // Build a lookup from territory key → territory metadata
@@ -592,6 +607,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
         title={config.title ?? ""}
         description={config.description}
         source={config.source ?? { name: "" }}
+        geoCredit={config.geoCredit}
         width={containerSize.w}
         height={containerSize.h}
         responsive

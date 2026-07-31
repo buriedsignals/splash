@@ -114,11 +114,17 @@ describe("traceClosure — map-native interactive entry", () => {
     expect(rel).toContain("skills/map-native/src/RouteMap.tsx");
   });
   it("stays within skills/map-native or the shared core (no scrolly/chart-native)", () => {
-    // lib/core is the shared cross-engine package (theme/contrast/…), not another skill — every
-    // engine is expected to reach it. scrolly/chart-native's own src/ must still never appear.
+    // lib/core is the shared cross-engine package (theme/contrast/…); lib/geo (D10, the
+    // GeographyRef resolver — basemaps.ts is now a thin re-export of it) is the same kind of
+    // shared cross-engine package, just for geography instead of theme. Neither is another
+    // skill — every engine is expected to reach them. scrolly/chart-native's own src/ must
+    // still never appear.
     expect(
       rel.every(
-        (r) => r.startsWith("skills/map-native/") || r.startsWith("lib/core/"),
+        (r) =>
+          r.startsWith("skills/map-native/") ||
+          r.startsWith("lib/core/") ||
+          r.startsWith("lib/geo/"),
       ),
     ).toBe(true);
     expect(rel.some((r) => r.startsWith("skills/scrolly/"))).toBe(false);

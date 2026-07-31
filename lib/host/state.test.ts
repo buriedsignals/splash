@@ -8,9 +8,19 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describeState, describeNext, readOnlyUiLanguage } from "./state";
+import {
+  describeState,
+  describeNext,
+  readOnlyUiLanguage,
+  loadRun,
+} from "./state";
 import { installRoot } from "../newsroom/decor";
-import { writeManifest, nextActions, type RunManifest } from "../loop/manifest";
+import {
+  writeManifest,
+  nextActions,
+  CURRENT_SCHEMA_VERSION,
+  type RunManifest,
+} from "../loop/manifest";
 import { freezeInput } from "../loop/freeze";
 
 const emptyDir = (): string => mkdtempSync(join(tmpdir(), "host-state-"));
@@ -48,7 +58,7 @@ function makeRun(): { dir: string; run: RunManifest } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "host-state",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
@@ -150,6 +160,91 @@ describe("state and next are genuinely read-only", () => {
     expect(readdirSync(dir)).toEqual(["run.json"]);
   });
 
+  // A run written just before the schema was bumped (schemaVersion one behind CURRENT) is the
+  // shape this repair exists for: v2 through v4 all migrate to the current schema through pure
+  // object transforms (migrateWriteFree, lib/loop/migrate.ts) — nothing on disk changes, only the
+  // in-memory manifest handed back does. `state`/`next` used to refuse this outright, naming a
+  // migration command that did not exist; now the manifest is simply readable.
+  it("migrates a manifest one version behind CURRENT_SCHEMA_VERSION in memory, and leaves the file on disk untouched", () => {
+    const dir = emptyDir();
+    const manifestPath = join(dir, "run.json");
+    const raw = {
+      runId: "one-behind",
+      schemaVersion: CURRENT_SCHEMA_VERSION - 1,
+      route: "embed",
+      channel: "article-web",
+      input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
+      elements: [{ id: "e1" }],
+      events: [],
+    };
+    writeFileSync(manifestPath, JSON.stringify(raw));
+    const before = readFileSync(manifestPath, "utf8");
+
+    const loaded = loadRun(dir);
+    if ("fail" in loaded) throw new Error(JSON.stringify(loaded.fail));
+    expect(loaded.run.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    expect(loaded.run.runId).toBe("one-behind");
+
+    // The read-only promise held: the manifest on disk is byte-for-byte what it was before, and
+    // no sibling file (e.g. a frozen input) appeared next to it.
+    expect(readFileSync(manifestPath, "utf8")).toBe(before);
+    expect(readdirSync(dir)).toEqual(["run.json"]);
+
+    // describeState — the host-facing entry point — reads it the same way.
+    const s = describeState(dir);
+    expect(s.ok).toBe(true);
+  });
+
+  // loadRun's stale-schema gate used to restate CURRENT_SCHEMA_VERSION as its own hardcoded
+  // literal, invisible to `tsc` (a runtime number, not a type) — it silently fell one version
+  // behind lib/loop/manifest.ts's own version and started refusing every CURRENT run as stale,
+  // found only by spawning the real CLI and reading a live `stale-schema` response. Pinned here
+  // two ways: a run built at the schema's OWN exported constant must never be refused, and one
+  // version NEWER than it must always be (a version-behind run is no longer refused at all — see
+  // the in-memory migration test above) — so a re-introduced hardcoded literal reddens whichever
+  // side it drifts from, the moment CURRENT_SCHEMA_VERSION next moves.
+  it("a run at the schema's own CURRENT_SCHEMA_VERSION is never refused as stale-schema", () => {
+    const dir = emptyDir();
+    const src = join(dir, "src.csv");
+    writeFileSync(src, "a,b\n1,2\n");
+    const run: RunManifest = {
+      runId: "current-schema",
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      route: "embed",
+      channel: "article-web",
+      input: { data: freezeInput(dir, src, "data") },
+      elements: [{ id: "e1" }],
+      events: [],
+    };
+    writeManifest(join(dir, "run.json"), run);
+    const r = describeState(dir);
+    expect(r.ok).toBe(true);
+  });
+
+  // A version NEWER than this build knows genuinely cannot be handled: there is no migration
+  // that turns tomorrow's shape into today's, so this refusal — unlike the one-version-behind
+  // case above — stays for good.
+  it("a run one version NEWER than CURRENT_SCHEMA_VERSION is refused as stale-schema", () => {
+    const dir = emptyDir();
+    writeFileSync(
+      join(dir, "run.json"),
+      JSON.stringify({
+        runId: "newer-than-current",
+        schemaVersion: CURRENT_SCHEMA_VERSION + 1,
+        route: "embed",
+        channel: "article-web",
+        input: {},
+        elements: [],
+        events: [],
+      }),
+    );
+    const r = describeState(dir);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error("unreachable");
+    expect(r.code).toBe("stale-schema");
+    expect(r.message).toContain(`schemaVersion ${CURRENT_SCHEMA_VERSION + 1}`);
+  });
+
   it("reading a current run repeatedly leaves the directory byte-for-byte identical", () => {
     const { dir } = makeRun();
     const before = readdirSync(dir).sort();
@@ -183,18 +278,24 @@ describe("state and next are genuinely read-only", () => {
 // And once an angle exists, the report says WHAT ORDERED ITS OFFER. That is the defect this
 // slice removes: an intent read out of prose by a keyword pass that frequently read nothing left
 // the offer ranked by fit and readiness alone, and the run said nothing at all about it.
-function runWithAngle(angle?: RunManifest["elements"][number]["angle"]): string {
+function runWithAngle(
+  angle?: RunManifest["elements"][number]["angle"],
+): string {
   const dir = emptyDir();
   const src = join(dir, "src.csv");
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "host-intent",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
     orient: {
-      profile: { columns: ["canton", "prime"], numericColumns: ["prime"], rowCount: 7 },
+      profile: {
+        columns: ["canton", "prime"],
+        numericColumns: ["prime"],
+        rowCount: 7,
+      },
       supportsPoint: true,
     },
     elements: [{ id: "e1", ...(angle ? { angle } : {}) }],
@@ -254,7 +355,10 @@ describe("state serves the intent question, and says what ordered the offer", ()
   // The state the whole slice exists to stop being silent.
   it("says when the order rests on nothing at all", () => {
     const value = stateOf(
-      runWithAngle({ ...ANGLE, confirmedTakeaway: "Les chats aiment le fromage" }),
+      runWithAngle({
+        ...ANGLE,
+        confirmedTakeaway: "Les chats aiment le fromage",
+      }),
     );
     expect(value.elements[0].intent).toEqual({ basis: "none", guessed: [] });
   });

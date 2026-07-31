@@ -9,7 +9,7 @@ import type { RunManifest } from "./manifest";
 function run(numericColumns: string[], rowCount = 8): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 4,
+    schemaVersion: 5,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },

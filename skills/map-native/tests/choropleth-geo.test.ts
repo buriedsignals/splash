@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import {
   computeChoropleth,
+  applyChoroplethJoin,
   type ChoroplethData,
   regionBounds,
 } from "../src/choropleth-geo";
@@ -236,5 +237,59 @@ describe("regionBounds", () => {
     const b = regionBounds(fra);
     expect(b[0]).toBeGreaterThan(-10); // west = mainland ~2°E, not -53°W
     expect(b[1]).toBeGreaterThan(40); // south = mainland ~48°N, not 4°N
+  });
+});
+
+describe("applyChoroplethJoin — table alongside geometry, never merged into properties (D8)", () => {
+  const features: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { iso_a3: "CHE" },
+        geometry: { type: "Point", coordinates: [0, 0] },
+      },
+      {
+        type: "Feature",
+        properties: { iso_a3: "FRA" },
+        geometry: { type: "Point", coordinates: [1, 1] },
+      },
+    ],
+  };
+  const data = {
+    regionKey: "iso_a3",
+    valueField: "v",
+    rows: [{ iso_a3: "CHE", v: 5 }],
+  };
+  const layout = computeChoropleth(data, features, "iso_a3");
+
+  it("returns features with NO extra properties beyond the source's own", () => {
+    // DEVIATION from the brief's literal test: applyChoroplethJoin returns the SAME `features`
+    // object reference it was given (its own doc comment: "features returned UNCHANGED"), so
+    // `out.features[i]` and `features.features.find(...)` are literally the same object once
+    // the call returns. Comparing an object's keys against a live re-lookup of itself is
+    // vacuous — it passes unconditionally no matter what the implementation does, including a
+    // properties-mutating regression. Verified empirically: reintroducing the exact
+    // `f.properties = {...f.properties, __value}` regression (the brief's own prescribed
+    // mutation) did NOT redden the brief's literal assertion. Fixed by snapshotting each
+    // feature's properties BEFORE the call, so the comparison is against the true original,
+    // not a possibly-already-mutated alias.
+    const originalPropsByKey = new Map(
+      features.features.map((f) => [f.properties?.iso_a3, { ...f.properties }]),
+    );
+    const { features: out } = applyChoroplethJoin(features, layout, "iso_a3");
+    for (const f of out.features) {
+      // The fixture element carrying the claim: CHE has a joined value (5) — if the merge
+      // regressed to the old properties-mutation, CHE's properties would gain __value/__hasData.
+      expect(Object.keys(f.properties ?? {})).toEqual(
+        Object.keys(originalPropsByKey.get(f.properties?.iso_a3) ?? {}),
+      );
+    }
+  });
+
+  it("puts the joined value/hasData in a SEPARATE states table, keyed by the join value", () => {
+    const { states } = applyChoroplethJoin(features, layout, "iso_a3");
+    expect(states["CHE"]).toEqual({ value: 5, hasData: true });
+    expect(states["FRA"]).toEqual({ value: null, hasData: false });
   });
 });

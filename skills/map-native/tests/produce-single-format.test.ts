@@ -92,6 +92,13 @@ d("produce.mjs single-format dispatch", () => {
     expect(existsSync(`${out}/video-verify.json`)).toBe(true);
   }, 180_000);
 
+  // No explicit timeout previously (bun:test's 5_000ms default) relied on
+  // resolveGeometryForProduce (lib/geo/resolve-for-produce.ts) being skipped for this
+  // default-typed choropleth fixture — a bug (config.type default not honoured) fixed
+  // separately. Fixed, it correctly resolves geometry (subsetGeometry's real filter +
+  // simplify/encode mapshaper passes) BEFORE produce.mjs's switch even inspects the
+  // format and refuses "scrolly", so this now legitimately takes ~5.3s (measured) —
+  // real headroom, not a shrunk fixture.
   it("produce scrolly fails hard — map-native does not build scrolly directly (owned by the scrolly producer)", () => {
     const configPath = join(root, CHOROPLETH_CONFIG);
     const outDir = mkdtempSync(
@@ -110,7 +117,7 @@ d("produce.mjs single-format dispatch", () => {
       expect(existsSync(`${outDir}/scrolly.html`)).toBe(false);
     }
     expect(threw).toBe(true);
-  });
+  }, 30_000);
 
   it('rejects an unknown/legacy format value (the old "all" default) instead of silently building everything', () => {
     const configPath = join(root, CHOROPLETH_CONFIG);
