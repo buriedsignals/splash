@@ -277,3 +277,58 @@ Three statements the orchestrator made to a journalist, each contradicted by the
 ## After the plan
 
 A **fresh whole-branch review** before merge, on the most capable model. Task 7-9 touch 13 sites doing the same thing in three separate tasks — that is precisely the shape that produced four cross-task Criticals during the geography repair, and per-task reviews cannot see between branches.
+
+---
+
+### Task 13: the scrolly compositions and HexGridReveal read the injected geometry too
+
+**Found by Task 7's implementer, looking beyond its own files.** This plan said "13 sites"; the real
+count is about 24. The figure came from the geography review's list, which had grepped only for its own
+purpose, and the plan repeated it without re-counting. Measured:
+
+```
+ChoroplethScrolly.tsx   5 sites   — owned by NO task
+CartogramScrolly.tsx    2 sites   — owned by NO task
+DotDensityScrolly.tsx   2 sites   — owned by NO task
+HexGridReveal.tsx       2 sites   — owned by NO task (Task 8 listed only Cartogram + DotDensity)
+```
+
+`RouteScrolly.tsx` is covered by Task 9. These four files are not, and they carry the same defect: they
+fetch the shipped world file and join on a hardcoded `iso_a3`, so a non-world geography renders an empty
+map. **`map-scrolly` is a public promise on `splash.buriedsignals.com`** — leaving the scrolly
+compositions on the world file would mean a repaired video and a still-broken scrolly, which is worse
+than either alone because the difference is invisible from the outside.
+
+Task 7's implementer also flagged that `skills/scrolly/scripts/produce.mjs` never passes `format`, so
+the video-only refusal does not protect the scrolly track at all. **Verify that claim** — if it holds, a
+non-world map-scrolly is being produced today with no guard, and that belongs in your report as a
+finding even though this task's fix removes the need for the guard.
+
+**Files:**
+- Modify: `skills/map-native/src/components/ChoroplethScrolly.tsx`, `CartogramScrolly.tsx`,
+  `DotDensityScrolly.tsx`, `HexGridReveal.tsx`
+- Test: the shared helper's suite from Task 7 (`src/core/video-geometry.test.ts`)
+
+- [ ] **Step 1: Use Task 7's shared helper, do not write a fifth variant**
+
+Task 7 extracted a shared `resolveVideoGeometry` module rather than editing seven sites by hand. Read it
+first and call it. Four files each rolling their own decoding is the drift this plan keeps warning about.
+
+- [ ] **Step 2: Write the failing test** — a scrolly-composition config carrying an injected non-world
+geometry with a non-`iso_a3` join key resolves from that geometry.
+- [ ] **Step 3: Run it and watch it fail.**
+- [ ] **Step 4: Convert all eleven sites** across the four files.
+- [ ] **Step 5: Prove the world path is unchanged** — report before/after feature counts.
+- [ ] **Step 6: Mutation-verify** — restore one hardcoded `iso_a3`, confirm the non-world test reddens,
+restore.
+- [ ] **Step 7: Commit**
+
+```bash
+git status --short
+git add skills/map-native/src/components
+git commit -m "fix(map-native): the scrolly compositions and hex-grid reveal read the injected geometry"
+```
+
+**Do not render.** The watched render for every family is consolidated into Task 10, alone, on a calm
+machine — and Task 10's checklist gains this task: it must confirm Task 13 landed before it removes the
+refusal.
