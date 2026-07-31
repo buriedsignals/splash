@@ -10,13 +10,15 @@ import {
   AbsoluteFill,
   continueRender,
   delayRender,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import type { Topology } from "topojson-specification";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { resolveVideoGeometry } from "../core/video-geometry";
+import type { GeographyRef } from "../basemaps";
 import { computeChoropleth, type ChoroplethData } from "../choropleth-geo";
 import { NO_DATA_COLOR } from "../theme/colors";
 import { deriveMapStory, type Beat } from "../map-story";
@@ -112,6 +114,7 @@ interface MapStory {
   sortedBins: { min: number; max: number; color: string }[];
   worldGeoJson: GeoJSON.FeatureCollection;
   joined: { key: string; value: number | null }[];
+  joinKey: string;
 }
 
 export const ChoroplethScrolly: React.FC<{
@@ -125,6 +128,15 @@ export const ChoroplethScrolly: React.FC<{
     /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
      *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
     geoCredit?: { name: string; url?: string };
+    /** Legacy shape: the basemap name alone. Superseded by `geography` when present — see
+     *  resolveVideoGeometry (Task 7/13, mirrors ChoroplethMap.tsx's interactive path). */
+    basemap?: string;
+    /** Which geography (set/scope/joinKey) `geometry` names (GeographyRef, Task 4/9/10). */
+    geography?: GeographyRef;
+    /** The actual subset TopoJSON for this map, injected by produce (Task 20). There is no
+     *  bundled fallback geometry anymore (D5) — required at render time even though the type
+     *  stays optional for configs assembled before Task 20 lands. */
+    geometry?: Topology;
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
     /** the topic hint (e.g. "electricity access") → drives the subject-fit ramp guard. */
@@ -198,151 +210,160 @@ export const ChoroplethScrolly: React.FC<{
         if (layer.type === "symbol") m.removeLayer(layer.id);
       }
 
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
-          // Compute choropleth layout.
-          const layout = computeChoropleth(config, worldGeoJson, "iso_a3", {
-            bins: NUM_BINS,
-            scaleType: config.scaleType ?? "sequential",
-            palette: config.palette,
-            labelField: config.labelField,
-          });
+      // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+      // fetch. Mirrors ChoroplethStory.tsx's own fix (Task 7) / ChoroplethMap.tsx's interactive
+      // path (Task 16/20): config.geometry is decoded and config.geography.joinKey preferred
+      // over the legacy basemap-derived default.
+      try {
+        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+          config,
+          "choropleth-scrolly",
+        );
 
-          const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
+        // Compute choropleth layout.
+        const layout = computeChoropleth(config, worldGeoJson, joinKey, {
+          bins: NUM_BINS,
+          scaleType: config.scaleType ?? "sequential",
+          palette: config.palette,
+          labelField: config.labelField,
+        });
 
-          // Build meta + beats.
-          const meta = {
-            title: config.title ?? "",
-            insight: config.insight ?? config.title ?? "",
-            unit: config.valueUnit ?? "",
-            valueField: config.valueField,
-            narrativePattern: config.valueKind,
-            lang: config.lang,
-            // The confirmed walk reaches the deriver — see map-arc.ts.
-            arcBeats: config.arcBeats,
+        const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
+
+        // Build meta + beats.
+        const meta = {
+          title: config.title ?? "",
+          insight: config.insight ?? config.title ?? "",
+          unit: config.valueUnit ?? "",
+          valueField: config.valueField,
+          narrativePattern: config.valueKind,
+          lang: config.lang,
+          // The confirmed walk reaches the deriver — see map-arc.ts.
+          arcBeats: config.arcBeats,
+        };
+        const beats = deriveMapStory(layout, worldGeoJson, joinKey, meta);
+
+        // Precompute camera solutions — cameraForBounds → {center, zoom}.
+        const solutions: CameraSolution[] = beats.map((b) => {
+          const result = m.cameraForBounds(
+            b.camera as maptilersdk.LngLatBoundsLike,
+            { padding: mapFrame.pad },
+          );
+          if (!result || !result.center) return { center: [10, 20], zoom: 2 };
+          const c = maptilersdk.LngLat.convert(result.center);
+          return {
+            center: [c.lng, c.lat],
+            zoom: result.zoom ?? 2,
           };
-          const beats = deriveMapStory(layout, worldGeoJson, "iso_a3", meta);
+        });
 
-          // Precompute camera solutions — cameraForBounds → {center, zoom}.
-          const solutions: CameraSolution[] = beats.map((b) => {
-            const result = m.cameraForBounds(
-              b.camera as maptilersdk.LngLatBoundsLike,
-              { padding: mapFrame.pad },
-            );
-            if (!result || !result.center) return { center: [10, 20], zoom: 2 };
-            const c = maptilersdk.LngLat.convert(result.center);
-            return {
-              center: [c.lng, c.lat],
-              zoom: result.zoom ?? 2,
-            };
-          });
+        // Delta 1: build the scrolly story and step timeline.
+        const story = mapStoryToChapters(beats, {
+          title: config.title ?? "",
+          description: config.description,
+          source: config.source,
+          regionsWithData: layout.joined.filter((j) => j.value !== null).length,
+        });
+        // Step camera solutions: each step flies to its ref beat's camera.
+        const stepKinds = story.steps.map((_, i) =>
+          i === 0 ? "title" : "reveal",
+        );
+        const { phases } = buildTimeline(stepKinds, fps);
+        const stepSolutions = story.steps.map(
+          (s) => solutions[s.ref as number],
+        );
 
-          // Delta 1: build the scrolly story and step timeline.
-          const story = mapStoryToChapters(beats, {
-            title: config.title ?? "",
-            description: config.description,
-            source: config.source,
-            regionsWithData: layout.joined.filter((j) => j.value !== null)
-              .length,
-          });
-          // Step camera solutions: each step flies to its ref beat's camera.
-          const stepKinds = story.steps.map((_, i) =>
-            i === 0 ? "title" : "reveal",
-          );
-          const { phases } = buildTimeline(stepKinds, fps);
-          const stepSolutions = story.steps.map(
-            (s) => solutions[s.ref as number],
-          );
+        // Build the initial enriched world for step 0's ref beat.
+        const initialWorld = enrichWorld(
+          worldGeoJson,
+          layout.joined,
+          sortedBins,
+          beats[story.steps[0].ref as number],
+          joinKey,
+        );
 
-          // Build the initial enriched world for step 0's ref beat.
-          const initialWorld = enrichWorld(
-            worldGeoJson,
-            layout.joined,
+        // Build fill-color expression (static — color per value).
+        const colorExpr: unknown[] = [
+          "case",
+          ["==", ["get", "__hasData"], false],
+          NO_DATA_COLOR,
+        ];
+        for (let i = 0; i < sortedBins.length - 1; i++) {
+          colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
+          colorExpr.push(sortedBins[i].color);
+        }
+        colorExpr.push(sortedBins[sortedBins.length - 1].color);
+
+        m.addSource("choropleth-world", {
+          type: "geojson",
+          data: initialWorld,
+        });
+
+        m.addLayer({
+          id: "choropleth-fill",
+          type: "fill",
+          source: "choropleth-world",
+          paint: {
+            "fill-color": colorExpr as never,
+            "fill-opacity": 0, // start blank
+          },
+        });
+
+        m.addLayer({
+          id: "choropleth-stroke",
+          type: "line",
+          source: "choropleth-world",
+          paint: {
+            "line-color": dark ? "#1c1c1f" : "#ffffff",
+            "line-width": 0.5,
+            "line-opacity": 0.6,
+          },
+        });
+
+        // Highlight stroke — data-driven width means no per-frame setPaintProperty needed.
+        m.addLayer({
+          id: "choropleth-highlight-stroke",
+          type: "line",
+          source: "choropleth-world",
+          paint: {
+            "line-width": [
+              "case",
+              ["==", ["get", "__highlight"], 1],
+              2.5,
+              0,
+            ] as never,
+            "line-color": dark ? "#f4f4f5" : "#1a1a1a",
+            "line-opacity": 0.9,
+          },
+        });
+
+        // Position to step 0's camera.
+        m.jumpTo({
+          center: stepSolutions[0].center,
+          zoom: stepSolutions[0].zoom,
+        });
+
+        continueWhenMapSettles(m, () => {
+          setMapState({
+            map: m,
+            beats,
+            story,
+            phases,
+            stepSolutions,
             sortedBins,
-            beats[story.steps[0].ref as number],
-            "iso_a3",
-          );
-
-          // Build fill-color expression (static — color per value).
-          const colorExpr: unknown[] = [
-            "case",
-            ["==", ["get", "__hasData"], false],
-            NO_DATA_COLOR,
-          ];
-          for (let i = 0; i < sortedBins.length - 1; i++) {
-            colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
-            colorExpr.push(sortedBins[i].color);
-          }
-          colorExpr.push(sortedBins[sortedBins.length - 1].color);
-
-          m.addSource("choropleth-world", {
-            type: "geojson",
-            data: initialWorld,
+            worldGeoJson,
+            joined: layout.joined,
+            joinKey,
           });
-
-          m.addLayer({
-            id: "choropleth-fill",
-            type: "fill",
-            source: "choropleth-world",
-            paint: {
-              "fill-color": colorExpr as never,
-              "fill-opacity": 0, // start blank
-            },
-          });
-
-          m.addLayer({
-            id: "choropleth-stroke",
-            type: "line",
-            source: "choropleth-world",
-            paint: {
-              "line-color": dark ? "#1c1c1f" : "#ffffff",
-              "line-width": 0.5,
-              "line-opacity": 0.6,
-            },
-          });
-
-          // Highlight stroke — data-driven width means no per-frame setPaintProperty needed.
-          m.addLayer({
-            id: "choropleth-highlight-stroke",
-            type: "line",
-            source: "choropleth-world",
-            paint: {
-              "line-width": [
-                "case",
-                ["==", ["get", "__highlight"], 1],
-                2.5,
-                0,
-              ] as never,
-              "line-color": dark ? "#f4f4f5" : "#1a1a1a",
-              "line-opacity": 0.9,
-            },
-          });
-
-          // Position to step 0's camera.
-          m.jumpTo({
-            center: stepSolutions[0].center,
-            zoom: stepSolutions[0].zoom,
-          });
-
-          continueWhenMapSettles(m, () => {
-            setMapState({
-              map: m,
-              beats,
-              story,
-              phases,
-              stepSolutions,
-              sortedBins,
-              worldGeoJson,
-              joined: layout.joined,
-            });
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("ChoroplethScrolly: failed to load world GeoJSON", err);
           continueRender(handle);
         });
+      } catch (err) {
+        console.error(
+          "ChoroplethScrolly: failed to build story from injected geometry",
+          err,
+        );
+        continueRender(handle);
+      }
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -358,6 +379,7 @@ export const ChoroplethScrolly: React.FC<{
       sortedBins,
       worldGeoJson,
       joined,
+      joinKey,
     } = mapState;
 
     const h = delayRender(`choropleth-scrolly-frame-${frame}`);
@@ -385,7 +407,7 @@ export const ChoroplethScrolly: React.FC<{
         joined,
         sortedBins,
         beats[refBeatIndex],
-        "iso_a3",
+        joinKey,
       );
       (map.getSource("choropleth-world") as maptilersdk.GeoJSONSource).setData(
         enriched,
