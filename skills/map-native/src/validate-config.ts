@@ -645,6 +645,12 @@ export type DotDensityConfigShape = {
    *  this is required at render time even though the type stays optional for configs
    *  assembled before Task 20 lands. */
   geometry?: Topology;
+  /** Which geography (set/scope/joinKey) this map's geometry names (GeographyRef) — injected
+   *  by produce (resolve-for-produce.ts) alongside `geometry`. Optional for back-compat with
+   *  configs that still only carry `basemap` — the join key then falls back to
+   *  `resolveBasemapMeta(basemap)`. Mirrors ChoroplethConfig's own `geography` field
+   *  (src/ChoroplethMap.tsx). */
+  geography?: GeographyRef;
   mapStyle?: string;
   /** Newsroom house ground (arbitrary #rrggbb) — themes the map furniture (frame + legend).
    * Set by the Foundation merge; a per-element value wins. The basemap stays light/dark. */
@@ -937,6 +943,18 @@ export type CartogramConfigShape = {
    *  this is required at render time even though the type stays optional for configs
    *  assembled before Task 20 lands. */
   geometry?: Topology;
+  /** Which geography (set/scope/joinKey) this map's geometry names (GeographyRef) — injected
+   *  by produce (resolve-for-produce.ts) alongside `geometry`. Optional for back-compat with
+   *  configs that still only carry `basemap` — the join key then falls back to
+   *  `resolveBasemapMeta(basemap)`. Mirrors ChoroplethConfig's own `geography` field
+   *  (src/ChoroplethMap.tsx). computeCartogram reads it off `data.joinKey` (never a positional
+   *  arg, unlike computeChoropleth/computeDotDensity) — threaded in at the call site. */
+  geography?: GeographyRef;
+  /** Legacy fallback basemap key — the assembler no longer sets this for cartogram (only
+   *  `geography`), but hand-authored/legacy fixtures (e.g. assets/sample-data/cartogram-*.json)
+   *  still carry it; `validateCartogramConfig` above already reads it dynamically as the same
+   *  fallback. Mirrors ChoroplethConfigShape's optional `basemap`. */
+  basemap?: string;
   // The short value suffix for callouts (e.g. "%") — mirrors ChoroplethConfigShape's
   // `valueUnit`.
   valueUnit?: string;

@@ -17,8 +17,13 @@
 //      real, often-concave coastline, so a centroid can fall outside it) carries name +
 //      value; CaptionCard(beat.copy) still carries the fuller rank/value/id sentence.
 //   5. sequential/diverging bin legend; title scene via resolveScene.
+//   6. Geometry arrives through config.geometry (injected by produce, never a bundled
+//      world.geojson fetch — Task 8, D5). The join key prefers config.geography.joinKey over
+//      the world default, via the shared resolveVideoGeometry (core/video-geometry.ts, Task 7)
+//      — the same helper the choropleth video family uses, so all four families read injected
+//      geometry identically instead of drifting.
 // Harness:
-//   delayRender → fetch world.geojson → build cells (+__id) + beats + entrance layers + jumpTo
+//   delayRender → decode config.geometry → build cells (+__id) + beats + entrance layers + jumpTo
 //   beat 0 → idle → continueRender
 //   per-frame: delayRender → jumpTo → per-subject staged entrance → setPaintProperty(dim by
 //   beat) → project label anchor → caption/label overlay → idle → continueRender
@@ -29,7 +34,6 @@ import {
   continueRender,
   delayRender,
   interpolate,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -37,6 +41,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { poleOfInaccessibility } from "../core/label-anchor";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { computeCartogram, type CartogramCell } from "../cartogram-geo";
 import { deriveCartogramStory } from "../cartogram-story";
 import { applyCartogramBasemap } from "../theme/cartogram-basemap";
@@ -159,162 +164,168 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
     });
 
     m.on("load", () => {
-      // Fetch world GeoJSON via Remotion staticFile (served from remotion/public/).
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
-          // Compute cartogram layout once.
-          const layout = computeCartogram(config, worldGeoJson);
+      try {
+        // Geometry arrives through the injected config now (produce.mjs) — never a static
+        // bundle fetch. Shared with the choropleth video family (Task 7).
+        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+          config,
+          "cartogram-story",
+        );
 
-          // Apply basemap treatment BEFORE adding cells.
-          // grid variant: neutral flat canvas (hides all basemap layers).
-          // scaled variant: keep basemap, strip symbol clutter.
-          applyCartogramBasemap(m, dark, layout.variant);
+        // Compute cartogram layout once. joinKey is threaded onto the data object —
+        // computeCartogram reads it off `data.joinKey` (never a positional arg), so this
+        // is spread rather than passed separately (mirrors its own existing contract,
+        // cartogram-geo.ts:62).
+        const layout = computeCartogram({ ...config, joinKey }, worldGeoJson);
 
-          // Build cell GeoJSON. Each feature is tagged with __id (the region id string)
-          // so a reveal beat can dim non-highlighted cells via a data-driven expression.
-          const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
-            type: "Feature",
-            properties: {
-              __color: cell.color,
-              __id: cell.id,
-              __value: cell.value,
-            },
-            geometry: cell.feature.geometry,
-          }));
-          const cellGeoJson: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: cellFeatures,
+        // Apply basemap treatment BEFORE adding cells.
+        // grid variant: neutral flat canvas (hides all basemap layers).
+        // scaled variant: keep basemap, strip symbol clutter.
+        applyCartogramBasemap(m, dark, layout.variant);
+
+        // Build cell GeoJSON. Each feature is tagged with __id (the region id string)
+        // so a reveal beat can dim non-highlighted cells via a data-driven expression.
+        const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
+          type: "Feature",
+          properties: {
+            __color: cell.color,
+            __id: cell.id,
+            __value: cell.value,
+          },
+          geometry: cell.feature.geometry,
+        }));
+        const cellGeoJson: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: cellFeatures,
+        };
+
+        m.addSource("cartogram-cell-src", {
+          type: "geojson",
+          data: cellGeoJson,
+        });
+
+        // Cell fill — coloured by bin. Opacity starts full (establish beat 0).
+        m.addLayer({
+          id: CELL_LAYER,
+          type: "fill",
+          source: "cartogram-cell-src",
+          paint: {
+            "fill-color": ["get", "__color"] as never,
+            "fill-opacity": FULL_OPACITY,
+          },
+        });
+
+        // Thin outline for legibility.
+        m.addLayer({
+          id: OUTLINE_LAYER,
+          type: "line",
+          source: "cartogram-cell-src",
+          paint: {
+            "line-color": outlineColor,
+            "line-width": 0.6,
+            "line-opacity": 0.5,
+          },
+        });
+
+        // Derive beats — title → establish → highest-region reveals → takeaway. `beatsForMode`
+        // drops the establish beat in `sequential` (dead air on an empty map) — shared rule
+        // with Root.tsx's duration calc so the video length matches the animation.
+        const meta = {
+          title: config.title ?? "",
+          description: config.description,
+          insight:
+            ((config as Record<string, unknown>).insight as string) ??
+            config.title ??
+            "",
+          lang: config.lang,
+          // The confirmed walk reaches the deriver — see map-arc.ts.
+          arcBeats: config.arcBeats,
+        };
+        const beats = beatsForMode(deriveCartogramStory(layout, meta), mode);
+
+        // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox.
+        const solutions: CameraSolution[] = beats.map((b) => {
+          const result = m.cameraForBounds(
+            b.camera as maptilersdk.LngLatBoundsLike,
+            { padding: mapFrame.pad },
+          );
+          if (!result || !result.center) return { center: [10, 50], zoom: 4 };
+          const c = maptilersdk.LngLat.convert(result.center);
+          return {
+            center: [c.lng, c.lat],
+            zoom: result.zoom ?? 2,
           };
+        });
 
-          m.addSource("cartogram-cell-src", {
-            type: "geojson",
-            data: cellGeoJson,
-          });
+        // Build timeline phases — same fluid interwoven envelope as ChoroplethStory.
+        const kinds = beats.map((b) => b.kind);
+        const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
 
-          // Cell fill — coloured by bin. Opacity starts full (establish beat 0).
-          m.addLayer({
-            id: CELL_LAYER,
-            type: "fill",
-            source: "cartogram-cell-src",
-            paint: {
-              "fill-color": ["get", "__color"] as never,
-              "fill-opacity": FULL_OPACITY,
-            },
-          });
-
-          // Thin outline for legibility.
-          m.addLayer({
-            id: OUTLINE_LAYER,
-            type: "line",
-            source: "cartogram-cell-src",
-            paint: {
-              "line-color": outlineColor,
-              "line-width": 0.6,
-              "line-opacity": 0.5,
-            },
-          });
-
-          // Derive beats — title → establish → highest-region reveals → takeaway. `beatsForMode`
-          // drops the establish beat in `sequential` (dead air on an empty map) — shared rule
-          // with Root.tsx's duration calc so the video length matches the animation.
-          const meta = {
-            title: config.title ?? "",
-            description: config.description,
-            insight:
-              ((config as Record<string, unknown>).insight as string) ??
-              config.title ??
-              "",
-            lang: config.lang,
-            // The confirmed walk reaches the deriver — see map-arc.ts.
-            arcBeats: config.arcBeats,
-          };
-          const beats = beatsForMode(deriveCartogramStory(layout, meta), mode);
-
-          // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox.
-          const solutions: CameraSolution[] = beats.map((b) => {
-            const result = m.cameraForBounds(
-              b.camera as maptilersdk.LngLatBoundsLike,
-              { padding: mapFrame.pad },
-            );
-            if (!result || !result.center) return { center: [10, 50], zoom: 4 };
-            const c = maptilersdk.LngLat.convert(result.center);
-            return {
-              center: [c.lng, c.lat],
-              zoom: result.zoom ?? 2,
-            };
-          });
-
-          // Build timeline phases — same fluid interwoven envelope as ChoroplethStory.
-          const kinds = beats.map((b) => b.kind);
-          const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
-
-          // Cells are single Polygons (scaled real-region polygons or grid squares — never
-          // MultiPolygon, see cartogram-geo.ts), but the `scaled` variant's polygon is a
-          // scaled copy of the region's real mainland coastline and is frequently CONCAVE
-          // (Norway, Japan's largest island, Chile…) — a centroid can fall outside the
-          // shape and drop the label into empty space. Use the pole of inaccessibility
-          // (most-interior point), same as ChoroplethStory. Only build border/anchor
-          // entries for the FEW cells a reveal beat actually visits (triggerFrameByRegion
-          // keys are exactly the beats' highlight values), never the whole cell set.
-          const triggers = triggerFrameByRegion(beats, phases);
-          const cellById = new Map(layout.cells.map((c) => [c.id, c]));
-          const borderByKey = new Map<string, DrawEntry>();
-          const anchorByKey = new Map<string, [number, number]>();
-          for (const key of triggers.keys()) {
-            const cell = cellById.get(key);
-            if (!cell || cell.feature.geometry.type !== "Polygon") continue;
-            borderByKey.set(
+        // Cells are single Polygons (scaled real-region polygons or grid squares — never
+        // MultiPolygon, see cartogram-geo.ts), but the `scaled` variant's polygon is a
+        // scaled copy of the region's real mainland coastline and is frequently CONCAVE
+        // (Norway, Japan's largest island, Chile…) — a centroid can fall outside the
+        // shape and drop the label into empty space. Use the pole of inaccessibility
+        // (most-interior point), same as ChoroplethStory. Only build border/anchor
+        // entries for the FEW cells a reveal beat actually visits (triggerFrameByRegion
+        // keys are exactly the beats' highlight values), never the whole cell set.
+        const triggers = triggerFrameByRegion(beats, phases);
+        const cellById = new Map(layout.cells.map((c) => [c.id, c]));
+        const borderByKey = new Map<string, DrawEntry>();
+        const anchorByKey = new Map<string, [number, number]>();
+        for (const key of triggers.keys()) {
+          const cell = cellById.get(key);
+          if (!cell || cell.feature.geometry.type !== "Polygon") continue;
+          borderByKey.set(
+            key,
+            buildDraw([cell.feature.geometry.coordinates[0]]),
+          );
+          try {
+            anchorByKey.set(
               key,
-              buildDraw([cell.feature.geometry.coordinates[0]]),
+              poleOfInaccessibility(
+                cell.feature as GeoJSON.Feature<GeoJSON.Polygon>,
+              ),
             );
-            try {
-              anchorByKey.set(
-                key,
-                poleOfInaccessibility(
-                  cell.feature as GeoJSON.Feature<GeoJSON.Polygon>,
-                ),
-              );
-            } catch {
-              // Skip a subject where the pole computation fails (e.g., degenerate geometry).
-            }
+          } catch {
+            // Skip a subject where the pole computation fails (e.g., degenerate geometry).
           }
+        }
 
-          // Per-subject emphasis: border trail (draws on) + fill bloom (brief overshoot on top
-          // of the base fill) — one dedicated source+layer pair per reveal-beat cell, staged
-          // over the beat's own entrance window (shared areal-story-choreography core).
-          addSubjectEmphasisLayers(m, [...triggers.keys()], {
-            idPrefix: "cartogram",
-            featureFor: (key) => cellById.get(key)?.feature ?? EMPTY_FEATURE,
-            colorFor: (key) => cellById.get(key)?.color ?? "#999999",
-            dark,
+        // Per-subject emphasis: border trail (draws on) + fill bloom (brief overshoot on top
+        // of the base fill) — one dedicated source+layer pair per reveal-beat cell, staged
+        // over the beat's own entrance window (shared areal-story-choreography core).
+        addSubjectEmphasisLayers(m, [...triggers.keys()], {
+          idPrefix: "cartogram",
+          featureFor: (key) => cellById.get(key)?.feature ?? EMPTY_FEATURE,
+          colorFor: (key) => cellById.get(key)?.color ?? "#999999",
+          dark,
+        });
+
+        m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
+
+        setLegendState({
+          bins: layout.bins,
+          valueLabel: layout.valueLabel,
+        });
+
+        continueWhenMapSettles(m, () => {
+          setMapState({
+            map: m,
+            beats,
+            phases,
+            solutions,
+            triggers,
+            borderByKey,
+            anchorByKey,
+            cellById,
           });
-
-          m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
-
-          setLegendState({
-            bins: layout.bins,
-            valueLabel: layout.valueLabel,
-          });
-
-          continueWhenMapSettles(m, () => {
-            setMapState({
-              map: m,
-              beats,
-              phases,
-              solutions,
-              triggers,
-              borderByKey,
-              anchorByKey,
-              cellById,
-            });
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("CartogramStory: failed to load world GeoJSON", err);
           continueRender(handle);
         });
+      } catch (err) {
+        console.error("CartogramStory: failed to resolve geometry", err);
+        continueRender(handle);
+      }
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 

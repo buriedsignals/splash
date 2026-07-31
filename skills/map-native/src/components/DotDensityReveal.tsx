@@ -9,15 +9,19 @@
 //   3. mapStyle-adaptive via resolveMapStyle; faint region outline; legend "1 dot = N" + category
 //      swatches; fixed camera via revealCameraPlan(layout.bounds); title scene + MapFrame furniture.
 // Harness:
-//   delayRender at mount → on load fetch world → build dots + region outline + fitBounds → idle → continueRender
+//   delayRender at mount → decode config.geometry → build dots + region outline + fitBounds → idle → continueRender
 //   per-frame: delayRender → setPaintProperty (opacity ramped by progress) → continueWhenMapSettles → continueRender
+//
+// Geometry arrives through config.geometry (injected by produce, never a bundled world.geojson
+// fetch — Task 8, D5). The join key prefers config.geography.joinKey over the world default, via
+// the shared resolveVideoGeometry (core/video-geometry.ts, Task 7) — the same helper the
+// choropleth video family uses, so all four families read injected geometry identically.
 
 import React, { useEffect, useRef, useState } from "react";
 import {
   AbsoluteFill,
   continueRender,
   delayRender,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -28,6 +32,7 @@ import { computeDotDensity, UNIVARIATE_ACCENT } from "../dot-density-geo";
 import { scatterInPolygon } from "../dot-scatter";
 import { resolveMapStyle } from "../route-geo";
 import type { DotDensityConfigShape } from "../validate-config";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { formatLocaleNumber } from "../core/locale";
@@ -40,7 +45,6 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 const DOT_RADIUS_PX = 2; // FIXED — uniform dot size, NEVER value-scaled
 const DOT_LAYER = "dot-density-dots";
 const OUTLINE_LAYER = "dot-density-outline";
-const JOIN_KEY = "iso_a3";
 
 interface DDLegend {
   hasCategories: boolean;
@@ -116,95 +120,98 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
         if (layer.type === "symbol") map.removeLayer(layer.id);
       }
 
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((world: GeoJSON.FeatureCollection) => {
-          const layout = computeDotDensity(config, world, JOIN_KEY);
+      try {
+        // Geometry arrives through the injected config now (produce.mjs) — never a static
+        // bundle fetch. Shared with the choropleth video family (Task 7).
+        const { world, joinKey } = resolveVideoGeometry(
+          config,
+          "dot-density-reveal",
+        );
+        const layout = computeDotDensity(config, world, joinKey);
 
-          // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.
-          // Deterministic — scatterInPolygon is seeded, so this is frame-stable.
-          const dotFeatures: GeoJSON.Feature[] = [];
-          for (const region of layout.regions) {
-            for (const group of region.groups) {
-              const pts = scatterInPolygon(
-                region.feature,
-                group.count,
-                group.seed,
-              );
-              for (const [lon, lat] of pts) {
-                dotFeatures.push({
-                  type: "Feature",
-                  properties: { color: group.color },
-                  geometry: { type: "Point", coordinates: [lon, lat] },
-                });
-              }
+        // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.
+        // Deterministic — scatterInPolygon is seeded, so this is frame-stable.
+        const dotFeatures: GeoJSON.Feature[] = [];
+        for (const region of layout.regions) {
+          for (const group of region.groups) {
+            const pts = scatterInPolygon(
+              region.feature,
+              group.count,
+              group.seed,
+            );
+            for (const [lon, lat] of pts) {
+              dotFeatures.push({
+                type: "Feature",
+                properties: { color: group.color },
+                geometry: { type: "Point", coordinates: [lon, lat] },
+              });
             }
           }
+        }
 
-          // Faint region outline for context.
-          const regionGeoJson: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: layout.regions.map((r) => r.feature),
-          };
+        // Faint region outline for context.
+        const regionGeoJson: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: layout.regions.map((r) => r.feature),
+        };
 
-          map.addSource("dot-density-region-src", {
-            type: "geojson",
-            data: regionGeoJson,
-          });
-          map.addSource("dot-density-dot-src", {
-            type: "geojson",
-            data: { type: "FeatureCollection", features: dotFeatures },
-          });
+        map.addSource("dot-density-region-src", {
+          type: "geojson",
+          data: regionGeoJson,
+        });
+        map.addSource("dot-density-dot-src", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: dotFeatures },
+        });
 
-          map.addLayer({
-            id: OUTLINE_LAYER,
-            type: "line",
-            source: "dot-density-region-src",
-            paint: {
-              "line-color": outlineColor,
-              "line-width": 0.6,
-              "line-opacity": 0.5,
-            },
-          });
+        map.addLayer({
+          id: OUTLINE_LAYER,
+          type: "line",
+          source: "dot-density-region-src",
+          paint: {
+            "line-color": outlineColor,
+            "line-width": 0.6,
+            "line-opacity": 0.5,
+          },
+        });
 
-          // Dot layer — FIXED radius; opacity ramps 0 → 1 by the reveal `progress`.
-          map.addLayer({
-            id: DOT_LAYER,
-            type: "circle",
-            source: "dot-density-dot-src",
-            paint: {
-              "circle-radius": DOT_RADIUS_PX,
-              "circle-color": ["get", "color"],
-              "circle-opacity": progress,
-              "circle-stroke-width": 0.3,
-              "circle-stroke-color": dark
-                ? "rgba(0,0,0,0.4)"
-                : "rgba(0,0,0,0.15)",
-              "circle-stroke-opacity": progress,
-            },
-          });
+        // Dot layer — FIXED radius; opacity ramps 0 → 1 by the reveal `progress`.
+        map.addLayer({
+          id: DOT_LAYER,
+          type: "circle",
+          source: "dot-density-dot-src",
+          paint: {
+            "circle-radius": DOT_RADIUS_PX,
+            "circle-color": ["get", "color"],
+            "circle-opacity": progress,
+            "circle-stroke-width": 0.3,
+            "circle-stroke-color": dark
+              ? "rgba(0,0,0,0.4)"
+              : "rgba(0,0,0,0.15)",
+            "circle-stroke-opacity": progress,
+          },
+        });
 
-          // Fixed camera plan — latitude-clamped Mercator-safe bounds.
-          const plan = revealCameraPlan(
-            layout.bounds as [number, number, number, number],
-          );
-          map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
+        // Fixed camera plan — latitude-clamped Mercator-safe bounds.
+        const plan = revealCameraPlan(
+          layout.bounds as [number, number, number, number],
+        );
+        map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
-          setLegendState({
-            hasCategories: layout.hasCategories,
-            dotValue: layout.dotValue,
-            legend: layout.legend,
-          });
+        setLegendState({
+          hasCategories: layout.hasCategories,
+          dotValue: layout.dotValue,
+          legend: layout.legend,
+        });
 
-          continueWhenMapSettles(map, () => {
-            setMapReady(true);
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("DotDensityReveal: failed to load world GeoJSON", err);
+        continueWhenMapSettles(map, () => {
+          setMapReady(true);
           continueRender(handle);
         });
+      } catch (err) {
+        console.error("DotDensityReveal: failed to resolve geometry", err);
+        continueRender(handle);
+      }
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

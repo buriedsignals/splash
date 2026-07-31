@@ -19,10 +19,15 @@
 //      inaccessibility, reveal=labelReveal; CaptionCard(beat.copy) carries the fuller sentence;
 //      title scene via resolveScene; legend "1 dot = N" + category swatches (multivariate).
 // Harness:
-//   delayRender → on load fetch world → build dots(+__region) + regions + beats + entrance
+//   delayRender → decode config.geometry → build dots(+__region) + regions + beats + entrance
 //   layers (trail-only) → jumpTo beat 0 → idle → continueRender
 //   per-frame: delayRender → jumpTo → per-subject trail slice → dots opacity expression →
 //   project label anchor → caption/label overlay → idle → continueRender
+//
+// Geometry arrives through config.geometry (injected by produce, never a bundled world.geojson
+// fetch — Task 8, D5). The join key prefers config.geography.joinKey over the world default, via
+// the shared resolveVideoGeometry (core/video-geometry.ts, Task 7) — the same helper the
+// choropleth video family uses, so all four families read injected geometry identically.
 
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -30,7 +35,6 @@ import {
   continueRender,
   delayRender,
   interpolate,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
@@ -38,6 +42,7 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { poleOfInaccessibility } from "../core/label-anchor";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { mainlandFeature } from "../choropleth-geo";
 import {
   computeDotDensity,
@@ -82,7 +87,6 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 const DOT_RADIUS_PX = 2; // FIXED — uniform dot size, NEVER value-scaled
 const DOT_LAYER = "dot-density-dots";
 const OUTLINE_LAYER = "dot-density-outline";
-const JOIN_KEY = "iso_a3";
 const DIM_OPACITY = 0.25; // non-highlighted regions during a reveal beat (context mode)
 
 interface DDLegend {
@@ -181,207 +185,206 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
         if (layer.type === "symbol") m.removeLayer(layer.id);
       }
 
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((world: GeoJSON.FeatureCollection) => {
-          const layout = computeDotDensity(config, world, JOIN_KEY);
+      try {
+        // Geometry arrives through the injected config now (produce.mjs) — never a static
+        // bundle fetch. Shared with the choropleth video family (Task 7).
+        const { world, joinKey } = resolveVideoGeometry(
+          config,
+          "dot-density-story",
+        );
+        const layout = computeDotDensity(config, world, joinKey);
 
-          // Build the DOT GeoJSON once — one Point per dot, coloured by group, TAGGED with
-          // __region = the region key so a reveal beat can dim non-highlighted regions, and
-          // __dotOrder = a deterministic per-region ordering fraction ∈ [0,1) (dot index over
-          // the region's total dot count, across all its groups) so the entrance can stipple
-          // dots in with a per-dot stagger instead of fading the whole region uniformly (see
-          // buildDotOpacityExpression, dot-density-story.ts).
-          const dotFeatures: GeoJSON.Feature[] = [];
-          for (const region of layout.regions) {
-            const regionDotCount = region.groups.reduce(
-              (s, g) => s + g.count,
-              0,
+        // Build the DOT GeoJSON once — one Point per dot, coloured by group, TAGGED with
+        // __region = the region key so a reveal beat can dim non-highlighted regions, and
+        // __dotOrder = a deterministic per-region ordering fraction ∈ [0,1) (dot index over
+        // the region's total dot count, across all its groups) so the entrance can stipple
+        // dots in with a per-dot stagger instead of fading the whole region uniformly (see
+        // buildDotOpacityExpression, dot-density-story.ts).
+        const dotFeatures: GeoJSON.Feature[] = [];
+        for (const region of layout.regions) {
+          const regionDotCount = region.groups.reduce((s, g) => s + g.count, 0);
+          let dotIndex = 0;
+          for (const group of region.groups) {
+            const pts = scatterInPolygon(
+              region.feature,
+              group.count,
+              group.seed,
             );
-            let dotIndex = 0;
-            for (const group of region.groups) {
-              const pts = scatterInPolygon(
-                region.feature,
-                group.count,
-                group.seed,
-              );
-              for (const [lon, lat] of pts) {
-                dotFeatures.push({
-                  type: "Feature",
-                  properties: {
-                    color: group.color,
-                    __region: region.key,
-                    __dotOrder:
-                      regionDotCount > 0 ? dotIndex / regionDotCount : 0,
-                  },
-                  geometry: { type: "Point", coordinates: [lon, lat] },
-                });
-                dotIndex++;
-              }
+            for (const [lon, lat] of pts) {
+              dotFeatures.push({
+                type: "Feature",
+                properties: {
+                  color: group.color,
+                  __region: region.key,
+                  __dotOrder:
+                    regionDotCount > 0 ? dotIndex / regionDotCount : 0,
+                },
+                geometry: { type: "Point", coordinates: [lon, lat] },
+              });
+              dotIndex++;
             }
           }
+        }
 
-          const regionGeoJson: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: layout.regions.map((r) => r.feature),
+        const regionGeoJson: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: layout.regions.map((r) => r.feature),
+        };
+
+        m.addSource("dot-density-region-src", {
+          type: "geojson",
+          data: regionGeoJson,
+        });
+        m.addSource("dot-density-dot-src", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: dotFeatures },
+        });
+
+        m.addLayer({
+          id: OUTLINE_LAYER,
+          type: "line",
+          source: "dot-density-region-src",
+          paint: {
+            "line-color": outlineColor,
+            "line-width": 0.6,
+            "line-opacity": 0.5,
+          },
+        });
+
+        // Dot layer — FIXED radius, colour by group. Opacity starts full (establish beat 0).
+        m.addLayer({
+          id: DOT_LAYER,
+          type: "circle",
+          source: "dot-density-dot-src",
+          paint: {
+            "circle-radius": DOT_RADIUS_PX,
+            "circle-color": ["get", "color"],
+            "circle-opacity": 1,
+            "circle-stroke-width": 0.3,
+            "circle-stroke-color": dark
+              ? "rgba(0,0,0,0.4)"
+              : "rgba(0,0,0,0.15)",
+            "circle-stroke-opacity": 1,
+          },
+        });
+
+        // Build beats from the layout — title → establish (dropped in sequential) → densest
+        // reveals → takeaway.
+        const meta = {
+          title: config.title ?? "",
+          description: config.description,
+          insight:
+            ((config as Record<string, unknown>).insight as string) ??
+            config.title ??
+            "",
+          unit: ((config as Record<string, unknown>).valueUnit as string) ?? "",
+          lang: config.lang,
+          // The confirmed walk reaches the deriver — see map-arc.ts.
+          arcBeats: config.arcBeats,
+        };
+        const beats = beatsForMode(deriveDotDensityStory(layout, meta), mode);
+
+        // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
+        const solutions: CameraSolution[] = beats.map((b) => {
+          const result = m.cameraForBounds(
+            b.camera as maptilersdk.LngLatBoundsLike,
+            { padding: mapFrame.pad },
+          );
+          if (!result || !result.center) return { center: [10, 20], zoom: 2 };
+          const c = maptilersdk.LngLat.convert(result.center);
+          return {
+            center: [c.lng, c.lat],
+            zoom: result.zoom ?? 2,
           };
+        });
 
-          m.addSource("dot-density-region-src", {
-            type: "geojson",
-            data: regionGeoJson,
-          });
-          m.addSource("dot-density-dot-src", {
-            type: "geojson",
-            data: { type: "FeatureCollection", features: dotFeatures },
-          });
+        // Build timeline phases — same fluid interwoven envelope as ChoroplethStory/CartogramStory.
+        const kinds = beats.map((b) => b.kind);
+        const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
 
-          m.addLayer({
-            id: OUTLINE_LAYER,
-            type: "line",
-            source: "dot-density-region-src",
-            paint: {
-              "line-color": outlineColor,
-              "line-width": 0.6,
-              "line-opacity": 0.5,
-            },
-          });
+        // Precompute, for each subject region a reveal beat actually visits (triggerFrameByRegion
+        // keys are exactly the beats' callout.region values) — never the whole region set:
+        //  - its border-draw geometry: ALL of the region feature's exterior ring(s) (a
+        //    MultiPolygon region, e.g. offshore islands, must draw every part, not just the
+        //    largest), staged-drawn on over the beat's own entrance window.
+        //  - its callout anchor: the pole of inaccessibility (most-interior point) of the
+        //    region's MAINLAND polygon only, not the full feature — the camera bounds
+        //    (region.camera, built from regionBounds's mainlandFeature) frame the mainland,
+        //    so anchoring on the full feature risks the pole grid-search landing on a large
+        //    offshore-islands part that wins the search but sits outside the framed
+        //    viewport, projecting off-screen (mirrors ChoroplethStory's guard).
+        const regionByKey = new Map(layout.regions.map((r) => [r.key, r]));
+        const triggers = triggerFrameByRegion(beats, phases);
+        const borderByKey = new Map<string, DrawEntry>();
+        const anchorByKey = new Map<string, [number, number]>();
+        for (const key of triggers.keys()) {
+          const region = regionByKey.get(key);
+          if (!region) continue;
 
-          // Dot layer — FIXED radius, colour by group. Opacity starts full (establish beat 0).
-          m.addLayer({
-            id: DOT_LAYER,
-            type: "circle",
-            source: "dot-density-dot-src",
-            paint: {
-              "circle-radius": DOT_RADIUS_PX,
-              "circle-color": ["get", "color"],
-              "circle-opacity": 1,
-              "circle-stroke-width": 0.3,
-              "circle-stroke-color": dark
-                ? "rgba(0,0,0,0.4)"
-                : "rgba(0,0,0,0.15)",
-              "circle-stroke-opacity": 1,
-            },
-          });
+          const g = region.feature.geometry;
+          let rings: number[][][];
+          if (g.type === "Polygon") {
+            rings = [g.coordinates[0]];
+          } else if (g.type === "MultiPolygon") {
+            rings = g.coordinates.map((poly) => poly[0]);
+          } else {
+            continue;
+          }
+          if (rings.length > 0) borderByKey.set(key, buildDraw(rings));
 
-          // Build beats from the layout — title → establish (dropped in sequential) → densest
-          // reveals → takeaway.
-          const meta = {
-            title: config.title ?? "",
-            description: config.description,
-            insight:
-              ((config as Record<string, unknown>).insight as string) ??
-              config.title ??
-              "",
-            unit:
-              ((config as Record<string, unknown>).valueUnit as string) ?? "",
-            lang: config.lang,
-            // The confirmed walk reaches the deriver — see map-arc.ts.
-            arcBeats: config.arcBeats,
-          };
-          const beats = beatsForMode(deriveDotDensityStory(layout, meta), mode);
-
-          // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
-          const solutions: CameraSolution[] = beats.map((b) => {
-            const result = m.cameraForBounds(
-              b.camera as maptilersdk.LngLatBoundsLike,
-              { padding: mapFrame.pad },
+          try {
+            anchorByKey.set(
+              key,
+              poleOfInaccessibility(
+                mainlandFeature(region.feature) as GeoJSON.Feature<
+                  GeoJSON.Polygon | GeoJSON.MultiPolygon
+                >,
+              ),
             );
-            if (!result || !result.center) return { center: [10, 20], zoom: 2 };
-            const c = maptilersdk.LngLat.convert(result.center);
-            return {
-              center: [c.lng, c.lat],
-              zoom: result.zoom ?? 2,
-            };
-          });
+          } catch {
+            // Skip a subject where the pole computation fails (e.g., degenerate geometry).
+          }
+        }
 
-          // Build timeline phases — same fluid interwoven envelope as ChoroplethStory/CartogramStory.
-          const kinds = beats.map((b) => b.kind);
-          const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
-
-          // Precompute, for each subject region a reveal beat actually visits (triggerFrameByRegion
-          // keys are exactly the beats' callout.region values) — never the whole region set:
-          //  - its border-draw geometry: ALL of the region feature's exterior ring(s) (a
-          //    MultiPolygon region, e.g. offshore islands, must draw every part, not just the
-          //    largest), staged-drawn on over the beat's own entrance window.
-          //  - its callout anchor: the pole of inaccessibility (most-interior point) of the
-          //    region's MAINLAND polygon only, not the full feature — the camera bounds
-          //    (region.camera, built from regionBounds's mainlandFeature) frame the mainland,
-          //    so anchoring on the full feature risks the pole grid-search landing on a large
-          //    offshore-islands part that wins the search but sits outside the framed
-          //    viewport, projecting off-screen (mirrors ChoroplethStory's guard).
-          const regionByKey = new Map(layout.regions.map((r) => [r.key, r]));
-          const triggers = triggerFrameByRegion(beats, phases);
-          const borderByKey = new Map<string, DrawEntry>();
-          const anchorByKey = new Map<string, [number, number]>();
-          for (const key of triggers.keys()) {
+        // Per-subject emphasis: border trail ONLY (bloom:false) — the fill channel is the
+        // dots themselves (stipple-in via circle-opacity, computed per-frame below), not an
+        // areal fill layer.
+        addSubjectEmphasisLayers(m, [...triggers.keys()], {
+          idPrefix: "dotdensity",
+          featureFor: (key) => regionByKey.get(key)?.feature ?? EMPTY_FEATURE,
+          colorFor: (key) => {
             const region = regionByKey.get(key);
-            if (!region) continue;
+            return region ? dominantColor(region) : "#999999";
+          },
+          dark,
+          bloom: false,
+        });
 
-            const g = region.feature.geometry;
-            let rings: number[][][];
-            if (g.type === "Polygon") {
-              rings = [g.coordinates[0]];
-            } else if (g.type === "MultiPolygon") {
-              rings = g.coordinates.map((poly) => poly[0]);
-            } else {
-              continue;
-            }
-            if (rings.length > 0) borderByKey.set(key, buildDraw(rings));
+        m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
 
-            try {
-              anchorByKey.set(
-                key,
-                poleOfInaccessibility(
-                  mainlandFeature(region.feature) as GeoJSON.Feature<
-                    GeoJSON.Polygon | GeoJSON.MultiPolygon
-                  >,
-                ),
-              );
-            } catch {
-              // Skip a subject where the pole computation fails (e.g., degenerate geometry).
-            }
-          }
+        setLegendState({
+          hasCategories: layout.hasCategories,
+          dotValue: layout.dotValue,
+          legend: layout.legend,
+        });
 
-          // Per-subject emphasis: border trail ONLY (bloom:false) — the fill channel is the
-          // dots themselves (stipple-in via circle-opacity, computed per-frame below), not an
-          // areal fill layer.
-          addSubjectEmphasisLayers(m, [...triggers.keys()], {
-            idPrefix: "dotdensity",
-            featureFor: (key) => regionByKey.get(key)?.feature ?? EMPTY_FEATURE,
-            colorFor: (key) => {
-              const region = regionByKey.get(key);
-              return region ? dominantColor(region) : "#999999";
-            },
-            dark,
-            bloom: false,
+        continueWhenMapSettles(m, () => {
+          setMapState({
+            map: m,
+            beats,
+            phases,
+            solutions,
+            triggers,
+            borderByKey,
+            anchorByKey,
+            regionByKey,
           });
-
-          m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
-
-          setLegendState({
-            hasCategories: layout.hasCategories,
-            dotValue: layout.dotValue,
-            legend: layout.legend,
-          });
-
-          continueWhenMapSettles(m, () => {
-            setMapState({
-              map: m,
-              beats,
-              phases,
-              solutions,
-              triggers,
-              borderByKey,
-              anchorByKey,
-              regionByKey,
-            });
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("DotDensityStory: failed to load world GeoJSON", err);
           continueRender(handle);
         });
+      } catch (err) {
+        console.error("DotDensityStory: failed to resolve geometry", err);
+        continueRender(handle);
+      }
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
