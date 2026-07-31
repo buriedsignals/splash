@@ -13,18 +13,18 @@
 //   it fails hard, mirroring chart-native.
 //
 // Video-kind note: map-native has always offered TWO video styles internally —
-// "reveal" (fixed camera, data fades/animates in — src/reveal.ts) and "story"
-// (camera-guided narrative tour derived from deriveMapStory beats). The single
-// VisualFormat "video" has no slot for that second axis, so this produce picks ONE
-// deterministically: the STORY kind — the only style every one of the 7 map types
-// supports (route has no simple-reveal) and the project's own documented preference
-// ("a reveal that just fades every region in at once tells no story" — SKILL.md
-// §Narrated story). The old "scrolly-captured-as-mp4" kind (a video CAPTURE of the
-// scroll experience) is also no longer reachable through this CLI — the true scrolly
-// HTML format lives in skills/scrolly (see the "scrolly" case). Neither src/reveal.ts
-// nor the scrolly video-capture render path is deleted — just unwired from this
-// single-format entry point. Flag to a human if "reveal" needs its own producible
-// path back under this contract.
+// "reveal" (fixed camera, data fades/animates in — the *Reveal components) and "story"
+// (camera-guided narrative tour derived from deriveMapStory beats — the *Story
+// components). The single VisualFormat "video" has no slot for that second axis on its
+// own, so it is a SEPARATE config field, `cameraMode` (./lib/story-comps.mjs), that
+// picks between them: unset defaults to the STORY kind — every type but route supports
+// it, and it is the project's own documented preference ("a reveal that just fades
+// every region in at once tells no story" — SKILL.md §Narrated story) — but a config
+// that sets `cameraMode: "simple"` explicitly gets the fixed-camera reveal instead. The
+// old "scrolly-captured-as-mp4" kind (a video CAPTURE of the scroll experience) is still
+// not reachable through this CLI — the true scrolly HTML format lives in skills/scrolly
+// (see the "scrolly" case); that render path is not deleted, just unwired from this
+// single-format entry point.
 //
 // Outputs (only the built format's keys are present):
 //   static      → { static }
@@ -41,6 +41,7 @@ import { snapCommand, remotionCommand } from "../src/platform-runners.ts";
 import { runWithVideoWatchdog } from "../src/video-watchdog.ts";
 import { mapSourceManifest } from "../src/source-manifest.ts";
 import { readCompDims } from "./lib/comp-registry.mjs";
+import { storyComps, defaultCameraMode } from "./lib/story-comps.mjs";
 import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../splash/src/channel.ts";
 import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce.ts";
 
@@ -246,54 +247,11 @@ const run = (cmd, args, extraEnv = {}) =>
   });
 const snap = (script, extraEnv = {}) => run(SNAP[0], [...SNAP.slice(1), script], extraEnv);
 
-const isRoute = parsedConfig.type === "route";
-
-// Returns the composition set for the story kind, dispatched on cameraMode.
-// guided-tour: choropleth/symbol fly-through (SP2). route-reveal: draw-on route (SP3b).
-function storyComps(config, cameraMode) {
-  const isSymbolMap = config.type === "symbol";
-  const isLocatorMap = config.type === "locator";
-  const isDotDensityMap = config.type === "dot-density";
-  const isHexGridMap = config.type === "hex-grid";
-  const isCartogramMap = config.type === "cartogram";
-  if (cameraMode === "guided-tour") {
-    return isCartogramMap
-      ? [["CartogramStory", "landscape"], ["CartogramStorySquare", "square"], ["CartogramStoryPortrait", "portrait"]]
-      : isHexGridMap
-      ? [["HexGridStory", "landscape"], ["HexGridStorySquare", "square"], ["HexGridStoryPortrait", "portrait"]]
-      : isDotDensityMap
-      ? [["DotDensityStory", "landscape"], ["DotDensityStorySquare", "square"], ["DotDensityStoryPortrait", "portrait"]]
-      : isLocatorMap
-      ? [["LocatorStory", "landscape"], ["LocatorStorySquare", "square"], ["LocatorStoryPortrait", "portrait"]]
-      : isSymbolMap
-      ? [["SymbolStory", "landscape"], ["SymbolStorySquare", "square"], ["SymbolStoryPortrait", "portrait"]]
-      : [["ChoroplethStory", "landscape"], ["ChoroplethStorySquare", "square"], ["ChoroplethStoryPortrait", "portrait"]];
-  }
-  if (cameraMode === "route-reveal") {
-    return [["RouteReveal", "landscape"], ["RouteRevealSquare", "square"], ["RouteRevealPortrait", "portrait"]];
-  }
-  // The reveal kind: fixed camera, the data animates in. All 21 reveal compositions are registered
-  // (remotion/src/index.ts — 7 types x 3 aspects) and until now only route's was reachable here, so
-  // six of them rendered correctly and nothing could ask for them. `guided-tour` stays the default
-  // and the documented preference for most articles; this is the explicit opt-in, not a new default.
-  if (cameraMode === "simple") {
-    const base = isCartogramMap
-      ? "CartogramReveal"
-      : isHexGridMap
-      ? "HexGridReveal"
-      : isDotDensityMap
-      ? "DotDensityReveal"
-      : isLocatorMap
-      ? "LocatorReveal"
-      : isSymbolMap
-      ? "SymbolReveal"
-      : config.type === "route"
-      ? "RouteReveal"
-      : "ChoroplethReveal";
-    return [[base, "landscape"], [`${base}Square`, "square"], [`${base}Portrait`, "portrait"]];
-  }
-  throw new Error(`camera mode '${cameraMode}' is not implemented`);
-}
+// storyComps (the composition set for the story kind, dispatched on cameraMode) and
+// defaultCameraMode (the no-choice fallback) now live in ./lib/story-comps.mjs — pulled out
+// of this script so they can be unit-tested by calling them directly (this script cannot be
+// imported in a test: process.argv parsing + process.exit below run the moment it loads).
+// See skills/map-native/tests/story-comps.test.ts.
 
 // Still mid-frame for the story kind (matches the pre-single-format STILL_FRAME.story).
 const STORY_STILL_FRAME = 140;
@@ -429,12 +387,13 @@ switch (format) {
     break;
   }
 
-  // video (config injected via Remotion --props) — render ONLY the single STORY comp
-  // matching the channel's aspect (see the file-header "Video-kind note" for why
-  // story, not reveal). No web build at all: Remotion has its own bundler entry
-  // (remotion/src/index.ts), independent of the static/interactive Vite dist.
+  // video (config injected via Remotion --props) — render ONLY the single comp matching
+  // the channel's aspect, from whichever kind `cameraMode` selects (see the file-header
+  // "Video-kind note" and ./lib/story-comps.mjs). No web build at all: Remotion has its
+  // own bundler entry (remotion/src/index.ts), independent of the static/interactive
+  // Vite dist.
   case "video": {
-    const cameraMode = parsedConfig.cameraMode ?? (isRoute ? "route-reveal" : "guided-tour");
+    const cameraMode = parsedConfig.cameraMode ?? defaultCameraMode(parsedConfig);
     const allComps = storyComps(parsedConfig, cameraMode);
     // Render ONLY the comp matching the channel's aspect (portrait/square/landscape) —
     // not the unconditional triple. Guarantees the channel is the only aspect ever

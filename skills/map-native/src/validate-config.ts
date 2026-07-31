@@ -126,16 +126,38 @@ function brandHueError(s: Record<string, unknown>): string | null {
   return null;
 }
 
-// If a config declares a camera mode, it must be one the engine knows. (route-reveal
-// is a valid mode that is not yet implemented — produce throws at render for it — but
-// a typo'd mode is caught here, before render.)
-function cameraModeError(s: Record<string, unknown>): string | null {
+// If a config declares a camera mode, it must be one the engine knows — a typo'd mode is
+// caught here, before render, rather than as storyComps' own runtime throw. Field coverage
+// mirrors revealMode's: every area/point type but route (a route has exactly one video
+// animation, so a camera-style choice is moot for it — see story-comps.mjs's guided-tour
+// case).
+//
+// `type` is passed by the CALLING validator rather than read off the config — same discipline
+// as unsupportedArcBeatsErrors above, and for the same reason: each validator already knows
+// which type it is, so the refusal cannot be dodged by a config that omits its own
+// discriminant (choropleth has none at all — it is the mount default). Without this, "route-
+// reveal" (a real, valid CAMERA_MODES member — it is what a route's own guided tour resolves
+// to, see story-comps.mjs) would pass membership on ANY type, and storyComps' route-reveal
+// branch would then hand back RouteReveal for data that was never a route — a silent wrong
+// composition, not a caught typo. That is the exact defect this task exists to close; a mode
+// that is spelled correctly but does not apply to this map is refused just as loudly as one
+// that is misspelled.
+function cameraModeError(
+  s: Record<string, unknown>,
+  type: string,
+): string | null {
   if (s.cameraMode === undefined) return null;
   if (
     typeof s.cameraMode !== "string" ||
     !(CAMERA_MODES as readonly string[]).includes(s.cameraMode)
   )
     return `cameraMode must be one of: ${CAMERA_MODES.join(", ")}`;
+  if (s.cameraMode === "route-reveal" && type !== "route")
+    return (
+      `cameraMode "route-reveal" draws a route's own line on — it does not apply to a ` +
+      `"${type}" map. Choose "guided-tour" (a beat-driven camera tour of this map's own ` +
+      `highlights) or "simple" (a fixed camera; the data animates in place).`
+    );
   return null;
 }
 
@@ -167,7 +189,7 @@ export function validateChoroplethConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
-  const cmErr = cameraModeError(s);
+  const cmErr = cameraModeError(s, "choropleth");
   if (cmErr) errors.push(cmErr);
   errors.push(...paletteErrors(s));
 
@@ -298,7 +320,7 @@ export function validateSymbolConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
-  const cmErr = cameraModeError(s);
+  const cmErr = cameraModeError(s, "symbol");
   if (cmErr) errors.push(cmErr);
   const bhErrSymbol = brandHueError(s);
   if (bhErrSymbol) errors.push(bhErrSymbol);
@@ -473,6 +495,9 @@ export type LocatorConfigShape = {
   /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
    * resolveRevealMode — unset/unknown falls back to "context". */
   revealMode?: RevealMode;
+  /** Video camera style ("guided-tour" default | "simple"). See camera-mode.ts —
+   *  unset/unknown falls back to "guided-tour" (produce.mjs's defaultCameraMode). */
+  cameraMode?: CameraMode;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -520,6 +545,8 @@ export function validateLocatorConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const cmErrLocator = cameraModeError(s, "locator");
+  if (cmErrLocator) errors.push(cmErrLocator);
   const bhErrLocator = brandHueError(s);
   if (bhErrLocator) errors.push(bhErrLocator);
 
@@ -625,6 +652,9 @@ export type DotDensityConfigShape = {
   /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
    * resolveRevealMode — unset/unknown falls back to "context". */
   revealMode?: RevealMode;
+  /** Video camera style ("guided-tour" default | "simple"). See camera-mode.ts —
+   *  unset/unknown falls back to "guided-tour" (produce.mjs's defaultCameraMode). */
+  cameraMode?: CameraMode;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -674,6 +704,8 @@ export function validateDotDensityConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const cmErrDotDensity = cameraModeError(s, "dot-density");
+  if (cmErrDotDensity) errors.push(cmErrDotDensity);
   const bhErrDotDensity = brandHueError(s);
   if (bhErrDotDensity) errors.push(bhErrDotDensity);
 
@@ -774,6 +806,9 @@ export type HexGridConfigShape = {
   /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
    * resolveRevealMode — unset/unknown falls back to "context". */
   revealMode?: RevealMode;
+  /** Video camera style ("guided-tour" default | "simple"). See camera-mode.ts —
+   *  unset/unknown falls back to "guided-tour" (produce.mjs's defaultCameraMode). */
+  cameraMode?: CameraMode;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -813,6 +848,8 @@ export function validateHexGridConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const cmErrHexGrid = cameraModeError(s, "hex-grid");
+  if (cmErrHexGrid) errors.push(cmErrHexGrid);
   if (
     s.binShape !== undefined &&
     !["hex", "square"].includes(s.binShape as string)
@@ -915,6 +952,9 @@ export type CartogramConfigShape = {
   /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
    * resolveRevealMode — unset/unknown falls back to "context". */
   revealMode?: RevealMode;
+  /** Video camera style ("guided-tour" default | "simple"). See camera-mode.ts —
+   *  unset/unknown falls back to "guided-tour" (produce.mjs's defaultCameraMode). */
+  cameraMode?: CameraMode;
   title: string;
   description?: string;
   source?: { name?: string; url?: string };
@@ -980,6 +1020,8 @@ export function validateCartogramConfig(
     !["context", "sequential"].includes(s.revealMode as string)
   )
     errors.push("revealMode must be one of: context, sequential");
+  const cmErrCartogram = cameraModeError(s, "cartogram");
+  if (cmErrCartogram) errors.push(cmErrCartogram);
 
   errors.push(...paletteErrors(s));
 

@@ -12,10 +12,14 @@ import { CAMERA_MODES } from "../src/camera-mode";
 // What this pins: that every registered *Reveal composition can be SELECTED. It does not render
 // them — the render is proven by produce's own video path and its snap-video check. It guards the
 // reachability, which is what was broken.
+//
+// The dispatch itself (storyComps) has since moved out of produce.mjs into
+// ./lib/story-comps.mjs (task-6, so it could be unit-tested by calling it — see
+// story-comps.test.ts) — this file's own string-match approach follows it there.
 const SRC = join(import.meta.dir, "..", "src");
 const REMOTION = join(import.meta.dir, "..", "remotion", "src");
 const PRODUCE = readFileSync(
-  join(import.meta.dir, "..", "scripts", "produce.mjs"),
+  join(import.meta.dir, "..", "scripts", "lib", "story-comps.mjs"),
   "utf8",
 );
 

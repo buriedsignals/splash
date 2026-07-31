@@ -33,6 +33,7 @@ in `map-dw-spec.md`** (shared across all map producers — map-dw, map-native, s
   "scaleType": "sequential",
   "palette": "<subject-fit registry ramp — see the Map colour rule below; NEVER default blue for a non-water subject>",
   "revealMode": "context",
+  "cameraMode": "guided-tour",
   "source": { "name": "<honest source>", "url": "<URL>" }
 }
 ```
@@ -55,6 +56,14 @@ Field notes:
 - `revealMode`: `"context"` (default) — emit it explicitly. Journey/progression narratives (a route or
   ordered sequence the story deliberately walks) may set `"sequential"`; do NOT infer it heuristically —
   leave it on `"context"` unless the editorial framing is genuinely a guided journey.
+- `cameraMode` (video only): `"guided-tour"` (default) — a beat-driven camera tour between the data's
+  own highlights. `"simple"` — a fixed camera; the data animates in place instead. This is the
+  journalist's own choice of camera style, not an inference: ask when the format is video and it
+  matters to the story, otherwise leave it unset (`"guided-tour"` is the documented preference and
+  today's default — validated by `validateChoroplethConfig` / `validateSymbolConfig` /
+  `validateLocatorConfig` / `validateDotDensityConfig` / `validateHexGridConfig` /
+  `validateCartogramConfig`, all in `map-native/src/validate-config.ts`). A `route` has no
+  `cameraMode` field — its one video animation (`RouteReveal`) is not a choice.
 - `unit` / `valueUnit`: **EMIT them whenever the measured quantity has a short unit (mm, %, €, t,
   hab.)** — the unit feeds the legend and the hover/caption surfaces and is part of faithful data
   representation, not decoration (same rule as the map-dw `unit` field note above). Omit only when the
