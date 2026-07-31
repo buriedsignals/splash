@@ -349,6 +349,15 @@ describe("validateLocatorConfig — filters wiring", () => {
       }).ok,
     ).toBe(true);
   });
+  it("accepts a known cameraMode and rejects an unknown one", () => {
+    expect(validateLocatorConfig({ ...base, cameraMode: "simple" }).ok).toBe(
+      true,
+    );
+    const bad = validateLocatorConfig({ ...base, cameraMode: "orbit" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+  });
 });
 
 describe("basemap registry — unregistered basemap is rejected by all validators", () => {
@@ -443,6 +452,15 @@ describe("validateDotDensityConfig — filters wiring", () => {
       }).ok,
     ).toBe(true);
   });
+  it("accepts a known cameraMode and rejects an unknown one", () => {
+    expect(validateDotDensityConfig({ ...base, cameraMode: "simple" }).ok).toBe(
+      true,
+    );
+    const bad = validateDotDensityConfig({ ...base, cameraMode: "orbit" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+  });
 });
 
 describe("validateHexGridConfig — filters wiring", () => {
@@ -481,6 +499,15 @@ describe("validateHexGridConfig — filters wiring", () => {
     if (!bad.ok)
       expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
   });
+  it("accepts a known cameraMode and rejects an unknown one", () => {
+    expect(validateHexGridConfig({ ...base, cameraMode: "simple" }).ok).toBe(
+      true,
+    );
+    const bad = validateHexGridConfig({ ...base, cameraMode: "orbit" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
+  });
 });
 
 describe("validateCartogramConfig — filters wiring", () => {
@@ -517,6 +544,15 @@ describe("validateCartogramConfig — filters wiring", () => {
     expect(bad.ok).toBe(false);
     if (!bad.ok)
       expect(bad.errors.some((e) => /revealMode/.test(e))).toBe(true);
+  });
+  it("accepts a known cameraMode and rejects an unknown one", () => {
+    expect(validateCartogramConfig({ ...base, cameraMode: "simple" }).ok).toBe(
+      true,
+    );
+    const bad = validateCartogramConfig({ ...base, cameraMode: "orbit" });
+    expect(bad.ok).toBe(false);
+    if (!bad.ok)
+      expect(bad.errors.some((e) => /cameraMode/.test(e))).toBe(true);
   });
 });
 

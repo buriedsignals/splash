@@ -393,6 +393,12 @@ keep in mind even without opening it:
   on the default blue ramp.
 - Filters are interactive-only, **at most 2**; never emit `kind:"time"` (unwired) or
   `kind:"category"` on a dot-density map.
+- **`cameraMode` (video only)** — the journalist's camera style: **`"guided-tour"`** (default —
+  a beat-driven camera tour between the data's own highlights) or **`"simple"`** (a fixed
+  camera; the data animates in place). Ask when the format is **video** and the choice actually
+  matters to the story ("a guided tour between the highlights, or a fixed shot that fills in?");
+  otherwise leave it unset — `"guided-tour"` is the documented preference and today's default.
+  Do not infer `"simple"` heuristically.
 
 ### map-native (POINT / LOCATOR or SYMBOL path)
 
@@ -433,6 +439,9 @@ or a sorted bar chart.
 
 **Filters:** an interactive locator/symbol may carry a `filters` block (same syntax as the choropleth
 path — `kind:"category"` on a marker attribute; `kind:"range"` on a numeric value field).
+
+**`cameraMode` (video only):** same knob as the choropleth path above — `"guided-tour"` (default,
+a beat-driven tour of the markers/points) or `"simple"` (fixed camera, the points animate in).
 
 **Self-check:** after filling the config, run `validateChoroplethConfig` (from
 `skills/map-native/src/validate-config.ts`). Fix all errors; address warnings (description + source).
