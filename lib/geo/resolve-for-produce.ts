@@ -115,7 +115,14 @@ export async function resolveGeometryForProduce(
     "dot-density",
     "route",
   ]);
-  const joins = JOINING_TYPES.has(String(config.type));
+  // `config.type` defaults to "choropleth" when absent — the same convention produce.mjs's
+  // own conformance logging and source-manifest.ts's `type()` already apply (every shipped
+  // sample fixture, e.g. assets/sample-data/choropleth.json, carries no `type` field at all
+  // and relies on this default). `String(config.type)` alone turned an absent type into the
+  // literal string "undefined", which is never in JOINING_TYPES — silently skipping geometry
+  // resolution for the default-typed choropleth case and leaving the renderer to throw
+  // "config.geometry is required" at runtime.
+  const joins = JOINING_TYPES.has(String(config.type ?? "choropleth"));
   if (!joins) return false;
 
   if (geography) {
