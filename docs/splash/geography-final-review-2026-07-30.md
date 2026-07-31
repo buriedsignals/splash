@@ -388,3 +388,35 @@ branch is between substrate and delivery, not in the merge.
 `interactive` and `video` were not rendered (slow, and the machine was shared). They use the same
 components and the same injected config, so C1/C2 apply identically by construction — but that is
 reasoning, not measurement. No full gate was run during this review.
+
+## What the gate sees — measured 2026-07-30
+
+The repair ran `bun run check` three times on a calm machine. This is the measurement the original
+plan's Task 21 briefed and never ran.
+
+| run | state | result |
+|---|---|---|
+| A | `VITE_MAPTILER_KEY` unset | **19/22** |
+| B | keys exported from `.env` | **18/22** |
+| head | after the four gate-fix commits + the final fix wave | **21/22** |
+
+**The finding:** `skills/map-dw/src`'s live suite does not appear *at all* in run A. It does not pass
+without a key — it never runs. A contributor on a clean checkout sees a number that says nothing about
+that path. That is the mechanism which let the seven Criticals ship behind a green gate.
+
+**A correction to the above, which matters if anyone cites it.** Run A was labelled "the clean-checkout
+state". It was not, for every suite: `/Users/rmdms/Sites/Professional/splash-geography/.env` exists
+(gitignored), and `skills/scrolly/scripts/produce.mjs:21-35` self-sources `VITE_MAPTILER_KEY` from the
+repo-root `.env` whenever the environment variable is unset. Unsetting the variable therefore does not
+unset the key for either native producer. The conclusion holds for suites that gate on the environment
+**variable** — which is where the observed A-vs-B difference and the `map-dw` finding come from — and is
+overstated for suites that gate on the **key**.
+
+Related, and still open: `lib/loop/map-scrolly-e2e.test.ts` and
+`skills/scrolly/src/produce-geometry-smoke.test.ts` carry no skip condition at all, so on a genuinely
+clean clone they go **red**, not skipped — against this branch's own convention at
+`skills/map-native/tests/produce-single-format.test.ts:45-51`.
+
+At head, the only failing check is `test lib`, carrying the two items triaged as not this work's: the
+ambient `readiness.ts:54` empty-reason check (last touched 2026-07-27), and a `capture` suite that times
+out at 120s on a different test each run and passes in ~905ms in isolation.
