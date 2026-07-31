@@ -19,7 +19,8 @@ import {
   type DrawEntry,
 } from "../core/border-slice";
 import * as turf from "@turf/turf";
-import worldGeoJsonImport from "../../assets/geo/world.geojson";
+import { feature as topoFeature } from "topojson-client";
+import type { Topology } from "topojson-specification";
 import type {
   RouteConfig,
   RouteRevealTerritory,
@@ -37,6 +38,28 @@ import { resolveMapFrame } from "../core/map-format";
 // animation parameters from computeRouteReveal — no hardcoded countries, coordinates, or colours.
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
+
+// Geometry arrives through the injected config now (produce.mjs) — never a bundled static
+// import (D5, mirrors RouteMap.tsx / ChoroplethMap.tsx). Loud, named failure instead of a bare
+// TypeError on `undefined.objects`: with the static world.geojson import removed there is no
+// bundled fallback geometry anymore, so an absent config.geometry must fail here, not as an
+// unexplained Remotion render timeout downstream. Exported (not inlined in the component) so
+// this wiring is exercisable directly in a unit test, without a live Remotion/WebGL context —
+// see route-video-geometry.test.ts.
+export function resolveWorldFromGeometry(
+  geometry: RouteConfig["geometry"],
+): GeoJSON.FeatureCollection {
+  if (!geometry)
+    throw new Error(
+      "route: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
+    );
+  const topology = geometry as Topology;
+  const objectName = Object.keys(topology.objects)[0]!;
+  return topoFeature(
+    topology,
+    topology.objects[objectName]!,
+  ) as unknown as GeoJSON.FeatureCollection;
+}
 
 // ---------------------------------------------------------------------------
 // Electric colour sets — mapStyle-adaptive
@@ -140,7 +163,10 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
     ? maptilersdk.MapStyle.DATAVIZ.DARK
     : maptilersdk.MapStyle.DATAVIZ.LIGHT;
 
-  const world = worldGeoJsonImport as unknown as GeoJSON.FeatureCollection;
+  const world = useMemo(
+    () => resolveWorldFromGeometry(config.geometry),
+    [config.geometry],
+  );
 
   // Derive layout + draw structures from config ONCE (heavy turf geometry). Memoised on
   // config, which is stable per composition — so this does NOT re-run every frame / on
@@ -158,7 +184,7 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
         terr.map((t) => [t.key, buildDraw(t.border)]),
       ) as Record<string, DrawEntry>,
     };
-  }, [config]);
+  }, [config, world]);
 
   // Trigger time for each territory (seconds into the clip)
   const trigger = (t: RouteRevealTerritory) =>
