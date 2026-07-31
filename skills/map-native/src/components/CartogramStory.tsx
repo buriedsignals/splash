@@ -226,6 +226,8 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
               config.title ??
               "",
             lang: config.lang,
+            // The confirmed walk reaches the deriver — see map-arc.ts.
+            arcBeats: config.arcBeats,
           };
           const beats = beatsForMode(deriveCartogramStory(layout, meta), mode);
 

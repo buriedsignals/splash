@@ -10,6 +10,8 @@ import { scrollyStepCount } from "../src/route-story";
 import { computeChoropleth } from "../src/choropleth-geo";
 import { deriveLocatorStory } from "../src/locator-story";
 import type { LocatorMarker } from "../src/locator-geo";
+import { deriveCartogramStory } from "../src/cartogram-story";
+import { computeCartogram } from "../src/cartogram-geo";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import world from "../assets/geo/world.geojson" assert { type: "json" };
 
@@ -27,9 +29,11 @@ describe("map-native story components forward the confirmed claim-arc", () => {
     "components/ChoroplethStory.tsx", // video
     "components/SymbolStory.tsx", // video
     "components/LocatorStory.tsx", // video
+    "components/CartogramStory.tsx", // video
     "components/ChoroplethScrolly.tsx", // scrolly
     "components/SymbolScrolly.tsx", // scrolly
     "components/LocatorScrolly.tsx", // scrolly
+    "components/CartogramScrolly.tsx", // scrolly
   ];
   for (const file of files) {
     it(`${file} puts arcBeats in the deriver meta`, () => {
@@ -200,15 +204,87 @@ describe("the locator sizer agrees with the walk that renders", () => {
   });
 });
 
+// Same class of proof for cartogram, added when the cartogram deriver gained arc support
+// (map-storyboard-and-video-geography, Task 2). CartogramStory.tsx/CartogramScrolly.tsx both
+// literally call deriveCartogramStory(layout, meta) then mapStoryToChapters(beats, ...) —
+// reproduced here as `renderedSteps`, exactly like the choropleth/locator blocks above.
+describe("the cartogram sizer agrees with the walk that renders", () => {
+  // Real ISO codes (world.geojson's iso_a3 join, cartogram's default joinKey) — same
+  // countries the choropleth sizer block above already exercises.
+  const VALUES = [
+    { id: "NOR", value: 99 },
+    { id: "SWE", value: 68 },
+    { id: "DEU", value: 59 },
+    { id: "GBR", value: 48 },
+    { id: "ESP", value: 44 },
+    { id: "ITA", value: 41 },
+    { id: "FRA", value: 27 },
+    { id: "POL", value: 21 },
+  ];
+  const ARC: MapArcBeat[] = [
+    { region: "DEU", role: "establish", text: "Germany anchors it." },
+    { region: "POL", role: "build", text: "Poland widens it." },
+    { region: "NOR", role: "payoff", text: "Norway closes it." },
+  ];
+  const base = {
+    type: "cartogram" as const,
+    title: "Eight regions, in the order the story needs",
+    description: "Eight European cartogram cells",
+    basemap: "world",
+    values: VALUES,
+  };
+
+  function renderedSteps(config: Record<string, unknown>): number {
+    const layout = computeCartogram(
+      config as never,
+      world as unknown as GeoJSON.FeatureCollection,
+    );
+    const beats = deriveCartogramStory(layout, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      insight:
+        (config.insight as string | undefined) ?? (config.title as string),
+      arcBeats: config.arcBeats as MapArcBeat[] | undefined,
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      regionsWithData: layout.cells.length,
+    }).steps.length;
+  }
+
+  const size = (config: Record<string, unknown>) =>
+    scrollyStepCount(config, world as unknown as GeoJSON.FeatureCollection);
+
+  it("sizes an ARC config for the arc's own length, not the value-ranked walk's", () => {
+    const config = { ...base, arcBeats: ARC };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+
+  it("can go red: the arc's length differs from the value-ranked walk's", () => {
+    // 3 confirmed reveals vs. 5 value-ranked reveals (all 8 regions, default cap) — the two
+    // walks CANNOT accidentally agree here, so this is a real lever.
+    const withArc = { ...base, arcBeats: ARC };
+    const withoutArc = { ...base };
+    expect(size(withArc)).not.toBe(size(withoutArc));
+    expect(renderedSteps(withArc)).not.toBe(renderedSteps(withoutArc));
+  });
+
+  it("leaves the value-ranked sizing untouched", () => {
+    const config = { ...base };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+});
+
 describe("Remotion's calculateMetadata sizers forward the arc too", () => {
   // Root.tsx cannot be imported under a test (remotion + module-scope MapTiler key), and what
   // went wrong is a missing property in an object literal — same guard shape as above.
-  it("storyMeta, symbolStoryMeta and locatorStoryMeta all put arcBeats in the deriver meta", () => {
+  it("storyMeta, symbolStoryMeta, locatorStoryMeta and cartogramStoryMeta all put arcBeats in the deriver meta", () => {
     const source = readFileSync(
       join(import.meta.dir, "..", "remotion", "src", "Root.tsx"),
       "utf8",
     );
-    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(3);
+    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(4);
   });
 });
 
@@ -245,10 +321,12 @@ describe("unsupportedArcBeatsErrors", () => {
   });
 
   it("refuses by name, and names the way out", () => {
-    const errors = unsupportedArcBeatsErrors({ arcBeats: plan }, "cartogram");
+    // "cartogram" used to be the example here — it moved to the capable side in
+    // map-storyboard-and-video-geography Task 2, so a non-capable type stands in now.
+    const errors = unsupportedArcBeatsErrors({ arcBeats: plan }, "route");
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("arcBeats");
-    expect(errors[0]).toContain("cartogram");
+    expect(errors[0]).toContain("route");
     // The refusal has to say which types DO walk an arc — otherwise it is a dead end.
     for (const type of ARC_CAPABLE_MAP_TYPES) expect(errors[0]).toContain(type);
   });

@@ -903,6 +903,9 @@ export type CartogramConfigShape = {
   /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
   brandHue?: string;
   brandPalette?: string[];
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
+  // Anchors on `values[].id`; validated by validateCartogramConfig below.
+  arcBeats?: MapArcBeat[];
 };
 
 export function validateCartogramConfig(
@@ -914,8 +917,11 @@ export function validateCartogramConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
-  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  // Gate on ARC_CAPABLE_MAP_TYPES membership before validating content. A no-op today
+  // ("cartogram" is capable — see map-arc.ts) but the single lever a capability regression
+  // trips: drop "cartogram" from ARC_CAPABLE_MAP_TYPES and this refusal fires again instead
+  // of silently content-validating an arcBeats plan against a type that can no longer
+  // render it.
   errors.push(...unsupportedArcBeatsErrors(s, "cartogram"));
 
   // Task 8 (C6): every sibling validator requires a registered basemap (validateBasemap
@@ -986,6 +992,19 @@ export function validateCartogramConfig(
     cartogramRowsForFilters,
   );
   if (!frCartogram.ok) errors.push(...frCartogram.errors);
+
+  if (s.arcBeats !== undefined) {
+    if (!Array.isArray(s.arcBeats)) {
+      errors.push(
+        "arcBeats override must be an ARRAY of beat objects (see MapArcBeat)",
+      );
+    } else {
+      const validCellIds = Array.isArray(vals)
+        ? (vals as Record<string, unknown>[]).map((v) => String(v.id))
+        : [];
+      errors.push(...mapArcErrors(s.arcBeats as MapArcBeat[], validCellIds));
+    }
+  }
 
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)

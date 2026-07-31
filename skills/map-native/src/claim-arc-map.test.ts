@@ -7,12 +7,16 @@ import {
 } from "./map-story.ts";
 import { deriveSymbolStory } from "./symbol-story.ts";
 import { deriveLocatorStory } from "./locator-story.ts";
+import { deriveCartogramStory } from "./cartogram-story.ts";
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo.ts";
+import { computeCartogram } from "./cartogram-geo.ts";
 import type { SymbolPoint } from "./symbol-geo.ts";
 import type { LocatorMarker } from "./locator-geo.ts";
+import { bbox } from "@turf/turf";
 import {
   validateChoroplethConfig,
   validateLocatorConfig,
+  validateCartogramConfig,
 } from "./validate-config.ts";
 
 const validRegions = ["Geneva", "Vaud", "Zurich", "Bern"];
@@ -173,6 +177,48 @@ describe("mapArcErrors wired into validateLocatorConfig", () => {
 
   it("validates exactly as today when arcBeats is absent (behaviour-preserving)", () => {
     const result = validateLocatorConfig(baseLocatorSpec);
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe("mapArcErrors wired into validateCartogramConfig", () => {
+  const baseCartogramSpec = {
+    type: "cartogram",
+    basemap: "world",
+    title: "Three regions cartogram with a real insight",
+    values: [
+      { id: "FRA", value: 68 },
+      { id: "DEU", value: 84 },
+      { id: "ESP", value: 44 },
+    ],
+  };
+
+  it("passes with a well-formed arcBeats override anchored on real region ids", () => {
+    const result = validateCartogramConfig({
+      ...baseCartogramSpec,
+      arcBeats: [
+        { region: "FRA", role: "establish", text: "France starts." },
+        { region: "DEU", role: "build", text: "Germany climbs." },
+        { region: "ESP", role: "payoff", text: "Spain lands it." },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails on an arcBeats override anchored on a non-existent region id, listing the real ids", () => {
+    const result = validateCartogramConfig({
+      ...baseCartogramSpec,
+      arcBeats: [{ region: "Nowhere", role: "establish", text: "sets" }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.some((e) => /not found|region/i.test(e))).toBe(true);
+      expect(result.errors.some((e) => /FRA/.test(e))).toBe(true);
+    }
+  });
+
+  it("validates exactly as today when arcBeats is absent (behaviour-preserving)", () => {
+    const result = validateCartogramConfig(baseCartogramSpec);
     expect(result.ok).toBe(true);
   });
 });
@@ -688,6 +734,221 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
         dim: false,
         callout: null,
         copy: "",
+      },
+    ]);
+  });
+});
+
+// Four unit-square regions in a 2x2 arrangement, keyed A..D — same fixture as
+// cartogram-story.test.ts's own unit tests, so the wiring proof and the deriver's own
+// tests stay comparable.
+const cartogramSquare = (
+  id: string,
+  x: number,
+  y: number,
+): GeoJSON.Feature => ({
+  type: "Feature",
+  properties: { iso_a3: id },
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [x, y],
+        [x + 1, y],
+        [x + 1, y + 1],
+        [x, y + 1],
+        [x, y],
+      ],
+    ],
+  },
+});
+const cartogramFeatures: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [
+    cartogramSquare("A", 0, 1),
+    cartogramSquare("B", 2, 1),
+    cartogramSquare("C", 0, -1),
+    cartogramSquare("D", 2, -1),
+  ],
+};
+// Values: B=16 (highest), D=9 (2nd), A=4 (3rd), C=1 (lowest) — same ranking as
+// cartogram-story.test.ts, so the ARC below (C, A, D) both skips the top-ranked region (B)
+// and reorders the rest, proving it is not just a re-sorted salience walk.
+const cartogramValues = [
+  { id: "A", value: 4 },
+  { id: "B", value: 16 },
+  { id: "C", value: 1 },
+  { id: "D", value: 9 },
+];
+const cartogramLayout = computeCartogram(
+  { variant: "scaled", values: cartogramValues, valueLabel: "pop" },
+  cartogramFeatures,
+);
+const cartogramArc: MapArcBeat[] = [
+  { region: "C", role: "establish", text: "C starts the smallest." },
+  { region: "A", role: "build", text: "A grows in the middle." },
+  { region: "D", role: "payoff", text: "D closes near the top." },
+];
+
+// Reproduces cartogram-story.ts's private `frameCell` — the same "expand a cell bbox to
+// >= 50% of the full extent" rule a value-ranked reveal ALSO uses, so an arc-anchored
+// camera is pinned to the SAME math a ranked reveal would produce for that cell, not a
+// bespoke shape invented for the arc path.
+function expectedCartogramCamera(id: string): [number, number, number, number] {
+  const cell = cartogramLayout.cells.find((c) => c.id === id)!;
+  const [cw, cs, ce, cn] = bbox(cell.feature) as [
+    number,
+    number,
+    number,
+    number,
+  ];
+  const [fw, fs, fe, fn] = cartogramLayout.bounds;
+  const cx = (cw + ce) / 2;
+  const cy = (cs + cn) / 2;
+  const halfW = Math.max((ce - cw) / 2, ((fe - fw) * 0.5) / 2);
+  const halfH = Math.max((cn - cs) / 2, ((fn - fs) * 0.5) / 2);
+  return [cx - halfW, cy - halfH, cx + halfW, cy + halfH];
+}
+
+describe("deriveCartogramStory — applyMapArc wiring", () => {
+  it("with a confirmed arcBeats: reveals follow the ARC order (not the value-ranked order), carry the claim text verbatim, and the camera frames the NAMED cell's own bbox — not the map's default framing", () => {
+    const beats = deriveCartogramStory(cartogramLayout, {
+      title: "Four regions, in the order the story needs",
+      arcBeats: cartogramArc,
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    // ARC order (C, A, D) — NOT value-ranked order (B, D, A, C), which the value-ranked
+    // walk below would give, and skips B entirely (the arc's own selection, not a cap).
+    expect(reveals.map((b) => b.highlight[0])).toEqual(["C", "A", "D"]);
+    expect(reveals.map((b) => b.role)).toEqual([
+      "establish",
+      "build",
+      "payoff",
+    ]);
+    expect(reveals.map((b) => b.copy)).toEqual([
+      "C starts the smallest.",
+      "A grows in the middle.",
+      "D closes near the top.",
+    ]);
+    for (const b of reveals) {
+      expect(b.callout?.text).toBe(b.copy);
+    }
+    // Camera is the NAMED cell's own frameCell box — never the establish/title full extent,
+    // which the value-ranked walk's title/establish/takeaway beats use instead.
+    expect(reveals.map((b) => b.camera)).toEqual([
+      expectedCartogramCamera("C"),
+      expectedCartogramCamera("A"),
+      expectedCartogramCamera("D"),
+    ]);
+    for (const r of reveals)
+      expect(r.camera).not.toEqual(cartogramLayout.bounds);
+  });
+
+  it("an arcBeats naming a region id that does not exist is refused by name, listing the real ids — not silently dropped", () => {
+    const result = validateCartogramConfig({
+      type: "cartogram",
+      basemap: "world",
+      title: "Four regions cartogram with a real insight",
+      values: cartogramValues,
+      arcBeats: [
+        {
+          region: "Nowhere",
+          role: "establish",
+          text: "Nowhere is not on this map.",
+        },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(
+        result.errors.some((e) => /"Nowhere" not found in the data/i.test(e)),
+      ).toBe(true);
+      expect(result.errors.some((e) => /A.*B.*C.*D/.test(e))).toBe(true);
+    }
+  });
+
+  it("without arcBeats: byte-identical to the captured value-ranked baseline", () => {
+    const beats = deriveCartogramStory(cartogramLayout, {
+      title: "Population cartogram",
+      description: "Regions scaled by population",
+      insight: "B has the most people",
+    });
+    expect(beats).toEqual([
+      {
+        kind: "title",
+        camera: [0.2499880989371377, -0.8750000000000001, 3, 2],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "Population cartogram",
+      },
+      {
+        kind: "establish",
+        camera: [0.2499880989371377, -0.8750000000000001, 3, 2],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      {
+        kind: "reveal",
+        camera: [1.8124970247342844, 0.78125, 3.1875029752657156, 2.21875],
+        highlight: ["B"],
+        dim: true,
+        callout: {
+          region: "B",
+          name: "B",
+          value: "16",
+          text: "16 pop — the highest — B",
+        },
+        copy: "16 pop — the highest — B",
+      },
+      {
+        kind: "reveal",
+        camera: [1.8124970247342844, -1.21875, 3.1875029752657156, 0.21875],
+        highlight: ["D"],
+        dim: true,
+        callout: {
+          region: "D",
+          name: "D",
+          value: "9",
+          text: "9 pop — the 2nd highest — D",
+        },
+        copy: "9 pop — the 2nd highest — D",
+      },
+      {
+        kind: "reveal",
+        camera: [-0.18750297526571558, 0.78125, 1.1875029752657156, 2.21875],
+        highlight: ["A"],
+        dim: true,
+        callout: {
+          region: "A",
+          name: "A",
+          value: "4",
+          text: "4 pop — #3 — A",
+        },
+        copy: "4 pop — #3 — A",
+      },
+      {
+        kind: "reveal",
+        camera: [-0.18750297526571558, -1.21875, 1.1875029752657156, 0.21875],
+        highlight: ["C"],
+        dim: true,
+        callout: {
+          region: "C",
+          name: "C",
+          value: "1",
+          text: "1 pop — #4 — C",
+        },
+        copy: "1 pop — #4 — C",
+      },
+      {
+        kind: "takeaway",
+        camera: [0.2499880989371377, -0.8750000000000001, 3, 2],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "B has the most people",
       },
     ]);
   });

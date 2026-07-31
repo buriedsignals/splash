@@ -2,7 +2,7 @@
 // HIGHEST regions by value (descending, capped) → takeaway. Each reveal highlights one region by
 // its id so components can dim non-highlighted cells. The camera stays framed on the data zone:
 // a reveal expands the cell bbox to >= 50% of the full extent (same frameCell rule as hex-grid).
-import type { Beat } from "./map-story";
+import { applyMapArc, type Beat, type MapArcBeat } from "./map-story";
 import type { CartogramLayout } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
 import { localizeValueLabel } from "./core/locale";
@@ -12,6 +12,11 @@ export interface CartogramStoryMeta {
   description?: string;
   insight?: string;
   lang?: string;
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
+  // Anchors on cell ids (`layout.cells[].id`, the data's `values[].id`). When present +
+  // non-empty, the reveal beats follow the arc (applyMapArc) instead of the value-ranked
+  // walk below; absent/empty leaves today's ranked walk byte-identical.
+  arcBeats?: MapArcBeat[];
 }
 
 const DEFAULT_MAX_REVEALS = 5;
@@ -62,32 +67,54 @@ export function deriveCartogramStory(
     copy: "",
   });
 
-  // Rank cells by value descending; tie-break by index for determinism.
-  const ranked = layout.cells
-    .map((c, i) => ({ c, i }))
-    .sort((a, b) => b.c.value - a.c.value || a.i - b.i);
+  if (meta.arcBeats?.length) {
+    // Journalist-confirmed claim-arc override — the reveals follow the ARC order, not the
+    // value-ranked selection below. mapArcErrors (run at the gate) has already validated
+    // every arcBeat's region against the cells' own ids, so this lookup cannot miss
+    // (applyMapArc throws defensively if one somehow did). The camera uses the SAME
+    // frameCell(cellBbox, full, 0.5) box a ranked reveal uses — never the full extent.
+    const cellById = new Map(layout.cells.map((c) => [c.id, c]));
+    beats.push(
+      ...applyMapArc(meta.arcBeats, (id) => {
+        const c = cellById.get(id);
+        if (!c) return null;
+        const cellBbox = bbox(c.feature) as [number, number, number, number];
+        return {
+          camera: frameCell(cellBbox, full, 0.5),
+          highlight: [c.id],
+          name: c.name,
+          value: `${fmt(c.value)}${layout.valueUnit}`,
+        };
+      }),
+    );
+  } else {
+    // Rank cells by value descending; tie-break by index for determinism.
+    const ranked = layout.cells
+      .map((c, i) => ({ c, i }))
+      .sort((a, b) => b.c.value - a.c.value || a.i - b.i);
 
-  ranked.slice(0, cap).forEach(({ c }, rank) => {
-    const cellBbox = bbox(c.feature) as [number, number, number, number];
-    const rankDesc =
-      rank === 0
-        ? "the highest"
-        : rank === 1
-          ? "the 2nd highest"
-          : `#${rank + 1}`;
-    // Display value with its unit (e.g. "16%") — mirrors ChoroplethMap's callout
-    // formatting (`${shownValue}${valueUnit}`).
-    const value = `${fmt(c.value)}${layout.valueUnit}`;
-    const text = `${value} ${layout.valueLabel} — ${rankDesc} — ${c.name}`;
-    beats.push({
-      kind: "reveal",
-      camera: frameCell(cellBbox, full, 0.5),
-      highlight: [c.id],
-      dim: true,
-      callout: { region: c.id, name: c.name, value, text },
-      copy: text,
+    ranked.slice(0, cap).forEach(({ c }, rank) => {
+      const cellBbox = bbox(c.feature) as [number, number, number, number];
+      const rankDesc =
+        rank === 0
+          ? "the highest"
+          : rank === 1
+            ? "the 2nd highest"
+            : `#${rank + 1}`;
+      // Display value with its unit (e.g. "16%") — mirrors ChoroplethMap's callout
+      // formatting (`${shownValue}${valueUnit}`).
+      const value = `${fmt(c.value)}${layout.valueUnit}`;
+      const text = `${value} ${layout.valueLabel} — ${rankDesc} — ${c.name}`;
+      beats.push({
+        kind: "reveal",
+        camera: frameCell(cellBbox, full, 0.5),
+        highlight: [c.id],
+        dim: true,
+        callout: { region: c.id, name: c.name, value, text },
+        copy: text,
+      });
     });
-  });
+  }
 
   beats.push({
     kind: "takeaway",

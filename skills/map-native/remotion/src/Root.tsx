@@ -320,6 +320,9 @@ const cartogramStoryMeta = makeStoryMeta(
         title: cfg.title ?? "",
         description: cfg.description,
         insight: cfg.insight ?? cfg.title ?? "",
+        // Same mirror as symbolStoryMeta/locatorStoryMeta above — size the walk that will
+        // actually render.
+        arcBeats: cfg.arcBeats,
       }),
       resolveRevealMode(cfg),
     );
