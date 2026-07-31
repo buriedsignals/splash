@@ -2,7 +2,12 @@
 // few-annotated (a beat per PLACE, camera on a tight box, caption = the marker note) and
 // categorized (a beat per CATEGORY, camera on that category's markers, caption = category + count).
 // title → establish (all markers) → reveals → takeaway. Same Beat shape as choropleth/symbol.
-import type { Beat, RevealMode } from "./map-story";
+import {
+  applyMapArc,
+  type Beat,
+  type MapArcBeat,
+  type RevealMode,
+} from "./map-story";
 import type { LocatorMarker } from "./locator-geo";
 import type { Phase } from "./story-timeline";
 import { shortWayLongitudeExtent } from "./core/longitude";
@@ -11,6 +16,12 @@ export interface LocatorStoryMeta {
   title: string;
   description?: string;
   insight?: string;
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
+  // Anchors on marker labels (mirrors deriveSymbolStory's point labels — a marker has no
+  // numeric value of its own, so the resolved anchor's `value` is always ""). When present
+  // + non-empty, the reveal beats follow the arc (applyMapArc) instead of the categorized/
+  // few-annotated regimes below; absent/empty leaves today's regimes byte-identical.
+  arcBeats?: MapArcBeat[];
 }
 
 const CITY_DELTA = 1.5; // half-width (deg) of a tight place-framing box
@@ -63,44 +74,75 @@ export function deriveLocatorStory(
     copy: "",
   });
 
-  const categories = [
-    ...new Set(
-      markers
-        .map((m) => m.category)
-        .filter((c): c is string => !!c && c.trim().length > 0),
-    ),
-  ].sort();
-
-  if (categories.length > 0) {
-    // Categorized regime: a beat per category (capped).
-    for (const cat of categories.slice(0, cap)) {
-      const inCat = markers.filter((m) => m.category === cat);
-      const count = inCat.length;
-      const text = `${cat} — ${count} ${count === 1 ? "site" : "sites"}`;
-      beats.push({
-        kind: "reveal",
-        camera: padBbox(bboxOf(inCat)),
-        highlight: inCat.map((m) => m.label),
-        dim: true,
-        callout: { region: cat, name: cat, value: `${count}`, text },
-        copy: text,
-      });
-    }
+  if (meta.arcBeats?.length) {
+    // Journalist-confirmed claim-arc override — the reveals follow the ARC order, not
+    // either salience regime below. mapArcErrors (run at the gate) has already validated
+    // every arcBeat's region against the markers' own labels, so this lookup cannot miss
+    // (applyMapArc throws defensively if one somehow did). The camera is a tight box on the
+    // NAMED marker's own coordinates (mirrors deriveSymbolStory's CITY_DELTA box) — never
+    // `allBounds`, which is the map's default framing the few-annotated regime uses instead.
+    const markerByLabel = new Map(markers.map((m) => [m.label, m]));
+    beats.push(
+      ...applyMapArc(meta.arcBeats, (label) => {
+        const m = markerByLabel.get(label);
+        return m
+          ? {
+              camera: [
+                m.lon - CITY_DELTA,
+                m.lat - CITY_DELTA,
+                m.lon + CITY_DELTA,
+                m.lat + CITY_DELTA,
+              ],
+              highlight: [m.label],
+              name: m.label,
+              // A locator marker carries no numeric value (unlike a choropleth region or a
+              // symbol point) — the few-annotated regime's own callout already uses "" for
+              // the same reason (see below), so this is not a new convention.
+              value: "",
+            }
+          : null;
+      }),
+    );
   } else {
-    // Few-annotated regime: a beat per place (capped), caption = note ?? label.
-    // Camera STAYS on the whole concerned zone (all places framed) for every reveal, so the
-    // markers stay visible and separated — a per-place ±CITY_DELTA box would zoom OUT and lose
-    // tightly-clustered places (e.g. sites within one city). The reveal is the highlight + callout.
-    for (const m of markers.slice(0, cap)) {
-      const copy = m.note?.trim() ? m.note : m.label;
-      beats.push({
-        kind: "reveal",
-        camera: allBounds,
-        highlight: [m.label],
-        dim: true,
-        callout: { region: m.label, name: m.label, value: "", text: copy },
-        copy,
-      });
+    const categories = [
+      ...new Set(
+        markers
+          .map((m) => m.category)
+          .filter((c): c is string => !!c && c.trim().length > 0),
+      ),
+    ].sort();
+
+    if (categories.length > 0) {
+      // Categorized regime: a beat per category (capped).
+      for (const cat of categories.slice(0, cap)) {
+        const inCat = markers.filter((m) => m.category === cat);
+        const count = inCat.length;
+        const text = `${cat} — ${count} ${count === 1 ? "site" : "sites"}`;
+        beats.push({
+          kind: "reveal",
+          camera: padBbox(bboxOf(inCat)),
+          highlight: inCat.map((m) => m.label),
+          dim: true,
+          callout: { region: cat, name: cat, value: `${count}`, text },
+          copy: text,
+        });
+      }
+    } else {
+      // Few-annotated regime: a beat per place (capped), caption = note ?? label.
+      // Camera STAYS on the whole concerned zone (all places framed) for every reveal, so the
+      // markers stay visible and separated — a per-place ±CITY_DELTA box would zoom OUT and lose
+      // tightly-clustered places (e.g. sites within one city). The reveal is the highlight + callout.
+      for (const m of markers.slice(0, cap)) {
+        const copy = m.note?.trim() ? m.note : m.label;
+        beats.push({
+          kind: "reveal",
+          camera: allBounds,
+          highlight: [m.label],
+          dim: true,
+          callout: { region: m.label, name: m.label, value: "", text: copy },
+          copy,
+        });
+      }
     }
   }
 

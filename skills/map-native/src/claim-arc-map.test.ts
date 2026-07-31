@@ -6,9 +6,14 @@ import {
   type MapArcBeat,
 } from "./map-story.ts";
 import { deriveSymbolStory } from "./symbol-story.ts";
+import { deriveLocatorStory } from "./locator-story.ts";
 import { computeChoropleth, type ChoroplethData } from "./choropleth-geo.ts";
 import type { SymbolPoint } from "./symbol-geo.ts";
-import { validateChoroplethConfig } from "./validate-config.ts";
+import type { LocatorMarker } from "./locator-geo.ts";
+import {
+  validateChoroplethConfig,
+  validateLocatorConfig,
+} from "./validate-config.ts";
 
 const validRegions = ["Geneva", "Vaud", "Zurich", "Bern"];
 
@@ -127,6 +132,47 @@ describe("mapArcErrors wired into validateChoroplethConfig", () => {
 
   it("validates exactly as today when arcBeats is absent (behaviour-preserving)", () => {
     const result = validateChoroplethConfig(baseSpec);
+    expect(result.ok).toBe(true);
+  });
+});
+
+describe("mapArcErrors wired into validateLocatorConfig", () => {
+  const baseLocatorSpec = {
+    basemap: "world",
+    title: "Three places along a route",
+    markers: [
+      { lon: 6.1, lat: 46.2, label: "Geneva" },
+      { lon: 6.6, lat: 46.5, label: "Lausanne" },
+      { lon: 8.5, lat: 47.4, label: "Zurich" },
+    ],
+  };
+
+  it("passes with a well-formed arcBeats override anchored on real marker names", () => {
+    const result = validateLocatorConfig({
+      ...baseLocatorSpec,
+      arcBeats: [
+        { region: "Geneva", role: "establish", text: "Geneva starts." },
+        { region: "Lausanne", role: "build", text: "Lausanne climbs." },
+        { region: "Zurich", role: "payoff", text: "Zurich lands it." },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("fails on an arcBeats override anchored on a non-existent marker, listing the real names", () => {
+    const result = validateLocatorConfig({
+      ...baseLocatorSpec,
+      arcBeats: [{ region: "Nowhere", role: "establish", text: "sets" }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.some((e) => /not found|region/i.test(e))).toBe(true);
+      expect(result.errors.some((e) => /Geneva/.test(e))).toBe(true);
+    }
+  });
+
+  it("validates exactly as today when arcBeats is absent (behaviour-preserving)", () => {
+    const result = validateLocatorConfig(baseLocatorSpec);
     expect(result.ok).toBe(true);
   });
 });
@@ -493,6 +539,147 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
           text: "Bern — 10 pts",
         },
         copy: "Bern — 10 pts",
+      },
+      {
+        kind: "takeaway",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+    ]);
+  });
+});
+
+const locatorMarkers: LocatorMarker[] = [
+  { lon: 6.1, lat: 46.2, label: "Geneva" },
+  { lon: 6.6, lat: 46.5, label: "Lausanne" },
+  { lon: 8.5, lat: 47.4, label: "Zurich" },
+];
+
+const locatorArc: MapArcBeat[] = [
+  { region: "Zurich", role: "establish", text: "Zurich anchors the search." },
+  { region: "Geneva", role: "build", text: "Geneva widens it." },
+  { region: "Lausanne", role: "payoff", text: "Lausanne closes the loop." },
+];
+
+describe("deriveLocatorStory — applyMapArc wiring", () => {
+  it("with a confirmed arcBeats: reveals follow the ARC order (not the marker array order), carry the claim text verbatim, and the camera anchors on the named marker's own coordinates — not the map's default framing", () => {
+    const beats = deriveLocatorStory(locatorMarkers, {
+      title: "Three Swiss places, in the order the story needs",
+      arcBeats: locatorArc,
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    // ARC order (Zurich, Geneva, Lausanne) — NOT the markers' array order
+    // (Geneva, Lausanne, Zurich), which is what the few-annotated salience walk would give.
+    expect(reveals.map((b) => b.highlight[0])).toEqual([
+      "Zurich",
+      "Geneva",
+      "Lausanne",
+    ]);
+    expect(reveals.map((b) => b.role)).toEqual([
+      "establish",
+      "build",
+      "payoff",
+    ]);
+    expect(reveals.map((b) => b.copy)).toEqual([
+      "Zurich anchors the search.",
+      "Geneva widens it.",
+      "Lausanne closes the loop.",
+    ]);
+    for (const b of reveals) {
+      expect(b.callout?.text).toBe(b.copy);
+    }
+    // Camera is a tight box on the NAMED marker's own coordinates — never the map's
+    // default framing (allBounds, [6.1, 46.2, 8.5, 47.4]), which the salience walk below
+    // uses instead. Zurich sits at [8.5, 47.4]; ±1.5° (CITY_DELTA) around it.
+    const allBounds = [6.1, 46.2, 8.5, 47.4];
+    expect(reveals[0].camera).toEqual([7, 45.9, 10, 48.9]);
+    expect(reveals[0].camera).not.toEqual(allBounds);
+    expect(reveals[1].camera).toEqual([4.6, 44.7, 7.6, 47.7]); // Geneva ±1.5°
+    expect(reveals[2].camera).toEqual([5.1, 45, 8.1, 48]); // Lausanne ±1.5°
+  });
+
+  it("an arcBeats naming a marker that does not exist is refused by name, listing the real marker names — not silently dropped", () => {
+    const result = validateLocatorConfig({
+      basemap: "world",
+      title: "Three places along a route",
+      markers: locatorMarkers,
+      arcBeats: [
+        { region: "Bern", role: "establish", text: "Bern is not on this map." },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(
+        result.errors.some((e) => /"Bern" not found in the data/i.test(e)),
+      ).toBe(true);
+      expect(
+        result.errors.some((e) => /Geneva.*Lausanne.*Zurich/.test(e)),
+      ).toBe(true);
+    }
+  });
+
+  it("without arcBeats: byte-identical to the captured salience baseline", () => {
+    const beats = deriveLocatorStory(locatorMarkers, {
+      title: "Three Swiss places",
+    });
+    expect(beats).toEqual([
+      {
+        kind: "title",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "Three Swiss places",
+      },
+      {
+        kind: "establish",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      {
+        kind: "reveal",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: ["Geneva"],
+        dim: true,
+        callout: {
+          region: "Geneva",
+          name: "Geneva",
+          value: "",
+          text: "Geneva",
+        },
+        copy: "Geneva",
+      },
+      {
+        kind: "reveal",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: ["Lausanne"],
+        dim: true,
+        callout: {
+          region: "Lausanne",
+          name: "Lausanne",
+          value: "",
+          text: "Lausanne",
+        },
+        copy: "Lausanne",
+      },
+      {
+        kind: "reveal",
+        camera: [6.1, 46.2, 8.5, 47.4],
+        highlight: ["Zurich"],
+        dim: true,
+        callout: {
+          region: "Zurich",
+          name: "Zurich",
+          value: "",
+          text: "Zurich",
+        },
+        copy: "Zurich",
       },
       {
         kind: "takeaway",
