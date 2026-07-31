@@ -19,8 +19,7 @@ import {
   type DrawEntry,
 } from "../core/border-slice";
 import * as turf from "@turf/turf";
-import { feature as topoFeature } from "topojson-client";
-import type { Topology } from "topojson-specification";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import type {
   RouteConfig,
   RouteRevealTerritory,
@@ -38,28 +37,6 @@ import { resolveMapFrame } from "../core/map-format";
 // animation parameters from computeRouteReveal — no hardcoded countries, coordinates, or colours.
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
-
-// Geometry arrives through the injected config now (produce.mjs) — never a bundled static
-// import (D5, mirrors RouteMap.tsx / ChoroplethMap.tsx). Loud, named failure instead of a bare
-// TypeError on `undefined.objects`: with the static world.geojson import removed there is no
-// bundled fallback geometry anymore, so an absent config.geometry must fail here, not as an
-// unexplained Remotion render timeout downstream. Exported (not inlined in the component) so
-// this wiring is exercisable directly in a unit test, without a live Remotion/WebGL context —
-// see route-video-geometry.test.ts.
-export function resolveWorldFromGeometry(
-  geometry: RouteConfig["geometry"],
-): GeoJSON.FeatureCollection {
-  if (!geometry)
-    throw new Error(
-      "route: config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)",
-    );
-  const topology = geometry as Topology;
-  const objectName = Object.keys(topology.objects)[0]!;
-  return topoFeature(
-    topology,
-    topology.objects[objectName]!,
-  ) as unknown as GeoJSON.FeatureCollection;
-}
 
 // ---------------------------------------------------------------------------
 // Electric colour sets — mapStyle-adaptive
@@ -163,9 +140,16 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
     ? maptilersdk.MapStyle.DATAVIZ.DARK
     : maptilersdk.MapStyle.DATAVIZ.LIGHT;
 
-  const world = useMemo(
-    () => resolveWorldFromGeometry(config.geometry),
-    [config.geometry],
+  // Geometry arrives through the injected config now (produce.mjs) — never a bundled static
+  // import (D5, mirrors RouteMap.tsx / ChoroplethMap.tsx / ChoroplethStory.tsx). Shared with the
+  // choropleth video family (Task 7) via resolveVideoGeometry, rather than a route-local copy of
+  // the same decode — route reads only `world` off it; `joinKey` is unused here because route
+  // never threads a join key (RouteMap.tsx, the interactive sibling, hardcodes `iso_a3 ?? name`
+  // inline and `computeRoute`/`computeRouteReveal` derive the key internally — route's own
+  // established shape, not something this task changes).
+  const { world } = useMemo(
+    () => resolveVideoGeometry(config, "route-reveal"),
+    [config],
   );
 
   // Derive layout + draw structures from config ONCE (heavy turf geometry). Memoised on

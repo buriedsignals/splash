@@ -3,34 +3,39 @@
 // assets/geo/world.geojson static import — the fix ChoroplethMap.tsx / RouteMap.tsx (the
 // interactive sibling) already proved, per D5's "no bundled fallback geometry" contract.
 //
-// Two kinds of coverage, mirroring skills/scrolly/src/geometry-guard.test.tsx's own split
-// (see that file's header for the fuller rationale):
-//   (A) WIRING — behavioural, against the REAL exported code. Both components now export
-//       `resolveWorldFromGeometry` (the same function the component's own `useMemo` calls) so
-//       this exact wiring is importable and callable in a plain bun:test, without a live
-//       Remotion/WebGL render context (RouteReveal/RouteScrolly are Remotion compositions bound
-//       to useCurrentFrame/useVideoConfig, which a bare renderToStaticMarkup could not supply —
-//       the same constraint already documented for this codebase's WebGL/Remotion-bound
-//       components; no bun:test suite renders ChoroplethMap.tsx/RouteMap.tsx either). A source
-//       import of each component module still works (proven below) because top-level side
-//       effects — the MapTiler CSS import, `maptilersdk.config.apiKey = …` — are inert outside
-//       a browser/render context.
-//   (B) BEHAVIOUR (geometry layer) — the SHARED pure geometry layer both files call,
-//       `computeRouteReveal`/`computeRoute` (route-geo.ts), exercised on the SAME decoded
-//       FeatureCollection (A) produces. Proves an injected NON-WORLD geometry resolves its own
-//       features (not the shipped world.geojson's — the actual production defect this task
-//       closes), and that decoding the real world geometry through the SAME topojson round-trip
-//       reproduces the identical territories the old direct-array (static-import) path already
-//       produced — world-path parity, since the two components' watched Remotion renders are
-//       deferred to Task 10.
+// Round-1 review finding: an earlier version of this fix duplicated the decode logic as a
+// byte-identical `resolveWorldFromGeometry` in each of the two files, instead of calling Task 7's
+// already-extracted, already-reviewed `resolveVideoGeometry` (skills/map-native/src/core/
+// video-geometry.ts, brought into this worktree/branch verbatim from
+// repair/task-7-video-choro:skills/map-native/src/core/video-geometry.ts, since this branch was
+// cut before Task 7 landed it). Both components now call that ONE shared function — its own
+// behavioural coverage (non-world join key, legacy-config fallback, loud-throw, and a real
+// produce-pipeline round-trip) lives in the materialised video-geometry.test.ts alongside it, so
+// this file no longer re-tests that surface. What THIS file still owns:
+//   (A) WIRING — that RouteReveal.tsx / RouteScrolly.tsx (i) no longer statically import the
+//       shipped world.geojson asset, and (ii) both import and call the SHARED
+//       `resolveVideoGeometry`, with their own distinct callSite name, rather than a
+//       re-derived or route-local copy. Source-scan, not render: RouteReveal/RouteScrolly are
+//       Remotion compositions bound to useCurrentFrame/useVideoConfig, which a bare
+//       renderToStaticMarkup cannot supply — the same constraint already documented for this
+//       codebase's WebGL/Remotion-bound components (no bun:test suite renders
+//       ChoroplethMap.tsx/RouteMap.tsx either).
+//   (B) BEHAVIOUR (route's own geometry layer) — `computeRouteReveal`/`computeRoute`
+//       (route-geo.ts, unchanged pure functions — route never threads a join key; see
+//       task-9-report.md's "Structural choice" for why that is route's own established shape,
+//       not something this task changes), exercised on the FeatureCollection
+//       `resolveVideoGeometry` itself produces. Proves an injected NON-WORLD geometry resolves
+//       its own features (not the shipped world.geojson's), and that decoding the real world
+//       geometry through the SAME shared function reproduces the identical territories the old
+//       direct-array (static-import) path already produced — world-path parity, since the two
+//       components' watched Remotion renders are deferred to Task 10.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, expect } from "bun:test";
 import type { Topology } from "topojson-specification";
 import type { RouteConfig } from "../route-geo";
 import { computeRoute, computeRouteReveal } from "../route-geo";
-import { resolveWorldFromGeometry as resolveFromReveal } from "./RouteReveal";
-import { resolveWorldFromGeometry as resolveFromScrolly } from "./RouteScrolly";
+import { resolveVideoGeometry } from "../core/video-geometry";
 
 const COMPONENTS_DIR = import.meta.dir;
 const ASSETS_GEO_DIR = join(COMPONENTS_DIR, "..", "..", "assets", "geo");
@@ -46,10 +51,13 @@ const ROUTE_FIXTURE_PATH = join(
 
 // -----------------------------------------------------------------------------------------
 // A hand-rolled GeoJSON → TopoJSON converter (no transform/quantization — arcs carry literal
-// coordinates), scoped to Polygon/MultiPolygon, which is all a route's crossed territories
-// ever are. Exists only so this test can build a real Topology the same shape produce.mjs's
-// resolveGeometryForProduce (lib/geo/resolve-for-produce.ts) injects as `config.geometry`,
-// without pulling in topojson-server (not a direct dependency of this package).
+// coordinates), scoped to Polygon/MultiPolygon, which is all a route's crossed territories ever
+// are. Exists only to BUILD Topology test fixtures (mirrors how Task 7's own
+// video-geometry.test.ts hand-builds its CANTON_TOPOLOGY literal) — the actual decode under test
+// is always the shared `resolveVideoGeometry`, never a parallel decode here. Not a substitute
+// for the real produce pipeline: no quantization/simplification, unlike mapshaper's real output
+// (lib/geo/subset.ts). That gap is recorded, not fixed, in task-9-report.md's fix-report
+// addendum — Task 10's watched render is what settles whether it matters.
 // -----------------------------------------------------------------------------------------
 
 type PolyFC = GeoJSON.FeatureCollection<GeoJSON.Polygon | GeoJSON.MultiPolygon>;
@@ -84,7 +92,7 @@ function topologize(fc: PolyFC, objectName: string): Topology {
 }
 
 // -----------------------------------------------------------------------------------------
-// (A) WIRING — behavioural, against the real exported `resolveWorldFromGeometry`.
+// (A) WIRING — source-scan: one shared implementation, called by name, not re-derived.
 // -----------------------------------------------------------------------------------------
 
 describe("RouteReveal.tsx / RouteScrolly.tsx no longer statically import the shipped world.geojson asset", () => {
@@ -98,68 +106,40 @@ describe("RouteReveal.tsx / RouteScrolly.tsx no longer statically import the shi
   }
 });
 
-describe("resolveWorldFromGeometry (the exact function each component's own useMemo calls) throws a loud, named error when config.geometry is missing", () => {
-  it("RouteReveal.tsx's export", () => {
-    expect(() => resolveFromReveal(undefined)).toThrow(
-      /route: config\.geometry is required.*D5/,
-    );
-  });
+describe("RouteReveal.tsx / RouteScrolly.tsx call the SHARED resolveVideoGeometry, not a route-local re-derivation", () => {
+  const cases = [
+    { file: "RouteReveal.tsx", callSite: "route-reveal" },
+    { file: "RouteScrolly.tsx", callSite: "route-scrolly" },
+  ] as const;
 
-  it("RouteScrolly.tsx's export", () => {
-    expect(() => resolveFromScrolly(undefined)).toThrow(
-      /route: config\.geometry is required.*D5/,
-    );
-  });
-});
+  for (const { file, callSite } of cases) {
+    const src = readFileSync(join(COMPONENTS_DIR, file), "utf8");
 
-describe("resolveWorldFromGeometry decodes an injected Topology into its own features, not the shipped world's", () => {
-  const objectName = "territories";
-  const injectedTopology = topologize(
-    {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: { iso_a3: "YY1", name: "Ypsilon One" },
-          geometry: {
-            type: "Polygon",
-            coordinates: [
-              [
-                [40, 0],
-                [50, 0],
-                [50, 10],
-                [40, 10],
-                [40, 0],
-              ],
-            ],
-          },
-        },
-      ],
-    },
-    objectName,
-  );
+    it(`${file}: imports resolveVideoGeometry from ../core/video-geometry`, () => {
+      expect(src).toMatch(
+        /import\s*\{\s*resolveVideoGeometry\s*\}\s*from\s*["']\.\.\/core\/video-geometry["']/,
+      );
+    });
 
-  it("RouteReveal.tsx's export decodes the injected feature (iso_a3 YY1 — absent from the shipped world.geojson)", () => {
-    const decoded = resolveFromReveal(injectedTopology);
-    expect(decoded.features.map((f) => f.properties?.["iso_a3"])).toEqual([
-      "YY1",
-    ]);
-  });
+    it(`${file}: calls resolveVideoGeometry with its own callSite name ("${callSite}")`, () => {
+      expect(src).toMatch(
+        new RegExp(
+          `resolveVideoGeometry\\(\\s*config\\s*,\\s*["']${callSite}["']\\s*\\)`,
+        ),
+      );
+    });
 
-  it("RouteScrolly.tsx's export decodes the same injected feature", () => {
-    const decoded = resolveFromScrolly(injectedTopology);
-    expect(decoded.features.map((f) => f.properties?.["iso_a3"])).toEqual([
-      "YY1",
-    ]);
-  });
+    it(`${file}: does not define its own resolveWorldFromGeometry (the fork this review round closed)`, () => {
+      expect(src).not.toMatch(/function resolveWorldFromGeometry/);
+    });
+  }
 });
 
 // -----------------------------------------------------------------------------------------
-// (B) BEHAVIOUR — the shared pure geometry layer, exercised the same way the fixed
-// components now call it.
+// (B) BEHAVIOUR — route's own geometry-consuming pure functions, fed by the shared decode.
 // -----------------------------------------------------------------------------------------
 
-describe("computeRouteReveal / computeRoute resolve territories from an injected NON-WORLD geometry", () => {
+describe("computeRouteReveal / computeRoute resolve territories from an injected NON-WORLD geometry (decoded via the SHARED resolveVideoGeometry)", () => {
   const objectName = "territories";
   const injectedTopology = topologize(
     {
@@ -201,9 +181,13 @@ describe("computeRouteReveal / computeRoute resolve territories from an injected
     },
     objectName,
   );
-  // Decoded through RouteReveal.tsx's own exported function — the real production wiring, not
-  // a parallel reimplementation.
-  const injectedWorld = resolveFromReveal(injectedTopology);
+  // Decoded through the shared resolveVideoGeometry, exactly as RouteReveal.tsx's own useMemo
+  // now does — route only reads `.world` off the result; `.joinKey` is unused (see the "one
+  // shared implementation, route reads only `world`" note in RouteReveal.tsx/RouteScrolly.tsx).
+  const { world: injectedWorld } = resolveVideoGeometry(
+    { geometry: injectedTopology },
+    "route-reveal",
+  );
 
   const routeConfig: RouteConfig = {
     type: "route",
@@ -240,15 +224,14 @@ describe("computeRouteReveal / computeRoute resolve territories from an injected
   });
 });
 
-describe("decoding the injected world Topology reproduces the same territories as the old static-import world.geojson path (world-path parity)", () => {
+describe("decoding the injected world Topology (via the SHARED resolveVideoGeometry) reproduces the same territories as the old static-import world.geojson path (world-path parity)", () => {
   const world = JSON.parse(readFileSync(WORLD_GEOJSON_PATH, "utf8")) as PolyFC;
 
   // The real route this skill already ships (assets/sample-data/route.json, the Yarlung
   // Tsangpo) crosses a small, known handful of South Asian countries. Narrowed to that
   // allow-list so building a Topology from real Natural Earth geometry stays fast in a unit
-  // test — the two paths below still decode the SAME real ring coordinates for every
-  // territory the route actually crosses, so the parity this proves is real, not narrowed
-  // away.
+  // test — the two paths below still decode the SAME real ring coordinates for every territory
+  // the route actually crosses, so the parity this proves is real, not narrowed away.
   const routeConfig = JSON.parse(
     readFileSync(ROUTE_FIXTURE_PATH, "utf8"),
   ) as RouteConfig;
@@ -268,10 +251,13 @@ describe("decoding the injected world Topology reproduces the same territories a
     }
   });
 
-  it("old path (raw world.geojson feature array) and new path (topojson-decoded injected geometry, via RouteScrolly.tsx's own export) resolve identical territories", () => {
+  it("old path (raw world.geojson feature array) and new path (topojson-decoded injected geometry, via the SHARED resolveVideoGeometry) resolve identical territories", () => {
     const oldPath = computeRouteReveal(routeConfig, nearby);
     const topology = topologize(nearby, "world");
-    const viaInjectedGeometry = resolveFromScrolly(topology);
+    const { world: viaInjectedGeometry } = resolveVideoGeometry(
+      { geometry: topology },
+      "route-scrolly",
+    );
     const newPath = computeRouteReveal(routeConfig, viaInjectedGeometry);
 
     expect(newPath.territories.map((t) => t.key)).toEqual(
