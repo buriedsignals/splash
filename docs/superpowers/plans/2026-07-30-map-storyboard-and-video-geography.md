@@ -110,6 +110,17 @@ git commit -m "feat(map-native): a locator map walks a confirmed storyboard, anc
 > that type. A capability that exists only in a unit test is the exact defect this plan was written to
 > close.
 
+> **THE FOUR THREADING SITES, measured by Task 1 so nobody rediscovers them.** For cartogram,
+> dot-density and hex-grid, a confirmed arc must be threaded at all four or it stops short of a reader:
+> (1) the type's deriver; (2) its `*Story.tsx` **and** `*Scrolly.tsx`; (3) the `scrollyStepCount` sizer
+> in `route-story.ts`; (4) the video composition's own `calculateMetadata` in `remotion/src/Root.tsx`
+> (Task 1 found this fourth one itself — it was not in the original brief). Assert at the component
+> boundary, and mutate each site.
+>
+> **Task 4 (route) is NOT this shape.** It has no `meta` object in its `scrollyStepCount` branch and no
+> `calculateMetadata` on its video compositions, so there is no existing sizer to extend — it needs a
+> design decision, not a threading line. Do not size it as a copy of Tasks 2/3/5.
+
 ### Task 2: `cartogram` — the same shape, anchored on its region ids
 
 `CartogramConfigShape.values` is `{id, value}[]`, so the anchor is `values[].id` — a string in a list, exactly like Task 1.
