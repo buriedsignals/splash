@@ -101,6 +101,15 @@ git commit -m "feat(map-native): a locator map walks a confirmed storyboard, anc
 
 ---
 
+> **AMENDMENT (controller, after Task 1) — every type task also threads its own component.**
+> Task 1 landed the deriver contract and found that `LocatorStory.tsx` / `LocatorScrolly.tsx` never
+> passed `config.arcBeats` into `meta`, unlike `SymbolStory.tsx` — so the capability resolved in tests
+> and reached no reader. Tasks 2-5 therefore include, for their own type: threading `arcBeats` from the
+> config into the component's `meta`, an assertion at the **component's** boundary (not the deriver's)
+> that a confirmed arc arrives, and the `scrollyStepCount` sizer in `route-story.ts` if it is blind to
+> that type. A capability that exists only in a unit test is the exact defect this plan was written to
+> close.
+
 ### Task 2: `cartogram` — the same shape, anchored on its region ids
 
 `CartogramConfigShape.values` is `{id, value}[]`, so the anchor is `values[].id` — a string in a list, exactly like Task 1.
