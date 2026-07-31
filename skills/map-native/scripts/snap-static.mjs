@@ -77,6 +77,14 @@ await page.waitForSelector(".maplibregl-canvas", { timeout: 60_000 });
 console.log("canvas ready");
 
 // Wait until a known data layer exists (choropleth, symbol, or route)
+// Playwright's two-arg `waitForFunction(fn, options)` form treats the second
+// positional argument as the in-page function's `arg`, not as `options` — the
+// `{ timeout }` object below was silently discarded and every call actually ran
+// under Playwright's 30_000ms default, not the intended 90_000ms. Passing the
+// explicit `undefined` arg is what makes the third positional actually bind as
+// options. Bumped from the originally-intended 60_000 to 90_000 for real
+// headroom: subsetGeometry (lib/geo/subset.ts) now runs a filter pass AND a
+// simplify/encode pass, and every real produce is slower for it.
 await page.waitForFunction(
   () => {
     const m = window.__map__;
@@ -93,11 +101,12 @@ await page.waitForFunction(
         m.getLayer("route-line"))
     );
   },
-  { timeout: 60_000 },
+  undefined,
+  { timeout: 90_000 },
 );
 console.log("map layer ready");
 
-// Wait for map to reach idle state
+// Wait for map to reach idle state (see the arg-order note above — same fix).
 await page.waitForFunction(
   () => {
     const m = window.__map__;
@@ -109,7 +118,8 @@ await page.waitForFunction(
       m.areTilesLoaded()
     );
   },
-  { timeout: 60_000 },
+  undefined,
+  { timeout: 90_000 },
 );
 console.log("map idle");
 
