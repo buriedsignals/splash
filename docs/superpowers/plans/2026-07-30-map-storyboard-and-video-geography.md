@@ -169,6 +169,20 @@ Read `route-geo.ts`'s `computeRoute`. Report: are the crossed territories deriva
 
 ---
 
+> **AMENDMENT (controller, after Task 2) — the refusal runs out of subjects, and Task 5 must settle it.**
+> This plan makes all seven map types arc-capable. So by the time Task 5 lands, `ARC_CAPABLE_MAP_TYPES`
+> equals every map type there is, `unsupportedArcBeatsErrors` can no longer fire for any real type, and
+> the fixture its test relies on has nowhere left to go. Task 2 already had to move that fixture once
+> (`"cartogram"` → `"route"`) and recorded that route "stays non-capable through this plan" — which is
+> wrong: Task 4 makes it capable. Nobody is at fault; the end state was simply never traced.
+>
+> **Task 5 owns the decision**, and it is a real one:
+> (a) keep the refusal as defence-in-depth against an unknown or future type, and test it with a type
+> string that is deliberately not a map type — the function then guards the boundary rather than a list;
+> or (b) delete it as dead code, and say what now refuses a plan on a type that cannot carry one.
+> Whichever you choose, no test may be left asserting a refusal that can never fire — a green test that
+> cannot redden is the defect this whole project keeps paying for.
+
 ### Task 5: `hex-grid` — anchored on a place, the cell deduced
 
 The hardest, and the only type whose units do not exist until the data is binned. The journalist names a **place**; the engine finds the cell containing it and verifies that cell carries data.
