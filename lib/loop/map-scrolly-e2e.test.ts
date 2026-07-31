@@ -15,7 +15,6 @@ import { test, expect } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Topology } from "topojson-specification";
 import "../../skills/splash/src/register-producers";
 import { freezeInput } from "./freeze";
 import { produce, elementRenderDir } from "./produce";
@@ -117,8 +116,13 @@ test(
 
       const outDir = elementRenderDir(runDir, "e1");
       const configPath = join(outDir, "config.json");
+      // A minimal local shape for the two fields this assertion reads — `lib` has no
+      // dependency on `topojson-specification`/`@types/topojson-specification` (only the
+      // skills that render TopoJSON do), and lib/geo/subset.ts's own post-condition check
+      // uses the same "shape only what you read" convention rather than pulling in the
+      // full Topology type for one file.
       const config = JSON.parse(readFileSync(configPath, "utf8")) as {
-        geometry?: Topology;
+        geometry?: { type?: string; objects?: Record<string, unknown> };
         type?: string;
       };
 
