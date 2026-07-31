@@ -7,14 +7,16 @@ import {
   AbsoluteFill,
   continueRender,
   delayRender,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import type { Topology } from "topojson-specification";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import { computeChoropleth, type ChoroplethData } from "../choropleth-geo";
+import type { GeographyRef } from "../basemaps";
 import {
   easedRevealProgress,
   revealFillOpacity,
@@ -43,6 +45,15 @@ export type ChoroplethRevealProps = {
     /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
      *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
     geoCredit?: { name: string; url?: string };
+    /** Legacy shape: the basemap name alone. Superseded by `geography` when present — see
+     *  resolveVideoGeometry (Task 7, mirrors ChoroplethMap.tsx's interactive path). */
+    basemap?: string;
+    /** Which geography (set/scope/joinKey) `geometry` names (GeographyRef, Task 4/9/10). */
+    geography?: GeographyRef;
+    /** The actual subset TopoJSON for this map, injected by produce (Task 20). There is no
+     *  bundled fallback geometry anymore (D5) — required at render time even though the type
+     *  stays optional for configs assembled before Task 20 lands. */
+    geometry?: Topology;
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
     mapStyle?: string;
@@ -112,93 +123,99 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
         if (layer.type === "symbol") m.removeLayer(layer.id);
       }
 
-      // Fetch world GeoJSON via Remotion staticFile (served from remotion/public/)
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
-          const layout = computeChoropleth(config, worldGeoJson, "iso_a3", {
-            bins: NUM_BINS,
-            scaleType: config.scaleType ?? "sequential",
-            palette: config.palette,
-          });
+      // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+      // fetch. Mirrors ChoroplethMap.tsx's interactive path (Task 16/20): config.geometry is
+      // decoded and config.geography.joinKey preferred over the legacy basemap-derived default.
+      try {
+        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+          config,
+          "choropleth-reveal",
+        );
+        const layout = computeChoropleth(config, worldGeoJson, joinKey, {
+          bins: NUM_BINS,
+          scaleType: config.scaleType ?? "sequential",
+          palette: config.palette,
+        });
 
-          // Enrich features with value + bin index (ascending order)
-          const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
-          const coloredWorld: GeoJSON.FeatureCollection = {
-            type: "FeatureCollection",
-            features: worldGeoJson.features.map((f, i) => {
-              const joined = layout.joined[i];
-              const binIdx =
-                joined.value !== null
-                  ? sortedBins.findIndex(
-                      (b, bi) =>
-                        joined.value! < b.max || bi === sortedBins.length - 1,
-                    )
-                  : -1;
-              return {
-                ...f,
-                properties: {
-                  ...f.properties,
-                  __value: joined.value,
-                  __hasData: joined.value !== null,
-                  __binIdx: binIdx,
-                },
-              };
-            }),
-          };
+        // Enrich features with value + bin index (ascending order)
+        const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
+        const coloredWorld: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: worldGeoJson.features.map((f, i) => {
+            const joined = layout.joined[i];
+            const binIdx =
+              joined.value !== null
+                ? sortedBins.findIndex(
+                    (b, bi) =>
+                      joined.value! < b.max || bi === sortedBins.length - 1,
+                  )
+                : -1;
+            return {
+              ...f,
+              properties: {
+                ...f.properties,
+                __value: joined.value,
+                __hasData: joined.value !== null,
+                __binIdx: binIdx,
+              },
+            };
+          }),
+        };
 
-          m.addSource("choropleth-world", {
-            type: "geojson",
-            data: coloredWorld,
-          });
+        m.addSource("choropleth-world", {
+          type: "geojson",
+          data: coloredWorld,
+        });
 
-          // Build fill-color expression
-          const colorExpr: unknown[] = [
-            "case",
-            ["==", ["get", "__hasData"], false],
-            NO_DATA_COLOR,
-          ];
-          for (let i = 0; i < sortedBins.length - 1; i++) {
-            colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
-            colorExpr.push(sortedBins[i].color);
-          }
-          colorExpr.push(sortedBins[sortedBins.length - 1].color);
+        // Build fill-color expression
+        const colorExpr: unknown[] = [
+          "case",
+          ["==", ["get", "__hasData"], false],
+          NO_DATA_COLOR,
+        ];
+        for (let i = 0; i < sortedBins.length - 1; i++) {
+          colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
+          colorExpr.push(sortedBins[i].color);
+        }
+        colorExpr.push(sortedBins[sortedBins.length - 1].color);
 
-          m.addLayer({
-            id: "choropleth-fill",
-            type: "fill",
-            source: "choropleth-world",
-            paint: {
-              "fill-color": colorExpr as never,
-              "fill-opacity": 0, // start blank
-            },
-          });
+        m.addLayer({
+          id: "choropleth-fill",
+          type: "fill",
+          source: "choropleth-world",
+          paint: {
+            "fill-color": colorExpr as never,
+            "fill-opacity": 0, // start blank
+          },
+        });
 
-          m.addLayer({
-            id: "choropleth-stroke",
-            type: "line",
-            source: "choropleth-world",
-            paint: {
-              "line-color": dark ? "#1c1c1f" : "#ffffff",
-              "line-width": 0.5,
-              "line-opacity": 0.6,
-            },
-          });
+        m.addLayer({
+          id: "choropleth-stroke",
+          type: "line",
+          source: "choropleth-world",
+          paint: {
+            "line-color": dark ? "#1c1c1f" : "#ffffff",
+            "line-width": 0.5,
+            "line-opacity": 0.6,
+          },
+        });
 
-          const plan = revealCameraPlan(
-            layout.bounds as [number, number, number, number],
-          );
-          m.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
+        const plan = revealCameraPlan(
+          layout.bounds as [number, number, number, number],
+        );
+        m.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
-          continueWhenMapSettles(m, () => {
-            setMapState({ map: m, bins: sortedBins, numBins: NUM_BINS });
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("ChoroplethReveal: failed to load world GeoJSON", err);
+        continueWhenMapSettles(m, () => {
+          setMapState({ map: m, bins: sortedBins, numBins: NUM_BINS });
           continueRender(handle);
         });
+      } catch (err) {
+        console.error(
+          "ChoroplethReveal: failed to build reveal from injected geometry",
+          err,
+        );
+        continueRender(handle);
+      }
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 

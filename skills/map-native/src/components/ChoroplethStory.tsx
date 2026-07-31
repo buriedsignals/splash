@@ -9,18 +9,20 @@ import {
   continueRender,
   delayRender,
   interpolate,
-  staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import type { Topology } from "topojson-specification";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { resolveVideoGeometry } from "../core/video-geometry";
 import {
   computeChoropleth,
   mainlandFeature,
   type ChoroplethData,
 } from "../choropleth-geo";
+import type { GeographyRef } from "../basemaps";
 import { NO_DATA_COLOR } from "../theme/colors";
 import {
   deriveMapStory,
@@ -103,6 +105,7 @@ interface MapStory {
   joined: { key: string; value: number | null }[];
   triggers: Map<string, number>;
   borderByRegion: Map<string, DrawEntry>;
+  joinKey: string;
 }
 
 export type ChoroplethStoryConfig = ChoroplethData & {
@@ -115,6 +118,15 @@ export type ChoroplethStoryConfig = ChoroplethData & {
   /** D7's credit for a DECLARED geometry (never a shipped basemap — see policy.ts's
    *  assertGeoCreditPresent). Threaded to MapFrame beside `source`. */
   geoCredit?: { name: string; url?: string };
+  /** Legacy shape: the basemap name alone. Superseded by `geography` when present — see
+   *  resolveVideoGeometry (Task 7, mirrors ChoroplethMap.tsx's interactive path). */
+  basemap?: string;
+  /** Which geography (set/scope/joinKey) `geometry` names (GeographyRef, Task 4/9/10). */
+  geography?: GeographyRef;
+  /** The actual subset TopoJSON for this map, injected by produce (Task 20). There is no
+   *  bundled fallback geometry anymore (D5) — required at render time even though the type
+   *  stays optional for configs assembled before Task 20 lands. */
+  geometry?: Topology;
   scaleType?: "sequential" | "diverging";
   palette?: string | string[];
   /** the topic hint (e.g. "electricity access") → drives the subject-fit ramp guard. */
@@ -208,209 +220,217 @@ export const ChoroplethStory: React.FC<{
           m.removeLayer(layer.id);
       }
 
-      fetch(staticFile("geo/world.geojson"))
-        .then((r) => r.json())
-        .then((worldGeoJson: GeoJSON.FeatureCollection) => {
-          // Compute choropleth layout.
-          const layout = computeChoropleth(config, worldGeoJson, "iso_a3", {
-            bins: NUM_BINS,
-            scaleType: config.scaleType ?? "sequential",
-            palette: config.palette,
-            labelField: config.labelField,
-          });
+      // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
+      // fetch. Mirrors ChoroplethMap.tsx's interactive path (Task 16/20): config.geometry is
+      // decoded and config.geography.joinKey preferred over the legacy basemap-derived default.
+      try {
+        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+          config,
+          "choropleth-story",
+        );
 
-          const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
+        // Compute choropleth layout.
+        const layout = computeChoropleth(config, worldGeoJson, joinKey, {
+          bins: NUM_BINS,
+          scaleType: config.scaleType ?? "sequential",
+          palette: config.palette,
+          labelField: config.labelField,
+        });
 
-          // Build meta + beats.
-          const meta = {
-            title: config.title ?? "",
-            insight: config.insight ?? config.title ?? "",
-            unit: config.valueUnit ?? "",
-            valueField: config.valueField,
-            narrativePattern: config.valueKind,
-            lang: config.lang,
-            // The confirmed walk reaches the deriver — see map-arc.ts.
-            arcBeats: config.arcBeats,
-          };
-          // Drop the establish beat in `sequential` (dead air on an empty map) — shared
-          // rule with Root.tsx's duration calc so the video length matches the animation.
-          const beats = beatsForMode(
-            deriveMapStory(layout, worldGeoJson, "iso_a3", meta),
-            mode,
+        const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
+
+        // Build meta + beats.
+        const meta = {
+          title: config.title ?? "",
+          insight: config.insight ?? config.title ?? "",
+          unit: config.valueUnit ?? "",
+          valueField: config.valueField,
+          narrativePattern: config.valueKind,
+          lang: config.lang,
+          // The confirmed walk reaches the deriver — see map-arc.ts.
+          arcBeats: config.arcBeats,
+        };
+        // Drop the establish beat in `sequential` (dead air on an empty map) — shared
+        // rule with Root.tsx's duration calc so the video length matches the animation.
+        const beats = beatsForMode(
+          deriveMapStory(layout, worldGeoJson, joinKey, meta),
+          mode,
+        );
+
+        // Precompute camera solutions — cameraForBounds → {center, zoom}.
+        // Use mapFrame.pad so the data stays out of the title/source bands.
+        const solutions: CameraSolution[] = beats.map((b) => {
+          const result = m.cameraForBounds(
+            b.camera as maptilersdk.LngLatBoundsLike,
+            { padding: mapFrame.pad },
           );
+          if (!result || !result.center) return { center: [10, 20], zoom: 2 };
+          const c = maptilersdk.LngLat.convert(result.center);
+          return {
+            center: [c.lng, c.lat],
+            zoom: result.zoom ?? 2,
+          };
+        });
 
-          // Precompute camera solutions — cameraForBounds → {center, zoom}.
-          // Use mapFrame.pad so the data stays out of the title/source bands.
-          const solutions: CameraSolution[] = beats.map((b) => {
-            const result = m.cameraForBounds(
-              b.camera as maptilersdk.LngLatBoundsLike,
-              { padding: mapFrame.pad },
-            );
-            if (!result || !result.center) return { center: [10, 20], zoom: 2 };
-            const c = maptilersdk.LngLat.convert(result.center);
-            return {
-              center: [c.lng, c.lat],
-              zoom: result.zoom ?? 2,
-            };
-          });
+        // Build timeline phases — keyed by beat kind for per-kind hold durations.
+        const kinds = beats.map((b) => b.kind);
+        const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
 
-          // Build timeline phases — keyed by beat kind for per-kind hold durations.
-          const kinds = beats.map((b) => b.kind);
-          const { phases } = buildTimeline(kinds, fps, AREAL_TIMELINE_OPTS);
+        // Precompute, for each subject region (the FEW regions a reveal beat visits —
+        // triggerFrameByRegion keys are exactly the beats' callout.region values):
+        //  - its callout anchor: the pole of inaccessibility of its mainland polygon
+        //    (most-interior point), not the centroid — a centroid can fall outside a
+        //    concave/crescent shape or on the wrong side of an offshore-islands split, the
+        //    pole never does. Grid-sample cost is real (~400ms/feature) — scoped to the
+        //    handful of subjects, never the whole ~240-feature world (measured ~98s and a
+        //    delayRender timeout when it was).
+        //  - its border-draw geometry: the exterior ring(s) of the ACTUAL geometry (a
+        //    MultiPolygon subject, e.g. a country with offshore islands, must draw ALL of
+        //    its parts, not just the largest one — mainlandFeature is for camera framing
+        //    and the anchor, not render geometry), staged-drawn on over the beat's first
+        //    ~2.5s via the shared border-slice/staged-reveal core.
+        const triggers = triggerFrameByRegion(beats, phases);
+        const anchorByKey = new Map<string, [number, number]>();
+        const borderByRegion = new Map<string, DrawEntry>();
+        for (const key of triggers.keys()) {
+          const f = worldGeoJson.features.find(
+            (ft) => String(ft.properties?.[joinKey]) === key,
+          );
+          if (!f || !f.geometry) continue;
 
-          // Precompute, for each subject region (the FEW regions a reveal beat visits —
-          // triggerFrameByRegion keys are exactly the beats' callout.region values):
-          //  - its callout anchor: the pole of inaccessibility of its mainland polygon
-          //    (most-interior point), not the centroid — a centroid can fall outside a
-          //    concave/crescent shape or on the wrong side of an offshore-islands split, the
-          //    pole never does. Grid-sample cost is real (~400ms/feature) — scoped to the
-          //    handful of subjects, never the whole ~240-feature world (measured ~98s and a
-          //    delayRender timeout when it was).
-          //  - its border-draw geometry: the exterior ring(s) of the ACTUAL geometry (a
-          //    MultiPolygon subject, e.g. a country with offshore islands, must draw ALL of
-          //    its parts, not just the largest one — mainlandFeature is for camera framing
-          //    and the anchor, not render geometry), staged-drawn on over the beat's first
-          //    ~2.5s via the shared border-slice/staged-reveal core.
-          const triggers = triggerFrameByRegion(beats, phases);
-          const anchorByKey = new Map<string, [number, number]>();
-          const borderByRegion = new Map<string, DrawEntry>();
-          for (const key of triggers.keys()) {
-            const f = worldGeoJson.features.find(
-              (ft) => String(ft.properties?.["iso_a3"]) === key,
-            );
-            if (!f || !f.geometry) continue;
-
-            try {
-              const c = poleOfInaccessibility(
-                mainlandFeature(f) as GeoJSON.Feature<
-                  GeoJSON.Polygon | GeoJSON.MultiPolygon
-                >,
-              ) as [number, number];
-              anchorByKey.set(key, c);
-            } catch {
-              // Skip a subject where the pole computation fails (e.g., degenerate geometry).
-            }
-
-            const g = f.geometry;
-            let rings: number[][][];
-            if (g.type === "Polygon") {
-              rings = [g.coordinates[0]];
-            } else if (g.type === "MultiPolygon") {
-              rings = g.coordinates.map((poly) => poly[0]);
-            } else {
-              continue;
-            }
-            if (rings.length === 0) continue;
-            borderByRegion.set(key, buildDraw(rings));
+          try {
+            const c = poleOfInaccessibility(
+              mainlandFeature(f) as GeoJSON.Feature<
+                GeoJSON.Polygon | GeoJSON.MultiPolygon
+              >,
+            ) as [number, number];
+            anchorByKey.set(key, c);
+          } catch {
+            // Skip a subject where the pole computation fails (e.g., degenerate geometry).
           }
 
-          // Build the initial enriched world for beat 0.
-          const initialWorld = enrichWorld(
-            worldGeoJson,
-            layout.joined,
+          const g = f.geometry;
+          let rings: number[][][];
+          if (g.type === "Polygon") {
+            rings = [g.coordinates[0]];
+          } else if (g.type === "MultiPolygon") {
+            rings = g.coordinates.map((poly) => poly[0]);
+          } else {
+            continue;
+          }
+          if (rings.length === 0) continue;
+          borderByRegion.set(key, buildDraw(rings));
+        }
+
+        // Build the initial enriched world for beat 0.
+        const initialWorld = enrichWorld(
+          worldGeoJson,
+          layout.joined,
+          sortedBins,
+          beats[0],
+          joinKey,
+        );
+
+        // Build fill-color expression (static — color per value, same as ChoroplethReveal).
+        const colorExpr: unknown[] = [
+          "case",
+          ["==", ["get", "__hasData"], false],
+          NO_DATA_COLOR,
+        ];
+        for (let i = 0; i < sortedBins.length - 1; i++) {
+          colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
+          colorExpr.push(sortedBins[i].color);
+        }
+        colorExpr.push(sortedBins[sortedBins.length - 1].color);
+
+        m.addSource("choropleth-world", {
+          type: "geojson",
+          data: initialWorld,
+        });
+
+        m.addLayer({
+          id: "choropleth-fill",
+          type: "fill",
+          source: "choropleth-world",
+          paint: {
+            "fill-color": colorExpr as never,
+            "fill-opacity": 0, // start blank
+          },
+        });
+
+        m.addLayer({
+          id: "choropleth-stroke",
+          type: "line",
+          source: "choropleth-world",
+          paint: {
+            "line-color": dark ? "#1c1c1f" : "#ffffff",
+            "line-width": 0.5,
+            "line-opacity": 0.6,
+          },
+        });
+
+        // A subject region's own feature, isolated as a one-feature FeatureCollection —
+        // the bloom fill source (filtered so the transient overshoot only ever paints
+        // that region, never the rest of the distribution).
+        const singleRegionFeature = (
+          key: string,
+        ): GeoJSON.FeatureCollection => ({
+          type: "FeatureCollection",
+          features: worldGeoJson.features.filter(
+            (f) => String(f.properties?.[joinKey]) === key,
+          ),
+        });
+
+        // A subject region's bin color — same sortedBins lookup as colorExpr/the callout
+        // highlight color below, so the bloom always matches what's already painted there.
+        const binColorForKey = (key: string): string => {
+          const j = layout.joined.find((jj) => jj.key === key);
+          if (j?.value === null || j?.value === undefined) return NO_DATA_COLOR;
+          const binIdx = sortedBins.findIndex(
+            (b, bi) =>
+              (j.value as number) < b.max || bi === sortedBins.length - 1,
+          );
+          return binIdx >= 0 ? sortedBins[binIdx].color : NO_DATA_COLOR;
+        };
+
+        // Per-subject emphasis: border trail (draws on) + fill bloom (brief overshoot on
+        // top of the base fill) — one dedicated source+layer pair per reveal-beat region,
+        // staged over the beat's first ~2.5-4.2s. Bloom sits above the base fill so its
+        // opacity reads as an additive brightening; the trail sits above the bloom so the
+        // drawn border stays visible through it.
+        addSubjectEmphasisLayers(m, [...triggers.keys()], {
+          idPrefix: "choro",
+          featureFor: singleRegionFeature,
+          colorFor: binColorForKey,
+          dark,
+        });
+
+        // Position to beat 0 (global establish view).
+        m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
+
+        continueWhenMapSettles(m, () => {
+          setMapState({
+            map: m,
+            beats,
+            phases,
+            solutions,
             sortedBins,
-            beats[0],
-            "iso_a3",
-          );
-
-          // Build fill-color expression (static — color per value, same as ChoroplethReveal).
-          const colorExpr: unknown[] = [
-            "case",
-            ["==", ["get", "__hasData"], false],
-            NO_DATA_COLOR,
-          ];
-          for (let i = 0; i < sortedBins.length - 1; i++) {
-            colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
-            colorExpr.push(sortedBins[i].color);
-          }
-          colorExpr.push(sortedBins[sortedBins.length - 1].color);
-
-          m.addSource("choropleth-world", {
-            type: "geojson",
-            data: initialWorld,
+            anchorByKey,
+            worldGeoJson,
+            joined: layout.joined,
+            triggers,
+            borderByRegion,
+            joinKey,
           });
-
-          m.addLayer({
-            id: "choropleth-fill",
-            type: "fill",
-            source: "choropleth-world",
-            paint: {
-              "fill-color": colorExpr as never,
-              "fill-opacity": 0, // start blank
-            },
-          });
-
-          m.addLayer({
-            id: "choropleth-stroke",
-            type: "line",
-            source: "choropleth-world",
-            paint: {
-              "line-color": dark ? "#1c1c1f" : "#ffffff",
-              "line-width": 0.5,
-              "line-opacity": 0.6,
-            },
-          });
-
-          // A subject region's own feature, isolated as a one-feature FeatureCollection —
-          // the bloom fill source (filtered so the transient overshoot only ever paints
-          // that region, never the rest of the distribution).
-          const singleRegionFeature = (
-            key: string,
-          ): GeoJSON.FeatureCollection => ({
-            type: "FeatureCollection",
-            features: worldGeoJson.features.filter(
-              (f) => String(f.properties?.["iso_a3"]) === key,
-            ),
-          });
-
-          // A subject region's bin color — same sortedBins lookup as colorExpr/the callout
-          // highlight color below, so the bloom always matches what's already painted there.
-          const binColorForKey = (key: string): string => {
-            const j = layout.joined.find((jj) => jj.key === key);
-            if (j?.value === null || j?.value === undefined)
-              return NO_DATA_COLOR;
-            const binIdx = sortedBins.findIndex(
-              (b, bi) =>
-                (j.value as number) < b.max || bi === sortedBins.length - 1,
-            );
-            return binIdx >= 0 ? sortedBins[binIdx].color : NO_DATA_COLOR;
-          };
-
-          // Per-subject emphasis: border trail (draws on) + fill bloom (brief overshoot on
-          // top of the base fill) — one dedicated source+layer pair per reveal-beat region,
-          // staged over the beat's first ~2.5-4.2s. Bloom sits above the base fill so its
-          // opacity reads as an additive brightening; the trail sits above the bloom so the
-          // drawn border stays visible through it.
-          addSubjectEmphasisLayers(m, [...triggers.keys()], {
-            idPrefix: "choro",
-            featureFor: singleRegionFeature,
-            colorFor: binColorForKey,
-            dark,
-          });
-
-          // Position to beat 0 (global establish view).
-          m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
-
-          continueWhenMapSettles(m, () => {
-            setMapState({
-              map: m,
-              beats,
-              phases,
-              solutions,
-              sortedBins,
-              anchorByKey,
-              worldGeoJson,
-              joined: layout.joined,
-              triggers,
-              borderByRegion,
-            });
-            continueRender(handle);
-          });
-        })
-        .catch((err) => {
-          console.error("ChoroplethStory: failed to load world GeoJSON", err);
           continueRender(handle);
         });
+      } catch (err) {
+        console.error(
+          "ChoroplethStory: failed to build story from injected geometry",
+          err,
+        );
+        continueRender(handle);
+      }
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -428,6 +448,7 @@ export const ChoroplethStory: React.FC<{
       joined,
       triggers,
       borderByRegion,
+      joinKey,
     } = mapState;
 
     const h = delayRender(`story-frame-${frame}`);
@@ -491,7 +512,7 @@ export const ChoroplethStory: React.FC<{
         joined,
         sortedBins,
         beats[beatIndex],
-        "iso_a3",
+        joinKey,
       );
       (map.getSource("choropleth-world") as maptilersdk.GeoJSONSource).setData(
         enriched,
