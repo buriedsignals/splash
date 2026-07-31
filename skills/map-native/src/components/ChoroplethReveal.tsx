@@ -126,96 +126,93 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
       // Geometry arrives through the injected config now (produce.mjs) — never a static bundle
       // fetch. Mirrors ChoroplethMap.tsx's interactive path (Task 16/20): config.geometry is
       // decoded and config.geography.joinKey preferred over the legacy basemap-derived default.
-      try {
-        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
-          config,
-          "choropleth-reveal",
-        );
-        const layout = computeChoropleth(config, worldGeoJson, joinKey, {
-          bins: NUM_BINS,
-          scaleType: config.scaleType ?? "sequential",
-          palette: config.palette,
-        });
+      // No try/catch here: resolveVideoGeometry throws when config.geometry is
+      // missing, and that throw is meant to escape — swallowing it produced a blank
+      // map in a video that still exited 0. Left uncaught, it fails this render hard
+      // via delayRender's own timeout, matching ChoroplethMap.tsx's uncaught-throw
+      // behaviour on the interactive path.
+      const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+        config,
+        "choropleth-reveal",
+      );
+      const layout = computeChoropleth(config, worldGeoJson, joinKey, {
+        bins: NUM_BINS,
+        scaleType: config.scaleType ?? "sequential",
+        palette: config.palette,
+      });
 
-        // Enrich features with value + bin index (ascending order)
-        const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
-        const coloredWorld: GeoJSON.FeatureCollection = {
-          type: "FeatureCollection",
-          features: worldGeoJson.features.map((f, i) => {
-            const joined = layout.joined[i];
-            const binIdx =
-              joined.value !== null
-                ? sortedBins.findIndex(
-                    (b, bi) =>
-                      joined.value! < b.max || bi === sortedBins.length - 1,
-                  )
-                : -1;
-            return {
-              ...f,
-              properties: {
-                ...f.properties,
-                __value: joined.value,
-                __hasData: joined.value !== null,
-                __binIdx: binIdx,
-              },
-            };
-          }),
-        };
+      // Enrich features with value + bin index (ascending order)
+      const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
+      const coloredWorld: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: worldGeoJson.features.map((f, i) => {
+          const joined = layout.joined[i];
+          const binIdx =
+            joined.value !== null
+              ? sortedBins.findIndex(
+                  (b, bi) =>
+                    joined.value! < b.max || bi === sortedBins.length - 1,
+                )
+              : -1;
+          return {
+            ...f,
+            properties: {
+              ...f.properties,
+              __value: joined.value,
+              __hasData: joined.value !== null,
+              __binIdx: binIdx,
+            },
+          };
+        }),
+      };
 
-        m.addSource("choropleth-world", {
-          type: "geojson",
-          data: coloredWorld,
-        });
+      m.addSource("choropleth-world", {
+        type: "geojson",
+        data: coloredWorld,
+      });
 
-        // Build fill-color expression
-        const colorExpr: unknown[] = [
-          "case",
-          ["==", ["get", "__hasData"], false],
-          NO_DATA_COLOR,
-        ];
-        for (let i = 0; i < sortedBins.length - 1; i++) {
-          colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
-          colorExpr.push(sortedBins[i].color);
-        }
-        colorExpr.push(sortedBins[sortedBins.length - 1].color);
-
-        m.addLayer({
-          id: "choropleth-fill",
-          type: "fill",
-          source: "choropleth-world",
-          paint: {
-            "fill-color": colorExpr as never,
-            "fill-opacity": 0, // start blank
-          },
-        });
-
-        m.addLayer({
-          id: "choropleth-stroke",
-          type: "line",
-          source: "choropleth-world",
-          paint: {
-            "line-color": dark ? "#1c1c1f" : "#ffffff",
-            "line-width": 0.5,
-            "line-opacity": 0.6,
-          },
-        });
-
-        const plan = revealCameraPlan(
-          layout.bounds as [number, number, number, number],
-        );
-        m.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
-
-        continueWhenMapSettles(m, () => {
-          setMapState({ map: m, bins: sortedBins, numBins: NUM_BINS });
-          continueRender(handle);
-        });
-      } catch (err) {
-        console.error(
-          "ChoroplethReveal: failed to build reveal from injected geometry",
-          err,
-        );
-        continueRender(handle);
+      // Build fill-color expression
+      const colorExpr: unknown[] = [
+        "case",
+        ["==", ["get", "__hasData"], false],
+        NO_DATA_COLOR,
+      ];
+      for (let i = 0; i < sortedBins.length - 1; i++) {
+        colorExpr.push(["<", ["get", "__value"], sortedBins[i].max]);
+        colorExpr.push(sortedBins[i].color);
       }
+      colorExpr.push(sortedBins[sortedBins.length - 1].color);
+
+      m.addLayer({
+        id: "choropleth-fill",
+        type: "fill",
+        source: "choropleth-world",
+        paint: {
+          "fill-color": colorExpr as never,
+          "fill-opacity": 0, // start blank
+        },
+      });
+
+      m.addLayer({
+        id: "choropleth-stroke",
+        type: "line",
+        source: "choropleth-world",
+        paint: {
+          "line-color": dark ? "#1c1c1f" : "#ffffff",
+          "line-width": 0.5,
+          "line-opacity": 0.6,
+        },
+      });
+
+      const plan = revealCameraPlan(
+        layout.bounds as [number, number, number, number],
+      );
+      m.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
+
+      continueWhenMapSettles(m, () => {
+        setMapState({ map: m, bins: sortedBins, numBins: NUM_BINS });
+        continueRender(handle);
+      });
     });
   }, [handle]); // eslint-disable-line react-hooks/exhaustive-deps
 

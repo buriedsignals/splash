@@ -120,98 +120,98 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
         if (layer.type === "symbol") map.removeLayer(layer.id);
       }
 
-      try {
-        // Geometry arrives through the injected config now (produce.mjs) — never a static
-        // bundle fetch. Shared with the choropleth video family (Task 7).
-        const { world, joinKey } = resolveVideoGeometry(
-          config,
-          "dot-density-reveal",
-        );
-        const layout = computeDotDensity(config, world, joinKey);
+      // Geometry arrives through the injected config now (produce.mjs) — never a static
+      // bundle fetch. Shared with the choropleth video family (Task 7).
+      // No try/catch here: resolveVideoGeometry throws when config.geometry is
+      // missing, and that throw is meant to escape — swallowing it produced a blank
+      // map in a video that still exited 0. Left uncaught, it fails this render hard
+      // via delayRender's own timeout, matching ChoroplethMap.tsx's uncaught-throw
+      // behaviour on the interactive path.
+      const { world, joinKey } = resolveVideoGeometry(
+        config,
+        "dot-density-reveal",
+      );
+      const layout = computeDotDensity(config, world, joinKey);
 
-        // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.
-        // Deterministic — scatterInPolygon is seeded, so this is frame-stable.
-        const dotFeatures: GeoJSON.Feature[] = [];
-        for (const region of layout.regions) {
-          for (const group of region.groups) {
-            const pts = scatterInPolygon(
-              region.feature,
-              group.count,
-              group.seed,
-            );
-            for (const [lon, lat] of pts) {
-              dotFeatures.push({
-                type: "Feature",
-                properties: { color: group.color },
-                geometry: { type: "Point", coordinates: [lon, lat] },
-              });
-            }
+      // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.
+      // Deterministic — scatterInPolygon is seeded, so this is frame-stable.
+      const dotFeatures: GeoJSON.Feature[] = [];
+      for (const region of layout.regions) {
+        for (const group of region.groups) {
+          const pts = scatterInPolygon(
+            region.feature,
+            group.count,
+            group.seed,
+          );
+          for (const [lon, lat] of pts) {
+            dotFeatures.push({
+              type: "Feature",
+              properties: { color: group.color },
+              geometry: { type: "Point", coordinates: [lon, lat] },
+            });
           }
         }
-
-        // Faint region outline for context.
-        const regionGeoJson: GeoJSON.FeatureCollection = {
-          type: "FeatureCollection",
-          features: layout.regions.map((r) => r.feature),
-        };
-
-        map.addSource("dot-density-region-src", {
-          type: "geojson",
-          data: regionGeoJson,
-        });
-        map.addSource("dot-density-dot-src", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: dotFeatures },
-        });
-
-        map.addLayer({
-          id: OUTLINE_LAYER,
-          type: "line",
-          source: "dot-density-region-src",
-          paint: {
-            "line-color": outlineColor,
-            "line-width": 0.6,
-            "line-opacity": 0.5,
-          },
-        });
-
-        // Dot layer — FIXED radius; opacity ramps 0 → 1 by the reveal `progress`.
-        map.addLayer({
-          id: DOT_LAYER,
-          type: "circle",
-          source: "dot-density-dot-src",
-          paint: {
-            "circle-radius": DOT_RADIUS_PX,
-            "circle-color": ["get", "color"],
-            "circle-opacity": progress,
-            "circle-stroke-width": 0.3,
-            "circle-stroke-color": dark
-              ? "rgba(0,0,0,0.4)"
-              : "rgba(0,0,0,0.15)",
-            "circle-stroke-opacity": progress,
-          },
-        });
-
-        // Fixed camera plan — latitude-clamped Mercator-safe bounds.
-        const plan = revealCameraPlan(
-          layout.bounds as [number, number, number, number],
-        );
-        map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
-
-        setLegendState({
-          hasCategories: layout.hasCategories,
-          dotValue: layout.dotValue,
-          legend: layout.legend,
-        });
-
-        continueWhenMapSettles(map, () => {
-          setMapReady(true);
-          continueRender(handle);
-        });
-      } catch (err) {
-        console.error("DotDensityReveal: failed to resolve geometry", err);
-        continueRender(handle);
       }
+
+      // Faint region outline for context.
+      const regionGeoJson: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: layout.regions.map((r) => r.feature),
+      };
+
+      map.addSource("dot-density-region-src", {
+        type: "geojson",
+        data: regionGeoJson,
+      });
+      map.addSource("dot-density-dot-src", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: dotFeatures },
+      });
+
+      map.addLayer({
+        id: OUTLINE_LAYER,
+        type: "line",
+        source: "dot-density-region-src",
+        paint: {
+          "line-color": outlineColor,
+          "line-width": 0.6,
+          "line-opacity": 0.5,
+        },
+      });
+
+      // Dot layer — FIXED radius; opacity ramps 0 → 1 by the reveal `progress`.
+      map.addLayer({
+        id: DOT_LAYER,
+        type: "circle",
+        source: "dot-density-dot-src",
+        paint: {
+          "circle-radius": DOT_RADIUS_PX,
+          "circle-color": ["get", "color"],
+          "circle-opacity": progress,
+          "circle-stroke-width": 0.3,
+          "circle-stroke-color": dark
+            ? "rgba(0,0,0,0.4)"
+            : "rgba(0,0,0,0.15)",
+          "circle-stroke-opacity": progress,
+        },
+      });
+
+      // Fixed camera plan — latitude-clamped Mercator-safe bounds.
+      const plan = revealCameraPlan(
+        layout.bounds as [number, number, number, number],
+      );
+      map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
+
+      setLegendState({
+        hasCategories: layout.hasCategories,
+        dotValue: layout.dotValue,
+        legend: layout.legend,
+      });
+
+      continueWhenMapSettles(map, () => {
+        setMapReady(true);
+        continueRender(handle);
+      });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

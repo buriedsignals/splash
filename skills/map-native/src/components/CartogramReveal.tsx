@@ -115,87 +115,87 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
     mapRef.current = map;
 
     map.on("load", () => {
-      try {
-        // Geometry arrives through the injected config now (produce.mjs) — never a static
-        // bundle fetch. Shared with the choropleth video family (Task 7).
-        const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
-          config,
-          "cartogram-reveal",
-        );
+      // Geometry arrives through the injected config now (produce.mjs) — never a static
+      // bundle fetch. Shared with the choropleth video family (Task 7).
+      // No try/catch here: resolveVideoGeometry throws when config.geometry is
+      // missing, and that throw is meant to escape — swallowing it produced a blank
+      // map in a video that still exited 0. Left uncaught, it fails this render hard
+      // via delayRender's own timeout, matching ChoroplethMap.tsx's uncaught-throw
+      // behaviour on the interactive path.
+      const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+        config,
+        "cartogram-reveal",
+      );
 
-        // Compute cartogram layout once. joinKey is threaded onto the data object —
-        // computeCartogram reads it off `data.joinKey` (never a positional arg), so this
-        // is spread rather than passed separately (mirrors its own existing contract,
-        // cartogram-geo.ts:62).
-        const layout = computeCartogram({ ...config, joinKey }, worldGeoJson);
+      // Compute cartogram layout once. joinKey is threaded onto the data object —
+      // computeCartogram reads it off `data.joinKey` (never a positional arg), so this
+      // is spread rather than passed separately (mirrors its own existing contract,
+      // cartogram-geo.ts:62).
+      const layout = computeCartogram({ ...config, joinKey }, worldGeoJson);
 
-        // Apply basemap treatment BEFORE adding cells.
-        // grid variant: neutral flat canvas (hides all basemap layers).
-        // scaled variant: keep basemap, strip symbol clutter.
-        applyCartogramBasemap(map, dark, layout.variant);
+      // Apply basemap treatment BEFORE adding cells.
+      // grid variant: neutral flat canvas (hides all basemap layers).
+      // scaled variant: keep basemap, strip symbol clutter.
+      applyCartogramBasemap(map, dark, layout.variant);
 
-        // Build FeatureCollection from cells — each carries display props.
-        const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
-          type: "Feature",
-          properties: {
-            __color: cell.color,
-            __id: cell.id,
-            __value: cell.value,
-          },
-          geometry: cell.feature.geometry,
-        }));
-        const cellGeoJson: GeoJSON.FeatureCollection = {
-          type: "FeatureCollection",
-          features: cellFeatures,
-        };
+      // Build FeatureCollection from cells — each carries display props.
+      const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
+        type: "Feature",
+        properties: {
+          __color: cell.color,
+          __id: cell.id,
+          __value: cell.value,
+        },
+        geometry: cell.feature.geometry,
+      }));
+      const cellGeoJson: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: cellFeatures,
+      };
 
-        map.addSource("cartogram-cell-src", {
-          type: "geojson",
-          data: cellGeoJson,
-        });
+      map.addSource("cartogram-cell-src", {
+        type: "geojson",
+        data: cellGeoJson,
+      });
 
-        // Cell fill — coloured by bin; opacity starts at 0 (fades in via per-frame effect).
-        map.addLayer({
-          id: CELL_LAYER,
-          type: "fill",
-          source: "cartogram-cell-src",
-          paint: {
-            "fill-color": ["get", "__color"] as never,
-            "fill-opacity": fillOpacity,
-          },
-        });
+      // Cell fill — coloured by bin; opacity starts at 0 (fades in via per-frame effect).
+      map.addLayer({
+        id: CELL_LAYER,
+        type: "fill",
+        source: "cartogram-cell-src",
+        paint: {
+          "fill-color": ["get", "__color"] as never,
+          "fill-opacity": fillOpacity,
+        },
+      });
 
-        // Thin outline for legibility.
-        map.addLayer({
-          id: OUTLINE_LAYER,
-          type: "line",
-          source: "cartogram-cell-src",
-          paint: {
-            "line-color": outlineColor,
-            "line-width": 0.6,
-            "line-opacity": 0.5,
-          },
-        });
+      // Thin outline for legibility.
+      map.addLayer({
+        id: OUTLINE_LAYER,
+        type: "line",
+        source: "cartogram-cell-src",
+        paint: {
+          "line-color": outlineColor,
+          "line-width": 0.6,
+          "line-opacity": 0.5,
+        },
+      });
 
-        // Fixed camera plan — latitude-clamped Mercator-safe bounds.
-        const plan = revealCameraPlan(
-          layout.bounds as [number, number, number, number],
-        );
-        map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
+      // Fixed camera plan — latitude-clamped Mercator-safe bounds.
+      const plan = revealCameraPlan(
+        layout.bounds as [number, number, number, number],
+      );
+      map.fitBounds(plan.bounds, { padding: mapFrame.pad, duration: 0 });
 
-        setLegendState({
-          bins: layout.bins,
-          valueLabel: layout.valueLabel,
-        });
+      setLegendState({
+        bins: layout.bins,
+        valueLabel: layout.valueLabel,
+      });
 
-        continueWhenMapSettles(map, () => {
-          setMapReady(true);
-          continueRender(handle);
-        });
-      } catch (err) {
-        console.error("CartogramReveal: failed to resolve geometry", err);
+      continueWhenMapSettles(map, () => {
+        setMapReady(true);
         continueRender(handle);
-      }
+      });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
