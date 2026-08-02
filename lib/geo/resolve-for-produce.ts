@@ -126,28 +126,31 @@ export async function resolveGeometryForProduce(
   if (!joins) return false;
 
   if (geography) {
-    // The video family reads staticFile("geo/world.geojson") directly and never looks at
-    // config.geometry (grep: zero hits for config.geometry under src/components — confirmed
-    // across ChoroplethStory.tsx/ChoroplethReveal.tsx/CartogramStory.tsx/CartogramReveal.tsx/
-    // DotDensityStory.tsx/DotDensityReveal.tsx/RouteReveal.tsx/RouteScrolly.tsx, all hardcoded
-    // to "iso_a3" against the shipped world file). A DECLARED geometry always renders a
-    // different map than the one the credit names — the worst available outcome. But a SHIPPED
-    // basemap that is NOT "world" (us-states, natural-earth-admin-1) is just as wrong: it now
-    // resolves cleanly into config.geometry (Tasks 8/14 made that succeed), so nothing else
-    // stops the video build — the composition would silently render an EMPTY world map (every
-    // feature id from a us-states/admin-1 subset misses every iso_a3 in world.geojson), not
-    // merely a mismatched one. Refused here, by name, for both shapes, mirroring the exact
-    // precedent already applied to dot-density's own basemap check
-    // (lib/loop/assemble/map-native.ts:214-219, `basemapKeyFor(geo.geography) !== "world"`).
-    if (
-      input.format === "video" &&
-      (geography.origin === "declared" || basemapKeyFor(geography) !== "world")
-    )
+    // Tasks 7-9/13 moved every video composition (ChoroplethStory/Reveal,
+    // CartogramStory/Reveal, DotDensityStory/Reveal, RouteReveal/Scrolly, and the scrolly
+    // siblings) off the bundled world.geojson/hardcoded "iso_a3" and onto the shared
+    // resolveVideoGeometry (skills/map-native/src/core/video-geometry.ts), which reads
+    // config.geometry (injected below) and its own config.geography.joinKey — so a SHIPPED
+    // non-world geography (us-states, natural-earth-admin-1 — a Swiss-canton choropleth, e.g.)
+    // now renders the SAME real subset as static/interactive/scrolly, not an empty world map.
+    // The refusal that used to stand in for this (a "shipped basemap that is not world" branch)
+    // is gone — render-verified (Task 10, task-10-report.md): a Swiss-canton choropleth video
+    // renders the real cantons, coloured against the legend, camera-toured beat by beat.
+    //
+    // A DECLARED geometry stays refused for video. Unlike the shipped case above, no production
+    // code threads `geography.sourcePath` for a declared geography (confirmed by grep while
+    // implementing this task — unchanged since Task 9's own finding at commit fba11075): no
+    // assembler task wires a journalist-uploaded file through to this point yet, so a declared
+    // geometry always fails on "carries no sourcePath" below regardless of format — but naming
+    // it here, for video specifically, says the honest thing ("not built or verified yet") to a
+    // future caller that DOES start setting it, rather than the generic sourcePath error, which
+    // would read as a config bug instead of an unbuilt path.
+    if (input.format === "video" && geography.origin === "declared")
       throw new Error(
-        `produce: a ${geography.origin === "declared" ? `declared geography ("${geography.set}")` : `"${basemapKeyFor(geography)}" geography`} cannot be rendered as video yet — ` +
-          `the video compositions read the shipped world basemap directly, so the output would ` +
-          `show a different (or empty) map from the one the credit/data names. Choose static, ` +
-          `interactive or scrolly for this geography`,
+        `produce: a declared geography ("${geography.set}") cannot be rendered as video yet — ` +
+          `no assembler threads its frozen source file through to produce (config.geography.sourcePath ` +
+          `is unset for every declared geography in this tree), so this path has never been built or ` +
+          `verified. Choose static, interactive or scrolly for this geography`,
       );
 
     // D7's credit obligation applies ONLY to a DECLARED geometry (a shipped basemap —

@@ -86,7 +86,7 @@ describe("resolveGeometryForProduce", () => {
     expect(geoms).toHaveLength(1); // not 2 — France's Jura is scoped out
   }, 30_000);
 
-  it("should refuse a declared geography in the video format rather than render another map", async () => {
+  it("should refuse a declared geography in the video format — no production code threads geography.sourcePath yet (Task 9's own finding, unchanged as of Task 10), so this path has never been built or verified, unlike the shipped-geography case below", async () => {
     const config: Record<string, unknown> = {
       type: "choropleth",
       regionKey: "code",
@@ -111,22 +111,57 @@ describe("resolveGeometryForProduce", () => {
     ).rejects.toThrow(/video/i);
   });
 
-  it("should refuse a SHIPPED non-world geography (us-states) in the video format — it now resolves cleanly into config.geometry, but the video family still reads world.geojson/iso_a3 unconditionally, so the render would silently come out an empty world map with no error at all", async () => {
+  it("should NOT refuse a SHIPPED non-world geography (us-states) in the video format anymore — Tasks 7-9/13 moved every video composition onto config.geometry via the shared resolveVideoGeometry, so a shipped non-world subset renders the same real geometry as static/interactive/scrolly instead of silently coming out an empty world map", async () => {
     const config: Record<string, unknown> = {
       type: "choropleth",
       basemap: "us-states",
       regionKey: "code",
       rows: [{ code: "CA", value: 1 }],
     };
-    await expect(
-      resolveGeometryForProduce({
-        config,
-        assetsGeoDir: ASSETS,
-        renderWidthPx: 1200,
-        format: "video",
-      }),
-    ).rejects.toThrow(/video/i);
-  });
+    const wrote = await resolveGeometryForProduce({
+      config,
+      assetsGeoDir: ASSETS,
+      renderWidthPx: 1200,
+      format: "video",
+    });
+    expect(wrote).toBe(true);
+    expect((config.geometry as { type: string }).type).toBe("Topology");
+  }, 30_000); // real bunx mapshaper, two passes now (filter+measure, then simplify+encode)
+
+  it("should NOT refuse a SHIPPED admin-1 geography scoped to a single country (a Swiss-canton choropleth) in the video format — the exact shape Task 10's own render proof (task-10-report.md) used", async () => {
+    const config: Record<string, unknown> = {
+      type: "choropleth",
+      regionKey: "canton",
+      rows: [
+        { canton: "Zürich", rent: 1650 },
+        { canton: "Genève", rent: 1780 },
+      ],
+      valueField: "rent",
+      geography: {
+        origin: "shipped",
+        set: "natural-earth-admin-1",
+        scope: "CHE",
+        level: "canton",
+        joinKey: "name",
+        joinKeyFamily: "name",
+      },
+    };
+    const wrote = await resolveGeometryForProduce({
+      config,
+      assetsGeoDir: ASSETS,
+      renderWidthPx: 1200,
+      format: "video",
+    });
+    expect(wrote).toBe(true);
+    const geometry = config.geometry as {
+      objects: Record<
+        string,
+        { geometries: { properties: Record<string, unknown> }[] }
+      >;
+    };
+    const layerKey = Object.keys(geometry.objects)[0]!;
+    expect(geometry.objects[layerKey]!.geometries).toHaveLength(2); // Zürich + Genève only
+  }, 30_000);
 
   it("should NOT refuse a shipped world geography in the video format — the one geography the video family can actually render", async () => {
     const config: Record<string, unknown> = {

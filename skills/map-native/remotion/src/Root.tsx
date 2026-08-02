@@ -66,6 +66,7 @@ import { REVEAL_FRAMES } from "../../src/reveal";
 import { TITLE_SCENE_FRAMES } from "../../src/video-scene";
 import { computeChoropleth } from "../../src/choropleth-geo";
 import { computeRouteReveal, routeRevealFrames } from "../../src/route-geo";
+import { resolveVideoGeometry } from "../../src/core/video-geometry";
 import {
   deriveMapStory,
   beatsForMode,
@@ -82,6 +83,57 @@ import sampleDotDensity from "../../assets/sample-data/dot-density-multi.json";
 import sampleHexGrid from "../../assets/sample-data/hex-grid-count.json";
 import sampleCartogram from "../../assets/sample-data/cartogram-scaled.json";
 import world from "../../assets/geo/world.geojson";
+import type { Topology, Arc } from "topojson-specification";
+
+// Task 10 amendment: the choropleth/cartogram/dot-density/route video family now resolves
+// config.geometry (core/video-geometry.ts, Tasks 7-9) and throws BY NAME when it is absent —
+// there is deliberately no bundled world.geojson fallback anymore (D5). None of this skill's
+// sample-data fixtures (assets/sample-data/*.json) carry config.geometry: they predate that
+// change and still lean on the old "fetch the shipped world file" path the components no
+// longer take. Left unpatched, opening Remotion Studio to any of these compositions — or
+// rendering them from their default props — throws immediately. `devGeometrySubset` wraps a
+// HANDFUL of already-bundled REAL world.geojson features (never the full 241-feature file) into
+// a minimal, valid Topology so the Studio default-props preview resolves real geometry the same
+// way a produced config would, just smaller.
+function devGeometrySubset(
+  source: GeoJSON.FeatureCollection,
+  joinKey: string,
+  ids: string[],
+  objectName: string,
+): Topology {
+  const wanted = new Set(ids);
+  const features = source.features.filter((f) =>
+    wanted.has(String(f.properties?.[joinKey])),
+  ) as GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>[];
+  const missing = ids.filter(
+    (id) => !features.some((f) => String(f.properties?.[joinKey]) === id),
+  );
+  if (missing.length)
+    throw new Error(
+      `devGeometrySubset: ${missing.join(", ")} not found in the source FeatureCollection on join key "${joinKey}"`,
+    );
+  const arcs: Arc[] = [];
+  const addRing = (ring: GeoJSON.Position[]): number[] => [arcs.push(ring) - 1];
+  const geometries = features.map((f) => {
+    const geom = f.geometry;
+    if (geom.type === "Polygon")
+      return {
+        type: "Polygon" as const,
+        properties: f.properties ?? {},
+        arcs: geom.coordinates.map((ring) => addRing(ring)),
+      };
+    return {
+      type: "MultiPolygon" as const,
+      properties: f.properties ?? {},
+      arcs: geom.coordinates.map((poly) => poly.map((ring) => addRing(ring))),
+    };
+  });
+  return {
+    type: "Topology",
+    objects: { [objectName]: { type: "GeometryCollection", geometries } },
+    arcs,
+  };
+}
 
 const sampleLayout = computeChoropleth(sampleConfig, world as any, "iso_a3", {
   bins: 5,
@@ -98,20 +150,42 @@ const STORY_FRAMES = buildTimeline(
   AREAL_TIMELINE_OPTS,
 ).totalFrames;
 
-const choroplethDefaultProps = { config: sampleConfig };
+const choroplethDefaultProps = {
+  config: {
+    ...sampleConfig,
+    // A 3-feature real subset (of the 8 rows, joined on "code"/iso_a3) — see
+    // devGeometrySubset's own comment above.
+    geometry: devGeometrySubset(
+      world as unknown as GeoJSON.FeatureCollection,
+      "iso_a3",
+      ["NOR", "DEU", "FRA"],
+      "countries",
+    ),
+  },
+};
 
 // Mode-aware composition duration. `sequential` drops the establish beat (beatsForMode), so the
 // length must be recomputed from the INJECTED config — otherwise the sequential MP4 ends with a
 // frozen tail. Mirrors ChoroplethStory's own layout+beats setup so the counts match exactly.
 const storyMeta = makeStoryMeta((cfg: ChoroplethStoryConfig) => {
-  const layout = computeChoropleth(cfg, world as any, "iso_a3", {
+  // Duration must be sized off the SAME geometry the component itself renders — never the
+  // bundled world.geojson (Task 10 finding: this precompute still hardcoded world/"iso_a3"
+  // after Tasks 7/9 moved the component itself onto resolveVideoGeometry, so a non-world
+  // config's own render crashed inside "choropleth: no region matched the data" the moment
+  // the refusal that used to catch this earlier stopped running). Mirrors
+  // ChoroplethStory.tsx's own resolveVideoGeometry call verbatim.
+  const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+    cfg,
+    "storyMeta",
+  );
+  const layout = computeChoropleth(cfg, worldGeoJson, joinKey, {
     bins: 5,
     scaleType: cfg.scaleType ?? "sequential",
     palette: cfg.palette,
     labelField: cfg.labelField,
   });
   const beats = beatsForMode(
-    deriveMapStory(layout, world as any, "iso_a3", {
+    deriveMapStory(layout, worldGeoJson, joinKey, {
       title: cfg.title ?? "",
       insight: cfg.insight ?? cfg.title ?? "",
       unit: cfg.valueUnit ?? "",
@@ -148,7 +222,19 @@ const ROUTE_REVEAL_FRAMES = routeRevealFrames(
   computeRouteReveal(sampleRoute as any, world as any).territories.length,
   30,
 );
-const routeDefaultProps = { config: sampleRoute };
+const routeDefaultProps = {
+  config: {
+    ...sampleRoute,
+    // The two territories the sample route's own `territories` narration names — see
+    // devGeometrySubset's own comment above.
+    geometry: devGeometrySubset(
+      world as unknown as GeoJSON.FeatureCollection,
+      "iso_a3",
+      ["IND", "BGD"],
+      "territories",
+    ),
+  },
+};
 const sampleSymbolBeats = deriveSymbolStory(sampleSymbol.points, {
   title: sampleSymbol.title ?? "",
   insight:
@@ -237,14 +323,32 @@ const DOT_DENSITY_STORY_FRAMES = buildTimeline(
   30,
   AREAL_TIMELINE_OPTS,
 ).totalFrames;
-const dotDensityDefaultProps = { config: sampleDotDensity };
+const dotDensityDefaultProps = {
+  config: {
+    ...sampleDotDensity,
+    // A 3-feature real subset (of the 9 rows, joined on iso_a3) — see devGeometrySubset's
+    // own comment above.
+    geometry: devGeometrySubset(
+      world as unknown as GeoJSON.FeatureCollection,
+      "iso_a3",
+      ["DEU", "FRA", "GBR"],
+      "countries",
+    ),
+  },
+};
 
 // Mode-aware composition duration — mirrors `storyMeta`/`cartogramStoryMeta` above (single
 // source of truth with DotDensityStory.tsx's own layout+beats+beatsForMode setup, so the
 // sequential mp4 doesn't end with a frozen tail).
 const dotDensityStoryMeta = makeStoryMeta(
   (cfg: DotDensityConfigShape & { insight?: string; valueUnit?: string }) => {
-    const layout = computeDotDensity(cfg, world as any, "iso_a3");
+    // Same fix as storyMeta above (Task 10 finding) — size off the config's own resolved
+    // geometry, never the bundled world.geojson, mirroring DotDensityStory.tsx's own call.
+    const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+      cfg,
+      "dotDensityStoryMeta",
+    );
+    const layout = computeDotDensity(cfg, worldGeoJson, joinKey);
     const beats = beatsForMode(
       deriveDotDensityStory(layout, {
         title: cfg.title ?? "",
@@ -313,14 +417,34 @@ const CARTOGRAM_STORY_FRAMES = buildTimeline(
   30,
   AREAL_TIMELINE_OPTS,
 ).totalFrames;
-const cartogramDefaultProps = { config: sampleCartogram };
+const cartogramDefaultProps = {
+  config: {
+    ...sampleCartogram,
+    // A 3-feature real subset (of the 18 values, joined on iso_a3) — see devGeometrySubset's
+    // own comment above.
+    geometry: devGeometrySubset(
+      world as unknown as GeoJSON.FeatureCollection,
+      "iso_a3",
+      ["CHN", "IND", "RUS"],
+      "countries",
+    ),
+  },
+};
 
 // Mode-aware composition duration — mirrors `storyMeta` above (single source of truth with
 // CartogramStory.tsx's own layout+beats+beatsForMode setup, so the sequential mp4 doesn't end
 // with a frozen tail).
 const cartogramStoryMeta = makeStoryMeta(
   (cfg: CartogramConfigShape & { insight?: string }) => {
-    const layout = computeCartogram(cfg, world as any);
+    // Same fix as storyMeta above (Task 10 finding) — size off the config's own resolved
+    // geometry, never the bundled world.geojson, mirroring CartogramStory.tsx's own call
+    // (computeCartogram reads its join key off `data.joinKey`, so the resolved joinKey is
+    // spread onto the config the same way the component itself does).
+    const { world: worldGeoJson, joinKey } = resolveVideoGeometry(
+      cfg,
+      "cartogramStoryMeta",
+    );
+    const layout = computeCartogram({ ...cfg, joinKey }, worldGeoJson);
     const beats = beatsForMode(
       deriveCartogramStory(layout, {
         title: cfg.title ?? "",
