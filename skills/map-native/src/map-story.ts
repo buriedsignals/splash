@@ -79,11 +79,16 @@ export interface MapArcAnchor {
   value: string;
 }
 
-// Turn a journalist-confirmed claim-arc into ORDERED reveal Beats — the shared
-// choreography for choropleth (deriveMapStory) and symbol (deriveSymbolStory) maps.
-// Beat is the shared shape, so the callout is ONE shape either way: { region; name;
-// value; text }. `copy`/`callout.text` is the arc beat's CLAIM (`text`), never a
-// derived "name — value" caption — the journalist's assertion is the caption.
+// Turn a journalist-confirmed claim-arc into ORDERED reveal Beats — the shared choreography for
+// five of the six arc-capable map-native types that anchor on a lookup key: choropleth (HERE,
+// below), symbol (symbol-story.ts), locator (locator-story.ts), cartogram (cartogram-story.ts)
+// and dot-density (dot-density-story.ts) all call this function directly. hex-grid is the one
+// exception — its anchor is a (lon, lat) place, not a lookup key, a shape this function's
+// `resolve(region: string)` has no seam for — so hex-grid-story.ts REIMPLEMENTS this choreography
+// locally (`resolveHexGridArc`) rather than calling it; see that function's own header comment.
+// Beat is the shared shape, so the callout is ONE shape either way: { region; name; value; text
+// }. `copy`/`callout.text` is the arc beat's CLAIM (`text`), never a derived "name — value"
+// caption — the journalist's assertion is the caption.
 // A `resolve` returning null should be unreachable — callers are expected to check
 // their region set against `resolve`'s key space BEFORE calling applyMapArc (see
 // deriveMapStory/deriveSymbolStory) — but this throws regardless: defense in depth,

@@ -27,9 +27,17 @@ export const CHART_SCROLLY_TYPES = new Set(["line", "bar", "scatter"]);
  * — a map's plan goes in `arcBeats`, not `beats` — and keeps its own wording because it names a
  * different field, not a different version of this.)
  */
+// UPDATED (map-storyboard-and-video-geography): the wording used to say a map scrolly "derives
+// its own walk from the data" full stop, as if no authored override existed for it at all — true
+// when this was written, false since every map-native type gained a confirmed claim-arc
+// (`arcBeats`, `skills/map-native/src/map-arc.ts`'s `ARC_CAPABLE_MAP_TYPES`). The refusal itself
+// stays correct — `beats` (the CHART track's own field) still never applies to a map — but the
+// reason must name the actual way out, or a journalist reading it concludes a map has no
+// named-step control at all, which `skills/splash/SKILL.md` now explicitly forbids saying.
 export const MAP_TRACK_BEATS_REFUSAL =
-  "a map scrolly derives its own walk from the data (deriveMapStory) — an authored beat plan " +
-  "belongs to a chart scrolly, so this walk cannot be published as written";
+  "`beats` is chart-track narrative control and never applies to a map scrolly — a map's own " +
+  "confirmed walk is `arcBeats` (region-anchored: `{region, role, text}`); move the plan there, " +
+  "or leave it unset for the salience default";
 
 export const MAP_SCROLLY_TYPES = new Set([
   "symbol",

@@ -91,9 +91,14 @@ const BEAT_TYPES = new Set<string>(AUTHORABLE_SCROLLY_TYPES);
  * consulted only on "choose-form"). One predicate, read by the router and honoured by the
  * drafter, is what keeps them from drifting apart again.
  *
- * A MAP scrolly is deliberately absent: that track derives its own walk from the data
- * (deriveMapStory) and `assembleScrolly` refuses an authored plan on it outright, so it needs no
- * draft — it goes straight to produce.
+ * A MAP scrolly is deliberately absent — but not because it has no confirmed walk of its own.
+ * Every map-native type now carries `arcBeats` (region-anchored: `{region, role, text}`,
+ * `skills/map-native/src/map-arc.ts`'s `ARC_CAPABLE_MAP_TYPES`), the map's own confirm/tweak/veto
+ * override, exactly like this track's `beats`. It is absent HERE because `arcBeats` is never
+ * MACHINE-DRAFTED — the journalist's own wording is pinned verbatim, with no `draft-beats` step
+ * to route to in the first place (unlike a chart's `beats`, which this predicate exists to gate).
+ * `assembleScrolly` still refuses an authored `beats` plan on the map track outright — that part
+ * is unchanged — so a map scrolly goes straight to produce, never through this drafter.
  *
  * A SCATTER scrolly is absent too, and is not routed to produce either: the scrolly renderer
  * hosts one and would DERIVE its captions, which is the defect this whole seam exists to remove,

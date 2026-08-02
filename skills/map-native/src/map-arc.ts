@@ -8,11 +8,13 @@
 import { arcErrors, type ArcRole } from "../../../lib/core/claim-arc";
 
 // ---------------------------------------------------------------------------
-// Claim-arc — the journalist-confirmed override for map-native (choropleth +
-// symbol). Mirrors chart-native's beats: `region` anchors on a value the data
-// actually has (a region key for choropleth, a point label for symbol); `role`
-// (optional) claims a position in the establish→build→turn→payoff arc; `text`
-// is the beat's assertion. Validated by mapArcErrors below.
+// Claim-arc — the journalist-confirmed override for map-native. Every real map type carries
+// it now (see ARC_CAPABLE_MAP_TYPES below — choropleth/symbol/locator/cartogram/dot-density/
+// route/hex-grid). Mirrors chart-native's beats: `region` anchors on a value the data actually
+// has (a region key for choropleth/cartogram/dot-density, a point/marker label for
+// symbol/locator, a computed territory for route, a free-text place for hex-grid); `role`
+// (optional) claims a position in the establish→build→turn→payoff arc; `text` is the beat's
+// assertion. Validated by mapArcErrors below.
 // ---------------------------------------------------------------------------
 // `lon`/`lat` are hex-grid-ONLY (see ARC_CAPABLE_MAP_TYPES comment below and
 // hex-grid-story.ts's deriveHexGridStory). Every other arc-capable type anchors on a KEY
