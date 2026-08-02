@@ -216,64 +216,113 @@ describe("the scrolly map track forwards the confirmed plan to its deriver", () 
 });
 
 // ---------------------------------------------------------------------------
-// Refusal — the types no deriver can honour an arc for.
+// Refusal — a malformed arc is refused, naming the malformation.
+//
+// UPDATED (map-storyboard-and-video-geography, Task 5 — hex-grid, the last map type to gain
+// arc support): this describe block used to prove "a map type that cannot honour arcBeats is
+// refused by name" against five real types (hex-grid/dot-density/locator/cartogram/route).
+// Task 5 made every real map type arc-capable (see map-arc.ts's ARC_CAPABLE_MAP_TYPES and its
+// own DECISION comment) — none of those five can reach that capability-refusal branch with a
+// real type string any more, and mapNativeConfigErrors dispatches purely on `type`, so it has
+// no seam for the deliberately-fake type map-native's own boundary test uses instead (see
+// skills/map-native/tests/arc-beats-threading.test.ts's `unsupportedArcBeatsErrors` block,
+// which now owns that boundary proof directly). The genuine thing left to prove at THIS layer
+// — mapNativeConfigErrors, the dispatcher scrolly's own validator calls — is that a MALFORMED
+// arc still gets refused, by name, on every one of these five types: an incomplete plan
+// (establish with no build/payoff) is content the type CAN carry but the journalist did not
+// finish, and dispatch must not swallow that check for any type it routes to.
 // ---------------------------------------------------------------------------
 
-describe("arcBeats on a map type that cannot honour it is REFUSED, never dropped", () => {
-  const plan = [{ region: "X", role: "establish" as const, text: "a claim" }];
+describe("a malformed claim-arc on an arc-capable map type is REFUSED, never dropped", () => {
+  // Missing `build` and `payoff` — a plan the type CAN carry, incompletely confirmed. Each
+  // fixture is otherwise valid (real basemap, insight-length title, well-formed geometry) so
+  // the malformed arc is the SOLE fault — the same discipline produce-cli-validation.test.ts
+  // documents for its own route fixture: unrelated holes would let the assertion pass while
+  // proving nothing about the arc check.
+  const brokenArc = [
+    { region: "Place", role: "establish" as const, text: "a claim" },
+  ];
 
-  it("refuses it by name on hex-grid / dot-density / locator / cartogram / route", () => {
+  it("names the missing beats on hex-grid / dot-density / locator / cartogram / route", () => {
     const specs: Record<string, unknown> = {
       "hex-grid": {
         type: "hex-grid",
-        title: "T",
-        rows: [{ code: "AA", value: 1, col: 0, row: 0 }],
-        regionKey: "code",
-        valueField: "value",
-        arcBeats: plan,
+        basemap: "world",
+        title: "A hex-grid with a real insight",
+        points: [
+          { lon: 6.1, lat: 46.2 },
+          { lon: 6.6, lat: 46.5 },
+        ],
+        arcBeats: [
+          {
+            region: "Place",
+            role: "establish",
+            text: "a claim",
+            lon: 6.1,
+            lat: 46.2,
+          },
+        ],
       },
       cartogram: {
         type: "cartogram",
-        title: "T",
-        rows: [{ code: "AA", value: 1 }],
-        regionKey: "code",
-        valueField: "value",
-        arcBeats: plan,
+        basemap: "world",
+        title: "A cartogram with a real insight",
+        values: [
+          { id: "FRA", value: 68 },
+          { id: "DEU", value: 84 },
+        ],
+        arcBeats: brokenArc,
       },
       locator: {
         type: "locator",
-        title: "T",
-        markers: [{ lon: 0, lat: 0, label: "A" }],
-        arcBeats: plan,
+        basemap: "world",
+        title: "A locator with a real insight",
+        markers: [
+          { lon: 6.1, lat: 46.2, label: "Geneva" },
+          { lon: 6.6, lat: 46.5, label: "Lausanne" },
+        ],
+        arcBeats: brokenArc.map((b) => ({ ...b, region: "Geneva" })),
       },
       route: {
         type: "route",
-        title: "T",
-        waypoints: [
-          { lon: 0, lat: 0 },
-          { lon: 1, lat: 1 },
+        basemap: "world",
+        title: "A route with a real insight",
+        route: [
+          [2.35, 48.85],
+          [13.4, 52.52],
         ],
-        arcBeats: plan,
+        arcBeats: brokenArc,
       },
       "dot-density": {
         type: "dot-density",
-        title: "T",
-        rows: [{ code: "AA", value: 1 }],
-        regionKey: "code",
+        basemap: "world",
+        boundaries: "world",
+        regionKey: "iso_a3",
         valueField: "value",
-        arcBeats: plan,
+        title: "A dot-density with a real insight",
+        rows: [
+          { iso_a3: "FRA", value: 68 },
+          { iso_a3: "DEU", value: 84 },
+        ],
+        arcBeats: brokenArc.map((b) => ({ ...b, region: "FRA" })),
       },
     };
     for (const [type, spec] of Object.entries(specs)) {
       const errors = mapNativeConfigErrors(spec);
+      // The two faults an establish-only plan always carries: it never closes, and it never
+      // rises. Both must be named — not just "an error happened somewhere".
       expect(
-        errors.some((e) => e.includes("arcBeats")),
-        `${type} must refuse arcBeats by name, got: ${errors.join(" | ")}`,
+        errors.some((e) => e.includes("must CLOSE on a `payoff` beat")),
+        `${type} must name the missing payoff, got: ${errors.join(" | ")}`,
+      ).toBe(true);
+      expect(
+        errors.some((e) => e.includes("needs at least one `build` beat")),
+        `${type} must name the missing build, got: ${errors.join(" | ")}`,
       ).toBe(true);
     }
   });
 
-  it("still accepts a valid arc on the two types that DO honour it", () => {
+  it("still accepts a well-formed arc on a representative arc-capable type (symbol)", () => {
     const errors = mapNativeConfigErrors({
       type: "symbol",
       title: "T",

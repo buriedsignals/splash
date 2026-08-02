@@ -78,10 +78,13 @@ auto-pick for line and bar:
   rejected on a map-track config (`beats` is chart-only narrative control; a map uses `arcBeats`
   instead — a mis-placed `beats` on a map fails loud at the gate). **The MAP track's own override is
   region-anchored `arcBeats`** (`{ region, role, text }` — `region` is the join-key/label value the
-  beat anchors on; same arc shape as chart-native, `mapArcErrors`) — but ONLY for choropleth and symbol
-  maps; absent ⇒ map steps come from `deriveMapStory`'s temporal/magnitude ordering. The other map
-  types (route, cartogram, dot-density, hex-grid, locator) have no confirmed-arc override yet — their
-  steps stay data-derived only.
+  beat anchors on; same arc shape as chart-native, `mapArcErrors`) — every map-native type now honours
+  it (choropleth/symbol/locator/cartogram/dot-density/route/hex-grid — `ARC_CAPABLE_MAP_TYPES`,
+  `skills/map-native/src/map-arc.ts`, `hex-grid` was the last to gain it); absent ⇒ map steps come from
+  `deriveMapStory`'s (or the type's own deriver's) temporal/magnitude ordering. An `arcBeats` plan
+  submitted on a type string outside this list is still refused BY NAME rather than silently dropped
+  (`unsupportedArcBeatsErrors`) — defence-in-depth for a hypothetical future type; every real map type
+  today carries it.
 
 ## Architecture
 

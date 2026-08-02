@@ -14,7 +14,14 @@ describe("the scrolly CLI does not bypass the validator", () => {
   // shipped instead. The rule was never missing: mapNativeConfigErrors validates arcBeats
   // (validate-config.ts:216, :352) and the five incapable types refuse it BY NAME (:411,
   // :499, :623, :742, :875). Only this entry point never asked.
-  it("should refuse an arcBeats plan on a type that cannot carry one", () => {
+  //
+  // UPDATED (map-storyboard-and-video-geography, Task 5 — hex-grid, the last map type to
+  // gain arc support): "route" is arc-capable now (see map-arc.ts's ARC_CAPABLE_MAP_TYPES),
+  // so this fixture's `role: "context"` no longer trips the by-name capability refusal — it
+  // trips the arc's own STRUCTURAL validation instead (an unrecognised role, which also
+  // means the plan neither opens on establish nor closes on payoff). The fixture is
+  // unchanged; only what it proves is renamed to match what the validator now says.
+  it("should refuse an arcBeats plan whose role the arc cannot carry", () => {
     const errors = scrollySpecErrors({
       type: "route",
       title: "T",
@@ -23,7 +30,11 @@ describe("the scrolly CLI does not bypass the validator", () => {
       arcBeats: [{ region: "FR", role: "context", text: "x" }],
     });
     expect(errors.length).toBeGreaterThan(0);
-    expect(errors.join(" ")).toContain("arcBeats");
+    // Not just "an error happened somewhere" — the refusal must name the actual fault this
+    // fixture carries: an unrecognised role.
+    expect(errors.join(" ")).toContain(
+      'role "context" is not one of establish/build/turn/payoff',
+    );
   });
 
   // Behavioural, not textual: spawns the REAL CLI as a subprocess. A `expect(cli).toContain(...)`
@@ -32,7 +43,10 @@ describe("the scrolly CLI does not bypass the validator", () => {
   // string. That's not a guard, it's a coincidence. This test only passes if the validator
   // actually ran and actually stopped the build: non-zero exit, the CLI's refusal marker on
   // stderr (not just "it crashed for some other reason"), and no artifact on disk.
-  it("refuses to build when the CLI is invoked on an arcBeats plan the type cannot carry", () => {
+  //
+  // UPDATED (Task 5 — see the sibling test above): the fault this fixture carries is a
+  // malformed role, not an incapable type — "route" honours a claim-arc now.
+  it("refuses to build when the CLI is invoked on an arcBeats plan whose role the arc cannot carry", () => {
     const workDir = mkdtempSync(join(tmpdir(), "scrolly-cli-validation-"));
     try {
       const configPath = join(workDir, "config.json");
@@ -77,8 +91,10 @@ describe("the scrolly CLI does not bypass the validator", () => {
       const stderr = proc.stderr.toString();
       expect(stderr).toContain("INVALID CONFIG");
       // Not just "the CLI refused something" — the refusal must name the fault this
-      // fixture actually carries.
-      expect(stderr).toContain("arcBeats");
+      // fixture actually carries: an unrecognised role.
+      expect(stderr).toContain(
+        'role "context" is not one of establish/build/turn/payoff',
+      );
 
       // No artifact of any kind — a refusal must leave nothing behind. produce.mjs only
       // creates outDir AFTER validation passes, so a correctly-refusing CLI never even
