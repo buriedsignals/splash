@@ -4,6 +4,31 @@ import { join } from "node:path";
 import { mapStoryToChapters } from "../src/chapters";
 import { applyMapArc, type Beat } from "../../map-native/src/map-story";
 import { mapNativeConfigErrors } from "../../map-native/src/validate-config";
+import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce";
+
+// Scrolly.tsx statically imports every map track component (ScrollyMap.tsx et al.), which throw
+// at module-eval time without a MapTiler key — mirrors scaffold-root.test.tsx's own sourcing of
+// the repo-root .env rather than duplicating the secret in this package.
+if (!process.env.VITE_MAPTILER_KEY) {
+  try {
+    const lines = readFileSync(
+      join(import.meta.dir, "..", "..", "..", ".env"),
+      "utf8",
+    ).split("\n");
+    for (const line of lines) {
+      const m = line.match(/^(?:VITE|REMOTION)_MAPTILER_KEY\s*=\s*(.+)$/);
+      if (m) {
+        process.env.VITE_MAPTILER_KEY = m[1].trim();
+        break;
+      }
+    }
+  } catch {
+    // .env absent — a downstream throw will surface it clearly if a map track is exercised.
+  }
+}
+
+const { Scrolly } = await import("../src/Scrolly");
+const { renderToStaticMarkup } = await import("react-dom/server");
 
 // THE DEFECT this file pins, in the three shapes a QA sweep found it in:
 //
@@ -199,8 +224,16 @@ describe("the scrolly map track forwards the confirmed plan to its deriver", () 
   const sites: [string, string][] = [
     ["Scrolly.tsx", "deriveSymbolStory"],
     ["Scrolly.tsx", "deriveMapStory"],
+    ["Scrolly.tsx", "deriveHexGridStory"],
+    ["Scrolly.tsx", "deriveDotDensityStory"],
+    ["Scrolly.tsx", "deriveLocatorStory"],
+    ["Scrolly.tsx", "deriveCartogramStory"],
     ["ScrollySymbolMap.tsx", "deriveSymbolStory"],
     ["ScrollyMap.tsx", "deriveMapStory"],
+    ["ScrollyHexMap.tsx", "deriveHexGridStory"],
+    ["ScrollyDotDensityMap.tsx", "deriveDotDensityStory"],
+    ["ScrollyLocatorMap.tsx", "deriveLocatorStory"],
+    ["ScrollyCartogramMap.tsx", "deriveCartogramStory"],
   ];
   for (const [file, fn] of sites) {
     it(`${file} passes arcBeats into ${fn}`, () => {
@@ -337,5 +370,231 @@ describe("a malformed claim-arc on an arc-capable map type is REFUSED, never dro
       ],
     });
     expect(errors.filter((e) => e.includes("arcBeats"))).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Behavioural proof — the SHIPPED reader-facing scrolly, not a source grep.
+//
+// CRITICAL 1 of the final review: hex-grid/dot-density/locator/cartogram were arc-capable at
+// the gate but the actual page a journalist's reader receives (Scrolly.tsx → mapStoryToChapters
+// → the prose column, rendered by src/Scrolly.tsx) never forwarded the plan — a validated arc
+// silently collapsed to the salience walk. The drift guard above proves a LINE exists in the
+// source; a reviewer's mutation showed a line surviving is not the same as the reader seeing
+// the right words. This block renders the actual <Scrolly> dispatcher (the one thing this
+// codebase's own tests treat as ground truth for "what a reader would see" — see
+// scaffold-root.test.tsx / geometry-guard.test.tsx's own SSR pattern) and asserts the confirmed
+// claim text reaches the page, per type, and that withholding the plan produces different prose.
+// ---------------------------------------------------------------------------
+
+describe("the reader-facing scrolly renders the journalist's confirmed walk (behavioural, per type)", () => {
+  it("hex-grid: the confirmed claims reach the page, the salience region names do not gate them", () => {
+    const base = {
+      type: "hex-grid" as const,
+      title: "Two clusters, in the order the story needs",
+      description: "Two hex-grid clusters",
+      basemap: "world",
+      points: [
+        { lon: 2.0, lat: 46.0 },
+        { lon: 2.05, lat: 46.02 },
+        { lon: 1.95, lat: 45.98 },
+        { lon: 2.02, lat: 45.97 },
+        { lon: 20.0, lat: 46.0 },
+        { lon: 20.05, lat: 46.02 },
+        { lon: 19.95, lat: 45.98 },
+        { lon: 20.02, lat: 45.97 },
+      ],
+      binShape: "square" as const,
+      cellSizeKm: 30,
+    };
+    const arcBeats = [
+      {
+        region: "The eastern cluster",
+        role: "establish" as const,
+        text: "It starts in the east, confirmed by the newsroom.",
+        lon: 20.0,
+        lat: 46.0,
+      },
+      {
+        region: "The western cluster",
+        role: "payoff" as const,
+        text: "It closes in the west, confirmed by the newsroom.",
+        lon: 2.0,
+        lat: 46.0,
+      },
+    ];
+    const withArc = renderToStaticMarkup(
+      <Scrolly config={{ ...base, arcBeats } as never} />,
+    );
+    const withoutArc = renderToStaticMarkup(<Scrolly config={base as never} />);
+    expect(withArc).toContain(
+      "It starts in the east, confirmed by the newsroom.",
+    );
+    expect(withArc).toContain(
+      "It closes in the west, confirmed by the newsroom.",
+    );
+    // The two renders must genuinely differ — silence would be a byte-identical page.
+    expect(withArc).not.toBe(withoutArc);
+    expect(withoutArc).not.toContain("confirmed by the newsroom");
+  });
+
+  it("locator: the confirmed claims reach the page, the salience region names do not gate them", () => {
+    const base = {
+      type: "locator" as const,
+      title: "Five places, in the order the story needs",
+      description: "Five Swiss/French places",
+      basemap: "world",
+      markers: [
+        { lon: 6.1, lat: 46.2, label: "Geneva" },
+        { lon: 6.6, lat: 46.5, label: "Lausanne" },
+        { lon: 8.5, lat: 47.4, label: "Zurich" },
+        { lon: 7.4, lat: 46.9, label: "Bern" },
+        { lon: 4.8, lat: 45.7, label: "Chambéry" },
+      ],
+    };
+    const arcBeats = [
+      {
+        region: "Zurich",
+        role: "establish" as const,
+        text: "Zurich anchors it, confirmed by the newsroom.",
+      },
+      {
+        region: "Bern",
+        role: "build" as const,
+        text: "Bern widens it, confirmed by the newsroom.",
+      },
+      {
+        region: "Geneva",
+        role: "payoff" as const,
+        text: "Geneva closes it, confirmed by the newsroom.",
+      },
+    ];
+    const withArc = renderToStaticMarkup(
+      <Scrolly config={{ ...base, arcBeats } as never} />,
+    );
+    const withoutArc = renderToStaticMarkup(<Scrolly config={base as never} />);
+    expect(withArc).toContain("Zurich anchors it, confirmed by the newsroom.");
+    expect(withArc).toContain("Geneva closes it, confirmed by the newsroom.");
+    expect(withArc).not.toBe(withoutArc);
+    expect(withoutArc).not.toContain("confirmed by the newsroom");
+  });
+
+  it("dot-density: the confirmed claims reach the page, the density-ranked walk does not gate them", async () => {
+    const config: Record<string, unknown> = {
+      type: "dot-density",
+      title: "Eight regions, in the order the story needs",
+      description: "Eight European dot-density regions",
+      basemap: "world",
+      boundaries: "world",
+      regionKey: "iso_a3",
+      valueField: "value",
+      rows: [
+        { iso_a3: "NOR", value: 99 },
+        { iso_a3: "SWE", value: 68 },
+        { iso_a3: "DEU", value: 59 },
+        { iso_a3: "GBR", value: 48 },
+        { iso_a3: "ESP", value: 44 },
+        { iso_a3: "ITA", value: 41 },
+        { iso_a3: "FRA", value: 27 },
+        { iso_a3: "POL", value: 21 },
+      ],
+    };
+    await resolveGeometryForProduce({
+      config,
+      assetsGeoDir: join(
+        import.meta.dir,
+        "..",
+        "..",
+        "map-native",
+        "assets",
+        "geo",
+      ),
+      renderWidthPx: 1200,
+    });
+    const arcBeats = [
+      {
+        region: "DEU",
+        role: "establish" as const,
+        text: "Germany anchors it, confirmed by the newsroom.",
+      },
+      {
+        region: "POL",
+        role: "build" as const,
+        text: "Poland widens it, confirmed by the newsroom.",
+      },
+      {
+        region: "NOR",
+        role: "payoff" as const,
+        text: "Norway closes it, confirmed by the newsroom.",
+      },
+    ];
+    const withArc = renderToStaticMarkup(
+      <Scrolly config={{ ...config, arcBeats } as never} />,
+    );
+    const withoutArc = renderToStaticMarkup(<Scrolly config={config as never} />);
+    expect(withArc).toContain(
+      "Germany anchors it, confirmed by the newsroom.",
+    );
+    expect(withArc).toContain("Norway closes it, confirmed by the newsroom.");
+    expect(withArc).not.toBe(withoutArc);
+    expect(withoutArc).not.toContain("confirmed by the newsroom");
+  });
+
+  it("cartogram: the confirmed claims reach the page, the value-ranked walk does not gate them", async () => {
+    const config: Record<string, unknown> = {
+      type: "cartogram",
+      title: "Eight regions, in the order the story needs",
+      description: "Eight European cartogram cells",
+      basemap: "world",
+      values: [
+        { id: "NOR", value: 99 },
+        { id: "SWE", value: 68 },
+        { id: "DEU", value: 59 },
+        { id: "GBR", value: 48 },
+        { id: "ESP", value: 44 },
+        { id: "ITA", value: 41 },
+        { id: "FRA", value: 27 },
+        { id: "POL", value: 21 },
+      ],
+    };
+    await resolveGeometryForProduce({
+      config,
+      assetsGeoDir: join(
+        import.meta.dir,
+        "..",
+        "..",
+        "map-native",
+        "assets",
+        "geo",
+      ),
+      renderWidthPx: 1200,
+    });
+    const arcBeats = [
+      {
+        region: "DEU",
+        role: "establish" as const,
+        text: "Germany anchors it, confirmed by the newsroom.",
+      },
+      {
+        region: "POL",
+        role: "build" as const,
+        text: "Poland widens it, confirmed by the newsroom.",
+      },
+      {
+        region: "NOR",
+        role: "payoff" as const,
+        text: "Norway closes it, confirmed by the newsroom.",
+      },
+    ];
+    const withArc = renderToStaticMarkup(
+      <Scrolly config={{ ...config, arcBeats } as never} />,
+    );
+    const withoutArc = renderToStaticMarkup(<Scrolly config={config as never} />);
+    expect(withArc).toContain(
+      "Germany anchors it, confirmed by the newsroom.",
+    );
+    expect(withArc).toContain("Norway closes it, confirmed by the newsroom.");
+    expect(withArc).not.toBe(withoutArc);
+    expect(withoutArc).not.toContain("confirmed by the newsroom");
   });
 });

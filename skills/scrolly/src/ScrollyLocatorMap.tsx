@@ -15,7 +15,7 @@ import { locatorGeometry } from "../../map-native/src/locator-geo";
 import type { LocatorMarker } from "../../map-native/src/locator-geo";
 import { deriveLocatorStory } from "../../map-native/src/locator-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
-import type { Beat } from "../../map-native/src/map-story";
+import type { Beat, MapArcBeat } from "../../map-native/src/map-story";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -55,6 +55,9 @@ export interface ScrollyLocatorConfig {
   // brandHue is the single-hue fallback. Absent → today's Okabe-Ito path, unchanged.
   brandHue?: string;
   brandPalette?: string[];
+  /** Journalist-confirmed claim-arc (S2), anchored on marker labels — validated by
+   *  validateLocatorConfig and honoured by deriveLocatorStory. Absent ⇒ the salience walk. */
+  arcBeats?: MapArcBeat[];
 }
 
 interface CameraPoint {
@@ -98,6 +101,10 @@ export const ScrollyLocatorMap: React.FC<{
       ((config as unknown as Record<string, unknown>).insight as string) ??
       config.title ??
       "",
+    // The confirmed claim-arc drives the camera flight, exactly as it drives the captions in
+    // Scrolly.tsx. Both had to forward it: one without the other puts the right words over
+    // the wrong region.
+    arcBeats: config.arcBeats,
   };
   const beats = deriveLocatorStory(config.markers, meta);
 

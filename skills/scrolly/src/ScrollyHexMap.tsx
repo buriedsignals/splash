@@ -13,7 +13,7 @@ import { fmtBin } from "../../map-native/src/core/legend-format";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
-import type { Beat } from "../../map-native/src/map-story";
+import type { Beat, MapArcBeat } from "../../map-native/src/map-story";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -45,6 +45,9 @@ export interface ScrollyHexConfig {
   source?: { name: string; url: string };
   /** deliverable language — localizes numbers + "Source". Default English. */
   lang?: string;
+  /** Journalist-confirmed claim-arc (S2), anchored on the cell's (lon, lat) — validated by
+   *  validateHexGridConfig and honoured by deriveHexGridStory. Absent ⇒ the salience walk. */
+  arcBeats?: MapArcBeat[];
 }
 
 interface CameraPoint {
@@ -88,6 +91,10 @@ export const ScrollyHexMap: React.FC<{
     title: config.title ?? "",
     insight: config.insight ?? config.title ?? "",
     lang: config.lang,
+    // The confirmed claim-arc drives the camera flight, exactly as it drives the captions in
+    // Scrolly.tsx. Both had to forward it: one without the other puts the right words over
+    // the wrong region.
+    arcBeats: config.arcBeats,
   });
 
   // ---------------------------------------------------------------------------

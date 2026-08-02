@@ -17,7 +17,7 @@ import { computeCartogram } from "../../map-native/src/cartogram-geo";
 import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { applyCartogramBasemap } from "../../map-native/src/theme/cartogram-basemap";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
-import type { Beat } from "../../map-native/src/map-story";
+import type { Beat, MapArcBeat } from "../../map-native/src/map-story";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -55,6 +55,9 @@ export interface ScrollyCartogramConfig {
    *  fallback geometry anymore (D5) — mirrors ChoroplethConfig's `geometry` field in
    *  map-native. */
   geometry?: Topology;
+  /** Journalist-confirmed claim-arc (S2), anchored on the cell `id` — validated by
+   *  validateCartogramConfig and honoured by deriveCartogramStory. Absent ⇒ the salience walk. */
+  arcBeats?: MapArcBeat[];
 }
 
 interface CameraPoint {
@@ -123,6 +126,10 @@ export const ScrollyCartogramMap: React.FC<{
       title: config.title ?? "",
       insight: config.insight ?? config.title ?? "",
       lang: config.lang,
+      // The confirmed claim-arc drives the camera flight, exactly as it drives the captions in
+      // Scrolly.tsx. Both had to forward it: one without the other puts the right words over
+      // the wrong region.
+      arcBeats: config.arcBeats,
     });
 
     const style =

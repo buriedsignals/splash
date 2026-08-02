@@ -232,6 +232,8 @@ export const Scrolly: React.FC<{
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
         lang: config.lang,
+        // The journalist's CONFIRMED walk — see the symbol/choropleth branches above.
+        arcBeats: config.arcBeats,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
@@ -257,6 +259,8 @@ export const Scrolly: React.FC<{
           ((config as unknown as Record<string, unknown>).valueUnit as
             string | undefined) ?? "",
         lang: config.lang,
+        // The journalist's CONFIRMED walk — see the symbol/choropleth branches above.
+        arcBeats: config.arcBeats,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
@@ -280,6 +284,8 @@ export const Scrolly: React.FC<{
             string | undefined) ??
           config.title ??
           "",
+        // The journalist's CONFIRMED walk — see the symbol/choropleth branches above.
+        arcBeats: config.arcBeats,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
@@ -297,6 +303,8 @@ export const Scrolly: React.FC<{
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
         lang: config.lang,
+        // The journalist's CONFIRMED walk — see the symbol/choropleth branches above.
+        arcBeats: config.arcBeats,
       });
       return mapStoryToChapters(beats, {
         title: config.title ?? "",
