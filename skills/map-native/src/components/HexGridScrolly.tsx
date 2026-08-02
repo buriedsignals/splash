@@ -183,6 +183,7 @@ export const HexGridScrolly: React.FC<{ config: HexGridConfigShape }> = ({
           config.title ??
           "",
         lang: config.lang,
+        arcBeats: config.arcBeats,
       };
       const beats = deriveHexGridStory(layout, meta);
 

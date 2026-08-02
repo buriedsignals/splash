@@ -19,6 +19,8 @@ import { deriveCartogramStory } from "../src/cartogram-story";
 import { computeCartogram } from "../src/cartogram-geo";
 import { deriveDotDensityStory } from "../src/dot-density-story";
 import { computeDotDensity } from "../src/dot-density-geo";
+import { deriveHexGridStory } from "../src/hex-grid-story";
+import { computeHexGrid } from "../src/hex-grid-geo";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import world from "../assets/geo/world.geojson" assert { type: "json" };
 
@@ -38,18 +40,21 @@ describe("map-native story components forward the confirmed claim-arc", () => {
     "components/LocatorStory.tsx", // video
     "components/CartogramStory.tsx", // video
     "components/DotDensityStory.tsx", // video
+    "components/HexGridStory.tsx", // video
     "components/ChoroplethScrolly.tsx", // scrolly
     "components/SymbolScrolly.tsx", // scrolly
     "components/LocatorScrolly.tsx", // scrolly
     "components/CartogramScrolly.tsx", // scrolly
     "components/DotDensityScrolly.tsx", // scrolly
+    "components/HexGridScrolly.tsx", // scrolly
     // Deliberately NOT here: components/RouteScrolly.tsx and components/RouteReveal.tsx.
     // RouteScrolly.tsx does not thread arcBeats through a `meta` object literal at all — see
     // the dedicated route block below for why, and for the (stronger) invariant it checks
     // instead. RouteReveal.tsx (route's video) draws the route's own line on as a single
     // continuous physical sweep through every crossed territory in geographic order — there is
     // no discrete-beat seam for a confirmed arc to reorder or subset (see its own header
-    // comment on this).
+    // comment on this). Also NOT here: components/HexGridReveal.tsx — same shape as
+    // RouteReveal.tsx (fixed-camera fade-in over the whole grid, no discrete beats at all).
   ];
   for (const file of files) {
     it(`${file} puts arcBeats in the deriver meta`, () => {
@@ -426,6 +431,89 @@ describe("the dot-density sizer agrees with the walk that renders", () => {
   });
 });
 
+// Same class of proof for hex-grid, added when the hex-grid deriver gained arc support
+// (map-storyboard-and-video-geography, Task 5 — the last type). HexGridStory.tsx/
+// HexGridScrolly.tsx both literally call deriveHexGridStory(layout, meta) then
+// mapStoryToChapters(beats, ...) — reproduced here as `renderedSteps`, exactly like the
+// dot-density block above. Unlike every other block here, hex-grid's arc is anchored on a
+// PLACE (lon/lat), not a data key — two clusters far enough apart (2°E vs 20°E) that a 30km
+// square grid drops every cell between them, mirroring claim-arc-map.test.ts's own fixture.
+describe("the hex-grid sizer agrees with the walk that renders", () => {
+  const POINTS = [
+    { lon: 2.0, lat: 46.0 },
+    { lon: 2.05, lat: 46.02 },
+    { lon: 1.95, lat: 45.98 },
+    { lon: 2.02, lat: 45.97 },
+    { lon: 20.0, lat: 46.0 },
+    { lon: 20.05, lat: 46.02 },
+    { lon: 19.95, lat: 45.98 },
+    { lon: 20.02, lat: 45.97 },
+  ];
+  const ARC: MapArcBeat[] = [
+    {
+      region: "The eastern cluster",
+      role: "establish",
+      text: "It starts in the east.",
+      lon: 20.0,
+      lat: 46.0,
+    },
+    {
+      region: "The western cluster",
+      role: "payoff",
+      text: "It closes in the west.",
+      lon: 2.0,
+      lat: 46.0,
+    },
+  ];
+  const base = {
+    type: "hex-grid" as const,
+    title: "Two clusters, in the order the story needs",
+    description: "Two hex-grid clusters",
+    basemap: "world",
+    points: POINTS,
+    binShape: "square" as const,
+    cellSizeKm: 30,
+  };
+
+  function renderedSteps(config: Record<string, unknown>): number {
+    const layout = computeHexGrid(config as never);
+    const beats = deriveHexGridStory(layout, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      insight:
+        (config.insight as string | undefined) ?? (config.title as string),
+      arcBeats: config.arcBeats as MapArcBeat[] | undefined,
+    });
+    return mapStoryToChapters(beats, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      regionsWithData: layout.cells.length,
+    }).steps.length;
+  }
+
+  const size = (config: Record<string, unknown>) =>
+    scrollyStepCount(config, world as unknown as GeoJSON.FeatureCollection);
+
+  it("sizes an ARC config for the arc's own length, not the value-ranked walk's", () => {
+    const config = { ...base, arcBeats: ARC };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+
+  it("can go red: the arc's length differs from the value-ranked walk's", () => {
+    // 2 confirmed reveals vs. 4 value-ranked reveals (all 4 populated cells, default cap) —
+    // the two walks CANNOT accidentally agree here, so this is a real lever.
+    const withArc = { ...base, arcBeats: ARC };
+    const withoutArc = { ...base };
+    expect(size(withArc)).not.toBe(size(withoutArc));
+    expect(renderedSteps(withArc)).not.toBe(renderedSteps(withoutArc));
+  });
+
+  it("leaves the value-ranked sizing untouched", () => {
+    const config = { ...base };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+});
+
 // Same class of proof for route, added when the route deriver gained arc support
 // (map-storyboard-and-video-geography, Task 4). Unlike the four blocks above, route's
 // deriver is routeStoryToChapters (not deriveXStory + mapStoryToChapters) — reproduced
@@ -497,12 +585,12 @@ describe("the route sizer agrees with the walk that renders", () => {
 describe("Remotion's calculateMetadata sizers forward the arc too", () => {
   // Root.tsx cannot be imported under a test (remotion + module-scope MapTiler key), and what
   // went wrong is a missing property in an object literal — same guard shape as above.
-  it("storyMeta, symbolStoryMeta, locatorStoryMeta, cartogramStoryMeta and dotDensityStoryMeta all put arcBeats in the deriver meta", () => {
+  it("storyMeta, symbolStoryMeta, locatorStoryMeta, cartogramStoryMeta, dotDensityStoryMeta and hexGridStoryMeta all put arcBeats in the deriver meta", () => {
     const source = readFileSync(
       join(import.meta.dir, "..", "remotion", "src", "Root.tsx"),
       "utf8",
     );
-    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(5);
+    expect(source.match(/arcBeats:\s*cfg\.arcBeats/g) ?? []).toHaveLength(6);
   });
 });
 
@@ -526,8 +614,20 @@ describe("applyMapArc marks its beats as authored", () => {
   });
 });
 
+// hex-grid (Task 5) was the last non-capable real map type — ARC_CAPABLE_MAP_TYPES now equals
+// every real map type there is, so no REAL type string can reach the refusal branch anymore.
+// map-arc.ts's own DECISION comment on unsupportedArcBeatsErrors explains why it is kept
+// anyway (defence-in-depth against a capability regression AND a genuinely new, 8th map
+// type), and states the consequence for testing it: it can no longer be exercised with a real
+// map-type string, so the fixture below is a string that is DELIBERATELY not a map type at
+// all — proving the function guards the BOUNDARY (capable-list membership), not a specific
+// list of "the types that still can't". A green test asserting a refusal that can never fire
+// for a real type would be exactly the defect this plan kept paying for (see Task 2/Task 4's
+// own fixture moves, and the plan's AMENDMENT) — this is deliberately NOT a real type, so it
+// never expires.
 describe("unsupportedArcBeatsErrors", () => {
   const plan = [{ region: "A", role: "establish" as const, text: "a" }];
+  const NOT_A_MAP_TYPE = "not-a-real-map-type";
 
   it("is silent for every arc-capable type", () => {
     for (const type of ARC_CAPABLE_MAP_TYPES)
@@ -535,33 +635,25 @@ describe("unsupportedArcBeatsErrors", () => {
   });
 
   it("is silent when no plan was submitted", () => {
-    expect(unsupportedArcBeatsErrors({}, "hex-grid")).toEqual([]);
+    expect(unsupportedArcBeatsErrors({}, NOT_A_MAP_TYPE)).toEqual([]);
   });
 
   it("refuses by name, and names the way out", () => {
-    // "cartogram" used to be the example here — it moved to the capable side in
-    // map-storyboard-and-video-geography Task 2; "route" stood in next — it moved to the
-    // capable side in Task 4, so "hex-grid" (the LAST non-capable type — Task 5 makes it
-    // capable too) stands in now. EXPIRES AT TASK 5: same "runs out of subjects" note as
-    // the empty-plan test below — see the plan's AMENDMENT for what Task 5 must decide.
-    const errors = unsupportedArcBeatsErrors({ arcBeats: plan }, "hex-grid");
+    const errors = unsupportedArcBeatsErrors(
+      { arcBeats: plan },
+      NOT_A_MAP_TYPE,
+    );
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("arcBeats");
-    expect(errors[0]).toContain("hex-grid");
-    // The refusal has to say which types DO walk an arc — otherwise it is a dead end.
+    expect(errors[0]).toContain(NOT_A_MAP_TYPE);
+    // The refusal has to say which types DO walk an arc — otherwise it is a dead end. Every
+    // REAL map type, now — the full list.
     for (const type of ARC_CAPABLE_MAP_TYPES) expect(errors[0]).toContain(type);
   });
 
   it("refuses an EMPTY plan too — an empty array is still a field the render ignores", () => {
-    // "locator" used to be the example here — it moved to the capable side in
-    // map-storyboard-and-video-geography Task 1, then "dot-density" stood in — it moved to
-    // the capable side in Task 3, so a non-capable type stands in now.
-    // EXPIRES AT TASK 5: this plan makes all seven map types arc-capable, so once hex-grid
-    // (the last one) gains support, no real type is left to trigger this refusal — Task 5
-    // owns deciding whether unsupportedArcBeatsErrors becomes a guard tested with a
-    // deliberately-non-map-type string, or is retired as dead code.
     expect(
-      unsupportedArcBeatsErrors({ arcBeats: [] }, "hex-grid"),
+      unsupportedArcBeatsErrors({ arcBeats: [] }, NOT_A_MAP_TYPE),
     ).toHaveLength(1);
   });
 });

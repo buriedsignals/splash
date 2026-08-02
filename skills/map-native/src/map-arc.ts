@@ -14,10 +14,22 @@ import { arcErrors, type ArcRole } from "../../../lib/core/claim-arc";
 // (optional) claims a position in the establish→build→turn→payoff arc; `text`
 // is the beat's assertion. Validated by mapArcErrors below.
 // ---------------------------------------------------------------------------
+// `lon`/`lat` are hex-grid-ONLY (see ARC_CAPABLE_MAP_TYPES comment below and
+// hex-grid-story.ts's deriveHexGridStory). Every other arc-capable type anchors on a KEY
+// the data already has (a region code, a marker label, a cell id) — hex-grid is the one
+// type whose units do not exist until the data is BINNED, so a grid cell has no name to
+// give until then. Its anchor is therefore a PLACE: `region` here is the journalist's own
+// free-text label for that place (display-only — carried straight through to the beat's
+// callout — never looked up against a list, because no list of place names exists), and
+// `lon`/`lat` are the coordinates the deriver resolves against the binned grid by
+// point-in-polygon. Optional on the shared interface because every other type leaves them
+// unset.
 export interface MapArcBeat {
   region: string;
   role?: ArcRole;
   text?: string;
+  lon?: number;
+  lat?: number;
 }
 
 // How many valid region values a fail-loud message lists before truncating —
@@ -61,9 +73,14 @@ export function mapArcErrors(
 // the same way but through its own resolveRouteArc, not applyMapArc — its anchors (the
 // territories a route crosses) are COMPUTED from the injected geometry at produce time,
 // not declared in the config, so its content validation cannot run at the gate (see
-// validateRouteConfig / resolveRouteArc). The last one (hex-grid) still derives its walk
-// from the data unconditionally — there is nowhere to put a plan (yet — see the plan this
-// task belongs to for the remaining type).
+// validateRouteConfig / resolveRouteArc). deriveHexGridStory (hex-grid) branches the same
+// way too, through its own resolution (not applyMapArc, whose `resolve(region: string)`
+// signature has no seam for a coordinate pair) — its anchors (which cell a named place
+// lands in) are likewise COMPUTED, from the binned grid, not declared, so it shares
+// route's deferred-to-produce-time validation shape (see validateHexGridConfig /
+// deriveHexGridStory). This is the LAST of the seven real map types to gain one — every
+// type in ARC_CAPABLE_MAP_TYPES below is now every real map type there is (see
+// unsupportedArcBeatsErrors's own comment for what that means for its refusal).
 export const ARC_CAPABLE_MAP_TYPES = [
   "choropleth",
   "symbol",
@@ -71,6 +88,7 @@ export const ARC_CAPABLE_MAP_TYPES = [
   "cartogram",
   "dot-density",
   "route",
+  "hex-grid",
 ] as const;
 
 // Human-readable "a X, a Y, or a Z" listing of the arc-capable types, for the refusal
@@ -106,6 +124,23 @@ function listArcCapableTypes(types: readonly string[]): string {
  * which type it is, and only a dispatch would have to guess.
  *
  * Pure and throw-free; `[]` when the type is arc-capable or no plan was submitted.
+ *
+ * DECISION (map-storyboard-and-video-geography, Task 5 — hex-grid, the last map type to gain
+ * arc support): ARC_CAPABLE_MAP_TYPES is now every real map type there is, so no REAL type
+ * string can ever reach the refusal branch below again — every validator that calls this
+ * (validateRouteConfig/validateLocatorConfig/validateDotDensityConfig/
+ * validateCartogramConfig/validateHexGridConfig) passes a type already in the list. Kept
+ * anyway, as DEFENCE-IN-DEPTH rather than deleted, for two concrete reasons: (1) each call
+ * site's own comment already frames it as "the single lever a capability regression trips" —
+ * drop a type from ARC_CAPABLE_MAP_TYPES (or copy-paste a new validator that forgets to add
+ * itself) and this fires again instead of silently letting an ignored plan through validation;
+ * (2) a genuinely NEW map type, the 8th, is exactly the case this function exists for, and
+ * deleting it would mean re-inventing it the next time one lands. What changes is what the
+ * function's own test can prove: it can no longer be exercised with a real map-type string
+ * (there is none left that is non-capable), so its test now uses a type string that is
+ * deliberately NOT a map type at all — the function guards the BOUNDARY (is this string in
+ * the capable list?) rather than a specific list of "the types that still can't" (see
+ * tests/arc-beats-threading.test.ts's `unsupportedArcBeatsErrors` block).
  */
 export function unsupportedArcBeatsErrors(
   config: unknown,

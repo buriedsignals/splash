@@ -860,6 +860,15 @@ export type HexGridConfigShape = {
   /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
   brandHue?: string;
   brandPalette?: string[];
+  // Journalist-confirmed claim-arc override (S2) — see map-arc.ts's MapArcBeat.lon/lat doc.
+  // Anchors on a PLACE (a free-text name plus its lon/lat), not a data key — hex-grid points
+  // carry no name of their own and a cell has no identity until computeHexGrid bins the data,
+  // so there is nothing to look a name up against here. Validated STRUCTURALLY only (role
+  // sequence + a well-formed coordinate pair per beat) by validateHexGridConfig below; the
+  // CONTENT check (does this place land on a populated cell?) is deferred to produce time,
+  // the same asymmetry as RouteConfigShape's arcBeats — see deriveHexGridStory's
+  // resolveHexGridArc.
+  arcBeats?: MapArcBeat[];
 };
 
 export function validateHexGridConfig(
@@ -871,9 +880,51 @@ export function validateHexGridConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
-  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  // Gate on ARC_CAPABLE_MAP_TYPES membership before validating content. A no-op today
+  // ("hex-grid" is capable — see map-arc.ts) but the single lever a capability regression
+  // trips: drop "hex-grid" from ARC_CAPABLE_MAP_TYPES and this refusal fires again instead
+  // of silently content-validating an arcBeats plan against a type that can no longer
+  // render it.
   errors.push(...unsupportedArcBeatsErrors(s, "hex-grid"));
+
+  if (s.arcBeats !== undefined) {
+    if (!Array.isArray(s.arcBeats)) {
+      errors.push(
+        "arcBeats override must be an ARRAY of beat objects (see MapArcBeat)",
+      );
+    } else {
+      // STRUCTURAL validation only (role sequence — establish opens/payoff closes/≥1
+      // build/≤1 turn — and non-empty text per role beat, PLUS a well-formed coordinate
+      // pair per beat): mirrors validateRouteConfig's own reasoning for WHY the content
+      // check (does this place land on a POPULATED cell?) cannot run here — computeHexGrid
+      // needs @turf/turf, forbidden in this validation import closure (see
+      // validate-closure.test.ts) — but unlike route, hex-grid's anchor SHAPE (does this
+      // beat even carry a coordinate?) can be checked here, the same way `points[]` is
+      // checked below. A typo'd or out-of-range coordinate is caught now; whether it lands
+      // on real data is refused BY NAME at produce time instead (hex-grid-story.ts's
+      // resolveHexGridArc) — one step later than every non-computed arc-capable type.
+      const hgArcBeats = s.arcBeats as Record<string, unknown>[];
+      hgArcBeats.forEach((b, i) => {
+        if (typeof b.region !== "string" || !b.region.trim())
+          errors.push(`arcBeats[${i}]: region must be a non-empty place name`);
+        if (
+          typeof b.lon !== "number" ||
+          Number.isNaN(b.lon) ||
+          b.lon < -180 ||
+          b.lon > 180
+        )
+          errors.push(`arcBeats[${i}]: lon must be a number in [-180, 180]`);
+        if (
+          typeof b.lat !== "number" ||
+          Number.isNaN(b.lat) ||
+          b.lat < -90 ||
+          b.lat > 90
+        )
+          errors.push(`arcBeats[${i}]: lat must be a number in [-90, 90]`);
+      });
+      errors.push(...arcErrors(s.arcBeats as MapArcBeat[]));
+    }
+  }
 
   validateBasemap(s.basemap, errors);
   if (

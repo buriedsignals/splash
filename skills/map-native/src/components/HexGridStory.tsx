@@ -224,6 +224,7 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
           config.title ??
           "",
         lang: config.lang,
+        arcBeats: config.arcBeats,
       };
       const beats = beatsForMode(deriveHexGridStory(layout, meta), mode);
 

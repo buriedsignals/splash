@@ -9,6 +9,7 @@ import { deriveSymbolStory } from "./symbol-story.ts";
 import { deriveLocatorStory } from "./locator-story.ts";
 import { deriveCartogramStory } from "./cartogram-story.ts";
 import { deriveDotDensityStory } from "./dot-density-story.ts";
+import { deriveHexGridStory, frameCell } from "./hex-grid-story.ts";
 import {
   computeChoropleth,
   regionBounds,
@@ -16,15 +17,17 @@ import {
 } from "./choropleth-geo.ts";
 import { computeCartogram } from "./cartogram-geo.ts";
 import { computeDotDensity } from "./dot-density-geo.ts";
+import { computeHexGrid } from "./hex-grid-geo.ts";
 import type { SymbolPoint } from "./symbol-geo.ts";
 import type { LocatorMarker } from "./locator-geo.ts";
-import { bbox } from "@turf/turf";
+import { bbox, booleanPointInPolygon, point as turfPoint } from "@turf/turf";
 import {
   validateChoroplethConfig,
   validateLocatorConfig,
   validateCartogramConfig,
   validateDotDensityConfig,
   validateRouteConfig,
+  validateHexGridConfig,
 } from "./validate-config.ts";
 import { computeRouteReveal } from "./route-geo.ts";
 import {
@@ -1569,6 +1572,239 @@ describe("validateRouteConfig — arcBeats", () => {
   it("rejects a non-array arcBeats", () => {
     const result = validateRouteConfig({
       ...baseRoute,
+      arcBeats: "not-an-array",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.errors.some((e) => /must be an ARRAY/i.test(e))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hex-grid — the LAST arc-capable type, and the hardest: its units (grid cells) do not
+// exist until the data is BINNED, and a hex-grid point carries no name at all
+// (HexGridData.points has no label field — see hex-grid-geo.ts). So, unlike every block
+// above, the journalist cannot name a data KEY; the anchor is a PLACE — a free-text name
+// plus its (lon, lat) — resolved against the binned grid by point-in-polygon (see
+// hex-grid-story.ts's deriveHexGridStory / resolveHexGridArc, and MapArcBeat.lon/lat in
+// map-arc.ts). Two clusters far enough apart (2°E vs 20°E) that a 30km square grid drops
+// every cell in the gap between them — the EMPTY area the Step-1 case needs.
+// ---------------------------------------------------------------------------
+
+const hexClusterA = [
+  { lon: 2.0, lat: 46.0 },
+  { lon: 2.05, lat: 46.02 },
+  { lon: 1.95, lat: 45.98 },
+  { lon: 2.02, lat: 45.97 },
+];
+const hexClusterB = [
+  { lon: 20.0, lat: 46.0 },
+  { lon: 20.05, lat: 46.02 },
+  { lon: 19.95, lat: 45.98 },
+  { lon: 20.02, lat: 45.97 },
+];
+const hexGridLayout = computeHexGrid({
+  points: [...hexClusterA, ...hexClusterB],
+  binShape: "square",
+  aggregate: "count",
+  cellSizeKm: 30,
+});
+
+// Independently re-derives the expected camera by locating the containing cell via the SAME
+// point-in-polygon test resolveHexGridArc uses internally, then framing it via the EXPORTED
+// frameCell — never re-implementing that framing math, mirroring route's expectedRouteCamera.
+function expectedHexGridCamera(
+  lon: number,
+  lat: number,
+): [number, number, number, number] {
+  const pt = turfPoint([lon, lat]);
+  const idx = hexGridLayout.cells.findIndex((c) =>
+    booleanPointInPolygon(pt, c.feature as GeoJSON.Feature<GeoJSON.Polygon>),
+  );
+  if (idx === -1) throw new Error("test fixture bug: point matches no cell");
+  return frameCell(
+    bbox(hexGridLayout.cells[idx].feature) as [number, number, number, number],
+    hexGridLayout.bounds,
+  );
+}
+
+describe("deriveHexGridStory — arcBeats anchored on a place, resolved to its cell", () => {
+  it("with a confirmed arcBeats: reveals follow the ARC order, carry the claim text verbatim, and the camera frames the CONTAINING cell — not the full extent", () => {
+    const beats = deriveHexGridStory(hexGridLayout, {
+      title: "Two clusters, one confirmed order",
+      arcBeats: [
+        {
+          region: "The eastern cluster",
+          role: "establish",
+          text: "It starts in the east.",
+          lon: 20.0,
+          lat: 46.0,
+        },
+        {
+          region: "The western cluster",
+          role: "payoff",
+          text: "It closes in the west.",
+          lon: 2.0,
+          lat: 46.0,
+        },
+      ],
+    });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals).toHaveLength(2); // the arc's own length — not the ranked cap (5)
+    expect(reveals.map((b) => b.copy)).toEqual([
+      "It starts in the east.",
+      "It closes in the west.",
+    ]);
+    expect(reveals.map((b) => b.callout?.text)).toEqual([
+      "It starts in the east.",
+      "It closes in the west.",
+    ]);
+    // The place NAME the journalist gave — never the rank descriptor the ranked walk uses.
+    expect(reveals.map((b) => b.callout?.name)).toEqual([
+      "The eastern cluster",
+      "The western cluster",
+    ]);
+    expect(reveals.map((b) => b.role)).toEqual(["establish", "payoff"]);
+    expect(reveals.map((b) => b.authored)).toEqual([true, true]);
+    expect(reveals.map((b) => b.camera)).toEqual([
+      expectedHexGridCamera(20.0, 46.0),
+      expectedHexGridCamera(2.0, 46.0),
+    ]);
+    for (const r of reveals) expect(r.camera).not.toEqual(hexGridLayout.bounds);
+  });
+
+  it("a place that falls in an EMPTY cell (no populated cell contains it) is refused BY NAME — Step 1 decision (a): never silently snapped or framed", () => {
+    const callDerive = () =>
+      deriveHexGridStory(hexGridLayout, {
+        title: "Two clusters, one confirmed order",
+        arcBeats: [
+          {
+            region: "Nowhere between them",
+            role: "establish",
+            text: "x",
+            lon: 11,
+            lat: 46,
+          },
+        ],
+      });
+    expect(callDerive).toThrow(/"Nowhere between them"/);
+    expect(callDerive).toThrow(/empty/i);
+  });
+
+  it("an anchor missing lon/lat is refused by name — a hex-grid anchor is a coordinate, not a lookup key", () => {
+    const callDerive = () =>
+      deriveHexGridStory(hexGridLayout, {
+        title: "Two clusters, one confirmed order",
+        arcBeats: [
+          { region: "Somewhere unspecified", role: "establish", text: "x" },
+        ],
+      });
+    expect(callDerive).toThrow(/"Somewhere unspecified"/);
+  });
+
+  it("without arcBeats: byte-identical to the value-ranked baseline (see hex-grid-story.test.ts's own suite for the full ranked-path proof)", () => {
+    const withArc = deriveHexGridStory(hexGridLayout, {
+      title: "Two clusters",
+      arcBeats: [
+        {
+          region: "The eastern cluster",
+          role: "establish",
+          text: "x",
+          lon: 20.0,
+          lat: 46.0,
+        },
+      ],
+    });
+    const withoutArc = deriveHexGridStory(hexGridLayout, {
+      title: "Two clusters",
+    });
+    // The ranked walk visits every populated cell (4, under the default cap of 5) — the arc
+    // above visits exactly 1. The two walks cannot accidentally agree, so this is a real lever.
+    expect(withArc.filter((b) => b.kind === "reveal")).toHaveLength(1);
+    expect(withoutArc.filter((b) => b.kind === "reveal")).toHaveLength(4);
+  });
+});
+
+describe("validateHexGridConfig — arcBeats", () => {
+  const basePoints = [...hexClusterA, ...hexClusterB];
+  const baseHexGrid = {
+    type: "hex-grid" as const,
+    basemap: "world",
+    title: "A confirmed hex-grid arc, structurally valid",
+    points: basePoints,
+    binShape: "square" as const,
+    cellSizeKm: 30,
+  };
+
+  it("passes a STRUCTURALLY well-formed arcBeats — content (does this place land on data?) is NOT checked here, only at produce time", () => {
+    const result = validateHexGridConfig({
+      ...baseHexGrid,
+      // "Nowhere" cannot be checked at the gate (computeHexGrid needs @turf/turf, forbidden
+      // in the validation import closure — see validate-closure.test.ts) — this is the same
+      // Step 1 asymmetry as route's, not a bug: validateHexGridConfig only checks the claim-
+      // arc STRUCTURE (role sequence + a well-formed coordinate pair per beat).
+      arcBeats: [
+        {
+          region: "Nowhere",
+          role: "establish",
+          text: "sets the scene",
+          lon: 0,
+          lat: 0,
+        },
+        {
+          region: "StillNowhere",
+          role: "build",
+          text: "builds the case",
+          lon: 1,
+          lat: 1,
+        },
+        {
+          region: "AlsoNowhere",
+          role: "payoff",
+          text: "lands it",
+          lon: 2,
+          lat: 2,
+        },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a STRUCTURALLY malformed arcBeats (no establish) even though the place can't be checked yet", () => {
+    const result = validateHexGridConfig({
+      ...baseHexGrid,
+      arcBeats: [
+        { region: "Nowhere", role: "payoff", text: "lands it", lon: 0, lat: 0 },
+      ],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.errors.some((e) => /open.*establish/i.test(e))).toBe(true);
+  });
+
+  it("rejects an arcBeat with no lon/lat, or an out-of-range one — the SHAPE check the gate CAN run, unlike the content check", () => {
+    const missing = validateHexGridConfig({
+      ...baseHexGrid,
+      arcBeats: [{ region: "Nowhere", role: "establish", text: "x" }],
+    });
+    expect(missing.ok).toBe(false);
+    if (!missing.ok)
+      expect(missing.errors.some((e) => /lon/i.test(e))).toBe(true);
+
+    const outOfRange = validateHexGridConfig({
+      ...baseHexGrid,
+      arcBeats: [
+        { region: "Nowhere", role: "establish", text: "x", lon: 999, lat: 0 },
+      ],
+    });
+    expect(outOfRange.ok).toBe(false);
+    if (!outOfRange.ok)
+      expect(outOfRange.errors.some((e) => /lon/i.test(e))).toBe(true);
+  });
+
+  it("rejects a non-array arcBeats", () => {
+    const result = validateHexGridConfig({
+      ...baseHexGrid,
       arcBeats: "not-an-array",
     });
     expect(result.ok).toBe(false);
