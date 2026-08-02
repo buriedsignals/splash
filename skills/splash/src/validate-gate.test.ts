@@ -272,10 +272,10 @@ describe("validateAccepted — the spine validation gate", () => {
     if (r.ok) expect(r.warnings.join(" ")).toMatch(/auto-picked|salience/i);
   });
 
-  // Guard the deferral — route/cartogram (and the other non-workhorse map types) do not
-  // support an arcBeats override yet, so a config with no arcBeats must NOT be flagged
-  // with the salience-fallback warning (there is no override to confirm instead).
-  it("does NOT warn on a MAP route scrolly with no arcBeats (route doesn't support an override yet)", () => {
+  // route joined ARC_CAPABLE_MAP_TYPES (map-storyboard-and-video-geography) — a route
+  // scrolly with no confirmed arcBeats is now a salience fallback exactly like its
+  // siblings above, and must be flagged the same way.
+  it("WARNS that a MAP route scrolly with no confirmed arcBeats used the salience fallback", () => {
     const r = validateAccepted(
       accept("scrolly", {
         type: "route",
@@ -290,7 +290,7 @@ describe("validateAccepted — the spine validation gate", () => {
       }),
     );
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.warnings.join(" ")).not.toMatch(/auto-picked|salience/i);
+    if (r.ok) expect(r.warnings.join(" ")).toMatch(/auto-picked|salience/i);
   });
 
   it("returns a FAILURE (never a crash) for a producer outside the union", () => {
