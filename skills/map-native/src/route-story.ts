@@ -1,5 +1,6 @@
-import type { RouteRevealLayout } from "./route-geo";
+import type { RouteRevealLayout, RouteRevealTerritory } from "./route-geo";
 import { computeRouteReveal } from "./route-geo";
+import { listValidRegions, type MapArcBeat } from "./map-arc";
 import { computeChoropleth } from "./choropleth-geo";
 import { computeDotDensity } from "./dot-density-geo";
 import { deriveLocatorStory } from "./locator-story";
@@ -13,6 +14,61 @@ import { deriveCartogramStory } from "./cartogram-story";
 import { buildTimeline } from "./story-timeline";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
 import type { ScrollyStory, ScrollyStep } from "../../scrolly/src/chapters";
+
+// The arc-camera for one crossed territory: its OWN geographic footprint (a bbox over the
+// border rings computeRouteReveal already extracted), never the cumulative "route drawn
+// through" bbox the geographic-order walk below uses. Mirrors cartogram's frameCell /
+// dot-density's regionBounds — an arc beat's camera is the named anchor's own extent, not
+// the map's default framing.
+export function routeArcCamera(
+  territory: RouteRevealTerritory,
+): [number, number, number, number] {
+  let w = Infinity,
+    s = Infinity,
+    e = -Infinity,
+    n = -Infinity;
+  for (const ring of territory.border) {
+    for (const [lon, lat] of ring) {
+      if (lon < w) w = lon;
+      if (lon > e) e = lon;
+      if (lat < s) s = lat;
+      if (lat > n) n = lat;
+    }
+  }
+  return [w, s, e, n];
+}
+
+export interface RouteArcStep {
+  territory: RouteRevealTerritory;
+  text: string;
+  camera: [number, number, number, number];
+}
+
+// Turn a journalist-confirmed claim-arc into an ORDERED walk of the territories THIS route
+// crosses. Route is the one arc-capable map type whose anchors are COMPUTED, not declared
+// (see map-arc.ts's ARC_CAPABLE_MAP_TYPES comment and validateRouteConfig): the gate cannot
+// check `region` against a real territory list because that list only exists once
+// computeRouteReveal has run against the injected geometry. So — unlike applyMapArc's
+// defensive throw in map-story.ts, which is unreachable in practice because mapArcErrors
+// already validated every region at the gate — the throw below IS the validation for a
+// route's arcBeats. It fires at PRODUCE time, later than every other arc-capable type
+// learns of a typo, and it refuses BY NAME, listing the territories this route actually
+// crosses (its own way out, same discipline as mapArcErrors's message).
+export function resolveRouteArc(
+  layout: RouteRevealLayout,
+  arcBeats: MapArcBeat[],
+): RouteArcStep[] {
+  const byKey = new Map(layout.territories.map((t) => [t.key, t]));
+  return arcBeats.map((b) => {
+    const t = byKey.get(b.region);
+    if (!t)
+      throw new Error(
+        `route arcBeats: territory "${b.region}" is not one this route crosses — ` +
+          `it crosses: ${listValidRegions(layout.territories.map((x) => x.key))}`,
+      );
+    return { territory: t, text: b.text ?? "", camera: routeArcCamera(t) };
+  });
+}
 
 // Route → ScrollyStory. Step sequence:
 //   [0] intro       — flyTo, title card scene, carries the description (ref 0)
@@ -33,9 +89,17 @@ export function routeStoryToChapters(
     source?: { name: string; url: string };
     insight?: string;
     notes?: Record<string, string>;
+    // Journalist-confirmed claim-arc override (S2) — see map-arc.ts / resolveRouteArc's
+    // header comment. When present + non-empty, the drawTo steps follow the ARC (order +
+    // verbatim `text`, never the note/label fallback) instead of the geographic-order walk
+    // below; absent/empty leaves that walk byte-identical.
+    arcBeats?: MapArcBeat[];
   },
 ): ScrollyStory {
-  const n = layout.territories.length;
+  const arc = meta.arcBeats?.length
+    ? resolveRouteArc(layout, meta.arcBeats)
+    : null;
+  const n = arc ? arc.length : layout.territories.length;
 
   const intro: ScrollyStep = {
     id: "step-0-intro",
@@ -55,16 +119,27 @@ export function routeStoryToChapters(
     align: "center",
   };
 
-  const drawSteps: ScrollyStep[] = layout.territories.map((t, i) => ({
-    id: `step-${i + 2}-draw`,
-    visual: "map",
-    action: "drawTo",
-    ref: i,
-    prose: meta.notes?.[t.key]?.trim()
-      ? (meta.notes[t.key] as string)
-      : t.label,
-    align: "center",
-  }));
+  const drawSteps: ScrollyStep[] = arc
+    ? arc.map((a, i) => ({
+        id: `step-${i + 2}-draw`,
+        visual: "map",
+        action: "drawTo",
+        ref: i,
+        // The journalist's claim, verbatim — never the note/label fallback the
+        // geographic-order walk below uses.
+        prose: a.text,
+        align: "center",
+      }))
+    : layout.territories.map((t, i) => ({
+        id: `step-${i + 2}-draw`,
+        visual: "map",
+        action: "drawTo",
+        ref: i,
+        prose: meta.notes?.[t.key]?.trim()
+          ? (meta.notes[t.key] as string)
+          : t.label,
+        align: "center",
+      }));
 
   const takeawayProse = meta.insight?.trim()
     ? meta.insight
@@ -105,7 +180,17 @@ export function scrollyStepCount(
   world: GeoJSON.FeatureCollection,
 ): number {
   if (config.type === "route") {
-    return computeRouteReveal(config, world).territories.length + 3;
+    const layout = computeRouteReveal(config, world);
+    // The SIZER must derive the same walk the renderer does (same mirror as every branch
+    // below) — a confirmed arc changes the beat COUNT (the journalist's own selection, not
+    // the geographic-order walk), so a sizer blind to it sizes the composition for a
+    // different story than the one that renders. Reuses resolveRouteArc rather than just
+    // `config.arcBeats.length` so an unknown territory throws here too, exactly as it would
+    // at render — the sizer and the renderer agree on failure, not just on success.
+    const n = config.arcBeats?.length
+      ? resolveRouteArc(layout, config.arcBeats).length
+      : layout.territories.length;
+    return n + 3;
   }
   if (config.type === "locator") {
     const beats = deriveLocatorStory(config.markers, {

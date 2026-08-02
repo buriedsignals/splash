@@ -25,7 +25,10 @@ export interface MapArcBeat {
 // typo at a glance, bounded so a 1 000-row dataset cannot flood the log.
 const ARC_BEAT_REGION_SAMPLE = 20;
 
-function listValidRegions(values: string[]): string {
+// Exported so route-story.ts's produce-time refusal (route cannot validate its arc's
+// regions at the gate — see resolveRouteArc's header comment) can format the SAME
+// "here's the real list" message shape, rather than growing its own copy.
+export function listValidRegions(values: string[]): string {
   const shown = values.slice(0, ARC_BEAT_REGION_SAMPLE);
   const more = values.length - shown.length;
   return shown.join(", ") + (more > 0 ? `, … (+${more} more)` : "");
@@ -54,15 +57,20 @@ export function mapArcErrors(
 // The map story types whose derivers have a seam for a confirmed arc: deriveMapStory
 // (choropleth), deriveSymbolStory (symbol), deriveLocatorStory (locator),
 // deriveCartogramStory (cartogram) and deriveDotDensityStory (dot-density) all branch on
-// `meta.arcBeats` and walk it through applyMapArc. The other two (route, hex-grid) derive
-// their walk from the data unconditionally — there is nowhere to put a plan (yet — see the
-// plan this task belongs to for the remaining types).
+// `meta.arcBeats` and walk it through applyMapArc. routeStoryToChapters (route) branches
+// the same way but through its own resolveRouteArc, not applyMapArc — its anchors (the
+// territories a route crosses) are COMPUTED from the injected geometry at produce time,
+// not declared in the config, so its content validation cannot run at the gate (see
+// validateRouteConfig / resolveRouteArc). The last one (hex-grid) still derives its walk
+// from the data unconditionally — there is nowhere to put a plan (yet — see the plan this
+// task belongs to for the remaining type).
 export const ARC_CAPABLE_MAP_TYPES = [
   "choropleth",
   "symbol",
   "locator",
   "cartogram",
   "dot-density",
+  "route",
 ] as const;
 
 // Human-readable "a X, a Y, or a Z" listing of the arc-capable types, for the refusal

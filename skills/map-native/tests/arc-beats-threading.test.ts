@@ -404,11 +404,14 @@ describe("unsupportedArcBeatsErrors", () => {
 
   it("refuses by name, and names the way out", () => {
     // "cartogram" used to be the example here — it moved to the capable side in
-    // map-storyboard-and-video-geography Task 2, so a non-capable type stands in now.
-    const errors = unsupportedArcBeatsErrors({ arcBeats: plan }, "route");
+    // map-storyboard-and-video-geography Task 2; "route" stood in next — it moved to the
+    // capable side in Task 4, so "hex-grid" (the LAST non-capable type — Task 5 makes it
+    // capable too) stands in now. EXPIRES AT TASK 5: same "runs out of subjects" note as
+    // the empty-plan test below — see the plan's AMENDMENT for what Task 5 must decide.
+    const errors = unsupportedArcBeatsErrors({ arcBeats: plan }, "hex-grid");
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("arcBeats");
-    expect(errors[0]).toContain("route");
+    expect(errors[0]).toContain("hex-grid");
     // The refusal has to say which types DO walk an arc — otherwise it is a dead end.
     for (const type of ARC_CAPABLE_MAP_TYPES) expect(errors[0]).toContain(type);
   });

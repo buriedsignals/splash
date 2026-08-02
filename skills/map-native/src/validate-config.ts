@@ -12,6 +12,11 @@ import {
   type MapArcBeat,
 } from "./map-arc";
 import type { RevealMode } from "./map-story";
+// Structural-only claim-arc validation (role sequence, non-empty text) — the piece of
+// mapArcErrors that does NOT need a region list. validateRouteConfig uses this alone
+// (see its own comment): a route's valid regions (the territories it crosses) only exist
+// once the injected geometry is available, at produce time.
+import { arcErrors } from "../../../lib/core/claim-arc";
 
 // Shared palette/scaleType validation for any config that carries a colour scale.
 // Errors block: a scaleType must be known, a named palette must exist AND match the
@@ -415,6 +420,12 @@ export type RouteConfigShape = {
   brandHue?: string;
   brandPalette?: string[];
   brandExplicit?: boolean;
+  // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors. Anchors
+  // on the territories THIS ROUTE crosses (RouteRevealTerritory.key), which only exist
+  // once computeRoute/computeRouteReveal run against the injected geometry — so, unlike
+  // every other arc-capable type, an unknown territory name is NOT caught here. See
+  // validateRouteConfig below and route-story.ts's resolveRouteArc.
+  arcBeats?: MapArcBeat[];
 };
 
 // Framework-free structural validation of a route-map config (pre-render — no
@@ -429,9 +440,31 @@ export function validateRouteConfig(
   const warnings: string[] = [];
   const s = (spec ?? {}) as Record<string, unknown>;
 
-  // This type's deriver has no seam for a confirmed claim-arc — refuse the plan by name
-  // rather than accept it and drop it at the render (see unsupportedArcBeatsErrors).
+  // Gate on ARC_CAPABLE_MAP_TYPES membership before validating content. A no-op today
+  // ("route" is capable — see map-arc.ts) but the single lever a capability regression
+  // trips: drop "route" from ARC_CAPABLE_MAP_TYPES and this refusal fires again instead
+  // of silently letting an arcBeats plan through to a deriver that no longer honours it.
   errors.push(...unsupportedArcBeatsErrors(s, "route"));
+
+  if (s.arcBeats !== undefined) {
+    if (!Array.isArray(s.arcBeats)) {
+      errors.push(
+        "arcBeats override must be an ARRAY of beat objects (see MapArcBeat)",
+      );
+    } else {
+      // STRUCTURAL validation only (role sequence — establish opens/payoff closes/≥1
+      // build/≤1 turn — and non-empty text per role beat): arcErrors needs no region
+      // list. The CONTENT check every other arc-capable type's mapArcErrors also runs
+      // here (does `region` name a real anchor?) CANNOT run: a route's valid regions
+      // are the territories `computeRoute`/`computeRouteReveal` finds crossed, which
+      // needs the injected geometry (`config.geometry`, set by produce.mjs) — absent at
+      // validation time. So a route's arcBeats is validated LESS than the other five
+      // arc-capable types at this gate: a typo in `region` here passes validation and
+      // is refused later, by name, at PRODUCE time (route-story.ts's resolveRouteArc)
+      // — the journalist learns of it one step later than everywhere else.
+      errors.push(...arcErrors(s.arcBeats as MapArcBeat[]));
+    }
+  }
 
   validateBasemap(s.basemap, errors);
 

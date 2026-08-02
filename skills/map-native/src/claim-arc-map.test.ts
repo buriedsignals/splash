@@ -24,7 +24,14 @@ import {
   validateLocatorConfig,
   validateCartogramConfig,
   validateDotDensityConfig,
+  validateRouteConfig,
 } from "./validate-config.ts";
+import { computeRouteReveal } from "./route-geo.ts";
+import {
+  resolveRouteArc,
+  routeArcCamera,
+  routeStoryToChapters,
+} from "./route-story.ts";
 
 const validRegions = ["Geneva", "Vaud", "Zurich", "Bern"];
 
@@ -1264,5 +1271,229 @@ describe("mapNarrativeFallbackWarning — empty arcBeats (Finding #2)", () => {
   it("still warns when arcBeats is absent (behaviour-preserving)", () => {
     const warning = mapNarrativeFallbackWarning({ type: "choropleth" });
     expect(warning).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// route — the one arc-capable type whose anchors are COMPUTED, not declared.
+// `computeRouteReveal` needs the injected geometry to know which territories a route
+// crosses at all, so — unlike the five blocks above — a route's arcBeats content
+// (does `region` name a real territory?) is NOT checked by validateRouteConfig; it is
+// checked by resolveRouteArc, at produce time (see route-story.ts / validate-config.ts's
+// validateRouteConfig for the Step 1 finding this asymmetry comes from).
+//
+// Three unit-square territories side by side along +lon — AAA[0,1], BBB[1,2], CCC[2,3] —
+// crossed by a route running west→east through all three, at lat 0.5 (mirrors
+// tests/route-geo.test.ts's fixture shape, extended to a 3rd territory so an arc can both
+// SKIP one and REORDER the rest, proving it is not just a re-sorted geographic walk).
+// ---------------------------------------------------------------------------
+
+const routePoly = (k: string, x0: number): GeoJSON.Feature => ({
+  type: "Feature",
+  properties: { iso_a3: k, name: k },
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [x0, 0],
+        [x0 + 1, 0],
+        [x0 + 1, 1],
+        [x0, 1],
+        [x0, 0],
+      ],
+    ],
+  },
+});
+const routeBoundaries: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [routePoly("AAA", 0), routePoly("BBB", 1), routePoly("CCC", 2)],
+};
+const routeConfig = {
+  type: "route" as const,
+  route: [
+    [0.2, 0.5],
+    [2.8, 0.5],
+  ] as [number, number][],
+  basemap: "world",
+  title: "A path across three lands",
+};
+const routeLayout = computeRouteReveal(routeConfig, routeBoundaries);
+// ARC order (CCC, AAA) — NOT geographic entry order (AAA, BBB, CCC, since the route starts
+// inside AAA and exits through BBB into CCC), and skips BBB entirely (the arc's own
+// selection, not a cap).
+const routeArc: MapArcBeat[] = [
+  { region: "CCC", role: "establish", text: "CCC opens the story." },
+  { region: "AAA", role: "payoff", text: "AAA closes it." },
+];
+
+function expectedRouteCamera(key: string): [number, number, number, number] {
+  const t = routeLayout.territories.find((x) => x.key === key)!;
+  return routeArcCamera(t);
+}
+
+describe("resolveRouteArc — the produce-time anchor resolver", () => {
+  it("with a confirmed arcBeats: walks the ARC order (not geographic entry order), carries the claim text verbatim, and the camera frames the NAMED territory's own footprint — not the route's cumulative drawn-through bounds", () => {
+    const resolved = resolveRouteArc(routeLayout, routeArc);
+    expect(resolved.map((r) => r.territory.key)).toEqual(["CCC", "AAA"]);
+    expect(resolved.map((r) => r.text)).toEqual([
+      "CCC opens the story.",
+      "AAA closes it.",
+    ]);
+    expect(resolved.map((r) => r.camera)).toEqual([
+      expectedRouteCamera("CCC"),
+      expectedRouteCamera("AAA"),
+    ]);
+    for (const r of resolved) expect(r.camera).not.toEqual(routeLayout.bounds);
+  });
+
+  it("an arcBeats naming a territory this route does not cross is refused BY NAME, listing the territories it actually crosses", () => {
+    const callResolve = () =>
+      resolveRouteArc(routeLayout, [
+        {
+          region: "Nowhere",
+          role: "establish",
+          text: "Nowhere is not on this route.",
+        },
+      ]);
+    expect(callResolve).toThrow(/"Nowhere".*not one this route crosses/);
+    expect(callResolve).toThrow(/AAA.*BBB.*CCC/);
+  });
+});
+
+describe("routeStoryToChapters — resolveRouteArc wiring", () => {
+  it("with a confirmed arcBeats: drawTo steps follow the ARC order and carry the claim text verbatim, not the note/label fallback", () => {
+    const story = routeStoryToChapters(routeLayout, {
+      title: routeConfig.title,
+      arcBeats: routeArc,
+    });
+    const draws = story.steps.filter((s) => s.action === "drawTo");
+    expect(draws).toHaveLength(2); // the arc's own length — not layout.territories.length (3)
+    expect(draws.map((s) => s.ref)).toEqual([0, 1]);
+    expect(draws.map((s) => s.prose)).toEqual([
+      "CCC opens the story.",
+      "AAA closes it.",
+    ]);
+    // The takeaway's sentinel ref is the ARC's length, not the geographic walk's.
+    const takeaway = story.steps[story.steps.length - 1];
+    expect(takeaway.ref).toBe(2);
+  });
+
+  it("an arcBeats naming an unknown territory is refused by name when the story is derived", () => {
+    const callDerive = () =>
+      routeStoryToChapters(routeLayout, {
+        title: routeConfig.title,
+        arcBeats: [
+          {
+            region: "Nowhere",
+            role: "establish",
+            text: "Nowhere is not on this route.",
+          },
+        ],
+      });
+    expect(callDerive).toThrow(/"Nowhere".*not one this route crosses/);
+    expect(callDerive).toThrow(/AAA.*BBB.*CCC/);
+  });
+
+  it("without arcBeats: byte-identical to the captured geographic-order baseline", () => {
+    const story = routeStoryToChapters(routeLayout, {
+      title: routeConfig.title,
+      insight: "Three lands, one path.",
+    });
+    expect(story.steps).toEqual([
+      {
+        id: "step-0-intro",
+        visual: "map",
+        action: "flyTo",
+        ref: 0,
+        prose: "A path across three lands",
+        align: "center",
+      },
+      {
+        id: "step-1-overview",
+        visual: "map",
+        action: "flyTo",
+        ref: -1,
+        prose: "A path across three lands",
+        align: "center",
+      },
+      {
+        id: "step-2-draw",
+        visual: "map",
+        action: "drawTo",
+        ref: 0,
+        prose: "AAA",
+        align: "center",
+      },
+      {
+        id: "step-3-draw",
+        visual: "map",
+        action: "drawTo",
+        ref: 1,
+        prose: "BBB",
+        align: "center",
+      },
+      {
+        id: "step-4-draw",
+        visual: "map",
+        action: "drawTo",
+        ref: 2,
+        prose: "CCC",
+        align: "center",
+      },
+      {
+        id: "step-5-takeaway",
+        visual: "map",
+        action: "flyTo",
+        ref: 3,
+        prose: "Three lands, one path.",
+        align: "center",
+      },
+    ]);
+  });
+});
+
+describe("validateRouteConfig — arcBeats", () => {
+  const baseRoute = {
+    type: "route" as const,
+    basemap: "world",
+    title: "A path across three real lands",
+    route: [
+      [0.2, 0.5],
+      [2.8, 0.5],
+    ] as [number, number][],
+  };
+
+  it("passes a STRUCTURALLY well-formed arcBeats — content (does `region` name a real territory?) is NOT checked here, only at produce time", () => {
+    const result = validateRouteConfig({
+      ...baseRoute,
+      // "Nowhere" cannot be checked at the gate (no geometry yet) — this is the Step 1
+      // asymmetry, not a bug: validateRouteConfig only checks the claim-arc STRUCTURE.
+      arcBeats: [
+        { region: "Nowhere", role: "establish", text: "sets the scene" },
+        { region: "StillNowhere", role: "build", text: "builds the case" },
+        { region: "AlsoNowhere", role: "payoff", text: "lands it" },
+      ],
+    });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects a STRUCTURALLY malformed arcBeats (no establish) even though the territories can't be checked yet", () => {
+    const result = validateRouteConfig({
+      ...baseRoute,
+      arcBeats: [{ region: "Nowhere", role: "payoff", text: "lands it" }],
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.errors.some((e) => /open.*establish/i.test(e))).toBe(true);
+  });
+
+  it("rejects a non-array arcBeats", () => {
+    const result = validateRouteConfig({
+      ...baseRoute,
+      arcBeats: "not-an-array",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.errors.some((e) => /must be an ARRAY/i.test(e))).toBe(true);
   });
 });
