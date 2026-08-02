@@ -33,6 +33,81 @@ import world from "../assets/geo/world.geojson" assert { type: "json" };
 
 const SRC = join(import.meta.dir, "..", "src");
 
+// Strips `//` line comments and `/* … */` block comments, replacing comment characters with
+// spaces so line/column offsets are preserved — mirrors lib/geo/static-geojson-imports.test.ts's
+// own stripComments (same discipline: a naive scan over raw source matches the file's own prose
+// as readily as the code it describes, and a doc comment naming a function by hand is exactly
+// how a source-scan guard ends up brittle to a harmless wording edit). String literals
+// (single/double/backtick) are tracked as opaque so a `//` inside one is never mistaken for a
+// comment start.
+function stripLineAndBlockComments(src: string): string {
+  let out = "";
+  let state:
+    | "code"
+    | "line-comment"
+    | "block-comment"
+    | "string-single"
+    | "string-double"
+    | "template" = "code";
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    const next = src[i + 1];
+    if (state === "code") {
+      if (c === "/" && next === "/") {
+        state = "line-comment";
+        out += "  ";
+        i++;
+      } else if (c === "/" && next === "*") {
+        state = "block-comment";
+        out += "  ";
+        i++;
+      } else if (c === "'" || c === '"' || c === "`") {
+        state =
+          c === "'"
+            ? "string-single"
+            : c === '"'
+              ? "string-double"
+              : "template";
+        out += c;
+      } else {
+        out += c;
+      }
+      continue;
+    }
+    if (state === "line-comment") {
+      if (c === "\n") {
+        state = "code";
+        out += c;
+      } else {
+        out += " ";
+      }
+      continue;
+    }
+    if (state === "block-comment") {
+      if (c === "*" && next === "/") {
+        state = "code";
+        out += "  ";
+        i++;
+      } else {
+        out += c === "\n" ? "\n" : " ";
+      }
+      continue;
+    }
+    const quote =
+      state === "string-single" ? "'" : state === "string-double" ? '"' : "`";
+    if (c === "\\" && next !== undefined) {
+      out += c + next;
+      i++;
+    } else if (c === quote) {
+      state = "code";
+      out += c;
+    } else {
+      out += c;
+    }
+  }
+  return out;
+}
+
 describe("map-native story components forward the confirmed claim-arc", () => {
   const files = [
     "components/ChoroplethStory.tsx", // video
@@ -106,9 +181,24 @@ describe("RouteScrolly.tsx resolves its walk exactly once, and threads that valu
     );
   });
 
-  it("calls resolveRouteWalk EXACTLY ONCE — a second call, anywhere in the file, for any reason, is the round-2 bug reintroduced", () => {
-    const occurrences = routeScrollySource.match(/resolveRouteWalk\(/g) ?? [];
-    expect(occurrences).toHaveLength(1);
+  // Counting the CALL form (`resolveRouteWalk(`) alone is defeated by a one-line alias:
+  // `const rw2 = resolveRouteWalk;` then calling `rw2(l, undefined)` elsewhere adds a second,
+  // independent derivation of the walk — the exact round-2 shape this test exists to catch —
+  // while every occurrence of the literal text `resolveRouteWalk(` in the file stays unchanged
+  // (measured: the call-form count stays 1 under that exploit). Counting the BARE identifier
+  // instead catches it (measured: 2 → 3 under the exploit), because the alias assignment itself
+  // — `= resolveRouteWalk` — is a second occurrence of the identifier, call or not.
+  //
+  // Comments are stripped before counting so a doc-comment mention of "resolveRouteWalk" (this
+  // file's own header explains the round-1/round-2 history by name, three times) cannot change
+  // the count — a harmless prose edit must never flip this test. What remains after stripping is
+  // exactly TWO code occurrences today: the import (`import { ..., resolveRouteWalk, ... }`) and
+  // the one real call. A third occurrence, anywhere — an alias, a re-export, a second import
+  // binding — is the regression.
+  it("the bare identifier `resolveRouteWalk` appears exactly twice in CODE (the import + the one real call) — a third occurrence anywhere is the round-2 bug reintroduced, alias or not", () => {
+    const stripped = stripLineAndBlockComments(routeScrollySource);
+    const occurrences = stripped.match(/\bresolveRouteWalk\b/g) ?? [];
+    expect(occurrences).toHaveLength(2);
   });
 
   it("passes the resolved walk (not `arcBeats`) into routeStoryToChapters — the type signature routeStoryToChapters(layout, walk, meta) makes a re-derivation from arcBeats inside it impossible, this confirms the CALLER honours that", () => {
