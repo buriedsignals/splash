@@ -6,7 +6,8 @@ import {
   ARC_CAPABLE_MAP_TYPES,
 } from "../src/map-arc";
 import { applyMapArc, deriveMapStory, type MapArcBeat } from "../src/map-story";
-import { scrollyStepCount } from "../src/route-story";
+import { routeStoryToChapters, scrollyStepCount } from "../src/route-story";
+import { computeRouteReveal } from "../src/route-geo";
 import { computeChoropleth } from "../src/choropleth-geo";
 import { deriveLocatorStory } from "../src/locator-story";
 import type { LocatorMarker } from "../src/locator-geo";
@@ -353,6 +354,68 @@ describe("the dot-density sizer agrees with the walk that renders", () => {
   });
 
   it("leaves the density-ranked sizing untouched", () => {
+    const config = { ...base };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+});
+
+// Same class of proof for route, added when the route deriver gained arc support
+// (map-storyboard-and-video-geography, Task 4). Unlike the four blocks above, route's
+// deriver is routeStoryToChapters (not deriveXStory + mapStoryToChapters) — reproduced
+// here as `renderedSteps`, calling it exactly as RouteScrolly.tsx's own layout/story build
+// does. The route this fixture walks (Beijing → Tibet → Delhi, world.geojson) crosses
+// CHN, NPL, IND in that geographic order (verified against computeRouteReveal directly);
+// the arc below names only IND and CHN — a length that provably differs from the
+// geographic walk's 3.
+describe("the route sizer agrees with the walk that renders", () => {
+  const ROUTE = {
+    type: "route" as const,
+    route: [
+      [116.4, 39.9],
+      [96.0, 33.0],
+      [88.0, 29.0],
+      [77.2, 28.6],
+    ] as [number, number][],
+    basemap: "dataviz",
+    title: "A river's path from Tibet to the sea",
+    description: "The route crosses several territories.",
+  };
+  const ARC: MapArcBeat[] = [
+    { region: "IND", role: "establish", text: "India opens it." },
+    { region: "CHN", role: "payoff", text: "China closes it." },
+  ];
+  const base = { ...ROUTE };
+
+  function renderedSteps(config: Record<string, unknown>): number {
+    const layout = computeRouteReveal(
+      config as never,
+      world as unknown as GeoJSON.FeatureCollection,
+    );
+    return routeStoryToChapters(layout, {
+      title: config.title as string,
+      description: config.description as string | undefined,
+      arcBeats: config.arcBeats as MapArcBeat[] | undefined,
+    }).steps.length;
+  }
+
+  const size = (config: Record<string, unknown>) =>
+    scrollyStepCount(config, world as unknown as GeoJSON.FeatureCollection);
+
+  it("sizes an ARC config for the arc's own length, not the geographic-order walk's", () => {
+    const config = { ...base, arcBeats: ARC };
+    expect(size(config)).toBe(renderedSteps(config));
+  });
+
+  it("can go red: the arc's length differs from the geographic-order walk's", () => {
+    // 2 confirmed reveals (IND, CHN) vs. 3 geographic-order reveals (CHN, NPL, IND) — the
+    // two walks CANNOT accidentally agree here, so this is a real lever.
+    const withArc = { ...base, arcBeats: ARC };
+    const withoutArc = { ...base };
+    expect(size(withArc)).not.toBe(size(withoutArc));
+    expect(renderedSteps(withArc)).not.toBe(renderedSteps(withoutArc));
+  });
+
+  it("leaves the geographic-order sizing untouched", () => {
     const config = { ...base };
     expect(size(config)).toBe(renderedSteps(config));
   });
