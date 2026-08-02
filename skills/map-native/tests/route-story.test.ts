@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import {
+  resolveRouteWalk,
   routeStoryToChapters,
   scrollyFrames,
   scrollyStepCount,
@@ -23,7 +24,8 @@ const sampleRoute = {
 
 describe("routeStoryToChapters", () => {
   const layout = computeRouteReveal(sampleRoute, world as any);
-  const story = routeStoryToChapters(layout, {
+  const walk = resolveRouteWalk(layout, undefined);
+  const story = routeStoryToChapters(layout, walk, {
     title: sampleRoute.title,
     description: sampleRoute.description,
     source: sampleRoute.source,
@@ -68,7 +70,7 @@ describe("routeStoryToChapters", () => {
 
   it("uses the editorial note as drawTo prose, falling back to the label", () => {
     const notes = { [layout.territories[0].key]: "A custom editorial note" };
-    const withNotes = routeStoryToChapters(layout, {
+    const withNotes = routeStoryToChapters(layout, walk, {
       title: sampleRoute.title,
       description: sampleRoute.description,
       source: sampleRoute.source,

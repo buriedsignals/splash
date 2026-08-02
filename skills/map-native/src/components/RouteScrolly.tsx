@@ -248,13 +248,13 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     for (const t of config.territories ?? []) {
       if (t.note?.trim()) notes[t.key] = t.note;
     }
-    // resolveRouteWalk (route-story.ts) is the SINGLE source of truth for which territory —
-    // and, for a confirmed claim-arc, which own-segment camera + verbatim claim — each draw
-    // step targets. routeStoryToChapters below calls the SAME function, with the SAME
-    // arguments, for the caption's order/text, so the two can never silently diverge (the bug
-    // this closes: a first pass built the walk order inline here, separately from
-    // routeStoryToChapters's own resolution, and the caption followed the arc while the
-    // camera/highlight kept following the geographic walk).
+    // resolveRouteWalk (route-story.ts) is called EXACTLY ONCE here, and the resulting `w` is
+    // THREADED — never re-derived — to every consumer: routeStoryToChapters below (captions),
+    // and `walk` in this hook's own return (camera + per-territory emphasis, further down in
+    // this component). routeStoryToChapters takes the resolved walk as a parameter rather than
+    // `arcBeats` specifically so there is no second call site inside this render for one of two
+    // calls to silently receive the wrong argument — see resolveRouteWalk's own header comment
+    // for why that is not a hypothetical (it happened twice).
     //
     // `territories`/`DRAW` below stay the FULL crossed set UNCONDITIONALLY — a confirmed arc
     // governs narration order, camera and emphasis, never which territories exist on screen. A
@@ -263,7 +263,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     // de-emphasizes (never removes) the ones the arc doesn't name — same convention
     // LocatorScrolly.tsx uses (every marker rendered, a highlight flag toggled per beat).
     const w = resolveRouteWalk(l, config.arcBeats);
-    const st = routeStoryToChapters(l, {
+    const st = routeStoryToChapters(l, w, {
       title: config.title ?? "",
       description: config.description,
       source: config.source
@@ -271,8 +271,6 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         : { name: "", url: "" },
       insight: (config as { insight?: string }).insight,
       notes,
-      // The confirmed walk reaches the deriver — see map-arc.ts.
-      arcBeats: config.arcBeats,
     });
     const stepKinds = st.steps.map((_, i) => (i === 0 ? "title" : "reveal"));
     const { phases: ph, totalFrames: tf } = buildTimeline(stepKinds, fps);

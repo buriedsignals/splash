@@ -77,17 +77,28 @@ export function resolveRouteArc(
 // caption falls back to an editorial note or the territory's own label; both are the caller's
 // job (routeStoryToChapters below, RouteScrolly.tsx's stepSolutions).
 //
-// SINGLE SOURCE OF TRUTH: this is the one place a route's arc/geographic dispatch happens.
-// routeStoryToChapters (the caption) and RouteScrolly.tsx (the camera + per-territory
-// emphasis) both call THIS function with the SAME (layout, arcBeats) — not two independent
-// re-derivations of "what does step k target" that could silently drift apart. That drift is
-// exactly the bug this closes: a first attempt at threading the arc into RouteScrolly.tsx built
-// the walk order inline, separately from routeStoryToChapters's own internal resolution: the
-// caption followed the confirmed arc while the camera/highlight kept following the geographic
-// walk — a visible mismatch a source-grep on "does the component mention arcBeats" could not
-// catch, because it never mentioned the WALK matching, only that the field was read. See
-// claim-arc-map.test.ts's lockstep test, which calls this function directly (the same function
-// object RouteScrolly.tsx calls) and asserts its order/count agree with routeStoryToChapters's.
+// THE one place a route's arc/geographic dispatch happens — call it ONCE per render, then
+// THREAD the result, never re-derive it. RouteScrolly.tsx's useMemo is the only render-time
+// caller: it calls this function exactly once and passes the SAME `walk` value to
+// routeStoryToChapters (below, for captions) and uses it directly for camera + per-territory
+// emphasis. routeStoryToChapters therefore takes `walk` as a parameter, not `arcBeats` — it
+// cannot call this function itself, by construction, so there is no second call site inside a
+// single render for one of two calls to silently receive the wrong argument.
+//
+// That is not a hypothetical: it happened TWICE. First, a component built its walk order
+// inline, separately from routeStoryToChapters's own resolution (captions followed the arc,
+// camera didn't). Then, after extracting this function so both sides delegated to it, the
+// component still held TWO independent calls to it — one direct (for camera/emphasis), one
+// indirect through routeStoryToChapters (for captions) — and a mutation that broke only the
+// direct one still left every grepped literal (`arcBeats: config.arcBeats`) textually intact,
+// so a source-grep test passed while the render was wrong. Both failures were a WIRING defect,
+// not an algorithmic one: nothing was computed incorrectly, the same correct function was just
+// reachable from two places that could independently be given the wrong input. Passing the
+// resolved walk into routeStoryToChapters removes the second place — see its own header
+// comment. The one LEGITIMATE second call site left is scrollyStepCount (the sizer), which
+// runs in a separate calculateMetadata pass and cannot share the renderer's `walk` value — see
+// its own comment for how that one is still pinned to agree, as a testable pure-function
+// property (tests/arc-beats-threading.test.ts), rather than trusted to.
 export interface RouteWalkStep {
   territory: RouteRevealTerritory;
   camera: [number, number, number, number] | null;
@@ -123,25 +134,29 @@ export function resolveRouteWalk(
 // Sentinel refs let the renderer detect the two framing steps: ref === -1 → overview,
 // ref === territories.length → takeaway. drawTo refs stay 0..N-1 so the driver reads
 // territory.stop from them.
+//
+// Takes an ALREADY-RESOLVED `walk` (resolveRouteWalk's output) rather than `arcBeats` — this
+// is deliberate, not an oversight: a caller that received `arcBeats` here would have to call
+// resolveRouteWalk ITSELF to build steps, and a renderer (RouteScrolly.tsx) needs that exact
+// same walk for its camera/highlight — two calls to the same function, with the same
+// arguments, computing the same value, are two places for one of them to be given the wrong
+// argument (arcBeats vs. undefined) while the other stays right. That happened twice: a
+// caption that followed a confirmed arc while the camera/highlight kept following the
+// geographic walk, in a component no test can render to observe the mismatch. Passing the
+// resolved `walk` in makes a second, independently-wrong resolution UNREPRESENTABLE — there is
+// only one value, computed once, threaded to every consumer (captions here, camera/highlight
+// in RouteScrolly.tsx). See resolveRouteWalk's own header comment for the full history.
 export function routeStoryToChapters(
   layout: RouteRevealLayout,
+  walk: RouteWalkStep[],
   meta: {
     title: string;
     description?: string;
     source?: { name: string; url: string };
     insight?: string;
     notes?: Record<string, string>;
-    // Journalist-confirmed claim-arc override (S2) — see map-arc.ts / resolveRouteArc's
-    // header comment. When present + non-empty, the drawTo steps follow the ARC (order +
-    // verbatim `text`, never the note/label fallback) instead of the geographic-order walk
-    // below; absent/empty leaves that walk byte-identical.
-    arcBeats?: MapArcBeat[];
   },
 ): ScrollyStory {
-  // resolveRouteWalk is the SINGLE source of truth for the arc/geographic dispatch — see its
-  // own header comment. RouteScrolly.tsx calls the SAME function, with the SAME arguments, for
-  // its camera + per-territory emphasis, so the two can never silently diverge.
-  const walk = resolveRouteWalk(layout, meta.arcBeats);
   const n = walk.length;
 
   const intro: ScrollyStep = {
@@ -217,13 +232,17 @@ export function scrollyStepCount(
 ): number {
   if (config.type === "route") {
     const layout = computeRouteReveal(config, world);
-    // The SIZER must derive the same walk the renderer does (same mirror as every branch
-    // below) — a confirmed arc changes the beat COUNT (the journalist's own selection, not
-    // the geographic-order walk), so a sizer blind to it sizes the composition for a
-    // different story than the one that renders. resolveRouteWalk is the SAME single source
-    // of truth routeStoryToChapters and RouteScrolly.tsx both call, so an unknown territory
-    // throws here too, exactly as it would at render — the sizer and the renderer agree on
-    // failure, not just on success.
+    // The SIZER runs OUTSIDE the render (a separate calculateMetadata pass — see Root.tsx's
+    // scrollyMeta), so unlike routeStoryToChapters (which now takes an ALREADY-RESOLVED walk,
+    // see its own header comment) it cannot share the renderer's walk value — it must call
+    // resolveRouteWalk itself. The invariant that keeps this a legitimate second call, not a
+    // reintroduction of the drift that function's extraction closed: SAME function, SAME
+    // (layout, arcBeats) arguments as RouteScrolly.tsx's own call — pinned as a pure-function
+    // property in tests/arc-beats-threading.test.ts's route sizer-agreement block, not assumed.
+    // A confirmed arc changes the beat COUNT (the journalist's own selection, not the
+    // geographic-order walk), so a sizer blind to it sizes the composition for a different
+    // story than the one that renders; reusing resolveRouteWalk also means an unknown
+    // territory throws here too, exactly as it would at render.
     return resolveRouteWalk(layout, config.arcBeats).length + 3;
   }
   if (config.type === "locator") {

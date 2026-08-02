@@ -6,7 +6,11 @@ import {
   ARC_CAPABLE_MAP_TYPES,
 } from "../src/map-arc";
 import { applyMapArc, deriveMapStory, type MapArcBeat } from "../src/map-story";
-import { routeStoryToChapters, scrollyStepCount } from "../src/route-story";
+import {
+  resolveRouteWalk,
+  routeStoryToChapters,
+  scrollyStepCount,
+} from "../src/route-story";
 import { computeRouteReveal } from "../src/route-geo";
 import { computeChoropleth } from "../src/choropleth-geo";
 import { deriveLocatorStory } from "../src/locator-story";
@@ -39,11 +43,13 @@ describe("map-native story components forward the confirmed claim-arc", () => {
     "components/LocatorScrolly.tsx", // scrolly
     "components/CartogramScrolly.tsx", // scrolly
     "components/DotDensityScrolly.tsx", // scrolly
-    "components/RouteScrolly.tsx", // scrolly — route's only discrete, beat-driven format
-    // Deliberately NOT here: components/RouteReveal.tsx (route's video). It draws the route's
-    // own line on as a single continuous physical sweep through every crossed territory in
-    // geographic order — there is no discrete-beat seam for a confirmed arc to reorder or
-    // subset (see RouteReveal.tsx's own header comment on this).
+    // Deliberately NOT here: components/RouteScrolly.tsx and components/RouteReveal.tsx.
+    // RouteScrolly.tsx does not thread arcBeats through a `meta` object literal at all — see
+    // the dedicated route block below for why, and for the (stronger) invariant it checks
+    // instead. RouteReveal.tsx (route's video) draws the route's own line on as a single
+    // continuous physical sweep through every crossed territory in geographic order — there is
+    // no discrete-beat seam for a confirmed arc to reorder or subset (see its own header
+    // comment on this).
   ];
   for (const file of files) {
     it(`${file} puts arcBeats in the deriver meta`, () => {
@@ -53,25 +59,59 @@ describe("map-native story components forward the confirmed claim-arc", () => {
   }
 });
 
-// route is the ONLY arc-capable type with a SECOND critical call site: RouteScrolly.tsx
-// resolves its own camera + per-territory emphasis from resolveRouteWalk(l, config.arcBeats)
-// (route-story.ts) — a call the block above's regex does not cover, because it is not the
-// `meta` object literal every other component threads arcBeats through. This regex would NOT
-// have caught the bug this test suite exists to close: a first attempt forwarded arcBeats into
-// routeStoryToChapters's meta correctly (the block above would have passed) while the
-// component's own walk/camera resolution silently ignored it — the caption followed the arc,
-// the camera and highlighted territory did not. See claim-arc-map.test.ts's
-// "resolveRouteWalk — the walk routeStoryToChapters and RouteScrolly.tsx both resolve from"
-// block for the deeper behavioural proof (calling resolveRouteWalk directly and asserting
-// lockstep with routeStoryToChapters's own steps); this is the narrower, component-source
-// backstop for the specific call site that broke.
-describe("RouteScrolly.tsx resolves its walk from the SAME function+arguments the caption uses", () => {
+// route is structurally different from every other arc-capable type, and had TWO rounds of
+// silent-regression bugs to prove it:
+//
+//   Round 1: a component built its walk order INLINE, separately from routeStoryToChapters's
+//   own internal resolveRouteArc call — the caption followed a confirmed arc while the
+//   camera/highlight kept following the geographic walk.
+//
+//   Round 2: after extracting resolveRouteWalk so both sides delegated to ONE function, the
+//   component still held TWO independent CALLS to it in the same render — one direct (for
+//   camera/emphasis), one indirect through routeStoryToChapters's OLD signature (which took
+//   `arcBeats` and called resolveRouteWalk itself, for captions). A mutation that broke only
+//   the direct call left EVERY grepped literal — including a regex on the direct call's own
+//   text — textually intact, because the indirect call (a DIFFERENT line, inside
+//   routeStoryToChapters, in a different file) still matched.
+//
+// The structural fix (route-story.ts): routeStoryToChapters now takes the ALREADY-RESOLVED
+// walk as a parameter, not `arcBeats` — it cannot call resolveRouteWalk itself anymore, by
+// construction, so the round-2 exploit (an indirect SECOND call inside routeStoryToChapters)
+// is not merely untested, it is not expressible: there is no `arcBeats` for it to receive.
+//
+// What remains representable, and what this test guards: RouteScrolly.tsx could still
+// reintroduce a SECOND, independent resolveRouteWalk(...) call of its OWN — e.g. computing the
+// walk once for the caption and AGAIN (wrongly) for the returned camera/emphasis data. Rather
+// than grep for one specific line surviving (round 2's exact failure mode — a mutation
+// elsewhere left that check's target line untouched), this counts EVERY occurrence of
+// `resolveRouteWalk(` in the component's source: it must be exactly one, no matter WHERE a
+// second one might be introduced. See claim-arc-map.test.ts's "resolveRouteWalk — the walk
+// routeStoryToChapters and RouteScrolly.tsx both resolve from" block for the deeper behavioural
+// proof that the shared function itself is correct; this is the narrower, component-source
+// invariant that there is only ever one place it gets called from.
+describe("RouteScrolly.tsx resolves its walk exactly once, and threads that value everywhere", () => {
+  const routeScrollySource = readFileSync(
+    join(SRC, "components/RouteScrolly.tsx"),
+    "utf8",
+  );
+
   it("calls resolveRouteWalk(l, config.arcBeats) — not a re-derived/hardcoded walk", () => {
-    const source = readFileSync(
-      join(SRC, "components/RouteScrolly.tsx"),
-      "utf8",
+    expect(routeScrollySource).toMatch(
+      /resolveRouteWalk\(\s*l,\s*config\.arcBeats\s*\)/,
     );
-    expect(source).toMatch(/resolveRouteWalk\(\s*l,\s*config\.arcBeats\s*\)/);
+  });
+
+  it("calls resolveRouteWalk EXACTLY ONCE — a second call, anywhere in the file, for any reason, is the round-2 bug reintroduced", () => {
+    const occurrences = routeScrollySource.match(/resolveRouteWalk\(/g) ?? [];
+    expect(occurrences).toHaveLength(1);
+  });
+
+  it("passes the resolved walk (not `arcBeats`) into routeStoryToChapters — the type signature routeStoryToChapters(layout, walk, meta) makes a re-derivation from arcBeats inside it impossible, this confirms the CALLER honours that", () => {
+    expect(routeScrollySource).toMatch(/routeStoryToChapters\(\s*l,\s*w,/);
+    // And `meta` no longer carries `arcBeats` at all — the field doesn't exist on
+    // routeStoryToChapters's parameter type anymore, so this would be a type error if
+    // reintroduced; the source check is a cheap, redundant backstop.
+    expect(routeScrollySource).not.toMatch(/arcBeats:\s*config\.arcBeats/);
   });
 });
 
@@ -418,10 +458,16 @@ describe("the route sizer agrees with the walk that renders", () => {
       config as never,
       world as unknown as GeoJSON.FeatureCollection,
     );
-    return routeStoryToChapters(layout, {
+    // Mirrors RouteScrolly.tsx's own call pattern exactly: resolve the walk ONCE, then pass
+    // it (not `arcBeats`) into routeStoryToChapters — routeStoryToChapters can no longer
+    // resolve arcBeats itself, by construction (see route-story.ts's header comment).
+    const walk = resolveRouteWalk(
+      layout,
+      config.arcBeats as MapArcBeat[] | undefined,
+    );
+    return routeStoryToChapters(layout, walk, {
       title: config.title as string,
       description: config.description as string | undefined,
-      arcBeats: config.arcBeats as MapArcBeat[] | undefined,
     }).steps.length;
   }
 

@@ -1363,10 +1363,11 @@ describe("resolveRouteArc — the produce-time anchor resolver", () => {
 
 describe("routeStoryToChapters — resolveRouteArc wiring", () => {
   it("with a confirmed arcBeats: drawTo steps follow the ARC order and carry the claim text verbatim, not the note/label fallback", () => {
-    const story = routeStoryToChapters(routeLayout, {
-      title: routeConfig.title,
-      arcBeats: routeArc,
-    });
+    const story = routeStoryToChapters(
+      routeLayout,
+      resolveRouteWalk(routeLayout, routeArc),
+      { title: routeConfig.title },
+    );
     const draws = story.steps.filter((s) => s.action === "drawTo");
     expect(draws).toHaveLength(2); // the arc's own length — not layout.territories.length (3)
     expect(draws.map((s) => s.ref)).toEqual([0, 1]);
@@ -1379,27 +1380,32 @@ describe("routeStoryToChapters — resolveRouteArc wiring", () => {
     expect(takeaway.ref).toBe(2);
   });
 
-  it("an arcBeats naming an unknown territory is refused by name when the story is derived", () => {
-    const callDerive = () =>
-      routeStoryToChapters(routeLayout, {
-        title: routeConfig.title,
-        arcBeats: [
+  it("an arcBeats naming an unknown territory is refused by name BEFORE the story is ever built — resolveRouteWalk throws while resolving the argument, routeStoryToChapters never runs", () => {
+    const callResolve = () =>
+      routeStoryToChapters(
+        routeLayout,
+        resolveRouteWalk(routeLayout, [
           {
             region: "Nowhere",
             role: "establish",
             text: "Nowhere is not on this route.",
           },
-        ],
-      });
-    expect(callDerive).toThrow(/"Nowhere".*not one this route crosses/);
-    expect(callDerive).toThrow(/AAA.*BBB.*CCC/);
+        ]),
+        { title: routeConfig.title },
+      );
+    expect(callResolve).toThrow(/"Nowhere".*not one this route crosses/);
+    expect(callResolve).toThrow(/AAA.*BBB.*CCC/);
   });
 
   it("without arcBeats: byte-identical to the captured geographic-order baseline", () => {
-    const story = routeStoryToChapters(routeLayout, {
-      title: routeConfig.title,
-      insight: "Three lands, one path.",
-    });
+    const story = routeStoryToChapters(
+      routeLayout,
+      resolveRouteWalk(routeLayout, undefined),
+      {
+        title: routeConfig.title,
+        insight: "Three lands, one path.",
+      },
+    );
     expect(story.steps).toEqual([
       {
         id: "step-0-intro",
@@ -1454,18 +1460,18 @@ describe("routeStoryToChapters — resolveRouteArc wiring", () => {
 });
 
 // ---------------------------------------------------------------------------
-// resolveRouteWalk — the SINGLE source of truth routeStoryToChapters (the caption) and
-// RouteScrolly.tsx (the camera + per-territory emphasis) both call, with the SAME (layout,
-// arcBeats) arguments. This is the lockstep invariant a first attempt at threading the arc
-// into RouteScrolly.tsx broke: the component built its own walk order inline, separately from
-// routeStoryToChapters's internal resolution, so the caption followed a confirmed arc while
-// the camera/highlight kept following the geographic walk — a mismatch a source-grep on
-// "does the component mention arcBeats" could not catch (it never checked the WALK agrees,
-// only that the field was read). These tests call resolveRouteWalk DIRECTLY — the same
-// function object RouteScrolly.tsx calls — and assert its output against what
-// routeStoryToChapters (which now calls the SAME function internally) actually renders as
-// steps, so a regression in the shared resolver, or a re-introduction of a second, divergent
-// walk computation, reddens here rather than only in a component no test can render.
+// resolveRouteWalk — the ONLY place a route's arc/geographic dispatch happens.
+// routeStoryToChapters takes the ALREADY-RESOLVED walk as a parameter (not `arcBeats`) —
+// deliberately, so there is no second call site inside a render for the caption and the
+// camera/highlight (RouteScrolly.tsx) to receive a different value from. This is not a
+// hypothetical: it happened TWICE — first a component built its walk order inline, separately
+// from routeStoryToChapters's own resolution; then, even after extracting resolveRouteWalk so
+// both sides delegated to the SAME function, the component still held two independent CALLS to
+// it (one direct, one indirect through routeStoryToChapters's old signature) and a mutation
+// that broke only the direct one left every grepped literal textually intact. These tests pass
+// ONE resolveRouteWalk() result into routeStoryToChapters — the SAME value a real caller must
+// now construct once and thread everywhere, by construction — and assert the steps agree with
+// it, so a regression in the shared resolver reddens here directly.
 // ---------------------------------------------------------------------------
 
 describe("resolveRouteWalk — the walk routeStoryToChapters and RouteScrolly.tsx both resolve from", () => {
@@ -1486,9 +1492,9 @@ describe("resolveRouteWalk — the walk routeStoryToChapters and RouteScrolly.ts
     // The lockstep proof: routeStoryToChapters's draw steps (ref 0..N-1, in order) must name
     // exactly walk[ref].territory, step count included — this is what "the caption and the
     // camera/highlight never disagree" actually means, checked directly rather than assumed.
-    const story = routeStoryToChapters(routeLayout, {
+    // `walk` is passed in DIRECTLY — the same value a real caller must thread, not re-derived.
+    const story = routeStoryToChapters(routeLayout, walk, {
       title: routeConfig.title,
-      arcBeats: routeArc,
     });
     const draws = story.steps.filter((s) => s.action === "drawTo");
     expect(draws).toHaveLength(walk.length);
@@ -1510,7 +1516,7 @@ describe("resolveRouteWalk — the walk routeStoryToChapters and RouteScrolly.ts
       expect(w.text).toBeNull();
     }
 
-    const story = routeStoryToChapters(routeLayout, {
+    const story = routeStoryToChapters(routeLayout, walk, {
       title: routeConfig.title,
     });
     const draws = story.steps.filter((s) => s.action === "drawTo");
