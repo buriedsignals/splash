@@ -272,11 +272,16 @@ describe("validateAccepted — the spine validation gate", () => {
     if (r.ok) expect(r.warnings.join(" ")).toMatch(/auto-picked|salience/i);
   });
 
-  // route joined ARC_CAPABLE_MAP_TYPES (map-storyboard-and-video-geography) — a route
-  // scrolly with no confirmed arcBeats is now a salience fallback exactly like its
-  // siblings above, and must be flagged the same way.
-  it("WARNS that a MAP route scrolly with no confirmed arcBeats used the salience fallback", () => {
-    const r = validateAccepted(
+  // route joined ARC_CAPABLE_MAP_TYPES at the GATE level (map-storyboard-and-video-geography's
+  // claim-arc, mapArcErrors etc.), but never gained a scrolly host — MAP_SCROLLY_TYPES still has
+  // six entries, not seven. A route scrolly used to fall through here as a benign "salience
+  // fallback" (this test used to assert ok:true) — accepting a spec that every OTHER layer
+  // already refuses (lib/loop/assemble/scrolly.ts by name, produce.mjs's own format refusal),
+  // and, worse, silently accepting a CONFIRMED arcBeats plan that would then reach no
+  // reader-facing output at all. Refused HERE now, loud, before production — final-review
+  // finding "CRITICAL 2".
+  it("REFUSES a MAP route scrolly outright — no scrolly host exists for it (with or without arcBeats)", () => {
+    const withoutArc = validateAccepted(
       accept("scrolly", {
         type: "route",
         route: [
@@ -289,8 +294,34 @@ describe("validateAccepted — the spine validation gate", () => {
         source: { name: "X", url: "https://x" },
       }),
     );
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.warnings.join(" ")).toMatch(/auto-picked|salience/i);
+    expect(withoutArc.ok).toBe(false);
+    if (!withoutArc.ok)
+      expect(withoutArc.errors.join(" ")).toMatch(
+        /route.*scrolly|scrolly.*route/i,
+      );
+
+    // The sharper case: a CONFIRMED claim-arc must not be silently swallowed — the refusal
+    // must say so explicitly, before the journalist's authored plan is lost.
+    const withArc = validateAccepted(
+      accept("scrolly", {
+        type: "route",
+        route: [
+          [2.35, 48.85],
+          [4.35, 50.85],
+        ],
+        basemap: "world",
+        title: "The route the shipment took",
+        description: "Path from Paris to Brussels",
+        source: { name: "X", url: "https://x" },
+        arcBeats: [
+          { region: "FRA", role: "establish", text: "It leaves Paris." },
+          { region: "BEL", role: "payoff", text: "It arrives in Brussels." },
+        ],
+      }),
+    );
+    expect(withArc.ok).toBe(false);
+    if (!withArc.ok)
+      expect(withArc.errors.join(" ")).toMatch(/confirmed claim-arc|arcBeats/i);
   });
 
   it("returns a FAILURE (never a crash) for a producer outside the union", () => {

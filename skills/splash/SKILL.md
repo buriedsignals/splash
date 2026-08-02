@@ -303,19 +303,24 @@ established.
    and silently dropped at the render — the old failure this guards, kept as defence-in-depth for an
    eighth type, should one ever land. Every real map type today is on the list, so this should never
    fire for a real one.
-   **★ A route's confirmed arc reaches its scrolly ONLY — never its video.** A route video always
-   draws its line on continuously, through every crossed territory in geographic order — every camera
-   mode a route video can take (`route-reveal`, `guided-tour`, or `simple`) resolves to the SAME
+   **★ A route's confirmed arc reaches NO output today — never promise otherwise.** A route video
+   always draws its line on continuously, through every crossed territory in geographic order — every
+   camera mode a route video can take (`route-reveal`, `guided-tour`, or `simple`) resolves to the SAME
    composition, `RouteReveal` (`skills/map-native/scripts/lib/story-comps.mjs`) — and `RouteReveal`
    deliberately never reads `arcBeats` (`RouteReveal.tsx:159-171`): a continuous self-drawing line has
-   no discrete-beat seam to honour a plan with. Confirm a route's arc and it still reaches the reader,
-   but only through `RouteScrolly.tsx` — the scrolly walks it step by step; the video does not. Say
-   this plainly the moment a journalist confirms a route arc and picks video: the plan will not show up
-   there — never let a confirmed route arc go silently ignored by a video render. No other arc-capable
-   type has this split: the other six all read `arcBeats` both in their guided-tour video composition
-   (`*Story.tsx`) and their scrolly (`*Scrolly.tsx`); only the *fixed-camera* video family
-   (`*Reveal.tsx`, the `simple` camera-mode opt-in, never the default) skips it everywhere — symmetric
-   across every type, not a gap unique to any one of them.
+   no discrete-beat seam to honour a plan with. The scrolly track has no route branch either —
+   `MAP_SCROLLY_TYPES` (`skills/scrolly/src/scrolly-types.ts`) lists six map types, not seven — so a
+   route scrolly is refused at the gate outright, WITH OR WITHOUT a confirmed `arcBeats` (Tier-0
+   `validateAccepted`, `skills/splash/src/validate-gate.ts`: it names the missing scrolly host and, on
+   an `arcBeats`-bearing spec, says explicitly that the plan would reach no reader-facing output).
+   **A route's confirmed arc therefore reaches the reader through NEITHER format** — say this plainly
+   the moment a journalist starts confirming one: authoring a route storyboard today produces a plan
+   that ships nowhere, video or scrolly. This is a genuine, unclosed capability gap, not a formatting
+   choice — building the missing route scrolly component is a separately scoped follow-up, not done
+   here. No other arc-capable type has this gap: the other six all read `arcBeats` both in their
+   guided-tour video composition (`*Story.tsx`) and their scrolly (`*Scrolly.tsx`); only the
+   *fixed-camera* video family (`*Reveal.tsx`, the `simple` camera-mode opt-in, never the default)
+   skips it everywhere — symmetric across every type, not a gap unique to any one of them.
    **Locator (marker map) already tours per place before any arc is confirmed — never deny it, and
    never call `revealMode` a choropleth setting.** A locator video's default camera mode is
    `guided-tour` — the default for every map type but route, which draws on instead
@@ -637,10 +642,13 @@ surfaced only at Gate 3 AFTER production. So:
   visually shows (see 3a).
 - **Map scrolly** named-step control is `arcBeats`, NOT this track's `beats` field — a chart-native
   `beats` field submitted on a map spec is still mechanically rejected (see the region-anchored
-  claim-arc at Gate 1b, above): every map-native type — choropleth/symbol/locator/cartogram/
-  dot-density/route/hex-grid — now accepts a confirmed `arcBeats` plan (`establish → build+ → [turn]
-  → payoff`, same confirm/tweak/veto). Point the journalist at `arcBeats` here; never tell them a map
-  story has no named-step control — that limitation no longer exists.
+  claim-arc at Gate 1b, above): every map-native type accepts a confirmed `arcBeats` plan
+  (`establish → build+ → [turn] → payoff`, same confirm/tweak/veto) at validation — but **`route` is
+  the one exception with nowhere for it to land**: its scrolly is refused at the gate outright (no
+  `MAP_SCROLLY_TYPES` branch — see the claim-arc rule above), so an `arcBeats` plan on a route never
+  reaches a scrolly reader. For the other six — choropleth/symbol/locator/cartogram/dot-density/
+  hex-grid — point the journalist at `arcBeats` here; never tell them a map story has no named-step
+  control — that limitation no longer exists for THEM.
 
 **Article/web has NO static fallback — the pinned format is the ONLY artifact, so pin the one the
 journalist actually wants.** For the article-web channel, `suggest-chart` routing DEFAULTS to interactive

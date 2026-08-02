@@ -40,6 +40,9 @@ import {
 } from "./source-guard";
 import { guardrailParityViolations } from "./guardrail-parity";
 import { engineTypes, isRenderable } from "../../../lib/core/registry";
+// Leaf module, imports nothing (see its own header comment) — safe to read here without pulling
+// in Scrolly.tsx's component tree / module-scope MapTiler key guard.
+import { MAP_SCROLLY_TYPES } from "../../scrolly/src/scrolly-types";
 // Side-effect import — the deferred-type guard below (deferredTypeError) reads the registry
 // this populates (each engine's manifest self-registers on import). This module must NOT rely
 // on some OTHER file having imported the manifests first: production is safe today only
@@ -164,6 +167,31 @@ function validateScrolly(spec: unknown): ValidationOutcome {
     }
     return outcome;
   }
+  // A "route" map track has no scrolly host: MAP_SCROLLY_TYPES has six entries, not seven —
+  // Scrolly.tsx's dispatch falls through to an empty-but-valid story for it (see
+  // scrolly-types.ts's own header comment), lib/loop/assemble/scrolly.ts already refuses it
+  // by name at composition time, and produce.mjs refuses format "scrolly" for it outright.
+  // This gate used to fall through to validateMapNative + a benign "salience fallback"
+  // warning regardless — accepting a spec every other layer already refuses, and, worse,
+  // silently accepting a CONFIRMED `arcBeats` plan on it (the exact defect this branch
+  // exists to close: a journalist who authored a route storyboard learning only at produce
+  // time that the plan reaches no reader-facing output). Refused HERE, before production,
+  // whether or not `arcBeats` is present — a route scrolly is not a content-quality gap a
+  // warning can flag, it is a capability that does not exist yet.
+  const mapType = (spec as { type?: string } | null)?.type ?? "choropleth";
+  if (!MAP_SCROLLY_TYPES.has(mapType))
+    return {
+      ok: false,
+      errors: [
+        `a "${mapType}" scrolly does not exist yet — MAP_SCROLLY_TYPES has no branch for it, ` +
+          "so nothing walks it (Scrolly.tsx renders an empty story for it, and produce " +
+          `refuses format "scrolly" for it outright).` +
+          ((spec as { arcBeats?: unknown } | null)?.arcBeats !== undefined
+            ? " The confirmed claim-arc on this spec would reach no reader-facing output — " +
+              `do not author one for a "${mapType}" scrolly.`
+            : ` Build this "${mapType}" as a static image, an interactive map, or a video instead.`),
+      ],
+    };
   // The explicit `beats` field is CHART-track narrative control. A map uses `arcBeats`
   // (region-anchored: { region, role, text }) instead — the map track derives its own
   // story (deriveMapStory) and would silently IGNORE `beats`, the exact flow failure the
