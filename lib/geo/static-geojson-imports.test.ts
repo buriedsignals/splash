@@ -27,15 +27,18 @@
 //   (b) any `*.d.ts` file — an ambient module declaration (`declare module "*.geojson"`,
 //       `declare module "*.geojson?raw"`) describes the TYPE of an import specifier for the
 //       bundler; it does not itself import or fetch any geometry.
-//   (c) the video family — this plan deliberately leaves ChoroplethReveal/Story/Scrolly,
-//       CartogramReveal/Story/Scrolly, DotDensityReveal/Story/Scrolly and the Remotion
-//       registration root (remotion/src/Root.tsx, which wires those same compositions for
-//       preview/render) reading the shipped world.geojson asset. Task 7 makes a DECLARED
-//       geography refuse the video format instead of wiring video to injected geometry — so
-//       these are not a residual bug, they are the other side of that decision. RouteReveal and
-//       RouteScrolly were exempted here for the same reason but are no longer: Task 9 wired both
-//       to decode `config.geometry` (mirroring ChoroplethMap.tsx / RouteMap.tsx), so their static
-//       import is gone and this guard now covers them like any other source file.
+//   (c) the Remotion registration root ONLY (remotion/src/Root.tsx) — this used to also exempt
+//       ChoroplethReveal/Story/Scrolly, CartogramReveal/Story/Scrolly and
+//       DotDensityReveal/Story/Scrolly (Task 7's decision: a DECLARED geography refuses the video
+//       format instead of those nine reading injected geometry). map-storyboard-and-video-geography
+//       closed that gap for every SHIPPED geography (Task 10: `resolveVideoGeometry` reads
+//       `config.geometry`, the same decode static/interactive/scrolly already use) — all nine are
+//       now clean of any static geojson reference, confirmed by this guard itself once the
+//       exemption is lifted, so they are exempt no longer. RouteReveal and RouteScrolly went
+//       through the identical move earlier (Task 9) and were already off this list. `Root.tsx`
+//       stays exempt: `:85` is a real static import feeding the Remotion Studio's default-props
+//       geometry (a dev-only preview convenience, never a shipped render path), not a regression
+//       of the bug this guard exists to catch.
 //   (d) standalone dev tooling, named individually below, where the reference is either not the
 //       shipped asset or not a runtime import at all — see BUILD_TOOLING_FILES for the reason on
 //       each.
@@ -71,20 +74,12 @@ const LIB_FILES = walk(join(ROOT, "lib"), IS_SOURCE_FILE);
 const SKILLS_FILES = walk(join(ROOT, "skills"), IS_SOURCE_FILE);
 const ALL_FILES = [...LIB_FILES, ...SKILLS_FILES];
 
-// Exemption class (c): the video family, per Task 7's decision (see header comment).
-const VIDEO_FAMILY_PATHS = new Set(
-  [
-    join("skills", "map-native", "src", "components", "CartogramReveal.tsx"),
-    join("skills", "map-native", "src", "components", "CartogramScrolly.tsx"),
-    join("skills", "map-native", "src", "components", "CartogramStory.tsx"),
-    join("skills", "map-native", "src", "components", "ChoroplethReveal.tsx"),
-    join("skills", "map-native", "src", "components", "ChoroplethScrolly.tsx"),
-    join("skills", "map-native", "src", "components", "ChoroplethStory.tsx"),
-    join("skills", "map-native", "src", "components", "DotDensityReveal.tsx"),
-    join("skills", "map-native", "src", "components", "DotDensityScrolly.tsx"),
-    join("skills", "map-native", "src", "components", "DotDensityStory.tsx"),
-    join("skills", "map-native", "remotion", "src", "Root.tsx"),
-  ].map((p) => join(ROOT, p)),
+// Exemption class (c): the Remotion registration root ONLY (see header comment) — a real static
+// import feeding the Studio's default-props geometry, not a shipped render path.
+const REMOTION_ROOT_PATH = new Set(
+  [join("skills", "map-native", "remotion", "src", "Root.tsx")].map((p) =>
+    join(ROOT, p),
+  ),
 );
 
 // Exemption class (d): dev tooling. Each reference here is either not a runtime import of the
@@ -132,7 +127,7 @@ const BUILD_TOOLING_PATHS = new Set(
 function isExempt(file: string): boolean {
   if (file.endsWith(".test.ts") || file.endsWith(".test.tsx")) return true; // class (a)
   if (file.endsWith(".d.ts")) return true; // class (b)
-  if (VIDEO_FAMILY_PATHS.has(file)) return true; // class (c)
+  if (REMOTION_ROOT_PATH.has(file)) return true; // class (c)
   if (BUILD_TOOLING_PATHS.has(file)) return true; // class (d)
   return false;
 }
