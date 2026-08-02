@@ -274,23 +274,61 @@ established.
    zero `build`, two `turn`s, or a role beat with an empty claim) fails the proposal loud before
    production — on top of the existing anchor-must-exist-in-the-data check (see the beat-model rule at
    PROPOSITION, below).
-   **Map claim-arc — choropleth + symbol only, say the boundary plainly, never promise otherwise:** the
-   claim-arc override now ALSO exists for map-scrolly, but ONLY for the `choropleth` and `symbol` map
-   types. It is a SEPARATE field from chart-native's: a map arc is a **region-anchored `arcBeats`** plan
-   — `{ region, role, text }` per beat, where `region` is the join-key/label value the beat anchors on
-   (not an x-value/category) — same shape as the chart arc (`establish → build+ → [turn] → payoff`), same
-   journalist confirm/tweak/veto, same fail-loud shape check (`arcErrors`), pinned VERBATIM as `arcBeats`
-   once confirmed. **`arcBeats` and chart-native's `spec.beats` are never interchangeable — a chart
-   `beats` field submitted on a map spec is rejected loud, use `arcBeats` for a map.** **STILL a
-   follow-up, say this plainly, never promise otherwise:** the other map story types — `route`,
-   `cartogram`, `dot-density`, `hex-grid`, `locator` — do NOT accept a confirmed arc yet; their beats
-   still derive from the data alone (the existing salience picker, `deriveMapStory`). Never tell a
-   journalist one of those five types can be confirmed beat-by-beat the way a chart-scrolly or a
-   choropleth/symbol map-scrolly now can. That boundary is now MECHANICAL, not just documented:
-   `arcBeats` submitted on one of those five is REFUSED by name at validation
-   (`unsupportedArcBeatsErrors`, `skills/map-native/src/map-arc.ts`) rather than accepted and then
-   dropped at the render — which is what used to happen, and is how a validated plan came to produce
-   a walk nobody confirmed.
+   **Map claim-arc — ALL SEVEN map-native story types now carry it; say what each one anchors on,
+   never "only choropleth/symbol".** The claim-arc override exists for every real map-native story
+   type — `choropleth`, `symbol`, `locator`, `cartogram`, `dot-density`, `route`, `hex-grid`
+   (`ARC_CAPABLE_MAP_TYPES`, `skills/map-native/src/map-arc.ts` — `hex-grid` was the last to gain it).
+   There is no map type left whose beats can ONLY come from the salience auto-pick. It is a SEPARATE
+   field from chart-native's: a map arc is a **region-anchored `arcBeats`** plan — `{ region, role,
+   text }` per beat — same shape as the chart arc (`establish → build+ → [turn] → payoff`), same
+   journalist confirm/tweak/veto, same fail-loud shape check (`arcErrors`), pinned VERBATIM as
+   `arcBeats` once confirmed. **`arcBeats` and chart-native's `spec.beats` are never interchangeable —
+   a chart `beats` field submitted on a map spec is rejected loud, use `arcBeats` for a map.** What
+   `region` anchors on is type-specific — confirm the ACTUAL anchor with the journalist, never a
+   generic "region":
+   - `choropleth` / `dot-density` / `cartogram` — a named region the data already has (region key /
+     region id).
+   - `symbol` / `locator` — a named point (a marker's own label).
+   - `route` — a territory the route crosses, COMPUTED from the injected geometry at produce time,
+     never a string the journalist declares up front — so a route's arc cannot be content-checked at
+     the gate the way the other six are; a typo'd territory name is caught later, at produce, by name,
+     against the territories that route actually crosses (`resolveRouteArc`, `route-story.ts`).
+   - `hex-grid` — a **place**, not a region key: a hex cell is computed by binning points, so no cell
+     has a name until the data is binned. A hex-grid beat's `region` is the journalist's own free-text
+     label for the place, and it MUST also carry `lon`/`lat` — the only type whose anchor needs
+     coordinates, resolved against the binned grid by point-in-polygon — a beat missing either is
+     refused at validation (`resolveHexGridArc`, `hex-grid-story.ts`).
+   `arcBeats` submitted on a type string outside this list of seven is still refused BY NAME at
+   validation (`unsupportedArcBeatsErrors`, `skills/map-native/src/map-arc.ts`) rather than accepted
+   and silently dropped at the render — the old failure this guards, kept as defence-in-depth for an
+   eighth type, should one ever land. Every real map type today is on the list, so this should never
+   fire for a real one.
+   **★ A route's confirmed arc reaches its scrolly ONLY — never its video.** A route video always
+   draws its line on continuously, through every crossed territory in geographic order — every camera
+   mode a route video can take (`route-reveal`, `guided-tour`, or `simple`) resolves to the SAME
+   composition, `RouteReveal` (`skills/map-native/scripts/lib/story-comps.mjs`) — and `RouteReveal`
+   deliberately never reads `arcBeats` (`RouteReveal.tsx:159-171`): a continuous self-drawing line has
+   no discrete-beat seam to honour a plan with. Confirm a route's arc and it still reaches the reader,
+   but only through `RouteScrolly.tsx` — the scrolly walks it step by step; the video does not. Say
+   this plainly the moment a journalist confirms a route arc and picks video: the plan will not show up
+   there — never let a confirmed route arc go silently ignored by a video render. No other arc-capable
+   type has this split: the other six all read `arcBeats` both in their guided-tour video composition
+   (`*Story.tsx`) and their scrolly (`*Scrolly.tsx`); only the *fixed-camera* video family
+   (`*Reveal.tsx`, the `simple` camera-mode opt-in, never the default) skips it everywhere — symmetric
+   across every type, not a gap unique to any one of them.
+   **Locator (marker map) already tours per place before any arc is confirmed — never deny it, and
+   never call `revealMode` a choropleth setting.** A locator video's default camera mode is
+   `guided-tour` — the default for every map type but route, which draws on instead
+   (`defaultCameraMode`, `skills/map-native/scripts/lib/story-comps.mjs:87-89`) — and its guided-tour
+   composition (`LocatorStory.tsx:1-3`) already visits one place (or one category) at a time, each with
+   its own camera box, a caption ramp per beat, and a central place/category label (the same pattern
+   every beat-driven map story shares — choropleth/symbol/cartogram/hex-grid/dot-density). A confirmed
+   arc only picks WHICH places that tour visits and what each caption says, in place of the salience
+   auto-pick — it does not switch on a capability that was otherwise off. `revealMode`
+   (`LocatorConfigShape.revealMode`, `"context"` default | `"sequential"`) is that tour's camera
+   choreography — `context` keeps the establishing bounds in view around each reveal, `sequential` cuts
+   straight to each place instead — it is camera behaviour, not a fill/colour setting, and every
+   arc-capable type but route carries the same field for the same reason.
 3. **Prose table — GATE 2b (prose-extracted figures only):** when the figures come from the
    article's prose, show the reconstructed table (verbatim quotes) and get an explicit
    confirmation BEFORE anything is routed — a wrong table must never invalidate an
