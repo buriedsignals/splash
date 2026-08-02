@@ -635,9 +635,12 @@ surfaced only at Gate 3 AFTER production. So:
   screen. A caption the data contradicts is corrected (or its claim dropped) before the spec is
   produced; the render-review (Gate 3a) then re-verifies each step caption against what that step
   visually shows (see 3a).
-- **Map scrolly** steps stay derived from the data (temporal sequence / magnitude ranks — no explicit
-  override exists on that track; a `beats` field there is mechanically rejected); if the journalist
-  needs named-step control on a map story, say that limitation at PROPOSITION, not after production.
+- **Map scrolly** named-step control is `arcBeats`, NOT this track's `beats` field — a chart-native
+  `beats` field submitted on a map spec is still mechanically rejected (see the region-anchored
+  claim-arc at Gate 1b, above): every map-native type — choropleth/symbol/locator/cartogram/
+  dot-density/route/hex-grid — now accepts a confirmed `arcBeats` plan (`establish → build+ → [turn]
+  → payoff`, same confirm/tweak/veto). Point the journalist at `arcBeats` here; never tell them a map
+  story has no named-step control — that limitation no longer exists.
 
 **Article/web has NO static fallback — the pinned format is the ONLY artifact, so pin the one the
 journalist actually wants.** For the article-web channel, `suggest-chart` routing DEFAULTS to interactive
