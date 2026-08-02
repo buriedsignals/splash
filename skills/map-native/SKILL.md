@@ -173,10 +173,14 @@ Remotion+MapLibre per-frame hang becomes a clean fail-hard instead of a burned r
 hang stays a separate ticket). The static and interactive web builds need `VITE_MAPTILER_KEY` in `.env`;
 the Remotion build needs `REMOTION_MAPTILER_KEY` — both free-tier keys, gitignored.
 
-One more Remotion footgun: the component fetches the basemap geo via `staticFile("geo/world.geojson")`
-at render time, so the file MUST live under the Remotion **public dir**. `remotion.config.ts` sets the
-project root to the package dir, so it also calls `Config.setPublicDir("remotion/public")` — without
-that, `staticFile` 404s and the map renders blank (a silent failure: the still "succeeds" but is empty).
+One more Remotion footgun, now HISTORICAL: the geometry-needing video compositions used to fetch the
+basemap via `staticFile("geo/world.geojson")` at render time, which required the file to live under
+the Remotion **public dir**. That fetch is gone — every one of them now reads the geometry
+`produce.mjs` injects into `config.geometry` instead (see the "Video now renders any SHIPPED
+geography" paragraph below), the same decode the static/interactive/scrolly formats already use.
+Kept here as a note in case the public-dir plumbing (`Config.setPublicDir("remotion/public")` in
+`remotion.config.ts`) is ever repurposed for a different static asset — not because the geo fetch
+it originally existed for still runs.
 
 ## Narrative video grammar — the `mapStory` (for narrated types)
 
@@ -351,13 +355,19 @@ in this tree threads the frozen file's path onto `config.geography.sourcePath` b
 declared geography as accepted-but-not-yet-wired, not as a working shipped-preset alternative,
 until that threading lands.
 
-**Video cannot render any of `us-states` or `natural-earth-admin-1` yet, nor a declared geography —
-only `world`.** The eight video compositions (`{Choropleth,Cartogram,DotDensity}{Story,Reveal}.tsx`,
-`RouteReveal.tsx`, `RouteScrolly.tsx`) fetch `staticFile("geo/world.geojson")` directly and join on
-a hardcoded `iso_a3`, never reading the injected `config.geometry` the static/interactive/scrolly
-formats already use. `resolveGeometryForProduce` refuses any non-`world` geography for
-`format: "video"` by name, before any build step, rather than letting the render silently come out
-an empty (or wrong) world map. Choose static, interactive, or scrolly for anything below `world`.
+**Video now renders any SHIPPED geography — `world`, `us-states`, `natural-earth-admin-1` — a
+declared geography stays the one thing it cannot render yet.** The eight video compositions
+(`{Choropleth,Cartogram,DotDensity}{Story,Reveal}.tsx`, `RouteReveal.tsx`, `RouteScrolly.tsx`) read
+the injected `config.geometry` through `resolveVideoGeometry` (`skills/map-native/src/core/
+video-geometry.ts`) — the same decode the static/interactive/scrolly formats already use, joining on
+`config.geography.joinKey` when present — instead of the bundled `staticFile("geo/world.geojson")` +
+hardcoded `iso_a3` this section used to describe (render-verified: a Swiss-canton choropleth video
+renders the real cantons, camera-toured beat by beat — see the geography-anywhere digest above). A
+DECLARED geography is the one case still refused for video: `resolveGeometryForProduce` throws by
+name, before any build step, because no assembler in this tree threads a declared geometry's
+`sourcePath` through to produce yet (the same gap the paragraph above already names — nothing new
+here, just the video-specific consequence of it). Choose static, interactive, or scrolly for a
+declared geography until that threading lands.
 
 ## Produce — format selector from one config
 
