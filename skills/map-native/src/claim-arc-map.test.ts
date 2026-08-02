@@ -29,6 +29,7 @@ import {
 import { computeRouteReveal } from "./route-geo.ts";
 import {
   resolveRouteArc,
+  resolveRouteWalk,
   routeArcCamera,
   routeStoryToChapters,
 } from "./route-story.ts";
@@ -1449,6 +1450,78 @@ describe("routeStoryToChapters — resolveRouteArc wiring", () => {
         align: "center",
       },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveRouteWalk — the SINGLE source of truth routeStoryToChapters (the caption) and
+// RouteScrolly.tsx (the camera + per-territory emphasis) both call, with the SAME (layout,
+// arcBeats) arguments. This is the lockstep invariant a first attempt at threading the arc
+// into RouteScrolly.tsx broke: the component built its own walk order inline, separately from
+// routeStoryToChapters's internal resolution, so the caption followed a confirmed arc while
+// the camera/highlight kept following the geographic walk — a mismatch a source-grep on
+// "does the component mention arcBeats" could not catch (it never checked the WALK agrees,
+// only that the field was read). These tests call resolveRouteWalk DIRECTLY — the same
+// function object RouteScrolly.tsx calls — and assert its output against what
+// routeStoryToChapters (which now calls the SAME function internally) actually renders as
+// steps, so a regression in the shared resolver, or a re-introduction of a second, divergent
+// walk computation, reddens here rather than only in a component no test can render.
+// ---------------------------------------------------------------------------
+
+describe("resolveRouteWalk — the walk routeStoryToChapters and RouteScrolly.tsx both resolve from", () => {
+  it("with a confirmed arcBeats: walk order/keys match the ARC (not geographic order), and every draw step's territory-key is in lockstep with routeStoryToChapters's own step order", () => {
+    const walk = resolveRouteWalk(routeLayout, routeArc);
+    // ARC order (CCC, AAA) — not geographic entry order (AAA, BBB, CCC) — and each entry
+    // carries the confirmed camera + verbatim text (never null, unlike the geographic walk).
+    expect(walk.map((w) => w.territory.key)).toEqual(["CCC", "AAA"]);
+    expect(walk.map((w) => w.text)).toEqual([
+      "CCC opens the story.",
+      "AAA closes it.",
+    ]);
+    expect(walk.map((w) => w.camera)).toEqual([
+      expectedRouteCamera("CCC"),
+      expectedRouteCamera("AAA"),
+    ]);
+
+    // The lockstep proof: routeStoryToChapters's draw steps (ref 0..N-1, in order) must name
+    // exactly walk[ref].territory, step count included — this is what "the caption and the
+    // camera/highlight never disagree" actually means, checked directly rather than assumed.
+    const story = routeStoryToChapters(routeLayout, {
+      title: routeConfig.title,
+      arcBeats: routeArc,
+    });
+    const draws = story.steps.filter((s) => s.action === "drawTo");
+    expect(draws).toHaveLength(walk.length);
+    draws.forEach((step, i) => {
+      expect(step.ref).toBe(i);
+      // The step's prose IS the walk entry's text at the same index — the two were built
+      // from the exact same resolveRouteWalk() call, not two independent re-derivations.
+      expect(step.prose).toBe(walk[i].text);
+    });
+    // The takeaway sentinel ref is the walk's own length.
+    expect(story.steps[story.steps.length - 1].ref).toBe(walk.length);
+  });
+
+  it("without arcBeats: the walk is the geographic order, camera/text null (the caller's cumulative-camera/label-fallback branches apply), still in lockstep with routeStoryToChapters", () => {
+    const walk = resolveRouteWalk(routeLayout, undefined);
+    expect(walk.map((w) => w.territory.key)).toEqual(["AAA", "BBB", "CCC"]);
+    for (const w of walk) {
+      expect(w.camera).toBeNull();
+      expect(w.text).toBeNull();
+    }
+
+    const story = routeStoryToChapters(routeLayout, {
+      title: routeConfig.title,
+    });
+    const draws = story.steps.filter((s) => s.action === "drawTo");
+    expect(draws).toHaveLength(walk.length);
+    draws.forEach((step, i) => expect(step.ref).toBe(i));
+  });
+
+  it("an empty arcBeats array behaves exactly like an absent one (falls back to the geographic walk) — mirrors every other arc-capable type's `?.length` gate", () => {
+    expect(resolveRouteWalk(routeLayout, [])).toEqual(
+      resolveRouteWalk(routeLayout, undefined),
+    );
   });
 });
 

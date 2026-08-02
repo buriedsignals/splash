@@ -70,6 +70,48 @@ export function resolveRouteArc(
   });
 }
 
+// The territory (and, for a confirmed arc, that territory's own-segment camera + verbatim
+// claim) each draw step ACTUALLY targets, step-for-step, in walk order (`walk[k]` is
+// `story.steps[k + 2]`'s target). `camera`/`text` are null for the geographic-order walk — the
+// cumulative "route drawn through" camera needs the route LINE (not just this layout), and the
+// caption falls back to an editorial note or the territory's own label; both are the caller's
+// job (routeStoryToChapters below, RouteScrolly.tsx's stepSolutions).
+//
+// SINGLE SOURCE OF TRUTH: this is the one place a route's arc/geographic dispatch happens.
+// routeStoryToChapters (the caption) and RouteScrolly.tsx (the camera + per-territory
+// emphasis) both call THIS function with the SAME (layout, arcBeats) — not two independent
+// re-derivations of "what does step k target" that could silently drift apart. That drift is
+// exactly the bug this closes: a first attempt at threading the arc into RouteScrolly.tsx built
+// the walk order inline, separately from routeStoryToChapters's own internal resolution: the
+// caption followed the confirmed arc while the camera/highlight kept following the geographic
+// walk — a visible mismatch a source-grep on "does the component mention arcBeats" could not
+// catch, because it never mentioned the WALK matching, only that the field was read. See
+// claim-arc-map.test.ts's lockstep test, which calls this function directly (the same function
+// object RouteScrolly.tsx calls) and asserts its order/count agree with routeStoryToChapters's.
+export interface RouteWalkStep {
+  territory: RouteRevealTerritory;
+  camera: [number, number, number, number] | null;
+  text: string | null;
+}
+
+export function resolveRouteWalk(
+  layout: RouteRevealLayout,
+  arcBeats?: MapArcBeat[],
+): RouteWalkStep[] {
+  if (arcBeats?.length) {
+    return resolveRouteArc(layout, arcBeats).map((a) => ({
+      territory: a.territory,
+      camera: a.camera,
+      text: a.text,
+    }));
+  }
+  return layout.territories.map((t) => ({
+    territory: t,
+    camera: null,
+    text: null,
+  }));
+}
+
 // Route → ScrollyStory. Step sequence:
 //   [0] intro       — flyTo, title card scene, carries the description (ref 0)
 //   [1] overview     — flyTo, full route framed, nothing drawn yet, all territories outlined
@@ -96,10 +138,11 @@ export function routeStoryToChapters(
     arcBeats?: MapArcBeat[];
   },
 ): ScrollyStory {
-  const arc = meta.arcBeats?.length
-    ? resolveRouteArc(layout, meta.arcBeats)
-    : null;
-  const n = arc ? arc.length : layout.territories.length;
+  // resolveRouteWalk is the SINGLE source of truth for the arc/geographic dispatch — see its
+  // own header comment. RouteScrolly.tsx calls the SAME function, with the SAME arguments, for
+  // its camera + per-territory emphasis, so the two can never silently diverge.
+  const walk = resolveRouteWalk(layout, meta.arcBeats);
+  const n = walk.length;
 
   const intro: ScrollyStep = {
     id: "step-0-intro",
@@ -119,27 +162,20 @@ export function routeStoryToChapters(
     align: "center",
   };
 
-  const drawSteps: ScrollyStep[] = arc
-    ? arc.map((a, i) => ({
-        id: `step-${i + 2}-draw`,
-        visual: "map",
-        action: "drawTo",
-        ref: i,
-        // The journalist's claim, verbatim — never the note/label fallback the
-        // geographic-order walk below uses.
-        prose: a.text,
-        align: "center",
-      }))
-    : layout.territories.map((t, i) => ({
-        id: `step-${i + 2}-draw`,
-        visual: "map",
-        action: "drawTo",
-        ref: i,
-        prose: meta.notes?.[t.key]?.trim()
-          ? (meta.notes[t.key] as string)
-          : t.label,
-        align: "center",
-      }));
+  const drawSteps: ScrollyStep[] = walk.map((w, i) => ({
+    id: `step-${i + 2}-draw`,
+    visual: "map",
+    action: "drawTo",
+    ref: i,
+    prose:
+      w.text !== null
+        ? // The journalist's claim, verbatim — never the note/label fallback below.
+          w.text
+        : meta.notes?.[w.territory.key]?.trim()
+          ? (meta.notes[w.territory.key] as string)
+          : w.territory.label,
+    align: "center",
+  }));
 
   const takeawayProse = meta.insight?.trim()
     ? meta.insight
@@ -184,13 +220,11 @@ export function scrollyStepCount(
     // The SIZER must derive the same walk the renderer does (same mirror as every branch
     // below) — a confirmed arc changes the beat COUNT (the journalist's own selection, not
     // the geographic-order walk), so a sizer blind to it sizes the composition for a
-    // different story than the one that renders. Reuses resolveRouteArc rather than just
-    // `config.arcBeats.length` so an unknown territory throws here too, exactly as it would
-    // at render — the sizer and the renderer agree on failure, not just on success.
-    const n = config.arcBeats?.length
-      ? resolveRouteArc(layout, config.arcBeats).length
-      : layout.territories.length;
-    return n + 3;
+    // different story than the one that renders. resolveRouteWalk is the SAME single source
+    // of truth routeStoryToChapters and RouteScrolly.tsx both call, so an unknown territory
+    // throws here too, exactly as it would at render — the sizer and the renderer agree on
+    // failure, not just on success.
+    return resolveRouteWalk(layout, config.arcBeats).length + 3;
   }
   if (config.type === "locator") {
     const beats = deriveLocatorStory(config.markers, {

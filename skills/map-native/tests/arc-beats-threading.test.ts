@@ -53,6 +53,28 @@ describe("map-native story components forward the confirmed claim-arc", () => {
   }
 });
 
+// route is the ONLY arc-capable type with a SECOND critical call site: RouteScrolly.tsx
+// resolves its own camera + per-territory emphasis from resolveRouteWalk(l, config.arcBeats)
+// (route-story.ts) — a call the block above's regex does not cover, because it is not the
+// `meta` object literal every other component threads arcBeats through. This regex would NOT
+// have caught the bug this test suite exists to close: a first attempt forwarded arcBeats into
+// routeStoryToChapters's meta correctly (the block above would have passed) while the
+// component's own walk/camera resolution silently ignored it — the caption followed the arc,
+// the camera and highlighted territory did not. See claim-arc-map.test.ts's
+// "resolveRouteWalk — the walk routeStoryToChapters and RouteScrolly.tsx both resolve from"
+// block for the deeper behavioural proof (calling resolveRouteWalk directly and asserting
+// lockstep with routeStoryToChapters's own steps); this is the narrower, component-source
+// backstop for the specific call site that broke.
+describe("RouteScrolly.tsx resolves its walk from the SAME function+arguments the caption uses", () => {
+  it("calls resolveRouteWalk(l, config.arcBeats) — not a re-derived/hardcoded walk", () => {
+    const source = readFileSync(
+      join(SRC, "components/RouteScrolly.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/resolveRouteWalk\(\s*l,\s*config\.arcBeats\s*\)/);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // The SIZERS mirror the derivation, and had to be threaded with it.
 //
