@@ -296,8 +296,12 @@ established.
    - `hex-grid` — a **place**, not a region key: a hex cell is computed by binning points, so no cell
      has a name until the data is binned. A hex-grid beat's `region` is the journalist's own free-text
      label for the place, and it MUST also carry `lon`/`lat` — the only type whose anchor needs
-     coordinates, resolved against the binned grid by point-in-polygon — a beat missing either is
-     refused at validation (`resolveHexGridArc`, `hex-grid-story.ts`).
+     coordinates, resolved against the binned grid by point-in-polygon. A beat missing either, or
+     carrying an out-of-range one, is refused AT THE GATE (`validateHexGridConfig`,
+     `validate-config.ts`) — structural, same moment as every other type's shape check. A
+     WELL-FORMED coordinate that lands on no populated cell is a separate, later refusal, BY NAME,
+     at produce time (`resolveHexGridArc`, `hex-grid-story.ts`) — the content check, deferred
+     because it needs the binned grid.
    `arcBeats` submitted on a type string outside this list of seven is still refused BY NAME at
    validation (`unsupportedArcBeatsErrors`, `skills/map-native/src/map-arc.ts`) rather than accepted
    and silently dropped at the render — the old failure this guards, kept as defence-in-depth for an

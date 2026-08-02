@@ -247,12 +247,18 @@ const ROUTE_REVEAL_FRAMES = routeRevealFrames(
 const routeDefaultProps = {
   config: {
     ...sampleRoute,
-    // The two territories the sample route's own `territories` narration names — see
-    // devGeometrySubset's own comment above.
+    // ALL THREE territories the route geographically crosses (CHN/IND/BGD — computeRouteReveal
+    // against the full bundled world confirms this; "IND"/"BGD" alone, the two the sample's own
+    // `territories` narration names by hand, used to be the only ones subsetted here). Sizing
+    // (ROUTE_REVEAL_FRAMES below) is computed against the SAME full-world crossing count, so a
+    // narrower subset silently dropped the CHN leg from the Studio preview while still sizing
+    // the composition for it — roughly 1.2s of frozen tail, camera-toured toward a territory
+    // whose geometry was never in the preview at all. The narration itself is unaffected: CHN
+    // carries no `territories[]` note (the journalist's own choice), same as before.
     geometry: devGeometrySubset(
       world as unknown as GeoJSON.FeatureCollection,
       "iso_a3",
-      ["IND", "BGD"],
+      ["CHN", "IND", "BGD"],
       "territories",
     ),
   },

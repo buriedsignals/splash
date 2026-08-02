@@ -430,10 +430,18 @@ la toucher.
 
 ### 3.9 Moteurs et couleur
 
-- **L'override d'arc carto est câblé pour choroplèthe + symbole UNIQUEMENT** ; les quatre autres
+- ~~**L'override d'arc carto est câblé pour choroplèthe + symbole UNIQUEMENT** ; les quatre autres
   types carto n'ont que `Beat.role`. `SKILL.md` liste **exactement** ces deux-là — c'est la leçon
   de S2-slice-1 : promettre un override sur un type non câblé coûte plus qu'il ne rapporte. Étendre
-  la liste veut dire câbler d'abord. *(`skills/splash/src/validate-gate.ts:142`.)*
+  la liste veut dire câbler d'abord.~~ **Fermé (map-storyboard-and-video-geography)** : les quatre
+  types alors manquants — locator, cartogram, dot-density, hex-grid (le dernier, câblé via sa
+  propre résolution par lieu plutôt qu'`applyMapArc`, cf. `map-story.ts`) — ont chacun reçu
+  l'override `arcBeats`, plus `route` (anchor calculé à la production, jamais déclaré). Les sept
+  types réels sont désormais dans `ARC_CAPABLE_MAP_TYPES` — plus aucun type carto réel n'a
+  seulement `Beat.role`. `SKILL.md` liste maintenant les sept, avec l'ancre par type. *(Citation
+  corrigée au passage — `validate-gate.ts:142` ne pointait jamais sur ce dispatch : la liste vit
+  dans `skills/map-native/src/map-arc.ts`'s `ARC_CAPABLE_MAP_TYPES`, lue par `validateMapNative`,
+  `skills/splash/src/validate-gate.ts`'s `validateMapNative` switch.)*
 - **Les couleurs de séries catégorielles ne dérivent PAS de la palette maison** — Okabe-Ito reste.
   Décision CVD : une rampe dérivée d'une teinte de marque ne garantit pas la distinguabilité entre
   séries, et c'est l'invariant global du projet.

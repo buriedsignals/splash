@@ -204,10 +204,12 @@ function validateScrolly(spec: unknown): ValidationOutcome {
           "(region-anchored: `{region, role, text}`). Move the plan to `arcBeats`.",
       ],
     };
-  // arcBeats (S2) is validated INSIDE validateMapNative (choropleth/symbol dispatch to
-  // validateChoroplethConfig/validateSymbolConfig, which call mapArcErrors) — its errors
-  // already flow through as ok:false here. On the OK path, flag the salience fallback
-  // (no confirmed arcBeats) the same way the chart track does above.
+  // arcBeats (S2) is validated INSIDE validateMapNative — all seven of its per-type
+  // validators (validateChoroplethConfig/validateSymbolConfig/validateLocatorConfig/
+  // validateCartogramConfig/validateDotDensityConfig/validateRouteConfig/
+  // validateHexGridConfig) call mapArcErrors (or their own arc resolution, for route/
+  // hex-grid) — its errors already flow through as ok:false here. On the OK path, flag the
+  // salience fallback (no confirmed arcBeats) the same way the chart track does above.
   const mapOutcome = validateMapNative(spec);
   if (mapOutcome.ok) {
     const fallback = mapNarrativeFallbackWarning(spec);
