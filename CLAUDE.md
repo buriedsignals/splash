@@ -81,6 +81,56 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 - **Format skill-autonome** (canon Tom) : `SKILL.md` (8 sections : Overview · When to use · gotcha · Architecture · How it works · Quick start · Tuning knobs (chacun = un nombre) · Files) + `references/` + `scripts/` (prep déterministe) + `assets/` (1 composant battle-tested + sample-data + preview) + `output-proof`.
 - Discipline vidéo (bug-free, façon Tom) : stack en couches · **frame-gating** sur la vraie disponibilité · données pré-cuites · valider 1 still avant le mp4 · plomberie (`preserveDrawingBuffer`, `--gl=angle`, timeouts).
 
+## ★ État courant — 2026-08-02 (LIS CECI EN PREMIER — `main` = `826aa071`)
+
+**Le storyboard de carte et la géographie vidéo sont fusionnés** (`feat/map-storyboard-and-video-geography`,
+43 commits, avance rapide, arbre propre). Gate **21/22** : le seul rouge est l'ambiant
+`lib/brain/eligibility.test.ts` (« a mark can never carry an empty reason », `readiness.ts:54`),
+qui échoue **aussi en isolation** en 123 ms — antérieur à tout ce travail, présent sur `main` avant.
+La branche n'introduit **aucune dépendance** (donc pas de `bun install` requis après un pull).
+
+**Ce que ça change pour un journaliste.** Les **sept** types de cartes acceptent un *storyboard confirmé*
+(`arcBeats` : une liste ordonnée de beats, chacun nommant une ancre réelle dans SES données + le texte
+qu'il a confirmé, épinglé verbatim). **Six sur sept** le font arriver jusqu'au lecteur sur les trois
+formes (vidéo *story*, vidéo *reveal*, scrolly web). La **vidéo rend enfin une géographie non-mondiale**
+— le refus provisoire est tombé, prouvé par une image de cantons suisses rendue et **regardée par deux
+relecteurs** via le vrai chemin non contourné.
+
+**★ LA ROUTE EST LE TROU CONNU, ET IL EST CADRÉ.** Elle est capable côté moteur (dériveur, validateur,
+dimensionneur, `resolveRouteWalk` qui produit territoire+caméra+texte par beat) mais **n'a aucune sortie** :
+il lui manque **DEUX composants**, pas un — `ScrollyRouteMap` (la piste scrolly web a six composants
+carte, pas de route) et `RouteStory` (les six autres types ont un `*Story.tsx`, le mode vidéo qui marche
+les beats ; la route n'a que `RouteReveal`, ligne continue qui ignore les beats **par conception**).
+En attendant, le système **refuse honnêtement** au gate Tier-0, avant que le journaliste n'écrive ses
+beats — il n'accepte plus pour perdre ensuite. `RouteScrolly.tsx` (Remotion) existe, marche, et n'est
+enregistré nulle part : c'est lui qui a fait croire à une revue que la capacité existait. Le brancher ou
+le supprimer fait partie du lot. Décision Rémy (2026-08-02) : lot dédié, pas greffé en fin de branche.
+
+**Deux Criticals trouvés par la revue finale de branche** (la 5ᵉ fois d'affilée qu'elle en trouve —
+**ne jamais fusionner sans elle**) : le scrolly LIVRÉ jetait silencieusement le storyboard confirmé pour
+4 types sur 6 (`Scrolly.tsx`, fichier **jamais touché par la branche**) — la branche avait transformé un
+**refus bruyant en perte silencieuse** ; et la prose promettait que l'arc de route atteignait le lecteur
+alors que les trois chemins étaient fermés. Corrigés, re-vérifiés par mutation indépendante.
+
+**★ LEÇON DE MÉTHODE LA PLUS CHÈRE DE LA SESSION — un garde vert ne prouve rien tant qu'on ne l'a pas vu
+rougir POUR LA BONNE RAISON.** Trois gardes de cette branche sont restés verts avec le bug présent : un
+grep de source, puis un comptage de forme d'appel (battu par `const rw2 = resolveRouteWalk`), puis un
+test « comportemental » qui n'appelait que des fonctions pures et ne voyait jamais le câblage du
+composant. La mutation qui tranche est celle qui **casse le comportement en laissant le texte grepé
+intact**. Le levier final de C1 y survit parce qu'il rend le vrai composant (`renderToStaticMarkup`) et
+lit **la page**, pas le fichier. Corollaire : quand une branche accorde une capacité, **les affirmations
+périmées ne sont JAMAIS dans le diff qui l'accorde** — 5 foyers trouvés hors diff cette session (un test
+`validate-gate`, une phrase de `SKILL.md` 350 l. plus loin, 3 tests + la doc de `scrolly`, et
+`map-native/SKILL.md`). Balayer **le dépôt**, nommer les répertoires fouillés. Et « j'ai confirmé avec
+`git stash` que c'est pré-existant » **n'est pas valide** sur une branche multi-commits : seule la
+comparaison à la **base de fusion** (ou un worktree de contrôle) l'établit.
+
+**Suivi ouvert (non bloquant, aucun chemin journaliste ne l'atteint)** : `scrollySpecErrors`
+(`skills/scrolly/src/manifest.ts:42-72`) accepte encore une route avec `arcBeats` — une **troisième**
+couche qui désaccorde, sous un commentaire (`produce.mjs:53`) affirmant que « la CLI et la colonne
+refusent à l'identique ». Le garde de câblage **caméra** reste un scan de source (parité avec l'existant,
+le rendu serveur n'expose aucun état MapLibre).
+
 ## ★ État courant — 2026-07-29 (branche `feat/family-b-what-reaches-the-reader`, famille B fermée)
 
 Famille B du registre (« ce qui arrive au lecteur est faux » — langue, unité, couleur
