@@ -47,6 +47,25 @@ export type GeoMatch = {
   matched: number;
   total: number;
   unmatched: string[];
+  /** RESOLVED region ids, one entry per DISTINCT raw value in `column` that the offline ADM1
+   *  index (matchAdm1Index) actually matched — each hit carries the country it belongs to,
+   *  because an ambiguous name (the "Jura" CH/FR collision) can resolve to more than one.
+   *  Set ONLY by the ADM1-index candidate: a shipped world/us-states match already filters
+   *  the real geometry file on the exact raw value it matched with, so it has no separate
+   *  resolved id to carry and no gap between matching and subsetting to close.
+   *
+   *  This is what closes that gap for an ADM1 join: matching tolerates spelling variants via
+   *  a NORMALIZED index ("Geneve" files under "GENEVE", same key as "Genève"), but the shipped
+   *  geometry file's own properties are not normalized — a produce step that recomputes ids
+   *  from the raw CSV values and compares them against those properties directly finds
+   *  nothing for "Geneve", even though matching already resolved it. See
+   *  lib/geo/resolve-for-produce.ts's own use of this field.
+   *
+   *  DERIVED, never hand-authored — a config assembled from a GeoMatch that carries this
+   *  field must thread it through unchanged (lib/loop/assemble/map-native.ts does). produce
+   *  refuses loudly, rather than silently recomputing raw values, when an admin-1 geography's
+   *  config lacks it (a manifest matched before this field existed, e.g.). */
+  featureIdsByValue?: Record<string, { featureId: string; country: string }[]>;
 };
 
 /** The journalist's own photographs, declared with the run. Splash never generates an image,

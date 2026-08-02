@@ -211,12 +211,24 @@ const GeographyRefSchema = z.strictObject({
   joinKey: z.string(),
   joinKeyFamily: z.string(),
 });
+// GeoMatch.featureIdsByValue's own hand-mirror (production-brief.ts's doc comment on that
+// field) — REQUIRED here, not merely typed on the plain type, or a manifest write→read
+// round-trip (every resume) would silently strip it: zod's default z.object() behaviour
+// drops unrecognised keys rather than erroring, and a dropped featureIdsByValue is exactly
+// the silent regression to raw-value subsetting that field exists to prevent.
+const Adm1FeatureHitSchema = z.object({
+  featureId: z.string(),
+  country: z.string(),
+});
 const GeoMatchSchema = z.object({
   column: z.string(),
   geography: GeographyRefSchema,
   matched: z.number(),
   total: z.number(),
   unmatched: z.array(z.string()),
+  featureIdsByValue: z
+    .record(z.string(), z.array(Adm1FeatureHitSchema))
+    .optional(),
 });
 // A journalist's join decision, one value at a time — the ledger's own unit of record (Task 5's
 // GeoJoinLedger, hand-mirrored here for the same reason GeoMatchSchema is above).

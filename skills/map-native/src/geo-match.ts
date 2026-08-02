@@ -145,6 +145,16 @@ function matchAdm1Index(
     // canton, matching only Switzerland) still settle the outcome.
     const countries = new Map<string, number>();
     const unmatched: string[] = [];
+    // The RESOLVED hit(s) for every matched raw value (Task 15 follow-up) — carried onto the
+    // winning candidate below as `featureIdsByValue` so produce (lib/geo/resolve-for-produce.ts)
+    // can filter the shipped geometry file by canonical featureId instead of recomputing this
+    // exact lookup against the raw column value, which the file's own (possibly accented)
+    // properties do not tolerate the way this normalized index does. Keyed by the raw value
+    // (not its normalized form) because that is what produce still has on hand per row.
+    const featureIdsByValue = new Map<
+      string,
+      { featureId: string; country: string }[]
+    >();
     let matched = 0;
     for (const v of values) {
       if (v === "") continue;
@@ -158,6 +168,10 @@ function matchAdm1Index(
       families.set(family, (families.get(family) ?? 0) + 1);
       for (const country of new Set(hits.map((h) => h.country)))
         countries.set(country, (countries.get(country) ?? 0) + 1);
+      featureIdsByValue.set(
+        v,
+        hits.map((h) => ({ featureId: h.featureId, country: h.country })),
+      );
     }
     if (matched === 0) continue;
     const winningFamily = [...families.entries()].sort(
@@ -190,6 +204,7 @@ function matchAdm1Index(
       matched,
       total: values.length,
       unmatched,
+      featureIdsByValue: Object.fromEntries(featureIdsByValue),
     };
     if (!best || candidate.matched > best.matched) best = candidate;
   }

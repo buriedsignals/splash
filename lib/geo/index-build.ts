@@ -74,13 +74,24 @@ function add(
     existing.push(entry);
 }
 
+// The property Natural Earth's admin-1 layer carries a feature's own canonical id under —
+// `featureId` below equals this property's value for every entry the source actually
+// populates it for (verified: 0 of 4596 real features in the committed asset are missing it;
+// the synthetic "<adm0_a3>-<i>" fallback below is defensive only and has never fired against
+// what is actually shipped). `lib/geo/resolve-for-produce.ts` relies on this: it filters the
+// shipped ADM1 asset on THIS property using the RESOLVED featureId, which is exact — unlike
+// filtering on a name family ("name", "name_fr"...), which needs the query normalized the
+// same way this index was built (NFD-strip + uppercase) and a real shapefile property never
+// is.
+export const ADM1_FEATURE_ID_PROPERTY = "adm1_code";
+
 export function buildAdm1Index(features: GeoJSON.Feature[]): Adm1Index {
   const index: Adm1Index = {};
   features.forEach((f, i) => {
     const p = (f.properties ?? {}) as Record<string, string | undefined>;
     const featureId =
-      p.adm1_code && p.adm1_code.trim() !== ""
-        ? p.adm1_code
+      p[ADM1_FEATURE_ID_PROPERTY] && p[ADM1_FEATURE_ID_PROPERTY]!.trim() !== ""
+        ? p[ADM1_FEATURE_ID_PROPERTY]!
         : `${p.adm0_a3 ?? "UNK"}-${i}`;
     // country is read straight off adm0_a3, independently of featureId — see the top-of-file
     // comment on why featureId's own prefix cannot be parsed back into a country instead.

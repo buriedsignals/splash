@@ -192,6 +192,11 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       source,
       ...(brief.lang ? { lang: brief.lang } : {}),
       ...(unit ? { valueUnit: unit } : {}),
+      // Threaded straight through, never recomputed — see resolve-for-produce.ts's own use
+      // of this field and production-brief.ts's GeoMatch.featureIdsByValue doc comment.
+      ...(geo.featureIdsByValue
+        ? { featureIdsByValue: geo.featureIdsByValue }
+        : {}),
     });
   }
 
@@ -255,6 +260,11 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     // heading and on no value — the sibling branches (:189, :333, :368) already emit
     // `valueUnit`; this one was the odd one out.
     ...(unit ? { unit, valueUnit: unit } : {}),
+    // Threaded straight through, never recomputed — see resolve-for-produce.ts's own use of
+    // this field and production-brief.ts's GeoMatch.featureIdsByValue doc comment.
+    ...(geo.featureIdsByValue
+      ? { featureIdsByValue: geo.featureIdsByValue }
+      : {}),
   });
 }
 

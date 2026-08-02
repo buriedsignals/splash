@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { subsetGeometry } from "./subset";
 import { assertGeoCreditPresent, type GeographyLicenceInfo } from "./policy";
+import { ADM1_FEATURE_ID_PROPERTY } from "./index-build";
 import {
   basemapKeyFor,
   fileExtensionFor,
@@ -55,7 +56,54 @@ type LooseMapConfig = Record<string, unknown> & {
   rows?: Record<string, unknown>[];
   regionKey?: string;
   geometry?: unknown;
+  // The RESOLVED ids an ADM1 join (matchAdm1Index) bound each raw column value to — threaded
+  // straight through from GeoMatch.featureIdsByValue (lib/loop/assemble/map-native.ts),
+  // never recomputed here. See production-brief.ts's doc comment on that field and this
+  // file's own use of it below. Absent for a shipped world/us-states join (nothing to
+  // disagree with there) and for every config assembled before this field existed.
+  featureIdsByValue?: Record<string, { featureId: string; country: string }[]>;
 };
+
+// An admin-1 join's RESOLVED id for one raw column value — never the raw value itself. See
+// production-brief.ts's GeoMatch.featureIdsByValue doc comment for why this exists: matching
+// tolerates spelling variants via a NORMALIZED index ("Geneve" files under the same key as
+// "Genève"), but the shipped geometry file's own properties are not normalized, so comparing
+// a raw CSV value against them directly (the bug this closes) finds nothing for "Geneve" even
+// though matching already resolved it.
+//
+// Filters the resolved hits to `geography.scope` exactly as `subsetGeometry`'s own scope
+// check would (lib/geo/subset.ts's ADM1_COUNTRY_PROPERTY filter): a name shared across a
+// border (the "Jura" CH/FR collision) must resolve to the ONE country this join is scoped to,
+// never to both — passing both through would make the sibling country's id look "requested
+// but absent" once subsetGeometry's own scope filter drops it, a false refusal for a region
+// nobody asked for.
+function resolveAdm1FeatureIds(
+  rawValue: string,
+  regionKeyLabel: string,
+  featureIdsByValue: Record<string, { featureId: string; country: string }[]>,
+  geography: ResolvedGeography,
+): string[] {
+  const value = rawValue.trim();
+  const hits = featureIdsByValue[value];
+  if (!hits || hits.length === 0)
+    throw new Error(
+      `produce: "${value}" (column "${regionKeyLabel}") was never resolved against ` +
+        `${geography.set}${geography.scope ? ` scoped to "${geography.scope}"` : ""} — the ` +
+        `earlier geography match never bound this value to a region in the file, so produce ` +
+        `cannot either; check its spelling against the source data`,
+    );
+  const scoped = geography.scope
+    ? hits.filter((h) => h.country === geography.scope)
+    : hits;
+  if (scoped.length === 0)
+    throw new Error(
+      `produce: "${value}" (column "${regionKeyLabel}") matched ` +
+        `${[...new Set(hits.map((h) => h.country))].join("/")} in the offline index, but ` +
+        `this join is scoped to "${geography.scope}" — none of its matches belong to that ` +
+        `country, so drawing any of them would colour the wrong region`,
+    );
+  return scoped.map((h) => h.featureId);
+}
 
 // The minimal shape the route branch reads off a parsed GeoJSON source file — just enough to
 // scan every feature's join-key property (see the "route" branch below).
@@ -168,10 +216,41 @@ export async function resolveGeometryForProduce(
       config.geoCredit,
     );
 
-    // The feature ids actually drawn (D5's own design call): recomputed here from the
-    // config's own data (the assembler does not thread a dedicated featureIds field back
-    // through ProductionBrief/GeoMatch — a deliberate smaller-change call this task's brief
-    // documents) rather than a NEW field on the manifest schema.
+    // WHICH PROPERTY the geometry filter matches on. An admin-1 join (matchAdm1Index, D10.2)
+    // resolves to a canonical featureId (`config.featureIdsByValue`, threaded from GeoMatch —
+    // see production-brief.ts's doc comment) rather than a value in the joinKey NAME family,
+    // so it filters on ADM1_FEATURE_ID_PROPERTY ("adm1_code") instead of `geography.joinKey`.
+    // A shipped world/us-states join is untouched: it already filters the real file on the
+    // exact raw value it matched with (matchShippedBasemaps compares that same raw column
+    // value against that same file), so there is no separate resolved id and no bug to fix
+    // there — this is scoped to the one join that HAS a normalized index standing between the
+    // match and the file's own properties.
+    const isAdm1Join = basemapKeyFor(geography) === "natural-earth-admin-1";
+    // FAIL LOUD, never fall back to the raw-value path silently: a config with this geography
+    // but no featureIdsByValue is either a manifest matched before this field existed, or a
+    // future assembler bug that forgot to thread it — both are exactly the mismatch this
+    // whole mechanism exists to prevent, so re-deriving raw ids here instead of refusing would
+    // silently reproduce it. (Route can never be admin-1 — assemblePointFamily always resolves
+    // it against "world" — so this can never fire for it; excluded from the condition anyway,
+    // belt-and-braces, since route's own id list is resolved from the source file below, not
+    // from `config.rows`/`config.values` at all.)
+    if (isAdm1Join && config.type !== "route" && !config.featureIdsByValue)
+      throw new Error(
+        `produce: an admin-1 geography ("${geography.set}"` +
+          `${geography.scope ? ` ${geography.scope}` : ""}) was matched before this run ` +
+          `started threading resolved region ids through to produce ` +
+          `(config.featureIdsByValue is unset) — re-run the geography match (orient) for ` +
+          `this element rather than subsetting on raw column spelling, which is exactly the ` +
+          `mismatch this field exists to prevent`,
+      );
+    const idProperty = isAdm1Join
+      ? ADM1_FEATURE_ID_PROPERTY
+      : geography.joinKey;
+
+    // The feature ids actually drawn (D5's own design call). A non-admin-1 join keeps its
+    // ORIGINAL behaviour byte-for-byte: one raw value per row/cell, unchanged since before
+    // this fix. An admin-1 join resolves each raw value through `resolveAdm1FeatureIds`
+    // instead of using it directly — see that function's own doc comment.
     //
     // "route" is NOT one of the brief's two named shapes (choropleth/dot-density vs.
     // cartogram) — a genuine gap in the brief's own Design call, found while implementing:
@@ -183,10 +262,29 @@ export async function resolveGeometryForProduce(
     // per-feature filtering step is a no-op for this one type.
     let featureIds =
       config.type === "cartogram"
-        ? config.values!.map((v) => String(v.id))
+        ? config.values!.flatMap((v) =>
+            isAdm1Join
+              ? resolveAdm1FeatureIds(
+                  String(v.id),
+                  "values[].id",
+                  config.featureIdsByValue!,
+                  geography,
+                )
+              : [String(v.id)],
+          )
         : config.type === "route"
           ? null // resolved below, once sourcePath is known
-          : config.rows!.map((r) => String(r[config.regionKey as string]));
+          : config.rows!.flatMap((r) => {
+              const raw = String(r[config.regionKey as string]);
+              return isAdm1Join
+                ? resolveAdm1FeatureIds(
+                    raw,
+                    config.regionKey as string,
+                    config.featureIdsByValue!,
+                    geography,
+                  )
+                : [raw];
+            });
 
     // WHERE to read the frozen source from: a declared file names its own frozen path
     // (`geography.sourcePath` — this task's own addition to the config shape, threaded by a
@@ -235,7 +333,7 @@ export async function resolveGeometryForProduce(
         sourcePath,
         outPath: geomOutPath,
         featureIds,
-        idProperty: geography.joinKey,
+        idProperty,
         // The join key alone is not enough: seven consumers read `properties.name` for the
         // label a reader actually sees (hover popup, video callout, cartogram cell, route
         // territory). Both of this suite's fixtures happened to join ON `name`, which is why
@@ -267,6 +365,7 @@ export async function resolveGeometryForProduce(
 
     delete geography.sourcePath; // produce-time-only — never reaches the browser
     config.geography = geography; // observable even when synthesized from `basemap`
+    delete config.featureIdsByValue; // produce-time-only — same discipline as sourcePath above
 
     return true;
   }
