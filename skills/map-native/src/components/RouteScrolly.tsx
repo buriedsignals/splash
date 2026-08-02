@@ -32,7 +32,11 @@ import { TitleCard } from "./StoryCards";
 import { ScrollyPanel } from "./ScrollyPanel";
 import { MapFrame } from "../core/MapFrame";
 import { resolveMapFrame } from "../core/map-format";
-import { routeStoryToChapters, scrollyFrames } from "../route-story";
+import {
+  resolveRouteArc,
+  routeStoryToChapters,
+  scrollyFrames,
+} from "../route-story";
 import {
   buildTimeline,
   cameraForFrame,
@@ -174,6 +178,11 @@ interface RouteScrollyModel {
   story: ScrollyStory;
   phases: Phase[];
   stepSolutions: CameraSolution[];
+  // Per-territory "own segment" camera (route-story.ts's routeArcCamera), keyed by territory
+  // key — set only when a confirmed claim-arc is active (see the useMemo below). null on the
+  // geographic-order walk, so the per-frame effect can tell the two apart without re-deriving
+  // config.arcBeats itself.
+  arcCameras: Map<string, [number, number, number, number]> | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -229,6 +238,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     line,
     lineKm,
     territories,
+    arcCameras,
     DRAW,
   } = useMemo(() => {
     const l: RouteRevealLayout = computeRouteReveal(config, world);
@@ -236,6 +246,18 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     for (const t of config.territories ?? []) {
       if (t.note?.trim()) notes[t.key] = t.note;
     }
+    // A confirmed claim-arc (map-arc.ts) walks ONLY the named territories, in the
+    // journalist's own order — never `l.territories`'s geographic entry order.
+    // routeStoryToChapters already branches on this for `story.steps` (order + verbatim
+    // text); this component must walk the SAME set/order for its own camera and
+    // fill/border rendering below, or the confirmed caption and what's on screen at that
+    // step would disagree — worse than not threading the arc at all. resolveRouteArc is
+    // the SAME resolver the deriver and the sizer (scrollyStepCount) use, so a typo'd
+    // territory throws here exactly as it does everywhere else the arc is touched.
+    const arc = config.arcBeats?.length
+      ? resolveRouteArc(l, config.arcBeats)
+      : null;
+    const walkedTerritories = arc ? arc.map((a) => a.territory) : l.territories;
     const st = routeStoryToChapters(l, {
       title: config.title ?? "",
       description: config.description,
@@ -244,6 +266,8 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         : { name: "", url: "" },
       insight: (config as { insight?: string }).insight,
       notes,
+      // The confirmed walk reaches the deriver — see map-arc.ts.
+      arcBeats: config.arcBeats,
     });
     const stepKinds = st.steps.map((_, i) => (i === 0 ? "title" : "reveal"));
     const { phases: ph, totalFrames: tf } = buildTimeline(stepKinds, fps);
@@ -254,9 +278,16 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       totalFrames: tf,
       line: turf.lineString(config.route),
       lineKm: l.totalLengthKm,
-      territories: l.territories,
+      territories: walkedTerritories,
+      // Precomputed per-territory "own segment" camera (route-story.ts's routeArcCamera) —
+      // used for a draw step's camera ONLY when an arc is confirmed (see stepSolutions
+      // below); the geographic-order walk keeps its existing cumulative "route drawn
+      // through" camera, unchanged.
+      arcCameras: arc
+        ? new Map(arc.map((a) => [a.territory.key, a.camera]))
+        : null,
       DRAW: Object.fromEntries(
-        l.territories.map((t) => [t.key, buildDraw(t)]),
+        walkedTerritories.map((t) => [t.key, buildDraw(t)]),
       ) as Record<string, DrawEntry>,
     };
   }, [config, fps, world]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -338,19 +369,27 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
 
       // exitStop for territory index k: the next territory's entry, or 1.0 if k is the last.
       // Mirrors the draw-on driver so the camera follows the DRAWN extent (through territory k),
-      // never lagging one territory behind.
+      // never lagging one territory behind. GEOGRAPHIC-ORDER WALK ONLY: an arc's own order can
+      // put a LATER-entering territory before an earlier one, so "next territory's entry" would
+      // be meaningless as an exit bound for it — see the arcCameras branch below instead.
       const exitStopOfK = (k: number): number =>
         k + 1 < territories.length ? territories[k + 1].stop : 1.0;
 
       // Per-step camera solutions (step sequence: 0 title, 1 overview, 2..N+1 draws, N+2 takeaway):
       //   step 0 (title/intro): full route bounds.
       //   step 1 (overview):    full route bounds (nothing drawn yet).
-      //   step i in 2..N+1:     bounds of the route drawn THROUGH territory k=i-2 ∪ territory k.
+      //   step i in 2..N+1, NO confirmed arc: bounds of the route drawn THROUGH territory
+      //     k=i-2 ∪ territory k (cumulative, geographic order).
+      //   step i in 2..N+1, a CONFIRMED arc: the named territory's OWN footprint
+      //     (arcCameras — routeArcCamera in route-story.ts), never the cumulative "drawn
+      //     through" bounds — an arc's order is the journalist's argument, not the route's
+      //     geography, so "drawn through territory k" has no meaning here.
       //   step N+2 (takeaway):  full route bounds (all drawn).
       const stepSolutions: CameraSolution[] = story.steps.map((s, i) => {
         const k = i - 2;
         if (k < 0 || k >= territories.length) return solveBounds(layout.bounds);
         const terr = territories[k];
+        if (arcCameras) return solveBounds(arcCameras.get(terr.key)!);
         const drawnKm = Math.max(0.001, lineKm * exitStopOfK(k));
         const drawn = turf.lineSliceAlong(line, 0, drawnKm);
         const terrFeatures = world.features.filter((f) => {
@@ -469,7 +508,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       });
 
       continueWhenMapSettles(m, () => {
-        setModel({ map: m, story, phases, stepSolutions });
+        setModel({ map: m, story, phases, stepSolutions, arcCameras });
         continueRender(handle);
       });
     });
@@ -481,7 +520,12 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
 
   useEffect(() => {
     if (!model) return;
-    const { map, phases: ph, stepSolutions } = model;
+    const {
+      map,
+      phases: ph,
+      stepSolutions,
+      arcCameras: modelArcCameras,
+    } = model;
     const h = delayRender(`route-scrolly-frame-${frame}`);
 
     // Camera on the STEP timeline.
@@ -514,6 +558,13 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       reveal = 0;
     } else if (active === lastStep) {
       // takeaway: full route drawn.
+      reveal = 1;
+    } else if (modelArcCameras) {
+      // A confirmed arc walks the journalist's OWN order, not the route's geography — the
+      // physical line has no meaningful "entry → next-territory's-entry" progress to animate
+      // in that order (see stepSolutions/exitStopOfK above). So once the walk begins, the
+      // route is already fully drawn; each step just pans to, and highlights, its own named
+      // territory (the fill/border loop below), instead of tracing physical progress.
       reveal = 1;
     } else {
       const entryStop = territories[k].stop;

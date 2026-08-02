@@ -39,6 +39,11 @@ describe("map-native story components forward the confirmed claim-arc", () => {
     "components/LocatorScrolly.tsx", // scrolly
     "components/CartogramScrolly.tsx", // scrolly
     "components/DotDensityScrolly.tsx", // scrolly
+    "components/RouteScrolly.tsx", // scrolly — route's only discrete, beat-driven format
+    // Deliberately NOT here: components/RouteReveal.tsx (route's video). It draws the route's
+    // own line on as a single continuous physical sweep through every crossed territory in
+    // geographic order — there is no discrete-beat seam for a confirmed arc to reorder or
+    // subset (see RouteReveal.tsx's own header comment on this).
   ];
   for (const file of files) {
     it(`${file} puts arcBeats in the deriver meta`, () => {

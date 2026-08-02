@@ -155,6 +155,21 @@ export const RouteReveal: React.FC<{ config: RouteConfig }> = ({ config }) => {
   // Derive layout + draw structures from config ONCE (heavy turf geometry). Memoised on
   // config, which is stable per composition — so this does NOT re-run every frame / on
   // every state update (that made offline renders far slower than necessary).
+  //
+  // `config.arcBeats` (a confirmed claim-arc, see route-geo.ts's RouteConfig / map-arc.ts) is
+  // DELIBERATELY NOT read here, unlike its sibling RouteScrolly.tsx. This composition draws
+  // the route's own line on, continuously, as a single physical sweep through every crossed
+  // territory in GEOGRAPHIC order — that IS the animation, not a sequence of discrete camera
+  // beats a plan could reorder or subset. There is no seam to honour an arc with: "walk only
+  // 2 of 3 territories" is not expressible for a line that must physically draw through all
+  // three to reach the third, and reordering the sweep would mean drawing the line out of
+  // order, which is not what this line IS. (story-comps.mjs's own comment already establishes
+  // the neighbouring fact that route's "guided-tour" camera mode collapses to this same
+  // composition for the identical reason — there is nothing for a beat-driven tour to add
+  // over a line that already draws itself on-screen point by point.) A confirmed arc still
+  // reaches the SCROLLY render of this same route (RouteScrolly.tsx, which walks discrete
+  // steps and so has a real seam) — it is only this continuous video composition that cannot
+  // express one.
   const { layout, line, lineKm, territories, RIVER_END, DRAW } = useMemo(() => {
     const l: RouteRevealLayout = computeRouteReveal(config, world);
     const terr = l.territories;

@@ -2,6 +2,7 @@ import * as turf from "@turf/turf";
 import type { Topology } from "topojson-specification";
 import { TITLE_SCENE_FRAMES } from "./scene-constants";
 import type { GeographyRef } from "./basemaps";
+import type { MapArcBeat } from "./map-arc";
 
 // ---------------------------------------------------------------------------
 // Map style option space — lives in map-styles.ts (runtime-free, see that file's
@@ -70,6 +71,14 @@ export interface RouteConfig {
     order?: number;
     note?: string;
   }>;
+  /** Journalist-confirmed claim-arc override (S2) — see map-arc.ts / route-story.ts's
+   *  resolveRouteArc. Anchors on the territories THIS ROUTE crosses (RouteRevealTerritory.key),
+   *  which only exist once computeRoute/computeRouteReveal run against `geometry` above — so,
+   *  unlike every other arc-capable type's config, an unknown territory name is refused at
+   *  PRODUCE time (resolveRouteArc), not at the validate-config gate. RouteScrolly.tsx threads
+   *  this through to routeStoryToChapters; RouteReveal.tsx does not (see its own header
+   *  comment — a continuously self-drawing line has no discrete-beat seam to honour one). */
+  arcBeats?: MapArcBeat[];
 }
 
 export interface RouteTerritory {
