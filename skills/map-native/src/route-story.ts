@@ -225,10 +225,15 @@ export function scrollyFrames(stepCount: number, fps: number): number {
 
 // Derive the scrolly step count for a config (used by Root's calculateMetadata to size the
 // composition to the real data, not the sample). Mirrors the per-type derivation the
-// renderers use.
+// renderers use. `joinKey` defaults to "iso_a3" (the bundled world.geojson's own join key) so
+// every existing caller that always passed real world.geojson data keeps working unchanged —
+// Root.tsx's own scrollyMeta is the one caller that must resolve and pass the REAL geometry's
+// join key (resolveVideoGeometry, mirroring storyMeta/dotDensityStoryMeta/cartogramStoryMeta),
+// since a non-world config's regions never match "iso_a3".
 export function scrollyStepCount(
   config: any,
   world: GeoJSON.FeatureCollection,
+  joinKey: string = "iso_a3",
 ): number {
   if (config.type === "route") {
     const layout = computeRouteReveal(config, world);
@@ -263,7 +268,7 @@ export function scrollyStepCount(
     }).steps.length;
   }
   if (config.type === "dot-density") {
-    const layout = computeDotDensity(config, world, "iso_a3");
+    const layout = computeDotDensity(config, world, joinKey);
     const beats = deriveDotDensityStory(layout, {
       title: config.title ?? "",
       description: config.description,
@@ -342,11 +347,11 @@ export function scrollyStepCount(
       regionsWithData: config.points.length,
     }).steps.length;
   }
-  const layout = computeChoropleth(config, world, "iso_a3", {
+  const layout = computeChoropleth(config, world, joinKey, {
     bins: 5,
     scaleType: "sequential",
   });
-  const beats = deriveMapStory(layout, world, "iso_a3", {
+  const beats = deriveMapStory(layout, world, joinKey, {
     title: config.title ?? "",
     insight: config.insight ?? config.title ?? "",
     unit: config.valueUnit ?? "",

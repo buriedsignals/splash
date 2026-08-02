@@ -594,6 +594,110 @@ describe("Remotion's calculateMetadata sizers forward the arc too", () => {
   });
 });
 
+// scrollyMeta (the SEVENTH calculateMetadata sizer, for the "MapScrolly"/"MapScrollySquare"/
+// "MapScrollyPortrait" compositions) was the one Task 10 missed: it kept passing the bundled
+// `world` import unconditionally into scrollyStepCount, which hardcoded "iso_a3" for the
+// geometry-joining types — the identical defect Task 10 fixed for storyMeta/dotDensityStoryMeta/
+// cartogramStoryMeta. Source-scanned here for the same reason as the block above (Root.tsx
+// cannot be imported under a test); the actual joinKey-threading logic is proven behaviourally
+// below, on the pure `scrollyStepCount` function itself.
+describe("scrollyMeta resolves the REAL injected geometry, not the bundled world.geojson", () => {
+  const source = readFileSync(
+    join(import.meta.dir, "..", "remotion", "src", "Root.tsx"),
+    "utf8",
+  );
+
+  it("calls resolveVideoGeometry, mirroring storyMeta/dotDensityStoryMeta/cartogramStoryMeta", () => {
+    expect(source).toMatch(
+      /resolveVideoGeometry\(\s*cfg,\s*"scrollyMeta"\s*\)/,
+    );
+  });
+
+  it("skips resolveVideoGeometry for the geometry-free types (symbol/locator/hex-grid) — it would throw on their sample/default-props configs, none of which carry config.geometry", () => {
+    expect(source).toMatch(
+      /!\[\s*"symbol",\s*"locator",\s*"hex-grid"\s*\]\.includes\(cfg\?\.type\)/,
+    );
+  });
+
+  it("passes the resolved joinKey into scrollyStepCount, not just the resolved world", () => {
+    expect(source).toMatch(
+      /scrollyStepCount\(\s*cfg,\s*resolvedWorld,\s*joinKey\s*\)/,
+    );
+  });
+});
+
+// Behavioural proof, on the pure function itself, that scrollyStepCount's new `joinKey`
+// argument is actually threaded to the region match — not decorative. A basemap whose features
+// are keyed on "code" (not "iso_a3", the default) sizes correctly with the right key and THROWS
+// with the old hardcoded one — the exact "throws inside calculateMetadata" failure a non-world
+// config hit before this fix.
+describe("scrollyStepCount's joinKey argument actually drives the region match", () => {
+  const customWorld: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: { code: "AAA" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+        },
+      },
+      {
+        type: "Feature",
+        properties: { code: "BBB" },
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [2, 0],
+              [3, 0],
+              [3, 1],
+              [2, 1],
+              [2, 0],
+            ],
+          ],
+        },
+      },
+    ],
+  };
+  const config = {
+    regionKey: "code",
+    valueField: "value",
+    title: "Two regions, a custom join key",
+    rows: [
+      { code: "AAA", value: 1 },
+      { code: "BBB", value: 2 },
+    ],
+  };
+
+  it("sizes correctly with the matching joinKey", () => {
+    expect(scrollyStepCount(config, customWorld, "code")).toBeGreaterThan(0);
+  });
+
+  it('defaults to "iso_a3" for backward compatibility (existing callers keep working unchanged)', () => {
+    // customWorld carries no "iso_a3" property at all — same failure mode as the explicit
+    // wrong-key case below, proving the DEFAULT really is "iso_a3", not silently something else.
+    expect(() => scrollyStepCount(config, customWorld)).toThrow(
+      /no region matched the data/,
+    );
+  });
+
+  it('throws with the old hardcoded "iso_a3" — the exact failure a non-world config hit before this fix', () => {
+    expect(() => scrollyStepCount(config, customWorld, "iso_a3")).toThrow(
+      /no region matched the data/,
+    );
+  });
+});
+
 describe("applyMapArc marks its beats as authored", () => {
   it("stamps every arc reveal, so a caption composer can tell it from a derived one", () => {
     const beats = applyMapArc(

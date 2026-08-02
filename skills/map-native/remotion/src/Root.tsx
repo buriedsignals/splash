@@ -207,12 +207,34 @@ const storyMeta = makeStoryMeta((cfg: ChoroplethStoryConfig) => {
   ).totalFrames;
 });
 
-const scrollyMeta = ({ props }: { props: { config: any } }) => ({
-  durationInFrames: scrollyFrames(
-    scrollyStepCount(props.config, world as any),
-    30,
-  ),
-});
+// Task 10 amendment (the one calculateMetadata it missed): only the geometry-joining types —
+// route/dot-density/cartogram, and the choropleth-default fallback — read `world`/`joinKey`
+// inside scrollyStepCount; symbol/locator/hex-grid derive their walk from points/markers alone
+// and never touch either argument. Resolving the REAL injected geometry (resolveVideoGeometry,
+// mirroring storyMeta/dotDensityStoryMeta/cartogramStoryMeta) only for the types that need it
+// matters twice over: for a non-`world` config passed via `--props`, the bundled `world` import
+// this used to pass unconditionally throws INSIDE calculateMetadata (resolveVideoGeometry throws
+// loud instead when a symbol/locator/hex-grid config carries no config.geometry at all, which
+// every sample and default-props config for those three still is); and even for `world` itself,
+// sizing off the full 241-feature bundled file instead of the actual injected subset mis-sizes
+// the composition (measured: 8 matched regions off the full file vs. the 3-feature subset
+// `choroplethDefaultProps` actually renders).
+const scrollyMeta = ({ props }: { props: { config: any } }) => {
+  const cfg = props.config;
+  const needsGeometry = !["symbol", "locator", "hex-grid"].includes(cfg?.type);
+  const { world: resolvedWorld, joinKey } = needsGeometry
+    ? resolveVideoGeometry(cfg, "scrollyMeta")
+    : {
+        world: world as unknown as GeoJSON.FeatureCollection,
+        joinKey: "iso_a3",
+      };
+  return {
+    durationInFrames: scrollyFrames(
+      scrollyStepCount(cfg, resolvedWorld, joinKey),
+      30,
+    ),
+  };
+};
 
 // The JSON import widens `type` to `string`; assert the sample back to SymbolConfig
 // (its `type` is "symbol" at rest) so the composition's `{ config: SymbolConfig }` prop matches.
