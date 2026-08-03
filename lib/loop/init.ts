@@ -22,7 +22,7 @@ import {
   DESTINATIONS,
   MEDIA_ASPECTS,
 } from "../core/vocabulary";
-import { coordinateRangeVerdict } from "../geo/crs";
+import { coordinateRangeVerdict, type TopoJsonTopology } from "../geo/crs";
 import { GeographyInputSchema } from "../geo/declaration";
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger, EN_SOURCE_QUESTIONS } from "../source/policy";
@@ -232,10 +232,10 @@ export function initRun(
         );
       }
       // JSON.parse succeeds on more than objects — "null", "42", "[1,2]" are all valid JSON —
-      // and coordinateRangeVerdict assumes a Geometry/FeatureCollection object (it reads
-      // `.type` unconditionally). Refusing the shape here, before the guard ever runs, is what
-      // keeps the "never throws" invariant this function documents true for a malformed file,
-      // not just an unparseable one.
+      // and coordinateRangeVerdict assumes a Geometry/FeatureCollection/Topology object (it
+      // reads `.type` unconditionally). Refusing the shape here, before the guard ever runs, is
+      // what keeps the "never throws" invariant this function documents true for a malformed
+      // file, not just an unparseable one.
       if (
         typeof parsed !== "object" ||
         parsed === null ||
@@ -243,10 +243,14 @@ export function initRun(
       )
         return fail(
           "invalid-request",
-          `init: the geography input ${JSON.stringify(path)} is not a GeoJSON geometry or FeatureCollection object`,
+          `init: the geography input ${JSON.stringify(path)} is not a GeoJSON geometry, FeatureCollection, or TopoJSON topology object`,
         );
+      // coordinateRangeVerdict detects a Topology STRUCTURALLY (a `type: "Topology"` field with
+      // an `arcs` array), not from the declared `encoding` above — a journalist's declaration
+      // can be wrong, and this guard checks the actual shape of the parsed JSON either way.
       const verdict = coordinateRangeVerdict(
-        parsed as GeoJSON.Geometry | GeoJSON.FeatureCollection,
+        parsed as
+          GeoJSON.Geometry | GeoJSON.FeatureCollection | TopoJsonTopology,
       );
       if (!verdict.ok) return fail("invalid-request", verdict.message);
     }
