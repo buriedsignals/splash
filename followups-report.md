@@ -287,3 +287,37 @@ them is a separate, larger audit.
 Every closed item was mutation-verified: broken, watched the covering test redden, restored,
 both outputs recorded above. `bun run check` was **not** run (per instructions) — left for a
 calm-machine run.
+
+---
+
+## Follow-ups (2026-08-02) — no-data colour prose corrected; two items opened, not closed
+
+Separately from the five items above: `SKILL.md:101/208/268` (map-native),
+`references/interactive-map-best-practices.md` (map-native), and `SKILL.md:128` (scrolly) all
+described no-data regions as rendered in a distinct grey — some with invented hex values that
+exist nowhere in the codebase. Verified against `choropleth-paint.ts` and `theme/colors.ts`: a
+no-data region is never tinted (`fill-opacity: 0`, basemap default shows through);
+`NO_DATA_COLOR` is only the paint expression's internal fallback. All three files corrected to
+say that plainly (commits `e98538c8`, `f8c8f2ad`, `47f6ab31`). Two things surfaced during that
+correction that were **not** acted on and are recorded here instead:
+
+> **`skills/map-native/tests/colors.test.ts` — question, not a fix.** This test's own comments
+> assert `NO_DATA_COLOR` "must be DARKER... so it remains visually distinct from the ocean" and
+> assert it is "darker than the lightest blue scale step (reads as present-but-unknown)" — both
+> premised on `NO_DATA_COLOR` being rendered as a visible tint somewhere. It isn't: the paint
+> expression that would show it is forced to `fill-opacity: 0`. The test currently passes (it
+> only checks the hex value's luminance in isolation, never the rendered pixel), so nothing is
+> red. The open question is not "fix the comment" — it's **whether this test still has a subject
+> at all**, now that `NO_DATA_COLOR` only serves as a paint-expression fallback that never
+> reaches a screen. Left for someone to read properly, not touched here (test file, out of scope
+> for a prose-only round).
+
+> **`references/interactive-map-best-practices.md` §5–§8 — unaudited, not confirmed clean.**
+> Only §1 (colour) and the "Enforceable checklist" colour item were verified against the code
+> this round; §2 (no-data hover) and §3–§4 (nav controls, bounds) were also checked and found
+> true. §5 (video title/credit timing), §6 (scrollytelling architecture — the doc names
+> `chapters[]` and scrollama's `onStepEnter`, which do not appear to match this codebase's actual
+> `beats`/`IntersectionObserver`-driven implementation, though this was not run to ground),
+> §7 (UX checklist), and §8 (direct-label placement) were **not** checked against the code this
+> round. Their accuracy is unknown, not confirmed — a reader should not assume the whole file was
+> verified because §1–§4 were.
