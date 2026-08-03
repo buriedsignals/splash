@@ -98,7 +98,9 @@ For each new map type, in order:
    The `interactive` prop switches hover popup on/off. Same component renders static, interactive,
    and video — no forks. **Apply the grounded interactive rules** in
    `references/interactive-map-best-practices.md` — they are non-negotiable defaults every map type
-   inherits: water blue / land light / no-data grey as three distinct layers (`theme/colors.ts`);
+   inherits: water blue / land light basemap (`theme/colors.ts`); a region with no data keeps the
+   basemap default and is never tinted — `NO_DATA_COLOR` only names that basemap appearance for the
+   paint expression's fallback, it is not a separate rendered layer;
    hover/tooltip ONLY on regions with data (no hover on no-data — project decision); `NavigationControl`
    + a reset control top-right with `aria-label`s; visible attribution; `maxBounds` (+~20%) plus
    `minZoom`/`maxZoom`; a container `aria-label`. The video adds: an opaque title card BEFORE the map,
@@ -205,8 +207,9 @@ the interactive scrolly play through the same beats. This is the difference betw
   same colour through the whole video — dimming reads as "the colours aren't consistent"). The revealed
   region pops via the zoom + a `__highlight`-keyed **stroke layer** (a thicker dark outline), not by
   fading its neighbours.
-- **Consistent basemap colours** — water blue + no-data grey come from `src/theme/colors.ts`
-  (`WATER_COLOR`/`NO_DATA_COLOR`), the SAME constants the interactive uses, so the two formats match.
+- **Consistent basemap colours** — water colour comes from `src/theme/colors.ts` (`WATER_COLOR`), the
+  SAME constant the interactive uses, so the two formats match; no-data regions stay unpainted (basemap
+  default) in both — `NO_DATA_COLOR` is a paint-expression fallback, never a rendered tint.
   (Import colours from `theme/colors`, NEVER from `ChoroplethMap` — `ChoroplethMap.tsx` throws at
   module-load time when `VITE_MAPTILER_KEY` is unset, and the Remotion build only ever sets
   `REMOTION_MAPTILER_KEY`, so pulling anything from it — even a shared constant — crashes the
@@ -265,7 +268,8 @@ a CVD-safe sequential or diverging colour scale, and a `fitBounds` to the data e
 + `fitBounds(layout.bounds, { duration: 0 })`. `progress` drives `fill-opacity` via
 `setPaintProperty` (the reveal). Exposes `window.__map__` and `window.__layout_bounds__` for the
 audit's basemap-fit check. Strips symbol/label clutter from the basemap. Hover popup on mousemove.
-No-data regions rendered in neutral `#e0e0e0` + named in the legend.
+No-data regions keep the basemap default (opacity 0, never tinted) and are not listed in the legend
+— only data-bearing bins appear there.
 
 **Remotion compositions**: `ChoroplethStory` (1280×720 landscape), `ChoroplethStorySquare`
 (1080×1080), `ChoroplethStoryPortrait` (1080×1920, true 9:16) — duration derived from the `mapStory`
