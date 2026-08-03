@@ -58,18 +58,29 @@ export const DATA_GESTURES = [
   // 110-138), and chart-native's interactive hover/keyboard-focus state (LineChart.tsx:131,173,
   // 438-441) — the last one present in the interactive format only (inventory §4.1).
   "highlight",
-  // An element fades or pops into visibility from nothing, uniformly (no stagger — see the
-  // ChoroplethReveal finding below): opacity 0→1 across the whole map-native Reveal family
-  // (CartogramReveal.tsx:202-208, DotDensityReveal.tsx:223-225), a chart node fading in
-  // (SankeyChart.tsx:1-3), a dot-density stipple-in (DotDensityStory.tsx header:8-14).
+  // An element fades or pops into visibility from nothing, with ONE shared scalar driving every
+  // instance at once — no per-subject offset, no per-subject gate: opacity 0→1 across the whole
+  // map-native Reveal family (CartogramReveal.tsx:202-208, DotDensityReveal.tsx:223-225).
   //
   // IMPORTANT — do not read this as a staggered/ordered reveal. ChoroplethReveal.tsx:3's header
   // claims regions reveal "in ascending-value order (stagger by bin index)"; the code does not:
   // `__binIdx` is written at :150/:163 and read nowhere, and the per-frame paint (:249-269)
   // applies one identical scalar `progress` to every data region in a single setPaintProperty
   // call. All six non-route Reveal siblings share this: one uniform ramp, not an ordered
-  // appearance. "appear" names that uniform ramp only.
+  // appearance. "appear" names that uniform ramp ONLY — see "stagger" below for the real,
+  // working per-subject entrance that "appear" must NOT be stretched to also cover.
   "appear",
+  // An entrance whose TIMING depends on which subject it is — a per-column, per-beat, or
+  // per-subject offset/gate, not one shared scalar. Two independent, real (non-dead-code)
+  // implementations: SankeyChart.tsx:254-255 — `nodeAppear(col) = easeOutCubic((p -
+  // colIndex.get(col)*0.12)/0.26)`, the file's own comment calls this "column-staggered node
+  // fade" (:253); and DotDensityStory.tsx (header :6-16) — each region's dot stipple-in is
+  // gated on ITS OWN beat trigger, held at 0 fill-opacity until that beat is entered, distinct
+  // per region. This is exactly the editorial-storyboard behaviour ("these subjects enter one
+  // per beat") — kept as its own name rather than folded into "appear" so a per-engine
+  // vocabulary can offer "everything fades up together" and "one subject enters per beat" as
+  // two distinguishable proposals, not one ambiguous word.
+  "stagger",
   // Two frames swap by opacity, one fading in as the other fades out — genuinely distinct from
   // "appear" (a single element from nothing) because a second element is present throughout.
   // The only place this exists: ScrollyImage.tsx:88-89 (`opacity: i === active ? 1 : 0`, 600ms
