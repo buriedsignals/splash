@@ -21,6 +21,20 @@ import { produce, elementRenderDir } from "./produce";
 import { validateSourcePolicy } from "../source/policy";
 import type { RunManifest } from "./manifest";
 
+// Token-free-gate honesty: the second test below shells scrolly's produce.mjs, which drives a
+// real headless MapLibre render needing a live MapTiler key (VITE_MAPTILER_KEY) to fetch vector
+// tiles — without one it hard-fails (not skips), so `bun run check` was silently NOT green on a
+// keyless checkout, and a contributor cloning the repo saw a failure and reasonably concluded
+// the project was broken. Self-skip the same way the DW-live suites do without
+// DATAWRAPPER_API_TOKEN (skills/dw-chart/tests/produce.test.ts) and map-native's own live-render
+// produce e2e does without this same key (skills/map-native/tests/produce-single-format.test.ts).
+const hasMapTilerKey = !!process.env.VITE_MAPTILER_KEY;
+if (!hasMapTilerKey) {
+  console.warn(
+    "lib/loop/map-scrolly-e2e.test.ts: VITE_MAPTILER_KEY not set — skipping (live MapTiler-backed produce e2e)",
+  );
+}
+
 // Real ISO-A3 rows against the shipped "world" (natural-earth-admin-0) basemap — the exact
 // GeographyRef shape lib/loop/assemble/map-native.test.ts's own REGION_BRIEF fixture uses, so a
 // choropleth reaching assembleMapNative resolves the same shipped geography a real orient stage
@@ -104,7 +118,7 @@ test("a map-track scrolly's source declaration clears the loop's source policy",
   );
 });
 
-test(
+test.skipIf(!hasMapTilerKey)(
   "a map-track scrolly built through the assembler resolves real geometry, not the fixture's",
   async () => {
     const runDir = mkdtempSync(join(tmpdir(), "map-scrolly-e2e-"));

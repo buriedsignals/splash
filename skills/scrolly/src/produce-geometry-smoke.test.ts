@@ -25,7 +25,22 @@ const sampleConfigPath = join(
   "scrolly.json",
 );
 
-describe("the scrolly CLI resolves a map track's geometry (D5/D7)", () => {
+// Token-free-gate honesty: this spawns the real produce.mjs against a map-track (choropleth)
+// config, which drives a real headless MapLibre render needing a live MapTiler key
+// (VITE_MAPTILER_KEY) to fetch vector tiles — without one it hard-fails (not skips), so
+// `bun run check` was silently NOT green on a keyless checkout. Self-skip the same way the
+// DW-live suites do without DATAWRAPPER_API_TOKEN (skills/dw-chart/tests/produce.test.ts) and
+// map-native's own live-render produce e2e does without this same key
+// (skills/map-native/tests/produce-single-format.test.ts).
+const hasMapTilerKey = !!process.env.VITE_MAPTILER_KEY;
+if (!hasMapTilerKey) {
+  console.warn(
+    "skills/scrolly/src/produce-geometry-smoke.test.ts: VITE_MAPTILER_KEY not set — skipping (live MapTiler-backed produce e2e)",
+  );
+}
+const d = hasMapTilerKey ? describe : describe.skip;
+
+d("the scrolly CLI resolves a map track's geometry (D5/D7)", () => {
   it("builds the committed sample (a choropleth, un-typed, no bundled geometry) and writes a real Topology into its own output config.json", () => {
     const workDir = mkdtempSync(join(tmpdir(), "scrolly-geometry-smoke-"));
     const outDir = join(workDir, "out");
