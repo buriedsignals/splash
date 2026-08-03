@@ -47,3 +47,35 @@ export const MAP_SCROLLY_TYPES = new Set([
   "cartogram",
   "choropleth",
 ]);
+
+/**
+ * THE ONE WORDING for "this map type has no scrolly host" — a "route" today, the one
+ * ARC_CAPABLE_MAP_TYPES member missing from MAP_SCROLLY_TYPES above (map-arc.ts's own
+ * comment: every one of the seven real map types is arc-capable now, so route's
+ * `arcBeats` validates fine at map-native's own gate — the layer this function's callers
+ * sit in front of is a NARROWER one, "does scrolly itself host this type at all").
+ *
+ * Two readers must refuse a "route" scrolly the same way: the V1 editorial gate
+ * (skills/splash/src/validate-gate.ts's validateScrolly) and this package's own producer
+ * validator (manifest.ts's scrollySpecErrors, which produce.mjs runs before it will build
+ * anything). Before this function existed they were two hand-written strings that agreed
+ * by accident, and manifest.ts's had silently fallen out of date — it never checked
+ * MAP_SCROLLY_TYPES membership at all, so a route+arcBeats config that validate-gate.ts
+ * refused passed scrollySpecErrors with zero errors (measured; the CLI's own comment
+ * claiming "the CLI and the spine refuse identically" was false for exactly this case).
+ * One function, called from both places, cannot drift that way again.
+ */
+export function unsupportedMapScrollyType(
+  mapType: string,
+  hasArcBeats: boolean,
+): string {
+  return (
+    `a "${mapType}" scrolly does not exist yet — MAP_SCROLLY_TYPES has no branch for it, ` +
+    "so nothing walks it (Scrolly.tsx renders an empty story for it, and produce " +
+    `refuses format "scrolly" for it outright).` +
+    (hasArcBeats
+      ? " The confirmed claim-arc on this spec would reach no reader-facing output — " +
+        `do not author one for a "${mapType}" scrolly.`
+      : ` Build this "${mapType}" as a static image, an interactive map, or a video instead.`)
+  );
+}
