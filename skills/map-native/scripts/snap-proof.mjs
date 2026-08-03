@@ -46,6 +46,10 @@ await page.waitForFunction(
         m.getLayer("route-line"))
     );
   },
+  // Playwright's `waitForFunction(fn, options)` two-arg form treats the second
+  // positional as the in-page function's `arg`, not `options` — this `undefined`
+  // is what makes the third positional actually bind as options.
+  undefined,
   { timeout: 60_000 },
 );
 
@@ -79,6 +83,7 @@ await page.waitForFunction(
       m.areTilesLoaded()
     );
   },
+  undefined,
   { timeout: 60_000 },
 );
 console.log("map idle");

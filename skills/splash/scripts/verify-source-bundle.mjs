@@ -233,6 +233,10 @@ async function renderAndAssert(distIndexPath, proofPngPath) {
         const m = window.__map__;
         return Boolean(m && m.loaded && m.loaded() && m.areTilesLoaded && m.areTilesLoaded());
       },
+      // Playwright's `waitForFunction(fn, options)` two-arg form treats the second
+      // positional as the in-page function's `arg`, not `options` — this `undefined`
+      // is what makes the third positional actually bind as options.
+      undefined,
       { timeout: RENDER_WAIT_TIMEOUT_MS },
     );
     await page.waitForTimeout(300); // settle for paint to flush, mirrors snap-proof.mjs

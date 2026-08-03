@@ -137,6 +137,10 @@ for (const c of cases) {
           const m = window.__map__;
           return m && m.loaded && m.loaded() && m.areTilesLoaded && m.areTilesLoaded();
         },
+        // Playwright's `waitForFunction(fn, options)` two-arg form treats the second
+        // positional as the in-page function's `arg`, not `options` — this `undefined`
+        // is what makes the third positional actually bind as options.
+        undefined,
         { timeout: 45_000 },
       )
       .then(() => true)

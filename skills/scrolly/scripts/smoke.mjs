@@ -32,7 +32,14 @@ const POINT_TYPES = new Set(["hex-grid", "dot-density", "locator", "cartogram"])
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1100, height: 800 } });
 await page.goto(url, { waitUntil: "domcontentloaded" });
-await page.waitForFunction(() => window.__map__ && window.__map__.loaded?.(), { timeout: 60000 });
+// Playwright's `waitForFunction(fn, options)` two-arg form treats the second positional as
+// the in-page function's `arg`, not `options` — the explicit `undefined` below is what makes
+// the third positional actually bind as options (same defect as map-native's snap scripts).
+await page.waitForFunction(
+  () => window.__map__ && window.__map__.loaded?.(),
+  undefined,
+  { timeout: 60000 },
+);
 
 // --- Per-type layer gate ---
 const configType = await page.evaluate(() => window.__config_type__);
