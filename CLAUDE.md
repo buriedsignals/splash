@@ -81,6 +81,40 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 - **Format skill-autonome** (canon Tom) : `SKILL.md` (8 sections : Overview · When to use · gotcha · Architecture · How it works · Quick start · Tuning knobs (chacun = un nombre) · Files) + `references/` + `scripts/` (prep déterministe) + `assets/` (1 composant battle-tested + sample-data + preview) + `output-proof`.
 - Discipline vidéo (bug-free, façon Tom) : stack en couches · **frame-gating** sur la vraie disponibilité · données pré-cuites · valider 1 still avant le mp4 · plomberie (`preserveDrawingBuffer`, `--gl=angle`, timeouts).
 
+## ★★ CAP PRODUIT — décidé par Rémy le 2026-08-03 (LIS CECI AVANT DE PRIORISER QUOI QUE CE SOIT)
+
+**A. Le dépôt reste PRIVÉ pour l'instant, mais il sera rendu public.** Donc : **tout préparer pour que
+ça marche le jour J** — `REPO_URL`, scrub des trailers, promesses publiques recadrées sur le vérifié.
+On prépare, on ne publie pas.
+
+**B. Passer par les APPS DE BUREAU, pas le terminal.** Ordre : **Goose d'abord**, puis Claude Desktop,
+Gemini desktop, ChatGPT desktop. **Le découpage de `SKILL.md` passe au second plan** — « il faut
+d'abord tester et voir ce qui marche ou non ».
+
+> ★ **Les quatre cibles ne sont PAS de même nature** (établi 2026-08-03) :
+> - **Goose Desktop + Claude Desktop** = skills au format ouvert, lus en local, exécution locale.
+>   Les deux sont « câbler et prouver ». Claude Desktop a la surface sous
+>   `~/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/…`, format
+>   **identique au nôtre** (`SKILL.md` + frontmatter + `scripts/`).
+> - **Gemini** : c'est la **CLI** qui implémente le standard ouvert. L'app macOS (Spark, juin 2026,
+>   accès fichiers locaux) — support `SKILL.md` **non établi**.
+> - **ChatGPT Desktop** : modèle **MCP / connecteurs configurés côté web**, pas de skills locaux ; un
+>   connecteur distant **ne peut pas lancer Bun/Playwright/Remotion chez le journaliste**. Splash est
+>   local-first. **Question préalable : ce modèle permet-il seulement de produire un fichier en
+>   local ?** À trancher AVANT d'y investir.
+
+**C. Tout ce qui a été construit doit FONCTIONNER et être ACCESSIBLE pour produire.** Ce n'est pas
+seulement le lot route : c'est un **audit d'atteignabilité** de toutes les capacités. La session du
+2026-08-02 a trouvé deux fois la même classe — une capacité que le moteur calcule et que le rendu jette
+(le storyboard de route sans sortie ; le scrolly livré qui jetait les phrases confirmées de 4 types).
+**Livingdocs ET We.Publish** : pouvoir proposer au journaliste d'intégrer **directement dans son
+article, dans son CMS**. « Un petit plus qui aidera les journalistes non tech. »
+
+**D. Le comportement Datawrapper est CONSERVÉ** — publication à l'URL publique au moment du produce.
+Décision prise, ne pas la rouvrir.
+
+**E. Résorber la dette** pour avoir « un truc clean et qui fonctionne correctement ».
+
 ## ★ POINT 2 FERMÉ — la jointure ADM1 (fusionné, `main` = `c66cb23f`)
 
 **Un CSV sans accents produit enfin une carte** — vérifié au RENDU, pas au test : le rendu sans accents
