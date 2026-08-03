@@ -1,6 +1,20 @@
 import { test, expect } from "bun:test";
 import { engineTypes, isRenderable } from "./registry";
 import "../loop/engines"; // populates the registry
+import type { EngineType } from "./registry";
+import type { Gesture } from "./gestures";
+
+test("an EngineType may declare what it makes move, per narrative kind", () => {
+  const t: EngineType = {
+    id: "choropleth",
+    gestures: { story: ["fly", "hold"], reveal: ["appear"] },
+  };
+  expect(t.gestures?.story).toContain("fly");
+  // `gestures` is OPTIONAL: an engine that owns no motion (a hosted embed) declares nothing,
+  // and that is a legitimate answer rather than an empty promise.
+  const hosted: EngineType = { id: "d3-range-plot" };
+  expect(hosted.gestures).toBeUndefined();
+});
 
 test("chart-native declares its canonical catalogue, deferred types included", () => {
   const ids = engineTypes("chart-native").map((t) => t.id);
