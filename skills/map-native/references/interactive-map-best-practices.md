@@ -4,15 +4,17 @@
 > Mapbox, WCAG/BOIA) to ground the map-native engine. Each rule is enforceable; encode defaults +
 > conformance/audit checks against this. Cited sources at the bottom.
 
-## 1. Colour — separate water / land / no-data (three distinct layers)
+## 1. Colour — water tint vs. basemap default (no separate no-data layer)
 
 - **Water/ocean = a blue tint, never grey.** Cartographic convention (OSM Carto `#aad3df`, Mapbox Light
-  `#c6e2f5`). Grey water is indistinguishable from no-data.
-- **Land basemap (regions with no value) = very light neutral** (`#f5f5f0`–`#e8e8e8`), lighter than the
-  no-data grey, well below the data palette so the data pops.
-- **No-data regions = a distinct mid grey** (`#c0c0c0`–`#a0a0a0`) — darker than the land background so
-  "no data here" reads as present-but-unknown, never confused with water or land.
-- All three must stay distinct under deuteranopia simulation. No hatch fills on screen (illegible small).
+  `#c6e2f5`). Grey water is indistinguishable from an unpainted region.
+- **A region with no data is NOT tinted.** It keeps the basemap's own default land appearance —
+  the same pixel as any region outside the data join. There is no separate "no-data grey" layer
+  drawn on top: `NO_DATA_COLOR` (`theme/colors.ts`) only exists as the paint expression's internal
+  fallback value, and is forced to `fill-opacity: 0` (`choropleth-paint.ts`) so it never actually
+  renders. Project decision, not an oversight — see the "non-negotiable rule" header comment there.
+- Only the water tint and the data-bearing bins need to stay distinct from each other and pass a
+  CVD check — there is no third rendered colour to check against them.
 
 ## 2. No-data hover
 
@@ -101,8 +103,9 @@ container + a screen-reader data-table alternative · don't steal focus to the m
 
 ## Enforceable checklist for the engine
 
-- Water blue / land light / no-data mid-grey — three distinct layers (conformance: assert the three
-  colours differ + pass a CVD check).
+- Water blue, distinct from the data ramp, CVD-safe. No-data regions stay unpainted (basemap
+  default, `fill-opacity: 0`) — never a tinted layer (`choropleth-paint-feature-state-safety.test.ts`;
+  `ScrollyMap`'s smoke gate asserts the no-data pixel matches the basemap, not any tint).
 - Tooltip only on regions with data (project decision); pointer cursor only there.
 - `NavigationControl` top-right + reset when bounded; attribution visible.
 - `maxBounds` (+~20%) + `minZoom`/`maxZoom`; `fitBounds` on resize.
