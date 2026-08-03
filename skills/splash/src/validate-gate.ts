@@ -42,7 +42,10 @@ import { guardrailParityViolations } from "./guardrail-parity";
 import { engineTypes, isRenderable } from "../../../lib/core/registry";
 // Leaf module, imports nothing (see its own header comment) — safe to read here without pulling
 // in Scrolly.tsx's component tree / module-scope MapTiler key guard.
-import { MAP_SCROLLY_TYPES } from "../../scrolly/src/scrolly-types";
+import {
+  MAP_SCROLLY_TYPES,
+  unsupportedMapScrollyType,
+} from "../../scrolly/src/scrolly-types";
 // Side-effect import — the deferred-type guard below (deferredTypeError) reads the registry
 // this populates (each engine's manifest self-registers on import). This module must NOT rely
 // on some OTHER file having imported the manifests first: production is safe today only
@@ -183,13 +186,10 @@ function validateScrolly(spec: unknown): ValidationOutcome {
     return {
       ok: false,
       errors: [
-        `a "${mapType}" scrolly does not exist yet — MAP_SCROLLY_TYPES has no branch for it, ` +
-          "so nothing walks it (Scrolly.tsx renders an empty story for it, and produce " +
-          `refuses format "scrolly" for it outright).` +
-          ((spec as { arcBeats?: unknown } | null)?.arcBeats !== undefined
-            ? " The confirmed claim-arc on this spec would reach no reader-facing output — " +
-              `do not author one for a "${mapType}" scrolly.`
-            : ` Build this "${mapType}" as a static image, an interactive map, or a video instead.`),
+        unsupportedMapScrollyType(
+          mapType,
+          (spec as { arcBeats?: unknown } | null)?.arcBeats !== undefined,
+        ),
       ],
     };
   // The explicit `beats` field is CHART-track narrative control. A map uses `arcBeats`

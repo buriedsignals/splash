@@ -15,19 +15,27 @@ describe("the scrolly CLI does not bypass the validator", () => {
   // (validate-config.ts:216, :352) and the five incapable types refuse it BY NAME (:411,
   // :499, :623, :742, :875). Only this entry point never asked.
   //
-  // UPDATED (map-storyboard-and-video-geography, Task 5 — hex-grid, the last map type to
-  // gain arc support): "route" is arc-capable now (see map-arc.ts's ARC_CAPABLE_MAP_TYPES),
-  // so this fixture's `role: "context"` no longer trips the by-name capability refusal — it
-  // trips the arc's own STRUCTURAL validation instead (an unrecognised role, which also
-  // means the plan neither opens on establish nor closes on payoff). The fixture is
-  // unchanged; only what it proves is renamed to match what the validator now says.
+  // UPDATED (Fix E1 — map-track type refusal reaches this validator now): the fixture used
+  // to be a "route" config, which was arc-capable at map-native's own gate (see map-arc.ts's
+  // ARC_CAPABLE_MAP_TYPES) so it proved the arc's STRUCTURAL validation ran (an unrecognised
+  // role). But scrollySpecErrors now refuses "route" BY NAME before any content validation —
+  // scrolly has no branch to walk it (MAP_SCROLLY_TYPES has six entries, not seven; see
+  // scrolly-types.ts's unsupportedMapScrollyType) — so a route fixture no longer reaches the
+  // role check at all. Switched to a hosted type ("choropleth") so this test still proves
+  // what it names: an arcBeats plan's role is validated through this CLI's validator.
   it("should refuse an arcBeats plan whose role the arc cannot carry", () => {
     const errors = scrollySpecErrors({
-      type: "route",
-      title: "T",
-      altInsight: "alt",
+      type: "choropleth",
+      title: "Renewables share across Europe",
+      basemap: "world",
+      regionKey: "code",
+      valueField: "value",
+      rows: [
+        { code: "FRA", value: 10 },
+        { code: "DEU", value: 20 },
+      ],
       source: { name: "S" },
-      arcBeats: [{ region: "FR", role: "context", text: "x" }],
+      arcBeats: [{ region: "FRA", role: "context", text: "x" }],
     });
     expect(errors.length).toBeGreaterThan(0);
     // Not just "an error happened somewhere" — the refusal must name the actual fault this
@@ -37,6 +45,54 @@ describe("the scrolly CLI does not bypass the validator", () => {
     );
   });
 
+  // Fix E1: scrollySpecErrors used to fall straight through to mapNativeConfigErrors for
+  // ANY map `type`, never checking whether scrolly itself hosts it. A well-formed "route"
+  // config validates fine at map-native's own gate (arc-capable, structurally valid arcBeats)
+  // — so this returned ZERO errors for a spec the editorial gate (validate-gate.ts) and the
+  // V2 assembler (lib/loop/assemble/scrolly.ts) both already refuse, contradicting this
+  // file's own produce.mjs comment that "the CLI and the spine refuse identically". Measured
+  // before the fix: this exact well-formed route+arcBeats object produced zero errors here.
+  it('refuses a "route" map track outright — scrolly has no branch to walk it, even for an otherwise well-formed config', () => {
+    const errors = scrollySpecErrors({
+      type: "route",
+      title: "Refugee route across three borders",
+      altInsight: "alt",
+      source: { name: "S" },
+      basemap: "world",
+      route: [
+        [2.35, 48.85],
+        [13.4, 52.52],
+      ],
+      arcBeats: [
+        { region: "FR", role: "establish", text: "a" },
+        { region: "DE", role: "build", text: "b" },
+        { region: "PL", role: "payoff", text: "c" },
+      ],
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.join(" ")).toContain('a "route" scrolly does not exist yet');
+    // The arcBeats-aware sentence — the fix's whole point: it must say the CONFIRMED plan
+    // reaches no output, not just that the type is unsupported in the abstract.
+    expect(errors.join(" ")).toContain(
+      "The confirmed claim-arc on this spec would reach no reader-facing output",
+    );
+  });
+
+  it('refuses a "route" map track with no arcBeats too (the type alone is the fault)', () => {
+    const errors = scrollySpecErrors({
+      type: "route",
+      title: "Refugee route across three borders",
+      basemap: "world",
+      route: [
+        [2.35, 48.85],
+        [13.4, 52.52],
+      ],
+    });
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.join(" ")).toContain('a "route" scrolly does not exist yet');
+    expect(errors.join(" ")).not.toContain("confirmed claim-arc");
+  });
+
   // Behavioural, not textual: spawns the REAL CLI as a subprocess. A `expect(cli).toContain(...)`
   // over the source text (the prior version of this test) proves a string is present in the
   // file — it stays green even if the call is commented out, since a comment still contains the
@@ -44,31 +100,33 @@ describe("the scrolly CLI does not bypass the validator", () => {
   // actually ran and actually stopped the build: non-zero exit, the CLI's refusal marker on
   // stderr (not just "it crashed for some other reason"), and no artifact on disk.
   //
-  // UPDATED (Task 5 — see the sibling test above): the fault this fixture carries is a
-  // malformed role, not an incapable type — "route" honours a claim-arc now.
+  // UPDATED (Fix E1 — see the sibling test above): switched from "route" to a hosted type
+  // ("choropleth") for the same reason — scrollySpecErrors now refuses "route" BY NAME
+  // before arcBeats content validation ever runs, so a route fixture no longer proves
+  // anything about the role check.
   it("refuses to build when the CLI is invoked on an arcBeats plan whose role the arc cannot carry", () => {
     const workDir = mkdtempSync(join(tmpdir(), "scrolly-cli-validation-"));
     try {
       const configPath = join(workDir, "config.json");
       const outDir = join(workDir, "out");
-      // Otherwise-VALID route config (real basemap, a 2-point route, an insight-length
-      // title) — measured: without `arcBeats` this exact object produces zero errors.
-      // arcBeats is therefore the SOLE fault; a fixture with unrelated holes (a 1-char
-      // title, a missing basemap, no route) would still refuse with arcBeats deleted
-      // entirely, and this test would stay green while proving nothing about arcBeats.
+      // Otherwise-VALID choropleth config — measured: without `arcBeats` this exact object
+      // produces zero errors. arcBeats is therefore the SOLE fault; a fixture with unrelated
+      // holes (a 1-char title, a missing basemap, no rows) would still refuse with arcBeats
+      // deleted entirely, and this test would stay green while proving nothing about arcBeats.
       writeFileSync(
         configPath,
         JSON.stringify({
-          type: "route",
-          title: "Refugee route across three borders",
-          altInsight: "alt",
-          source: { name: "S" },
+          type: "choropleth",
+          title: "Renewables share across Europe",
           basemap: "world",
-          route: [
-            [2.35, 48.85],
-            [13.4, 52.52],
+          regionKey: "code",
+          valueField: "value",
+          rows: [
+            { code: "FRA", value: 10 },
+            { code: "DEU", value: 20 },
           ],
-          arcBeats: [{ region: "FR", role: "context", text: "x" }],
+          source: { name: "S" },
+          arcBeats: [{ region: "FRA", role: "context", text: "x" }],
         }),
       );
 

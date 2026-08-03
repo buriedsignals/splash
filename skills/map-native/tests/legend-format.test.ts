@@ -1,6 +1,10 @@
 import { describe, it, expect } from "bun:test";
 import { fmtBin, fmtBinRange } from "../src/core/legend-format";
 
+// The narrow no-break space (U+202F) — French/German group and unit separator, the
+// same glyph core/locale's `labelWithUnit`/`localizeNumberString` emit.
+const NBSP = " ";
+
 describe("fmtBin (no minGap — matches the prior inline `fmt`)", () => {
   it("prints integers bare", () => {
     expect(fmtBin(2)).toBe("2");
@@ -67,10 +71,40 @@ describe("fmtBinRange (Fix 1a — the legend bins carry the value unit, not just
   });
 
   it("localizes the boundaries (French comma decimal) and still appends the unit", () => {
-    // Avoid asserting the exact FR thousands glyph (U+202F) — use decimals, which the
-    // French locale renders with a comma. The unit still lands after the localized range.
+    // The unit is spaced through `labelWithUnit` (core/locale), which puts a narrow
+    // no-break space (U+202F) before a short unit in French — not the plain ASCII
+    // space a caller might pre-bake into the `unit` string.
     expect(fmtBinRange(19.3, 45.6, { unit: " %", lang: "fr" })).toBe(
-      "19,3–45,6 %",
+      `19,3–45,6${NBSP}%`,
+    );
+  });
+});
+
+describe("fmtBinRange (Fix E4 — word units are SPACED, not glued raw)", () => {
+  // Real-world regression (2026-08-02 render): a CHF-denominated choropleth legend
+  // printed "1,200–1,316CHF" — the old body did bare `${lo}–${hi}${unit}` string
+  // concatenation, which only "worked" for a symbol unit like "%" by coincidence.
+  // `fmtBinRange` must compose through `labelWithUnit` (core/locale) — the SAME
+  // convention map-native's direct-label path already uses (labelWithUnit's own
+  // docblock: fixed a `7magnitude` defect, the identical class) — so a word unit is
+  // always spaced and a French/German range gets the narrow no-break space (U+202F).
+  it("spaces a word unit in English", () => {
+    expect(fmtBinRange(1200, 1316, { unit: "CHF" })).toBe("1,200–1,316 CHF");
+  });
+
+  it("spaces a word unit with the narrow no-break space in French, including the group separator", () => {
+    expect(fmtBinRange(1200, 1316, { unit: "CHF", lang: "fr" })).toBe(
+      `1${NBSP}200–1${NBSP}316${NBSP}CHF`,
+    );
+  });
+
+  it("keeps a symbol unit attached with no space in English", () => {
+    expect(fmtBinRange(4.2, 9.8, { unit: "%" })).toBe("4.2–9.8%");
+  });
+
+  it("spaces a symbol unit with the narrow no-break space in French", () => {
+    expect(fmtBinRange(4.2, 9.8, { unit: "%", lang: "fr" })).toBe(
+      `4,2–9,8${NBSP}%`,
     );
   });
 });

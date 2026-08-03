@@ -8,6 +8,10 @@ import {
   auditMapStoryReveals,
 } from "../src/map-story";
 
+// The narrow no-break space (U+202F) — French/German unit + group separator, the same
+// glyph core/locale's `labelWithUnit`/`localizeNumberString` emit.
+const NBSP = " ";
+
 function feat(iso: string, name: string, x: number, y: number) {
   return {
     type: "Feature",
@@ -73,7 +77,7 @@ describe("deriveMapStory — value grammar", () => {
     const one = reveals.find((b) => b.callout?.name === "Norway");
     expect(one?.callout?.value).toBe("1 night"); // not "1 nights"
   });
-  it("localizes callout numbers when meta.lang is fr (thousands grouping)", () => {
+  it("localizes callout numbers when meta.lang is fr (thousands grouping AND the narrow no-break space before the unit, not a plain space)", () => {
     const d: ChoroplethData = {
       regionKey: "code",
       valueField: "mw",
@@ -90,9 +94,9 @@ describe("deriveMapStory — value grammar", () => {
       lang: "fr",
     });
     const nor = beats.find((b) => b.callout?.name === "Norway");
-    expect(nor?.callout?.value).toBe("33 900 MW"); // narrow no-break space
+    expect(nor?.callout?.value).toBe("33 900 MW");
   });
-  it("never touches a SYMBOL unit like ' %' at value 1", () => {
+  it("never touches a SYMBOL unit like '%' at value 1, and attaches it directly in English", () => {
     const d: ChoroplethData = {
       regionKey: "code",
       valueField: "share",
@@ -110,7 +114,35 @@ describe("deriveMapStory — value grammar", () => {
     const one = beats
       .filter((b) => b.kind === "reveal")
       .find((b) => b.callout?.name === "Norway");
-    expect(one?.callout?.value).toBe("1 %"); // symbol unit unchanged
+    // A symbol unit attaches with no space in English (the same convention symbol-story's
+    // labelWithUnit path already applies, e.g. "70%") — not the plain-space "1 %" the old
+    // raw-concatenation body produced because the fixture pre-baked the space into `unit`.
+    expect(one?.callout?.value).toBe("1%");
+  });
+
+  it("spaces a BARE word unit (the real caller convention — config.valueUnit carries no leading space) instead of gluing it (Fix E4)", () => {
+    // Real-world regression, same class as the choropleth legend fix: `unit` reaches
+    // `deriveMapStory` as `config.valueUnit ?? ""` — bare, no leading space — everywhere it
+    // is called (ChoroplethStory.tsx, ChoroplethScrolly.tsx, route-story.ts). The old body
+    // did `${formatLocaleNumber(n, meta.lang)}${unit}`, raw concatenation, which only read
+    // right for a symbol unit by coincidence; a word unit like "CHF" glued straight onto the
+    // number ("1,200CHF").
+    const d: ChoroplethData = {
+      regionKey: "code",
+      valueField: "price",
+      rows: [
+        { code: "NOR", price: 1200 },
+        { code: "DEU", price: 800 },
+      ],
+    };
+    const layout = computeChoropleth(d, feats, "iso_a3");
+    const beats = deriveMapStory(layout, feats, "iso_a3", {
+      title: "T",
+      insight: "i",
+      unit: "CHF",
+    });
+    const nor = beats.find((b) => b.callout?.name === "Norway");
+    expect(nor?.callout?.value).toBe("1,200 CHF");
   });
 });
 
@@ -330,8 +362,11 @@ describe("deriveMapStory", () => {
       lang: "de",
     });
     const deReveals = deBeats.filter((b) => b.kind === "reveal");
-    expect(deReveals[0].copy).toBe("Norway führt — 99%");
-    expect(deReveals[1].copy).toBe("Germany — 59%, 2.");
+    // German gets the narrow no-break space before "%" too — the same DIN 5008
+    // convention as French, per core/locale's labelWithUnit (was glued "99%" before
+    // fmt composed through labelWithUnit — the same Fix E4 class, a second occurrence).
+    expect(deReveals[0].copy).toBe(`Norway führt — 99${NBSP}%`);
+    expect(deReveals[1].copy).toBe(`Germany — 59${NBSP}%, 2.`);
 
     const itBeats = deriveMapStory(layout, features, "iso_a3", {
       ...meta,
