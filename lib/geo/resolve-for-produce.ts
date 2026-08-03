@@ -144,8 +144,72 @@ function resolveAdm1FeatureIds(
 // applied to the FILE side already) closes this without touching subsetGeometry's generic,
 // byte-for-byte contract at all. Trimmed too, for the same reason matchShippedBasemaps trims
 // before comparing.
+//
+// ONLY for a SHIPPED join — review round 2's second finding: this used to apply to ANY
+// non-admin-1 geography, including a DECLARED one (a journalist's own uploaded file). A
+// declared file's casing/spelling is the journalist's, never ours to assume or rewrite — the
+// caller below only invokes this when `geography.origin === "shipped"`.
 function normalizeShippedJoinValue(raw: string): string {
   return raw.trim().toUpperCase();
+}
+
+// The property-bag shape this file reads back OFF the geometry it just produced — TopoJSON's
+// per-geometry `properties` survive arc-encoding untouched, so no topojson-client decode is
+// needed to read them (only the coordinate arcs are compressed).
+type TopoJsonLike = {
+  objects: Record<
+    string,
+    { geometries: { properties?: Record<string, unknown> }[] }
+  >;
+};
+
+// REVIEW ROUND 2's real finding: normalizing the SUBSET QUERY closed the produce-time crash,
+// but every RENDER-TIME join was still comparing the UNTOUCHED raw value against the file's
+// real properties — `ChoroplethMap.tsx` → `computeChoropleth` (`choropleth-geo.ts`),
+// `computeCartogram`'s own `valueByKey`/`matched` join (`cartogram-geo.ts`, on TOP of its
+// internal `computeChoropleth` reuse — two joins, not one), and `computeDotDensity`
+// (`dot-density-geo.ts`) all key `String(row[regionKey])` / `String(v.id)` against
+// `String(f.properties[joinKey])` directly, with no normalization of their own. Patching each
+// of those (three files, four join sites) would be "a normalization applied at N of N+1
+// sites" — the review's own words for why that is the same bug again, not a fix. Consumer list
+// verified exhaustive by grepping every read of `regionKey`/`config.rows`/`config.values`/`.id`
+// across skills/map-native/src (see this task's report for the full list and how each was
+// ruled in or out) — `cartogram-story.ts`/`dot-density-story.ts`/every `*Story.tsx` consume
+// the ALREADY-JOINED `layout` these compute functions return, never a second raw join; the
+// hover tooltip (`ChoroplethMap.tsx`) reads `f.state?.label ?? f.properties?.name`, never the
+// raw regionKey value, so rewriting it changes no reader-visible text.
+//
+// The fix that covers every one of those consumers AT ONCE, present and future: REWRITE
+// config.rows/config.values THEMSELVES, once, here, to the canonical joinKey literal read
+// straight off the geometry this function just produced. There is no second copy of this data
+// anywhere downstream — every consumer reads config.rows/config.values from the SAME config
+// object (or its serialized config.json), so a single rewrite point is structurally complete,
+// not another per-call-site patch.
+//
+// Builds `requestedId → canonical joinKey literal` from the DELIVERED geometry (never
+// re-derived): `idProperty` is what `subsetGeometry` just filtered on (so every requested id
+// among these IS present, by that function's own post-condition), `joinKey` is what a render
+// join actually compares against.
+function canonicalJoinValuesFrom(
+  geometry: TopoJsonLike,
+  idProperty: string,
+  joinKey: string,
+): Map<string, string> {
+  const layerKey = Object.keys(geometry.objects)[0];
+  const out = new Map<string, string>();
+  if (!layerKey) return out;
+  for (const g of geometry.objects[layerKey]!.geometries) {
+    const id = g.properties?.[idProperty];
+    const joinVal = g.properties?.[joinKey];
+    if (
+      id !== undefined &&
+      id !== null &&
+      joinVal !== undefined &&
+      joinVal !== null
+    )
+      out.set(String(id), String(joinVal));
+  }
+  return out;
 }
 
 // The minimal shape the route branch reads off a parsed GeoJSON source file — just enough to
@@ -297,14 +361,27 @@ export async function resolveGeometryForProduce(
       ? ADM1_FEATURE_ID_PROPERTY
       : geography.joinKey;
 
-    // The feature ids actually drawn (D5's own design call). An admin-1 join resolves each raw
-    // value through `resolveAdm1FeatureIds` instead of using it directly (see that function's
-    // own doc comment). A non-admin-1 (shipped world/us-states) join normalizes each raw value
-    // the SAME way `matchShippedBasemaps` already does at match time
-    // (`normalizeShippedJoinValue` above) — this is NOT byte-for-byte the pre-fix behaviour: a
-    // lowercase/whitespace-padded CSV value used to be passed straight through and silently
-    // disagree with `subsetGeometry`'s byte-for-byte compare, the same "recognised, then
-    // absent" contradiction the admin-1 fix closes, just on this path instead.
+    // A non-admin-1 value's own id, for BOTH the subset query below and the row/value
+    // canonicalization after the geometry is produced (see canonicalJoinValuesFrom's own
+    // comment). Normalizes ONLY for a SHIPPED join — review round 2's second finding: this
+    // used to apply unconditionally to every non-admin-1 geography, which silently included a
+    // DECLARED one (a journalist's own uploaded file, whose casing/spelling is theirs, never
+    // ours to assume). A declared join's value passes through completely unchanged, exactly as
+    // it did before either fix in this file existed.
+    const shippedJoinId = (raw: string): string =>
+      geography.origin === "shipped" ? normalizeShippedJoinValue(raw) : raw;
+
+    // The feature ids actually drawn (D5's own design call), captured ALONGSIDE the per-row/
+    // per-value REQUESTED id (rowRequestedIds/valueRequestedIds below — the single id, first of
+    // any ambiguous set, this row/value asked for) so the canonicalization pass after the
+    // geometry is produced can look each one up without re-deriving it. An admin-1 join
+    // resolves each raw value through `resolveAdm1FeatureIds` instead of using it directly (see
+    // that function's own doc comment). A non-admin-1 join normalizes each raw value via
+    // `shippedJoinId` above — this is NOT byte-for-byte the pre-fix behaviour for a SHIPPED
+    // join: a lowercase/whitespace-padded CSV value used to be passed straight through and
+    // silently disagree with `subsetGeometry`'s byte-for-byte compare, the same "recognised,
+    // then absent" contradiction the admin-1 fix closes, just on this path instead. A DECLARED
+    // join is untouched, byte-for-byte, on purpose.
     //
     // "route" is NOT one of the brief's two named shapes (choropleth/dot-density vs.
     // cartogram) — a genuine gap in the brief's own Design call, found while implementing:
@@ -316,30 +393,37 @@ export async function resolveGeometryForProduce(
     // per-feature filtering step is a no-op for this one type. Route's own id list (below,
     // once sourcePath is known) is scanned straight off the SOURCE FILE, never off a
     // journalist-supplied value, so it was never exposed to this case/whitespace gap either.
+    const rowRequestedIds: (string | undefined)[] = [];
+    const valueRequestedIds: (string | undefined)[] = [];
     let featureIds =
       config.type === "cartogram"
-        ? config.values!.flatMap((v) =>
-            isAdm1Join
+        ? config.values!.flatMap((v) => {
+            const raw = String(v.id);
+            const ids = isAdm1Join
               ? resolveAdm1FeatureIds(
-                  String(v.id),
+                  raw,
                   "values[].id",
                   config.featureIdsByValue!,
                   geography,
                 )
-              : [normalizeShippedJoinValue(String(v.id))],
-          )
+              : [shippedJoinId(raw)];
+            valueRequestedIds.push(ids[0]);
+            return ids;
+          })
         : config.type === "route"
           ? null // resolved below, once sourcePath is known
           : config.rows!.flatMap((r) => {
               const raw = String(r[config.regionKey as string]);
-              return isAdm1Join
+              const ids = isAdm1Join
                 ? resolveAdm1FeatureIds(
                     raw,
                     config.regionKey as string,
                     config.featureIdsByValue!,
                     geography,
                   )
-                : [normalizeShippedJoinValue(raw)];
+                : [shippedJoinId(raw)];
+              rowRequestedIds.push(ids[0]);
+              return ids;
             });
 
     // WHERE to read the frozen source from: a declared file names its own frozen path
@@ -394,7 +478,12 @@ export async function resolveGeometryForProduce(
         // label a reader actually sees (hover popup, video callout, cartogram cell, route
         // territory). Both of this suite's fixtures happened to join ON `name`, which is why
         // pruning to the join key alone looked harmless. `labelField` joins the list when the
-        // config names one.
+        // config names one. `idProperty` joins it too when it differs from `joinKey` (the
+        // admin-1 case: idProperty is "adm1_code", joinKey is "name"/"name_fr"/...) — the
+        // canonicalization pass below reads it back off the delivered geometry to rewrite
+        // config.rows/config.values to the file's own joinKey literal, and strips it again
+        // right after, so the SHIPPED property surface (what a bundle actually receives) ends
+        // up unchanged from before either fix in this file existed.
         keepProperties: [
           ...new Set(
             [
@@ -403,6 +492,7 @@ export async function resolveGeometryForProduce(
               typeof input.config.labelField === "string"
                 ? input.config.labelField
                 : undefined,
+              idProperty !== geography.joinKey ? idProperty : undefined,
             ].filter((k): k is string => Boolean(k)),
           ),
         ],
@@ -417,6 +507,47 @@ export async function resolveGeometryForProduce(
       config.geometry = JSON.parse(readFileSync(geomOutPath, "utf8"));
     } finally {
       rmSync(geomTmpDir, { recursive: true, force: true });
+    }
+
+    // REWRITE config.rows/config.values to the geometry's own canonical joinKey literal — see
+    // canonicalJoinValuesFrom's own comment for why this is the single fix point for every
+    // render-time join (ChoroplethMap.tsx/computeChoropleth, computeCartogram's two joins,
+    // computeDotDensity), not a per-consumer patch. ONLY for a SHIPPED join (admin-1 or
+    // world/us-states) — a DECLARED geometry is the journalist's own file, and review round
+    // 2's second finding is exactly this: its casing/spelling is theirs, never ours to
+    // normalize or rewrite. Route is excluded structurally (no config.rows/config.values to
+    // rewrite — it has config.route, raw coordinates, untouched).
+    if (geography.origin === "shipped" && config.type !== "route") {
+      const canonical = canonicalJoinValuesFrom(
+        config.geometry as TopoJsonLike,
+        idProperty,
+        geography.joinKey,
+      );
+      if (config.type === "cartogram") {
+        config.values!.forEach((v, i) => {
+          const canon = valueRequestedIds[i]
+            ? canonical.get(valueRequestedIds[i]!)
+            : undefined;
+          if (canon !== undefined) v.id = canon;
+        });
+      } else {
+        config.rows!.forEach((r, i) => {
+          const canon = rowRequestedIds[i]
+            ? canonical.get(rowRequestedIds[i]!)
+            : undefined;
+          if (canon !== undefined) r[config.regionKey as string] = canon;
+        });
+      }
+      // idProperty was added to keepProperties above ONLY so canonicalJoinValuesFrom could
+      // read it back — strip it again so the shipped property surface is exactly what it was
+      // before either fix in this file existed (joinKey/name/labelField only).
+      if (idProperty !== geography.joinKey) {
+        for (const layer of Object.values(
+          (config.geometry as TopoJsonLike).objects,
+        ))
+          for (const g of layer.geometries)
+            if (g.properties) delete g.properties[idProperty];
+      }
     }
 
     delete geography.sourcePath; // produce-time-only — never reaches the browser

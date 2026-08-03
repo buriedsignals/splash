@@ -1,11 +1,37 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { resolveGeometryForProduce } from "./resolve-for-produce";
 import { matchGeography } from "../../skills/map-native/src/geo-match";
 import { assembleMapNative } from "../loop/assemble/map-native";
+import { computeChoropleth } from "../../skills/map-native/src/choropleth-geo";
 import type { ProductionBrief } from "../core/production-brief";
 
 const ASSETS = join(import.meta.dir, "../../skills/map-native/assets/geo");
+
+// The RENDER join needs a real FeatureCollection shape (GeoJSON.FeatureCollection), but
+// `computeChoropleth` itself never reads `.geometry` (only `f.properties?.[joinKey]`) — see
+// choropleth-geo.ts's own body. So this stub, built straight off the TopoJSON `config.geometry`
+// resolveGeometryForProduce just produced, needs no real polygon decoding (no topojson-client
+// dependency in this test) — it carries the SAME properties a real decode would, which is the
+// only thing this join boundary reads.
+function stubFeatureCollectionFrom(geometry: {
+  objects: Record<
+    string,
+    { geometries: { properties?: Record<string, unknown> }[] }
+  >;
+}): GeoJSON.FeatureCollection {
+  const layerKey = Object.keys(geometry.objects)[0]!;
+  return {
+    type: "FeatureCollection",
+    features: geometry.objects[layerKey]!.geometries.map((g) => ({
+      type: "Feature",
+      properties: g.properties ?? {},
+      geometry: { type: "Point", coordinates: [0, 0] },
+    })),
+  };
+}
 
 describe("resolveGeometryForProduce", () => {
   it("should resolve a legacy shipped-basemap choropleth into real geometry", async () => {
@@ -159,6 +185,27 @@ describe("resolveGeometryForProduce", () => {
     // unaccented spelling only had to survive the JOIN, never the rendered label.
     const names = geoms.map((g) => g.properties.name).sort();
     expect(names).toEqual(["Genève", "Neuchâtel", "Zürich"]);
+
+    // REVIEW ROUND 2's finding: closing the SUBSET query was not enough — the RENDER join
+    // (ChoroplethMap.tsx → computeChoropleth) reads config.rows[i][regionKey] DIRECTLY, and
+    // that was still the raw "Geneve"/"Zurich"/"Neuchatel" before this round. Assert BOTH
+    // halves at the actual render-join boundary: (1) config.rows was rewritten to the file's
+    // own canonical spelling — the single fix point every consumer (choropleth, cartogram,
+    // dot-density) reads from; (2) computeChoropleth, called exactly as ChoroplethMap.tsx
+    // calls it, joins every row — not the "no region matched the data" throw review round 2
+    // reproduced live.
+    const rewrittenRows = (config.rows as Record<string, unknown>[]).map(
+      (r) => r[config.regionKey as string],
+    );
+    expect(rewrittenRows.sort()).toEqual(["Genève", "Neuchâtel", "Zürich"]);
+    const fc = stubFeatureCollectionFrom(geometry);
+    const layout = computeChoropleth(
+      config as unknown as Parameters<typeof computeChoropleth>[0],
+      fc,
+      (config.geography as { joinKey: string }).joinKey,
+    );
+    expect(layout.joined.filter((j) => j.value !== null)).toHaveLength(3);
+    expect(layout.unmatched).toEqual([]);
   }, 30_000);
 
   describe("shipped basemap (world/us-states) — the SAME case/whitespace normalization gap, found by review round 1 after the admin-1 fix shipped", () => {
@@ -202,10 +249,30 @@ describe("resolveGeometryForProduce", () => {
       });
       expect(wrote).toBe(true);
       const geometry = config.geometry as {
-        objects: Record<string, { geometries: unknown[] }>;
+        objects: Record<
+          string,
+          { geometries: { properties: Record<string, unknown> }[] }
+        >;
       };
       const layerKey = Object.keys(geometry.objects)[0]!;
       expect(geometry.objects[layerKey]!.geometries).toHaveLength(2);
+
+      // Review round 2: the render join too, with the same control the reviewer used
+      // (uppercase lowercase). config.rows must carry "NY"/"CA" now (the file's own
+      // convention), and computeChoropleth — the ACTUAL call ChoroplethMap.tsx makes — must
+      // join both, not throw "no region matched the data".
+      const rewrittenRows = (config.rows as Record<string, unknown>[]).map(
+        (r) => r[config.regionKey as string],
+      );
+      expect(rewrittenRows.sort()).toEqual(["CA", "NY"]);
+      const fc = stubFeatureCollectionFrom(geometry);
+      const layout = computeChoropleth(
+        config as unknown as Parameters<typeof computeChoropleth>[0],
+        fc,
+        (config.geography as { joinKey: string }).joinKey,
+      );
+      expect(layout.joined.filter((j) => j.value !== null)).toHaveLength(2);
+      expect(layout.unmatched).toEqual([]);
     }, 30_000);
 
     it("also tolerates a whitespace-padded, mixed-case world ISO-A3 code ('  fra ') the same way matchShippedBasemaps already does at match time", async () => {
@@ -255,6 +322,99 @@ describe("resolveGeometryForProduce", () => {
         format: "video",
       }),
     ).rejects.toThrow(/video/i);
+  });
+
+  describe("declared geometry — a journalist's own file, never normalized or rewritten (review round 2's second finding)", () => {
+    // A journalist's own uploaded GeoJSON — mixed-case ("Genève"/"Lausanne", standard French
+    // capitalization), the exact shape review round 2 used to prove `normalizeShippedJoinValue`
+    // had started reaching a path it must never touch: uppercasing "Genève" (matching the row
+    // exactly) into "GENÈVE" no longer matches the file's own "Genève" property — a case that
+    // worked before EITHER fix in this file, broken by treating a declared join like a shipped
+    // one. Real coordinates (not null/placeholder) since this exercises the actual
+    // `subsetGeometry` call, mapshaper included.
+    function declaredFixtureDir(): string {
+      const dir = mkdtempSync(join(tmpdir(), "declared-geo-"));
+      writeFileSync(
+        join(dir, "communes.geojson"),
+        JSON.stringify({
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              properties: { nom: "Genève" },
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [6.1, 46.2],
+                    [6.2, 46.2],
+                    [6.2, 46.25],
+                    [6.1, 46.25],
+                    [6.1, 46.2],
+                  ],
+                ],
+              },
+            },
+            {
+              type: "Feature",
+              properties: { nom: "Lausanne" },
+              geometry: {
+                type: "Polygon",
+                coordinates: [
+                  [
+                    [6.6, 46.5],
+                    [6.7, 46.5],
+                    [6.7, 46.55],
+                    [6.6, 46.55],
+                    [6.6, 46.5],
+                  ],
+                ],
+              },
+            },
+          ],
+        }),
+      );
+      return dir;
+    }
+
+    it("produces (does not refuse) a declared geometry whose values already match its own casing exactly — a case that worked before EITHER fix in this file and must keep working", async () => {
+      const dir = declaredFixtureDir();
+      const config: Record<string, unknown> = {
+        type: "choropleth",
+        regionKey: "commune",
+        rows: [
+          { commune: "Genève", value: 1 },
+          { commune: "Lausanne", value: 2 },
+        ],
+        geography: {
+          origin: "declared",
+          set: "ch-communes",
+          level: "commune",
+          joinKey: "nom",
+          joinKeyFamily: "nom",
+          sourcePath: join(dir, "communes.geojson"),
+        },
+        geoCredit: { name: "swisstopo" },
+      };
+      const wrote = await resolveGeometryForProduce({
+        config,
+        assetsGeoDir: ASSETS,
+        renderWidthPx: 1200,
+      });
+      expect(wrote).toBe(true);
+      // Untouched, byte-for-byte — a declared join is never normalized or rewritten.
+      expect((config.rows as Record<string, unknown>[])[0]!.commune).toBe(
+        "Genève",
+      );
+      expect((config.rows as Record<string, unknown>[])[1]!.commune).toBe(
+        "Lausanne",
+      );
+      const geometry = config.geometry as {
+        objects: Record<string, { geometries: unknown[] }>;
+      };
+      const layerKey = Object.keys(geometry.objects)[0]!;
+      expect(geometry.objects[layerKey]!.geometries).toHaveLength(2);
+    }, 30_000);
   });
 
   it("should NOT refuse a SHIPPED non-world geography (us-states) in the video format anymore — Tasks 7-9/13 moved every video composition onto config.geometry via the shared resolveVideoGeometry, so a shipped non-world subset renders the same real geometry as static/interactive/scrolly instead of silently coming out an empty world map", async () => {
