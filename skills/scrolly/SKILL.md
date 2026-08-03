@@ -125,8 +125,9 @@ Scrolly.tsx  (scaffold)
 
 ## Inherited interactive best-practices (from `map-native/references/interactive-map-best-practices.md`)
 
-- Water blue / land light / no-data grey via the shared `theme/colors` — the scrolly matches the
-  interactive and the video.
+- Water blue via the shared `theme/colors` — the scrolly matches the interactive and the video.
+  No-data regions stay unpainted (basemap default, never tinted) in all three; `NO_DATA_COLOR` is
+  only a paint-expression fallback, not a rendered layer.
 - Hover only on regions WITH data (no no-data hover). The map keeps its event system but disables the
   navigation handlers (`dragPan`/`scrollZoom`/etc. `false`) — the SCROLL drives the camera, so manual
   pan/zoom would fight the narrative; there is no `NavigationControl`.
