@@ -397,7 +397,16 @@ const RunElementSchema = z.object({
 // first one moves) — the schema module owes its own version number the same discipline. Found by
 // running lib/host/cli.test.ts's real CLI subprocess against a v5 manifest and getting a live
 // `stale-schema` refusal that `tsc` could not have caught (a runtime literal, not a type).
-export const CURRENT_SCHEMA_VERSION = 5 as const;
+//
+// v6 (Task 15 follow-up review round 1): GeoMatch.featureIdsByValue is OPTIONAL, so it does not
+// by itself force a version bump — a v5 manifest parses fine either way. The bump exists so
+// `readManifest`'s version-diff check (below) actually FIRES for a v5 manifest whose admin-1
+// geography match predates that field: without it, `readManifest`/`loadRun` treat a stale v5
+// manifest as current (same version number) and skip migration entirely, and produce's own
+// fail-loud guard against a missing featureIdsByValue then surfaces as an UNCAUGHT throw
+// instead of the catchable stale-schema/next-action path this file exists to provide. See
+// migrateV5toV6 (lib/loop/migrate.ts) for what the migration actually does.
+export const CURRENT_SCHEMA_VERSION = 6 as const;
 
 export const RunManifestSchema = z.object({
   runId: z.string(),

@@ -85,24 +85,67 @@ function resolveAdm1FeatureIds(
 ): string[] {
   const value = rawValue.trim();
   const hits = featureIdsByValue[value];
-  if (!hits || hits.length === 0)
+  if (!hits || hits.length === 0) {
+    // WHAT THE FILE OFFERS, bounded: not the full 4596-feature ADM1 index (this function
+    // never loads it — only the earlier match step did, and did not persist it), but the
+    // OTHER values THIS SAME COLUMN already resolved (`featureIdsByValue`'s own keys) — a
+    // journalist comparing spellings needs exactly this list, not the whole gazetteer, and it
+    // is naturally bounded by how many distinct values the column actually had (a CSV column
+    // realistically has tens of regions, never thousands). Capped at 5 anyway, mirroring
+    // subsetGeometry's own `missing.slice(0, 5)` convention, for a column that somehow did.
+    const resolvedValues = Object.keys(featureIdsByValue);
+    const sample = resolvedValues.slice(0, 5);
+    const offer = resolvedValues.length
+      ? ` — this file recognised ${resolvedValues.length} other value(s) in "${regionKeyLabel}": ${sample.join(", ")}${resolvedValues.length > sample.length ? `, +${resolvedValues.length - sample.length} more` : ""}`
+      : " — no other value in this column resolved either";
     throw new Error(
       `produce: "${value}" (column "${regionKeyLabel}") was never resolved against ` +
         `${geography.set}${geography.scope ? ` scoped to "${geography.scope}"` : ""} — the ` +
         `earlier geography match never bound this value to a region in the file, so produce ` +
-        `cannot either; check its spelling against the source data`,
+        `cannot either; check its spelling against the source data${offer}`,
     );
+  }
   const scoped = geography.scope
     ? hits.filter((h) => h.country === geography.scope)
     : hits;
-  if (scoped.length === 0)
-    throw new Error(
-      `produce: "${value}" (column "${regionKeyLabel}") matched ` +
-        `${[...new Set(hits.map((h) => h.country))].join("/")} in the offline index, but ` +
-        `this join is scoped to "${geography.scope}" — none of its matches belong to that ` +
-        `country, so drawing any of them would colour the wrong region`,
+  if (scoped.length === 0) {
+    // WHAT THE FILE OFFERS, for this refusal: the value's OWN resolved featureId(s) — it is a
+    // real region in the file, just not in the scoped country — plus the same bounded sample
+    // of this column's other in-scope values as refusal 1 above, so a journalist can compare
+    // "what I typed" against "what this join actually draws".
+    const ownFeatureIds = hits.map((h) => `${h.featureId} (${h.country})`);
+    const resolvedValues = Object.keys(featureIdsByValue).filter(
+      (v) => v !== value,
     );
+    const sample = resolvedValues.slice(0, 5);
+    const offer = sample.length
+      ? ` — other values already resolved to "${geography.scope}" in this column: ${sample.join(", ")}${resolvedValues.length > sample.length ? `, +${resolvedValues.length - sample.length} more` : ""}`
+      : "";
+    throw new Error(
+      `produce: "${value}" (column "${regionKeyLabel}") matched ${ownFeatureIds.join(", ")} ` +
+        `in the offline index, but this join is scoped to "${geography.scope}" — none of its ` +
+        `matches belong to that country, so drawing any of them would colour the wrong ` +
+        `region${offer}`,
+    );
+  }
   return scoped.map((h) => h.featureId);
+}
+
+// A shipped world/us-states join has its OWN normalization gap, found by review after this
+// file's admin-1 fix shipped: `matchShippedBasemaps` (skills/map-native/src/geo-match.ts)
+// matches CASE-INSENSITIVELY (`v.toUpperCase()` against the file's own keys, pre-uppercased by
+// `keysOf`) and reports "matched" — but this file used to pass the RAW, un-uppercased value
+// straight to `subsetGeometry`'s byte-for-byte compare, which found nothing for a lowercase
+// CSV ("ny" against the real file's "NY") and threw the identical "regions absent from the
+// file" contradiction the admin-1 fix closes, on a completely different path. Verified live: 0
+// of world.geojson's `iso_a3` and us-states.geojson's `postal` values contain a lowercase
+// character (checked directly against both shipped assets) — the file's own convention is
+// ALWAYS uppercase, so uppercasing the query (mirroring matchShippedBasemaps's own rule,
+// applied to the FILE side already) closes this without touching subsetGeometry's generic,
+// byte-for-byte contract at all. Trimmed too, for the same reason matchShippedBasemaps trims
+// before comparing.
+function normalizeShippedJoinValue(raw: string): string {
+  return raw.trim().toUpperCase();
 }
 
 // The minimal shape the route branch reads off a parsed GeoJSON source file — just enough to
@@ -220,18 +263,25 @@ export async function resolveGeometryForProduce(
     // resolves to a canonical featureId (`config.featureIdsByValue`, threaded from GeoMatch —
     // see production-brief.ts's doc comment) rather than a value in the joinKey NAME family,
     // so it filters on ADM1_FEATURE_ID_PROPERTY ("adm1_code") instead of `geography.joinKey`.
-    // A shipped world/us-states join is untouched: it already filters the real file on the
-    // exact raw value it matched with (matchShippedBasemaps compares that same raw column
-    // value against that same file), so there is no separate resolved id and no bug to fix
-    // there — this is scoped to the one join that HAS a normalized index standing between the
-    // match and the file's own properties.
+    // A shipped world/us-states join keeps `geography.joinKey` as its idProperty — that part
+    // is genuinely unchanged, the file's own iso_a3/postal property names — but it is NOT
+    // otherwise untouched: see `normalizeShippedJoinValue` below for the case/whitespace gap
+    // this same review round found and closed on that path too.
     const isAdm1Join = basemapKeyFor(geography) === "natural-earth-admin-1";
-    // FAIL LOUD, never fall back to the raw-value path silently: a config with this geography
-    // but no featureIdsByValue is either a manifest matched before this field existed, or a
-    // future assembler bug that forgot to thread it — both are exactly the mismatch this
-    // whole mechanism exists to prevent, so re-deriving raw ids here instead of refusing would
-    // silently reproduce it. (Route can never be admin-1 — assemblePointFamily always resolves
-    // it against "world" — so this can never fire for it; excluded from the condition anyway,
+    // FAIL LOUD, never fall back to the raw-value path silently: re-deriving raw ids here
+    // instead of refusing would silently reproduce the exact mismatch this whole mechanism
+    // exists to prevent. This is an UNCAUGHT throw (neither map-native's nor scrolly's
+    // producer wraps this call — see skills/map-native/scripts/produce.mjs's own top-level
+    // `await resolveGeometryForProduce(...)`), which is only an acceptable answer for a
+    // genuine PROGRAMMER error: a config assembled by code that forgot to thread
+    // `geo.featureIdsByValue` onto an admin-1 config it built fresh, today. It is NOT an
+    // acceptable answer for a JOURNALIST-facing stale manifest — a v5-vintage run whose
+    // admin-1 match predates this field entirely — and that case never reaches this line: the
+    // schema version bump (v5→v6, lib/loop/manifest.ts) plus lib/loop/migrate.ts's
+    // migrateV5toV6 drop that stale match on the way in (before produce ever sees the config),
+    // so it surfaces as the ordinary, catchable "needs orient again" next-action instead of a
+    // crash. (Route can never be admin-1 — assemblePointFamily always resolves it against
+    // "world" — so this can never fire for it; excluded from the condition anyway,
     // belt-and-braces, since route's own id list is resolved from the source file below, not
     // from `config.rows`/`config.values` at all.)
     if (isAdm1Join && config.type !== "route" && !config.featureIdsByValue)
@@ -247,10 +297,14 @@ export async function resolveGeometryForProduce(
       ? ADM1_FEATURE_ID_PROPERTY
       : geography.joinKey;
 
-    // The feature ids actually drawn (D5's own design call). A non-admin-1 join keeps its
-    // ORIGINAL behaviour byte-for-byte: one raw value per row/cell, unchanged since before
-    // this fix. An admin-1 join resolves each raw value through `resolveAdm1FeatureIds`
-    // instead of using it directly — see that function's own doc comment.
+    // The feature ids actually drawn (D5's own design call). An admin-1 join resolves each raw
+    // value through `resolveAdm1FeatureIds` instead of using it directly (see that function's
+    // own doc comment). A non-admin-1 (shipped world/us-states) join normalizes each raw value
+    // the SAME way `matchShippedBasemaps` already does at match time
+    // (`normalizeShippedJoinValue` above) — this is NOT byte-for-byte the pre-fix behaviour: a
+    // lowercase/whitespace-padded CSV value used to be passed straight through and silently
+    // disagree with `subsetGeometry`'s byte-for-byte compare, the same "recognised, then
+    // absent" contradiction the admin-1 fix closes, just on this path instead.
     //
     // "route" is NOT one of the brief's two named shapes (choropleth/dot-density vs.
     // cartogram) — a genuine gap in the brief's own Design call, found while implementing:
@@ -259,7 +313,9 @@ export async function resolveGeometryForProduce(
     // pre-known per-row id list to filter down to. Route needs every feature the source
     // names — its "id list" is every id present in the source file (a query, not a filter);
     // the prune/simplify/encode wins of D5 still apply in full to the result, only the
-    // per-feature filtering step is a no-op for this one type.
+    // per-feature filtering step is a no-op for this one type. Route's own id list (below,
+    // once sourcePath is known) is scanned straight off the SOURCE FILE, never off a
+    // journalist-supplied value, so it was never exposed to this case/whitespace gap either.
     let featureIds =
       config.type === "cartogram"
         ? config.values!.flatMap((v) =>
@@ -270,7 +326,7 @@ export async function resolveGeometryForProduce(
                   config.featureIdsByValue!,
                   geography,
                 )
-              : [String(v.id)],
+              : [normalizeShippedJoinValue(String(v.id))],
           )
         : config.type === "route"
           ? null // resolved below, once sourcePath is known
@@ -283,7 +339,7 @@ export async function resolveGeometryForProduce(
                     config.featureIdsByValue!,
                     geography,
                   )
-                : [raw];
+                : [normalizeShippedJoinValue(raw)];
             });
 
     // WHERE to read the frozen source from: a declared file names its own frozen path

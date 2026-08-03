@@ -20,7 +20,7 @@ import { migrate } from "./migrate";
 function base(): RunManifest {
   return {
     runId: "r1",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
@@ -254,14 +254,14 @@ test("nextActions off-ramps ([]) when data supports no visual", () => {
 });
 
 test("parseManifest rejects a manifest missing elements", () => {
-  const bad = { runId: "r", schemaVersion: 5, input: {}, events: [] };
+  const bad = { runId: "r", schemaVersion: 6, input: {}, events: [] };
   expect(() => parseManifest(bad)).toThrow();
 });
 
 test("a stored proposal from before the capability axis still parses", () => {
   const raw = {
     runId: "r",
-    schemaVersion: 5,
+    schemaVersion: 6,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     elements: [
       {
@@ -279,7 +279,7 @@ test("a stored proposal from before the capability axis still parses", () => {
 describe("the delivery slot", () => {
   const base = (): RunManifest => ({
     runId: "r1",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
@@ -519,7 +519,7 @@ describe("the delivery slot", () => {
 test("v4 carries the route and the channel at run level", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -533,7 +533,7 @@ test("v4 carries the route and the channel at run level", () => {
 test("a proposal records what was discarded, with its reason", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -592,7 +592,7 @@ test("an unknown channel is refused", () => {
   expect(() =>
     parseManifest({
       runId: "r",
-      schemaVersion: 5,
+      schemaVersion: 6,
       route: "embed",
       channel: "billboard",
       input: {},
@@ -1565,7 +1565,7 @@ describe("RunManifestSchema.lang — the run's own recorded language", () => {
 function baseManifestV5(overrides: Record<string, unknown> = {}) {
   return {
     runId: "r1",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "abc" } },

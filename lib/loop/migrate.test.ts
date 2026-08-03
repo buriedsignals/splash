@@ -2,8 +2,13 @@ import { test, expect, it, describe } from "bun:test";
 import { mkdtempSync, existsSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { migrate, materializeDeliverables } from "./migrate";
-import { parseManifest, channelForElement, provenanceHash } from "./manifest";
+import { migrate, migrateWriteFree, materializeDeliverables } from "./migrate";
+import {
+  parseManifest,
+  channelForElement,
+  provenanceHash,
+  nextActions,
+} from "./manifest";
 
 const v1 = {
   runId: "r1",
@@ -32,7 +37,7 @@ test("migrate upgrades a v1 manifest to a valid current-schema manifest", () => 
   const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
   const m = migrate(v1, runDir);
   expect(() => parseManifest(m)).not.toThrow();
-  expect(m.schemaVersion).toBe(5);
+  expect(m.schemaVersion).toBe(6);
 });
 
 test("migrate freezes the v1 inline dataCsv into the run dir", () => {
@@ -87,7 +92,7 @@ it("should drop the dormant v2 delivery slot rather than carry an unconvertible 
   };
   writeFileSync(join(dir, "input.csv"), "a\n1\n");
   const out = migrate(v2, dir);
-  expect(out.schemaVersion).toBe(5);
+  expect(out.schemaVersion).toBe(6);
   expect(out.elements[0]!.delivery).toBeUndefined();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -102,7 +107,7 @@ test("a v3 manifest migrates through v4 to the current schema, with the embed ro
     events: [],
   };
   const m = migrate(v3, dir);
-  expect(m.schemaVersion).toBe(5);
+  expect(m.schemaVersion).toBe(6);
   expect(m.route).toBe("embed");
   expect(m.channel).toBe("article-web");
   expect(m.elements[0].proposal!.excluded).toEqual([]);
@@ -110,13 +115,13 @@ test("a v3 manifest migrates through v4 to the current schema, with the embed ro
 
 // --- issue #1: making an implicit single channel explicit, without changing what it means ---
 // legacyRun is a CURRENT-schema fixture (fed straight to parseManifest, never migrate()), not a
-// v4-shaped one — its name predates schemaVersion 5 and refers to the run's implicit channel,
-// not to any past schema version.
+// v4-shaped one — its name predates schemaVersion 5 (and now 6) and refers to the run's
+// implicit channel, not to any past schema version.
 const legacyRun = (
   channel: "article-web" | "social-vertical" | "social-feed",
 ) => ({
   runId: "r9",
-  schemaVersion: 5 as const,
+  schemaVersion: 6 as const,
   route: "embed" as const,
   channel,
   input: { data: { path: "input/data.csv", sha256: "a".repeat(64) } },
@@ -210,7 +215,7 @@ describe("migrateV4toV5", () => {
       events: [],
     };
     const migrated = migrate(v4, "/tmp/does-not-matter");
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(6);
     expect(migrated.orient?.geo?.geography).toEqual({
       origin: "shipped",
       set: "natural-earth-admin-0",
@@ -248,7 +253,7 @@ describe("migrateV4toV5", () => {
     expect(migrated.orient?.geo?.geography.set).toBe("us-states");
   });
 
-  it("passes through a v4 manifest with no orient.geo at all, unaltered but at v5", () => {
+  it("passes through a v4 manifest with no orient.geo at all, unaltered but at v6", () => {
     const v4 = {
       runId: "r1",
       schemaVersion: 4,
@@ -259,7 +264,128 @@ describe("migrateV4toV5", () => {
       events: [],
     };
     const migrated = migrate(v4, "/tmp/does-not-matter");
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(6);
     expect(migrated.orient).toBeUndefined();
+  });
+});
+
+describe("migrateV5toV6 — the accent-normalization join fix's own migration (Task 15 follow-up review round 1)", () => {
+  // The reviewer's own repro: a v5 manifest shaped exactly like a real pre-fix admin-1 run
+  // (matched via the offline ADM1 index before featureIdsByValue existed) used to parse clean
+  // at "current" (schemaVersion stayed 5, so readManifest's version-diff gate never fired) and
+  // then crash produce with an UNCAUGHT throw — this is the manifest that must now come back
+  // readable, with `orient` dropped so the run re-derives it (and this time gets
+  // featureIdsByValue).
+  const staleAdm1V5 = {
+    runId: "r1",
+    schemaVersion: 5,
+    route: "embed",
+    channel: "article-web",
+    input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
+    orient: {
+      profile: { columns: ["canton"], numericColumns: ["rent"], rowCount: 1 },
+      supportsPoint: true,
+      geo: {
+        column: "canton",
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-1",
+          scope: "CHE",
+          level: "canton",
+          joinKey: "name",
+          joinKeyFamily: "name",
+        },
+        matched: 1,
+        total: 1,
+        unmatched: [],
+        // featureIdsByValue deliberately absent — the exact shape a real run written before
+        // this field existed carries.
+      },
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
+        proposal: {
+          options: [{ id: "choropleth", nativeType: "choropleth", why: "w" }],
+          excluded: [],
+          chosenId: "choropleth",
+        },
+      },
+    ],
+    events: [],
+  };
+
+  it("drops orient entirely for a stale v5 admin-1 match — parses clean, at v6, orient gone", () => {
+    const migrated = migrate(staleAdm1V5, "/tmp/does-not-matter");
+    expect(() => parseManifest(migrated)).not.toThrow();
+    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.orient).toBeUndefined();
+  });
+
+  it("leaves the rest of the element (proposal, angle) untouched — only orient is reset, not the whole run", () => {
+    const migrated = migrate(staleAdm1V5, "/tmp/does-not-matter");
+    expect(migrated.elements[0]!.proposal?.chosenId).toBe("choropleth");
+    expect(migrated.elements[0]!.angle?.confirmedTakeaway).toBe("t");
+  });
+
+  it("nextActions asks for 'orient' again on the migrated run — the catchable, already-tested next-action path, not a crash", () => {
+    const migrated = migrate(staleAdm1V5, "/tmp/does-not-matter");
+    const run = parseManifest(migrated);
+    expect(nextActions(run)).toEqual(["orient"]);
+  });
+
+  it("leaves a v5 admin-1 match that ALREADY carries featureIdsByValue untouched — only the STALE shape is dropped", () => {
+    const freshAdm1V5 = {
+      ...staleAdm1V5,
+      orient: {
+        ...staleAdm1V5.orient,
+        geo: {
+          ...staleAdm1V5.orient.geo,
+          featureIdsByValue: {
+            Genève: [{ featureId: "CHE-159", country: "CHE" }],
+          },
+        },
+      },
+    };
+    const migrated = migrate(freshAdm1V5, "/tmp/does-not-matter");
+    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.orient).toBeDefined();
+    expect(
+      (migrated.orient as { geo?: { featureIdsByValue?: unknown } }).geo
+        ?.featureIdsByValue,
+    ).toBeDefined();
+  });
+
+  it("leaves a v5 manifest with a non-admin-1 (or no) geography match untouched", () => {
+    const worldV5 = {
+      ...staleAdm1V5,
+      orient: {
+        ...staleAdm1V5.orient,
+        geo: {
+          column: "country",
+          geography: {
+            origin: "shipped",
+            set: "natural-earth-admin-0",
+            level: "country",
+            joinKey: "iso_a3",
+            joinKeyFamily: "iso_a3",
+          },
+          matched: 1,
+          total: 1,
+          unmatched: [],
+        },
+      },
+    };
+    const migrated = migrate(worldV5, "/tmp/does-not-matter");
+    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.orient).toBeDefined();
+  });
+
+  it("migrateWriteFree (the read-only state/next path) drops the same stale match in memory, with no write", () => {
+    const migrated = migrateWriteFree(staleAdm1V5);
+    expect(migrated).toBeDefined();
+    expect(migrated!.schemaVersion).toBe(6);
+    expect(migrated!.orient).toBeUndefined();
   });
 });

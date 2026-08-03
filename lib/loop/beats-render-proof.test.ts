@@ -88,7 +88,7 @@ function proofRun() {
   writeFileSync(src, SEA_ICE);
   const run: RunManifest = {
     runId: "beats-proof",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "article",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

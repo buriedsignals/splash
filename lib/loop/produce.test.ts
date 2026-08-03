@@ -27,7 +27,7 @@ test("produce renders a real static PNG through the chart-native seam", async ()
   );
   const run: RunManifest = {
     runId: "t",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -93,7 +93,7 @@ test("produce lands the declared source class on the rendered config", async () 
   );
   const run: RunManifest = {
     runId: "t",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -161,7 +161,7 @@ test("produce renders the chosen option's own format, not a hard-coded static", 
   );
   const run: RunManifest = {
     runId: "t-interactive",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -234,7 +234,7 @@ test("produce refuses a chosen option whose engine is not in the assembler table
   writeFileSync(src, "canton,value\nGenève,449\nVaud,412");
   const run: RunManifest = {
     runId: "wrong-engine",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -293,7 +293,7 @@ function makeBrokenRun(): { run: RunManifest; runDir: string } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "t-broken",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -396,7 +396,7 @@ test("a chosen chart-track scrolly option is carried past the buildability gate,
   );
   const run: RunManifest = {
     runId: "t-scrolly-format",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -480,7 +480,7 @@ test("produce refuses a run that declared no source, instead of crediting a plac
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "t-no-source",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -533,7 +533,7 @@ test("the declared source reaches the produced artifact, and the placeholder is 
   );
   const run: RunManifest = {
     runId: "t-credit",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -598,7 +598,7 @@ test("produce refuses a social deliverable whose aspect has not been confirmed",
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "t",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -665,7 +665,7 @@ function geoJoinRun(
   );
   return {
     runId: "t-geojoin",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -759,7 +759,7 @@ function scrollyRunOnDisk(): { run: RunManifest; runDir: string } {
     runDir,
     run: {
       runId: "t-beats",
-      schemaVersion: 5,
+      schemaVersion: 6,
       route: "article",
       channel: "article-web",
       input: { data: freezeInput(runDir, src, "data") },
@@ -1026,7 +1026,7 @@ test("a French run's language reaches the produced config, and the real i18n fur
   );
   const run: RunManifest = {
     runId: "t-lang-fr",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     lang: "fr",
@@ -1100,7 +1100,7 @@ test("a French run's language reaches the prose-source credit furniture, not jus
   writeFileSync(articlePath, article);
   const run: RunManifest = {
     runId: "t-lang-furniture-fr",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     lang: "fr",

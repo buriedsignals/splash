@@ -5,27 +5,33 @@ import { freezeInput } from "./freeze";
 import { aspectOf, destinationOf } from "../core/channel-policy";
 import {
   parseManifest,
+  CURRENT_SCHEMA_VERSION,
   type DeliveryRecord,
   type RunManifest,
   type RunElement,
 } from "./manifest";
 
-// The v2-through-v5 leg of the chain, and ONLY that leg: migrateV2toV3, migrateV3toV4 and
-// migrateV4toV5 are pure object transforms — no filesystem access anywhere in them. v1 is the
-// odd one out (migrateV1toV2 calls freezeInput, which WRITES the frozen input file into the run
-// directory) and is deliberately excluded here, which is what lets a caller that must not write
-// — lib/host/state.ts's loadRun, read-only by promise — migrate a stale manifest in memory
-// without checking each step's purity itself. Returns undefined for a v1 manifest, a manifest
-// already current, or a version this build does not know, so a caller can tell "migrated" apart
-// from "nothing to do here" without inspecting `schemaVersion` a second time.
+// The v2-through-v6 leg of the chain, and ONLY that leg: migrateV2toV3, migrateV3toV4,
+// migrateV4toV5 and migrateV5toV6 are pure object transforms — no filesystem access anywhere in
+// them. v1 is the odd one out (migrateV1toV2 calls freezeInput, which WRITES the frozen input
+// file into the run directory) and is deliberately excluded here, which is what lets a caller
+// that must not write — lib/host/state.ts's loadRun, read-only by promise — migrate a stale
+// manifest in memory without checking each step's purity itself. Returns undefined for a v1
+// manifest, a manifest already current, or a version this build does not know, so a caller can
+// tell "migrated" apart from "nothing to do here" without inspecting `schemaVersion` a second
+// time.
 export function migrateWriteFree(raw: unknown): RunManifest | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const obj = raw as { schemaVersion?: number };
-  if (obj.schemaVersion === 4) return parseManifest(migrateV4toV5(raw));
+  if (obj.schemaVersion === 5) return parseManifest(migrateV5toV6(raw));
+  if (obj.schemaVersion === 4)
+    return parseManifest(migrateV5toV6(migrateV4toV5(raw)));
   if (obj.schemaVersion === 3)
-    return parseManifest(migrateV4toV5(migrateV3toV4(raw)));
+    return parseManifest(migrateV5toV6(migrateV4toV5(migrateV3toV4(raw))));
   if (obj.schemaVersion === 2)
-    return parseManifest(migrateV4toV5(migrateV3toV4(migrateV2toV3(raw))));
+    return parseManifest(
+      migrateV5toV6(migrateV4toV5(migrateV3toV4(migrateV2toV3(raw)))),
+    );
   return undefined;
 }
 
@@ -33,20 +39,27 @@ export function migrateWriteFree(raw: unknown): RunManifest | undefined {
 // single top-level element; v2 freezes the content (path+hash) and wraps it in elements[];
 // v3 drops the dormant, unconvertible v2 delivery slot; v4 adds the run's route and channel
 // and the proposal's excluded list; v5 widens `orient.geo.basemap` into a GeographyRef and adds
-// `input.geography`/`orient.geoJoin` (geography-anywhere, D10). v1 chains through v2, v3 and v4
-// to v5.
+// `input.geography`/`orient.geoJoin` (geography-anywhere, D10); v6 drops a v5 admin-1 geography
+// match that predates GeoMatch.featureIdsByValue (see migrateV5toV6's own comment). v1 chains
+// through v2, v3, v4 and v5 to v6.
 export function migrate(raw: unknown, runDir: string): RunManifest {
   if (!raw || typeof raw !== "object")
     throw new Error("migrate: manifest is not an object");
   const obj = raw as { schemaVersion?: number };
-  if (obj.schemaVersion === 5) return parseManifest(raw);
+  // CURRENT_SCHEMA_VERSION, never a restated literal — a hand-copied number here is exactly
+  // what let a stale v5-admin1 manifest read as "already current" and skip migration entirely
+  // for as long as it did (this fast path used to read the literal `5`, unmoved when v6 was
+  // introduced — the review that found the resulting crash is what closed this).
+  if (obj.schemaVersion === CURRENT_SCHEMA_VERSION) return parseManifest(raw);
   const writeFree = migrateWriteFree(raw);
   if (writeFree) return writeFree;
   if (obj.schemaVersion !== 1)
     throw new Error(`migrate: unsupported schemaVersion ${obj.schemaVersion}`);
   return parseManifest(
-    migrateV4toV5(
-      migrateV3toV4(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir))),
+    migrateV5toV6(
+      migrateV4toV5(
+        migrateV3toV4(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir))),
+      ),
     ),
   );
 }
@@ -120,6 +133,51 @@ const SHIPPED_GEOGRAPHY_REFS: Record<string, unknown> = {
     joinKeyFamily: "postal",
   },
 };
+
+// v6 adds nothing to the schema shape itself — GeoMatch.featureIdsByValue (the accent-
+// normalization join fix's own field) is OPTIONAL, so a v5 manifest parses as v6 with no
+// complaint on shape alone. What v6 exists to fix is a correctness gap parsing cannot catch: a
+// v5 admin-1 geography match (`orient.geo.geography.set === "natural-earth-admin-1"`) that
+// predates that field carries no resolved region ids at all. `lib/geo/resolve-for-produce.ts`
+// now refuses LOUDLY (by design — never silently falling back to the raw-value join that IS the
+// bug) rather than silently recomputing raw values against the shipped file when
+// featureIdsByValue is missing on an admin-1 join — and an uncaught refusal reaching a
+// read-only host command (lib/host/state.ts's loadRun) breaks that file's own "never throws"
+// promise.
+//
+// There is no way to recompute the resolved ids from the persisted GeoMatch alone: it never
+// stored the per-row raw values, only the aggregate matched/unmatched counts, and re-deriving
+// them needs the frozen CSV — reading it here would violate this leg's own write-free contract
+// (migrateWriteFree, the one the read-only state/next commands rely on, takes no `runDir` and
+// touches no filesystem at all). So a stale admin-1 match is DROPPED instead of migrated
+// forward: `orient` (not just `orient.geo`) is removed entirely, which reuses the EXISTING,
+// already-tested "needs orient" gate (`nextActions`'s own `if (!run.orient) return ["orient"]`,
+// lib/loop/manifest.ts) rather than inventing a new one. Re-running orient recomputes profile
+// AND geo fresh, this time WITH featureIdsByValue (matchAdm1Index always sets it now) — the
+// same self-healing path a run that has not reached orient yet already takes, and it does not
+// disturb anything downstream: nextActions checks `!run.orient` FIRST, before any
+// proposal/produce state, so a run that had already progressed past orient simply redoes that
+// one step and continues exactly as if resuming a run that had not oriented yet.
+//
+// Every other v5 manifest is untouched: no admin-1 match at all, or an admin-1 match that
+// ALREADY carries featureIdsByValue (possible for a run created between the field's own commit
+// and this version bump).
+function migrateV5toV6(v5: unknown): unknown {
+  const m = v5 as {
+    orient?: {
+      geo?: {
+        geography?: { set?: string };
+        featureIdsByValue?: unknown;
+      };
+    };
+  };
+  const staleAdm1Match =
+    m.orient?.geo?.geography?.set === "natural-earth-admin-1" &&
+    m.orient.geo.featureIdsByValue === undefined;
+  if (!staleAdm1Match) return { ...(v5 as object), schemaVersion: 6 };
+  const { orient: _droppedOrient, ...rest } = v5 as Record<string, unknown>;
+  return { ...rest, schemaVersion: 6 };
+}
 
 // Translates the two shipped basemap names the same way lib/geo/ref.ts's resolveGeographyRef
 // does — duplicated here (not imported) because migrate.ts must keep working against every past

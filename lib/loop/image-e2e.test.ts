@@ -102,7 +102,7 @@ function imageRunFixture(): { run: RunManifest; runDir: string } {
   writeFileSync(src, "note\nno data axis for an image story\n");
   const run: RunManifest = {
     runId: "image-e2e",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "article",
     channel: "article-web",
     input: {

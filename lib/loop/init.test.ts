@@ -43,7 +43,7 @@ test("initRun defaults route, channel, one element, an empty ledger of events", 
   const { dir, csv } = scene();
   expect(initRun(dir, declaration(csv)).ok).toBe(true);
   const run = readManifest(join(dir, "run.json"), dir);
-  expect(run.schemaVersion).toBe(5);
+  expect(run.schemaVersion).toBe(6);
   expect(run.route).toBe("embed");
   expect(run.channel).toBe("article-web");
   expect(run.elements).toEqual([{ id: "el1" }]);

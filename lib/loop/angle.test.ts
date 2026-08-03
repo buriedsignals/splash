@@ -21,7 +21,7 @@ const PARTS = {
 function run(el: RunElement): RunManifest {
   return {
     runId: "angle",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },
@@ -56,7 +56,7 @@ test("confirmAngle writes the parts and moves the element to `angled`", () => {
 function manifestWithAngle(angle: unknown): unknown {
   return {
     runId: "angle",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/d.csv", sha256: "a".repeat(64) } },

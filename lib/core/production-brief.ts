@@ -63,8 +63,14 @@ export type GeoMatch = {
    *
    *  DERIVED, never hand-authored — a config assembled from a GeoMatch that carries this
    *  field must thread it through unchanged (lib/loop/assemble/map-native.ts does). produce
-   *  refuses loudly, rather than silently recomputing raw values, when an admin-1 geography's
-   *  config lacks it (a manifest matched before this field existed, e.g.). */
+   *  (lib/geo/resolve-for-produce.ts) refuses loudly, rather than silently recomputing raw
+   *  values, when a FRESH admin-1 config somehow lacks it — defense against a future assembler
+   *  bug that forgets to thread it. A manifest matched before this field existed does NOT
+   *  reach that throw at all: lib/loop/manifest.ts's schema version was bumped (v5→v6) and
+   *  lib/loop/migrate.ts's migrateV5toV6 drops a stale admin-1 match on the way in, which is
+   *  what makes the whole round-trip actually safe — see that migration's own comment for why
+   *  a throw alone was not a sufficient answer (it was an UNCAUGHT exception on the produce
+   *  path, not a caught refusal, before the version bump existed). */
   featureIdsByValue?: Record<string, { featureId: string; country: string }[]>;
 };
 

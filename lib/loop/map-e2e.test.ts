@@ -73,7 +73,7 @@ proof(
       // that refusal is the source policy working, not this proof failing.
       const run: RunManifest = {
         runId: "map-e2e",
-        schemaVersion: 5,
+        schemaVersion: 6,
         route: "embed",
         channel: "article-web",
         input: { data: freezeInput(runDir, src, "data") },

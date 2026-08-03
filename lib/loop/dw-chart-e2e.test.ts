@@ -87,7 +87,7 @@ function chartRun(
 ): RunManifest {
   return {
     runId: "dw-chart-e2e",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, dataPath, "data") },
@@ -469,7 +469,7 @@ const SHOPS_CSV =
 function barsRun(runDir: string, dataPath: string): RunManifest {
   return {
     runId: "dw-chart-rowdriven-e2e",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, dataPath, "data") },

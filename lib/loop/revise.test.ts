@@ -11,7 +11,7 @@ import {
 function producedRun(): RunManifest {
   const run: RunManifest = {
     runId: "r",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },

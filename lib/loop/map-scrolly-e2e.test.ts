@@ -32,7 +32,7 @@ function seedRun(runDir: string): RunManifest {
   writeFileSync(src, ELECTRICITY_ACCESS);
   return {
     runId: "map-scrolly-e2e",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

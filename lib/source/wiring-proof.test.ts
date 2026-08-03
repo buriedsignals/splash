@@ -66,7 +66,7 @@ function makeRun(
   );
   return {
     runId: "source-proof",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

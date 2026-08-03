@@ -23,7 +23,7 @@ const ARTIFACT = "d".repeat(64);
 function baseRun(): RunManifest {
   return {
     runId: "r1",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "data.csv", sha256: "1".repeat(64) } },

@@ -29,7 +29,7 @@ function makeRun(runDir: string, sources?: SourceLedger): RunManifest {
   );
   return {
     runId: "question",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

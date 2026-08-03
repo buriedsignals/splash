@@ -73,7 +73,7 @@ async function producedInteractiveRun(): Promise<{
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "wp-e2e",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

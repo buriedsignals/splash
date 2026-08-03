@@ -4,7 +4,7 @@ import { appendEvent, type RunManifest, type RunEvent } from "./manifest";
 function base(): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: {},

@@ -161,6 +161,77 @@ describe("resolveGeometryForProduce", () => {
     expect(names).toEqual(["Genève", "Neuchâtel", "Zürich"]);
   }, 30_000);
 
+  describe("shipped basemap (world/us-states) — the SAME case/whitespace normalization gap, found by review round 1 after the admin-1 fix shipped", () => {
+    it("THE SAME CONTRADICTION, ON A DIFFERENT PATH: lowercase US postal codes ('ny', 'ca') join the real shipped us-states.geojson (whose own postal property is ALWAYS uppercase) through the real matchGeography → assembleMapNative → resolveGeometryForProduce path, and produce a subset instead of the 'absent from the file' refusal", async () => {
+      const columns = ["state", "value"];
+      const rows = [
+        { state: "ny", value: "1" },
+        { state: "ca", value: "2" },
+      ];
+      const geo = matchGeography(columns, rows);
+      expect(geo).toBeDefined();
+      expect(geo!.geography.set).toBe("us-states");
+      expect(geo!.matched).toBe(2);
+      expect(geo!.unmatched).toEqual([]);
+
+      const brief: ProductionBrief = {
+        elementId: "e1",
+        nativeType: "choropleth",
+        format: "static",
+        angle: {
+          confirmedTakeaway: "New York and California lead these two states",
+          altInsight: "A map of two US states shaded by value",
+          unit: "u",
+        },
+        dataCsv: "state,value\nny,1\nca,2",
+        attribution: "Test fixture",
+        geo,
+      };
+      const assembled = assembleMapNative(brief);
+      expect(assembled.ok).toBe(true);
+      if (!assembled.ok) return;
+      const config = assembled.value as Record<string, unknown>;
+      // No featureIdsByValue here — this is NOT the ADM1 index path, confirming this fix is
+      // a genuinely separate mechanism (query-side normalization), not a reuse of it.
+      expect(config.featureIdsByValue).toBeUndefined();
+
+      const wrote = await resolveGeometryForProduce({
+        config,
+        assetsGeoDir: ASSETS,
+        renderWidthPx: 1200,
+      });
+      expect(wrote).toBe(true);
+      const geometry = config.geometry as {
+        objects: Record<string, { geometries: unknown[] }>;
+      };
+      const layerKey = Object.keys(geometry.objects)[0]!;
+      expect(geometry.objects[layerKey]!.geometries).toHaveLength(2);
+    }, 30_000);
+
+    it("also tolerates a whitespace-padded, mixed-case world ISO-A3 code ('  fra ') the same way matchShippedBasemaps already does at match time", async () => {
+      const config: Record<string, unknown> = {
+        type: "choropleth",
+        basemap: "world",
+        regionKey: "code",
+        rows: [{ code: "  fra ", value: 1 }],
+      };
+      const wrote = await resolveGeometryForProduce({
+        config,
+        assetsGeoDir: ASSETS,
+        renderWidthPx: 1200,
+      });
+      expect(wrote).toBe(true);
+      const geometry = config.geometry as {
+        objects: Record<
+          string,
+          { geometries: { properties: Record<string, unknown> }[] }
+        >;
+      };
+      const layerKey = Object.keys(geometry.objects)[0]!;
+      expect(geometry.objects[layerKey]!.geometries).toHaveLength(1);
+    }, 30_000);
+  });
+
   it("should refuse a declared geography in the video format — no production code threads geography.sourcePath yet (Task 9's own finding, unchanged as of Task 10), so this path has never been built or verified, unlike the shipped-geography case below", async () => {
     const config: Record<string, unknown> = {
       type: "choropleth",
@@ -285,26 +356,40 @@ describe("resolveGeometryForProduce", () => {
       expect(geometry.objects[layerKey]!.geometries).toHaveLength(2);
     }, 30_000);
 
-    it("should resolve an admin-1 cartogram whose values[].id is spelled WITHOUT accents, via the same resolved-featureId path as choropleth — the fix is not choropleth-only", async () => {
-      const config: Record<string, unknown> = {
-        type: "cartogram",
-        values: [
-          { id: "Zurich", value: 1650 },
-          { id: "Geneve", value: 1780 },
-        ],
-        geography: {
-          origin: "shipped",
-          set: "natural-earth-admin-1",
-          scope: "CHE",
-          level: "canton",
-          joinKey: "name",
-          joinKeyFamily: "name",
+    it("THE JOURNALIST'S REAL CASE, CARTOGRAM: an unaccented CSV joins through the real matchGeography → assembleMapNative → resolveGeometryForProduce path for a cartogram, exactly like the choropleth case above — this is what proves the assembler actually threads featureIdsByValue onto a cartogram config, not just that resolveGeometryForProduce can consume one if handed it directly", async () => {
+      const columns = ["canton", "rent"];
+      const rows = [
+        { canton: "Zurich", rent: "1650" },
+        { canton: "Geneve", rent: "1780" },
+      ];
+      const geo = matchGeography(columns, rows);
+      expect(geo).toBeDefined();
+      expect(geo!.geography.set).toBe("natural-earth-admin-1");
+      expect(geo!.matched).toBe(2);
+
+      const brief: ProductionBrief = {
+        elementId: "e1",
+        nativeType: "cartogram",
+        format: "static",
+        angle: {
+          confirmedTakeaway: "Geneva rents run highest among these two cantons",
+          altInsight: "A cartogram of two Swiss cantons sized by rent",
+          unit: "CHF",
         },
-        featureIdsByValue: {
-          Zurich: [{ featureId: "CHE-176", country: "CHE" }],
-          Geneve: [{ featureId: "CHE-159", country: "CHE" }],
-        },
+        dataCsv: "canton,rent\nZurich,1650\nGeneve,1780",
+        attribution: "Test fixture",
+        geo,
       };
+      const assembled = assembleMapNative(brief);
+      expect(assembled.ok).toBe(true);
+      if (!assembled.ok) return;
+      const config = assembled.value as Record<string, unknown>;
+      // The wiring under test: assembleMapNative's cartogram branch must have copied
+      // geo.featureIdsByValue onto the config itself — this is exactly the spread the
+      // mutation test below deletes to confirm this assertion (and the ones after it) is
+      // actually load-bearing, not vacuously true.
+      expect(config.featureIdsByValue).toBeDefined();
+
       const wrote = await resolveGeometryForProduce({
         config,
         assetsGeoDir: ASSETS,
@@ -346,6 +431,72 @@ describe("resolveGeometryForProduce", () => {
           renderWidthPx: 1200,
         }),
       ).rejects.toThrow(/featureIdsByValue is unset/);
+    });
+  });
+
+  describe("refusal messages name what the file offers, bounded (review round 1 minor finding)", () => {
+    it("an unresolved value's refusal lists the OTHER values this column's join already resolved", async () => {
+      const config: Record<string, unknown> = {
+        type: "choropleth",
+        regionKey: "canton",
+        rows: [{ canton: "Wallis", value: 1 }],
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-1",
+          scope: "CHE",
+          level: "canton",
+          joinKey: "name",
+          joinKeyFamily: "name",
+        },
+        // "Wallis" itself never resolved (absent as a key) — only its two siblings did.
+        featureIdsByValue: {
+          Genève: [{ featureId: "CHE-159", country: "CHE" }],
+          Zürich: [{ featureId: "CHE-176", country: "CHE" }],
+        },
+      };
+      await expect(
+        resolveGeometryForProduce({
+          config,
+          assetsGeoDir: ASSETS,
+          renderWidthPx: 1200,
+        }),
+      ).rejects.toThrow(
+        /this file recognised 2 other value\(s\).*Genève.*Zürich/s,
+      );
+    });
+
+    it("a scoped-out value's refusal names its own featureId/country AND the other in-scope values", async () => {
+      const config: Record<string, unknown> = {
+        type: "choropleth",
+        regionKey: "canton",
+        rows: [
+          { canton: "Genève", value: 1 },
+          { canton: "Jura", value: 2 },
+        ],
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-1",
+          scope: "CHE",
+          level: "canton",
+          joinKey: "name",
+          joinKeyFamily: "name",
+        },
+        featureIdsByValue: {
+          Genève: [{ featureId: "CHE-159", country: "CHE" }],
+          // "Jura" here ONLY matched France (a contrived fixture — the real index also carries
+          // the Swiss Jura, but this isolates the scoped-out branch specifically).
+          Jura: [{ featureId: "FRA-5312", country: "FRA" }],
+        },
+      };
+      await expect(
+        resolveGeometryForProduce({
+          config,
+          assetsGeoDir: ASSETS,
+          renderWidthPx: 1200,
+        }),
+      ).rejects.toThrow(
+        /FRA-5312 \(FRA\).*other values already resolved to "CHE".*Genève/s,
+      );
     });
   });
 

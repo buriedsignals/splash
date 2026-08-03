@@ -55,7 +55,7 @@ function seedRun(runDir: string): RunManifest {
   );
   return {
     runId: "deliverables-e2e",
-    schemaVersion: 5,
+    schemaVersion: 6,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

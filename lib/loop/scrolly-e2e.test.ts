@@ -55,7 +55,7 @@ function seedRun(runDir: string): RunManifest {
   writeFileSync(src, SEA_ICE);
   return {
     runId: "scrolly-e2e",
-    schemaVersion: 5,
+    schemaVersion: 6,
     // "embed", deliberately — the run declares itself an embeddable element and the scrolly is
     // walked to delivery on exactly that declaration. `route` is inert (lib/loop/resume.ts:41),
     // so this is a statement about what the fixture claims, not a lever.
