@@ -13,6 +13,15 @@ $NativeSkills = @("skills\chart-native", "skills\map-native")
 function Link-AgentsSkills {
   $agentsSkills = Join-Path $HOME ".agents\skills"
   New-Item -ItemType Directory -Force -Path $agentsSkills | Out-Null
+  # A renamed or moved source tree leaves junctions that EXIST but resolve to nothing — and to a
+  # host a dead junction is indistinguishable from an absent skill: it simply finds nothing,
+  # silently. Sweep them first so an install that predates a rename repairs itself on re-run.
+  foreach ($existing in Get-ChildItem $agentsSkills -Force -ErrorAction SilentlyContinue) {
+    $isReparse = $existing.Attributes -band [System.IO.FileAttributes]::ReparsePoint
+    if ($isReparse -and -not (Test-Path $existing.FullName)) {
+      Remove-Item $existing.FullName -Recurse -Force
+    }
+  }
   foreach ($skillDir in Get-ChildItem (Join-Path $Dest "skills") -Directory) {
     $link = Join-Path $agentsSkills $skillDir.Name
     if (Test-Path $link) { Remove-Item $link -Recurse -Force }

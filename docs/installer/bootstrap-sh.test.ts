@@ -1,5 +1,14 @@
 import { test, expect } from "bun:test";
-import { readFileSync } from "node:fs";
+import {
+  readFileSync,
+  mkdtempSync,
+  mkdirSync,
+  symlinkSync,
+  lstatSync,
+  realpathSync,
+  rmSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const sh = readFileSync(
@@ -83,4 +92,47 @@ test("skips the configurator on a re-run that already has a verified .env", () =
   expect(sh).toMatch(
     /if \[ ! -f "\$DEST\/\.env" \] \|\| \[ "\$\{SPLASH_RECONFIGURE:-0\}" = "1" \]; then/,
   );
+});
+
+test("link_agents_skills removes a dead symlink before linking (a rename must not leave a host blind)", () => {
+  const work = mkdtempSync(join(tmpdir(), "splash-deadlink-"));
+  try {
+    const home = join(work, "home");
+    const dest = join(work, "dest");
+    mkdirSync(join(home, ".agents", "skills"), { recursive: true });
+    mkdirSync(join(dest, "skills", "alpha"), { recursive: true });
+
+    // A link left by a previous install whose source tree was renamed away.
+    symlinkSync(
+      join(work, "gone", "skills", "stale"),
+      join(home, ".agents", "skills", "stale"),
+    );
+
+    const script = `
+      set -euo pipefail
+      HOME="${home}"; DEST="${dest}"
+      ${
+        readFileSync(
+          join(import.meta.dir, "../../install/bootstrap.sh"),
+          "utf8",
+        )
+          .split("link_agents_skills() {")[1]
+          .split("\n}")[0]
+          .replace(/^/, "link_agents_skills() {") + "\n}"
+      }
+      link_agents_skills
+    `;
+    const out = Bun.spawnSync(["bash", "-c", script]);
+    expect(out.exitCode).toBe(0);
+
+    // The dead link is gone — check with lstat, because existsSync FOLLOWS a symlink and would
+    // report false for a dead link that is still sitting there. That distinction is the whole test.
+    expect(() => lstatSync(join(home, ".agents", "skills", "stale"))).toThrow();
+    // …and the real skill is linked.
+    expect(realpathSync(join(home, ".agents", "skills", "alpha"))).toBe(
+      realpathSync(join(dest, "skills", "alpha")),
+    );
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
 });

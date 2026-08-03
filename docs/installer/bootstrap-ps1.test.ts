@@ -64,3 +64,13 @@ test("guards winget so an absent winget falls through to the friendly Node guida
 test("launcher strips the quotes the configurator now writes around .env values", () => {
   expect(ps).toContain('set "%%a=%%~b"');
 });
+
+test("Link-AgentsSkills removes a dead junction before linking (a rename must not leave a host blind)", () => {
+  // A renamed or moved source tree leaves a junction that EXISTS but resolves to nothing —
+  // mirrors the bash sweep in bootstrap.sh's link_agents_skills. Test-Path follows the reparse
+  // point and reports false for a dead one, same distinction as bash's `[ ! -e ]`.
+  expect(ps).toContain("ReparsePoint");
+  expect(ps).toMatch(
+    /if \(\$isReparse -and -not \(Test-Path \$existing\.FullName\)\) \{\s*\n\s*Remove-Item \$existing\.FullName -Recurse -Force/,
+  );
+});

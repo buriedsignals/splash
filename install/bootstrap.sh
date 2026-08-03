@@ -14,6 +14,12 @@ NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
 # covered automatically. Claude Code uses --plugin-dir instead and does not call this.
 link_agents_skills() {
   mkdir -p "$HOME/.agents/skills"
+  # A renamed or moved source tree leaves links that EXIST but resolve to nothing — and to a host
+  # a dead link is indistinguishable from an absent skill: it simply finds nothing, silently.
+  # Sweep them first so an install that predates a rename repairs itself on re-run.
+  for link in "$HOME"/.agents/skills/*; do
+    if [ -L "$link" ] && [ ! -e "$link" ]; then rm -f "$link"; fi
+  done
   for skill_dir in "$DEST"/skills/*/; do
     ln -sfn "$skill_dir" "$HOME/.agents/skills/$(basename "$skill_dir")"
   done
