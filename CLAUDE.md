@@ -81,7 +81,40 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 - **Format skill-autonome** (canon Tom) : `SKILL.md` (8 sections : Overview · When to use · gotcha · Architecture · How it works · Quick start · Tuning knobs (chacun = un nombre) · Files) + `references/` + `scripts/` (prep déterministe) + `assets/` (1 composant battle-tested + sample-data + preview) + `output-proof`.
 - Discipline vidéo (bug-free, façon Tom) : stack en couches · **frame-gating** sur la vraie disponibilité · données pré-cuites · valider 1 still avant le mp4 · plomberie (`preserveDrawingBuffer`, `--gl=angle`, timeouts).
 
-## ★ État courant — 2026-08-02 (LIS CECI EN PREMIER — `main` = `826aa071`)
+## ★ POINT 2 FERMÉ — la jointure ADM1 (fusionné, `main` = `c66cb23f`)
+
+**Un CSV sans accents produit enfin une carte** — vérifié au RENDU, pas au test : le rendu sans accents
+(`Geneve`, `Zurich`, `Neuchatel`) et le contrôle accentué sont **identiques au pixel**. Gate 21/22, même
+ambiant que ci-dessous ; `lib/geo` 77/0. Le bump de schéma **5→6** est inclus (voir plus bas).
+
+**Le vrai défaut n'était pas celui annoncé.** Le diagnostic de départ (« il suffit de threader le
+`featureId` déjà résolu ») ne couvrait **qu'une couche sur quatre**. Le bon cadrage était : *quelles
+couches lient une ligne de CSV à un polygone, et suivent-elles toutes la même règle ?* Réponse : quatre
+couches (`resolve-for-produce` subset · `choropleth-geo` · `cartogram-geo` ×2 joins · `dot-density-geo`),
+deux règles. Chaque revue a trouvé la couche suivante en **rejouant le cas du journaliste**, jamais en
+relisant le diff — trois rondes, la contradiction déplacée à chaque fois au lieu d'être fermée. Fermeture
+finale : **une seule réécriture de `config.rows`/`config.values` au point que tous les consommateurs
+lisent**, pas quatre patchs.
+
+**Fermé aussi, découvert en route** : le crash à la reprise (le champ était `.optional()` + version de
+schéma non bumpée ⇒ un manifeste d'hier levait **sans être rattrapé**, crash du producteur ; désormais
+`migrateV5toV6` laisse tomber l'appariement périmé et redemande `orient`, étape mécanique sans
+intervention) · **le même piège sur `us-states`/`world`** (CSV en minuscules `ny`/`ca` → « 2 sur 2
+reconnus » puis « 2 sur 2 absentes »), que le premier rapport déclarait inexistant · une **régression
+introduite par le correctif lui-même** sur les géométries déclarées (normalisation appliquée au GeoJSON
+du journaliste ; désormais gated sur `origin === "shipped"`).
+
+**Observé au rendu, non corrigé (backlog)** : la légende écrit `1,200–1,316CHF` — **pas d'espace avant
+l'unité**, sur le chemin choroplèthe (`legend-format.ts`, classe déjà notée au backlog, ici confirmée).
+
+**★ PIÈGE D'ENVIRONNEMENT À CONNAÎTRE** : un worktree neuf n'a **pas de `.env`** (il n'est pas suivi).
+Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible** — ce qui a fait conclure
+à tort à des « échecs pré-existants » et a bloqué la seule vérification qui comptait. Remède :
+`ln -s ../splash-merge/.env .env` dans le worktree → scrolly repasse **137/0**. Corollaire déjà payé deux
+fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
+comparer à la base de fusion ou monter un worktree de contrôle.
+
+## ★ État courant — 2026-08-02 (LIS CECI EN PREMIER — storyboard carte + géographie vidéo)
 
 **Le storyboard de carte et la géographie vidéo sont fusionnés** (`feat/map-storyboard-and-video-geography`,
 43 commits, avance rapide, arbre propre). Gate **21/22** : le seul rouge est l'ambiant
