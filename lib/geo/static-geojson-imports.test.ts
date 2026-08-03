@@ -141,6 +141,48 @@ const STATIC_IMPORT = /\.geojson(\?raw)?["']/;
 // The runtime fetch-the-shipped-asset form: `fetch(staticFile("geo/world.geojson"))`.
 const STATIC_FETCH = /staticFile\(["'][^"']*\.geojson/;
 
+// Words after which a bare `/` starts a regex literal rather than a division operator — this
+// guard's own scan target (lib/**, skills/**) is TypeScript/JS/TSX, where the two are only
+// distinguishable by what came before. Not exhaustive (a full parser's job, which this
+// source-scan guard explicitly is not — see file header), but covers the shapes this codebase's
+// own regex literals actually follow (`return /…/`, `case /…/:`, …).
+const REGEX_PRECEDING_WORDS = new Set([
+  "return",
+  "typeof",
+  "instanceof",
+  "in",
+  "of",
+  "new",
+  "delete",
+  "void",
+  "throw",
+  "yield",
+  "case",
+  "do",
+  "else",
+  "extends",
+  "default",
+]);
+
+// True if a `/` at this point in the scan opens a regex literal rather than being a division
+// operator, judged from the last significant character already written to `out`. A `/`
+// following an identifier, number, `)`, or `]` is division UNLESS that identifier is one of the
+// keywords above (`return /foo/`); a `/` following any other punctuation, or at the very start
+// of the file, is a regex.
+function regexAllowedBefore(out: string): boolean {
+  let j = out.length - 1;
+  while (j >= 0 && /\s/.test(out[j]!)) j--;
+  if (j < 0) return true; // start of file: only ever expression position
+  const c = out[j]!;
+  if (/[A-Za-z0-9_$)\]]/.test(c)) {
+    let k = j;
+    while (k >= 0 && /[A-Za-z0-9_$]/.test(out[k]!)) k--;
+    const word = out.slice(k + 1, j + 1);
+    return REGEX_PRECEDING_WORDS.has(word);
+  }
+  return true; // any other punctuation (=,(,{,[,;,:,!,&,|,?,+,-,*,%,^,~,<,>,}) — operand expected
+}
+
 // Strips `//` line comments and `/* … */` block comments (including JSDoc) from source text
 // before it is matched, replacing comment characters with spaces so line numbers and column
 // offsets are preserved. Without this, the guard fires on its own prose — this file's header
@@ -148,6 +190,14 @@ const STATIC_FETCH = /staticFile\(["'][^"']*\.geojson/;
 // matches the sentence describing the fault as readily as the fault itself (the project's own
 // "pas de charte maison" lesson, reproduced here). String literals (single/double/backtick) are
 // tracked as opaque so a `//` inside a URL is never mistaken for the start of a comment.
+//
+// Regex literals are ALSO tracked as opaque, and for the same reason: a character class like
+// `/[/*]/` contains a bare `/` immediately followed by `*` that, read naively in "code" state,
+// opens what looks like a block comment — one that, absent a matching `*/` anywhere else in the
+// file, silently swallows everything from that point to EOF. `//` can never legitimately appear
+// unescaped at the START of a would-be regex (an empty pattern `//` is always lexed as a line
+// comment, never a regex, so that ambiguity does not exist), but once inside a regex both `/`
+// and `*` can appear in combinations a naive comment scan misreads.
 function stripComments(src: string): string {
   let out = "";
   let state:
@@ -156,7 +206,9 @@ function stripComments(src: string): string {
     | "block-comment"
     | "string-single"
     | "string-double"
-    | "template" = "code";
+    | "template"
+    | "regex" = "code";
+  let inCharClass = false;
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
     const next = src[i + 1];
@@ -176,6 +228,10 @@ function stripComments(src: string): string {
             : c === '"'
               ? "string-double"
               : "template";
+        out += c;
+      } else if (c === "/" && next !== undefined && regexAllowedBefore(out)) {
+        state = "regex";
+        inCharClass = false;
         out += c;
       } else {
         out += c;
@@ -198,6 +254,28 @@ function stripComments(src: string): string {
         i++;
       } else {
         out += c === "\n" ? "\n" : " ";
+      }
+      continue;
+    }
+    if (state === "regex") {
+      // Copied through VERBATIM (never treated as a comment delimiter, whatever it looks like)
+      // — that is the entire point of this state. Backslash escapes, `[…]` character classes
+      // (where a bare `/` does not close the regex), and the real closing `/` are the only
+      // structure tracked, mirroring how the JS lexer itself reads a regex literal.
+      if (c === "\\" && next !== undefined) {
+        out += c + next;
+        i++;
+      } else if (c === "[") {
+        inCharClass = true;
+        out += c;
+      } else if (c === "]") {
+        inCharClass = false;
+        out += c;
+      } else if (c === "/" && !inCharClass) {
+        state = "code";
+        out += c;
+      } else {
+        out += c;
       }
       continue;
     }
@@ -244,5 +322,55 @@ describe("static geojson reference drift lock (source-scan only, not a correctne
         ? `static geojson reference(s) found outside the exempt classes — inject geometry instead, or add a named exemption with a written reason:\n${offenders.join("\n")}`
         : undefined,
     ).toEqual([]);
+  });
+});
+
+describe("stripComments does not desynchronise on a regex literal (source-scan helper, not a correctness proof)", () => {
+  it("a character class regex `/[/*]/` does not open a phantom, unterminated block comment", () => {
+    // Read naively in "code" state, the `/` immediately before the `*` inside `[/*]` looks
+    // exactly like the start of a `/* … */` block comment. With no real `*/` later in the file,
+    // that phantom comment never closes — it swallows every line after it, including the
+    // genuine static geojson import on line 2, hiding a real regression from the guard above.
+    const fixture = [
+      "const RE = /[/*]/;",
+      'import x from "./geo/world.geojson";',
+    ].join("\n");
+    const stripped = stripComments(fixture);
+    const lines = stripped.split("\n");
+    expect(STATIC_IMPORT.test(lines[1])).toBe(true);
+    // The regex literal itself survives byte-for-byte (nothing inside it is comment-stripped).
+    expect(lines[0]).toBe("const RE = /[/*]/;");
+  });
+
+  it("a regex containing an escaped `//`-shaped sequence does not open a phantom line comment", () => {
+    const fixture = [
+      "const RE = /^\\/\\//;",
+      'import x from "./geo/world.geojson";',
+    ].join("\n");
+    const stripped = stripComments(fixture);
+    const lines = stripped.split("\n");
+    expect(STATIC_IMPORT.test(lines[1])).toBe(true);
+    expect(lines[0]).toBe(fixture.split("\n")[0]);
+  });
+
+  it("still strips a REAL comment that follows a regex literal on the same line", () => {
+    const fixture = 'const RE = /[/*]/; // import "./geo/world.geojson"';
+    const stripped = stripComments(fixture);
+    // Same length (comment chars become spaces, never removed — line/column offsets stay
+    // intact), the code prefix survives verbatim, and the trailing comment text is gone.
+    expect(stripped.length).toBe(fixture.length);
+    expect(stripped.startsWith("const RE = /[/*]/;")).toBe(true);
+    expect(STATIC_IMPORT.test(stripped)).toBe(false);
+  });
+
+  it("a `/` after an identifier is still read as division, not a regex (no false opposite)", () => {
+    // Division immediately followed by a real block comment must still be recognised as a
+    // comment — proves the regex-vs-division heuristic does not overcorrect and swallow the
+    // language's actual comment syntax.
+    const fixture = "const half = total / /* two */ 2;";
+    const stripped = stripComments(fixture);
+    expect(stripped).not.toContain("two");
+    expect(stripped).toContain("const half = total /");
+    expect(stripped).toContain("2;");
   });
 });

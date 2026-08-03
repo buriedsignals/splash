@@ -33,13 +33,52 @@ import world from "../assets/geo/world.geojson" assert { type: "json" };
 
 const SRC = join(import.meta.dir, "..", "src");
 
+// Words after which a bare `/` starts a regex literal rather than a division operator — mirrors
+// lib/geo/static-geojson-imports.test.ts's own regexAllowedBefore.
+const REGEX_PRECEDING_WORDS = new Set([
+  "return",
+  "typeof",
+  "instanceof",
+  "in",
+  "of",
+  "new",
+  "delete",
+  "void",
+  "throw",
+  "yield",
+  "case",
+  "do",
+  "else",
+  "extends",
+  "default",
+]);
+
+// True if a `/` at this point in the scan opens a regex literal rather than being a division
+// operator — see lib/geo/static-geojson-imports.test.ts's own copy for the full reasoning.
+function regexAllowedBefore(out: string): boolean {
+  let j = out.length - 1;
+  while (j >= 0 && /\s/.test(out[j]!)) j--;
+  if (j < 0) return true;
+  const c = out[j]!;
+  if (/[A-Za-z0-9_$)\]]/.test(c)) {
+    let k = j;
+    while (k >= 0 && /[A-Za-z0-9_$]/.test(out[k]!)) k--;
+    const word = out.slice(k + 1, j + 1);
+    return REGEX_PRECEDING_WORDS.has(word);
+  }
+  return true;
+}
+
 // Strips `//` line comments and `/* … */` block comments, replacing comment characters with
 // spaces so line/column offsets are preserved — mirrors lib/geo/static-geojson-imports.test.ts's
 // own stripComments (same discipline: a naive scan over raw source matches the file's own prose
 // as readily as the code it describes, and a doc comment naming a function by hand is exactly
 // how a source-scan guard ends up brittle to a harmless wording edit). String literals
 // (single/double/backtick) are tracked as opaque so a `//` inside one is never mistaken for a
-// comment start.
+// comment start — and so are regex literals, for the same reason: a character class like
+// `/[/*]/` contains a bare `/` immediately followed by `*` that, read naively, opens what looks
+// like an unterminated block comment and silently swallows the rest of the file (see
+// lib/geo/static-geojson-imports.test.ts's header comment for the full account of this bug).
 function stripLineAndBlockComments(src: string): string {
   let out = "";
   let state:
@@ -48,7 +87,9 @@ function stripLineAndBlockComments(src: string): string {
     | "block-comment"
     | "string-single"
     | "string-double"
-    | "template" = "code";
+    | "template"
+    | "regex" = "code";
+  let inCharClass = false;
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
     const next = src[i + 1];
@@ -68,6 +109,10 @@ function stripLineAndBlockComments(src: string): string {
             : c === '"'
               ? "string-double"
               : "template";
+        out += c;
+      } else if (c === "/" && next !== undefined && regexAllowedBefore(out)) {
+        state = "regex";
+        inCharClass = false;
         out += c;
       } else {
         out += c;
@@ -90,6 +135,24 @@ function stripLineAndBlockComments(src: string): string {
         i++;
       } else {
         out += c === "\n" ? "\n" : " ";
+      }
+      continue;
+    }
+    if (state === "regex") {
+      if (c === "\\" && next !== undefined) {
+        out += c + next;
+        i++;
+      } else if (c === "[") {
+        inCharClass = true;
+        out += c;
+      } else if (c === "]") {
+        inCharClass = false;
+        out += c;
+      } else if (c === "/" && !inCharClass) {
+        state = "code";
+        out += c;
+      } else {
+        out += c;
       }
       continue;
     }
@@ -849,5 +912,28 @@ describe("unsupportedArcBeatsErrors", () => {
     expect(
       unsupportedArcBeatsErrors({ arcBeats: [] }, NOT_A_MAP_TYPE),
     ).toHaveLength(1);
+  });
+});
+
+describe("stripLineAndBlockComments does not desynchronise on a regex literal (source-scan helper)", () => {
+  it("a character class regex `/[/*]/` does not open a phantom, unterminated block comment", () => {
+    // Read naively in "code" state, the `/` immediately before the `*` inside `[/*]` looks
+    // exactly like the start of a `/* … */` block comment, which — absent a real `*/` later in
+    // the file — silently swallows everything after it, including the second
+    // `resolveRouteWalk` occurrence the describe block above counts on.
+    const fixture = [
+      "const RE = /[/*]/;",
+      "resolveRouteWalk(l, config.arcBeats);",
+    ].join("\n");
+    const stripped = stripLineAndBlockComments(fixture);
+    expect((stripped.match(/\bresolveRouteWalk\b/g) ?? []).length).toBe(1);
+    expect(stripped.split("\n")[0]).toBe("const RE = /[/*]/;");
+  });
+
+  it("a `/` after an identifier is still read as division, not a regex (no false opposite)", () => {
+    const fixture = "const half = total / /* two */ 2;";
+    const stripped = stripLineAndBlockComments(fixture);
+    expect(stripped).not.toContain("two");
+    expect(stripped).toContain("const half = total /");
   });
 });
