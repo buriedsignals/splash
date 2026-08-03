@@ -1,6 +1,6 @@
 import type { ChoroplethLayout } from "./choropleth-geo";
 import { regionBounds } from "./choropleth-geo";
-import { formatLocaleNumber } from "./core/locale";
+import { formatLocaleNumber, labelWithUnit } from "./core/locale";
 import { storyCopy } from "../../../lib/core/story-copy";
 import {
   classifyNarrativePattern,
@@ -178,14 +178,19 @@ export function deriveMapStory(
     meta.valueLabel ??
     ((v: number) => {
       const n = Math.round(v);
-      // Singularise a plural WORD unit when the value is exactly 1 ("1 nights" → "1
-      // night") — but never touch a symbol unit like " %" or " $". Only strips a
-      // trailing "s" from a purely-alphabetic word, leaving everything else intact.
-      const unit =
-        meta.unit && n === 1
-          ? meta.unit.replace(/^(\s*)([A-Za-z]+)s$/, "$1$2")
-          : (meta.unit ?? "");
-      return `${formatLocaleNumber(n, meta.lang)}${unit}`;
+      // Trim first: real callers pass `config.valueUnit ?? ""` bare (no leading space) —
+      // `labelWithUnit` below derives the locale-correct spacing itself, so a caller (or a
+      // test fixture) that still pre-bakes a leading space must not affect the outcome.
+      const raw = meta.unit?.trim() ?? "";
+      // Singularise a plural WORD unit when the value is exactly 1 ("nights" → "night")
+      // — but never touch a symbol unit like "%" or "$". Only strips a trailing "s" from
+      // a purely-alphabetic word, leaving everything else intact.
+      const unit = n === 1 ? raw.replace(/^([A-Za-z]+)s$/, "$1") : raw;
+      // Compose through `labelWithUnit` (core/locale) — NOT raw string concatenation — so
+      // a word unit is spaced ("1,200 CHF", never "1,200CHF") and French/German get the
+      // narrow no-break space before it. Same fix, same class, as legend-format.ts's
+      // fmtBinRange (Fix E4) — this was the sibling instance of the identical bug.
+      return labelWithUnit(formatLocaleNumber(n, meta.lang), unit, meta.lang);
     });
 
   // Regions that actually have a value, sorted by ascending key for tie-stability.
