@@ -359,6 +359,32 @@ than the flag: Goose Desktop discovers, executes, reaches `bun`, opens on the ri
 invokes nested skills by name, drives our producers, and puts a correct, sourced, takeaway-titled
 chart on disk from a journalist's article.
 
+### Both causes fixed; the re-run that would flip the flag is owed
+
+Criterion 2 and criterion 4 each had a cause, and each cause is now closed **in the product**, not in
+a note:
+
+- **2 — `report.json`.** `produce-all` writes it itself (`<runDir>/report.json`), so forgetting the
+  redirect can no longer make the render gate and the sign-off unreachable. Two tests, mutation-
+  verified.
+- **4 — the `_shown/` receipt.** Not a missing capability: `lib/host/cli.ts present` writes it, and
+  the approval gate reads it. Verified end to end on the very chart this run produced — without
+  `present`, `gate-render` refuses (« nobody has been shown this visual yet »); with it, *render
+  approved: el*. What was missing was the command's presence **in the numbered 3b step**; it was
+  documented only in the Never list, which is where a duty gets read after the mistake. Added to the
+  step, with a test pinning the ORDER (show before approve).
+
+**The flag still does not flip, and that is the rule working.** Fixing a cause is not the same as
+having seen the effect: it takes one more host run in which all six criteria are observed. Two
+attempts were made the same day and both were stopped by free-tier limits, not by the product —
+`nemotron-3-ultra-550b:free` refuses to resume a session containing a `read_image` result (« No
+endpoints found that support image input », a consequence of the earlier turn having looked at the
+PNG), and the vision-capable `gemma-4-31b-it:free` rate-limited on ten consecutive attempts.
+
+**What the re-run needs:** a free model that accepts image input (`google/gemma-4-31b-it:free`,
+`nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`) with allowance left, resuming session
+`splash-lb2`; or a fresh session against the existing `/tmp/splash-run` state.
+
 ## Not proven
 
 - **The bootstrap download.** `install/bootstrap.sh` fetches from `github.com/buriedsignals/splash`,
