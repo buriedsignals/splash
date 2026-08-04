@@ -37,6 +37,22 @@ describe("stripQuery", () => {
 });
 
 describe("importSpecifiers", () => {
+  it("should not let the word `from` ENDING a string literal swallow the file", () => {
+    // Measured on ScrollyRouteMap: its refusal reads "…the basemap topology its territories are
+    // cut from", and the tracer captured from that quote to the next one thirty lines away, then
+    // failed the build with "no version for dependency" naming half a component as a package.
+    // A module specifier cannot contain a newline; that is the whole fix and the whole guard.
+    const src = [
+      'import { a } from "./real";',
+      'throw new Error("the topology its territories are cut from",);',
+      'const x = (window as Record<string, unknown>)["__map__"];',
+      'import "./side-effect.css";',
+    ].join("\n");
+    const specs = importSpecifiers(src);
+    expect(specs).toEqual(["./real", "./side-effect.css"]);
+    expect(specs.some((s) => s.includes("\n"))).toBe(false);
+  });
+
   it("finds from-imports, side-effect imports and export-from", () => {
     const src = [
       `import React from "react";`,
