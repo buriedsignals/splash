@@ -40,6 +40,11 @@ export const MAP_TRACK_BEATS_REFUSAL =
   "or leave it unset for the salience default";
 
 export const MAP_SCROLLY_TYPES = new Set([
+  // `route` joined 2026-08-04 (ScrollyRouteMap.tsx). It was the ONE arc-capable map type with no
+  // browser scrolly — the walk existed (resolveRouteWalk gives territory + camera + confirmed
+  // text per step) and had no renderer to consume it, so a journalist could produce a video of a
+  // trajectory but never a page a reader scrolls.
+  "route",
   "symbol",
   "hex-grid",
   "dot-density",
