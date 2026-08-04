@@ -90,6 +90,32 @@ him. It never narrates the orchestrator's own process, bookkeeping, or self-inst
 
 ## The flow (run in order; every gate is a hard stop)
 
+### How to invoke a nested skill — read this before step 2
+
+Two steps below tell you to invoke another skill (`suggest-article` at ANALYSE, `suggest-chart` at
+PROPOSITION). **Invoking a nested skill is a HOST ACT, and it has a different shape on every
+host** — a `Skill` tool on one, `load_skill(name: "suggest-article")` or `delegate` on another,
+and on a third nothing at all. Use whatever your host provides, in this order:
+
+1. **Your host's own facility for loading another skill**, whatever it is named there. Pass the
+   skill's name as written here (`suggest-article`, `suggest-chart`), plus the paths you already
+   have (the article, the data, the run directory).
+2. **If your host has none — or it answers that no such skill/tool exists: open that skill's own
+   `SKILL.md` on disk** (`skills/suggest-article/SKILL.md`, `skills/suggest-chart/SKILL.md`) and
+   **read it and follow it step by step**, running the scripts it names. This option always
+   exists: the files are in this repository, beside the one you are reading.
+
+**A skill is not a tool: never invent a tool name from a skill name.** There is no
+`suggest_article` tool. A host replying « no such tool »
+**is not permission to do the step from memory** — option 2 is still there, and doing the analysis
+or the routing inline skips the KB grounding and the eval-hardened guardrails that are the only
+reason those skills exist.
+
+**What proves the step happened is the file it leaves in the run directory** — `opportunities.json`
+for `suggest-article`, `candidates.json` for `suggest-chart` — **not a name in `skillsInvoked`**.
+The spine reads those files: production stops when the record claims sub-skills the run directory
+holds no trace of (`skills/splash/src/attestation-corroboration.ts`).
+
 ### 1. INPUT
 
 Accept: an article (URL / file / pasted text), data (CSV / file / pasted table), both, or a bare
@@ -173,7 +199,8 @@ the bare-topic path (name the real dataset the topic needs) apply.
 ### 2. ANALYSE (silent)
 
 Invoke `suggest-article` **as a real Skill call** (not a mental paraphrase — actually run the
-`suggest-article` skill) to read silently: identify the data, the quantified claims, and the
+`suggest-article` skill; the ACT differs per host, see « How to invoke a nested skill » above, and
+the fallback is to read `skills/suggest-article/SKILL.md` and follow it) to read silently: identify the data, the quantified claims, and the
 narrative structure. Produce NO output to the journalist yet — this primes CADRAGE. Improvising this
 analysis inline instead of invoking the skill skips its provenance discipline and guardrails — a real
 cost observed in practice, not a theoretical one. For a bare topic (no article/data), instead NAME the
@@ -482,7 +509,8 @@ Branch:
 
 ### 4. PROPOSITION — GATE 2 (guided path only)
 
-For each `suggest-article` opportunity, invoke `suggest-chart` **as a real Skill call** (never
+For each `suggest-article` opportunity, invoke `suggest-chart` **as a real Skill call** (the ACT
+differs per host — see « How to invoke a nested skill » above; never
 guess the element/format/producer yourself — that re-decides what a sub-skill already decides and
 skips its KB-grounded guardrails). Since the canonical 12-step flow (2026-07-16) it answers in TWO
 stages, and the presentation is BATCHED:
@@ -1346,6 +1374,18 @@ The full scripted-guard inventory lives in `docs/splash/guardrails.md`.
 
 ## Never
 
+- **Never present a chart drawn in the chat as a deliverable, and never enable a host extension to
+  draw one.** Hosts ship visualisation extensions that render a chart inside the conversation
+  (Goose's `autovisualiser` is one). Whatever splash produces goes through a producer and comes out
+  as **a file under `exports/`** (or, for the embed form, a URL the export step itself created) —
+  a picture in the chat window is neither, and calling it « le visuel est prêt » is a false
+  delivery: no channel pin, no format pin, no conformance pass, no source credit, no review, and
+  nothing the newsroom owns. This is not hypothetical: it was measured on 2026-08-03, where a run
+  that could not invoke a nested skill went to the host's extension manager, **turned such an
+  extension on mid-run** — the config had it disabled — and announced a visual that no file backed
+  (`docs/installer/goose-desktop-proof.md`). So the ban covers the enabling too, not only the
+  drawing. If a step cannot run, the honest move is the one the Never list gives everywhere else:
+  say so and stop. **Nothing is ready until a producer wrote a file.**
 - Never skip a gate.
 - Never auto-progress from one phase to the next without the journalist's explicit response.
 - Never produce a visual before the PROPOSITION accept (gate 2) on the guided path, nor before the CADRAGE data truth (gates 2b/2c) on either branch.
