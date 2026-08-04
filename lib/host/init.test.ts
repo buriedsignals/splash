@@ -2,6 +2,8 @@ import { describe, it, expect } from "bun:test";
 import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { loadDecor, installRoot } from "../newsroom/decor";
+import { DEFAULT_UI_LANG } from "../newsroom/language";
 
 // Spawned, never called in process: `init` exists so that a host outside JavaScript can start a
 // run, and a test that imported initRun would prove nothing about that host.
@@ -39,6 +41,23 @@ function declaration(csv: string): string {
   });
 }
 
+// HERMETIC (registry E14). The house language is read from the INSTALL, and the install's
+// `NEWSROOM-PROFILE.md` is untracked — present in one worktree, absent in the next. Pinning "en"
+// pinned an accident of the checkout: it reddened for whoever had a profile installed, which is
+// exactly the person most likely to be working on the house charter, and it accused their work.
+//
+// Derived from the same source the façade reads (drive.ts:207 `tryLoadDecor().language.content`),
+// so the assertion is now the real contract — "the confirm-back reports the house content
+// language" — and it BITES HARDER than the pin: a façade that hardcoded a language would differ
+// from the install's and redden, which the old "en" could never catch on an English install.
+function houseContentLang(): string {
+  try {
+    return loadDecor(installRoot()).language.content;
+  } catch {
+    return DEFAULT_UI_LANG;
+  }
+}
+
 describe("init: the façade can begin a run", () => {
   it("creates a run and answers what is valid next", async () => {
     const { dir, csv } = scene();
@@ -46,9 +65,13 @@ describe("init: the façade can begin a run", () => {
     expect(r.code).toBe(0);
     expect(r.body).toEqual({
       ok: true,
-      // No article language declared and no house profile installed for this spawned process
-      // (this worktree carries no NEWSROOM-PROFILE.md): the confirm-back reports "en".
-      value: { runId: "premiums", nextActions: ["orient"], lang: "en" },
+      // No article language declared, so the confirm-back reports the INSTALL's house content
+      // language — derived, never pinned (see houseContentLang above).
+      value: {
+        runId: "premiums",
+        nextActions: ["orient"],
+        lang: houseContentLang(),
+      },
     });
     expect(existsSync(join(dir, "run.json"))).toBe(true);
   });
