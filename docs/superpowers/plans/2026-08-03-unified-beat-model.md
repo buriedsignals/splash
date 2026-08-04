@@ -12,6 +12,7 @@
 
 ## Global Constraints
 
+- **Correction (2026-08-03, found in review):** `beatSource` is an OBJECT — `{ facts: Record<string,string>, shared: Record<string,string> }` (`lib/loop/manifest.ts:187-190`), never a bare string. An earlier draft of this plan wrote `beatSource: "journalist"` in its fixtures; every occurrence is corrected below. If you meet that literal anywhere, it is wrong.
 - **The suggestion/confirmation split ALREADY EXISTS** — `text` + `draftText` + `beatSource` (`manifest.ts:191-198`), and `unauthoredBeats` (`:662`) already blocks produce (`produce.ts:173`) and routes to `author-beats` (`:784`). **Do not rebuild it.** Pin it against regression; that is all.
 - **This lot wires no component and builds no proposal step.** The seven `*Reveal` components still ignore beats when it lands — that is ④. If you find yourself editing a renderer, stop and report.
 - **The three new fields are OPTIONAL, and no guard may require them.** Nothing writes them until ③. A lot that requires what nothing produces breaks every existing run — precisely how the `5 → 6` bump crashed a producer on 2026-08-03.
@@ -45,7 +46,7 @@ test("a beat can anchor on a region, and on a place with coordinates", () => {
     role: "establish",
     text: "Genève encaisse le choc.",
     draftText: "",
-    beatSource: "journalist",
+    beatSource: { facts: {}, shared: {} },
   };
   const placeBeat = {
     ...regionBeat,
@@ -65,7 +66,7 @@ test("the two existing anchor kinds still parse unchanged", () => {
     role: "establish",
     text: "t",
     draftText: "",
-    beatSource: "journalist",
+    beatSource: { facts: {}, shared: {} },
   };
   expect(() => NarrativeBeatSchema.parse(xBeat)).not.toThrow();
   expect(() =>
@@ -133,7 +134,7 @@ test("a beat may carry a movement, an animation and a duration — all optional"
     role: "establish",
     text: "t",
     draftText: "",
-    beatSource: "journalist",
+    beatSource: { facts: {}, shared: {} },
   };
   // Optional: nothing writes these until sub-project ③, and a v6 manifest has none.
   expect(() => NarrativeBeatSchema.parse(base)).not.toThrow();
@@ -149,7 +150,7 @@ test("a movement outside the closed vocabulary is refused at the schema", () => 
     role: "establish",
     text: "t",
     draftText: "",
-    beatSource: "journalist",
+    beatSource: { facts: {}, shared: {} },
     movement: "zoom",
   };
   expect(() => NarrativeBeatSchema.parse(bad)).toThrow();
@@ -232,7 +233,7 @@ test("a v6 run WITH beats keeps every beat byte-identical", () => {
               role: "establish",
               text: "t",
               draftText: "d",
-              beatSource: "journalist",
+              beatSource: { facts: {}, shared: {} },
             },
           ],
         },
