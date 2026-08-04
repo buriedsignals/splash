@@ -87,7 +87,7 @@ describe("run.channel has exactly one reader", () => {
 
 const RUN: RunManifest = {
   runId: "r",
-  schemaVersion: 6,
+  schemaVersion: 7,
   route: "embed",
   channel: "social-vertical",
   input: {},

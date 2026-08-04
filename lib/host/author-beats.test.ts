@@ -51,7 +51,7 @@ function scrollyAwaitingItsWalk(): string {
   );
   const run: RunManifest = {
     runId: "host-beats",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },

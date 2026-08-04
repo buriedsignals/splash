@@ -51,7 +51,7 @@ function makeRun(opts: {
   }
   return {
     runId: "guards",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: {

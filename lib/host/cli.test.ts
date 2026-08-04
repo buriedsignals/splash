@@ -48,7 +48,7 @@ function makeRun(): string {
   writeFileSync(src, "canton,growth\nGeneva,4.1\nVaud,2.8\n");
   const run: RunManifest = {
     runId: "cli-run",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
@@ -155,7 +155,7 @@ describe("next — driven through the CLI, not only through its function", () =>
     expect(body.value.nextActions).toEqual([
       ...nextActions({
         runId: "cli-run",
-        schemaVersion: 6,
+        schemaVersion: 7,
         route: "embed",
         channel: "article-web",
         input: {},
@@ -523,7 +523,7 @@ describe("approve — the human gate at the process edge", () => {
     writeFileSync(src, "a,b\n1,2\n");
     writeManifest(join(dir, "run.json"), {
       runId: "approve-empty",
-      schemaVersion: 6,
+      schemaVersion: 7,
       route: "embed",
       channel: "article-web",
       input: { data: freezeInput(dir, src, "data") },
