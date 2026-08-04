@@ -65,6 +65,16 @@ test("launcher strips the quotes the configurator now writes around .env values"
   expect(ps).toContain('set "%%a=%%~b"');
 });
 
+test("Link-AgentsSkills junctions only directories that carry a SKILL.md", () => {
+  // Mirror of the bash guard in bootstrap.sh's link_agents_skills — no pwsh on this platform, so
+  // parity is asserted at the string level. A host silently ignores a directory without a
+  // SKILL.md, so junctioning one inflates the link count while the host discovers one fewer skill
+  // (measured on Goose Desktop: 12 linked, 11 discovered). Skip it and the two counts agree.
+  expect(ps).toMatch(
+    /if \(-not \(Test-Path \(Join-Path \$skillDir\.FullName "SKILL\.md"\)\)\) \{ continue \}/,
+  );
+});
+
 test("Link-AgentsSkills removes a dead junction before linking (a rename must not leave a host blind)", () => {
   // A renamed or moved source tree leaves a junction that EXISTS but resolves to nothing —
   // mirrors the bash sweep in bootstrap.sh's link_agents_skills. Test-Path follows the reparse

@@ -59,10 +59,14 @@ test("runtime_install symlinks every skill into ~/.agents/skills and seeds ~/.co
     // Hermetic harness: fake $HOME + $DEST with two fake skills; a stub `codex` on PATH so
     // runtime_install SKIPS the real CLI install (no npm/curl/network) and we test only the
     // wiring — symlink discovery + config seed — like the seam's own behavioral checks.
+    // Each fake skill carries a SKILL.md, because that file is what makes a directory a skill:
+    // the helper links only those, and a host only discovers those.
     const script = `set -euo pipefail
 export HOME="${fakeHome}"
 DEST="${dest}"
 mkdir -p "$DEST/skills/a" "$DEST/skills/b" "${fakeBin}"
+printf '# a\\n' > "$DEST/skills/a/SKILL.md"
+printf '# b\\n' > "$DEST/skills/b/SKILL.md"
 printf '#!/bin/sh\\n' > "${fakeBin}/codex"
 chmod +x "${fakeBin}/codex"
 export PATH="${fakeBin}:$PATH"

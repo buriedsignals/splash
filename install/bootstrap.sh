@@ -21,6 +21,11 @@ link_agents_skills() {
     if [ -L "$link" ] && [ ! -e "$link" ]; then rm -f "$link"; fi
   done
   for skill_dir in "$DEST"/skills/*/; do
+    # A host silently ignores a directory with no SKILL.md, so linking one (a production library
+    # such as skills/image-native) inflates the link count while the host discovers one fewer
+    # skill — measured on Goose Desktop: 12 linked, 11 discovered, and nothing said. Link only
+    # what a host can read, so the two counts agree and a real gap shows up instead of hiding.
+    [ -f "$skill_dir/SKILL.md" ] || continue
     ln -sfn "$skill_dir" "$HOME/.agents/skills/$(basename "$skill_dir")"
   done
 }
