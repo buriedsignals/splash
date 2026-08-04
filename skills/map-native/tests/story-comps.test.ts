@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { storyComps, defaultCameraMode } from "../scripts/lib/story-comps.mjs";
+import { CAMERA_MODES } from "../src/camera-mode";
 
 // storyComps dispatches the story-format video (produce.mjs's "video" case) on cameraMode.
 // Two things are pinned here:
@@ -138,5 +139,53 @@ describe("defaultCameraMode — the no-choice path is unchanged", () => {
       defaultCameraMode({ type: "choropleth" }),
     );
     expect(landscapeId(choroplethComps)).toBe("ChoroplethStory");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE STEPPED KIND — sub-project ④(a). The family already existed, worked, and was registered:
+// MapScrolly dispatches all seven types (MapScrolly.tsx) and Root.tsx registers its three
+// aspects with scrollyMeta. What did not exist was any way to ASK for it — storyComps knew only
+// "guided-tour" and "simple", so a whole narrative genre rendered correctly and no journalist
+// could reach it. Exactly the defect `simple` itself was in until it was added here.
+// ---------------------------------------------------------------------------
+describe("the stepped kind — one dispatcher, every type", () => {
+  const TYPES = [
+    "choropleth",
+    "symbol",
+    "locator",
+    "cartogram",
+    "dot-density",
+    "hex-grid",
+    "route",
+  ];
+
+  for (const type of TYPES)
+    it(`stepped on "${type}" resolves to the MapScrolly family`, () => {
+      const comps = storyComps({ type }, "stepped");
+      expect(comps.map(([id]) => id)).toEqual([
+        "MapScrolly",
+        "MapScrollySquare",
+        "MapScrollyPortrait",
+      ]);
+      // The three aspects the producer always builds for the video format.
+      expect(comps.map(([, aspect]) => aspect)).toEqual([
+        "landscape",
+        "square",
+        "portrait",
+      ]);
+    });
+
+  it("is a real camera mode, not a string the validator would reject", () => {
+    expect(CAMERA_MODES).toContain("stepped");
+  });
+
+  it("does not change what any other mode resolves to", () => {
+    expect(storyComps({ type: "choropleth" }, "guided-tour")[0]![0]).toBe(
+      "ChoroplethStory",
+    );
+    expect(storyComps({ type: "choropleth" }, "simple")[0]![0]).toBe(
+      "ChoroplethReveal",
+    );
   });
 });
