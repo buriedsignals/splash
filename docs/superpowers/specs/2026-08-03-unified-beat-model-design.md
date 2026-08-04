@@ -97,11 +97,40 @@ fonction n°3 du storyboard selon Rémy — « s'assurer que ça rentre dans ce 
 `scrolly` est avancé par le lecteur. Le validateur doit le refuser sur un `scrolly` plutôt que de
 l'ignorer.
 
-### 4.3 Ce que les cartes gagnent
+### 4.3 Ce que les cartes gagnent — ET POURQUOI ÇA N'A PAS PU SE FAIRE ICI
 
-Le beat de carte cesse d'être une structure à part et devient le beat de la boucle : il gagne `id`,
-`draftText`, `beatSource`, un `text` requis — donc il devient **proposable, verrouillable et traçable**.
-`MapArcBeat` disparaît ou devient un alias du type unifié.
+L'intention : le beat de carte cesse d'être une structure à part et devient le beat de la boucle — il
+gagne `id`, `draftText`, `beatSource`, un `text` requis, donc il devient **proposable, verrouillable et
+traçable**.
+
+> **★ CORRECTION (2026-08-04, établie par la tâche 5 du plan) — l'unification est BLOQUÉE, et sur quelque
+> chose que ③ doit construire.** `MapArcBeat` reste inchangé, délibérément.
+>
+> Mesuré : les **67 sites non-test** qui consomment `MapArcBeat` sont tous du **pass-through** (imports,
+> déclarations de champ, appels de validation) — **aucun ne construit un beat**. Les 127 littéraux réels
+> sont des fixtures de test, issues de JSON écrit par un journaliste. Et aucun d'eux ne peut fournir :
+> - **`id`** — il n'existe aucune identité d'ordre pour un beat de carte, seulement un index de tableau ;
+> - **`draftText`** — un beat de carte n'est **jamais** rédigé par la machine, par conception
+>   (`lib/brain/beats.ts:106-112`) : les mots du journaliste sont épinglés verbatim, il n'y a aucune
+>   étape de brouillon vers laquelle router ;
+> - **`beatSource`** — **il n'existe aucun dériveur de faits/partagés par région pour les cartes.** En
+>   construire un est une **capacité neuve**, et elle appartient à ③.
+>
+> Les forcer reviendrait à **fabriquer une provenance** — exactement le contraire de ce que `beatSource`
+> existe pour garantir.
+>
+> **Second blocage** : rendre `role` et `text` obligatoires **rejetterait des plans légitimes
+> d'aujourd'hui** — les plans « ancre seule, aucun arc revendiqué » (`lib/core/claim-arc.ts:16`). C'est
+> un changement de comportement, pas un renommage.
+>
+> **L'adaptateur n'a pas été écrit non plus, et c'est le bon arbitrage** : la projection descendante
+> (beat unifié → `MapArcBeat`) serait triviale et sans perte, mais **rien n'appelle dans ce sens
+> aujourd'hui**. L'écrire maintenant serait du code mort spéculatif sur une frontière que ce lot
+> s'interdit de câbler. Un adaptateur sans appelant est une dette qui a l'air d'un progrès.
+>
+> **Conséquence pour ③** : avant de pouvoir proposer un storyboard de carte, ③ doit d'abord **construire
+> le dériveur de `beatSource` pour les cartes** — dire, pour une région, d'où vient le fait qu'on
+> affirme. Sans lui, un beat de carte ne peut pas traverser l'étape éditoriale, quel que soit le reste.
 
 ## 5. Ce que ce sous-projet NE fait pas
 
