@@ -1319,6 +1319,29 @@ article-web is the one channel that can host it**:
      (`assertDelivered` already refuses this INSIDE `export-code.mjs`; this is the same disk fact,
      callable again right before you relay the path — a second look costs one command).
 
+  **★ NEVER ANNOUNCE A VISUAL WITHOUT ITS PATH.** Every sentence that tells the journalist something is
+  ready NAMES the file, by a path that exists on disk. « Le visuel est prêt » with nothing to open is not
+  a delivery — it is the exact shape of the 2026-08-03 failure, where a host model could not invoke a
+  nested skill, reached for its own chat-side charting extension instead, drew a bar in the conversation
+  and announced the visual as ready. **No `exports/`, no producer, no gate, no file the newsroom owns.**
+  Nothing in this repository could object, because nothing in this repository had run.
+
+  So the rule is on the SENTENCE, which is the only thing left when the pipeline was never entered:
+  a claim of readiness carries a path, or it is not made. And the journalist can check the claim
+  themselves, at any time, without reading any of this:
+  ```bash
+  bun skills/splash/scripts/verify-delivery.mjs <the path you were given>
+  ```
+  It answers from the disk — which run, which markers, which sub-skills the artifacts corroborate — or
+  says plainly that no Splash run stands behind the file. **A picture drawn in a chat has no path to
+  point it at, and that is the answer.** It reads files; it does not prove nobody wrote them by hand,
+  and it says so itself.
+
+  **If a host cannot invoke a nested skill** (the trigger of that failure — the model called
+  `suggest_article` as if it were a TOOL and got `Tool not found`): say so to the journalist and STOP.
+  Do not substitute another tool, and do not draw anything yourself. A visual this pipeline did not
+  produce is not this pipeline's visual, however plausible it looks.
+
   **`delivered` REQUIRES that `export-code.mjs --form <chosen>` built the artifact** (for interactive/scrolly).
   Never report an interactive/scrolly as delivered on produce-time outputs alone — a Gate-3 review PNG,
   `interactive.png`, or the build subdir's byproducts are NOT a delivery. If the `--form` build did not run, the
