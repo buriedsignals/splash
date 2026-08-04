@@ -151,6 +151,45 @@ test("an engine that declares no camera gesture today does not gain one silently
   }
 });
 
+// The sixth hole: the "typo'd key" test above (line 49) catches a CHART_GESTURES/
+// MAP_GESTURES key that matches no real type id. It does not catch the inverse — a real
+// type id with NO key at all. Both manifests build `p.types` by lookup
+// (`CHART_GESTURES[t.id] ? {...} : {}` in chart-native's manifest.ts,
+// `MAP_GESTURES[id]` in map-native's), so a type simply missing from the raw record
+// produces NO `gestures` block for it, and every OTHER guard in this file iterates
+// `Object.entries(t.gestures ?? {})` — zero entries, asserting nothing. The
+// declaring/silent split test above only catches a WHOLE engine's vocabulary vanishing
+// (every type at once); it says nothing about ONE type quietly losing its own entry
+// while its siblings keep theirs.
+//
+// Mutation-verified, both engines (`git diff` confirmed the edit landed before reading
+// results): deleting `pictogram: { reveal: ["stagger","highlight"] },` from
+// chart-native's CHART_GESTURES left this suite 17 pass / 0 fail, `tsc` clean, and
+// silently dropped the declaring-type count 41 → 40. Deleting `route: ROUTE_GESTURES,`
+// from map-native's MAP_GESTURES left it 10 pass / 0 fail, map-native silently down to 6
+// declaring types.
+//
+// This matters for sub-project ④: it adds types. A new type registered with no
+// vocabulary entry means the storyboard proposer offers nothing for it — green all the
+// way, because nothing above ever looks at NATIVE_TYPES/MAP_TYPES itself, only at what
+// the (possibly incomplete) gestures record already contains.
+test("every NATIVE_TYPES / MAP_TYPES id has a gesture-vocabulary entry — none can go silently missing", () => {
+  for (const t of NATIVE_TYPES) {
+    expect(
+      t.id in CHART_GESTURES,
+      `chart-native: type "${t.id}" is in NATIVE_TYPES but CHART_GESTURES declares no ` +
+        `entry for it — this type just lost its whole gesture vocabulary`,
+    ).toBe(true);
+  }
+  for (const id of MAP_TYPES) {
+    expect(
+      id in MAP_GESTURES,
+      `map-native: type "${id}" is in MAP_TYPES but MAP_GESTURES declares no entry for ` +
+        `it — this type just lost its whole gesture vocabulary`,
+    ).toBe(true);
+  }
+});
+
 // HONEST CEILING of this whole test suite: none of the checks above (nor gestures.test.ts's
 // own) can catch a gesture SWAP where both the old and new value are individually valid —
 // e.g. `pie: { reveal: ["draw", "highlight"] }` edited to `pie: { reveal: ["grow",
