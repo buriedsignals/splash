@@ -6,11 +6,15 @@ import {
   rmSync,
   existsSync,
   readFileSync,
+  readdirSync,
+  statSync,
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { measureSkillPayload } from "../../lib/host/skill-payload";
 
 const PACKER = join(import.meta.dir, "../../scripts/pack-skills.mjs");
+const REPO = join(import.meta.dir, "../..");
 
 /** A miniature repo: two skills, one library directory, one non-skill directory. */
 function repo(): string {
@@ -145,4 +149,44 @@ test(".dist is gitignored — a delivery that can be committed stops being deriv
     .split("\n")
     .some((line) => line.trim() === ".dist" || line.trim() === ".dist/");
   expect(ignoresDist).toBe(true);
+});
+
+test("packing the real repository carries no excluded tree and no engine dependency", () => {
+  const out = mkdtempSync(join(tmpdir(), "splash-realpack-"));
+  try {
+    const r = pack(REPO, out);
+    expect(r.stderr.toString()).not.toContain("Error");
+    expect(r.exitCode).toBe(0);
+
+    const skills = readdirSync(join(out, "skills"));
+    expect(skills.length).toBeGreaterThan(5);
+
+    for (const name of skills) {
+      const dir = join(out, "skills", name);
+      for (const banned of [
+        "node_modules",
+        "dist",
+        "tests",
+        "output-proof",
+        "coverage",
+      ]) {
+        expect({ skill: name, has: existsSync(join(dir, banned)) }).toEqual({
+          skill: name,
+          has: false,
+        });
+      }
+      // And the budgets hold on the DELIVERED tree, not only on the source-with-exclusions.
+      const p = measureSkillPayload(dir);
+      if (p.files > 400 || p.chars > 160_000)
+        throw new Error(
+          `${name}: delivered ${p.files} files / ${p.chars} chars — over budget`,
+        );
+    }
+
+    // The merged manifest is above the skills, where no host walks.
+    expect(existsSync(join(out, "package.json"))).toBe(true);
+    expect(statSync(join(out, "lib")).isDirectory()).toBe(true);
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
 });
