@@ -14,6 +14,8 @@
  *    "guided-tour"  — a beat-driven camera tour between the data's own highlights (SP2).
  *    "route-reveal" — a route drawn on as the camera follows it (SP3b).
  *    "simple"       — a fixed camera; the data animates in place (the *Reveal family).
+ *    "stepped"      — discrete steps advanced by TIME rather than by a reader (the MapScrolly
+ *                     family). The fourth narrative kind; see src/camera-mode.ts.
  */
 export function storyComps(config, cameraMode) {
   const isSymbolMap = config.type === "symbol";
@@ -61,6 +63,14 @@ export function storyComps(config, cameraMode) {
   // (remotion/src/index.ts — 7 types x 3 aspects) and until now only route's was reachable here, so
   // six of them rendered correctly and nothing could ask for them. `guided-tour` stays the default
   // and the documented preference for most articles; this is the explicit opt-in, not a new default.
+  // THE STEPPED KIND — one dispatcher for every type, unlike the two modes above. MapScrolly
+  // (src/components/MapScrolly.tsx) switches on `config.type` itself and renders the matching
+  // *Scrolly component, so there is no per-type composition to pick here: the three registered
+  // aspects ARE the family. Its duration is computed per run (Root.tsx's `scrollyMeta`), because
+  // a stepped video is as long as its walk has steps.
+  if (cameraMode === "stepped") {
+    return [["MapScrolly", "landscape"], ["MapScrollySquare", "square"], ["MapScrollyPortrait", "portrait"]];
+  }
   if (cameraMode === "simple") {
     const base = isCartogramMap
       ? "CartogramReveal"

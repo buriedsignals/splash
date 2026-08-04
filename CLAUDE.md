@@ -108,19 +108,30 @@ après avoir été traduite en **champ technique** la première fois.
   colonne 0 au lieu de celle que la géographie a matchée ; valeur en dernière colonne numérique au lieu
   de celle que le takeaway désigne — or ces nombres sont ce contre quoi `verifyBeats` fonde les
   affirmations du journaliste).
-- **④ Câblage des trois genres** — **NON COMMENCÉ**, et il n'est pas un bloc. Mesuré dans le code le
-  2026-08-04 :
-  - **(a) La famille `stepped` existe, marche, est enregistrée — mais est INATTEIGNABLE.**
-    `MapScrolly.tsx` dispatche les 7 types, 3 compositions enregistrées ; `storyComps()`
-    (`skills/map-native/scripts/lib/story-comps.mjs`) ne retourne **jamais** `MapScrolly` — il ne
-    connaît que `*Story` (guided-tour) et `*Reveal` (simple). Un genre narratif entier que personne ne
-    peut demander. **Petit, et c'est la tranche la plus rentable de ④.**
-  - **(b) Les 7 `*Reveal` n'ont AUCUNE notion de récit** — `arcBeats` = 0 occurrence dans six d'entre
-    eux, et la seule de `RouteReveal` est un commentaire. C'est le vrai chantier.
-  - **(c) `cameraMode` par beat** — refactor, dépend de (b).
-  - **(d) Le lot route rétrécit** : `RouteScrolly.tsx` est déjà branché dans le dispatcher de
-    `MapScrolly`, donc **(a) le rend atteignable du même coup**. Restent `ScrollyRouteMap` (web) et
-    `RouteStory` (vidéo à étapes).
+- **④ Câblage des trois genres** — **(a) et (b) FAITS** (`6a4dcd31`), spec
+  `2026-08-04-narrative-kinds-wiring-design.md`. **(c) non commencé.**
+  - **(a) `stepped` est atteignable.** `MapScrolly` dispatchait déjà les 7 types et ses 3 aspects
+    étaient enregistrés — mais `storyComps()` ne connaissait que `guided-tour`/`route-reveal`/
+    `simple`, donc **un genre narratif entier rendait correctement et personne ne pouvait le
+    demander**. ★ Effet de bord voulu : `RouteScrolly` est déjà branché dans ce dispatcher, donc
+    **la moitié du lot route (C2) devient atteignable sans écrire un composant**.
+  - **(b) Le `reveal` apprend un ORDRE.** Avant : une seule rampe pilotait l'opacité de tous les
+    sujets à la fois — la marche confirmée du journaliste ne changeait **rien** à l'écran.
+    Mécanisme pur et partagé dans `src/reveal.ts` (`walkSubjectProgress` · `walkFillOpacity` ·
+    `activeWalkIndex`) ; **sans marche, la valeur rendue est le scalaire d'avant, à l'octet**.
+    Honoré par `ChoroplethReveal` + `CartogramReveal`. Qui ne l'honore pas est **pinné par un
+    test** (`reveal-walk-coverage.test.ts`), pas affirmé : `route` et `hex-grid` **par nature**
+    (l'animation d'une route EST déjà la marche ; les cellules d'un hex-grid n'ont pas de clé
+    qu'un beat pourrait nommer) · `symbol`/`locator`/`dot-density` **en attente** (leur clé n'est
+    pas encore posée sur la feature, et la deviner refait le défaut « mauvaise clé,
+    silencieusement »).
+    **★ PROUVÉ AU RENDU** — `skills/map-native/output-proof/reveal-walk/` : deux produce réels du
+    même choroplèthe à la même frame, marche **délibérément à contre-courant du classement**
+    (`GBR → DEU → NOR` alors que `NOR` est le plus haut). Sans marche, la Scandinavie et l'Europe
+    centrale se teintent ensemble ; avec, **seul le Royaume-Uni est en place** et la Norvège n'est
+    pas entrée. L'inversion EST la preuve. mp4 `violations: []`. Hors gate (2 rendus MapTiler
+    live), comme `verify-source-bundle.mjs`.
+  - **(c) `cameraMode` par beat** — non commencé.
 
 **Rouges de `lib` au 2026-08-04, tous nommés et attribués** (aucun causé par ①②③) : `eligibility`
 (E5 — **une assertion fausse dans le test**, établi le 2026-08-04, ni environnement ni bug de rendu) ·

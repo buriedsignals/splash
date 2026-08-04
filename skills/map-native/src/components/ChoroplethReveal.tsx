@@ -30,6 +30,8 @@ import { NO_DATA_COLOR } from "../theme/colors";
 import { legendTheme } from "../theme/legend-theme";
 import { resolveMapStyle } from "../route-geo";
 import { fmtBinRange } from "../core/legend-format";
+import type { MapArcBeat } from "../map-arc";
+import { walkFillOpacity } from "../reveal";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -54,6 +56,10 @@ export type ChoroplethRevealProps = {
      *  bundled fallback geometry anymore (D5) — required at render time even though the type
      *  stays optional for configs assembled before Task 20 lands. */
     geometry?: Topology;
+    /** The journalist's confirmed walk — sub-project ④(b). Present ⇒ the regions it names
+     *  enter IN ITS ORDER, one per beat, instead of the whole map ramping at once. Absent ⇒
+     *  the uniform ramp, byte-identical to what this component rendered before. */
+    arcBeats?: MapArcBeat[];
     scaleType?: "sequential" | "diverging";
     palette?: string | string[];
     mapStyle?: string;
@@ -141,6 +147,13 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
         palette: config.palette,
       });
 
+      // THE WALK, as a lookup — sub-project ④(b). Built once here rather than searched per
+      // feature, and keyed by the region string the beats carry, which is the same joinKey the
+      // value join uses (map-arc.ts: a map beat anchors on "a key the data already has").
+      const walkIndexByKey = new Map<string, number>(
+        (config.arcBeats ?? []).map((b, i) => [String(b.region), i]),
+      );
+
       // Enrich features with value + bin index (ascending order)
       const sortedBins = [...layout.bins].sort((a, b) => a.min - b.min);
       const coloredWorld: GeoJSON.FeatureCollection = {
@@ -161,6 +174,10 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
               __value: joined.value,
               __hasData: joined.value !== null,
               __binIdx: binIdx,
+              // WHERE this region sits in the journalist's walk, or -1 when the walk does not
+              // name it. Matched on the SAME joinKey the value join above used, so a region
+              // cannot be coloured by one key and sequenced by another.
+              __walkIdx: walkIndexByKey.get(String(f.properties?.[joinKey])) ?? -1,
             },
           };
         }),
@@ -260,11 +277,23 @@ export const ChoroplethReveal: React.FC<ChoroplethRevealProps> = ({
     // NOT painted (opacity 0) — they show the default MapTiler basemap, exactly
     // like the ocean and like the symbol map's basemap. Nothing but the data
     // countries carries colour, and only they animate.
+    // THE WALK DECIDES THE ORDER — sub-project ④(b). With no walk this is exactly the one-ramp
+    // expression this component has always painted; with a walk, each named region gets its own
+    // window (walkSubjectProgress) and the map builds in the journalist's order.
+    //
+    // REGIONS THE WALK DOES NOT NAME complete with the LAST beat, deliberately: the walk leads
+    // and the rest of the map lands as the closing picture. Making them ramp continuously
+    // instead would drown the order the journalist chose — the point of the kind is "what
+    // appears, in what order", and an order nobody can see is not one.
+    const dataOpacity = walkFillOpacity(
+      progress,
+      config.arcBeats?.length ?? 0,
+    );
     map.setPaintProperty("choropleth-fill", "fill-opacity", [
       "case",
       ["==", ["get", "__hasData"], false],
       0, // no-data: unpainted → default basemap
-      revealFillOpacity(progress), // data: ramps 0 → 0.85
+      dataOpacity, // data: one ramp, or the walk's own order
     ] as never);
     continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
