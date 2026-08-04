@@ -24,9 +24,17 @@ test("every directory under skills/ carries a SKILL.md, so linked and discovered
   expect(without).toEqual([]);
 });
 
-// A host reads the frontmatter to decide whether to load the skill at all: no name, no description,
-// and it is discovered but never chosen. Present-but-unusable is the same silence in a new place.
-test("every SKILL.md declares a name and a description a host can route on", () => {
+// A host reads the frontmatter to decide whether to load the skill at all — and it PARSES it as
+// YAML. Anything the parser rejects is not a small formatting slip: the skill is dropped from
+// discovery entirely, with nothing said. MEASURED on 2026-08-04, when image-native's freshly written
+// description carried an unquoted ": " ("live here: the matching") — which a plain YAML scalar
+// cannot hold. The directory was linked, the SKILL.md was right there, and `goose skills list`
+// showed 11 of 12.
+//
+// So this PARSES rather than pattern-matches. A regex for /^description:\s*\S/ passed that very
+// file, which is exactly why this test does not use one: a guard that cannot fail for the real
+// reason is decoration.
+test("every SKILL.md's frontmatter PARSES as YAML and carries a routable name and description", () => {
   const broken: string[] = [];
   for (const name of skillDirs) {
     const path = join(SKILLS, name, "SKILL.md");
@@ -37,9 +45,19 @@ test("every SKILL.md declares a name and a description a host can route on", () 
       broken.push(`${name}: no frontmatter block`);
       continue;
     }
-    const body = fm[1]!;
-    if (!/^name:\s*\S/m.test(body)) broken.push(`${name}: no name`);
-    if (!/^description:\s*\S/m.test(body))
+    let parsed: unknown;
+    try {
+      parsed = Bun.YAML.parse(fm[1]!);
+    } catch (e) {
+      broken.push(
+        `${name}: frontmatter is not valid YAML — a host drops the skill silently (${(e as Error).message.split("\n")[0]})`,
+      );
+      continue;
+    }
+    const fields = parsed as Record<string, unknown> | null;
+    if (typeof fields?.name !== "string" || !fields.name.trim())
+      broken.push(`${name}: no name`);
+    if (typeof fields?.description !== "string" || !fields.description.trim())
       broken.push(`${name}: no description`);
   }
   expect(broken).toEqual([]);

@@ -1,6 +1,6 @@
 ---
 name: image-native
-description: The image engine — turns a journalist-validated image-story.json plus their OWN photographs into a self-contained image scrolly, deterministically. ZERO vision and ZERO generated text live here: the matching, the ordering, the captions and the alt come from suggest-image, behind its mandatory veto gate; this engine normalizes the frames to one box and builds the scroll. v1 ships the scrolly format only. Reach it through suggest-image unless you already hold a gated manifest. Keywords image scrolly, photo sequence, crossfade, frames, satellite, before after, archive photographs, prep, sRGB, EXIF, alt text, photo credit, self-contained html, image-story.json, deterministic producer.
+description: The image engine — turns a journalist-validated image-story.json plus their OWN photographs into a self-contained image scrolly, deterministically. ZERO vision and ZERO generated text live here — the matching, the ordering, the captions and the alt all come from suggest-image, behind its mandatory veto gate; this engine normalizes the frames to one box and builds the scroll. v1 ships the scrolly format only. Reach it through suggest-image unless you already hold a gated manifest. Keywords image scrolly, photo sequence, crossfade, frames, satellite, before after, archive photographs, prep, sRGB, EXIF, alt text, photo credit, self-contained html, image-story.json, deterministic producer.
 ---
 
 # image-native — the image engine
