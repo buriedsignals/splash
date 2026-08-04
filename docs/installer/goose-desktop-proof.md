@@ -258,6 +258,40 @@ worse day, silently exits the pipeline and reports success.
 **Consequence for `verified`.** It stays `false`, and this is now the stronger reason: a runtime is
 not verified because a chart appeared. Backlog **E11**.
 
+## The third attempt — the flow runs correctly, and only the request allowance stops it
+
+Same fixture, `google` provider, `gemini-2.5-flash` (the model the second attempt was *not*), driven
+through a wrapper that retries the free tier's cap.
+
+The session record — 33 messages — shows the pipeline being followed, not worked around:
+
+```
+load_skill → shell → tree → shell → todo_write → load_skill → shell ×4 → write → load_skill
+```
+
+including the call the second attempt got wrong:
+
+```
+▸ load_skill  name: suggest-article
+   args: article_path: /tmp/fixture-article.md, data_path: /tmp/fixture-data.csv
+```
+
+**Correct nested invocation, with arguments.** No `autovisualiser`, no invented tool name, no
+announced-but-absent visual. So E11's bypass is a consequence of model capability, not a property of
+the host — which makes it a floor problem (nothing mechanical prevents it) rather than a Goose
+problem.
+
+**Where it stopped:** the Gemini free tier allows **20 requests per day, per model** — observed as
+`limit: 20` on `gemini-2.5-flash` and, separately, on `gemini-2.5-flash-lite`. An agentic run of this
+flow spends that in a couple of turns. Sixteen retries across the two models exhausted both. The run
+never reached PRODUCTION, and **no export directory was created**.
+
+**What Layer B is now blocked on, stated exactly:** request allowance. Not the host, not the
+launcher, not `bun`, not skill discovery, not nested invocation, not the provider's ability to run
+Goose's own tool loop — all of those are settled. A key with a working allowance (any paid tier, or a
+free tier with a usable quota) resumes the session `splash-lb2`, which retains its full tool history
+because the `google` provider records it.
+
 ## Not proven
 
 - **The bootstrap download.** `install/bootstrap.sh` fetches from `github.com/buriedsignals/splash`,
