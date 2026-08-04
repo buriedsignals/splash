@@ -122,6 +122,38 @@ test("the declaring/silent split between engines is pinned — a whole engine lo
   }
 });
 
+// THE DANGER this whole sub-project's rename (2026-08-03, scrolly → stepped for
+// map-native's own video-timeline family) exists to guard against: `scrolly` and
+// `stepped` are BOTH valid GestureVocabulary keys now, so a `scrolly:` key left behind
+// (or typed by habit) on a map-native type does not fail — it silently means the
+// OPPOSITE of what its author intended (claims the browser-reader product that
+// map-native's own `*Scrolly.tsx` components do not implement — see
+// skills/map-native/src/manifest.ts's header, and skills/scrolly/src/manifest.ts's for
+// where that product's vocabulary actually lives). No structural check above catches
+// this: `scrolly` is a real NARRATIVE_KINDS member, so the closed-vocabulary test at the
+// top of this file accepts it happily.
+//
+// Mutation-verified (`git diff --stat` confirmed the edit landed before reading
+// results): adding `scrolly: ["fly"]` back onto CHOROPLETH_GESTURES in
+// skills/map-native/src/manifest.ts — restoring exactly the un-migrated shape this pin
+// exists to catch — reddened this test alone, naming "choropleth"; reverting (`git
+// checkout -- skills/map-native/src/manifest.ts`) turned it green again with no other
+// change. The rest of this file's suite (declaring/silent split, closed vocabulary,
+// non-empty kind) stayed green throughout the mutation — confirming none of them would
+// have caught it on their own.
+test("map-native never declares a `scrolly` key on any type — only `stepped`", () => {
+  for (const [id, vocab] of Object.entries(MAP_GESTURES)) {
+    expect(
+      "scrolly" in vocab,
+      `map-native's "${id}" declares a "scrolly" key. That word now names the ` +
+        `browser-reader map experience (skills/scrolly/src/Scrolly*Map.tsx, flyTo-driven) ` +
+        `— map-native's own "*Scrolly.tsx" components are the DIFFERENT video-timeline ` +
+        `family (jumpTo-driven), declared under "stepped". A "scrolly" key here claims a ` +
+        `product this engine's code does not implement. Rename it to "stepped".`,
+    ).toBe(false);
+  }
+});
+
 // The fifth hole: nothing before this test calls `isCameraGesture` at all. A chart type
 // can declare a camera gesture and no guard objects — proved: `pie: { reveal: ["fly",
 // "jump", "draw", "highlight"] }` in chart-native's manifest leaves the whole suite
