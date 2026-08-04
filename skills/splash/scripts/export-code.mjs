@@ -43,7 +43,7 @@ import {
   isHostedUrl,
 } from "../src/export-guard.ts";
 import { assertChainProvenance } from "../src/render-provenance.ts";
-import { embedDeliveryStatus } from "../src/preflight.ts";
+import { cmsDeliveryStatus, embedDeliveryStatus } from "../src/preflight.ts";
 import { resolveProfile, resolveProfilePath } from "../src/resolve-profile.ts";
 import {
   resolvePlacement,
@@ -100,10 +100,20 @@ const EXPORT_SOURCE_SCRIPT = join(
 // entangled, so bundle-source.mjs closure-copies it; chart-native keeps export-source.mjs).
 const BUNDLE_SOURCE_SCRIPT = join(dirname(SELF), "bundle-source.mjs");
 const DEPLOY_EMBED_SCRIPT = join(dirname(SELF), "deploy-embed.mjs");
+const PUBLISH_CMS_SCRIPT = join(dirname(SELF), "publish-cms.mjs");
+
+// The newsroom's CMS address — a non-secret setting, so it lives in newsroom.json beside the
+// capability it configures, never in .env with the credentials.
+function cmsEndpoint() {
+  const root = resolve(dirname(SELF), "../../..");
+  return (
+    readDecorState(root).capabilities?.["embed-cms"]?.settings?.endpoint ?? ""
+  );
+}
 
 const IMAGE_RE = /\.(png|svg|jpe?g)$/i;
 const VIDEO_RE = /\.mp4$/i;
-const VALID_FORMS = ["html", "code-source", "embed"];
+const VALID_FORMS = ["html", "code-source", "embed", "cms"];
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id and
 // the optional --form/--profile flags can sit alongside the positional args in any order.
@@ -116,6 +126,7 @@ function parseArgs(argv) {
       a === "--results" ||
       a === "--id" ||
       a === "--form" ||
+      a === "--article" ||
       a === "--profile"
     )
       flags[a.slice(2)] = argv[++i];
@@ -154,7 +165,7 @@ function resolveStaticMedia(files, result) {
 function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const [outDir, exportDir] = positional;
-  const { results: resultsPath, id, form: rawForm } = flags;
+  const { results: resultsPath, id, form: rawForm, article } = flags;
   if (!outDir || !exportDir || !resultsPath || !id) {
     console.error(
       "usage: export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <html|code-source|embed>] [--profile <NEWSROOM-PROFILE.md>]",
@@ -553,6 +564,76 @@ function main() {
     done({ format, form: "embed", url, exportDir: absExportDir });
     return;
   }
+
+  if (form === "cms") {
+    // The article is the journalist's answer, not a default. Refusing here rather than in
+    // publish-cms keeps the "never invent a slug" rule at BOTH doors — this is the one an
+    // orchestrator relaying the proposal's deliver command actually walks through.
+    if (!article)
+      fail(
+        `${format} form=cms needs --article <slug>: ask the journalist which of their articles the visual belongs in — never choose one.`,
+      );
+    if (isHostedEmbed)
+      fail(
+        `${format} form=cms is not available for a hosted Datawrapper interactive: the CMS block carries the visual's own bytes, and this one lives on the provider's servers — deliver it with --form embed and paste that link into the article.`,
+      );
+    if (!interactive)
+      fail(`${format} form=cms found no html to insert in ${outDir}`);
+    let out;
+    try {
+      out = execFileSync(
+        "bun",
+        [
+          PUBLISH_CMS_SCRIPT,
+          join(outDir, interactive),
+          "--article",
+          article,
+          "--results",
+          resolve(resultsPath),
+          "--id",
+          id,
+          ...(resolvedProfilePath
+            ? ["--profile", resolve(resolvedProfilePath)]
+            : []),
+        ],
+        { encoding: "utf8" },
+      );
+    } catch (e) {
+      // publish-cms refuses on an unconfigured route, an unknown article, or a block it cannot
+      // round-trip. Every one of those messages names the cause and the way out — surface it
+      // whole rather than falling through to record a delivery that did not happen.
+      const msg = (e.stderr || e.stdout || e.message || "").toString().trim();
+      fail(msg || `${format} form=cms insertion failed`);
+    }
+    const line = out.split("\n").find((l) => l.startsWith("CMS_ARTICLE_URL "));
+    if (!line) fail("publish-cms did not return a CMS_ARTICLE_URL");
+    const url = line.slice("CMS_ARTICLE_URL ".length).trim();
+    if (!isHostedUrl(url))
+      fail(
+        `${format} form=cms did not resolve a hosted https URL (got ${JSON.stringify(url)})`,
+      );
+    // publish-cms already wrote CMS_ARTICLE_URL.txt beside the artifact; the export folder is
+    // what the journalist is handed, so the record belongs here too.
+    try {
+      mkdirSync(exportDir, { recursive: true });
+      writeFileSync(join(exportDir, "CMS_ARTICLE_URL.txt"), url + "\n");
+    } catch (e) {
+      fail(
+        `${format} form=cms: the visual IS in the article's draft at ${url} but recording it under ${absExportDir} failed (${e.message}) — save that link, then re-run the delivery.`,
+      );
+    }
+    // Relayed verbatim by the orchestrator: the one fact a journalist could otherwise get
+    // wrong is that nothing is live yet.
+    const draftLine = out.split("\n").find((l) => l.startsWith("CMS_DRAFT_ONLY "));
+    if (draftLine) console.log(draftLine);
+    assertDelivered(readdirSync(exportDir), {
+      format,
+      form: "cms",
+      dir: exportDir,
+    });
+    done({ format, form: "cms", url, exportDir: absExportDir });
+    return;
+  }
 }
 
 // The lazy delivery-form PROPOSAL for an interactive / scrolly. Emitted as a FIXED,
@@ -630,6 +711,24 @@ function emitProposal(ctx) {
       command: `bun ${DEPLOY_EMBED_SCRIPT} ${join(absExportDir, interactive)} ${id} --results ${resolve(resultsPath)} --id ${id}`,
       deliver: `${deliverBase} --form embed`,
     };
+    // Form d — INTO the journalist's own article. Offered only when the newsroom's CMS route is
+    // actually configured: an unconfigured one is announced at INPUT as "le CMS n'est pas
+    // branché", and repeating the offer here would promise a delivery that refuses at the write.
+    //
+    // Unlike a/b/c it needs one thing from the journalist that no script can derive — WHICH
+    // article. `needsArticle` says so in the machine line, so the orchestrator asks instead of
+    // inventing a slug, and the deliver command carries the placeholder it must replace.
+    const cmsStatus = cmsDeliveryStatus({ endpoint: cmsEndpoint() });
+    forms.d = {
+      label: "Directement dans l'article (CMS)",
+      available: cmsStatus.ready,
+      needsArticle: true,
+      ...(cmsStatus.ready
+        ? {}
+        : { reason: cmsStatus.reason, missingKeys: cmsStatus.missing }),
+      command: `bun ${PUBLISH_CMS_SCRIPT} ${join(absExportDir, interactive)} --article <slug> --results ${resolve(resultsPath)} --id ${id}`,
+      deliver: `${deliverBase} --form cms --article <slug>`,
+    };
   }
 
   console.log(
@@ -661,6 +760,14 @@ function emitProposal(ctx) {
         : forms.c.available === false
           ? copy.formEmbedMissingKeys(forms.c.missingKeys.join(", "))
           : copy.formEmbedAvailable,
+    );
+  if (forms.d)
+    relay.push(
+      forms.d.available === false
+        ? copy.formCmsMissingKeys(
+            [...forms.d.missingKeys, ...(forms.d.missingKeys.length ? [] : ["endpoint"])].join(", "),
+          )
+        : copy.formCmsAvailable,
     );
   relay.push(
     copy.question(Object.keys(forms).join(" / ")),

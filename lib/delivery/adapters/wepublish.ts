@@ -28,6 +28,11 @@ import {
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
 import { buildBlockHtml, carriesMarker, carrierSlug } from "./wepublish-block";
+import {
+  articleUpdateVariables,
+  blockSelectionSet,
+  type TargetArticle,
+} from "./wepublish-article";
 import { gqlCall, isNotFound, MAX_REQUEST_BODY_BYTES } from "./wepublish-gql";
 
 /** W1: the GraphQL URL is `.../v1`, and it is configured rather than derived from a host. */
@@ -94,6 +99,156 @@ type ArticleShape = {
 /** The html of the first HTML block of a revision, or undefined. */
 function htmlOf(revision: RevisionShape | undefined): string | undefined {
   return revision?.blocks?.find((b) => b.__typename === "HTMLBlock")?.html;
+}
+
+// The target article's own state, read back in full so the total mutation can echo it
+// (wepublish-article.ts explains why nothing less is safe). `draft` is selected rather than
+// `latest` for the same reason the carrier lookup does — W7.
+const FIND_TARGET = `query SplashFindTarget($slug: String!) {
+  article(slug: $slug) {
+    id url slug likes shared hidden disableComments
+    tags { id }
+    draft {
+      preTitle title lead imageID canonicalUrl hideAuthor breaking
+      seoTitle socialMediaTitle socialMediaDescription socialMediaImageID
+      authors { id } socialMediaAuthors { id } properties { key value public }
+      blocks { ${blockSelectionSet()} }
+    }
+    published {
+      preTitle title lead imageID canonicalUrl hideAuthor breaking
+      seoTitle socialMediaTitle socialMediaDescription socialMediaImageID
+      authors { id } socialMediaAuthors { id } properties { key value public }
+      blocks { ${blockSelectionSet()} }
+    }
+  }
+}`;
+
+// Scalars only in the selection (W7/W8), exactly as the carrier's mutations do. The variables
+// are built by articleUpdateVariables and passed through whole — writing them out field by
+// field here would be a second place for the total input to drift.
+const UPDATE_TARGET = `mutation SplashInsert(
+  $id: String!, $slug: String, $likes: Int, $title: String, $preTitle: String, $lead: String,
+  $imageID: String, $canonicalUrl: String, $seoTitle: String, $socialMediaTitle: String,
+  $socialMediaDescription: String, $socialMediaImageID: String,
+  $shared: Boolean!, $hidden: Boolean!, $disableComments: Boolean!,
+  $hideAuthor: Boolean!, $breaking: Boolean!,
+  $blocks: [BlockContentInput!]!, $tagIds: [String!]!, $authorIds: [String!]!,
+  $socialMediaAuthorIds: [String!]!, $properties: [PropertyInput!]!
+) {
+  updateArticle(
+    id: $id, slug: $slug, likes: $likes, title: $title, preTitle: $preTitle, lead: $lead,
+    imageID: $imageID, canonicalUrl: $canonicalUrl, seoTitle: $seoTitle,
+    socialMediaTitle: $socialMediaTitle, socialMediaDescription: $socialMediaDescription,
+    socialMediaImageID: $socialMediaImageID,
+    shared: $shared, hidden: $hidden, disableComments: $disableComments,
+    hideAuthor: $hideAuthor, breaking: $breaking,
+    blocks: $blocks, tagIds: $tagIds, authorIds: $authorIds,
+    socialMediaAuthorIds: $socialMediaAuthorIds, properties: $properties
+  ) { id slug url }
+}`;
+
+/**
+ * Insert the visual into the journalist's existing article, as a DRAFT edit.
+ *
+ * Two refusals carry the whole safety of this path, and both are absolute:
+ *   - the article must EXIST. A typo'd slug creates nothing; the carrier path's
+ *     "not found means create" is exactly wrong here.
+ *   - every block must round-trip. `updateArticle` is total, so a block Splash cannot echo
+ *     would be written back as nothing (wepublish-article.ts).
+ *
+ * And one thing it deliberately does NOT do: publish. The carrier article is Splash's, so
+ * publishing it is part of delivering it. This article is the newsroom's, and pushing an
+ * editorial document live is the journalist's decision, never a side effect of adding a chart.
+ * The visual lands in the draft; the outcome says so.
+ */
+async function insertIntoArticle(args: {
+  endpoint: string;
+  token: string;
+  slug: string;
+  id: string;
+  blockHtml: string;
+  timeoutMs: number;
+  uploadTimeoutMs: number;
+}): Promise<VerbResult<PublishOutcome>> {
+  const { endpoint, token, slug, id, blockHtml, timeoutMs, uploadTimeoutMs } =
+    args;
+
+  const found = await gqlCall({
+    endpoint,
+    query: FIND_TARGET,
+    variables: { slug },
+    token,
+    timeoutMs,
+  });
+  if (!found.ok)
+    return fail(
+      isNotFound(found.message) ? "invalid-request" : "engine-failed",
+      isNotFound(found.message)
+        ? `wepublish: no article "${slug}" in the CMS. Splash inserts into an article that already exists and never creates one under a name it was given — check the slug in the CMS address bar.`
+        : `wepublish: could not look up the article "${slug}": ${found.message}`,
+    );
+  const target = (found.value.data as { article?: TargetArticle | null })
+    .article;
+  if (!target)
+    return fail(
+      "invalid-request",
+      `wepublish: no article "${slug}" in the CMS. Splash inserts into an article that already exists and never creates one under a name it was given — check the slug in the CMS address bar.`,
+    );
+
+  const built = articleUpdateVariables(
+    target,
+    { html: { html: blockHtml } },
+    { isOurs: (html) => carriesMarker(html, id) },
+  );
+  if (!built.ok) return fail("invalid-request", built.message);
+
+  const write = await gqlCall({
+    endpoint,
+    query: UPDATE_TARGET,
+    variables: built.variables,
+    token,
+    timeoutMs: uploadTimeoutMs,
+  });
+  if (!write.ok)
+    return fail(
+      "engine-failed",
+      `wepublish: could not insert the visual into "${slug}": ${write.message}`,
+    );
+
+  // Read back — authenticated and on the DRAFT, because that is where the edit landed. The
+  // carrier path verifies anonymously against `published`; doing that here would report a
+  // failure for the one thing this path is careful NOT to do.
+  const verify = await gqlCall({
+    endpoint,
+    query: FIND_TARGET,
+    variables: { slug },
+    token,
+    timeoutMs,
+  });
+  if (!verify.ok)
+    return fail(
+      "engine-failed",
+      `wepublish: inserted the visual into "${slug}" but reading the article back failed: ${verify.message}`,
+    );
+  const after = (verify.value.data as { article?: TargetArticle | null })
+    .article;
+  const present = (after?.draft?.blocks ?? []).some(
+    (b) => typeof b.html === "string" && b.html === blockHtml,
+  );
+  if (!present)
+    return fail(
+      "engine-failed",
+      `wepublish: the write to "${slug}" reported success, but the article's draft does not carry the visual — nothing was inserted.`,
+    );
+
+  return ok({
+    publisherId: "embed-cms",
+    kind: "hosted",
+    // The article's own address. Unlike the carrier, this URL existed before Splash and will
+    // serve the visual once the journalist publishes their draft.
+    url: after?.url ?? target.url!,
+    publishedAt: new Date().toISOString(),
+  });
 }
 
 async function publish(
@@ -217,6 +372,24 @@ async function publish(
       "engine-failed",
       `wepublish: signing in as ${email} returned no session token`,
     );
+
+  // Step 5b: DIRECT INSERTION — the journalist's own article, named per delivery.
+  //
+  // The two modes are deliberately exclusive rather than layered. The carrier article is a
+  // hosting surface Splash OWNS: it may set `hidden`, replace every block, and publish at will.
+  // The target article is the newsroom's editorial document, where none of those are Splash's
+  // to decide — so the branch is taken before any carrier logic runs, and shares only the
+  // session and the block it just built.
+  if ((req.settings.targetArticleSlug ?? "").trim())
+    return insertIntoArticle({
+      endpoint,
+      token,
+      slug: req.settings.targetArticleSlug!.trim(),
+      id: req.id,
+      blockHtml,
+      timeoutMs,
+      uploadTimeoutMs,
+    });
 
   // Step 6: find the carrier article. The slug is deterministic, which is what makes a
   // re-publication land on the SAME article and therefore the same URL (W12).

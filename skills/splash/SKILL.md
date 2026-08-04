@@ -1209,7 +1209,7 @@ article-web is the one channel that can host it**:
   case, so a clean check is not yet a reliable "this folder is safe to hand over" signal for it — a
   follow-up, not resolved here).
 - **INTERACTIVE or SCROLLY (a self-contained `interactive.html` / `scrolly.html`, article-web only):**
-  splash **PROPOSES three delivery forms and the journalist CHOOSES one — and ONLY the chosen form is built
+  splash **PROPOSES the delivery forms and the journalist CHOOSES one — and ONLY the chosen form is built
   (LAZILY, on demand)**. There is no "produce all forms unconditionally": the React bundle and the Cloudflare
   deploy are expensive/irreversible, so nothing beyond the produced `interactive.html`/`scrolly.html` is
   materialised until the journalist has picked. **There is NO auto no-JS `static.html` fallback** — accessibility
@@ -1217,13 +1217,13 @@ article-web is the one channel that can host it**:
   interactive. `export-code.mjs` is a **two-phase** script:
   1. **Phase 1 — emit the proposal (build NOTHING).** Run WITHOUT `--form`:
      `bun skills/splash/scripts/export-code.mjs exports/<slug>/<id> exports/<slug>/<id>-export --results exports/<slug>/report.json --id <id>` (the source is the per-proposal build subdir from 5c).
-     It emits a fixed three-form proposal DESCRIBING what each form WOULD be — an `EXPORT_FORMS_JSON {…}` line
+     It emits the delivery-form proposal DESCRIBING what each form WOULD be — an `EXPORT_FORMS_JSON {…}` line
      (machine-parseable: `forms.a` = `{kind, path, pending:true}`, `forms.b.path` = the standalone HTML file,
      `forms.c.command`/`url`, each with a `deliver` command = the exact `--form` re-invocation) plus an
      `EXPORT_FORMS_PROPOSAL … END_EXPORT_FORMS_PROPOSAL` human block. **No bundle is assembled, no deploy runs,
      no folder is written** at this phase — the paths in the proposal are `pending`.
-  2. **THEN relay the emitted proposal VERBATIM and ASK which form the journalist wants (a / b / c) — an
-     explicit, un-skippable GATE.** Do NOT collapse it to a bare "Livré."; do NOT pick for them. Relay the
+  2. **THEN relay the emitted proposal VERBATIM and ASK which form the journalist wants (a / b / c, plus d
+     when the newsroom's CMS is configured) — an explicit, un-skippable GATE.** Do NOT collapse it to a bare "Livré."; do NOT pick for them. Relay the
      script's `EXPORT_FORMS_PROPOSAL` block (it already carries the concrete paths + the `deliver` command for
      THIS export), then wait for their answer.
      **★ WAIT means WAIT: after emitting the proposal, `--form` MUST NOT run until a journalist message
@@ -1262,12 +1262,41 @@ article-web is the one channel that can host it**:
        `SPLASH_EMBED_PROJECT` is the newsroom's own project name and becomes the PUBLIC URL — ask for a name
        that identifies the newsroom (e.g. `heidi-news-splash`); generic names are refused by the adapter.
        (A hosted-DW form c stays available — it needs no deploy of ours.)
-  3. **THEN build + deliver ONLY the chosen form** — re-run `export-code.mjs` with `--form <html|code-source|embed>`
+     - **d) Directement dans l'article (CMS)** — splash adds the visual to one of the journalist's OWN
+       articles in the newsroom's CMS (We.Publish). **Offered ONLY when the CMS route is configured**
+       (`export-code.mjs` emits `forms.d` with `available` + `missingKeys` from the same capability
+       declaration INPUT reads, so a newsroom told « le CMS n'est pas branché » is never offered it here);
+       a missing credential is KEY-FIXABLE exactly like form c's, and the `endpoint` belongs in
+       `newsroom.json`, not `.env`. **Not available for a hosted Datawrapper interactive** — the CMS block
+       carries the visual's own bytes and a DW interactive has none locally; that one takes form c and the
+       journalist pastes the link.
+       **Two rules belong to this form alone, and neither is optional:**
+       1. **ASK WHICH ARTICLE — never choose one.** `forms.d` carries `needsArticle: true` and a `deliver`
+          command holding the literal placeholder `<slug>`. Ask the journalist for the slug of the article
+          the visual belongs in (it is the last part of its address in the CMS), and pass it as
+          `--article <slug>`. Both `export-code.mjs` and `publish-cms.mjs` REFUSE the unreplaced
+          placeholder: inventing a slug is the same class of violation as choosing a form for them, except
+          it writes into a stranger's article.
+       2. **SAY THAT NOTHING GOES LIVE.** The insertion is a DRAFT edit — splash never publishes the
+          journalist's article, because pushing an editorial document live is their decision and not a
+          side effect of adding a chart. The script prints a `CMS_DRAFT_ONLY …` line at hand-over;
+          relay it. The delivered record is `CMS_ARTICLE_URL.txt` (the article's own address).
+       **What the adapter refuses, and why you must not work around it:** the CMS has no "add a block"
+       operation — `updateArticle` is total, so inserting means re-sending the whole article. If it holds
+       a block splash cannot faithfully carry back, the write is REFUSED rather than performed, because a
+       partial write would silently delete that block from a live piece. That refusal names the block type;
+       relay it and offer form c (a link to paste) instead. Never retry it by hand, and never edit the
+       article yourself to make the refusal go away.
+  3. **THEN build + deliver ONLY the chosen form** — re-run `export-code.mjs` with `--form <html|code-source|embed|cms>`
      (the `deliver` command from the proposal is exactly this):
      - `--form html` → copies the standalone `interactive.html`/`scrolly.html` into the export folder; print its
        ABSOLUTE path (that single file IS the delivery).
      - `--form code-source` → runs `export-source.mjs` NOW (chart-native) or `bundle-source.mjs` NOW
        (map-native/scrolly) to assemble the runnable `<id>-source/` bundle; print its ABSOLUTE path.
+     - `--form cms --article <slug>` → runs `publish-cms.mjs` NOW to insert the visual into that article's
+       DRAFT in the newsroom's CMS, and records the article's URL in `CMS_ARTICLE_URL.txt`. It applies the
+       same editorial gates as the embed form (produced + render-approved + sign-off re-verified against the
+       artifact's CURRENT bytes) before it touches the CMS.
      - `--form embed` → runs `deploy-embed.mjs` NOW to publish to the newsroom's OWN Cloudflare Pages project
        (`$SPLASH_EMBED_PROJECT`) and records the hosted URL in `EMBED_URL.txt` (a hosted-DW producer
        records its already-live `publicUrl`, no deploy). Share the URL. **Integrity: `deploy-embed.mjs`

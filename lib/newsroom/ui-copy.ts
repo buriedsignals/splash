@@ -15,6 +15,9 @@ export type ExportProposalCopy = {
   formEmbedLive: (url: string) => string;
   formEmbedMissingKeys: (keys: string) => string;
   formEmbedAvailable: string;
+  /** Form d — the visual goes INTO the journalist's own article, in the newsroom's CMS. */
+  formCmsAvailable: string;
+  formCmsMissingKeys: (keys: string) => string;
   question: (forms: string) => string;
   waitInstruction: string;
   missingEmbedKeysReason: (reason: string) => string;
@@ -33,6 +36,12 @@ const EN: ExportProposalCopy = {
     `  c) Embed (hosted) — needs a missing key (${keys}). I can ask you for it, save it, and then deliver c); otherwise take b) (an equivalent standalone HTML file).`,
   formEmbedAvailable:
     "  c) Embed (hosted) — publish to your Cloudflare Pages project to get a reusable link",
+  // Says what it needs (the article) and what it will NOT do (publish), because both are the
+  // journalist's decision and neither is guessable from the word "insert".
+  formCmsAvailable:
+    "  d) Straight into your article (CMS) — I add the visual to one of your articles in We.Publish. Tell me which article (its slug), and I place it at the end of the DRAFT: nothing goes live until you publish it yourself.",
+  formCmsMissingKeys: (keys) =>
+    `  d) Straight into your article (CMS) — needs a missing key (${keys}). I can ask you for it and save it, then deliver d); otherwise take c) (a link to paste into your article).`,
   question: (forms) =>
     `Which form would you like? (${forms}) — then re-run export-code with --form <html|code-source|embed>.`,
   waitInstruction:
@@ -54,6 +63,10 @@ const FR: ExportProposalCopy = {
     `  c) Embed (hébergé) — nécessite une clé manquante (${keys}). Je peux vous la demander et l'enregistrer, puis livrer en c) ; sinon prenez b) (fichier HTML autonome équivalent).`,
   formEmbedAvailable:
     "  c) Embed (hébergé) — publier sur votre projet Cloudflare Pages pour obtenir un lien à réutiliser",
+  formCmsAvailable:
+    "  d) Directement dans votre article (CMS) — j'ajoute le visuel à l'un de vos articles dans We.Publish. Dites-moi lequel (son slug), et je le place à la fin du BROUILLON : rien n'est mis en ligne tant que vous ne publiez pas vous-même.",
+  formCmsMissingKeys: (keys) =>
+    `  d) Directement dans votre article (CMS) — nécessite une clé manquante (${keys}). Je peux vous la demander et l'enregistrer, puis livrer en d) ; sinon prenez c) (un lien à coller dans votre article).`,
   question: (forms) =>
     `Quelle forme souhaitez-vous ? (${forms}) — puis relancer export-code avec --form <html|code-source|embed>.`,
   waitInstruction:
