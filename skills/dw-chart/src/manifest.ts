@@ -47,6 +47,11 @@ registerProducer({
   name: "dw-chart",
   // dw-chart has no video/scrolly renderer (those require chart-native's D3 core).
   formats: ["static", "interactive"],
+  // No type below declares `gestures` — deliberate, not an oversight (2026-08-03
+  // gesture-vocabulary plan, Task 4): dw-chart delegates rendering to Datawrapper and
+  // owns no motion of its own (docs/splash/gesture-inventory-2026-08-03.md §8 summary
+  // table — "delegates rendering to Datawrapper; owns a static PNG export + a hosted
+  // embed, no motion of its own").
   types: CHART_TYPES.map((id) =>
     NOT_KB_MODELED[id] ? { id, deferred: NOT_KB_MODELED[id] } : { id },
   ),

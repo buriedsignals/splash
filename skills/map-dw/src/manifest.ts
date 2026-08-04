@@ -14,6 +14,10 @@ registerProducer({
   name: "map-dw",
   // Animated maps are map-native's — map-dw builds only static / interactive.
   formats: ["static", "interactive"],
+  // No type below declares `gestures` — deliberate, not an oversight (2026-08-03
+  // gesture-vocabulary plan, Task 4): map-dw delegates rendering to Datawrapper and owns
+  // no motion of its own (docs/splash/gesture-inventory-2026-08-03.md §8 summary table —
+  // "same as dw-chart... animated maps are map-native's").
   // MAP_DW_TYPES stays the validation union (validateMapSpec's error string names all three
   // ids, and that string must stay accurate) — but "symbol" is declared here as `deferred`:
   // validateMapSpec's symbol branch pushes an unconditional error (map-spec.ts, the symbol

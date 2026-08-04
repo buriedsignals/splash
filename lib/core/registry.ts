@@ -9,6 +9,7 @@
 // 2026-07-20-shared-core-registry-contracts-design.md.
 import type { VisualFormat } from "./vocabulary";
 import type { ProduceContext, DeliveredArtifact } from "./contract";
+import type { GestureVocabulary } from "./gestures";
 
 // How a producer is executed. "subprocess" = shell out to the engine's own build/render
 // script (chart-native, map-native, scrolly, image-native — the file-based producers).
@@ -20,7 +21,14 @@ export type ExecutionModel = "subprocess" | "in-process";
 // says "slope", dw-chart says "d3-range-plot" for the same KB sheet). `deferred` carries the
 // reason a type is declared but not reachable — declaring it is what lets the proposal brain
 // say "not offered, and here is why" instead of pretending the type does not exist.
-export type EngineType = { id: string; deferred?: string };
+// `gestures` carries the same idea one level down: WHAT this type can make move, per narrative
+// kind, so a storyboard proposal composes only from what exists (spec 2026-08-03 § 6). Absent
+// ⇒ this type animates nothing of its own (a hosted embed, for instance).
+export type EngineType = {
+  id: string;
+  deferred?: string;
+  gestures?: GestureVocabulary;
+};
 
 export interface ProducerManifest {
   name: string; // e.g. "chart-native" — matches AcceptedProposal.producer

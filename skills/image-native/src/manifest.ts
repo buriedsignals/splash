@@ -25,7 +25,20 @@ registerProducer({
   name: "image-native",
   // The engine's grid is static/video/scrolly (never interactive); v1 CLI ships scrolly.
   formats: ["scrolly"],
-  types: [{ id: IMAGE_SCROLLY_TYPE }],
+  types: [
+    {
+      id: IMAGE_SCROLLY_TYPE,
+      gestures: {
+        // ScrollyImage.tsx:88-89 is the ONLY place this renders (image-native itself has
+        // no .tsx components at all, docs/splash/gesture-inventory-2026-08-03.md §6) —
+        // one opacity crossfade between the active and previous frame, 600ms, dropped to
+        // a hard cut under prefers-reduced-motion. image-native's sole gesture
+        // (format-support.ts:1-7 — scrolly ONLY in v1, no camera/beat concept applies to
+        // a photograph sequence).
+        scrolly: ["crossfade"],
+      },
+    },
+  ],
   unsupportedFormatMessage: IMAGE_NATIVE_V1_FORMAT_MESSAGE,
   validate: (spec) =>
     checkImageConformance(spec as ImageStory, { format: "scrolly" }),

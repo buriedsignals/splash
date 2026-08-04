@@ -1,0 +1,153 @@
+// The closed vocabulary of what an engine can make move. A storyboard proposal composes ONLY
+// from what the target engine declares here (spec 2026-08-03 § 6), so a proposal is feasible
+// by construction rather than by the proposer's vigilance.
+//
+// Two families, deliberately not merged: a map has a camera that travels; a chart does not —
+// it grows, draws and highlights in a fixed frame. Asking a chart to "fly" is meaningless, and
+// the split is what lets a caller refuse that without string-matching a name.
+//
+// Every name below is grounded in docs/splash/gesture-inventory-2026-08-03.md (Task 1's
+// read-only, file:line-cited measurement) — not the brief's placeholder draft. See that
+// document's §8 summary table and §7 findings before changing this file.
+
+/**
+ * The four ways a beat sequence can express itself. Each is defined by two axes — the
+ * owner's own framing (2026-08-03 decision): what CARRIES the narrative (what the
+ * reader's attention rides on) and what ADVANCES it (the clock the beats step to).
+ *
+ *   story    — the CAMERA carries it, TIME advances it: a scripted flight through beats,
+ *              frame-driven, the reader does not control the pace.
+ *   stepped  — the STEP carries it, TIME advances it: a discrete walk through beats on a
+ *              timeline, frame-driven — map-native's own `*Scrolly.tsx` video family
+ *              (Remotion compositions that simulate a scroll narrative as a deterministic
+ *              frame sequence; `jumpTo` only, never `flyTo` — see CAMERA_GESTURES's `jump`
+ *              below). Renamed from `scrolly` (2026-08-03): that word collided with the
+ *              product below, which a reader actually receives.
+ *   scrolly  — the STEP carries it, the READER advances it: the same discrete walk, but
+ *              the reader's own scroll position drives which beat is current — the
+ *              browser-interactive family in skills/scrolly/src/ (ScrollyMap.tsx and its
+ *              five map siblings, ScrollyChart.tsx for chart types). This is the freed
+ *              name: before 2026-08-03 it was spoken for by `stepped`'s family above, and
+ *              the browser product it actually names was declared nowhere.
+ *   reveal   — the DATA carries it, TIME advances it: one continuous scalar unveils a
+ *              fixed scene; there are no beats to step through at all.
+ *
+ * A declaration left un-migrated after the 2026-08-03 rename does not fail — `scrolly` and
+ * `stepped` are both valid values, so a stale `scrolly:` key silently means the OPPOSITE of
+ * what its author intended. See gesture-declaration-drift.test.ts's map-native pin, which
+ * exists solely to catch that.
+ */
+export const NARRATIVE_KINDS = [
+  "story",
+  "stepped",
+  "scrolly",
+  "reveal",
+] as const;
+export type NarrativeKind = (typeof NARRATIVE_KINDS)[number];
+
+// Camera gestures — a frame that travels. Maps only; chart-native has no camera concept at all
+// (inventory §4: no flyTo/fitBounds/jumpTo/map instance anywhere under skills/chart-native/src).
+export const CAMERA_GESTURES = [
+  // A discrete, un-eased reposition between beats/steps. Every map-native Story component and
+  // every map-native video-Scrolly component (declaring the `stepped` kind, renamed 2026-08-03)
+  // uses `map.jumpTo`, never `flyTo` — six file headers say so explicitly ("Deterministic jump —
+  // never flyTo", e.g. LocatorStory.tsx:329) and the per-frame call sites were read to confirm it
+  // (ChoroplethStory.tsx:453-460, ChoroplethScrolly.tsx:1-6/§2 table). Named "jump" rather than
+  // the brief's "cut" to mirror the actual measured primitive 1:1, not a film-editing gloss on it.
+  "jump",
+  // A smooth, eased camera transition. Confirmed in skills/scrolly's browser-interactive
+  // Scrolly*Map.tsx family (`flyToBeat` → MapLibre `flyTo`, scrolly-camera.ts:54-71) — the
+  // live-browser sibling of the video Story/`stepped` families, which deliberately do NOT use
+  // this (they need frame-determinism). Declared (2026-08-03) on skills/scrolly's OWN producer
+  // manifest, per map-track type — never on map-native's, whose own `*Scrolly.tsx` components
+  // are the `stepped` family and do not implement this; see
+  // skills/map-native/src/manifest.ts's header and gesture-declaration-drift.test.ts's pin.
+  "fly",
+  // The camera does not move once framed. All six non-route map-native Reveal components call
+  // `map.fitBounds(plan.bounds, { duration: 0 })` exactly once at load, then never move it again
+  // (inventory §3 table, e.g. ChoroplethReveal.tsx:210).
+  "hold",
+  // A continuous, non-beat camera move — zoom and pitch lerp every frame by the clip's own
+  // progress fraction. The one exception to "reveal holds its camera": RouteReveal.tsx:449-455,
+  // the inventory's own words for it: "a push-in" (§3.1). Not "fly" (that name is reserved for
+  // the eased browser primitive) and not "jump" (this is continuous, not a beat-to-beat cut).
+  "push",
+] as const;
+
+// Data gestures — a fixed frame whose contents change. Every engine that animates something.
+export const DATA_GESTURES = [
+  // A size ramps from zero to full: bar/stem height from baseline (BarChart.tsx:1-3), point
+  // radius (SymbolReveal.tsx:218-233, LocatorReveal.tsx:219-234), cell scale-in (Waffle/
+  // Marimekko/Treemap, inventory §4 table).
+  //
+  // OPEN CONSISTENCY QUESTION (not resolved by this task — recorded, not silently
+  // smoothed over): "from zero to full" is read loosely in practice. HeatmapChart.tsx:250,
+  // MarimekkoChart.tsx:238, WaffleChart.tsx:229 and ChordChart.tsx:194 are all declared
+  // `grow` while their own ramp starts from a non-zero floor (an eased `a` that never
+  // actually reaches 0, a minimum cell/column scale, etc.), not literal zero. Meanwhile
+  // dumbbell (declared `grow`) and slope (declared `draw`) drive their own entrance off
+  // the SAME lerp primitive shape (a per-item eased 0→1 window widening a gap / extending
+  // a line) yet land on different gesture names. Whether "grow" should mean strictly
+  // "from literal zero" (tightening several of the above) or "size increases, floor
+  // aside" (loosening the definition to match current practice), and whether dumbbell/
+  // slope's shared primitive should collapse to one name, is a vocabulary decision for
+  // sub-project ④ — this task only measured the inconsistency, it did not adjudicate it.
+  "grow",
+  // A path or region progressively reveals along one dimension by a monotonic scalar: a line by
+  // cumulative length (LineChart.tsx via revealLine/revealHead), an area by left→right wipe
+  // (StackedAreaChart.tsx:1-4), an angle by sweep (PieChart.tsx:1-4), a border by trail
+  // (ChoroplethStory/CartogramStory/HexGridStory, story-choreography.ts), a route's line drawing
+  // continuously through every crossed territory (RouteReveal.tsx §3.1, RouteScrolly.tsx §2.1).
+  "draw",
+  // One subject is emphasised while its siblings dim, WITHOUT a size or opacity ramp on the
+  // emphasised subject itself: the per-beat/per-step spotlight in map-native's Story and
+  // `stepped`-video families (dim to ~0.2-0.25, CartogramScrolly.tsx:6-9), the browser
+  // Scrolly*Map.tsx family's own step-emphasis (a MapLibre `case` expression pinning the
+  // highlighted feature and its siblings to two CONSTANTS, e.g.
+  // ScrollyCartogramMap.tsx:271-277, ScrollyHexMap.tsx:238-249, ScrollyDotDensityMap.tsx:
+  // 294-311, ScrollyLocatorMap.tsx:262-303, ScrollyMap.tsx:340-345 — ScrollySymbolMap.tsx has no
+  // such mechanism at all, see its manifest declaration), ScrollyChart's bar/scatter "highlight
+  // walk" (progress pinned at 1, one bar/point accented per step, ScrollyChart.tsx:110-138), and
+  // chart-native's interactive hover/keyboard-focus state (LineChart.tsx:131,173,438-441) — the
+  // last one present in the interactive format only (inventory §4.1).
+  "highlight",
+  // An element fades or pops into visibility from nothing, with ONE shared scalar driving every
+  // instance at once — no per-subject offset, no per-subject gate: opacity 0→1 across the whole
+  // map-native Reveal family (CartogramReveal.tsx:202-208, DotDensityReveal.tsx:223-225).
+  //
+  // IMPORTANT — do not read this as a staggered/ordered reveal. ChoroplethReveal.tsx:3's header
+  // claims regions reveal "in ascending-value order (stagger by bin index)"; the code does not:
+  // `__binIdx` is written at :150/:163 and read nowhere, and the per-frame paint (:249-269)
+  // applies one identical scalar `progress` to every data region in a single setPaintProperty
+  // call. All six non-route Reveal siblings share this: one uniform ramp, not an ordered
+  // appearance. "appear" names that uniform ramp ONLY — see "stagger" below for the real,
+  // working per-subject entrance that "appear" must NOT be stretched to also cover.
+  "appear",
+  // An entrance whose TIMING depends on which subject it is — a per-column, per-beat, or
+  // per-subject offset/gate, not one shared scalar. Two independent, real (non-dead-code)
+  // implementations: SankeyChart.tsx:254-255 — `nodeAppear(col) = easeOutCubic((p -
+  // colIndex.get(col)*0.12)/0.26)`, the file's own comment calls this "column-staggered node
+  // fade" (:253); and DotDensityStory.tsx (header :6-16) — each region's dot stipple-in is
+  // gated on ITS OWN beat trigger, held at 0 fill-opacity until that beat is entered, distinct
+  // per region. This is exactly the editorial-storyboard behaviour ("these subjects enter one
+  // per beat") — kept as its own name rather than folded into "appear" so a per-engine
+  // vocabulary can offer "everything fades up together" and "one subject enters per beat" as
+  // two distinguishable proposals, not one ambiguous word.
+  "stagger",
+  // Two frames swap by opacity, one fading in as the other fades out — genuinely distinct from
+  // "appear" (a single element from nothing) because a second element is present throughout.
+  // The only place this exists: ScrollyImage.tsx:88-89 (`opacity: i === active ? 1 : 0`, 600ms
+  // transition), image-native's sole gesture (format-support.ts:1-7 — scrolly only, v1).
+  "crossfade",
+] as const;
+
+export const GESTURES = [...CAMERA_GESTURES, ...DATA_GESTURES] as const;
+export type Gesture = (typeof GESTURES)[number];
+
+export type GestureVocabulary = Partial<
+  Record<NarrativeKind, readonly Gesture[]>
+>;
+
+export function isCameraGesture(g: Gesture): boolean {
+  return (CAMERA_GESTURES as readonly string[]).includes(g);
+}
