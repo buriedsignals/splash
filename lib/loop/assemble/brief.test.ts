@@ -92,6 +92,53 @@ test("an element with a narrative plan carries its beats, anchor kind preserved"
   ]);
 });
 
+// I2: BriefBeat only carries "x"/"category" — a "region" or "place" anchor (widened onto
+// the unified beat by feat/unified-beat-model, reachable once sub-project ③ starts emitting
+// them) has no field to become on this brief and must refuse loud, never mislabel itself as
+// a chart `category`.
+test("a region anchor refuses loud rather than silently becoming a chart category", () => {
+  const el = {
+    ...RUN.elements[0]!,
+    narrative: {
+      beats: [
+        {
+          id: "b1",
+          anchor: { kind: "region", value: "Basel-Stadt" },
+          role: "setup",
+          text: "Basel-Stadt led the region.",
+        },
+      ],
+    },
+  } as unknown as RunManifest["elements"][number];
+  expect(() =>
+    briefFor(RUN, el, "year,extent\n1979,7", "NSIDC", undefined, "scrolly"),
+  ).toThrow(/region/);
+});
+
+test("a place anchor refuses loud the same way", () => {
+  const el = {
+    ...RUN.elements[0]!,
+    narrative: {
+      beats: [
+        {
+          id: "b1",
+          anchor: {
+            kind: "place",
+            value: "Rhine confluence",
+            lon: 7.6,
+            lat: 47.6,
+          },
+          role: "setup",
+          text: "Where the rivers meet.",
+        },
+      ],
+    },
+  } as unknown as RunManifest["elements"][number];
+  expect(() =>
+    briefFor(RUN, el, "year,extent\n1979,7", "NSIDC", undefined, "scrolly"),
+  ).toThrow(/place/);
+});
+
 test("takes the language off the manifest, never off ambient state", () => {
   const b = briefFor(
     { ...RUN, lang: "it" },
