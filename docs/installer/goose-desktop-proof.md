@@ -191,27 +191,53 @@ missing key.
 ### ★ What `load_skill` actually costs — the skill directory IS the payload
 
 Loading `splash` does not hand the model `SKILL.md`. It hands it `SKILL.md` **plus an enumeration of
-50 further loadable resources** inside the skill directory — `src/anti-improvisation.test.ts`,
-`src/format-pin.test.ts`, `src/guardrail-parity.test.ts`, `tsconfig.json`, every script. Measured in
-the run log: 50 `load_skill(name: "splash/…")` offers against 103 files on disk, so the host lists
-what it considers readable and skips the rest.
+every file under the skill directory** — `src/anti-improvisation.test.ts`, `src/format-pin.test.ts`,
+`tsconfig.json`, every script.
 
-What we link into `~/.agents/skills` is not a skill folder, it is an engine checkout:
+> ★★ **CORRECTED 2026-08-04, and the correction makes this WORSE, not smaller.** This section first
+> said "an enumeration of **50** further loadable resources … so the host lists what it considers
+> readable and skips the rest". **Both halves were wrong**, and the measurement that replaced them is
+> in `docs/splash/skill-payload-2026-08-04.md`.
+>
+> - **The 50 was my own truncated log window.** The message carries **50 lines**; the enumeration
+>   covers **748 files** for `splash`.
+> - **The host filters nothing.** Read at the tag rather than inferred (`crates/goose/src/skills/
+>   mod.rs:456-466`): no extension, size or depth filter, no ignore file. Only `.git`/`.hg`/`.svn`
+>   and subtrees that carry their own `SKILL.md`. **`.gooseignore` does not exist in v1.45.0** — the
+>   remedy this document originally floated is empty.
+> - **The counts here were taken with `find`, which does not follow symlinks. The host does.**
+>   That single difference is the whole mechanism: `node_modules` is reached THROUGH a symlink, so it
+>   is invisible to our measurement and fully visible to Goose. It is also exactly how the two
+>   `playwright-*` parasites of backlog **B6** get in.
 
-| Skill | Files (excl. `node_modules`) | `SKILL.md` |
-|---|---|---|
-| `splash` | 103 | 136 KB |
-| `suggest-chart` | 35 | 52 KB |
-| `map-native` | 274 | — |
-| `chart-native` | 931 | — |
+What we link into `~/.agents/skills` is not a skill folder, it is an engine checkout — measured the
+way the host actually walks it, with Goose's own tokenizer:
 
-This is the same arithmetic the backlog already records (`splash` alone measures 33 389 content
-tokens, and a `splash` → `suggest-chart` chain passes 45 000) seen from the other end: the prose is
-one cost, and **the directory listing is a second one that nobody had counted**. A journalist's run
-never needs `format-pin.test.ts`.
+| Skill | Files the host sees | Enumeration tokens | `SKILL.md` tokens |
+|---|---|---|---|
+| `map-native` | 20 640 | **1 342 060** | 9 438 |
+| `chart-native` | 12 191 | **737 634** | 5 622 |
+| `splash` | 748 | **42 634** | 33 693 |
 
-It is recorded, not fixed — the shape of a shipped skill directory is a distribution decision, not a
-runtime-module one, and it touches every host rather than this one. Backlog **E10**.
+**The listing costs more than the prose.** The `splash` → `suggest-chart` chain is **90 366** tokens,
+not the ~45 000 the backlog records.
+
+### And it is not a cost — it is a failure that already happened here
+
+`load_skill(splash)` returns **292 487 characters**, over Goose's 200 000 spill threshold
+(`large_response_handler.rs:5`). The response goes to a temp file and **`SKILL.md` never enters the
+model's context.** The 2026-08-04 run shows the model working that out by itself and saying so:
+
+> *« load_skill actually returns a file listing, and not the skill's instructions… My current context
+> is now misaligned. »*
+
+Four turns spent recovering. So E10 is part of **why Layer B was so hard to reach** — a run this
+document elsewhere describes as bounded by request allowance was also spending its allowance on this.
+
+It is recorded, not fixed: the shape of a shipped skill directory is a distribution decision that
+touches every host, not a runtime-module one. Options, costed, in `skill-payload-2026-08-04.md`.
+Worth knowing before choosing: **removing `node_modules` alone does not fix it** — `chart-native` and
+`map-native` still spill, and the largest unexpected contributor is `output-proof/`. Backlog **E10**.
 
 ## ★★ The run that "succeeded" without Splash — the most important result of this lot
 
