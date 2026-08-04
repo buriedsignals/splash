@@ -105,6 +105,34 @@ export function embedDeliveryStatus(
   };
 }
 
+// The CMS DELIVERY FORM's requirement — the same shape as the embed one above, and derived
+// from the SAME capability declaration rather than retyped, so the form offered in the export
+// proposal and the readiness announced at INPUT can never disagree about what is missing.
+const CMS_CAPABILITY = NEWSROOM_CAPABILITIES["embed-cms"]!;
+export const CMS_DELIVERY_ENV: readonly string[] = CMS_CAPABILITY.env.flat();
+export const CMS_DELIVERY_ENV_HELP: Record<string, string> =
+  CMS_CAPABILITY.envHelp;
+
+// A credential is only half of it: `endpoint` is a NON-secret setting that lives in
+// newsroom.json, and the adapter refuses without it. A form offered while the endpoint is
+// unset would be offered only to fail at the write, which is the failure mode this whole
+// readiness layer exists to move earlier.
+export function cmsDeliveryStatus(
+  opts: PreflightOpts & { endpoint?: string } = {},
+): EmbedDeliveryStatus {
+  const env = opts.env ?? defaultEnv();
+  const missing = CMS_DELIVERY_ENV.filter((name) => !isSet(env[name]));
+  const reasons = missing.map(
+    (name) => `${name} (${CMS_DELIVERY_ENV_HELP[name]})`,
+  );
+  if (!isSet(opts.endpoint))
+    reasons.push(
+      'the CMS address — set capabilities["embed-cms"].settings.endpoint in newsroom.json to the GraphQL URL, which on We.Publish ends in /v1',
+    );
+  if (reasons.length === 0) return { ready: true, missing: [], reason: "" };
+  return { ready: false, missing: [...missing], reason: reasons.join("; ") };
+}
+
 // Repo-root .env fallback (review F2): Bun auto-loads .env from the CWD only, while the
 // standard install keeps keys in /splash/.env and produce-all may run from anywhere (the
 // harness sandbox, an exports dir). The native producers self-load this file; the gate's

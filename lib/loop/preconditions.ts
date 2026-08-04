@@ -46,7 +46,7 @@ export function productionPrecondition(runDir: string): RoutedRefusal | null {
 /** The delivery FORM axis — orthogonal to VisualFormat. Structurally identical to
  *  skills/splash/src/export-guard.ts's DeliveryForm, which becomes an alias of this one: the lib
  *  half is the definition, because it is the half both sides may import. */
-export type HandoverForm = "html" | "code-source" | "embed" | null;
+export type HandoverForm = "html" | "code-source" | "embed" | "cms" | null;
 
 // The files a PRODUCTION directory carries and an export never does. Not a guess: the first
 // three (config.json, and either native-source.json for chart-native or source-manifest.json for

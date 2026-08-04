@@ -256,7 +256,34 @@ export function assertDelivered(
     }
     return;
   }
+  if (form === "cms") {
+    // Form d is delivered INSIDE the newsroom's CMS: the deliverable is the article, and the
+    // only thing Splash owns on disk is the record of where it went. Same strictness as embed —
+    // handing back the produced html and calling it "inserted" is the same faked delivery.
+    if (!files.includes("CMS_ARTICLE_URL.txt"))
+      throw new Error(
+        `not a delivery: ${format} form=cms requires a recorded article URL (CMS_ARTICLE_URL.txt) — found none; the produced artifact is not proof that the CMS took it`,
+      );
+    const stray = files.filter((f) => f !== "CMS_ARTICLE_URL.txt");
+    if (stray.length)
+      throw new Error(
+        `not a delivery: ${format} form=cms must be exactly CMS_ARTICLE_URL.txt, found extra ${JSON.stringify(stray)}`,
+      );
+    if (dir != null) {
+      let url = "";
+      try {
+        url = readFileSync(join(dir, "CMS_ARTICLE_URL.txt"), "utf8").trim();
+      } catch {
+        url = "";
+      }
+      if (!isHostedUrl(url))
+        throw new Error(
+          `not a delivery: ${format} form=cms CMS_ARTICLE_URL.txt has no resolvable https URL (got ${JSON.stringify(url)})`,
+        );
+    }
+    return;
+  }
   throw new Error(
-    `not a delivery: ${format} requires a form (html | code-source | embed), got ${String(form)}`,
+    `not a delivery: ${format} requires a form (html | code-source | embed | cms), got ${String(form)}`,
   );
 }
