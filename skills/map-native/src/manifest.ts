@@ -163,22 +163,32 @@ const SYMBOL_GESTURES: GestureVocabulary = {
   story: ["jump", "grow", "stagger"],
   // SymbolScrolly.tsx: `circle-radius = radius * fillReveal` (:299-303) is ONE shared
   // scalar applied to every symbol identically — `grow` (uniform, not per-subject), same
-  // primitive already declared for `reveal` below. `text-opacity = fillReveal` (:307)
-  // folds into the same `grow` declaration by the established SymbolReveal precedent
-  // (its own comment: "grow radii + fade labels by progress" — one gesture, two
-  // properties). No DIM_OPACITY anywhere in this file (0 hits) — no sibling ever dims,
-  // so no `highlight`. The highlighted symbol's `circle-stroke-width` ramps 1.5 → 1.5 +
-  // 3*dataReveal (:322-327) while every other symbol stays at the constant 1.5 — the
-  // file's OWN comment calls this "the highlighted symbol's stroke width grows in"
-  // (:314-315) — a ramp on the emphasised subject, `grow` again (not `highlight`, by the
-  // same exclusion rule applied to Choropleth above), already covered by the `grow`
+  // primitive already declared for `reveal` below. `text-opacity = fillReveal` (:307) is
+  // its own paint property with its own 0-start (story-timeline.ts:79: `fillReveal = 0`
+  // for the entire title beat, before ramping 0→1 across establish) — the SAME rule this
+  // manifest applies to `reveal` below (`appear`, not folded into `grow`, "the label
+  // channel is its own paint property with its own 0-start"). A prior version of this
+  // cell folded it into `grow` on the strength of SymbolReveal's summary comment ("grow
+  // radii + fade labels by progress") — but that comment is a one-line gloss, and
+  // SymbolReveal's own DECLARATION two cells below splits the same two properties into
+  // `grow` + `appear`. Folding here while splitting there was inconsistent for identical
+  // code; corrected to match. No DIM_OPACITY anywhere in this file (0 hits) — no sibling
+  // ever dims, so no `highlight`. The highlighted symbol's `circle-stroke-width` ramps
+  // 1.5 → 1.5 + 3*dataReveal (:322-327) while every other symbol stays at the constant
+  // 1.5 — the file's OWN comment calls this "the highlighted symbol's stroke width grows
+  // in" (:314-315) — a ramp on the emphasised subject, `grow` again (not `highlight`, by
+  // the same exclusion rule applied to Choropleth above), already covered by the `grow`
   // entry.
-  scrolly: ["jump", "grow"],
+  scrolly: ["jump", "grow", "appear"],
   // SymbolReveal.tsx:225-231: `circle-radius = radius * progress` (grow) AND
   // `text-opacity = progress` (:169 starts opacity at 0, :231 ramps it by the SAME
   // shared `progress`) — a genuine `appear` (opacity 0→1, one shared scalar) alongside
   // the radius grow, not merely folded into it: the label channel is its own paint
-  // property with its own 0-start.
+  // property with its own 0-start. RULE applied to both `scrolly` and `reveal` above:
+  // a channel that starts its OWN paint property at literal 0 and ramps to 1, even by a
+  // scalar shared with a `grow` ramp on a different property, is an `appear` of its own —
+  // "one gesture, two properties" is not a valid fold just because the driving scalar is
+  // shared; the property, not the scalar, is what a gesture names.
   reveal: ["hold", "grow", "appear"],
 };
 
