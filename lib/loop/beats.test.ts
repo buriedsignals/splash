@@ -350,3 +350,63 @@ describe("draftBeats — the image track", () => {
     rmSync(runDir, { recursive: true, force: true });
   });
 });
+
+// A run can hold a map element AND a chart element, and `orient.geo` belongs to the run, not to
+// one element. Threading the geography's column into a CHART draft would anchor it on the map's
+// region column — the exact silent-wrong-column defect the keyColumn thread exists to prevent,
+// created by the fix itself. Gated on the TRACK, and this is what proves it.
+test("a chart draft ignores the run's geography column", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-draft-chart-geo-"));
+  writeFileSync(
+    join(runDir, "src.csv"),
+    "year,canton,rent\n2015,Genève,449\n2020,Genève,512\n2024,Genève,583",
+  );
+  const run = {
+    runId: "t-chart-geo",
+    schemaVersion: 7,
+    channel: "article-web",
+    input: { data: { path: "src.csv", sha256: "x" } },
+    // The run carries a geography whose column is NOT the chart's axis.
+    orient: {
+      geo: {
+        column: "canton",
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-1",
+          level: "admin1",
+          joinKey: "name",
+          joinKeyFamily: "name",
+        },
+        matched: 3,
+        total: 3,
+        unmatched: [],
+      },
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
+        proposal: {
+          options: [
+            {
+              id: "o1",
+              nativeType: "line",
+              engine: "chart-native",
+              format: "scrolly",
+              why: "w",
+            },
+          ],
+          excluded: [],
+          chosenId: "o1",
+        },
+      },
+    ],
+    events: [],
+  } as unknown as RunManifest;
+  const r = draftBeats(run, run.elements[0]!, runDir);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  // Anchored on the YEAR axis, not on "Genève".
+  for (const b of r.value.narrative!.beats)
+    expect(["2015", "2020", "2024"]).toContain(b.anchor.value);
+});

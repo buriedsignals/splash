@@ -41,7 +41,11 @@ import { ARC_CAPABLE_MAP_TYPES } from "../../skills/map-native/src/map-arc";
  * write against it, which is the defect this seam exists to remove. They keep their hand-written
  * `arcBeats`; the spec's § 4.3 correction (sub-project ②) is where this was established.
  */
-export const PROPOSABLE_MAP_TYPES = ARC_CAPABLE_MAP_TYPES.filter(
+// Typed `readonly string[]` rather than keeping the engine list's literal union: callers ask
+// "is THIS type proposable?" about a `nativeType` that arrives as a plain string from the
+// manifest, and a union-typed `.includes` refuses that question at compile time — which would
+// push callers into a cast, the silent kind of widening this file argues against everywhere else.
+export const PROPOSABLE_MAP_TYPES: readonly string[] = ARC_CAPABLE_MAP_TYPES.filter(
   (t) => t !== "route" && t !== "hex-grid",
 );
 
@@ -63,9 +67,10 @@ export const IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED =
 // Hand-synced with NarrativeBeatSchema's anchor (lib/loop/manifest.ts) rather than built from
 // its z.infer, the same discipline GeographyRefSchema's plain-type twin already uses (that
 // schema's own comment) — this module has to stay importable without zod riding along.
-// `region`/`place` are widened here only so this type keeps compiling against the manifest's
-// anchor; suggestBeats itself still only ever emits "x"/"category" (chart-only) — a map beat's
-// region/place anchor is authored elsewhere (skills/map-native, Task 5's own migration).
+// `region` is now EMITTED by suggestBeats itself (sub-project ③ — the map track's proposal
+// step); `place` still is not, and is widened here only so this type keeps compiling against
+// the manifest's anchor — a hex-grid's place has no name until the binning runs, so nothing can
+// draft one (PROPOSABLE_MAP_TYPES' own comment).
 // Kept as a 4-arm discriminated union (a local convention already in place before this widening)
 // rather than one flat object with optional `lon`/`lat` on every kind, unlike GeographyRef's
 // flat-mirror style — both compile clean; this file continues what was already here.
@@ -104,6 +109,13 @@ export type SuggestBeatsInput = {
   /** The journalist's OWN anchor list, in their own order — the re-draft door that makes
    *  verifyBeats' exact-order refusal legitimate rather than a dead end. */
   anchors?: string[];
+  /** WHICH column the anchor is read from — the map track's own, and required there in
+   *  practice: a map's region column is whatever the geography MATCHED
+   *  (`run.orient.geo.column`), and nothing guarantees it is column 0. Anchoring on the first
+   *  column regardless would draft a walk against the wrong column SILENTLY, since its values
+   *  are still strings the data carries. Absent on the chart track, where the first column is
+   *  the axis by construction (the shape chart-native itself reads). */
+  keyColumn?: string;
 };
 
 // The engine's beats override supports line and bar only (skills/chart-native/src/chart-story.ts,
@@ -253,7 +265,17 @@ export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
     };
 
   const { columns, rows, numericColumns } = parseCsvRows(input.dataCsv);
-  const labelCol = columns[0];
+  // NAMED WINS over positional, and a name the data does not carry refuses loud with the list
+  // of what it does — the same philosophy as the anchor refusal below, and the same reason: a
+  // typo must never silently shift a walk onto another column.
+  if (input.keyColumn && !columns.includes(input.keyColumn))
+    return {
+      beats: [],
+      refusal:
+        `the anchor column "${input.keyColumn}" is not in the data — columns: ` +
+        `${columns.join(", ")}`,
+    };
+  const labelCol = input.keyColumn ?? columns[0];
   if (!labelCol)
     return {
       beats: [],

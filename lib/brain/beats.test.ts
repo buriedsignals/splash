@@ -250,3 +250,33 @@ describe("suggestBeats (map)", () => {
     }
   });
 });
+
+describe("suggestBeats (map) — the anchor column is the run's own, not the first column", () => {
+  // The defect this closes: a map's region column is whatever the geography MATCHED
+  // (run.orient.geo.column), and nothing guarantees it is column 0. Anchoring on the first
+  // column regardless would draft a walk anchored on the wrong thing — silently, since the
+  // labels would still be strings the data carries.
+  const SHIFTED = "id,canton,rent\n1,Genève,1780\n2,Zug,1690\n3,Vaud,1450\n4,Jura,1010";
+
+  test("anchors on the named key column", () => {
+    const { beats, refusal } = suggestBeats({
+      nativeType: "choropleth",
+      dataCsv: SHIFTED,
+      keyColumn: "canton",
+    });
+    expect(refusal).toBeUndefined();
+    for (const b of beats)
+      expect(["Genève", "Zug", "Vaud", "Jura"]).toContain(b.anchor.value);
+  });
+
+  test("refuses a key column the data does not carry, naming what it does", () => {
+    const { beats, refusal } = suggestBeats({
+      nativeType: "choropleth",
+      dataCsv: SHIFTED,
+      keyColumn: "region",
+    });
+    expect(beats).toEqual([]);
+    expect(refusal).toContain("region");
+    expect(refusal).toContain("canton");
+  });
+});

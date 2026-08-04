@@ -17,6 +17,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fail, ok, type VerbResult } from "../core/verbs";
 import {
+  PROPOSABLE_MAP_TYPES,
   suggestBeats,
   suggestImageBeats,
   IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED,
@@ -90,6 +91,15 @@ export function draftBeats(
   const { beats, refusal } = suggestBeats({
     nativeType: chosen.nativeType,
     dataCsv,
+    // THE MAP TRACK'S ANCHOR COLUMN — the one the geography actually MATCHED, not the CSV's
+    // first column. Threaded from the run rather than guessed: a map whose region column is not
+    // column 0 would otherwise be drafted against the wrong column silently, since its values
+    // are still strings the data carries. Absent for the chart track, where the first column is
+    // the axis by construction — so this changes nothing there.
+    ...(PROPOSABLE_MAP_TYPES.includes(chosen.nativeType) &&
+    run.orient?.geo?.column
+      ? { keyColumn: run.orient.geo.column }
+      : {}),
     // The angle's `unit` is the long axis label; the draft caption takes it only when it is
     // already short enough to sit inside a sentence (suggestBeats' shortUnit mirrors the
     // engine's own caption rule). The loop carries no separate `valueUnit` today.
