@@ -13,7 +13,9 @@ import {
   channelForElement,
   provenanceHash,
   nextActions,
+  readManifest,
 } from "./manifest";
+import { freezeInput } from "./freeze";
 
 const v1 = {
   runId: "r1",
@@ -452,5 +454,49 @@ describe("migrateV6toV7 — the unified beat model's own migration (sub-project 
     };
     const out = migrate(v4, "/tmp/does-not-matter");
     expect(out.schemaVersion).toBe(7);
+  });
+
+  // The three tests above call migrateV6toV7 DIRECTLY — nothing proves the v6 entry branch of
+  // migrateWriteFree/migrate is actually wired up. This is the seam that let 5→6 crash a
+  // producer (a stale manifest read as "already current" and never reached its migration): a
+  // raw v6 run.json, on disk, read the way a resuming host process actually reads one.
+  test("a v6 run.json on disk resumes through readManifest — the real entry, not migrateV6toV7 called directly", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "loop-mig-v6-resume-"));
+    const src = join(runDir, "src.csv");
+    writeFileSync(src, "canton,2015,2024\nGenève,449,583");
+    const data = freezeInput(runDir, src, "data");
+    const v6 = {
+      runId: "r-v6",
+      schemaVersion: 6,
+      route: "embed",
+      channel: "article-web",
+      input: { data },
+      orient: {
+        profile: {
+          columns: ["canton", "2015", "2024"],
+          numericColumns: ["2015", "2024"],
+          rowCount: 1,
+        },
+        supportsPoint: true,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
+          proposal: {
+            options: [{ id: "slope", nativeType: "slope", why: "w" }],
+            excluded: [],
+            chosenId: "slope",
+          },
+        },
+      ],
+      events: [],
+    };
+    const manifestPath = join(runDir, "run.json");
+    writeFileSync(manifestPath, JSON.stringify(v6, null, 2));
+    const run = readManifest(manifestPath, runDir);
+    expect(run.schemaVersion).toBe(7);
+    expect(nextActions(run)).toEqual(["produce"]);
+    rmSync(runDir, { recursive: true, force: true });
   });
 });
