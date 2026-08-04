@@ -1520,6 +1520,42 @@ describe("the narrative slot", () => {
       }),
     ).toThrow();
   });
+
+  test("a beat may carry a movement, an animation and a duration — all optional", () => {
+    const m = scrollyRun();
+    // Optional: nothing writes these until sub-project ③, and a v6 manifest has none.
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [AUTHORED_BEAT] } },
+        ],
+      }),
+    ).not.toThrow();
+    const motionBeat = {
+      ...AUTHORED_BEAT,
+      movement: "fly" as const,
+      animation: "grow" as const,
+      durationMs: 2500,
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [motionBeat] } }],
+      }),
+    ).not.toThrow();
+  });
+
+  test("a movement outside the closed vocabulary is refused at the schema", () => {
+    const m = scrollyRun();
+    const bogusBeat = { ...AUTHORED_BEAT, movement: "zoom" };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [bogusBeat] } }],
+      }),
+    ).toThrow();
+  });
 });
 
 describe("routing a narrative page through its beats", () => {

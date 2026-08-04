@@ -32,6 +32,10 @@ import { ARC_ROLES } from "../core/claim-arc";
 // by the routing below so the two cannot disagree, the same reason unauthoredBeats is imported
 // from nowhere else either.
 import { unresolvedGeoJoins } from "../geo/join";
+// The closed vocabulary of what an engine can make move (sub-project ①) — the beat's own
+// `movement`/`animation` fields draw from it below, so a beat can never name motion no engine
+// performs. See lib/core/gestures.ts's own header for the camera/data split.
+import { GESTURES } from "../core/gestures";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
@@ -207,6 +211,16 @@ const NarrativeBeatSchema = z.object({
   text: z.string(),
   draftText: z.string(),
   beatSource: BeatSourceSchema,
+  // What MOVES at this beat. Drawn from the closed vocabulary sub-project ① landed
+  // (lib/core/gestures.ts) so a beat can never name motion no engine performs.
+  //   movement  — how the frame arrives here from the previous beat
+  //   animation — what changes once the frame is held
+  //   durationMs — VIDEO only; a scrolly is advanced by the reader, not by time
+  // All three OPTIONAL: nothing writes them until the proposal step (③), and a v6 manifest
+  // carries none. A guard that required them would break every existing run.
+  movement: z.enum(GESTURES).optional(),
+  animation: z.enum(GESTURES).optional(),
+  durationMs: z.number().positive().optional(),
 });
 const NarrativeSchema = z.object({ beats: z.array(NarrativeBeatSchema) });
 
