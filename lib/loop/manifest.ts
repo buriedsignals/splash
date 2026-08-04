@@ -432,7 +432,17 @@ const RunElementSchema = z.object({
 // fail-loud guard against a missing featureIdsByValue then surfaces as an UNCAUGHT throw
 // instead of the catchable stale-schema/next-action path this file exists to provide. See
 // migrateV5toV6 (lib/loop/migrate.ts) for what the migration actually does.
-export const CURRENT_SCHEMA_VERSION = 6 as const;
+//
+// v7 (the unified beat model, sub-project ①/②): NarrativeBeatSchema's `anchor.kind` widens to
+// admit "region"/"place" and the beat gains three OPTIONAL motion fields (movement, animation,
+// durationMs). None of that forces a bump on shape alone either — a v6 manifest parses as v7
+// unchanged — but the bump is owed for the exact reason the v6 one was: without it, a v6
+// manifest reads as already-current and skips migrateV6toV7 entirely. That migration is a pure
+// passthrough today (nothing to rewrite, see its own comment), but the 5→6 crash is what this
+// bump is buying insurance against for the day a guard forgets a field is optional — the
+// version-diff check must fire so a future fix has a migration seam to land in, catchable
+// rather than an uncaught throw at a top-level await.
+export const CURRENT_SCHEMA_VERSION = 7 as const;
 
 export const RunManifestSchema = z.object({
   runId: z.string(),
