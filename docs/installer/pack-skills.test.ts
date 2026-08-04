@@ -1,0 +1,148 @@
+import { test, expect } from "bun:test";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+} from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+
+const PACKER = join(import.meta.dir, "../../scripts/pack-skills.mjs");
+
+/** A miniature repo: two skills, one library directory, one non-skill directory. */
+function repo(): string {
+  const root = mkdtempSync(join(tmpdir(), "splash-packsrc-"));
+  mkdirSync(join(root, "lib", "core"), { recursive: true });
+  writeFileSync(join(root, "lib", "core", "registry.ts"), "export {};");
+  writeFileSync(join(root, "lib", "core", "registry.test.ts"), "// test");
+
+  const alpha = join(root, "skills", "alpha");
+  mkdirSync(join(alpha, "src"), { recursive: true });
+  mkdirSync(join(alpha, "tests"), { recursive: true });
+  mkdirSync(join(alpha, "node_modules", "dep"), { recursive: true });
+  mkdirSync(join(alpha, "output-proof"), { recursive: true });
+  writeFileSync(join(alpha, "SKILL.md"), "---\nname: alpha\n---\n");
+  writeFileSync(join(alpha, "src", "a.ts"), "export {};");
+  writeFileSync(join(alpha, "src", "a.test.ts"), "// test");
+  writeFileSync(join(alpha, "tests", "t.ts"), "// test");
+  writeFileSync(join(alpha, "node_modules", "dep", "i.js"), "//");
+  writeFileSync(join(alpha, "output-proof", "p.png"), "PNG");
+  writeFileSync(
+    join(alpha, "package.json"),
+    JSON.stringify({ name: "alpha", dependencies: { d3: "7.0.0" } }),
+  );
+
+  // A directory under skills/ that is NOT a skill: no SKILL.md. E9's rule.
+  const libOnly = join(root, "skills", "library-only");
+  mkdirSync(libOnly, { recursive: true });
+  writeFileSync(join(libOnly, "index.ts"), "export {};");
+
+  const beta = join(root, "skills", "beta");
+  mkdirSync(beta, { recursive: true });
+  writeFileSync(join(beta, "SKILL.md"), "---\nname: beta\n---\n");
+  writeFileSync(
+    join(beta, "package.json"),
+    JSON.stringify({ name: "beta", dependencies: { remotion: "4.0.0" } }),
+  );
+  return root;
+}
+
+function pack(src: string, out: string) {
+  return Bun.spawnSync(["bun", PACKER, src, out], {
+    stderr: "pipe",
+    stdout: "pipe",
+  });
+}
+
+test("packs only directories that carry a SKILL.md", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    expect(pack(src, out).exitCode).toBe(0);
+    expect(existsSync(join(out, "skills", "alpha", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(out, "skills", "beta", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(out, "skills", "library-only"))).toBe(false);
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("leaves out every excluded tree — that is the whole point of the step", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    const a = join(out, "skills", "alpha");
+    expect(existsSync(join(a, "src", "a.ts"))).toBe(true);
+    expect(existsSync(join(a, "node_modules"))).toBe(false);
+    expect(existsSync(join(a, "tests"))).toBe(false);
+    expect(existsSync(join(a, "output-proof"))).toBe(false);
+    expect(existsSync(join(a, "src", "a.test.ts"))).toBe(false);
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("copies lib/ so the engines' cross-imports still resolve", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    // skills/*/src imports ../../../lib/core/registry — without lib/ the delivered tree is dead.
+    expect(existsSync(join(out, "lib", "core", "registry.ts"))).toBe(true);
+    expect(existsSync(join(out, "lib", "core", "registry.test.ts"))).toBe(
+      false,
+    );
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("writes ONE merged package.json at the root, above the skills", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    const merged = JSON.parse(readFileSync(join(out, "package.json"), "utf8"));
+    // Above skills/, so `bun install` here is resolvable from every engine and enumerated by
+    // no host: the host only ever walks .dist/skills/<name>/.
+    expect(merged.dependencies.d3).toBe("7.0.0");
+    expect(merged.dependencies.remotion).toBe("4.0.0");
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("is idempotent — a file deleted from the source disappears from the delivery", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    const stale = join(out, "skills", "alpha", "src", "gone.ts");
+    writeFileSync(stale, "// left over from a previous pack");
+    pack(src, out);
+    // Merging over a previous run makes the delivery an accumulation rather than a derivation.
+    expect(existsSync(stale)).toBe(false);
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test(".dist is gitignored — a delivery that can be committed stops being derived", () => {
+  const gitignore = readFileSync(
+    join(import.meta.dir, "../../.gitignore"),
+    "utf8",
+  );
+  const ignoresDist = gitignore
+    .split("\n")
+    .some((line) => line.trim() === ".dist" || line.trim() === ".dist/");
+  expect(ignoresDist).toBe(true);
+});

@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "check": "bun scripts/check.mjs",
+    "pack-skills": "bun scripts/pack-skills.mjs . .dist",
     "proofs": "bun scripts/proofs.mjs",
     "check:render": "bun scripts/check-render.mjs",
     "release:check": "bun scripts/preflight-release.mjs"
