@@ -108,19 +108,35 @@ après avoir été traduite en **champ technique** la première fois.
   colonne 0 au lieu de celle que la géographie a matchée ; valeur en dernière colonne numérique au lieu
   de celle que le takeaway désigne — or ces nombres sont ce contre quoi `verifyBeats` fonde les
   affirmations du journaliste).
-- **④ Câblage des trois genres** — **NON COMMENCÉ**, et il n'est pas un bloc. Mesuré dans le code le
-  2026-08-04 :
-  - **(a) La famille `stepped` existe, marche, est enregistrée — mais est INATTEIGNABLE.**
-    `MapScrolly.tsx` dispatche les 7 types, 3 compositions enregistrées ; `storyComps()`
-    (`skills/map-native/scripts/lib/story-comps.mjs`) ne retourne **jamais** `MapScrolly` — il ne
-    connaît que `*Story` (guided-tour) et `*Reveal` (simple). Un genre narratif entier que personne ne
-    peut demander. **Petit, et c'est la tranche la plus rentable de ④.**
-  - **(b) Les 7 `*Reveal` n'ont AUCUNE notion de récit** — `arcBeats` = 0 occurrence dans six d'entre
-    eux, et la seule de `RouteReveal` est un commentaire. C'est le vrai chantier.
-  - **(c) `cameraMode` par beat** — refactor, dépend de (b).
-  - **(d) Le lot route rétrécit** : `RouteScrolly.tsx` est déjà branché dans le dispatcher de
-    `MapScrolly`, donc **(a) le rend atteignable du même coup**. Restent `ScrollyRouteMap` (web) et
-    `RouteStory` (vidéo à étapes).
+- **④ Câblage des trois genres** — **(a) et (b) FAITS** (`6a4dcd31`), spec
+  `2026-08-04-narrative-kinds-wiring-design.md`. **(c) non commencé.**
+  - **(a) `stepped` est atteignable.** `MapScrolly` dispatchait déjà les 7 types et ses 3 aspects
+    étaient enregistrés — mais `storyComps()` ne connaissait que `guided-tour`/`route-reveal`/
+    `simple`, donc **un genre narratif entier rendait correctement et personne ne pouvait le
+    demander**. ★ Effet de bord voulu : `RouteScrolly` est déjà branché dans ce dispatcher, donc
+    **la moitié du lot route (C2) devient atteignable sans écrire un composant**.
+  - **(b) Le `reveal` apprend un ORDRE.** Avant : une seule rampe pilotait l'opacité de tous les
+    sujets à la fois — la marche confirmée du journaliste ne changeait **rien** à l'écran.
+    Mécanisme pur et partagé dans `src/reveal.ts` (`walkSubjectProgress` · `walkFillOpacity` ·
+    `activeWalkIndex`) ; **sans marche, la valeur rendue est le scalaire d'avant, à l'octet**.
+    Honoré par les **cinq** types dont l'ancre est une clé que la donnée porte : choroplèthe,
+    cartogramme, symbole, locator, densité. ★ **La clé de chacun est lue dans SON PROPRE
+    validateur**, jamais choisie — c'est ce qui garantit que ce qui est validé et ce qui est peint
+    parlent de la même chose (`points[].label` · `markers[].label` · `rows[][regionKey]` · la clé
+    de région · `values[].id`). Les deux qui restent dehors le sont **par nature**, pinné par
+    `reveal-walk-coverage.test.ts` : `route` (son animation EST déjà la marche) et `hex-grid`
+    (ses cellules n'ont pas de clé qu'un beat pourrait nommer). Plus aucun « en attente ».
+    Deux décisions assumées : un symbole grandit dans l'ordre de la marche mais **jamais à une
+    taille différente** (l'expression multiplie le rayon, elle ne le remplace pas — la taille EST
+    la valeur) ; et le plafond d'opacité suit le composant (0,85 surfaces, 1 points), parce que
+    c'est ce que chacun peignait avant.
+    **★ PROUVÉ AU RENDU** — `skills/map-native/output-proof/reveal-walk/` : deux produce réels du
+    même choroplèthe à la même frame, marche **délibérément à contre-courant du classement**
+    (`GBR → DEU → NOR` alors que `NOR` est le plus haut). Sans marche, la Scandinavie et l'Europe
+    centrale se teintent ensemble ; avec, **seul le Royaume-Uni est en place** et la Norvège n'est
+    pas entrée. L'inversion EST la preuve. **Refaite sur la famille symbole** (marche à contre-courant de la TAILLE : Amsterdam 52 en premier, London 296 hors marche — sans marche toutes les étiquettes sont là, avec, seul Amsterdam). mp4 `violations: []` des deux côtés. Hors gate (2 rendus MapTiler
+    live), comme `verify-source-bundle.mjs`.
+  - **(c) `cameraMode` par beat** — non commencé.
 
 **Rouges de `lib` au 2026-08-04, tous nommés et attribués** (aucun causé par ①②③) : `eligibility`
 (E5 — **une assertion fausse dans le test**, établi le 2026-08-04, ni environnement ni bug de rendu) ·
@@ -141,15 +157,18 @@ d'abord tester et voir ce qui marche ou non ».
 
 > ★ **Les quatre cibles ne sont PAS de même nature** (établi 2026-08-03) :
 > - **Goose Desktop + Claude Desktop** = skills au format ouvert, lus en local, exécution locale.
->   Les deux sont « câbler et prouver ». Claude Desktop a la surface sous
->   `~/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/…`, format
->   **identique au nôtre** (`SKILL.md` + frontmatter + `scripts/`).
+>   Les deux sont « câbler et prouver ». ⚠️ **Correction mesurée le 2026-08-04** : la surface de
+>   Claude Desktop n'est PAS `…/local-agent-mode-sessions/skills-plugin/…` (répertoire **géré par
+>   Anthropic**, synchronisé) — c'est **`~/.claude/skills/`**, auto-chargé par l'app et monté en
+>   lecture seule dans sa VM. Câblé depuis (`install/runtimes/claude-desktop.sh`).
 > - **Gemini** : c'est la **CLI** qui implémente le standard ouvert. L'app macOS (Spark, juin 2026,
 >   accès fichiers locaux) — support `SKILL.md` **non établi**.
-> - **ChatGPT Desktop** : modèle **MCP / connecteurs configurés côté web**, pas de skills locaux ; un
->   connecteur distant **ne peut pas lancer Bun/Playwright/Remotion chez le journaliste**. Splash est
->   local-first. **Question préalable : ce modèle permet-il seulement de produire un fichier en
->   local ?** À trancher AVANT d'y investir.
+> - **ChatGPT Desktop** : ⚠️ **ce qui suit a été MESURÉ FAUX le 2026-08-04** — « connecteurs côté web,
+>   donc pas d'exécution locale ». La doc OpenAI documente les serveurs MCP **STDIO lancés en process
+>   local** (`command = …`), config partagée avec Codex (`~/.codex/config.toml`). L'exécution locale
+>   n'est donc PAS le blocage ; ce qui manque est la **surface** (MCP expose des outils, pas des
+>   skills). Piste la moins chère : la surface est Codex embarqué, runtime qu'on livre déjà. Détail :
+>   `docs/installer/claude-desktop-findings.md` § B4.
 
 **C. Tout ce qui a été construit doit FONCTIONNER et être ACCESSIBLE pour produire.** Ce n'est pas
 seulement le lot route : c'est un **audit d'atteignabilité** de toutes les capacités. La session du

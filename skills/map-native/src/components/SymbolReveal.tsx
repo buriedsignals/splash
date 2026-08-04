@@ -31,7 +31,11 @@ import { houseFill } from "../theme/house-ramp";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { labelWithUnit } from "../core/locale";
-import { easedRevealProgress, revealCameraPlan } from "../reveal";
+import {
+  easedRevealProgress,
+  revealCameraPlan,
+  walkFillOpacity,
+} from "../reveal";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import { TitleCard } from "./StoryCards";
 
@@ -110,10 +114,18 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
       // Retained so the load `idle` can re-derive each label's in-viewport anchor and
       // setData once (fixed camera → compute-once, like SymbolMap). `anchor` starts at the
       // FT/NYT direct-label default (text to the RIGHT of the point, MapLibre "left").
+      // THE WALK, as a lookup. `s.label` is the point's own label carried through placement
+      // (symbol-geo.ts:99 spreads the point), which is EXACTLY the list
+      // validateSymbolConfig checks a beat's `region` against (validate-config.ts's
+      // `points.map(p => String(p.label))`) — the key is read from the validator, not chosen.
+      const walkIndexByLabel = new Map<string, number>(
+        (config.arcBeats ?? []).map((b, i) => [String(b.region), i]),
+      );
       const symbolFeatures: GeoJSON.Feature[] = geo.symbols.map((s, i) => ({
         type: "Feature",
         properties: {
           radius: s.radius,
+          __walkIdx: walkIndexByLabel.get(String(s.label)) ?? -1,
           labelText: labels[i]?.name
             ? `${labels[i].name}\n${labelWithUnit(labels[i].valueText, config.valueUnit, config.lang)}`
             : labelWithUnit(
@@ -222,13 +234,17 @@ export const SymbolReveal: React.FC<{ config: SymbolConfig }> = ({
     )
       return;
     const h = delayRender(`symbol-reveal-frame-${frame}`);
+    // One ramp with no walk (byte-identical); the journalist's own order when there is one.
+    // Multiplied INTO the radius expression rather than replacing it: a symbol's size is its
+    // value, and a walk decides WHEN it grows, never how big it gets.
+    const grow = walkFillOpacity(progress, config.arcBeats?.length ?? 0, 1);
     map.setPaintProperty("symbol-circles", "circle-radius", [
       "*",
       ["get", "radius"],
-      progress,
-    ]);
+      grow,
+    ] as never);
     if (map.getLayer("symbol-labels")) {
-      map.setPaintProperty("symbol-labels", "text-opacity", progress);
+      map.setPaintProperty("symbol-labels", "text-opacity", grow as never);
     }
     continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();

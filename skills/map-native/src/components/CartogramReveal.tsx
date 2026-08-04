@@ -36,7 +36,12 @@ import { resolveVideoGeometry } from "../core/video-geometry";
 import { resolveMapFrame } from "../core/map-format";
 import { fmtBin } from "../core/legend-format";
 import { MapFrame } from "../core/MapFrame";
-import { easedRevealProgress, revealCameraPlan } from "../reveal";
+import {
+  easedRevealProgress,
+  revealCameraPlan,
+  walkFillOpacity,
+} from "../reveal";
+import type { MapArcBeat } from "../map-arc";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import { TitleCard } from "./StoryCards";
 
@@ -85,7 +90,9 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
   );
 
   // fill-opacity ramps 0 → 0.85 (the CartogramMap max opacity).
-  const fillOpacity = progress * 0.85;
+  // One ramp when nobody wrote a walk (byte-identical to before); the journalist's own order
+  // when they did — sub-project ④(b), same shared helper the choropleth reveal paints.
+  const fillOpacity = walkFillOpacity(progress, config.arcBeats?.length ?? 0);
 
   // Scene: title card fades out, furniture fades in.
   const scene = resolveScene(frame, { titleSceneEndFrame: TITLE_SCENE_FRAMES });
@@ -139,12 +146,19 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
       applyCartogramBasemap(map, dark, layout.variant);
 
       // Build FeatureCollection from cells — each carries display props.
+      // THE WALK, as a lookup — built once rather than searched per cell (sub-project ④(b)).
+      const walkIndexById = new Map<string, number>(
+        (config.arcBeats ?? []).map((b, i) => [String(b.region), i]),
+      );
       const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
         type: "Feature",
         properties: {
           __color: cell.color,
           __id: cell.id,
           __value: cell.value,
+          // WHERE this cell sits in the journalist's walk, or -1 when unnamed — sub-project
+          // ④(b). A cartogram's arcBeat anchors on the region key, which IS `cell.id`.
+          __walkIdx: walkIndexById.get(String(cell.id)) ?? -1,
         },
         geometry: cell.feature.geometry,
       }));
@@ -165,7 +179,7 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
         source: "cartogram-cell-src",
         paint: {
           "fill-color": ["get", "__color"] as never,
-          "fill-opacity": fillOpacity,
+          "fill-opacity": fillOpacity as never,
         },
       });
 
@@ -205,7 +219,7 @@ export const CartogramReveal: React.FC<{ config: CartogramConfigShape }> = ({
     if (!mapReady || !map || !map.isStyleLoaded() || !map.getLayer(CELL_LAYER))
       return;
     const h = delayRender(`cartogram-reveal-frame-${frame}`);
-    map.setPaintProperty(CELL_LAYER, "fill-opacity", fillOpacity);
+    map.setPaintProperty(CELL_LAYER, "fill-opacity", fillOpacity as never);
     continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapReady, frame, fillOpacity]); // eslint-disable-line react-hooks/exhaustive-deps
