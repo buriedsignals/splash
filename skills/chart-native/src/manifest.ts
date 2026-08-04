@@ -13,11 +13,30 @@ const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 // What each chart type makes move — measured, not aspired to. Charts declare DATA
 // gestures only (grow/draw/stagger/highlight) — no camera concept exists anywhere in
-// skills/chart-native/src (docs/splash/gesture-inventory-2026-08-03.md §4). Every type
-// below has exactly one narrative kind, `reveal`: no .tsx file in this package reads a
-// beat structure (inventory §4, confirmed by an exhaustive `arcBeats` grep — 0 hits); the
-// only beat-driven chart narrative lives in the `scrolly` package, for 3 of these 41
-// types, and is declared on scrolly's own manifest (see below), not here.
+// skills/chart-native/src (docs/splash/gesture-inventory-2026-08-03.md §4).
+//
+// Every type below declares `reveal`. Three types (line, bar, scatter) ALSO declare
+// `scrolly` — corrected here: a prior version of this comment claimed chart-native "has
+// no beat structure" on the strength of "an exhaustive `arcBeats` grep — 0 hits", but
+// `arcBeats` is map-native's field name, not chart-native's. chart-native's own beat
+// structure lives in chart-story.ts, in plain sight: `ChartBeat` (:30), `mapStepToBeat`
+// (:60), `AUTHORABLE_SCROLLY_TYPES = ["line","bar"]` (:128, the two types an explicit
+// journalist `beats` override applies to — scatter's walk is always auto-derived, never
+// authored, but it still walks), `deriveChartStory` (:288+, builds title→establish→
+// reveal×N→takeaway beats for all three types). The renderer that consumes this beat
+// list is `skills/scrolly`'s own ScrollyChart.tsx (:92-138) — which imports LineChart/
+// BarChart/ScatterChart directly from this package and renders line/bar/scatter
+// scrollies today.
+//
+// Where that vocabulary is DECLARED was a circular buck-pass: this file used to say "see
+// scrolly's own manifest below" while scrolly/src/manifest.ts said "declared on chart-
+// native's manifest (their `scrolly` narrative kind), not here" — neither true. scrolly's
+// own producer registers ZERO `types` (documented there as deliberate: it is the shared
+// MECHANISM, not a type owner), so it structurally CANNOT declare a per-type gesture
+// vocabulary — the `t.gestures` shape is keyed by `p.types`, and scrolly's `p.types` is
+// always empty. chart-native is the only manifest that owns `line`/`bar`/`scatter` as
+// types, so chart-native is the only place this vocabulary CAN live. Declared below, per
+// type, from ScrollyChart.tsx's own code (see LINE_GESTURES / BAR_LIKE_SCROLLY comments).
 //
 // `highlight` (hover/keyboard-focus, present in the interactive rendering of the
 // `reveal` kind — inventory §4.1) is confirmed on every one of the 41 base components by
@@ -46,6 +65,16 @@ const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // inventory's own 7-header sample, which this task's brief explicitly permits going
 // beyond when the difference can be grounded in a few minutes of reading — see
 // task-4-report.md for the full per-type ledger).
+//
+// NOTE for sub-project ④ (which decides reachability/deferral, not this one): 14 of
+// NATIVE_TYPES' 41 entries carry `deferred` (native-types.ts) and every one of them still
+// gets a FULL gesture vocabulary below, same as a reachable type. That is deliberate, not
+// an oversight — `gestures` describes what the COMPONENT does when it renders (the same
+// "capability, not reachability" distinction this manifest already draws for map-native's
+// unreachable video-Scrolly family), and a deferred chart-native type's .tsx component
+// still exists and still renders exactly as declared; only its produce-path wiring is
+// deferred. Left as-is, called out explicitly here so ④ inherits the fact instead of
+// re-discovering it.
 
 // Bars/stems grow from the zero baseline (gestures.ts's own "grow" citation:
 // "bar/stem height from baseline (BarChart.tsx:1-3)"), each one's own entrance offset
@@ -61,17 +90,61 @@ const BAR_LIKE: GestureVocabulary = {
 // (StackedAreaChart.tsx:1-4).
 const WIPE_LIKE: GestureVocabulary = { reveal: ["draw", "highlight"] };
 
-const CHART_GESTURES: Record<string, GestureVocabulary> = {
-  // LineChart.tsx: the line draws on by cumulative length (revealLine/revealHead,
-  // gestures.ts's own "draw" citation); a second, distinct series gets its own
-  // `stagger(p, nY-1-i, nY, ...)` entrance offset at :304,307. Hover state :131,173,
-  // 438-441 (inventory §4.1's own citation).
-  line: { reveal: ["draw", "stagger", "highlight"] },
+// LineChart.tsx has exactly two `stagger(` calls in the whole file (:304, :307) — both
+// inside `layout.yTicks.map((t, i) => …)`, where `nY` is the Y-AXIS TICK COUNT. That is
+// gridline furniture (the axis's own gridlines, staggered top→bottom per :300's own
+// comment — "gridlines: horizontal wipe from the left, staggered bottom→top"), not a
+// second data series: a prior reading of this file claimed "a second, distinct series
+// gets its own stagger(...) entrance offset", but LineChart renders exactly one series
+// (one `revealLine`/`revealHead` call at :262-263, one `<path className="series-line">`
+// — singular, never mapped over a series list). Gridline furniture is not a data-mark
+// gesture — declaring `stagger` for `line` on the strength of it would promise a
+// per-series entrance the component cannot render for a chart type that has no second
+// series to begin with. `line` declares `draw` (the one data mark) and `highlight`
+// (hover/keyboard-focus) only.
+const LINE_GESTURES: GestureVocabulary = {
+  // revealLine/revealHead draw the single series by cumulative path length — `draw`,
+  // gestures.ts's own citation. Hover state :131,173,438-441 (inventory §4.1's own
+  // citation) — `highlight`.
+  reveal: ["draw", "highlight"],
+  // ScrollyChart.tsx:92-109: LineChart is driven by `revealTo` (a continuous scroll-
+  // mapped fraction, `scrollToLineProgress`), the SAME single-scalar cumulative-length
+  // draw as `reveal` above — `draw`. `interactive` is never passed (defaults false,
+  // LineChart.tsx:83), so the hover/keyboard-focus machinery that grounds `reveal`'s
+  // `highlight` is inert in the scrolly embed — no `highlight` here.
+  scrolly: ["draw"],
+};
+
+// BarChart.tsx/ScatterChart.tsx rendered by ScrollyChart.tsx (:110-141) are both called
+// with `progress={1}` — a CONSTANT, not scroll-driven — so the grow/stagger entrance
+// each type plays under `reveal` never runs in the scrolly embed; every mark is already
+// fully drawn from the first frame. The only thing that changes per scroll step is which
+// one mark is accented: BarChart's `highlightIndex` mutes every OTHER bar to `C.muted`
+// while the highlighted bar keeps the constant primary colour (`barColor`, BarChart.tsx:
+// 228-241 — siblings dim, no ramp on the emphasised subject: `highlight`); ScatterChart's
+// `annotate` attaches a text label to one story point, with no dim and no ramp on any
+// point's own rendering. Both match gestures.ts's own citation for this exact pattern
+// ("ScrollyChart's bar/scatter 'highlight walk' … one bar/point accented per step,
+// ScrollyChart.tsx:110-138" — the vocabulary's own grounding for `highlight`).
+// Only `bar` and `scatter` are ever rendered by ScrollyChart.tsx (CHART_SCROLLY_TYPES =
+// ["line","bar","scatter"], scrolly-types.ts) — this key is added to those two types
+// only, never to the other BAR_LIKE-sharing types (grouped/stacked/dumbbell/etc.), which
+// ScrollyChart never touches and so have no `scrolly` capability to declare.
+const BAR_LIKE_SCROLLY: GestureVocabulary = { scrolly: ["highlight"] };
+
+// Exported (not just used below) so a drift test can check every key here resolves to a
+// real NATIVE_TYPES id — a typo'd key here (e.g. "pictogrma") silently drops the real
+// type's gestures and leaves the typo'd entry unreachable through the registry (the
+// `.map()` below only ever looks up `CHART_GESTURES[t.id]` for a REAL id; a stray key
+// like "pictogrma" is simply never read, and its own product never appears in
+// `p.types` for anything to notice) — see gesture-declaration-drift.test.ts.
+export const CHART_GESTURES: Record<string, GestureVocabulary> = {
+  line: LINE_GESTURES,
   // BarChart.tsx:283 `stagger(p, i, n, 0.18, 0.5/n, 0.35)` per bar.
-  bar: BAR_LIKE,
+  bar: { ...BAR_LIKE, ...BAR_LIKE_SCROLLY },
   // ScatterChart.tsx:191 `stagger(p, xRank[i], n, ...)` per point; header: "dots POP IN
   // in place (scale 0→1, slight bloom)".
-  scatter: { reveal: ["grow", "stagger", "highlight"] },
+  scatter: { reveal: ["grow", "stagger", "highlight"], ...BAR_LIKE_SCROLLY },
   // pie-geometry.ts:139-144 `sliceProgress` — ONE continuous sweeping angle (`master`)
   // drives every slice's own [startAngle,endAngle] window; no per-slice easing/offset.
   // Matches gestures.ts's own "draw" citation ("an angle by sweep, PieChart.tsx:1-4").
@@ -101,15 +174,26 @@ const CHART_GESTURES: Record<string, GestureVocabulary> = {
   pyramid: BAR_LIKE,
   // BulletChart.tsx:197 `stagger(p, i, n, ...)` per row.
   bullet: BAR_LIKE,
-  // ConnectedScatterChart.tsx: one continuous cumulative-length path draw; each dot's
-  // opacity (`dotOp`, fixed radius, :307-309) is gated on the SAME draw-head position,
-  // not an independent per-item window — no `stagger(` call in the file.
-  "connected-scatter": WIPE_LIKE,
+  // ConnectedScatterChart.tsx:189-200: one continuous cumulative-length path draw
+  // (`draw`/`head`, single scalar). `dotOp` (:197-200) gates each dot's own opacity on
+  // ITS OWN cumulative position along the path (`pt.cum / totalLen`) — a real per-point
+  // timing offset, the same shape as the shared `stagger()` helper even though this file
+  // never calls it (it is hand-written inline, same class as HeatmapChart/CalendarChart
+  // per this manifest's own supplementary finding above). A prior reading took "no
+  // `stagger(` call in the file" literally and concluded no stagger exists — the per-dot
+  // gate is real, it is just not implemented via the shared helper.
+  "connected-scatter": { reveal: ["draw", "stagger", "highlight"] },
   // BoxplotChart.tsx:195 `stagger(p, i, n, ...)` per row; header: "grows each box FROM
   // THE MEDIAN outward".
   boxplot: BAR_LIKE,
-  // BumpChart.tsx: lines draw left→right (header); no `stagger(` call found.
-  bump: WIPE_LIKE,
+  // BumpChart.tsx:271 `drawBumpPath(ln.points, drawProg)` draws each line by one shared
+  // scalar (`draw`). :296-301: each period's dot has its own opacity gate
+  // `clamp01((drawProg - frac + 0.08) / 0.06)` where `frac` is the dot's own position
+  // along the line — the file's own comment: "each pops just as the sweep reaches it" —
+  // a real per-dot timing offset, same class as ConnectedScatterChart's `dotOp` above.
+  // Same correction: "no `stagger(` call found" is true of the helper, not of the
+  // pattern.
+  bump: { reveal: ["draw", "stagger", "highlight"] },
   // BeeswarmChart.tsx:273,317 `stagger(p, nd.order, n, ...)` per dot; header: "scales
   // each dot's radius from 0".
   beeswarm: BAR_LIKE,
