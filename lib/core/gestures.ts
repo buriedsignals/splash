@@ -44,6 +44,19 @@ export const DATA_GESTURES = [
   // A size ramps from zero to full: bar/stem height from baseline (BarChart.tsx:1-3), point
   // radius (SymbolReveal.tsx:218-233, LocatorReveal.tsx:219-234), cell scale-in (Waffle/
   // Marimekko/Treemap, inventory §4 table).
+  //
+  // OPEN CONSISTENCY QUESTION (not resolved by this task — recorded, not silently
+  // smoothed over): "from zero to full" is read loosely in practice. HeatmapChart.tsx:250,
+  // MarimekkoChart.tsx:238, WaffleChart.tsx:229 and ChordChart.tsx:194 are all declared
+  // `grow` while their own ramp starts from a non-zero floor (an eased `a` that never
+  // actually reaches 0, a minimum cell/column scale, etc.), not literal zero. Meanwhile
+  // dumbbell (declared `grow`) and slope (declared `draw`) drive their own entrance off
+  // the SAME lerp primitive shape (a per-item eased 0→1 window widening a gap / extending
+  // a line) yet land on different gesture names. Whether "grow" should mean strictly
+  // "from literal zero" (tightening several of the above) or "size increases, floor
+  // aside" (loosening the definition to match current practice), and whether dumbbell/
+  // slope's shared primitive should collapse to one name, is a vocabulary decision for
+  // sub-project ④ — this task only measured the inconsistency, it did not adjudicate it.
   "grow",
   // A path or region progressively reveals along one dimension by a monotonic scalar: a line by
   // cumulative length (LineChart.tsx via revealLine/revealHead), an area by left→right wipe
