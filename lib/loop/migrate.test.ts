@@ -460,11 +460,36 @@ describe("migrateV6toV7 — the unified beat model's own migration (sub-project 
   // migrateWriteFree/migrate is actually wired up. This is the seam that let 5→6 crash a
   // producer (a stale manifest read as "already current" and never reached its migration): a
   // raw v6 run.json, on disk, read the way a resuming host process actually reads one.
+  //
+  // M1 (whole-branch review): this fixture used to carry NO `narrative` at all, so the ONLY
+  // place a v6 beat's shape was ever asserted was "a v6 run WITH beats keeps every beat
+  // byte-identical" above — which calls migrateV6toV7 directly and asserts
+  // `toEqual({...withBeats, schemaVersion: 7})` against an implementation that IS
+  // `return {...raw, schemaVersion: 7}`. That assertion restates the implementation; it
+  // cannot redden for any beat shape. The two v6-beat tests never intersected, so nothing in
+  // the repository proved a beat with a populated `beatSource` survives the REAL entry
+  // (readManifest → migrate → parseManifest, which also validates against
+  // NarrativeBeatSchema — a check the direct-call tests never exercise at all). Added here
+  // instead of only widening the direct-call fixture, because this is the path a resuming
+  // host process actually takes.
   test("a v6 run.json on disk resumes through readManifest — the real entry, not migrateV6toV7 called directly", () => {
     const runDir = mkdtempSync(join(tmpdir(), "loop-mig-v6-resume-"));
     const src = join(runDir, "src.csv");
     writeFileSync(src, "canton,2015,2024\nGenève,449,583");
     const data = freezeInput(runDir, src, "data");
+    const beats = [
+      {
+        id: "b1",
+        anchor: { kind: "x", value: "2015" },
+        role: "establish",
+        text: "Genève held steady",
+        draftText: "Genève — 449",
+        beatSource: {
+          facts: { x: "2015", value: "449" },
+          shared: { points: "2", first: "449", last: "583" },
+        },
+      },
+    ];
     const v6 = {
       runId: "r-v6",
       schemaVersion: 6,
@@ -488,6 +513,7 @@ describe("migrateV6toV7 — the unified beat model's own migration (sub-project 
             excluded: [],
             chosenId: "slope",
           },
+          narrative: { beats },
         },
       ],
       events: [],
@@ -497,6 +523,9 @@ describe("migrateV6toV7 — the unified beat model's own migration (sub-project 
     const run = readManifest(manifestPath, runDir);
     expect(run.schemaVersion).toBe(7);
     expect(nextActions(run)).toEqual(["produce"]);
+    // The actual M1 proof: a v6 beat with a populated beatSource, round-tripped through the
+    // real resume path, comes back byte-identical — not just "the version stamp changed".
+    expect(run.elements[0]!.narrative?.beats).toEqual(beats);
     rmSync(runDir, { recursive: true, force: true });
   });
 });
