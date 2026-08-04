@@ -190,7 +190,19 @@ const BeatSourceSchema = z.object({
 });
 const NarrativeBeatSchema = z.object({
   id: z.string(),
-  anchor: z.object({ kind: z.enum(["x", "category"]), value: z.string() }),
+  // The anchor is what the beat is ABOUT, in the journalist's own words. Four kinds because
+  // the engines disagree about what a subject is: a chart anchors on an axis value or a
+  // category, a map on a region — and a hex-grid on a PLACE, because its cells do not exist
+  // until the data is binned, so there is no name to anchor on (skills/map-native's
+  // resolveHexGridArc). This is a WIDENING: "x" and "category" keep their exact meaning, so
+  // no existing beat changes sense. (The scrolly→stepped migration is the cautionary tale —
+  // when two values are both valid, a half-done reattribution lies silently.)
+  anchor: z.object({
+    kind: z.enum(["x", "category", "region", "place"]),
+    value: z.string(),
+    lon: z.number().optional(),
+    lat: z.number().optional(),
+  }),
   role: z.enum(ARC_ROLES),
   text: z.string(),
   draftText: z.string(),

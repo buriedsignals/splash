@@ -1449,6 +1449,63 @@ describe("the narrative slot", () => {
       }),
     ).not.toThrow();
   });
+
+  test("a beat can anchor on a region, and on a place with coordinates", () => {
+    const m = scrollyRun();
+    const regionBeat = {
+      ...AUTHORED_BEAT,
+      id: "beat-region",
+      anchor: { kind: "region" as const, value: "Genève" },
+    };
+    const placeBeat = {
+      ...AUTHORED_BEAT,
+      id: "beat-place",
+      // hex-grid is the one map type whose units do not exist until the data is binned, so its
+      // anchor is a name PLUS coordinates (skills/map-native's resolveHexGridArc).
+      anchor: {
+        kind: "place" as const,
+        value: "Lausanne",
+        lon: 6.63,
+        lat: 46.52,
+      },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [regionBeat] } }],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [placeBeat] } }],
+      }),
+    ).not.toThrow();
+  });
+
+  test("the two existing anchor kinds still parse unchanged", () => {
+    const m = scrollyRun();
+    const xBeat = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "x" as const, value: "2019" },
+    };
+    const categoryBeat = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "category" as const, value: "Vaud" },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [xBeat] } }],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [categoryBeat] } }],
+      }),
+    ).not.toThrow();
+  });
 });
 
 describe("routing a narrative page through its beats", () => {
