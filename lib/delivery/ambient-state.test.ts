@@ -36,16 +36,15 @@ function withoutComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 }
 
-// A ratchet, not an allowlist: the one entry left is named with what unblocks it, and the
-// COUNT is asserted, so a second door cannot be added under cover of the first.
+// A ratchet, not an allowlist. It reached ZERO on 2026-08-04 (registry A7) exactly the way the
+// previous note said it would: `resolveEmbedConfig`'s `= process.env` default was the last door,
+// held open by one caller — skills/splash/scripts/deploy-embed.mjs — that invoked it with no
+// argument. That call site now names `process.env` itself and the parameter is required, so the
+// environment a deploy runs in is a decision the caller makes rather than one an adapter inherits.
 //
-// `resolveEmbedConfig`'s `= process.env` default survives only because its one remaining
-// caller is skills/splash/scripts/deploy-embed.mjs:108, which calls it with no argument. That
-// file is the legacy shell (registry §3.6) and is outside this slice's boundary; the close is
-// one token there — `resolveEmbedConfig(process.env)` — and then this list goes to zero.
-const AMBIENT_READERS_LEFT: Record<string, number> = {
-  "adapters/cloudflare-pages.ts": 1,
-};
+// EMPTY IS THE POINT, and it is what makes this a ratchet rather than a report: an entry added
+// back here is a deliberate act with a name on it, not a default that slipped in.
+const AMBIENT_READERS_LEFT: Record<string, number> = {};
 
 describe("delivery adapters read no ambient state", () => {
   it("should touch process.env nowhere but the one door the register still names", () => {

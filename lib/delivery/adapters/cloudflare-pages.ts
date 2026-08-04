@@ -150,8 +150,11 @@ export function embedTokenConfigured(
   );
 }
 
+// `env` is REQUIRED, for `embedTokenConfigured`'s reason above: the last caller that relied on
+// the ambient default (skills/splash/scripts/deploy-embed.mjs) now names `process.env` at its own
+// call site, so the shell a deploy inherits is a decision the caller makes and can be read.
 export function resolveEmbedConfig(
-  env: Record<string, string | undefined> = process.env,
+  env: Record<string, string | undefined>,
 ): EmbedConfig {
   const token = (env.CLOUDFLARE_API_TOKEN ?? "").trim();
   const accountId = (env.CLOUDFLARE_ACCOUNT_ID ?? "").trim();

@@ -125,7 +125,7 @@ if (import.meta.main) {
   // Never let the upload stall mid-deploy or hand back a placeholder that fakes delivery.
   let cfg;
   try {
-    cfg = resolveEmbedConfig();
+    cfg = resolveEmbedConfig(process.env);
   } catch (e) {
     if (!hostedUrl) {
       console.error(e.message);
