@@ -87,3 +87,37 @@ C'est le premier appelant de `lib/core/beat-motion.ts`, que ② a livré sans co
    produisent exactement comme aujourd'hui, sans détour.
 4. **Chaque garde doit être vu rougir** pour la bonne raison, mutation appliquée vérifiée avant
    d'être crue.
+
+## 7. ★ Ce que l'exécution a trouvé (2026-08-04)
+
+Deux trous que la conception n'avait pas vus, tous deux **entre** les couches — la classe de
+défaut que ce projet paie depuis deux jours.
+
+**`assembleScrolly` refusait toute marche sur le track carte** (`MAP_TRACK_BEATS_REFUSAL`). La
+chaîne complète serait allée jusqu'au bout — routage, brouillon, écriture par le journaliste — puis
+**refusée à l'assemblage**. La règle avait été écrite quand un beat de brief ne pouvait être que
+chart-formé et n'avait nulle part où aller sur une carte ; elle juge désormais la **forme** du beat,
+pas sa présence. Une marche chart sur une carte reste refusée, mot pour mot.
+
+**Le brouillon lisait deux colonnes que le rendu ne lit pas.** L'ancre venait de la colonne 0 alors
+que la géographie a matché une colonne nommée (`run.orient.geo.column`), et la valeur venait de la
+dernière colonne numérique alors que l'assembleur la résout depuis le takeaway (`valueFieldFor`).
+Les deux divergences sont **silencieuses** : les valeurs restent des chaînes que la donnée porte.
+La seconde est la plus grave — les nombres du brouillon sont ce contre quoi `verifyBeats` fonde les
+affirmations du journaliste, donc ses phrases auraient été fondées sur une colonne que le lecteur
+ne voit jamais.
+
+## 8. La couture avec ④
+
+**`canDraftBeats(nativeType, format)`** — ④ ouvre la vidéo du track chart en ajoutant `format ===
+"video"` à la branche chart, une fois que les `*Reveal` lisent une marche. Le commentaire du code
+nomme ④ comme l'auteur de ce changement.
+
+**`beatMotionErrors` a désormais un appelant** (`produce.ts`), et il est **inerte tant que rien
+n'écrit de mouvement** : un beat sans mouvement ne produit aucune erreur. ④ est ce qui écrira un
+geste sur un beat ; le jour où il le fera, ce gate le juge déjà.
+
+**Une limite connue, non corrigée** : le gate lit `chosen.engine ?? ""`. Une `FormOption` héritée
+sans `engine` (fixtures, manifestes écrits à la main) verrait tout mouvement refusé — **bruyamment**,
+avec un message qui nomme un producteur vide. Inatteignable aujourd'hui (rien n'écrit de mouvement),
+à traiter par ④ quand il en écrira.

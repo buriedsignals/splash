@@ -15,6 +15,7 @@ import {
   type SourceLedger,
   type SourcePolicyCode,
 } from "../source";
+import { beatMotionErrors } from "../core/beat-motion";
 import {
   chosenOption,
   provenanceHash,
@@ -211,6 +212,36 @@ export async function produce(
   // the brain existed (fixtures, hand-authored manifests) carry no `format` at all; "static"
   // is the same default produce.ts always rendered before this format threading landed.
   const format: VisualFormat = chosen.format ?? "static";
+
+  // THE MOTION A BEAT CLAIMS, JUDGED BY THE ENGINE THAT WILL RENDER IT — sub-project ③, and the
+  // FIRST caller of lib/core/beat-motion.ts (sub-project ② delivered it with none, deliberately).
+  //
+  // This is the storyboard's third function in Rémy's own framing (2026-08-03): making sure what
+  // is asked for FITS what we know how to produce. It runs here rather than only at the proposal
+  // because the journalist can rewrite a walk between the two, and a gesture no component
+  // implements would otherwise be discovered as a silently diminished file — the exact failure
+  // `cameraMode: "simple"` produces today by throwing a whole storyboard away without a word.
+  //
+  // POSITION — after the unwritten-beat refusal, so a journalist is never told "that movement is
+  // impossible" about a walk they have not finished writing. Below the format resolution because
+  // the target NEEDS the pinned format: neither the narrative kind nor the vocabulary owner can
+  // be resolved without it.
+  //
+  // NOTHING WRITES THESE FIELDS YET, and this gate is written to stay silent about that: a beat
+  // with no motion is valid (beatMotionErrors returns [] for it), so every run made before ③
+  // passes here unchanged. Sub-project ④ is what will put a gesture on a beat.
+  const motionErrors = (el.narrative?.beats ?? []).flatMap((b) =>
+    beatMotionErrors(b, {
+      engine: chosen.engine ?? "",
+      nativeType: chosen.nativeType ?? "",
+      format,
+    }).map((e) => `${b.id}: ${e}`),
+  );
+  if (motionErrors.length)
+    return fail(
+      "invalid-request",
+      `produce: this walk asks for movement the engine cannot render — ${motionErrors.join("; ")}`,
+    );
 
   // WHO the figures belong to. This used to be `{ name: "Provided by the newsroom" }` — a
   // hard-coded placeholder, identical on every visual the loop ever built: the attribution did

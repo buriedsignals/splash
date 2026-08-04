@@ -22,6 +22,32 @@ import { ARC_ROLES, type ArcRole } from "../core/claim-arc";
 import { parseCsvRows } from "../loop/profile";
 import { AUTHORABLE_SCROLLY_TYPES } from "../../skills/chart-native/src/chart-story";
 import { IMAGE_SCROLLY_TYPE } from "../../skills/image-native/src/image-story";
+import { ARC_CAPABLE_MAP_TYPES } from "../../skills/map-native/src/map-arc";
+
+/**
+ * THE MAP TYPES A WALK CAN BE PROPOSED FOR — sub-project ③
+ * (docs/superpowers/specs/2026-08-04-proposal-step-design.md § 2).
+ *
+ * DERIVED from the engine's own list rather than retyped, the same discipline BEAT_TYPES already
+ * follows for the chart track: a type that joins ARC_CAPABLE_MAP_TYPES tomorrow is proposable the
+ * same day, and a list that drifts from the engine's cannot be the thing that decides.
+ *
+ * `route` and `hex-grid` are SUBTRACTED, and not as an oversight. Every other arc-capable type
+ * anchors on a key the frozen data already carries (a region code, a marker label), so a walk can
+ * be drafted from the CSV alone. Those two anchor on something that does not exist until produce
+ * time — a computed territory (`resolveRouteArc`) and a binned grid cell whose place has no name
+ * until the binning runs (`resolveHexGridArc`, and map-arc.ts's own comment on why `lon`/`lat` are
+ * hex-grid-only). Drafting for them would mean inventing an anchor and asking the journalist to
+ * write against it, which is the defect this seam exists to remove. They keep their hand-written
+ * `arcBeats`; the spec's § 4.3 correction (sub-project ②) is where this was established.
+ */
+// Typed `readonly string[]` rather than keeping the engine list's literal union: callers ask
+// "is THIS type proposable?" about a `nativeType` that arrives as a plain string from the
+// manifest, and a union-typed `.includes` refuses that question at compile time — which would
+// push callers into a cast, the silent kind of widening this file argues against everywhere else.
+export const PROPOSABLE_MAP_TYPES: readonly string[] = ARC_CAPABLE_MAP_TYPES.filter(
+  (t) => t !== "route" && t !== "hex-grid",
+);
 
 /**
  * THE ONE WORDING for "an image scrolly needs the journalist's own photographs".
@@ -41,9 +67,10 @@ export const IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED =
 // Hand-synced with NarrativeBeatSchema's anchor (lib/loop/manifest.ts) rather than built from
 // its z.infer, the same discipline GeographyRefSchema's plain-type twin already uses (that
 // schema's own comment) — this module has to stay importable without zod riding along.
-// `region`/`place` are widened here only so this type keeps compiling against the manifest's
-// anchor; suggestBeats itself still only ever emits "x"/"category" (chart-only) — a map beat's
-// region/place anchor is authored elsewhere (skills/map-native, Task 5's own migration).
+// `region` is now EMITTED by suggestBeats itself (sub-project ③ — the map track's proposal
+// step); `place` still is not, and is widened here only so this type keeps compiling against
+// the manifest's anchor — a hex-grid's place has no name until the binning runs, so nothing can
+// draft one (PROPOSABLE_MAP_TYPES' own comment).
 // Kept as a 4-arm discriminated union (a local convention already in place before this widening)
 // rather than one flat object with optional `lon`/`lat` on every kind, unlike GeographyRef's
 // flat-mirror style — both compile clean; this file continues what was already here.
@@ -82,6 +109,19 @@ export type SuggestBeatsInput = {
   /** The journalist's OWN anchor list, in their own order — the re-draft door that makes
    *  verifyBeats' exact-order refusal legitimate rather than a dead end. */
   anchors?: string[];
+  /** WHICH column the anchor is read from — the map track's own, and required there in
+   *  practice: a map's region column is whatever the geography MATCHED
+   *  (`run.orient.geo.column`), and nothing guarantees it is column 0. Anchoring on the first
+   *  column regardless would draft a walk against the wrong column SILENTLY, since its values
+   *  are still strings the data carries. Absent on the chart track, where the first column is
+   *  the axis by construction (the shape chart-native itself reads). */
+  keyColumn?: string;
+  /** WHICH column the beat's value is read from. The map track resolves this the way its own
+   *  assembler does (`valueFieldFor`, from the confirmed takeaway) rather than taking the last
+   *  numeric column: a draft citing a number the map will not render would ground the
+   *  journalist's claims against a column the reader never sees. Absent on the chart track,
+   *  where the engine renders the last numeric column — which is what this already picked. */
+  valueColumn?: string;
 };
 
 // The engine's beats override supports line and bar only (skills/chart-native/src/chart-story.ts,
@@ -90,6 +130,14 @@ export type SuggestBeatsInput = {
 // engine's own exported list rather than retyped here, which is what this comment used to
 // promise and a `new Set(["line", "bar"])` could only be trusted to keep.
 const BEAT_TYPES = new Set<string>(AUTHORABLE_SCROLLY_TYPES);
+
+/** The map types this drafter can propose a walk for (see PROPOSABLE_MAP_TYPES above). */
+const MAP_BEAT_TYPES = new Set<string>(PROPOSABLE_MAP_TYPES);
+
+/** Every type this drafter reads a CSV for — the chart track and the map track together. */
+function drafts(nativeType: string): boolean {
+  return BEAT_TYPES.has(nativeType) || MAP_BEAT_TYPES.has(nativeType);
+}
 
 /**
  * CAN THE LOOP DRAFT A WALK FOR THIS TRACK AT ALL — the one question
@@ -117,8 +165,24 @@ const BEAT_TYPES = new Set<string>(AUTHORABLE_SCROLLY_TYPES);
  * this predicate and the table's `supports` read the SAME engine list — a type the loop offers
  * as a scrolly and cannot draft a walk for would strand a run all over again.
  */
-export function canDraftBeats(nativeType: string): boolean {
-  return BEAT_TYPES.has(nativeType) || nativeType === IMAGE_SCROLLY_TYPE;
+export function canDraftBeats(nativeType: string, format: string): boolean {
+  // THE CHART AND IMAGE TRACKS — `scrolly` only, and the exclusion of `video` is DELIBERATE.
+  // chart-native's seven `*Reveal` components do not read a beat plan at all (the measured
+  // inventory, docs/splash/gesture-inventory-2026-08-03.md §4). Routing a chart video here would
+  // draft a walk, block production until the journalist wrote every claim, and then render
+  // something that ignores every word of it — worse than not proposing. Sub-project ④ is what
+  // makes those components honour a walk; the day it does, `video` joins this line.
+  if (BEAT_TYPES.has(nativeType) || nativeType === IMAGE_SCROLLY_TYPE)
+    return format === "scrolly";
+  // THE MAP TRACK — sub-project ③. Both narrative formats, because both honour a walk TODAY:
+  // the browser scrolly reads `arcBeats` (skills/scrolly/src/ScrollyMap.tsx:73,223) and the
+  // video's `story` family walks the beats (gesture-inventory §1). A map's `static` and
+  // `interactive` render a different component family with no notion of a beat at all
+  // (`narrativeKindFor` resolves them to `undefined`), so they are absent here rather than
+  // refused later.
+  if (MAP_BEAT_TYPES.has(nativeType))
+    return format === "scrolly" || format === "video";
+  return false;
 }
 
 /** A claim-arc needs establish + at least one build + payoff. Fewer anchors than this is not a
@@ -189,26 +253,48 @@ function barAnchorIndices(values: number[]): number[] {
 }
 
 export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
-  if (!BEAT_TYPES.has(input.nativeType))
+  if (!drafts(input.nativeType))
     return {
       beats: [],
-      // The CHART track's own type limit, which is a different rule from "a map derives its own
-      // walk" (that one has a single wording, skills/scrolly/src/scrolly-types.ts's
-      // MAP_TRACK_BEATS_REFUSAL, and a map never reaches this function any more — the router
-      // gates on canDraftBeats above).
+      // NAMES BOTH TRACKS, because a walk can now be drafted for either — and names them from
+      // the two lists themselves, so a type that joins one of them never has to be added here
+      // too. `route` and `hex-grid` land HERE deliberately: they are arc-capable but not
+      // proposable (PROPOSABLE_MAP_TYPES' own comment), and a journalist who asks for one must
+      // read WHY rather than "unsupported".
       refusal:
-        `a beat plan is ${[...BEAT_TYPES].join(" and ")} chart scrollies only (got ` +
-        `"${input.nativeType}") — the engine's own beats override supports no other type`,
+        `a beat plan can be drafted for ${[...BEAT_TYPES].join(" and ")} chart scrollies and ` +
+        `for ${[...MAP_BEAT_TYPES].join(", ")} maps (got "${input.nativeType}")` +
+        (input.nativeType === "route" || input.nativeType === "hex-grid"
+          ? ` — a ${input.nativeType} anchors on something that does not exist until produce ` +
+            `time, so there is nothing to anchor a draft on; write its arcBeats directly`
+          : ""),
     };
 
   const { columns, rows, numericColumns } = parseCsvRows(input.dataCsv);
-  const labelCol = columns[0];
+  // NAMED WINS over positional, and a name the data does not carry refuses loud with the list
+  // of what it does — the same philosophy as the anchor refusal below, and the same reason: a
+  // typo must never silently shift a walk onto another column.
+  if (input.keyColumn && !columns.includes(input.keyColumn))
+    return {
+      beats: [],
+      refusal:
+        `the anchor column "${input.keyColumn}" is not in the data — columns: ` +
+        `${columns.join(", ")}`,
+    };
+  const labelCol = input.keyColumn ?? columns[0];
   if (!labelCol)
     return {
       beats: [],
       refusal: "the data has no columns to anchor a beat on",
     };
-  const valueCol = numericColumns[numericColumns.length - 1];
+  if (input.valueColumn && !numericColumns.includes(input.valueColumn))
+    return {
+      beats: [],
+      refusal:
+        `the value column "${input.valueColumn}" is not a numeric column of the data — ` +
+        `numeric columns: ${numericColumns.join(", ") || "none"}`,
+    };
+  const valueCol = input.valueColumn ?? numericColumns[numericColumns.length - 1];
   if (!valueCol)
     return {
       beats: [],
@@ -263,8 +349,13 @@ export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
 
   const unit = shortUnit(input);
   const shared = sharedFacts(input.nativeType, values);
-  const kind: BeatAnchor["kind"] =
-    input.nativeType === "line" ? "x" : "category";
+  // A MAP anchors on `region` — the same key its engine already reads (`MapArcBeat.region`), so
+  // the projection in lib/loop/assemble/brief.ts is a rename of nothing rather than a guess.
+  const kind: BeatAnchor["kind"] = MAP_BEAT_TYPES.has(input.nativeType)
+    ? "region"
+    : input.nativeType === "line"
+      ? "x"
+      : "category";
   const valueRank = [...values]
     .map((v, i) => ({ v, i }))
     .sort((a, b) => b.v - a.v || a.i - b.i)
@@ -281,7 +372,11 @@ export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
         draftText: `${label} — ${withUnit(value, unit)}`,
         beatSource: {
           facts: {
-            [kind === "x" ? "x" : "category"]: label,
+            // KEYED BY THE ANCHOR'S OWN KIND, never by a binary. The binary that used to sit
+            // here read `kind === "x" ? "x" : "category"` and would have labelled a region as a
+            // chart category the day a third kind arrived — the exact silent-drift shape
+            // beatsFor refuses loud about (lib/loop/assemble/brief.ts).
+            [kind]: label,
             value,
             rank: String(valueRank.indexOf(rowIndex) + 1),
           },

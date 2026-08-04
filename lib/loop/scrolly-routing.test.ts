@@ -136,15 +136,24 @@ test("no offerable scrolly form is routed to an action the loop cannot perform",
   // draft-beats EXACTLY where a plan can be drafted, produce everywhere else.
   const expected = offerableScrollyForms().map(
     (f) =>
-      `${f.engine}/${f.key} → ${canDraftBeats(f.key) ? "draft-beats" : "produce"}`,
+      `${f.engine}/${f.key} → ${canDraftBeats(f.key, "scrolly") ? "draft-beats" : "produce"}`,
   );
   expect(routed.sort()).toEqual(expected.sort());
   // …and the two halves are both non-empty, or the assertion above would hold vacuously.
-  const drafted = offerableScrollyForms().filter((f) => canDraftBeats(f.key));
+  const drafted = offerableScrollyForms().filter((f) => canDraftBeats(f.key, "scrolly"));
+  // The five map types joined this list with sub-project ③: a map scrolly's walk used to be
+  // written from nothing, and is now DRAFTED like a chart's. `route` and `hex-grid` are the
+  // ones that keep the other half of this assertion non-empty, and they are absent for a
+  // measured reason — their anchor does not exist until produce (PROPOSABLE_MAP_TYPES).
   expect(drafted.map((f) => f.key).sort()).toEqual([
     "bar",
+    "cartogram",
+    "choropleth",
+    "dot-density",
     "image-scrolly",
     "line",
+    "locator",
+    "symbol",
   ]);
   expect(offerableScrollyForms().length).toBeGreaterThan(drafted.length);
 });

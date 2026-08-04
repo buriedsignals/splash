@@ -26,6 +26,12 @@ import type { GeographyRef } from "../geo/ref";
 export type BriefBeat = {
   x?: string;
   category?: string;
+  /** The map track's anchor — a region key the data already carries. Named `region` rather than
+   *  reusing `category` because that is the field the engine itself reads (`MapArcBeat.region`,
+   *  skills/map-native/src/map-arc.ts), so the projection in assemble/brief.ts renames nothing.
+   *  Sub-project ③: before it, a confirmed map walk had no route from the loop to the engine at
+   *  all (`arcBeats` had zero occurrences in lib/). */
+  region?: string;
   role: ArcRole;
   text: string;
 };
