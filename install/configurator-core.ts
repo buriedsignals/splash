@@ -26,4 +26,8 @@ export const RUNTIMES: Record<string, { label: string; verified: boolean }> = {
   // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — but nobody has seen a
   // visual come OUT of it. That is Layer B, and it is what flips this flag.
   "goose-desktop": { label: "Goose Desktop", verified: false },
+  // The second desktop runtime. Layer A is measured in the shipped bundle — the app auto-loads
+  // ~/.claude/skills and mounts it into its sandbox — but no visual has come out of the app, so it
+  // gets the same flag as its sibling. See docs/installer/claude-desktop-findings.md.
+  "claude-desktop": { label: "Claude Desktop", verified: false },
 };

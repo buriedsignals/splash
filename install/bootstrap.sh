@@ -9,15 +9,21 @@ REF="${SPLASH_REF:-main}"
 DEST="$HOME/Splash"
 NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
 
-# Shared skill-discovery helper for runtimes that read ~/.agents/skills/ (Codex, Gemini native
-# skills). Symlinks every skill dir there by name; globs skills/*/ so a skill added later is
+# Shared skill-discovery helper for runtimes that read a skills directory (Codex, Gemini native
+# skills, Goose). Symlinks every skill dir there by name; globs skills/*/ so a skill added later is
 # covered automatically. Claude Code uses --plugin-dir instead and does not call this.
+#
+# The target defaults to ~/.agents/skills and is overridable because not every host reads the same
+# door: Claude Desktop scans ~/.claude/skills and never looks at ~/.agents/skills. One helper rather
+# than one per host, so the two rules below — sweep dead links, link only what carries a SKILL.md —
+# cannot drift apart between doors.
 link_agents_skills() {
-  mkdir -p "$HOME/.agents/skills"
+  local target="${1:-$HOME/.agents/skills}"
+  mkdir -p "$target"
   # A renamed or moved source tree leaves links that EXIST but resolve to nothing — and to a host
   # a dead link is indistinguishable from an absent skill: it simply finds nothing, silently.
   # Sweep them first so an install that predates a rename repairs itself on re-run.
-  for link in "$HOME"/.agents/skills/*; do
+  for link in "$target"/*; do
     if [ -L "$link" ] && [ ! -e "$link" ]; then rm -f "$link"; fi
   done
   for skill_dir in "$DEST"/skills/*/; do
@@ -26,7 +32,7 @@ link_agents_skills() {
     # skill — measured on Goose Desktop: 12 linked, 11 discovered, and nothing said. Link only
     # what a host can read, so the two counts agree and a real gap shows up instead of hiding.
     [ -f "$skill_dir/SKILL.md" ] || continue
-    ln -sfn "$skill_dir" "$HOME/.agents/skills/$(basename "$skill_dir")"
+    ln -sfn "$skill_dir" "$target/$(basename "$skill_dir")"
   done
 }
 
