@@ -174,11 +174,23 @@ après avoir été traduite en **champ technique** la première fois.
   machine **apparie et ordonne**, chaque revendication vient du **passage de l'article du journaliste**
   qui parle de cette ancre, l'ordre suit le récit (pas la saillance), et ce que l'article ne fournit
   pas est **demandé**, jamais rempli. Vaut aussi pour le track carte et le genre `stepped`.
-- **Lot route (C2) : à moitié fait, et l'autre moitié n'est pas du storyboard.** `RouteStory` n'a pas
-  à exister (le dépôt a tranché : le survol guidé d'une route EST son tracé) et la vidéo à étapes est
-  atteignable depuis ④(a) via `RouteScrolly`. **Reste `ScrollyRouteMap`** — le scrolly navigateur,
-  300-400 lignes + preuve navigateur. La spec parapluie le classe **hors périmètre** (§8) : c'est une
-  capacité (backlog C2), pas une étape de storyboard. NON ÉCRIT.
+- **★ Lot route (C2) — FERMÉ.** `RouteStory` n'avait pas à exister (le dépôt a tranché : le survol
+  guidé d'une route EST son tracé) et la vidéo à étapes est atteignable depuis ④(a) via
+  `RouteScrolly`. **`ScrollyRouteMap` est écrit et prouvé** (`skills/scrolly/src/ScrollyRouteMap.tsx`,
+  preuve `skills/scrolly/output-proof/route/`) : c'était le SEUL type de carte arc-capable sans
+  scrolly navigateur — la marche existait, rien ne la rendait. Tout l'amont est **partagé** avec la
+  famille vidéo (layout, walk, séquence d'étapes et refs sentinelles), jamais re-dérivé. La fiche KB
+  déclare le format (DRIFT 3 exige que le savoir et la capacité s'accordent), le registre déclare
+  `fly` + `draw` + `highlight` (`draw` = le seul qu'aucun autre scrolly carte n'a), et **3 tests qui
+  épinglaient l'ABSENCE ont été INVERSÉS** plutôt que supprimés.
+  ⚠️ **Deux défauts que seul le bout-en-bout a attrapés** : (1) la prop est une **ref de beat**, pas
+  un indice d'étape (`Scrolly.tsx` passe `currentBeatRef`) — lue comme un indice, l'aperçu se
+  rabattait sur le premier territoire et la caméra ne bougeait jamais ; (2) une étape de tracé doit
+  cadrer **le territoire qu'elle entre**, pas l'étendue cumulée (règle de la vidéo) — sur cet
+  échantillon les deux coïncident (l'Inde couvre presque tout le fleuve) et **le garde de mouvement
+  réduit a refusé le build en le nommant** (« step 2's camera equals step 1's »). Ce refus parle du
+  lecteur : en scroll, c'est lui qui donne le rythme, et une étape dont la caméra ne bouge pas se lit
+  comme une page cassée.
 
 **Rouges de `lib` au 2026-08-04, tous nommés et attribués** (aucun causé par ①②③) : `eligibility`
 (E5 — **une assertion fausse dans le test**, établi le 2026-08-04, ni environnement ni bug de rendu) ·
