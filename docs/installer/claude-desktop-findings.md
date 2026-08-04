@@ -53,6 +53,15 @@ the launch window. Unlike Goose, where `GOOSE_WORKING_DIR` could be read back, t
 rely on. So `runtime_launch_cmd` is a plain `open -a Claude`, and the journalist picks the working
 folder inside the app. Recorded rather than guessed, so the next person does not re-derive it.
 
+### A wrinkle worth naming rather than discovering later
+
+`~/.claude/skills` is also what the **Claude Code CLI** auto-loads, and our `claude` runtime launches
+`claude --plugin-dir .` from the repository. A machine that has been through *both* installs would
+therefore offer the same skills twice, by two routes. The setup page records **one** runtime, so
+this needs a journalist to reconfigure from one to the other — and no install cleans the other's
+links, which has been true of `~/.agents/skills` since the first runtime shipped. Not introduced
+here, not guarded here, written down here.
+
 ### Status
 
 `claude-desktop` is registered with **`verified: false`**, the same flag as `goose-desktop` and for
