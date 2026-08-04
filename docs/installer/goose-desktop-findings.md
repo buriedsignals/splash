@@ -65,7 +65,16 @@ pas la CLI :
 "$APP/Contents/Resources/bin/goose" skills list
 ```
 
-Les 12 skills Splash remontent, tous avec `Location = /Users/rmdms/.agents/skills/<nom>`.
+Les skills Splash remontent, avec `Location = /Users/rmdms/.agents/skills/<nom>`.
+
+> ★ **CORRECTION (preuve niveau A, même jour).** La première rédaction disait « **les 12** skills
+> Splash remontent ». C'est faux, et le comptage est instructif : **12 répertoires sont LIÉS, 11 sont
+> DÉCOUVERTS**, et la douzième ligne de la liste était `goose-doc-guide`, le builtin de Goose.
+> Le manquant est **`skills/image-native/`** — le seul répertoire de `skills/` **sans `SKILL.md`**
+> (il n'en a jamais eu, et aucune prose n'en référence un). C'est une bibliothèque de production que
+> `suggest-image` pilote, posée dans un répertoire dont tous les voisins sont des skills, et
+> `link_agents_skills` la lie parce qu'il globe `skills/*/` sans regarder. Les hôtes l'ignorent en
+> silence. Détail et conséquences : `docs/installer/goose-desktop-proof.md`.
 
 **C'est le répertoire que `link_agents_skills` alimente déjà.** Aucun chemin nouveau à gérer, aucune
 copie à prévoir : le module `goose-desktop` peut appeler le helper partagé tel quel.
