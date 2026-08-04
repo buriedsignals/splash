@@ -30,13 +30,22 @@ const skillDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 //
 // Where that vocabulary is DECLARED was a circular buck-pass: this file used to say "see
 // scrolly's own manifest below" while scrolly/src/manifest.ts said "declared on chart-
-// native's manifest (their `scrolly` narrative kind), not here" — neither true. scrolly's
-// own producer registers ZERO `types` (documented there as deliberate: it is the shared
-// MECHANISM, not a type owner), so it structurally CANNOT declare a per-type gesture
-// vocabulary — the `t.gestures` shape is keyed by `p.types`, and scrolly's `p.types` is
-// always empty. chart-native is the only manifest that owns `line`/`bar`/`scatter` as
-// types, so chart-native is the only place this vocabulary CAN live. Declared below, per
-// type, from ScrollyChart.tsx's own code (see LINE_GESTURES / BAR_LIKE_SCROLLY comments).
+// native's manifest (their `scrolly` narrative kind), not here" — neither true. At the
+// time, scrolly's own producer registered ZERO `types` at all (it was the shared
+// MECHANISM, not a type owner), so it structurally could not declare a per-type gesture
+// vocabulary for ANY track — the `t.gestures` shape is keyed by `p.types`, and scrolly's
+// `p.types` was always empty. chart-native is the only manifest that owns `line`/`bar`/
+// `scatter` as types, so chart-native is the only place THIS (chart-track) vocabulary CAN
+// live. Declared below, per type, from ScrollyChart.tsx's own code (see LINE_GESTURES /
+// BAR_LIKE_SCROLLY comments).
+//
+// UPDATE (2026-08-03, stepped/scrolly split): scrolly's producer now DOES own types — its
+// own six map-track types (choropleth/cartogram/hex-grid/dot-density/locator/symbol),
+// declared on its own manifest under their `scrolly` key. That is a DIFFERENT resolution
+// from this one, made for a reason specific to maps (map-native has its own, colliding
+// `*Scrolly.tsx` component family; chart-native has no such collision) — see
+// skills/scrolly/src/manifest.ts's own comment for the reasoning. The chart track
+// (line/bar/scatter) is unaffected and stays exactly here.
 //
 // `highlight` (hover/keyboard-focus, present in the interactive rendering of the
 // `reveal` kind — inventory §4.1) is confirmed on every one of the 41 base components by

@@ -91,19 +91,21 @@ test("every type that declares gestures is a type the engine actually declares",
 // not delete this test because it became inconvenient — that is exactly how the drift this
 // sub-project exists to close gets back in.
 test("the declaring/silent split between engines is pinned — a whole engine losing (or gaining) its vocabulary is caught", () => {
-  // "scrolly" was missing from this table entirely — a registered producer
-  // (registerProducer({ name: "scrolly", ... })) that this test never looked at, so a
-  // bogus type with a gestures block added to its `types` (it registers none today,
-  // deliberately — see scrolly/src/manifest.ts's own "no types: scrolly is the shared
-  // MECHANISM, not a type owner") would pass this whole suite. Added, pinned false for
-  // the same reason dw-chart/map-dw are false: it renders nothing of its own.
+  // "scrolly" flipped true (2026-08-03, gesture-vocabulary's stepped/scrolly split):
+  // it used to register zero `types` at all ("the shared MECHANISM, not a type owner"),
+  // pinned false for the same reason dw-chart/map-dw are false. It now owns the SIX
+  // map-track types its own Scrolly*Map.tsx family renders (MAP_SCROLLY_GESTURES,
+  // scrolly/src/manifest.ts) — the browser-reader home for `fly`, deliberately NOT
+  // declared on map-native (see that manifest's own header comment). The chart track
+  // (line/bar/scatter) still lives on chart-native, unchanged — this flip is about the
+  // map track only.
   const DECLARES_GESTURES: Record<string, boolean> = {
     "chart-native": true,
     "map-native": true,
     "image-native": true,
     "dw-chart": false,
     "map-dw": false,
-    scrolly: false,
+    scrolly: true,
   };
   for (const [name, expected] of Object.entries(DECLARES_GESTURES)) {
     const producer = allProducers().find((p) => p.name === name);
@@ -130,8 +132,10 @@ test("an engine that declares no camera gesture today does not gain one silently
   // chart-native and image-native render a fixed frame with no camera concept at all
   // (chart-native's own manifest header; image-native has no map/camera anywhere,
   // inventory §6) — pinned at zero. map-native is the one engine with a real camera
-  // (jump/hold/push, and — reachability caveat aside — the browser scrolly family's
-  // fly), so it is deliberately excluded from this pin rather than asserted either way.
+  // (jump/hold/push — never `fly`), so it is deliberately excluded from this pin rather
+  // than asserted either way. `fly` itself is declared by the "scrolly" producer (its
+  // own map-track types), not by map-native or chart-native — also excluded, for the
+  // same reason.
   const NO_CAMERA_GESTURE_ENGINES = ["chart-native", "image-native"];
   for (const name of NO_CAMERA_GESTURE_ENGINES) {
     const producer = allProducers().find((p) => p.name === name);
