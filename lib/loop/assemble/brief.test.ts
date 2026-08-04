@@ -162,3 +162,80 @@ test("omits lang entirely when the run has none — byte-identical to before", (
   );
   expect("lang" in b).toBe(false);
 });
+
+// ---------------------------------------------------------------------------
+// THE MAP TRACK — sub-project ③. The two refusals above stay exactly as they are for a CHART
+// element; what changes is that a map element now has a field for a region anchor to become.
+// Before this, `arcBeats` had ZERO occurrences in lib/ — a journalist's confirmed walk could
+// not reach a map through the loop at all.
+// ---------------------------------------------------------------------------
+const MAP_RUN = {
+  ...RUN,
+  elements: [
+    {
+      ...RUN.elements[0]!,
+      proposal: {
+        chosenId: "o1",
+        options: [
+          {
+            id: "o1",
+            nativeType: "choropleth",
+            engine: "map-native",
+            format: "scrolly",
+            why: "where the rents are",
+          },
+        ],
+      },
+      narrative: {
+        beats: [
+          {
+            id: "b1",
+            anchor: { kind: "region", value: "Genève" },
+            role: "establish",
+            text: "Geneva sets the ceiling.",
+          },
+          {
+            id: "b2",
+            anchor: { kind: "region", value: "Jura" },
+            role: "payoff",
+            text: "The Jura pays half that.",
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as RunManifest;
+
+test("a region anchor becomes a map arc beat on a MAP element", () => {
+  const brief = briefFor(
+    MAP_RUN,
+    MAP_RUN.elements[0]!,
+    "canton,rent\nGenève,1780",
+    "OFS",
+    undefined,
+    "scrolly",
+  );
+  expect(brief.beats).toEqual([
+    { region: "Genève", role: "establish", text: "Geneva sets the ceiling." },
+    { region: "Jura", role: "payoff", text: "The Jura pays half that." },
+  ]);
+});
+
+test("a chart anchor on a MAP element still refuses loud", () => {
+  const el = {
+    ...MAP_RUN.elements[0]!,
+    narrative: {
+      beats: [
+        {
+          id: "b1",
+          anchor: { kind: "x", value: "1979" },
+          role: "establish",
+          text: "It began here.",
+        },
+      ],
+    },
+  } as unknown as RunManifest["elements"][number];
+  expect(() =>
+    briefFor(MAP_RUN, el, "canton,rent\nGenève,1780", "OFS", undefined, "scrolly"),
+  ).toThrow(/map/);
+});

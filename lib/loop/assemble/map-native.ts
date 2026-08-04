@@ -145,6 +145,32 @@ function typedRows(
   });
 }
 
+/**
+ * THE CONFIRMED WALK, ready to spread onto a config — sub-project ③.
+ *
+ * `arcBeats` is what every map-native renderer already reads (skills/map-native/src/map-arc.ts);
+ * what was missing was a writer. The brief's beats arrive already projected to `{region, role,
+ * text}` (lib/loop/assemble/brief.ts), so this THREADS them and derives nothing — the journalist's
+ * confirmed wording is pinned verbatim, which is the rule map-arc.ts states for this field.
+ *
+ * Spread rather than assigned, so a run with no walk produces a config BYTE-IDENTICAL to the one
+ * it produced before this existed: an absent field, not an empty array. `route` and `hex-grid`
+ * reach this too and are honoured the same way — they are outside the PROPOSAL step
+ * (PROPOSABLE_MAP_TYPES) because nothing can draft their anchor, which says nothing about
+ * carrying one a journalist wrote themselves.
+ */
+function arcBeatsFrom(brief: ProductionBrief): { arcBeats?: unknown[] } {
+  const beats = (brief.beats ?? []).filter((b) => b.region !== undefined);
+  if (!beats.length) return {};
+  return {
+    arcBeats: beats.map((b) => ({
+      region: b.region!,
+      role: b.role,
+      text: b.text,
+    })),
+  };
+}
+
 export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   if (!MAP_NATIVE_TYPES.has(brief.nativeType))
     return fail(
@@ -185,6 +211,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     }));
     return ok({
       type: "cartogram",
+      ...arcBeatsFrom(brief),
       values,
       geography: geo.geography,
       title,
@@ -226,6 +253,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
       );
     return ok({
       type: "dot-density",
+      ...arcBeatsFrom(brief),
       regionKey: geo.column,
       // No validator branch checks this field (DotDensityConfigShape types it `string` with
       // no format constraint) — the matched basemap name is the only value on hand that names
@@ -245,6 +273,7 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
 
   return ok({
     type: "choropleth",
+    ...arcBeatsFrom(brief),
     regionKey: geo.column,
     valueField,
     rows: typedRows(rows, numeric),
@@ -330,6 +359,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
     }));
     return ok({
       type: "locator",
+      ...arcBeatsFrom(brief),
       markers,
       basemap,
       title,
@@ -393,6 +423,7 @@ function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
   }));
   return ok({
     type: "symbol",
+    ...arcBeatsFrom(brief),
     points,
     basemap,
     title,

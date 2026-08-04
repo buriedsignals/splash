@@ -67,7 +67,16 @@ export function assembleScrolly(brief: ProductionBrief): VerbResult<unknown> {
     return fail("invalid-request", scrollyTrackRefusal(brief.nativeType));
   const isMap = MAP_SCROLLY_TYPES.has(brief.nativeType);
   if (!isMap) return assembleChartNative(brief);
-  if (brief.beats?.length)
+  // A CHART-SHAPED walk on the map track is still refused, in the same words. What changed with
+  // sub-project ③ is that a brief beat is no longer chart-shaped by construction: a REGION
+  // anchor now has a home on a map (`arcBeats`, which assembleMapNative threads and
+  // ScrollyMap.tsx:223 reads), so refusing it here would refuse the journalist's own confirmed
+  // walk at the door — after the loop had drafted it, routed it, and made them write every claim.
+  //
+  // The original rule is untouched for what it was written about: `beats` IS chart-track control
+  // and a chart beat would be silently ignored by deriveMapStory. Judged on the beat's SHAPE
+  // rather than on its mere presence, which is the distinction that did not exist before.
+  if (brief.beats?.length && brief.beats.some((b) => b.region === undefined))
     // The wording lives with the rule (scrolly-types.ts's MAP_TRACK_BEATS_REFUSAL), not here:
     // this refusal and the producer's own spec validator are two surfaces of one rule, and a
     // journalist meeting it twice must read it once.

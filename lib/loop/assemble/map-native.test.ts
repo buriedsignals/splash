@@ -544,3 +544,64 @@ describe("geoRefusal — ADM1-aware wording", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// THE CONFIRMED WALK REACHES THE MAP — sub-project ③. `arcBeats` is the field every map-native
+// renderer already reads (map-arc.ts); until now nothing in lib/ ever wrote it, so a journalist
+// who confirmed a walk through the loop saw it go nowhere.
+// ---------------------------------------------------------------------------
+describe("arcBeats — the journalist's confirmed walk, threaded to the engine", () => {
+  const WALK = [
+    { region: "TCD", role: "establish" as const, text: "Chad starts lowest." },
+    { region: "NER", role: "build" as const, text: "Niger is barely ahead." },
+    { region: "CHE", role: "payoff" as const, text: "Switzerland is universal." },
+  ];
+
+  it("threads the walk onto a region-family config, verbatim", () => {
+    const r = assembleMapNative({ ...REGION_BRIEF, beats: WALK });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const cfg = r.value as Record<string, unknown>;
+    expect(cfg.arcBeats).toEqual(WALK);
+    // Still a config the engine itself accepts — a walk must not cost validity.
+    expect(mapNativeConfigErrors(r.value)).toEqual([]);
+  });
+
+  it("omits the field entirely when there is no walk", () => {
+    const r = assembleMapNative(REGION_BRIEF);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value as Record<string, unknown>).not.toHaveProperty("arcBeats");
+  });
+
+  it("threads it onto a cartogram too", () => {
+    const r = assembleMapNative({
+      ...REGION_BRIEF,
+      nativeType: "cartogram",
+      beats: WALK,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect((r.value as Record<string, unknown>).arcBeats).toEqual(WALK);
+  });
+});
+
+// The point family carries the walk too — `symbol` and `locator` are proposable types
+// (lib/brain/beats.ts's PROPOSABLE_MAP_TYPES), so a walk confirmed for one must reach it.
+test("a symbol config carries the confirmed walk", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    nativeType: "symbol",
+    dataCsv: "name,lon,lat,value\nGenève,6.1,46.2,1780\nJura,7.0,47.3,1010",
+    beats: [
+      { region: "Genève", role: "establish" as const, text: "Geneva leads." },
+      { region: "Jura", role: "payoff" as const, text: "The Jura trails." },
+    ],
+  });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as Record<string, unknown>).arcBeats).toEqual([
+    { region: "Genève", role: "establish", text: "Geneva leads." },
+    { region: "Jura", role: "payoff", text: "The Jura trails." },
+  ]);
+});
