@@ -1556,6 +1556,88 @@ describe("the narrative slot", () => {
       }),
     ).toThrow();
   });
+
+  // M2 (whole-branch review): the closed vocabulary alone does not enforce the camera/data
+  // split gestures.ts's own header exists for — `movement`/`animation` both drew from the SAME
+  // combined GESTURES list, so a data gesture on `movement` and a camera gesture on
+  // `animation` both parsed clean.
+  test("a data gesture on movement is refused — movement is how the frame arrives (camera), not what changes once held", () => {
+    const m = scrollyRun();
+    const dataAsMovement = { ...AUTHORED_BEAT, movement: "grow" };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [dataAsMovement] } },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  test("a camera gesture on animation is refused — animation is what changes once the frame is held, not how it arrives", () => {
+    const m = scrollyRun();
+    const cameraAsAnimation = { ...AUTHORED_BEAT, animation: "fly" };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [cameraAsAnimation] } },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  test("a camera movement paired with a data animation on the same beat is accepted", () => {
+    const m = scrollyRun();
+    const wellFormed = {
+      ...AUTHORED_BEAT,
+      movement: "jump" as const,
+      animation: "highlight" as const,
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [wellFormed] } }],
+      }),
+    ).not.toThrow();
+  });
+
+  // M4 (whole-branch review): lon/lat only mean anything on a "place" anchor (the hex-grid
+  // case, resolved by coordinate) — a chart's "x"/"category" is not spatial at all.
+  test("lon/lat on a chart x anchor is refused — a chart anchor is not spatial", () => {
+    const m = scrollyRun();
+    const xWithCoords = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "x" as const, value: "2019", lon: 6.63, lat: 46.52 },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [xWithCoords] } }],
+      }),
+    ).toThrow();
+  });
+
+  test("lon/lat on a region anchor is refused — a region resolves by name, not by coordinate", () => {
+    const m = scrollyRun();
+    const regionWithCoords = {
+      ...AUTHORED_BEAT,
+      anchor: {
+        kind: "region" as const,
+        value: "Genève",
+        lon: 6.14,
+        lat: 46.2,
+      },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [regionWithCoords] } },
+        ],
+      }),
+    ).toThrow();
+  });
 });
 
 describe("routing a narrative page through its beats", () => {
