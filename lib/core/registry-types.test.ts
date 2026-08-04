@@ -2,7 +2,6 @@ import { test, expect } from "bun:test";
 import { engineTypes, isRenderable } from "./registry";
 import "../loop/engines"; // populates the registry
 import type { EngineType } from "./registry";
-import type { Gesture } from "./gestures";
 
 test("an EngineType may declare what it makes move, per narrative kind", () => {
   const t: EngineType = {
