@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test";
+import { test, expect, describe, it } from "bun:test";
 import type { ProductionBrief, BriefBeat } from "../../core/production-brief";
 import { assembleScrolly, SCROLLY_TRACK_TYPES } from "./scrolly";
 import { assembleChartNative } from "./chart-native";
@@ -132,3 +132,45 @@ for (const nativeType of SCROLLY_TRACK_TYPES) {
     });
   });
 }
+
+// ---------------------------------------------------------------------------
+// SUB-PROJECT ③ — a map scrolly's confirmed walk must REACH the map, not be refused at the
+// door. MAP_TRACK_BEATS_REFUSAL was written when a brief beat could only be chart-shaped and
+// had nowhere to go on a map; a region-anchored beat now has a home (`arcBeats`, which
+// ScrollyMap.tsx:223 reads). Without this, the whole proposal step stranded here: routed to
+// draft-beats, authored by the journalist, then refused at assembly.
+// ---------------------------------------------------------------------------
+describe("a map scrolly carries the journalist's confirmed walk", () => {
+  const MAP_BRIEF: ProductionBrief = {
+    ...REGION_BRIEF,
+    format: "scrolly",
+  };
+
+  it("threads a region-anchored walk into arcBeats", () => {
+    const r = assembleScrolly({
+      ...MAP_BRIEF,
+      beats: [
+        { region: "TCD", role: "establish", text: "Chad starts lowest." },
+        { region: "NER", role: "build", text: "Niger is barely ahead." },
+        { region: "CHE", role: "payoff", text: "Switzerland is universal." },
+      ],
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect((r.value as Record<string, unknown>).arcBeats).toEqual([
+      { region: "TCD", role: "establish", text: "Chad starts lowest." },
+      { region: "NER", role: "build", text: "Niger is barely ahead." },
+      { region: "CHE", role: "payoff", text: "Switzerland is universal." },
+    ]);
+  });
+
+  it("still refuses a CHART-shaped walk on the map track, in the same words", () => {
+    const r = assembleScrolly({
+      ...MAP_BRIEF,
+      beats: [{ x: "2019", role: "establish", text: "It began here." }],
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("arcBeats");
+  });
+});
