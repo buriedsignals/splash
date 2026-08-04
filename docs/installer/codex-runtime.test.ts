@@ -64,9 +64,9 @@ test("runtime_install symlinks every skill into ~/.agents/skills and seeds ~/.co
     const script = `set -euo pipefail
 export HOME="${fakeHome}"
 DEST="${dest}"
-mkdir -p "$DEST/skills/a" "$DEST/skills/b" "${fakeBin}"
-printf '# a\\n' > "$DEST/skills/a/SKILL.md"
-printf '# b\\n' > "$DEST/skills/b/SKILL.md"
+mkdir -p "$DEST/.dist/skills/a" "$DEST/.dist/skills/b" "${fakeBin}"
+printf '# a\\n' > "$DEST/.dist/skills/a/SKILL.md"
+printf '# b\\n' > "$DEST/.dist/skills/b/SKILL.md"
 printf '#!/bin/sh\\n' > "${fakeBin}/codex"
 chmod +x "${fakeBin}/codex"
 export PATH="${fakeBin}:$PATH"
@@ -103,7 +103,7 @@ test("config seed is non-clobbering: an existing config.toml is left untouched",
     const script = `set -euo pipefail
 export HOME="${fakeHome}"
 DEST="${dest}"
-mkdir -p "$DEST/skills/a" "${fakeBin}" "$HOME/.codex"
+mkdir -p "$DEST/.dist/skills/a" "${fakeBin}" "$HOME/.codex"
 printf '${sentinel}' > "$HOME/.codex/config.toml"
 printf '#!/bin/sh\\n' > "${fakeBin}/codex"
 chmod +x "${fakeBin}/codex"
@@ -135,7 +135,7 @@ test("an unwritable ~/.codex is reported with the chown fix, not a cryptic os er
     const script = `set +e
 export HOME="${fakeHome}"
 DEST="${dest}"
-mkdir -p "$DEST/skills/a" "${fakeBin}" "$HOME/.codex"
+mkdir -p "$DEST/.dist/skills/a" "${fakeBin}" "$HOME/.codex"
 chmod 500 "$HOME/.codex"
 printf '#!/bin/sh\\n' > "${fakeBin}/codex"
 chmod +x "${fakeBin}/codex"

@@ -74,7 +74,7 @@ test("claude module installs Claude via its own installer and launches with --pl
 test("shares an ~/.agents/skills symlink helper that globs every skill (Codex/Gemini discovery)", () => {
   expect(sh).toContain("link_agents_skills");
   expect(sh).toContain(".agents/skills");
-  expect(sh).toMatch(/for skill_dir in "\$DEST"\/skills\/\*\//); // globs, so a new skill is covered
+  expect(sh).toMatch(/for skill_dir in "\$DEST"\/\.dist\/skills\/\*\//); // globs the PACKAGED tree
 });
 
 test("runs the local configurator and does NOT write .env from caller env vars", () => {
@@ -119,17 +119,23 @@ test("link_agents_skills links only directories that carry a SKILL.md", () => {
     const home = join(work, "home");
     const dest = join(work, "dest");
     mkdirSync(join(home, ".agents", "skills"), { recursive: true });
-    mkdirSync(join(dest, "skills", "alpha"), { recursive: true });
-    mkdirSync(join(dest, "skills", "library"), { recursive: true });
-    writeFileSync(join(dest, "skills", "alpha", "SKILL.md"), "# alpha\n");
+    mkdirSync(join(dest, ".dist", "skills", "alpha"), { recursive: true });
+    mkdirSync(join(dest, ".dist", "skills", "library"), { recursive: true });
+    writeFileSync(
+      join(dest, ".dist", "skills", "alpha", "SKILL.md"),
+      "# alpha\n",
+    );
     // `library` deliberately has no SKILL.md — a production library, not a skill.
-    writeFileSync(join(dest, "skills", "library", "index.ts"), "export {};\n");
+    writeFileSync(
+      join(dest, ".dist", "skills", "library", "index.ts"),
+      "export {};\n",
+    );
 
     const out = Bun.spawnSync(["bash", "-c", linkHelperScript(home, dest)]);
     expect(out.exitCode).toBe(0);
 
     expect(realpathSync(join(home, ".agents", "skills", "alpha"))).toBe(
-      realpathSync(join(dest, "skills", "alpha")),
+      realpathSync(join(dest, ".dist", "skills", "alpha")),
     );
     // lstat, not existsSync: a link to a real directory would be reported either way, but this
     // asserts no entry of ANY kind was created for the library.
@@ -150,10 +156,16 @@ test("link_agents_skills fills the target it is given, and applies the same rule
     const home = join(work, "home");
     const dest = join(work, "dest");
     const target = join(home, ".claude", "skills");
-    mkdirSync(join(dest, "skills", "alpha"), { recursive: true });
-    mkdirSync(join(dest, "skills", "library"), { recursive: true });
-    writeFileSync(join(dest, "skills", "alpha", "SKILL.md"), "# alpha\n");
-    writeFileSync(join(dest, "skills", "library", "index.ts"), "export {};\n");
+    mkdirSync(join(dest, ".dist", "skills", "alpha"), { recursive: true });
+    mkdirSync(join(dest, ".dist", "skills", "library"), { recursive: true });
+    writeFileSync(
+      join(dest, ".dist", "skills", "alpha", "SKILL.md"),
+      "# alpha\n",
+    );
+    writeFileSync(
+      join(dest, ".dist", "skills", "library", "index.ts"),
+      "export {};\n",
+    );
 
     const out = Bun.spawnSync([
       "bash",
@@ -163,7 +175,7 @@ test("link_agents_skills fills the target it is given, and applies the same rule
     expect(out.exitCode).toBe(0);
 
     expect(realpathSync(join(target, "alpha"))).toBe(
-      realpathSync(join(dest, "skills", "alpha")),
+      realpathSync(join(dest, ".dist", "skills", "alpha")),
     );
     expect(() => lstatSync(join(target, "library"))).toThrow();
     // The default door must stay untouched when a target is given — otherwise a desktop install
@@ -180,8 +192,11 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
     const home = join(work, "home");
     const dest = join(work, "dest");
     mkdirSync(join(home, ".agents", "skills"), { recursive: true });
-    mkdirSync(join(dest, "skills", "alpha"), { recursive: true });
-    writeFileSync(join(dest, "skills", "alpha", "SKILL.md"), "# alpha\n");
+    mkdirSync(join(dest, ".dist", "skills", "alpha"), { recursive: true });
+    writeFileSync(
+      join(dest, ".dist", "skills", "alpha", "SKILL.md"),
+      "# alpha\n",
+    );
 
     // A link left by a previous install whose source tree was renamed away.
     symlinkSync(
@@ -197,9 +212,19 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
     expect(() => lstatSync(join(home, ".agents", "skills", "stale"))).toThrow();
     // …and the real skill is linked.
     expect(realpathSync(join(home, ".agents", "skills", "alpha"))).toBe(
-      realpathSync(join(dest, "skills", "alpha")),
+      realpathSync(join(dest, ".dist", "skills", "alpha")),
     );
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
+});
+
+test("the installer links the DELIVERED tree, not the engine checkout", () => {
+  // Pointing the helper at $DEST/skills would ship a host the whole engine — the failure this
+  // whole chantier exists to close. Asserted on the shipped text because the surrounding steps
+  // (download, bun install) cannot run in a test.
+  expect(sh).toContain(".dist/skills");
+  expect(sh).toContain("pack-skills");
+  // The merged install replaces the per-engine one: a journalist must not install twice.
+  expect(sh).not.toMatch(/for skill in "\$\{NATIVE_SKILLS\[@\]\}"/);
 });

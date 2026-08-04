@@ -7,11 +7,11 @@ set -euo pipefail
 REPO="${SPLASH_REPO:-https://github.com/buriedsignals/splash}"   # confirm before public release (preflight-release.mjs)
 REF="${SPLASH_REF:-main}"
 DEST="$HOME/Splash"
-NATIVE_SKILLS=("skills/chart-native" "skills/map-native")
 
 # Shared skill-discovery helper for runtimes that read a skills directory (Codex, Gemini native
-# skills, Goose). Symlinks every skill dir there by name; globs skills/*/ so a skill added later is
-# covered automatically. Claude Code uses --plugin-dir instead and does not call this.
+# skills, Goose). Symlinks every skill dir there by name; globs .dist/skills/*/ — the PACKAGED
+# tree (step 5), never the engine checkout — so a skill added later is covered automatically.
+# Claude Code uses --plugin-dir instead and does not call this.
 #
 # The target defaults to ~/.agents/skills and is overridable because not every host reads the same
 # door: Claude Desktop scans ~/.claude/skills and never looks at ~/.agents/skills. One helper rather
@@ -26,7 +26,7 @@ link_agents_skills() {
   for link in "$target"/*; do
     if [ -L "$link" ] && [ ! -e "$link" ]; then rm -f "$link"; fi
   done
-  for skill_dir in "$DEST"/skills/*/; do
+  for skill_dir in "$DEST"/.dist/skills/*/; do
     # A host silently ignores a directory with no SKILL.md, so linking one (a production library
     # such as skills/image-native) inflates the link count while the host discovers one fewer
     # skill — measured on Goose Desktop: 12 linked, 11 discovered, and nothing said. Link only
@@ -75,7 +75,33 @@ if [ ! -f "$DEST/.env" ] || [ "${SPLASH_RECONFIGURE:-0}" = "1" ]; then
   fi
 fi
 
-# 5. Runtime — install the one the setup page recorded, via its module in install/runtimes/.
+# 5. Package what a host receives, then install its dependencies ONCE.
+# The repo is the engine (20 640 files for map-native alone) and a host enumerates all of it,
+# filters nothing and follows symlinks — load_skill then overflows and SKILL.md never reaches
+# the model. The delivered tree drops node_modules/dist/tests/output-proof, and its dependencies
+# install ABOVE the skill directories, where Bun resolves them and no host walks. This must run
+# before step 6: runtime_install calls link_agents_skills, which globs $DEST/.dist/skills/*/.
+echo "-> Packaging the skills…"
+if ! ( cd "$DEST" && bun run pack-skills ); then
+  echo "Packaging failed (see the error above) — re-run this installer." >&2
+  exit 1
+fi
+echo "-> Installing render dependencies…"
+if ! ( cd "$DEST/.dist" && bun install >/dev/null ); then
+  echo "Dependency install failed in the packaged skills (see the error above) — check your connection, then re-run this installer." >&2
+  exit 1
+fi
+# ONE download, from one skill, on purpose: Playwright caches per user and per browser revision
+# (~/Library/Caches/ms-playwright on macOS), so map-native — and every other renderer — resolves
+# the same executable this call fetches. Measured, both skills report the identical path. The
+# decision holds only while those skills pin the SAME Playwright version, which
+# install/native-browser.test.ts keeps true. Running it per skill would re-download nothing.
+if ! ( cd "$DEST/.dist/skills/chart-native" && bunx playwright install chromium ); then
+  echo "Playwright Chromium download failed (see above) — re-run this installer to resume." >&2
+  exit 1
+fi
+
+# 6. Runtime — install the one the setup page recorded, via its module in install/runtimes/.
 # Adding a runtime is a new install/runtimes/<name>.sh (see that dir's README), never a change here.
 # The runtime lives in newsroom.json (the decor). install/read-runtime.ts resolves it — including
 # the legacy .splash-runtime of an install that predates the setup page — and validates it against
@@ -89,26 +115,6 @@ fi
 # shellcheck source=/dev/null
 . "$runtime_module"
 runtime_install
-
-# 6. Producer deps + render engine (Playwright Chromium, shared cache). Keep stderr visible and
-# guard each step: a failed install here (flaky wifi, proxy, full disk) must report its cause and
-# stop with guidance — not die silently under `set -e` after the .env was already written.
-echo "-> Installing render dependencies…"
-for skill in "${NATIVE_SKILLS[@]}"; do
-  if ! ( cd "$DEST/$skill" && bun install >/dev/null ); then
-    echo "Dependency install failed in $skill (see the error above) — check your connection, then re-run this installer." >&2
-    exit 1
-  fi
-done
-# ONE download, from one skill, on purpose: Playwright caches per user and per browser revision
-# (~/Library/Caches/ms-playwright on macOS), so map-native — and every other renderer — resolves
-# the same executable this call fetches. Measured, both skills report the identical path. The
-# decision holds only while those skills pin the SAME Playwright version, which
-# install/native-browser.test.ts keeps true. Running it per skill would re-download nothing.
-if ! ( cd "$DEST/skills/chart-native" && bunx playwright install chromium ); then
-  echo "Playwright Chromium download failed (see above) — re-run this installer to resume." >&2
-  exit 1
-fi
 
 # 7. Local double-click launcher (created locally → no quarantine → clean re-launch).
 # The runtime module supplies the launch command for the recorded runtime.
