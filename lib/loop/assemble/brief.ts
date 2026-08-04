@@ -31,7 +31,15 @@ function beatsFor(el: RunElement): BriefBeat[] {
     // there is still no correct chart field for it, and guessing `category` is the silent drift
     // this refusal was written to prevent.
     if (b.anchor.kind === "region" && onMapTrack)
-      return { region: b.anchor.value, role: b.role, text: b.text };
+      return {
+        region: b.anchor.value,
+        role: b.role,
+        text: b.text,
+        // The camera decision travels WITH its beat — sub-project ④(c). Spread rather than
+        // assigned so a beat that says nothing produces a brief beat byte-identical to the one
+        // this projection produced before the field existed.
+        ...(b.movement ? { movement: b.movement } : {}),
+      };
     if (b.anchor.kind === "region" || b.anchor.kind === "place")
       throw new Error(
         `beatsFor: a "${b.anchor.kind}" anchor has no ${onMapTrack ? "map" : "chart"}-track ` +

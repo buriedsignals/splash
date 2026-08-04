@@ -26,12 +26,29 @@ import { arcErrors, type ArcRole } from "../../../lib/core/claim-arc";
 // `lon`/`lat` are the coordinates the deriver resolves against the binned grid by
 // point-in-polygon. Optional on the shared interface because every other type leaves them
 // unset.
+/** The only two camera words a map VIDEO implements — the list mapArcErrors refuses against.
+ *  Exported so a caller never retypes it: one list, one meaning. */
+export const MAP_BEAT_MOVEMENTS = ["jump", "hold"] as const;
+
 export interface MapArcBeat {
   region: string;
   role?: ArcRole;
   text?: string;
   lon?: number;
   lat?: number;
+  /** WHAT THE CAMERA DOES to arrive at this beat — sub-project 4(c).
+   *
+   *  `cameraMode` is a GLOBAL knob: "guided-tour" repositions on every beat, "simple" on none.
+   *  The umbrella spec (2026-08-03 section 5) requires the storyboard to SURVIVE that choice —
+   *  the global setting is the DEFAULT, and the journalist may contradict it beat by beat. This
+   *  is where they contradict it.
+   *
+   *  Absent means `jump`, which is what every Story and `stepped` component already did for
+   *  every beat, so a run written before this renders identically. Only these two words are
+   *  legal because only these two are IMPLEMENTED: `jump` by `map.jumpTo` (never `flyTo` —
+   *  these families need frame-determinism) and `hold` by applyMapArc's camera carry-over
+   *  (map-story.ts). A smooth `fly` belongs to the browser scrolly, a different producer. */
+  movement?: (typeof MAP_BEAT_MOVEMENTS)[number];
 }
 
 // How many valid region values a fail-loud message lists before truncating —
@@ -63,6 +80,23 @@ export function mapArcErrors(
     if (!validRegions.includes(b.region))
       errors.push(
         `beat ${i + 1}: region "${b.region}" not found in the data — valid regions: ${listValidRegions(validRegions)}`,
+      );
+    // THE CAMERA WORD, refused by name when it is not one we implement — sub-project 4(c).
+    // Without this a typo ("holdd", "fly") would be dropped at the render and the beat would
+    // simply move, which is the silent-degradation shape this whole file exists to prevent:
+    // a journalist gets a green light on a camera decision the engine already ignored.
+    if (b.movement !== undefined && !MAP_BEAT_MOVEMENTS.includes(b.movement))
+      errors.push(
+        `beat ${i + 1}: movement "${b.movement}" is not something a map video does — ` +
+          `it can ${MAP_BEAT_MOVEMENTS.join(" or ")} (a smooth fly belongs to the browser ` +
+          `scrolly, which these frame-deterministic families deliberately do not use)`,
+      );
+    // A FIRST beat cannot hold — caught here too, not only at the render. The render's throw
+    // (map-story.ts's applyMapArc) is defence in depth; this is the surface a journalist meets
+    // BEFORE production, which is where a refusal is worth something.
+    if (i === 0 && b.movement === "hold")
+      errors.push(
+        `beat 1: the first beat cannot hold the camera — there is no previous frame to hold`,
       );
   });
   return [...errors, ...arcErrors(arcBeats)];
