@@ -258,6 +258,26 @@ worse day, silently exits the pipeline and reports success.
 **Consequence for `verified`.** It stays `false`, and this is now the stronger reason: a runtime is
 not verified because a chart appeared. Backlog **E11**.
 
+### What was done about F5/F6/F7, and what it does not reach (2026-08-03)
+
+- **F5** — `skills/splash/SKILL.md` gained « How to invoke a nested skill », before step 2: the act
+  is named as a HOST act with more than one shape, with the fallback that exists everywhere (open
+  that skill's own `SKILL.md` and follow it), the trap named out loud (a skill name is not a tool
+  name; « no such tool » is not permission to work from memory), and the reminder that the proof of
+  the step is the file it leaves, not the name in `skillsInvoked`. Pinned by
+  `skills/splash/src/invocation-is-a-host-act.test.ts`.
+- **F6** — a Never-list entry bans presenting a chat-drawn chart as a deliverable **and** bans
+  enabling an extension to draw one, with the criterion that decides it (a file under `exports/`).
+  **This is prose, and prose is exactly what the observed run overrode** — the model turned the
+  extension on itself. It raises the cost of the move; it cannot prevent it.
+- **F7** — `skills/splash/src/attestation-corroboration.ts` confronts `skillsInvoked` with the run
+  directory, wired into `produce-all.mjs` ahead of every engine: a record claiming sub-skills with
+  not one of their artifacts on disk stops the batch (`attestation-uncorroborated`). **Its reach is
+  bounded by construction**: it runs when the spine runs. The run described above never reached
+  `produce-all` at all, so this check would not have fired on it. What it closes is the shape one
+  step less honest — a run that walks up to production carrying a fabricated record — and it makes
+  the record itself no longer free to write.
+
 ## The third attempt — the flow runs correctly, and only the request allowance stops it
 
 Same fixture, `google` provider, `gemini-2.5-flash` (the model the second attempt was *not*), driven
