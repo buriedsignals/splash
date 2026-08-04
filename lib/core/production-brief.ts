@@ -32,6 +32,10 @@ export type BriefBeat = {
    *  Sub-project ③: before it, a confirmed map walk had no route from the loop to the engine at
    *  all (`arcBeats` had zero occurrences in lib/). */
   region?: string;
+  /** What the camera does to arrive at this beat — sub-project ④(c). Map track only: the
+   *  chart track has no camera at all. Absent means the global `cameraMode` decides, which is
+   *  what every beat did before this existed. */
+  movement?: string;
   role: ArcRole;
   text: string;
 };
