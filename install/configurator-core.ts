@@ -21,4 +21,9 @@ export const RUNTIMES: Record<string, { label: string; verified: boolean }> = {
   // splash skill + drove the flow — but Layer B was cut off by the free Gemini quota before the
   // nested invocation completed, so the full end-to-end is not proven. See docs/installer/goose-proof.md.
   goose: { label: "Goose", verified: true },
+  // The newsroom-facing runtime: installed once, launched from the Dock, no terminal after install.
+  // NOT verified: the gate proved the app discovers our skills, follows the symlinks, executes a
+  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — but nobody has seen a
+  // visual come OUT of it. That is Layer B, and it is what flips this flag.
+  "goose-desktop": { label: "Goose Desktop", verified: false },
 };

@@ -7,6 +7,7 @@ import {
   lstatSync,
   realpathSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,6 +16,20 @@ const sh = readFileSync(
   join(import.meta.dir, "../../install/bootstrap.sh"),
   "utf8",
 );
+
+// Runs the real helper — extracted from the shipped script, never re-typed — against a throwaway
+// HOME and DEST, so these tests exercise what installs, not a copy that can drift from it.
+const linkHelperScript = (home: string, dest: string) => `
+  set -euo pipefail
+  HOME="${home}"; DEST="${dest}"
+  ${
+    sh
+      .split("link_agents_skills() {")[1]!
+      .split("\n}")[0]!
+      .replace(/^/, "link_agents_skills() {") + "\n}"
+  }
+  link_agents_skills
+`;
 const claudeModule = readFileSync(
   join(import.meta.dir, "../../install/runtimes/claude.sh"),
   "utf8",
@@ -94,6 +109,38 @@ test("skips the configurator on a re-run that already has a verified .env", () =
   );
 });
 
+test("link_agents_skills links only directories that carry a SKILL.md", () => {
+  // A host reads ~/.agents/skills/ and silently ignores any directory without a SKILL.md, so a
+  // library directory linked there inflates the link count while the host discovers one fewer
+  // skill — measured on Goose Desktop: 12 linked, 11 discovered, with nothing said. Linking only
+  // what a host can read makes the two counts agree, so a real gap shows up instead of hiding.
+  const work = mkdtempSync(join(tmpdir(), "splash-skillmd-"));
+  try {
+    const home = join(work, "home");
+    const dest = join(work, "dest");
+    mkdirSync(join(home, ".agents", "skills"), { recursive: true });
+    mkdirSync(join(dest, "skills", "alpha"), { recursive: true });
+    mkdirSync(join(dest, "skills", "library"), { recursive: true });
+    writeFileSync(join(dest, "skills", "alpha", "SKILL.md"), "# alpha\n");
+    // `library` deliberately has no SKILL.md — a production library, not a skill.
+    writeFileSync(join(dest, "skills", "library", "index.ts"), "export {};\n");
+
+    const out = Bun.spawnSync(["bash", "-c", linkHelperScript(home, dest)]);
+    expect(out.exitCode).toBe(0);
+
+    expect(realpathSync(join(home, ".agents", "skills", "alpha"))).toBe(
+      realpathSync(join(dest, "skills", "alpha")),
+    );
+    // lstat, not existsSync: a link to a real directory would be reported either way, but this
+    // asserts no entry of ANY kind was created for the library.
+    expect(() =>
+      lstatSync(join(home, ".agents", "skills", "library")),
+    ).toThrow();
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+});
+
 test("link_agents_skills removes a dead symlink before linking (a rename must not leave a host blind)", () => {
   const work = mkdtempSync(join(tmpdir(), "splash-deadlink-"));
   try {
@@ -101,6 +148,7 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
     const dest = join(work, "dest");
     mkdirSync(join(home, ".agents", "skills"), { recursive: true });
     mkdirSync(join(dest, "skills", "alpha"), { recursive: true });
+    writeFileSync(join(dest, "skills", "alpha", "SKILL.md"), "# alpha\n");
 
     // A link left by a previous install whose source tree was renamed away.
     symlinkSync(
@@ -108,21 +156,7 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
       join(home, ".agents", "skills", "stale"),
     );
 
-    const script = `
-      set -euo pipefail
-      HOME="${home}"; DEST="${dest}"
-      ${
-        readFileSync(
-          join(import.meta.dir, "../../install/bootstrap.sh"),
-          "utf8",
-        )
-          .split("link_agents_skills() {")[1]
-          .split("\n}")[0]
-          .replace(/^/, "link_agents_skills() {") + "\n}"
-      }
-      link_agents_skills
-    `;
-    const out = Bun.spawnSync(["bash", "-c", script]);
+    const out = Bun.spawnSync(["bash", "-c", linkHelperScript(home, dest)]);
     expect(out.exitCode).toBe(0);
 
     // The dead link is gone — check with lstat, because existsSync FOLLOWS a symlink and would

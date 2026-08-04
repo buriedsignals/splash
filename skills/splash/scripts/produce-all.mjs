@@ -1,6 +1,6 @@
 // CLI: bun scripts/produce-all.mjs <accepted.json> <outDir>
 // Reads the accepted proposals, runs the in-code batch loop, prints the report as JSON.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { produceAll } from "../src/produce-all.ts";
 import { realDispatch } from "../src/adapters.ts";
@@ -19,6 +19,11 @@ import {
 import { productionPrecondition } from "../../../lib/loop/preconditions.ts";
 import { refusalSentence } from "../../../lib/core/routed-refusal.ts";
 import { isDirectBranch } from "../src/candidate-provenance.ts";
+import {
+  corroborateAttestation,
+  attestationRefusal,
+  attestationWarnings,
+} from "../src/attestation-corroboration.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -82,6 +87,24 @@ if (missingMenu && accepted.some((p) => !isDirectBranch(p))) {
   process.exit(1);
 }
 
+// ② THE RUN'S OWN RECORD IS CONFRONTED WITH THE RUN'S OWN DIRECTORY, before any engine runs.
+//
+// `skillsInvoked` is written by the model about itself, and GUARD 5 (validate-gate.ts) can only
+// check it against ITSELF. So a run that never touched a sub-skill can attest that it did — the
+// audit's S1, observed on 2026-08-03 (docs/installer/goose-desktop-proof.md, backlog E11). This
+// asks the disk instead, in the same spirit as the spine auto-record below: the artifacts a
+// sub-skill leaves behind are what corroborate the claim, and a claim with NOT ONE of them behind
+// it stops the batch here, before anything is half-built. A partial gap is said out loud and is
+// never fatal — see attestation-corroboration.ts for why absence alone cannot be a verdict.
+const corroboration = corroborateAttestation(dirname(acceptedPath), accepted);
+const uncorroborated = attestationRefusal(corroboration);
+if (uncorroborated) {
+  console.error(`[produce] ${refusalSentence(uncorroborated)}`);
+  process.exit(1);
+}
+for (const w of attestationWarnings(corroboration))
+  console.error(`[attestation] warning: ${w}`);
+
 // Flow-decision gate: decisions.jsonl sits beside accepted.json, like candidates.json. A required
 // decision never recorded fails the run; an optional one warns. Staged: the first-cut trio ships
 // required:false, so this is warnings-only until each is flipped.
@@ -121,7 +144,27 @@ const report = await produceAll(
   candidateProvenance,
 );
 if (menuNarrativeWarning) report.warnings = [menuNarrativeWarning];
-console.log(JSON.stringify(report, null, 2));
+const reportJson = JSON.stringify(report, null, 2);
+
+// THE REPORT IS WRITTEN, NOT LEFT TO A REDIRECTION THE CALLER MIGHT FORGET.
+//
+// Every step after this one takes the report as an ARGUMENT — gate-render.mjs <report.json>,
+// apply-signoff.mjs <report.json>, deploy-embed.mjs --results <report.json>. While the file only
+// existed if the orchestrator remembered `> report.json`, the render gate and the sign-off were not
+// gates at all: they were reachable only by discipline. Measured on a real host run, which produced
+// a correct chart, forgot the `>`, and left both unreachable with nothing reporting it
+// (docs/installer/goose-desktop-proof.md).
+//
+// Beside accepted.json, which is where the prose has always pointed and where candidates.json and
+// decisions.jsonl already live.
+//
+// The documented invocation ALSO redirects stdout into this same path, and that is safe rather than
+// a race: `>` truncates the file before the process starts, both writers emit the SAME bytes from
+// offset 0, so the result is one report either way. A first version guarded against the double
+// write by comparing the inode of fd 1; the guard could not be made to redden, because there was
+// nothing to catch — it was removed rather than kept as decoration.
+writeFileSync(join(runDir, "report.json"), `${reportJson}\n`);
+console.log(reportJson);
 // Exit non-zero if anything failed, so a caller can detect trouble; needs-fallback and
 // needs-confirmation are NOT failures (the agent acts on them), so they exit 0.
 const failed = report.results.some((r) => r.status === "failed");

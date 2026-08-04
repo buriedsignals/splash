@@ -23,6 +23,11 @@ function Link-AgentsSkills {
     }
   }
   foreach ($skillDir in Get-ChildItem (Join-Path $Dest "skills") -Directory) {
+    # A host silently ignores a directory with no SKILL.md, so junctioning one (a production
+    # library such as skills\image-native) inflates the link count while the host discovers one
+    # fewer skill — measured on Goose Desktop: 12 linked, 11 discovered, and nothing said. Link
+    # only what a host can read, so the two counts agree and a real gap shows up instead of hiding.
+    if (-not (Test-Path (Join-Path $skillDir.FullName "SKILL.md"))) { continue }
     $link = Join-Path $agentsSkills $skillDir.Name
     if (Test-Path $link) { Remove-Item $link -Recurse -Force }
     cmd /c mklink /J "`"$link`"" "`"$($skillDir.FullName)`"" | Out-Null
