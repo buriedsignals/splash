@@ -293,6 +293,27 @@ established.
    VETOES the whole plan back to auto-pick. The confirmed arc is pinned VERBATIM as chart-native's
    `spec.beats` — each beat carrying `role` + `text` (the confirmed claim) alongside its existing anchor
    (`x`/`xEnd`/`category`).
+   **★ WHERE THE WORDS COME FROM — the rule that makes a proposed beat honest.** The machine
+   APPAIRS and ORDERS; it does not write the journalism. Transposed verbatim from the principle
+   `suggest-image` already ships and that this project validated in practice: *the model serves
+   MATCHING and ORDER only — "which passage of the article is this beat about?" — never
+   description.* So:
+   • **Each beat's claim is drawn from the passage of the JOURNALIST'S OWN ARTICLE that speaks to
+     that anchor**, reformulated to stand alone — never invented, never derived from the data
+     alone. What they re-read is their own prose, not a machine's sentence.
+   • **The order follows the article's narrative**, not the data's salience. "The machine sorts by
+     descending value" and "the journalist argues" are different orders, and the second one wins —
+     this is precisely what the earlier storyboard did backwards.
+   • **What the article does not supply is ASKED, never filled in.** If no passage speaks to an
+     anchor the data makes salient, say so and offer to drop the beat or hear what it should say.
+     Silence is a question, not a licence.
+   • The `draftText` the engine emits is a **factual label** (`"Genève — 1780 CHF"`, an anchor and
+     a number), deliberately not a sentence: it says what the beat is ABOUT so the journalist knows
+     which passage to draw from. It is never shipped — `produce` refuses a beat whose `text` is
+     empty (`unauthoredBeats`).
+   **This applies to the MAP track identically** (sub-project ③ opened it: a map scrolly and a map
+   video are proposed a walk the same way), and to the `stepped` video kind.
+
    **WHICH point is the turn, and whether a given beat actually advances the argument, is the
    JOURNALIST's call — non-mechanizable, never decided by the code.** The code enforces only the arc's
    SHAPE, fail-loud (`arcErrors`, `skills/chart-native/src/chart-story.ts`): the arc opens on

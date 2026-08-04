@@ -26,6 +26,7 @@ import {
   labelReveal,
   stagger,
 } from "./core/math";
+import { walkPositions } from "./core/walk";
 import { unitSuffix, type Lang } from "./core/locale";
 import {
   COLORS,
@@ -61,6 +62,12 @@ export interface BarConfig {
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
   themeBg?: string;
   rows: Record<string, string | number>[];
+  /** The journalist's confirmed walk (lib/core/production-brief.ts's BriefBeat, threaded by
+   *  lib/loop/assemble/chart-native.ts). Present ⇒ the bars enter in ITS order rather than in
+   *  reading order — sub-project ④. Absent ⇒ unchanged, byte for byte. Typed loosely on
+   *  purpose: this component needs the ANCHOR only, and re-declaring the loop's beat shape here
+   *  would be a second copy to keep true. */
+  beats?: readonly { x?: string; category?: string }[];
 }
 
 export interface BarChartProps {
@@ -279,8 +286,18 @@ function BarSvg({
 
   // chrome wipe (gridlines + baseline) over the first ~18% of the timeline
   const chrome = easeOutCubic(p / 0.18);
-  // each bar grows from the baseline, staggered in reading order
-  const barP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
+  // Each bar grows from the baseline, staggered — in READING order by default, and in the
+  // JOURNALIST'S order when they confirmed a walk (sub-project ④, chart track). Before this,
+  // a bar video ignored a walk the journalist had written and validated: the plan reached the
+  // config and changed nothing on screen, one engine over from the same defect in map-native's
+  // reveals. With no walk `walkPositions` returns the index itself, so a chart nobody
+  // storyboarded is byte-identical to before.
+  const entryOrder = walkPositions(
+    config.rows.map((r) => String(r[config.catField])),
+    config.beats,
+  );
+  const barP = (i: number) =>
+    stagger(p, entryOrder[i] ?? i, n, 0.18, 0.5 / n, 0.35);
 
   return (
     <svg

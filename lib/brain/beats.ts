@@ -172,8 +172,22 @@ export function canDraftBeats(nativeType: string, format: string): boolean {
   // draft a walk, block production until the journalist wrote every claim, and then render
   // something that ignores every word of it — worse than not proposing. Sub-project ④ is what
   // makes those components honour a walk; the day it does, `video` joins this line.
+  // THE CHART TRACK. `scrolly` always; `video` for the types whose VIDEO component honours a
+  // walk — which since sub-project ④ is `bar`: its bars enter in the journalist's order rather
+  // than in reading order (BarChart's `barP` reads core/walk.ts's walkPositions).
+  //
+  // `line` is absent, and measured rather than deferred by default: a line video has NO
+  // per-subject entrance to reorder — the line draws continuously by cumulative length
+  // (revealLine), and LineChart's only `stagger` calls are for gridlines and axis labels.
+  // Expressing a walk there means segmenting the draw into per-beat pauses, a different
+  // mechanism from an entrance order, so it stays closed until that exists rather than being
+  // opened onto something that would ignore it.
+  //
+  // The image track is `scrolly`-only: no other format renders one.
   if (BEAT_TYPES.has(nativeType) || nativeType === IMAGE_SCROLLY_TYPE)
-    return format === "scrolly";
+    return (
+      format === "scrolly" || (format === "video" && nativeType === "bar")
+    );
   // THE MAP TRACK — sub-project ③. Both narrative formats, because both honour a walk TODAY:
   // the browser scrolly reads `arcBeats` (skills/scrolly/src/ScrollyMap.tsx:73,223) and the
   // video's `story` family walks the beats (gesture-inventory §1). A map's `static` and
