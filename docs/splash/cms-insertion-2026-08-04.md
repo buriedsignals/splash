@@ -53,8 +53,8 @@ D'où la forme du correctif — `lib/delivery/adapters/wepublish-article.ts` :
   comment, subscribe) prennent des types d'entrée imbriqués dont la forme diffère
   structurellement de ce que la requête rend : non échoables par copie, donc refusés ;
 - **le refus est le produit** : un article portant un bloc hors de cette table **n'est pas écrit
-  du tout**, et le refus nomme le type. Les ~23 autres types ne sont pas « non supportés pour
-  toujours » : ce sont des types dont personne n'a mesuré la forme d'entrée, et deviner
+  du tout**, et le refus nomme le type. Les 10 imbriqués ne sont pas « non supportés pour
+  toujours » : ce sont ceux dont l'entrée n'est pas une copie de la sortie, et deviner le mappage
   corromprait le bloc ;
 - **on ne publie jamais** l'article du journaliste. L'article porteur appartient à Splash, donc le
   publier fait partie de le livrer. Celui-ci appartient à la rédaction : mettre un document
@@ -110,10 +110,13 @@ seul endroit de la chaîne où le placement pourrait cesser d'être un conseil.
 
 Rien ne bloque : We.Publish — le CMS du livrable bourse, celui de Heidi.news — est livré.
 
-1. **Fait-on Livingdocs, et quand ?** Le travail est **plus petit** que celui qu'on vient de
-   faire pour We.Publish (pas de table de blocs, pas d'aller-retour total), mais il demande une
-   instance et un jeton pour être mesuré au lieu d'être écrit contre la doc. Aucun code ne doit
-   être écrit avant ça : la règle du projet sur les API externes est « vraies clés, vrais échecs ».
+1. **Livingdocs — décidé « oui », mais BLOQUÉ sur un accès.** Cherché le 2026-08-04 : le
+   **serveur Livingdocs n'est pas public**. L'org GitHub `livingdocsIO` publie le moteur
+   (`livingdocs-engine`, modèle de document côté client), des exemples et des dockerfiles
+   d'infra — **pas le serveur** ; la doc Docker dit de construire ses images soi-même et renvoie à
+   `contact@livingdocs.io` ; aucun essai ni sandbox self-serve trouvé. Il faut donc **une instance
+   + un jeton `public-api:write`** venant d'un contact commercial (Heidi.news ? Buried Signals ?).
+   L'écrire contre la doc seule violerait « vraies clés, vrais échecs » — donc rien n'est écrit.
 2. **~~Étend-on la table de blocs ?~~ FAIT (2026-08-04)** — 7 → **20 types**, dérivés du schéma.
    Un sondage ou un embed social ne bloque plus rien. Restent **10 types imbriqués** (teasers,
    listicle, galerie, flex, event, comment, subscribe) : leur entrée n'est pas une copie de la
