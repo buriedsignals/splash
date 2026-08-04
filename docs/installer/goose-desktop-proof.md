@@ -292,6 +292,73 @@ Goose's own tool loop — all of those are settled. A key with a working allowan
 free tier with a usable quota) resumes the session `splash-lb2`, which retains its full tool history
 because the `google` provider records it.
 
+## ★★★ Layer B — REACHED. A real file, from a real article, through Goose Desktop's runtime
+
+Resumed the same session `splash-lb2` on **OpenRouter's free tier** with
+`nvidia/nemotron-3-ultra-550b-a55b:free` (1 M context — our ~45k tokens of prose stop being a
+constraint). 20 requests/minute, 50/day without any purchase.
+
+**The artefact:** `/tmp/splash-run/output/budget-repartition-2026/budget-repartition-2026.png`,
+79 326 bytes, **1200×676** — the project's own `article-web` static density. Looked at, not inferred
+from a report:
+
+- the **title carries the confirmed takeaway** (« L'éducation absorbe près d'un tiers du budget
+  communal »), not a neutral description — the very discipline that has been the hardest to hold;
+- subtitle with the context the article gives (8,4 M€), six bars in value order, value labels on each;
+- a **source line with the article's own traceable URL**;
+- « Créé avec Datawrapper » — it went through the `dw-chart` producer, exactly the cheapest path the
+  audit predicted.
+
+**The trajectory, from the session record — 101 messages, 32 shell calls:**
+
+```
+load_skill(splash) → load_skill(suggest-article) → load_skill(suggest-chart) ×2 + delegate
+```
+
+**Nested invocation, by name, on a non-Claude-Code host.** `accepted.json` carries the
+`confirmedTakeaway`, the anchor with the article's **verbatim** quote, the claim, the intent and the
+producer; `decisions.jsonl` records `suggest-chart-invoked`.
+
+### The six criteria, judged
+
+| # | Criterion | Result |
+|---|---|---|
+| 1 | nested invocation of `suggest-article` **and** `suggest-chart` | **PASS** — both, by name, via `load_skill` |
+| 2 | `candidates.json` / `accepted.json` / `report.json` | **PARTIAL** — the first two exist, `report.json` does not (below) |
+| 3 | report status `produced` | **PASS in substance** — the artefact exists and is correct; the status was printed, never persisted |
+| 4 | a `_shown/` receipt | **FAIL** — never written |
+| 5 | `EXPORT_FORMS_PROPOSAL` | **n/a** — the a/b/c proposal belongs to interactive/scrolly; this element is `static` |
+| 6 | a public URL **before** any review | **CONFIRMED, live: `https://datawrapper.dwcdn.net/A74QR/1/`** |
+
+Criterion 6 is the audit's gravest finding (D1) and its §5.3 said plainly: *« Je ne l'ai pas observée
+en direct… c'est le premier que le run devrait confirmer ou réfuter. »* **Confirmed by observation:**
+a live public URL existed at produce time, before review and before signature.
+
+### ★ Why 2 and 4 failed — a gate whose input the model must remember to create
+
+`produce-all.mjs` **prints** its report to stdout; it never writes it. `SKILL.md:928-935` tells the
+model to redirect — *« report to a FILE (the gates and EXPORT read it back) »*, and *« Redirecting to
+`report.json` is required »*. The run called
+`produce-all.mjs --run-dir /tmp/splash-run` **without the redirect**, so the JSON went into the chat
+and `report.json` never existed. Every downstream step takes that file as its argument —
+`gate-render.mjs <report.json>`, `apply-signoff.mjs <report.json>`, `deploy-embed.mjs --results
+<report.json>`. So **the render gate and the sign-off were not skipped by decision; they became
+unreachable.**
+
+This is E11's shape again in a different place: a gate that is mechanical in its own code, but whose
+reachability depends on the model remembering a shell redirection. The prose says "required"; nothing
+enforces it. The fix is small and belongs to the producer rather than to the prose — `produce-all`
+writing `<runDir>/report.json` itself, in addition to printing it, would make the redirect
+impossible to forget. Backlog **E12**.
+
+### Consequence for `verified`
+
+**It stays `false`**, per this plan's own rule: flip only if **all** criteria pass. Two did not, and
+the reason is a real defect rather than an accident of the run. What is now established is stronger
+than the flag: Goose Desktop discovers, executes, reaches `bun`, opens on the right directory,
+invokes nested skills by name, drives our producers, and puts a correct, sourced, takeaway-titled
+chart on disk from a journalist's article.
+
 ## Not proven
 
 - **The bootstrap download.** `install/bootstrap.sh` fetches from `github.com/buriedsignals/splash`,
