@@ -455,3 +455,51 @@ PNG), and the vision-capable `gemma-4-31b-it:free` rate-limited on ten consecuti
 discovery, and the app finds every skill that *is* a skill. **Layer B: not attempted.**
 `RUNTIMES["goose-desktop"].verified` stays `false`, and the test in
 `install/configurator-core.test.ts` pins it there.
+
+---
+
+## The 2026-08-04 re-run — the flag still does not flip, for a third and better reason
+
+Run on `main` at `88c334fb` (so it carries both fixes the previous attempt was owed: E12's
+self-written `report.json`, and `present` as a numbered step of 3b), from the repository root, on
+the same cheapest fixture, provider **OpenRouter** with `nemotron-3-ultra-550b-a55b:free`. Session
+`splash-lb3`.
+
+**What it reproduced.** Criterion 1 again, by name — `load_skill` for `splash`, `suggest-article`
+and `suggest-chart`. Criterion 6 again, live: a public Datawrapper URL
+(`https://datawrapper.dwcdn.net/KA0XO/1/`) existed at produce time, before any review. The run
+directory carries `opportunities.json`, `candidates.json`, `accepted.json` and a real 66 KB PNG.
+
+**Why it still fails 2, 3 and 4 — and this is the finding.** `produce-all.mjs` **never ran**. Not
+"ran without the redirect", as on 2026-08-03: never ran at all. The model wrote its own producer,
+`/tmp/produce-chart.ts`, importing the engine directly —
+
+```ts
+import { produceChart } from "/Users/rmdms/.agents/skills/dw-chart/src/produce";
+const spec = { type: "column-chart", numberFormat: "0%", … };   // hand-authored
+```
+
+— and called it. Verified against the record rather than inferred: exporting the session and
+grepping every executed shell command for `produce` returns that script and nothing else. So there
+is no `report.json`, no `_shown/` receipt, and no render gate — **not because a gate was skipped,
+but because the spine that hosts every gate was bypassed.**
+
+**Three things follow.**
+
+1. **E12's fix is necessary and not sufficient.** It removes the forgotten-redirect failure; it
+   cannot help when the producer it lives in is never invoked.
+2. **E11's own stated limit is now observed twice.** The attestation-corroboration check runs inside
+   `produce-all`, *before* any engine — and a check on the spine only fires if the spine runs. This
+   run is precisely the case E11 wrote down as out of its reach. Detecting it needs an observer
+   **outside** the run.
+3. **The improvisation class is not a weak-model artefact.** The 2026-08-03 bypass
+   (`autovisualiser`) was on a small model and looked like one. This one is a 550B model that
+   nonetheless preferred hand-writing a producer over calling ours. What the two share is that the
+   prose names skills and producers but the model reconstructs the *call* itself.
+
+**Why it stopped there.** OpenRouter's free tier: `Rate limit exceeded: free-models-per-day`, 50
+requests per day without a purchase. The stop is the tier, not the product — but unlike the previous
+attempts, the run had already produced a chart by then, and the missing criteria are the bypass
+above rather than an unfinished journey.
+
+`verified` stays **`false`**.

@@ -19,7 +19,7 @@ const sh = readFileSync(
 
 // Runs the real helper — extracted from the shipped script, never re-typed — against a throwaway
 // HOME and DEST, so these tests exercise what installs, not a copy that can drift from it.
-const linkHelperScript = (home: string, dest: string) => `
+const linkHelperScript = (home: string, dest: string, target?: string) => `
   set -euo pipefail
   HOME="${home}"; DEST="${dest}"
   ${
@@ -28,7 +28,7 @@ const linkHelperScript = (home: string, dest: string) => `
       .split("\n}")[0]!
       .replace(/^/, "link_agents_skills() {") + "\n}"
   }
-  link_agents_skills
+  link_agents_skills ${target ? `"${target}"` : ""}
 `;
 const claudeModule = readFileSync(
   join(import.meta.dir, "../../install/runtimes/claude.sh"),
@@ -136,6 +136,39 @@ test("link_agents_skills links only directories that carry a SKILL.md", () => {
     expect(() =>
       lstatSync(join(home, ".agents", "skills", "library")),
     ).toThrow();
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+});
+
+test("link_agents_skills fills the target it is given, and applies the same rules there", () => {
+  // Not every host reads the same door: Claude Desktop scans ~/.claude/skills and never looks at
+  // ~/.agents/skills. One helper with a target keeps the two rules — sweep dead links, link only
+  // what carries a SKILL.md — from drifting apart between doors.
+  const work = mkdtempSync(join(tmpdir(), "splash-target-"));
+  try {
+    const home = join(work, "home");
+    const dest = join(work, "dest");
+    const target = join(home, ".claude", "skills");
+    mkdirSync(join(dest, "skills", "alpha"), { recursive: true });
+    mkdirSync(join(dest, "skills", "library"), { recursive: true });
+    writeFileSync(join(dest, "skills", "alpha", "SKILL.md"), "# alpha\n");
+    writeFileSync(join(dest, "skills", "library", "index.ts"), "export {};\n");
+
+    const out = Bun.spawnSync([
+      "bash",
+      "-c",
+      linkHelperScript(home, dest, target),
+    ]);
+    expect(out.exitCode).toBe(0);
+
+    expect(realpathSync(join(target, "alpha"))).toBe(
+      realpathSync(join(dest, "skills", "alpha")),
+    );
+    expect(() => lstatSync(join(target, "library"))).toThrow();
+    // The default door must stay untouched when a target is given — otherwise a desktop install
+    // would quietly also wire a runtime the journalist did not choose.
+    expect(() => lstatSync(join(home, ".agents", "skills", "alpha"))).toThrow();
   } finally {
     rmSync(work, { recursive: true, force: true });
   }

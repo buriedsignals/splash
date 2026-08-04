@@ -27,7 +27,11 @@ import { resolveMapStyle } from "../route-geo";
 import type { LocatorConfigShape } from "../validate-config";
 import { resolveMapFrame, labelTextSize } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
-import { easedRevealProgress, revealCameraPlan } from "../reveal";
+import {
+  easedRevealProgress,
+  revealCameraPlan,
+  walkFillOpacity,
+} from "../reveal";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import { TitleCard } from "./StoryCards";
 
@@ -90,12 +94,19 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
     if (!containerRef.current || startedRef.current) return;
     startedRef.current = true;
 
+    // THE WALK, as a lookup. A locator beat anchors on the MARKER'S LABEL — exactly the list
+    // validateLocatorConfig checks it against (validate-config.ts's `validMarkerNames`,
+    // `markers.map(m => String(m.label))`) — read from the validator, never chosen here.
+    const walkIndexByLabel = new Map<string, number>(
+      (config.arcBeats ?? []).map((b, i) => [String(b.region), i]),
+    );
     const features: GeoJSON.Feature[] = geo.markers.map((mk, i) => ({
       type: "Feature",
       id: i,
       properties: {
         key: `m${i}`,
         label: mk.label,
+        __walkIdx: walkIndexByLabel.get(String(mk.label)) ?? -1,
         color: mk.color,
         labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
         __showLabel: true, // recomputed by declutter
@@ -221,15 +232,17 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
     if (!mapReady || !map || !map.isStyleLoaded() || !map.getLayer(GLYPH_LAYER))
       return;
     const h = delayRender(`locator-reveal-frame-${frame}`);
+    // One ramp with no walk (byte-identical); the journalist's own order when there is one.
+    const grow = walkFillOpacity(progress, config.arcBeats?.length ?? 0, 1);
     map.setPaintProperty(GLYPH_LAYER, "circle-radius", [
       "*",
       DOT_RADIUS_PX,
-      progress,
-    ]);
-    map.setPaintProperty(GLYPH_LAYER, "circle-opacity", progress);
-    map.setPaintProperty(GLYPH_LAYER, "circle-stroke-opacity", progress);
+      grow,
+    ] as never);
+    map.setPaintProperty(GLYPH_LAYER, "circle-opacity", grow as never);
+    map.setPaintProperty(GLYPH_LAYER, "circle-stroke-opacity", grow as never);
     if (map.getLayer(LABEL_LAYER)) {
-      map.setPaintProperty(LABEL_LAYER, "text-opacity", progress);
+      map.setPaintProperty(LABEL_LAYER, "text-opacity", grow as never);
     }
     continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();

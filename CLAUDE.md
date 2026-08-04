@@ -119,17 +119,22 @@ après avoir été traduite en **champ technique** la première fois.
     sujets à la fois — la marche confirmée du journaliste ne changeait **rien** à l'écran.
     Mécanisme pur et partagé dans `src/reveal.ts` (`walkSubjectProgress` · `walkFillOpacity` ·
     `activeWalkIndex`) ; **sans marche, la valeur rendue est le scalaire d'avant, à l'octet**.
-    Honoré par `ChoroplethReveal` + `CartogramReveal`. Qui ne l'honore pas est **pinné par un
-    test** (`reveal-walk-coverage.test.ts`), pas affirmé : `route` et `hex-grid` **par nature**
-    (l'animation d'une route EST déjà la marche ; les cellules d'un hex-grid n'ont pas de clé
-    qu'un beat pourrait nommer) · `symbol`/`locator`/`dot-density` **en attente** (leur clé n'est
-    pas encore posée sur la feature, et la deviner refait le défaut « mauvaise clé,
-    silencieusement »).
+    Honoré par les **cinq** types dont l'ancre est une clé que la donnée porte : choroplèthe,
+    cartogramme, symbole, locator, densité. ★ **La clé de chacun est lue dans SON PROPRE
+    validateur**, jamais choisie — c'est ce qui garantit que ce qui est validé et ce qui est peint
+    parlent de la même chose (`points[].label` · `markers[].label` · `rows[][regionKey]` · la clé
+    de région · `values[].id`). Les deux qui restent dehors le sont **par nature**, pinné par
+    `reveal-walk-coverage.test.ts` : `route` (son animation EST déjà la marche) et `hex-grid`
+    (ses cellules n'ont pas de clé qu'un beat pourrait nommer). Plus aucun « en attente ».
+    Deux décisions assumées : un symbole grandit dans l'ordre de la marche mais **jamais à une
+    taille différente** (l'expression multiplie le rayon, elle ne le remplace pas — la taille EST
+    la valeur) ; et le plafond d'opacité suit le composant (0,85 surfaces, 1 points), parce que
+    c'est ce que chacun peignait avant.
     **★ PROUVÉ AU RENDU** — `skills/map-native/output-proof/reveal-walk/` : deux produce réels du
     même choroplèthe à la même frame, marche **délibérément à contre-courant du classement**
     (`GBR → DEU → NOR` alors que `NOR` est le plus haut). Sans marche, la Scandinavie et l'Europe
     centrale se teintent ensemble ; avec, **seul le Royaume-Uni est en place** et la Norvège n'est
-    pas entrée. L'inversion EST la preuve. mp4 `violations: []`. Hors gate (2 rendus MapTiler
+    pas entrée. L'inversion EST la preuve. **Refaite sur la famille symbole** (marche à contre-courant de la TAILLE : Amsterdam 52 en premier, London 296 hors marche — sans marche toutes les étiquettes sont là, avec, seul Amsterdam). mp4 `violations: []` des deux côtés. Hors gate (2 rendus MapTiler
     live), comme `verify-source-bundle.mjs`.
   - **(c) `cameraMode` par beat** — non commencé.
 
@@ -152,15 +157,18 @@ d'abord tester et voir ce qui marche ou non ».
 
 > ★ **Les quatre cibles ne sont PAS de même nature** (établi 2026-08-03) :
 > - **Goose Desktop + Claude Desktop** = skills au format ouvert, lus en local, exécution locale.
->   Les deux sont « câbler et prouver ». Claude Desktop a la surface sous
->   `~/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/…`, format
->   **identique au nôtre** (`SKILL.md` + frontmatter + `scripts/`).
+>   Les deux sont « câbler et prouver ». ⚠️ **Correction mesurée le 2026-08-04** : la surface de
+>   Claude Desktop n'est PAS `…/local-agent-mode-sessions/skills-plugin/…` (répertoire **géré par
+>   Anthropic**, synchronisé) — c'est **`~/.claude/skills/`**, auto-chargé par l'app et monté en
+>   lecture seule dans sa VM. Câblé depuis (`install/runtimes/claude-desktop.sh`).
 > - **Gemini** : c'est la **CLI** qui implémente le standard ouvert. L'app macOS (Spark, juin 2026,
 >   accès fichiers locaux) — support `SKILL.md` **non établi**.
-> - **ChatGPT Desktop** : modèle **MCP / connecteurs configurés côté web**, pas de skills locaux ; un
->   connecteur distant **ne peut pas lancer Bun/Playwright/Remotion chez le journaliste**. Splash est
->   local-first. **Question préalable : ce modèle permet-il seulement de produire un fichier en
->   local ?** À trancher AVANT d'y investir.
+> - **ChatGPT Desktop** : ⚠️ **ce qui suit a été MESURÉ FAUX le 2026-08-04** — « connecteurs côté web,
+>   donc pas d'exécution locale ». La doc OpenAI documente les serveurs MCP **STDIO lancés en process
+>   local** (`command = …`), config partagée avec Codex (`~/.codex/config.toml`). L'exécution locale
+>   n'est donc PAS le blocage ; ce qui manque est la **surface** (MCP expose des outils, pas des
+>   skills). Piste la moins chère : la surface est Codex embarqué, runtime qu'on livre déjà. Détail :
+>   `docs/installer/claude-desktop-findings.md` § B4.
 
 **C. Tout ce qui a été construit doit FONCTIONNER et être ACCESSIBLE pour produire.** Ce n'est pas
 seulement le lot route : c'est un **audit d'atteignabilité** de toutes les capacités. La session du
