@@ -93,15 +93,18 @@ d'abord tester et voir ce qui marche ou non ».
 
 > ★ **Les quatre cibles ne sont PAS de même nature** (établi 2026-08-03) :
 > - **Goose Desktop + Claude Desktop** = skills au format ouvert, lus en local, exécution locale.
->   Les deux sont « câbler et prouver ». Claude Desktop a la surface sous
->   `~/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/…`, format
->   **identique au nôtre** (`SKILL.md` + frontmatter + `scripts/`).
+>   Les deux sont « câbler et prouver ». ⚠️ **Correction mesurée le 2026-08-04** : la surface de
+>   Claude Desktop n'est PAS `…/local-agent-mode-sessions/skills-plugin/…` (répertoire **géré par
+>   Anthropic**, synchronisé) — c'est **`~/.claude/skills/`**, auto-chargé par l'app et monté en
+>   lecture seule dans sa VM. Câblé depuis (`install/runtimes/claude-desktop.sh`).
 > - **Gemini** : c'est la **CLI** qui implémente le standard ouvert. L'app macOS (Spark, juin 2026,
 >   accès fichiers locaux) — support `SKILL.md` **non établi**.
-> - **ChatGPT Desktop** : modèle **MCP / connecteurs configurés côté web**, pas de skills locaux ; un
->   connecteur distant **ne peut pas lancer Bun/Playwright/Remotion chez le journaliste**. Splash est
->   local-first. **Question préalable : ce modèle permet-il seulement de produire un fichier en
->   local ?** À trancher AVANT d'y investir.
+> - **ChatGPT Desktop** : ⚠️ **ce qui suit a été MESURÉ FAUX le 2026-08-04** — « connecteurs côté web,
+>   donc pas d'exécution locale ». La doc OpenAI documente les serveurs MCP **STDIO lancés en process
+>   local** (`command = …`), config partagée avec Codex (`~/.codex/config.toml`). L'exécution locale
+>   n'est donc PAS le blocage ; ce qui manque est la **surface** (MCP expose des outils, pas des
+>   skills). Piste la moins chère : la surface est Codex embarqué, runtime qu'on livre déjà. Détail :
+>   `docs/installer/claude-desktop-findings.md` § B4.
 
 **C. Tout ce qui a été construit doit FONCTIONNER et être ACCESSIBLE pour produire.** Ce n'est pas
 seulement le lot route : c'est un **audit d'atteignabilité** de toutes les capacités. La session du
