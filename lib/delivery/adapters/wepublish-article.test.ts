@@ -90,12 +90,42 @@ describe("blockInputFor", () => {
     });
   });
 
+  it("should carry blockStyleName — the field a hand-written table silently dropped", () => {
+    // The bug that changed the instrument. `blockStyleName` is on every one of the 20 inputs in
+    // the schema, and the first table (read off the TypeScript models) had it on none of them —
+    // so every rewritten block lost its style, on a live article, silently.
+    const r = blockInputFor({
+      __typename: "RichTextBlock",
+      richText: [{ type: "paragraph" }],
+      blockStyleName: "pull-quote",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.input.richText!.blockStyleName).toBe("pull-quote");
+  });
+
+  it("should echo the embed blocks a real article is full of", () => {
+    // 20 scalar-only types round-trip, not the 7 the first pass covered. These are the ones a
+    // newsroom piece actually carries between its paragraphs.
+    for (const [block, key, field, value] of [
+      [{ __typename: "YouTubeVideoBlock", videoID: "abc" }, "youTubeVideo", "videoID", "abc"],
+      [{ __typename: "TwitterTweetBlock", tweetID: "1", userID: "u" }, "twitterTweet", "tweetID", "1"],
+      [{ __typename: "PollBlock", pollId: "p-1" }, "poll", "pollId", "p-1"],
+      [{ __typename: "InstagramPostBlock", postID: "i" }, "instagramPost", "postID", "i"],
+    ] as const) {
+      const r = blockInputFor(block as BlockOut);
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.input[key]![field]).toBe(value);
+    }
+  });
+
   it("should REFUSE a block type it cannot faithfully echo, naming it", () => {
-    const r = blockInputFor({ __typename: "PollBlock", pollId: "p-1" });
+    const r = blockInputFor({ __typename: "ListicleBlock", items: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.code).toBe(UNSUPPORTED_BLOCK);
-      expect(r.typename).toBe("PollBlock");
+      expect(r.typename).toBe("ListicleBlock");
     }
   });
 });
@@ -150,7 +180,7 @@ describe("articleUpdateVariables", () => {
       html: "<iframe srcdoc='OLD'></iframe>",
     });
     const r = articleUpdateVariables(a, VISUAL, {
-      isOurs: (html) => html.includes("srcdoc"),
+      isOurs: (b) => typeof b.html === "string" && b.html.includes("srcdoc"),
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -160,14 +190,47 @@ describe("articleUpdateVariables", () => {
     expect(JSON.stringify(blocks)).not.toContain("OLD");
   });
 
+  it("should insert AFTER the block the journalist confirmed, not at the end", () => {
+    // The journalist is asked where the visual goes and confirms it before anything is written
+    // (SKILL.md §6 form d). `afterIndex` carries that answer; without it the visual would always
+    // land at the end of the piece, which is rarely where a chart belongs.
+    const r = articleUpdateVariables(article(), VISUAL, { afterIndex: 0 });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.variables.blocks).toEqual([
+      { title: { title: "Annemasse", lead: "Les chiffres" } },
+      VISUAL,
+      { richText: { richText: [{ type: "paragraph" }] } },
+      { image: { imageID: "img-1", caption: "La douane" } },
+    ]);
+  });
+
+  it("should place it FIRST when the confirmed position is before everything", () => {
+    const r = articleUpdateVariables(article(), VISUAL, { afterIndex: -1 });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.variables.blocks[0]).toEqual(VISUAL);
+    expect(r.variables.blocks).toHaveLength(4);
+  });
+
+  it("should REFUSE a position that is not a place in the article", () => {
+    // Out of range is not "clamp to the end": it means the article changed under the answer the
+    // journalist gave, and silently putting the visual somewhere else is the thing to avoid.
+    const r = articleUpdateVariables(article(), VISUAL, { afterIndex: 9 });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("9");
+    expect(r.message.toLowerCase()).toContain("position");
+  });
+
   it("should REFUSE the whole write when ONE block cannot be echoed", () => {
     const a = article();
-    a.draft.blocks.push({ __typename: "PollBlock", pollId: "p-1" });
+    a.draft.blocks.push({ __typename: "ListicleBlock", items: [] });
     const r = articleUpdateVariables(a, VISUAL);
     expect(r.ok).toBe(false);
     if (r.ok) return;
     // Names the block AND says what it protects: a partial write would drop the poll.
-    expect(r.message).toContain("PollBlock");
+    expect(r.message).toContain("ListicleBlock");
     expect(r.message).toContain("annemasse-frontaliers");
   });
 

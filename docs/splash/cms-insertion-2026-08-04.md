@@ -41,13 +41,20 @@ D'où la forme du correctif — `lib/delivery/adapters/wepublish-article.ts` :
 - **aller-retour total** : chaque champ que la mutation exige est relu depuis l'article et
   renvoyé tel quel (les drapeaux, `tagIds` depuis l'**article** et non la révision, `authorIds`
   depuis `authors[].id`, les `properties`, les scalaires éditoriaux) ;
-- **table de blocs mesurée, pas devinée** : chaque `XBlockInput` est `OmitType(XBlock, ['type'])`
-  (`block-content.model.ts` et ses voisins), la relation résolue cédant la place à son id
-  (`ImageBlockInput` omet `image`, garde `imageID`). Sept types couverts — Title, RichText, HTML,
-  Image, Quote, Break, IFrame ;
+- **table de blocs GÉNÉRÉE depuis le schéma publié du CMS** (`apps/api-example/schema-v2.graphql`),
+  pas écrite à la main depuis les modèles TypeScript. **Le changement d'instrument n'est pas
+  cosmétique** : la première table, lue sur les modèles, omettait `blockStyleName` sur les 20
+  types — donc chaque bloc réécrit perdait son style, silencieusement, sur un article vivant.
+  C'est exactement la réinitialisation muette que le module existe pour empêcher, et seul le
+  schéma — ce contre quoi le serveur valide réellement — pouvait l'énumérer.
+  Règle de sélection : un bloc est échoable quand son type d'entrée est **fait de scalaires
+  seuls**. **20 types** le sont (les 15 embeds + Title, RichText, HTML, Image, Quote, Break,
+  IFrame, Poll, Crowdfunding…). Les **10 autres** (teasers, listicle, galerie, flex, event,
+  comment, subscribe) prennent des types d'entrée imbriqués dont la forme diffère
+  structurellement de ce que la requête rend : non échoables par copie, donc refusés ;
 - **le refus est le produit** : un article portant un bloc hors de cette table **n'est pas écrit
-  du tout**, et le refus nomme le type. Les ~23 autres types ne sont pas « non supportés pour
-  toujours » : ce sont des types dont personne n'a mesuré la forme d'entrée, et deviner
+  du tout**, et le refus nomme le type. Les 10 imbriqués ne sont pas « non supportés pour
+  toujours » : ce sont ceux dont l'entrée n'est pas une copie de la sortie, et deviner le mappage
   corromprait le bloc ;
 - **on ne publie jamais** l'article du journaliste. L'article porteur appartient à Splash, donc le
   publier fait partie de le livrer. Celui-ci appartient à la rédaction : mettre un document
@@ -103,14 +110,17 @@ seul endroit de la chaîne où le placement pourrait cesser d'être un conseil.
 
 Rien ne bloque : We.Publish — le CMS du livrable bourse, celui de Heidi.news — est livré.
 
-1. **Fait-on Livingdocs, et quand ?** Le travail est **plus petit** que celui qu'on vient de
-   faire pour We.Publish (pas de table de blocs, pas d'aller-retour total), mais il demande une
-   instance et un jeton pour être mesuré au lieu d'être écrit contre la doc. Aucun code ne doit
-   être écrit avant ça : la règle du projet sur les API externes est « vraies clés, vrais échecs ».
-2. **Étend-on la table de blocs We.Publish ?** Aujourd'hui, un article contenant un sondage, une
-   galerie, un teaser ou un embed social **refuse** l'insertion et bascule sur la forme c (un lien
-   à coller). Chaque type ajouté élargit la couverture ; chacun exige d'être mesuré contre une
-   instance réelle, pas déduit de la source. À arbitrer sur ce que Heidi.news utilise réellement.
+1. **Livingdocs — décidé « oui », mais BLOQUÉ sur un accès.** Cherché le 2026-08-04 : le
+   **serveur Livingdocs n'est pas public**. L'org GitHub `livingdocsIO` publie le moteur
+   (`livingdocs-engine`, modèle de document côté client), des exemples et des dockerfiles
+   d'infra — **pas le serveur** ; la doc Docker dit de construire ses images soi-même et renvoie à
+   `contact@livingdocs.io` ; aucun essai ni sandbox self-serve trouvé. Il faut donc **une instance
+   + un jeton `public-api:write`** venant d'un contact commercial (Heidi.news ? Buried Signals ?).
+   L'écrire contre la doc seule violerait « vraies clés, vrais échecs » — donc rien n'est écrit.
+2. **~~Étend-on la table de blocs ?~~ FAIT (2026-08-04)** — 7 → **20 types**, dérivés du schéma.
+   Un sondage ou un embed social ne bloque plus rien. Restent **10 types imbriqués** (teasers,
+   listicle, galerie, flex, event, comment, subscribe) : leur entrée n'est pas une copie de la
+   sortie, donc chacun demande une vraie mesure. À rouvrir seulement si Heidi.news en utilise.
 3. **Le placement réel** (point ci-dessus) : si Livingdocs se fait, faut-il que l'ancre pilote la
    position, ou le visuel va-t-il en fin de brouillon comme sur We.Publish ? C'est une question
    éditoriale — « Splash place » vs « Splash propose et le journaliste place » — et la réponse

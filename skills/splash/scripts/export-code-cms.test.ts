@@ -113,6 +113,25 @@ describe("export-code — form d is REACHABLE from the journalist's menu", () =>
     expect(proposal.forms.d.needsArticle).toBe(true);
     expect(proposal.forms.d.deliver).toContain("--form cms");
     expect(proposal.forms.d.deliver).toContain("<slug>");
+    // And the second thing only the journalist can answer: where in the piece it goes.
+    expect(proposal.forms.d.needsPosition).toBe(true);
+    expect(proposal.forms.d.deliver).toContain("--after");
+  });
+
+  it("should REFUSE --form cms with an article but no confirmed position", () => {
+    // Knowing WHICH article is not knowing WHERE. Writing at the end because nobody said
+    // otherwise is deciding for them — the same violation as picking the delivery form.
+    const { outDir, resultsPath } = setup();
+    let err = "";
+    try {
+      run([outDir, exportDir(), "--results", resultsPath, "--id", "p1", "--form", "cms", "--article", "annemasse"]);
+      throw new Error("expected a refusal");
+    } catch (e) {
+      const x = e as { stderr?: Buffer; stdout?: Buffer };
+      err = `${(x.stderr ?? "").toString()}${(x.stdout ?? "").toString()}`;
+    }
+    expect(err).toContain("--after");
+    expect(err).toContain("end");
   });
 
   it("should say WHY it is unavailable when the newsroom's CMS is not configured", () => {
@@ -161,6 +180,36 @@ describe("export-code — form d refuses rather than invents", () => {
     expect(stderr.toLowerCase()).toContain("never choose");
   });
 
+  it("should REFUSE a direct publish-cms call that names no position at all", () => {
+    // The load-bearing door. export-code refuses earlier with a friendlier message, but that one
+    // cannot be made to redden on its own — publish-cms is independently callable, so this is
+    // where "nobody was asked" has to be stopped.
+    const { outDir, resultsPath } = setup();
+    let err = "";
+    try {
+      execFileSync(
+        "bun",
+        [
+          join(import.meta.dir, "publish-cms.mjs"),
+          join(outDir, "interactive.html"),
+          "--article",
+          "annemasse",
+          "--results",
+          resultsPath,
+          "--id",
+          "p1",
+        ],
+        { encoding: "utf8" },
+      );
+      throw new Error("expected a refusal");
+    } catch (e) {
+      const x = e as { stderr?: Buffer; stdout?: Buffer };
+      err = `${(x.stderr ?? "").toString()}${(x.stdout ?? "").toString()}`;
+    }
+    expect(err).toContain("--after is required");
+    expect(err.toLowerCase()).toContain("deciding for them");
+  });
+
   it("should REFUSE the proposal's unreplaced <slug> placeholder", () => {
     // The failure this catches is an orchestrator relaying the deliver command verbatim
     // without ever asking. Writing into an article literally named "<slug>" is the kind of
@@ -179,6 +228,8 @@ describe("export-code — form d refuses rather than invents", () => {
         "cms",
         "--article",
         "<slug>",
+        "--after",
+        "end",
       ]);
       throw new Error("expected a refusal");
     } catch (e) {

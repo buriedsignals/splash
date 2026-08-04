@@ -1700,7 +1700,11 @@ describe("routing a narrative page through its beats", () => {
       expect(nextActions(mapRun(t, "scrolly"))).not.toEqual(["draft-beats"]);
   });
 
-  it("does NOT route a chart VIDEO — the *Reveal family ignores beats (sub-project ④)", () => {
+  // ★ The title used to read "does NOT route a chart VIDEO", which over-claimed from the day
+  // sub-project ④ opened `bar`: this fixture is a LINE, and a line is the type that stays closed
+  // (no per-subject entrance to reorder — it draws continuously). A reader taking the old title
+  // at face value would conclude the whole chart track was still shut.
+  it("does NOT route a LINE video — a line draws continuously, with no entrance order to walk", () => {
     const m = scrollyRun();
     const chartVideo = {
       ...m,

@@ -102,9 +102,13 @@ async function readBack(auth: string, slug: string) {
           title lead hideAuthor breaking
           blocks {
             __typename
-            ... on TitleBlock { title lead }
-            ... on RichTextBlock { richText }
-            ... on HTMLBlock { html }
+            ... on TitleBlock { title lead blockStyleName }
+            ... on RichTextBlock { richText blockStyleName }
+            ... on HTMLBlock { html blockStyleName }
+            ... on YouTubeVideoBlock { videoID blockStyleName }
+            ... on QuoteBlock { quote author blockStyleName }
+            ... on IFrameBlock { url title width height blockStyleName }
+            ... on ImageBlock { imageID caption blockStyleName }
           }
         }
       }
@@ -117,7 +121,11 @@ async function readBack(auth: string, slug: string) {
   return (r.value.data as { article: Record<string, any> }).article;
 }
 
-function request(slug: string, id: string): PublishRequest {
+function request(
+  slug: string,
+  id: string,
+  extra: Record<string, string> = {},
+): PublishRequest {
   const dir = mkdtempSync(join(tmpdir(), "splash-insert-e2e-"));
   const artifact = join(dir, "interactive.html");
   writeFileSync(
@@ -135,7 +143,7 @@ function request(slug: string, id: string): PublishRequest {
       credit: "Splash",
       lang: "fr",
     },
-    settings: { endpoint: ENDPOINT, targetArticleSlug: slug },
+    settings: { endpoint: ENDPOINT, targetArticleSlug: slug, ...extra },
     credentials: {
       SPLASH_WEPUBLISH_EMAIL: EMAIL,
       SPLASH_WEPUBLISH_PASSWORD: PASSWORD,
@@ -249,6 +257,213 @@ test.skipIf(!RUN)(
     // The article is exactly as it was — no partial write, no lost block.
     const after = await readBack(auth, slug);
     expect(after.draft.blocks).toEqual(before.draft.blocks);
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: an article full of embeds, a poll and a styled block round-trips untouched",
+  async () => {
+    // The proof of the WIDENED table. The first pass covered 7 block types and refused the rest,
+    // so a piece with a YouTube embed between two paragraphs — an ordinary piece — could not
+    // receive a visual at all. These are the types the schema says round-trip by construction.
+    const auth = await token();
+    const slug = `annemasse-riche-${Date.now()}`;
+    const r = await gqlCall({
+      endpoint: ENDPOINT,
+      query: `mutation Create($slug: String!, $blocks: [BlockContentInput!]!) {
+        createArticle(
+          title: "Un article ordinaire", slug: $slug, blocks: $blocks,
+          hidden: false, shared: false, disableComments: false, breaking: false, hideAuthor: false,
+          tagIds: [], authorIds: [], socialMediaAuthorIds: [], properties: []
+        ) { id }
+      }`,
+      variables: {
+        slug,
+        blocks: [
+          { title: { title: "Un article ordinaire" } },
+          // blockStyleName is the field the hand-written table dropped on every block.
+          {
+            richText: {
+              richText: [
+                { type: "paragraph", children: [{ text: "Le contexte." }] },
+              ],
+              blockStyleName: "pull-quote",
+            },
+          },
+          { youTubeVideo: { videoID: "dQw4w9WgXcQ" } },
+          { quote: { quote: "On ne comprend rien", author: "Une élue" } },
+          { embed: { url: "https://example.org/x", title: "Un embed", width: 640, height: 360 } },
+        ],
+      },
+      token: auth,
+      timeoutMs: 30000,
+    });
+    if (!r.ok) throw new Error(`fixture failed: ${r.message}`);
+
+    const before = await readBack(auth, slug);
+    const result = await wepublishPublisher.publish(request(slug, "budget"));
+    if (!result.ok) throw new Error(`insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(6);
+    // Each of the five survives — including the styled one, whose style is the point.
+    // Byte-for-byte, every one of the five — INCLUDING whatever the server chose to store for
+    // `blockStyleName`. The fixture asks for "pull-quote" and this instance stores null, because
+    // block styles are declared per project and an undeclared name is dropped at creation. That
+    // is the server's business; what this asserts is that the round-trip returns exactly what it
+    // was given, whatever that is. (The field's presence in the mapping is unit-tested — the
+    // hand-written table omitted it entirely, which is the bug this whole table replaced.)
+    for (let i = 0; i < 5; i++)
+      expect(after.draft.blocks[i]).toEqual(before.draft.blocks[i]);
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: the visual lands where the journalist confirmed, not at the end",
+  async () => {
+    // Placement stops being advice here. The anchor suggest-article computes is shown to the
+    // journalist, they confirm it, and THAT is what the write uses.
+    const auth = await token();
+    const slug = `annemasse-place-${Date.now()}`;
+    await journalistArticle(auth, slug); // title, prose, an in-house HTML aside
+
+    const result = await wepublishPublisher.publish(
+      request(slug, "budget", { targetAfterBlock: "0" }),
+    );
+    if (!result.ok) throw new Error(`insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(4);
+    // Second, right after the title — not fourth.
+    expect(after.draft.blocks[1].__typename).toBe("HTMLBlock");
+    expect(after.draft.blocks[1].html).toContain("iframe");
+    expect(after.draft.blocks[2].__typename).toBe("RichTextBlock");
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: a position the article no longer has is REFUSED, not clamped",
+  async () => {
+    const auth = await token();
+    const slug = `annemasse-oob-${Date.now()}`;
+    await journalistArticle(auth, slug);
+    const before = await readBack(auth, slug);
+
+    const result = await wepublishPublisher.publish(
+      request(slug, "budget", { targetAfterBlock: "42" }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.message).toContain("42");
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toEqual(before.draft.blocks);
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: a static PNG is uploaded to the media server and inserted as an image block",
+  async () => {
+    // The path that did not exist. An image cannot travel as markup — the block that renders a
+    // picture takes an `imageID` the media server issues — so this is the ONLY way what Splash
+    // produces as a PNG reaches a journalist's article at all.
+    const auth = await token();
+    const slug = `annemasse-png-${Date.now()}`;
+    await journalistArticle(auth, slug);
+
+    // A real 1x1 PNG: bytes that are not valid UTF-8, which is the point.
+    const dir = mkdtempSync(join(tmpdir(), "splash-png-e2e-"));
+    const png = join(dir, "static.png");
+    writeFileSync(
+      png,
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+    );
+
+    const result = await wepublishPublisher.publish({
+      artifactPath: png,
+      id: "budget",
+      format: "static",
+      metadata: {
+        title: "Le budget d'Annemasse",
+        altText: "Répartition du budget par poste",
+        source: "Ville d'Annemasse",
+        credit: "Splash",
+        lang: "fr",
+      },
+      settings: {
+        endpoint: ENDPOINT,
+        targetArticleSlug: slug,
+        targetAfterBlock: "0",
+      },
+      credentials: {
+        SPLASH_WEPUBLISH_EMAIL: EMAIL,
+        SPLASH_WEPUBLISH_PASSWORD: PASSWORD,
+      },
+      outDir: dir,
+    } as PublishRequest);
+    if (!result.ok) throw new Error(`static insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(4);
+    const block = after.draft.blocks[1];
+    // An IMAGE block, at the confirmed position, pointing at a real upload.
+    expect(block.__typename).toBe("ImageBlock");
+    expect(typeof block.imageID).toBe("string");
+    expect(block.imageID.length).toBeGreaterThan(0);
+    expect(block.caption).toBe("Le budget d'Annemasse");
+    // And still a draft edit: nothing published.
+    expect(after.publishedAt ?? null).toBeNull();
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: a video is inserted as a player pointing at the hosted file",
+  async () => {
+    // The one format with no native home: no self-hosted mp4 block exists, so the article gets
+    // an HTML block carrying a <video> element aimed at wherever the newsroom serves the file.
+    const auth = await token();
+    const slug = `annemasse-video-${Date.now()}`;
+    await journalistArticle(auth, slug);
+
+    const result = await wepublishPublisher.publish({
+      artifactUrl: "https://splash.example.pages.dev/budget.mp4",
+      id: "budget",
+      format: "video",
+      metadata: {
+        title: "Le budget d'Annemasse",
+        altText: "Répartition du budget",
+        source: "Ville d'Annemasse",
+        credit: "Splash",
+        lang: "fr",
+      },
+      settings: {
+        endpoint: ENDPOINT,
+        targetArticleSlug: slug,
+        targetAfterBlock: "1",
+      },
+      credentials: {
+        SPLASH_WEPUBLISH_EMAIL: EMAIL,
+        SPLASH_WEPUBLISH_PASSWORD: PASSWORD,
+      },
+      outDir: mkdtempSync(join(tmpdir(), "splash-video-e2e-")),
+    } as PublishRequest);
+    if (!result.ok) throw new Error(`video insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(4);
+    const block = after.draft.blocks[2];
+    expect(block.__typename).toBe("HTMLBlock");
+    expect(block.html).toContain("<video");
+    expect(block.html).toContain("budget.mp4");
+    expect(after.publishedAt ?? null).toBeNull();
   },
   120000,
 );

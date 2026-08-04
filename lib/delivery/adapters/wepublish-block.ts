@@ -81,6 +81,33 @@ export function buildBlockHtml(input: BlockHtmlInput): string {
 }
 
 /**
+ * The block a VIDEO becomes inside an article.
+ *
+ * Measured, and it is the reason this looks different from the one above: We.Publish has no
+ * self-hosted mp4 block. Every video block in `BlockContentInput` takes an id from an external
+ * platform (YouTube, Vimeo, TikTok, Streamable, Facebook…), and `uploadDocument` stores a file no
+ * block renders. An image had a way in through the media server; a video has none.
+ *
+ * So the mp4 is served from where the newsroom already publishes its own files, and the article
+ * gets a real player pointing at it — the same HTML block an interactive uses, carrying a
+ * `<video>` element instead of an iframe. The ownership marker is the same, so a re-delivery
+ * replaces rather than stacks, exactly as it does for the other two.
+ */
+export function buildVideoBlockHtml(input: {
+  url: string;
+  id: string;
+  title: string;
+}): string {
+  const title = attributeEscape(input.title);
+  const src = attributeEscape(input.url);
+  return (
+    `${ownershipMarker(input.id)}\n` +
+    `<video title="${title}" src="${src}" controls playsinline preload="metadata" ` +
+    `style="width:100%;height:auto"></video>`
+  );
+}
+
+/**
  * The carrier article's slug.
  *
  * DETERMINISTIC on purpose, and that is what buys the "same link after a revision" behaviour the
