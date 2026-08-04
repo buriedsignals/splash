@@ -50,8 +50,10 @@
   (`center`/`zoom`/`pitch`/`bearing`), `mapAnimation` (`flyTo`|`easeTo`|`jumpTo`), `onChapterEnter`/
   `onChapterExit` layer ops, and an optional `callback` for non-map visuals (chart draw-to-progress,
   image crossfade).
-- One dispatcher: scrollama `onStepEnter({index, direction})` reads `chapters[index]` and applies it.
-  Sticky graphic via CSS `position: sticky` (NOT JS scroll listeners — no jank).
+- One dispatcher reads `chapters[index]` and applies it. Sticky graphic via CSS `position: sticky`
+  (NOT JS scroll listeners — no jank). **What skills/scrolly actually ships is an `IntersectionObserver`,
+  not scrollama** (`Scrolly.tsx`): same contract — one ordered list, one step-enter dispatcher — with no
+  runtime dependency to vendor into a self-contained HTML export. Audited 2026-08-04 (registry E3).
 - **Dual output from one storyboard:** the same `chapters[]` drives the scroll interactive AND an
   auto-advancing video (a render pass iterates the chapters with fixed durations, playing each move to
   completion). This is exactly map-native's `mapStory` generalised across visual types.
@@ -112,6 +114,12 @@ container + a screen-reader data-table alternative · don't steal focus to the m
 - Video: a title beat precedes map motion; lower-thirds after orientation.
 - Scrolly: one `chapters[]` source of truth; `onStepEnter` dispatcher; CSS sticky; same config feeds video.
 - A11y: reduced-motion, container `aria-label`, no keyboard trap, ≥4.5:1 overlay contrast, loading state.
+  Reduced-motion is enforced, not asserted: `tests/reduced-motion-parity.test.ts` scans every browser
+  renderer and fails one that tweens the camera (`flyTo`/`easeTo`) without `prefersReducedMotion()`.
+  It caught the only real gap of the §5–§8 audit — `LocatorMap`'s cluster-zoom `easeTo`, animating on
+  a reader's click while `lib/core/motion.ts`'s own header already listed it as a client. The Remotion
+  `*Reveal/Story/Scrolly` components are out of scope by design: baked motion the reader chose to play
+  is 2.3.3-exempt, and `prefersReducedMotion()` is false in Node regardless.
 - Direct symbol labels stay inside the viewport — edge-aware `placeSymbolLabel` (flip right→left, clamp),
   never `text-variable-anchor` alone (it ignores the canvas edge). Unit-tested in `symbol-labels.test.ts`.
 
