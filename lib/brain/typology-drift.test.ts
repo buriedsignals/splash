@@ -4,7 +4,12 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadTypology, renderableSheets, type TypeSheet } from "./typology";
-import { allProducers, engineTypes } from "../core/registry";
+import {
+  allProducers,
+  engineTypes,
+  producerForFormat,
+} from "../core/registry";
+import { VISUAL_FORMATS } from "../core/vocabulary";
 import "../loop/engines";
 
 test("DRIFT 1: every declared render key exists in that engine's catalogue", () => {
@@ -16,16 +21,53 @@ test("DRIFT 1: every declared render key exists in that engine's catalogue", () 
     }
 });
 
+/** The engines whose track `host` renders on their behalf — i.e. those some format of theirs
+ *  routes INTO it. skills/scrolly is the case: it is a MECHANISM, not a peer engine (CLAUDE.md,
+ *  "skills/scrolly n'est que le mécanisme partagé … PAS un moteur pair"), so a map-scrolly is a
+ *  map-native choropleth the orchestrator drives — which is exactly how the offer enumerates it
+ *  (`choropleth · map-native/choropleth → scrolly`, lib/loop/scrolly-routing.test.ts).
+ *
+ *  Self-redirects are excluded: image-native builds its own scrolly, so it hosts nothing. */
+function hostedFrom(host: string): string[] {
+  return allProducers()
+    .map((p) => p.name)
+    .filter(
+      (engine) =>
+        engine !== host &&
+        VISUAL_FORMATS.some((f) => producerForFormat(engine, f) === host),
+    );
+}
+
+// A sheet must claim every type a journalist can be shown — but it claims it on the engine that
+// OWNS the visual, never on the mechanism that drives it. A sheet declaring `scrolly:choropleth`
+// would be claiming an orchestrator, and would then contradict the offer, which routes the same
+// form as `map-native/choropleth → scrolly`.
+//
+// This indirection became load-bearing on 2026-08-03, when the scrolly producer began declaring
+// the six map types it hosts SO THAT it could declare their GESTURES (sub-project ①: "every
+// engine declares what it can make move" — the orchestrator implements Scrolly*Map.tsx, so it is
+// the honest declarer of what those move like). That made one `types` array serve two readings:
+// the gesture vocabulary, and this guard's "types needing a sheet". They are reconciled here,
+// where the second reading lives, rather than by weakening the first.
+//
+// THE GUARD STILL BITES: a hosted type is claimed only if the engine it is hosted FROM claims
+// it. A type on the orchestrator that no owning engine's sheet covers still fails, which is the
+// dead end this test exists to prevent.
 test("DRIFT 2: every reachable engine type has a sheet", () => {
   const claimed = new Map<string, string>(); // `${engine}:${key}` → sheet id
   for (const sheet of loadTypology())
     for (const [engine, keys] of Object.entries(sheet.engines))
       for (const key of keys) claimed.set(`${engine}:${key}`, sheet.id);
   const missing: string[] = [];
-  for (const p of allProducers())
-    for (const t of engineTypes(p.name))
-      if (!t.deferred && !claimed.has(`${p.name}:${t.id}`))
-        missing.push(`${p.name}:${t.id}`);
+  for (const p of allProducers()) {
+    const owners = hostedFrom(p.name);
+    for (const t of engineTypes(p.name)) {
+      if (t.deferred) continue;
+      if (claimed.has(`${p.name}:${t.id}`)) continue;
+      if (owners.some((engine) => claimed.has(`${engine}:${t.id}`))) continue;
+      missing.push(`${p.name}:${t.id}`);
+    }
+  }
   expect(missing).toEqual([]);
 });
 

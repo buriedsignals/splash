@@ -485,15 +485,22 @@ test("a mark can never carry an empty reason, even for a capability disabled wit
       },
     ],
   });
-  // Scoped to the engine the fixture actually disabled: a candidate on ANOTHER engine now
-  // carries the "production cannot build this" mark instead, whose reason is a different (also
-  // non-empty) sentence. What is pinned here is the empty-reason repair, not which mark wins.
-  // A chart-native candidate in the SCROLLY format is scoped out too, and no longer because a
-  // branch mark masks it: a scrolly track the host does not compose carries the `missing`
-  // buildability mark, which outranks this `disabled` one. Which mark wins there is the subject
-  // of "a scrolly track the host does not host is MARKED…" above, not of this test.
+  // Scoped to the candidates whose winning mark IS the readiness one: this test pins the
+  // empty-reason repair, never which mark wins. A candidate carrying a buildability mark is
+  // scoped out BY THAT MARK rather than by naming a format — `missing` outranks this `disabled`,
+  // so its (also non-empty) sentence is the one that surfaces, and which mark wins there is the
+  // subject of "a scrolly track the host does not host is MARKED…" above.
+  //
+  // Named by the mark, not by the format, because naming formats made this test drift twice:
+  // scrolly was excluded by hand, then chart-native/video/dot-strip earned a `missing` mark of
+  // its own (skills/chart-native/src/video-reach.ts — the reveal ends before the clip does) and
+  // the hand-written exclusion did not cover it. The filter now asks the same question the
+  // production code answers, so a new render limit cannot make it red again.
   const marked = ok.filter(
-    (c) => c.engine === "chart-native" && c.format !== "scrolly" && c.readiness,
+    (c) =>
+      c.engine === "chart-native" &&
+      buildabilityMark(c.engine, c.format, c.key) == null &&
+      c.readiness,
   );
   expect(marked.length).toBeGreaterThan(0); // the fixture actually exercised the path
   for (const c of marked) {

@@ -13,6 +13,7 @@ import { placeLabels, labelRadialOffset } from "./locator-labels";
 import { locatorLabelPlacement } from "./locator-label-placement";
 import { resolveMapStyle } from "./route-geo";
 import { makeResetControl, safeSetMaxBounds } from "./controls";
+import { prefersReducedMotion } from "../../../lib/core/motion";
 import { resolveMapFrame, labelTextSize } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import { MapFilterBar } from "./core/MapFilterBar";
@@ -442,13 +443,19 @@ export const LocatorMap: React.FC<Props> = ({
             const src = map.getSource("locator") as maptilersdk.GeoJSONSource;
             if (clusterId == null) return;
             src.getClusterExpansionZoom(clusterId).then((zoom) => {
-              map.easeTo({
+              const camera = {
                 center: (f.geometry as GeoJSON.Point).coordinates as [
                   number,
                   number,
                 ],
                 zoom,
-              });
+              };
+              // WCAG 2.3.3 (Animation from Interactions): the reader still lands on the
+              // expanded cluster — they just do not get flown there. `jumpTo` is the same
+              // camera without the tween, which is why the destination is computed once and
+              // shared rather than duplicated per branch.
+              if (prefersReducedMotion()) map.jumpTo(camera);
+              else map.easeTo(camera);
             });
           });
           map.on("mouseenter", "locator-clusters", () => {
