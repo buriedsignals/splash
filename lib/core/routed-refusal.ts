@@ -25,6 +25,7 @@ export const REFUSAL_CODES = [
   "reviewer-not-attributed",
   "late-render-refusal",
   "placement-undeclared",
+  "attestation-uncorroborated",
 ] as const;
 
 export type RefusalCode = (typeof REFUSAL_CODES)[number];
@@ -109,6 +110,14 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
     // all it takes.
     command:
       "bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <form>]",
+  },
+  // No command, for the same reason as no-candidates-menu: the act is a SKILL invocation inside
+  // the session — and, on a host with no skill-invocation facility, reading that skill's own
+  // SKILL.md and following it. Neither is a process this catalogue could name. The artifacts the
+  // step leaves behind (and the writers that leave them) are named in the refusal's own message,
+  // built from skills/splash/src/attestation-corroboration.ts's evidence table.
+  "attestation-uncorroborated": {
+    step: "actually invoke the skills this run says it invoked — or drop the claim, and say plainly that the step did not run",
   },
 };
 
