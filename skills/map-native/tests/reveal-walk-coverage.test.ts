@@ -15,8 +15,17 @@ import { join } from "node:path";
 const SRC = join(import.meta.dir, "..", "src", "components");
 const read = (f: string) => readFileSync(join(SRC, `${f}.tsx`), "utf8");
 
-// Honour a walk: they paint through the shared helper, so they cannot drift apart.
-const HONOURS_A_WALK = ["ChoroplethReveal", "CartogramReveal"];
+// Honour a walk: they paint through the shared helper, so they cannot drift apart. Each one's
+// anchor key is the one its OWN validator checks a beat against (validate-config.ts), never a
+// key chosen here: points[].label for symbol, markers[].label for locator, rows[][regionKey]
+// for dot-density, the region key for choropleth, values[].id for cartogram.
+const HONOURS_A_WALK = [
+  "ChoroplethReveal",
+  "CartogramReveal",
+  "SymbolReveal",
+  "LocatorReveal",
+  "DotDensityReveal",
+];
 
 // Do NOT honour one, each for a reason that is about the type, not about effort.
 const DOES_NOT: Record<string, string> = {
@@ -28,12 +37,6 @@ const DOES_NOT: Record<string, string> = {
   // PLACE, not on a key the cells carry — nothing to match a walk against. Same reason it is
   // outside the proposal step (lib/brain/beats.ts's PROPOSABLE_MAP_TYPES).
   HexGridReveal: "its cells carry no key a beat could name",
-  // PENDING, and named rather than silently missing: both carry a key a beat could match
-  // (a marker's label, a region's join key) but threading it needs that key established at
-  // the feature, not guessed — the silent-wrong-key defect this branch already paid for once.
-  SymbolReveal: "pending — the marker key is not yet threaded to the feature",
-  LocatorReveal: "pending — the marker key is not yet threaded to the feature",
-  DotDensityReveal: "pending — the region key is not yet threaded to the dot",
 };
 
 describe("the reveal kind and the journalist's walk", () => {

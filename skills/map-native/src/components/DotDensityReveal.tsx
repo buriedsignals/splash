@@ -36,7 +36,11 @@ import { resolveVideoGeometry } from "../core/video-geometry";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { formatLocaleNumber } from "../core/locale";
-import { easedRevealProgress, revealCameraPlan } from "../reveal";
+import {
+  easedRevealProgress,
+  revealCameraPlan,
+  walkFillOpacity,
+} from "../reveal";
 import { resolveScene, TITLE_SCENE_FRAMES } from "../video-scene";
 import { TitleCard } from "./StoryCards";
 
@@ -136,6 +140,10 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
       // Build the DOT GeoJSON once: one Point feature per dot, coloured by group.
       // Deterministic — scatterInPolygon is seeded, so this is frame-stable.
       const dotFeatures: GeoJSON.Feature[] = [];
+      // THE WALK, as a lookup — built once rather than searched per dot.
+      const walkIndexByKey = new Map<string, number>(
+        (config.arcBeats ?? []).map((b, i) => [String(b.region), i]),
+      );
       for (const region of layout.regions) {
         for (const group of region.groups) {
           const pts = scatterInPolygon(
@@ -146,7 +154,15 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
           for (const [lon, lat] of pts) {
             dotFeatures.push({
               type: "Feature",
-              properties: { color: group.color },
+              properties: {
+                color: group.color,
+                // WHERE this dot's region sits in the journalist's walk, or -1 — sub-project
+                // ④(b). `region.key` is `String(row[regionKey])` (dot-density-geo.ts:90),
+                // which is EXACTLY the list validateDotDensityConfig checks a beat's `region`
+                // against (validate-config.ts's validRegionValues) — the key is read from the
+                // validator, never chosen here.
+                __walkIdx: walkIndexByKey.get(region.key) ?? -1,
+              },
               geometry: { type: "Point", coordinates: [lon, lat] },
             });
           }
@@ -221,8 +237,19 @@ export const DotDensityReveal: React.FC<{ config: DotDensityConfigShape }> = ({
     if (!mapReady || !map || !map.isStyleLoaded() || !map.getLayer(DOT_LAYER))
       return;
     const h = delayRender(`dot-density-reveal-frame-${frame}`);
-    map.setPaintProperty(DOT_LAYER, "circle-opacity", progress);
-    map.setPaintProperty(DOT_LAYER, "circle-stroke-opacity", progress);
+    // One ramp with no walk (byte-identical to before); the journalist's own order when there
+    // is one — the same shared helper the choropleth and cartogram reveals paint.
+    const dotOpacity = walkFillOpacity(
+      progress,
+      config.arcBeats?.length ?? 0,
+      1,
+    );
+    map.setPaintProperty(DOT_LAYER, "circle-opacity", dotOpacity as never);
+    map.setPaintProperty(
+      DOT_LAYER,
+      "circle-stroke-opacity",
+      dotOpacity as never,
+    );
     continueWhenMapSettles(map, () => continueRender(h));
     map.triggerRepaint();
   }, [mapReady, frame, progress]); // eslint-disable-line react-hooks/exhaustive-deps
