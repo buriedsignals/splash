@@ -176,3 +176,77 @@ describe("suggestBeats — an explicit anchor list (the re-draft door)", () => {
     expect(refusal).toContain("build");
   });
 });
+
+// ---------------------------------------------------------------------------
+// THE MAP WALK — sub-project ③ (docs/superpowers/specs/2026-08-04-proposal-step-design.md).
+// A map's walk was never machine-drafted: `arcBeats` had to be written from nothing, which is
+// the opposite of the proposal step. These pin what the brain may now offer, and what it still
+// must refuse.
+// ---------------------------------------------------------------------------
+const RENTS =
+  "canton,rent\nGenève,1780\nZug,1690\nZurich,1610\nVaud,1450\nBern,1290\nJura,1010";
+
+describe("suggestBeats (map)", () => {
+  const { beats, refusal } = suggestBeats({
+    nativeType: "choropleth",
+    dataCsv: RENTS,
+    valueUnit: "CHF",
+  });
+
+  test("offers a plan for a map type it used to refuse outright", () => {
+    expect(refusal).toBeUndefined();
+    expect(beats.length).toBeGreaterThanOrEqual(3);
+  });
+
+  test("anchors on REGION, not on a chart axis", () => {
+    for (const b of beats) expect(b.anchor.kind).toBe("region");
+  });
+
+  test("anchors on region keys the data actually carries, in data order", () => {
+    const keys = RENTS.split("\n")
+      .slice(1)
+      .map((l) => l.split(",")[0]!);
+    const anchors = beats.map((b) => b.anchor.value);
+    for (const a of anchors) expect(keys).toContain(a);
+    const positions = anchors.map((a) => keys.indexOf(a));
+    expect([...positions].sort((x, y) => x - y)).toEqual(positions);
+  });
+
+  test("drafts a factual caption and leaves the claim unwritten", () => {
+    expect(beats[0]!.draftText).toContain("Genève");
+    expect(beats[0]!.draftText).toContain("1780");
+    // The seam's whole point: what the machine offers lives in draftText, never in text.
+    expect(beats[0]).not.toHaveProperty("text");
+  });
+
+  test("carries the plan-wide facts a claim may cite", () => {
+    expect(beats[0]!.beatSource.shared.top).toBe("1780");
+    expect(beats[0]!.beatSource.facts.region).toBe("Genève");
+  });
+
+  test("walks the arc: establish → … → payoff", () => {
+    expect(beats[0]!.role).toBe("establish");
+    expect(beats[beats.length - 1]!.role).toBe("payoff");
+  });
+
+  test("honours the journalist's own regions, in their order", () => {
+    const { beats: own, refusal: r } = suggestBeats({
+      nativeType: "symbol",
+      dataCsv: RENTS,
+      anchors: ["Jura", "Genève", "Bern"],
+    });
+    expect(r).toBeUndefined();
+    expect(own.map((b) => b.anchor.value)).toEqual(["Jura", "Genève", "Bern"]);
+  });
+
+  test("refuses route and hex-grid — their anchor does not exist until produce", () => {
+    for (const t of ["route", "hex-grid"]) {
+      const { beats: none, refusal: why } = suggestBeats({
+        nativeType: t,
+        dataCsv: RENTS,
+      });
+      expect(none).toEqual([]);
+      expect(why).toContain(t);
+    }
+  });
+});
