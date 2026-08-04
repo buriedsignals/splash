@@ -38,11 +38,15 @@ function repo(): string {
     join(alpha, "package.json"),
     JSON.stringify({
       name: "alpha",
-      dependencies: { d3: "7.0.0" },
+      dependencies: { d3: "7.0.0", typescript: "5.0.0" },
       // Mirrors the real repo: the build tooling a producer shells out to at render time
       // (vite, its plugins, playwright) is filed under devDependencies upstream, not
       // dependencies — see scripts/verify-dist-produce.mjs's finding.
-      devDependencies: { vite: "9.0.0" },
+      //
+      // typescript ALSO appears in dependencies above at a different version — an INTRA-skill
+      // collision fixture (one package.json naming the same package in both maps), distinct
+      // from the cross-skill collision the other tests cover.
+      devDependencies: { vite: "9.0.0", typescript: "6.0.3" },
     }),
   );
 
@@ -144,6 +148,30 @@ test("merges devDependencies too — a produce that shells out to `bunx vite bui
     // ('vite') on the very first produce. There is no separate "dev install" step for a
     // delivered tree, so the dev/prod distinction cannot survive the merge.
     expect(merged.dependencies.vite).toBe("9.0.0");
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("reports an INTRA-skill version collision the same way it reports a cross-skill one", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    // alpha's own package.json names "typescript" in both dependencies (5.0.0) AND
+    // devDependencies (6.0.3) — the merge loop's `{...deps, ...devDeps}` spread resolves this
+    // by spread order (devDeps wins) BEFORE the cross-skill dedupe two lines below ever sees
+    // it, so the cross-skill note alone can't catch it. Both the chosen version and the
+    // report are asserted here.
+    const r = pack(src, out);
+    const merged = JSON.parse(readFileSync(join(out, "package.json"), "utf8"));
+    expect(merged.dependencies.typescript).toBe("6.0.3");
+
+    const stderr = r.stderr.toString();
+    expect(stderr).toContain("typescript");
+    expect(stderr).toContain("pinned twice within alpha's package.json");
+    expect(stderr).toContain("5.0.0");
+    expect(stderr).toContain("6.0.3");
   } finally {
     rmSync(src, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });

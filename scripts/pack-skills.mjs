@@ -76,10 +76,20 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   // devDependencies upstream. Dropping that distinction here is what makes the delivered tree
   // able to render at all (proven by scripts/verify-dist-produce.mjs: static failed with
   // ERR_MODULE_NOT_FOUND('vite') until this merged devDependencies too).
-  for (const [dep, version] of Object.entries({
-    ...(pkg.dependencies ?? {}),
-    ...(pkg.devDependencies ?? {}),
-  })) {
+  const deps = pkg.dependencies ?? {};
+  const devDeps = pkg.devDependencies ?? {};
+  // INTRA-skill collision: the same package named in both maps of ONE package.json, at
+  // different versions. The spread below (deps then devDeps) resolves it by spread order —
+  // devDeps wins — same as the cross-skill collision two lines down was always reported, this
+  // one was resolved silently. Surfaced the same way, before the merge picks a winner.
+  for (const dep of Object.keys(devDeps)) {
+    if (dep in deps && deps[dep] !== devDeps[dep]) {
+      console.error(
+        `note: ${dep} pinned twice within ${entry.name}'s package.json (dependencies ${deps[dep]} vs devDependencies ${devDeps[dep]}); keeping ${devDeps[dep]}`,
+      );
+    }
+  }
+  for (const [dep, version] of Object.entries({ ...deps, ...devDeps })) {
     if (merged[dep] && merged[dep] !== version)
       console.error(`note: ${dep} pinned twice (${merged[dep]} vs ${version}); keeping ${merged[dep]}`);
     merged[dep] ??= version;
