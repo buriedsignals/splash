@@ -53,20 +53,28 @@ describe("wepublishPublisher shape", () => {
     expect(wepublishPublisher.implemented).toBe(true);
   });
 
-  // The `serves` decision (spec §4.1), locked as a test because it is the one thing about this
-  // adapter a future reader is most likely to "fix" without re-reading the measurement.
-  it("should serve the embed genre only — a CMS block carries markup, not binary assets", () => {
+  // The `serves` decision, locked as a test because it is the one thing about this adapter a
+  // future reader is most likely to "fix" without re-reading the measurement.
+  //
+  // It CHANGED on 2026-08-04, and the half that changed is worth stating. The old rule read "a
+  // CMS block carries markup, not binary assets", which was true of the BLOCK and therefore
+  // taken to be true of the adapter. It is not: the CMS has a media server, and an image reaches
+  // an article through an upload plus a block pointing at the id it issues. That path is now
+  // built, so `static` is served.
+  it("should serve interactive, scrolly and static", () => {
     expect([...wepublishPublisher.serves].sort()).toEqual([
       "interactive",
       "scrolly",
+      "static",
     ]);
   });
 
-  it("should NOT claim to serve static or video", () => {
-    // Measured (W6): the only block that can carry the artifact carries MARKUP. The image
-    // block needs an imageID from the media server, and every video block takes an external
-    // platform id — there is no self-hosted mp4 block in BlockContentInput at all.
-    expect(wepublishPublisher.serves).not.toContain("static");
+  it("should still NOT claim to serve video — nothing in the CMS renders an mp4", () => {
+    // The half of the old rule that survives, and it is a measurement rather than a policy:
+    // every video block in BlockContentInput takes an id from an EXTERNAL platform (YouTube,
+    // Vimeo, TikTok, Streamable, Facebook…), and `uploadDocument` stores a file that no block
+    // renders. There is no self-hosted mp4 block at all — so an mp4 reaches a CMS article only
+    // as an embed of a URL somebody else hosts, which is a different destination, not this one.
     expect(wepublishPublisher.serves).not.toContain("video");
   });
 });
