@@ -90,12 +90,42 @@ describe("blockInputFor", () => {
     });
   });
 
+  it("should carry blockStyleName — the field a hand-written table silently dropped", () => {
+    // The bug that changed the instrument. `blockStyleName` is on every one of the 20 inputs in
+    // the schema, and the first table (read off the TypeScript models) had it on none of them —
+    // so every rewritten block lost its style, on a live article, silently.
+    const r = blockInputFor({
+      __typename: "RichTextBlock",
+      richText: [{ type: "paragraph" }],
+      blockStyleName: "pull-quote",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.input.richText!.blockStyleName).toBe("pull-quote");
+  });
+
+  it("should echo the embed blocks a real article is full of", () => {
+    // 20 scalar-only types round-trip, not the 7 the first pass covered. These are the ones a
+    // newsroom piece actually carries between its paragraphs.
+    for (const [block, key, field, value] of [
+      [{ __typename: "YouTubeVideoBlock", videoID: "abc" }, "youTubeVideo", "videoID", "abc"],
+      [{ __typename: "TwitterTweetBlock", tweetID: "1", userID: "u" }, "twitterTweet", "tweetID", "1"],
+      [{ __typename: "PollBlock", pollId: "p-1" }, "poll", "pollId", "p-1"],
+      [{ __typename: "InstagramPostBlock", postID: "i" }, "instagramPost", "postID", "i"],
+    ] as const) {
+      const r = blockInputFor(block as BlockOut);
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.input[key]![field]).toBe(value);
+    }
+  });
+
   it("should REFUSE a block type it cannot faithfully echo, naming it", () => {
-    const r = blockInputFor({ __typename: "PollBlock", pollId: "p-1" });
+    const r = blockInputFor({ __typename: "ListicleBlock", items: [] });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.code).toBe(UNSUPPORTED_BLOCK);
-      expect(r.typename).toBe("PollBlock");
+      expect(r.typename).toBe("ListicleBlock");
     }
   });
 });
@@ -162,12 +192,12 @@ describe("articleUpdateVariables", () => {
 
   it("should REFUSE the whole write when ONE block cannot be echoed", () => {
     const a = article();
-    a.draft.blocks.push({ __typename: "PollBlock", pollId: "p-1" });
+    a.draft.blocks.push({ __typename: "ListicleBlock", items: [] });
     const r = articleUpdateVariables(a, VISUAL);
     expect(r.ok).toBe(false);
     if (r.ok) return;
     // Names the block AND says what it protects: a partial write would drop the poll.
-    expect(r.message).toContain("PollBlock");
+    expect(r.message).toContain("ListicleBlock");
     expect(r.message).toContain("annemasse-frontaliers");
   });
 

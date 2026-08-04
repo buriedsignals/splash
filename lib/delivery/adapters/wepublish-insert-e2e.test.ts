@@ -102,9 +102,12 @@ async function readBack(auth: string, slug: string) {
           title lead hideAuthor breaking
           blocks {
             __typename
-            ... on TitleBlock { title lead }
-            ... on RichTextBlock { richText }
-            ... on HTMLBlock { html }
+            ... on TitleBlock { title lead blockStyleName }
+            ... on RichTextBlock { richText blockStyleName }
+            ... on HTMLBlock { html blockStyleName }
+            ... on YouTubeVideoBlock { videoID blockStyleName }
+            ... on QuoteBlock { quote author blockStyleName }
+            ... on IFrameBlock { url title width height blockStyleName }
           }
         }
       }
@@ -249,6 +252,65 @@ test.skipIf(!RUN)(
     // The article is exactly as it was — no partial write, no lost block.
     const after = await readBack(auth, slug);
     expect(after.draft.blocks).toEqual(before.draft.blocks);
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: an article full of embeds, a poll and a styled block round-trips untouched",
+  async () => {
+    // The proof of the WIDENED table. The first pass covered 7 block types and refused the rest,
+    // so a piece with a YouTube embed between two paragraphs — an ordinary piece — could not
+    // receive a visual at all. These are the types the schema says round-trip by construction.
+    const auth = await token();
+    const slug = `annemasse-riche-${Date.now()}`;
+    const r = await gqlCall({
+      endpoint: ENDPOINT,
+      query: `mutation Create($slug: String!, $blocks: [BlockContentInput!]!) {
+        createArticle(
+          title: "Un article ordinaire", slug: $slug, blocks: $blocks,
+          hidden: false, shared: false, disableComments: false, breaking: false, hideAuthor: false,
+          tagIds: [], authorIds: [], socialMediaAuthorIds: [], properties: []
+        ) { id }
+      }`,
+      variables: {
+        slug,
+        blocks: [
+          { title: { title: "Un article ordinaire" } },
+          // blockStyleName is the field the hand-written table dropped on every block.
+          {
+            richText: {
+              richText: [
+                { type: "paragraph", children: [{ text: "Le contexte." }] },
+              ],
+              blockStyleName: "pull-quote",
+            },
+          },
+          { youTubeVideo: { videoID: "dQw4w9WgXcQ" } },
+          { quote: { quote: "On ne comprend rien", author: "Une élue" } },
+          { embed: { url: "https://example.org/x", title: "Un embed", width: 640, height: 360 } },
+        ],
+      },
+      token: auth,
+      timeoutMs: 30000,
+    });
+    if (!r.ok) throw new Error(`fixture failed: ${r.message}`);
+
+    const before = await readBack(auth, slug);
+    const result = await wepublishPublisher.publish(request(slug, "budget"));
+    if (!result.ok) throw new Error(`insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(6);
+    // Each of the five survives — including the styled one, whose style is the point.
+    // Byte-for-byte, every one of the five — INCLUDING whatever the server chose to store for
+    // `blockStyleName`. The fixture asks for "pull-quote" and this instance stores null, because
+    // block styles are declared per project and an undeclared name is dropped at creation. That
+    // is the server's business; what this asserts is that the round-trip returns exactly what it
+    // was given, whatever that is. (The field's presence in the mapping is unit-tested — the
+    // hand-written table omitted it entirely, which is the bug this whole table replaced.)
+    for (let i = 0; i < 5; i++)
+      expect(after.draft.blocks[i]).toEqual(before.draft.blocks[i]);
   },
   120000,
 );

@@ -15,48 +15,53 @@
 // refusals here are the substance of the file: an article carrying anything this module cannot
 // echo faithfully is NOT written at all.
 //
-// The block input map is likewise measured, not guessed: each `XBlockInput` is
-// `OmitType(XBlock, ['type'])` (block-content.model.ts and its neighbours), with the resolved
-// relation dropped in favour of its id where the output carries both (`ImageBlockInput` omits
-// `image`, keeps `imageID`). The one-of key is the `BlockType` enum value (block-type.model.ts).
+// The block table below is GENERATED from the CMS's own published schema
+// (wepublish@main, apps/api-example/schema-v2.graphql), not hand-written from the TypeScript
+// models. That change of instrument is not cosmetic: the hand-written first version silently
+// dropped `blockStyleName` from EVERY block it echoed, because that field is declared somewhere
+// the model-reading missed. A field dropped on every rewritten block is precisely the silent
+// reset this whole module exists to prevent, and only the schema — the thing the server actually
+// validates against — could be trusted to enumerate them.
+//
+// Selection rule, applied to `BlockContentInput`'s one-of keys: a block is echoable when its
+// input type is made of SCALARS ONLY. Those 20 round-trip by construction. The other 10
+// (teasers, listicle, image gallery, flex, event, comment, subscribe…) take nested input types
+// whose shape differs structurally from what the query returns, so they are NOT echoable by
+// copying and are refused rather than guessed at.
 
 /** The refusal code a block type outside the measured map produces. */
 export const UNSUPPORTED_BLOCK = "unsupported-block" as const;
 
-/** Fields every block input still carries — `BaseBlock` minus the omitted `type`. */
-const BASE_BLOCK_FIELDS = ["disabled", "blockStyle"] as const;
-
 /**
  * __typename → { key: the one-of field on BlockContentInput, fields: what the input accepts }.
  *
- * Deliberately a SUBSET of the ~30 block types We.Publish declares. A type absent here is not
- * "unsupported forever": it is a type whose input shape nobody has measured, and echoing a
- * guess would corrupt the block. The refusal names it so the gap is visible and closable.
+ * The 20 scalar-only block types, from the schema. A type absent here is one of the 10 whose
+ * input nests another input type: echoing the query's output into it would not typecheck at the
+ * server, and guessing the mapping would corrupt the block. The refusal names it.
  */
 const BLOCK_INPUTS: Readonly<
   Record<string, { key: string; fields: readonly string[] }>
 > = {
-  TitleBlock: { key: "title", fields: ["preTitle", "title", "lead"] },
-  RichTextBlock: { key: "richText", fields: ["richText"] },
-  HTMLBlock: { key: "html", fields: ["html"] },
-  ImageBlock: { key: "image", fields: ["imageID", "caption", "linkUrl"] },
-  QuoteBlock: { key: "quote", fields: ["quote", "author", "imageID"] },
-  BreakBlock: {
-    key: "linkPageBreak",
-    fields: [
-      "text",
-      "richText",
-      "linkURL",
-      "linkText",
-      "linkTarget",
-      "hideButton",
-      "imageID",
-    ],
-  },
-  IFrameBlock: {
-    key: "embed",
-    fields: ["url", "title", "width", "height", "styleCustom", "sandbox"],
-  },
+  BildwurfAdBlock: { key: "bildwurfAd", fields: ["blockStyle", "blockStyleName", "disabled", "zoneID"] },
+  BreakBlock: { key: "linkPageBreak", fields: ["blockStyle", "blockStyleName", "disabled", "hideButton", "imageID", "linkTarget", "linkText", "linkURL", "richText", "text"] },
+  CrowdfundingBlock: { key: "crowdfunding", fields: ["blockStyle", "blockStyleName", "crowdfundingId", "disabled"] },
+  FacebookPostBlock: { key: "facebookPost", fields: ["blockStyle", "blockStyleName", "disabled", "postID", "userID"] },
+  FacebookVideoBlock: { key: "facebookVideo", fields: ["blockStyle", "blockStyleName", "disabled", "userID", "videoID"] },
+  HTMLBlock: { key: "html", fields: ["blockStyle", "blockStyleName", "disabled", "html"] },
+  IFrameBlock: { key: "embed", fields: ["blockStyle", "blockStyleName", "disabled", "height", "sandbox", "styleCustom", "title", "url", "width"] },
+  ImageBlock: { key: "image", fields: ["blockStyle", "blockStyleName", "caption", "disabled", "imageID", "linkUrl"] },
+  InstagramPostBlock: { key: "instagramPost", fields: ["blockStyle", "blockStyleName", "disabled", "postID"] },
+  PolisConversationBlock: { key: "polisConversation", fields: ["blockStyle", "blockStyleName", "conversationID", "disabled"] },
+  PollBlock: { key: "poll", fields: ["blockStyle", "blockStyleName", "disabled", "pollId"] },
+  QuoteBlock: { key: "quote", fields: ["author", "blockStyle", "blockStyleName", "disabled", "imageID", "quote"] },
+  RichTextBlock: { key: "richText", fields: ["blockStyle", "blockStyleName", "disabled", "richText"] },
+  SoundCloudTrackBlock: { key: "soundCloudTrack", fields: ["blockStyle", "blockStyleName", "disabled", "trackID"] },
+  StreamableVideoBlock: { key: "streamableVideo", fields: ["blockStyle", "blockStyleName", "disabled", "videoID"] },
+  TikTokVideoBlock: { key: "tikTokVideo", fields: ["blockStyle", "blockStyleName", "disabled", "userID", "videoID"] },
+  TitleBlock: { key: "title", fields: ["blockStyle", "blockStyleName", "disabled", "lead", "preTitle", "title"] },
+  TwitterTweetBlock: { key: "twitterTweet", fields: ["blockStyle", "blockStyleName", "disabled", "tweetID", "userID"] },
+  VimeoVideoBlock: { key: "vimeoVideo", fields: ["blockStyle", "blockStyleName", "disabled", "videoID"] },
+  YouTubeVideoBlock: { key: "youTubeVideo", fields: ["blockStyle", "blockStyleName", "disabled", "videoID"] },
 };
 
 export type BlockOut = { __typename?: string } & Record<string, unknown>;
@@ -70,7 +75,7 @@ export type BlockResult =
 export function blockSelectionSet(): string {
   const fragments = Object.entries(BLOCK_INPUTS).map(
     ([typename, { fields }]) =>
-      `... on ${typename} { ${[...BASE_BLOCK_FIELDS, ...fields].join(" ")} }`,
+      `... on ${typename} { ${fields.join(" ")} }`,
   );
   return `__typename ${fragments.join(" ")}`;
 }
@@ -81,7 +86,7 @@ export function blockInputFor(block: BlockOut): BlockResult {
   const spec = BLOCK_INPUTS[typename];
   if (!spec) return { ok: false, code: UNSUPPORTED_BLOCK, typename };
   const body: Record<string, unknown> = {};
-  for (const field of [...BASE_BLOCK_FIELDS, ...spec.fields])
+  for (const field of spec.fields)
     if (block[field] !== undefined && block[field] !== null)
       body[field] = block[field];
   return { ok: true, input: { [spec.key]: body } };

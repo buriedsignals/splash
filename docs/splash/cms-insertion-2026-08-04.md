@@ -41,10 +41,17 @@ D'où la forme du correctif — `lib/delivery/adapters/wepublish-article.ts` :
 - **aller-retour total** : chaque champ que la mutation exige est relu depuis l'article et
   renvoyé tel quel (les drapeaux, `tagIds` depuis l'**article** et non la révision, `authorIds`
   depuis `authors[].id`, les `properties`, les scalaires éditoriaux) ;
-- **table de blocs mesurée, pas devinée** : chaque `XBlockInput` est `OmitType(XBlock, ['type'])`
-  (`block-content.model.ts` et ses voisins), la relation résolue cédant la place à son id
-  (`ImageBlockInput` omet `image`, garde `imageID`). Sept types couverts — Title, RichText, HTML,
-  Image, Quote, Break, IFrame ;
+- **table de blocs GÉNÉRÉE depuis le schéma publié du CMS** (`apps/api-example/schema-v2.graphql`),
+  pas écrite à la main depuis les modèles TypeScript. **Le changement d'instrument n'est pas
+  cosmétique** : la première table, lue sur les modèles, omettait `blockStyleName` sur les 20
+  types — donc chaque bloc réécrit perdait son style, silencieusement, sur un article vivant.
+  C'est exactement la réinitialisation muette que le module existe pour empêcher, et seul le
+  schéma — ce contre quoi le serveur valide réellement — pouvait l'énumérer.
+  Règle de sélection : un bloc est échoable quand son type d'entrée est **fait de scalaires
+  seuls**. **20 types** le sont (les 15 embeds + Title, RichText, HTML, Image, Quote, Break,
+  IFrame, Poll, Crowdfunding…). Les **10 autres** (teasers, listicle, galerie, flex, event,
+  comment, subscribe) prennent des types d'entrée imbriqués dont la forme diffère
+  structurellement de ce que la requête rend : non échoables par copie, donc refusés ;
 - **le refus est le produit** : un article portant un bloc hors de cette table **n'est pas écrit
   du tout**, et le refus nomme le type. Les ~23 autres types ne sont pas « non supportés pour
   toujours » : ce sont des types dont personne n'a mesuré la forme d'entrée, et deviner
@@ -107,10 +114,10 @@ Rien ne bloque : We.Publish — le CMS du livrable bourse, celui de Heidi.news �
    faire pour We.Publish (pas de table de blocs, pas d'aller-retour total), mais il demande une
    instance et un jeton pour être mesuré au lieu d'être écrit contre la doc. Aucun code ne doit
    être écrit avant ça : la règle du projet sur les API externes est « vraies clés, vrais échecs ».
-2. **Étend-on la table de blocs We.Publish ?** Aujourd'hui, un article contenant un sondage, une
-   galerie, un teaser ou un embed social **refuse** l'insertion et bascule sur la forme c (un lien
-   à coller). Chaque type ajouté élargit la couverture ; chacun exige d'être mesuré contre une
-   instance réelle, pas déduit de la source. À arbitrer sur ce que Heidi.news utilise réellement.
+2. **~~Étend-on la table de blocs ?~~ FAIT (2026-08-04)** — 7 → **20 types**, dérivés du schéma.
+   Un sondage ou un embed social ne bloque plus rien. Restent **10 types imbriqués** (teasers,
+   listicle, galerie, flex, event, comment, subscribe) : leur entrée n'est pas une copie de la
+   sortie, donc chacun demande une vraie mesure. À rouvrir seulement si Heidi.news en utilise.
 3. **Le placement réel** (point ci-dessus) : si Livingdocs se fait, faut-il que l'ancre pilote la
    position, ou le visuel va-t-il en fin de brouillon comme sur We.Publish ? C'est une question
    éditoriale — « Splash place » vs « Splash propose et le journaliste place » — et la réponse

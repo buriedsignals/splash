@@ -214,14 +214,14 @@ describe("wepublish direct insertion", () => {
     const cms = fakeCms({
       blocks: [
         { __typename: "TitleBlock", title: "Annemasse" },
-        { __typename: "PollBlock", pollId: "p-1" },
+        { __typename: "ListicleBlock", items: [] },
       ],
     });
     running = cms;
     const r = await wepublishPublisher.publish(request(cms.url));
     expect(r.ok).toBe(false);
     if (r.ok) return;
-    expect(r.message).toContain("PollBlock");
+    expect(r.message).toContain("ListicleBlock");
     // The refusal is worth nothing if the write already went out.
     expect(cms.calls.map((c) => c.operation)).not.toContain("SplashInsert");
   });
