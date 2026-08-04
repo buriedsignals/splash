@@ -127,6 +127,7 @@ function parseArgs(argv) {
       a === "--id" ||
       a === "--form" ||
       a === "--article" ||
+      a === "--after" ||
       a === "--profile"
     )
       flags[a.slice(2)] = argv[++i];
@@ -165,7 +166,7 @@ function resolveStaticMedia(files, result) {
 function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const [outDir, exportDir] = positional;
-  const { results: resultsPath, id, form: rawForm, article } = flags;
+  const { results: resultsPath, id, form: rawForm, article, after } = flags;
   if (!outDir || !exportDir || !resultsPath || !id) {
     console.error(
       "usage: export-code.mjs <outDir> <exportDir> --results <report.json> --id <proposalId> [--form <html|code-source|embed>] [--profile <NEWSROOM-PROFILE.md>]",
@@ -573,6 +574,11 @@ function main() {
       fail(
         `${format} form=cms needs --article <slug>: ask the journalist which of their articles the visual belongs in — never choose one.`,
       );
+    if (!after)
+      fail(
+        `${format} form=cms needs --after <position|end>: SHOW the journalist where the visual would go and get their answer before writing into their article. ` +
+          `"end" is a valid answer; a missing flag is not.`,
+      );
     if (isHostedEmbed)
       fail(
         `${format} form=cms is not available for a hosted Datawrapper interactive: the CMS block carries the visual's own bytes, and this one lives on the provider's servers — deliver it with --form embed and paste that link into the article.`,
@@ -588,6 +594,8 @@ function main() {
           join(outDir, interactive),
           "--article",
           article,
+          "--after",
+          after,
           "--results",
           resolve(resultsPath),
           "--id",
@@ -723,11 +731,15 @@ function emitProposal(ctx) {
       label: "Directement dans l'article (CMS)",
       available: cmsStatus.ready,
       needsArticle: true,
+      // The second thing no script can derive: WHERE in the piece. The anchor suggest-article
+      // computed is a proposal, not an answer — the journalist confirms it before anything is
+      // written into their article.
+      needsPosition: true,
       ...(cmsStatus.ready
         ? {}
         : { reason: cmsStatus.reason, missingKeys: cmsStatus.missing }),
-      command: `bun ${PUBLISH_CMS_SCRIPT} ${join(absExportDir, interactive)} --article <slug> --results ${resolve(resultsPath)} --id ${id}`,
-      deliver: `${deliverBase} --form cms --article <slug>`,
+      command: `bun ${PUBLISH_CMS_SCRIPT} ${join(absExportDir, interactive)} --article <slug> --after <position|end> --results ${resolve(resultsPath)} --id ${id}`,
+      deliver: `${deliverBase} --form cms --article <slug> --after <position|end>`,
     };
   }
 

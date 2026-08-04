@@ -120,7 +120,11 @@ async function readBack(auth: string, slug: string) {
   return (r.value.data as { article: Record<string, any> }).article;
 }
 
-function request(slug: string, id: string): PublishRequest {
+function request(
+  slug: string,
+  id: string,
+  extra: Record<string, string> = {},
+): PublishRequest {
   const dir = mkdtempSync(join(tmpdir(), "splash-insert-e2e-"));
   const artifact = join(dir, "interactive.html");
   writeFileSync(
@@ -138,7 +142,7 @@ function request(slug: string, id: string): PublishRequest {
       credit: "Splash",
       lang: "fr",
     },
-    settings: { endpoint: ENDPOINT, targetArticleSlug: slug },
+    settings: { endpoint: ENDPOINT, targetArticleSlug: slug, ...extra },
     credentials: {
       SPLASH_WEPUBLISH_EMAIL: EMAIL,
       SPLASH_WEPUBLISH_PASSWORD: PASSWORD,
@@ -311,6 +315,51 @@ test.skipIf(!RUN)(
     // hand-written table omitted it entirely, which is the bug this whole table replaced.)
     for (let i = 0; i < 5; i++)
       expect(after.draft.blocks[i]).toEqual(before.draft.blocks[i]);
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: the visual lands where the journalist confirmed, not at the end",
+  async () => {
+    // Placement stops being advice here. The anchor suggest-article computes is shown to the
+    // journalist, they confirm it, and THAT is what the write uses.
+    const auth = await token();
+    const slug = `annemasse-place-${Date.now()}`;
+    await journalistArticle(auth, slug); // title, prose, an in-house HTML aside
+
+    const result = await wepublishPublisher.publish(
+      request(slug, "budget", { targetAfterBlock: "0" }),
+    );
+    if (!result.ok) throw new Error(`insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(4);
+    // Second, right after the title — not fourth.
+    expect(after.draft.blocks[1].__typename).toBe("HTMLBlock");
+    expect(after.draft.blocks[1].html).toContain("iframe");
+    expect(after.draft.blocks[2].__typename).toBe("RichTextBlock");
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: a position the article no longer has is REFUSED, not clamped",
+  async () => {
+    const auth = await token();
+    const slug = `annemasse-oob-${Date.now()}`;
+    await journalistArticle(auth, slug);
+    const before = await readBack(auth, slug);
+
+    const result = await wepublishPublisher.publish(
+      request(slug, "budget", { targetAfterBlock: "42" }),
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.message).toContain("42");
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toEqual(before.draft.blocks);
   },
   120000,
 );

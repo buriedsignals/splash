@@ -1270,7 +1270,17 @@ article-web is the one channel that can host it**:
        `newsroom.json`, not `.env`. **Not available for a hosted Datawrapper interactive** — the CMS block
        carries the visual's own bytes and a DW interactive has none locally; that one takes form c and the
        journalist pastes the link.
-       **Two rules belong to this form alone, and neither is optional:**
+       **Three rules belong to this form alone, and none is optional:**
+       0. **SHOW WHERE IT WOULD GO, AND GET THE ANSWER — before anything is written.** `forms.d`
+          carries `needsPosition: true`. Splash already knows where the visual BELONGS: the anchor
+          `suggest-article` computed (paragraph + verbatim quote), which §6 makes you relay at every
+          hand-over. Here that anchor stops being advice and becomes a write, so it must be
+          CONFIRMED: read the target article's blocks back, tell the journalist which block the
+          visual would follow, in their words (« je le mets juste après le paragraphe qui commence
+          par “les frontaliers de Bonneville” — ça te va ? »), and pass the position they confirm as
+          `--after <n>` (`-1` = before everything, `end` = at the end). **`end` is a real answer;
+          a missing flag is not** — both `export-code.mjs` and `publish-cms.mjs` refuse without one,
+          because writing at the end "since nobody said otherwise" is deciding for them.
        1. **ASK WHICH ARTICLE — never choose one.** `forms.d` carries `needsArticle: true` and a `deliver`
           command holding the literal placeholder `<slug>`. Ask the journalist for the slug of the article
           the visual belongs in (it is the last part of its address in the CMS), and pass it as
@@ -1284,7 +1294,10 @@ article-web is the one channel that can host it**:
        **What the adapter refuses, and why you must not work around it:** the CMS has no "add a block"
        operation — `updateArticle` is total, so inserting means re-sending the whole article. If it holds
        a block splash cannot faithfully carry back, the write is REFUSED rather than performed, because a
-       partial write would silently delete that block from a live piece. That refusal names the block type;
+       partial write would silently delete that block from a live piece. **20 of the CMS's 30 block types
+       round-trip** (every scalar-only one — the embeds, title, prose, image, quote, poll…), so an ordinary
+       piece goes through; the 10 that nest another input type (teasers, listicle, gallery, flex, event,
+       comment, subscribe) are the ones that refuse. That refusal names the block type;
        relay it and offer form c (a link to paste) instead. Never retry it by hand, and never edit the
        article yourself to make the refusal go away.
   3. **THEN build + deliver ONLY the chosen form** — re-run `export-code.mjs` with `--form <html|code-source|embed|cms>`
@@ -1293,7 +1306,7 @@ article-web is the one channel that can host it**:
        ABSOLUTE path (that single file IS the delivery).
      - `--form code-source` → runs `export-source.mjs` NOW (chart-native) or `bundle-source.mjs` NOW
        (map-native/scrolly) to assemble the runnable `<id>-source/` bundle; print its ABSOLUTE path.
-     - `--form cms --article <slug>` → runs `publish-cms.mjs` NOW to insert the visual into that article's
+     - `--form cms --article <slug> --after <n|end>` → runs `publish-cms.mjs` NOW to insert the visual into that article's
        DRAFT in the newsroom's CMS, and records the article's URL in `CMS_ARTICLE_URL.txt`. It applies the
        same editorial gates as the embed form (produced + render-approved + sign-off re-verified against the
        artifact's CURRENT bytes) before it touches the CMS.

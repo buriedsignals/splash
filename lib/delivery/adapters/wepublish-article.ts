@@ -42,26 +42,128 @@ export const UNSUPPORTED_BLOCK = "unsupported-block" as const;
 const BLOCK_INPUTS: Readonly<
   Record<string, { key: string; fields: readonly string[] }>
 > = {
-  BildwurfAdBlock: { key: "bildwurfAd", fields: ["blockStyle", "blockStyleName", "disabled", "zoneID"] },
-  BreakBlock: { key: "linkPageBreak", fields: ["blockStyle", "blockStyleName", "disabled", "hideButton", "imageID", "linkTarget", "linkText", "linkURL", "richText", "text"] },
-  CrowdfundingBlock: { key: "crowdfunding", fields: ["blockStyle", "blockStyleName", "crowdfundingId", "disabled"] },
-  FacebookPostBlock: { key: "facebookPost", fields: ["blockStyle", "blockStyleName", "disabled", "postID", "userID"] },
-  FacebookVideoBlock: { key: "facebookVideo", fields: ["blockStyle", "blockStyleName", "disabled", "userID", "videoID"] },
-  HTMLBlock: { key: "html", fields: ["blockStyle", "blockStyleName", "disabled", "html"] },
-  IFrameBlock: { key: "embed", fields: ["blockStyle", "blockStyleName", "disabled", "height", "sandbox", "styleCustom", "title", "url", "width"] },
-  ImageBlock: { key: "image", fields: ["blockStyle", "blockStyleName", "caption", "disabled", "imageID", "linkUrl"] },
-  InstagramPostBlock: { key: "instagramPost", fields: ["blockStyle", "blockStyleName", "disabled", "postID"] },
-  PolisConversationBlock: { key: "polisConversation", fields: ["blockStyle", "blockStyleName", "conversationID", "disabled"] },
-  PollBlock: { key: "poll", fields: ["blockStyle", "blockStyleName", "disabled", "pollId"] },
-  QuoteBlock: { key: "quote", fields: ["author", "blockStyle", "blockStyleName", "disabled", "imageID", "quote"] },
-  RichTextBlock: { key: "richText", fields: ["blockStyle", "blockStyleName", "disabled", "richText"] },
-  SoundCloudTrackBlock: { key: "soundCloudTrack", fields: ["blockStyle", "blockStyleName", "disabled", "trackID"] },
-  StreamableVideoBlock: { key: "streamableVideo", fields: ["blockStyle", "blockStyleName", "disabled", "videoID"] },
-  TikTokVideoBlock: { key: "tikTokVideo", fields: ["blockStyle", "blockStyleName", "disabled", "userID", "videoID"] },
-  TitleBlock: { key: "title", fields: ["blockStyle", "blockStyleName", "disabled", "lead", "preTitle", "title"] },
-  TwitterTweetBlock: { key: "twitterTweet", fields: ["blockStyle", "blockStyleName", "disabled", "tweetID", "userID"] },
-  VimeoVideoBlock: { key: "vimeoVideo", fields: ["blockStyle", "blockStyleName", "disabled", "videoID"] },
-  YouTubeVideoBlock: { key: "youTubeVideo", fields: ["blockStyle", "blockStyleName", "disabled", "videoID"] },
+  BildwurfAdBlock: {
+    key: "bildwurfAd",
+    fields: ["blockStyle", "blockStyleName", "disabled", "zoneID"],
+  },
+  BreakBlock: {
+    key: "linkPageBreak",
+    fields: [
+      "blockStyle",
+      "blockStyleName",
+      "disabled",
+      "hideButton",
+      "imageID",
+      "linkTarget",
+      "linkText",
+      "linkURL",
+      "richText",
+      "text",
+    ],
+  },
+  CrowdfundingBlock: {
+    key: "crowdfunding",
+    fields: ["blockStyle", "blockStyleName", "crowdfundingId", "disabled"],
+  },
+  FacebookPostBlock: {
+    key: "facebookPost",
+    fields: ["blockStyle", "blockStyleName", "disabled", "postID", "userID"],
+  },
+  FacebookVideoBlock: {
+    key: "facebookVideo",
+    fields: ["blockStyle", "blockStyleName", "disabled", "userID", "videoID"],
+  },
+  HTMLBlock: {
+    key: "html",
+    fields: ["blockStyle", "blockStyleName", "disabled", "html"],
+  },
+  IFrameBlock: {
+    key: "embed",
+    fields: [
+      "blockStyle",
+      "blockStyleName",
+      "disabled",
+      "height",
+      "sandbox",
+      "styleCustom",
+      "title",
+      "url",
+      "width",
+    ],
+  },
+  ImageBlock: {
+    key: "image",
+    fields: [
+      "blockStyle",
+      "blockStyleName",
+      "caption",
+      "disabled",
+      "imageID",
+      "linkUrl",
+    ],
+  },
+  InstagramPostBlock: {
+    key: "instagramPost",
+    fields: ["blockStyle", "blockStyleName", "disabled", "postID"],
+  },
+  PolisConversationBlock: {
+    key: "polisConversation",
+    fields: ["blockStyle", "blockStyleName", "conversationID", "disabled"],
+  },
+  PollBlock: {
+    key: "poll",
+    fields: ["blockStyle", "blockStyleName", "disabled", "pollId"],
+  },
+  QuoteBlock: {
+    key: "quote",
+    fields: [
+      "author",
+      "blockStyle",
+      "blockStyleName",
+      "disabled",
+      "imageID",
+      "quote",
+    ],
+  },
+  RichTextBlock: {
+    key: "richText",
+    fields: ["blockStyle", "blockStyleName", "disabled", "richText"],
+  },
+  SoundCloudTrackBlock: {
+    key: "soundCloudTrack",
+    fields: ["blockStyle", "blockStyleName", "disabled", "trackID"],
+  },
+  StreamableVideoBlock: {
+    key: "streamableVideo",
+    fields: ["blockStyle", "blockStyleName", "disabled", "videoID"],
+  },
+  TikTokVideoBlock: {
+    key: "tikTokVideo",
+    fields: ["blockStyle", "blockStyleName", "disabled", "userID", "videoID"],
+  },
+  TitleBlock: {
+    key: "title",
+    fields: [
+      "blockStyle",
+      "blockStyleName",
+      "disabled",
+      "lead",
+      "preTitle",
+      "title",
+    ],
+  },
+  TwitterTweetBlock: {
+    key: "twitterTweet",
+    fields: ["blockStyle", "blockStyleName", "disabled", "tweetID", "userID"],
+  },
+  VimeoVideoBlock: {
+    key: "vimeoVideo",
+    fields: ["blockStyle", "blockStyleName", "disabled", "videoID"],
+  },
+  YouTubeVideoBlock: {
+    key: "youTubeVideo",
+    fields: ["blockStyle", "blockStyleName", "disabled", "videoID"],
+  },
 };
 
 export type BlockOut = { __typename?: string } & Record<string, unknown>;
@@ -74,8 +176,7 @@ export type BlockResult =
 /** The GraphQL selection set that reads back everything the map above can echo. */
 export function blockSelectionSet(): string {
   const fragments = Object.entries(BLOCK_INPUTS).map(
-    ([typename, { fields }]) =>
-      `... on ${typename} { ${fields.join(" ")} }`,
+    ([typename, { fields }]) => `... on ${typename} { ${fields.join(" ")} }`,
   );
   return `__typename ${fragments.join(" ")}`;
 }
@@ -149,7 +250,7 @@ function idsOf(people: { id?: string }[] | undefined): string[] {
 export function articleUpdateVariables(
   article: TargetArticle,
   visual: BlockInput,
-  opts: { isOurs?: (html: string) => boolean } = {},
+  opts: { isOurs?: (html: string) => boolean; afterIndex?: number } = {},
 ): VariablesResult {
   const revision = article.draft ?? article.published ?? null;
   if (!revision)
@@ -185,7 +286,26 @@ export function articleUpdateVariables(
       };
     blocks.push(mapped.input);
   }
-  if (!replaced) blocks.push(visual);
+
+  if (!replaced) {
+    // WHERE it goes. `afterIndex` is the journalist's CONFIRMED answer (SKILL.md §6 form d asks
+    // and confirms before anything is written): -1 puts the visual first, n puts it after the
+    // n-th existing block, and an absent answer appends. Appending is a fallback, not a default
+    // worth defending — a chart usually belongs beside the paragraph that makes its claim, which
+    // is why the anchor `suggest-article` already computes finally has somewhere to go.
+    const existing = blocks.length;
+    const at = opts.afterIndex;
+    if (at === undefined) blocks.push(visual);
+    else if (at < -1 || at >= existing)
+      return {
+        ok: false,
+        message:
+          `wepublish: the confirmed position (after block ${at}) is not a place in "${article.slug ?? article.id}" — it holds ${existing} blocks. ` +
+          `The article has probably been edited since you were asked where the visual goes. Re-read it and confirm the position again; ` +
+          `Splash will not quietly put the visual somewhere else.`,
+      };
+    else blocks.splice(at + 1, 0, visual);
+  }
 
   if (!article.id)
     return {

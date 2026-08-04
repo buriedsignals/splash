@@ -167,11 +167,20 @@ async function insertIntoArticle(args: {
   slug: string;
   id: string;
   blockHtml: string;
+  afterIndex?: number;
   timeoutMs: number;
   uploadTimeoutMs: number;
 }): Promise<VerbResult<PublishOutcome>> {
-  const { endpoint, token, slug, id, blockHtml, timeoutMs, uploadTimeoutMs } =
-    args;
+  const {
+    endpoint,
+    token,
+    slug,
+    id,
+    blockHtml,
+    afterIndex,
+    timeoutMs,
+    uploadTimeoutMs,
+  } = args;
 
   const found = await gqlCall({
     endpoint,
@@ -198,7 +207,7 @@ async function insertIntoArticle(args: {
   const built = articleUpdateVariables(
     target,
     { html: { html: blockHtml } },
-    { isOurs: (html) => carriesMarker(html, id) },
+    { isOurs: (html) => carriesMarker(html, id), afterIndex },
   );
   if (!built.ok) return fail("invalid-request", built.message);
 
@@ -387,6 +396,11 @@ async function publish(
       slug: req.settings.targetArticleSlug!.trim(),
       id: req.id,
       blockHtml,
+      // The journalist's confirmed position, carried as a setting like the target itself. An
+      // absent one appends; a malformed one is NOT silently dropped into "append".
+      ...(req.settings.targetAfterBlock !== undefined
+        ? { afterIndex: Number(req.settings.targetAfterBlock) }
+        : {}),
       timeoutMs,
       uploadTimeoutMs,
     });

@@ -37,7 +37,12 @@ function parseArgs(argv) {
   const flags = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--article" || a === "--results" || a === "--id")
+    if (
+      a === "--article" ||
+      a === "--after" ||
+      a === "--results" ||
+      a === "--id"
+    )
       flags[a.slice(2)] = argv[++i];
     else positional.push(a);
   }
@@ -83,6 +88,29 @@ async function main() {
         `Ask the journalist WHICH article the visual belongs in, and pass its slug — never invent one.`,
     );
 
+  // The position, when the journalist gave one. "end" is a real answer (append) and is spelled
+  // out rather than expressed as an absent flag, so a forgotten --after cannot pass for a
+  // deliberate "at the end". Anything else must be an integer index, -1 meaning "before
+  // everything": a non-numeric answer is a misunderstanding, not a position.
+  // REQUIRED, like --article. An absent position is not "append": it is nobody having been
+  // asked. This door is the load-bearing one — export-code refuses earlier for a better message,
+  // but publish-cms is also callable directly, and a direct call must not be able to drop a
+  // visual into a journalist's article at a position they never saw.
+  if (flags.after === undefined)
+    die(
+      `publish-cms: --after is required — SHOW the journalist where the visual would go and pass the position they confirmed ` +
+        `(a block index, -1 for before everything, or "end"). Appending because nobody said otherwise is deciding for them.`,
+    );
+  let afterIndex;
+  if (flags.after !== "end") {
+    if (!/^-?\d+$/.test(flags.after))
+      die(
+        `publish-cms: --after takes a block index, or "end" — got ${JSON.stringify(flags.after)}. ` +
+          `Ask the journalist WHERE the visual goes and pass the position they confirmed.`,
+      );
+    afterIndex = Number(flags.after);
+  }
+
   const status = cmsDeliveryStatus({ endpoint: cmsSettings().endpoint });
   if (!status.ready)
     die(
@@ -116,7 +144,11 @@ async function main() {
     id: flags.id,
     format: entry?.format ?? "interactive",
     metadata: entry?.metadata ?? { title: flags.id, lang: "fr" },
-    settings: { ...cmsSettings(), targetArticleSlug: flags.article },
+    settings: {
+      ...cmsSettings(),
+      targetArticleSlug: flags.article,
+      ...(afterIndex === undefined ? {} : { targetAfterBlock: String(afterIndex) }),
+    },
     credentials: credentials(),
     outDir: dirname(resolve(artifact)),
   });
