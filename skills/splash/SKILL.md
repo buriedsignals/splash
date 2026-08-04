@@ -1066,9 +1066,24 @@ render, and re-run 3a (`review-gate`) on THAT render** before showing again — 
 updated spec to 3b (`gate-render`); the fresh report 5c writes resets `reviewed`/`renderApproved` for
 exactly this reason (see the ★ note under 5c above), and 3b's approval is only ever for the render just
 shown, never a prior one.
-Verify quality, not just that it built. **After "ship it", record the approval — pass the LOCAL
+Verify quality, not just that it built.
+
+**SHOWING IT IS A COMMAND, not only an intention.** (The duty is also in the Never list below; it
+belongs HERE too, in the step where the act happens — a rule found only in an appendix is a rule read
+after the mistake.) Open the artifact for the journalist with `present`, which BOTH surfaces it and
+writes the receipt the approval gate reads back (`_shown/<file>.json`, `lib/loop/presentation.ts`):
+```bash
+bun lib/host/cli.ts present --path exports/<slug>/<id>/static.png
+```
+Skip it and `gate-render` refuses — *« nobody has been shown this visual yet, so there is nothing to
+have an opinion about »* — which is correct, and is exactly what a run that described the render in
+prose instead of opening it deserves. The refusal names this command, so a run that forgets it can
+recover; do not make it earn that.
+
+**After "ship it", record the approval — pass the LOCAL
 artifact file path on disk, NEVER the public/cloud URL** (a Datawrapper `publicUrl`, a Cloudflare embed
-link, etc.): `gate-render` opens and hashes the file at that path, so a public URL ENOENTs.
+link, etc.): `gate-render` opens and hashes the file at that path, so a public URL ENOENTs. It must be
+the SAME path `present` was given — the gate compares the approved bytes against the shown ones.
 ```bash
 bun skills/splash/scripts/gate-render.mjs exports/<slug>/report.json <id> exports/<slug>/<id>/static.png
 ```
