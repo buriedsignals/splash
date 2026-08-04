@@ -50,9 +50,11 @@ website, no backend.
 - **`scrolly`** — the scroll-driven interactive (scrollytelling) orchestrator; owns the scroll
   scaffold and step dispatcher, and imports the visual renderer from `map-native` or
   `chart-native` depending on the story.
-- **`image-native`** (script only, no `SKILL.md` — invoked via
-  `bun skills/image-native/scripts/produce.mjs`) — produces the image-scrolly `suggest-image`
-  specs.
+- **`image-native`** — the image engine: sequences the newsroom's OWN photographs into a
+  self-contained image scrolly, deterministically (zero vision, zero generated text — those live in
+  `suggest-image`, behind its mandatory veto gate). v1 ships the `scrolly` format only. Like every
+  other engine it is discoverable, and like every other engine the journalist reaches it through its
+  suggester rather than directly.
 
 ## What splash never does
 
