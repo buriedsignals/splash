@@ -102,11 +102,34 @@ registerProducer({
   formats: ["scrolly"],
   // No `types`: scrolly is the shared MECHANISM, not a type owner — the scrolly sub-format
   // belongs to the host engine and inherits its furniture (see CLAUDE.md, engine taxonomy).
-  // Same rule for the gesture vocabulary (2026-08-03 gesture-vocabulary plan, Task 4): the
-  // chart/map track's gestures are declared on chart-native's and map-native's own
-  // manifests (their `scrolly` narrative kind), not here — scrolly renders them, it does
-  // not own them. image-native's crossfade is likewise declared on image-native's manifest
-  // even though the renderer (ScrollyImage.tsx) lives in this package.
+  // Because this producer registers zero `types`, it structurally CANNOT declare a
+  // per-type gesture vocabulary here (`t.gestures` is keyed by `p.types`) — a prior
+  // version of this comment and chart-native's own manifest each pointed at the OTHER as
+  // the declaring side, which left the CHART scrolly vocabulary (line/bar/scatter,
+  // rendered by this package's own ScrollyChart.tsx) declared on NEITHER. Fixed: it now
+  // lives on chart-native's manifest (the only manifest that owns `line`/`bar`/`scatter`
+  // as types), under those types' own `scrolly` key.
+  //
+  // For MAPS the same rule (chart/map track gestures live on the owning engine's
+  // manifest) points at map-native — but map-native's `scrolly` key names a DIFFERENT
+  // product from the one this package renders: map-native's `scrolly` is its own video
+  // (Remotion) Scrolly family (skills/map-native/src/components/*Scrolly.tsx, camera
+  // `jumpTo` only); the map+scrolly experience THIS package actually ships to a browser
+  // reader is ScrollyMap.tsx and its five siblings (ScrollyCartogramMap.tsx,
+  // ScrollyDotDensityMap.tsx, ScrollyHexMap.tsx, ScrollyLocatorMap.tsx,
+  // ScrollySymbolMap.tsx — living HERE, in this package, camera `flyToBeat`/`flyTo`,
+  // e.g. ScrollyMap.tsx:448), for exactly MAP_SCROLLY_TYPES (scrolly-types.ts: symbol,
+  // hex-grid, dot-density, locator, cartogram, choropleth — route excluded, refused by
+  // name in scrollySpecErrors above). Because this producer owns no `types` and
+  // map-native's `scrolly` key is already spoken for by its own, different, unreachable
+  // video family, the vocabulary for THIS reachable browser family (including `fly`) has
+  // no home in the current 3-kind model (NARRATIVE_KINDS) without either overloading an
+  // existing key to mean two things or adding a fourth kind — left as an open gap, not
+  // silently resolved (see docs/splash/gesture-vocabulary final-fix-report).
+  //
+  // image-native's crossfade is likewise declared on image-native's manifest even though
+  // the renderer (ScrollyImage.tsx) lives in this package — that case has no ambiguity:
+  // image-native owns exactly one narrative kind (`scrolly`) and one product.
   validate: scrollySpecErrors,
   execution: "subprocess",
   subprocess: {
