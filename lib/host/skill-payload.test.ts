@@ -81,6 +81,11 @@ describe("measureSkillPayload — what a host is actually handed", () => {
       symlinkSync(outside, join(root, "alpha", "linked"));
       const p = measureSkillPayload(join(root, "alpha"));
       expect(p.files).toBe(7); // the six above plus the smuggled one
+      // A count alone does not prove the walk went THROUGH the link: treating the
+      // symlink itself as an opaque file also yields 7 offers. Pin the char total too,
+      // which only matches if "linked/smuggled.js" (19 chars) was actually enumerated
+      // rather than "linked" (6 chars) standing in for it.
+      expect(p.chars).toBe(146);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
