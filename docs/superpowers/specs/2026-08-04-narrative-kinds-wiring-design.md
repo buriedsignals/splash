@@ -54,16 +54,23 @@ bouge pas d'une frame.
   n'est pas encore posée sur la feature. La deviner est exactement le défaut « mauvaise clé,
   silencieusement » que cette branche a déjà payé une fois.
 
-## ⚠️ Ce qui n'est PAS prouvé
+## ★ PROUVÉ AU RENDU (2026-08-04)
 
-**L'ordre d'entrée n'est pas vérifié AU RENDU.** Il est unit-prouvé (fenêtres ordonnées,
-monotonie, plafond d'opacité, mutation vue rougir) et l'expression est celle que MapLibre
-consomme — mais **aucun still n'a été rendu**. Ce dépôt tient qu'une affirmation visuelle non
-rendue n'est pas une affirmation, et celle-ci ne l'est pas.
+`skills/map-native/output-proof/reveal-walk/` — deux produce RÉELS du même choroplèthe, rendus à
+la même frame, ne différant que par la marche.
 
-Ce qui la prouverait : un produce réel d'un choroplèthe portant une marche (la géométrie est
-injectée par le producteur, donc un rendu isolé demande un run complet), puis deux stills à la
-même frame — avec et sans marche — dont la différence est l'ordre.
+La marche est **délibérément à contre-courant du classement des données** (`GBR → DEU → NOR`
+alors que `NOR` porte la valeur la plus haute), parce que c'est la seule forme de marche qui
+distingue « l'ordre du journaliste a été honoré » de « la rampe a l'air ordonnée par hasard ».
+
+- **Sans marche** : la Scandinavie et l'Europe centrale se teintent **ensemble** — une seule
+  rampe, tout le monde en même temps, les valeurs hautes se lisant d'abord parce qu'elles sont
+  les bins les plus foncés.
+- **Avec marche** : **seul le Royaume-Uni est en place** — le beat 1. La Norvège, valeur la plus
+  haute de la donnée, n'est pas encore entrée.
+
+Cette inversion EST la preuve : ce qui apparaît, et dans quel ordre, vient de la marche que le
+journaliste a confirmée, pas de la saillance des données.
 
 ## (c) `cameraMode` par beat — non commencé
 
