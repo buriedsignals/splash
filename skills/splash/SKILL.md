@@ -925,15 +925,19 @@ the direct branch: an `accepted.json` where every proposal is `skillsInvoked: ["
 (the journalist NAMED the visual) needs no menu, and `precheck` reads that same file beside `--dir`
 to grant the same exemption `produce-all` itself applies.
 
-**5c. Produce everything at once** — report to a FILE (the gates and EXPORT read it back):
+**5c. Produce everything at once** — the report lands in a FILE by itself (the gates and EXPORT read
+it back):
 ```bash
-bun skills/splash/scripts/produce-all.mjs exports/<slug>/accepted.json exports/<slug> \
-  > exports/<slug>/report.json
+bun skills/splash/scripts/produce-all.mjs exports/<slug>/accepted.json exports/<slug>
 ```
 `produce-all` iterates EVERY proposal, dispatches to the right producer + format, and writes
 `{ results: [{ id, producer, actualProducer, format, status, outputs?, publicUrl?, reason?, error?, renderApproved }] }`.
-It exits non-zero only if some `status` is `"failed"`. (Redirecting to `report.json` is required — the
-report is the machine channel; producer progress goes to stderr, so stdout stays pure JSON.)
+It exits non-zero only if some `status` is `"failed"`. **`produce-all` WRITES `exports/<slug>/report.json`
+itself** — you do not have to redirect, and forgetting to is no longer a way to lose the render gate
+and the sign-off (both take that file as an argument; a real host run produced a correct chart, forgot
+the `>`, and left both unreachable with nothing reporting it). It still prints the report on stdout,
+so `> exports/<slug>/report.json` remains legal and writes the same bytes; producer progress goes to
+stderr, so stdout stays pure JSON.
 **Producer-match guard (GUARD 1, `src/producer-guard.ts`):** `actualProducer` records what ACTUALLY
 ran; `produce-all` fails-hard when it diverges from the accepted `producer` (a silent dw-chart→chart-native
 flip is refused). The ONE sanctioned switch is the native→dw fallback (`needs-fallback`, below); any other
