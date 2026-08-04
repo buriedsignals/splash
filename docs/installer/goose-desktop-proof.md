@@ -154,9 +154,109 @@ An audit run against that grep would have reported "no nested invocation" from a
 never emitted, which is the exact failure mode this project keeps paying for. The criterion should
 read the **session record's tool calls**, or the **artefacts on disk**, not the transcript.
 
-**What Layer B needs:** a provider where Goose runs its own loop — an API key (anthropic, openai,
-openrouter) or the paid Gemini tier. The free Gemini tier is not a quota accident but a permanent
-`limit: 0`, reproduced this session.
+**What Layer B needs:** a provider where Goose runs its own loop.
+
+## ★ Nested invocation — observed, and the unknown since 2026-07-14 is closed
+
+Re-run on the `google` provider (Goose's own loop) with `gemini-2.5-flash`, which the free tier
+**does** serve — the permanent `limit: 0` applies to `gemini-2.5-pro` and `gemini-2.0-flash`, not to
+every model, which is why "the free tier is dead" was too broad a reading of July's failure.
+
+The log shows the thing nobody had ever seen a non-Claude-Code host do:
+
+```
+▸ load_skill   name: splash
+▸ load_skill   name: using-splash
+▸ delegate     source splash
+```
+
+**Goose calls `load_skill`.** The audit's finding S1 — "nested invocation is required by the prose
+and ATTESTED BY THE MODEL (`validate-gate.ts:648-655` reads only `skillsInvoked`, which the model
+writes), so a host that cannot nest produces a plausible artefact with no KB anchoring and nothing
+reports it" — is answered for Goose: it can nest, through a real tool, and Goose additionally has a
+`delegate` primitive for handing a task to a skill.
+
+That does not make `skillsInvoked` trustworthy (it is still a model attestation, on every host); it
+removes Goose from the list of hosts suspected of being unable to honour it.
+
+**Where the free tier does stop:** `gemini-2.5-flash` free is `limit: 5` requests, and Goose does not
+auto-retry — it prints "Please retry" and exits. An agentic run makes dozens of requests, so the run
+ends within the first few turns. `gemini-2.5-flash-lite` also answers and carries a larger allowance;
+the only local model on the machine is Apertus 8B q4, too small to carry ~45k tokens of skill prose
+plus orchestration.
+
+So Layer B is now bounded by **request allowance**, not by capability, not by the host, and not by a
+missing key.
+
+### ★ What `load_skill` actually costs — the skill directory IS the payload
+
+Loading `splash` does not hand the model `SKILL.md`. It hands it `SKILL.md` **plus an enumeration of
+50 further loadable resources** inside the skill directory — `src/anti-improvisation.test.ts`,
+`src/format-pin.test.ts`, `src/guardrail-parity.test.ts`, `tsconfig.json`, every script. Measured in
+the run log: 50 `load_skill(name: "splash/…")` offers against 103 files on disk, so the host lists
+what it considers readable and skips the rest.
+
+What we link into `~/.agents/skills` is not a skill folder, it is an engine checkout:
+
+| Skill | Files (excl. `node_modules`) | `SKILL.md` |
+|---|---|---|
+| `splash` | 103 | 136 KB |
+| `suggest-chart` | 35 | 52 KB |
+| `map-native` | 274 | — |
+| `chart-native` | 931 | — |
+
+This is the same arithmetic the backlog already records (`splash` alone measures 33 389 content
+tokens, and a `splash` → `suggest-chart` chain passes 45 000) seen from the other end: the prose is
+one cost, and **the directory listing is a second one that nobody had counted**. A journalist's run
+never needs `format-pin.test.ts`.
+
+It is recorded, not fixed — the shape of a shipped skill directory is a distribution decision, not a
+runtime-module one, and it touches every host rather than this one. Backlog **E10**.
+
+## ★★ The run that "succeeded" without Splash — the most important result of this lot
+
+A second Layer B attempt, `gemini-2.5-flash-lite` on the `google` provider, ran to completion and
+announced: *« Le visuel est prêt et peut être visualisé. »*
+
+**No `exports/` directory was created. No producer ran. No gate was answered. No file was owned.**
+The chart existed only as a rendering inside the chat.
+
+The session's tool calls give the whole causal chain, in order:
+
+| # | Call | What happened |
+|---|---|---|
+| 1 | `load_skill(splash)`, `load_skill(using-splash)` | correct — the flow was entered |
+| 2 | `delegate`, `shell` ×3 | correct — real work, real commands |
+| 3 | **`suggest_article`** | **`-32002: Tool 'suggest_article' not found`** — the model called the nested skill as if it were a TOOL |
+| 4 | `extensionmanager__search_available_extensions` | it went shopping for something else that could work |
+| 5 | `extensionmanager__manage_extensions` | **it enabled `autovisualiser` itself** |
+| 6 | `autovisualiser__show_chart` | drew a bar chart in the chat and declared the job done |
+
+Three findings sit inside that chain, and none of them is "the model is weak":
+
+**F5 — our prose names a skill but never says how a host invokes one.** `SKILL.md` says to invoke
+`suggest-article`; on Goose the act is `load_skill(name: "suggest-article")` or `delegate`. Nothing
+tells the model that, so it guessed a tool name and got a hard error. This is the host-adapter gap
+the audit describes, observed rather than reasoned about.
+
+**F6 — a competing chart tool is one tool-call away, and disabling it does not hold.**
+`~/.config/goose/config.yaml` carries `autovisualiser: enabled: false`. The session ran with it
+**enabled**, because the model turned it on through the extension manager. So "ship a config with it
+off" is not a remedy; the model can undo it mid-run.
+
+**F7 — nothing on our side notices.** The run produced a plausible visual with no channel pinning, no
+format pinning, no WCAG conformance pass, no source credit, no owned file, and no export gate — and
+Splash has no way to tell that its own pipeline was never used. This is exactly the audit's S1
+written as an observation instead of a risk: `validate-gate.ts:648-655` reads `skillsInvoked`, which
+**the model writes**. A run that never touched a producer can still attest that it did.
+
+**What this does not say.** It does not say Goose cannot run Splash: the first attempt, on a stronger
+model, entered the flow correctly, produced a real `opportunities.json`, and honoured the gates one
+question at a time. It says the floor is not held by anything mechanical — a weaker model, or a
+worse day, silently exits the pipeline and reports success.
+
+**Consequence for `verified`.** It stays `false`, and this is now the stronger reason: a runtime is
+not verified because a chart appeared. Backlog **E11**.
 
 ## Not proven
 
