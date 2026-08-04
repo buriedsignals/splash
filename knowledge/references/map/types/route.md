@@ -5,7 +5,7 @@ engines:
 intent: [spatial, flow]
 shape: spatial
 limits: {}
-formats: [static, interactive, video]
+formats: [static, interactive, video, scrolly]
 bestFor:
   - "a linear geographic story — following any path-like feature across space (river, road trip, trade route, migration corridor, pipeline, flight path, disputed border); the route is the protagonist, territories are supporting context"
 notFor:
@@ -250,6 +250,32 @@ The push-in camera and the label anchors are computed per-size so labels remain 
 all three.
 
 For the full camera-mode taxonomy see `knowledge/references/map/camera-modes.md` § `route-reveal`.
+
+## Scrolly format (shipped 2026-08-04)
+
+A route scrolly is the reader-driven sibling of its video: the same walk, advanced by scroll
+instead of by time. `ScrollyRouteMap` (`skills/scrolly/src/ScrollyRouteMap.tsx`) draws the whole
+trajectory faintly from the first frame — the reader can see WHERE the journey goes before it is
+walked — and reveals the travelled portion step by step, filling each crossed territory as its
+step arrives.
+
+**A confirmed walk changes what "progress" means, and the renderer says so rather than faking it.**
+Without one, each step draws the route from the territory it enters to the next one's entry: the
+physical journey, in geographic order. With one, the route is drawn in full from the walk's first
+step and each step pans to the territory the journalist named — because a confirmed walk follows
+THEIR argument, and the line has no physical progress to animate in that order. Animating one
+anyway would show the reader a journey that never happened.
+
+Its steps are NOT region beats and do not come from `mapStoryToChapters`: `routeStoryToChapters`
+builds intro → overview → one step per crossed territory → takeaway, with sentinel refs that let
+the renderer tell the two framing steps apart. The walk is resolved ONCE (`resolveRouteWalk`) and
+threaded to captions and camera alike, so the words and the frame can never follow different
+orders.
+
+**A route is still not PROPOSABLE** (`lib/brain/beats.ts`'s `PROPOSABLE_MAP_TYPES`): its anchor is
+a territory computed at produce time from the line, so there is nothing for the loop to draft a
+walk against before production. A journalist writes its `arcBeats` directly, or takes the
+geographic default.
 
 ## Implementation pointer
 

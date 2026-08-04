@@ -5,7 +5,7 @@
 // validate mirrors validate-gate.ts's `validateScrolly` (errors-only): a chart-track config
 // carries `nativeType` and IS a chart-native NativeSpec (validate by construction + any
 // explicit journalist beat plan); a map-track config is one of the SIX types MAP_SCROLLY_TYPES
-// hosts (dispatch by `type`) — a seventh, "route", is refused BY NAME before any content
+// hosts (dispatch by `type`) — seven since 2026-08-04, when ScrollyRouteMap.tsx gave `route`
 // validation runs, the same refusal validate-gate.ts's gate and the V2 assembler
 // (lib/loop/assemble/scrolly.ts) already apply, sharing one wording
 // (unsupportedMapScrollyType). An explicit `beats` override on the map track is rejected loud
@@ -72,15 +72,17 @@ export function scrollySpecErrors(spec: unknown): string[] {
       ...narrativeBeatErrors(spec as NativeSpec),
     ];
   }
-  // Map track: a type MAP_SCROLLY_TYPES does not host (today: "route" — arc-capable at
-  // map-native's own gate, but never given a Scrolly.tsx branch) is refused HERE, by
-  // name, before any content validation. Fix E1: this check was missing — a well-formed
-  // route+arcBeats config fell straight through to mapNativeConfigErrors, whose
-  // validateRouteConfig accepts arcBeats structurally (route IS in ARC_CAPABLE_MAP_TYPES),
-  // so this function returned zero errors for a spec validate-gate.ts and the V2 assembler
-  // both already refuse — contradicting this file's own produce.mjs's comment that "the
-  // CLI and the spine refuse identically". One wording, shared with validate-gate.ts's
-  // validateScrolly — see unsupportedMapScrollyType.
+  // Map track: a type MAP_SCROLLY_TYPES does not host is refused HERE, by name, before any
+  // content validation. Fix E1: this check was missing, and a config for an unhosted type fell
+  // straight through to mapNativeConfigErrors — which validates it structurally and returns zero
+  // errors for a spec validate-gate.ts and the V2 assembler both already refuse, contradicting
+  // produce.mjs's own claim that "the CLI and the spine refuse identically".
+  //
+  // ★ The example this comment used to give was "route", and that stopped being true on
+  // 2026-08-04: ScrollyRouteMap.tsx hosts it. The CHECK stays — a type with no branch must still
+  // be refused by name rather than drawn as a choropleth by the dispatch's final `else` — it just
+  // no longer has a member to name. One wording, shared with validate-gate.ts's validateScrolly
+  // (see unsupportedMapScrollyType).
   const mapType = (spec as { type?: string } | null)?.type ?? "choropleth";
   if (!MAP_SCROLLY_TYPES.has(mapType)) {
     return [
@@ -126,10 +128,16 @@ export function scrollySpecErrors(spec: unknown): string[] {
 // flight)"), confirmed by reading the code: its currentStep effect (:242-254) calls ONLY
 // flyToBeat, no setPaintProperty of any kind — `fly` alone.
 //
-// route has no browser-scrolly host at all (MAP_SCROLLY_TYPES excludes it,
-// scrolly-types.ts — refused by name in scrollySpecErrors above) — omitted, not declared
-// with an empty vocabulary.
+// route joined 2026-08-04 with ScrollyRouteMap.tsx (this comment used to read "route has no
+// browser-scrolly host at all — omitted, not declared with an empty vocabulary", which was true
+// until that component existed). It declares `fly` AND `draw`, and the second is what no other
+// map scrolly has: the route's own line is progressively revealed step by step
+// (`turf.lineSliceAlong` into the `route-drawn` source), which is `draw` by this vocabulary's own
+// definition — a path revealing along one dimension by a monotonic scalar. `highlight` too: the
+// step's territory fills while its siblings stay dim, the same case-expression shape the five
+// above use.
 const MAP_SCROLLY_GESTURES: Record<string, GestureVocabulary> = {
+  route: { scrolly: ["fly", "draw", "highlight"] },
   choropleth: { scrolly: ["fly", "highlight"] },
   cartogram: { scrolly: ["fly", "highlight"] },
   "hex-grid": { scrolly: ["fly", "highlight"] },

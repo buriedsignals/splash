@@ -30,6 +30,13 @@ import { deriveFurniture, bgIsDark } from "../../../lib/core/theme";
 import { ScrollyChart, type ChartScrollyConfig } from "./ScrollyChart";
 import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
+import { ScrollyRouteMap, type ScrollyRouteConfig } from "./ScrollyRouteMap";
+import { computeRouteReveal } from "../../map-native/src/route-geo";
+import {
+  resolveRouteWalk,
+  routeStoryToChapters,
+} from "../../map-native/src/route-story";
+import { resolveVideoGeometry } from "../../map-native/src/core/video-geometry";
 import { ScrollyHexMap, type ScrollyHexConfig } from "./ScrollyHexMap";
 import {
   ScrollyDotDensityMap,
@@ -104,6 +111,7 @@ export const Scrolly: React.FC<{
     | ScrollyDotDensityConfig
     | ScrollyLocatorConfig
     | ScrollyCartogramConfig
+    | ScrollyRouteConfig
     | ImageScrollyConfig;
 }> = ({ config }) => {
   // Themed scaffold surfaces derived from the newsroom house ground (config.themeBg): on a DARK
@@ -203,6 +211,39 @@ export const Scrolly: React.FC<{
         visual: "map",
         steps: [],
       } as ReturnType<typeof mapStoryToChapters>;
+    }
+
+    if (config.type === "route") {
+      // The route track derives its OWN step sequence (routeStoryToChapters: intro, overview,
+      // one step per crossed territory, takeaway) rather than going through mapStoryToChapters —
+      // its steps are not region beats, they are stops along a line, and its sentinel refs are
+      // what let the renderer tell the two framing steps apart.
+      //
+      // resolveRouteWalk is called ONCE, here, and the resolved walk is threaded to
+      // routeStoryToChapters for the captions; ScrollyRouteMap resolves the same walk from the
+      // same config for its camera. That mirrors what the video family already does — see
+      // route-story.ts's header on why a second, independently-wrong resolution must be made
+      // unrepresentable.
+      const { world } = resolveVideoGeometry(
+        config as never,
+        "scrolly-route-story",
+      );
+      const layout = computeRouteReveal(config as never, world);
+      const notes: Record<string, string> = {};
+      for (const t of (config as unknown as { territories?: { key: string; note?: string }[] })
+        .territories ?? [])
+        if (t.note?.trim()) notes[t.key] = t.note;
+      return routeStoryToChapters(
+        layout,
+        resolveRouteWalk(layout, config.arcBeats),
+        {
+          title: config.title ?? "",
+          description: config.description,
+          source: config.source,
+          insight: config.insight ?? config.title,
+          notes,
+        },
+      );
     }
 
     if (config.type === "symbol") {
@@ -721,6 +762,11 @@ export const Scrolly: React.FC<{
               scrollProgress={scrollProgress}
               currentStep={currentBeatRef}
               lineCardTargets={lineCardTargets}
+            />
+          ) : config.type === "route" ? (
+            <ScrollyRouteMap
+              config={config as unknown as ScrollyRouteConfig}
+              currentStep={currentBeatRef}
             />
           ) : config.type === "symbol" ? (
             <ScrollySymbolMap
