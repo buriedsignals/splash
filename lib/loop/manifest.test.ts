@@ -1651,6 +1651,81 @@ describe("routing a narrative page through its beats", () => {
     expect(nextActions(scrollyRun())).toEqual(["draft-beats"]);
   });
 
+  // SUB-PROJECT ③ — the proposal step stops being chart-scrolly-only.
+  // A map's walk used to be written from nothing (`arcBeats` never machine-drafted), and a
+  // VIDEO never reached this seam at all, whichever track it was on — which is exactly the
+  // editorial step Rémy asked for on 2026-07-31 and that was translated into a field instead.
+  function mapRun(nativeType: string, format: string): RunManifest {
+    const m = scrollyRun();
+    return {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          proposal: {
+            options: [
+              {
+                id: "o1",
+                nativeType,
+                engine: "map-native",
+                format,
+                why: "the geography carries the point",
+              },
+            ],
+            excluded: [],
+            chosenId: "o1",
+          },
+        },
+      ],
+    } as RunManifest;
+  }
+
+  it("routes a map scrolly with no plan yet to draft-beats", () => {
+    expect(nextActions(mapRun("choropleth", "scrolly"))).toEqual([
+      "draft-beats",
+    ]);
+  });
+
+  it("routes a map VIDEO with no plan yet to draft-beats", () => {
+    expect(nextActions(mapRun("symbol", "video"))).toEqual(["draft-beats"]);
+  });
+
+  it("leaves a map's non-narrative formats alone — there is no walk to propose", () => {
+    for (const f of ["static", "interactive"])
+      expect(nextActions(mapRun("choropleth", f))).not.toEqual(["draft-beats"]);
+  });
+
+  it("does NOT route route/hex-grid — their anchor does not exist until produce", () => {
+    for (const t of ["route", "hex-grid"])
+      expect(nextActions(mapRun(t, "scrolly"))).not.toEqual(["draft-beats"]);
+  });
+
+  it("does NOT route a chart VIDEO — the *Reveal family ignores beats (sub-project ④)", () => {
+    const m = scrollyRun();
+    const chartVideo = {
+      ...m,
+      elements: [
+        {
+          ...m.elements[0]!,
+          proposal: {
+            options: [
+              {
+                id: "o1",
+                nativeType: "line",
+                engine: "chart-native",
+                format: "video",
+                why: "a trend over time",
+              },
+            ],
+            excluded: [],
+            chosenId: "o1",
+          },
+        },
+      ],
+    } as RunManifest;
+    expect(nextActions(chartVideo)).not.toEqual(["draft-beats"]);
+  });
+
   it("asks the journalist to author, whenever a plan carries an unwritten beat", () => {
     const m = base();
     expect(

@@ -81,6 +81,54 @@ Splash = **un skill open-source MIT, installable, agnostique runtime, local-firs
 - **Format skill-autonome** (canon Tom) : `SKILL.md` (8 sections : Overview · When to use · gotcha · Architecture · How it works · Quick start · Tuning knobs (chacun = un nombre) · Files) + `references/` + `scripts/` (prep déterministe) + `assets/` (1 composant battle-tested + sample-data + preview) + `output-proof`.
 - Discipline vidéo (bug-free, façon Tom) : stack en couches · **frame-gating** sur la vraie disponibilité · données pré-cuites · valider 1 still avant le mp4 · plomberie (`preserveDrawingBuffer`, `--gl=angle`, timeouts).
 
+## ★ CHANTIER STORYBOARD ÉDITORIAL — ①②③ FUSIONNÉS (2026-08-04, `main` = `9d24edb9`)
+
+Spec parapluie : `docs/superpowers/specs/2026-08-03-editorial-storyboard-design.md` (4 sous-projets).
+C'est la demande de Rémy du 2026-07-31, retraduite en **conversation** (proposer → valider → produire)
+après avoir été traduite en **champ technique** la première fois.
+
+- **① Vocabulaire des gestes** — fusionné (`082eabc0`). Six moteurs déclarent ce qu'ils font bouger,
+  chaque affirmation ancrée à une ligne ; garde vérifié sur 6 mutations. + migration `scrolly` →
+  **`stepped`** (4ᵉ genre narratif, arbitrage de Rémy) : `fly` a enfin un propriétaire.
+- **② Modèle de beat unifié** — fusionné (`88c334fb`). Ancre élargie à `region`/`place` · le beat
+  déclare mouvement/animation/durée · **schéma 7** avec preuve de reprise commitée · `beatMotionErrors`
+  livré. ⚠️ La tâche 5 (unifier `MapArcBeat`) s'est arrêtée : sa justification a été **réfutée par la
+  revue finale** puis corrigée dans la spec (§ 4.3) — le vrai blocage est `role`/`text` requis sur le
+  schéma unifié vs optionnels sur `MapArcBeat`, pas une capacité manquante.
+- **③ Étape de proposition** — fusionné (`9d24edb9`). Spec+plan :
+  `2026-08-04-proposal-step-design.md` / `-proposal-step.md`. **Une carte narrative reçoit enfin une
+  marche PROPOSÉE** (5 types : choropleth, symbol, locator, cartogram, dot-density) au lieu d'un
+  `arcBeats` à écrire depuis rien — en **scrolly ET en vidéo**, parce que les deux honorent une marche
+  aujourd'hui. `arcBeats` avait **zéro occurrence dans `lib/`** : une marche confirmée ne pouvait pas
+  atteindre une carte par la boucle. `produce` juge désormais le mouvement d'un beat contre le moteur
+  qui rendra (premier appelant de `beat-motion.ts`).
+  **Deux trous trouvés à l'exécution, tous deux entre les couches** : `assembleScrolly` refusait TOUTE
+  marche sur le track carte (la chaîne serait allée jusqu'à l'écriture du journaliste puis aurait
+  refusé d'assembler) ; et le brouillon lisait **deux colonnes que le rendu ne lit pas** (ancre en
+  colonne 0 au lieu de celle que la géographie a matchée ; valeur en dernière colonne numérique au lieu
+  de celle que le takeaway désigne — or ces nombres sont ce contre quoi `verifyBeats` fonde les
+  affirmations du journaliste).
+- **④ Câblage des trois genres** — **NON COMMENCÉ**, et il n'est pas un bloc. Mesuré dans le code le
+  2026-08-04 :
+  - **(a) La famille `stepped` existe, marche, est enregistrée — mais est INATTEIGNABLE.**
+    `MapScrolly.tsx` dispatche les 7 types, 3 compositions enregistrées ; `storyComps()`
+    (`skills/map-native/scripts/lib/story-comps.mjs`) ne retourne **jamais** `MapScrolly` — il ne
+    connaît que `*Story` (guided-tour) et `*Reveal` (simple). Un genre narratif entier que personne ne
+    peut demander. **Petit, et c'est la tranche la plus rentable de ④.**
+  - **(b) Les 7 `*Reveal` n'ont AUCUNE notion de récit** — `arcBeats` = 0 occurrence dans six d'entre
+    eux, et la seule de `RouteReveal` est un commentaire. C'est le vrai chantier.
+  - **(c) `cameraMode` par beat** — refactor, dépend de (b).
+  - **(d) Le lot route rétrécit** : `RouteScrolly.tsx` est déjà branché dans le dispatcher de
+    `MapScrolly`, donc **(a) le rend atteignable du même coup**. Restent `ScrollyRouteMap` (web) et
+    `RouteStory` (vidéo à étapes).
+
+**Rouges de `lib` au 2026-08-04, tous nommés et attribués** (aucun causé par ①②③) : `eligibility`
+(E5 — **une assertion fausse dans le test**, établi le 2026-08-04, ni environnement ni bug de rendu) ·
+`typology-drift` DRIFT 2 (E13 — 6 types scrolly-carte sans fiche KB) · `capture` ×2-3 (contention
+Playwright, **20/20 en isolation en 8 s**). ⚠️ Et les tests d'init d'un run **ne sont pas hermétiques** :
+ils lisent le `NEWSROOM-PROFILE.md` ambiant à la racine, donc ils rougissent chez la personne la plus
+susceptible de travailler sur la charte maison, en accusant son travail. **Pas encore au backlog.**
+
 ## ★★ CAP PRODUIT — décidé par Rémy le 2026-08-03 (LIS CECI AVANT DE PRIORISER QUOI QUE CE SOIT)
 
 **A. Le dépôt reste PRIVÉ pour l'instant, mais il sera rendu public.** Donc : **tout préparer pour que
