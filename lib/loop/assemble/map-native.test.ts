@@ -605,3 +605,31 @@ test("a symbol config carries the confirmed walk", () => {
     { region: "Jura", role: "payoff", text: "The Jura trails." },
   ]);
 });
+
+// SUB-PROJECT ④(c) — a beat's camera decision travels with it, all the way to the engine.
+// `cameraMode` stays the global default; this is how a journalist contradicts it beat by beat.
+it("threads a beat's camera decision into arcBeats, and omits it when there is none", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    beats: [
+      { region: "TCD", role: "establish" as const, text: "Chad starts lowest." },
+      {
+        region: "NER",
+        role: "build" as const,
+        text: "Niger is barely ahead.",
+        movement: "hold",
+      },
+    ],
+  });
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  expect((r.value as Record<string, unknown>).arcBeats).toEqual([
+    { region: "TCD", role: "establish", text: "Chad starts lowest." },
+    {
+      region: "NER",
+      role: "build",
+      text: "Niger is barely ahead.",
+      movement: "hold",
+    },
+  ]);
+});

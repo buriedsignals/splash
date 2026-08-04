@@ -85,7 +85,49 @@ distingue « l'ordre du journaliste a été honoré » de « la rampe a l'air or
 Cette inversion EST la preuve : ce qui apparaît, et dans quel ordre, vient de la marche que le
 journaliste a confirmée, pas de la saillance des données.
 
-## (c) `cameraMode` par beat — non commencé
+## (c) La décision de caméra descend au beat — FAIT
 
-Dépend de (b), qui est désormais complet : les cinq `*Reveal` qui peuvent lire une marche la
-lisent, donc il existe enfin un beat sur lequel poser un défaut de caméra.
+**Le problème** : `cameraMode` est un réglage **global**. « Survol guidé » ⇒ chaque étape
+repositionne la caméra ; « plan fixe » ⇒ aucune. Le journaliste ne pouvait pas dire *« ici, ne
+bouge pas »* sur une étape en particulier — alors que c'est exactement ce que demande la spec
+parapluie (§ 5 : le réglage global devient le **défaut**, contredit beat par beat).
+
+**Le mécanisme** : un beat porte `movement: "jump" | "hold"`. `hold` garde le cadre que l'étape
+précédente a laissé. Appliqué **à un seul endroit** — `applyMapArc` (`map-story.ts`), là où une
+étape de storyboard devient une étape de récit — donc les sept composants `Story` et les sept
+`stepped` en héritent sans une ligne chacun.
+
+**Le mot existait déjà** : `hold` est dans `CAMERA_GESTURES` depuis ①, déclaré sur `reveal` (la
+caméra fitBounds une fois et ne bouge plus). ④(c) l'**implémente** pour `story`/`stepped` puis le
+déclare — dans cet ordre, la règle de ①. Un mot, un sens, deux mécanismes.
+
+**Quatre refus, pour qu'aucune dérive ne soit silencieuse** :
+
+1. Un mot non implémenté (`fly` sur une vidéo) est refusé **au gate**, en nommant ce que le moteur
+   sait faire. Sans ça, une faute de frappe serait jetée au rendu et l'étape bougerait quand même.
+2. Un `hold` sur la **première** étape est refusé — il n'y a pas de cadre précédent à garder.
+   Refusé aux deux surfaces : au gate (là où ça sert au journaliste) et au rendu (défense en
+   profondeur).
+3. Une **suite** de `hold` reste sur le dernier cadre qui a **vraiment bougé**, pas sur le cadre
+   d'une étape qui tenait elle-même. (Premier jet : le commentaire décrivait ça, le code lisait le
+   beat brut. Le test l'a attrapé.)
+4. Un beat qui ne dit rien produit un rendu **identique à l'octet** à celui d'avant.
+
+### ⚠️ Ce qui est prouvé, et par quel instrument
+
+**Prouvé jusqu'au dérivateur** — `deriveSymbolStory` avec et sans `hold` : l'étape tenue reçoit
+exactement le cadre de la précédente, et tout le reste du beat est intact. C'est ce que le
+composant consomme : il transforme ce `camera` en solution MapLibre et y saute.
+
+**PAS démontré au rendu, et c'est une limite de l'instrument, pas une réserve sur le code.** Deux
+paires de vidéos ont été rendues (choroplèthe, symbole) sans réussir à **discriminer** :
+
+- un choroplèthe en mode `context` (le défaut) garde délibérément le cadre d'établissement autour
+  de chaque étape — toutes les étapes partagent déjà la même caméra, donc `hold` y est honoré mais
+  **inobservable**. C'est une propriété du type, à dire au journaliste ;
+- sur un symbole, la caméra reste sur la première étape jusqu'aux dernières fractions de seconde
+  du clip, donc aucune frame échantillonnée ne montrait le mouvement que `hold` supprime.
+
+Ce qui le montrerait : une marche à **deux** étapes sur un symbole, ou un clip allongé, avec des
+frames extraites du mp4 aux frontières d'étapes plutôt qu'au still de revue (frame 140, qui tombe
+dans le plan d'établissement).

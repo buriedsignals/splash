@@ -167,6 +167,9 @@ function arcBeatsFrom(brief: ProductionBrief): { arcBeats?: unknown[] } {
       region: b.region!,
       role: b.role,
       text: b.text,
+      // Threaded, never defaulted: an absent movement means "the global cameraMode decides",
+      // and writing a value here would silently promote a default into a decision.
+      ...(b.movement ? { movement: b.movement } : {}),
     })),
   };
 }

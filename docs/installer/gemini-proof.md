@@ -135,7 +135,7 @@ so we omit `contextFileName` entirely — no GEMINI.md, no dangling include.
 | Consent-gated activation blocks zero-terminal flow | ⏳ verify prompt count (interactive: non-blocking, expected) | Layer B |
 | Headless `-p` auto-activation | ⏳ verify (not on primary path) | Layer B |
 | Node 20+ runtime dependency (bootstrap.sh installs only Bun on macOS/Linux) | ⏳ document / decide | see below |
-| 9th skill (`image-native`) has no SKILL.md yet | ✅ self-correcting (helper globs `skills/*/`) | Layer A note |
+| 9th skill (`image-native`) has no SKILL.md yet | ⚠️ STALE since 2026-08-04 — it has one, and the helper now links only what carries one (E9) | Layer A note |
 
 **Node runtime dependency (macOS/Linux).** `gemini`'s bin has a `#!/usr/bin/env node` shebang and
 requires **Node ≥20** to *run*, even when installed via `bun add -g`. `bootstrap.sh` installs only

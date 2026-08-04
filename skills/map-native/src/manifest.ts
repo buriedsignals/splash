@@ -69,8 +69,16 @@ const CHOROPLETH_GESTURES: GestureVocabulary = {
   // where this base-fill wash is a real, config-reachable ramp (`resolveRevealMode`,
   // :159); cartogram/hex-grid's equivalent base layer only ever toggles between two
   // CONSTANTS (FULL_OPACITY / DIM_OPACITY), never ramps — so `appear` does NOT belong on
+// ★ `hold` on `story` and `stepped` (sub-project ④(c), 2026-08-04) — declared AFTER it was
+// implemented, which is this file's rule. A beat carrying `movement: "hold"` keeps the frame the
+// previous beat left it in: applyMapArc (map-story.ts) carries the previous RESOLVED camera
+// forward, at the single place an arc beat becomes a story beat, so every Story component and
+// every `stepped` component inherits it without a line of its own. `hold` was already declared on
+// `reveal`, where it means the same thing for a different reason (the camera is fitBounds'd once
+// and never moves again) — one word, one meaning, two mechanisms.
+
   // those two despite the identical-looking "branches on revealMode" comment shape.
-  story: ["jump", "draw", "stagger", "appear"],
+  story: ["jump", "hold", "draw", "stagger", "appear"],
   // ChoroplethScrolly.tsx (declaring `stepped`, renamed 2026-08-03): the base
   // `choropleth-fill` layer (:417-422) paints ONE shared `fillReveal*0.9` across every
   // data region each step — `appear`, not `stagger` (no `stagedByKey`/`stagedEntrance`/
@@ -85,7 +93,7 @@ const CHOROPLETH_GESTURES: GestureVocabulary = {
   // too. A 0→full size ramp on one subject is `grow` by definition (matches this
   // manifest's own "ribbon strokeWidth... widens... a real grow" precedent for
   // SankeyChart in chart-native's manifest).
-  stepped: ["jump", "appear", "grow"],
+  stepped: ["jump", "hold", "appear", "grow"],
   // ChoroplethReveal.tsx:249-269: `fill-opacity` ramps 0 → 0.85 via ONE shared
   // `easedRevealProgress` — no per-region offset, no highlight stroke of any kind in
   // this file.
@@ -99,7 +107,7 @@ const CARTOGRAM_GESTURES: GestureVocabulary = {
   // highlighted cell's fill-opacity is pinned to the CONSTANT FULL_OPACITY while every
   // other cell is pinned to the CONSTANT DIM_OPACITY; neither value ramps, so this
   // cleanly matches `highlight`'s "no ramp on the emphasised subject" test.
-  story: ["jump", "draw", "stagger", "highlight"],
+  story: ["jump", "hold", "draw", "stagger", "highlight"],
   // CartogramScrolly.tsx (declaring `stepped`, renamed 2026-08-03): cells `addLayer` at a
   // STATIC `fill-opacity: FULL_OPACITY` (:181) — no fade-from-zero anywhere, so no
   // `appear`. No `stagedByKey`/trail/`sliceBorder` (0 hits) — no `draw`, no `stagger`.
@@ -107,7 +115,7 @@ const CARTOGRAM_GESTURES: GestureVocabulary = {
   // FULL_OPACITY and ramps every OTHER cell's opacity down toward DIM_OPACITY via
   // `dimNow` — siblings dim, the emphasised subject itself never ramps: `highlight`,
   // cleanly.
-  stepped: ["jump", "highlight"],
+  stepped: ["jump", "hold", "highlight"],
   // CartogramReveal.tsx:82-88,208: `fill-opacity` ramps 0 → 0.85 via ONE shared
   // `easedRevealProgress` (`progress * 0.85`) — no per-cell offset.
   reveal: ["hold", "appear"],
@@ -117,13 +125,13 @@ const HEX_GRID_GESTURES: GestureVocabulary = {
   // HexGridStory.tsx: identical shape to CartogramStory — `stagedByKey` (:332) for the
   // per-subject border draw + fill bloom (draw + stagger); a real sibling-dim CONSTANT
   // toggle (:382-421, `beat.dim` + DIM_OPACITY, 3 hits) for `highlight`.
-  story: ["jump", "draw", "stagger", "highlight"],
+  story: ["jump", "hold", "draw", "stagger", "highlight"],
   // HexGridScrolly.tsx (declaring `stepped`, renamed 2026-08-03): identical shape to
   // CartogramScrolly — static `fill-opacity: FULL_OPACITY` at addLayer (no `appear`), 0
   // hits for staged/trail machinery (no `draw`, no `stagger`), and the per-step emphasis
   // (:265-280) pins the highlighted cell at the constant FULL_OPACITY while siblings ramp
   // down to DIM_OPACITY — `highlight`.
-  stepped: ["jump", "highlight"],
+  stepped: ["jump", "hold", "highlight"],
   // HexGridReveal.tsx:75-81,186: `fill-opacity` ramps 0 → 0.8 via ONE shared
   // `easedRevealProgress` — no per-cell offset.
   reveal: ["hold", "appear"],
@@ -139,14 +147,14 @@ const DOT_DENSITY_GESTURES: GestureVocabulary = {
   // dot layer's own circle-opacity, data-driven off the same staged entrance (`stagger`,
   // gestures.ts's own cited example for this exact file). Real sibling-dim CONSTANT
   // toggle for `highlight` (3 hits).
-  story: ["jump", "draw", "stagger", "highlight"],
+  story: ["jump", "hold", "draw", "stagger", "highlight"],
   // DotDensityScrolly.tsx (declaring `stepped`, renamed 2026-08-03): `circle-radius:
   // DOT_RADIUS_PX` is a fixed constant (no `grow`), `circle-opacity: 1` at addLayer (no
   // fade-from-zero, no `appear`), 0 hits for staged/trail machinery (no `draw`, no
   // `stagger`). The per-step emphasis (:303-323) pins the highlighted region's dots at
   // the CONSTANT 1 while siblings ramp down to DIM_OPACITY via `dimNow` — `highlight`,
   // cleanly, same shape as Cartogram/Hex-grid.
-  stepped: ["jump", "highlight"],
+  stepped: ["jump", "hold", "highlight"],
   // DotDensityReveal.tsx:84,182-195: `circle-opacity` ramps 0 → 1 via ONE shared
   // `progress`; `circle-radius` is the fixed DOT_RADIUS_PX (never value-scaled) — no
   // `grow`.
@@ -160,7 +168,7 @@ const SYMBOL_GESTURES: GestureVocabulary = {
   // mechanism anywhere in this file (0 hits for DIM_OPACITY/beat.dim/dimNow, matching
   // C3's finding) — the prior shared `POINT_ENTRANCE_BEAT` constant borrowed
   // LocatorStory's real highlight for this type too; Symbol has no such mechanism.
-  story: ["jump", "grow", "stagger"],
+  story: ["jump", "hold", "grow", "stagger"],
   // SymbolScrolly.tsx (declaring `stepped`, renamed 2026-08-03): `circle-radius = radius
   // * fillReveal` (:299-303) is ONE shared scalar applied to every symbol identically —
   // `grow` (uniform, not per-subject), same
@@ -180,7 +188,7 @@ const SYMBOL_GESTURES: GestureVocabulary = {
   // in" (:314-315) — a ramp on the emphasised subject, `grow` again (not `highlight`, by
   // the same exclusion rule applied to Choropleth above), already covered by the `grow`
   // entry.
-  stepped: ["jump", "grow", "appear"],
+  stepped: ["jump", "hold", "grow", "appear"],
   // SymbolReveal.tsx:225-231: `circle-radius = radius * progress` (grow) AND
   // `text-opacity = progress` (:169 starts opacity at 0, :231 ramps it by the SAME
   // shared `progress`) — a genuine `appear` (opacity 0→1, one shared scalar) alongside
@@ -197,7 +205,7 @@ const LOCATOR_GESTURES: GestureVocabulary = {
   // LocatorStory.tsx: `stagedEntrance` (imported :57, driving `__radius`, :410-436) —
   // grow (radius 0→full) gated per-subject (stagger). Real sibling-dim CONSTANT toggle
   // for `highlight` (4 hits, `beat.dim` + DIM_OPACITY, :338 `emphasise`).
-  story: ["jump", "grow", "stagger", "highlight"],
+  story: ["jump", "hold", "grow", "stagger", "highlight"],
   // LocatorScrolly.tsx (declaring `stepped`, renamed 2026-08-03): `circle-radius:
   // DOT_RADIUS_PX` is fixed (no primary-mark `grow`). The main glyph opacity is a STATIC
   // case expression set once at addLayer (:160-171, `__highlight ? 0.95 : DIM_OPACITY` —
@@ -209,7 +217,7 @@ const LOCATOR_GESTURES: GestureVocabulary = {
   // pattern as Symbol/Choropleth, present here ALONGSIDE the genuine highlight (unlike
   // Symbol, which has the ring but no sibling-dim, and unlike Cartogram, which has the
   // dim but no ring).
-  stepped: ["jump", "highlight", "grow"],
+  stepped: ["jump", "hold", "highlight", "grow"],
   // LocatorReveal.tsx:224-232: `circle-radius = DOT_RADIUS_PX * progress` (grow) AND
   // `circle-opacity`/`circle-stroke-opacity`/`text-opacity` all ramp by the SAME shared
   // `progress` (:229-232) — a genuine `appear` alongside the grow, matching the same
@@ -233,7 +241,7 @@ const ROUTE_GESTURES: GestureVocabulary = {
   // any step) — the border is not an additional `draw` source, already covered by the
   // line's own. Route has no browser-scrolly host either (MAP_SCROLLY_TYPES excludes
   // it, scrolly-types.ts) — `stepped` is its only step-driven kind.
-  stepped: ["jump", "draw", "stagger"],
+  stepped: ["jump", "hold", "draw", "stagger"],
   // RouteReveal.tsx:449-455: a continuous, non-beat camera push (zoom+pitch lerp by
   // frame progress) — `push`. The route line draws continuously through every crossed
   // territory (:540-573, `reveal` scalar) — `draw`. SEPARATELY, each territory's own

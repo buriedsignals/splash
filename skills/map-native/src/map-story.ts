@@ -97,7 +97,7 @@ export function applyMapArc(
   arcBeats: MapArcBeat[],
   resolve: (region: string) => MapArcAnchor | null,
 ): Beat[] {
-  return arcBeats.map((arcBeat) => {
+  const beats: Beat[] = arcBeats.map((arcBeat) => {
     const anchor = resolve(arcBeat.region);
     if (!anchor)
       throw new Error(
@@ -120,6 +120,37 @@ export function applyMapArc(
       authored: true,
     };
   });
+
+  // THE CAMERA HOLD — sub-project 4(c), applied HERE and nowhere else. This is the single place
+  // an arc beat becomes a story beat, so every Story component AND every `stepped` component
+  // inherits the behaviour without a line of its own: they all read the `camera` this function
+  // returns, turn it into a solution, and jump to it.
+  //
+  // A held beat takes the PREVIOUS beat's frame AFTER that one has itself been resolved, so a
+  // run of consecutive holds all sit on the last frame that actually moved, rather than each
+  // holding a frame that was itself a hold of something else.
+  const held: Beat[] = [];
+  beats.forEach((beat, i) => {
+    if (arcBeats[i]!.movement !== "hold") {
+      held.push(beat);
+      return;
+    }
+    if (i === 0)
+      // Refused rather than silently kept: a first beat has no previous frame to hold, and
+      // quietly giving it its own would make "hold" mean two different things depending on
+      // position — the ambiguity this codebase pays for later.
+      throw new Error(
+        `applyMapArc: the FIRST beat cannot hold the camera — there is no previous frame to ` +
+          `hold. Drop the "hold" movement on "${arcBeats[0]!.region}", or give the walk an ` +
+          `establishing beat before it`,
+      );
+    // From the RESOLVED previous beat, not the raw one — that is what makes a run of holds
+    // sit on the last frame that actually moved. Reading `beats[i - 1]` instead would give the
+    // second hold the frame of the first hold's own anchor, which is a frame the camera never
+    // visited.
+    held.push({ ...beat, camera: held[i - 1]!.camera });
+  });
+  return held;
 }
 
 // The choreography a reveal beat's camera follows. "context" (default) keeps the

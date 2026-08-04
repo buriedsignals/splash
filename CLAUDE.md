@@ -108,7 +108,7 @@ après avoir été traduite en **champ technique** la première fois.
   colonne 0 au lieu de celle que la géographie a matchée ; valeur en dernière colonne numérique au lieu
   de celle que le takeaway désigne — or ces nombres sont ce contre quoi `verifyBeats` fonde les
   affirmations du journaliste).
-- **④ Câblage des trois genres** — **(a) et (b) FAITS** (`6a4dcd31`), spec
+- **④ Câblage des trois genres** — **(a), (b) et (c) FAITS — le chantier storyboard est CLOS** (`6a4dcd31`), spec
   `2026-08-04-narrative-kinds-wiring-design.md`. **(c) non commencé.**
   - **(a) `stepped` est atteignable.** `MapScrolly` dispatchait déjà les 7 types et ses 3 aspects
     étaient enregistrés — mais `storyComps()` ne connaissait que `guided-tour`/`route-reveal`/
@@ -136,7 +136,23 @@ après avoir été traduite en **champ technique** la première fois.
     centrale se teintent ensemble ; avec, **seul le Royaume-Uni est en place** et la Norvège n'est
     pas entrée. L'inversion EST la preuve. **Refaite sur la famille symbole** (marche à contre-courant de la TAILLE : Amsterdam 52 en premier, London 296 hors marche — sans marche toutes les étiquettes sont là, avec, seul Amsterdam). mp4 `violations: []` des deux côtés. Hors gate (2 rendus MapTiler
     live), comme `verify-source-bundle.mjs`.
-  - **(c) `cameraMode` par beat** — non commencé.
+  - **(c) La décision de caméra descend au BEAT — FAIT.** `cameraMode` était un réglage global :
+    le journaliste ne pouvait pas dire « ici, ne bouge pas » sur UNE étape. Un beat porte désormais
+    `movement: "jump" | "hold"` ; un `hold` garde le cadre laissé par l'étape précédente. Appliqué
+    à **un seul endroit** (`applyMapArc`, là où une étape de storyboard devient une étape de récit)
+    donc les 7 `Story` + 7 `stepped` en héritent sans une ligne chacun. Le mot `hold` **existait
+    déjà** dans `CAMERA_GESTURES` (déclaré sur `reveal` depuis ①) — ④(c) l'implémente pour
+    story/stepped **puis** le déclare, dans cet ordre. Quatre refus : mot non implémenté refusé
+    **au gate** en nommant ce que le moteur sait faire · `hold` sur la 1ʳᵉ étape refusé (gate +
+    rendu) · une SUITE de holds reste sur le dernier cadre qui a vraiment bougé · un beat muet
+    rend à l'octet près comme avant.
+    ⚠️ **Prouvé jusqu'au dérivateur** (`deriveSymbolStory` ± hold, mutation-vérifié), **PAS
+    démontré au rendu** — et c'est une limite de l'instrument, écrite comme telle : un choroplèthe
+    en mode `context` garde le cadre d'établissement sur chaque étape (le hold y est honoré mais
+    **inobservable** — propriété du type, à dire au journaliste), et sur un symbole la caméra reste
+    sur l'étape 1 jusqu'aux dernières fractions de seconde. ★ **Le still de revue (frame 140) n'est
+    pas un instrument valable pour juger une décision de caméra tardive** — il tombe dans le plan
+    d'établissement ; extraire des frames du mp4 aux frontières d'étapes.
 
 **Rouges de `lib` au 2026-08-04, tous nommés et attribués** (aucun causé par ①②③) : `eligibility`
 (E5 — **une assertion fausse dans le test**, établi le 2026-08-04, ni environnement ni bug de rendu) ·
