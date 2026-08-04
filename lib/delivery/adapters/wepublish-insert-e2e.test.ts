@@ -423,3 +423,47 @@ test.skipIf(!RUN)(
   },
   120000,
 );
+
+test.skipIf(!RUN)(
+  "LIVE: a video is inserted as a player pointing at the hosted file",
+  async () => {
+    // The one format with no native home: no self-hosted mp4 block exists, so the article gets
+    // an HTML block carrying a <video> element aimed at wherever the newsroom serves the file.
+    const auth = await token();
+    const slug = `annemasse-video-${Date.now()}`;
+    await journalistArticle(auth, slug);
+
+    const result = await wepublishPublisher.publish({
+      artifactUrl: "https://splash.example.pages.dev/budget.mp4",
+      id: "budget",
+      format: "video",
+      metadata: {
+        title: "Le budget d'Annemasse",
+        altText: "Répartition du budget",
+        source: "Ville d'Annemasse",
+        credit: "Splash",
+        lang: "fr",
+      },
+      settings: {
+        endpoint: ENDPOINT,
+        targetArticleSlug: slug,
+        targetAfterBlock: "1",
+      },
+      credentials: {
+        SPLASH_WEPUBLISH_EMAIL: EMAIL,
+        SPLASH_WEPUBLISH_PASSWORD: PASSWORD,
+      },
+      outDir: mkdtempSync(join(tmpdir(), "splash-video-e2e-")),
+    } as PublishRequest);
+    if (!result.ok) throw new Error(`video insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(4);
+    const block = after.draft.blocks[2];
+    expect(block.__typename).toBe("HTMLBlock");
+    expect(block.html).toContain("<video");
+    expect(block.html).toContain("budget.mp4");
+    expect(after.publishedAt ?? null).toBeNull();
+  },
+  120000,
+);

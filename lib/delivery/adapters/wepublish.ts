@@ -27,7 +27,12 @@ import {
 } from "../../core/publishers";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
-import { buildBlockHtml, carriesMarker, carrierSlug } from "./wepublish-block";
+import {
+  buildBlockHtml,
+  buildVideoBlockHtml,
+  carriesMarker,
+  carrierSlug,
+} from "./wepublish-block";
 import {
   articleUpdateVariables,
   blockSelectionSet,
@@ -309,14 +314,20 @@ async function publish(
   if (!isSafeId(req.id))
     return fail("invalid-request", unsafeIdMessage(req.id));
 
-  // Step 3: read the artifact.
-  const file = artifactFileOf(req, "wepublish");
+  // Step 3: read the artifact — unless it is a video, which arrives as an ADDRESS. There is no
+  // self-hosted mp4 block in this CMS, so the bytes live wherever the newsroom publishes its
+  // files and the article points at them; demanding a local file here would refuse the only
+  // shape a video can legitimately have.
+  const isVideo = req.format === "video";
+  const file = isVideo
+    ? ok("")
+    : artifactFileOf(req, "wepublish");
   if (!file.ok) return file;
   // BYTES, not text. An interactive is markup and becomes a string a line below; a static PNG
   // is not valid UTF-8, and reading it as text corrupts it before anything else can go wrong.
   let bytes: Buffer;
   try {
-    bytes = readFileSync(file.value);
+    bytes = isVideo ? Buffer.alloc(0) : readFileSync(file.value);
   } catch (e) {
     return fail(
       "engine-failed",
@@ -325,6 +336,15 @@ async function publish(
   }
 
   const isStatic = req.format === "static";
+  // A video's deliverable is the address the newsroom already serves it from. Refused loudly
+  // rather than turned into a player with an empty src — a broken video in a live piece is
+  // worse than a refusal that says what to do.
+  if (isVideo && !(req.artifactUrl ?? "").trim())
+    return fail(
+      "invalid-request",
+      "wepublish: a video reaches a CMS article as a player pointing at a hosted file — this CMS has no self-hosted mp4 block. " +
+        "Publish the mp4 to the newsroom's own hosting first, then hand its URL over for insertion.",
+    );
   const height =
     typeof req.metadata.height === "number"
       ? req.metadata.height
@@ -333,7 +353,13 @@ async function publish(
   // needs a session and therefore happens after the login, in the insertion branch below.
   const blockHtml = isStatic
     ? ""
-    : buildBlockHtml({
+    : isVideo
+      ? buildVideoBlockHtml({
+          url: req.artifactUrl!,
+          id: req.id,
+          title: req.metadata.title,
+        })
+      : buildBlockHtml({
         document: bytes.toString("utf8"),
         id: req.id,
         title: req.metadata.title,
@@ -645,10 +671,11 @@ export const wepublishPublisher: Publisher = {
   // an external platform (YouTube, Vimeo, TikTok, Streamable…), `uploadDocument` stores a file
   // that no block renders, and there is no self-hosted mp4 block at all. An mp4 therefore
   // reaches a CMS article only as an embed of a URL somebody else hosts.
-  serves: ["interactive", "scrolly", "static"],
-  // BYTES. This adapter moves the deliverable itself, so it needs a file the run owns; a
-  // Datawrapper embed is already published elsewhere and there is nothing here to move.
-  sources: ["file"],
+  serves: ["interactive", "scrolly", "static", "video"],
+  // BYTES for the three formats that have a home here, and an ADDRESS for the one that does
+  // not: a video is inserted as a player pointing at a file the newsroom already serves, so its
+  // deliverable is legitimately a URL this run owns no bytes of.
+  sources: ["file", "hosted"],
   implemented: true,
   publish,
 };
