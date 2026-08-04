@@ -44,6 +44,9 @@ export const IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED =
 // `region`/`place` are widened here only so this type keeps compiling against the manifest's
 // anchor; suggestBeats itself still only ever emits "x"/"category" (chart-only) — a map beat's
 // region/place anchor is authored elsewhere (skills/map-native, Task 5's own migration).
+// Kept as a 4-arm discriminated union (a local convention already in place before this widening)
+// rather than one flat object with optional `lon`/`lat` on every kind, unlike GeographyRef's
+// flat-mirror style — both compile clean; this file continues what was already here.
 export type BeatAnchor =
   | { kind: "x"; value: string } // line: a value of the x column
   | { kind: "category"; value: string } // bar: a value of the category column

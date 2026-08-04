@@ -1506,6 +1506,20 @@ describe("the narrative slot", () => {
       }),
     ).not.toThrow();
   });
+
+  test("an anchor kind outside the closed set is still refused — the widening is not permissive", () => {
+    const m = scrollyRun();
+    const bogusBeat = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "bogus", value: "2019" },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [bogusBeat] } }],
+      }),
+    ).toThrow();
+  });
 });
 
 describe("routing a narrative page through its beats", () => {
