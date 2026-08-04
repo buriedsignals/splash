@@ -32,6 +32,10 @@ import { ARC_ROLES } from "../core/claim-arc";
 // by the routing below so the two cannot disagree, the same reason unauthoredBeats is imported
 // from nowhere else either.
 import { unresolvedGeoJoins } from "../geo/join";
+// The closed vocabulary of what an engine can make move (sub-project ①) — the beat's own
+// `movement`/`animation` fields draw from it below, so a beat can never name motion no engine
+// performs. See lib/core/gestures.ts's own header for the camera/data split.
+import { GESTURES, isCameraGesture } from "../core/gestures";
 // --- source policy (lib/source) ---
 import { SourceLedgerSchema } from "../source/kinds";
 import { assertSourceLedger } from "../source/policy";
@@ -188,14 +192,84 @@ const BeatSourceSchema = z.object({
   facts: z.record(z.string(), z.string()),
   shared: z.record(z.string(), z.string()),
 });
-const NarrativeBeatSchema = z.object({
-  id: z.string(),
-  anchor: z.object({ kind: z.enum(["x", "category"]), value: z.string() }),
-  role: z.enum(ARC_ROLES),
-  text: z.string(),
-  draftText: z.string(),
-  beatSource: BeatSourceSchema,
-});
+const NarrativeBeatSchema = z
+  .object({
+    id: z.string(),
+    // The anchor is what the beat is ABOUT, in the journalist's own words. Four kinds because
+    // the engines disagree about what a subject is: a chart anchors on an axis value or a
+    // category, a map on a region — and a hex-grid on a PLACE, because its cells do not exist
+    // until the data is binned, so there is no name to anchor on (skills/map-native's
+    // resolveHexGridArc). This is a WIDENING: "x" and "category" keep their exact meaning, so
+    // no existing beat changes sense. (The scrolly→stepped migration is the cautionary tale —
+    // when two values are both valid, a half-done reattribution lies silently.)
+    anchor: z.object({
+      kind: z.enum(["x", "category", "region", "place"]),
+      value: z.string(),
+      lon: z.number().optional(),
+      lat: z.number().optional(),
+    }),
+    role: z.enum(ARC_ROLES),
+    text: z.string(),
+    draftText: z.string(),
+    beatSource: BeatSourceSchema,
+    // What MOVES at this beat. Drawn from the closed vocabulary sub-project ① landed
+    // (lib/core/gestures.ts) so a beat can never name motion no engine performs.
+    //   movement  — how the frame arrives here from the previous beat
+    //   animation — what changes once the frame is held
+    //   durationMs — VIDEO only; a scrolly is advanced by the reader, not by time
+    // All three OPTIONAL: nothing writes them until the proposal step (③), and a v6 manifest
+    // carries none. A guard that required them would break every existing run.
+    movement: z.enum(GESTURES).optional(),
+    animation: z.enum(GESTURES).optional(),
+    durationMs: z.number().positive().optional(),
+  })
+  // The camera/data split gestures.ts's OWN header states as the reason it keeps the two
+  // families separate ("the split is what lets a caller refuse that without string-matching
+  // a name") was declared but never enforced: `movement`/`animation` above both draw from the
+  // SAME combined `GESTURES` list, so `movement: "grow"` (a data gesture masquerading as "how
+  // the frame arrives") and `animation: "fly"` (a camera gesture masquerading as "what changes
+  // once held") both parsed clean. `isCameraGesture` (gestures.ts) existed for exactly this
+  // check and had no caller anywhere in the codebase. `movement` is what CARRIES a beat to the
+  // next frame — a camera concept — so it is refused whenever it names a data gesture; a chart
+  // beat (no camera at all, gestures.ts's own header) therefore never sets `movement`, only
+  // `animation`. `animation` is what changes once the frame is held — refused whenever it
+  // names a camera gesture, the mirror rule.
+  .superRefine((beat, ctx) => {
+    if (beat.movement !== undefined && !isCameraGesture(beat.movement))
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["movement"],
+        message:
+          `movement "${beat.movement}" is a data gesture, not a camera one — movement is how ` +
+          `the frame ARRIVES here from the previous beat; use "animation" for what changes ` +
+          `once it is held`,
+      });
+    if (beat.animation !== undefined && isCameraGesture(beat.animation))
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["animation"],
+        message:
+          `animation "${beat.animation}" is a camera gesture, not a data one — animation is ` +
+          `what changes once the frame is HELD; use "movement" for how it arrives`,
+      });
+    // M4 (whole-branch review): `lon`/`lat` only mean anything on a "place" anchor
+    // (resolveHexGridArc resolves a hex-grid cell by point-in-polygon against them — the ONE
+    // anchor kind with no name to look up, this schema's own comment above) — "region" already
+    // resolves by name against the data's own join, and a chart's "x"/"category" is not spatial
+    // at all. Coordinates on any other kind are meaningless input a producer would either
+    // ignore (silently discarding what the journalist supplied) or misuse; refused here instead.
+    if (
+      (beat.anchor.lon !== undefined || beat.anchor.lat !== undefined) &&
+      beat.anchor.kind !== "place"
+    )
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["anchor"],
+        message:
+          `anchor.lon/anchor.lat only apply to a "place" anchor (a hex-grid cell, resolved by ` +
+          `coordinate) — a "${beat.anchor.kind}" anchor resolves by name and cannot carry them`,
+      });
+  });
 const NarrativeSchema = z.object({ beats: z.array(NarrativeBeatSchema) });
 
 // GeographyRef, GeoJoinLedger's shape hand-mirrored as zod (Task 9's own design call: the PLAIN
@@ -406,7 +480,17 @@ const RunElementSchema = z.object({
 // fail-loud guard against a missing featureIdsByValue then surfaces as an UNCAUGHT throw
 // instead of the catchable stale-schema/next-action path this file exists to provide. See
 // migrateV5toV6 (lib/loop/migrate.ts) for what the migration actually does.
-export const CURRENT_SCHEMA_VERSION = 6 as const;
+//
+// v7 (the unified beat model, sub-project ①/②): NarrativeBeatSchema's `anchor.kind` widens to
+// admit "region"/"place" and the beat gains three OPTIONAL motion fields (movement, animation,
+// durationMs). None of that forces a bump on shape alone either — a v6 manifest parses as v7
+// unchanged — but the bump is owed for the exact reason the v6 one was: without it, a v6
+// manifest reads as already-current and skips migrateV6toV7 entirely. That migration is a pure
+// passthrough today (nothing to rewrite, see its own comment), but the 5→6 crash is what this
+// bump is buying insurance against for the day a guard forgets a field is optional — the
+// version-diff check must fire so a future fix has a migration seam to land in, catchable
+// rather than an uncaught throw at a top-level await.
+export const CURRENT_SCHEMA_VERSION = 7 as const;
 
 export const RunManifestSchema = z.object({
   runId: z.string(),

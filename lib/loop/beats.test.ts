@@ -16,7 +16,7 @@ function runWith(csv = SEA_ICE, nativeType = "line") {
   writeFileSync(src, csv);
   const run: RunManifest = {
     runId: "t",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "article",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -238,7 +238,7 @@ describe("draftBeats — the image track", () => {
     writeFileSync(src, "note\nan image story has no data axis\n");
     const run: RunManifest = {
       runId: "t-image",
-      schemaVersion: 6,
+      schemaVersion: 7,
       route: "article",
       channel: "article-web",
       input: {

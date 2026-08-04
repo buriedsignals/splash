@@ -58,7 +58,7 @@ function makeRun(): { dir: string; run: RunManifest } {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "host-state",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },
@@ -286,7 +286,7 @@ function runWithAngle(
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "host-intent",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(dir, src, "data") },

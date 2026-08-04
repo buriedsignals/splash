@@ -4,13 +4,33 @@ import type { SourceKind } from "../../source";
 import { chosenOption, type RunManifest, type RunElement } from "../manifest";
 
 function beatsFor(el: RunElement): BriefBeat[] {
-  return (el.narrative?.beats ?? []).map((b) => ({
-    ...(b.anchor.kind === "x"
-      ? { x: b.anchor.value }
-      : { category: b.anchor.value }),
-    role: b.role,
-    text: b.text,
-  }));
+  return (el.narrative?.beats ?? []).map((b) => {
+    // BriefBeat carries exactly two anchor fields — `x` (a line's axis value) and
+    // `category` (a bar's category) — the two kinds the unified anchor had before this
+    // branch widened it (feat/unified-beat-model, "region"/"place" for a map). This
+    // branch made the wider kinds EXPRESSIBLE on a beat (lib/loop/manifest.ts's
+    // NarrativeBeatSchema) without making them REACHABLE (suggestBeats still only ever
+    // emits "x"/"category" — lib/brain/beats.ts's own comment on BeatAnchor) — but
+    // sub-project ③ is exactly what makes them reachable, and a binary
+    // `kind === "x" ? {x} : {category}` would then silently mislabel a region/place
+    // anchor as a chart `category`, the exact class of silent drift this codebase has
+    // already paid for once (the scrolly→stepped rename). BriefBeat has no field for
+    // either kind regardless, so there is no correct mapping to fall back on — refuse
+    // loud instead of guessing.
+    if (b.anchor.kind === "region" || b.anchor.kind === "place")
+      throw new Error(
+        `beatsFor: a "${b.anchor.kind}" anchor has no chart-track field to become — ` +
+          `BriefBeat only carries "x"/"category" (chart-native's own anchors); a ` +
+          `"${b.anchor.kind}" beat belongs on the map track, not this brief`,
+      );
+    return {
+      ...(b.anchor.kind === "x"
+        ? { x: b.anchor.value }
+        : { category: b.anchor.value }),
+      role: b.role,
+      text: b.text,
+    };
+  });
 }
 
 /**

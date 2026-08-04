@@ -49,7 +49,7 @@ const BINDING = hostedBindingDigest(HOSTED_URL, PIXELS);
 function base(): RunManifest {
   return {
     runId: "r-hosted",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },

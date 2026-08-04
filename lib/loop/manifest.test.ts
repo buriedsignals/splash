@@ -20,7 +20,7 @@ import { migrate } from "./migrate";
 function base(): RunManifest {
   return {
     runId: "r1",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
@@ -254,14 +254,14 @@ test("nextActions off-ramps ([]) when data supports no visual", () => {
 });
 
 test("parseManifest rejects a manifest missing elements", () => {
-  const bad = { runId: "r", schemaVersion: 6, input: {}, events: [] };
+  const bad = { runId: "r", schemaVersion: 7, input: {}, events: [] };
   expect(() => parseManifest(bad)).toThrow();
 });
 
 test("a stored proposal from before the capability axis still parses", () => {
   const raw = {
     runId: "r",
-    schemaVersion: 6,
+    schemaVersion: 7,
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
     elements: [
       {
@@ -279,7 +279,7 @@ test("a stored proposal from before the capability axis still parses", () => {
 describe("the delivery slot", () => {
   const base = (): RunManifest => ({
     runId: "r1",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
@@ -519,7 +519,7 @@ describe("the delivery slot", () => {
 test("v4 carries the route and the channel at run level", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -533,7 +533,7 @@ test("v4 carries the route and the channel at run level", () => {
 test("a proposal records what was discarded, with its reason", () => {
   const m = parseManifest({
     runId: "r",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -592,7 +592,7 @@ test("an unknown channel is refused", () => {
   expect(() =>
     parseManifest({
       runId: "r",
-      schemaVersion: 6,
+      schemaVersion: 7,
       route: "embed",
       channel: "billboard",
       input: {},
@@ -1449,6 +1449,195 @@ describe("the narrative slot", () => {
       }),
     ).not.toThrow();
   });
+
+  test("a beat can anchor on a region, and on a place with coordinates", () => {
+    const m = scrollyRun();
+    const regionBeat = {
+      ...AUTHORED_BEAT,
+      id: "beat-region",
+      anchor: { kind: "region" as const, value: "Genève" },
+    };
+    const placeBeat = {
+      ...AUTHORED_BEAT,
+      id: "beat-place",
+      // hex-grid is the one map type whose units do not exist until the data is binned, so its
+      // anchor is a name PLUS coordinates (skills/map-native's resolveHexGridArc).
+      anchor: {
+        kind: "place" as const,
+        value: "Lausanne",
+        lon: 6.63,
+        lat: 46.52,
+      },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [regionBeat] } }],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [placeBeat] } }],
+      }),
+    ).not.toThrow();
+  });
+
+  test("the two existing anchor kinds still parse unchanged", () => {
+    const m = scrollyRun();
+    const xBeat = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "x" as const, value: "2019" },
+    };
+    const categoryBeat = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "category" as const, value: "Vaud" },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [xBeat] } }],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [categoryBeat] } }],
+      }),
+    ).not.toThrow();
+  });
+
+  test("an anchor kind outside the closed set is still refused — the widening is not permissive", () => {
+    const m = scrollyRun();
+    const bogusBeat = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "bogus", value: "2019" },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [bogusBeat] } }],
+      }),
+    ).toThrow();
+  });
+
+  test("a beat may carry a movement, an animation and a duration — all optional", () => {
+    const m = scrollyRun();
+    // Optional: nothing writes these until sub-project ③, and a v6 manifest has none.
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [AUTHORED_BEAT] } },
+        ],
+      }),
+    ).not.toThrow();
+    const motionBeat = {
+      ...AUTHORED_BEAT,
+      movement: "fly" as const,
+      animation: "grow" as const,
+      durationMs: 2500,
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [motionBeat] } }],
+      }),
+    ).not.toThrow();
+  });
+
+  test("a movement outside the closed vocabulary is refused at the schema", () => {
+    const m = scrollyRun();
+    const bogusBeat = { ...AUTHORED_BEAT, movement: "zoom" };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [bogusBeat] } }],
+      }),
+    ).toThrow();
+  });
+
+  // M2 (whole-branch review): the closed vocabulary alone does not enforce the camera/data
+  // split gestures.ts's own header exists for — `movement`/`animation` both drew from the SAME
+  // combined GESTURES list, so a data gesture on `movement` and a camera gesture on
+  // `animation` both parsed clean.
+  test("a data gesture on movement is refused — movement is how the frame arrives (camera), not what changes once held", () => {
+    const m = scrollyRun();
+    const dataAsMovement = { ...AUTHORED_BEAT, movement: "grow" };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [dataAsMovement] } },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  test("a camera gesture on animation is refused — animation is what changes once the frame is held, not how it arrives", () => {
+    const m = scrollyRun();
+    const cameraAsAnimation = { ...AUTHORED_BEAT, animation: "fly" };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [cameraAsAnimation] } },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  test("a camera movement paired with a data animation on the same beat is accepted", () => {
+    const m = scrollyRun();
+    const wellFormed = {
+      ...AUTHORED_BEAT,
+      movement: "jump" as const,
+      animation: "highlight" as const,
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [wellFormed] } }],
+      }),
+    ).not.toThrow();
+  });
+
+  // M4 (whole-branch review): lon/lat only mean anything on a "place" anchor (the hex-grid
+  // case, resolved by coordinate) — a chart's "x"/"category" is not spatial at all.
+  test("lon/lat on a chart x anchor is refused — a chart anchor is not spatial", () => {
+    const m = scrollyRun();
+    const xWithCoords = {
+      ...AUTHORED_BEAT,
+      anchor: { kind: "x" as const, value: "2019", lon: 6.63, lat: 46.52 },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [{ ...m.elements[0]!, narrative: { beats: [xWithCoords] } }],
+      }),
+    ).toThrow();
+  });
+
+  test("lon/lat on a region anchor is refused — a region resolves by name, not by coordinate", () => {
+    const m = scrollyRun();
+    const regionWithCoords = {
+      ...AUTHORED_BEAT,
+      anchor: {
+        kind: "region" as const,
+        value: "Genève",
+        lon: 6.14,
+        lat: 46.2,
+      },
+    };
+    expect(() =>
+      parseManifest({
+        ...m,
+        elements: [
+          { ...m.elements[0]!, narrative: { beats: [regionWithCoords] } },
+        ],
+      }),
+    ).toThrow();
+  });
 });
 
 describe("routing a narrative page through its beats", () => {
@@ -1565,7 +1754,7 @@ describe("RunManifestSchema.lang — the run's own recorded language", () => {
 function baseManifestV5(overrides: Record<string, unknown> = {}) {
   return {
     runId: "r1",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "abc" } },

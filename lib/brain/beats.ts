@@ -38,9 +38,20 @@ export const IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED =
   "an image scrolly walks the journalist's own photographs, and none are declared with this " +
   "run — bring a photograph (with its alt text and credit) for each beat of the walk";
 
+// Hand-synced with NarrativeBeatSchema's anchor (lib/loop/manifest.ts) rather than built from
+// its z.infer, the same discipline GeographyRefSchema's plain-type twin already uses (that
+// schema's own comment) — this module has to stay importable without zod riding along.
+// `region`/`place` are widened here only so this type keeps compiling against the manifest's
+// anchor; suggestBeats itself still only ever emits "x"/"category" (chart-only) — a map beat's
+// region/place anchor is authored elsewhere (skills/map-native, Task 5's own migration).
+// Kept as a 4-arm discriminated union (a local convention already in place before this widening)
+// rather than one flat object with optional `lon`/`lat` on every kind, unlike GeographyRef's
+// flat-mirror style — both compile clean; this file continues what was already here.
 export type BeatAnchor =
   | { kind: "x"; value: string } // line: a value of the x column
-  | { kind: "category"; value: string }; // bar: a value of the category column
+  | { kind: "category"; value: string } // bar: a value of the category column
+  | { kind: "region"; value: string; lon?: number; lat?: number } // map: a named region
+  | { kind: "place"; value: string; lon?: number; lat?: number }; // hex-grid: a named place
 
 export type BeatSource = {
   /** The numbers THIS beat's claim may cite — its anchor and its value. */

@@ -9,7 +9,7 @@ import { parseManifest, type RunManifest, type FormOption } from "./manifest";
 function run(): RunManifest {
   return {
     runId: "r",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },
@@ -176,7 +176,7 @@ test("a refused offer is refused LOUD by phrasing — a refusal never travels as
 function proposedMapRun(): RunManifest {
   const m: RunManifest = {
     runId: "r",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data-abc.csv", sha256: "a".repeat(64) } },

@@ -24,7 +24,7 @@ function twoElementRun(): { run: RunManifest; runDir: string } {
   };
   const run: RunManifest = {
     runId: "r1",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

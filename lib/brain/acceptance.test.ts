@@ -51,7 +51,7 @@ function newRun(channel: RunManifest["channel"] = "article-web"): {
     dir,
     run: {
       runId: "e2e",
-      schemaVersion: 6,
+      schemaVersion: 7,
       route: "embed",
       channel,
       input: { data },

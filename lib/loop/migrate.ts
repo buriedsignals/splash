@@ -11,26 +11,32 @@ import {
   type RunElement,
 } from "./manifest";
 
-// The v2-through-v6 leg of the chain, and ONLY that leg: migrateV2toV3, migrateV3toV4,
-// migrateV4toV5 and migrateV5toV6 are pure object transforms — no filesystem access anywhere in
-// them. v1 is the odd one out (migrateV1toV2 calls freezeInput, which WRITES the frozen input
-// file into the run directory) and is deliberately excluded here, which is what lets a caller
-// that must not write — lib/host/state.ts's loadRun, read-only by promise — migrate a stale
-// manifest in memory without checking each step's purity itself. Returns undefined for a v1
-// manifest, a manifest already current, or a version this build does not know, so a caller can
-// tell "migrated" apart from "nothing to do here" without inspecting `schemaVersion` a second
-// time.
+// The v2-through-v7 leg of the chain, and ONLY that leg: migrateV2toV3, migrateV3toV4,
+// migrateV4toV5, migrateV5toV6 and migrateV6toV7 are pure object transforms — no filesystem
+// access anywhere in them. v1 is the odd one out (migrateV1toV2 calls freezeInput, which WRITES
+// the frozen input file into the run directory) and is deliberately excluded here, which is what
+// lets a caller that must not write — lib/host/state.ts's loadRun, read-only by promise —
+// migrate a stale manifest in memory without checking each step's purity itself. Returns
+// undefined for a v1 manifest, a manifest already current, or a version this build does not
+// know, so a caller can tell "migrated" apart from "nothing to do here" without inspecting
+// `schemaVersion` a second time.
 export function migrateWriteFree(raw: unknown): RunManifest | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const obj = raw as { schemaVersion?: number };
-  if (obj.schemaVersion === 5) return parseManifest(migrateV5toV6(raw));
+  if (obj.schemaVersion === 6) return parseManifest(migrateV6toV7(raw));
+  if (obj.schemaVersion === 5)
+    return parseManifest(migrateV6toV7(migrateV5toV6(raw)));
   if (obj.schemaVersion === 4)
-    return parseManifest(migrateV5toV6(migrateV4toV5(raw)));
+    return parseManifest(migrateV6toV7(migrateV5toV6(migrateV4toV5(raw))));
   if (obj.schemaVersion === 3)
-    return parseManifest(migrateV5toV6(migrateV4toV5(migrateV3toV4(raw))));
+    return parseManifest(
+      migrateV6toV7(migrateV5toV6(migrateV4toV5(migrateV3toV4(raw)))),
+    );
   if (obj.schemaVersion === 2)
     return parseManifest(
-      migrateV5toV6(migrateV4toV5(migrateV3toV4(migrateV2toV3(raw)))),
+      migrateV6toV7(
+        migrateV5toV6(migrateV4toV5(migrateV3toV4(migrateV2toV3(raw)))),
+      ),
     );
   return undefined;
 }
@@ -40,8 +46,9 @@ export function migrateWriteFree(raw: unknown): RunManifest | undefined {
 // v3 drops the dormant, unconvertible v2 delivery slot; v4 adds the run's route and channel
 // and the proposal's excluded list; v5 widens `orient.geo.basemap` into a GeographyRef and adds
 // `input.geography`/`orient.geoJoin` (geography-anywhere, D10); v6 drops a v5 admin-1 geography
-// match that predates GeoMatch.featureIdsByValue (see migrateV5toV6's own comment). v1 chains
-// through v2, v3, v4 and v5 to v6.
+// match that predates GeoMatch.featureIdsByValue (see migrateV5toV6's own comment); v7 widens
+// the beat's anchor and adds three optional motion fields — nothing to rewrite, see
+// migrateV6toV7's own comment. v1 chains through v2, v3, v4, v5 and v6 to v7.
 export function migrate(raw: unknown, runDir: string): RunManifest {
   if (!raw || typeof raw !== "object")
     throw new Error("migrate: manifest is not an object");
@@ -56,12 +63,29 @@ export function migrate(raw: unknown, runDir: string): RunManifest {
   if (obj.schemaVersion !== 1)
     throw new Error(`migrate: unsupported schemaVersion ${obj.schemaVersion}`);
   return parseManifest(
-    migrateV5toV6(
-      migrateV4toV5(
-        migrateV3toV4(migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir))),
+    migrateV6toV7(
+      migrateV5toV6(
+        migrateV4toV5(
+          migrateV3toV4(
+            migrateV2toV3(migrateV1toV2(raw as V1Manifest, runDir)),
+          ),
+        ),
       ),
     ),
   );
+}
+
+/** v6 → v7: the beat gained a wider anchor (region/place, alongside x/category) and three
+ *  optional motion fields (movement, animation, durationMs — sub-project ① and ②'s own work).
+ *  NOTHING in a v6 manifest becomes invalid: the anchor widening keeps "x" and "category"
+ *  meaning exactly what they meant, and every new field is optional, so this migration only
+ *  stamps the version. Written as a pure passthrough on purpose — a migration that rewrites
+ *  data it does not have to rewrite is a migration that can corrupt it, the same discipline
+ *  migrateV3toV4/migrateV4toV5 already hold for a widening. Total: no branch on `elements`,
+ *  `narrative` or `beats` shape at all, so a run with no narrative, a chart-only run, a map
+ *  run and an image run all pass through identically (migrate.test.ts pins the five shapes). */
+export function migrateV6toV7(raw: unknown): unknown {
+  return { ...(raw as object), schemaVersion: 7 };
 }
 
 // A delivery record whose package was written under the PRE-FIX layout (`elements/<id>/…`,

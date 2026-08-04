@@ -67,7 +67,7 @@ test("full loop: orient → (human) → propose → (human) → produce → revi
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
     runId: "e2e",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -168,7 +168,7 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
     runId: "handoff",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -273,7 +273,7 @@ test("advance() records a produce failure as a bounded event without advancing s
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "broken",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -336,7 +336,7 @@ test("advance() records a MISSING FROZEN INPUT as a bounded failure, never a thr
   const frozen = freezeInput(runDir, src, "data");
   const run: RunManifest = {
     runId: "missing-input",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: frozen },
@@ -394,7 +394,7 @@ function makeRunMissingFrozenInput(): { run: RunManifest; runDir: string } {
   return {
     run: {
       runId: "missing-input",
-      schemaVersion: 6,
+      schemaVersion: 7,
       route: "embed",
       channel: "article-web",
       input: { data },
@@ -425,7 +425,7 @@ test("a run with no elements orients without throwing, and its failure event car
   const after = await advance(
     {
       runId: "no-elements",
-      schemaVersion: 6,
+      schemaVersion: 7,
       route: "embed",
       channel: "article-web",
       input: {},
@@ -457,7 +457,7 @@ test("advance() builds a proposal annotated against a decor, and never throws do
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "default-decor",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -532,7 +532,7 @@ test("advance() persists the brain's refusal on the element when the requested f
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "refusal",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "social-vertical", // allows only static/video (lib/core/channel-policy.ts)
     input: { data: freezeInput(runDir, src, "data") },
@@ -589,7 +589,7 @@ test("a channel-legal requested scrolly format is offered unstranded, and starts
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
     runId: "scrolly-request",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web", // scrolly IS allowed on this channel
     input: { data: freezeInput(runDir, src, "data") },
@@ -651,7 +651,7 @@ test("the element-driven branches never dereference a missing element", async ()
   const runDir = mkdtempSync(join(tmpdir(), "loop-no-elements-2-"));
   const oriented: RunManifest = {
     runId: "no-elements-oriented",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -679,7 +679,7 @@ function deliverableRun(runDir: string): {
   writeFileSync(join(runDir, "elements", "e1", "static.png"), "not-a-real-png");
   const base: RunManifest = {
     runId: "deliver-branch",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: { path: "input/data.csv", sha256: "abc" } },
@@ -787,7 +787,7 @@ test("advanceStep names the deterministic step it ran", async () => {
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "step",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -813,7 +813,7 @@ test("advanceStep reports a human turn as nothing run, leaving the manifest unto
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "human",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -846,7 +846,7 @@ test("advanceStep reports an off-ramp — nothing valid to do — as nothing run
   const runDir = mkdtempSync(join(tmpdir(), "loop-step-offramp-"));
   const run: RunManifest = {
     runId: "offramp",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -869,7 +869,7 @@ test("advanceStep surfaces a refused step with the very message it recorded as a
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "refused",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -930,7 +930,7 @@ test("advance() is exactly advanceStep's manifest — the wrapper adds nothing",
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "wrapper",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -1002,7 +1002,7 @@ test("advance() carries capture then review on the road to a requested delivery"
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   let run: RunManifest = {
     runId: "verify-chain",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -1115,7 +1115,7 @@ function scrollyAwaitingItsWalk(runDir: string): RunManifest {
   );
   return {
     runId: "d-draft-beats",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -1219,7 +1219,7 @@ test("author-beats is a human turn — the driver runs nothing and changes nothi
   writeFileSync(src, "canton,2015,2024\nGenève,449,583\nVaud,412,531");
   const run: RunManifest = {
     runId: "d-beats",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "article",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },
@@ -1293,7 +1293,7 @@ test("author-beats is a human turn — the driver runs nothing and changes nothi
 function strandedOnUnbuildableChoice(): RunManifest {
   return {
     runId: "dead-end",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: {},
@@ -1398,7 +1398,7 @@ test("a refusal that repeats identically is one ledger entry, not one per turn",
   const frozen = freezeInput(runDir, src, "data");
   const run: RunManifest = {
     runId: "repeat-refusal",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: frozen },

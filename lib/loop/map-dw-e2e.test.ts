@@ -108,7 +108,7 @@ function runFor(runDir: string, format: "static" | "interactive"): RunManifest {
   writeFileSync(src, ACCESS_CSV);
   return {
     runId: "map-dw-e2e",
-    schemaVersion: 6,
+    schemaVersion: 7,
     route: "embed",
     channel: "article-web",
     input: { data: freezeInput(runDir, src, "data") },

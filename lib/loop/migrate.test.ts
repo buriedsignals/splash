@@ -2,13 +2,20 @@ import { test, expect, it, describe } from "bun:test";
 import { mkdtempSync, existsSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { migrate, migrateWriteFree, materializeDeliverables } from "./migrate";
+import {
+  migrate,
+  migrateWriteFree,
+  migrateV6toV7,
+  materializeDeliverables,
+} from "./migrate";
 import {
   parseManifest,
   channelForElement,
   provenanceHash,
   nextActions,
+  readManifest,
 } from "./manifest";
+import { freezeInput } from "./freeze";
 
 const v1 = {
   runId: "r1",
@@ -37,7 +44,7 @@ test("migrate upgrades a v1 manifest to a valid current-schema manifest", () => 
   const runDir = mkdtempSync(join(tmpdir(), "loop-mig-"));
   const m = migrate(v1, runDir);
   expect(() => parseManifest(m)).not.toThrow();
-  expect(m.schemaVersion).toBe(6);
+  expect(m.schemaVersion).toBe(7);
 });
 
 test("migrate freezes the v1 inline dataCsv into the run dir", () => {
@@ -92,7 +99,7 @@ it("should drop the dormant v2 delivery slot rather than carry an unconvertible 
   };
   writeFileSync(join(dir, "input.csv"), "a\n1\n");
   const out = migrate(v2, dir);
-  expect(out.schemaVersion).toBe(6);
+  expect(out.schemaVersion).toBe(7);
   expect(out.elements[0]!.delivery).toBeUndefined();
   rmSync(dir, { recursive: true, force: true });
 });
@@ -107,7 +114,7 @@ test("a v3 manifest migrates through v4 to the current schema, with the embed ro
     events: [],
   };
   const m = migrate(v3, dir);
-  expect(m.schemaVersion).toBe(6);
+  expect(m.schemaVersion).toBe(7);
   expect(m.route).toBe("embed");
   expect(m.channel).toBe("article-web");
   expect(m.elements[0].proposal!.excluded).toEqual([]);
@@ -115,13 +122,13 @@ test("a v3 manifest migrates through v4 to the current schema, with the embed ro
 
 // --- issue #1: making an implicit single channel explicit, without changing what it means ---
 // legacyRun is a CURRENT-schema fixture (fed straight to parseManifest, never migrate()), not a
-// v4-shaped one — its name predates schemaVersion 5 (and now 6) and refers to the run's
+// v4-shaped one — its name predates schemaVersion 5, 6 (and now 7) and refers to the run's
 // implicit channel, not to any past schema version.
 const legacyRun = (
   channel: "article-web" | "social-vertical" | "social-feed",
 ) => ({
   runId: "r9",
-  schemaVersion: 6 as const,
+  schemaVersion: 7 as const,
   route: "embed" as const,
   channel,
   input: { data: { path: "input/data.csv", sha256: "a".repeat(64) } },
@@ -215,7 +222,7 @@ describe("migrateV4toV5", () => {
       events: [],
     };
     const migrated = migrate(v4, "/tmp/does-not-matter");
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(migrated.orient?.geo?.geography).toEqual({
       origin: "shipped",
       set: "natural-earth-admin-0",
@@ -253,7 +260,7 @@ describe("migrateV4toV5", () => {
     expect(migrated.orient?.geo?.geography.set).toBe("us-states");
   });
 
-  it("passes through a v4 manifest with no orient.geo at all, unaltered but at v6", () => {
+  it("passes through a v4 manifest with no orient.geo at all, unaltered but at v7", () => {
     const v4 = {
       runId: "r1",
       schemaVersion: 4,
@@ -264,7 +271,7 @@ describe("migrateV4toV5", () => {
       events: [],
     };
     const migrated = migrate(v4, "/tmp/does-not-matter");
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(migrated.orient).toBeUndefined();
   });
 });
@@ -316,10 +323,10 @@ describe("migrateV5toV6 — the accent-normalization join fix's own migration (T
     events: [],
   };
 
-  it("drops orient entirely for a stale v5 admin-1 match — parses clean, at v6, orient gone", () => {
+  it("drops orient entirely for a stale v5 admin-1 match — parses clean, at v7, orient gone", () => {
     const migrated = migrate(staleAdm1V5, "/tmp/does-not-matter");
     expect(() => parseManifest(migrated)).not.toThrow();
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(migrated.orient).toBeUndefined();
   });
 
@@ -349,7 +356,7 @@ describe("migrateV5toV6 — the accent-normalization join fix's own migration (T
       },
     };
     const migrated = migrate(freshAdm1V5, "/tmp/does-not-matter");
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(migrated.orient).toBeDefined();
     expect(
       (migrated.orient as { geo?: { featureIdsByValue?: unknown } }).geo
@@ -378,14 +385,147 @@ describe("migrateV5toV6 — the accent-normalization join fix's own migration (T
       },
     };
     const migrated = migrate(worldV5, "/tmp/does-not-matter");
-    expect(migrated.schemaVersion).toBe(6);
+    expect(migrated.schemaVersion).toBe(7);
     expect(migrated.orient).toBeDefined();
   });
 
   it("migrateWriteFree (the read-only state/next path) drops the same stale match in memory, with no write", () => {
     const migrated = migrateWriteFree(staleAdm1V5);
     expect(migrated).toBeDefined();
-    expect(migrated!.schemaVersion).toBe(6);
+    expect(migrated!.schemaVersion).toBe(7);
     expect(migrated!.orient).toBeUndefined();
+  });
+});
+
+describe("migrateV6toV7 — the unified beat model's own migration (sub-project ①/②)", () => {
+  test("migrateV6toV7 is total: it alters no run that carries no beats", () => {
+    const noOrient = { schemaVersion: 6, elements: [] };
+    expect(migrateV6toV7(noOrient)).toEqual({ ...noOrient, schemaVersion: 7 });
+  });
+
+  test("a v6 run WITH beats keeps every beat byte-identical", () => {
+    const withBeats = {
+      schemaVersion: 6,
+      elements: [
+        {
+          id: "e1",
+          narrative: {
+            beats: [
+              {
+                id: "b1",
+                anchor: { kind: "x", value: "2019" },
+                role: "establish",
+                text: "t",
+                draftText: "d",
+                beatSource: { facts: {}, shared: {} },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    // The three new fields are OPTIONAL — migration adds nothing, it only stamps the version.
+    expect(migrateV6toV7(withBeats)).toEqual({
+      ...withBeats,
+      schemaVersion: 7,
+    });
+  });
+
+  test("a chart-only run, a map run and an image run all pass through unaltered", () => {
+    for (const el of [
+      { id: "c", producer: "chart-native" },
+      { id: "m", producer: "map-native" },
+      { id: "i", producer: "image-native" },
+    ]) {
+      const run = { schemaVersion: 6, elements: [el] };
+      expect(migrateV6toV7(run)).toEqual({ ...run, schemaVersion: 7 });
+    }
+  });
+
+  test("the chain v4 → v5 → v6 → v7 composes", () => {
+    const v4 = {
+      runId: "r1",
+      schemaVersion: 4,
+      route: "embed",
+      channel: "article-web",
+      input: {},
+      elements: [],
+      events: [],
+    };
+    const out = migrate(v4, "/tmp/does-not-matter");
+    expect(out.schemaVersion).toBe(7);
+  });
+
+  // The three tests above call migrateV6toV7 DIRECTLY — nothing proves the v6 entry branch of
+  // migrateWriteFree/migrate is actually wired up. This is the seam that let 5→6 crash a
+  // producer (a stale manifest read as "already current" and never reached its migration): a
+  // raw v6 run.json, on disk, read the way a resuming host process actually reads one.
+  //
+  // M1 (whole-branch review): this fixture used to carry NO `narrative` at all, so the ONLY
+  // place a v6 beat's shape was ever asserted was "a v6 run WITH beats keeps every beat
+  // byte-identical" above — which calls migrateV6toV7 directly and asserts
+  // `toEqual({...withBeats, schemaVersion: 7})` against an implementation that IS
+  // `return {...raw, schemaVersion: 7}`. That assertion restates the implementation; it
+  // cannot redden for any beat shape. The two v6-beat tests never intersected, so nothing in
+  // the repository proved a beat with a populated `beatSource` survives the REAL entry
+  // (readManifest → migrate → parseManifest, which also validates against
+  // NarrativeBeatSchema — a check the direct-call tests never exercise at all). Added here
+  // instead of only widening the direct-call fixture, because this is the path a resuming
+  // host process actually takes.
+  test("a v6 run.json on disk resumes through readManifest — the real entry, not migrateV6toV7 called directly", () => {
+    const runDir = mkdtempSync(join(tmpdir(), "loop-mig-v6-resume-"));
+    const src = join(runDir, "src.csv");
+    writeFileSync(src, "canton,2015,2024\nGenève,449,583");
+    const data = freezeInput(runDir, src, "data");
+    const beats = [
+      {
+        id: "b1",
+        anchor: { kind: "x", value: "2015" },
+        role: "establish",
+        text: "Genève held steady",
+        draftText: "Genève — 449",
+        beatSource: {
+          facts: { x: "2015", value: "449" },
+          shared: { points: "2", first: "449", last: "583" },
+        },
+      },
+    ];
+    const v6 = {
+      runId: "r-v6",
+      schemaVersion: 6,
+      route: "embed",
+      channel: "article-web",
+      input: { data },
+      orient: {
+        profile: {
+          columns: ["canton", "2015", "2024"],
+          numericColumns: ["2015", "2024"],
+          rowCount: 1,
+        },
+        supportsPoint: true,
+      },
+      elements: [
+        {
+          id: "e1",
+          angle: { confirmedTakeaway: "t", altInsight: "a", unit: "CHF" },
+          proposal: {
+            options: [{ id: "slope", nativeType: "slope", why: "w" }],
+            excluded: [],
+            chosenId: "slope",
+          },
+          narrative: { beats },
+        },
+      ],
+      events: [],
+    };
+    const manifestPath = join(runDir, "run.json");
+    writeFileSync(manifestPath, JSON.stringify(v6, null, 2));
+    const run = readManifest(manifestPath, runDir);
+    expect(run.schemaVersion).toBe(7);
+    expect(nextActions(run)).toEqual(["produce"]);
+    // The actual M1 proof: a v6 beat with a populated beatSource, round-tripped through the
+    // real resume path, comes back byte-identical — not just "the version stamp changed".
+    expect(run.elements[0]!.narrative?.beats).toEqual(beats);
+    rmSync(runDir, { recursive: true, force: true });
   });
 });
