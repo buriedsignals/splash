@@ -848,6 +848,11 @@ export function nextActionsForElement(
   // track), so `draft-beats` IS reachable through this function: a chosen chart-track scrolly
   // with no narrative yet lands here, not on "choose-form".
   //
+  // GATED ON (TRACK, FORMAT) TOGETHER — sub-project ③ moved the format half INTO canDraftBeats
+  // rather than leaving a `format === "scrolly"` here: the two halves disagreed once already
+  // (see below), and the answer to "can a walk be proposed for this?" now genuinely depends on
+  // both. A map is proposable in scrolly AND video; a chart only in scrolly, until ④.
+  //
   // GATED ON THE TRACK, not on the format alone — and the gate is `canDraftBeats`, the drafter's
   // OWN answer (lib/brain/beats.ts), never a second list here. Format alone was a silent dead
   // end: a map scrolly and an image scrolly were both routed to `draft-beats`, `draftBeats`
@@ -860,9 +865,8 @@ export function nextActionsForElement(
   // The `author-beats` line below is NOT format-gated for the same honesty: whatever created a
   // plan, an unwritten one must not reach produce.
   if (
-    chosen?.format === "scrolly" &&
     !el.narrative &&
-    canDraftBeats(chosen.nativeType ?? "")
+    canDraftBeats(chosen?.nativeType ?? "", chosen?.format ?? "")
   )
     return ["draft-beats"];
   if (unauthoredBeats(el).length > 0) return ["author-beats"];

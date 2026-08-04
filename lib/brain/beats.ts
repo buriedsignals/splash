@@ -147,8 +147,24 @@ function drafts(nativeType: string): boolean {
  * this predicate and the table's `supports` read the SAME engine list — a type the loop offers
  * as a scrolly and cannot draft a walk for would strand a run all over again.
  */
-export function canDraftBeats(nativeType: string): boolean {
-  return BEAT_TYPES.has(nativeType) || nativeType === IMAGE_SCROLLY_TYPE;
+export function canDraftBeats(nativeType: string, format: string): boolean {
+  // THE CHART AND IMAGE TRACKS — `scrolly` only, and the exclusion of `video` is DELIBERATE.
+  // chart-native's seven `*Reveal` components do not read a beat plan at all (the measured
+  // inventory, docs/splash/gesture-inventory-2026-08-03.md §4). Routing a chart video here would
+  // draft a walk, block production until the journalist wrote every claim, and then render
+  // something that ignores every word of it — worse than not proposing. Sub-project ④ is what
+  // makes those components honour a walk; the day it does, `video` joins this line.
+  if (BEAT_TYPES.has(nativeType) || nativeType === IMAGE_SCROLLY_TYPE)
+    return format === "scrolly";
+  // THE MAP TRACK — sub-project ③. Both narrative formats, because both honour a walk TODAY:
+  // the browser scrolly reads `arcBeats` (skills/scrolly/src/ScrollyMap.tsx:73,223) and the
+  // video's `story` family walks the beats (gesture-inventory §1). A map's `static` and
+  // `interactive` render a different component family with no notion of a beat at all
+  // (`narrativeKindFor` resolves them to `undefined`), so they are absent here rather than
+  // refused later.
+  if (MAP_BEAT_TYPES.has(nativeType))
+    return format === "scrolly" || format === "video";
+  return false;
 }
 
 /** A claim-arc needs establish + at least one build + payoff. Fewer anchors than this is not a

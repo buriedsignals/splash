@@ -461,6 +461,71 @@ test("a chosen chart-track scrolly option is carried past the buildability gate,
   expect(result.message).toContain("beat-1");
 });
 
+// SUB-PROJECT ③ — the storyboard's third function: what is asked for must FIT what we know how
+// to produce. The first caller of lib/core/beat-motion.ts; before this, a beat could claim any
+// gesture at all and the run would only find out by rendering something diminished.
+test("produce refuses a beat that claims movement its engine cannot render, and names the alternative", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-motion-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "year,rent\n2015,449\n2020,512\n2024,583");
+  const run: RunManifest = {
+    runId: "t-motion",
+    schemaVersion: 7,
+    route: "embed",
+    channel: "article-web",
+    input: { data: { path: "src.csv", sha256: "x" } },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Rents climbed through the decade",
+          altInsight: "A line rising from 449 to 583",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "line",
+              nativeType: "line",
+              engine: "chart-native",
+              format: "scrolly",
+              why: "a trend over time",
+            },
+          ],
+          excluded: [],
+          chosenId: "line",
+        },
+        narrative: {
+          beats: [
+            {
+              id: "beat-1",
+              anchor: { kind: "x", value: "2015" },
+              role: "establish",
+              // WRITTEN, so the unwritten-beat guard above is cleared and this one is what
+              // answers — otherwise the test would pass for the wrong reason.
+              text: "Rents were already high in 2015.",
+              draftText: "2015 — 449",
+              beatSource: { facts: { x: "2015", value: "449" }, shared: {} },
+              // A CAMERA gesture on a chart. A chart has no camera at all — this is the
+              // clearest case of a walk promising something no component implements.
+              movement: "fly",
+            },
+          ],
+        },
+      },
+    ],
+    events: [],
+  } as unknown as RunManifest;
+  const result = await produce(run, run.elements[0]!, runDir);
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error("unreachable");
+  expect(result.code).toBe("invalid-request");
+  expect(result.message).toContain("beat-1");
+  expect(result.message).toContain("fly");
+  // The refusal is a door, not a wall: it says what this type DOES declare.
+  expect(result.message).toMatch(/declares/);
+});
+
 // --- the declared source is the credit ---------------------------------------------------
 //
 // produce.ts used to assemble `source: { name: "Provided by the newsroom" }` — a hard-coded
