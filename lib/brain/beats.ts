@@ -116,6 +116,12 @@ export type SuggestBeatsInput = {
    *  are still strings the data carries. Absent on the chart track, where the first column is
    *  the axis by construction (the shape chart-native itself reads). */
   keyColumn?: string;
+  /** WHICH column the beat's value is read from. The map track resolves this the way its own
+   *  assembler does (`valueFieldFor`, from the confirmed takeaway) rather than taking the last
+   *  numeric column: a draft citing a number the map will not render would ground the
+   *  journalist's claims against a column the reader never sees. Absent on the chart track,
+   *  where the engine renders the last numeric column — which is what this already picked. */
+  valueColumn?: string;
 };
 
 // The engine's beats override supports line and bar only (skills/chart-native/src/chart-story.ts,
@@ -281,7 +287,14 @@ export function suggestBeats(input: SuggestBeatsInput): BeatDraft {
       beats: [],
       refusal: "the data has no columns to anchor a beat on",
     };
-  const valueCol = numericColumns[numericColumns.length - 1];
+  if (input.valueColumn && !numericColumns.includes(input.valueColumn))
+    return {
+      beats: [],
+      refusal:
+        `the value column "${input.valueColumn}" is not a numeric column of the data — ` +
+        `numeric columns: ${numericColumns.join(", ") || "none"}`,
+    };
+  const valueCol = input.valueColumn ?? numericColumns[numericColumns.length - 1];
   if (!valueCol)
     return {
       beats: [],

@@ -28,6 +28,8 @@ import {
 import { IMAGE_SCROLLY_TYPE } from "../../skills/image-native/src/image-story";
 import { verifyBeats, type AuthoredBeat } from "../brain/verify-beats";
 import { chosenOption, type RunManifest, type RunElement } from "./manifest";
+import { valueFieldFor } from "./assemble/map-native";
+import { parseCsvRows } from "./profile";
 
 /**
  * Draft the walk for an article-branch deliverable: read the frozen input, ask the brain which
@@ -96,10 +98,7 @@ export function draftBeats(
     // column 0 would otherwise be drafted against the wrong column silently, since its values
     // are still strings the data carries. Absent for the chart track, where the first column is
     // the axis by construction — so this changes nothing there.
-    ...(PROPOSABLE_MAP_TYPES.includes(chosen.nativeType) &&
-    run.orient?.geo?.column
-      ? { keyColumn: run.orient.geo.column }
-      : {}),
+    ...mapColumns(run, el, chosen.nativeType, dataCsv),
     // The angle's `unit` is the long axis label; the draft caption takes it only when it is
     // already short enough to sit inside a sentence (suggestBeats' shortUnit mirrors the
     // engine's own caption rule). The loop carries no separate `valueUnit` today.
@@ -109,6 +108,45 @@ export function draftBeats(
   if (refusal) return fail("invalid-request", `draft-beats: ${refusal}`);
 
   return ok(withPlan(el, beats));
+}
+
+/**
+ * THE TWO COLUMNS A MAP WALK IS DRAFTED AGAINST — sub-project ③, and both are read from the run
+ * rather than guessed from the CSV's shape.
+ *
+ * `keyColumn` is the column the GEOGRAPHY matched, not column 0: nothing guarantees a map's
+ * region column comes first, and anchoring on the wrong one would be silent (its values are
+ * still strings the data carries).
+ *
+ * `valueColumn` is resolved THE WAY THE ASSEMBLER RESOLVES IT (valueFieldFor, from the confirmed
+ * takeaway) rather than as "the last numeric column". The two rules differ the moment a map's
+ * data carries more than one numeric column — and the draft's numbers are what verifyBeats
+ * grounds the journalist's claims against, so a draft reading a different column would ground
+ * their sentences on figures the map never renders. When the takeaway names none of the
+ * candidates, this stays SILENT and lets the assembler's own refusal name them at produce: two
+ * wordings for one ambiguity is what this file's header argues against.
+ *
+ * Returns nothing at all for the chart track, where the first column IS the axis and the last
+ * numeric column IS what the engine renders — so a chart draft is byte-identical to before.
+ */
+function mapColumns(
+  run: RunManifest,
+  el: RunElement,
+  nativeType: string,
+  dataCsv: string,
+): { keyColumn?: string; valueColumn?: string } {
+  if (!PROPOSABLE_MAP_TYPES.includes(nativeType)) return {};
+  const keyColumn = run.orient?.geo?.column;
+  if (!keyColumn) return {};
+  const { numericColumns } = parseCsvRows(dataCsv);
+  const resolved = valueFieldFor(
+    numericColumns.filter((c) => c !== keyColumn),
+    el.angle?.confirmedTakeaway ?? "",
+  );
+  return {
+    keyColumn,
+    ...("field" in resolved ? { valueColumn: resolved.field } : {}),
+  };
 }
 
 /** The drafted plan, onto the element — one shape for both tracks, so the chart walk and the

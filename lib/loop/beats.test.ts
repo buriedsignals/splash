@@ -410,3 +410,70 @@ test("a chart draft ignores the run's geography column", () => {
   for (const b of r.value.narrative!.beats)
     expect(["2015", "2020", "2024"]).toContain(b.anchor.value);
 });
+
+// The draft's numbers are what verifyBeats grounds the journalist's claims against. A map's
+// rendered value column is resolved from the confirmed takeaway (valueFieldFor), NOT as "the
+// last numeric column" — so drafting on the last one would ground their sentences on figures
+// the map never renders. Two numeric columns is the only shape where the two rules differ.
+test("a map draft cites the column the map will render, not the last numeric one", () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-draft-map-value-"));
+  writeFileSync(
+    join(runDir, "src.csv"),
+    "canton,rent,population\nGenève,1780,510\nZug,1690,130\nVaud,1450,820\nJura,1010,73",
+  );
+  const run = {
+    runId: "t-map-value",
+    schemaVersion: 7,
+    channel: "article-web",
+    input: { data: { path: "src.csv", sha256: "x" } },
+    orient: {
+      geo: {
+        column: "canton",
+        geography: {
+          origin: "shipped",
+          set: "natural-earth-admin-1",
+          level: "admin1",
+          joinKey: "name",
+          joinKeyFamily: "name",
+        },
+        matched: 4,
+        total: 4,
+        unmatched: [],
+      },
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          // NAMES the rent column — so that is what the map renders, and what a draft must cite.
+          confirmedTakeaway: "Geneva's rent towers over the Jura's",
+          altInsight: "a",
+          unit: "CHF",
+        },
+        proposal: {
+          options: [
+            {
+              id: "o1",
+              nativeType: "choropleth",
+              engine: "map-native",
+              format: "scrolly",
+              why: "w",
+            },
+          ],
+          excluded: [],
+          chosenId: "o1",
+        },
+      },
+    ],
+    events: [],
+  } as unknown as RunManifest;
+  const r = draftBeats(run, run.elements[0]!, runDir);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const geneva = r.value.narrative!.beats.find(
+    (b) => b.anchor.value === "Genève",
+  )!;
+  // 1780 is the rent; 510 is the population the takeaway never mentions.
+  expect(geneva.beatSource.facts.value).toBe("1780");
+  expect(geneva.draftText).toContain("1780");
+});
