@@ -223,12 +223,27 @@ Et un téléchargement direct existe aussi, ce qui est ce qui compte pour un jou
 > est là, le `.zip` sinon. Et `.zip`, pas `.dmg` — il n'y a aucune image à monter, donc l'esquisse
 > `hdiutil` du plan ne s'applique pas.
 
-## Le provider — ce qui débloque la preuve de niveau B
+## Le provider — et pourquoi celui qui semblait débloquer le niveau B l'empêche
 
 Goose 1.45 embarque un provider **`claude-code`** (`crates/goose/src/providers/claude_code.rs`) qui
-pilote la CLI `claude` locale. La preuve de niveau B (tâche 6) n'a donc **pas** besoin d'une clé API
-neuve : elle tourne sur l'abonnement existant, et se sélectionne par run
-(`goose run --provider claude-code --model sonnet`) **sans toucher la configuration du journaliste**.
+pilote la CLI `claude` locale, et se sélectionne par run
+(`goose run --provider claude-code --model sonnet`) sans toucher la configuration du journaliste.
+
+> ★ **CORRECTION (run niveau B, même jour).** Cette section concluait d'abord : « la preuve de niveau
+> B n'a donc **pas** besoin d'une clé API neuve, elle tourne sur l'abonnement existant ». **C'est
+> faux**, et la mesure est nette : la session `claude-code` du run contient **6 messages, tous
+> `text`, zéro appel d'outil** ; une session Goose antérieure sur le provider `google` en contient
+> **7 `toolRequest` + 7 `toolResponse`**. Ce provider délègue toute la boucle d'outils à la CLI
+> `claude` — elle n'entre **jamais** dans la conversation de Goose. Deux conséquences :
+>
+> - **le travail est perdu entre les tours** : au troisième tour, le modèle redemandait l'article
+>   qu'il avait déjà lu et analysé. Or le parcours Splash est multi-tours **par conception** — six
+>   gates non-skippables ;
+> - **`load_skill` n'est jamais appelé par Goose**, donc ce provider ne peut pas répondre à la
+>   question de l'**invocation imbriquée** (F2 de l'audit), qui en est précisément l'inconnu n° 1.
+>
+> Le niveau B exige donc un provider où **Goose tient sa propre boucle** : une clé API (anthropic,
+> openai, openrouter…) ou le palier Gemini payant. Détail : `goose-desktop-proof.md`.
 
 Confirmé au passage, et c'est le blocage historique : le provider configuré sur la machine est
 `google`, et son quota gratuit est à **zéro** — `limit: 0` sur `generate_content_free_tier_requests`.
@@ -275,7 +290,7 @@ l'écran ». Un coup d'œil dans l'interface la convertirait en preuve directe, 
 | **3 — le module `goose-desktop`** | Tient. Peut appeler `link_agents_skills` sans variante (Q1, Q2). Doit intégrer **F1** (translocation — le plan ne le prévoyait pas), **F3** (vérifier `bun` sur le PATH de login) et **F4** (cask `block-goose`, canal `.zip`, propriétaire `aaif-goose`). **Aucune injection de `PATH`.** |
 | **4 — l'entrée de la page de setup** | Inchangée. |
 | **5 — preuve niveau A** | Inchangée, moins l'étape lien-mort : elle prouve désormais un helper déjà livré, pas un helper neuf. |
-| **6 — preuve niveau B** | Débloquée côté provider : `--provider claude-code` tourne sur l'abonnement existant, sans clé neuve ni modification de la config du journaliste. |
+| **6 — preuve niveau B** | **TENTÉE, non concluante — et le blocage est le provider, pas l'hôte.** Le run a réellement tourné (dépendances installées, `opportunities.json` produit, gates honorés un par un), puis a buté sur la perte de contexte entre tours propre à `claude-code`. Exige une clé API. `goose-desktop-proof.md` § « Layer B ». |
 | **7 — le gate final** | Inchangé. |
 
 - **F2** impose de tester dans l'app tout ce qu'on croit savoir de la CLI, et réciproquement.

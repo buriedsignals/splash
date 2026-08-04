@@ -108,6 +108,56 @@ that is an artefact of the isolated setup rather than good news: this checkout h
 `dw-chart/node_modules/playwright-core`. Backlog **B6** stands, for the desktop app as much as for
 the CLI.
 
+## Layer B — attempted 2026-08-03, not concluded, and the blocker is the provider
+
+Run from the repository root (what `open -a Goose .` now guarantees) on the cheapest fixture in the
+corpus — `splash-harness/cases/budget-commune-part`, a French article plus a six-row CSV that routes
+to `dw-chart` static: no Playwright, no MapTiler. Provider `claude-code`, chosen because it costs an
+existing subscription rather than a new key.
+
+**What the run proves, and it is not nothing:**
+
+- **The app really executes.** Not narration — the agent installed the dependencies of four engines
+  (`map-native`, `scrolly`, `chart-native`, `image-native` all have `node_modules` timestamped
+  inside the run window), which is a thing only a real shell can do.
+- **`suggest-article` really ran.** `exports/fontenay-budget-2026/opportunities.json` exists, with a
+  claim anchored to a real paragraph of the article and a well-formed intent. That is the mechanical
+  output of the ANALYSE step.
+- **The gates held.** The flow announced INPUT, moved to CADRAGE, and asked **one question at a
+  time**, waiting each time. It did not skip a gate, and it did not batch them.
+
+**Where it stopped, and why it is the instrument rather than the host:**
+
+The third turn came back to the beginning — the model asked for the article it had already read and
+analysed. The session record says why:
+
+| Session | Provider | Messages | Content |
+|---|---|---|---|
+| `20260804_4` (this run) | `claude-code` | 6 | **6 × `text`, zero tool calls** |
+| `20260714_3` (July proof) | `google` | 15 | **7 × `toolRequest` + 7 × `toolResponse`** |
+
+The `claude-code` provider hands the whole tool loop to the Claude CLI, so it never enters Goose's
+own conversation. Nothing about what the agent did is persisted; a resumed turn sees prose only and
+re-derives from scratch. **Splash's flow is multi-turn by design — six non-skippable gates — so this
+provider cannot carry it.** It also means `load_skill` is never called by Goose, so this run cannot
+answer the audit's first criterion (F2, nested invocation) either way.
+
+**A correction this run forced.** An earlier section of the findings document concluded that
+`claude-code` "unblocks Layer B by running on the existing subscription". It does the opposite. The
+claim was plausible, cheap, and wrong; it is corrected where it was written rather than quietly
+dropped.
+
+**A defect in the audit's own criteria, found by running them.** Criterion 1 greps the log for
+`"Loaded Skill: suggest-article"`. Goose 1.45 exposes skills through a **`load_skill` tool** and
+confirms with `"File loaded into context."` — the audit's string appears nowhere, on any provider.
+An audit run against that grep would have reported "no nested invocation" from a marker that is
+never emitted, which is the exact failure mode this project keeps paying for. The criterion should
+read the **session record's tool calls**, or the **artefacts on disk**, not the transcript.
+
+**What Layer B needs:** a provider where Goose runs its own loop — an API key (anthropic, openai,
+openrouter) or the paid Gemini tier. The free Gemini tier is not a quota accident but a permanent
+`limit: 0`, reproduced this session.
+
 ## Not proven
 
 - **The bootstrap download.** `install/bootstrap.sh` fetches from `github.com/buriedsignals/splash`,
