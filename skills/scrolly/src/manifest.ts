@@ -102,6 +102,11 @@ registerProducer({
   formats: ["scrolly"],
   // No `types`: scrolly is the shared MECHANISM, not a type owner — the scrolly sub-format
   // belongs to the host engine and inherits its furniture (see CLAUDE.md, engine taxonomy).
+  // Same rule for the gesture vocabulary (2026-08-03 gesture-vocabulary plan, Task 4): the
+  // chart/map track's gestures are declared on chart-native's and map-native's own
+  // manifests (their `scrolly` narrative kind), not here — scrolly renders them, it does
+  // not own them. image-native's crossfade is likewise declared on image-native's manifest
+  // even though the renderer (ScrollyImage.tsx) lives in this package.
   validate: scrollySpecErrors,
   execution: "subprocess",
   subprocess: {
