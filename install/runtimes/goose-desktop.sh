@@ -105,4 +105,17 @@ ensure_bun_on_login_path() {
   } >>"$profile"
 }
 
-runtime_launch_cmd() { echo 'open -a Goose'; }
+# THE TRAILING DOT IS THE WHOLE POINT, and it took a measurement to find.
+#
+# `open` hands the launch to launchd, so the generated launcher's `cd "$(dirname "$0")"` does NOT
+# reach the app: started plain, Goose Desktop opens in $HOME (GOOSE_WORKING_DIR=/Users/<user>,
+# observed). Every executable command in our prose is relative to the repository root and no
+# SKILL.md resolves that root (host-gates audit §2.3), so a plain `open -a Goose` would put the
+# journalist in the one directory where none of it works.
+#
+# Passing a folder fixes it — `open -a Goose <dir>` sets both GOOSE_WORKING_DIR and REQUEST_DIR to
+# that folder (measured: two windows, two different roots, each honoured). The DOT rather than
+# "$PWD" because bootstrap.sh writes the launcher through an UNQUOTED heredoc: a `$` here would be
+# expanded when the launcher is WRITTEN — to the installer's own directory — instead of when it is
+# RUN. The dot carries no `$`, and `open` resolves it against the launcher's own cd.
+runtime_launch_cmd() { echo 'open -a Goose .'; }

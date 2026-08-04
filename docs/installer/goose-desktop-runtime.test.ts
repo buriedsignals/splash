@@ -22,14 +22,39 @@ test("goose-desktop runtime module is valid bash", () => {
   ).toBe(0);
 });
 
-test("runtime_launch_cmd opens the app, never a terminal session", () => {
+test("runtime_launch_cmd opens the app on the install directory, never a terminal session", () => {
   const out = Bun.spawnSync([
     "bash",
     "-c",
     `. "${MODULE}"; runtime_launch_cmd`,
   ]);
   expect(out.exitCode).toBe(0);
-  expect(out.stdout.toString().trim()).toBe("open -a Goose");
+  // The dot is not decoration: `open` hands off to launchd, so the launcher's own `cd` never
+  // reaches the app and Goose Desktop would otherwise open in $HOME — the one directory where our
+  // repo-root-relative prose resolves to nothing (host-gates audit §2.3).
+  expect(out.stdout.toString().trim()).toBe("open -a Goose .");
+});
+
+// bootstrap.sh writes the launcher through an UNQUOTED heredoc, so anything carrying a `$` in the
+// launch command is expanded when the launcher is WRITTEN rather than when it is RUN — silently
+// baking the installer's own directory into it. This reproduces that exact write.
+test("the launch command survives bootstrap's heredoc unexpanded", () => {
+  const out = Bun.spawnSync([
+    "bash",
+    "-c",
+    `set -euo pipefail
+. "${MODULE}"
+launch_cmd="$(runtime_launch_cmd)"
+launcher="$(mktemp)"
+cat > "$launcher" <<LAUNCH
+#!/usr/bin/env bash
+cd "\\$(dirname "\\$0")" && set -a && . ./.env && set +a && $launch_cmd
+LAUNCH
+tail -1 "$launcher"
+rm -f "$launcher"`,
+  ]);
+  expect(out.exitCode).toBe(0);
+  expect(out.stdout.toString().trim()).toEndWith("open -a Goose .");
 });
 
 test("module defines the two contract functions and wires skill discovery", () => {

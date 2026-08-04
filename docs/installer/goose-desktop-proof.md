@@ -22,6 +22,17 @@ separating what was proven from what was not.
 - **Provider:** Goose is model-agnostic and the desktop app owns its own provider screen, so the
   module bakes no key. Goose 1.45 also ships a `claude-code` provider, which is what makes Layer B
   affordable — it drives the local `claude` CLI on an existing subscription.
+- **The launcher can hand the app a working directory, and it must.** `open` gives the launch to
+  launchd, so the generated `Launch Splash.command`'s `cd "$(dirname "$0")"` never reaches the app:
+  started plain, Goose Desktop opens in `$HOME` (`GOOSE_WORKING_DIR=/Users/<user>`, observed). That
+  is the single directory where none of our prose works, since every executable command in it is
+  relative to a repository root no `SKILL.md` resolves (host-gates audit §2.3). Measured fix:
+  `open -a Goose <dir>` sets **both** `GOOSE_WORKING_DIR` and `REQUEST_DIR` to that folder — two
+  windows were opened on two different roots and each honoured its own. So
+  `runtime_launch_cmd` echoes `open -a Goose .`, and the **dot** rather than `"$PWD"` because
+  `bootstrap.sh` writes the launcher through an unquoted heredoc: a `$` would be expanded when the
+  launcher is *written*, baking in the installer's own directory. Both halves are pinned by tests,
+  and both mutations (dropping the dot, using `$PWD`) redden.
 
 ## What ships
 
