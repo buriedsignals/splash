@@ -32,6 +32,7 @@
 //     digit-shaped claims are checked.
 //   - AN EMPTY `why` passes for an unmarked option. There is no substance floor.
 import type { Offer } from "./offer";
+import { figuresIn } from "../core/figures";
 
 export type PhrasedOption = {
   id: string;
@@ -66,11 +67,11 @@ export function verifyOffer(phrased: PhrasedOption[], offer: Offer): void {
     // Claim grounding: every number in the prose must be a number the brain computed, or one
     // the sheet's own fragments already contain. Anything else is invented.
     const allowed = new Set([
-      ...Object.values(option.whySource.facts).flatMap(numbersIn),
-      ...option.whySource.fragments.flatMap(numbersIn),
-      ...numbersIn(option.readiness?.reason ?? ""),
+      ...Object.values(option.whySource.facts).flatMap(figuresIn),
+      ...option.whySource.fragments.flatMap(figuresIn),
+      ...figuresIn(option.readiness?.reason ?? ""),
     ]);
-    for (const n of numbersIn(p.why))
+    for (const n of figuresIn(p.why))
       if (!allowed.has(n))
         throw new Error(
           `verifyOffer: "${p.id}" claims the number ${n}, which is in neither the facts nor the sheet`,
@@ -106,12 +107,3 @@ export function verifyOffer(phrased: PhrasedOption[], offer: Offer): void {
 // "1 234 567"), not two different numbers. Collapsed before numbers are extracted, on BOTH the
 // prose and the grounding sources, so correct French/German/Italian prose at ordinary data
 // sizes (>= 1000 rows) is not refused for how it writes a number it got right.
-function collapseDigitGroups(s: string): string {
-  return s.replace(/(\d)[\u0020\u00a0\u202f](?=\d{3}(?:\D|$))/g, "$1");
-}
-
-function numbersIn(s: string): string[] {
-  return (collapseDigitGroups(s).match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) =>
-    n.replace(",", "."),
-  );
-}

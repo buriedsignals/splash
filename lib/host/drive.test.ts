@@ -19,7 +19,6 @@ import {
 import { freezeInput } from "../loop/freeze";
 import { DEFAULT_UI_LANG } from "../newsroom/language";
 import { loadDecor, installRoot } from "../newsroom/decor";
-import { DEFAULT_UI_LANG } from "../newsroom/language";
 
 function emptyDir(prefix: string): string {
   return mkdtempSync(join(tmpdir(), prefix));

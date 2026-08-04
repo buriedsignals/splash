@@ -41,6 +41,7 @@
 import { arcErrors } from "../core/claim-arc";
 import type { ArcRole } from "../core/claim-arc";
 import type { SuggestedBeat } from "./beats";
+import { figuresIn } from "../core/figures";
 
 export type AuthoredBeat = {
   id: string;
@@ -77,7 +78,7 @@ export function verifyBeats(
   // NOT every value in the series, and that omission is the guard's whole edge: admitting them
   // would make almost any two-digit number find a twin in an ordinary dataset, and a guard is
   // worth exactly what it refuses.
-  const anchors = suggested.flatMap((b) => numbersIn(b.anchor.value));
+  const anchors = suggested.flatMap((b) => figuresIn(b.anchor.value));
   for (const a of authored) {
     const beat = suggested.find((b) => b.id === a.id)!;
     const allowed = new Set([
@@ -85,7 +86,7 @@ export function verifyBeats(
       ...Object.values(beat.beatSource.shared).flatMap(groundedForms),
       ...anchors,
     ]);
-    for (const n of numbersIn(a.text))
+    for (const n of figuresIn(a.text))
       if (!allowed.has(n))
         throw new Error(
           `verifyBeats: "${a.id}" claims the number ${n}, which is in neither this beat's facts nor the plan's`,
@@ -97,15 +98,6 @@ export function verifyBeats(
 // between a digit and a following exactly-three-digit chunk is thousands grouping ("8 000",
 // "1 234 567"), not two different numbers. Taken verbatim from verify-offer.ts: the two guards
 // read the same prose in the same languages, and they must not disagree about what a number is.
-function collapseDigitGroups(s: string): string {
-  return s.replace(/(\d)[   ](?=\d{3}(?:\D|$))/g, "$1");
-}
-
-function numbersIn(s: string): string[] {
-  return (collapseDigitGroups(s).match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) =>
-    n.replace(",", "."),
-  );
-}
 
 // The forms of a grounded value a claim may legitimately take. Beyond the value itself, a
 // DECIMAL rounding of it: writing "38.6 %" for a measured 38.57 % is a presentation of the same
@@ -118,8 +110,8 @@ function numbersIn(s: string): string[] {
 const ROUNDING_DECIMALS = [0, 1, 2] as const;
 
 function groundedForms(raw: string): string[] {
-  const forms = new Set(numbersIn(raw));
-  for (const n of numbersIn(raw)) {
+  const forms = new Set(figuresIn(raw));
+  for (const n of figuresIn(raw)) {
     const v = Number(n);
     if (!Number.isFinite(v)) continue;
     for (const d of ROUNDING_DECIMALS) {
