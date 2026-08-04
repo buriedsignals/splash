@@ -617,7 +617,16 @@ function claimGroundingErrors(p: AcceptedProposal): string[] {
   return errors;
 }
 
-// GUARD 5 — skillsInvoked (mechanical sub-skill proof, Spotlight A5). Absent/empty ⇒ warning
+// GUARD 5 — skillsInvoked. NOT a proof of invocation, and no longer described as one: everything
+// below reads a list the model writes about itself and compares it with ITSELF. Its whole content
+// is internal consistency (declare guided ⇒ also declare suggest-chart), which a run that never
+// touched a sub-skill satisfies by typing the sub-skill's name (observed: E11,
+// docs/installer/goose-desktop-proof.md). The attestation is CONFRONTED WITH THE DISK one layer
+// out, where the run directory is in scope: attestation-corroboration.ts, wired into
+// produce-all.mjs ahead of every engine. This guard stays because internal incoherence is still
+// worth catching early and needs no filesystem — but it is the weaker half of the pair.
+//
+// Absent/empty ⇒ warning
 // (legacy accepted.json). Present + guided branch declared without "suggest-chart" ⇒ error:
 // the ranked candidates only suggest-chart can emit were bypassed. Present but declaring
 // NEITHER branch token ⇒ warning too (review M1): a list that skips the branch declaration

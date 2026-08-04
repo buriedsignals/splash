@@ -19,6 +19,11 @@ import {
 import { productionPrecondition } from "../../../lib/loop/preconditions.ts";
 import { refusalSentence } from "../../../lib/core/routed-refusal.ts";
 import { isDirectBranch } from "../src/candidate-provenance.ts";
+import {
+  corroborateAttestation,
+  attestationRefusal,
+  attestationWarnings,
+} from "../src/attestation-corroboration.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -81,6 +86,24 @@ if (missingMenu && accepted.some((p) => !isDirectBranch(p))) {
   console.error(`[produce] ${refusalSentence(missingMenu)}`);
   process.exit(1);
 }
+
+// ② THE RUN'S OWN RECORD IS CONFRONTED WITH THE RUN'S OWN DIRECTORY, before any engine runs.
+//
+// `skillsInvoked` is written by the model about itself, and GUARD 5 (validate-gate.ts) can only
+// check it against ITSELF. So a run that never touched a sub-skill can attest that it did — the
+// audit's S1, observed on 2026-08-03 (docs/installer/goose-desktop-proof.md, backlog E11). This
+// asks the disk instead, in the same spirit as the spine auto-record below: the artifacts a
+// sub-skill leaves behind are what corroborate the claim, and a claim with NOT ONE of them behind
+// it stops the batch here, before anything is half-built. A partial gap is said out loud and is
+// never fatal — see attestation-corroboration.ts for why absence alone cannot be a verdict.
+const corroboration = corroborateAttestation(dirname(acceptedPath), accepted);
+const uncorroborated = attestationRefusal(corroboration);
+if (uncorroborated) {
+  console.error(`[produce] ${refusalSentence(uncorroborated)}`);
+  process.exit(1);
+}
+for (const w of attestationWarnings(corroboration))
+  console.error(`[attestation] warning: ${w}`);
 
 // Flow-decision gate: decisions.jsonl sits beside accepted.json, like candidates.json. A required
 // decision never recorded fails the run; an optional one warns. Staged: the first-cut trio ships
