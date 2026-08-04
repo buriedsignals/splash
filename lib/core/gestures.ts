@@ -10,23 +10,58 @@
 // read-only, file:line-cited measurement) — not the brief's placeholder draft. See that
 // document's §8 summary table and §7 findings before changing this file.
 
-/** How the beats of a video express themselves. A scrolly is always step-driven. */
-export const NARRATIVE_KINDS = ["story", "scrolly", "reveal"] as const;
+/**
+ * The four ways a beat sequence can express itself. Each is defined by two axes — the
+ * owner's own framing (2026-08-03 decision): what CARRIES the narrative (what the
+ * reader's attention rides on) and what ADVANCES it (the clock the beats step to).
+ *
+ *   story    — the CAMERA carries it, TIME advances it: a scripted flight through beats,
+ *              frame-driven, the reader does not control the pace.
+ *   stepped  — the STEP carries it, TIME advances it: a discrete walk through beats on a
+ *              timeline, frame-driven — map-native's own `*Scrolly.tsx` video family
+ *              (Remotion compositions that simulate a scroll narrative as a deterministic
+ *              frame sequence; `jumpTo` only, never `flyTo` — see CAMERA_GESTURES's `jump`
+ *              below). Renamed from `scrolly` (2026-08-03): that word collided with the
+ *              product below, which a reader actually receives.
+ *   scrolly  — the STEP carries it, the READER advances it: the same discrete walk, but
+ *              the reader's own scroll position drives which beat is current — the
+ *              browser-interactive family in skills/scrolly/src/ (ScrollyMap.tsx and its
+ *              five map siblings, ScrollyChart.tsx for chart types). This is the freed
+ *              name: before 2026-08-03 it was spoken for by `stepped`'s family above, and
+ *              the browser product it actually names was declared nowhere.
+ *   reveal   — the DATA carries it, TIME advances it: one continuous scalar unveils a
+ *              fixed scene; there are no beats to step through at all.
+ *
+ * A declaration left un-migrated after the 2026-08-03 rename does not fail — `scrolly` and
+ * `stepped` are both valid values, so a stale `scrolly:` key silently means the OPPOSITE of
+ * what its author intended. See gesture-declaration-drift.test.ts's map-native pin, which
+ * exists solely to catch that.
+ */
+export const NARRATIVE_KINDS = [
+  "story",
+  "stepped",
+  "scrolly",
+  "reveal",
+] as const;
 export type NarrativeKind = (typeof NARRATIVE_KINDS)[number];
 
 // Camera gestures — a frame that travels. Maps only; chart-native has no camera concept at all
 // (inventory §4: no flyTo/fitBounds/jumpTo/map instance anywhere under skills/chart-native/src).
 export const CAMERA_GESTURES = [
   // A discrete, un-eased reposition between beats/steps. Every map-native Story component and
-  // every map-native video-Scrolly component uses `map.jumpTo`, never `flyTo` — six file headers
-  // say so explicitly ("Deterministic jump — never flyTo", e.g. LocatorStory.tsx:329) and the
-  // per-frame call sites were read to confirm it (ChoroplethStory.tsx:453-460,
-  // ChoroplethScrolly.tsx:1-6/§2 table). Named "jump" rather than the brief's "cut" to mirror the
-  // actual measured primitive 1:1, not a film-editing gloss on it.
+  // every map-native video-Scrolly component (declaring the `stepped` kind, renamed 2026-08-03)
+  // uses `map.jumpTo`, never `flyTo` — six file headers say so explicitly ("Deterministic jump —
+  // never flyTo", e.g. LocatorStory.tsx:329) and the per-frame call sites were read to confirm it
+  // (ChoroplethStory.tsx:453-460, ChoroplethScrolly.tsx:1-6/§2 table). Named "jump" rather than
+  // the brief's "cut" to mirror the actual measured primitive 1:1, not a film-editing gloss on it.
   "jump",
-  // A smooth, eased camera transition. Confirmed only in skills/scrolly's browser-interactive
-  // ScrollyMap.tsx:448 (`flyToBeat` → MapLibre `flyTo`) — the live-browser sibling of the video
-  // Story/Scrolly families, which deliberately do NOT use this (they need frame-determinism).
+  // A smooth, eased camera transition. Confirmed in skills/scrolly's browser-interactive
+  // Scrolly*Map.tsx family (`flyToBeat` → MapLibre `flyTo`, scrolly-camera.ts:54-71) — the
+  // live-browser sibling of the video Story/`stepped` families, which deliberately do NOT use
+  // this (they need frame-determinism). Declared (2026-08-03) on skills/scrolly's OWN producer
+  // manifest, per map-track type — never on map-native's, whose own `*Scrolly.tsx` components
+  // are the `stepped` family and do not implement this; see
+  // skills/map-native/src/manifest.ts's header and gesture-declaration-drift.test.ts's pin.
   "fly",
   // The camera does not move once framed. All six non-route map-native Reveal components call
   // `map.fitBounds(plan.bounds, { duration: 0 })` exactly once at load, then never move it again
@@ -65,11 +100,16 @@ export const DATA_GESTURES = [
   // continuously through every crossed territory (RouteReveal.tsx §3.1, RouteScrolly.tsx §2.1).
   "draw",
   // One subject is emphasised while its siblings dim, WITHOUT a size or opacity ramp on the
-  // emphasised subject itself: the per-beat/per-step spotlight in map-native's Story and video-
-  // Scrolly families (dim to ~0.2-0.25, CartogramScrolly.tsx:6-9), ScrollyChart's bar/scatter
-  // "highlight walk" (progress pinned at 1, one bar/point accented per step, ScrollyChart.tsx:
-  // 110-138), and chart-native's interactive hover/keyboard-focus state (LineChart.tsx:131,173,
-  // 438-441) — the last one present in the interactive format only (inventory §4.1).
+  // emphasised subject itself: the per-beat/per-step spotlight in map-native's Story and
+  // `stepped`-video families (dim to ~0.2-0.25, CartogramScrolly.tsx:6-9), the browser
+  // Scrolly*Map.tsx family's own step-emphasis (a MapLibre `case` expression pinning the
+  // highlighted feature and its siblings to two CONSTANTS, e.g.
+  // ScrollyCartogramMap.tsx:271-277, ScrollyHexMap.tsx:238-249, ScrollyDotDensityMap.tsx:
+  // 294-311, ScrollyLocatorMap.tsx:262-303, ScrollyMap.tsx:340-345 — ScrollySymbolMap.tsx has no
+  // such mechanism at all, see its manifest declaration), ScrollyChart's bar/scatter "highlight
+  // walk" (progress pinned at 1, one bar/point accented per step, ScrollyChart.tsx:110-138), and
+  // chart-native's interactive hover/keyboard-focus state (LineChart.tsx:131,173,438-441) — the
+  // last one present in the interactive format only (inventory §4.1).
   "highlight",
   // An element fades or pops into visibility from nothing, with ONE shared scalar driving every
   // instance at once — no per-subject offset, no per-subject gate: opacity 0→1 across the whole

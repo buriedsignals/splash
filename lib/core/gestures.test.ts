@@ -8,8 +8,17 @@ import {
   type Gesture,
 } from "./gestures";
 
-test("the narrative kinds are exactly the three the spec names", () => {
-  expect([...NARRATIVE_KINDS].sort()).toEqual(["reveal", "scrolly", "story"]);
+test("the narrative kinds are exactly the four the spec names", () => {
+  // Grew from three to four on 2026-08-03: `scrolly` was renamed `stepped` (map-native's
+  // own video-timeline family) and `scrolly` was freed for the browser-reader family it
+  // actually names now. A deliberate, visible edit — same rationale as the vocabulary pin
+  // below.
+  expect([...NARRATIVE_KINDS].sort()).toEqual([
+    "reveal",
+    "scrolly",
+    "stepped",
+    "story",
+  ]);
 });
 
 test("every gesture is readable at runtime, so a test and a proposal read the SAME list", () => {
