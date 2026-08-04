@@ -36,7 +36,14 @@ function repo(): string {
   writeFileSync(join(alpha, "output-proof", "p.png"), "PNG");
   writeFileSync(
     join(alpha, "package.json"),
-    JSON.stringify({ name: "alpha", dependencies: { d3: "7.0.0" } }),
+    JSON.stringify({
+      name: "alpha",
+      dependencies: { d3: "7.0.0" },
+      // Mirrors the real repo: the build tooling a producer shells out to at render time
+      // (vite, its plugins, playwright) is filed under devDependencies upstream, not
+      // dependencies — see scripts/verify-dist-produce.mjs's finding.
+      devDependencies: { vite: "9.0.0" },
+    }),
   );
 
   // A directory under skills/ that is NOT a skill: no SKILL.md. E9's rule.
@@ -118,6 +125,25 @@ test("writes ONE merged package.json at the root, above the skills", () => {
     // no host: the host only ever walks .dist/skills/<name>/.
     expect(merged.dependencies.d3).toBe("7.0.0");
     expect(merged.dependencies.remotion).toBe("4.0.0");
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("merges devDependencies too — a produce that shells out to `bunx vite build` needs them resolvable", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    const merged = JSON.parse(readFileSync(join(out, "package.json"), "utf8"));
+    // scripts/verify-dist-produce.mjs proved this the hard way: chart-native's produce.mjs
+    // shells out to `bunx vite build`, and vite.config.ts imports @vitejs/plugin-react /
+    // vite-plugin-singlefile — all filed as devDependencies upstream. Dropping them at the
+    // merge left the delivered tree's `bun install` without vite at all: ERR_MODULE_NOT_FOUND
+    // ('vite') on the very first produce. There is no separate "dev install" step for a
+    // delivered tree, so the dev/prod distinction cannot survive the merge.
+    expect(merged.dependencies.vite).toBe("9.0.0");
   } finally {
     rmSync(src, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });

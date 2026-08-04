@@ -117,3 +117,51 @@ reachable with no new code. **Untested — the app is not installed on this mach
 Nothing here observes a *visual* coming out of a desktop app. That remains Layer B, it remains
 `goose-desktop`'s open item, and the 2026-08-04 re-run attempt is recorded in
 `goose-desktop-proof.md` § "The 2026-08-04 re-run".
+
+---
+
+## Addendum, same day — the small tree also renders (a different Layer B, closed)
+
+The item above is about a desktop *app* rendering something. This one is narrower and does not
+answer it: it asks whether the **small tree a host receives** (the packer built by the
+`skill-distribution-payload` work — `.dist/`, none of the engine's tests/node_modules/output-proof,
+one merged `package.json`) can still produce a real visual once installed, with no access to the
+source repo at all. `scripts/verify-dist-produce.mjs` packs into a throwaway temp dir, `bun
+install`s there from scratch, and produces for real. Full run recorded in
+`.superpowers/sdd/2026-08-04-skill-distribution-payload/task-6-report.md`; summary here.
+
+**Result: yes.** A chart-native static PNG (47 991 bytes) and a map-native video (10.4 MB mp4,
+948 frames, `snap-video`-verified) both came out of a tree that started as a fresh temp
+directory with nothing in it but the packer's output plus `bun install`.
+
+**Question 1 — does the per-engine `package.json` left in `.dist/skills/<engine>/` disturb
+resolution from `.dist/node_modules`?** No. `bun install` at the dist root only ever reads the
+root manifest — the lockfile's `workspaces` block lists exactly one member (`""`, the root), and
+no `node_modules` appears under any `.dist/skills/<engine>/` after install. The stray files are
+inert for installation and are kept on purpose: `skills/chart-native/scripts/export-source.mjs`
+and `skills/splash/scripts/bundle-source.mjs` read a skill's own `package.json` to pin dependency
+versions when building a journalist's runnable source bundle — dropping it would silently break
+that unrelated, already-shipped feature the first time it ran from a packed tree.
+
+**What DID break, and was the real bug**: the merge in `pack-skills.mjs` only read
+`pkg.dependencies`, silently dropping `pkg.devDependencies`. Several producers need packages filed
+there — `vite`, `@vitejs/plugin-react`, `vite-plugin-singlefile` (chart-native's `vite.config.ts`
+imports the last two directly) — because a delivered tree has no separate "dev install" step; `bun
+install` at `.dist/` is the only install that ever runs. The first static produce failed hard:
+`Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite'`. Fixed by merging both
+`dependencies` and `devDependencies` into the one root manifest; a regression test
+(`docs/installer/pack-skills.test.ts`, "merges devDependencies too") pins it.
+
+**Question 2 — is `map-native/remotion/` enough to render video from the delivered tree?** Yes,
+once the tree has a MapTiler key to reach. The render itself needed no fix — the `.mp4` came out
+clean on the first attempt that supplied the key correctly. The key is deliberately never
+packaged (secrets do not belong in `.dist/`); `map-native/scripts/produce.mjs` already falls back
+to reading a `.env` two directories above the skill root, which lands on `.dist/.env` in the
+packed tree — exactly where a real install's `.env` (written by the installer, not by this
+verifier) would sit. `verify-dist-produce.mjs` reproduces that by loading the repo's own `.env`
+into its *own* process before packing, so the key is already in `process.env` (not read from a
+file inside `.dist/`) by the time it shells out to `bunx remotion`; Remotion's CLI independently
+whitelists any inherited `REMOTION_`-prefixed env var (`@remotion/cli/dist/get-env.js`), so this
+works without writing a second copy of the secret into the temp tree. Chromium/Chrome Headless
+Shell downloaded once (93.5 MB, cached by Remotion outside any project's `node_modules`) and was
+not re-downloaded on repeat runs.

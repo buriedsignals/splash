@@ -69,7 +69,17 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   const pkgPath = join(src, "package.json");
   if (!existsSync(pkgPath)) continue;
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-  for (const [dep, version] of Object.entries(pkg.dependencies ?? {})) {
+  // Both dependencies AND devDependencies: the delivered tree has no separate build step that
+  // installs "dev" packages only for CI and strips them after — `bun install` at the dist root
+  // is the ONLY install that ever happens, and produce.mjs shells out to `bunx vite build` with
+  // a vite.config.ts that imports @vitejs/plugin-react / vite-plugin-singlefile, all filed under
+  // devDependencies upstream. Dropping that distinction here is what makes the delivered tree
+  // able to render at all (proven by scripts/verify-dist-produce.mjs: static failed with
+  // ERR_MODULE_NOT_FOUND('vite') until this merged devDependencies too).
+  for (const [dep, version] of Object.entries({
+    ...(pkg.dependencies ?? {}),
+    ...(pkg.devDependencies ?? {}),
+  })) {
     if (merged[dep] && merged[dep] !== version)
       console.error(`note: ${dep} pinned twice (${merged[dep]} vs ${version}); keeping ${merged[dep]}`);
     merged[dep] ??= version;
