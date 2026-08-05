@@ -113,16 +113,32 @@ test("packages the payload before anything links it, exactly as the POSIX instal
 test("junctions the PACKAGED skills, never the engine tree", () => {
   expect(ps).toContain(".dist\\skills");
   // The pre-packaging glob is gone: linking `$Dest\skills` is what shipped the engine.
-  expect(ps).not.toMatch(/Get-ChildItem \(Join-Path \$Dest "skills"\) -Directory/);
+  expect(ps).not.toMatch(
+    /Get-ChildItem \(Join-Path \$Dest "skills"\) -Directory/,
+  );
 });
 
 test("installs the packaged tree's dependencies ONCE, above the skills, not per engine", () => {
   // Above the skill directories is where Bun resolves them and no host walks — that placement is
   // the reason the payload stays small, not an optimisation.
   expect(ps).toMatch(/Join-Path \$Dest "\.dist"/);
-  expect(ps).not.toContain('$NativeSkills = @("skills\\chart-native", "skills\\map-native")');
+  expect(ps).not.toContain(
+    '$NativeSkills = @("skills\\chart-native", "skills\\map-native")',
+  );
 });
 
 test("downloads Chromium from the packaged chart-native, so the browser lands for the delivered tree", () => {
   expect(ps).toContain(".dist\\skills\\chart-native");
+});
+
+// The page measures the tree; the tree must therefore exist. Packaging and installing after the
+// page is what made it report four healthy engines as missing on every real install.
+test("packages and installs BEFORE opening the setup page", () => {
+  const pack = ps.indexOf("bun run pack-skills");
+  const page = ps.indexOf("bun install/configurator.ts");
+  const runtime = ps.indexOf("bun install/read-runtime.ts");
+  expect(pack).toBeGreaterThan(0);
+  expect(page).toBeGreaterThan(pack);
+  // The runtime module is chosen BY the page, so it still comes after it.
+  expect(runtime).toBeGreaterThan(page);
 });

@@ -89,21 +89,12 @@ bun install | Out-Null
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "bun install failed in $Dest — check your connection, then re-run this installer." }
 Pop-Location
 
-# 5. Local setup page — pick runtime + enter keys (verified live); writes .env
-Write-Host "-> Opening the setup page in your browser to collect your keys…"
-Push-Location $Dest
-bun install/configurator.ts
-Pop-Location
-# $ErrorActionPreference = "Stop" does NOT stop on a native command's non-zero exit, so check
-# both the exit code and the file — this also catches a Ctrl-C out of the configurator.
-if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
-  throw "Configuration was not completed — re-run this installer."
-}
-
-
-# 5b. Package what a host receives, then install its dependencies ONCE, ABOVE the skill
-# directories — where Bun resolves them and no host walks. This MUST run before the runtime
-# module: Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
+# 5. Package what a host receives, then install its dependencies ONCE, ABOVE the skill
+# directories — where Bun resolves them and no host walks.
+# This runs BEFORE the setup page (step 6) for two reasons: the page MEASURES this tree — a page
+# opened first reports every in-house engine as missing — and a failure here must stop the install
+# before anyone fills in a form for a tree that will not work. It also runs before step 7, whose
+# Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
 Write-Host "-> Packaging the skills…"
 Push-Location $Dest
 bun run pack-skills
@@ -116,7 +107,18 @@ bun install | Out-Null
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Dependency install failed in the packaged skills — check your connection, then re-run this installer." }
 Pop-Location
 
-# 6. Runtime — install the one the setup page recorded, via its module in install\runtimes\.
+# 6. Local setup page — pick runtime + enter keys (verified live); writes .env
+Write-Host "-> Opening the setup page in your browser to collect your keys…"
+Push-Location $Dest
+bun install/configurator.ts
+Pop-Location
+# $ErrorActionPreference = "Stop" does NOT stop on a native command's non-zero exit, so check
+# both the exit code and the file — this also catches a Ctrl-C out of the configurator.
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
+  throw "Configuration was not completed — re-run this installer."
+}
+
+# 7. Runtime — install the one the setup page recorded, via its module in install\runtimes\.
 # Adding a runtime is a new install\runtimes\<name>.ps1 (see that dir's README), never a change here.
 # The runtime lives in newsroom.json (the decor). install\read-runtime.ts resolves it — including
 # the legacy .splash-runtime of an install that predates the setup page — and validates it against
@@ -133,7 +135,7 @@ if (-not (Test-Path $runtimeModule)) {
 . $runtimeModule
 Runtime-Install
 
-# 7. Render engine. The dependencies themselves were installed once at step 5b, above the
+# 8. Render engine. The dependencies themselves were installed once at step 5, above the
 # packaged skills; only the browser is left, and ONE download serves every renderer: Playwright
 # caches per user and per browser revision, so map-native resolves the same executable this call
 # fetches (mirrors bootstrap.sh, and install/native-browser.test.ts keeps the versions pinned
@@ -143,7 +145,7 @@ bunx playwright install chromium
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
 Pop-Location
 
-# 8. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
+# 9. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
 $launcher = Join-Path $Dest "Launch Splash.cmd"
 $launchCmd = Runtime-LaunchCmd
 @"
