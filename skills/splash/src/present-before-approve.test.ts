@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { flowProse } from "./flow-prose";
 
 // WHY THIS EXISTS — the approval gate reads a receipt only one command writes, and the prose that
 // drives the journalist's path did not name that command.
@@ -20,7 +21,7 @@ import { join } from "node:path";
 //
 // This pins the ORDER, which is the part that carries the meaning: showing comes before approving.
 describe("SKILL.md documents `present` before the approval gate", () => {
-  const skill = readFileSync(join(import.meta.dir, "..", "SKILL.md"), "utf8");
+  const skill = flowProse();
 
   it("names the command that writes the presentation receipt", () => {
     expect(skill).toContain("lib/host/cli.ts present");

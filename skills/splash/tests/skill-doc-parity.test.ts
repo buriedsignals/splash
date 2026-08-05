@@ -4,8 +4,9 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { flowProse } from "../src/flow-prose";
 
-const splash = readFileSync(join(import.meta.dir, "..", "SKILL.md"), "utf8");
+const splash = flowProse();
 
 describe("A5 — skillsInvoked emission", () => {
   it("§5b prescribes emitting skillsInvoked like channel/confirmedTakeaway", () => {

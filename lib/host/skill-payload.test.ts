@@ -129,9 +129,13 @@ describe("calibration — the simulator against the measured payloads", () => {
   it("reproduces the packaged size of splash, the skill that sets the budget", () => {
     if (!fileExists(splash)) return; // not a source checkout; nothing to calibrate against
     const p = measureSkillPayload(splash, { applyExclusions: true });
-    // 144 757 characters measured on 2026-08-04 (skill-payload-2026-08-04.md §5.3). A 25%
-    // band absorbs prose edits without letting a rewrite of the walker pass unnoticed.
-    expect(p.chars).toBeGreaterThan(144_757 * 0.75);
+    // 38 129 characters, re-measured 2026-08-04 AFTER the phase split. It was 144 757 before
+    // (skill-payload-2026-08-04.md §5.3): the root no longer carries the six phases' prose, which
+    // now lives in splash-input / splash-cadrage / splash-proposition / splash-production /
+    // splash-export (6.9k … 31.9k each, every one of them far under the 200 000 overflow
+    // threshold). The re-pin is a STRUCTURAL change, not prose drift — the 25% band exists to
+    // absorb edits, and letting a 3.8x drop pass inside it would have made the band meaningless.
+    expect(p.chars).toBeGreaterThan(38_129 * 0.75);
     expect(p.chars).toBeLessThan(144_757 * 1.25);
   });
 });
