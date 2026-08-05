@@ -15,6 +15,10 @@ import {
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { measureSkillPayload } from "../../lib/host/skill-payload";
+import {
+  migratedDecorState,
+  needsDecorMigration,
+} from "../../lib/newsroom/migrate-decor";
 
 const PACKER = join(import.meta.dir, "../../scripts/pack-skills.mjs");
 const REPO = join(import.meta.dir, "../..");
@@ -262,6 +266,46 @@ test("links the install-root files back, so the delivered scripts resolve them u
     // RELATIVE, so the link survives moving or renaming the whole install directory.
     expect(readlinkSync(join(out, ".env"))).toBe("../.env");
     expect(readlinkSync(join(out, "newsroom.json"))).toBe("../newsroom.json");
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+test("the legacy migration still fires from inside the delivery", () => {
+  // The narrow path of the same defect. lib/newsroom/migrate-decor.ts reads `.splash-runtime` and
+  // `.splash-preflight.json` at installRoot() — which the delivery re-points at .dist, where they
+  // never exist. A pre-newsroom.json install that re-runs the installer with an existing .env
+  // SKIPS the configurator (install/bootstrap.sh:70), so newsroom.json is never written and the
+  // migration is the only thing that recovers its runtime, its interface language and its green
+  // preflight stamps. Asserted through the production functions, from the delivered tree's own
+  // installRoot(), not through a re-implementation of the path.
+  const src = repo();
+  const out = join(src, ".dist");
+  try {
+    writeFileSync(join(src, ".splash-runtime"), "goose\n");
+    writeFileSync(
+      join(src, ".splash-preflight.json"),
+      JSON.stringify({
+        engines: {
+          "chart-native": {
+            status: "green",
+            checkedAt: "2026-07-01T00:00:00Z",
+          },
+        },
+      }),
+    );
+    writeFileSync(join(src, "NEWSROOM-PROFILE.md"), "---\nlang: fr\n---\n");
+    expect(pack(src, out).exitCode).toBe(0);
+
+    // decor.ts's installRoot() is `lib/../..` — inside the delivery, this is the delivery.
+    const installRoot = resolve(join(out, "lib", "newsroom"), "../..");
+    expect(needsDecorMigration(installRoot)).toBe(true);
+    const state = migratedDecorState(installRoot, {});
+    expect(state.runtime).toBe("goose"); // not the default
+    expect(state.uiLang).toBe("fr"); // not the English fallback
+    expect(state.capabilities["chart-native"]?.lastVerified?.at).toBe(
+      "2026-07-01T00:00:00Z",
+    ); // the green stamp survived
   } finally {
     rmSync(src, { recursive: true, force: true });
   }
