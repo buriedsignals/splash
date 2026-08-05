@@ -188,7 +188,7 @@ config.json { type:"symbol", points:[{lon,lat,value,label?}], basemap, valueUnit
 - **Bun only** — `bun`, `bunx`, `bun test`. The single accepted exception is Remotion render via
   `bunx remotion` / its node toolchain, as already used by choropleth.
 - **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no
-  `Co-Authored-By: Claude`.
+  an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via `.env` only** — never hard-code or log it.
 - **Grounded conformance** — every guard rule traces to `proportional-symbol.md`; verify at render

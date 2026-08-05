@@ -12,7 +12,7 @@
 
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages in English.
-- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
+- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`.
 - **Grounded judgment:** the routing follows `<repo-root>/knowledge/references/formats/format-selection.md` (the ladder + Gate 5) + `chart-selection.md` — NOT a new hardcoded heuristic. Gate 5: geographic data → map ONLY when the spatial pattern is the story (+ normalized + legible regions); else a sorted bar chart.
 - **Key hygiene:** the Datawrapper token comes from `/splash/.env` (`DATAWRAPPER_API_TOKEN`); never hard-code or log it.
 - **Honest provenance:** prose-extracted figures keep an honest source (the source the article names); a value charted/mapped must appear verbatim in the article.

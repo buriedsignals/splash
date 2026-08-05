@@ -140,7 +140,7 @@ as `ChoroplethStory` derives `STORY_FRAMES`. Composition ids are unchanged (`Sym
 - **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`) — never
   hard-code or log it.
 - **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO
-  `Co-Authored-By: Claude`.
+  an authorship trailer naming an assistant.
 - **English** throughout.
 - **Additive** — `SymbolStory` internals are rewritten (fixing the misnomer) but its composition ids are
   unchanged; `ChoroplethStory`, the SP1 reveal components, and the produce format selector are untouched.

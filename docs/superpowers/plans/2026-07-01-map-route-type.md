@@ -12,7 +12,7 @@
 
 - **Bun only** (`bun test`, `bun scripts/...`); web render via the Vite + Playwright snap pipeline.
 - **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`) — never hard-code or log it.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **English** throughout.
 - **Additive** — a NEW type; choropleth/symbol/route-video paths + the produce format selector are unchanged. Do NOT overwrite existing test files — APPEND.
 - **`clampBounds` on every bounds→MapTiler call**; bounded interactive nav; static build has no controls.

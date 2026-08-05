@@ -155,7 +155,7 @@ component (width,height, title, description?, source, geo.bounds)
 ## Global constraints (binding)
 
 - **Bun only** — `bun`, `bunx`, `bun test` (Remotion render via `bunx remotion … --gl=angle --concurrency=1` is the accepted exception).
-- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** — never hard-code or log it.
 - **MapFrame is shared** — every change must be verified at render on BOTH map types (choropleth + symbol) across ALL formats incl. portrait; a regression in either is a blocker.

@@ -12,7 +12,7 @@
 
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages in English.
-- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
+- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`.
 - **No article text in the module:** captions are derived from the DATA + the insight only. Never pull/duplicate article prose. (Grounded in `docs/splash/embeddable-module-best-practices.md`.)
 - **Each furniture element once:** title (header), description (intro caption), source (footer) — no element repeated as a step caption.
 - **Determinism:** `mapStoryToChapters` is pure — no `Date`/`Math.random`.

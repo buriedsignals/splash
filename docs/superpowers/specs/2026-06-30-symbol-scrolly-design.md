@@ -100,7 +100,7 @@ config (type:"symbol", points)
 ## Global constraints (binding)
 
 - **Bun only** — `bun`, `bunx`, `bun test`.
-- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** (`VITE_MAPTILER_KEY` at build) — never hard-code or log it.
 - **Back-compat:** the choropleth scrolly path is unchanged when `config.type` is absent or `"choropleth"`; verify it still renders.

@@ -95,7 +95,7 @@ against its mirror and its code cross-refs separately.)
 
 ## Global constraints (binding)
 
-- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no an authorship trailer naming an assistant.
 - **English.**
 - **No fabricated URLs / no invented conformance rules** — every cross-ref must match real code; cite sources by name, URLs only when confident.
 - **Mirror the existing docs' structure + terseness** (`design-conformance.md` for the global, `proportional-symbol.md` for the type ref).

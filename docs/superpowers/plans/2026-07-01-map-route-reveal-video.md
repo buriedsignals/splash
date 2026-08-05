@@ -12,7 +12,7 @@
 
 - **Bun only** (`bun test`, `bun scripts/...`); video render via `bunx remotion ... --gl=angle --concurrency=1`.
 - **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`; Remotion reads `REMOTION_MAPTILER_KEY`) — never hard-code or log it.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **English** throughout.
 - **Additive except the deliberate pilot removal** — `RouteReveal` is new; SP3a route static/interactive + all other types + the produce `static|reveal|story|all` selector are unchanged; the pilot (`RiverReveal`/`MapExplainer`/its geo + `prep-geo.mjs`) is removed as superseded.
 - **`mapStyle` AI-selected** — route-reveal honours it (verify BOTH dark and light).

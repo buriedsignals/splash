@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Bun only**; **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`) — never hard-code or log it.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **English** throughout.
 - **Every fix ships four artifacts** — code + conformance-or-harness + KB at the right layer (`map/formats/{static,interactive}.md`) + render verification on BOTH map types (static + interactive, incl. 360px).
 - **Grounded KB**, sourced by name (Datawrapper Academy, NN/g, FT Visual Vocabulary), no fabricated URLs.

@@ -96,7 +96,7 @@ Give the interactive build full map navigation, mirroring the choropleth control
 ## Global constraints (binding)
 
 - **Bun only** — `bun`, `bunx`, `bun test` (Remotion render via `bunx remotion … --gl=angle --concurrency=1` is the accepted exception).
-- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** — never hard-code or log it.
 - **Verify at render** — eyeball each format at multiple sizes incl. portrait, and verify interactive navigation live in-browser (a static PNG cannot show pan/zoom/reset).

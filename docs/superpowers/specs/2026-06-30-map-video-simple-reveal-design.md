@@ -164,7 +164,7 @@ Remotion `--props` (`{ config: ... }`) for video builds.
 - **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`) — never
   hard-code or log it.
 - **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO
-  `Co-Authored-By: Claude`.
+  an authorship trailer naming an assistant.
 - **English** throughout.
 - **Every format ships its four artifacts** (code + conformance/harness + KB at the right layer +
   render verification on BOTH types).

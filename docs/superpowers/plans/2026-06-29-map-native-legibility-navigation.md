@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Bun only** — `bun`, `bunx`, `bun test`. Remotion render via `bunx remotion … --gl=angle --concurrency=1` is the accepted exception.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`) — never hard-code or log it.
 - **Verify at render** — eyeball each format at multiple sizes INCLUDING portrait; verify interactive navigation live in-browser (a static PNG cannot show pan/zoom/reset).

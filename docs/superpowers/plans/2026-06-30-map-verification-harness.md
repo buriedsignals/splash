@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Bun only** — scripts run via `bun scripts/...`.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** — the interactive build needs `VITE_MAPTILER_KEY` at build time (`set -a && . ../../.env && set +a` from `skills/map-native/`); never hard-code or log it.
 - **Shared scripts work for BOTH map types** — layer detection (`choropleth-fill`||`symbol-circles`) keeps them type-agnostic; verify on both.

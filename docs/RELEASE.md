@@ -18,5 +18,24 @@ during dev; this one is expected to fail until release prep is done).
 - [x] **Installer secret hygiene.** The installer no longer writes the API key to `~/.zshrc` (which leaked it into every shell/dotfile-backup). The key lives only in the gitignored `~/Splash/.env`; the launch command sources it per-session (`set -a && . ./.env && set +a`) — the runtime key still reaches `claude`, without a global-profile leak. (The `.env` export is NOT redundant for the *runtime* key — `claude` reads it from the shell env, not a `.env` — so sourcing at launch, not dropping, was the correct fix.) Installer tests now run in `bun run check`.
 
 ## Honesty / scoping
-- [ ] Scope the installer's "No terminal needed" and "runtime-agnostic" claims to what is verified: macOS + Claude Code in v1 (codex/gemini/goose are `verified:false` stubs). Recurring launch still needs a terminal — consider shipping a double-clickable launcher `.command`.
-- [ ] Confirm no other AI-assistant or vendor attribution in published artifacts (docs, code comments, sample data).
+- [x] **Claims re-scoped to what is measured — and the item was wrong in BOTH directions.**
+      It said "macOS + Claude Code in v1 (codex/gemini/goose are `verified:false` stubs)". Measured
+      2026-08-04 in `install/configurator-core.ts`: **claude, codex, gemini and goose are all
+      `verified: true`**; the two that are not are `goose-desktop` and `claude-desktop`. The item
+      UNDERSOLD what works.
+      It also said "consider shipping a double-clickable launcher `.command`" — **it exists**
+      (`install/bootstrap.sh`, and a `.cmd` on Windows). What is true, and what the public claims
+      must now say: **no command to type to USE it; one terminal moment to INSTALL it.**
+      Windows reached payload parity the same day (E10/B6), so "runtime-agnostic" is no longer a
+      macOS-only claim either.
+- [x] **No assistant attribution in published artifacts — and it is now a RELEASE CHECK, not a sweep.**
+      A sweep is true on the day it runs; the rule is permanent, so `bun run release:check` gained
+      `no assistant attribution in tracked files`. It found what a sweep would have missed: **one
+      real session URL in five plan files**, plus 26 quoted `Co-Authored-By` examples — 31 files in
+      all, cleaned. The pattern is deliberately narrow: it hunts a claim about WHO WROTE THIS (a
+      session URL, an authorship trailer, a "generated with" badge), never the mention of a runtime
+      — "Claude Code" is a supported host with its own module and docs, and forbidding its name
+      would forbid saying what the tool runs on.
+      ⚠️ The checker excludes ITSELF by name, because its own regex necessarily contains the
+      patterns it hunts. Without that it reports itself forever, and a guard that always fires is a
+      guard that gets ignored.

@@ -12,7 +12,7 @@
 
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages, branch names in English.
-- **No attribution:** never mention Claude/Anthropic in any file, commit, or doc. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
+- **No attribution:** never mention Claude/Anthropic in any file, commit, or doc. No `Co-Authored-By`.
 - **Key hygiene:** MapTiler key via `import.meta.env.VITE_MAPTILER_KEY` (gitignored in `/splash/.env`). Never hard-code or log the key value.
 - **No jank:** stickiness is CSS `position: sticky` ONLY — no scroll-position listeners driving layout. Step changes come from an IntersectionObserver.
 - **Accessibility:** `prefers-reduced-motion` → `jumpTo` instead of `flyTo`; never steal focus to the map on step change; container `aria-label`; prose steps are real text.

@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Bun only**; **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`) — never hard-code or log it.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **English** throughout.
 - **Every fix ships four coupled artifacts** — code + conformance-or-harness + KB at the RIGHT layer (global `map/design-conformance.md` / per-type `map/types/*.md` / per-format `map/formats/*.md`) + verification. A fix missing its KB-layer line or its harness assertion is incomplete.
 - **Grounded KB** — each best-practice line cites a real source by name (data-to-viz, FT Visual Vocabulary, Datawrapper Academy, NN/g for interactive, WCAG); no fabricated URLs, no invented conformance rule names.

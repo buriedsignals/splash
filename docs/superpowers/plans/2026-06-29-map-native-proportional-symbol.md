@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Bun only** — `bun`, `bunx`, `bun test`. The sole accepted exception is Remotion render via `bunx remotion` (its node toolchain), exactly as choropleth already does.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`. (User rule; overrides any default trailer instruction.)
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant. (User rule; overrides any default trailer instruction.)
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** (`VITE_MAPTILER_KEY` web / `REMOTION_MAPTILER_KEY` video, from `/splash/.env`) — never hard-code or log it.
 - **Area-proportional sizing** (`r ∝ √value`), never radius-proportional — enforced by the conformance guard.

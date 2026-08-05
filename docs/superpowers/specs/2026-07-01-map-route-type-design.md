@@ -146,7 +146,7 @@ A React + MapTiler component driven by the config, rendering the route map's res
 - **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`) — never
   hard-code or log it.
 - **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO
-  `Co-Authored-By: Claude`.
+  an authorship trailer naming an assistant.
 - **English** throughout.
 - **Additive** — a NEW type; choropleth/symbol/route-video paths and the produce selector are unchanged
   (the route `story` dispatch is a new, type-aware THROW stub SP3b fills).

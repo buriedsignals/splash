@@ -121,7 +121,7 @@ the test-hygiene lesson.
 ## Global constraints (binding)
 
 - **Bun only** — `bun`, `bun test`.
-- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **Pure** — `conformance.ts` stays framework-free (no React/MapTiler imports); `checkMapFraming` may import only `resolveMapFrame` from `core/map-format`.
 - **Back-compat** — existing two-arg call sites and tests must keep working unchanged (the `format?` field is optional).

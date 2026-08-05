@@ -12,7 +12,7 @@
 
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages in English.
-- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
+- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`.
 - **Furniture standard** (from `docs/splash/embeddable-module-best-practices.md`): insight title + description + source, each once + responsive. The `description` is the what/when/where line, distinct from the long `unit` (legend label) and short `valueUnit`.
 - **Responsive recipe**: `min()/clamp()/vw` inline; cap fixed overlays at `min(Npx, calc(100vw - gutter))`.
 - **Determinism (video):** pure function of `frame`; no `Date`/`Math.random`. **Key hygiene:** MapTiler key via env only; never hard-code/log it.

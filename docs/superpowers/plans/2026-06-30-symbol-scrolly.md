@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Bun only** — `bun`, `bunx`, `bun test`.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** (`VITE_MAPTILER_KEY` at build; `set -a && . ../../.env && set +a` from `skills/scrolly/`) — never hard-code or log it.
 - **Back-compat:** the choropleth scrolly path is unchanged when `config.type` is absent or `"choropleth"`; verify it still renders.

@@ -103,7 +103,7 @@ This slice's deliverable is the harness itself; it is verified by RUNNING it on 
 ## Global constraints (binding)
 
 - **Bun only** — scripts run via `bun scripts/...`; Playwright via the project's existing dep.
-- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file or commit message — no `Claude-Session:` trailer, no an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **MapTiler key via env only** — the interactive build needs `VITE_MAPTILER_KEY` at build time (loaded via `set -a && . ../../.env && set +a`); never hard-code or log it.
 - **Shared scripts must work for BOTH map types** — the layer detection (`choropleth-fill`||`symbol-circles`) keeps them type-agnostic; verify on both before done.

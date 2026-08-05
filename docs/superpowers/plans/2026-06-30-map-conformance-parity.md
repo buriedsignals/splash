@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Bun only** — `bun`, `bun test`.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **Code, comments, commit messages in English.**
 - **Pure** — `conformance.ts` stays framework-free; the only new import allowed is `resolveMapFrame` from `./core/map-format`.
 - **Back-compat** — existing two-arg call sites/tests keep working unchanged; `format?` is an optional field.

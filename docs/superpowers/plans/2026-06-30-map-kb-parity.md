@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **English.**
 - **No fabricated URLs / no invented conformance rules** — every code cross-ref must name a rule that actually exists in `skills/map-native/src/conformance.ts`; cite sources by name, include a URL ONLY for well-known ones you are confident about (`data-to-viz.com`, the FT chart-doctor GitHub `github.com/Financial-Times/chart-doctor`, `academy.datawrapper.de`).
 - **Mirror the existing docs** — `knowledge/references/design-conformance.md` (terse global checklist style) and `knowledge/references/map/types/proportional-symbol.md` (type-ref structure).

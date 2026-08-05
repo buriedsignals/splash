@@ -12,7 +12,7 @@
 
 - **Runtime:** Bun only — `bun`, `bunx`, `bun test`. Never `npm`/`npx`/`node`.
 - **Language:** all code, comments, commit messages in English.
-- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`. Commit trailer (only if used) EXACTLY: `Claude-Session: https://claude.ai/code/session_01Paz87P3M49t27P9GksL246`
+- **No attribution:** never mention Claude/Anthropic. No `Co-Authored-By`.
 - **Grounded routing:** the static-vs-native choice follows the format ladder (`<repo-root>/knowledge/references/formats/format-selection.md`, Gates 1–4) — static→`map-dw`, interactive/video→`map-native`. Gate 5 (map vs chart) is unchanged from slice 1.
 - **Each engine owns its spec validation** (`validateChartSpec`/`validateMapSpec`/`validateChoroplethConfig`).
 - **Key hygiene:** the MapTiler key (map-native produce) via env only; never hard-code/log it.

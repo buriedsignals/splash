@@ -71,6 +71,41 @@ check(
   `${trailerCount} commit(s) carry a '<name>-Session:' trailer — run scripts/scrub-trailers.sh --yes on the release branch`,
 );
 
+// 4b. No assistant attribution in TRACKED FILES — the commit-trailer check above only reads
+// commit messages, and the same leak lives in the tree. Measured 2026-08-04: one real session URL
+// (https://claude.ai/code/session_…) sat in five plan files, and 91 files under docs/superpowers/
+// state the no-attribution rule by quoting the very thing it forbids.
+//
+// WHY THIS IS A RELEASE CHECK AND NOT A ONE-OFF SWEEP: a sweep is true on the day it runs. The
+// rule ("no vendor attribution in published artifacts") is absolute and permanent, so the only
+// honest form is one that runs before every release.
+//
+// The pattern is deliberately narrow — ATTRIBUTION, not mention. "Claude Code" is a supported
+// runtime with its own module, label and documentation; forbidding its name would forbid saying
+// what the tool runs on. What is forbidden is a claim about WHO WROTE THIS: a session URL, a
+// Co-Authored-By, a "generated with" badge.
+//
+// The checker EXCLUDES ITSELF, narrowly and by name: its own regex necessarily contains the
+// patterns it hunts, so without this it reports itself forever and the check gets ignored — which
+// is how a guard dies. (Second time in one day that prose written to explain a rule tripped the
+// rule: an ordering test in bootstrap-ps1.test.ts matched its own comment. Match the ACT, and
+// exclude the file whose job is to describe it.)
+let attributionHits = [];
+try {
+  const out = execSync(
+    "git grep -lE 'claude\\.ai/code/session_|Co-Authored-By: *(Claude|Anthropic)|Generated with \\[Claude|🤖 Generated' -- ':!node_modules' ':!scripts/preflight-release.mjs' || true",
+    { encoding: "utf8", shell: "/bin/bash" },
+  ).trim();
+  attributionHits = out ? out.split("\n") : [];
+} catch {
+  attributionHits = ["<scan failed>"];
+}
+check(
+  "no assistant attribution in tracked files",
+  attributionHits.length === 0,
+  `${attributionHits.length} file(s) carry a session URL or an authorship trailer: ${attributionHits.slice(0, 5).join(", ")}${attributionHits.length > 5 ? ", …" : ""}`,
+);
+
 // 5. .env is not tracked (never commit the secrets file).
 let envTracked = true;
 try {

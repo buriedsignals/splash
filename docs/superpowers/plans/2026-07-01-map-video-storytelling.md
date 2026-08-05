@@ -12,7 +12,7 @@
 
 - **Bun only** (`bun test`, `bun scripts/...`); video render via `bunx remotion ... --gl=angle --concurrency=1`.
 - **MapTiler key via env only** (`set -a && . ../../.env && set +a` from `skills/map-native/`; Remotion reads `REMOTION_MAPTILER_KEY`) — never hard-code or log it.
-- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO `Co-Authored-By: Claude`.
+- **No Claude/Anthropic mention** in any file OR commit message — NO `Claude-Session:` trailer, NO an authorship trailer naming an assistant.
 - **English** throughout.
 - **Additive:** `SymbolStory` internals are rewritten but its composition ids stay (`SymbolStory` / `SymbolStorySquare` / `SymbolStoryPortrait`). Do NOT change `ChoroplethStory`'s logic/behavior, the SP1 reveal components (`SymbolReveal`/`ChoroplethReveal`), or the produce `static|reveal|story|all` selector's meaning. (The ONE permitted `ChoroplethStory` edit is the mechanical extraction of its inline `TitleCard`/`CaptionCard` into a shared module — an import swap with NO logic change, Task 2 Step 1.)
 - **Default basemap** (no water recolour); no-data / basemap policy from SP1 holds. The symbol map already uses the default basemap.
