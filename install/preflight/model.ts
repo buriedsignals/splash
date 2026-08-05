@@ -22,7 +22,7 @@ import {
   type CapabilityReadiness,
   type ReadinessStatus,
 } from "../../lib/newsroom/readiness.ts";
-import { isSet } from "../../lib/newsroom/probe.ts";
+import { isSet, type BrowserProbeResult } from "../../lib/newsroom/probe.ts";
 import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
@@ -108,6 +108,8 @@ export type PreflightModelInput = {
   focus?: string;
   resolveDep?: (pkg: string, fromDir: string) => boolean;
   skillsRoot?: string;
+  /** Injectable for tests, exactly like resolveDep — see lib/newsroom/readiness.ts's own opt. */
+  probeBrowser?: (fromDir: string) => BrowserProbeResult;
 };
 
 /**
@@ -232,6 +234,7 @@ export function preflightModel(
     env,
     ...(input.resolveDep ? { resolveDep: input.resolveDep } : {}),
     ...(input.skillsRoot ? { skillsRoot: input.skillsRoot } : {}),
+    ...(input.probeBrowser ? { probeBrowser: input.probeBrowser } : {}),
   };
 
   // The same state with everything switched on, so each capability can also be asked what it

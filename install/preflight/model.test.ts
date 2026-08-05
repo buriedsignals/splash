@@ -1,9 +1,19 @@
 import { describe, expect, it } from "bun:test";
+import type { BrowserProbeResult } from "../../lib/newsroom/probe.ts";
 import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
 import { preflightModel, type PreflightModel } from "./model.ts";
+
+// chart-native's criticalDeps include "remotion", which also runs the real browser probe
+// (a filesystem stat) unless stubbed — pinning it here keeps this test's result independent of
+// whatever happens to be extracted under skills/chart-native/node_modules/.remotion on the
+// machine running it. Same DI pattern as resolveDep, see lib/newsroom/readiness.test.ts.
+const BROWSER_READY = (): BrowserProbeResult => ({
+  status: "ready",
+  executablePath: "/stub/chrome-headless-shell",
+});
 
 function state(over: Partial<NewsroomState> = {}): NewsroomState {
   return { ...DEFAULT_NEWSROOM_STATE, capabilities: {}, ...over };
@@ -189,6 +199,7 @@ describe("the rest of the decor the page renders", () => {
         },
       }),
       resolveDep: () => true,
+      probeBrowser: BROWSER_READY,
     });
     expect(m.summary.ready).toBe(1);
     expect(m.summary.missing).toBe(1);
