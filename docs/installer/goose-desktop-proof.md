@@ -655,3 +655,17 @@ preuve qui manquait : un garde qu'on ne peut pas satisfaire honnêtement pousse 
 écrire « B1 est vert » serait précisément le geste qu'E19 et E20 viennent de fermer chez le modèle.
 `verified` reste `false` jusqu'à ce qu'un hôte fasse les six critères dans un run.
 
+---
+
+## À QUI ce document fait crédit — précision du 2026-08-05
+
+Tout ce qui est mesuré ici passe par **`goose run`, la CLI**, avec les skills installés par notre
+lien. **Aucun run n'est parti de la fenêtre de l'application.** Le PNG produit prouve donc la
+couche B de **`goose`** (reportée dans `goose-proof.md`), et **pas** celle de `goose-desktop` —
+dont le drapeau `verified` reste `false` pour exactement cette raison : *« the newsroom-facing
+runtime […] launched from the Dock »* n'a toujours rien produit depuis le Dock.
+
+La confusion est facile et ce dépôt l'a déjà payée une fois (cf. `goose-desktop-findings.md` :
+« ne jamais inférer le comportement de l'une depuis l'autre »). C'est pourquoi c'est écrit ici,
+dans le document qui porte les mesures, et pas seulement dans celui qui porte le drapeau.
+

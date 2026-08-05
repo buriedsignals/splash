@@ -62,3 +62,20 @@ Layer-B run, NOT a claim that the full nested-invoke + produce is proven (it was
 the gap, re-run Layer B on a fresh/paid provider key and confirm `suggest-article`→`suggest-chart`
 fires + an artifact is produced. Node-free install + shared `~/.agents/skills` discovery make Goose
 the cheapest of the three non-Claude adapters on the discovery axis.
+
+## ★ Couche B — PROUVÉE pour la CLI le 2026-08-05 (et c'est bien la CLI, pas l'app)
+
+Le partiel du 2026-07-14 ci-dessus est dépassé. Un **vrai PNG 1200×676** est sorti de Goose, depuis
+l'article d'un journaliste : titre portant le takeaway confirmé mot pour mot, données justes et
+triées, source citée, densité `article-web`. Trajectoire lue dans l'enregistrement de session —
+`load_skill(splash) → splash-input → splash-cadrage → splash-proposition → splash-production`, plus
+`suggest-article` et `suggest-chart`.
+
+**C'est `goose run`, la CLI.** Rien de tout cela n'est passé par la fenêtre de l'application, et
+c'est la distinction qui décide des deux drapeaux : `goose` (CLI) a désormais sa couche B ;
+`goose-desktop` ne l'a pas. Le détail complet du run vit dans `goose-desktop-proof.md` pour des
+raisons chronologiques — **il prouve `goose`, pas `goose-desktop`.**
+
+⚠️ Ce que ce run n'a PAS établi : la phase EXPORT. Elle a été atteinte, le gate a refusé
+légitimement, et les paliers gratuits se sont épuisés avant qu'un hôte ne la termine.
+

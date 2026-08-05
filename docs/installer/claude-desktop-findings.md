@@ -108,7 +108,11 @@ Two consequences, and neither is "write an adapter":
 There is also a **cheaper hypothesis worth testing before any of that**: the surface in question is
 Codex embedded in the app, and `codex` is a runtime we already ship and mark verified. If the
 embedded Codex reads `~/.agents/skills` the way the CLI does, ChatGPT desktop may already be
-reachable with no new code. **Untested — the app is not installed on this machine.**
+reachable with no new code. ~~**Untested — the app is not installed on this machine.**~~
+**PÉRIMÉ, corrigé le 2026-08-05** : `/Applications/Claude.app` **est** présente sur la machine, et
+la qualification B2 a été faite depuis. La phrase ci-dessus décrivait un état, pas une propriété —
+elle est restée vraie une journée. Ce qui reste exact est la ligne suivante : aucun visuel n'est
+sorti de l'app, donc la couche B reste non prouvée et le drapeau `verified` reste `false`.
 
 ---
 
