@@ -90,11 +90,13 @@ if ($LASTEXITCODE -ne 0) { Pop-Location; throw "bun install failed in $Dest — 
 Pop-Location
 
 # 5. Package what a host receives, then install its dependencies ONCE, ABOVE the skill
-# directories — where Bun resolves them and no host walks.
+# directories — where Bun resolves them and no host walks. The browser download that follows is
+# part of the same delivered tree (mirrors bootstrap.sh, which bundles it into the same step).
 # This runs BEFORE the setup page (step 6) for two reasons: the page MEASURES this tree — a page
-# opened first reports every in-house engine as missing — and a failure here must stop the install
-# before anyone fills in a form for a tree that will not work. It also runs before step 7, whose
-# Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
+# opened first reports every in-house engine as missing (chart-native/map-native included, whose
+# readiness probe is a filesystem stat for the extracted Playwright browser) — and a failure here
+# must stop the install before anyone fills in a form for a tree that will not work. It also runs
+# before step 7, whose Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
 Write-Host "-> Packaging the skills…"
 Push-Location $Dest
 bun run pack-skills
@@ -105,6 +107,15 @@ Write-Host "-> Installing render dependencies…"
 Push-Location (Join-Path $Dest ".dist")
 bun install | Out-Null
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Dependency install failed in the packaged skills — check your connection, then re-run this installer." }
+Pop-Location
+
+# ONE download, from one skill, on purpose: Playwright caches per user and per browser revision,
+# so map-native — and every other renderer — resolves the same executable this call fetches
+# (mirrors bootstrap.sh, and install/native-browser.test.ts keeps the versions pinned together,
+# which is the condition that makes one download enough).
+Push-Location (Join-Path $Dest ".dist\skills\chart-native")
+bunx playwright install chromium
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
 Pop-Location
 
 # 6. Local setup page — pick runtime + enter keys (verified live); writes .env
@@ -135,17 +146,7 @@ if (-not (Test-Path $runtimeModule)) {
 . $runtimeModule
 Runtime-Install
 
-# 8. Render engine. The dependencies themselves were installed once at step 5, above the
-# packaged skills; only the browser is left, and ONE download serves every renderer: Playwright
-# caches per user and per browser revision, so map-native resolves the same executable this call
-# fetches (mirrors bootstrap.sh, and install/native-browser.test.ts keeps the versions pinned
-# together, which is the condition that makes one download enough).
-Push-Location (Join-Path $Dest ".dist\skills\chart-native")
-bunx playwright install chromium
-if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
-Pop-Location
-
-# 9. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
+# 8. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
 $launcher = Join-Path $Dest "Launch Splash.cmd"
 $launchCmd = Runtime-LaunchCmd
 @"

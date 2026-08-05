@@ -210,13 +210,19 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
 });
 
 // The page measures the tree; the tree must therefore exist. Packaging and installing after the
-// page is what made it report four healthy engines as missing on every real install.
+// page is what made it report four healthy engines as missing on every real install. The browser
+// download is part of that same tree — chart-native/map-native's readiness probe is a filesystem
+// stat for the extracted Playwright browser — so it must land before the page too, not just
+// pack-skills; a script that moved only the packaging call back after the page would still fail
+// this test via the chromium leg.
 test("packages and installs BEFORE opening the setup page", () => {
   const pack = sh.indexOf("bun run pack-skills");
+  const chromium = sh.indexOf("playwright install chromium");
   const page = sh.indexOf("bun install/configurator.ts");
   const runtime = sh.indexOf("bun install/read-runtime.ts");
   expect(pack).toBeGreaterThan(0);
-  expect(page).toBeGreaterThan(pack);
+  expect(chromium).toBeGreaterThan(pack);
+  expect(page).toBeGreaterThan(chromium);
   // The runtime module is chosen BY the page, so it still comes after it.
   expect(runtime).toBeGreaterThan(page);
 });
