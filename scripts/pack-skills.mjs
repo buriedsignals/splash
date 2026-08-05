@@ -45,8 +45,28 @@ if (!repoRoot || !outDir) {
 }
 
 /** Copy a tree, dropping the excluded entries. Symlinks are RESOLVED into real files: a link
- *  is exactly how node_modules smuggled itself into a tree that looked clean. */
-function copyTree(from, to) {
+ *  is exactly how node_modules smuggled itself into a tree that looked clean.
+ *
+ *  Every rule here must be a rule the simulator (lib/host/skill-payload.ts) also applies —
+ *  otherwise the delivery carries weight the budgets never measured. Two of them exist for that
+ *  reason alone: the realpath `seen` set, and `stopAtNestedSkill`.
+ *
+ *  @param seen  realpaths already copied. Symlinks are FOLLOWED, so a cycle is reachable; without
+ *               this the packer materialises nested copies until ELOOP, swallows the stat failure
+ *               at the bottom and reports success on a delivery it has wrecked.
+ *  @param stopAtNestedSkill  skip a subtree carrying its own SKILL.md. A host loading <name> never
+ *               offers such a subtree, so the budgets never counted it. Applied under skills/ only:
+ *               lib/ is an internal dependency, not an offer, and no host walks it. */
+function copyTree(from, to, { seen = new Set(), stopAtNestedSkill = false } = {}) {
+  let real;
+  try {
+    real = realpathSync(from);
+  } catch {
+    return;
+  }
+  if (seen.has(real)) return;
+  seen.add(real);
+
   mkdirSync(to, { recursive: true });
   for (const entry of readdirSync(from, { withFileTypes: true })) {
     const name = entry.name;
@@ -63,7 +83,8 @@ function copyTree(from, to) {
     }
     if (isDir) {
       if (isExcludedEntry(name, true)) continue;
-      copyTree(src, dst);
+      if (stopAtNestedSkill && existsSync(join(src, "SKILL.md"))) continue;
+      copyTree(src, dst, { seen, stopAtNestedSkill });
     } else {
       if (isExcludedEntry(name, false)) continue;
       copyFileSync(src, dst);
@@ -96,6 +117,16 @@ process.on("exit", (code) => {
   // A failed build leaves nothing behind and, above all, leaves the live delivery alone.
   if (code !== 0) rmSync(stage, { recursive: true, force: true });
 });
+
+// Explicit, because copyTree tolerates an unresolvable source (a dead link copies nothing) and
+// that tolerance must not extend to the roots: a delivery with no lib/ resolves not one engine
+// import, and one with no skills/ carries nothing at all. Fail loudly rather than promote it.
+for (const required of ["lib", "skills"]) {
+  if (!existsSync(join(repoRoot, required))) {
+    console.error(`no ${join(repoRoot, required)} — nothing to pack from there`);
+    process.exit(1);
+  }
+}
 
 copyTree(join(repoRoot, "lib"), join(stage, "lib"));
 
@@ -140,7 +171,7 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   const src = join(skillsRoot, entry.name);
   // E9's rule, applied here too: a directory with no SKILL.md is not a skill.
   if (!existsSync(join(src, "SKILL.md"))) continue;
-  copyTree(src, join(stage, "skills", entry.name));
+  copyTree(src, join(stage, "skills", entry.name), { stopAtNestedSkill: true });
   packed++;
   foldManifest(join(src, "package.json"), entry.name);
 }

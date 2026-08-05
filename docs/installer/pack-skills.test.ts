@@ -10,6 +10,7 @@ import {
   statSync,
   lstatSync,
   readlinkSync,
+  symlinkSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
@@ -400,6 +401,96 @@ test("carries the previous delivery's node_modules across the re-pack", () => {
     writeFileSync(join(out, "node_modules", "d3", "index.js"), "//");
     pack(src, out);
     expect(existsSync(join(out, "node_modules", "d3", "index.js"))).toBe(true);
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+// ── The packer must decide exactly what the simulator decides ──
+//
+// The budgets are measured by lib/host/skill-payload.ts and the tree is written by the packer. Any
+// rule one applies and the other does not is a delivery the budgets never measured. Two such
+// divergences existed: the simulator keys a `seen` set on realpathSync and the packer had no cycle
+// guard at all, and the simulator stops at a subtree carrying its own SKILL.md while the packer
+// copied straight through it.
+
+/** Every regular file under `dir`, counted without following links (the packed tree has none). */
+function countFilesOnDisk(dir: string): number {
+  let n = 0;
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.isDirectory()) n += countFilesOnDisk(join(dir, e.name));
+    else n += 1;
+  }
+  return n;
+}
+
+test("a symlink cycle is bounded, not materialised until the filesystem gives up", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    // alpha/src/loop -> alpha/src. statSync follows it, so an unguarded walk copies src into
+    // itself over and over until ELOOP — and the packer then swallowed the stat failure at the
+    // bottom and reported success on a delivery it had wrecked. The simulator has always keyed on
+    // realpathSync and stopped. The link points at src, NOT at alpha: a cycle back to the skill
+    // root carries a SKILL.md and would be cut by the nested-skill rule instead, which would leave
+    // this guard untested.
+    symlinkSync(
+      join(src, "skills", "alpha", "src"),
+      join(src, "skills", "alpha", "src", "loop"),
+    );
+    const r = pack(src, out);
+    expect(r.stderr.toString()).not.toContain("ELOOP");
+    expect(r.exitCode).toBe(0);
+    expect(existsSync(join(out, "skills", "alpha", "SKILL.md"))).toBe(true);
+    expect(
+      existsSync(join(out, "skills", "alpha", "src", "loop", "loop")),
+    ).toBe(false);
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("a subtree carrying its own SKILL.md is left out, exactly as the host leaves it out", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    const nested = join(src, "skills", "alpha", "vendor");
+    mkdirSync(nested, { recursive: true });
+    writeFileSync(join(nested, "SKILL.md"), "# vendored\n");
+    writeFileSync(join(nested, "heavy.ts"), "export {};");
+    pack(src, out);
+    // A host loading alpha never offers vendor/'s files, so the budgets never counted them; the
+    // delivery must not carry weight nothing measures.
+    expect(existsSync(join(out, "skills", "alpha", "vendor"))).toBe(false);
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("what the packer writes is exactly what the simulator measures", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    const nested = join(src, "skills", "alpha", "vendor");
+    mkdirSync(nested, { recursive: true });
+    writeFileSync(join(nested, "SKILL.md"), "# vendored\n");
+    writeFileSync(join(nested, "heavy.ts"), "export {};");
+    symlinkSync(
+      join(src, "skills", "alpha", "src"),
+      join(src, "skills", "alpha", "src", "loop"),
+    );
+    expect(pack(src, out).exitCode).toBe(0);
+    // Counted on DISK, not re-measured through the simulator — which would be blind here, because
+    // a materialised cycle copies alpha's own SKILL.md into the junk and the simulator then skips
+    // it as "another skill". What the packer WROTE is the thing under test.
+    expect(countFilesOnDisk(join(out, "skills", "alpha"))).toBe(
+      measureSkillPayload(join(src, "skills", "alpha"), {
+        applyExclusions: true,
+      }).files,
+    );
   } finally {
     rmSync(src, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });
