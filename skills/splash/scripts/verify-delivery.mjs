@@ -82,6 +82,31 @@ if (!existsSync(abs)) {
   process.exit(2);
 }
 
+// A DELIVERED FOLDER CARRIES ITS OWN SIGNATURE (registry E19). `export-code.mjs` is the only
+// writer of `exports/<id>/`, and `assertDelivered` signs every folder it lets through — so an
+// export the gate never passed has no receipt, and that absence is the tell. This is checked
+// BEFORE the walk upwards, because a delivered folder legitimately sits outside any run directory:
+// it is the artifact the newsroom keeps.
+const receiptDir = statSync(abs).isDirectory() ? abs : dirname(abs);
+const receipt = readJson(join(receiptDir, ".splash-export.json"));
+if (receipt?.writtenBy) {
+  console.log(`✓ ${abs}`);
+  console.log("");
+  console.log(`  Delivered by  : ${receipt.writtenBy}`);
+  console.log(`  Format / form : ${receipt.format} / ${receipt.form ?? "—"}`);
+  const named = Object.keys(receipt.files ?? {});
+  if (named.length) console.log(`  Files signed  : ${named.join(", ")}`);
+  console.log("");
+  console.log(
+    "  This reads a receipt on disk. It does NOT prove nobody wrote it by hand — it proves the",
+  );
+  console.log(
+    "  gate that refuses an unreviewed export is the one that wrote it, which a copied folder",
+  );
+  console.log("  cannot show.");
+  process.exit(0);
+}
+
 const runDir = findRunDir(abs);
 if (!runDir) {
   console.error(`✗ ${abs}`);

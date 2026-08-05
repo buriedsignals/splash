@@ -103,6 +103,36 @@ describe("verify-delivery — what stands behind this file", () => {
     expect(r.code).not.toBe(0);
   });
 
+  // E19 — THE FABRICATED FOLDER. A model that cannot pass the export gate can still copy the file
+  // into exports/ by hand and announce a delivery; that is what happened on 2026-08-05. A delivered
+  // folder now carries a receipt only assertDelivered writes, so its ABSENCE is the tell — and the
+  // journalist can see it without knowing any of this history.
+  it("should refuse an export folder that carries no receipt", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exports-"));
+    const el = join(dir, "budget-2026");
+    mkdirSync(el, { recursive: true });
+    writeFileSync(join(el, "budget-2026.png"), "copied by hand");
+    const r = await verify(join(el, "budget-2026.png"));
+    expect(r.code).not.toBe(0);
+    expect(r.out.toLowerCase()).toContain("no splash run");
+  });
+
+  // …and a folder the gate DID sign answers cleanly, so the check distinguishes the two rather
+  // than refusing everything outside a run directory.
+  it("should accept a signed export folder", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "exports-signed-"));
+    const el = join(dir, "budget-2026");
+    mkdirSync(el, { recursive: true });
+    writeFileSync(join(el, "budget-2026.png"), "real bytes");
+    writeFileSync(
+      join(el, ".splash-export.json"),
+      JSON.stringify({ writtenBy: "export-code.mjs", format: "static", form: null, files: {} }),
+    );
+    const r = await verify(join(el, "budget-2026.png"));
+    expect(r.code).toBe(0);
+    expect(r.out).toContain("export-code.mjs");
+  });
+
   // HONESTY, asserted: the command must state its own limit in its own output. It reads files;
   // it cannot prove nobody wrote them by hand. A verification that oversells itself is the same
   // defect as the attestation it exists to check.

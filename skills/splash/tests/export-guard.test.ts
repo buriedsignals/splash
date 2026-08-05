@@ -23,6 +23,22 @@ const rep = (over: Partial<ProduceReport["results"][0]>): ProduceReport => ({
   ],
 });
 
+// `dir` became REQUIRED with the export receipt (registry E19): the guard signs the folder it lets
+// through, so it must be handed one. These cases test the SHAPE rule and do not care which folder
+// — a throwaway keeps each one isolated, and nothing they assert changes.
+const tmpDir = () => mkdtempSync(join(tmpdir(), "export-guard-"));
+
+// An embed delivery is validated AGAINST ITS FILE — `assertDelivered` reads EMBED_URL.txt and
+// checks the URL's shape. That check used to be skipped whenever `dir` was absent, which is most
+// of the time in these unit cases; making `dir` required (registry E19) turned it on everywhere.
+// That is an improvement, not an obstacle: the cases that hand over an embed now have to hand over
+// a real one.
+function tmpDirWithEmbed(url = "https://datawrapper.dwcdn.net/abc12/1/"): string {
+  const d = tmpDir();
+  writeFileSync(join(d, "EMBED_URL.txt"), url);
+  return d;
+}
+
 describe("assertShippable", () => {
   it("passes a produced + reviewed + render-approved proposal", () => {
     expect(() => assertShippable(rep({}), "p1")).not.toThrow();
@@ -68,19 +84,18 @@ describe("assertShippable", () => {
 describe("assertDelivered", () => {
   it("accepts a static delivery of a single image, no html", () => {
     expect(() =>
-      assertDelivered(["chart.png"], { format: "static", form: null }),
+      assertDelivered(["chart.png"], { format: "static", form: null, dir: tmpDir() }),
     ).not.toThrow();
   });
   it("accepts an interactive delivery of just interactive.html (no static.html)", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: "html",
-      }),
+        form: "html", dir: tmpDir() }),
     ).not.toThrow();
   });
   it("refuses a static delivery that is an empty folder", () => {
-    expect(() => assertDelivered([], { format: "static", form: null })).toThrow(
+    expect(() => assertDelivered([], { format: "static", form: null, dir: tmpDir() })).toThrow(
       /exactly one image file/,
     );
   });
@@ -88,81 +103,74 @@ describe("assertDelivered", () => {
     expect(() =>
       assertDelivered(["chart.png", "static.html"], {
         format: "static",
-        form: null,
-      }),
+        form: null, dir: tmpDir() }),
     ).toThrow(/must not include an \.html file/);
   });
   it("refuses a static delivery with extra companion files", () => {
     expect(() =>
       assertDelivered(["chart.png", "README.txt"], {
         format: "static",
-        form: null,
-      }),
+        form: null, dir: tmpDir() }),
     ).toThrow(/exactly the media file/);
   });
   it("refuses a static delivery given a non-null form", () => {
     expect(() =>
       assertDelivered(["chart.png"], {
         format: "static",
-        form: "html" as unknown as null,
-      }),
+        form: "html" as unknown as null, dir: tmpDir() }),
     ).toThrow(/takes no form/);
   });
   it("accepts a video delivery of a single .mp4", () => {
     expect(() =>
-      assertDelivered(["clip.mp4"], { format: "video", form: null }),
+      assertDelivered(["clip.mp4"], { format: "video", form: null, dir: tmpDir() }),
     ).not.toThrow();
   });
   it("refuses a video delivery with no .mp4", () => {
     expect(() =>
-      assertDelivered(["clip.mov"], { format: "video", form: null }),
+      assertDelivered(["clip.mov"], { format: "video", form: null, dir: tmpDir() }),
     ).toThrow(/exactly one \.mp4 file/);
   });
   it("accepts a scrolly delivery of just scrolly.html", () => {
     expect(() =>
-      assertDelivered(["scrolly.html"], { format: "scrolly", form: "html" }),
+      assertDelivered(["scrolly.html"], { format: "scrolly", form: "html", dir: tmpDir() }),
     ).not.toThrow();
   });
   it("refuses a scrolly delivery carrying interactive.html instead of scrolly.html", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "scrolly",
-        form: "html",
-      }),
+        form: "html", dir: tmpDir() }),
     ).toThrow(/scrolly\.html/);
   });
   it("accepts an interactive code-source delivery of a runnable bundle dir listing", () => {
     expect(() =>
       assertDelivered(["package.json", "vite.config.ts", "src/App.tsx"], {
         format: "interactive",
-        form: "code-source",
-      }),
+        form: "code-source", dir: tmpDir() }),
     ).not.toThrow();
   });
   it("refuses an interactive code-source delivery missing vite.config.ts", () => {
     expect(() =>
       assertDelivered(["package.json", "src/App.tsx"], {
         format: "interactive",
-        form: "code-source",
-      }),
+        form: "code-source", dir: tmpDir() }),
     ).toThrow(/runnable source bundle/);
   });
   it("refuses an interactive code-source delivery that is an empty folder", () => {
     expect(() =>
-      assertDelivered([], { format: "interactive", form: "code-source" }),
+      assertDelivered([], { format: "interactive", form: "code-source", dir: tmpDir() }),
     ).toThrow(/non-empty source-bundle directory/);
   });
   it("accepts an interactive embed delivery with a recorded hosted-URL artifact", () => {
     expect(() =>
       assertDelivered(["EMBED_URL.txt"], {
         format: "interactive",
-        form: "embed",
-      }),
+        form: "embed", dir: tmpDirWithEmbed() }),
     ).not.toThrow();
   });
   it("refuses an interactive embed delivery with nothing recorded", () => {
     expect(() =>
-      assertDelivered([], { format: "interactive", form: "embed" }),
+      assertDelivered([], { format: "interactive", form: "embed", dir: tmpDir() }),
     ).toThrow(/recorded hosted-URL artifact/);
   });
   // The faked-delivery bug (QA Wave 11): the run handed over the pre-export PRODUCTION output
@@ -173,16 +181,14 @@ describe("assertDelivered", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "scrolly",
-        form: "embed",
-      }),
+        form: "embed", dir: tmpDir() }),
     ).toThrow(/EMBED_URL\.txt/);
   });
   it("refuses an embed delivery with EMBED_URL.txt plus a stray produced file", () => {
     expect(() =>
       assertDelivered(["EMBED_URL.txt", "static.png"], {
         format: "interactive",
-        form: "embed",
-      }),
+        form: "embed", dir: tmpDirWithEmbed() }),
     ).toThrow(/exactly EMBED_URL\.txt/);
   });
   it("accepts an embed delivery whose EMBED_URL.txt holds a resolvable https URL (hosted-DW publicUrl)", () => {
@@ -196,8 +202,7 @@ describe("assertDelivered", () => {
         assertDelivered(["EMBED_URL.txt"], {
           format: "interactive",
           form: "embed",
-          dir,
-        }),
+          dir }),
       ).not.toThrow();
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -211,8 +216,7 @@ describe("assertDelivered", () => {
         assertDelivered(["EMBED_URL.txt"], {
           format: "interactive",
           form: "embed",
-          dir,
-        }),
+          dir }),
       ).toThrow(/resolvable https URL/i);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -222,8 +226,7 @@ describe("assertDelivered", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: null,
-      }),
+        form: null, dir: tmpDir() }),
     ).toThrow(/requires a form/);
   });
 });
@@ -235,8 +238,7 @@ describe("assertDelivered — the build folder is not a delivery", () => {
         ["interactive.html", "config.json", "native-source.json"],
         {
           format: "interactive",
-          form: "html",
-        },
+          form: "html", dir: tmpDir() },
       ),
     ).toThrow(/config\.json/);
     expect(() =>
@@ -244,8 +246,7 @@ describe("assertDelivered — the build folder is not a delivery", () => {
         ["interactive.html", "config.json", "native-source.json"],
         {
           format: "interactive",
-          form: "html",
-        },
+          form: "html", dir: tmpDir() },
       ),
     ).toThrow(/hand(ed)? over/);
   });
@@ -254,8 +255,7 @@ describe("assertDelivered — the build folder is not a delivery", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: "html",
-      }),
+        form: "html", dir: tmpDir() }),
     ).not.toThrow();
   });
 
@@ -265,8 +265,7 @@ describe("assertDelivered — the build folder is not a delivery", () => {
         ["package.json", "vite.config.ts", "config.json", "index.html"],
         {
           format: "scrolly",
-          form: "code-source",
-        },
+          form: "code-source", dir: tmpDir() },
       ),
     ).not.toThrow();
   });
@@ -275,8 +274,7 @@ describe("assertDelivered — the build folder is not a delivery", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: "code-source",
-      }),
+        form: "code-source", dir: tmpDir() }),
     ).toThrow(/package\.json/);
   });
 });

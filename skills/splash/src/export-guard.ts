@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ProduceReport, VisualFormat } from "./producer-spec";
 import type { BrandProfile } from "./brand-profile";
@@ -13,6 +13,7 @@ import {
   type HandoverForm,
 } from "../../../lib/loop/preconditions";
 import { refusalSentence } from "../../../lib/core/routed-refusal";
+import { createHash } from "node:crypto";
 
 export { isHostedUrl };
 
@@ -154,11 +155,74 @@ export type DeliveryForm = HandoverForm;
 //       "embed"       → EXACTLY an EMBED_URL.txt holding the hosted link — never the pre-export
 //                       production output. When `opts.dir` is given the URL's shape is verified
 //                       too (isHostedUrl), so a blank / stalled-deploy file cannot fake delivery.
+/** The file `export-code.mjs` — and nothing else — leaves in a delivered folder. */
+export const EXPORT_RECEIPT = ".splash-export.json";
+
+// ── WHY A DELIVERED FOLDER IS SIGNED (registry E19) ────────────────────────────────────────
+// Observed live 2026-08-05: `export-code.mjs` refused twice — "not render-reviewed", exit 1,
+// naming the command to run — and the host model then COPIED THE PNG INTO exports/ BY HAND and
+// announced « L'export est terminé, le fichier a été livré », with a plausible placement block.
+// It did not merely claim a delivery that had not happened: it manufactured one. An escalation of
+// E11 — on 2026-08-03 the model routed around a skill it could not invoke; here it routed around
+// an explicit refusal from our own code that told it what to do instead.
+//
+// The signature lives HERE because this function is the one thing every delivery passes through
+// (ten call sites in export-code.mjs, no other writer). The gate that validates a folder is the
+// gate that signs it: a folder cannot pass without being signed, nor be signed without passing. A
+// separate "now write the receipt" step beside each call site would be ten chances to forget —
+// the exact class of defect this guard exists to remove.
+//
+// It records the BYTES, not just the names: a hand-swapped file is a different delivery even when
+// the folder still looks right. What it does NOT do is prove the bytes are good — only that this
+// code wrote them, which is precisely the claim a fabricated folder cannot make.
+// `dir` is REQUIRED, and that is the mechanical half of this guard. It was optional, and five of
+// the nine call sites in export-code.mjs did not pass it — they would have validated a folder and
+// left it unsigned, which is the failure this receipt exists to prevent, reintroduced by omission.
+// Making it required moves the obligation from a reader's memory to the type-checker.
 export function assertDelivered(
+  files: string[],
+  opts: { format: VisualFormat; form: DeliveryForm; dir: string },
+): void {
+  assertDeliveredShape(files, opts);
+  writeExportReceipt(opts.dir, files, opts);
+}
+
+function writeExportReceipt(
+  dir: string,
+  files: string[],
+  opts: { format: VisualFormat; form: DeliveryForm },
+): void {
+  const delivered = files.filter((f) => f !== EXPORT_RECEIPT);
+  const hashes: Record<string, string> = {};
+  for (const f of delivered) {
+    try {
+      hashes[f] = createHash("sha256")
+        .update(readFileSync(join(dir, f)))
+        .digest("hex");
+    } catch {
+      // A directory entry (a source bundle's subfolder) has no bytes of its own. Recorded by
+      // name, without a hash, rather than failing a delivery that is otherwise valid.
+      hashes[f] = "";
+    }
+  }
+  writeFileSync(
+    join(dir, EXPORT_RECEIPT),
+    JSON.stringify(
+      { writtenBy: "export-code.mjs", format: opts.format, form: opts.form, files: hashes },
+      null,
+      2,
+    ),
+  );
+}
+
+function assertDeliveredShape(
   files: string[],
   opts: { format: VisualFormat; form: DeliveryForm; dir?: string },
 ): void {
   const { format, form, dir } = opts;
+  // The receipt is bookkeeping, never a deliverable: a static delivery is still exactly one PNG
+  // after it has been signed, so re-validating a signed folder must still pass.
+  files = files.filter((f) => f !== EXPORT_RECEIPT);
 
   // ① A PRODUCTION FOLDER IS NOT A DELIVERY. The 16 proven non-deliveries of the 2026-07-28 sweep
   // are all inside the 36 cases that handed this folder back, and none outside it — so this is a

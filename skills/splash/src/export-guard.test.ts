@@ -8,6 +8,9 @@ import {
 } from "./editorial-signoff";
 import type { BrandProfile } from "./brand-profile";
 import type { ProduceReport } from "./producer-spec";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const BYTES = new TextEncoder().encode("the-approved-artifact");
 const H = sha256Hex(BYTES);
@@ -133,7 +136,12 @@ describe("assertEditoriallyCleared — verify editorial sign-offs against curren
   });
 });
 
+// `dir` became REQUIRED with the export receipt (registry E19) — the guard signs the folder it
+// lets through, so it must be handed one. These cases are about the SHAPE rule, so the folder is a
+// throwaway: what they assert is unchanged.
 describe("assertDelivered — code-source now requires a runnable bundle", () => {
+  const tmpDir = () => mkdtempSync(join(tmpdir(), "assert-delivered-"));
+
   it("accepts a real bundle (package.json + vite.config.ts present)", () => {
     expect(() =>
       assertDelivered(
@@ -147,6 +155,7 @@ describe("assertDelivered — code-source now requires a runnable bundle", () =>
         {
           format: "interactive",
           form: "code-source",
+          dir: tmpDir(),
         },
       ),
     ).not.toThrow();
@@ -156,12 +165,17 @@ describe("assertDelivered — code-source now requires a runnable bundle", () =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
         form: "code-source",
+        dir: tmpDir(),
       }),
     ).toThrow(/runnable source bundle/);
   });
   it("still rejects an empty dir", () => {
     expect(() =>
-      assertDelivered([], { format: "scrolly", form: "code-source" }),
+      assertDelivered([], {
+        format: "scrolly",
+        form: "code-source",
+        dir: tmpDir(),
+      }),
     ).toThrow();
   });
 });

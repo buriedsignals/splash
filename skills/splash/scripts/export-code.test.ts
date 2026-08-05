@@ -111,6 +111,14 @@ function run(
   return execFileSync("bun", args, { encoding: "utf8" });
 }
 
+// WHAT THE NEWSROOM RECEIVES, without our bookkeeping. `assertDelivered` signs every folder it
+// lets through with a hidden `.splash-export.json` (registry E19) so a hand-copied folder can be
+// told from a delivered one. That receipt is provenance, not a deliverable — these assertions are
+// about what the journalist gets, so they read the folder the way a journalist sees it.
+function delivered(dir: string): string[] {
+  return readdirSync(dir).filter((f) => !f.startsWith("."));
+}
+
 describe("isEphemeralPath", () => {
   it("flags temp / scratchpad destinations the journalist would lose", () => {
     expect(isEphemeralPath("/tmp/co2-export")).toBe(true);
@@ -191,7 +199,7 @@ describe("export-code CLI — STATIC delivery (media direct, no folder machinery
     try {
       const out = run(outDir, exportDir, resultsPath, "p1");
       expect(out).toContain("EXPORT_CODE_RESULT");
-      const listing = readdirSync(exportDir);
+      const listing = delivered(exportDir);
       // The lone media file IS the delivery — nothing else.
       expect(listing).toEqual(["static.png"]);
       expect(existsSync(join(exportDir, "static.html"))).toBe(false);
@@ -221,7 +229,7 @@ describe("export-code CLI — STATIC delivery (media direct, no folder machinery
     const exportDir = mkdtempSync(join(import.meta.dir, "export-static-dw-"));
     try {
       run(outDir, exportDir, resultsPath, "wage-gap");
-      expect(readdirSync(exportDir)).toEqual([pngName]);
+      expect(delivered(exportDir)).toEqual([pngName]);
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(outDir, { recursive: true, force: true });
@@ -289,7 +297,7 @@ describe("export-code CLI — VIDEO delivery (a menu, not a hand-over)", () => {
       // The CMS form must HOST the file first: no self-hosted mp4 block exists, so an article
       // can only point at one. Declared, so it is never presented as a one-step choice.
       expect(proposal.forms.c.hostsFirst).toBe(true);
-      expect(readdirSync(exportDir)).toEqual([]);
+      expect(delivered(exportDir)).toEqual([]);
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(outDir, { recursive: true, force: true });
@@ -323,7 +331,7 @@ describe("export-code CLI — VIDEO delivery (a menu, not a hand-over)", () => {
     try {
       const out = run(outDir, exportDir, resultsPath, "p1", "file");
       expect(out).toContain("EXPORT_CODE_RESULT");
-      expect(readdirSync(exportDir)).toEqual(["landscape.mp4"]);
+      expect(delivered(exportDir)).toEqual(["landscape.mp4"]);
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(outDir, { recursive: true, force: true });
@@ -423,7 +431,7 @@ describe("export-code CLI — INTERACTIVE phase 1 (proposal, builds nothing)", (
     try {
       const out = run(outDir, exportDir, resultsPath, "p1", "html");
       expect(out).toContain("EXPORT_CODE_RESULT");
-      expect(readdirSync(exportDir)).toEqual(["interactive.html"]);
+      expect(delivered(exportDir)).toEqual(["interactive.html"]);
       expect(existsSync(join(exportDir, "p1-source"))).toBe(false);
       expect(existsSync(join(exportDir, "static.html"))).toBe(false);
     } finally {
@@ -510,7 +518,7 @@ describe("export-code CLI — markerless outDir (no code-source bundle possible)
     );
     try {
       run(outDir, exportDir, resultsPath, "p1", "html");
-      expect(readdirSync(exportDir)).toEqual(["scrolly.html"]);
+      expect(delivered(exportDir)).toEqual(["scrolly.html"]);
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
       rmSync(outDir, { recursive: true, force: true });
@@ -951,7 +959,7 @@ describe("export-code CLI — S4d editorial sign-off gate", () => {
       // The artifact must not be on disk: no exportDir at all, or (if it existed) no static.png
       // inside it — either shape proves the copy never ran.
       if (existsSync(exportDir)) {
-        expect(readdirSync(exportDir)).not.toContain("static.png");
+        expect(delivered(exportDir)).not.toContain("static.png");
       }
     } finally {
       rmSync(exportDir, { recursive: true, force: true });
@@ -1074,7 +1082,7 @@ describe("export-code CLI — S4d PROFILE AUTO-DISCOVERY from cwd (no --profile 
       );
       // Refused before any write — the artifact never lands in exportDir.
       if (existsSync(exportDir)) {
-        expect(readdirSync(exportDir)).not.toContain("static.png");
+        expect(delivered(exportDir)).not.toContain("static.png");
       }
     } finally {
       rmSync(exportDir, { recursive: true, force: true });

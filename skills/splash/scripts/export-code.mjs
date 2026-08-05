@@ -323,7 +323,7 @@ function main() {
     editorialGate(readFileSync(join(outDir, media)));
     mkdirSync(exportDir, { recursive: true });
     copyFileSync(join(outDir, media), join(exportDir, media));
-    assertDelivered(readdirSync(exportDir), { format, form: null });
+    assertDelivered(readdirSync(exportDir), { format, form: null, dir: exportDir });
     done({ format, media: join(absExportDir, media), exportDir: absExportDir });
     return;
   }
@@ -414,7 +414,7 @@ function main() {
     if (form === "file") {
       mkdirSync(exportDir, { recursive: true });
       copyFileSync(join(outDir, mp4), join(exportDir, mp4));
-      assertDelivered(readdirSync(exportDir), { format, form: "file" });
+      assertDelivered(readdirSync(exportDir), { format, form: "file", dir: exportDir });
       done({ format, form: "file", media: join(absExportDir, mp4), exportDir: absExportDir });
       return;
     }
@@ -525,7 +525,7 @@ function main() {
     editorialGate(readFileSync(join(outDir, interactive)));
     mkdirSync(exportDir, { recursive: true });
     copyFileSync(join(outDir, interactive), join(exportDir, interactive));
-    assertDelivered(readdirSync(exportDir), { format, form: "html" });
+    assertDelivered(readdirSync(exportDir), { format, form: "html", dir: exportDir });
     done({
       format,
       form: "html",
@@ -564,7 +564,7 @@ function main() {
         [EXPORT_SOURCE_SCRIPT, bundleType, join(outDir, "config.json"), bundleDir],
         { stdio: "inherit" },
       );
-      assertDelivered(readdirSync(bundleDir), { format, form: "code-source" });
+      assertDelivered(readdirSync(bundleDir), { format, form: "code-source", dir: bundleDir });
       done({
         format,
         form: "code-source",
@@ -586,7 +586,7 @@ function main() {
         ],
         { stdio: "inherit" },
       );
-      assertDelivered(readdirSync(bundleDir), { format, form: "code-source" });
+      assertDelivered(readdirSync(bundleDir), { format, form: "code-source", dir: bundleDir });
       done({
         format,
         form: "code-source",
