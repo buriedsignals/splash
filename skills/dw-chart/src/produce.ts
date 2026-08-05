@@ -23,6 +23,7 @@ import {
   normalizeChannel,
   renderSize,
 } from "../../splash/src/channel";
+import { resolveDeliverableLang } from "./deliverable-lang";
 
 // The single-format-produce-export redesign's vocabulary, restricted to the two
 // values dw-chart actually builds differently (it has no video/scrolly — see
@@ -143,7 +144,15 @@ export async function produceChart(
   }
   const channel = normalizeChannel(spec.channel);
 
-  const patch = specToMetadata(spec);
+  // THE DELIVERABLE'S LANGUAGE, resolved here rather than hoped for (registry E18). `spec.lang` is
+  // documented as "set by the suggester" and nothing set it, so a French journey shipped
+  // `28,400,000` and « Created with Datawrapper » — observed at the render on the 2026-08-05 host
+  // run, with a profile declaring `lang: fr` sitting beside it the whole time. An explicit spec
+  // language still wins; the install answers when the spec is silent.
+  const patch = specToMetadata({
+    ...spec,
+    lang: resolveDeliverableLang(spec.lang),
+  });
   // i18n FURNITURE GATE (P5) — fail loud BEFORE any API call if a non-English chart's
   // outgoing metadata would ship the English/double "Source:" caption: annotate.notes
   // must carry the localized "Source : X" line and describe.source-name/source-url
