@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { realLinkAgentsSkills } from "./link-helper";
 
 const RUNTIMES = join(import.meta.dir, "../../install/runtimes");
 const gooseSh = readFileSync(join(RUNTIMES, "goose.sh"), "utf8");
@@ -61,7 +62,7 @@ test("runtime_install symlinks every skill into ~/.agents/skills (CLI install sk
     mkdirSync(home, { recursive: true });
     mkdirSync(fakeBin, { recursive: true });
     for (const s of skills) {
-      const d = join(dest, "skills", s);
+      const d = join(dest, ".dist", "skills", s);
       mkdirSync(d, { recursive: true });
       writeFileSync(join(d, "SKILL.md"), `---\nname: ${s}\n---\n`);
     }
@@ -75,12 +76,7 @@ test("runtime_install symlinks every skill into ~/.agents/skills (CLI install sk
 export HOME="${home}"
 DEST="${dest}"
 export PATH="${fakeBin}:/usr/bin:/bin"
-link_agents_skills() {
-  mkdir -p "$HOME/.agents/skills"
-  for skill_dir in "$DEST"/skills/*/; do
-    ln -sfn "$skill_dir" "$HOME/.agents/skills/$(basename "$skill_dir")"
-  done
-}
+${realLinkAgentsSkills()}
 . "${join(RUNTIMES, "goose.sh")}"
 runtime_install
 `;
@@ -91,7 +87,7 @@ runtime_install
     for (const s of skills) {
       const link = join(home, ".agents", "skills", s);
       expect(lstatSync(link).isSymbolicLink()).toBe(true);
-      expect(realpathSync(link)).toBe(realpathSync(join(dest, "skills", s)));
+      expect(realpathSync(link)).toBe(realpathSync(join(dest, ".dist", "skills", s)));
     }
   } finally {
     rmSync(work, { recursive: true, force: true });

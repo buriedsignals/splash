@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { realLinkAgentsSkills } from "./link-helper";
 
 const RUNTIMES = join(import.meta.dir, "../../install/runtimes");
 const MODULE = join(RUNTIMES, "goose-desktop.sh");
@@ -111,7 +112,7 @@ test("runtime_install wires every skill when the app is already present", () => 
     mkdirSync(home, { recursive: true });
     mkdirSync(app, { recursive: true });
     for (const s of skills) {
-      const d = join(dest, "skills", s);
+      const d = join(dest, ".dist", "skills", s);
       mkdirSync(d, { recursive: true });
       writeFileSync(join(d, "SKILL.md"), `---\nname: ${s}\n---\n`);
     }
@@ -123,12 +124,7 @@ export HOME="${home}"
 DEST="${dest}"
 export GOOSE_APP="${app}"
 export PATH="/usr/bin:/bin"
-link_agents_skills() {
-  mkdir -p "$HOME/.agents/skills"
-  for skill_dir in "$DEST"/skills/*/; do
-    ln -sfn "$skill_dir" "$HOME/.agents/skills/$(basename "$skill_dir")"
-  done
-}
+${realLinkAgentsSkills()}
 . "${MODULE}"
 ensure_bun_on_login_path() { :; }
 runtime_install
@@ -139,7 +135,7 @@ runtime_install
     for (const s of skills) {
       const link = join(home, ".agents", "skills", s);
       expect(lstatSync(link).isSymbolicLink()).toBe(true);
-      expect(realpathSync(link)).toBe(realpathSync(join(dest, "skills", s)));
+      expect(realpathSync(link)).toBe(realpathSync(join(dest, ".dist", "skills", s)));
     }
   } finally {
     rmSync(work, { recursive: true, force: true });

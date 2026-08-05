@@ -8,23 +8,12 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+// The REAL shared helper, so this exercises the seam codex.sh depends on, not a copy of it.
+import { realLinkAgentsSkills } from "./link-helper";
 
 const runtimesDir = join(import.meta.dir, "../../install/runtimes");
 const codexSh = readFileSync(join(runtimesDir, "codex.sh"), "utf8");
 const codexPs1 = readFileSync(join(runtimesDir, "codex.ps1"), "utf8");
-const bootstrapSh = readFileSync(
-  join(import.meta.dir, "../../install/bootstrap.sh"),
-  "utf8",
-);
-
-// Extract the REAL shared link_agents_skills helper from bootstrap.sh so the behavioral test
-// exercises the actual seam wiring codex.sh depends on, not a re-implementation of it.
-function realLinkAgentsSkills(): string {
-  const m = bootstrapSh.match(/^link_agents_skills\(\)\s*\{[\s\S]*?^\}/m);
-  if (!m)
-    throw new Error("link_agents_skills helper not found in bootstrap.sh");
-  return m[0];
-}
 
 // Run a bash snippet in a fresh subprocess (isolated env/HOME) and return {exitCode, stdout}.
 function runBash(script: string): { code: number; out: string; err: string } {

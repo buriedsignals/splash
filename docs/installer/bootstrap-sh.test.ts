@@ -10,6 +10,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+// Runs the real helper — extracted from the shipped script, never re-typed — so these tests
+// exercise what installs, not a copy that can drift from it.
+import { linkHelperScript } from "./link-helper";
 import { join } from "node:path";
 
 const sh = readFileSync(
@@ -17,19 +20,6 @@ const sh = readFileSync(
   "utf8",
 );
 
-// Runs the real helper — extracted from the shipped script, never re-typed — against a throwaway
-// HOME and DEST, so these tests exercise what installs, not a copy that can drift from it.
-const linkHelperScript = (home: string, dest: string, target?: string) => `
-  set -euo pipefail
-  HOME="${home}"; DEST="${dest}"
-  ${
-    sh
-      .split("link_agents_skills() {")[1]!
-      .split("\n}")[0]!
-      .replace(/^/, "link_agents_skills() {") + "\n}"
-  }
-  link_agents_skills ${target ? `"${target}"` : ""}
-`;
 const claudeModule = readFileSync(
   join(import.meta.dir, "../../install/runtimes/claude.sh"),
   "utf8",
@@ -221,10 +211,18 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
 
 test("the installer links the DELIVERED tree, not the engine checkout", () => {
   // Pointing the helper at $DEST/skills would ship a host the whole engine — the failure this
-  // whole chantier exists to close. Asserted on the shipped text because the surrounding steps
-  // (download, bun install) cannot run in a test.
-  expect(sh).toContain(".dist/skills");
-  expect(sh).toContain("pack-skills");
+  // whole chantier exists to close. Asserted on the EXECUTABLE lines: `toContain(".dist/skills")`
+  // and `toContain("pack-skills")` were both satisfied by this file's own comments, which mention
+  // the packaged tree several times, so they would have held with the glob pointed anywhere.
+  const code = sh
+    .split("\n")
+    .filter((l) => !l.trimStart().startsWith("#"))
+    .join("\n");
+  expect(code).toMatch(/for skill_dir in "\$DEST"\/\.dist\/skills\/\*\/; do/);
+  expect(code).toMatch(/bun run pack-skills/);
+  // …and the dependency install + the Playwright download address the delivery, not the checkout.
+  expect(code).toMatch(/cd "\$DEST\/\.dist" && bun install/);
+  expect(code).toMatch(/cd "\$DEST\/\.dist\/skills\/chart-native"/);
   // The merged install replaces the per-engine one: a journalist must not install twice.
   expect(sh).not.toMatch(/for skill in "\$\{NATIVE_SKILLS\[@\]\}"/);
 });
