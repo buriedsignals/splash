@@ -89,7 +89,7 @@ describe("capability readiness", () => {
     );
     expect(r.status).toBe("missing");
     expect(r.reason).toContain("vite");
-    expect(r.reason).toContain("bun install");
+    expect(r.reason).toContain("installer");
   });
 
   it("is unverified when the last live check could not reach the provider", () => {
@@ -170,8 +170,8 @@ describe("capability readiness", () => {
       { env: {}, resolveDep: ALL_DEPS_PRESENT, probeBrowser: BROWSER_MISSING },
     );
     expect(r.status).toBe("missing");
-    expect(r.reason).toContain("bunx remotion browser ensure");
-    expect(r.reason).toContain("skills/chart-native");
+    expect(r.reason).toContain("installer");
+    expect(r.reason).toContain("browser");
   });
 
   it("is missing for map-native too — every criticalDep list carrying remotion is gated", () => {
@@ -185,8 +185,8 @@ describe("capability readiness", () => {
       },
     );
     expect(r.status).toBe("missing");
-    expect(r.reason).toContain("bunx remotion browser ensure");
-    expect(r.reason).toContain("skills/map-native");
+    expect(r.reason).toContain("installer");
+    expect(r.reason).toContain("browser");
   });
 
   it("does not probe the browser at all for a capability whose criticalDeps never mention remotion", () => {
@@ -205,6 +205,20 @@ describe("capability readiness", () => {
     );
     expect(called).toBe(false);
     expect(r.status).toBe("ready");
+  });
+
+  // The setup page is the one screen whose promise is that there will be no terminal. Telling its
+  // reader to `bun install` in a directory is both impossible for them and, since the installer
+  // installs the dependencies itself, never their job in the first place.
+  it("never tells the journalist to run a command", () => {
+    const missing = capabilityReadiness(
+      NEWSROOM_CAPABILITIES["image-native"]!,
+      state({ "image-native": { enabled: true } }),
+      { env: {}, resolveDep: () => false },
+    );
+    expect(missing.status).toBe("missing");
+    expect(missing.reason).not.toContain("bun install");
+    expect(missing.reason).toContain("installer");
   });
 
   it("is ready once the browser is fully extracted", () => {

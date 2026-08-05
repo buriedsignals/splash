@@ -113,8 +113,8 @@ export function capabilityReadiness(
         ...base,
         status: "missing",
         reason:
-          `${cap.label} is not installed (${missing.join(", ")} missing) — ` +
-          `run \`bun install\` in skills/${cap.criticalDeps.fromSkillDir}, then retry`,
+          `${cap.label} was not installed completely (${missing.join(", ")} missing) — ` +
+          `run the Splash installer again to finish it`,
       };
 
     // Package resolution alone cannot see this: a stalled fetch can leave a partial download
@@ -127,9 +127,8 @@ export function capabilityReadiness(
           ...base,
           status: "missing",
           reason:
-            `${cap.label}'s video renderer needs its Remotion browser, which looks missing ` +
-            `or half-downloaded — run \`bunx remotion browser ensure\` in ` +
-            `skills/${cap.criticalDeps.fromSkillDir}, then retry`,
+            `${cap.label}'s video renderer is missing its browser, or it downloaded ` +
+            `only halfway — run the Splash installer again to finish it`,
         };
     }
   }
