@@ -6,13 +6,13 @@ import { measureSkillPayload } from "./skill-payload";
 // Two ceilings, guarding two different things on purpose.
 //
 // FILE_BUDGET is what the packer controls. After packaging the worst skill is chart-native at
-// 275 files, so 400 leaves 45% of room in an engine that grows a directory per chart type.
+// 276 files, so 400 leaves 45% of room in an engine that grows a directory per chart type.
 //
 // CHAR_BUDGET is the guard against the failure itself: Goose spills a tool response over
 // 200 000 characters into a temp file, and SKILL.md then never enters the model's context
 // (measured, and observed happening — skill-payload-2026-08-04.md §3). 160 000 is 80% of it.
 //
-// splash sits at 144 757 and passes with only 10% of room. That is deliberate and must NOT be
+// splash sits at 146 316 and passes with only 9% of room. That is deliberate and must NOT be
 // exempted: its weight is no longer enumeration (1 905 tokens) but PROSE (33 693 tokens), so
 // this ceiling is the only sensor the repo has on SKILL.md growth. When it reddens, the answer
 // is to split SKILL.md by phase — not to raise the number.
