@@ -546,3 +546,45 @@ attempts, the run had already produced a chart by then, and the missing criteria
 above rather than an unfinished journey.
 
 `verified` stays **`false`**.
+
+---
+
+## Run du 2026-08-05 — ce que le découpage en phases donne sur un vrai hôte
+
+Session `splash-b1-final` (`20260805_2`), OpenRouter `nemotron-3-ultra-550b-a55b:free`, session
+NEUVE (pas une reprise — c'est ce qui rendait le modèle fort inaccessible).
+
+**★ LE SEPTIÈME CRITÈRE EST OBSERVÉ, et c'est le résultat principal.** Les skills de phase sont
+chargés, dans l'ordre du parcours, par leur nom :
+
+```
+load_skill splash → splash-input → splash-cadrage → splash-proposition → splash-production
+                  (+ suggest-article, suggest-chart)
+```
+
+Le découpage fonctionne sur un hôte réel, pas seulement sous `scripts/verify-phase-split.mjs` —
+qui prouve que le déplacement était pur et dit lui-même qu'il ne peut pas prouver qu'une règle a
+atterri dans la bonne phase. Mesure de Goose : `splash` est passé à **8 789 tokens de contenu**
+(33 693 avant), et plus rien ne déborde.
+
+**Ce que le run a aussi confirmé** : un vrai PNG 1200×676 correct (titre = takeaway confirmé
+verbatim, données justes et triées, source citée) · **`report.json` écrit par `produce-all`**
+(le correctif E12 tient sur un hôte) · `publicUrl https://datawrapper.dwcdn.net/2sk89/1/` vivant
+**au produce** (D1, re-confirmé) · et `verify-delivery.mjs` qui corrobore `suggest-article` et
+`suggest-chart` depuis le disque, en signalant `splash:cadrage-guided` comme **non corroboré** —
+exactement l'avertissement qu'il existe pour donner.
+
+**Deux défauts que seul un run pouvait trouver :**
+1. **Mon propre `verify-delivery.mjs` lisait `accepted.json` comme un objet** alors que c'est un
+   TABLEAU — il rapportait « aucun sous-skill corroboré » sur un run qui en listait trois. Ses
+   fixtures avaient été écrites dans la forme du lecteur, donc elles étaient d'accord avec le bug.
+   Corrigé, fixtures alignées sur ce que `produce-all` écrit vraiment.
+2. **E18 — le graphique est localisé en anglais sur un run français.** Voir le backlog.
+
+**Ce qui n'a PAS eu lieu, et pourquoi `verified` ne bascule pas :** la phase EXPORT. Le 550B a
+saturé (`Upstream error from Nvidia: Worker local total request limit reached`), et la reprise
+exigeait un modèle acceptant l'image puisque la session porte un `read_image` — le
+`nemotron-3-nano-omni-30b` accepté l'image mais **s'est perdu** : il s'est mis à raisonner sur des
+fichiers de test au lieu d'invoquer `splash-export`. Aucun dossier `-export`, donc le gate de forme
+de livraison n'est pas observé. **C'est une limite de modèle et de palier gratuit, pas du produit.**
+
