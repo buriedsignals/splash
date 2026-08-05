@@ -125,3 +125,23 @@ Rien ne bloque : We.Publish — le CMS du livrable bourse, celui de Heidi.news �
    position, ou le visuel va-t-il en fin de brouillon comme sur We.Publish ? C'est une question
    éditoriale — « Splash place » vs « Splash propose et le journaliste place » — et la réponse
    actuelle du projet, partout ailleurs, est la seconde.
+
+## 4. « Pourquoi ne pas déposer le média directement dans le CMS ? »
+
+La question a été posée le 2026-08-04, elle est bonne, et la réponse a demandé **trois** mesures —
+les deux premières ne la tranchaient pas.
+
+1. **Aucun bloc vidéo ne prend un fichier.** Tous (`youTubeVideo`, `vimeoVideo`, `tikTokVideo`,
+   `streamableVideo`, `facebookVideo`…) prennent un **id de plateforme externe**.
+2. **`uploadImage` est réservé aux images** — c'est le chemin du PNG statique, et il marche.
+3. **`uploadDocument` avait l'air d'être la voie** : `Document.url` est `String!`, donc tout ce qui
+   y est stocké est servi, et un bloc HTML pourrait pointer un `<video>` dessus. **Mais le serveur
+   média valide contre une LISTE BLANCHE** (`libs/media/api/src/lib/media-service/supported-documents-validator.ts`) :
+   pdf, Word, Excel, PowerPoint, ODF, csv, txt, zip. **Ni vidéo, ni audio.**
+   Prouvé sur instance live : **les mêmes octets sont acceptés en `text/csv` et refusés en
+   `video/mp4`** avec un Bad Request nu — le refus est bien le type MIME, pas le fichier.
+
+**Conclusion : We.Publish n'a nulle part où mettre un mp4.** Le lecteur pointant un fichier hébergé
+ailleurs n'est pas une complication de notre adaptateur — c'est la seule forme que le CMS laisse
+disponible. Si ça doit changer un jour, c'est la liste blanche du serveur média qu'il faut élargir,
+côté We.Publish, pas notre code.
