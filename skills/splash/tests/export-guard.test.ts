@@ -8,6 +8,7 @@ import {
   isHostedUrl,
 } from "../src/export-guard";
 import type { ProduceReport } from "../src/producer-spec";
+import { presentArtifact } from "../../../lib/loop/presentation";
 
 const rep = (over: Partial<ProduceReport["results"][0]>): ProduceReport => ({
   results: [
@@ -33,7 +34,9 @@ const tmpDir = () => mkdtempSync(join(tmpdir(), "export-guard-"));
 // of the time in these unit cases; making `dir` required (registry E19) turned it on everywhere.
 // That is an improvement, not an obstacle: the cases that hand over an embed now have to hand over
 // a real one.
-function tmpDirWithEmbed(url = "https://datawrapper.dwcdn.net/abc12/1/"): string {
+function tmpDirWithEmbed(
+  url = "https://datawrapper.dwcdn.net/abc12/1/",
+): string {
   const d = tmpDir();
   writeFileSync(join(d, "EMBED_URL.txt"), url);
   return d;
@@ -81,96 +84,230 @@ describe("assertShippable", () => {
   });
 });
 
+// ── REGISTRY E24 ─────────────────────────────────────────────────────────────────────────────
+// The receipt has to be looked up on the artifact the APPROVAL NAMES, never on whichever file the
+// producer happened to write first. Measured on a real journalist run (2026-08-05, a scrolly): the
+// engine writes `config.json` before `scrolly.html`, so the guard interrogated a build byproduct
+// nobody is ever shown and refused a visual that had been presented, reviewed and approved.
+//
+// These cases build a REAL receipt with the real writer (`presentArtifact`) rather than a
+// hand-made JSON, so they cannot drift from the receipt format the gate reads.
+describe("assertShippable — the receipt is looked up on the approved artifact (E24)", () => {
+  const NO_VIEWER = { ...process.env, SPLASH_NO_VIEWER: "1" };
+
+  /** A produced element: a build byproduct written FIRST, the deliverable written second. */
+  function producedElement(): { dir: string; deliverable: string } {
+    const dir = tmpDir();
+    writeFileSync(join(dir, "config.json"), '{"nativeType":"bar"}');
+    const deliverable = join(dir, "scrolly.html");
+    writeFileSync(deliverable, "<!doctype html><title>the visual</title>");
+    return { dir, deliverable };
+  }
+
+  it("passes when the approved artifact was shown, though it is not the first output", () => {
+    const { dir, deliverable } = producedElement();
+    const shown = presentArtifact(deliverable, NO_VIEWER);
+    if (!shown.ok)
+      throw new Error("test setup: the artifact was not presented");
+
+    expect(() =>
+      assertShippable(
+        rep({
+          producer: "scrolly",
+          format: "scrolly",
+          outputs: [join(dir, "config.json"), deliverable],
+          approvedHash: shown.value.sha256,
+          shownSha256: shown.value.sha256,
+        }),
+        "p1",
+      ),
+    ).not.toThrow();
+  });
+
+  it("still refuses when NO output carries a receipt for the approved bytes", () => {
+    const { dir, deliverable } = producedElement();
+    // Nothing is presented at all — the E20 forgery this guard exists to stop.
+    expect(() =>
+      assertShippable(
+        rep({
+          producer: "scrolly",
+          format: "scrolly",
+          outputs: [join(dir, "config.json"), deliverable],
+          approvedHash: "a".repeat(64),
+          shownSha256: "a".repeat(64),
+        }),
+        "p1",
+      ),
+    ).toThrow(/nobody has been shown/);
+  });
+
+  it("still refuses when a DIFFERENT artifact was shown than the one approved", () => {
+    const { dir, deliverable } = producedElement();
+    // The byproduct is what got presented; the approval names the deliverable's bytes.
+    const shown = presentArtifact(join(dir, "config.json"), NO_VIEWER);
+    if (!shown.ok)
+      throw new Error("test setup: the artifact was not presented");
+
+    expect(() =>
+      assertShippable(
+        rep({
+          producer: "scrolly",
+          format: "scrolly",
+          outputs: [join(dir, "config.json"), deliverable],
+          approvedHash: "b".repeat(64),
+          shownSha256: "b".repeat(64),
+        }),
+        "p1",
+      ),
+    ).toThrow(/nobody has been shown|has changed since/);
+  });
+
+  it("still refuses an approval that names no bytes at all", () => {
+    const { dir, deliverable } = producedElement();
+    presentArtifact(deliverable, NO_VIEWER);
+    expect(() =>
+      assertShippable(
+        rep({
+          producer: "scrolly",
+          format: "scrolly",
+          outputs: [join(dir, "config.json"), deliverable],
+        }),
+        "p1",
+      ),
+    ).toThrow(/no approvedHash/);
+  });
+});
+
 describe("assertDelivered", () => {
   it("accepts a static delivery of a single image, no html", () => {
     expect(() =>
-      assertDelivered(["chart.png"], { format: "static", form: null, dir: tmpDir() }),
+      assertDelivered(["chart.png"], {
+        format: "static",
+        form: null,
+        dir: tmpDir(),
+      }),
     ).not.toThrow();
   });
   it("accepts an interactive delivery of just interactive.html (no static.html)", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: "html", dir: tmpDir() }),
+        form: "html",
+        dir: tmpDir(),
+      }),
     ).not.toThrow();
   });
   it("refuses a static delivery that is an empty folder", () => {
-    expect(() => assertDelivered([], { format: "static", form: null, dir: tmpDir() })).toThrow(
-      /exactly one image file/,
-    );
+    expect(() =>
+      assertDelivered([], { format: "static", form: null, dir: tmpDir() }),
+    ).toThrow(/exactly one image file/);
   });
   it("refuses a static delivery carrying an .html file", () => {
     expect(() =>
       assertDelivered(["chart.png", "static.html"], {
         format: "static",
-        form: null, dir: tmpDir() }),
+        form: null,
+        dir: tmpDir(),
+      }),
     ).toThrow(/must not include an \.html file/);
   });
   it("refuses a static delivery with extra companion files", () => {
     expect(() =>
       assertDelivered(["chart.png", "README.txt"], {
         format: "static",
-        form: null, dir: tmpDir() }),
+        form: null,
+        dir: tmpDir(),
+      }),
     ).toThrow(/exactly the media file/);
   });
   it("refuses a static delivery given a non-null form", () => {
     expect(() =>
       assertDelivered(["chart.png"], {
         format: "static",
-        form: "html" as unknown as null, dir: tmpDir() }),
+        form: "html" as unknown as null,
+        dir: tmpDir(),
+      }),
     ).toThrow(/takes no form/);
   });
   it("accepts a video delivery of a single .mp4", () => {
     expect(() =>
-      assertDelivered(["clip.mp4"], { format: "video", form: null, dir: tmpDir() }),
+      assertDelivered(["clip.mp4"], {
+        format: "video",
+        form: null,
+        dir: tmpDir(),
+      }),
     ).not.toThrow();
   });
   it("refuses a video delivery with no .mp4", () => {
     expect(() =>
-      assertDelivered(["clip.mov"], { format: "video", form: null, dir: tmpDir() }),
+      assertDelivered(["clip.mov"], {
+        format: "video",
+        form: null,
+        dir: tmpDir(),
+      }),
     ).toThrow(/exactly one \.mp4 file/);
   });
   it("accepts a scrolly delivery of just scrolly.html", () => {
     expect(() =>
-      assertDelivered(["scrolly.html"], { format: "scrolly", form: "html", dir: tmpDir() }),
+      assertDelivered(["scrolly.html"], {
+        format: "scrolly",
+        form: "html",
+        dir: tmpDir(),
+      }),
     ).not.toThrow();
   });
   it("refuses a scrolly delivery carrying interactive.html instead of scrolly.html", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "scrolly",
-        form: "html", dir: tmpDir() }),
+        form: "html",
+        dir: tmpDir(),
+      }),
     ).toThrow(/scrolly\.html/);
   });
   it("accepts an interactive code-source delivery of a runnable bundle dir listing", () => {
     expect(() =>
       assertDelivered(["package.json", "vite.config.ts", "src/App.tsx"], {
         format: "interactive",
-        form: "code-source", dir: tmpDir() }),
+        form: "code-source",
+        dir: tmpDir(),
+      }),
     ).not.toThrow();
   });
   it("refuses an interactive code-source delivery missing vite.config.ts", () => {
     expect(() =>
       assertDelivered(["package.json", "src/App.tsx"], {
         format: "interactive",
-        form: "code-source", dir: tmpDir() }),
+        form: "code-source",
+        dir: tmpDir(),
+      }),
     ).toThrow(/runnable source bundle/);
   });
   it("refuses an interactive code-source delivery that is an empty folder", () => {
     expect(() =>
-      assertDelivered([], { format: "interactive", form: "code-source", dir: tmpDir() }),
+      assertDelivered([], {
+        format: "interactive",
+        form: "code-source",
+        dir: tmpDir(),
+      }),
     ).toThrow(/non-empty source-bundle directory/);
   });
   it("accepts an interactive embed delivery with a recorded hosted-URL artifact", () => {
     expect(() =>
       assertDelivered(["EMBED_URL.txt"], {
         format: "interactive",
-        form: "embed", dir: tmpDirWithEmbed() }),
+        form: "embed",
+        dir: tmpDirWithEmbed(),
+      }),
     ).not.toThrow();
   });
   it("refuses an interactive embed delivery with nothing recorded", () => {
     expect(() =>
-      assertDelivered([], { format: "interactive", form: "embed", dir: tmpDir() }),
+      assertDelivered([], {
+        format: "interactive",
+        form: "embed",
+        dir: tmpDir(),
+      }),
     ).toThrow(/recorded hosted-URL artifact/);
   });
   // The faked-delivery bug (QA Wave 11): the run handed over the pre-export PRODUCTION output
@@ -181,14 +318,18 @@ describe("assertDelivered", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "scrolly",
-        form: "embed", dir: tmpDir() }),
+        form: "embed",
+        dir: tmpDir(),
+      }),
     ).toThrow(/EMBED_URL\.txt/);
   });
   it("refuses an embed delivery with EMBED_URL.txt plus a stray produced file", () => {
     expect(() =>
       assertDelivered(["EMBED_URL.txt", "static.png"], {
         format: "interactive",
-        form: "embed", dir: tmpDirWithEmbed() }),
+        form: "embed",
+        dir: tmpDirWithEmbed(),
+      }),
     ).toThrow(/exactly EMBED_URL\.txt/);
   });
   it("accepts an embed delivery whose EMBED_URL.txt holds a resolvable https URL (hosted-DW publicUrl)", () => {
@@ -202,7 +343,8 @@ describe("assertDelivered", () => {
         assertDelivered(["EMBED_URL.txt"], {
           format: "interactive",
           form: "embed",
-          dir }),
+          dir,
+        }),
       ).not.toThrow();
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -216,7 +358,8 @@ describe("assertDelivered", () => {
         assertDelivered(["EMBED_URL.txt"], {
           format: "interactive",
           form: "embed",
-          dir }),
+          dir,
+        }),
       ).toThrow(/resolvable https URL/i);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -226,7 +369,9 @@ describe("assertDelivered", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: null, dir: tmpDir() }),
+        form: null,
+        dir: tmpDir(),
+      }),
     ).toThrow(/requires a form/);
   });
 });
@@ -238,7 +383,9 @@ describe("assertDelivered — the build folder is not a delivery", () => {
         ["interactive.html", "config.json", "native-source.json"],
         {
           format: "interactive",
-          form: "html", dir: tmpDir() },
+          form: "html",
+          dir: tmpDir(),
+        },
       ),
     ).toThrow(/config\.json/);
     expect(() =>
@@ -246,7 +393,9 @@ describe("assertDelivered — the build folder is not a delivery", () => {
         ["interactive.html", "config.json", "native-source.json"],
         {
           format: "interactive",
-          form: "html", dir: tmpDir() },
+          form: "html",
+          dir: tmpDir(),
+        },
       ),
     ).toThrow(/hand(ed)? over/);
   });
@@ -255,7 +404,9 @@ describe("assertDelivered — the build folder is not a delivery", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: "html", dir: tmpDir() }),
+        form: "html",
+        dir: tmpDir(),
+      }),
     ).not.toThrow();
   });
 
@@ -265,7 +416,9 @@ describe("assertDelivered — the build folder is not a delivery", () => {
         ["package.json", "vite.config.ts", "config.json", "index.html"],
         {
           format: "scrolly",
-          form: "code-source", dir: tmpDir() },
+          form: "code-source",
+          dir: tmpDir(),
+        },
       ),
     ).not.toThrow();
   });
@@ -274,7 +427,9 @@ describe("assertDelivered — the build folder is not a delivery", () => {
     expect(() =>
       assertDelivered(["interactive.html"], {
         format: "interactive",
-        form: "code-source", dir: tmpDir() }),
+        form: "code-source",
+        dir: tmpDir(),
+      }),
     ).toThrow(/package\.json/);
   });
 });

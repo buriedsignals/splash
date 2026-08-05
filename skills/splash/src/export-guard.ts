@@ -21,12 +21,43 @@ export { isHostedUrl };
 // The one MECHANICAL gate: nothing ships unless it was actually produced AND the human
 // approved the render. Lives in the irreversible-action scripts so a lower-level call
 // cannot bypass it.
-/** The first output that exists as bytes on disk. Hosted deliveries (a Datawrapper embed) have a
+/** Every output that exists as bytes on disk. Hosted deliveries (a Datawrapper embed) have a
  *  URL and no local file, and there is nothing there to have been shown. */
-function firstLocalOutput(r: { outputs?: string[] }): string | null {
-  for (const v of r.outputs ?? [])
-    if (typeof v === "string" && v && !/^https?:\/\//.test(v) && existsSync(v))
-      return v;
+function localOutputs(r: { outputs?: string[] }): string[] {
+  return (r.outputs ?? []).filter(
+    (v) =>
+      typeof v === "string" && v && !/^https?:\/\//.test(v) && existsSync(v),
+  );
+}
+
+/**
+ * WHICH OUTPUT THE APPROVAL IS ABOUT — the one whose bytes hash to `approvedHash`.
+ *
+ * Registry E24. This used to be "the first local output", and that was wrong for a reason that had
+ * nothing to do with approvals: the order of `outputs` is whatever order the PRODUCER wrote its
+ * files in. Measured on a real journalist run (2026-08-05), the scrolly engine emits
+ * `config.json` before `scrolly.html`, so the guard looked for a presentation receipt on a build
+ * byproduct nobody is ever shown, found none, and refused a visual that had been presented,
+ * reviewed and approved. Elements whose first output happened to BE the deliverable passed by
+ * luck — the guard was non-deterministic with respect to producer write order.
+ *
+ * The approval already names its subject (`gate-render` hashes the file it was handed), so the
+ * lookup keys on that instead of on position. Returns null when no output carries those bytes —
+ * a real refusal, left to the caller to phrase.
+ */
+function approvedLocalOutput(
+  r: { outputs?: string[] },
+  approvedHash: string,
+): string | null {
+  for (const path of localOutputs(r)) {
+    let digest: string;
+    try {
+      digest = createHash("sha256").update(readFileSync(path)).digest("hex");
+    } catch {
+      continue; // unreadable now — it cannot be what was approved
+    }
+    if (digest === approvedHash) return path;
+  }
   return null;
 }
 
@@ -66,12 +97,17 @@ export function assertShippable(report: ProduceReport, id: string): void {
   // `approvedHash` at all: the model simply flipped the two booleans. A guard that skips when the
   // evidence is absent is defeated by removing the evidence, which is the cheapest possible
   // forgery. Measured: with the conditional version, that exact report still exported.
-  const shownPath = firstLocalOutput(r);
-  if (shownPath) {
+  const localPaths = localOutputs(r);
+  if (localPaths.length > 0) {
     if (!r.approvedHash)
       throw new Error(
         `refusing to export ${id}: approved with no approvedHash — nothing names the bytes that were approved, so the approval cannot be checked`,
       );
+    // The artifact the approval NAMES (E24). Falling back to the first output when nothing
+    // matches keeps the refusal concrete — it still has a path to talk about — and that branch is
+    // exactly the case where no output carries the approved bytes, which must refuse anyway.
+    const shownPath =
+      approvedLocalOutput(r, r.approvedHash) ?? (localPaths[0] as string);
     const refusal = shownCovers(shownPath, r.approvedHash);
     if (refusal)
       throw new Error(
@@ -251,7 +287,12 @@ function writeExportReceipt(
   writeFileSync(
     join(dir, EXPORT_RECEIPT),
     JSON.stringify(
-      { writtenBy: "export-code.mjs", format: opts.format, form: opts.form, files: hashes },
+      {
+        writtenBy: "export-code.mjs",
+        format: opts.format,
+        form: opts.form,
+        files: hashes,
+      },
       null,
       2,
     ),
