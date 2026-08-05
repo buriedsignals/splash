@@ -84,3 +84,45 @@ test("Link-AgentsSkills removes a dead junction before linking (a rename must no
     /if \(\$isReparse -and -not \(Test-Path \$existing\.FullName\)\) \{\s*\n\s*Remove-Item \$existing\.FullName -Recurse -Force/,
   );
 });
+
+// WINDOWS PAYLOAD PARITY (registry E10/B6, closed POSIX-only on 2026-08-04).
+//
+// The POSIX installer packages what a host receives, installs its dependencies ABOVE the skill
+// directories, and junctions the PACKAGED tree. The PowerShell one did none of that: it linked
+// `$Dest\skills` — the engine itself, 20 640 files for map-native alone — so a Windows newsroom
+// got exactly the payload that makes `load_skill` overflow and `SKILL.md` never reach the model.
+// The two halves of E10 were one measurement and one installer apart.
+//
+// Asserted at the STRING level, as every other Windows test here is: there is no PowerShell on
+// the machine that runs this suite, so what can be proven is that the shipped script says the
+// right thing — the same standard the rest of this file already holds itself to.
+test("packages the payload before anything links it, exactly as the POSIX installer does", () => {
+  expect(ps).toContain("bun run pack-skills");
+  // Ordering is the whole point: Link-AgentsSkills globs the packaged tree, so packaging must
+  // happen BEFORE the runtime module runs. A correct pair of steps in the wrong order ships the
+  // engine anyway, and nothing would say so.
+  // Matched on the CALL — a line that is nothing but `Runtime-Install` — not on the name, which
+  // also appears in the comment explaining why the order matters. The first version of this
+  // assertion found that comment and failed on correct code, which is how an ordering guard turns
+  // into noise nobody trusts.
+  const callIndex = ps.search(/^Runtime-Install\s*$/m);
+  expect(callIndex).toBeGreaterThan(0);
+  expect(ps.indexOf("bun run pack-skills")).toBeLessThan(callIndex);
+});
+
+test("junctions the PACKAGED skills, never the engine tree", () => {
+  expect(ps).toContain(".dist\\skills");
+  // The pre-packaging glob is gone: linking `$Dest\skills` is what shipped the engine.
+  expect(ps).not.toMatch(/Get-ChildItem \(Join-Path \$Dest "skills"\) -Directory/);
+});
+
+test("installs the packaged tree's dependencies ONCE, above the skills, not per engine", () => {
+  // Above the skill directories is where Bun resolves them and no host walks — that placement is
+  // the reason the payload stays small, not an optimisation.
+  expect(ps).toMatch(/Join-Path \$Dest "\.dist"/);
+  expect(ps).not.toContain('$NativeSkills = @("skills\\chart-native", "skills\\map-native")');
+});
+
+test("downloads Chromium from the packaged chart-native, so the browser lands for the delivered tree", () => {
+  expect(ps).toContain(".dist\\skills\\chart-native");
+});

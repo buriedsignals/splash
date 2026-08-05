@@ -6,7 +6,6 @@ $ErrorActionPreference = "Stop"
 $Repo = if ($env:SPLASH_REPO) { $env:SPLASH_REPO } else { "https://github.com/buriedsignals/splash" }   # confirm before public release
 $Ref  = if ($env:SPLASH_REF) { $env:SPLASH_REF } else { "main" }
 $Dest = Join-Path $HOME "Splash"
-$NativeSkills = @("skills\chart-native", "skills\map-native")
 
 # Shared skill-discovery helper for runtimes that read ~\.agents\skills\ (Codex, Gemini native
 # skills). Junctions every skill dir there by name. Claude Code uses --plugin-dir instead.
@@ -22,7 +21,12 @@ function Link-AgentsSkills {
       Remove-Item $existing.FullName -Recurse -Force
     }
   }
-  foreach ($skillDir in Get-ChildItem (Join-Path $Dest "skills") -Directory) {
+  # The PACKAGED tree, never the engine (registry E10/B6). The repo is 20 640 files for
+  # map-native alone; a host enumerates all of it, filters nothing and follows junctions, so
+  # load_skill overflows and SKILL.md never reaches the model. Mirrors bootstrap.sh's
+  # $DEST/.dist/skills/*/ glob — the two installers must deliver the same thing or the measurement
+  # that closed this only ever held on one operating system.
+  foreach ($skillDir in Get-ChildItem (Join-Path $Dest ".dist\skills") -Directory) {
     # A host silently ignores a directory with no SKILL.md, so junctioning one (a production
     # library such as skills\image-native) inflates the link count while the host discovers one
     # fewer skill — measured on Goose Desktop: 12 linked, 11 discovered, and nothing said. Link
@@ -96,6 +100,22 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
   throw "Configuration was not completed — re-run this installer."
 }
 
+
+# 5b. Package what a host receives, then install its dependencies ONCE, ABOVE the skill
+# directories — where Bun resolves them and no host walks. This MUST run before the runtime
+# module: Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
+Write-Host "-> Packaging the skills…"
+Push-Location $Dest
+bun run pack-skills
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Packaging failed (see the error above) — re-run this installer." }
+Pop-Location
+
+Write-Host "-> Installing render dependencies…"
+Push-Location (Join-Path $Dest ".dist")
+bun install | Out-Null
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Dependency install failed in the packaged skills — check your connection, then re-run this installer." }
+Pop-Location
+
 # 6. Runtime — install the one the setup page recorded, via its module in install\runtimes\.
 # Adding a runtime is a new install\runtimes\<name>.ps1 (see that dir's README), never a change here.
 # The runtime lives in newsroom.json (the decor). install\read-runtime.ts resolves it — including
@@ -113,15 +133,12 @@ if (-not (Test-Path $runtimeModule)) {
 . $runtimeModule
 Runtime-Install
 
-# 7. Producer deps + render engine
-Write-Host "-> Installing render dependencies…"
-foreach ($skill in $NativeSkills) {
-  Push-Location (Join-Path $Dest $skill)
-  bun install | Out-Null
-  if ($LASTEXITCODE -ne 0) { Pop-Location; throw "bun install failed in $skill." }
-  Pop-Location
-}
-Push-Location (Join-Path $Dest "skills\chart-native")
+# 7. Render engine. The dependencies themselves were installed once at step 5b, above the
+# packaged skills; only the browser is left, and ONE download serves every renderer: Playwright
+# caches per user and per browser revision, so map-native resolves the same executable this call
+# fetches (mirrors bootstrap.sh, and install/native-browser.test.ts keeps the versions pinned
+# together, which is the condition that makes one download enough).
+Push-Location (Join-Path $Dest ".dist\skills\chart-native")
 bunx playwright install chromium
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
 Pop-Location
