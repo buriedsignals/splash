@@ -180,7 +180,7 @@ describe("articleUpdateVariables", () => {
       html: "<iframe srcdoc='OLD'></iframe>",
     });
     const r = articleUpdateVariables(a, VISUAL, {
-      isOurs: (html) => html.includes("srcdoc"),
+      isOurs: (b) => typeof b.html === "string" && b.html.includes("srcdoc"),
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;

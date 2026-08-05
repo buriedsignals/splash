@@ -201,6 +201,21 @@ if (parsedConfig.mapStyle === "dataviz-dark" && format === "video") {
   );
 }
 
+// Route arc notice: a route's video draws its line on continuously, so a confirmed storyboard
+// has no camera stops to drive and its prose never appears. Sound behaviour (RouteReveal.tsx
+// explains why), but the reachability audit found it to be the only map type that drops
+// `arcBeats` in SILENCE — and rated that above a hard refusal, because a refusal is something
+// the journalist learns. A notice, not a failure: the video is still the right artefact.
+{
+  const { routeArcNotice } = await import("../src/route-arc-notice.ts");
+  const notice = routeArcNotice({
+    type: parsedConfig.type,
+    format,
+    arcBeats: parsedConfig.arcBeats,
+  });
+  if (notice) console.warn(`[produce map] WARNING: ${notice}`);
+}
+
 // Conformance-at-produce-time: run the type-appropriate guard (core/map-produce-conformance.ts)
 // against the ACTUAL config being rendered — furniture L0 (insight title, source name+url, WCAG
 // contrast) + palette CVD-safety for the ramp-driven types — BEFORE any build step. A violation

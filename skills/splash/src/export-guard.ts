@@ -188,16 +188,48 @@ export function assertDelivered(
   }
 
   if (format === "video") {
-    if (form !== null)
-      throw new Error(
-        `not a delivery: video format takes no form (got ${String(form)})`,
-      );
-    assertFileMedia("video", files);
-    if (files.length !== 1)
-      throw new Error(
-        "not a delivery: video format delivery must be exactly the media file, no extra files",
-      );
-    return;
+    // A video HAS forms since 2026-08-04 — the file, a hosted link, or an insertion into the
+    // journalist's article. `null` stays legal and means the file, so every caller that predates
+    // the menu still delivers exactly what it used to.
+    if (form === null || form === "file") {
+      assertFileMedia("video", files);
+      if (files.length !== 1)
+        throw new Error(
+          "not a delivery: video form=file must be exactly the media file, no extra files",
+        );
+      return;
+    }
+    if (form === "embed" || form === "cms") {
+      // Same strictness as the interactive forms of the same names: the deliverable is the
+      // RECORDED address, never the mp4 sitting beside it. Handing the produced file over and
+      // calling it hosted is the faked delivery this guards.
+      const marker = form === "embed" ? "EMBED_URL.txt" : "CMS_ARTICLE_URL.txt";
+      if (!files.includes(marker))
+        throw new Error(
+          `not a delivery: video form=${form} requires ${marker} — found none; the produced mp4 is not proof that it was published`,
+        );
+      const stray = files.filter((f) => f !== marker);
+      if (stray.length)
+        throw new Error(
+          `not a delivery: video form=${form} must be exactly ${marker}, found extra ${JSON.stringify(stray)}`,
+        );
+      if (dir != null) {
+        let url = "";
+        try {
+          url = readFileSync(join(dir, marker), "utf8").trim();
+        } catch {
+          url = "";
+        }
+        if (!isHostedUrl(url))
+          throw new Error(
+            `not a delivery: video form=${form} ${marker} has no resolvable https URL (got ${JSON.stringify(url)})`,
+          );
+      }
+      return;
+    }
+    throw new Error(
+      `not a delivery: video takes form file | embed | cms (got ${String(form)})`,
+    );
   }
 
   // format is "interactive" | "scrolly" from here on.

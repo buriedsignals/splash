@@ -70,3 +70,30 @@ export function featureLimits(
 export function clearFeatureLimits(): void {
   REGISTRY.clear();
 }
+
+// ── WHY CLEARING IS NOT ENOUGH, and why this pair exists ───────────────────────────────────
+// Production registers at IMPORT time (skills/map-native/src/feature-limits.ts:47, top level),
+// and an ES module body runs ONCE per process. A test runner puts every file in that one
+// process. So a test that clears the registry does not get a clean slate it can hand back —
+// it DESTROYS the real declaration for every file that runs after it, and no later import
+// re-creates it. Measured 2026-08-04 (registry E15): `feature-reach.test.ts` and
+// `lib/brain/offer.test.ts` each pass alone and fail together, in EITHER order —
+//   · this file first  ⇒ its fake `map-native` survives, and the real registration then throws
+//     "already declared", an import-time error that kills whole files;
+//   · this file second ⇒ the real `map-native` is wiped, and every offer/phrase test that reads
+//     a declared limit sees an empty registry.
+// That accounted for 5 of the 12 red tests in `lib`, all of them green in isolation — the exact
+// shape that makes a green suite meaningless.
+//
+// `clearFeatureLimits` is kept as-is: a test that wants an empty registry is legitimate. What
+// was missing is the way BACK. Snapshot before, restore after, and the file is hermetic.
+export function snapshotFeatureLimits(): ReadonlyMap<string, LimitsFn> {
+  return new Map(REGISTRY);
+}
+
+export function restoreFeatureLimits(
+  snapshot: ReadonlyMap<string, LimitsFn>,
+): void {
+  REGISTRY.clear();
+  for (const [engine, fn] of snapshot) REGISTRY.set(engine, fn);
+}

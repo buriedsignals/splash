@@ -108,6 +108,7 @@ async function readBack(auth: string, slug: string) {
             ... on YouTubeVideoBlock { videoID blockStyleName }
             ... on QuoteBlock { quote author blockStyleName }
             ... on IFrameBlock { url title width height blockStyleName }
+            ... on ImageBlock { imageID caption blockStyleName }
           }
         }
       }
@@ -360,6 +361,109 @@ test.skipIf(!RUN)(
 
     const after = await readBack(auth, slug);
     expect(after.draft.blocks).toEqual(before.draft.blocks);
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: a static PNG is uploaded to the media server and inserted as an image block",
+  async () => {
+    // The path that did not exist. An image cannot travel as markup — the block that renders a
+    // picture takes an `imageID` the media server issues — so this is the ONLY way what Splash
+    // produces as a PNG reaches a journalist's article at all.
+    const auth = await token();
+    const slug = `annemasse-png-${Date.now()}`;
+    await journalistArticle(auth, slug);
+
+    // A real 1x1 PNG: bytes that are not valid UTF-8, which is the point.
+    const dir = mkdtempSync(join(tmpdir(), "splash-png-e2e-"));
+    const png = join(dir, "static.png");
+    writeFileSync(
+      png,
+      Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+        "base64",
+      ),
+    );
+
+    const result = await wepublishPublisher.publish({
+      artifactPath: png,
+      id: "budget",
+      format: "static",
+      metadata: {
+        title: "Le budget d'Annemasse",
+        altText: "Répartition du budget par poste",
+        source: "Ville d'Annemasse",
+        credit: "Splash",
+        lang: "fr",
+      },
+      settings: {
+        endpoint: ENDPOINT,
+        targetArticleSlug: slug,
+        targetAfterBlock: "0",
+      },
+      credentials: {
+        SPLASH_WEPUBLISH_EMAIL: EMAIL,
+        SPLASH_WEPUBLISH_PASSWORD: PASSWORD,
+      },
+      outDir: dir,
+    } as PublishRequest);
+    if (!result.ok) throw new Error(`static insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(4);
+    const block = after.draft.blocks[1];
+    // An IMAGE block, at the confirmed position, pointing at a real upload.
+    expect(block.__typename).toBe("ImageBlock");
+    expect(typeof block.imageID).toBe("string");
+    expect(block.imageID.length).toBeGreaterThan(0);
+    expect(block.caption).toBe("Le budget d'Annemasse");
+    // And still a draft edit: nothing published.
+    expect(after.publishedAt ?? null).toBeNull();
+  },
+  120000,
+);
+
+test.skipIf(!RUN)(
+  "LIVE: a video is inserted as a player pointing at the hosted file",
+  async () => {
+    // The one format with no native home: no self-hosted mp4 block exists, so the article gets
+    // an HTML block carrying a <video> element aimed at wherever the newsroom serves the file.
+    const auth = await token();
+    const slug = `annemasse-video-${Date.now()}`;
+    await journalistArticle(auth, slug);
+
+    const result = await wepublishPublisher.publish({
+      artifactUrl: "https://splash.example.pages.dev/budget.mp4",
+      id: "budget",
+      format: "video",
+      metadata: {
+        title: "Le budget d'Annemasse",
+        altText: "Répartition du budget",
+        source: "Ville d'Annemasse",
+        credit: "Splash",
+        lang: "fr",
+      },
+      settings: {
+        endpoint: ENDPOINT,
+        targetArticleSlug: slug,
+        targetAfterBlock: "1",
+      },
+      credentials: {
+        SPLASH_WEPUBLISH_EMAIL: EMAIL,
+        SPLASH_WEPUBLISH_PASSWORD: PASSWORD,
+      },
+      outDir: mkdtempSync(join(tmpdir(), "splash-video-e2e-")),
+    } as PublishRequest);
+    if (!result.ok) throw new Error(`video insertion refused: ${result.message}`);
+
+    const after = await readBack(auth, slug);
+    expect(after.draft.blocks).toHaveLength(4);
+    const block = after.draft.blocks[2];
+    expect(block.__typename).toBe("HTMLBlock");
+    expect(block.html).toContain("<video");
+    expect(block.html).toContain("budget.mp4");
+    expect(after.publishedAt ?? null).toBeNull();
   },
   120000,
 );

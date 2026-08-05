@@ -273,35 +273,16 @@ describe("validateAccepted — the spine validation gate", () => {
   });
 
   // route joined ARC_CAPABLE_MAP_TYPES at the GATE level (map-storyboard-and-video-geography's
-  // claim-arc, mapArcErrors etc.), but never gained a scrolly host — MAP_SCROLLY_TYPES still has
-  // six entries, not seven. A route scrolly used to fall through here as a benign "salience
-  // fallback" (this test used to assert ok:true) — accepting a spec that every OTHER layer
-  // already refuses (lib/loop/assemble/scrolly.ts by name, produce.mjs's own format refusal),
-  // and, worse, silently accepting a CONFIRMED arcBeats plan that would then reach no
-  // reader-facing output at all. Refused HERE now, loud, before production — final-review
-  // finding "CRITICAL 2".
-  it("REFUSES a MAP route scrolly outright — no scrolly host exists for it (with or without arcBeats)", () => {
-    const withoutArc = validateAccepted(
-      accept("scrolly", {
-        type: "route",
-        route: [
-          [2.35, 48.85],
-          [4.35, 50.85],
-        ],
-        basemap: "world",
-        title: "The route the shipment took",
-        description: "Path from Paris to Brussels",
-        source: { name: "X", url: "https://x" },
-      }),
-    );
-    expect(withoutArc.ok).toBe(false);
-    if (!withoutArc.ok)
-      expect(withoutArc.errors.join(" ")).toMatch(
-        /route.*scrolly|scrolly.*route/i,
-      );
-
-    // The sharper case: a CONFIRMED claim-arc must not be silently swallowed — the refusal
-    // must say so explicitly, before the journalist's authored plan is lost.
+  // The spine's "does the scrolly host this map type" refusal. It was introduced with route as
+  // its case — a route scrolly used to fall through as a benign "salience fallback", accepting a
+  // spec every other layer refused and, worse, silently swallowing a CONFIRMED arcBeats plan that
+  // would reach no reader.
+  //
+  // Route stopped being that case on 2026-08-04: ScrollyRouteMap.tsx gave it a host, so the spine
+  // must now ACCEPT it — the confirmed arc finally reaches a reader through it. The refusal is
+  // unchanged and still guards every type the scrolly cannot draw; it just needs a type that is
+  // genuinely unhosted to be about anything.
+  it("ACCEPTS a MAP route scrolly now that ScrollyRouteMap hosts it", () => {
     const withArc = validateAccepted(
       accept("scrolly", {
         type: "route",
@@ -315,11 +296,31 @@ describe("validateAccepted — the spine validation gate", () => {
         source: { name: "X", url: "https://x" },
         arcBeats: [
           { region: "FRA", role: "establish", text: "It leaves Paris." },
+          { region: "BEL", role: "build", text: "It crosses the border." },
+          { region: "NLD", role: "payoff", text: "It arrives." },
+        ],
+      }),
+    );
+    expect(withArc.ok).toBe(true);
+  });
+
+  it("REFUSES a map scrolly whose type no track can draw, naming the lost arc", () => {
+    const withArc = validateAccepted(
+      accept("scrolly", {
+        type: "flow",
+        basemap: "world",
+        title: "Where the money moves",
+        description: "Flows between three centres",
+        source: { name: "X", url: "https://x" },
+        arcBeats: [
+          { region: "FRA", role: "establish", text: "It leaves Paris." },
           { region: "BEL", role: "payoff", text: "It arrives in Brussels." },
         ],
       }),
     );
     expect(withArc.ok).toBe(false);
+    // The confirmed plan must be named: a bare "unsupported type" hides that the journalist's
+    // authored arc is what gets lost.
     if (!withArc.ok)
       expect(withArc.errors.join(" ")).toMatch(/confirmed claim-arc|arcBeats/i);
   });

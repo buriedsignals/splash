@@ -21,16 +21,11 @@
 
 // A digit-group separator (space, no-break space, narrow no-break space) between a digit and a
 // following exactly-three-digit chunk is thousands grouping, not two numbers.
-function collapseDigitGroups(s: string): string {
-  return s.replace(/(\d)[\u0020\u00a0\u202f](?=\d{3}(?:\D|$))/g, "$1");
-}
-
-/** Every numeric token of a text, normalized (thousands collapsed, comma decimal → period). */
-export function figuresIn(text: string): string[] {
-  return (collapseDigitGroups(text).match(/\d+(?:[.,]\d+)?/g) ?? []).map((n) =>
-    n.replace(",", "."),
-  );
-}
+// The tokenizer lives in lib/core/figures.ts — one definition for the three grounding
+// guards that read the same numbers (registry A18). Re-exported so this module keeps the name
+// its own callers and tests already use.
+import { figuresIn } from "../core/figures";
+export { figuresIn };
 
 /**
  * The figures present in what will be rendered but absent from the quoted text — in order of

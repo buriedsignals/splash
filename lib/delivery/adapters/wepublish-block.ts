@@ -81,6 +81,44 @@ export function buildBlockHtml(input: BlockHtmlInput): string {
 }
 
 /**
+ * The block a VIDEO becomes inside an article.
+ *
+ * Measured THREE TIMES, because the obvious objection — "why not just put the file in the CMS,
+ * like the PNG?" — deserves a real answer and the first two measurements did not settle it:
+ *
+ *   1. Every video block in `BlockContentInput` takes an id from an EXTERNAL platform (YouTube,
+ *      Vimeo, TikTok, Streamable, Facebook…). None takes a file.
+ *   2. `uploadImage` is images only — that is the path a static PNG takes.
+ *   3. `uploadDocument` looked like the way in: `Document.url` is `String!`, so anything stored
+ *      there is served, and an HTML block could point a `<video>` at it. But the media server
+ *      validates against an ALLOWLIST (`supported-documents-validator.ts`): pdf, Word, Excel,
+ *      PowerPoint, ODF, csv, txt, zip. No video, no audio. Proven on a live instance: the SAME
+ *      bytes are accepted as `text/csv` and refused as `video/mp4` with a bare Bad Request.
+ *
+ * So We.Publish has nowhere to put an mp4 at all. A video reaching an article as a player aimed
+ * at a file hosted elsewhere is not this adapter over-complicating things — it is the only shape
+ * the CMS leaves available.
+ *
+ * So the mp4 is served from where the newsroom already publishes its own files, and the article
+ * gets a real player pointing at it — the same HTML block an interactive uses, carrying a
+ * `<video>` element instead of an iframe. The ownership marker is the same, so a re-delivery
+ * replaces rather than stacks, exactly as it does for the other two.
+ */
+export function buildVideoBlockHtml(input: {
+  url: string;
+  id: string;
+  title: string;
+}): string {
+  const title = attributeEscape(input.title);
+  const src = attributeEscape(input.url);
+  return (
+    `${ownershipMarker(input.id)}\n` +
+    `<video title="${title}" src="${src}" controls playsinline preload="metadata" ` +
+    `style="width:100%;height:auto"></video>`
+  );
+}
+
+/**
  * The carrier article's slug.
  *
  * DETERMINISTIC on purpose, and that is what buys the "same link after a revision" behaviour the

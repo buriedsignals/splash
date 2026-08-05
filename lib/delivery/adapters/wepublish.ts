@@ -27,13 +27,25 @@ import {
 } from "../../core/publishers";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
 import { isSafeId, unsafeIdMessage } from "../../core/id-safety";
-import { buildBlockHtml, carriesMarker, carrierSlug } from "./wepublish-block";
+import {
+  buildBlockHtml,
+  buildVideoBlockHtml,
+  carriesMarker,
+  carrierSlug,
+} from "./wepublish-block";
 import {
   articleUpdateVariables,
   blockSelectionSet,
+  type BlockInput,
+  type BlockOut,
   type TargetArticle,
 } from "./wepublish-article";
-import { gqlCall, isNotFound, MAX_REQUEST_BODY_BYTES } from "./wepublish-gql";
+import {
+  gqlCall,
+  gqlUpload,
+  isNotFound,
+  MAX_REQUEST_BODY_BYTES,
+} from "./wepublish-gql";
 
 /** W1: the GraphQL URL is `.../v1`, and it is configured rather than derived from a host. */
 const REQUIRED_SETTINGS = ["endpoint"] as const;
@@ -71,6 +83,13 @@ const FIND_ARTICLE = `query SplashFind($slug: String!) {
     draft { blocks { __typename ... on HTMLBlock { html } } }
     published { blocks { __typename ... on HTMLBlock { html } } }
   }
+}`;
+
+// The media server's way in. `tags` is NON_NULL with no default, so it is written out; the
+// caption and alt live on the BLOCK, not on the image record, which is why nothing here tries
+// to carry them.
+const UPLOAD_IMAGE = `mutation SplashUpload($file: Upload!, $filename: String, $title: String, $description: String) {
+  uploadImage(file: $file, filename: $filename, title: $title, description: $description, tags: []) { id }
 }`;
 
 const PUBLISH_ARTICLE = `mutation SplashPublish($id: String!, $at: DateTime!) {
@@ -165,22 +184,15 @@ async function insertIntoArticle(args: {
   endpoint: string;
   token: string;
   slug: string;
-  id: string;
-  blockHtml: string;
+  /** The visual, already in the shape the CMS takes — markup, or a block pointing at an upload. */
+  visual: BlockInput;
+  /** Recognises a previous delivery of THIS element, so a re-run replaces rather than stacks. */
+  isOurs: (block: BlockOut) => boolean;
   afterIndex?: number;
   timeoutMs: number;
   uploadTimeoutMs: number;
 }): Promise<VerbResult<PublishOutcome>> {
-  const {
-    endpoint,
-    token,
-    slug,
-    id,
-    blockHtml,
-    afterIndex,
-    timeoutMs,
-    uploadTimeoutMs,
-  } = args;
+  const { endpoint, token, slug, visual, isOurs, afterIndex, timeoutMs } = args;
 
   const found = await gqlCall({
     endpoint,
@@ -204,11 +216,7 @@ async function insertIntoArticle(args: {
       `wepublish: no article "${slug}" in the CMS. Splash inserts into an article that already exists and never creates one under a name it was given — check the slug in the CMS address bar.`,
     );
 
-  const built = articleUpdateVariables(
-    target,
-    { html: { html: blockHtml } },
-    { isOurs: (html) => carriesMarker(html, id), afterIndex },
-  );
+  const built = articleUpdateVariables(target, visual, { isOurs, afterIndex });
   if (!built.ok) return fail("invalid-request", built.message);
 
   const write = await gqlCall({
@@ -216,7 +224,7 @@ async function insertIntoArticle(args: {
     query: UPDATE_TARGET,
     variables: built.variables,
     token,
-    timeoutMs: uploadTimeoutMs,
+    timeoutMs: args.uploadTimeoutMs,
   });
   if (!write.ok)
     return fail(
@@ -241,9 +249,7 @@ async function insertIntoArticle(args: {
     );
   const after = (verify.value.data as { article?: TargetArticle | null })
     .article;
-  const present = (after?.draft?.blocks ?? []).some(
-    (b) => typeof b.html === "string" && b.html === blockHtml,
-  );
+  const present = (after?.draft?.blocks ?? []).some((b) => isOurs(b));
   if (!present)
     return fail(
       "engine-failed",
@@ -308,12 +314,20 @@ async function publish(
   if (!isSafeId(req.id))
     return fail("invalid-request", unsafeIdMessage(req.id));
 
-  // Step 3: read the artifact.
-  const file = artifactFileOf(req, "wepublish");
+  // Step 3: read the artifact — unless it is a video, which arrives as an ADDRESS. There is no
+  // self-hosted mp4 block in this CMS, so the bytes live wherever the newsroom publishes its
+  // files and the article points at them; demanding a local file here would refuse the only
+  // shape a video can legitimately have.
+  const isVideo = req.format === "video";
+  const file = isVideo
+    ? ok("")
+    : artifactFileOf(req, "wepublish");
   if (!file.ok) return file;
-  let document: string;
+  // BYTES, not text. An interactive is markup and becomes a string a line below; a static PNG
+  // is not valid UTF-8, and reading it as text corrupts it before anything else can go wrong.
+  let bytes: Buffer;
   try {
-    document = readFileSync(file.value, "utf8");
+    bytes = isVideo ? Buffer.alloc(0) : readFileSync(file.value);
   } catch (e) {
     return fail(
       "engine-failed",
@@ -321,23 +335,43 @@ async function publish(
     );
   }
 
+  const isStatic = req.format === "static";
+  // A video's deliverable is the address the newsroom already serves it from. Refused loudly
+  // rather than turned into a player with an empty src — a broken video in a live piece is
+  // worse than a refusal that says what to do.
+  if (isVideo && !(req.artifactUrl ?? "").trim())
+    return fail(
+      "invalid-request",
+      "wepublish: a video reaches a CMS article as a player pointing at a hosted file — this CMS has no self-hosted mp4 block. " +
+        "Publish the mp4 to the newsroom's own hosting first, then hand its URL over for insertion.",
+    );
   const height =
     typeof req.metadata.height === "number"
       ? req.metadata.height
       : DEFAULT_FRAME_HEIGHT;
-  const blockHtml = buildBlockHtml({
-    document,
-    id: req.id,
-    title: req.metadata.title,
-    height,
-  });
+  // An image does not become markup: it becomes an upload plus a block that points at it, which
+  // needs a session and therefore happens after the login, in the insertion branch below.
+  const blockHtml = isStatic
+    ? ""
+    : isVideo
+      ? buildVideoBlockHtml({
+          url: req.artifactUrl!,
+          id: req.id,
+          title: req.metadata.title,
+        })
+      : buildBlockHtml({
+        document: bytes.toString("utf8"),
+        id: req.id,
+        title: req.metadata.title,
+        height,
+      });
 
   // Step 4: the size ceiling, checked on the ESCAPED block rather than on the file (W14/W16).
   // A document full of quotes inflates on the way into the srcdoc attribute, so measuring the
   // raw file would let a payload through and earn the opaque 413 this check exists to prevent.
   // gqlCall enforces the same ceiling on the real body; this earlier check is what makes the
   // message name the ARTIFACT rather than an anonymous request.
-  if (Buffer.byteLength(blockHtml) > MAX_REQUEST_BODY_BYTES)
+  if (!isStatic && Buffer.byteLength(blockHtml) > MAX_REQUEST_BODY_BYTES)
     return fail(
       "invalid-request",
       `wepublish: this visual is too large to travel inside a CMS block — ${Buffer.byteLength(blockHtml)} bytes once wrapped for the article, ` +
@@ -389,13 +423,73 @@ async function publish(
   // The target article is the newsroom's editorial document, where none of those are Splash's
   // to decide — so the branch is taken before any carrier logic runs, and shares only the
   // session and the block it just built.
-  if ((req.settings.targetArticleSlug ?? "").trim())
+  if ((req.settings.targetArticleSlug ?? "").trim()) {
+    // WHAT the visual becomes inside the article, decided by its pinned format.
+    //
+    // interactive / scrolly → an HTML block carrying the markup, with our ownership marker in it.
+    // static               → an UPLOAD to the media server, then an image block pointing at the
+    //                        id it issued. That indirection is the CMS's, not ours: the image
+    //                        block takes an `imageID` and has nowhere to put bytes.
+    let visual: BlockInput;
+    let isOurs: (block: BlockOut) => boolean;
+    if (isStatic) {
+      const uploaded = await gqlUpload({
+        endpoint,
+        query: UPLOAD_IMAGE,
+        variables: {
+          file: null,
+          filename: `${req.id}.png`,
+          title: req.metadata.title,
+          // The alt text, on the record the CMS will reuse everywhere this image appears. It is
+          // required upstream of here (WCAG 1.1.1 is fail-hard at produce), so it is never blank.
+          description: req.metadata.altText,
+        },
+        file: bytes,
+        filename: `${req.id}.png`,
+        contentType: "image/png",
+        token,
+        timeoutMs: uploadTimeoutMs,
+      });
+      if (!uploaded.ok)
+        return fail(
+          "engine-failed",
+          `wepublish: could not upload the image to the CMS's media server: ${uploaded.message}`,
+        );
+      const imageID = (uploaded.value.data as { uploadImage?: { id?: string } })
+        .uploadImage?.id;
+      if (!imageID)
+        return fail(
+          "engine-failed",
+          "wepublish: the media server accepted the image but returned no id, so no block can point at it",
+        );
+      visual = {
+        image: {
+          imageID,
+          // The caption a reader sees. The title carries the takeaway; the alt lives on the
+          // image record above, where the CMS expects it.
+          caption: req.metadata.title,
+        },
+      };
+      // Recognising a previous delivery: the image block Splash inserted is the one pointing at
+      // THIS upload. A re-run uploads a fresh image, so the match is on the caption we wrote —
+      // the only field of ours that survives on the block.
+      isOurs = (block) =>
+        block.__typename === "ImageBlock" &&
+        typeof block.caption === "string" &&
+        block.caption === req.metadata.title;
+    } else {
+      visual = { html: { html: blockHtml } };
+      isOurs = (block) =>
+        block.__typename === "HTMLBlock" &&
+        typeof block.html === "string" &&
+        carriesMarker(block.html, req.id);
+    }
     return insertIntoArticle({
       endpoint,
       token,
       slug: req.settings.targetArticleSlug!.trim(),
-      id: req.id,
-      blockHtml,
+      visual,
+      isOurs,
       // The journalist's confirmed position, carried as a setting like the target itself. An
       // absent one appends; a malformed one is NOT silently dropped into "append".
       ...(req.settings.targetAfterBlock !== undefined
@@ -404,6 +498,7 @@ async function publish(
       timeoutMs,
       uploadTimeoutMs,
     });
+  }
 
   // Step 6: find the carrier article. The slug is deterministic, which is what makes a
   // re-publication land on the SAME article and therefore the same URL (W12).
@@ -570,10 +665,17 @@ export const wepublishPublisher: Publisher = {
   // one would blow the 1 MiB ceiling and produce a worse result than the file the CMS wants.
   // lib/loop/deliver.ts turns a `static`/`video` request here into a refusal that names the
   // portable package instead, which is where the genre routing already sends them.
-  serves: ["interactive", "scrolly"],
-  // BYTES. This adapter moves the deliverable itself, so it needs a file the run owns; a
-  // Datawrapper embed is already published elsewhere and there is nothing here to move.
-  sources: ["file"],
+  // `static` joined the list once the media-server path existed: an image reaches an article
+  // through an upload plus a block that points at it, which is the CMS's own mechanism for
+  // pictures. `video` did NOT: measured, every video block in BlockContentInput takes an id from
+  // an external platform (YouTube, Vimeo, TikTok, Streamable…), `uploadDocument` stores a file
+  // that no block renders, and there is no self-hosted mp4 block at all. An mp4 therefore
+  // reaches a CMS article only as an embed of a URL somebody else hosts.
+  serves: ["interactive", "scrolly", "static", "video"],
+  // BYTES for the three formats that have a home here, and an ADDRESS for the one that does
+  // not: a video is inserted as a player pointing at a file the newsroom already serves, so its
+  // deliverable is legitimately a URL this run owns no bytes of.
+  sources: ["file", "hosted"],
   implemented: true,
   publish,
 };

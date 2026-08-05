@@ -46,7 +46,16 @@ export function productionPrecondition(runDir: string): RoutedRefusal | null {
 /** The delivery FORM axis — orthogonal to VisualFormat. Structurally identical to
  *  skills/splash/src/export-guard.ts's DeliveryForm, which becomes an alias of this one: the lib
  *  half is the definition, because it is the half both sides may import. */
-export type HandoverForm = "html" | "code-source" | "embed" | "cms" | null;
+export type HandoverForm =
+  | "html"
+  | "code-source"
+  | "embed"
+  | "cms"
+  // A VIDEO's own first form: the mp4 itself. It used to be the only thing a video could be, so
+  // it needed no name — video was handed over with `form: null`. It has siblings now (a hosted
+  // link, an insertion into the article), so the file is one choice among three and says so.
+  | "file"
+  | null;
 
 // The files a PRODUCTION directory carries and an export never does. Not a guess: the first
 // three (config.json, and either native-source.json for chart-native or source-manifest.json for

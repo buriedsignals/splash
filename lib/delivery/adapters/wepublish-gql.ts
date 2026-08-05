@@ -8,6 +8,7 @@ import {
   fetchBounded,
 } from "../../core/publishers";
 import { fail, ok, type VerbResult } from "../../core/verbs/types";
+import { buildUploadBody } from "./wepublish-upload";
 
 /**
  * The request-body ceiling, MEASURED against the live instance (W14): a body of 1 047 298 bytes
@@ -40,6 +41,55 @@ export type GqlOk = { data: Record<string, unknown> };
  *
  * Never throws: every failure is a typed VerbResult (invariant I1).
  */
+/**
+ * The same call, carrying a FILE. Used by the one path that needs it: an image has to reach the
+ * media server before any block can point at it (wepublish-upload.ts explains why).
+ *
+ * The size ceiling is deliberately NOT applied here. That check exists because a visual travels
+ * inside a request body as escaped markup and a 413 comes back bare (W14); an upload is what the
+ * media server is FOR, and refusing a 2 MB photograph against a limit meant for inlined markup
+ * would be the wrong instrument on the wrong path.
+ */
+export async function gqlUpload(
+  input: GqlCallInput & {
+    file: Uint8Array;
+    filename: string;
+    contentType: string;
+  },
+): Promise<VerbResult<GqlOk>> {
+  const { body, headerContentType } = buildUploadBody({
+    query: input.query,
+    variables: input.variables ?? {},
+    file: input.file,
+    filename: input.filename,
+    contentType: input.contentType,
+  });
+  let res: Response;
+  try {
+    res = await fetchBounded(
+      input.endpoint,
+      {
+        method: "POST",
+        headers: {
+          "content-type": headerContentType,
+          // Apollo's upload handler rejects a multipart request without this (CSRF prevention),
+          // and the refusal names neither the header nor the reason.
+          "apollo-require-preflight": "true",
+          ...(input.token ? { authorization: `Bearer ${input.token}` } : {}),
+        },
+        body,
+      },
+      input.timeoutMs ?? DEFAULT_NETWORK_TIMEOUT_MS,
+    );
+  } catch (e) {
+    return fail(
+      "engine-failed",
+      `wepublish: ${input.endpoint} did not answer the upload: ${(e as Error).message}`,
+    );
+  }
+  return readEnvelope(res, input.endpoint);
+}
+
 export async function gqlCall(input: GqlCallInput): Promise<VerbResult<GqlOk>> {
   const body = JSON.stringify({
     query: input.query,
@@ -87,6 +137,18 @@ export async function gqlCall(input: GqlCallInput): Promise<VerbResult<GqlOk>> {
         `it can be raised on the We.Publish deployment, or the visual delivered to a destination that takes the file itself.`,
     );
 
+  return readEnvelope(res, input.endpoint);
+}
+
+/**
+ * Reading the answer — shared by the JSON call and the upload, because W4 is the fact that
+ * decides both: an authentication failure is HTTP 200 with `errors`, so `errors` is read before
+ * `data` and before the status. Two copies of that rule would be two chances to lose it.
+ */
+async function readEnvelope(
+  res: Response,
+  endpoint: string,
+): Promise<VerbResult<GqlOk>> {
   const text = await res.text();
   let parsed: unknown;
   try {
@@ -96,7 +158,7 @@ export async function gqlCall(input: GqlCallInput): Promise<VerbResult<GqlOk>> {
     // refusal carrying the status and a slice of what came back, never an exception.
     return fail(
       "engine-failed",
-      `wepublish: ${input.endpoint} answered HTTP ${res.status} with a body that is not JSON: ${text.slice(0, 200)}`,
+      `wepublish: ${endpoint} answered HTTP ${res.status} with a body that is not JSON: ${text.slice(0, 200)}`,
     );
   }
 
@@ -123,13 +185,13 @@ export async function gqlCall(input: GqlCallInput): Promise<VerbResult<GqlOk>> {
   if (!res.ok)
     return fail(
       "engine-failed",
-      `wepublish: ${input.endpoint} answered HTTP ${res.status}`,
+      `wepublish: ${endpoint} answered HTTP ${res.status}`,
     );
 
   if (!envelope.data)
     return fail(
       "engine-failed",
-      `wepublish: ${input.endpoint} answered with neither data nor errors`,
+      `wepublish: ${endpoint} answered with neither data nor errors`,
     );
 
   return ok({ data: envelope.data });

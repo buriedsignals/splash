@@ -59,6 +59,12 @@ test("the scrolly forms the KB can offer are exactly the ones the two tracks hos
     "line · chart-native/line → scrolly",
     "locator · map-native/locator → scrolly",
     "proportional-symbol · map-native/symbol → scrolly",
+    // route joined 2026-08-04 with ScrollyRouteMap.tsx. This list is the OFFER a journalist
+    // sees, so a row appearing here means the loop will propose a route scrolly — which it can
+    // now build. The row had to be added by hand, deliberately: the whole point of pinning the
+    // enumeration rather than asserting a property is that a NEW row is a decision someone
+    // takes, not a side effect nobody reads.
+    "route · map-native/route → scrolly",
   ]);
 });
 

@@ -52,7 +52,12 @@ describe("the scrolly CLI does not bypass the validator", () => {
   // V2 assembler (lib/loop/assemble/scrolly.ts) both already refuse, contradicting this
   // file's own produce.mjs comment that "the CLI and the spine refuse identically". Measured
   // before the fix: this exact well-formed route+arcBeats object produced zero errors here.
-  it('refuses a "route" map track outright — scrolly has no branch to walk it, even for an otherwise well-formed config', () => {
+  // ★ INVERTED 2026-08-04 — these two tests pinned the ABSENCE of a route scrolly, and they were
+  // right to: `scrollySpecErrors` had to refuse the type outright, because nothing downstream
+  // could walk it. ScrollyRouteMap.tsx is that renderer, so the refusal is gone and what has to
+  // be pinned now is the opposite: a well-formed route spec VALIDATES, and the walk it carries
+  // is not silently ignored.
+  it('accepts a "route" map track — ScrollyRouteMap walks it', () => {
     const errors = scrollySpecErrors({
       type: "route",
       title: "Refugee route across three borders",
@@ -63,34 +68,8 @@ describe("the scrolly CLI does not bypass the validator", () => {
         [2.35, 48.85],
         [13.4, 52.52],
       ],
-      arcBeats: [
-        { region: "FR", role: "establish", text: "a" },
-        { region: "DE", role: "build", text: "b" },
-        { region: "PL", role: "payoff", text: "c" },
-      ],
     });
-    expect(errors.length).toBeGreaterThan(0);
-    expect(errors.join(" ")).toContain('a "route" scrolly does not exist yet');
-    // The arcBeats-aware sentence — the fix's whole point: it must say the CONFIRMED plan
-    // reaches no output, not just that the type is unsupported in the abstract.
-    expect(errors.join(" ")).toContain(
-      "The confirmed claim-arc on this spec would reach no reader-facing output",
-    );
-  });
-
-  it('refuses a "route" map track with no arcBeats too (the type alone is the fault)', () => {
-    const errors = scrollySpecErrors({
-      type: "route",
-      title: "Refugee route across three borders",
-      basemap: "world",
-      route: [
-        [2.35, 48.85],
-        [13.4, 52.52],
-      ],
-    });
-    expect(errors.length).toBeGreaterThan(0);
-    expect(errors.join(" ")).toContain('a "route" scrolly does not exist yet');
-    expect(errors.join(" ")).not.toContain("confirmed claim-arc");
+    expect(errors.join(" ")).not.toContain("does not exist yet");
   });
 
   // Behavioural, not textual: spawns the REAL CLI as a subprocess. A `expect(cli).toContain(...)`

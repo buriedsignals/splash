@@ -113,7 +113,9 @@ function cmsEndpoint() {
 
 const IMAGE_RE = /\.(png|svg|jpe?g)$/i;
 const VIDEO_RE = /\.mp4$/i;
-const VALID_FORMS = ["html", "code-source", "embed", "cms"];
+// "file" is the VIDEO's own form — the mp4 itself, which used to be the only thing a video
+// could be and so needed no name.
+const VALID_FORMS = ["html", "code-source", "embed", "cms", "file"];
 
 // Splits argv into positionals and `--flag value` pairs, so the required --results/--id and
 // the optional --form/--profile flags can sit alongside the positional args in any order.
@@ -326,18 +328,143 @@ function main() {
     return;
   }
 
-  // ---- VIDEO: hand over the lone .mp4 directly (the review still is not a deliverable). ----
+  // ---- VIDEO: a two-phase LAZY delivery, like interactive/scrolly. ----
+  //
+  // A video used to be handed over as its file, full stop — "the media IS the deliverable". That
+  // was true of what a video IS and taken to be true of how it SHIPS, and it left a journalist
+  // who wanted the film in their article with no way to ask for it: the CMS route existed, was
+  // measured and was proven live, and the prose path never offered it. Video now proposes, like
+  // every other format that has more than one home.
   if (format === "video") {
-    if (form !== null) fail(`video format takes no --form (got "${form}")`);
     const mp4 = files.find((f) => VIDEO_RE.test(f));
     if (!mp4) fail(`no .mp4 found in ${outDir}`);
-    // Gate BEFORE any write — see the static branch above for why.
+
+    if (form === null) {
+      const deliverBase = `bun ${SELF} ${outDir} ${exportDir} --results ${resolve(resultsPath)} --id ${id}`;
+      const cmsStatus = cmsDeliveryStatus({ endpoint: cmsEndpoint() });
+      const embedStatus = embedDeliveryStatus();
+      const forms = {
+        a: {
+          kind: "media-file",
+          label: "Le fichier vidéo",
+          path: join(absExportDir, mp4),
+          deliver: `${deliverBase} --form file`,
+        },
+        b: {
+          label: "Embed (hébergé)",
+          available: embedStatus.ready,
+          ...(embedStatus.ready
+            ? {}
+            : {
+                reason: uiCopy().missingEmbedKeysReason(embedStatus.reason),
+                missingKeys: embedStatus.missing,
+              }),
+          deliver: `${deliverBase} --form embed`,
+        },
+        c: {
+          label: "Directement dans l'article (CMS)",
+          available: cmsStatus.ready,
+          needsArticle: true,
+          needsPosition: true,
+          // A video has no bytes the CMS can hold — no self-hosted mp4 block exists — so this
+          // form HOSTS the file first and inserts a player pointing at it. Two network steps,
+          // one journalist choice; the chaining is this script's job, not theirs.
+          hostsFirst: true,
+          ...(cmsStatus.ready
+            ? {}
+            : { reason: cmsStatus.reason, missingKeys: cmsStatus.missing }),
+          deliver: `${deliverBase} --form cms --article <slug> --after <position|end>`,
+        },
+      };
+      console.log(
+        "EXPORT_FORMS_JSON " +
+          JSON.stringify({
+            proposalId: id,
+            format,
+            scrolly: false,
+            hosted: false,
+            exportDir: absExportDir,
+            forms,
+          }),
+      );
+      const copy = uiCopy();
+      const relay = [
+        "EXPORT_FORMS_PROPOSAL",
+        copy.intro,
+        `  a) ${copy.formVideoFile(forms.a.path)}`,
+        "  b) " +
+          (forms.b.available === false
+            ? copy.formEmbedMissingKeys(forms.b.missingKeys.join(", "))
+            : copy.formEmbedAvailable),
+        "  c) " +
+          (forms.c.available === false
+            ? copy.formCmsMissingKeys([...forms.c.missingKeys, "endpoint"].join(", "))
+            : copy.formCmsAvailable),
+        copy.question("a / b / c"),
+        copy.waitInstruction,
+        "END_EXPORT_FORMS_PROPOSAL",
+      ];
+      console.log(relay.join("\n"));
+      return;
+    }
+
+    // Gate BEFORE any write or upload — see the static branch above for why.
     editorialGate(readFileSync(join(outDir, mp4)));
-    mkdirSync(exportDir, { recursive: true });
-    copyFileSync(join(outDir, mp4), join(exportDir, mp4));
-    assertDelivered(readdirSync(exportDir), { format, form: null });
-    done({ format, media: join(absExportDir, mp4), exportDir: absExportDir });
-    return;
+
+    if (form === "file") {
+      mkdirSync(exportDir, { recursive: true });
+      copyFileSync(join(outDir, mp4), join(exportDir, mp4));
+      assertDelivered(readdirSync(exportDir), { format, form: "file" });
+      done({ format, form: "file", media: join(absExportDir, mp4), exportDir: absExportDir });
+      return;
+    }
+
+    if (form === "embed" || form === "cms") {
+      const url = deployMedia(join(outDir, mp4), id, resultsPath, format);
+      if (form === "embed") {
+        mkdirSync(exportDir, { recursive: true });
+        writeFileSync(join(exportDir, "EMBED_URL.txt"), url + "\n");
+        assertDelivered(readdirSync(exportDir), {
+          format,
+          form: "embed",
+          dir: exportDir,
+        });
+        done({ format, form: "embed", url, exportDir: absExportDir });
+        return;
+      }
+      // form === "cms": the file is hosted now, so the article can point at it.
+      if (!article)
+        fail(
+          `${format} form=cms needs --article <slug>: ask the journalist which of their articles the visual belongs in — never choose one.`,
+        );
+      if (!after)
+        fail(
+          `${format} form=cms needs --after <position|end>: SHOW the journalist where the visual would go and get their answer before writing into their article.`,
+        );
+      const out = runPublishCms({
+        artifact: join(outDir, mp4),
+        url,
+        article,
+        after,
+        resultsPath,
+        id,
+      });
+      const line = out.split("\n").find((l) => l.startsWith("CMS_ARTICLE_URL "));
+      if (!line) fail("publish-cms did not return a CMS_ARTICLE_URL");
+      const articleUrl = line.slice("CMS_ARTICLE_URL ".length).trim();
+      mkdirSync(exportDir, { recursive: true });
+      writeFileSync(join(exportDir, "CMS_ARTICLE_URL.txt"), articleUrl + "\n");
+      const draftLine = out.split("\n").find((l) => l.startsWith("CMS_DRAFT_ONLY "));
+      if (draftLine) console.log(draftLine);
+      assertDelivered(readdirSync(exportDir), {
+        format,
+        form: "cms",
+        dir: exportDir,
+      });
+      done({ format, form: "cms", url: articleUrl, exportDir: absExportDir });
+      return;
+    }
+    fail(`video takes --form file | embed | cms (got "${form}")`);
   }
 
   // ---- INTERACTIVE / SCROLLY: two-phase lazy delivery. ----
@@ -644,6 +771,69 @@ function main() {
   }
 }
 
+// Publish a media file to the newsroom's own hosting and return the URL it serves it from.
+// Shared by the video's embed form and its CMS form, because the CMS form NEEDS the file hosted
+// before an article can point at it — this CMS has no self-hosted mp4 block.
+function deployMedia(mediaPath, id, resultsPath, format) {
+  let out;
+  try {
+    out = execFileSync(
+      "bun",
+      [
+        DEPLOY_EMBED_SCRIPT,
+        mediaPath,
+        id,
+        "--results",
+        resolve(resultsPath),
+        "--id",
+        id,
+        // The format decides the served filename and content type: without it an mp4 is
+        // uploaded as index.html.
+        "--format",
+        format,
+      ],
+      { encoding: "utf8" },
+    );
+  } catch (e) {
+    const msg = (e.stderr || e.stdout || e.message || "").toString().trim();
+    fail(msg || `${format} deploy failed`);
+  }
+  const line = out.split("\n").find((l) => l.startsWith("EMBED_URL "));
+  if (!line) fail("deploy-embed did not return an EMBED_URL");
+  const url = line.slice("EMBED_URL ".length).trim();
+  if (!isHostedUrl(url))
+    fail(`${format} deploy did not resolve a hosted https URL (got ${JSON.stringify(url)})`);
+  return url;
+}
+
+// Insert an already-hosted artifact into the journalist's article. `url` is passed rather than
+// the file: the adapter takes an ADDRESS for a video (there is nothing for the CMS to hold).
+function runPublishCms({ artifact, url, article, after, resultsPath, id }) {
+  try {
+    return execFileSync(
+      "bun",
+      [
+        PUBLISH_CMS_SCRIPT,
+        artifact,
+        "--article",
+        article,
+        "--after",
+        after,
+        "--url",
+        url,
+        "--results",
+        resolve(resultsPath),
+        "--id",
+        id,
+      ],
+      { encoding: "utf8" },
+    );
+  } catch (e) {
+    const msg = (e.stderr || e.stdout || e.message || "").toString().trim();
+    fail(msg || "form=cms insertion failed");
+  }
+}
+
 // The lazy delivery-form PROPOSAL for an interactive / scrolly. Emitted as a FIXED,
 // machine-relayable block so the orchestrator relays THIS message verbatim (killing the
 // "Livré." with-nothing failure mode) and gets the a/b/c answer — THEN re-invokes this
@@ -763,23 +953,25 @@ function emitProposal(ctx) {
   const relay = ["EXPORT_FORMS_PROPOSAL", copy.intro];
   // forms.a, when present, is always the runnable React source bundle (a markerless outDir has
   // no code-source deliverable, so form a is simply omitted — see above).
-  if (forms.a) relay.push(copy.formCodeSource(forms.a.path));
-  if (forms.b) relay.push(copy.formHtml(forms.b.path));
+  if (forms.a) relay.push(`  a) ${copy.formCodeSource(forms.a.path)}`);
+  if (forms.b) relay.push(`  b) ${copy.formHtml(forms.b.path)}`);
   if (forms.c)
     relay.push(
-      forms.c.url
+      "  c) " +
+      (forms.c.url
         ? copy.formEmbedLive(forms.c.url)
         : forms.c.available === false
           ? copy.formEmbedMissingKeys(forms.c.missingKeys.join(", "))
-          : copy.formEmbedAvailable,
+          : copy.formEmbedAvailable),
     );
   if (forms.d)
     relay.push(
-      forms.d.available === false
-        ? copy.formCmsMissingKeys(
-            [...forms.d.missingKeys, ...(forms.d.missingKeys.length ? [] : ["endpoint"])].join(", "),
-          )
-        : copy.formCmsAvailable,
+      "  d) " +
+        (forms.d.available === false
+          ? copy.formCmsMissingKeys(
+              [...forms.d.missingKeys, ...(forms.d.missingKeys.length ? [] : ["endpoint"])].join(", "),
+            )
+          : copy.formCmsAvailable),
     );
   relay.push(
     copy.question(Object.keys(forms).join(" / ")),

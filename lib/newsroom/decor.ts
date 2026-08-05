@@ -69,8 +69,22 @@ export type Decor = {
   theme?: string;
 };
 
+/**
+ * WHERE THIS INSTALL LIVES — the directory a newsroom's own `NEWSROOM-PROFILE.md`, `.env` and
+ * state sit in. Derived from this module's path, because an install is wherever the code was put.
+ *
+ * ★ `SPLASH_INSTALL_ROOT` overrides it, and that is not a test hook bolted on: without it, the
+ * install's root is UNADDRESSABLE, so anything that reads the house profile reads the profile of
+ * whoever happens to be running — including a test. That cost a real red: `journey.test.ts`
+ * spawns the CLI, the CLI resolved the developer's own `NEWSROOM-PROFILE.md` at the repo root,
+ * and a house `lang: "fr"` turned an assertion about the DEFAULT language into a failure. The
+ * test was not wrong and the profile was not wrong — the root had no seam, so the two could not
+ * be told apart. It bites the person most likely to be working on the house-style feature, which
+ * is the worst possible audience for a false red.
+ */
 export function installRoot(): string {
-  return resolve(here, "../..");
+  const override = process.env.SPLASH_INSTALL_ROOT?.trim();
+  return override ? resolve(override) : resolve(here, "../..");
 }
 
 /**

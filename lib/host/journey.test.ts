@@ -6,6 +6,10 @@ import { fileArtifact, type RunManifest } from "../loop/manifest";
 
 const CLI = join(import.meta.dir, "cli.ts");
 
+// An empty directory that stands in for "an install with no house profile". Created once, so
+// every spawned CLI in this file sees the same clean world.
+const HERMETIC_INSTALL_ROOT = mkdtempSync(join(tmpdir(), "splash-hermetic-install-"));
+
 async function cli(
   args: string[],
   stdin = "",
@@ -18,7 +22,15 @@ async function cli(
     // instead of launching a viewer — the same flag a host that presents the deliverable
     // itself sets (lib/loop/preview.ts). It is the run's environment, not a stub: the
     // presentation is performed for real and recorded truthfully as what it was.
-    env: { ...process.env, SPLASH_NO_VIEWER: "1" },
+    // HERMETIC: point the install root at an empty directory so the CLI reads no house profile.
+    // Without this the spawned CLI resolves whatever `NEWSROOM-PROFILE.md` the DEVELOPER has at
+    // the repo root, and this journey's assertions — which are about the default language and
+    // the default decor — fail for a reason that has nothing to do with the code under test.
+    env: {
+      ...process.env,
+      SPLASH_NO_VIEWER: "1",
+      SPLASH_INSTALL_ROOT: HERMETIC_INSTALL_ROOT,
+    },
   });
   const out = await new Response(p.stdout).text();
   const code = await p.exited;

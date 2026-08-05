@@ -53,22 +53,42 @@ describe("wepublishPublisher shape", () => {
     expect(wepublishPublisher.implemented).toBe(true);
   });
 
-  // The `serves` decision (spec §4.1), locked as a test because it is the one thing about this
-  // adapter a future reader is most likely to "fix" without re-reading the measurement.
-  it("should serve the embed genre only — a CMS block carries markup, not binary assets", () => {
+  // The `serves` decision, locked as a test because it is the one thing about this adapter a
+  // future reader is most likely to "fix" without re-reading the measurement.
+  //
+  // It has been WRONG TWICE, in the same direction — too narrow — and both corrections are worth
+  // keeping, because each was a measurement of a BLOCK mistaken for a measurement of the CMS:
+  //
+  //   "a CMS block carries markup, not binary assets" → true of the block, but the CMS has a
+  //   MEDIA SERVER, and the image block takes the id it issues. `static` was reachable all along.
+  //
+  //   "nothing in the CMS renders an mp4" → true of every VIDEO block (each takes an id from an
+  //   external platform), but the HTML block renders arbitrary markup, and `<video src>` is
+  //   markup. A video is reachable too — pointing at a file the newsroom already serves.
+  it("should serve all four formats", () => {
     expect([...wepublishPublisher.serves].sort()).toEqual([
       "interactive",
       "scrolly",
+      "static",
+      "video",
     ]);
   });
 
-  it("should NOT claim to serve static or video", () => {
-    // Measured (W6): the only block that can carry the artifact carries MARKUP. The image
-    // block needs an imageID from the media server, and every video block takes an external
-    // platform id — there is no self-hosted mp4 block in BlockContentInput at all.
-    expect(wepublishPublisher.serves).not.toContain("static");
-    expect(wepublishPublisher.serves).not.toContain("video");
+  it("should take an ADDRESS as well as a file, because a video has no bytes here", () => {
+    // The three others ship their own bytes. A video cannot: there is no self-hosted mp4 block,
+    // so the file lives where the newsroom publishes its files and the article points at it.
+    expect([...wepublishPublisher.sources].sort()).toEqual(["file", "hosted"]);
   });
+
+  it("should REFUSE a video with no hosted address, rather than insert a broken player", async () => {
+    const r = await wepublishPublisher.publish(
+      request({ format: "video", artifactPath: undefined, artifactUrl: "" }),
+    );
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.message).toContain("hosted");
+  });
+
 });
 
 describe("wepublishPublisher settings refusals", () => {

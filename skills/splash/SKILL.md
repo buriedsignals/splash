@@ -293,6 +293,27 @@ established.
    VETOES the whole plan back to auto-pick. The confirmed arc is pinned VERBATIM as chart-native's
    `spec.beats` — each beat carrying `role` + `text` (the confirmed claim) alongside its existing anchor
    (`x`/`xEnd`/`category`).
+   **★ WHERE THE WORDS COME FROM — the rule that makes a proposed beat honest.** The machine
+   APPAIRS and ORDERS; it does not write the journalism. Transposed verbatim from the principle
+   `suggest-image` already ships and that this project validated in practice: *the model serves
+   MATCHING and ORDER only — "which passage of the article is this beat about?" — never
+   description.* So:
+   • **Each beat's claim is drawn from the passage of the JOURNALIST'S OWN ARTICLE that speaks to
+     that anchor**, reformulated to stand alone — never invented, never derived from the data
+     alone. What they re-read is their own prose, not a machine's sentence.
+   • **The order follows the article's narrative**, not the data's salience. "The machine sorts by
+     descending value" and "the journalist argues" are different orders, and the second one wins —
+     this is precisely what the earlier storyboard did backwards.
+   • **What the article does not supply is ASKED, never filled in.** If no passage speaks to an
+     anchor the data makes salient, say so and offer to drop the beat or hear what it should say.
+     Silence is a question, not a licence.
+   • The `draftText` the engine emits is a **factual label** (`"Genève — 1780 CHF"`, an anchor and
+     a number), deliberately not a sentence: it says what the beat is ABOUT so the journalist knows
+     which passage to draw from. It is never shipped — `produce` refuses a beat whose `text` is
+     empty (`unauthoredBeats`).
+   **This applies to the MAP track identically** (sub-project ③ opened it: a map scrolly and a map
+   video are proposed a walk the same way), and to the `stepped` video kind.
+
    **WHICH point is the turn, and whether a given beat actually advances the argument, is the
    JOURNALIST's call — non-mechanizable, never decided by the code.** The code enforces only the arc's
    SHAPE, fail-loud (`arcErrors`, `skills/chart-native/src/chart-story.ts`): the arc opens on
@@ -1182,19 +1203,37 @@ Branch EXACTLY on the channel/format model (`skills/splash/src/channel.ts`) — 
 over the media directly, no delivery menu; only interactive gets a delivery choice, and only because
 article-web is the one channel that can host it**:
 
-- **VIDEO (mp4):** hand over the mp4 directly, at the CADRAGE channel's size and the narrative sub-format
-  chosen at PROPOSITION (camera/reveal mode) — no code/embed forms, the media IS the deliverable. The
-  producer renders **only the one aspect the channel requires** — social-vertical → **portrait 9:16**
-  (1080×1920), social-feed → **square 1:1** (1080×1080), article-web → **landscape 16:9** — **one mp4, not
-  three** (the aspect is threaded via `SPLASH_CHANNEL`; a fail-hard produce-time conformance step refuses
-  a render whose size ≠ the channel). Native chart-native/map-native now render **true 9:16** for
-  social-vertical (Slice 2 repointed the portrait comps 1080×1350 → 1080×1920), matching `dw-chart`'s
-  static portrait — no more 4:5 caveat.
-  **Run the hand-over script even though there is no delivery menu** — it is what PRINTS the placement
-  block, and §6 forbids you to compose one yourself:
-  `bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results exports/<slug>/report.json --id <id>`.
-  Without it nothing states where the video goes, and the placement guard never runs either, because it
-  lives inside this script.
+- **VIDEO (mp4): splash PROPOSES three delivery forms and the journalist CHOOSES one** — the same
+  two-phase, lazy shape as interactive/scrolly. Video used to be handed over as its file, full stop
+  ("the media IS the deliverable"). That was true of what a video IS and mistaken for how it SHIPS:
+  a journalist who wanted the film inside their article had no way to ask for it, though the CMS
+  route existed and worked. The producer still renders **only the one aspect the channel requires**
+  — social-vertical → **portrait 9:16** (1080×1920), social-feed → **square 1:1**, article-web →
+  **landscape 16:9** — **one mp4, not three** (threaded via `SPLASH_CHANNEL`; a fail-hard
+  produce-time conformance step refuses a render whose size ≠ the channel).
+  1. **Phase 1 — emit the proposal (build NOTHING).** Run WITHOUT `--form`:
+     `bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results exports/<slug>/report.json --id <id>`.
+     It emits `EXPORT_FORMS_JSON` + the human `EXPORT_FORMS_PROPOSAL` block. **Relay it VERBATIM and
+     WAIT** — the same un-skippable gate as every other menu.
+  2. **The three forms:**
+     - **a) Le fichier vidéo** — the mp4 itself, the newsroom's to upload wherever it publishes.
+       This is what a video always was, and it stays the plain answer.
+     - **b) Embed (hébergé)** — publish the mp4 to the newsroom's own Cloudflare Pages project and
+       share the URL. Key-fixable exactly like an interactive's embed form.
+     - **c) Directement dans l'article (CMS)** — the film appears in one of the journalist's own
+       articles. **It HOSTS the file first** (`hostsFirst: true` in the JSON): this CMS has no
+       self-hosted mp4 block, so the article carries a player pointing at the hosted file. Two
+       network steps, ONE journalist choice — the chaining is the script's job, never a second
+       question. It obeys the same two rules as the interactive CMS form: **ask WHICH article**
+       (`--article <slug>`, the placeholder is refused) and **SHOW WHERE and get the answer**
+       (`--after <position|end>`, a missing flag is refused), and it is a DRAFT edit that publishes
+       nothing.
+  3. **THEN build + deliver ONLY the chosen form** — `--form file` copies the mp4 · `--form embed`
+     deploys and records `EMBED_URL.txt` · `--form cms --article <slug> --after <n|end>` hosts, then
+     inserts, and records `CMS_ARTICLE_URL.txt`. Each ends with `assertDelivered`, and the
+     **placement block is printed at the HAND-OVER, not with the menu** — the journalist is told
+     where the film goes when they receive it, not while they are still choosing how.
+
 - **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly, at the channel's size
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
   article-web) — no delivery menu, just the file.
@@ -1331,6 +1370,29 @@ article-web is the one channel that can host it**:
      `report.json`, …) — that is the directory the build worked in, not the finished deliverable
      (`assertDelivered` already refuses this INSIDE `export-code.mjs`; this is the same disk fact,
      callable again right before you relay the path — a second look costs one command).
+
+  **★ NEVER ANNOUNCE A VISUAL WITHOUT ITS PATH.** Every sentence that tells the journalist something is
+  ready NAMES the file, by a path that exists on disk. « Le visuel est prêt » with nothing to open is not
+  a delivery — it is the exact shape of the 2026-08-03 failure, where a host model could not invoke a
+  nested skill, reached for its own chat-side charting extension instead, drew a bar in the conversation
+  and announced the visual as ready. **No `exports/`, no producer, no gate, no file the newsroom owns.**
+  Nothing in this repository could object, because nothing in this repository had run.
+
+  So the rule is on the SENTENCE, which is the only thing left when the pipeline was never entered:
+  a claim of readiness carries a path, or it is not made. And the journalist can check the claim
+  themselves, at any time, without reading any of this:
+  ```bash
+  bun skills/splash/scripts/verify-delivery.mjs <the path you were given>
+  ```
+  It answers from the disk — which run, which markers, which sub-skills the artifacts corroborate — or
+  says plainly that no Splash run stands behind the file. **A picture drawn in a chat has no path to
+  point it at, and that is the answer.** It reads files; it does not prove nobody wrote them by hand,
+  and it says so itself.
+
+  **If a host cannot invoke a nested skill** (the trigger of that failure — the model called
+  `suggest_article` as if it were a TOOL and got `Tool not found`): say so to the journalist and STOP.
+  Do not substitute another tool, and do not draw anything yourself. A visual this pipeline did not
+  produce is not this pipeline's visual, however plausible it looks.
 
   **`delivered` REQUIRES that `export-code.mjs --form <chosen>` built the artifact** (for interactive/scrolly).
   Never report an interactive/scrolly as delivered on produce-time outputs alone — a Gate-3 review PNG,

@@ -243,14 +243,15 @@ function idsOf(people: { id?: string }[] | undefined): string[] {
 /**
  * The journalist's article + our visual block → the complete `updateArticle` variables.
  *
- * `isOurs` identifies a previously inserted visual by the html of an HTMLBlock, so a second
- * delivery of the same element REPLACES it in place instead of stacking a duplicate — the same
- * update-never-blindly-create discipline the carrier path applies (W10).
+ * `isOurs` identifies a previously inserted visual — the caller knows what shape its own block
+ * takes (markup for an interactive, an image block for a static), so it is handed the whole
+ * block rather than one field of one shape. A second delivery REPLACES in place instead of
+ * stacking a duplicate: the same update-never-blindly-create discipline as the carrier (W10).
  */
 export function articleUpdateVariables(
   article: TargetArticle,
   visual: BlockInput,
-  opts: { isOurs?: (html: string) => boolean; afterIndex?: number } = {},
+  opts: { isOurs?: (block: BlockOut) => boolean; afterIndex?: number } = {},
 ): VariablesResult {
   const revision = article.draft ?? article.published ?? null;
   if (!revision)
@@ -264,11 +265,7 @@ export function articleUpdateVariables(
   const blocks: BlockInput[] = [];
   let replaced = false;
   for (const block of revision.blocks ?? []) {
-    const isOurs =
-      block.__typename === "HTMLBlock" &&
-      typeof block.html === "string" &&
-      (opts.isOurs?.(block.html) ?? false);
-    if (isOurs) {
+    if (opts.isOurs?.(block) ?? false) {
       // In place: the journalist chose where this visual sits. A re-delivery that appended
       // instead would move it to the end of the article and leave the stale copy behind.
       blocks.push(visual);

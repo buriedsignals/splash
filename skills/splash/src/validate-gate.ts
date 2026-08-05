@@ -170,7 +170,10 @@ function validateScrolly(spec: unknown): ValidationOutcome {
     }
     return outcome;
   }
-  // A "route" map track has no scrolly host: MAP_SCROLLY_TYPES has six entries, not seven —
+  // A map track with no scrolly host is refused here by name. (Until 2026-08-04 that meant
+  // "route" — ScrollyRouteMap.tsx hosts it now, and this gate followed the capability without an
+  // edit because it reads MAP_SCROLLY_TYPES rather than a list of its own.)
+  // Historical note, kept because it is the reason this check exists:
   // Scrolly.tsx's dispatch falls through to an empty-but-valid story for it (see
   // scrolly-types.ts's own header comment), lib/loop/assemble/scrolly.ts already refuses it
   // by name at composition time, and produce.mjs refuses format "scrolly" for it outright.

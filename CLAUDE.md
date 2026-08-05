@@ -154,6 +154,44 @@ après avoir été traduite en **champ technique** la première fois.
     pas un instrument valable pour juger une décision de caméra tardive** — il tombe dans le plan
     d'établissement ; extraire des frames du mp4 aux frontières d'étapes.
 
+**★ FERMETURE DU CHANTIER (2026-08-04, `ba41b0da`) — les 3 trous que ④ avait laissés :**
+- **La vidéo du track CHART est ouverte pour `bar`.** Elle ignorait toute marche : `BarChart`
+  échelonne ses barres par index, donc un plan écrit ET validé par le journaliste atteignait la
+  config et ne changeait rien à l'écran. `skills/chart-native/src/core/walk.ts` (pur) donne la
+  POSITION d'entrée de chaque sujet : les sujets nommés d'abord dans l'ordre de la marche, le reste
+  ensuite en ordre de donnée, toujours une permutation (dédupliquée). Sans marche, la position EST
+  l'index → un graphique non-storyboardé est identique à l'octet. **Prouvé au rendu**
+  (`skills/chart-native/output-proof/walk-order/`) par inversion : marche partant de Westpark
+  (dernière ligne, plus petite barre) vs ordre de lecture partant de Central. chart-native 1488/0 —
+  le composant est partagé par les 3 formats, donc c'était le vrai risque.
+  ⚠️ **`line` reste fermé, MESURÉ** : une vidéo de ligne n'a aucune entrée par sujet à réordonner
+  (tracé continu par longueur cumulée ; les seuls `stagger` de `LineChart` sont grilles + étiquettes
+  d'axe). Y exprimer une marche = segmenter le tracé en pauses par étape, autre mécanisme.
+  ⚠️ **Le still de revue (frame 140) est inutilisable pour juger un ordre d'entrée de barres** — il
+  tombe APRÈS la fenêtre d'échelonnement. Extraire une frame du mp4 pendant la construction (~1,5 s).
+- **D'où viennent les mots d'un beat — écrit dans `skills/splash/SKILL.md`.** La prose demandait « la
+  revendication, une phrase » sans jamais dire sa source. Règle de `suggest-image` transposée : la
+  machine **apparie et ordonne**, chaque revendication vient du **passage de l'article du journaliste**
+  qui parle de cette ancre, l'ordre suit le récit (pas la saillance), et ce que l'article ne fournit
+  pas est **demandé**, jamais rempli. Vaut aussi pour le track carte et le genre `stepped`.
+- **★ Lot route (C2) — FERMÉ.** `RouteStory` n'avait pas à exister (le dépôt a tranché : le survol
+  guidé d'une route EST son tracé) et la vidéo à étapes est atteignable depuis ④(a) via
+  `RouteScrolly`. **`ScrollyRouteMap` est écrit et prouvé** (`skills/scrolly/src/ScrollyRouteMap.tsx`,
+  preuve `skills/scrolly/output-proof/route/`) : c'était le SEUL type de carte arc-capable sans
+  scrolly navigateur — la marche existait, rien ne la rendait. Tout l'amont est **partagé** avec la
+  famille vidéo (layout, walk, séquence d'étapes et refs sentinelles), jamais re-dérivé. La fiche KB
+  déclare le format (DRIFT 3 exige que le savoir et la capacité s'accordent), le registre déclare
+  `fly` + `draw` + `highlight` (`draw` = le seul qu'aucun autre scrolly carte n'a), et **3 tests qui
+  épinglaient l'ABSENCE ont été INVERSÉS** plutôt que supprimés.
+  ⚠️ **Deux défauts que seul le bout-en-bout a attrapés** : (1) la prop est une **ref de beat**, pas
+  un indice d'étape (`Scrolly.tsx` passe `currentBeatRef`) — lue comme un indice, l'aperçu se
+  rabattait sur le premier territoire et la caméra ne bougeait jamais ; (2) une étape de tracé doit
+  cadrer **le territoire qu'elle entre**, pas l'étendue cumulée (règle de la vidéo) — sur cet
+  échantillon les deux coïncident (l'Inde couvre presque tout le fleuve) et **le garde de mouvement
+  réduit a refusé le build en le nommant** (« step 2's camera equals step 1's »). Ce refus parle du
+  lecteur : en scroll, c'est lui qui donne le rythme, et une étape dont la caméra ne bouge pas se lit
+  comme une page cassée.
+
 **Rouges de `lib` au 2026-08-04, tous nommés et attribués** (aucun causé par ①②③) : `eligibility`
 (E5 — **une assertion fausse dans le test**, établi le 2026-08-04, ni environnement ni bug de rendu) ·
 `typology-drift` DRIFT 2 (E13 — 6 types scrolly-carte sans fiche KB) · `capture` ×2-3 (contention

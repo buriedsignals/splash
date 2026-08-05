@@ -60,9 +60,18 @@ function stripComments(src) {
 export function importSpecifiers(src) {
   const code = stripComments(src);
   const specs = new Set();
-  for (const m of code.matchAll(/(?<!["'])\bfrom\s*["']([^"']+)["']/g))
+  // NO NEWLINE in the captured specifier — `[^"'\n]+`, not `[^"']+`. A module specifier cannot
+  // contain one, and that single character class is what stops the word `from` ENDING a string
+  // literal from swallowing the rest of the file. Measured: ScrollyRouteMap's refusal reads
+  // "…the basemap topology its territories are cut from", and the old pattern captured from that
+  // quote all the way to the next one thirty lines later, then failed the run with a "no version
+  // for dependency" naming half a component as a package.
+  //
+  // The `(?<!["'])` guard above it covers a DIFFERENT case (a bare `"from"` literal, image-native's
+  // stop-word list) and does not help here: this `from` is preceded by a space, inside a string.
+  for (const m of code.matchAll(/(?<!["'])\bfrom\s*["']([^"'\n]+)["']/g))
     specs.add(m[1]);
-  for (const m of code.matchAll(/(?:^|[;\n{}(]|\s)import\s*["']([^"']+)["']/g))
+  for (const m of code.matchAll(/(?:^|[;\n{}(]|\s)import\s*["']([^"'\n]+)["']/g))
     specs.add(m[1]);
   return [...specs];
 }

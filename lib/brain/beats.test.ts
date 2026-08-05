@@ -1,5 +1,5 @@
 import { test, expect, describe } from "bun:test";
-import { suggestBeats } from "./beats";
+import { suggestBeats, canDraftBeats } from "./beats";
 
 // The engine's own sample (skills/scrolly/assets/sample-data/line-scrolly.json): seven
 // September sea-ice minima. Chosen because it is the shape the scrolly track actually ships.
@@ -279,4 +279,33 @@ describe("suggestBeats (map) — the anchor column is the run's own, not the fir
     expect(refusal).toContain("region");
     expect(refusal).toContain("canton");
   });
+});
+
+describe("canDraftBeats — which (type, format) pairs can be proposed a walk", () => {
+  test("a bar VIDEO can be, since sub-project ④ made its bars enter in the walk's order", () => {
+    expect(canDraftBeats("bar", "video")).toBe(true);
+  });
+
+  test("a LINE video cannot — its line draws continuously, there is no entrance to reorder", () => {
+    expect(canDraftBeats("line", "video")).toBe(false);
+  });
+
+  test("both remain proposable in scrolly, unchanged", () => {
+    expect(canDraftBeats("bar", "scrolly")).toBe(true);
+    expect(canDraftBeats("line", "scrolly")).toBe(true);
+  });
+
+  test("a chart's static/interactive are not narrative formats at all", () => {
+    for (const f of ["static", "interactive"]) {
+      expect(canDraftBeats("bar", f)).toBe(false);
+      expect(canDraftBeats("line", f)).toBe(false);
+    }
+  });
+});
+
+// The counterpart of the line refusal above, pinned so the two cannot drift into one claim:
+// a bar video IS routed, and that is what makes the "chart video is closed" wording false.
+test("the chart track's video is open for bar and closed for line — not one answer for both", () => {
+  expect(canDraftBeats("bar", "video")).toBe(true);
+  expect(canDraftBeats("line", "video")).toBe(false);
 });

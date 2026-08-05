@@ -360,3 +360,32 @@ describe("readDecorState — the migration-aware read that writes nothing", () =
     expect(readDecorState(dir(), {}).uiLang).toBe("en");
   });
 });
+
+// ★ The install root must be ADDRESSABLE — see installRoot's own header for the red this cost.
+// Without a seam, everything that reads the house profile reads whoever happens to be running.
+describe("installRoot — the seam that makes a house profile addressable", () => {
+  it("is this install by default", () => {
+    const prev = process.env.SPLASH_INSTALL_ROOT;
+    delete process.env.SPLASH_INSTALL_ROOT;
+    try {
+      // The repo root carries lib/ — enough to know we resolved the install and not a tmp dir.
+      expect(existsSync(join(installRoot(), "lib", "newsroom"))).toBe(true);
+    } finally {
+      if (prev !== undefined) process.env.SPLASH_INSTALL_ROOT = prev;
+    }
+  });
+
+  it("follows SPLASH_INSTALL_ROOT when a host names one", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-root-seam-"));
+    const prev = process.env.SPLASH_INSTALL_ROOT;
+    process.env.SPLASH_INSTALL_ROOT = dir;
+    try {
+      expect(installRoot()).toBe(dir);
+      // …and a decor read from there finds no house profile, which is the whole point.
+      expect(loadDecor().profile.requiredSigners ?? []).toEqual([]);
+    } finally {
+      if (prev === undefined) delete process.env.SPLASH_INSTALL_ROOT;
+      else process.env.SPLASH_INSTALL_ROOT = prev;
+    }
+  });
+});
