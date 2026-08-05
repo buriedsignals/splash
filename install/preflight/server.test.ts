@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -261,6 +262,51 @@ describe("what a submission writes", () => {
         await fetch(`http://127.0.0.1:${port}/?section=embed-cloudflare`)
       ).text();
       expect(html).toContain('"focus":"embed-cloudflare"');
+    });
+  });
+});
+
+describe("the setup page probes the delivered skills tree on a packed install", () => {
+  it("reads image-native as ready when its dependencies are at .dist/node_modules", async () => {
+    const dest = root();
+    // Create the packed-install shape: .dist/skills/{engine}/ + .dist/node_modules/{pkg}/
+    mkdirSync(join(dest, ".dist", "skills", "image-native"), {
+      recursive: true,
+    });
+    const sharpDir = join(dest, ".dist", "node_modules", "sharp");
+    mkdirSync(sharpDir, { recursive: true });
+    writeFileSync(
+      join(sharpDir, "package.json"),
+      JSON.stringify({ name: "sharp", version: "0.0.0", main: "index.js" }),
+    );
+    writeFileSync(join(sharpDir, "index.js"), "module.exports = {};\n");
+
+    await withServer(dest, async (port) => {
+      // Submit state to enable image-native
+      const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({ enabled: ["image-native"] }),
+      });
+      expect(submitRes.status).toBe(200);
+    });
+
+    // Request the page again to see the updated model
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      // Extract the JSON model from the script tag
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const payload = html.slice(start, end);
+      const model = JSON.parse(payload);
+
+      // Verify image-native reports as ready when probing .dist/skills
+      const imageNative = model.engines.find(
+        (e: { id: string; status: string }) => e.id === "image-native",
+      );
+      expect(imageNative).toBeDefined();
+      expect(imageNative!.status).toBe("ready");
     });
   });
 });
