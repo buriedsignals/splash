@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { flowProse } from "./flow-prose";
 
 // WHY THIS EXISTS — both pins come from ONE observed run (2026-08-03, backlog E11,
 // docs/installer/goose-desktop-proof.md § "The run that succeeded without Splash").
@@ -15,7 +16,7 @@ import { join } from "node:path";
 // chart living in the chat is not a deliverable. Neither is enforceable in code from inside a run
 // that never reaches our code — which is exactly why they are pinned here, in the one artefact
 // that run DID read.
-const skill = readFileSync(join(import.meta.dir, "..", "SKILL.md"), "utf8");
+const skill = flowProse();
 
 describe("SKILL.md says HOW a host invokes a nested skill — the act, not just the name", () => {
   it("names invoking a skill as a host act with more than one shape", () => {

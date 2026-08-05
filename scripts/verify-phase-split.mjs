@@ -37,8 +37,12 @@ function meaningful(line) {
   return true;
 }
 
+// HTML comments are stripped everywhere, source and destinations alike: they carry no rule, and
+// the additions manifest needs a header explaining itself without that header counting as prose
+// the split added. Same reason blank lines and fences are ignored.
 function linesOf(path) {
   return readFileSync(path, "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "")
     .split("\n")
     .map((l) => l.trim())
     .filter(meaningful);
@@ -51,10 +55,21 @@ function counts(lines) {
   return m;
 }
 
-const [source, ...destinations] = process.argv.slice(2);
+// `--additions <file>` names the prose the split legitimately ADDS — the spec's six invocation
+// blocks (§3) are new lines by construction, and a check that refused them would refuse the
+// design. Enumerating them in one reviewable file is the point: everything NOT listed there must
+// still be a pure move, so the additions stay small, visible, and argued for.
+const argv = process.argv.slice(2);
+let additionsPath = null;
+const ix = argv.indexOf("--additions");
+if (ix !== -1) {
+  additionsPath = argv[ix + 1];
+  argv.splice(ix, 2);
+}
+const [source, ...destinations] = argv;
 if (!source || destinations.length === 0) {
   console.error(
-    "usage: verify-phase-split.mjs <source SKILL.md> <destination…>\n" +
+    "usage: verify-phase-split.mjs [--additions <file>] <source SKILL.md> <destination…>\n" +
       "  Proves the split moved every rule exactly once.",
   );
   process.exit(2);
@@ -70,8 +85,13 @@ for (const [line, n] of src) {
   if (got === 0) lost.push(line);
   else if (got > n) duplicated.push({ line, was: n, now: got });
 }
+const allowed = additionsPath ? counts(linesOf(additionsPath)) : new Map();
 const invented = [];
-for (const [line, n] of dst) if (!src.has(line)) invented.push({ line, n });
+for (const [line, n] of dst)
+  if (!src.has(line) && !allowed.has(line)) invented.push({ line, n });
+// An addition DECLARED but never used is dead prose in the manifest — reported, because a list
+// nobody prunes stops describing anything.
+const unusedAdditions = [...allowed.keys()].filter((l) => !dst.has(l));
 
 const show = (label, rows, fmt) => {
   if (rows.length === 0) return;
@@ -92,10 +112,18 @@ show(
   (r) => `${r.line.slice(0, 110)}`,
 );
 
-const failures = lost.length + duplicated.length + invented.length;
+show(
+  "DECLARED AS ADDED but present nowhere",
+  unusedAdditions.map((l) => ({ line: l })),
+  (r) => r.line.slice(0, 110),
+);
+
+const failures =
+  lost.length + duplicated.length + invented.length + unusedAdditions.length;
 if (failures === 0) {
   console.log(
-    `✓ pure move: ${src.size} distinct rule-bearing lines, each landing exactly as often as before.`,
+    `✓ pure move: ${src.size} distinct rule-bearing lines, each landing exactly as often as before` +
+      (allowed.size ? `, plus ${allowed.size} declared addition(s).` : "."),
   );
   console.log(
     "  This does NOT prove each line landed in the phase where it applies — that judgement is yours.",
