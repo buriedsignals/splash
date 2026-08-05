@@ -46,6 +46,12 @@ fi
 export BUN_INSTALL="${BUN_INSTALL:-$HOME/.bun}"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+# What the JOURNALIST owns inside the install directory — never ours to replace. Their keys, their
+# house style and its cache, the decor (which holds the chosen runtime), and the visuals they have
+# already delivered. Named one by one on purpose: a rule that says "keep what looks personal" is a
+# rule nobody can check, and the thing being risked here is a newsroom's keys.
+SPLASH_OWNED=(".env" "NEWSROOM-PROFILE.md" "brand.json" "newsroom.json" "exports")
+
 # 2. Splash source (zip — no git; contains the configurator)
 if [ ! -d "$DEST" ]; then
   echo "-> Downloading Splash…"
@@ -54,7 +60,38 @@ if [ ! -d "$DEST" ]; then
   unzip -q "$tmp/splash.zip" -d "$tmp"
   mv "$tmp"/splash-* "$DEST"
   rm -rf "$tmp"
+  printf '%s\n' "$REF" > "$DEST/.splash-version"
+# 2b. UPDATE — opt-in, because an install that cannot be updated is a fork (registry E21).
+# Until this existed, step 2 skipped whenever $DEST was present: a newsroom kept the version it
+# first installed FOREVER, and no later fix ever reached it. Re-running the installer to recover
+# from a failed step still must not replace the tree underneath anyone, so the update is a
+# decision — SPLASH_UPDATE=1 — and never a side effect of re-running.
+elif [ "${SPLASH_UPDATE:-0}" = "1" ]; then
+  echo "-> Updating Splash (your keys, house style and exports are kept)…"
+  tmp="$(mktemp -d)"
+  curl -fsSL "$REPO/archive/$REF.zip" -o "$tmp/splash.zip"
+  unzip -q "$tmp/splash.zip" -d "$tmp"
+  new_tree="$(echo "$tmp"/splash-*)"
+  if [ ! -d "$new_tree" ]; then
+    echo "Update download did not produce a source tree — your install is untouched." >&2
+    rm -rf "$tmp"; exit 1
+  fi
+  # Carry across before swapping, so a failure at any point leaves the OLD install in place rather
+  # than a half-updated one. Absent entries are skipped: a newsroom that never set a house style has
+  # no NEWSROOM-PROFILE.md, and that is not an error.
+  for owned in "${SPLASH_OWNED[@]}"; do
+    [ -e "$DEST/$owned" ] || continue
+    cp -R "$DEST/$owned" "$new_tree/$owned"
+  done
+  printf '%s\n' "$REF" > "$new_tree/.splash-version"
+  rm -rf "$DEST.previous"
+  mv "$DEST" "$DEST.previous"
+  mv "$new_tree" "$DEST"
+  rm -rf "$tmp"
+  echo "   (the previous install is kept at $DEST.previous — delete it once you are happy)"
 fi
+SPLASH_VERSION="$(cat "$DEST/.splash-version" 2>/dev/null || echo unknown)"
+echo "-> Splash version: $SPLASH_VERSION"
 
 # 3. Root dependencies. The setup page reads and writes the newsroom decor (lib/newsroom), which
 # needs the root packages. Doing it here makes that dependency explicit and guarded, instead of
