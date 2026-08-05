@@ -13,9 +13,9 @@
 // directories: resolvable by Bun, invisible to a host that only walks .dist/skills/<name>/.
 import {
   readdirSync, mkdirSync, copyFileSync, rmSync, existsSync, readFileSync, writeFileSync, statSync,
-  symlinkSync, realpathSync,
+  symlinkSync, realpathSync, renameSync,
 } from "node:fs";
-import { join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { isExcludedEntry } from "../lib/host/skill-payload.ts";
 
 /** The install root's own files, which the delivered tree is NOT the root of.
@@ -71,11 +71,33 @@ function copyTree(from, to) {
   }
 }
 
-// Idempotent: a stale delivery is worse than none, because it stops being derived.
-rmSync(outDir, { recursive: true, force: true });
-mkdirSync(outDir, { recursive: true });
+// Build into a SIBLING, and only replace the live delivery once the whole tree stands.
+//
+// bootstrap.sh runs this on every re-run, and this step used to delete the delivery before
+// rebuilding it. A pack that then failed — flaky wifi, full disk, exactly what the surrounding
+// guards exist for — left ~/.agents/skills/* pointing at an empty directory and the host
+// discovering nothing at all. Before this step existed, a failed re-run left the install working;
+// staging restores that. Idempotence is unaffected: the staging tree is always fresh, so a file
+// deleted from the source still disappears from the delivery.
+const parent = dirname(resolve(outDir));
+const stem = basename(resolve(outDir));
+const stage = join(parent, `${stem}.staging-${process.pid}`);
+const retired = join(parent, `${stem}.retired-${process.pid}`);
 
-copyTree(join(repoRoot, "lib"), join(outDir, "lib"));
+mkdirSync(parent, { recursive: true });
+// Sweep any leftover from a run that was killed outright (a signal runs no cleanup).
+for (const name of readdirSync(parent)) {
+  if (name.startsWith(`${stem}.staging-`) || name.startsWith(`${stem}.retired-`))
+    rmSync(join(parent, name), { recursive: true, force: true });
+}
+mkdirSync(stage, { recursive: true });
+
+process.on("exit", (code) => {
+  // A failed build leaves nothing behind and, above all, leaves the live delivery alone.
+  if (code !== 0) rmSync(stage, { recursive: true, force: true });
+});
+
+copyTree(join(repoRoot, "lib"), join(stage, "lib"));
 
 const skillsRoot = join(repoRoot, "skills");
 const merged = {};
@@ -118,7 +140,7 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
   const src = join(skillsRoot, entry.name);
   // E9's rule, applied here too: a directory with no SKILL.md is not a skill.
   if (!existsSync(join(src, "SKILL.md"))) continue;
-  copyTree(src, join(outDir, "skills", entry.name));
+  copyTree(src, join(stage, "skills", entry.name));
   packed++;
   foldManifest(join(src, "package.json"), entry.name);
 }
@@ -136,13 +158,31 @@ foldManifest(join(repoRoot, "package.json"), "the repository root");
 // unconditionally: NEWSROOM-PROFILE.md is usually written AFTER the install, and a link made only
 // when the target already exists would miss it forever.
 for (const name of INSTALL_ROOT_FILES) {
+  // Relative to the FINAL location, not the staging one — the link travels with the rename.
   const target = relative(resolve(outDir), resolve(repoRoot, name));
-  symlinkSync(target, join(outDir, name));
+  symlinkSync(target, join(stage, name));
 }
 
 writeFileSync(
-  join(outDir, "package.json"),
+  join(stage, "package.json"),
   `${JSON.stringify({ name: "splash-delivered", private: true, dependencies: merged }, null, 2)}\n`,
 );
+
+// ── Promote. The tree stands; swap it in.
+const hadPrevious = existsSync(outDir);
+if (hadPrevious) renameSync(outDir, retired);
+try {
+  renameSync(stage, outDir);
+} catch (err) {
+  if (hadPrevious) renameSync(retired, outDir); // put the working delivery back
+  throw err;
+}
+// Carry the previous install's node_modules over. bootstrap.sh runs `bun install` at the delivery
+// AFTER this step, and a failure there (flaky wifi, full disk) would otherwise leave a freshly
+// packed tree with NO dependencies, which cannot render. This degrades a failed re-run to "the
+// previous dependencies" instead of "none"; the install that follows reconciles them.
+if (hadPrevious && existsSync(join(retired, "node_modules")))
+  renameSync(join(retired, "node_modules"), join(outDir, "node_modules"));
+rmSync(retired, { recursive: true, force: true });
 
 console.log(`packed ${packed} skills into ${outDir}`);

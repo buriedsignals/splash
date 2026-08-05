@@ -336,6 +336,76 @@ test("is idempotent — a file deleted from the source disappears from the deliv
   }
 });
 
+// ── A failed re-run must not destroy a working install ──
+//
+// bootstrap.sh runs the packer on EVERY re-run, and the packer used to delete .dist before
+// rebuilding it. A pack that then failed — flaky wifi, full disk, exactly what the surrounding
+// guards exist for — left ~/.agents/skills/* pointing at an empty directory and the host
+// discovering nothing. Before this step existed, a failed re-run left the install working.
+
+/** A source tree the packer CANNOT pack: skills but no lib/ to copy. */
+function brokenRepo(): string {
+  const root = repo();
+  rmSync(join(root, "lib"), { recursive: true, force: true });
+  return root;
+}
+
+test("a pack that fails leaves the previous delivery untouched", () => {
+  const good = repo();
+  const bad = brokenRepo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    expect(pack(good, out).exitCode).toBe(0);
+    const before = readdirSync(join(out, "skills")).sort();
+
+    expect(pack(bad, out).exitCode).not.toBe(0);
+
+    // Still the previous delivery, complete — not an empty directory a host discovers nothing in.
+    expect(readdirSync(join(out, "skills")).sort()).toEqual(before);
+    expect(existsSync(join(out, "skills", "alpha", "SKILL.md"))).toBe(true);
+    expect(existsSync(join(out, "lib", "core", "registry.ts"))).toBe(true);
+    expect(existsSync(join(out, "package.json"))).toBe(true);
+  } finally {
+    for (const d of [good, bad, out])
+      rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test("a pack leaves no staging or retired sibling behind, on success or on failure", () => {
+  const good = repo();
+  const bad = brokenRepo();
+  const work = mkdtempSync(join(tmpdir(), "splash-packwork-"));
+  const out = join(work, ".dist");
+  try {
+    expect(pack(good, out).exitCode).toBe(0);
+    expect(readdirSync(work)).toEqual([".dist"]);
+    expect(pack(bad, out).exitCode).not.toBe(0);
+    expect(readdirSync(work)).toEqual([".dist"]);
+  } finally {
+    for (const d of [good, bad, work])
+      rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test("carries the previous delivery's node_modules across the re-pack", () => {
+  // The other half of the same failure: bootstrap.sh runs `bun install` at .dist AFTER the pack,
+  // and a failure THERE would otherwise leave a freshly packed tree with no dependencies at all —
+  // which cannot render. Keeping the previous install means a failed re-run degrades to "the old
+  // dependencies" rather than to "none".
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    mkdirSync(join(out, "node_modules", "d3"), { recursive: true });
+    writeFileSync(join(out, "node_modules", "d3", "index.js"), "//");
+    pack(src, out);
+    expect(existsSync(join(out, "node_modules", "d3", "index.js"))).toBe(true);
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
 test(".dist is gitignored — a delivery that can be committed stops being derived", () => {
   const gitignore = readFileSync(
     join(import.meta.dir, "../../.gitignore"),
