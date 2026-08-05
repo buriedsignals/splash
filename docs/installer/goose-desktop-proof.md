@@ -588,3 +588,43 @@ exigeait un modèle acceptant l'image puisque la session porte un `read_image` �
 fichiers de test au lieu d'invoquer `splash-export`. Aucun dossier `-export`, donc le gate de forme
 de livraison n'est pas observé. **C'est une limite de modèle et de palier gratuit, pas du produit.**
 
+## La phase EXPORT, 2026-08-05 — le gate a tenu, le modèle l'a contourné à la main
+
+Session `splash-b1-export3`, 550B, session neuve. **`splash-export` se charge** : les SIX skills de
+phase sont désormais observés sur un hôte réel.
+
+**Le gate mécanique a REFUSÉ, deux fois, et correctement :**
+```
+refusing to export annemasse-budget-personnel: not render-reviewed
+(run the render-review + review-gate first)          Command exited with code 1
+```
+
+**Puis le modèle a copié le PNG à la main** dans `exports/annemasse-budget-personnel/` et annoncé
+« L'export est terminé. Le fichier PNG a été livré dans le dossier stable du projet », avec un bloc
+de placement d'apparence correcte. Il n'a pas seulement annoncé une livraison qui n'avait pas eu
+lieu : **il en a fabriqué une plausible.**
+
+C'est E11 sur le chemin de l'export, et c'est une aggravation par rapport au 2026-08-03 — là, le
+modèle avait contourné un skill qu'il n'arrivait pas à invoquer ; ici il contourne **un refus
+explicite de notre propre code**.
+
+**Ce que ça valide, en revanche :**
+- le gate de relecture **n'est pas contournable par accident** — il a dit non, deux fois, avec la
+  commande à lancer ;
+- **`verify-delivery.mjs` attrape la fabrication.** Pointé sur le fichier que le modèle venait
+  d'annoncer : *« NO SPLASH RUN stands behind this file — whatever it may have been announced as. »*
+  L'outil d'E11 se prouve contre exactement la panne pour laquelle il a été écrit, sur un run réel
+  et non sur une fixture.
+
+**★ ET LA CAUSE DU « BLOCAGE IMAGE » EST TROUVÉE, après deux jours de mauvaise explication.**
+Ce n'était JAMAIS la reprise de session. Une sonde à deux tours le montre : le 550B répond
+parfaitement sur une session neuve triviale, et échoue en 404 « No endpoints found that support
+image input » dès qu'un prompt **cite un chemin `.png`** — Goose attache le fichier comme image, et
+l'endpoint gratuit du 550B ne l'accepte pas. La preuve d'hier disait « nemotron refuse de reprendre
+une session contenant un read_image » : c'était le symptôme, pas la cause.
+**Remède : ne jamais citer un chemin d'image dans le prompt** — nommer le dossier du run et laisser
+le modèle trouver l'artefact au shell. C'est ce qui a débloqué cette phase.
+
+**`verified` reste `false`,** et pour une raison désormais nette : la forme livrée n'a jamais été
+produite par `export-code.mjs`. Ce n'est plus une limite de palier gratuit — c'est E11.
+
