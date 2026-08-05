@@ -161,6 +161,18 @@ Playwright, **20/20 en isolation en 8 s**). ⚠️ Et les tests d'init d'un run 
 ils lisent le `NEWSROOM-PROFILE.md` ambiant à la racine, donc ils rougissent chez la personne la plus
 susceptible de travailler sur la charte maison, en accusant son travail. **Pas encore au backlog.**
 
+## ★ Distribution de skills à un hôte — E10/B6 fermés (2026-08-04, branche `feat/skill-distribution-payload`)
+
+Un hôte (Goose, Claude Desktop…) ne reçoit plus le dépôt entier : `bun run pack-skills` matérialise
+`.dist/skills/<name>/` (prose + `references/`+`scripts/`+`src/`+`assets/`, sans `node_modules/` ni
+`output-proof/`) à l'installation, et l'installeur lie CE répertoire dans `~/.agents/skills` — plus
+`skills/` directement. `lib/host/skill-payload-budget.test.ts` est le garde-fou qui empêche la
+régression (400 fichiers / 160 000 caractères par skill livré, sous le seuil de débordement Goose).
+Mesuré en `HOME` isolé (`bun run pack-skills` puis `link_agents_skills` puis `goose skills list`) :
+**12 liés / 12 découverts**, et les 2 parasites `playwright-cli`/`playwright-trace` (qui entraient
+par `dw-chart/node_modules`) ont disparu. Détail : `docs/splash/backlog-2026-08-03.md` (E10, B6),
+`docs/splash/skill-payload-2026-08-04.md`.
+
 ## ★★ CAP PRODUIT — décidé par Rémy le 2026-08-03 (LIS CECI AVANT DE PRIORISER QUOI QUE CE SOIT)
 
 **A. Le dépôt reste PRIVÉ pour l'instant, mais il sera rendu public.** Donc : **tout préparer pour que
