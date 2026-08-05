@@ -431,6 +431,49 @@ PNG), and the vision-capable `gemma-4-31b-it:free` rate-limited on ten consecuti
 `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`) with allowance left, resuming session
 `splash-lb2`; or a fresh session against the existing `/tmp/splash-run` state.
 
+---
+
+## ⚠️ The re-run's terms CHANGED on 2026-08-04 evening — read this before running it
+
+Two things landed after the paragraph above was written, and both change what a re-run proves.
+
+**1. `nemotron-3-ultra-550b:free` is usable again — start FRESH, do not resume.** The image
+constraint was never a property of the model or of the flow: it came from RESUMING `splash-lb2`,
+whose history contains a `read_image` result. A new session carries no image, so the strongest free
+model is available. Re-measured 2026-08-04 21:55: the 550B answers; `gemma-4-31b-it:free` is still
+rate-limited upstream; `nemotron-3-nano-omni-30b-a3b-reasoning:free` answers and remains the
+image-capable fallback if a resume is ever needed.
+
+**2. The host contract is NOT the one this proof measured.** `skills/splash/SKILL.md` was 1571
+lines and carried all six phases; it is now **285 lines**, and the phases live in five sibling
+skills the root invokes at the moment each begins (`splash-input`, `splash-cadrage`,
+`splash-proposition`, `splash-production`, `splash-export`). `load_skill(splash)` hands a host
+**38 129 characters instead of 144 757**.
+
+That is the single biggest change to what a host experiences since this document was written, and
+it cuts both ways:
+
+- **It should HELP.** The 2026-08-04 run recorded the model saying *« load_skill actually returns a
+  file listing, and not the skill's instructions… My current context is now misaligned »* — the
+  overflow that kept `SKILL.md` out of context. That specific failure is measured away.
+- **It introduces a NEW failure mode the six criteria do not cover.** A run that does not invoke
+  the skill of its phase now has FEWER rules in context than before the split. The root carries a
+  STOP for exactly this, and it is prose. **A re-run must therefore observe a seventh thing: that
+  each phase skill was actually loaded** — visible in the session's `load_skill` calls, the same
+  place the nested-invocation criterion is already read.
+
+**So the re-run is worth more than it was, and proves something different.** It is no longer only
+"do the six criteria pass"; it is also the first evidence that the phase split works on a real host
+rather than only under `scripts/verify-phase-split.mjs`, which proves the move was pure and says
+plainly that it cannot prove each rule landed in the phase where it applies.
+
+**One thing to decide before launching it, deliberately not decided here:** the run publishes. D1
+keeps Datawrapper publishing at produce time, so a real chart becomes publicly reachable at a
+`dwcdn.net` URL before anyone reviews it — that is the audit's gravest confirmed finding, and it is
+the point of the exercise, but it is an outward-facing act on a live account and belongs to Rémy to
+trigger, not to a background sweep.
+
+
 ## Not proven
 
 - **The bootstrap download.** `install/bootstrap.sh` fetches from `github.com/buriedsignals/splash`,
