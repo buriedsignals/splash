@@ -5,8 +5,23 @@ import { measureSkillPayload } from "./skill-payload";
 
 // Two ceilings, guarding two different things on purpose.
 //
+// ★ BOTH ARE AN INSTALL-DAY MEASUREMENT, and that limit is real rather than theoretical. This
+// file measures the SOURCE with exclusions applied, and docs/installer/pack-skills.test.ts
+// measures a FRESHLY PACKED tree — neither ever measures a live install. The exclusion of `dist/`
+// therefore holds until the first produce and no longer: the producers build into `<skill>/dist/`
+// (chart-native's vite.config.ts through chartDistSub, map-native's produce.mjs through BUILD_OUT,
+// scrolly's vite.config.ts outDir), which in an installation is `.dist/skills/<engine>/dist/` —
+// inside the one directory a host enumerates. Nothing prunes it and nothing here can see it.
+// Measured on this repo after ordinary development use: chart-native/dist = 14 files (~518 chars
+// of enumeration), map-native/dist = 24 (~1 578), scrolly/dist = 1. The shape is
+// dist/<type>/<format>/ at ~1-2 files each, so an install that eventually produced all 41
+// chart-native types would add on the order of 120 files to a budget of 400 that starts at 276.
+// It is the FILE ceiling that would bind, not the character one (~4 500 chars against 130 000 of
+// headroom). Redirecting the build output out of the skill tree is the real fix and is recorded as
+// out of scope in the design's §7 — not compensated for by inventing a number here.
+//
 // FILE_BUDGET is what the packer controls. After packaging the worst skill is chart-native at
-// 276 files, so 400 leaves 45% of room in an engine that grows a directory per chart type.
+// 276 files, so 400 leaves 31% of room in an engine that grows a directory per chart type.
 //
 // CHAR_BUDGET is the guard against the failure itself: Goose spills a tool response over
 // 200 000 characters into a temp file, and SKILL.md then never enters the model's context

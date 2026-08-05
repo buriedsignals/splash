@@ -129,19 +129,30 @@ symboliques sont suivis**, sont sautés `.git`/`.hg`/`.svn` et tout sous-arbre p
 Ils gardent deux choses différentes, et c'est délibéré.
 
 **Budget d'énumération — 400 fichiers par skill.** C'est ce que le packageur contrôle vraiment. Le
-maximum après packaging est `chart-native` à 275 fichiers → 45 % de marge. (Référence en tokens
+maximum après packaging est `chart-native` à 276 fichiers → 31 % de marge. (Référence en tokens
 Goose, non gardée : 11 895 pour `chart-native`.)
 
 **Budget de charge utile — 160 000 caractères par skill**, soit 80 % du seuil de débordement de
 Goose. C'est le garde-fou contre la panne elle-même.
 
-| Skill | Fichiers | Tokens d'énumération | Charge utile (car.) | Marge au budget |
+**Les colonnes « après » ont été RE-MESURÉES le 2026-08-04 avec le simulateur livré**
+(`lib/host/skill-payload.ts`) sur l'arbre réellement packagé — le premier jet de ce tableau était
+écrit avant que l'outil existe, et ses charges utiles étaient fausses d'un facteur allant jusqu'à
+2,2 (`chart-native` annoncé 67 657, mesuré **30 243**). Les colonnes « avant » et la colonne
+**tokens** restent les mesures d'origine d'E10, prises par le tokeniseur de Goose : elles ne sont
+pas reproductibles depuis `bun test` et n'ont pas été re-mesurées.
+
+| Skill | Fichiers | Tokens d'énumération | Charge utile (car.) | Marge au budget car. |
 |---|---|---|---|---|
-| `chart-native` | 12 191 → **275** | 737 634 → **11 895** | 3 009 640 → **67 657** | ×2,4 |
-| `map-native` | 20 640 → **145** | 1 342 060 → **6 104** | 5 168 976 → **59 176** | ×2,7 |
-| `scrolly` | 4 405 → **35** | 274 896 → **1 578** | 1 005 889 → **19 160** | ×8 |
-| `splash` | 748 → **48** | 42 634 → **1 905** | 294 111 → **144 757** | **×1,1** |
-| `dw-chart` | 700 → **20** | 41 951 → **869** | 172 020 → **19 263** | ×8 |
+| `chart-native` | 12 191 → **276** | 737 634 → **11 895** | 3 009 640 → **30 243** | ×5,3 |
+| `map-native` | 20 640 → **147** | 1 342 060 → **6 104** | 5 168 976 → **40 363** | ×4,0 |
+| `scrolly` | 4 405 → **38** | 274 896 → **1 578** | 1 005 889 → **14 888** | ×10,7 |
+| `splash` | 748 → **51** | 42 634 → **1 905** | 294 111 → **146 316** | **×1,1** |
+| `dw-chart` | 700 → **21** | 41 951 → **869** | 172 020 → **16 757** | ×9,5 |
+
+Les 12 skills se re-mesurent en une commande avec le même simulateur. Le second poids lourd n'est
+dans aucune ligne ci-dessus : `suggest-chart`, **32 fichiers / 50 111 caractères** — de la prose,
+comme `splash`.
 
 **L'arbitrage sur `splash`, décidé** : il passe de justesse, et son poids n'est plus de l'énumération
 (1 905 tokens) mais **sa prose** (33 693 tokens). Le plafond reste à 160 000 **malgré** cette marge
@@ -176,6 +187,25 @@ le seul fait que les fichiers existent).
   déplacement de moteur. Écarté au profit de § 3.2, qui obtient le même effet sans y toucher.
 - **Le chemin développeur** : `claude --plugin-dir .` depuis le dépôt continue de voir l'arbre
   complet. Inchangé.
+- **★ Le `dist/` que produit un rendu, dans l'installation vivante.** L'exclusion de `dist/` tient
+  au packaging et **jusqu'au premier `produce`, pas au-delà** : les producteurs construisent dans
+  `<skill>/dist/` (`chart-native/vite.config.ts` via `chartDistSub`, `map-native/scripts/produce.mjs`
+  via `BUILD_OUT`, `scrolly/vite.config.ts` `outDir: "dist"`), c'est-à-dire dans
+  `.dist/skills/<moteur>/dist/` — **à l'intérieur du seul répertoire que l'hôte énumère**. Rien ne
+  l'élague, et les deux gardes mesurent un arbre **fraîchement packagé**, jamais une installation
+  vivante : **les deux budgets sont une mesure du jour de l'installation.**
+  Ordre de grandeur mesuré sur ce dépôt après un usage de développement ordinaire :
+  `chart-native/dist` = 14 fichiers (~518 car. d'énumération), `map-native/dist` = 24 (~1 578),
+  `scrolly/dist` = 1. La forme est `dist/<type>/<format>/` à ~1–2 fichiers par couple, donc une
+  installation qui finirait par produire les **41** types de `chart-native` ajouterait de l'ordre de
+  **120 fichiers** à un budget de 400 qui démarre à **276** — le plafond de FICHIERS est ce qui
+  serrerait, pas celui de caractères (~4 500 car. face à 130 000 de marge).
+  **Non corrigé ici, et délibérément** : rediriger les sorties de build hors de l'arbre du skill
+  demande de câbler une racine de build à travers `chartDistSub` et ses 8 scripts de snap, les 2
+  appels `BUILD_OUT` de `map-native` et le `vite.config.ts` de `scrolly` — un changement dont la
+  seule preuve valable est un rendu réel, hors périmètre d'une passe de revue. La contrainte est
+  écrite ici et dans le commentaire de `lib/host/skill-payload-budget.test.ts` plutôt que
+  compensée par un correctif inventé.
 - **`GOOSE_MAX_TOOL_RESPONSE_SIZE`** : le relever supprimerait le débordement mais livrerait
   l'énumération en contexte — une panne visible échangée contre une saignée invisible. À ne pas
   toucher.
