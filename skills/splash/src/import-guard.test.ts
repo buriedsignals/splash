@@ -101,24 +101,22 @@ async function scanEngineFiles(): Promise<string[]> {
 //
 // Rule 1: map-dw imports SYMBOL_LABELS_INTERACTIVE from map-native. Remedy: the sentence is
 // shared by two engines, so it belongs in lib/core, not in map-native's feature-limits.
-const KNOWN_REACH_INS: Record<string, number> = {
-  "skills/map-dw/src/map-spec.ts": 1,
-};
+// EMPTY, and that is the point (registry E16, closed 2026-08-04). The one entry here — map-dw
+// reaching into map-native for a shared refusal sentence — is gone because the sentence moved to
+// lib/core/limit-sentences.ts, where a string two engines show the journalist belongs.
+// A ratchet that reaches zero stops being an allowlist: any entry added back is a deliberate act
+// with a name on it.
+const KNOWN_REACH_INS: Record<string, number> = {};
 
 // Rule 2 (no exemptions, by design): scrolly reads `fmtBin` from map-native's own src/core.
 // Remedy: move fmtBin to lib/core — WITH the locale layer it depends on (labelWithUnit,
 // localizeNumberString, Lang). That is a design move about where localisation lives, not a
 // repair, which is why un-blinding the guard came first and this did not.
-const KNOWN_CORE_REACH_INS: Record<string, number> = {
-  "skills/scrolly/src/ScrollyCartogramMap.tsx": 1,
-  "skills/scrolly/src/ScrollyHexMap.tsx": 1,
-  // ★ The route scrolly's two entries were here for a few hours on 2026-08-04, recorded with the
-  // note "RECORDED, NOT BLESSED — moving the primitive to lib/core is the real fix". The real fix
-  // turned out to be smaller than that: `scrolly` already decoded its own injected geometry
-  // inline in Scrolly.tsx, so ScrollyRouteMap did not need map-native's core at all. Extracted to
-  // src/world-geometry.ts and shared — the violation is gone rather than accounted for, and the
-  // ledger is shorter than before the route landed.
-};
+// EMPTY. scrolly read `fmtBin` from map-native's own src/core; it now reads
+// lib/core/legend-format.ts. The move cost nothing it was feared to cost — the dependency it was
+// said to "drag" was already a re-export shim of lib/core/locale, which a measurement settled and
+// a first reading had got wrong.
+const KNOWN_CORE_REACH_INS: Record<string, number> = {};
 
 /** Offenders counted per file, so the ratchet compares a shape and not an ordering. */
 function tally(offenders: string[]): Record<string, number> {

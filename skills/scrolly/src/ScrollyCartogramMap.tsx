@@ -12,7 +12,7 @@ import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { feature as topoFeature } from "topojson-client";
 import type { Topology } from "topojson-specification";
 import { flyToBeat } from "./scrolly-camera";
-import { fmtBin } from "../../map-native/src/core/legend-format";
+import { fmtBin } from "../../../lib/core/legend-format";
 import { computeCartogram } from "../../map-native/src/cartogram-geo";
 import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { applyCartogramBasemap } from "../../map-native/src/theme/cartogram-basemap";

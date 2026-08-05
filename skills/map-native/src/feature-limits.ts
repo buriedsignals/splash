@@ -6,12 +6,11 @@ import {
   type FeatureLimit,
 } from "../../../lib/core/feature-reach";
 import type { VisualFormat } from "../../../lib/core/vocabulary";
+import { SYMBOL_LABELS_INTERACTIVE } from "../../../lib/core/limit-sentences";
 
 /** The one wording for "an interactive symbol map does not label its circles" — exported so
  *  map-dw's refusal QUOTES it instead of asserting a top-N nothing implements. */
-export const SYMBOL_LABELS_INTERACTIVE =
-  "on the live interactive page the circles are read by hovering them — they carry no " +
-  "always-visible name+value labels (the no-JS static fallback does)";
+export { SYMBOL_LABELS_INTERACTIVE } from "../../../lib/core/limit-sentences";
 
 const KEYBOARD: FeatureLimit = {
   feature: "keyboard",

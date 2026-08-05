@@ -6,7 +6,7 @@ import {
 } from "../../dw-chart/src/chart-spec";
 import { validJoinKeysFor, regionCountFor } from "./basemap-keys";
 import { columnValues } from "./join-match";
-import { SYMBOL_LABELS_INTERACTIVE } from "../../map-native/src/feature-limits";
+import { SYMBOL_LABELS_INTERACTIVE } from "../../../lib/core/limit-sentences";
 
 export interface GradientStop {
   color: string; // hex

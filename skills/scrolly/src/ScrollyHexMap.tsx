@@ -9,7 +9,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { flyToBeat } from "./scrolly-camera";
-import { fmtBin } from "../../map-native/src/core/legend-format";
+import { fmtBin } from "../../../lib/core/legend-format";
 import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
