@@ -32,6 +32,7 @@ import {
 } from "../../lib/newsroom/verify.ts";
 import { MODEL_SCRIPT_ID } from "./copy.ts";
 import { preflightModel } from "./model.ts";
+import { resolveSkillsRoot } from "./skills-root.ts";
 import {
   envUpdates,
   mergeEnvFile,
@@ -81,6 +82,7 @@ function renderPage(focus: string | null): string {
     state: decor.state,
     env,
     profileExists: existsSync(join(ROOT, PROFILE_FILE)),
+    skillsRoot: resolveSkillsRoot(ROOT),
     ...(profileLang() ? { profileLang: profileLang()! } : {}),
     ...(focus ? { focus } : {}),
   });
