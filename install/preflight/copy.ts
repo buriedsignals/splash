@@ -37,8 +37,7 @@ export type PageCopy = {
 
   assistantTitle: string;
   assistantHint: string;
-  anthropicLabel: string;
-  anthropicHint: string;
+  loginOptionalHint: string;
 
   capabilitiesTitle: string;
   capabilitiesHint: string;
@@ -96,9 +95,8 @@ const EN: PageCopy = {
 
   assistantTitle: "Your assistant",
   assistantHint: "The AI runtime that drives Splash on this machine.",
-  anthropicLabel: "Anthropic API key",
-  anthropicHint:
-    "Leave blank if you have a Claude subscription — you will log in on first launch.",
+  loginOptionalHint:
+    "Leave blank if you have a subscription — you will sign in on first launch.",
 
   capabilitiesTitle: "What you want to be able to do",
   capabilitiesHint:
@@ -159,9 +157,8 @@ const FR: PageCopy = {
 
   assistantTitle: "Votre assistant",
   assistantHint: "Le runtime IA qui pilote Splash sur cette machine.",
-  anthropicLabel: "Clé API Anthropic",
-  anthropicHint:
-    "Laissez vide si vous avez un abonnement Claude — vous vous connecterez au premier lancement.",
+  loginOptionalHint:
+    "Laissez vide si vous avez un abonnement — vous vous connecterez au premier lancement.",
 
   capabilitiesTitle: "Ce que vous voulez pouvoir faire",
   capabilitiesHint:

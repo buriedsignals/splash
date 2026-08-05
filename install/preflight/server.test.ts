@@ -72,7 +72,7 @@ function submission(over: Record<string, unknown> = {}) {
     runtime: "claude",
     uiLang: "en",
     contentLang: "en",
-    anthropic: "",
+    login: "",
     credentials: {},
     enabled: [],
     publisher: "zip",

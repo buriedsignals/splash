@@ -21,7 +21,7 @@ type FormState = {
   uiLang: string;
   contentLang: string;
   runtime: string;
-  anthropic: string;
+  login: string;
   credentials: Record<string, string>;
   enabled: Set<string>;
   publisher: string;
@@ -38,7 +38,7 @@ const form: FormState = {
   uiLang: model.language.ui,
   contentLang: model.language.content,
   runtime: model.runtime,
-  anthropic: "",
+  login: "",
   credentials: {},
   enabled: new Set(
     [...model.engines, ...model.delivery]
@@ -389,6 +389,8 @@ function renderAssistant(copy: PageCopy): void {
     input.checked = form.runtime === runtime.id;
     input.addEventListener("change", () => {
       form.runtime = runtime.id;
+      form.login = "";
+      renderAssistant(copy);
     });
     const label = el("label", { for: id });
     label.append(input, runtime.label);
@@ -397,26 +399,36 @@ function renderAssistant(copy: PageCopy): void {
   }
   body.append(group);
 
-  const anthropic = el("div", { class: "field" });
-  anthropic.append(el("label", { for: "anthropic" }, copy.anthropicLabel));
-  anthropic.append(
-    el("p", { class: "field-help", id: "anthropic-help" }, copy.anthropicHint),
+  const login = model.runtimes.find((r) => r.id === form.runtime)?.login;
+  if (!login) return; // this runtime owns its own sign-in — nothing to ask
+  const configured =
+    form.runtime === model.runtime && model.login
+      ? model.login.configured
+      : false;
+  const field = el("div", { class: "field" });
+  field.append(el("label", { for: "login" }, login.label));
+  field.append(
+    el(
+      "p",
+      { class: "field-help", id: "login-help" },
+      login.optional ? copy.loginOptionalHint : login.help,
+    ),
   );
   const key = el("input", {
-    id: "anthropic",
+    id: "login",
     type: "password",
     autocomplete: "off",
-    "aria-describedby": "anthropic-help",
-    ...(model.anthropicConfigured
+    "aria-describedby": "login-help",
+    ...(configured
       ? { placeholder: `${copy.configured} — ${copy.configuredHint}` }
       : {}),
-  });
-  key.value = form.anthropic;
+  }) as HTMLInputElement;
+  key.value = form.login;
   key.addEventListener("input", () => {
-    form.anthropic = key.value;
+    form.login = key.value;
   });
-  anthropic.append(key);
-  body.append(anthropic);
+  field.append(key);
+  body.append(field);
 }
 
 function renderCapabilities(copy: PageCopy): void {
@@ -551,7 +563,7 @@ function payload() {
     runtime: form.runtime,
     uiLang: form.uiLang,
     contentLang: form.contentLang,
-    anthropic: form.anthropic,
+    login: form.login,
     credentials: form.credentials,
     enabled: [...form.enabled],
     publisher: form.publisher,

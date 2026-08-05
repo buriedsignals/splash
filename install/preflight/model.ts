@@ -27,7 +27,7 @@ import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
-import { RUNTIMES } from "../configurator-core.ts";
+import { RUNTIMES, type RuntimeLogin } from "../configurator-core.ts";
 
 /** Where a field's value belongs once submitted. Secrets are always `env`. */
 export type FieldDestination = "env" | "settings";
@@ -81,13 +81,18 @@ export type PreflightCapability = {
 };
 
 export type PreflightModel = {
-  runtimes: { id: string; label: string; verified: boolean }[];
+  runtimes: {
+    id: string;
+    label: string;
+    verified: boolean;
+    login?: RuntimeLogin;
+  }[];
   runtime: string;
   language: { ui: string; content: string };
   /** True when NEWSROOM-PROFILE.md exists: the page then refuses to rewrite it. */
   profileExists: boolean;
-  /** The runtime's own API key is not a capability — it is the assistant's login. */
-  anthropicConfigured: boolean;
+  /** The runtime's own sign-in — declared by the chosen runtime, absent when it needs none. */
+  login: (RuntimeLogin & { configured: boolean }) | null;
   fields: PreflightField[];
   engines: PreflightCapability[];
   delivery: PreflightCapability[];
@@ -126,6 +131,16 @@ function aliasesOf(
     for (const group of cap.env)
       if (group.includes(field)) for (const n of group) names.add(n);
   return [...names];
+}
+
+/** The chosen runtime's own sign-in, with whether it is already set in .env — or null when the
+ * runtime needs none. */
+function loginOf(
+  runtime: string,
+  env: Record<string, string | undefined>,
+): (RuntimeLogin & { configured: boolean }) | null {
+  const login = RUNTIMES[runtime]?.login;
+  return login ? { ...login, configured: isSet(env[login.name]) } : null;
 }
 
 function collectFields(
@@ -267,7 +282,7 @@ export function preflightModel(
       ...(input.profileLang ? { profileLang: input.profileLang } : {}),
     }),
     profileExists: input.profileExists === true,
-    anthropicConfigured: isSet(env.ANTHROPIC_API_KEY),
+    login: loginOf(state.runtime, env),
     fields: collectFields(state, env),
     engines: capabilities.filter((c) => c.kind === "engine"),
     delivery: capabilities.filter((c) => c.kind === "delivery"),
