@@ -7,6 +7,13 @@
 //
 //   bun scripts/verify-dist-produce.mjs
 //
+// It packs to a TEMP dir on purpose, and that is now load-bearing rather than incidental: a
+// delivery nested inside the repo inherits the repo's node_modules, so it can resolve packages its
+// own manifest never declares. This run cannot — which is exactly why it caught `vite` and, once
+// the packer began merging the root manifest too, why it is the check that proves the delivery is
+// relocatable. The standing guard for the same question is the import scan in
+// docs/installer/pack-skills.test.ts; this one settles it by rendering.
+//
 // Two questions the design left to this run rather than to reasoning (see docs/installer/
 // claude-desktop-findings.md for the answers this run recorded):
 //   1. does the per-engine package.json left in <dist>/skills/<engine>/ disturb dependency
