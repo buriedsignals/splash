@@ -5,9 +5,10 @@ import {
   writeFileSync,
   rmSync,
   utimesSync,
+  readFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 import { assertShippable } from "./export-guard";
 import { assertChainProvenance } from "./render-provenance";
@@ -41,6 +42,19 @@ const HAND_AUTHORED_SPEC = {
   title: "Rents in Annemasse",
   source: { name: "INSEE" },
 };
+
+/** Writes the presentation receipt `lib/host/cli.ts present` leaves, and returns the hash it
+ *  covers — so a fixture can hold an approval that something was actually shown for. */
+function shownFor(artifact: string): string {
+  const hash = createHash("sha256").update(readFileSync(artifact)).digest("hex");
+  const dir = join(dirname(artifact), "_shown");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, `${basename(artifact)}.json`),
+    JSON.stringify({ sha256: hash, presentedAs: "opened" }),
+  );
+  return hash;
+}
 
 describe("anti-improvisation regression — hand-authored chart-native spec is unshippable", () => {
   let dir: string;
@@ -119,6 +133,10 @@ describe("anti-improvisation regression — hand-authored chart-native spec is u
       outputs: [outputPath],
       renderApproved: true,
       reviewed: true,
+      // A REAL presentation, because assertShippable now re-reads it (registry E20). Without
+      // this the fixture would be refused for the wrong reason, and the refusal these cases
+      // actually prove — the chain-provenance one — would never be reached.
+      approvedHash: shownFor(outputPath),
       acceptedConfigHash: hash,
     };
     return { generatedAt, results: [result] };
@@ -129,9 +147,11 @@ describe("anti-improvisation regression — hand-authored chart-native spec is u
     writeCandidatesWithoutChartNative();
     const report = buildReport(specHash(HAND_AUTHORED_SPEC));
 
-    // assertShippable alone is not the guard under test — it only checks produced/reviewed/
-    // renderApproved, all of which an improviser can fabricate. It must still pass here so the
-    // refusal below is proven to come from the chain-provenance check specifically.
+    // assertShippable is not the guard under test. It used to check only produced/reviewed/
+    // renderApproved — "all of which an improviser can fabricate", as this comment said, and one
+    // did on 2026-08-05. It now also re-reads the presentation receipt (registry E20), which this
+    // fixture provides, so it still passes here and the refusal below is proven to come from the
+    // chain-provenance check specifically.
     expect(() => assertShippable(report, "p1")).not.toThrow();
 
     let thrown: unknown;

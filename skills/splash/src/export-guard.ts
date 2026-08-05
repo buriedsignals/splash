@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ProduceReport, VisualFormat } from "./producer-spec";
 import type { BrandProfile } from "./brand-profile";
@@ -13,6 +13,7 @@ import {
   type HandoverForm,
 } from "../../../lib/loop/preconditions";
 import { refusalSentence } from "../../../lib/core/routed-refusal";
+import { shownCovers } from "../../../lib/loop/presentation";
 import { createHash } from "node:crypto";
 
 export { isHostedUrl };
@@ -20,6 +21,15 @@ export { isHostedUrl };
 // The one MECHANICAL gate: nothing ships unless it was actually produced AND the human
 // approved the render. Lives in the irreversible-action scripts so a lower-level call
 // cannot bypass it.
+/** The first output that exists as bytes on disk. Hosted deliveries (a Datawrapper embed) have a
+ *  URL and no local file, and there is nothing there to have been shown. */
+function firstLocalOutput(r: { outputs?: string[] }): string | null {
+  for (const v of r.outputs ?? [])
+    if (typeof v === "string" && v && !/^https?:\/\//.test(v) && existsSync(v))
+      return v;
+  return null;
+}
+
 export function assertShippable(report: ProduceReport, id: string): void {
   const r = report.results.find((x) => x.id === id);
   if (!r) throw new Error(`unknown proposal ${id}`);
@@ -35,6 +45,39 @@ export function assertShippable(report: ProduceReport, id: string): void {
     throw new Error(
       `refusing to export ${id}: not render-approved (run gate-render first)`,
     );
+  // ── THE APPROVAL IS RE-VERIFIED AGAINST THE DISK (registry E20) ──────────────────────────
+  // The three checks above read fields of a JSON file, and a model can write that file. Observed
+  // live 2026-08-05: refused with "not render-reviewed", the host model edited the report —
+  // `"renderApproved": false` → `true` — was refused again for the neighbouring field, edited
+  // that one too, and exported on the forged approval. The run directory had no `_shown/`
+  // receipt at all: nobody had been shown anything.
+  //
+  // This is the closure the comment below has been naming: re-read the PRESENTATION RECEIPT, the
+  // one artifact only `lib/host/cli.ts present` writes, and require that it covers the bytes the
+  // approval claims. Forging the report is no longer enough — a forger would have to also
+  // manufacture a receipt for the exact bytes, which is the point at which "faking it" and
+  // "actually showing the journalist" converge.
+  //
+  // Applied only when there is a path to check: `outputs` is absent on hosted-only deliveries
+  // (a Datawrapper embed has a URL and no local bytes), and refusing those would break a
+  // legitimate form rather than close a hole.
+  // PRESENCE IS REQUIRED, not merely checked-when-present. The first version of this guard was
+  // conditional on `r.approvedHash` — and the real forged report from the 2026-08-05 run has no
+  // `approvedHash` at all: the model simply flipped the two booleans. A guard that skips when the
+  // evidence is absent is defeated by removing the evidence, which is the cheapest possible
+  // forgery. Measured: with the conditional version, that exact report still exported.
+  const shownPath = firstLocalOutput(r);
+  if (shownPath) {
+    if (!r.approvedHash)
+      throw new Error(
+        `refusing to export ${id}: approved with no approvedHash — nothing names the bytes that were approved, so the approval cannot be checked`,
+      );
+    const refusal = shownCovers(shownPath, r.approvedHash);
+    if (refusal)
+      throw new Error(
+        `refusing to export ${id}: ${refusalSentence(refusal)} — an approval nobody was shown is not an approval`,
+      );
+  }
   // "shown" and "approved" have to name the same bytes — but this comparison does not itself
   // verify that. gate.ts:38-49 is the only writer of either field, and it writes BOTH from the
   // same computed `approvedHash` variable in the same object literal, so on any honestly-written

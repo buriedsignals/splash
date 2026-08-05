@@ -11,7 +11,7 @@ import {
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { isEphemeralPath } from "./export-code.mjs";
 import { canonicalJson } from "../src/canonical-json.ts";
 import { generateEditorKeypair, signArtifact } from "./sign-artifact.mjs";
@@ -66,6 +66,25 @@ function writeChainFixture(
 // sanctioned candidates.json/accepted.json chain (written into `dir`, report.json's directory) so
 // assertChainProvenance passes for every legitimate fixture in this file. `dir` is always the
 // directory the caller writes report.json into (join(dir, "report.json")).
+// AN APPROVAL NEEDS A PRESENTATION BEHIND IT (registry E20). `assertShippable` re-reads the
+// receipt `lib/host/cli.ts present` writes and requires it to cover the approved bytes — because
+// a report is a file a model can edit, and on 2026-08-05 one did exactly that. These fixtures
+// therefore have to hand over a real presentation, not just a `renderApproved: true` flag.
+function approveShown(outputs: unknown): string | undefined {
+  const first = Array.isArray(outputs)
+    ? outputs.find((o) => typeof o === "string" && existsSync(o))
+    : undefined;
+  if (typeof first !== "string") return undefined;
+  const hash = createHash("sha256").update(readFileSync(first)).digest("hex");
+  const dir = join(dirname(first), "_shown");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    join(dir, `${basename(first)}.json`),
+    JSON.stringify({ sha256: hash, presentedAs: "opened" }),
+  );
+  return hash;
+}
+
 const report = (
   dir: string,
   id: string,
@@ -86,6 +105,9 @@ const report = (
         renderApproved: true,
         acceptedConfigHash,
         ...extra,
+        ...(approveShown((extra as { outputs?: unknown }).outputs)
+          ? { approvedHash: approveShown((extra as { outputs?: unknown }).outputs) }
+          : {}),
       },
     ],
   };
