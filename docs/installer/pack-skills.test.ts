@@ -22,8 +22,24 @@ const REPO = join(import.meta.dir, "../..");
 function repo(): string {
   const root = mkdtempSync(join(tmpdir(), "splash-packsrc-"));
   mkdirSync(join(root, "lib", "core"), { recursive: true });
-  writeFileSync(join(root, "lib", "core", "registry.ts"), "export {};");
+  // lib/ imports packages NO skill declares — zod (lib/newsroom/state.ts + 17 modules), fflate
+  // (lib/delivery/adapters/zip.ts), @noble/hashes (lib/loop/deliver.ts) — and they are declared
+  // only in the ROOT package.json.
+  writeFileSync(
+    join(root, "lib", "core", "registry.ts"),
+    'import { z } from "zod";\nexport { z };\n',
+  );
   writeFileSync(join(root, "lib", "core", "registry.test.ts"), "// test");
+  writeFileSync(
+    join(root, "package.json"),
+    JSON.stringify({
+      name: "splash",
+      dependencies: { zod: "4.4.3" },
+      // playwright is ALSO pinned by a skill below, at a different version: the skill's pin wins,
+      // because the renderers are what native-browser.test.ts keeps in step.
+      devDependencies: { playwright: "1.0.0", "@types/node": "26.1.1" },
+    }),
+  );
 
   const alpha = join(root, "skills", "alpha");
   mkdirSync(join(alpha, "src"), { recursive: true });
@@ -48,7 +64,11 @@ function repo(): string {
       // typescript ALSO appears in dependencies above at a different version — an INTRA-skill
       // collision fixture (one package.json naming the same package in both maps), distinct
       // from the cross-skill collision the other tests cover.
-      devDependencies: { vite: "9.0.0", typescript: "6.0.3" },
+      devDependencies: {
+        vite: "9.0.0",
+        typescript: "6.0.3",
+        playwright: "1.61.1",
+      },
     }),
   );
 
@@ -150,6 +170,26 @@ test("merges devDependencies too — a produce that shells out to `bunx vite bui
     // ('vite') on the very first produce. There is no separate "dev install" step for a
     // delivered tree, so the dev/prod distinction cannot survive the merge.
     expect(merged.dependencies.vite).toBe("9.0.0");
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test("merges the ROOT manifest too — lib/ is delivered and its packages are declared nowhere else", () => {
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    const merged = JSON.parse(readFileSync(join(out, "package.json"), "utf8"));
+    // lib/ ships in the delivery and imports zod / fflate / @noble/hashes, all declared ONLY in
+    // the root package.json — which the packer did not read. It worked in the shipped layout only
+    // because .dist sits inside $DEST and inherits $DEST/node_modules: an accident of nesting, not
+    // a property of the delivery. Merging the root manifest is what makes the tree relocatable.
+    expect(merged.dependencies.zod).toBe("4.4.3");
+    expect(merged.dependencies["@types/node"]).toBe("26.1.1");
+    // A skill's pin still wins over the root's — the renderers own the version that has to agree.
+    expect(merged.dependencies.playwright).toBe("1.61.1");
   } finally {
     rmSync(src, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });
@@ -342,6 +382,154 @@ test("packing the real repository carries no excluded tree and no engine depende
     // The merged manifest is above the skills, where no host walks.
     expect(existsSync(join(out, "package.json"))).toBe(true);
     expect(statSync(join(out, "lib")).isDirectory()).toBe(true);
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
+// ── Does the merged manifest actually cover what the delivered tree imports? ──
+//
+// Two dependency holes were found by hand rather than by a guard: `vite` (a devDependency the
+// merge dropped, so the first produce died on ERR_MODULE_NOT_FOUND) and `zod`/`fflate`/
+// `@noble/hashes` (declared only in the ROOT manifest, which the packer never read). Both were
+// invisible because .dist sits inside $DEST and inherits $DEST/node_modules — the delivery
+// resolved packages it does not declare. This test asks the question directly, on the packed
+// tree, so the third hole is caught by the repository instead of by a journalist.
+
+const CODE_EXT = new Set([
+  ".ts",
+  ".tsx",
+  ".mts",
+  ".cts",
+  ".js",
+  ".mjs",
+  ".cjs",
+  ".jsx",
+]);
+
+/** Node builtins reachable WITHOUT the `node:` prefix. Not dependencies. */
+const BUILTINS = new Set([
+  "assert",
+  "async_hooks",
+  "buffer",
+  "child_process",
+  "cluster",
+  "console",
+  "constants",
+  "crypto",
+  "dgram",
+  "diagnostics_channel",
+  "dns",
+  "domain",
+  "events",
+  "fs",
+  "http",
+  "http2",
+  "https",
+  "inspector",
+  "module",
+  "net",
+  "os",
+  "path",
+  "perf_hooks",
+  "process",
+  "punycode",
+  "querystring",
+  "readline",
+  "repl",
+  "stream",
+  "string_decoder",
+  "sys",
+  "timers",
+  "tls",
+  "trace_events",
+  "tty",
+  "url",
+  "util",
+  "v8",
+  "vm",
+  "wasi",
+  "worker_threads",
+  "zlib",
+]);
+
+/** Strip comments, so English prose ("derived from \"the first value column\"") is not read as an
+ *  import. Crude but sufficient here: this file's job is to find specifiers, not to parse JS. */
+function stripComments(text: string): string {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
+}
+
+/** Every bare specifier a module in `dir` imports, mapped to its package name. */
+function bareImports(dir: string): Map<string, string[]> {
+  const found = new Map<string, string[]>();
+  // Anchored on the STATEMENT, never on a bare `from`: the specifier list of an import carries no
+  // quote and no semicolon, so `[^;'"]*` spans a multi-line one and stops at anything else.
+  // `import type` / `export type` are ERASED before anything runs — a missing type package fails
+  // the typecheck, never the delivery (map-native's `import type { Topology } from
+  // "topojson-specification"` resolves through @types/topojson-specification, a devDependency
+  // whose module name is not a runtime package at all). Only runtime specifiers are in scope here.
+  const patterns = [
+    /(?:^|[\n;}])\s*import\s+(?!type\s)(?:[^;'"]*\sfrom\s*)?["']([^"']+)["']/g,
+    /(?:^|[\n;}])\s*export\s+(?!type\s)[^;'"]*\sfrom\s*["']([^"']+)["']/g,
+    // Dynamic import("p") — but not TypeScript's import-TYPE query `import("p").Topology`, which
+    // is erased like any other type. Discriminated on the member being capitalised: a real dynamic
+    // import is consumed through `.then`/`.default`/`await`, never through a PascalCase member.
+    /\bimport\s*\(\s*["']([^"']+)["']\s*\)(?!\s*\.\s*[A-Z])/g,
+    /\brequire\s*\(\s*["']([^"']+)["']\s*\)/g,
+  ];
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const full = join(d, e.name);
+      if (e.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      const ext = e.name.slice(e.name.lastIndexOf("."));
+      if (!CODE_EXT.has(ext)) continue;
+      const text = stripComments(readFileSync(full, "utf8"));
+      for (const re of patterns) {
+        re.lastIndex = 0;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(text)) !== null) {
+          const spec = m[1]!;
+          if (spec.startsWith(".") || spec.startsWith("/")) continue;
+          if (spec.startsWith("node:") || spec.startsWith("bun:")) continue;
+          if (BUILTINS.has(spec)) continue;
+          const pkg = spec.startsWith("@")
+            ? spec.split("/").slice(0, 2).join("/")
+            : spec.split("/")[0]!;
+          if (!pkg || pkg.startsWith("#")) continue; // subpath imports resolve in-package
+          const where = found.get(pkg) ?? [];
+          if (where.length < 3) where.push(full.slice(dir.length + 1));
+          found.set(pkg, where);
+        }
+      }
+    }
+  };
+  walk(dir);
+  return found;
+}
+
+test("every package the delivered tree imports is declared by the merged manifest", () => {
+  const out = mkdtempSync(join(tmpdir(), "splash-realpack-deps-"));
+  try {
+    expect(pack(REPO, out).exitCode).toBe(0);
+    const merged = JSON.parse(readFileSync(join(out, "package.json"), "utf8"));
+    const declared = new Set(Object.keys(merged.dependencies ?? {}));
+
+    const missing: string[] = [];
+    for (const [pkg, where] of bareImports(out)) {
+      if (!declared.has(pkg))
+        missing.push(`${pkg} (imported by ${where.join(", ")})`);
+    }
+    if (missing.length)
+      throw new Error(
+        `the delivered tree imports packages the merged manifest does not declare, so a relocated ` +
+          `delivery cannot install them:\n  ${missing.join("\n  ")}\n` +
+          `Declare each in the package.json the packer merges (a skill's, or the root's).`,
+      );
   } finally {
     rmSync(out, { recursive: true, force: true });
   }

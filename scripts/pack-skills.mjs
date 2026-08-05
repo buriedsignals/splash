@@ -80,33 +80,29 @@ copyTree(join(repoRoot, "lib"), join(outDir, "lib"));
 const skillsRoot = join(repoRoot, "skills");
 const merged = {};
 let packed = 0;
-for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue;
-  const src = join(skillsRoot, entry.name);
-  // E9's rule, applied here too: a directory with no SKILL.md is not a skill.
-  if (!existsSync(join(src, "SKILL.md"))) continue;
-  copyTree(src, join(outDir, "skills", entry.name));
-  packed++;
-  const pkgPath = join(src, "package.json");
-  if (!existsSync(pkgPath)) continue;
+
+/** Fold one manifest's dependencies AND devDependencies into the merged one.
+ *
+ *  Both maps, because the delivered tree has no separate build step that installs "dev" packages
+ *  only for CI and strips them after — `bun install` at the dist root is the ONLY install that
+ *  ever happens, and produce.mjs shells out to `bunx vite build` with a vite.config.ts that
+ *  imports @vitejs/plugin-react / vite-plugin-singlefile, all filed under devDependencies
+ *  upstream. Dropping that distinction here is what makes the delivered tree able to render at
+ *  all (proven by scripts/verify-dist-produce.mjs: static failed with ERR_MODULE_NOT_FOUND
+ *  ('vite') until this merged devDependencies too). */
+function foldManifest(pkgPath, label) {
+  if (!existsSync(pkgPath)) return;
   const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
-  // Both dependencies AND devDependencies: the delivered tree has no separate build step that
-  // installs "dev" packages only for CI and strips them after — `bun install` at the dist root
-  // is the ONLY install that ever happens, and produce.mjs shells out to `bunx vite build` with
-  // a vite.config.ts that imports @vitejs/plugin-react / vite-plugin-singlefile, all filed under
-  // devDependencies upstream. Dropping that distinction here is what makes the delivered tree
-  // able to render at all (proven by scripts/verify-dist-produce.mjs: static failed with
-  // ERR_MODULE_NOT_FOUND('vite') until this merged devDependencies too).
   const deps = pkg.dependencies ?? {};
   const devDeps = pkg.devDependencies ?? {};
-  // INTRA-skill collision: the same package named in both maps of ONE package.json, at
+  // INTRA-manifest collision: the same package named in both maps of ONE package.json, at
   // different versions. The spread below (deps then devDeps) resolves it by spread order —
-  // devDeps wins — same as the cross-skill collision two lines down was always reported, this
-  // one was resolved silently. Surfaced the same way, before the merge picks a winner.
+  // devDeps wins — and unlike the cross-manifest collision two lines down, it was resolved
+  // silently. Surfaced the same way, before the merge picks a winner.
   for (const dep of Object.keys(devDeps)) {
     if (dep in deps && deps[dep] !== devDeps[dep]) {
       console.error(
-        `note: ${dep} pinned twice within ${entry.name}'s package.json (dependencies ${deps[dep]} vs devDependencies ${devDeps[dep]}); keeping ${devDeps[dep]}`,
+        `note: ${dep} pinned twice within ${label}'s package.json (dependencies ${deps[dep]} vs devDependencies ${devDeps[dep]}); keeping ${devDeps[dep]}`,
       );
     }
   }
@@ -116,6 +112,25 @@ for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
     merged[dep] ??= version;
   }
 }
+
+for (const entry of readdirSync(skillsRoot, { withFileTypes: true })) {
+  if (!entry.isDirectory()) continue;
+  const src = join(skillsRoot, entry.name);
+  // E9's rule, applied here too: a directory with no SKILL.md is not a skill.
+  if (!existsSync(join(src, "SKILL.md"))) continue;
+  copyTree(src, join(outDir, "skills", entry.name));
+  packed++;
+  foldManifest(join(src, "package.json"), entry.name);
+}
+
+// The ROOT manifest, LAST. `lib/` ships in the delivery and imports zod (lib/newsroom/state.ts +
+// 17 modules), fflate (lib/delivery/adapters/zip.ts) and @noble/hashes (lib/loop/deliver.ts) —
+// declared in NO skill's package.json, only in the root's. Without this the delivery resolves
+// packages it does not declare, and only because .dist sits inside $DEST and inherits
+// $DEST/node_modules: an accident of nesting, not a property of the delivery. Last, so a skill's
+// pin still wins on a shared package — the renderers own the version that has to agree
+// (install/native-browser.test.ts keeps Playwright in step across them).
+foldManifest(join(repoRoot, "package.json"), "the repository root");
 
 // Link the install root's own files back into the delivery (see INSTALL_ROOT_FILES). Created
 // unconditionally: NEWSROOM-PROFILE.md is usually written AFTER the install, and a link made only
