@@ -485,3 +485,46 @@ describe("what the journalist reads at PROPOSITION (manual-run feedback, 2026-07
     expect(splash).toContain("Say that the check RAN");
   });
 });
+
+// ── REGISTRY E24 (the second half) ───────────────────────────────────────────────────────────
+// A tool failure reaches the journalist as a FACT and a NEXT ACTION, never as a diagnosis, and
+// never as a decision he is asked to arbitrate. Observed 2026-08-05 on a real run: the export
+// refusal was relayed to him with the offending file and line numbers, three sha256 digests, and
+// a choice between "take the file as-is" and "fix the defect first" — none of which is a
+// journalist's to read or to make.
+//
+// These are STRING PINS, and they are worth exactly what a string pin is worth: they catch a
+// rewrite that DROPS the rule, not a run that ignores it. Nothing mechanical can read a chat
+// message and tell a fact from a diagnosis; this is a prose contract the orchestrator executes.
+describe("E24 — a failure is told, its internals are not", () => {
+  it("§Voice states that the failure reaches him but the diagnosis does not", () => {
+    expect(splash).toContain(
+      "A FAILURE is never hidden and never softened — but it is not a bug report handed to the",
+    );
+    expect(splash).toContain("he will never fix a Splash defect");
+    expect(splash).toContain("the fact and the next action, never the cause");
+  });
+
+  it("the Never list forbids handing him a diagnosis or asking him to arbitrate a defect", () => {
+    expect(splash).toContain(
+      "Never hand the journalist a technical diagnosis, and never ask him to arbitrate a Splash defect",
+    );
+  });
+
+  it("the PRODUCTION and EXPORT hard stops say what 'surfaced' means", () => {
+    // Both phases used to say a failure is surfaced "AS-IS", which is what licensed pasting the
+    // engine's internals at him. Each now scopes that word.
+    expect(splash).toContain(
+      '**"Surfaced" means the FACT and the NEXT ACTION, not the engine\'s internals**',
+    );
+    expect(splash).toContain(
+      "**Tell him the FACT and the NEXT ACTION, never the engine's internals**",
+    );
+  });
+
+  it("keeps the diagnosis written down somewhere — suppressed from the chat, not from the record", () => {
+    expect(splash).toContain(
+      "Suppressing the technical detail from the CHAT is not suppressing it from the RECORD",
+    );
+  });
+});

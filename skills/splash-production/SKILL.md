@@ -153,10 +153,15 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   5c. Do not hand-translate. This native→dw direction is the ONE producer switch GUARD 1 sanctions; the
   reverse (dw→native) or any other switch is refused (see 5c).
 - **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual.
-  **A non-zero `produce-all` exit (or any gate refusal) is a HARD STOP surfaced to the journalist AS-IS
-  — never worked around** by re-authoring code, hand-editing outputs, an ad-hoc script, or a silent retry
-  with hidden changes (see Never; the harness `check:conformance-no-fabrication` catches a produce exit=1
-  the run continued past). If the
+  **A non-zero `produce-all` exit (or any gate refusal) is a HARD STOP the journalist is ALWAYS told
+  about — never worked around** by re-authoring code, hand-editing outputs, an ad-hoc script, or a silent
+  retry with hidden changes (see Never; the harness `check:conformance-no-fabrication` catches a produce
+  exit=1 the run continued past).
+  **"Surfaced" means the FACT and the NEXT ACTION, not the engine's internals** (`skills/splash/SKILL.md`
+  §Voice): tell him a step failed, what it costs his article, and what to relaunch or decide. The file,
+  the line, the function, the hash, the internal id and the reasoning about which guard misfired stay OUT
+  of the chat and go to the backlog/defect note — he will not fix this tool, and asking him to arbitrate
+  a defect is its own failure. Nothing is softened or hidden by this; only the audience changes. If the
   failure is a **conformance gate** rejecting the accepted spec (e.g. a colour/contrast/format
   violation) — do NOT silently mutate the accepted spec (`baseColor`, format, etc.) to make the gate
   pass without saying so: SURFACE the conformance issue to the journalist as-is, and if the spec

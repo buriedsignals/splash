@@ -38,9 +38,13 @@ scratchpad — the scratchpad is temporary and gets cleaned, so the journalist w
 (non-zero) if the export path looks ephemeral. The ship scripts also refuse unless the proposal is
 `produced` AND render-approved (GATE 3 done) — pass the report + id so the gate can check. **If a ship
 script exits non-zero (an ephemeral path, an unmet `assertDelivered` shape, a missing prerequisite), that
-is a HARD STOP surfaced to the journalist — never worked around** by `mv`/`cp`-ing files into the shape a
-gate expects, by hand-editing the export folder, or by a silent retry; fix the actual cause (re-run the
-correct `--form` build, point the script at the file production emitted) and re-run the script (see Never).
+is a HARD STOP the journalist is always told about — never worked around** by `mv`/`cp`-ing files into the
+shape a gate expects, by hand-editing the export folder, or by a silent retry; fix the actual cause (re-run
+the correct `--form` build, point the script at the file production emitted) and re-run the script (see
+Never). **Tell him the FACT and the NEXT ACTION, never the engine's internals** (`skills/splash/SKILL.md`
+§Voice): a step failed, here is where his file is, here is what to relaunch. The file, the line, the hash
+and the guard's reasoning go to the backlog/defect note — never to him, and never as a choice for him to
+arbitrate.
 
 Branch EXACTLY on the channel/format model (`skills/splash/src/channel.ts`) — **image and video hand
 over the media directly, no delivery menu; only interactive gets a delivery choice, and only because
