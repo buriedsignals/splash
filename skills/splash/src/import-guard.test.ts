@@ -112,13 +112,12 @@ const KNOWN_REACH_INS: Record<string, number> = {
 const KNOWN_CORE_REACH_INS: Record<string, number> = {
   "skills/scrolly/src/ScrollyCartogramMap.tsx": 1,
   "skills/scrolly/src/ScrollyHexMap.tsx": 1,
-  // Added 2026-08-04 with the route scrolly: both import `resolveVideoGeometry` from
-  // map-native/src/core. RECORDED, NOT BLESSED — this ledger is a ratchet, and the rule it
-  // enforces says the shared primitive belongs in lib/core. Moving it there is the real fix and
-  // would empty these four lines; it is not done here because it is the map engine's call, not
-  // this test's. The count going UP is the debt becoming visible, which is the ledger working.
-  "skills/scrolly/src/Scrolly.tsx": 1,
-  "skills/scrolly/src/ScrollyRouteMap.tsx": 1,
+  // ★ The route scrolly's two entries were here for a few hours on 2026-08-04, recorded with the
+  // note "RECORDED, NOT BLESSED — moving the primitive to lib/core is the real fix". The real fix
+  // turned out to be smaller than that: `scrolly` already decoded its own injected geometry
+  // inline in Scrolly.tsx, so ScrollyRouteMap did not need map-native's core at all. Extracted to
+  // src/world-geometry.ts and shared — the violation is gone rather than accounted for, and the
+  // ledger is shorter than before the route landed.
 };
 
 /** Offenders counted per file, so the ratchet compares a shape and not an ordering. */
