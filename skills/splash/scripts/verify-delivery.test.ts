@@ -36,10 +36,11 @@ function realRun(): { runDir: string; artifact: string } {
   const runDir = mkdtempSync(join(tmpdir(), "splash-run-"));
   writeFileSync(
     join(runDir, "accepted.json"),
-    JSON.stringify({
-      id: "budget-2026",
-      skillsInvoked: ["suggest-article", "suggest-chart"],
-    }),
+    // An ARRAY, because that is what produce-all really writes — one entry per pinned element.
+    // The first version of this fixture was an object, and it made the reader's bug invisible.
+    JSON.stringify([
+      { id: "budget-2026", skillsInvoked: ["suggest-article", "suggest-chart"] },
+    ]),
   );
   writeFileSync(join(runDir, "candidates.json"), "[]");
   writeFileSync(join(runDir, "opportunities.json"), "[]");
@@ -75,10 +76,9 @@ describe("verify-delivery — what stands behind this file", () => {
     // Claims two, and only one left its artifact behind.
     writeFileSync(
       join(runDir, "accepted.json"),
-      JSON.stringify({
-        id: "half",
-        skillsInvoked: ["suggest-article", "suggest-chart"],
-      }),
+      JSON.stringify([
+        { id: "half", skillsInvoked: ["suggest-article", "suggest-chart"] },
+      ]),
     );
     writeFileSync(join(runDir, "candidates.json"), "[]");
     const r = await verify(runDir);

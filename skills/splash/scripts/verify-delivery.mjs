@@ -100,10 +100,21 @@ if (!runDir) {
 }
 
 const present = ALL_MARKERS.filter((m) => existsSync(join(runDir, m)));
-const accepted = readJson(join(runDir, "accepted.json")) ?? {};
-const claimed = Array.isArray(accepted.skillsInvoked)
-  ? accepted.skillsInvoked
-  : [];
+// `accepted.json` is an ARRAY of accepted elements — one per visual the run pinned. Reading it as
+// a single object silently found no attestation at all, which is how this command reported "no
+// sub-skills corroborated" on a run whose accepted.json listed three. Caught by running it on a
+// real host run rather than on its own fixtures: the fixtures had been written to match the
+// reader, which is the way a test agrees with a bug.
+const acceptedRaw = readJson(join(runDir, "accepted.json"));
+const elements = Array.isArray(acceptedRaw)
+  ? acceptedRaw
+  : acceptedRaw
+    ? [acceptedRaw]
+    : [];
+const accepted = elements[0] ?? {};
+const claimed = [
+  ...new Set(elements.flatMap((e) => (Array.isArray(e?.skillsInvoked) ? e.skillsInvoked : []))),
+];
 const corroborated = claimed.filter(
   (s) => EVIDENCE[s] && existsSync(join(runDir, EVIDENCE[s])),
 );
