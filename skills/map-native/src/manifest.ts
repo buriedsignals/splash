@@ -239,8 +239,14 @@ const ROUTE_GESTURES: GestureVocabulary = {
   // territory it is: `stagger`. The territory BORDER itself never partially draws
   // (always `sliceBorder(d, 0, d.total)`, full or `EMPTY_FEATURE` — no partial slice at
   // any step) — the border is not an additional `draw` source, already covered by the
-  // line's own. Route has no browser-scrolly host either (MAP_SCROLLY_TYPES excludes
-  // it, scrolly-types.ts) — `stepped` is its only step-driven kind.
+  // line's own.
+  //
+  // ★ This comment used to end "Route has no browser-scrolly host either (MAP_SCROLLY_TYPES
+  // excludes it) — `stepped` is its only step-driven kind." That stopped being true on
+  // 2026-08-04: ScrollyRouteMap.tsx hosts one, and skills/scrolly's OWN manifest declares its
+  // browser vocabulary (fly, draw, highlight). Nothing changes HERE — map-native declares what
+  // ITS components do, and the browser scrolly is the other producer's to declare — but the
+  // sentence had to go: it asserted an absence that no longer exists.
   stepped: ["jump", "hold", "draw", "stagger"],
   // RouteReveal.tsx:449-455: a continuous, non-beat camera push (zoom+pitch lerp by
   // frame progress) — `push`. The route line draws continuously through every crossed
