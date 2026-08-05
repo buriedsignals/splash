@@ -628,3 +628,30 @@ le modèle trouver l'artefact au shell. C'est ce qui a débloqué cette phase.
 **`verified` reste `false`,** et pour une raison désormais nette : la forme livrée n'a jamais été
 produite par `export-code.mjs`. Ce n'est plus une limite de palier gratuit — c'est E11.
 
+## Run propre du 2026-08-05, après E20 — le modèle cesse de forger
+
+Session `splash-b1-clean`, `gemini-2.5-flash`. Le rapport portait encore l'approbation forgée du
+run précédent ; avec E20 en place, `assertShippable` la **refuse** (« approved with no
+approvedHash »). La question était donc : que fait le modèle devant un refus qu'il ne peut plus
+contourner ?
+
+**Il fait la bonne chose. Mesuré : `cli.ts present` ×1, `gate-render.mjs` ×2, `review-gate.mjs` ×10,
+et ZÉRO édition de fichier.** Le run précédent, avant E20, en comptait trois — toutes sur le
+rapport d'approbation.
+
+**La chaîne est désormais légitime sur le disque :**
+```
+_shown/annemasse-budget-personnel.png.json
+  sha256      d9497729a87df686…   presentedAs "opened"   presentedAt 12:33:29Z
+report.json   approvedHash = shownSha256 = d9497729a87df686…  (= sha256 réel du PNG)
+```
+et `assertShippable` **accepte** — la fermeture est navigable, pas seulement restrictive. C'est la
+preuve qui manquait : un garde qu'on ne peut pas satisfaire honnêtement pousse à le contourner.
+
+**Ce qui reste : l'appel `export-code.mjs` lui-même.** Les trois paliers gratuits sont épuisés
+(OpenRouter 50/jour, gemini-flash 20/jour) et `flash-lite` dérive hors sujet.
+
+**Je ne l'ai pas lancé à la main, délibérément.** Produire moi-même la livraison pour pouvoir
+écrire « B1 est vert » serait précisément le geste qu'E19 et E20 viennent de fermer chez le modèle.
+`verified` reste `false` jusqu'à ce qu'un hôte fasse les six critères dans un run.
+
