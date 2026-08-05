@@ -26,7 +26,7 @@ import {
   type RouteRevealLayout,
 } from "../../map-native/src/route-geo";
 import { resolveRouteWalk } from "../../map-native/src/route-story";
-import { resolveVideoGeometry } from "../../map-native/src/core/video-geometry";
+import { decodeWorldGeometry } from "./world-geometry";
 import type { MapArcBeat } from "../../map-native/src/map-story";
 
 // ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ export const ScrollyRouteMap: React.FC<{
   // Layout + walk + line — derived ONCE (turf geometry is heavy) and shared with the caption
   // side, never re-derived per step.
   const { layout, walk, line, lineKm, world } = useMemo(() => {
-    const { world: w } = resolveVideoGeometry(config, "scrolly-route");
+    const w = decodeWorldGeometry(config.geometry, "route");
     const l: RouteRevealLayout = computeRouteReveal(config, w);
     const ln = turf.lineString(l.route);
     return {

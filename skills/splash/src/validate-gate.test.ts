@@ -280,48 +280,37 @@ describe("validateAccepted — the spine validation gate", () => {
   // and, worse, silently accepting a CONFIRMED arcBeats plan that would then reach no
   // reader-facing output at all. Refused HERE now, loud, before production — final-review
   // finding "CRITICAL 2".
-  it("REFUSES a MAP route scrolly outright — no scrolly host exists for it (with or without arcBeats)", () => {
-    const withoutArc = validateAccepted(
-      accept("scrolly", {
-        type: "route",
-        route: [
-          [2.35, 48.85],
-          [4.35, 50.85],
-        ],
-        basemap: "world",
-        title: "The route the shipment took",
-        description: "Path from Paris to Brussels",
-        source: { name: "X", url: "https://x" },
-      }),
-    );
-    expect(withoutArc.ok).toBe(false);
-    if (!withoutArc.ok)
-      expect(withoutArc.errors.join(" ")).toMatch(
-        /route.*scrolly|scrolly.*route/i,
+  // ★ INVERTED 2026-08-04. This test pinned the REFUSAL of a route scrolly, and it was right to:
+  // no browser component hosted one, so accepting it meant a journalist's confirmed arcBeats
+  // plan reaching no reader-facing output at all. ScrollyRouteMap.tsx hosts it now, so what has
+  // to be pinned is the other direction — the gate must not keep refusing a form the engine
+  // renders. The gate itself needed no edit: it reads MAP_SCROLLY_TYPES, so it followed the
+  // capability the moment the set gained the type. That is the design working.
+  it("ACCEPTS a MAP route scrolly — ScrollyRouteMap hosts it, arcBeats or not", () => {
+    for (const arcBeats of [
+      undefined,
+      [
+        { region: "FRA", role: "establish", text: "It leaves Paris." },
+        { region: "BEL", role: "payoff", text: "It arrives in Brussels." },
+      ],
+    ]) {
+      const r = validateAccepted(
+        accept("scrolly", {
+          type: "route",
+          route: [
+            [2.35, 48.85],
+            [4.35, 50.85],
+          ],
+          basemap: "world",
+          title: "The route the shipment took",
+          description: "Path from Paris to Brussels",
+          source: { name: "X", url: "https://x" },
+          ...(arcBeats ? { arcBeats } : {}),
+        }),
       );
-
-    // The sharper case: a CONFIRMED claim-arc must not be silently swallowed — the refusal
-    // must say so explicitly, before the journalist's authored plan is lost.
-    const withArc = validateAccepted(
-      accept("scrolly", {
-        type: "route",
-        route: [
-          [2.35, 48.85],
-          [4.35, 50.85],
-        ],
-        basemap: "world",
-        title: "The route the shipment took",
-        description: "Path from Paris to Brussels",
-        source: { name: "X", url: "https://x" },
-        arcBeats: [
-          { region: "FRA", role: "establish", text: "It leaves Paris." },
-          { region: "BEL", role: "payoff", text: "It arrives in Brussels." },
-        ],
-      }),
-    );
-    expect(withArc.ok).toBe(false);
-    if (!withArc.ok)
-      expect(withArc.errors.join(" ")).toMatch(/confirmed claim-arc|arcBeats/i);
+      if (!r.ok)
+        expect(r.errors.join(" ")).not.toMatch(/route.*scrolly|scrolly.*route/i);
+    }
   });
 
   it("returns a FAILURE (never a crash) for a producer outside the union", () => {

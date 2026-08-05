@@ -32,11 +32,11 @@ import { ScrollyMap, type ScrollyMapConfig } from "./ScrollyMap";
 import { ScrollySymbolMap, type ScrollySymbolConfig } from "./ScrollySymbolMap";
 import { ScrollyRouteMap, type ScrollyRouteConfig } from "./ScrollyRouteMap";
 import { computeRouteReveal } from "../../map-native/src/route-geo";
+import { decodeWorldGeometry } from "./world-geometry";
 import {
   resolveRouteWalk,
   routeStoryToChapters,
 } from "../../map-native/src/route-story";
-import { resolveVideoGeometry } from "../../map-native/src/core/video-geometry";
 import { ScrollyHexMap, type ScrollyHexConfig } from "./ScrollyHexMap";
 import {
   ScrollyDotDensityMap,
@@ -60,21 +60,6 @@ import { storyCopy } from "../../../lib/core/story-copy";
 // no bundled fallback geometry anymore, so an absent config.geometry must fail here, not as an
 // unexplained downstream error. `label` identifies WHICH story branch failed (this module has
 // three call sites — dot-density/cartogram/choropleth — each needing its own basemap decode for
-// the STORY/prose track, independent of the sticky map component's own decode below).
-function decodeWorldGeometry(
-  geometry: Topology | undefined,
-  label: string,
-): GeoJSON.FeatureCollection {
-  if (!geometry)
-    throw new Error(
-      `scrolly story (${label}): config.geometry is required (injected by produce; there is no bundled basemap geometry anymore — D5)`,
-    );
-  const objectName = Object.keys(geometry.objects)[0]!;
-  return topoFeature(
-    geometry,
-    geometry.objects[objectName]!,
-  ) as unknown as GeoJSON.FeatureCollection;
-}
 
 // The types each track actually hosts, defined in a leaf module (imports nothing) so they can be
 // read without pulling in ScrollyMap.tsx's module-scope VITE_MAPTILER_KEY throw. Re-exported here
@@ -224,10 +209,7 @@ export const Scrolly: React.FC<{
       // same config for its camera. That mirrors what the video family already does — see
       // route-story.ts's header on why a second, independently-wrong resolution must be made
       // unrepresentable.
-      const { world } = resolveVideoGeometry(
-        config as never,
-        "scrolly-route-story",
-      );
+      const world = decodeWorldGeometry(config.geometry, "route");
       const layout = computeRouteReveal(config as never, world);
       const notes: Record<string, string> = {};
       for (const t of (config as unknown as { territories?: { key: string; note?: string }[] })
