@@ -1,7 +1,18 @@
+import { decorEnv, installRoot } from "../../../lib/newsroom/decor";
+
 const API = "https://api.datawrapper.de/v3";
 
-function token(): string {
-  const t = process.env.DATAWRAPPER_API_TOKEN;
+// ONE KEY, ONE HOME (registry E17). This read used to be `process.env` alone, and Bun fills that
+// only by auto-loading the `.env` of the CURRENT DIRECTORY — it does not walk up. The preflight,
+// meanwhile, reads the INSTALL's `.env` by path. The two agreed while the journalist worked from
+// ~/Splash and diverged in silence the moment they opened their own article folder: **preflight
+// green, production dead**, with the check on the reassuring side.
+//
+// `decorEnv(installRoot())` is the house answer to exactly this (its own header names the trap):
+// the install's `.env`, with `process.env` WINNING — so a token exported for one run still
+// overrides, and a green preflight now means this call finds the same key the preflight judged.
+export function datawrapperToken(): string {
+  const t = decorEnv(installRoot()).DATAWRAPPER_API_TOKEN;
   if (!t)
     throw new Error(
       "DATAWRAPPER_API_TOKEN is not set — create a token at " +
@@ -11,8 +22,9 @@ function token(): string {
     );
   return t;
 }
+
 function auth(extra: Record<string, string> = {}): Record<string, string> {
-  return { Authorization: `Bearer ${token()}`, ...extra };
+  return { Authorization: `Bearer ${datawrapperToken()}`, ...extra };
 }
 
 export async function createChart(
