@@ -8,8 +8,10 @@ import {
   readFileSync,
   readdirSync,
   statSync,
+  lstatSync,
+  readlinkSync,
 } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { measureSkillPayload } from "../../lib/host/skill-payload";
 
@@ -175,6 +177,106 @@ test("reports an INTRA-skill version collision the same way it reports a cross-s
   } finally {
     rmSync(src, { recursive: true, force: true });
     rmSync(out, { recursive: true, force: true });
+  }
+});
+
+// ── The delivered tree is a NEW ROOT, and a dozen shipped scripts resolve the install root as
+// "N levels above my own directory": skills/splash/scripts/save-key.mjs reads ../../../.env,
+// skills/map-native/scripts/produce.mjs reads <skill>/../../.env, lib/newsroom/decor.ts's
+// installRoot() is lib/../.. . Packing the skills one level down silently re-pointed every one
+// of them at .dist/, where the configurator has written nothing — a Dock-launched session (no
+// .env in its environment, which is exactly the case the file fallback exists for) then fails
+// with "VITE_MAPTILER_KEY missing", save-key.mjs writes the journalist's secret into a directory
+// the next pack deletes, and readDecorState finds no newsroom.json so uiLang falls back to
+// English and the CMS endpoint reads empty. The packer links them back.
+
+test("links the install-root files back, so the delivered scripts resolve them unchanged", () => {
+  const src = repo();
+  const out = join(src, ".dist"); // the shipped layout: $DEST/.dist
+  try {
+    writeFileSync(join(src, ".env"), 'VITE_MAPTILER_KEY="abc"\n');
+    writeFileSync(join(src, "newsroom.json"), '{"uiLang":"fr"}');
+    writeFileSync(join(src, "NEWSROOM-PROFILE.md"), "---\nlang: fr\n---\n");
+    expect(pack(src, out).exitCode).toBe(0);
+
+    // Each resolution a shipped script really performs, spelled the way it spells it.
+    const fromSplashScripts = resolve(
+      join(out, "skills", "alpha", "scripts"),
+      "../../../.env",
+    ); // save-key.mjs:29, preflight.mjs:27, export-code.mjs:77
+    const fromSkillRoot = resolve(join(out, "skills", "alpha"), "../../.env"); // map-native/scrolly produce.mjs
+    const fromLibNewsroom = resolve(join(out, "lib", "newsroom"), "../.."); // decor.ts installRoot()
+    expect(readFileSync(fromSplashScripts, "utf8")).toContain(
+      "VITE_MAPTILER_KEY",
+    );
+    expect(readFileSync(fromSkillRoot, "utf8")).toContain("VITE_MAPTILER_KEY");
+    expect(
+      JSON.parse(readFileSync(join(fromLibNewsroom, "newsroom.json"), "utf8"))
+        .uiLang,
+    ).toBe("fr");
+    expect(
+      readFileSync(join(fromLibNewsroom, "NEWSROOM-PROFILE.md"), "utf8"),
+    ).toContain("lang: fr");
+
+    // RELATIVE, so the link survives moving or renaming the whole install directory.
+    expect(readlinkSync(join(out, ".env"))).toBe("../.env");
+    expect(readlinkSync(join(out, "newsroom.json"))).toBe("../newsroom.json");
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+test("the link-backs sit above skills/ — a host's payload is byte-identical with and without them", () => {
+  // The claim the whole fix rests on: a host enumerates .dist/skills/<name>/ and only ever
+  // DESCENDS from there (lib/host/skill-payload.ts, the measured Goose rule), so a file beside
+  // skills/ is unreachable. Proven by measurement, not by reading the walk: pack the same source
+  // with and without the install-root files present and compare what a host would be handed.
+  const bare = repo();
+  const withFiles = repo();
+  const outBare = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  const outFiles = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    writeFileSync(join(withFiles, ".env"), 'K="v"\n'.repeat(500));
+    writeFileSync(join(withFiles, "newsroom.json"), '{"uiLang":"fr"}');
+    writeFileSync(join(withFiles, "NEWSROOM-PROFILE.md"), "x".repeat(50_000));
+    pack(bare, outBare);
+    pack(withFiles, outFiles);
+
+    for (const name of ["alpha", "beta"]) {
+      expect(measureSkillPayload(join(outFiles, "skills", name))).toEqual(
+        measureSkillPayload(join(outBare, "skills", name)),
+      );
+    }
+  } finally {
+    for (const d of [bare, withFiles, outBare, outFiles])
+      rmSync(d, { recursive: true, force: true });
+  }
+});
+
+test("a missing install-root file leaves a link that behaves exactly like an absent file", () => {
+  // NEWSROOM-PROFILE.md often does not exist, and a dangling link must not be worse than nothing:
+  // every reader tests existsSync or catches ENOENT, and both answer the same for a dangling link
+  // as for no link at all. The one asymmetry is deliberate and load-bearing — writeFileSync
+  // through a dangling link CREATES the target, which is how save-key.mjs lands the journalist's
+  // key in $DEST/.env instead of inside the delivery the next pack deletes.
+  const src = repo();
+  const out = join(src, ".dist");
+  try {
+    expect(pack(src, out).exitCode).toBe(0);
+    const link = join(out, ".env");
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(existsSync(link)).toBe(false); // follows the link — reads as absent, as it should
+    expect(() => readFileSync(link, "utf8")).toThrow();
+
+    writeFileSync(link, 'MAPTILER_KEY="k"\n'); // save-key.mjs's write
+    expect(readFileSync(join(src, ".env"), "utf8")).toContain("MAPTILER_KEY");
+
+    // And a re-pack does not follow the link out to destroy what it points at.
+    expect(pack(src, out).exitCode).toBe(0);
+    expect(existsSync(join(src, ".env"))).toBe(true);
+    expect(readFileSync(join(out, ".env"), "utf8")).toContain("MAPTILER_KEY");
+  } finally {
+    rmSync(src, { recursive: true, force: true });
   }
 });
 
