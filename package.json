@@ -2,19 +2,21 @@
   "name": "splash",
   "version": "0.1.0",
   "private": true,
-  "description": "Open-source visual storytelling for every newsroom — article/data to a finished, exported visual.",
+  "description": "Open-source visual storytelling for every newsroom \u2014 article/data to a finished, exported visual.",
   "license": "MIT",
   "scripts": {
     "check": "bun scripts/check.mjs",
     "pack-skills": "bun scripts/pack-skills.mjs . .dist",
     "proofs": "bun scripts/proofs.mjs",
     "check:render": "bun scripts/check-render.mjs",
-    "release:check": "bun scripts/preflight-release.mjs"
+    "release:check": "bun scripts/preflight-release.mjs",
+    "setup:dev": "bun install && for d in skills/*/package.json; do (cd $(dirname $d) && bun install); done"
   },
   "devDependencies": {
     "@types/node": "26.1.1",
     "bun-types": "1.3.14",
-    "playwright": "1.61.1"
+    "playwright": "1.61.1",
+    "@types/geojson": "^7946.0.16"
   },
   "dependencies": {
     "@noble/hashes": "2.2.0",

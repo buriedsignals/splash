@@ -17,3 +17,14 @@ newsroom.json
 
 # packed delivery (scripts/pack-skills.mjs) — always derived from the repo, never committed.
 .dist/
+
+# The INSTALL's own newsroom profile, and its machine-readable cache. `NEWSROOM-PROFILE.example.md`
+# is the tracked template; the real file belongs to whoever installed Splash and must never ship.
+# Both were committed by accident on 2026-08-04 (swept into a docs commit by `git add -A`) carrying
+# a real newsroom's colour, name and URL — so every stranger cloning this repository received that
+# newsroom as their default, and every visual they made would have cited it as the source until
+# they noticed. Found by the release dress rehearsal (registry A5), which is what that rehearsal is
+# for: the defect is invisible from inside a working install, where the file is supposed to exist.
+NEWSROOM-PROFILE.md
+brand.json
+

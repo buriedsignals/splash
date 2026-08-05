@@ -115,6 +115,31 @@ try {
 }
 check(".env not committed", !envTracked, ".env is tracked — untrack it (it holds secrets)");
 
+// 6. The INSTALL's own newsroom profile is not tracked. `NEWSROOM-PROFILE.example.md` is the
+// template and ships; the real file belongs to whoever installed Splash.
+//
+// This is not hygiene, it is what a stranger RECEIVES. Both files were committed by accident on
+// 2026-08-04 carrying a real newsroom's colour, name and URL — so every clone arrived with that
+// newsroom pre-installed, and every visual made from it would have cited them as the source until
+// someone noticed. Found by the dress rehearsal (registry A5), and invisible from inside a working
+// install, where the file is SUPPOSED to be there. That is exactly why it needs a check and not a
+// memory.
+let profileTracked = [];
+try {
+  const out = execSync(
+    "git ls-files NEWSROOM-PROFILE.md brand.json || true",
+    { encoding: "utf8", shell: "/bin/bash" },
+  ).trim();
+  profileTracked = out ? out.split("\n") : [];
+} catch {
+  profileTracked = ["<scan failed>"];
+}
+check(
+  "the install's own newsroom profile is not tracked",
+  profileTracked.length === 0,
+  `${profileTracked.join(", ")} tracked — a stranger's clone would arrive with someone else's newsroom; git rm --cached them (NEWSROOM-PROFILE.example.md is the one that ships)`,
+);
+
 let failed = 0;
 for (const c of checks) {
   console.log(`${c.ok ? "PASS" : "FAIL"}  ${c.name}${c.ok ? "" : `  — ${c.detail}`}`);
