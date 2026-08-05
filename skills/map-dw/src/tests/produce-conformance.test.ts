@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runProduceMapDwConformance } from "../produce-conformance";
@@ -156,12 +156,22 @@ describe("runProduceMapDwConformance — choropleth ramp CVD-safety (always hard
 });
 
 async function withoutToken(fn: () => Promise<void>): Promise<void> {
+  // "No token" means BOTH homes are empty (registry E17): clearing process.env alone stopped
+  // being enough the day the producer started reading the key where the preflight judged it —
+  // the install's own .env. SPLASH_INSTALL_ROOT is the seam that tells a test apart from a
+  // developer's real install.
   const saved = process.env.DATAWRAPPER_API_TOKEN;
+  const savedRoot = process.env.SPLASH_INSTALL_ROOT;
   delete process.env.DATAWRAPPER_API_TOKEN;
+  process.env.SPLASH_INSTALL_ROOT = mkdtempSync(
+    join(tmpdir(), "no-token-install-"),
+  );
   try {
     await fn();
   } finally {
     if (saved !== undefined) process.env.DATAWRAPPER_API_TOKEN = saved;
+    if (savedRoot !== undefined) process.env.SPLASH_INSTALL_ROOT = savedRoot;
+    else delete process.env.SPLASH_INSTALL_ROOT;
   }
 }
 

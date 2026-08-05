@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -37,13 +37,22 @@ function locatorSpec(extra: Record<string, unknown> = {}): MapSpec {
   } as unknown as MapSpec;
 }
 
+// "No token" means BOTH homes are empty (registry E17). Clearing process.env alone stopped being
+// enough the day the producer started reading the key where the preflight judged it — the
+// install's own .env — which is the whole point of that fix: one key, one home. So the install
+// root is pointed at an empty directory for the duration, through SPLASH_INSTALL_ROOT, the seam
+// that exists precisely so a test and a developer's real install can be told apart.
 async function withoutToken(fn: () => Promise<void>): Promise<void> {
   const saved = process.env.DATAWRAPPER_API_TOKEN;
+  const savedRoot = process.env.SPLASH_INSTALL_ROOT;
   delete process.env.DATAWRAPPER_API_TOKEN;
+  process.env.SPLASH_INSTALL_ROOT = mkdtempSync(join(tmpdir(), "no-token-install-"));
   try {
     await fn();
   } finally {
     if (saved !== undefined) process.env.DATAWRAPPER_API_TOKEN = saved;
+    if (savedRoot !== undefined) process.env.SPLASH_INSTALL_ROOT = savedRoot;
+    else delete process.env.SPLASH_INSTALL_ROOT;
   }
 }
 
