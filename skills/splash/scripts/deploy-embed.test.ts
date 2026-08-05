@@ -54,6 +54,28 @@ describe("stageArtifact — Cloudflare serves a directory, not a file", () => {
   });
 });
 
+  it("should stage a VIDEO as index.mp4, not index.html", () => {
+    // The prose path called stageArtifact WITHOUT a format, so `artifactMediaFor(undefined)` fell
+    // through to its html default and an mp4 would have been served as index.html — wrong name,
+    // wrong content type, and the verification would then read a binary file as text. Dormant
+    // while video had no embed form; live the moment it got one.
+    const dir = mkdtempSync(join(tmpdir(), "stage-video-"));
+    const mp4 = join(dir, "chart.mp4");
+    writeFileSync(mp4, Buffer.from([0, 0, 0, 24, 102, 116, 121, 112]));
+    const stage = join(dir, "site");
+    expect(stageArtifact(mp4, stage, "video")).toBe("index.mp4");
+    expect(existsSync(join(stage, "index.mp4"))).toBe(true);
+    expect(existsSync(join(stage, "index.html"))).toBe(false);
+  });
+
+  it("should stage a STATIC image as index.png", () => {
+    const dir = mkdtempSync(join(tmpdir(), "stage-static-"));
+    const png = join(dir, "static.png");
+    writeFileSync(png, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    const stage = join(dir, "site");
+    expect(stageArtifact(png, stage, "static")).toBe("index.png");
+  });
+
 describe("servedMatcher — the delivery proof on an undocumented protocol", () => {
   it("should accept the artifact's own bytes", () => {
     const html = "<html><body><h1>Loyers europeens</h1></body></html>";

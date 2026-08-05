@@ -8,6 +8,10 @@
 import { EN_SOURCE_QUESTIONS, type SourceQuestionCopy } from "../source/policy";
 import { DEFAULT_UI_LANG } from "./language";
 
+// NOTE: none of these carry their own letter. The letter is the MENU's, and a form's position
+// differs per format — the CMS insertion is `d)` for an interactive (after source/html/embed) and
+// `c)` for a video (after file/embed). Baking "d)" into the sentence produced exactly that: a
+// video menu that read "a) … c) … d) … which form? (a / b / c)".
 export type ExportProposalCopy = {
   intro: string;
   formCodeSource: (path: string) => string;
@@ -16,6 +20,7 @@ export type ExportProposalCopy = {
   formEmbedMissingKeys: (keys: string) => string;
   formEmbedAvailable: string;
   /** Form d — the visual goes INTO the journalist's own article, in the newsroom's CMS. */
+  formVideoFile: (path: string) => string;
   formCmsAvailable: string;
   formCmsMissingKeys: (keys: string) => string;
   question: (forms: string) => string;
@@ -27,52 +32,56 @@ const EN: ExportProposalCopy = {
   intro:
     "The visual is produced. Choose how it should be delivered (nothing is built yet — the form you choose is generated on demand):",
   formCodeSource: (path) =>
-    `  a) Source code — a standalone React project you can rebuild and customise (bun install && bun run build): ${path}`,
+    `Source code — a standalone React project you can rebuild and customise (bun install && bun run build): ${path}`,
   formHtml: (path) =>
-    `  b) Standalone HTML — one self-contained file you can drop anywhere: ${path}`,
+    `Standalone HTML — one self-contained file you can drop anywhere: ${path}`,
   formEmbedLive: (url) =>
-    `  c) Embed (hosted) — a link that is already live and reusable anywhere: ${url}`,
+    `Embed (hosted) — a link that is already live and reusable anywhere: ${url}`,
   formEmbedMissingKeys: (keys) =>
-    `  c) Embed (hosted) — needs a missing key (${keys}). I can ask you for it, save it, and then deliver c); otherwise take b) (an equivalent standalone HTML file).`,
+    `Embed (hosted) — needs a missing key (${keys}). I can ask you for it, save it, and then deliver it; otherwise take the standalone HTML file, which is equivalent.`,
   formEmbedAvailable:
-    "  c) Embed (hosted) — publish to your Cloudflare Pages project to get a reusable link",
+    "Embed (hosted) — publish to your Cloudflare Pages project to get a reusable link",
   // Says what it needs (the article) and what it will NOT do (publish), because both are the
   // journalist's decision and neither is guessable from the word "insert".
+  formVideoFile: (path) =>
+    `The video file — the mp4 itself, yours to upload wherever you publish: ${path}`,
   formCmsAvailable:
-    "  d) Straight into your article (CMS) — I add the visual to one of your articles in We.Publish. Tell me which article (its slug), and I place it at the end of the DRAFT: nothing goes live until you publish it yourself.",
+    "Straight into your article (CMS) — I add the visual to one of your articles in We.Publish. Tell me which article (its slug), and I place it at the end of the DRAFT: nothing goes live until you publish it yourself.",
   formCmsMissingKeys: (keys) =>
-    `  d) Straight into your article (CMS) — needs a missing key (${keys}). I can ask you for it and save it, then deliver d); otherwise take c) (a link to paste into your article).`,
+    `Straight into your article (CMS) — needs a missing key (${keys}). I can ask you for it and save it, then deliver it; otherwise take the hosted link and paste it into your article.`,
   question: (forms) =>
-    `Which form would you like? (${forms}) — then re-run export-code with --form <html|code-source|embed>.`,
+    `Which form would you like? (${forms})`,
   waitInstruction:
     "WAIT for the journalist's answer to THIS proposal before any --form: never choose for them — even when only one form is possible, the journalist confirms it, and across several elements never assume a shared answer (a grouped answer only counts when THEY give it).",
   missingEmbedKeysReason: (reason) =>
-    `Missing key(s) for the hosted embed: ${reason}. Provide them (they will be saved via save-key.mjs) to deliver c), or choose b) (standalone HTML).`,
+    `Missing key(s) for the hosted embed: ${reason}. Provide them (they will be saved via save-key.mjs) to deliver the hosted form, or choose the standalone file.`,
 };
 
 const FR: ExportProposalCopy = {
   intro:
     "Le visuel est produit. Choisissez la forme de livraison (rien n'est encore construit — la forme choisie est générée à la demande) :",
   formCodeSource: (path) =>
-    `  a) Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${path}`,
+    `Code source — projet React autonome à rebuilder/personnaliser (bun install && bun run build) : ${path}`,
   formHtml: (path) =>
-    `  b) HTML autonome — un seul fichier autonome à déposer n'importe où : ${path}`,
+    `HTML autonome — un seul fichier autonome à déposer n'importe où : ${path}`,
   formEmbedLive: (url) =>
-    `  c) Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${url}`,
+    `Embed (hébergé) — lien déjà en ligne, réutilisable partout : ${url}`,
   formEmbedMissingKeys: (keys) =>
-    `  c) Embed (hébergé) — nécessite une clé manquante (${keys}). Je peux vous la demander et l'enregistrer, puis livrer en c) ; sinon prenez b) (fichier HTML autonome équivalent).`,
+    `Embed (hébergé) — nécessite une clé manquante (${keys}). Je peux vous la demander et l'enregistrer, puis la livrer ; sinon prenez le fichier HTML autonome, qui est équivalent.`,
   formEmbedAvailable:
-    "  c) Embed (hébergé) — publier sur votre projet Cloudflare Pages pour obtenir un lien à réutiliser",
+    "Embed (hébergé) — publier sur votre projet Cloudflare Pages pour obtenir un lien à réutiliser",
+  formVideoFile: (path) =>
+    `Le fichier vidéo — le mp4 lui-même, à déposer où vous publiez : ${path}`,
   formCmsAvailable:
-    "  d) Directement dans votre article (CMS) — j'ajoute le visuel à l'un de vos articles dans We.Publish. Dites-moi lequel (son slug), et je le place à la fin du BROUILLON : rien n'est mis en ligne tant que vous ne publiez pas vous-même.",
+    "Directement dans votre article (CMS) — j'ajoute le visuel à l'un de vos articles dans We.Publish. Dites-moi lequel (son slug), et je le place à la fin du BROUILLON : rien n'est mis en ligne tant que vous ne publiez pas vous-même.",
   formCmsMissingKeys: (keys) =>
-    `  d) Directement dans votre article (CMS) — nécessite une clé manquante (${keys}). Je peux vous la demander et l'enregistrer, puis livrer en d) ; sinon prenez c) (un lien à coller dans votre article).`,
+    `Directement dans votre article (CMS) — nécessite une clé manquante (${keys}). Je peux vous la demander et l'enregistrer, puis la livrer ; sinon prenez le lien hébergé et collez-le dans votre article.`,
   question: (forms) =>
-    `Quelle forme souhaitez-vous ? (${forms}) — puis relancer export-code avec --form <html|code-source|embed>.`,
+    `Quelle forme souhaitez-vous ? (${forms})`,
   waitInstruction:
     "ATTENDRE la réponse du journaliste à CETTE proposition avant tout --form : ne jamais choisir à sa place — même quand une seule forme est possible, c'est le journaliste qui la confirme, et sur plusieurs éléments jamais de « pour les deux » présumé (une réponse groupée n'est valable que si c'est LUI qui la donne).",
   missingEmbedKeysReason: (reason) =>
-    `Clé(s) manquante(s) pour l'embed hébergé : ${reason}. Fournissez-la/les (elles seront enregistrées via save-key.mjs) pour livrer en c), ou choisissez b) (HTML autonome).`,
+    `Clé(s) manquante(s) pour l'embed hébergé : ${reason}. Fournissez-la/les (elles seront enregistrées via save-key.mjs) pour livrer la forme hébergée, ou choisissez le fichier autonome.`,
 };
 
 const TABLE: Record<string, ExportProposalCopy> = { en: EN, fr: FR };

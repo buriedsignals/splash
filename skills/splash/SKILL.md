@@ -1203,19 +1203,37 @@ Branch EXACTLY on the channel/format model (`skills/splash/src/channel.ts`) — 
 over the media directly, no delivery menu; only interactive gets a delivery choice, and only because
 article-web is the one channel that can host it**:
 
-- **VIDEO (mp4):** hand over the mp4 directly, at the CADRAGE channel's size and the narrative sub-format
-  chosen at PROPOSITION (camera/reveal mode) — no code/embed forms, the media IS the deliverable. The
-  producer renders **only the one aspect the channel requires** — social-vertical → **portrait 9:16**
-  (1080×1920), social-feed → **square 1:1** (1080×1080), article-web → **landscape 16:9** — **one mp4, not
-  three** (the aspect is threaded via `SPLASH_CHANNEL`; a fail-hard produce-time conformance step refuses
-  a render whose size ≠ the channel). Native chart-native/map-native now render **true 9:16** for
-  social-vertical (Slice 2 repointed the portrait comps 1080×1350 → 1080×1920), matching `dw-chart`'s
-  static portrait — no more 4:5 caveat.
-  **Run the hand-over script even though there is no delivery menu** — it is what PRINTS the placement
-  block, and §6 forbids you to compose one yourself:
-  `bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results exports/<slug>/report.json --id <id>`.
-  Without it nothing states where the video goes, and the placement guard never runs either, because it
-  lives inside this script.
+- **VIDEO (mp4): splash PROPOSES three delivery forms and the journalist CHOOSES one** — the same
+  two-phase, lazy shape as interactive/scrolly. Video used to be handed over as its file, full stop
+  ("the media IS the deliverable"). That was true of what a video IS and mistaken for how it SHIPS:
+  a journalist who wanted the film inside their article had no way to ask for it, though the CMS
+  route existed and worked. The producer still renders **only the one aspect the channel requires**
+  — social-vertical → **portrait 9:16** (1080×1920), social-feed → **square 1:1**, article-web →
+  **landscape 16:9** — **one mp4, not three** (threaded via `SPLASH_CHANNEL`; a fail-hard
+  produce-time conformance step refuses a render whose size ≠ the channel).
+  1. **Phase 1 — emit the proposal (build NOTHING).** Run WITHOUT `--form`:
+     `bun skills/splash/scripts/export-code.mjs <outDir> <exportDir> --results exports/<slug>/report.json --id <id>`.
+     It emits `EXPORT_FORMS_JSON` + the human `EXPORT_FORMS_PROPOSAL` block. **Relay it VERBATIM and
+     WAIT** — the same un-skippable gate as every other menu.
+  2. **The three forms:**
+     - **a) Le fichier vidéo** — the mp4 itself, the newsroom's to upload wherever it publishes.
+       This is what a video always was, and it stays the plain answer.
+     - **b) Embed (hébergé)** — publish the mp4 to the newsroom's own Cloudflare Pages project and
+       share the URL. Key-fixable exactly like an interactive's embed form.
+     - **c) Directement dans l'article (CMS)** — the film appears in one of the journalist's own
+       articles. **It HOSTS the file first** (`hostsFirst: true` in the JSON): this CMS has no
+       self-hosted mp4 block, so the article carries a player pointing at the hosted file. Two
+       network steps, ONE journalist choice — the chaining is the script's job, never a second
+       question. It obeys the same two rules as the interactive CMS form: **ask WHICH article**
+       (`--article <slug>`, the placeholder is refused) and **SHOW WHERE and get the answer**
+       (`--after <position|end>`, a missing flag is refused), and it is a DRAFT edit that publishes
+       nothing.
+  3. **THEN build + deliver ONLY the chosen form** — `--form file` copies the mp4 · `--form embed`
+     deploys and records `EMBED_URL.txt` · `--form cms --article <slug> --after <n|end>` hosts, then
+     inserts, and records `CMS_ARTICLE_URL.txt`. Each ends with `assertDelivered`, and the
+     **placement block is printed at the HAND-OVER, not with the menu** — the journalist is told
+     where the film goes when they receive it, not while they are still choosing how.
+
 - **STATIC IMAGE (a static chart / map PNG):** hand over the `static.png` directly, at the channel's size
   (portrait 1080×1920 for social-vertical, square 1080×1080 for social-feed, landscape 1200×675 for
   article-web) — no delivery menu, just the file.

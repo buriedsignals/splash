@@ -259,22 +259,69 @@ describe("export-code CLI — STATIC delivery (media direct, no folder machinery
   });
 });
 
-describe("export-code CLI — VIDEO delivery (mp4 direct)", () => {
-  it("delivers the lone mp4 and never the review still", () => {
+describe("export-code CLI — VIDEO delivery (a menu, not a hand-over)", () => {
+  // A produced video: the mp4 the journalist gets, plus the Gate-3 review still that is NOT
+  // part of any delivery.
+  function setupVideo() {
     const outDir = mkdtempSync(join(tmpdir(), "splash-export-video-"));
     writeFileSync(join(outDir, "landscape.mp4"), Buffer.from("fake-mp4"));
-    // produce leaves a Gate-3 review still alongside — it is NOT part of the delivery.
     writeFileSync(
       join(outDir, "video-landscape-still.png"),
       Buffer.from("fake-still"),
     );
     const resultsPath = join(outDir, "report.json");
     writeFileSync(resultsPath, JSON.stringify(report(outDir, "p1", "video")));
-    const exportDir = mkdtempSync(
-      join(import.meta.dir, "export-video-fixture-"),
-    );
+    const exportDir = mkdtempSync(join(import.meta.dir, "export-video-fixture-"));
+    return { outDir, resultsPath, exportDir };
+  }
+
+  it("PROPOSES three forms for a video, and builds none of them", () => {
+    // Video used to hand its mp4 over directly — "the media IS the deliverable". True of what a
+    // video IS, and mistaken for how it SHIPS: a journalist who wanted the film in their article
+    // had no way to ask, though the CMS route existed and was proven live. It proposes now.
+    const { outDir, resultsPath, exportDir } = setupVideo();
     try {
       const out = run(outDir, exportDir, resultsPath, "p1");
+      const proposal = parseFormsProposal(out);
+      expect(Object.keys(proposal.forms).sort()).toEqual(["a", "b", "c"]);
+      expect(proposal.forms.a.kind).toBe("media-file");
+      expect(proposal.forms.c.needsArticle).toBe(true);
+      // The CMS form must HOST the file first: no self-hosted mp4 block exists, so an article
+      // can only point at one. Declared, so it is never presented as a one-step choice.
+      expect(proposal.forms.c.hostsFirst).toBe(true);
+      expect(readdirSync(exportDir)).toEqual([]);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it("reads as ONE menu — the letters it offers are the letters it asks for", () => {
+    // The defect this catches, seen on the first run: the form sentences carried their own
+    // letter ("c)", "d)") because they were written for the interactive menu, so a video read
+    // "a) … c) … d) … which form? (a / b / c)". The letter belongs to the MENU.
+    const { outDir, resultsPath, exportDir } = setupVideo();
+    try {
+      const out = run(outDir, exportDir, resultsPath, "p1");
+      const block = out.slice(
+        out.indexOf("EXPORT_FORMS_PROPOSAL"),
+        out.indexOf("END_EXPORT_FORMS_PROPOSAL"),
+      );
+      const offered = [...block.matchAll(/^ {2}([a-d])\)/gm)].map((m) => m[1]);
+      expect(offered).toEqual(["a", "b", "c"]);
+      // Anchored to a MENU LINE, not to the substring: an unanchored "d)" also matches the word
+      // "demand):" in the intro, which is the assertion lying rather than the product.
+      expect(block).not.toMatch(/^ {2}d\)/m);
+    } finally {
+      rmSync(exportDir, { recursive: true, force: true });
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  });
+
+  it("delivers the lone mp4 on --form file, and never the review still", () => {
+    const { outDir, resultsPath, exportDir } = setupVideo();
+    try {
+      const out = run(outDir, exportDir, resultsPath, "p1", "file");
       expect(out).toContain("EXPORT_CODE_RESULT");
       expect(readdirSync(exportDir)).toEqual(["landscape.mp4"]);
     } finally {
@@ -1413,7 +1460,10 @@ describe("placement at hand-over", () => {
       join(import.meta.dir, "export-placement-video-"),
     );
 
-    const out = run(outDir, exportDir, resultsPath, "e1");
+    // Delivered with `--form file`: a video PROPOSES first now, and the placement belongs with
+    // the hand-over (done()) rather than with the menu — the journalist is told where the film
+    // goes when they receive it, not while they are still choosing how.
+    const out = run(outDir, exportDir, resultsPath, "e1", "file");
     expect(parsePlacement(out).placement).toEqual({ kind: "free-standing" });
     const block = out.slice(
       out.indexOf("SPLASH_PLACEMENT"),

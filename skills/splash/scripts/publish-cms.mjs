@@ -40,6 +40,7 @@ function parseArgs(argv) {
     if (
       a === "--article" ||
       a === "--after" ||
+      a === "--url" ||
       a === "--results" ||
       a === "--id"
     )
@@ -139,8 +140,13 @@ async function main() {
   );
 
   const entry = report.results.find((r) => r.id === flags.id);
+  // A VIDEO travels as an ADDRESS, not as bytes: this CMS has no self-hosted mp4 block, so the
+  // file is published to the newsroom's own hosting first and the article gets a player aimed at
+  // it. Every other format ships its own bytes. `artifactPath` stays the SIGNED artifact either
+  // way — the sign-off above is verified against the real file, never against a URL.
+  const hosted = flags.url !== undefined;
   const result = await wepublishPublisher.publish({
-    artifactPath,
+    ...(hosted ? { artifactUrl: flags.url } : { artifactPath }),
     id: flags.id,
     format: entry?.format ?? "interactive",
     metadata: entry?.metadata ?? { title: flags.id, lang: "fr" },

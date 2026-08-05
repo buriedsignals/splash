@@ -53,7 +53,12 @@ function parseArgs(argv) {
   const flags = {};
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === "--results" || a === "--id" || a === "--profile")
+    if (
+      a === "--results" ||
+      a === "--id" ||
+      a === "--format" ||
+      a === "--profile"
+    )
       flags[a.slice(2)] = argv[++i];
     else positional.push(a);
   }
@@ -140,8 +145,14 @@ if (import.meta.main) {
 
   const slug = embedSlug(rawSlug);
   const stageDir = join(mkdtempSync(join(tmpdir(), "splash-embed-")), "site");
+  // The FORMAT decides the served filename and content type (index.html / index.png / index.mp4).
+  // Omitting it made artifactMediaFor fall through to its html default, so an mp4 would have been
+  // uploaded as index.html — served with the wrong type, and then "verified" by reading binary as
+  // text. Defaults to interactive, which is what every caller meant before video had a form.
+  const artifactFormat = flags.format ?? "interactive";
+  let stagedName;
   try {
-    stageArtifact(artifactPath, stageDir);
+    stagedName = stageArtifact(artifactPath, stageDir, artifactFormat);
   } catch (e) {
     console.error(`cannot stage ${artifactPath} for upload: ${e.message}`);
     process.exit(1);
@@ -156,7 +167,16 @@ if (import.meta.main) {
     // while on a newsroom's FIRST embed, and silence would read as a hang.
     console.error(`embed uploaded — waiting for ${url} to serve the artifact...`);
     // Always verify against the staged entry point — that is literally what the edge serves.
-    await verifyServed(url, servedMatcher(readFileSync(join(stageDir, "index.html"), "utf8")));
+    // Verified against what was ACTUALLY staged, not against a hard-coded index.html. For a
+    // media file the proof is its byte length: servedMatcher's text slice is meaningless on
+    // binary, and reading an mp4 as utf8 would corrupt the comparison rather than fail it.
+    const stagedPath = join(stageDir, stagedName);
+    await verifyServed(
+      url,
+      stagedName.endsWith(".html")
+        ? servedMatcher(readFileSync(stagedPath, "utf8"))
+        : ((bytes) => bytes.length === statSync(stagedPath).size),
+    );
 
     console.log("EMBED_URL " + url);
   } catch (e) {
