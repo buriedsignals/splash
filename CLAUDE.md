@@ -281,6 +281,39 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+## ★ État courant — 2026-08-06 (soir) — LE GENRE NARRATIF D'UNE VIDÉO EST PROPOSÉ (fusionné, gate 23/23)
+
+Spec `docs/superpowers/specs/2026-08-06-the-narrative-kind-is-proposed-design.md`, plan
+`.../plans/2026-08-06-propose-the-narrative-kind.md` (5 tâches), branche
+`feat/narrative-kind-proposed` **fusionnée dans `main`**.
+
+**Le défaut** : une vidéo n'est pas une chose. Une carte peut être un survol guidé (`story`), une
+suite d'étapes (`stepped`) ou une révélation à caméra fixe (`reveal`) — trois familles de
+composants. Personne ne demandait laquelle : `cameraMode` restait au repli du moteur, donc rien ne
+pouvait honnêtement en dépendre — et le garde de marche exigeait un storyboard même pour un
+`reveal`, qui **n'affiche aucun mot** (Rémy : « le reveal n'inclut pas des mots, c'est normal »).
+
+**Ce qui est en place :**
+- `narrativeKindsFor(producer, type)` **lu du registre**, jamais récité (une carte : 3 genres ; un
+  chart : 2, faute de caméra qui voyage ; un type sans marche : `reveal` seul, avec sa raison) +
+  la commande `bun lib/host/cli.ts narrative-kinds --producer <p> --type <t>`.
+- `narrativeKind` voyage sur la proposition ; **une marche n'est exigée que si le genre narre**.
+  Genre absent ⇒ question ouverte, refusée en nommant la commande. Un `cameraMode` explicite déjà
+  sur la spec compte comme réponse (ancien vocabulaire) ; le repli du moteur, non.
+- **Trou fermé** : les moteurs lisent `cameraMode` et n'ont jamais entendu parler de
+  `narrativeKind` ⇒ un genre choisi mais non traduit dans la spec est un choix **jeté avant le
+  rendu**. Refusé, en nommant le champ à écrire ; l'offre porte désormais son `cameraMode` (dont
+  le `route-reveal` propre à une route).
+- `splash-proposition` ouvre toute vidéo épinglée par la question du genre : proposition
+  **éditoriale** (pas un formulaire), coût dit avant le choix, puis storyboard si story/stepped.
+  4 pins doc-parity mutation-vérifiés.
+
+**Prouvé sur la chaîne du journaliste** (`produce-all.mjs`, avant tout moteur) : sans genre → refus
+routé nommant la commande ; genre posé sans `cameraMode` → refus nommant le champ ; traduit → seules
+restent les erreurs de forme de la fixture. **Reste de la tâche 5 : un vrai `/using-splash` par
+Rémy** — la question du genre doit apparaître après le choix de la vidéo, le storyboard ne suivre
+que si le genre narre.
+
 ## ★ État courant — 2026-08-06 (branche `feat/setup-page-truth` @ `c3567a92`, revue finale close)
 
 **La page de setup dit vrai sur une vraie install, prouvé sous `$HOME` isolé.** Gate 23/23 (les 3
