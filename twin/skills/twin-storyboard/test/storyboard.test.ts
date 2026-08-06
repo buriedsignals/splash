@@ -75,6 +75,39 @@ describe("checkStoryboard", () => {
     );
   });
 
+  it("should treat a comma inside a quoted candidate as part of that candidate, not a separator", () => {
+    // A naive `.split(",")` on the inline array's inner text would tear `"a, b"` into two
+    // candidates ("a" and "b"), then spuriously refuse a `chosen` value quoted verbatim from the
+    // source array as "not among its candidates" — a legitimate storyboard gate-blocked by a
+    // parsing bug, not an editorial problem.
+    const text = VALID.replace(
+      '    candidates: ["trajectory", "comparison"]\n    chosen: "trajectory"',
+      '    candidates: ["a, b", "c"]\n    chosen: "a, b"',
+    );
+    const { meta } = parseStoryboard(text);
+    expect(meta.slots[0].candidates).toEqual(["a, b", "c"]);
+    expect(checkStoryboard(meta)).toEqual([]);
+  });
+
+  it("should refuse a slot with a chosen treatment but no candidates ever listed", () => {
+    // Distinct from "nothing chosen" (no chosen value at all) and from "not among its candidates"
+    // (a candidates list exists but doesn't include the chosen value) — this is the third,
+    // previously-unverified branch: chosen IS set, but candidates is absent or empty, so there was
+    // nothing to verify the choice against. Treated as malformed, not legitimate (see the comment
+    // in checkStoryboard): a real choice can only be confirmed from a list that was actually shown.
+    const missingField = parseStoryboard(VALID).meta;
+    delete missingField.slots[0].candidates;
+    expect(checkStoryboard(missingField)).toContain(
+      'slot 1: chosen "trajectory" but no candidates were listed',
+    );
+
+    const emptyArray = parseStoryboard(VALID).meta;
+    emptyArray.slots[0].candidates = [];
+    expect(checkStoryboard(emptyArray)).toContain(
+      'slot 1: chosen "trajectory" but no candidates were listed',
+    );
+  });
+
   it("should not consider a bare YAML null or tilde takeaway confirmed, agreeing with whereIs", () => {
     // where.mjs's hasConfirmedTakeaway (twin/skills/splash-twin/scripts/where.mjs) refuses the
     // raw tokens "null" and "~" as a confirmed takeaway. parseStoryboard must resolve the same

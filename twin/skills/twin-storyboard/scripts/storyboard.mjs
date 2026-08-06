@@ -11,12 +11,37 @@ function isNullSentinel(value) {
   return value === "null" || value === "~";
 }
 
+// Splits an inline array's inner text on commas that are NOT inside a quoted element, so a
+// treatment name that itself contains a comma (`"a, b"`) stays one element instead of being torn
+// in two. A naive `.split(",")` would silently fragment `["a, b", "c"]` into three candidates
+// (`"a"`, `"b"`, `"c"`), which then spuriously fails membership checks against a `chosen` value
+// quoted verbatim from the source array.
+function splitArrayItems(inner) {
+  const items = [];
+  let current = "";
+  let quote = null;
+  for (const ch of inner) {
+    if (quote) {
+      current += ch;
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+    } else if (ch === ",") {
+      items.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  items.push(current);
+  return items;
+}
+
 function scalar(raw) {
   const value = raw.trim();
   if (value.startsWith("[") && value.endsWith("]")) {
-    return value
-      .slice(1, -1)
-      .split(",")
+    return splitArrayItems(value.slice(1, -1))
       .map((item) => item.trim().replace(/^["']|["']$/g, ""))
       .filter(Boolean);
   }
@@ -69,7 +94,16 @@ export function checkStoryboard(meta) {
       errors.push(`slot ${slot.id}: nothing chosen — gate 2 is not closed`);
       continue;
     }
-    if (candidates.length > 0 && !candidates.includes(slot.chosen)) {
+    // A chosen treatment is only a real choice if it was verifiably picked from a shown list —
+    // that is what stops the exchange from being disguised parameter collection (references/
+    // exchange.md, §③). A slot with `chosen` set but no `candidates` ever listed means the
+    // proposal step was skipped, not that there was nothing to check membership against — so
+    // this is malformed, not legitimate, and refuses on its own, distinct from a mismatch.
+    if (candidates.length === 0) {
+      errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} but no candidates were listed`);
+      continue;
+    }
+    if (!candidates.includes(slot.chosen)) {
       errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} is not among its candidates`);
     }
   }
