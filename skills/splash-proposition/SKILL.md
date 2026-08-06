@@ -348,3 +348,32 @@ also carries no provenance, so it can never be published through Splash. To rend
 source policy, create a run and let `produce` take the credit from the declared ledger.
 
 Only accepted proposals continue.
+
+#### ★ A NARRATIVE FORM OWES A WALK — propose it here, before producing
+
+A **scrolly** or a **narrative video** does not merely state the takeaway: it proves it step by
+step. So the moment one is pinned, the step plan is owed, and this is where it is proposed — not
+discovered later by a refusal.
+
+**Propose, do not write.** The machine's job is to MATCH and to ORDER, never to author:
+
+- **The steps and their order.** Which anchor each one sits on — a category, a point on the axis,
+  a region — and in the order the ARTICLE argues, not the order the data ranks.
+- **A sentence per step, drawn from the passage of the journalist's own article that speaks to
+  that anchor**, reformulated to stand alone. Never invented, never derived from the data alone.
+  Show the passage beside the sentence so they can check it against their own prose.
+- **What the article does not supply is ASKED, never filled in.** If no passage speaks to an
+  anchor the data makes salient, say so and offer to drop the step or hear what it should say.
+
+The journalist **corrects, reorders, deletes, or sends it back to the automatic selection**. What
+ships is what they confirmed, pinned verbatim.
+
+**This is enforced, not advisory.** `validateAccepted` refuses a narrative form whose spec carries
+no confirmed walk (`skills/splash/src/narrative-walk-gate.ts`), before any engine runs — a step
+whose claim is unwritten is not publishable. The refusal names the act that resolves it, but
+meeting it means the proposal was skipped: propose the walk here.
+
+**Where it applies today** — the guard demands a walk only where its words reach the reader:
+every hosted `scrolly`, a **map** video, and a **bar** video. It stays silent for a line video and
+the other chart types, whose video has no per-subject entrance to hang a step on; demanding
+sentences a render would drop is the one thing this rule may not do.
