@@ -1,0 +1,58 @@
+import { describe, it, expect } from "bun:test";
+import { narrativeKindsFor } from "./narrative-kinds";
+
+// ---------------------------------------------------------------------------
+// WHICH NARRATIVE KINDS A VIDEO CAN BE — read from the registry, never recited.
+//
+// A video is not one thing. A map can be a guided tour, a run of steps, or a fixed-camera
+// reveal — three component families that render three different objects. Nobody ever asked the
+// journalist which one, so `cameraMode` sat at its default and nothing could honestly depend on
+// it: the walk guard demanded a storyboard even for a reveal, which shows no words at all.
+// ---------------------------------------------------------------------------
+describe("narrativeKindsFor — what this type can actually be", () => {
+  it("a map offers the three kinds, and only the narrating ones owe a storyboard", () => {
+    const kinds = narrativeKindsFor("map-native", "choropleth");
+    expect(kinds.map((k) => k.kind).sort()).toEqual([
+      "reveal",
+      "stepped",
+      "story",
+    ]);
+    const owed = Object.fromEntries(
+      kinds.map((k) => [k.kind, k.owesStoryboard]),
+    );
+    expect(owed).toEqual({ story: true, stepped: true, reveal: false });
+  });
+
+  it("a chart offers TWO — it has no camera to travel, so no story", () => {
+    const kinds = narrativeKindsFor("chart-native", "bar");
+    expect(kinds.map((k) => k.kind).sort()).toEqual(["reveal", "stepped"]);
+    expect(kinds.find((k) => k.kind === "stepped")!.owesStoryboard).toBe(true);
+    expect(kinds.find((k) => k.kind === "reveal")!.owesStoryboard).toBe(false);
+  });
+
+  it("a chart that can carry no walk offers only the reveal, and says why", () => {
+    const kinds = narrativeKindsFor("chart-native", "pie");
+    expect(kinds.map((k) => k.kind)).toEqual(["reveal"]);
+    expect(kinds[0]!.owesStoryboard).toBe(false);
+    // The absence is EXPLAINED, not silent — a journalist reads why the steps are not offered.
+    expect(kinds[0]!.why).toMatch(/continuous scalar|per-subject entrance/);
+  });
+
+  it("route and hex-grid offer only the reveal too — their anchor exists at produce time", () => {
+    for (const t of ["route", "hex-grid"]) {
+      const kinds = narrativeKindsFor("map-native", t);
+      expect(kinds.some((k) => k.owesStoryboard)).toBe(false);
+    }
+  });
+
+  it("every kind carries a sentence a journalist can be shown as-is", () => {
+    for (const k of narrativeKindsFor("map-native", "choropleth")) {
+      expect(k.why.length).toBeGreaterThan(20);
+      expect(k.why).not.toMatch(/unsupported|invalid|error/i);
+    }
+  });
+
+  it("a producer that renders no video at all offers nothing", () => {
+    expect(narrativeKindsFor("dw-chart", "d3-bars")).toEqual([]);
+  });
+});
