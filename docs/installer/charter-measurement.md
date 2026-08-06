@@ -183,13 +183,16 @@ on every evidence entry — visible, but not a behaviour change for this particu
   after client-side JavaScript runs, with no static declaration at all — was not one of the three
   fixtures and was not run by hand here.
 
-  Its named, accepted limit: once the page is open, it is a real browser executing the page's own
-  JavaScript, and that script can issue outbound requests — a fetch, an image load, a redirect —
-  to addresses this module does not vet. The static path checks every stylesheet href against a
-  same-host/forbidden-host list before fetching it; the rendered path has no equivalent, because a
-  rendered page's outbound traffic is not a list of hrefs read in advance, it is arbitrary code
-  running inside Chromium. The entry address itself is vetted exactly like the static path
-  (`normalizeSiteUrl`, the same function); what happens after the page opens is not.
+  Its named, accepted limits, in the order a request travels. **The entry address** is vetted
+  exactly like the static path (`normalizeSiteUrl`, the same function). **The address the browser
+  landed on** is vetted too, before a byte of the page is read — but only *after* `goto` resolved,
+  so Chromium has already dialled every hop of the redirect chain. That closes the read, not the
+  request: a pasted redirector that bounces onto `http://192.168.1.1/reboot?confirm=1` still causes
+  that GET, where the static path refuses it before sending (`redirect: "manual"`, every hop vetted
+  in advance). **Once the page is open**, it is a real browser executing the page's own JavaScript,
+  and that script can issue outbound requests — a fetch, an image load, a redirect — to addresses
+  this module does not vet at all, because a rendered page's outbound traffic is not a list of
+  hrefs read in advance, it is arbitrary code running inside Chromium.
 
 - **The honest headline: on heidi.news, no new colour was found, because there was none to
   find.** Across this whole chantier's colour work on that site — same-host CDN fix, then
