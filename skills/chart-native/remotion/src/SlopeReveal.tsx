@@ -5,6 +5,7 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { SlopeChart, type SlopeConfig } from "../../src/SlopeChart";
 import sample from "../../assets/sample-data/slope.json";
 import { RevealStage } from "./RevealStage";
+import { steppedFrame } from "../../src/core/walk";
 
 const sampleConfig = sample as unknown as SlopeConfig;
 
@@ -19,6 +20,11 @@ export const SlopeReveal: React.FC<{ scale?: number; config?: SlopeConfig }> = (
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  // ★ A STEPPED VIDEO IS THE SCROLLY, IN TIME. The chart stands complete and each step
+  // accents the subject its sentence is about — `ScrollyChart`'s own staging, with the
+  // clock turning the pages. Null without a walk, so an un-storyboarded video is unchanged.
+  const step = steppedFrame("slope", config, progress);
+
   return (
     <RevealStage
       config={config}
@@ -29,8 +35,8 @@ export const SlopeReveal: React.FC<{ scale?: number; config?: SlopeConfig }> = (
       nativeType="slope"
     >
       <SlopeChart
-        config={config}
-        progress={progress}
+        config={step ? ({ ...config, ...step.accent } as typeof config) : config}
+        progress={step ? step.chartProgress : progress}
         width={width}
         height={height}
         scale={scale}

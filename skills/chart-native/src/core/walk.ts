@@ -10,7 +10,7 @@
 /** The shape a brief beat arrives in (lib/core/production-brief.ts's BriefBeat, narrowed to what
  *  an order needs). `x` is a line's axis value, `category` a bar's category — the two anchors
  *  chart-native itself validates against (chart-story.ts's narrativeBeatErrors). */
-import { entranceOf, type EntranceSchedule } from "./chart-walk";
+import { entranceOf, chartWalk, type EntranceSchedule } from "./chart-walk";
 
 export type WalkBeat = { x?: string; category?: string };
 
@@ -148,7 +148,7 @@ export type CaptionClock =
    * `config.rows`, which is not the order a component that sorts actually renders, and it needed
    * to know whether the type permuted at all.
    */
-  | { grain: "anchored"; entrance: EntranceSchedule; count: number }
+  | { grain: "entrance"; entrance: EntranceSchedule; count: number }
   /** No per-subject entrance to sit on: the beats share the timeline in equal parts, in the order
    *  the journalist wrote them. A stepped video in the plainest sense — the step carries the
    *  argument and the clock turns the page. */
@@ -215,4 +215,56 @@ export function walkEntryOrder(
   if (!beats?.length) return (i) => i;
   const order = walkPositions([...laidOutLabels], beats);
   return (i) => order[i] ?? i;
+}
+
+/**
+ * ★ THE STEPPED FRAME — what a video shows at this progress, for a type that stages like a scrolly.
+ *
+ * Rémy, after watching the first stepped bar video (2026-08-06): *« le stepped devrait avoir le
+ * même rendu qu'un scrolly, juste en format vidéo »*. He was right, and the scrolly is where this
+ * staging was already settled — `ScrollyChart`'s bar branch draws every bar (`progress={1}`) and
+ * accents the ACTIVE beat's subject, step by step. What the video did instead was race the bars in
+ * while a fixed accent stayed put, so the closing sentence pointed at another subject. That is not
+ * a polish note; it is a caption asserting something about the wrong bar.
+ *
+ * So: the chart stands COMPLETE, the timeline is cut into equal steps, and each step accents the
+ * subject its sentence is about. Time replaces scroll, and nothing else changes.
+ *
+ * Returns `null` when there is no walk, so a video nobody storyboarded is byte-identical.
+ */
+export function steppedFrame(
+  nativeType: string,
+  config: {
+    rows?: readonly Record<string, unknown>[];
+    beats?: readonly WalkBeat[];
+  },
+  progress: number,
+): { chartProgress: number; accent: Record<string, unknown> } | null {
+  const walk = chartWalk(nativeType);
+  if (walk?.grain !== "accent" || !walk.accent || !config.beats?.length)
+    return null;
+  const beats = config.beats;
+  const k = Math.min(
+    beats.length - 1,
+    Math.max(0, Math.floor(progress * beats.length)),
+  );
+  const subject = String(beats[k]?.category ?? beats[k]?.x ?? "");
+  const accent: Record<string, unknown> = {};
+  if (walk.accent.by === "label") accent[walk.accent.prop] = subject;
+  else {
+    // The row's own position. Safe for the index-addressed types because their mapper pins the
+    // display sort OFF when a walk is present (`resolveBarSort`), so rendered order IS data
+    // order — the sortedIndex the scrolly's own story beats carry.
+    // `anchorField` names the CONFIG key that holds the COLUMN name (`catField: "region"`), not
+    // the column itself — one indirection, and forgetting it silently accents nothing at all.
+    const column = String(
+      (config as Record<string, unknown>)[walk.anchorField ?? ""] ?? "",
+    );
+    const i = (config.rows ?? []).findIndex(
+      (r) => String(r[column] ?? "") === subject,
+    );
+    if (i >= 0) accent[walk.accent.prop] = i;
+  }
+  // COMPLETE from the first frame, as a scrolly is when the reader arrives at it.
+  return { chartProgress: 1, accent };
 }

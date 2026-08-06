@@ -7,13 +7,28 @@ import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 
 const { fontFamily } = loadFont();
 
-// Caption lower-third card — semi-opaque, WCAG-contrasted. Typography mirrors CountryLabel
-// (same Space Grotesk font-var + shadow-var) so the reveal-beat central label and the
-// takeaway caption read as one concordant design language, not two unrelated text styles.
-export const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
-  text,
-  reveal,
-}) => {
+/**
+ * Caption lower-third card — semi-opaque, WCAG-contrasted.
+ *
+ * ★ IT CARRIES THE SUBJECT TOO, since 2026-08-06. An authored step used to put the place name in
+ * a giant centred overlay AND the journalist's sentence in a card at the bottom, in another type
+ * treatment — two text objects saying one thing, in two styles. Rémy, on seeing it: « tu ressors
+ * le titre en gros au centre et tu mets le texte en bas d'un autre style. Il faut homogénéiser. »
+ *
+ * So the name (and its value, where the type has one) becomes an EYEBROW on this card, and the
+ * centred overlay is not drawn for that step. One object, one type scale, nothing lost — the
+ * derived stories, which have no sentence, keep the centred label exactly as before.
+ */
+export const CaptionCard: React.FC<{
+  text: string;
+  reveal: number;
+  /** The step's subject — drawn above the sentence, small, when this card replaces the centred
+   *  label. Absent ⇒ the card renders as it always did. */
+  eyebrow?: string;
+  /** The subject's value, appended to the eyebrow. Empty for types that carry none (a locator
+   *  marker has no number), which is why it is separate rather than baked into `eyebrow`. */
+  value?: string;
+}> = ({ text, reveal, eyebrow, value }) => {
   const opacity = interpolate(reveal, [0, 0.4], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
@@ -34,6 +49,25 @@ export const CaptionCard: React.FC<{ text: string; reveal: number }> = ({
         pointerEvents: "none",
       }}
     >
+      {eyebrow && (
+        <p
+          style={{
+            margin: "0 0 6px",
+            color: "#F5F2ED",
+            opacity: 0.72,
+            fontFamily: `var(--map-label-font, ${fontFamily})`,
+            fontSize: 18,
+            fontWeight: 600,
+            lineHeight: 1.2,
+            textAlign: "center",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+          }}
+        >
+          {eyebrow}
+          {value ? ` · ${value}` : ""}
+        </p>
+      )}
       <p
         style={{
           margin: 0,

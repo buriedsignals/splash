@@ -36,12 +36,33 @@ export type Entrance = {
 };
 
 export type ChartWalk = {
-  grain: "anchored" | "sequenced";
+  /**
+   * HOW a stepped video of this type stages its walk.
+   *
+   * · `accent` — THE SCROLLY, IN TIME. The chart stands complete and each step ACCENTS the subject
+   *   its sentence is about, the clock turning the pages. Rémy, 2026-08-06, after seeing the first
+   *   stepped bar video: "le stepped devrait avoir le même rendu qu'un scrolly, juste en format
+   *   vidéo" — and he was right, because the scrolly is where this staging was settled
+   *   (`ScrollyChart`: all bars visible, the active beat's bar accented). It also removes a defect
+   *   that same run showed: a fixed accent left the closing sentence pointing at another subject.
+   *   Needs a highlight the component honours.
+   * · `entrance` — the subjects ENTER in the walk's order and the sentence rides the entrance.
+   *   Where a type has a per-subject entrance but no accent to move. Second best, and named as
+   *   such: a type joins `accent` the day it learns to highlight.
+   * · `sequenced` — no subject a beat can address; the sentences follow the order written over
+   *   whatever the animation already does.
+   */
+  grain: "accent" | "entrance" | "sequenced";
   /** The component file whose entrance this describes — read by the drift test. Anchored only. */
   component?: string;
   /** The Config field whose value each beat's `category` names. Anchored only. */
   anchorField?: string;
   entrance?: Entrance;
+  /** The config prop this type accents a subject through, and what it takes. `index` is the
+   *  post-sort row index (safe for `bar`: the mapper pins `sort: "none"` when beats are present);
+   *  `label` is the subject's own name, which no sort can invalidate. Absent ⇒ grain is not
+   *  `accent`. */
+  accent?: { prop: string; by: "index" | "label" };
   /** Does the component PERMUTE its entrance into the walk's order? True for every anchored
    *  type since 2026-08-06: the first rendered proof of a non-bar walk played the sentences in
    *  the DATA's order — establish second, payoff first — because only `bar` permuted. A walk
@@ -72,12 +93,13 @@ const anchored = (
   entrance: Entrance,
   extra?: Partial<ChartWalk>,
 ): ChartWalk => ({
-  grain: "anchored",
+  grain: "entrance",
   component,
   anchorField,
   entrance,
   reorders: true,
-  why: "each subject enters at the moment of its own sentence, in the order you choose",
+  why:
+    "each subject enters at the moment of its own sentence, in the order you choose",
   ...extra,
 });
 
@@ -92,9 +114,22 @@ const sequenced = (why: string): ChartWalk => ({ grain: "sequenced", why });
  */
 export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
   // --- ANCHORED: a per-subject entrance indexed by the subject's own row, and a field naming it.
-  bar: anchored("BarChart", "catField", BAR_FAMILY),
+  // ★ THE THREE THAT STAGE LIKE A SCROLLY — the chart stands complete and the accent walks.
+  bar: anchored("BarChart", "catField", BAR_FAMILY, {
+    grain: "accent",
+    accent: { prop: "highlightIndex", by: "index" },
+    why:
+      "the chart stands complete and each step highlights the subject its sentence is about — " +
+      "the reading of a scrolly, with the clock turning the pages",
+  }),
   diverging: anchored("DivergingBarChart", "catField", BAR_FAMILY),
-  lollipop: anchored("LollipopChart", "catField", BAR_FAMILY),
+  lollipop: anchored("LollipopChart", "catField", BAR_FAMILY, {
+    grain: "accent",
+    accent: { prop: "highlightLabel", by: "label" },
+    why:
+      "the chart stands complete and each step highlights the subject its sentence is about — " +
+      "the reading of a scrolly, with the clock turning the pages",
+  }),
   "radial-bar": anchored("RadialBarChart", "categoryField", {
     start: 0.15,
     stepNumerator: 0.5,
@@ -102,7 +137,13 @@ export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
   }),
   pyramid: anchored("PopulationPyramidChart", "bandField", BAR_FAMILY),
   dumbbell: anchored("DumbbellChart", "labelField", PAIRED_FAMILY),
-  slope: anchored("SlopeChart", "labelField", PAIRED_FAMILY),
+  slope: anchored("SlopeChart", "labelField", PAIRED_FAMILY, {
+    grain: "accent",
+    accent: { prop: "highlightLabel", by: "label" },
+    why:
+      "the chart stands complete and each step highlights the line its sentence is about — " +
+      "the reading of a scrolly, with the clock turning the pages",
+  }),
 
   // --- SEQUENCED by series: the entrance advances one SERIES at a time, so `stacked`'s bars all
   // grow together per series and no single category can own a moment.

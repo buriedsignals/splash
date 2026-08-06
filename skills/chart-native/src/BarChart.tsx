@@ -21,6 +21,7 @@ import {
 } from "./bar-geometry";
 import {
   formatNumber,
+  formatValueLabel,
   clamp01,
   easeOutCubic,
   labelReveal,
@@ -481,7 +482,7 @@ function BarSvg({
                 fill={C.ink}
                 opacity={labelOp}
               >
-                {formatNumber(b.rawVal, config.lang) + valueSuffix}
+                {formatValueLabel(b.rawVal, config.lang) + valueSuffix}
               </text>
             </g>
           );

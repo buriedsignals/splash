@@ -568,7 +568,10 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
       {overlay &&
         beat?.callout &&
         overlay.calloutPt &&
-        overlay.labelReveal > 0 && (
+        overlay.labelReveal > 0 &&
+        // The centred label is the DERIVED story's caption. An authored step carries its
+        // subject on the CaptionCard instead — one text object, one type scale.
+        !beat?.authored && (
           <CountryLabel
             name={beat.callout.name}
             color={overlay.calloutColor}
@@ -583,10 +586,23 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
           central CountryLabel; title beat uses the full TitleCard) */}
       {overlay &&
         beat?.kind !== "title" &&
-        beat?.kind !== "reveal" &&
+        // ★ AN AUTHORED REVEAL SHOWS ITS SENTENCE. A derived reveal's `copy` restates what the
+        // map already writes on itself (the region's name and value), so a card would duplicate
+        // it — that is why reveals were excluded. But a CONFIRMED walk's copy is the
+        // journalist's own claim, and excluding it meant the guided tour demanded nine sentences
+        // and displayed none of them. Measured on Rémy's own run, 2026-08-06: "La visite guidée
+        // n'affiche pas les phrases que tu as validées." The `authored` flag has existed on the
+        // beat since applyMapArc was written, documented at length — and no component read it.
+        (beat?.kind !== "reveal" || beat?.authored) &&
         beat?.copy &&
         overlay.captionReveal > 0 && (
-          <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
+          <CaptionCard
+            text={beat.copy}
+            reveal={overlay.captionReveal}
+            {...(beat.authored && beat.callout
+              ? { eyebrow: beat.callout.name, value: beat.callout.value }
+              : {})}
+          />
         )}
 
       {/* Title card — shown from frame 0, fades out as the map scene begins. */}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { CHART_WALKS, chartWalk, entranceStep } from "../src/core/chart-walk";
 import { NATIVE_TYPES } from "../src/native-types";
@@ -31,7 +31,7 @@ describe("CHART_WALKS covers every native type, and only those", () => {
 describe("each grain declares what that grain needs", () => {
   it("an anchored type names its subjects and its entrance", () => {
     for (const [id, w] of Object.entries(CHART_WALKS)) {
-      if (w.grain !== "anchored") continue;
+      if (w.grain === "sequenced") continue;
       expect({
         id,
         anchorField: !!w.anchorField,
@@ -62,7 +62,7 @@ describe("each grain declares what that grain needs", () => {
   // whose steps arrive out of order is not a walk.
   it("every anchored type permutes its entrance into the walk's order", () => {
     const anchored = Object.entries(CHART_WALKS).filter(
-      ([, w]) => w.grain === "anchored",
+      ([, w]) => w.grain !== "sequenced",
     );
     expect(anchored.length).toBeGreaterThan(1);
     for (const [id, w] of anchored) expect({ id, reorders: w.reorders }).toEqual({ id, reorders: true });
@@ -100,7 +100,7 @@ describe("each grain declares what that grain needs", () => {
 // ---------------------------------------------------------------------------
 describe("an anchored component reads its entrance, never spells it out", () => {
   for (const [id, w] of Object.entries(CHART_WALKS)) {
-    if (w.grain !== "anchored") continue;
+    if (w.grain === "sequenced") continue;
     it(`${id}: ${w.component} drives stagger from the registry`, () => {
       const src = readFileSync(
         join(import.meta.dir, "..", "src", `${w.component}.tsx`),
@@ -252,4 +252,79 @@ describe("an anchored walk permutes the order the component RENDERS", () => {
     const entry = walkEntryOrder(["a", "b", "c"], undefined);
     expect([entry(0), entry(1), entry(2)]).toEqual([0, 1, 2]);
   });
+});
+
+// ---------------------------------------------------------------------------
+// ★ A STEPPED VIDEO IS THE SCROLLY, IN TIME — Rémy, 2026-08-06, after watching the first one:
+// « le stepped devrait avoir le même rendu qu'un scrolly, juste en format vidéo ».
+//
+// He was right, and the first version was worse than merely different: the bars raced in while a
+// FIXED accent stayed put, so the closing sentence pointed at another subject. A caption asserting
+// something about the wrong bar is not a polish note.
+// ---------------------------------------------------------------------------
+import { steppedFrame } from "../src/core/walk";
+
+describe("the stepped frame — the chart stands complete, the accent walks", () => {
+  const rows = [
+    { region: "Alpes", value: 2370 },
+    { region: "Suisse", value: 900 },
+    { region: "Léman", value: 580 },
+  ];
+  const cfg = { catField: "region", labelField: "region", rows };
+  const beats = [
+    { category: "Alpes", text: "2370 km² libérés." },
+    { category: "Suisse", text: "Dont 900 pour la Suisse." },
+    { category: "Léman", text: "Quatre fois le Léman." },
+  ];
+
+  it("the chart is COMPLETE from the first frame, as a scrolly is when the reader arrives", () => {
+    const f = steppedFrame("bar", { ...cfg, beats }, 0)!;
+    expect(f.chartProgress).toBe(1);
+  });
+
+  it("each step accents the subject ITS sentence is about", () => {
+    const at = (p: number) => steppedFrame("bar", { ...cfg, beats }, p)!.accent;
+    expect(at(0.1)).toEqual({ highlightIndex: 0 });
+    expect(at(0.5)).toEqual({ highlightIndex: 1 });
+    // ★ THE DEFECT, PINNED: the closing sentence is about the Léman, so the closing accent is the
+    // Léman — not whichever subject a fixed `highlight` had chosen once and for all.
+    expect(at(0.95)).toEqual({ highlightIndex: 2 });
+  });
+
+  it("a label-addressed type accents by NAME, which no sort can invalidate", () => {
+    expect(steppedFrame("lollipop", { ...cfg, beats }, 0.5)!.accent).toEqual({
+      highlightLabel: "Suisse",
+    });
+    expect(steppedFrame("slope", { ...cfg, beats }, 0.95)!.accent).toEqual({
+      highlightLabel: "Léman",
+    });
+  });
+
+  it("gives NOTHING without a walk — an un-storyboarded video is unchanged", () => {
+    expect(steppedFrame("bar", { ...cfg }, 0.5)).toBeNull();
+  });
+
+  it("gives nothing for a type that cannot accent — it stages by entrance instead", () => {
+    expect(steppedFrame("dumbbell", { ...cfg, beats }, 0.5)).toBeNull();
+    expect(steppedFrame("pie", { ...cfg, beats }, 0.5)).toBeNull();
+  });
+});
+
+// The three that stage like a scrolly must actually be wired to it — a staging nothing calls is a
+// staging that does not happen, which is how the caption stage itself sat unreachable for a day.
+describe("the scrolly staging is wired into the compositions that claim it", () => {
+  for (const [id, w] of Object.entries(CHART_WALKS)) {
+    if (w.grain !== "accent") continue;
+    it(`${id}: its reveal composition drives the chart from the stepped frame`, () => {
+      const file = readdirSync(
+        join(import.meta.dir, "..", "remotion", "src"),
+      ).find((f) => f.toLowerCase().startsWith(id.replace("-", "")) && f.endsWith("Reveal.tsx"));
+      const src = readFileSync(
+        join(import.meta.dir, "..", "remotion", "src", file!),
+        "utf8",
+      );
+      expect(src).toContain(`steppedFrame("${id}"`);
+      expect(src).toContain("step ? step.chartProgress : progress");
+    });
+  }
 });

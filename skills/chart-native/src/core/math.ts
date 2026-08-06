@@ -3,7 +3,7 @@
 // formatting, clamping, and the easing/stagger vocabulary the motion build uses.
 // Decouples the geometry files from each other (bar must not import from line).
 
-import { localizeDecimal, type Lang } from "./locale";
+import { localizeDecimal, formatLocaleNumber, type Lang } from "./locale";
 
 /**
  * Abbreviate a number the FT way: 12831 -> "12.8k", 1_800_000 -> "1.8M".
@@ -76,4 +76,18 @@ export function stagger(
 ): number {
   const begin = start + i * step;
   return easeOutCubic((p - begin) / span);
+}
+
+/**
+ * ★ A DIRECT VALUE LABEL PRINTS THE FIGURE, NOT AN APPROXIMATION OF IT.
+ *
+ * `formatNumber` abbreviates from a thousand up ("2370" → "2,4k") — right for an AXIS TICK, which
+ * is a scale, and wrong for a label sitting on a mark, which is a CLAIM. Rémy's own run, 2026-08-06:
+ * he confirmed 2370 km² and the screen said 2,4k, while the caption beneath it read 2370. The
+ * chart contradicted the sentence it was carrying — and rounded up, on top.
+ *
+ * So the two are separated: ticks stay compact, direct labels are exact and grouped.
+ */
+export function formatValueLabel(n: number, lang?: Lang): string {
+  return formatLocaleNumber(n, lang);
 }
