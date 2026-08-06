@@ -38,10 +38,23 @@ describe("narrativeKindsFor — what this type can actually be", () => {
     expect(kinds[0]!.why).toMatch(/continuous scalar|per-subject entrance/);
   });
 
-  it("route and hex-grid offer only the reveal too — their anchor exists at produce time", () => {
+  // These two narrate like any other map — their Story family paints the beats' words — so a
+  // narrating kind OWES a walk here as it does everywhere. What they cannot do is have one
+  // DRAFTED: their anchors only exist once the map is built. Owing and being proposable are two
+  // questions, and this file once answered the first with the second (see the matrix sweep below).
+  it("route and hex-grid owe a walk when they narrate — written by hand, but owed", () => {
     for (const t of ["route", "hex-grid"]) {
       const kinds = narrativeKindsFor("map-native", t);
-      expect(kinds.some((k) => k.owesStoryboard)).toBe(false);
+      const narrating = kinds.filter((k) => k.kind !== "reveal");
+      expect(narrating.length).toBe(2);
+      for (const k of narrating) {
+        expect(k.owesStoryboard).toBe(true);
+        // …and the journalist is told they write them themselves, not offered a draft.
+        expect(k.why).toMatch(/BY HAND/);
+      }
+      expect(kinds.find((k) => k.kind === "reveal")!.owesStoryboard).toBe(
+        false,
+      );
     }
   });
 
@@ -107,4 +120,62 @@ describe("every offered kind can be expressed to the engines", () => {
           k.kind !== "reveal" ? k.owesStoryboard : false,
         );
   });
+});
+
+// ★ THE OFFER AND THE GUARD ARE ONE ANSWER — swept, not spot-checked.
+//
+// This test exists because the two disagreed. `owesStoryboard` was first written as "can a walk be
+// DRAFTED for this type", so a route's guided tour advertised that it owed nothing while the guard
+// refused it for exactly that missing walk. A journalist would have been told "nothing to write",
+// then blocked at produce with "write it" — two truths about the same product, which is the whole
+// disease this line of work exists to close.
+//
+// Spot-checking the pair could not have caught it: choropleth agreed. Only sweeping the matrix
+// does, so the sweep is the test.
+import { narrativeWalkError } from "./narrative-walk-gate";
+import type { AcceptedProposal } from "./producer-spec";
+
+const videoProposal = (
+  producer: string,
+  type: string,
+  kind: string,
+  cameraMode?: string,
+): AcceptedProposal =>
+  ({
+    id: "e1",
+    producer,
+    format: "video",
+    confirmedTakeaway: "t",
+    narrativeKind: kind,
+    spec: { type, nativeType: type, ...(cameraMode ? { cameraMode } : {}) },
+  }) as unknown as AcceptedProposal;
+
+describe("what an offer PROMISES is what the guard DEMANDS", () => {
+  const MATRIX: readonly [string, string][] = [
+    ["map-native", "choropleth"],
+    ["map-native", "symbol"],
+    // The two whose anchors only exist once the map is built — they narrate, so they owe.
+    ["map-native", "route"],
+    ["map-native", "hex-grid"],
+    ["chart-native", "bar"],
+    ["chart-native", "line"],
+    ["chart-native", "pie"],
+    ["chart-native", "stacked-bar"],
+  ];
+
+  for (const [producer, type] of MATRIX)
+    it(`${producer}/${type}: every offered kind is judged as it was advertised`, () => {
+      const offers = narrativeKindsFor(producer, type);
+      expect(offers.length).toBeGreaterThan(0);
+      for (const o of offers) {
+        const demanded =
+          narrativeWalkError(
+            videoProposal(producer, type, o.kind, o.cameraMode),
+          ) !== null;
+        expect({ kind: o.kind, demanded }).toEqual({
+          kind: o.kind,
+          demanded: o.owesStoryboard,
+        });
+      }
+    });
 });

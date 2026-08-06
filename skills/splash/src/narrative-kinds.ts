@@ -78,13 +78,17 @@ export function narrativeKindsFor(
       "video",
       "guided-tour",
     ).carriesWalk;
-    // ★ NARRATING AND PROPOSABLE ARE TWO QUESTIONS. A route and a hex-grid DO show their beats'
-    // words — their Story family paints them like any other map's. But no walk can be DRAFTED
-    // for them: their anchor is computed at produce time (`resolveRouteArc`,
-    // `resolveHexGridArc`), so there is nothing to propose against before production
-    // (PROPOSABLE_MAP_TYPES, lib/brain/beats.ts). Their kinds are therefore offered — a guided
-    // tour of a route is a real thing — but no storyboard is OWED, because demanding one would
-    // block a journalist who legitimately writes their arcBeats by hand.
+    // ★ NARRATING AND PROPOSABLE ARE TWO QUESTIONS, AND OWING IS THE FIRST ONE. A route and a
+    // hex-grid DO show their beats' words — their Story family paints them like any other map's —
+    // so choosing a narrating kind for them OWES a walk exactly as it does elsewhere. What they
+    // cannot do is have one DRAFTED: their anchors are computed at produce time (`resolveRouteArc`,
+    // `resolveHexGridArc`), so nothing can be proposed against before production
+    // (PROPOSABLE_MAP_TYPES, lib/brain/beats.ts) and the steps are written by hand.
+    //
+    // Read `owesStoryboard: proposable` here first, and it disagreed with the guard, which demands
+    // a walk for every narrating map video whatever its type — two truths about the same product,
+    // which is the failure this whole line of work exists to close. The offer answers the same
+    // question the guard refuses on; the hand-written caveat lives in `why`, where it belongs.
     const proposable = PROPOSABLE_MAP_TYPES.includes(nativeType);
     const offers: NarrativeKindOffer[] = [];
     if (narrates) {
@@ -95,8 +99,8 @@ export function narrativeKindsFor(
           "it arrives — the closest thing to being walked through the map" +
           (proposable
             ? ""
-            : " (its steps are written by hand — this type's anchors only exist once the map is built, so none can be proposed to you)"),
-        owesStoryboard: proposable,
+            : " — and its steps are written BY HAND: this type's anchors only exist once the map is built, so none can be proposed to you, but they are still owed"),
+        owesStoryboard: true,
         cameraMode: CAMERA_MODE_FOR_KIND.story,
       });
       offers.push({
@@ -104,8 +108,8 @@ export function narrativeKindsFor(
         why:
           "the map holds still and advances by discrete steps, each with its own sentence — " +
           "the same reading as a scrolly, but the clock turns the pages" +
-          (proposable ? "" : " (its steps are written by hand — see above)"),
-        owesStoryboard: proposable,
+          (proposable ? "" : " — and its steps are written BY HAND, see above"),
+        owesStoryboard: true,
         cameraMode: CAMERA_MODE_FOR_KIND.stepped,
       });
     }
