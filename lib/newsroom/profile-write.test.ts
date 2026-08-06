@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { profileMarkdown } from "./profile-write";
+import { profileMarkdown, updateProfileMarkdown } from "./profile-write";
 import { parseNewsroomMarkdown } from "../../skills/splash/src/brand-profile";
 
 describe("profileMarkdown — the setup page's shape is unchanged", () => {
@@ -120,5 +120,37 @@ describe("profileMarkdown — the reader must accept what the writer produces", 
   it("should round-trip the dark preset", () => {
     const md = profileMarkdown({ palette: ["#e8b100"], theme: "dark" });
     expect(parseNewsroomMarkdown(md)?.theme).toBe("dark");
+  });
+});
+
+describe("updateProfileMarkdown — an edit rewrites what it knows, keeps the rest", () => {
+  // The file belongs to the newsroom: Splash created it, the journalist owns it. An edit from the
+  // setup page rewrites the fields the page knows and touches nothing else — the comments they
+  // wrote, and any key a later version (or a human) added.
+  it("keeps the body and the keys it does not know", () => {
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#000000"',
+      'lang: "en"',
+      'requiredSigners: ["yvan"]',
+      "---",
+      "",
+      "# Newsroom profile",
+      "",
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      palette: ["#d5121e"],
+      lang: "fr",
+    });
+    expect(out).toContain('"#d5121e"');
+    expect(out).not.toContain('"#000000"');
+    expect(out).toContain('lang: "fr"');
+    expect(out).toContain('requiredSigners: ["yvan"]');
+    expect(out).toContain(
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+    );
   });
 });

@@ -240,13 +240,20 @@ function unquote(v: string): string {
   return t;
 }
 
+// What counts as "the frontmatter" of a NEWSROOM-PROFILE.md: a `---` fence, its body, a closing
+// `---`. Exported so a WRITER (lib/newsroom/profile-write.ts's `updateProfileMarkdown`) splits a
+// file the same way this reader does — a second notion of "frontmatter" that drifted from this
+// one would let the writer silently mishandle a file this parser reads fine.
+export const NEWSROOM_FRONTMATTER_RE =
+  /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(\r?\n|$)/;
+
 /**
  * Parse the YAML frontmatter of a NEWSROOM-PROFILE.md into a BrandProfile. Reads only the known
  * fields (palette list, source.name/url, lang, credit, signers, requiredSigners); unknown keys are ignored. No
  * frontmatter, or no usable field → null. Pure.
  */
 export function parseNewsroomMarkdown(md: string): BrandProfile | null {
-  const fm = md.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(\r?\n|$)/);
+  const fm = md.match(NEWSROOM_FRONTMATTER_RE);
   if (!fm) return null;
   const lines = fm[1].split(/\r?\n/).map(stripComment);
   const fields: {

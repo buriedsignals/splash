@@ -226,7 +226,7 @@ describe("what a submission writes", () => {
     expect(env).toContain('DATAWRAPPER_API_TOKEN="new"');
   });
 
-  it("creates the newsroom profile once, and never rewrites an existing one", async () => {
+  it("creates the newsroom profile once, then an edit rewrites the fields it knows and keeps the rest", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
       await fetch(`http://127.0.0.1:${port}/submit`, {
@@ -241,14 +241,57 @@ describe("what a submission writes", () => {
     expect(profile).toContain('name: "Heidi.news"');
     expect(profile).toContain('lang: "fr"');
 
-    writeFileSync(join(dest, "NEWSROOM-PROFILE.md"), "MINE, HAND EDITED\n");
+    // The newsroom made this file theirs: a hand-added key this version does not author
+    // (`requiredSigners`) and a comment in the body. Neither came from the setup page.
+    writeFileSync(
+      join(dest, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "palette:",
+        '  - "#0a5c36"   # your house colour',
+        "source:",
+        '  name: "Heidi.news"',
+        'lang: "fr"',
+        'requiredSigners: ["yvan"]',
+        "---",
+        "",
+        "# Newsroom profile",
+        "",
+        "Ne pas toucher : notre rouge vient de la charte 2019.",
+        "",
+      ].join("\n"),
+    );
     await withServer(dest, async (port) => {
       await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
         body: submission({
-          newsroom: { name: "Someone else", lang: "de" },
+          contentLang: "de",
+          newsroom: { name: "Someone else", color: "#d5121e", lang: "de" },
         }),
       });
+    });
+    const edited = readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8");
+    // Rewritten: the fields the page knows.
+    expect(edited).toContain('name: "Someone else"');
+    expect(edited).toContain('lang: "de"');
+    expect(edited).toContain('"#d5121e"');
+    expect(edited).not.toContain('"#0a5c36"');
+    // Preserved: the key and the prose the page never touched.
+    expect(edited).toContain('requiredSigners: ["yvan"]');
+    expect(edited).toContain(
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+    );
+  });
+
+  it("writes nothing when no newsroom facts are submitted — the human gesture is required", async () => {
+    const dest = root();
+    writeFileSync(join(dest, "NEWSROOM-PROFILE.md"), "MINE, HAND EDITED\n");
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission(),
+      });
+      expect(r.status).toBe(200);
     });
     expect(readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8")).toBe(
       "MINE, HAND EDITED\n",

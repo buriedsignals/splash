@@ -16,6 +16,7 @@
 // Splash has measured but cannot yet apply — the newsroom's typefaces — goes in the BODY, as
 // prose, labelled as not yet applied.
 import { isSet } from "./probe";
+import { NEWSROOM_FRONTMATTER_RE } from "../../skills/splash/src/brand-profile";
 
 export type NewsroomFacts = {
   name?: string;
@@ -38,18 +39,21 @@ function scalar(raw: string): string {
   return raw.trim().replace(/[\r\n"]/g, "");
 }
 
+// The frontmatter keys `NewsroomFacts` covers — the ones `profileMarkdown`/`updateProfileMarkdown`
+// author. Every other frontmatter key (`credit`, `signers`, `requiredSigners`, or one this
+// version has never heard of) is the newsroom's, not this function's, to write.
+const KNOWN_KEYS = new Set(["palette", "source", "lang", "theme"]);
+
 /**
- * NEWSROOM-PROFILE.md from facts the journalist has CONFIRMED.
- *
- * It takes values, never a measurement: there is no path from a site scan into this function
- * that does not pass through a human saying yes. That separation is the point — see
- * skills/newsroom-charter/SKILL.md.
+ * The frontmatter lines `facts` produce — palette, source, lang, theme, in that order, each
+ * omitted when unset (lang alone always renders, defaulting to "en"). No delimiters: shared by
+ * `profileMarkdown` (a fresh file) and `updateProfileMarkdown` (an existing one's known fields).
  */
-export function profileMarkdown(facts: NewsroomFacts): string {
+function knownFieldLines(facts: NewsroomFacts): string[] {
   const palette = (
     facts.palette?.length ? facts.palette : facts.color ? [facts.color] : []
   ).filter((c) => isSet(c));
-  const lines = ["---"];
+  const lines: string[] = [];
   if (palette.length) {
     lines.push("palette:");
     palette.forEach((c, i) => {
@@ -67,7 +71,18 @@ export function profileMarkdown(facts: NewsroomFacts): string {
   }
   lines.push(`lang: "${scalar(facts.lang || "en")}"`);
   if (isSet(facts.theme)) lines.push(`theme: "${scalar(facts.theme!)}"`);
-  lines.push("---");
+  return lines;
+}
+
+/**
+ * NEWSROOM-PROFILE.md from facts the journalist has CONFIRMED.
+ *
+ * It takes values, never a measurement: there is no path from a site scan into this function
+ * that does not pass through a human saying yes. That separation is the point — see
+ * skills/newsroom-charter/SKILL.md.
+ */
+export function profileMarkdown(facts: NewsroomFacts): string {
+  const lines = ["---", ...knownFieldLines(facts), "---"];
   lines.push("");
   lines.push("# Newsroom profile");
   lines.push("");
@@ -84,4 +99,64 @@ export function profileMarkdown(facts: NewsroomFacts): string {
     lines.push("");
   }
   return lines.join("\n");
+}
+
+// Where a block a KNOWN key opened (an empty-value line, e.g. `palette:`) ends: the same
+// blank-line-skip / dedent-stops rule `parseNewsroomMarkdown` uses to find the end of `palette`,
+// `source`, `signers` and `requiredSigners`. Reused here so a dropped known block does not leave
+// its old indented lines behind as orphans.
+function blockEnd(lines: string[], start: number): number {
+  let i = start;
+  while (i < lines.length) {
+    if (lines[i].trim() === "") {
+      i++;
+      continue;
+    }
+    if (!/^[ \t]/.test(lines[i])) break;
+    i++;
+  }
+  return i;
+}
+
+// Every frontmatter line NOT belonging to a KNOWN key, in its original order: comments, blank
+// lines, a key this version has never heard of, and every line of ITS block (kept because those
+// continuation lines never match the key:value pattern below, so they fall through untouched).
+function preserveUnknownLines(lines: string[]): string[] {
+  const kept: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const kv = lines[i].match(/^([A-Za-z_]+):[ \t]*(.*)$/);
+    if (kv && KNOWN_KEYS.has(kv[1])) {
+      i++;
+      if (kv[2].trim() === "") i = blockEnd(lines, i);
+      continue;
+    }
+    kept.push(lines[i]);
+    i++;
+  }
+  return kept;
+}
+
+/**
+ * Rewrite the fields of an EXISTING NEWSROOM-PROFILE.md that `facts` covers, and leave everything
+ * else exactly as it was: the newsroom's prose in the body, its comments, and any frontmatter key
+ * this function does not author (a key a later version added, or one a human typed by hand).
+ *
+ * Splits frontmatter from body the same way `parseNewsroomMarkdown` does (`NEWSROOM_FRONTMATTER_RE`),
+ * so a file that parser reads is a file this rewrites the same way. A file with no frontmatter at
+ * all — someone deleted it, or it never had one — gets a fresh one and keeps its whole body.
+ *
+ * The body is never touched, not even to append a note: on an edit the newsroom's own prose is
+ * the one thing that must survive byte-for-byte, so `facts.notes` (which `profileMarkdown` folds
+ * into the body of a FRESH file) is ignored here.
+ */
+export function updateProfileMarkdown(
+  existing: string,
+  facts: NewsroomFacts,
+): string {
+  const fm = existing.match(NEWSROOM_FRONTMATTER_RE);
+  const body = fm ? existing.slice(fm[0].length) : existing;
+  const preserved = fm ? preserveUnknownLines(fm[1].split(/\r?\n/)) : [];
+  const inner = [...knownFieldLines(facts), ...preserved];
+  return ["---", ...inner, "---", ""].join("\n") + body;
 }

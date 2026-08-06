@@ -47,6 +47,7 @@ import {
   mergeEnvFile,
   profileMarkdown,
   submittedState,
+  updateProfileMarkdown,
   type PreflightSubmission,
 } from "./serialize.ts";
 
@@ -255,14 +256,21 @@ function persist(sub: PreflightSubmission): void {
     if (existsSync(legacy)) rmSync(legacy, { force: true });
   }
 
-  // Created ONCE, never round-tripped: after this the file belongs to the newsroom, comments and
-  // all (spec 2026-07-24, decision 6).
+  // The human gesture that gates this write is `sub.newsroom` — a measurement from `measureSite`
+  // never reaches here on its own. What changed (spec 2026-08-06): the file used to be created
+  // ONCE and never round-tripped; now the setup page can also EDIT an existing one, rewriting the
+  // fields it knows (updateProfileMarkdown) while leaving the newsroom's own comments, prose and
+  // any field this version does not author exactly as they were.
   const profilePath = join(ROOT, PROFILE_FILE);
-  if (sub.newsroom && !existsSync(profilePath))
+  if (sub.newsroom) {
+    const facts = { ...sub.newsroom, lang: sub.contentLang ?? "en" };
     writeFileSync(
       profilePath,
-      profileMarkdown({ ...sub.newsroom, lang: sub.contentLang ?? "en" }),
+      existsSync(profilePath)
+        ? updateProfileMarkdown(readFileSync(profilePath, "utf8"), facts)
+        : profileMarkdown(facts),
     );
+  }
 }
 
 /**

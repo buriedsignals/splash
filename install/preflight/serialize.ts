@@ -28,6 +28,7 @@ import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
 // existing importer of this module is unaffected.
 export {
   profileMarkdown,
+  updateProfileMarkdown,
   type NewsroomFacts,
 } from "../../lib/newsroom/profile-write.ts";
 import type { NewsroomFacts } from "../../lib/newsroom/profile-write.ts";
