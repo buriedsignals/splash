@@ -74,4 +74,40 @@ describe("runPreflight", () => {
       "missing",
     );
   });
+
+  it("should report the maptiler key as missing, not failed, when MAPTILER_KEY is absent from env", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    await mkdir(join(root, "node_modules"), { recursive: true });
+    const verdict = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = verdict.checks.find((c) => c.id === "maptiler-key");
+    expect(check.status).toBe("missing");
+    expect(verdict.ok).toBe(false);
+  });
+
+  it("should report the newsroom profile as failed, not missing, when the file exists but cannot be parsed", async () => {
+    // A leading blank line breaks the front-matter regex without ever making the file unreadable.
+    await writeFile(join(root, "NEWSROOM.md"), `\n${complete}`);
+    await mkdir(join(root, "node_modules"), { recursive: true });
+    const verdict = await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "k" },
+      fetchFn: okFetch,
+    });
+    const check = verdict.checks.find((c) => c.id === "newsroom-profile");
+    expect(check.status).toBe("fail");
+    expect(check.detail).toContain("front matter");
+  });
+
+  it("should report the newsroom profile as failed when NEWSROOM.md is present but incomplete", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), "---\nname: X\n---\n");
+    await mkdir(join(root, "node_modules"), { recursive: true });
+    const verdict = await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "k" },
+      fetchFn: okFetch,
+    });
+    const check = verdict.checks.find((c) => c.id === "newsroom-profile");
+    expect(check.status).toBe("fail");
+    expect(verdict.ok).toBe(false);
+  });
 });

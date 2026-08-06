@@ -37,6 +37,16 @@ describe("probeMapTiler", () => {
     expect(result.status).toBe(null);
     expect(result.detail).toContain("ENOTFOUND");
   });
+
+  it("should send the key in the request URL, not silently drop it", async () => {
+    let capturedUrl = "";
+    const fetchFn = async (url) => {
+      capturedUrl = String(url);
+      return new Response("{}", { status: 200 });
+    };
+    await probeMapTiler("secret-key-123", fetchFn);
+    expect(capturedUrl).toContain("secret-key-123");
+  });
 });
 
 describe("probeDatawrapper", () => {
@@ -51,15 +61,38 @@ describe("probeDatawrapper", () => {
     expect(result.ok).toBe(false);
     expect(result.status).toBe(401);
   });
+
+  it("should send the bearer token in the Authorization header, not silently drop it", async () => {
+    let capturedInit;
+    const fetchFn = async (url, init) => {
+      capturedInit = init;
+      return new Response("{}", { status: 200 });
+    };
+    await probeDatawrapper("secret-token-456", fetchFn);
+    expect(capturedInit?.headers?.Authorization).toBe(
+      "Bearer secret-token-456",
+    );
+  });
 });
 
 describe("probeMapTiler against the real endpoint", () => {
-  it("should return a concrete verdict using the key in the environment", async () => {
-    const result = await probeMapTiler(process.env.MAPTILER_KEY ?? "", fetch);
-    expect(typeof result.ok).toBe("boolean");
-    expect(result.detail.length).toBeGreaterThan(0);
+  const key = process.env.MAPTILER_KEY ?? "";
+  if (!key) {
     console.log(
-      `MapTiler verdict: ok=${result.ok} status=${result.status} — ${result.detail}`,
+      "Skipping real MapTiler probe: MAPTILER_KEY is not set in the environment.",
     );
-  });
+  }
+
+  it.skipIf(!key)(
+    "should return a concrete verdict using the key in the environment",
+    async () => {
+      const result = await probeMapTiler(key, fetch);
+      expect(typeof result.ok).toBe("boolean");
+      expect(result.status).not.toBe(null);
+      expect(result.detail.length).toBeGreaterThan(0);
+      console.log(
+        `MapTiler verdict: ok=${result.ok} status=${result.status} — ${result.detail}`,
+      );
+    },
+  );
 });
