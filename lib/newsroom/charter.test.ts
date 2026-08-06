@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import {
+  alphaOf,
   cssRules,
   firstFamily,
   groundTheme,
@@ -45,7 +46,7 @@ describe("parseCssColour", () => {
   });
 
   it("should refuse a notation it cannot convert rather than approximate it", () => {
-    expect(parseCssColour("oklch(0.7 0.15 30)")).toBeNull();
+    expect(parseCssColour("lab(29.2345% 39.3825 20.0664)")).toBeNull();
     expect(parseCssColour("color-mix(in srgb, red, blue)")).toBeNull();
     expect(parseCssColour("rebeccapurple")).toBeNull();
   });
@@ -54,6 +55,72 @@ describe("parseCssColour", () => {
     expect(parseCssColour("")).toBeNull();
     expect(parseCssColour("#")).toBeNull();
     expect(parseCssColour("rgb(")).toBeNull();
+  });
+});
+
+// Reference values, not the fixture's own output — each is independently checkable:
+// - oklch(62.8% 0.2577 29.23) ≈ #ff0000 is the CSS Color 4 spec's own worked example for pure
+//   red (drafts.csswg.org's relative-color examples resolve `oklch(from hsl(0 100% 50%) l c h)`
+//   to `oklch(0.627966 0.257704 29.2346)`; the Culori colour library's test suite pins the same
+//   round trip to full precision — github.com/Evercoder/culori, test/oklch.test.js, `oklch('red')`
+//   = { l: 0.6279553639214311, c: 0.2576833038053608, h: 29.233880279627854 }).
+// - oklch(0% 0 0) = #000000 and oklch(100% 0 0) = #ffffff are definitional (zero/full lightness,
+//   zero chroma).
+// - oklch(17.764% 0 0) ≈ #111111 is the same Culori test suite, `oklch('#111')` = { l:
+//   0.17763777307657064, c: 0 } — a second, independent published pair, chosen because it is a
+//   pure-grey case (c: 0) where the hue term cannot mask an error in the a/b split.
+// All three were also cross-checked against the CSS Color 4 spec's own two-step conversion code
+// (OKLab_to_XYZ + XYZ_to_lin_sRGB, drafts.csswg.org/css-color-4/conversions.js) composed
+// independently of the direct matrix this module uses — the two paths agree to sub-integer
+// precision on every value below.
+describe("parseCssColour — oklch()", () => {
+  it("should convert the CSS Color 4 spec's own reference red", () => {
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23)")).toBe("#ff0000");
+  });
+
+  it("should convert pure black and white", () => {
+    expect(parseCssColour("oklch(0% 0 0)")).toBe("#000000");
+    expect(parseCssColour("oklch(100% 0 0)")).toBe("#ffffff");
+  });
+
+  it("should convert a pure-grey reference pinned from the Culori library's test suite", () => {
+    expect(parseCssColour("oklch(17.764% 0 0)")).toBe("#111111");
+  });
+
+  it("should accept unit-interval lightness as the same value as the percentage", () => {
+    expect(parseCssColour("oklch(0.628 0.2577 29.23)")).toBe(
+      parseCssColour("oklch(62.8% 0.2577 29.23)"),
+    );
+  });
+
+  it("should accept the site's real syntax — percentage lightness, bare chroma, bare degrees", () => {
+    // The exact form heidi.news declares its red scale in.
+    expect(parseCssColour("oklch(55.41% .2189 26.74)")).toBe("#d5121e");
+  });
+
+  it("should accept an explicit deg suffix on the hue", () => {
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23deg)")).toBe("#ff0000");
+  });
+
+  it("should read the alpha channel and treat a fully transparent one as no colour", () => {
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23 / 0)")).toBeNull();
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23 / 50%)")).toBe("#ff0000");
+  });
+
+  it("should refuse a malformed oklch() rather than guess", () => {
+    expect(parseCssColour("oklch(not a colour)")).toBeNull();
+    expect(parseCssColour("oklch(50% 0.1)")).toBeNull();
+  });
+});
+
+describe("alphaOf — oklch()", () => {
+  it("should read a low alpha the same as any other translucent colour", () => {
+    expect(alphaOf("oklch(62.8% 0.2577 29.23 / 10%)")).toBeCloseTo(0.1, 5);
+    expect(alphaOf("oklch(62.8% 0.2577 29.23 / 0.1)")).toBeCloseTo(0.1, 5);
+  });
+
+  it("should default to fully opaque when no alpha is declared", () => {
+    expect(alphaOf("oklch(62.8% 0.2577 29.23)")).toBe(1);
   });
 });
 
@@ -205,6 +272,24 @@ describe("proposeCharter — what the site declares", () => {
     const p = proposeCharter(bare({ html, url: "https://example.news/" }));
     expect(p.candidates[0]!.evidence[0]!.source).toBe("https://example.news/");
   });
+
+  // heidi.news declares its red scale only in oklch() — this is the shape of that declaration
+  // (lib/newsroom/fixtures/sites/heidi-news.css: `--lt-color-red-500: oklch(55.41% .2189 26.74)`),
+  // and it must read as a --brand declaration, at `declared` confidence, exactly like a hex would.
+  it("should take a --brand declared in oklch() at the same confidence as hex", () => {
+    const css = ":root { --brand: oklch(55.41% .2189 26.74) }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    expect(p.candidates[0]!.evidence[0]!.signal).toBe("brand-property");
+    expect(p.confidence).toBe("declared");
+  });
+
+  it("should not propose a near-white/grey read only in oklch() — the neutral rule applies after conversion too", () => {
+    // oklch(96% 0.005 90) is a near-white; isNeutral must still catch it once converted to hex.
+    const css = ":root { --brand: oklch(96% 0.005 90) }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates).toEqual([]);
+  });
 });
 
 describe("proposeCharter — refusing rather than inventing", () => {
@@ -222,10 +307,12 @@ describe("proposeCharter — refusing rather than inventing", () => {
   });
 
   it("should report an unreadable colour notation instead of guessing it", () => {
-    const css = ":root{--brand: oklch(0.62 0.19 25)}";
+    // oklch() is read now (see "proposeCharter — what the site declares"); lab() is still not —
+    // this is the notation the refuse-rather-than-invent path is proven against today.
+    const css = ":root{--brand: lab(29.2345% 39.3825 20.0664)}";
     const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
     expect(p.candidates).toEqual([]);
-    expect(p.notes.join(" ")).toContain("oklch");
+    expect(p.notes.join(" ")).toContain("lab");
   });
 
   it("should never throw, whatever it is handed", () => {

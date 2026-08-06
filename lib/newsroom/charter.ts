@@ -200,13 +200,77 @@ function hslToRgb(h: number, s: number, l: number): Rgb {
 }
 
 /**
+ * OKLCH → sRGB: OKLCH polar → OKLab cartesian, then Björn Ottosson's OKLab↔linear-sRGB matrix,
+ * then the standard sRGB gamma encode. That matrix is the algebraic composition of the two-step
+ * OKLab→XYZ→linear-sRGB path published as the CSS Color 4 spec's own sample code
+ * (https://drafts.csswg.org/css-color-4/conversions.js, functions `OKLab_to_XYZ` +
+ * `XYZ_to_lin_sRGB`) — the two paths were computed independently and checked to agree, which is
+ * how the constants below were verified rather than merely remembered. Gamut clamp happens where
+ * every other notation here clamps: `toHex`'s `clamp255`, at the very end.
+ */
+function oklchToRgb(l: number, c: number, hDeg: number): Rgb {
+  const hRad = (hDeg * Math.PI) / 180;
+  const a = c * Math.cos(hRad);
+  const b = c * Math.sin(hRad);
+  const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = l - 0.0894841775 * a - 1.291485548 * b;
+  const ll = l_ ** 3;
+  const mm = m_ ** 3;
+  const ss = s_ ** 3;
+  const rLin = 4.0767416621 * ll - 3.3077115913 * mm + 0.2309699292 * ss;
+  const gLin = -1.2684380046 * ll + 2.6097574011 * mm - 0.3413193965 * ss;
+  const bLin = -0.0041960863 * ll - 0.7034186147 * mm + 1.707614701 * ss;
+  const gamma = (v: number): number => {
+    const sign = v < 0 ? -1 : 1;
+    const av = Math.abs(v);
+    const enc = av <= 0.0031308 ? 12.92 * av : 1.055 * av ** (1 / 2.4) - 0.055;
+    return sign * enc;
+  };
+  return { r: gamma(rLin) * 255, g: gamma(gLin) * 255, b: gamma(bLin) * 255 };
+}
+
+/**
+ * `oklch(L C H)` / `oklch(L C H / A)` — the body between the parens, already lowercase-trimmed.
+ * L accepts a percentage or the unit-interval CSS also allows (`97.98%` and `0.9798` are the same
+ * lightness); C accepts a bare number or a percentage (100% = 0.4, the CSS Color 4 reference
+ * range); H is degrees, bare or with a `deg` suffix — the two forms the committed fixtures and the
+ * spec both use. Returns null, never throws, on anything else — same discipline as `rgb()`/`hsl()`.
+ */
+function parseOklch(inner: string): Rgb | null {
+  const parts = inner
+    .replace(/\//g, " ")
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  if (parts.length < 3) return null;
+  const num = (s: string, pctOf: number): number | null => {
+    const m = /^(-?[\d.]+)(%?)$/.exec(s);
+    if (!m) return null;
+    const v = Number(m[1]);
+    if (!Number.isFinite(v)) return null;
+    return m[2] === "%" ? (v / 100) * pctOf : v;
+  };
+  if (parts.length >= 4) {
+    const a = num(parts[3]!, 1);
+    if (a !== null && a <= 0) return null;
+  }
+  const l = num(parts[0]!, 1);
+  const c = num(parts[1]!, 0.4);
+  const hm = /^(-?[\d.]+)(deg)?$/i.exec(parts[2]!);
+  if (l === null || c === null || !hm) return null;
+  const h = Number(hm[1]);
+  if (!Number.isFinite(h)) return null;
+  return oklchToRgb(Math.max(0, Math.min(1, l)), Math.max(0, c), h);
+}
+
+/**
  * Parse ONE CSS colour token to #rrggbb. Understands `#rgb`, `#rrggbb`, `#rrggbbaa`, `rgb()`,
- * `rgba()`, `hsl()`, `hsla()` in both comma and space syntax.
+ * `rgba()`, `hsl()`, `hsla()` in both comma and space syntax, and `oklch()` (see `parseOklch`).
  *
- * Deliberately does NOT understand `oklch()`, `lab()`, `color()` or `color-mix()`: converting
- * those correctly is real colour science, and a wrong conversion here becomes a wrong house
- * colour on every chart the newsroom ever publishes. An unparsed notation is reported as a gap
- * (`notes`), never approximated. Named colours are likewise skipped — `red` on a news site is
+ * Deliberately does NOT understand `oklab()`, `lab()`, `lch()`, `color()` or `color-mix()`:
+ * converting those correctly is real colour science, and a wrong conversion here becomes a wrong
+ * house colour on every chart the newsroom ever publishes. An unparsed notation is reported as a
+ * gap (`notes`), never approximated. Named colours are likewise skipped — `red` on a news site is
  * almost always a browser default or an error state, not a masthead.
  *
  * Fully transparent values return null: `rgba(0,0,0,0)` is a spacer, not a colour.
@@ -227,6 +291,11 @@ export function parseCssColour(raw: string): string | null {
       return `#${d.slice(0, 6)}`;
     }
     return null;
+  }
+  const oklch = /^oklch\(([^)]*)\)$/.exec(t);
+  if (oklch) {
+    const rgb = parseOklch(oklch[1]!);
+    return rgb ? toHex(rgb) : null;
   }
   const fn = /^(rgba?|hsla?)\(([^)]*)\)$/.exec(t);
   if (!fn) return null;
@@ -280,7 +349,7 @@ export function alphaOf(raw: string): number {
     const a = d.length === 4 ? d[3]! + d[3]! : d.slice(6);
     return parseInt(a, 16) / 255;
   }
-  const fn = /^(?:rgba?|hsla?)\(([^)]*)\)$/.exec(t);
+  const fn = /^(?:rgba?|hsla?|oklch)\(([^)]*)\)$/.exec(t);
   if (!fn) return 1;
   const parts = fn[1]!
     .replace(/\//g, " ")
@@ -432,7 +501,7 @@ function declarations(decls: string): { prop: string; value: string }[] {
 /** The colour tokens inside a declaration value (a shorthand can carry several). */
 function colourTokens(value: string): string[] {
   const out: string[] = [];
-  const re = /(#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?)\([^)]*\))/g;
+  const re = /(#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?|oklch)\([^)]*\))/g;
   for (const m of value.matchAll(re)) out.push(m[1]!);
   return out;
 }
@@ -668,9 +737,12 @@ function scanCss(css: string, raw: Raw, source: string): void {
     const isLink = LINK_SELECTOR.test(sel);
     const isGround = sel.split(",").some((s) => GROUND_SELECTOR.test(s.trim()));
     for (const { prop, value } of declarations(rule.decls)) {
-      if (/\b(?:oklch|oklab|lab|lch|color-mix|color)\(/.test(value))
+      // `oklch` is deliberately absent from this list — it is read (see `parseOklch`), so a value
+      // expressed in it is no longer a gap. `oklab`/`lab`/`lch`/`color()`/`color-mix()` remain
+      // unread, and a value that only ever appears in one of THOSE is still reported as missed.
+      if (/\b(?:oklab|lab|lch|color-mix|color)\(/.test(value))
         raw.unparsed.add(
-          /\b(oklch|oklab|lab|lch|color-mix|color)\(/.exec(value)![1]!,
+          /\b(oklab|lab|lch|color-mix|color)\(/.exec(value)![1]!,
         );
       if (prop === "font-family") {
         const family = firstFamily(value);

@@ -29,24 +29,33 @@ test("heidi.news, as captured — the colour theme-color declares", () => {
   expect(p.candidates).toHaveLength(1);
   expect(p.candidates[0]?.value).toBe("#d5121e");
   // 101, not 100: task 2 lifted the same-host filter, so the CDN stylesheet is now read too, and
-  // it repeats #d5121e in three more `declared` custom properties — one point of frequency bonus
-  // on top of the theme-color signal's weight. The colour and its top signal are unchanged.
+  // it repeats #d5121e in more `declared` custom properties (three in hex, plus — since this
+  // chantier taught the parser oklch() — four more in `oklch(55.41% .2189 26.74)`, which converts
+  // to the exact same #d5121e the sheet also declares in hex) — one point of frequency bonus on
+  // top of the theme-color signal's weight either way (evidence count 4 -> 8, same rounded score).
+  // The colour and its top signal are unchanged.
   expect(p.candidates[0]?.score).toBe(101);
+  expect(p.candidates[0]?.count).toBe(8);
   expect(p.candidates[0]?.evidence[0]?.signal).toBe("theme-color");
   expect(p.confidence).toBe("declared");
   expect(p.ground).toBeUndefined();
 });
 
-test("heidi.news, as captured — the CDN stylesheet is read, and what it still misses", () => {
+test("heidi.news, as captured — the CDN stylesheet is read, and oklch() no longer among what it misses", () => {
   const p = proposeCharter(loadSiteFixture("heidi-news"));
   // Before task 2: heidi.news links its CSS from heidi-17455.kxcdn.com — its own CDN, a
   // different host than www.heidi.news. `stylesheetHrefs`'s same-host filter dropped it, and the
   // note this test used to pin blamed JavaScript for a stylesheet that was never even attempted.
-  // After task 2: the filter is lifted, the 557 KB sheet is read, and the note that survives is
-  // an honest, different one — the sheet uses `color-mix()`/`oklch()` colour notation this
-  // extractor does not parse, so a brand colour expressed only that way would still be missed.
+  // After task 2: the filter is lifted and the 557 KB sheet is read. It declares its 210 red-scale
+  // values (`--lt-color-red-500`, `--lt-color-primary-500`, …) only in oklch() — this chantier
+  // teaches the parser that notation, and the reading now lands on the SAME #d5121e the site
+  // already declares in hex elsewhere (`--lt-color-red-500-rgb: #d5121e`), which is the
+  // independent cross-check that the conversion is right, not just that it runs. What survives in
+  // `notes` narrows to the one notation still genuinely unread: `color-mix()` (4 occurrences,
+  // itself a computation over other colours rather than a colour notation, deliberately left
+  // alone by this chantier).
   expect(p.notes).toEqual([
-    "the site declares colours in color-mix/oklch() notation, which is NOT read here — a brand colour expressed only that way was missed",
+    "the site declares colours in color-mix() notation, which is NOT read here — a brand colour expressed only that way was missed",
   ]);
 });
 
