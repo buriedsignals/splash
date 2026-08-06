@@ -163,3 +163,21 @@ test("fetches the video renderer for BOTH video engines, before the page", () =>
   for (const engine of ["chart-native", "map-native"])
     expect(ps).toContain(engine);
 });
+
+// The check above (`toContain(engine)`) is satisfied by `map-native` appearing ANYWHERE in the
+// file — and it does, in Link-AgentsSkills's own comments and the payload-parity assertions
+// elsewhere in this file — so dropping `map-native` from the loop that actually downloads its
+// render browser left that check green. This asserts the LOOP ITSELF names both engines, not
+// merely that the string occurs somewhere in the script.
+test("the render-browser loop's own engine list names both video engines, not just the file", () => {
+  const m = ps.match(
+    /foreach \(\$engine in @\(([^)]+)\)\) \{\n([\s\S]*?)\n\}\n/,
+  );
+  expect(m).not.toBeNull();
+  const [, listText, body] = m!;
+  const engines = listText!
+    .split(",")
+    .map((s) => s.trim().replace(/^"|"$/g, ""));
+  expect(engines).toEqual(["chart-native", "map-native"]);
+  expect(body).toContain("remotion browser ensure");
+});

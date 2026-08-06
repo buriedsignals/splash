@@ -242,6 +242,19 @@ test("fetches the video renderer for BOTH video engines, before the page", () =>
     expect(sh).toContain(engine);
 });
 
+// The check above (`toContain(engine)`) is satisfied by `map-native` appearing ANYWHERE in the
+// file — and it does, in the skills-symlink helper's own comment and in the delivered-tree
+// assertions elsewhere in this file — so dropping `map-native` from the loop that actually
+// downloads its render browser left that check green. This asserts the LOOP ITSELF names both
+// engines, not merely that the string occurs somewhere in 5000+ characters of shell.
+test("the render-browser loop's own engine list names both video engines, not just the file", () => {
+  const m = sh.match(/for engine in ([^;]+); do\n([\s\S]*?)\ndone\n/);
+  expect(m).not.toBeNull();
+  const [, listText, body] = m!;
+  expect(listText!.trim().split(/\s+/)).toEqual(["chart-native", "map-native"]);
+  expect(body).toContain("remotion browser ensure");
+});
+
 test("the installer links the DELIVERED tree, not the engine checkout", () => {
   // Pointing the helper at $DEST/skills would ship a host the whole engine — the failure this
   // whole chantier exists to close. Asserted on the EXECUTABLE lines: `toContain(".dist/skills")`
