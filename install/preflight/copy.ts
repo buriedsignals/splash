@@ -32,7 +32,17 @@ export type PageCopy = {
   profileOwned: string;
   profileGround: string;
 
-  /** The publication language row in the profile read-out — the profile is where it lives now. */
+  /** The action that measures the address just typed above ("read my site"). */
+  measureAction: string;
+  measuring: string;
+  measureNeedsUrl: string;
+  measureFailed: string;
+  /** Shown when a measurement's palette comes back empty — a legitimate answer, not an error. */
+  siteDeclaresNothing: string;
+  /** Appended to an INFERRED (not declared) colour reading, so it reads as the guess it is. */
+  charterInferred: string;
+
+  /** The publication language field — a profile field, edited here (the profile is where it lives). */
   languageContent: string;
 
   assistantTitle: string;
@@ -94,8 +104,16 @@ const EN: PageCopy = {
   newsroomUrl: "Website (optional)",
   newsroomColor: "House colour",
   profileOwned:
-    "You already have a newsroom profile. It is yours to edit — Splash will not rewrite it. Open NEWSROOM-PROFILE.md to change the house style or the language of your visuals.",
+    "You already have a newsroom profile. Editing the fields below and saving updates it — everything else in NEWSROOM-PROFILE.md, your own comments included, is left exactly as it is.",
   profileGround: "House ground",
+
+  measureAction: "Read my site",
+  measuring: "Reading…",
+  measureNeedsUrl: "Enter your website address first.",
+  measureFailed: "Could not read your site — check the address and try again.",
+  siteDeclaresNothing:
+    "Your site does not declare a house colour we can read — a legitimate answer. Type one in below.",
+  charterInferred: "(a guess — not a colour your site names as its own)",
 
   languageContent: "Language your visuals are published in",
 
@@ -161,8 +179,18 @@ const FR: PageCopy = {
   newsroomUrl: "Site web (facultatif)",
   newsroomColor: "Couleur maison",
   profileOwned:
-    "Vous avez déjà un profil de rédaction. Il vous appartient — Splash ne le réécrira pas. Ouvrez NEWSROOM-PROFILE.md pour changer le style maison ou la langue de vos visuels.",
+    "Vous avez déjà un profil de rédaction. Modifier les champs ci-dessous puis enregistrer le met à jour — le reste de NEWSROOM-PROFILE.md, y compris vos propres commentaires, reste exactement tel quel.",
   profileGround: "Fond maison",
+
+  measureAction: "Lire mon site",
+  measuring: "Lecture…",
+  measureNeedsUrl: "Entrez d'abord l'adresse de votre site.",
+  measureFailed:
+    "Impossible de lire votre site — vérifiez l'adresse et réessayez.",
+  siteDeclaresNothing:
+    "Votre site ne déclare aucune couleur maison lisible — une réponse légitime. Saisissez-en une ci-dessous.",
+  charterInferred:
+    "(une supposition — pas une couleur que votre site déclare comme la sienne)",
 
   languageContent: "Langue de publication de vos visuels",
 

@@ -15,6 +15,10 @@ import { groupEnginesByWant } from "./group-by-want.ts";
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
+// Type-only: charter-endpoint.ts's own imports reach lib/newsroom/charter.ts, and this file is
+// bundled for the browser. A value import here would pull that module graph into the bundle;
+// `import type` is erased at compile time, so only the shape crosses the boundary.
+import type { CharterReadout } from "./charter-endpoint.ts";
 
 type FormState = {
   uiLang: string;
@@ -24,10 +28,27 @@ type FormState = {
   credentials: Record<string, string>;
   enabled: Set<string>;
   publisher: string;
-  newsroom: { name: string; url: string; color: string };
+  newsroom: {
+    name: string;
+    url: string;
+    color: string;
+    /** "light" | "dark" | "#rrggbb" | "" — NEWSROOM-PROFILE.md's `theme:`. */
+    theme: string;
+    /** Measured but not (yet) a frontmatter field — typefaces, extractor caveats. Verbatim. */
+    notes: string[];
+  };
   /** Live verdicts from the last check, per capability id. */
   verified: Record<string, VerifyOutcome>;
 };
+
+/** The state of the "read my site" action — a measurement, never a decision (see charter.ts). */
+type CharterState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "done"; readout: CharterReadout }
+  | { status: "error"; message: string };
+
+let charter: CharterState = { status: "idle" };
 
 const model: PreflightModel = JSON.parse(
   document.getElementById(MODEL_SCRIPT_ID)!.textContent!,
@@ -45,7 +66,13 @@ const form: FormState = {
       .map((c) => c.id),
   ),
   publisher: model.publisher ?? "zip",
-  newsroom: { name: "", url: "", color: "#0072b2" },
+  newsroom: {
+    name: model.profile?.name ?? "",
+    url: model.profile?.url ?? "",
+    color: model.profile?.palette?.[0] ?? "#0072b2",
+    theme: model.profile?.theme ?? "",
+    notes: [],
+  },
   verified: {},
 };
 
@@ -284,69 +311,21 @@ function textField(
   return wrapper;
 }
 
+/**
+ * The newsroom section: editable fields, prefilled from an existing profile when there is one,
+ * and fillable by measuring the site. A measurement is never a decision (skills/newsroom-charter)
+ * — every value it fills in stays editable, and its receipt is shown right beside it so the
+ * journalist can tell where it came from and disagree with it.
+ */
 function renderNewsroom(copy: PageCopy): void {
   const { name, hint, body } = section("newsroom");
   name.textContent = copy.newsroomTitle;
   hint.textContent = copy.newsroomHint;
   body.replaceChildren();
-  if (model.profileExists) {
+
+  if (model.profileExists)
     body.append(el("p", { class: "shared-note" }, copy.profileOwned));
-    const p = model.profile;
-    if (!p) return; // a file that declares nothing readable — the sentence is the whole answer
-    const readout = el("div", { class: "profile-readout" });
-    const row = (label: string, value: string) => {
-      const r = el("div", { class: "profile-row" });
-      r.append(el("span", { class: "profile-label" }, label));
-      r.append(el("span", { class: "profile-value" }, value));
-      readout.append(r);
-    };
-    if (p.name) row(copy.newsroomName, p.url ? `${p.name} — ${p.url}` : p.name);
-    if (p.palette?.length) {
-      const r = el("div", { class: "profile-row" });
-      r.append(el("span", { class: "profile-label" }, copy.newsroomColor));
-      const swatches = el("span", { class: "profile-value" });
-      p.palette.forEach((hex, i) => {
-        const dot = el("span", { class: "swatch" });
-        dot.style.background = hex;
-        dot.title = hex;
-        swatches.append(dot);
-        // The house colour's hex sits right after the FIRST swatch, not after the last — on a
-        // multi-colour palette, printing it after the final dot reads as that dot's own value,
-        // even though the text was always the first colour's.
-        if (i === 0) swatches.append(el("span", { class: "swatch-hex" }, hex));
-      });
-      r.append(swatches);
-      readout.append(r);
-    }
-    // The token stored on disk (a BCP-47-ish id), not a caption — the same list the language
-    // SELECT just below shows as "Français". Printing the raw id here read as the page failing to
-    // resolve its own data (a "fr" nobody asked for) right next to a select that got it right.
-    if (p.lang) {
-      const label =
-        CONTENT_LANGUAGES.find((l) => l.id === p.lang)?.label ?? p.lang;
-      row(copy.languageContent, label);
-    }
-    if (p.theme) {
-      // "light" | "dark" are words, not colours — only a #rrggbb ground gets a swatch, the same
-      // treatment the house-colour row above already gives a palette. Printing the hex bare (the
-      // regression this closes) read as an English leftover under a French label.
-      if (/^#[0-9a-fA-F]{6}$/.test(p.theme)) {
-        const r = el("div", { class: "profile-row" });
-        r.append(el("span", { class: "profile-label" }, copy.profileGround));
-        const swatches = el("span", { class: "profile-value" });
-        const dot = el("span", { class: "swatch" });
-        dot.style.background = p.theme;
-        dot.title = p.theme;
-        swatches.append(dot, el("span", { class: "swatch-hex" }, p.theme));
-        r.append(swatches);
-        readout.append(r);
-      } else {
-        row(copy.profileGround, p.theme);
-      }
-    }
-    body.append(readout);
-    return;
-  }
+
   body.append(
     textField("newsroom-name", copy.newsroomName, form.newsroom.name, (v) => {
       form.newsroom.name = v;
@@ -363,15 +342,168 @@ function renderNewsroom(copy: PageCopy): void {
       "url",
     ),
   );
-  const colour = el("div", { class: "field shrink" });
-  colour.append(el("label", { for: "newsroom-color" }, copy.newsroomColor));
-  const input = el("input", { id: "newsroom-color", type: "color" });
-  input.value = form.newsroom.color;
-  input.addEventListener("input", () => {
-    form.newsroom.color = input.value;
+
+  // "Read my site": the one action that turns the address just typed above into a measurement.
+  const measureField = el("div", { class: "field" });
+  const measureBtn = el(
+    "button",
+    { type: "button", id: "newsroom-measure", class: "btn" },
+    charter.status === "loading" ? copy.measuring : copy.measureAction,
+  ) as HTMLButtonElement;
+  measureBtn.disabled = charter.status === "loading";
+  measureBtn.addEventListener("click", () => void measureSite(copy));
+  measureField.append(measureBtn);
+  if (charter.status === "error")
+    measureField.append(el("p", { class: "field-help" }, charter.message));
+  body.append(measureField);
+
+  const palette = charter.status === "done" ? charter.readout.palette : [];
+
+  // House colour — the primary field. Ranked candidates from a measurement are offered as
+  // swatches to pick from; the colour input underneath always reflects whichever is current, and
+  // stays open to any hex the journalist wants to type or pick instead.
+  const colourField = el("div", { class: "field" });
+  colourField.append(
+    el("label", { for: "newsroom-color" }, copy.newsroomColor),
+  );
+  if (charter.status === "done" && palette.length === 0) {
+    colourField.append(
+      el("p", { class: "field-help" }, copy.siteDeclaresNothing),
+    );
+    for (const note of charter.readout.notes)
+      colourField.append(el("p", { class: "charter-receipt" }, note));
+  }
+  if (palette.length) {
+    const swatches = el("div", { class: "charter-candidates" });
+    for (const candidate of palette) {
+      const swatchBtn = el("button", {
+        type: "button",
+        class: "swatch swatch-btn",
+        title: candidate.hex,
+      }) as HTMLButtonElement;
+      swatchBtn.style.background = candidate.hex;
+      swatchBtn.addEventListener("click", () => {
+        form.newsroom.color = candidate.hex;
+        renderNewsroom(copy);
+      });
+      swatches.append(swatchBtn);
+    }
+    colourField.append(swatches);
+  }
+  const colourInput = el("input", {
+    id: "newsroom-color",
+    type: "color",
+  }) as HTMLInputElement;
+  colourInput.value = form.newsroom.color;
+  colourInput.addEventListener("input", () => {
+    form.newsroom.color = colourInput.value;
+    renderNewsroom(copy); // may reveal/hide the matching candidate's receipt below
   });
-  colour.append(input);
-  body.append(colour);
+  colourField.append(colourInput);
+  const chosenCandidate = palette.find(
+    (c) => c.hex.toLowerCase() === form.newsroom.color.toLowerCase(),
+  );
+  if (chosenCandidate)
+    colourField.append(
+      el(
+        "p",
+        { class: "charter-receipt" },
+        chosenCandidate.confidence === "inferred"
+          ? `${chosenCandidate.receipt} ${copy.charterInferred}`
+          : chosenCandidate.receipt,
+      ),
+    );
+  body.append(colourField);
+
+  // House ground — a word ("light"/"dark") or a #rrggbb, exactly what NEWSROOM-PROFILE.md's
+  // `theme:` accepts. A plain text field: the extractor may measure none at all.
+  const groundField = el("div", { class: "field" });
+  groundField.append(
+    el("label", { for: "newsroom-ground" }, copy.profileGround),
+  );
+  const groundInput = el("input", {
+    id: "newsroom-ground",
+    type: "text",
+    autocomplete: "off",
+  }) as HTMLInputElement;
+  groundInput.value = form.newsroom.theme;
+  groundInput.addEventListener("input", () => {
+    form.newsroom.theme = groundInput.value;
+    renderNewsroom(copy);
+  });
+  groundField.append(groundInput);
+  if (
+    charter.status === "done" &&
+    charter.readout.ground &&
+    charter.readout.ground.value.toLowerCase() ===
+      form.newsroom.theme.toLowerCase()
+  )
+    groundField.append(
+      el("p", { class: "charter-receipt" }, charter.readout.ground.receipt),
+    );
+  body.append(groundField);
+
+  // Publication language — a profile field (Task 4 removed the section that re-asked it in a
+  // second vocabulary; CONTENT_LANGUAGES is the same list, so "fr" reads as "Français" here too).
+  const langField = el("div", { class: "field" });
+  langField.append(el("label", { for: "newsroom-lang" }, copy.languageContent));
+  const langSelect = el("select", {
+    id: "newsroom-lang",
+  }) as HTMLSelectElement;
+  for (const option of CONTENT_LANGUAGES)
+    langSelect.append(el("option", { value: option.id }, option.label));
+  langSelect.value = form.contentLang;
+  langSelect.addEventListener("change", () => {
+    form.contentLang = langSelect.value;
+  });
+  langField.append(langSelect);
+  body.append(langField);
+}
+
+/**
+ * Read the address just typed into the newsroom section, over `/charter`, and prefill the
+ * fields above with what it found. Total on the client's side too: a network failure or a `/charter`
+ * `{ error }` answer both render as a plain sentence, never a thrown exception — matching
+ * `measureSite` on the server, which never throws either.
+ */
+async function measureSite(copy: PageCopy): Promise<void> {
+  const url = form.newsroom.url.trim();
+  if (!url) {
+    charter = { status: "error", message: copy.measureNeedsUrl };
+    renderNewsroom(copy);
+    return;
+  }
+  charter = { status: "loading" };
+  renderNewsroom(copy);
+  try {
+    const response = await fetch("/charter", {
+      method: "POST",
+      body: JSON.stringify({ url }),
+    });
+    const data = (await response.json()) as CharterReadout | { error: string };
+    if ("error" in data) {
+      charter = { status: "error", message: data.error };
+      renderNewsroom(copy);
+      return;
+    }
+    charter = { status: "done", readout: data };
+    // Prefill only — never raise the confidence the extractor states, never invent a value it did
+    // not return. Every field this touches remains editable afterwards.
+    const top = data.palette[0];
+    if (top) form.newsroom.color = top.hex;
+    if (data.ground) form.newsroom.theme = data.ground.value;
+    // The measured typefaces have no frontmatter field of their own (no engine applies them yet)
+    // — they, and the extractor's own caveats, go into `notes`: prose `profileMarkdown` appends
+    // to the body on a FRESH profile, never a frontmatter key (spec 2026-08-06 §3.1).
+    form.newsroom.notes = [
+      ...data.notes,
+      ...data.typefaces.map((t) => `${t.role}: ${t.family} — ${t.receipt}`),
+    ];
+    renderNewsroom(copy);
+  } catch {
+    charter = { status: "error", message: copy.measureFailed };
+    renderNewsroom(copy);
+  }
 }
 
 function renderAssistant(copy: PageCopy): void {
@@ -607,16 +739,17 @@ function payload() {
     enabled: [...form.enabled],
     publisher: form.publisher,
     verified: form.verified,
-    ...(model.profileExists
-      ? {}
-      : {
-          newsroom: {
-            name: form.newsroom.name,
-            url: form.newsroom.url,
-            color: form.newsroom.color,
-            lang: form.contentLang,
-          },
-        }),
+    // Sent on every submission now, edit or first creation alike (Task 3, 2026-08-06) — the
+    // section is editable either way, and `sub.newsroom` being present IS the human gesture
+    // `persist()` gates the write on (server.ts). `contentLang` above carries the language;
+    // `updateProfileMarkdown`/`profileMarkdown` leave `theme`/`notes` out when they are unset.
+    newsroom: {
+      name: form.newsroom.name,
+      url: form.newsroom.url,
+      color: form.newsroom.color,
+      ...(form.newsroom.theme ? { theme: form.newsroom.theme } : {}),
+      ...(form.newsroom.notes.length ? { notes: form.newsroom.notes } : {}),
+    },
   };
 }
 

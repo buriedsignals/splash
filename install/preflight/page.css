@@ -384,6 +384,33 @@ details.tech code {
   color: var(--muted);
 }
 
+/* Ranked colour candidates from a site measurement — each swatch is a button, clicking one
+   picks it as the house colour without losing the ability to type any other hex afterwards. */
+.charter-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.swatch-btn {
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatch-btn:hover,
+.swatch-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The receipt under a measured value: where it was read, relayed verbatim from the extractor. */
+.charter-receipt {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* ── status pills ─────────────────────────────────────────────────────── */
 
 .pill {

@@ -59,6 +59,18 @@ describe("the page is a real file, not a template literal", () => {
   });
 });
 
+describe("the newsroom section is editable, and offers a measurement", () => {
+  // The newsroom section's fields are built at runtime by client.ts (this suite has no DOM
+  // harness to render them into), so "the served page" here means the source that IS served
+  // byte-for-byte as /client.js — the same idiom the rest of this file uses on page.html/page.css.
+  const CLIENT = readFileSync(join(import.meta.dir, "client.ts"), "utf8");
+
+  it("offers the site address as the way to fill the profile", () => {
+    expect(CLIENT).toContain('"newsroom-url"');
+    expect(CSS).toContain(".charter-receipt");
+  });
+});
+
 describe("the page's own copy", () => {
   it("leads in English and falls back to English for a language it does not speak", () => {
     expect(pageCopy("en").title).toBe(pageCopy("rm-CH").title);

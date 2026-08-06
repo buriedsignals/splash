@@ -133,7 +133,12 @@ export type PreflightModel = {
   }[];
   runtime: string;
   language: { ui: string; content: string };
-  /** True when NEWSROOM-PROFILE.md exists: the page then refuses to rewrite it. */
+  /**
+   * True when NEWSROOM-PROFILE.md exists. The page renders it as editable fields either way — a
+   * submission rewrites only the fields it knows and preserves everything else in the file
+   * (`lib/newsroom/profile-write.ts`'s `updateProfileMarkdown`). This flag only changes the
+   * notice shown above the form, never whether the form can be edited.
+   */
   profileExists: boolean;
   /** What that file declares — null when the install has no profile on disk. */
   profile: PreflightProfile | null;

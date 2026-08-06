@@ -36,7 +36,10 @@ import type { NewsroomFacts } from "../../lib/newsroom/profile-write.ts";
 export type PreflightSubmission = {
   runtime: string;
   uiLang: string;
-  /** The deliverables' language — only used when the profile is being created. */
+  /**
+   * The deliverables' language, carried to NEWSROOM-PROFILE.md's `lang` field on every write —
+   * a first creation exactly like a later edit (`persist()` in server.ts applies it either way).
+   */
   contentLang?: string;
   /** The runtime's own sign-in. Blank = the subscription / interactive path. */
   login?: string;
@@ -46,6 +49,13 @@ export type PreflightSubmission = {
   publisher?: string;
   /** Live check verdicts gathered by the page, per capability id. */
   verified?: Record<string, VerifyOutcome>;
+  /**
+   * The newsroom section's fields — sent on every submission now (Task 3, 2026-08-06), not only
+   * when there is no profile yet: the page edits an existing one exactly as freely as it creates
+   * one. Typed as `NewsroomFacts` itself, so `palette`/`theme`/`notes` ride along unpicked —
+   * nothing here reaches into the object, so a field `NewsroomFacts` grows later needs no second
+   * edit to this type.
+   */
   newsroom?: NewsroomFacts;
 };
 

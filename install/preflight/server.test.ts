@@ -283,6 +283,34 @@ describe("what a submission writes", () => {
     );
   });
 
+  // Task 3's own carry-through: `PreflightSubmission.newsroom` is typed as `NewsroomFacts`
+  // already (serialize.ts), so `theme` and `notes` — the ground and the measured-typeface
+  // caveats the client now collects — must reach the file untouched, and `notes` must land in
+  // the BODY as prose, never as a frontmatter key (spec 2026-08-06 §3.1: "les typos vont dans le
+  // corps, pas dans le frontmatter").
+  it("carries the ground and the measured notes through to the file, notes in the body only", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({
+          contentLang: "en",
+          newsroom: {
+            name: "Heidi.news",
+            color: "#0a5c36",
+            theme: "#111318",
+            notes: ["body: Publico Text — read from body { font-family: … }"],
+          },
+        }),
+      });
+    });
+    const profile = readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8");
+    const [frontmatter, body] = profile.split(/^---$/m).slice(1);
+    expect(frontmatter).toContain('theme: "#111318"');
+    expect(frontmatter).not.toContain("Publico Text");
+    expect(body).toContain("Publico Text");
+  });
+
   it("writes nothing when no newsroom facts are submitted — the human gesture is required", async () => {
     const dest = root();
     writeFileSync(join(dest, "NEWSROOM-PROFILE.md"), "MINE, HAND EDITED\n");
