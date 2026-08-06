@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { CalendarChart, type CalendarConfig } from "../../src/CalendarChart";
 import sample from "../../assets/sample-data/calendar.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as CalendarConfig;
 
@@ -19,7 +20,14 @@ export const CalendarReveal: React.FC<{ scale?: number; config?: CalendarConfig 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="calendar"
+    >
       <CalendarChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const CalendarReveal: React.FC<{ scale?: number; config?: CalendarConfig 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

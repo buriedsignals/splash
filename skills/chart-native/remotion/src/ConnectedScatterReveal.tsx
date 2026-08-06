@@ -7,6 +7,7 @@ import {
   type ConnectedScatterConfig,
 } from "../../src/ConnectedScatterChart";
 import sample from "../../assets/sample-data/connected-scatter.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as ConnectedScatterConfig;
 
@@ -22,7 +23,14 @@ export const ConnectedScatterReveal: React.FC<{ scale?: number; config?: Connect
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="connected-scatter"
+    >
       <ConnectedScatterChart
         config={config}
         progress={progress}
@@ -30,6 +38,6 @@ export const ConnectedScatterReveal: React.FC<{ scale?: number; config?: Connect
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

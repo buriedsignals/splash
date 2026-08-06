@@ -10,7 +10,7 @@
 /** The shape a brief beat arrives in (lib/core/production-brief.ts's BriefBeat, narrowed to what
  *  an order needs). `x` is a line's axis value, `category` a bar's category — the two anchors
  *  chart-native itself validates against (chart-story.ts's narrativeBeatErrors). */
-import { entranceOf } from "./chart-walk";
+import { entranceOf, type EntranceSchedule } from "./chart-walk";
 
 export type WalkBeat = { x?: string; category?: string };
 
@@ -124,15 +124,42 @@ export function activeBeatAt(
  * whose claims are unwritten (`unauthoredBeats`), so a blank here can only come from a
  * hand-authored spec — and an empty caption box is a worse answer than none.
  */
+export type CaptionClock =
+  /** The type's own per-subject entrance. `reorder` is false for every anchored type but `bar`:
+   *  they keep the data's order, so the caption must follow the index the component actually
+   *  staggers on — assuming a permutation nobody performs is the two-clock defect again. */
+  | {
+      grain: "anchored";
+      anchors: readonly string[];
+      entrance: EntranceSchedule;
+      reorder: boolean;
+    }
+  /** No per-subject entrance to sit on: the beats share the timeline in equal parts, in the order
+   *  the journalist wrote them. A stepped video in the plainest sense — the step carries the
+   *  argument and the clock turns the page. */
+  | { grain: "sequenced" };
+
 export function captionAt(
   beats: readonly { x?: string; category?: string; text?: string }[] | undefined,
-  anchors: readonly string[],
+  clock: CaptionClock,
   progress: number,
 ): { text: string; index: number } | null {
   if (!beats?.length) return null;
-  const entryOrder = walkPositions([...anchors], beats);
-  const start = BAR_ENTRANCE.start;
-  const step = BAR_ENTRANCE.step(Math.max(1, anchors.length));
+  if (clock.grain === "sequenced") {
+    // Equal segments, clamped: progress 0 reads the first sentence and progress 1 the last.
+    const k = Math.min(
+      beats.length - 1,
+      Math.max(0, Math.floor(progress * beats.length)),
+    );
+    const t = beats[k]?.text?.trim();
+    return t ? { text: t, index: k } : null;
+  }
+  const anchors = clock.anchors;
+  const entryOrder = clock.reorder
+    ? walkPositions([...anchors], beats)
+    : anchors.map((_, i) => i);
+  const start = clock.entrance.start;
+  const step = clock.entrance.step(Math.max(1, anchors.length));
   let active = -1;
   let bestBegin = -Infinity;
   beats.forEach((b, k) => {

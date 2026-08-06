@@ -7,6 +7,7 @@ import {
   type DivergingStackedConfig,
 } from "../../src/DivergingStackedChart";
 import sample from "../../assets/sample-data/diverging-stacked.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as DivergingStackedConfig;
 
@@ -22,7 +23,14 @@ export const DivergingStackedReveal: React.FC<{ scale?: number; config?: Divergi
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="diverging-stacked"
+    >
       <DivergingStackedChart
         config={config}
         progress={progress}
@@ -30,6 +38,6 @@ export const DivergingStackedReveal: React.FC<{ scale?: number; config?: Divergi
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

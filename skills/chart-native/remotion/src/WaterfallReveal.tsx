@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { WaterfallChart, type WaterfallConfig } from "../../src/WaterfallChart";
 import sample from "../../assets/sample-data/waterfall.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as WaterfallConfig;
 
@@ -19,7 +20,14 @@ export const WaterfallReveal: React.FC<{ scale?: number; config?: WaterfallConfi
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="waterfall"
+    >
       <WaterfallChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const WaterfallReveal: React.FC<{ scale?: number; config?: WaterfallConfi
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

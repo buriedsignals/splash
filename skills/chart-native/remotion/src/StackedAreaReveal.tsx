@@ -7,6 +7,7 @@ import {
   type StackedAreaConfig,
 } from "../../src/StackedAreaChart";
 import sample from "../../assets/sample-data/stacked-area.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as StackedAreaConfig;
 
@@ -22,7 +23,14 @@ export const StackedAreaReveal: React.FC<{ scale?: number; config?: StackedAreaC
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="stacked-area"
+    >
       <StackedAreaChart
         config={config}
         progress={progress}
@@ -30,6 +38,6 @@ export const StackedAreaReveal: React.FC<{ scale?: number; config?: StackedAreaC
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

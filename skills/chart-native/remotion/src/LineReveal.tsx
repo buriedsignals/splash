@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { LineChart, type ChartConfig } from "../../src/LineChart";
 import sample from "../../assets/sample-data/series.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as ChartConfig;
 
@@ -24,7 +25,14 @@ export const LineReveal: React.FC<{ scale?: number; config?: ChartConfig }> = ({
   });
 
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="line"
+    >
       <LineChart
         config={config}
         progress={progress}
@@ -32,6 +40,6 @@ export const LineReveal: React.FC<{ scale?: number; config?: ChartConfig }> = ({
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

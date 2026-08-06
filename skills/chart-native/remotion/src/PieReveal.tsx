@@ -3,6 +3,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { PieChart, type PieConfig } from "../../src/PieChart";
 import sample from "../../assets/sample-data/pie.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as PieConfig;
 
@@ -18,7 +19,14 @@ export const PieReveal: React.FC<{ scale?: number; config?: PieConfig }> = ({ sc
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="pie"
+    >
       <PieChart
         config={config}
         progress={progress}
@@ -26,6 +34,6 @@ export const PieReveal: React.FC<{ scale?: number; config?: PieConfig }> = ({ sc
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

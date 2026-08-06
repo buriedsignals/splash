@@ -7,6 +7,7 @@ import {
   type PopulationPyramidConfig,
 } from "../../src/PopulationPyramidChart";
 import sample from "../../assets/sample-data/population-pyramid.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as PopulationPyramidConfig;
 
@@ -22,7 +23,14 @@ export const PopulationPyramidReveal: React.FC<{ scale?: number; config?: Popula
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="pyramid"
+    >
       <PopulationPyramidChart
         config={config}
         progress={progress}
@@ -30,6 +38,6 @@ export const PopulationPyramidReveal: React.FC<{ scale?: number; config?: Popula
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

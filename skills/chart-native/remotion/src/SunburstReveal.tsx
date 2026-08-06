@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { SunburstChart, type SunburstConfig } from "../../src/SunburstChart";
 import sample from "../../assets/sample-data/sunburst.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as SunburstConfig;
 
@@ -19,7 +20,14 @@ export const SunburstReveal: React.FC<{ scale?: number; config?: SunburstConfig 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="sunburst"
+    >
       <SunburstChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const SunburstReveal: React.FC<{ scale?: number; config?: SunburstConfig 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

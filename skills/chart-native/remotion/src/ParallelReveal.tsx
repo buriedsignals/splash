@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { ParallelChart, type ParallelConfig } from "../../src/ParallelChart";
 import sample from "../../assets/sample-data/parallel.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as ParallelConfig;
 
@@ -19,7 +20,14 @@ export const ParallelReveal: React.FC<{ scale?: number; config?: ParallelConfig 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="parallel"
+    >
       <ParallelChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const ParallelReveal: React.FC<{ scale?: number; config?: ParallelConfig 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

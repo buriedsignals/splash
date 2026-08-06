@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { StackedBarChart, type StackedConfig } from "../../src/StackedBarChart";
 import sample from "../../assets/sample-data/stacked.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as StackedConfig;
 
@@ -19,7 +20,14 @@ export const StackedBarReveal: React.FC<{ scale?: number; config?: StackedConfig
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="stacked"
+    >
       <StackedBarChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const StackedBarReveal: React.FC<{ scale?: number; config?: StackedConfig
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

@@ -11,7 +11,8 @@
 // pixel.
 
 import React from "react";
-import { captionAt } from "../../src/core/walk";
+import { captionAt, type CaptionClock } from "../../src/core/walk";
+import { chartWalk, entranceOf } from "../../src/core/chart-walk";
 import { themeColors, FONT, TYPE } from "../../src/core/tokens";
 import { sourceFooterReserve } from "../../../../lib/core/text-fit";
 
@@ -19,12 +20,44 @@ import { sourceFooterReserve } from "../../../../lib/core/text-fit";
  *  Typed structurally rather than against one chart's Config, because every walk-capable type
  *  will pass its own. */
 export type StageConfig = {
-  beats?: readonly { text?: string }[];
+  beats?: readonly { text?: string; category?: string; x?: string }[];
   themeBg?: string;
   baseColor?: string;
-  catField?: string;
-  rows?: readonly Record<string, string | number>[];
+  /** Loosely typed on purpose: 41 chart Configs pass through here and their row shapes differ
+   *  (a bullet row carries a `number[]` of bands, a heatmap's cells are nested). The stage only
+   *  ever reads ONE key of a row — the anchor field its type declares — so a narrower type would
+   *  buy nothing and would make most Configs unassignable. */
+  rows?: readonly Record<string, unknown>[];
 };
+
+/**
+ * WHICH CLOCK this type's caption follows — read from the walk registry, never guessed.
+ *
+ * An anchored type has a per-subject entrance the sentence can ride; a sequenced one has not, and
+ * its beats share the timeline in equal parts. Passing the wrong clock is the two-clock defect
+ * this file's own header warns about, so it is answered once, here, from the same registry the
+ * component drives its stagger from.
+ */
+export function captionClock(
+  nativeType: string | undefined,
+  config: StageConfig,
+): CaptionClock {
+  const walk = nativeType ? chartWalk(nativeType) : undefined;
+  if (!walk || walk.grain !== "anchored" || !walk.anchorField)
+    return { grain: "sequenced" };
+  // The field naming the subjects differs per type (`catField`, `labelField`, `categoryField`,
+  // `bandField`…), so it is read off the registry and looked up dynamically. Structural typing
+  // cannot express "whichever key this type declares" without an index signature that would stop
+  // every real chart Config from being assignable here.
+  const field = walk.anchorField;
+  const rows = config.rows ?? [];
+  return {
+    grain: "anchored",
+    anchors: rows.map((r) => String(r[field] ?? "")),
+    entrance: entranceOf(nativeType!),
+    reorder: walk.reorders === true,
+  };
+}
 
 /**
  * WHERE THE SENTENCE SITS — a lower third, the same furniture a map video already uses
@@ -56,17 +89,21 @@ export const RevealStage: React.FC<{
    *  into it exactly when the scale is not 1. Measured on a real 1080×1920 portrait: the band
    *  bit into "Source: Glamos". Landscape at scale 1 had hidden it. */
   scale?: number;
+  /** The native type id (`"bar"`, `"pie"`, …) — what decides the caption's clock. Absent ⇒ the
+   *  sequenced clock, which is what a hand-mounted composition with a walk should get rather than
+   *  an entrance schedule invented for it. */
+  nativeType?: string;
   children: React.ReactNode;
-}> = ({ config, progress, width, height, scale = 1, children }) => {
+}> = ({ config, progress, width, height, scale = 1, nativeType, children }) => {
   const C = themeColors(config.themeBg, config.baseColor);
 
-  // The walk's order, resolved the same way BarChart resolves it — one answer, not two. The
-  // anchors are the chart's own category values; a config with no rows/catField (or no walk)
-  // yields an identity order, which captionAt then turns into `null` anyway.
-  const anchors = (config.rows ?? []).map((r) =>
-    String(r[config.catField ?? ""] ?? ""),
+  // The clock this type actually renders on — anchored to its subjects' entrance, or the plain
+  // sequence. One answer, read from the registry the component staggers from, never two.
+  const caption = captionAt(
+    config.beats,
+    captionClock(nativeType, config),
+    progress,
   );
-  const caption = captionAt(config.beats, anchors, progress);
 
   // NO WALK ⇒ the exact element these wrappers rendered before this component existed.
   if (!caption)

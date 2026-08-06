@@ -3,49 +3,57 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 // ---------------------------------------------------------------------------
-// WHICH CHART VIDEOS CARRY THE WALK'S WORDS — sub-project ①, kept MECHANICAL rather than claimed.
+// EVERY CHART VIDEO CARRIES THE WALK'S WORDS — kept MECHANICAL rather than claimed.
 //
-// A caption only means something for a type that can HAVE a walk. Today that is `bar` and only
-// `bar` (lib/brain/beats.ts's canDraftBeats: the chart track's video is open for it alone). So
-// this does not touch the other forty-one wrappers — it pins that the decision was taken, and
-// why, so a forty-third type cannot be added without someone answering the question.
+// It used to be `bar` and only `bar`, and that was the hole: 40 types offered one narrative kind,
+// one offer is not a question, so the journalist was never asked and no storyboard was ever
+// proposed. The cause was a conflation — showing the sentence and REORDERING the entrance were
+// treated as one capability, when only the first is what the guard asks for.
+//
+// So the list of exceptions is gone. What is pinned instead: all 41 render through the shared
+// stage, each declaring the type whose clock it follows, and the registry knows every one of them.
+// A 42nd composition fails here until someone decides its grain.
 // ---------------------------------------------------------------------------
+import { CHART_WALKS } from "../src/core/chart-walk";
+
 const DIR = join(import.meta.dir, "..", "remotion", "src");
 const read = (f: string) => readFileSync(join(DIR, f), "utf8");
 
-const CARRIES_WORDS = ["BarReveal.tsx"];
+const REVEALS = () =>
+  readdirSync(DIR).filter(
+    (f) => f.endsWith("Reveal.tsx") && f !== "RevealStage.tsx",
+  );
 
-const DOES_NOT: Record<string, string> = {
-  // The one type whose video is walk-capable but whose walk is CLOSED, for a measured reason: a
-  // line draws continuously by cumulative length, so it has no per-subject entrance to reorder
-  // and nothing to hang a per-beat sentence on. Opening the caption without the order would give
-  // it nothing to say. Both open together, or neither.
-  "LineReveal.tsx": "its video has no walk yet — a line draws continuously",
-};
+describe("every chart video carries the walk's words", () => {
+  it("all 41 reveal compositions render through the shared stage", () => {
+    const without = REVEALS().filter((f) => !read(f).includes("RevealStage"));
+    expect(without).toEqual([]);
+    // Pinned so a new composition arrives here as a decision to take, not as a silent addition.
+    expect(REVEALS().length).toBe(41);
+  });
 
-describe("the chart video and the walk's words", () => {
-  for (const f of CARRIES_WORDS)
-    it(`${f} renders through the shared stage`, () => {
-      expect(read(f)).toContain("RevealStage");
-    });
-
-  for (const [f, why] of Object.entries(DOES_NOT))
-    it(`${f} does not — ${why}`, () => {
-      expect(read(f)).not.toContain("RevealStage");
-    });
-
-  it("every OTHER reveal is untouched — no walk can be drafted for it at all", () => {
-    const all = readdirSync(DIR).filter(
-      (f) => f.endsWith("Reveal.tsx") && f !== "RevealStage.tsx",
-    );
-    const accounted = new Set([...CARRIES_WORDS, ...Object.keys(DOES_NOT)]);
-    const others = all.filter((f) => !accounted.has(f));
-    // …and they are genuinely untouched, not merely unlisted.
-    for (const f of others) expect(read(f)).not.toContain("RevealStage");
-    // The count is pinned so a new composition shows up here as a decision to take.
-    // FORTY-ONE, measured — the spec said "42 compositions", which counted the directory's
-    // files rather than its reveal components. Small, and worth correcting where it is checked.
-    expect(all.length).toBe(41);
+  it("each one declares WHICH type's clock it follows, and the registry knows it", () => {
+    const declared = new Map<string, string>();
+    for (const f of REVEALS()) {
+      const m = read(f).match(/nativeType="([a-z-]+)"/);
+      expect({ file: f, declares: m?.[1] ?? null }).not.toEqual({
+        file: f,
+        declares: null,
+      });
+      // …and it is a type the walk registry has decided a grain for — a typo here would give the
+      // sequenced clock to a type that has an entrance, which is a sentence over the wrong
+      // subject and nothing would say so.
+      expect({ file: f, known: !!CHART_WALKS[m![1]!] }).toEqual({
+        file: f,
+        known: true,
+      });
+      declared.set(m![1]!, f);
+    }
+    // One composition per type, and every type covered: no two wrappers claiming the same clock.
+    expect(declared.size).toBe(REVEALS().length);
+    expect(
+      Object.keys(CHART_WALKS).filter((t) => !declared.has(t)),
+    ).toEqual([]);
   });
 });
 

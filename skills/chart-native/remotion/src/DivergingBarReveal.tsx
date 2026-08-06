@@ -7,6 +7,7 @@ import {
   type DivergingBarConfig,
 } from "../../src/DivergingBarChart";
 import sample from "../../assets/sample-data/diverging-bar.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as DivergingBarConfig;
 
@@ -22,7 +23,14 @@ export const DivergingBarReveal: React.FC<{ scale?: number; config?: DivergingBa
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="diverging"
+    >
       <DivergingBarChart
         config={config}
         progress={progress}
@@ -30,6 +38,6 @@ export const DivergingBarReveal: React.FC<{ scale?: number; config?: DivergingBa
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

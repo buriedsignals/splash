@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { WaffleChart, type WaffleConfig } from "../../src/WaffleChart";
 import sample from "../../assets/sample-data/waffle.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as WaffleConfig;
 
@@ -19,7 +20,14 @@ export const WaffleReveal: React.FC<{ scale?: number; config?: WaffleConfig }> =
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="waffle"
+    >
       <WaffleChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const WaffleReveal: React.FC<{ scale?: number; config?: WaffleConfig }> =
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

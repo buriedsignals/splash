@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { SankeyChart, type SankeyConfig } from "../../src/SankeyChart";
 import sample from "../../assets/sample-data/sankey.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as SankeyConfig;
 
@@ -19,7 +20,14 @@ export const SankeyReveal: React.FC<{ scale?: number; config?: SankeyConfig }> =
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="sankey"
+    >
       <SankeyChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const SankeyReveal: React.FC<{ scale?: number; config?: SankeyConfig }> =
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

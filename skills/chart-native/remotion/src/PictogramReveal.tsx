@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { PictogramChart, type PictogramConfig } from "../../src/PictogramChart";
 import sample from "../../assets/sample-data/pictogram.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as PictogramConfig;
 
@@ -19,7 +20,14 @@ export const PictogramReveal: React.FC<{ scale?: number; config?: PictogramConfi
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="pictogram"
+    >
       <PictogramChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const PictogramReveal: React.FC<{ scale?: number; config?: PictogramConfi
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

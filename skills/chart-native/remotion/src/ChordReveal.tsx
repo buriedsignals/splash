@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { ChordChart, type ChordConfig } from "../../src/ChordChart";
 import sample from "../../assets/sample-data/chord.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as ChordConfig;
 
@@ -19,7 +20,14 @@ export const ChordReveal: React.FC<{ scale?: number; config?: ChordConfig }> = (
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="chord"
+    >
       <ChordChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const ChordReveal: React.FC<{ scale?: number; config?: ChordConfig }> = (
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

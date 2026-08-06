@@ -7,6 +7,7 @@ import {
   type CandlestickConfig,
 } from "../../src/CandlestickChart";
 import sample from "../../assets/sample-data/candlestick.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as CandlestickConfig;
 
@@ -22,7 +23,14 @@ export const CandlestickReveal: React.FC<{ scale?: number; config?: CandlestickC
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="candlestick"
+    >
       <CandlestickChart
         config={config}
         progress={progress}
@@ -30,6 +38,6 @@ export const CandlestickReveal: React.FC<{ scale?: number; config?: CandlestickC
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

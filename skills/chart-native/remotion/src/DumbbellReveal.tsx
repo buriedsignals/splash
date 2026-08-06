@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { DumbbellChart, type DumbbellConfig } from "../../src/DumbbellChart";
 import sample from "../../assets/sample-data/dumbbell.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as DumbbellConfig;
 
@@ -19,7 +20,14 @@ export const DumbbellReveal: React.FC<{ scale?: number; config?: DumbbellConfig 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="dumbbell"
+    >
       <DumbbellChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const DumbbellReveal: React.FC<{ scale?: number; config?: DumbbellConfig 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };
