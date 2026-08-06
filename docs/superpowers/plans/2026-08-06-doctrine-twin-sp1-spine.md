@@ -1915,6 +1915,15 @@ describe("inspectSvg", () => {
 });
 ```
 
+AMENDED 2026-08-06 (review, correctness governs): 8 more tests were added below the six above,
+each pinning one of the defects fixed in Step 3 — an ancestor `<g fill="...">` inherited by a bare
+`<text>`, a fill declared via `style="fill:..."`, a three-digit hex, an attribute merely NAMED
+`data-nofill` (must not be read as `fill`), a root `<title>` preceded by a comment or a `<desc>`, a
+`<title>` nested inside a child element (must NOT be flagged — that's a legitimate accessible name
+for the sub-group, not a redundant tooltip), and the WCAG large-text floor (3:1, not 4.5:1) for a
+big bold title. Every one of the 14 tests was confirmed to fail when the specific line it targets
+is broken, and to pass again once reverted.
+
 - [ ] **Step 2: Run it and record the failure**
 
 Run: `cd twin && bun test skills/twin-chart-beat/test/inspect-render.test.ts`
@@ -1922,31 +1931,192 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Write the minimal implementation**
 
+AMENDED 2026-08-06 (standing ruling: correctness governs a plan-origin defect). Three real defects
+in the block this plan first carried, all found by probing exactly what the task brief asked to
+probe:
+
+1. **The fill regex only sees `fill="#rrggbb"` as a literal attribute on the `<text>` tag itself.**
+   It misses a fill declared via `style="fill:..."`, a three-digit hex, and — worst of all — a fill
+   INHERITED from an ancestor `<g fill="...">` wrapping a bare `<text>`, which is ordinary, legal
+   SVG. A tool that silently sees no text at all there reports a clean bill of health on a chart
+   with unreadable labels: the worst failure this tool exists to prevent. It also matches
+   `fill="..."` as a bare substring, so an attribute merely NAMED `data-nofill="..."` would be
+   misread as the fill. Fixed by walking the tag stream once with a small stack that carries each
+   ancestor's resolved fill down to its children, resolving `style="fill:..."`, expanding
+   3-/6-digit hex and a small named-colour table, reading attributes by NAME (anchored, so
+   `data-nofill` can never match `fill`), and — since silently dropping is the failure to avoid —
+   defaulting an undeclared fill to the SVG initial value (black) rather than skipping the text.
+2. **The root-title regex `/<svg[^>]*>\s*<title>/` only detects a `<title>` immediately after the
+   opening `<svg>` tag**, so a `<desc>` or a comment before it (both legal, and `<desc>` is exactly
+   what this same beat emits) hides a real root title from the check. The same stack walker now
+   flags `rootTitle` when a `<title>` is a direct child of the root `<svg>` (nesting depth, not
+   textual position) — which also confirms, rather than assumes, that a `<title>` nested inside a
+   child element (a legitimate accessible name for that sub-group) is correctly NOT flagged.
+3. **Every text node was judged at the WCAG normal-text floor (4.5:1).** WCAG 1.4.3 sets a lower
+   floor, 3:1, for large text (>=24px, or >=18.66px at bold weight >=700). Treating every node as
+   normal text would flag a big bold title as a false failure on a ground where it is in fact
+   readable — the flat threshold is now split by measured font-size/font-weight (also inherited
+   through the same stack), reported per entry as before.
+
+`contrast` is imported from `render-still.mjs` (Task 7) rather than re-derived — the maths must be
+identical, not merely similar, to what `deriveFurniture` used to choose the fill in the first place.
+
 ```js
 // twin/skills/twin-chart-beat/scripts/inspect-render.mjs
-// Three checklist items the eye cannot judge. A tool, not a gate.
+//
+// Three checklist items the eye cannot judge on a rendered SVG: contrast against the REAL
+// ground (never an assumed white), the presence of an alt-text <desc>, and a root <title> that
+// SVG turns into a redundant cursor tooltip. A tool the model runs and reads — not a gate. SP1
+// ships no conformance engine.
 
-function relativeLuminance(hex) {
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
-  const channel = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+import { contrast } from "./render-still.mjs";
+
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+const HEX3 = /^#[0-9a-fA-F]{3}$/;
+
+// A defensible subset of CSS named colours a hand-written SVG might use instead of hex. Not
+// exhaustive: anything outside this table and outside hex falls through to the SVG initial
+// fill value (black) in resolveEffectiveFill() below, rather than being silently dropped —
+// silently seeing no text at all is the one failure this tool must never produce.
+const NAMED_COLOURS = {
+  black: "#000000", white: "#ffffff", red: "#ff0000", green: "#008000",
+  blue: "#0000ff", gray: "#808080", grey: "#808080", silver: "#c0c0c0",
+  yellow: "#ffff00", orange: "#ffa500", purple: "#800080", navy: "#000080",
+  teal: "#008080", maroon: "#800000", olive: "#808000", lime: "#00ff00",
+  aqua: "#00ffff", fuchsia: "#ff00ff",
+};
+
+/**
+ * Resolves a raw colour token to a #rrggbb hex, or a sentinel:
+ *  - null      explicitly unpainted ("none" / "transparent") — not a contrast question.
+ *  - undefined not declared at all here — the caller inherits from its ancestor.
+ */
+function resolveColour(raw) {
+  if (raw === null || raw === undefined) return undefined;
+  const value = raw.trim();
+  if (HEX6.test(value)) return value.toUpperCase();
+  if (HEX3.test(value)) {
+    const [r, g, b] = value.slice(1);
+    return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
+  }
+  const lower = value.toLowerCase();
+  if (lower === "none" || lower === "transparent") return null;
+  if (NAMED_COLOURS[lower]) return NAMED_COLOURS[lower].toUpperCase();
+  return undefined; // e.g. currentColor, or a keyword this table does not know
 }
 
-function ratio(a, b) {
-  const [high, low] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
-  return (high + 0.05) / (low + 0.05);
+/** Reads one attribute by NAME — anchored, so `data-nofill="..."` can never be read as `fill`. */
+function readAttr(rawAttrs, name) {
+  const re = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`);
+  const match = re.exec(rawAttrs);
+  if (!match) return null;
+  return match[1] ?? match[2];
+}
+
+/** The fill declared directly on this tag — as an attribute or inside its style attribute. */
+function ownFill(rawAttrs) {
+  const direct = resolveColour(readAttr(rawAttrs, "fill"));
+  if (direct !== undefined) return direct;
+  const style = readAttr(rawAttrs, "style");
+  if (style) {
+    const declared = /fill\s*:\s*([^;]+)/.exec(style);
+    if (declared) return resolveColour(declared[1]);
+  }
+  return undefined;
+}
+
+function ownNumber(rawAttrs, name) {
+  const value = readAttr(rawAttrs, name);
+  if (value === null) return undefined;
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+// WCAG 2.x large text: >=24px regular, or >=18.66px (~14pt) at bold weight (>=700). Large text
+// clears the checklist at 3:1; everything else needs 4.5:1. Treating every text node as normal
+// text would flag a big bold title as a false failure on a ground it is in fact readable on.
+function isLargeText(fontSize, fontWeight) {
+  if (fontSize >= 24) return true;
+  return fontSize >= 18.66 && fontWeight >= 700;
+}
+
+const TAG_RE = /<(\/?)([a-zA-Z][\w:-]*)((?:\s+[^<>]*?)?)\s*(\/?)>/g;
+
+/**
+ * Walks the tag stream once, carrying the fill/font-size/font-weight context each <text>
+ * actually inherits down through its ancestors — a `<g fill="...">` wrapping a bare `<text>`
+ * is real, legal SVG, and a per-tag regex that only looks at the <text> tag itself misses it
+ * completely. Also tracks nesting depth so a `<title>` is only "the root title" when it is a
+ * direct child of the root <svg> — a `<title>` on a sub-group is a legitimate accessible name,
+ * not a redundant cursor tooltip on the whole chart.
+ */
+function walk(svg) {
+  const stripped = svg.replace(/<!--[\s\S]*?-->/g, "");
+  const stack = [{ fill: undefined, fontSize: 16, fontWeight: 400 }];
+  const texts = [];
+  let depth = 0;
+  let rootTitle = false;
+  let match;
+  TAG_RE.lastIndex = 0;
+  while ((match = TAG_RE.exec(stripped))) {
+    const [, closing, name, rawAttrs, selfClosing] = match;
+    const tag = name.toLowerCase();
+
+    if (closing) {
+      if (stack.length > 1) stack.pop();
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    const parent = stack[stack.length - 1];
+    const ownedFill = ownFill(rawAttrs);
+    const ownedSize = ownNumber(rawAttrs, "font-size");
+    const ownedWeight = ownNumber(rawAttrs, "font-weight");
+    const context = {
+      fill: ownedFill !== undefined ? ownedFill : parent.fill,
+      fontSize: ownedSize !== undefined ? ownedSize : parent.fontSize,
+      fontWeight: ownedWeight !== undefined ? ownedWeight : parent.fontWeight,
+    };
+    depth++;
+
+    if (tag === "title" && depth === 2) rootTitle = true; // direct child of the root <svg>
+    if (tag === "text") texts.push(context);
+
+    if (selfClosing) {
+      depth--; // no children can follow; nothing will close this tag later
+    } else {
+      stack.push(context);
+    }
+  }
+  return { texts, rootTitle };
+}
+
+/** Skip fills the beat CHOSE not to paint; default the never-declared case to black, the SVG
+ *  initial value — never drop the text silently, which is the worst failure this tool can make. */
+function effectiveFill(fill) {
+  if (fill === null) return null;
+  return fill === undefined ? "#000000" : fill;
 }
 
 export function inspectSvg(svg, { ground }) {
-  const fills = [...svg.matchAll(/<text[^>]*fill="(#[0-9a-fA-F]{6})"/g)].map((m) => m[1]);
-  const desc = /<desc>([\s\S]*?)<\/desc>/.exec(svg);
+  const stripped = svg.replace(/<!--[\s\S]*?-->/g, "");
+  const { texts, rootTitle } = walk(svg);
+
+  const contrastEntries = [];
+  for (const text of texts) {
+    const fill = effectiveFill(text.fill);
+    if (fill === null) continue; // explicitly unpainted; there is nothing to read the contrast of
+    const value = contrast(fill, ground);
+    const threshold = isLargeText(text.fontSize, text.fontWeight) ? 3 : 4.5;
+    contrastEntries.push({ fill, ratio: Number(value.toFixed(2)), pass: value >= threshold });
+  }
+
+  const desc = /<desc>([\s\S]*?)<\/desc>/.exec(stripped);
+
   return {
-    contrast: fills.map((fill) => {
-      const value = ratio(fill, ground);
-      return { fill, ratio: Number(value.toFixed(2)), pass: value >= 4.5 };
-    }),
+    contrast: contrastEntries,
     altText: { present: Boolean(desc), text: desc ? desc[1].trim() : null },
-    rootTitle: /<svg[^>]*>\s*<title>/.test(svg),
+    rootTitle,
   };
 }
 ```
@@ -1954,7 +2124,7 @@ export function inspectSvg(svg, { ground }) {
 - [ ] **Step 4: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-chart-beat/test/inspect-render.test.ts`
-Expected: PASS, 6 tests.
+Expected: PASS, 6 tests. AMENDED 2026-08-06: 14 tests, not 6 — see the Step 1 amendment above.
 
 - [ ] **Step 5: Run the tool on the real render from Task 7**
 
