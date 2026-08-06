@@ -20,6 +20,7 @@ import {
   type RadialBarLayout,
 } from "./radial-bar-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
+import { entranceOf } from "./core/chart-walk";
 import {
   COLORS,
   FONT,
@@ -189,6 +190,9 @@ function RadialBarSvg({
 }) {
   const { cx, cy, innerR, outerR, bars, ticks } = layout;
   const n = bars.length;
+  // The entrance schedule is READ from the walk registry, never retyped here: the video
+  // caption reads the same one, and two copies of it is a sentence over the wrong subject.
+  const E = entranceOf("radial-bar");
   const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);
   const ox = padding.left + cx;
@@ -237,7 +241,7 @@ function RadialBarSvg({
         {/* bars (grow outward, staggered clockwise) */}
         <g>
           {bars.map((b) => {
-            const grow = stagger(p, b.index, n, 0.15, 0.5 / n, 0.5);
+            const grow = stagger(p, b.index, n, E.start, E.step(n), E.span);
             const isPeak = peakSet.has(b.index);
             const focused = interactive && hover === b.index;
             const dim = interactive && hover !== null && !focused;

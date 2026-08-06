@@ -17,6 +17,7 @@ import {
   type DivergingLayout,
 } from "./diverging-bar-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
+import { entranceOf } from "./core/chart-walk";
 import {
   COLORS,
   FONT,
@@ -205,7 +206,10 @@ function DivergingSvg({
   const C = themeColors(config.themeBg, config.baseColor);
 
   const chrome = easeOutCubic(p / 0.18);
-  const barP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
+  // The entrance schedule is READ from the walk registry, never retyped here: the video
+  // caption reads the same one, and two copies of it is a sentence over the wrong subject.
+  const E = entranceOf("diverging");
+  const barP = (i: number) => stagger(p, i, n, E.start, E.step(n), E.span);
 
   return (
     <svg

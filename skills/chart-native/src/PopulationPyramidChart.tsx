@@ -17,6 +17,7 @@ import {
   type PyramidLayout,
 } from "./population-pyramid-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
+import { entranceOf } from "./core/chart-walk";
 import {
   COLORS,
   themeColors,
@@ -193,7 +194,10 @@ function PyramidSvg({
   const n = bands.length;
 
   const chrome = easeOutCubic(p / 0.18);
-  const bandP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.35);
+  // The entrance schedule is READ from the walk registry, never retyped here: the video
+  // caption reads the same one, and two copies of it is a sentence over the wrong subject.
+  const E = entranceOf("pyramid");
+  const bandP = (i: number) => stagger(p, i, n, E.start, E.step(n), E.span);
 
   const legend = layoutLegend(
     [config.leftLabel, config.rightLabel],

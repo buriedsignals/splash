@@ -10,6 +10,8 @@
 /** The shape a brief beat arrives in (lib/core/production-brief.ts's BriefBeat, narrowed to what
  *  an order needs). `x` is a line's axis value, `category` a bar's category — the two anchors
  *  chart-native itself validates against (chart-story.ts's narrativeBeatErrors). */
+import { entranceOf } from "./chart-walk";
+
 export type WalkBeat = { x?: string; category?: string };
 
 /**
@@ -65,11 +67,7 @@ export function walkPositions(
  * not hypothetical — it is what route-story.ts's header documents at length, from a caption that
  * followed a confirmed arc while the camera kept following the geographic walk.
  */
-export const BAR_ENTRANCE = {
-  start: 0.18,
-  step: (count: number) => 0.5 / count,
-  span: 0.35,
-} as const;
+export const BAR_ENTRANCE = entranceOf("bar");
 
 /**
  * WHICH BEAT a caption should name at this progress — the subject whose entrance has most

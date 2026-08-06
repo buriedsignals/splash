@@ -19,6 +19,7 @@ import {
   type DumbbellLayout,
 } from "./dumbbell-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
+import { entranceOf } from "./core/chart-walk";
 import {
   COLORS,
   TYPE,
@@ -233,7 +234,10 @@ function DumbbellSvg({
   const n = rows.length;
 
   const chrome = easeOutCubic(p / 0.18);
-  const rowP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.4);
+  // The entrance schedule is READ from the walk registry, never retyped here: the video
+  // caption reads the same one, and two copies of it is a sentence over the wrong subject.
+  const E = entranceOf("dumbbell");
+  const rowP = (i: number) => stagger(p, i, n, E.start, E.step(n), E.span);
 
   const legendTop = innerHeight + 32 * sc;
   const legend = layoutLegend(
