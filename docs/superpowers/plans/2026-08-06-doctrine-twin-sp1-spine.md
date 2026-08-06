@@ -1255,6 +1255,28 @@ Step 1. Everything else in the prescribed code, including the rest of the hand-r
 reader, held up under mutation testing (every line targeted by a test was confirmed to flip that
 test red when broken, then reverted).
 
+**Amended again after a second review round.** Two more findings on the corrected code above:
+
+1. The inline-array split (`value.slice(1, -1).split(",")`) is naive — it splits on every comma,
+   including one inside a quoted element. `candidates: ["a, b", "c"]` parses as three candidates
+   (`"a"`, `"b"`, `"c"`), so a slot with `chosen: "a, b"` — listed verbatim in its source array —
+   is wrongly reported `chosen "a, b" is not among its candidates`: a legitimate storyboard
+   spuriously gate-blocked by a parsing bug. Fixed with a `splitArrayItems()` helper that tracks
+   quote state and only splits outside a quoted element; a test pins the exact `["a, b", "c"]`
+   case.
+2. `candidates.length > 0 && !candidates.includes(slot.chosen)` left the `candidates.length > 0`
+   guard completely unverified in both directions — no test exercised a slot with a `chosen` value
+   and empty/absent `candidates`. Decision: this is **malformed, not legitimate** — a chosen
+   treatment is only a real choice if it was verifiably picked from a list that was actually shown
+   (`references/exchange.md` §③: this is what stops the exchange from being disguised parameter
+   collection). The compound condition is split into two explicit branches — an empty/absent
+   `candidates` with a `chosen` value now refuses on its own
+   (`chosen "…" but no candidates were listed`), distinct from a genuine mismatch — and a test
+   pins both the missing-field and the empty-array case.
+
+Both fixes and their tests are folded into Steps 1 and 3 below; the code blocks reflect the
+doubly-amended version, not the original brief.
+
 - [ ] **Step 1: Write the failing test**
 
 ```ts
@@ -1328,6 +1350,39 @@ describe("checkStoryboard", () => {
     expect(checkStoryboard(meta)).toContain("slot 1: nothing chosen — gate 2 is not closed");
   });
 
+  it("should treat a comma inside a quoted candidate as part of that candidate, not a separator", () => {
+    // A naive `.split(",")` on the inline array's inner text would tear `"a, b"` into two
+    // candidates ("a" and "b"), then spuriously refuse a `chosen` value quoted verbatim from the
+    // source array as "not among its candidates" — a legitimate storyboard gate-blocked by a
+    // parsing bug, not an editorial problem.
+    const text = VALID.replace(
+      '    candidates: ["trajectory", "comparison"]\n    chosen: "trajectory"',
+      '    candidates: ["a, b", "c"]\n    chosen: "a, b"',
+    );
+    const { meta } = parseStoryboard(text);
+    expect(meta.slots[0].candidates).toEqual(["a, b", "c"]);
+    expect(checkStoryboard(meta)).toEqual([]);
+  });
+
+  it("should refuse a slot with a chosen treatment but no candidates ever listed", () => {
+    // Distinct from "nothing chosen" (no chosen value at all) and from "not among its candidates"
+    // (a candidates list exists but doesn't include the chosen value) — this is the third,
+    // previously-unverified branch: chosen IS set, but candidates is absent or empty, so there was
+    // nothing to verify the choice against. Treated as malformed, not legitimate (see the comment
+    // in checkStoryboard): a real choice can only be confirmed from a list that was actually shown.
+    const missingField = parseStoryboard(VALID).meta;
+    delete missingField.slots[0].candidates;
+    expect(checkStoryboard(missingField)).toContain(
+      'slot 1: chosen "trajectory" but no candidates were listed',
+    );
+
+    const emptyArray = parseStoryboard(VALID).meta;
+    emptyArray.slots[0].candidates = [];
+    expect(checkStoryboard(emptyArray)).toContain(
+      'slot 1: chosen "trajectory" but no candidates were listed',
+    );
+  });
+
   it("should not consider a bare YAML null or tilde takeaway confirmed, agreeing with whereIs", () => {
     // where.mjs's hasConfirmedTakeaway (twin/skills/splash-twin/scripts/where.mjs) refuses the
     // raw tokens "null" and "~" as a confirmed takeaway. parseStoryboard must resolve the same
@@ -1354,7 +1409,7 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-A dependency-free reader for the narrow YAML subset used here: scalars, and a list of maps whose values are scalars or inline string arrays. `scalar()` resolves the bare `null`/`~` sentinels to a real `null` (see the amendment above) so this parser and `where.mjs` cannot disagree about what a confirmed takeaway is.
+A dependency-free reader for the narrow YAML subset used here: scalars, and a list of maps whose values are scalars or inline string arrays. `scalar()` resolves the bare `null`/`~` sentinels to a real `null` (see the first amendment) so this parser and `where.mjs` cannot disagree about what a confirmed takeaway is, and splits inline arrays quote-aware (see the second amendment) so a comma inside a candidate name cannot fragment it.
 
 ```js
 // twin/skills/twin-storyboard/scripts/storyboard.mjs
@@ -1369,10 +1424,37 @@ function isNullSentinel(value) {
   return value === "null" || value === "~";
 }
 
+// Splits an inline array's inner text on commas that are NOT inside a quoted element, so a
+// treatment name that itself contains a comma (`"a, b"`) stays one element instead of being torn
+// in two by a naive `.split(",")`.
+function splitArrayItems(inner) {
+  const items = [];
+  let current = "";
+  let quote = null;
+  for (const ch of inner) {
+    if (quote) {
+      current += ch;
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+    } else if (ch === ",") {
+      items.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  items.push(current);
+  return items;
+}
+
 function scalar(raw) {
   const value = raw.trim();
   if (value.startsWith("[") && value.endsWith("]")) {
-    return value.slice(1, -1).split(",").map((item) => item.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+    return splitArrayItems(value.slice(1, -1))
+      .map((item) => item.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
   }
   if (isNullSentinel(value)) return null;
   return value.replace(/^["']|["']$/g, "");
@@ -1415,8 +1497,20 @@ export function checkStoryboard(meta) {
 
   for (const slot of slots) {
     const candidates = Array.isArray(slot.candidates) ? slot.candidates : [];
-    if (!slot.chosen) { errors.push(`slot ${slot.id}: nothing chosen — gate 2 is not closed`); continue; }
-    if (candidates.length > 0 && !candidates.includes(slot.chosen)) {
+    if (!slot.chosen) {
+      errors.push(`slot ${slot.id}: nothing chosen — gate 2 is not closed`);
+      continue;
+    }
+    // A chosen treatment is only a real choice if it was verifiably picked from a shown list —
+    // that is what stops the exchange from being disguised parameter collection (references/
+    // exchange.md, §③). A slot with `chosen` set but no `candidates` ever listed means the
+    // proposal step was skipped, not that there was nothing to check membership against — so
+    // this is malformed, not legitimate, and refuses on its own, distinct from a mismatch.
+    if (candidates.length === 0) {
+      errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} but no candidates were listed`);
+      continue;
+    }
+    if (!candidates.includes(slot.chosen)) {
       errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} is not among its candidates`);
     }
   }
@@ -1427,7 +1521,8 @@ export function checkStoryboard(meta) {
 - [ ] **Step 4: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-storyboard/test/storyboard.test.ts`
-Expected: PASS, 8 tests (7 original + 1 null/tilde regression added post-review).
+Expected: PASS, 10 tests (7 original + 1 null/tilde regression from the first review round + 2
+quoted-comma/no-candidates-listed regressions from the second review round).
 
 - [ ] **Step 5: Write `references/exchange.md`**
 
