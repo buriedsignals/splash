@@ -112,6 +112,29 @@ describe("the credential fields the page asks for", () => {
     expect(serialized).not.toContain("acct-1234");
   });
 
+  // Decision (2026-08-06): the production keys are asked outright. A newsroom should not have to
+  // tick a box to be allowed to hand over the token it already has. Publication destinations keep
+  // asking on choice — a newsroom that delivers a file has no S3 account to give.
+  it("marks the production keys as asked upfront, and only those", () => {
+    const m = model();
+    const upfront = m.fields
+      .filter((f) => f.upfront)
+      .map((f) => f.name)
+      .sort();
+    expect(upfront).toEqual(["DATAWRAPPER_API_TOKEN", "VITE_MAPTILER_KEY"]);
+    for (const f of m.fields)
+      if (f.name.startsWith("CLOUDFLARE_") || f.name.startsWith("SPLASH_S3_"))
+        expect(f.upfront).toBe(false);
+  });
+
+  // The tick no longer gates the ASK. Nothing is enabled here and the two keys are still there.
+  it("asks for them with no capability ticked at all", () => {
+    const m = model({ state: state({}) });
+    const names = m.fields.filter((f) => f.upfront).map((f) => f.name);
+    expect(names).toContain("DATAWRAPPER_API_TOKEN");
+    expect(names).toContain("VITE_MAPTILER_KEY");
+  });
+
   it("is PURE — an injected empty env wins over a populated process.env", () => {
     process.env.SPLASH_MODEL_PURITY_PROBE = "x";
     try {

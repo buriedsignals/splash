@@ -215,7 +215,9 @@ function capabilityRow(
   for (const name of capability.fields) {
     const field = model.fields.find((f) => f.name === name);
     if (!field) continue;
-    if (field.capabilities[0] !== capability.id) {
+    // A production key (`upfront`) is asked once, above every want group — never nested under a
+    // tick, whichever capability owns it first, so it is never doubled and never gated on a tick.
+    if (field.upfront || field.capabilities[0] !== capability.id) {
       fields.append(
         el(
           "p",
@@ -331,13 +333,16 @@ function renderNewsroom(copy: PageCopy): void {
       const r = el("div", { class: "profile-row" });
       r.append(el("span", { class: "profile-label" }, copy.newsroomColor));
       const swatches = el("span", { class: "profile-value" });
-      for (const hex of p.palette) {
+      p.palette.forEach((hex, i) => {
         const dot = el("span", { class: "swatch" });
         dot.style.background = hex;
         dot.title = hex;
         swatches.append(dot);
-      }
-      swatches.append(el("span", { class: "swatch-hex" }, p.palette[0]!));
+        // The house colour's hex sits right after the FIRST swatch, not after the last — on a
+        // multi-colour palette, printing it after the final dot reads as that dot's own value,
+        // even though the text was always the first colour's.
+        if (i === 0) swatches.append(el("span", { class: "swatch-hex" }, hex));
+      });
       r.append(swatches);
       readout.append(r);
     }
@@ -466,6 +471,23 @@ function renderCapabilities(copy: PageCopy): void {
   const engines = section("capabilities");
   engines.name.textContent = copy.capabilitiesTitle;
   engines.hint.textContent = copy.capabilitiesHint;
+  const blocks: HTMLElement[] = [];
+
+  // Production keys (`upfront`) sit ABOVE every want group, asked outright — a newsroom should
+  // not have to tick a box to be allowed to hand over a token it already has (model.ts's
+  // `upfront`, derived from the registry). Publication destinations stay under their own tick,
+  // below, unchanged.
+  const upfrontFields = model.fields.filter((f) => f.upfront);
+  if (upfrontFields.length) {
+    const block = el("div", { class: "want production-keys" });
+    block.append(el("h3", { class: "want-title" }, copy.productionKeysTitle));
+    for (const field of upfrontFields) {
+      const control = fieldControl(field.name, copy);
+      if (control) block.append(control);
+    }
+    blocks.push(block);
+  }
+
   // The want leads, the tool underneath stays its own choosable checkbox (the project owner's
   // explicit "do not collapse the two engines of a want into one"). The grouping itself is
   // group-by-want.ts's groupEnginesByWant (pure, tested there — client.ts has no DOM test
@@ -473,22 +495,18 @@ function renderCapabilities(copy: PageCopy): void {
   // model.ts because this IS a value import (unlike the type-only ones above), and model.ts's
   // module graph is server-only (readiness.ts's node:url) — pulling it in breaks the browser
   // bundle Bun.build produces for this file.
-  const blocks = groupEnginesByWant(model.engines).map(
-    ({ want, capabilities }) => {
-      const block = el("div", { class: "want" });
-      // `want` is undefined only for a capability the registry never assigns one — no engine does
-      // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
-      // than asserted: PreflightCapability#want is optional by type, and a malformed model must
-      // still render its rows instead of throwing on a wantless heading.
-      if (want)
-        block.append(
-          el("h3", { class: "want-title" }, copy.wants[want] ?? want),
-        );
-      for (const c of capabilities)
-        block.append(capabilityRow(c, copy, "checkbox"));
-      return block;
-    },
-  );
+  for (const { want, capabilities } of groupEnginesByWant(model.engines)) {
+    const block = el("div", { class: "want" });
+    // `want` is undefined only for a capability the registry never assigns one — no engine does
+    // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
+    // than asserted: PreflightCapability#want is optional by type, and a malformed model must
+    // still render its rows instead of throwing on a wantless heading.
+    if (want)
+      block.append(el("h3", { class: "want-title" }, copy.wants[want] ?? want));
+    for (const c of capabilities)
+      block.append(capabilityRow(c, copy, "checkbox"));
+    blocks.push(block);
+  }
   engines.body.replaceChildren(...blocks);
 
   const publishing = section("publishing");

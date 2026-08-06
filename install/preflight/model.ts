@@ -62,6 +62,15 @@ export type PreflightField = {
   capabilities: string[];
   /** True when a value is already in place. NEVER the value itself. */
   configured: boolean;
+  /**
+   * True when at least one capability this field serves is `kind: "engine"` — a production key,
+   * asked outright rather than gated behind a tick. Derived from the registry (never a
+   * hand-written list of names): a newsroom should not have to tick a box to be allowed to hand
+   * over a token it already has. A field that serves ONLY delivery capabilities (Cloudflare, S3,
+   * We.Publish) stays `false` — a newsroom that delivers a file has no S3 account to give, and
+   * asking for one it will never have is the same fault mirrored.
+   */
+  upfront: boolean;
 };
 
 export type PreflightCapability = {
@@ -210,6 +219,7 @@ function collectFields(
         destination: f.secret || envNames.includes(f.name) ? "env" : "settings",
         capabilities: [cap.id],
         configured: false,
+        upfront: false,
       });
       owners.set(f.name, [cap]);
     }
@@ -224,6 +234,9 @@ function collectFields(
         : field.capabilities.some((id) =>
             isSet(state.capabilities[id]?.settings?.[field.name]),
           );
+    field.upfront = owners
+      .get(field.name)!
+      .some((cap) => cap.kind === "engine");
   }
   return [...byName.values()];
 }
