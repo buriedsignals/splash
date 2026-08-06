@@ -222,7 +222,7 @@ function capabilityRow(
         el(
           "p",
           { class: "shared-note" },
-          `${field.label} — asked once, above.`,
+          `${field.label} — ${copy.askedOnceAbove}`,
         ),
       );
       continue;
@@ -346,8 +346,32 @@ function renderNewsroom(copy: PageCopy): void {
       r.append(swatches);
       readout.append(r);
     }
-    if (p.lang) row(copy.languageContent, p.lang);
-    if (p.theme) row(copy.profileGround, p.theme);
+    // The token stored on disk (a BCP-47-ish id), not a caption — the same list the language
+    // SELECT just below shows as "Français". Printing the raw id here read as the page failing to
+    // resolve its own data (a "fr" nobody asked for) right next to a select that got it right.
+    if (p.lang) {
+      const label =
+        CONTENT_LANGUAGES.find((l) => l.id === p.lang)?.label ?? p.lang;
+      row(copy.languageContent, label);
+    }
+    if (p.theme) {
+      // "light" | "dark" are words, not colours — only a #rrggbb ground gets a swatch, the same
+      // treatment the house-colour row above already gives a palette. Printing the hex bare (the
+      // regression this closes) read as an English leftover under a French label.
+      if (/^#[0-9a-fA-F]{6}$/.test(p.theme)) {
+        const r = el("div", { class: "profile-row" });
+        r.append(el("span", { class: "profile-label" }, copy.profileGround));
+        const swatches = el("span", { class: "profile-value" });
+        const dot = el("span", { class: "swatch" });
+        dot.style.background = p.theme;
+        dot.title = p.theme;
+        swatches.append(dot, el("span", { class: "swatch-hex" }, p.theme));
+        r.append(swatches);
+        readout.append(r);
+      } else {
+        row(copy.profileGround, p.theme);
+      }
+    }
     body.append(readout);
     return;
   }
@@ -421,7 +445,11 @@ function renderAssistant(copy: PageCopy): void {
       id,
       type: "radio",
       name: "runtime",
-      ...(runtime.verified ? {} : { disabled: "disabled" }),
+      // `selectable`, not `verified`: a runtime can be verified (proof or decision) and still have
+      // no module for THIS platform — goose-desktop/claude-desktop ship no .ps1, so Windows must
+      // never offer them (I1: the install used to die at bootstrap.ps1's dispatch after the keys
+      // were typed and everything else installed).
+      ...(runtime.selectable ? {} : { disabled: "disabled" }),
     }) as HTMLInputElement;
     input.checked = form.runtime === runtime.id;
     input.addEventListener("change", () => {

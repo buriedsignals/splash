@@ -29,6 +29,7 @@ import {
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
 import { RUNTIMES, type RuntimeLogin } from "../configurator-core.ts";
+import { hasRuntimeModuleForPlatform } from "../read-runtime.ts";
 
 /**
  * The newsroom's own profile, as declared in NEWSROOM-PROFILE.md — read-only here (task-2's
@@ -122,6 +123,12 @@ export type PreflightModel = {
     id: string;
     label: string;
     verified: boolean;
+    /**
+     * true only when `verified` AND this platform ships a module for it
+     * (`hasRuntimeModuleForPlatform`). What the radio actually gates on — see the type's own
+     * `verified` for the (separate) proof-or-decision judgement.
+     */
+    selectable: boolean;
     login: (RuntimeLogin & { configured: boolean }) | null;
   }[];
   runtime: string;
@@ -158,6 +165,8 @@ export type PreflightModelInput = {
   focus?: string;
   resolveDep?: (pkg: string, fromDir: string) => boolean;
   skillsRoot?: string;
+  /** The machine serving the page — defaults to `process.platform`. Injectable for tests. */
+  platform?: NodeJS.Platform;
   /** Injectable for tests, exactly like resolveDep — see lib/newsroom/readiness.ts's own opt. */
   probeBrowser?: (fromDir: string) => BrowserProbeResult;
 };
@@ -330,10 +339,12 @@ export function preflightModel(
   const count = (status: ReadinessStatus) =>
     capabilities.filter((c) => c.status === status).length;
 
+  const platform = input.platform ?? process.platform;
   const runtimes = Object.entries(RUNTIMES).map(([id, rt]) => ({
     id,
     label: rt.label,
     verified: rt.verified,
+    selectable: rt.verified && hasRuntimeModuleForPlatform(id, platform),
     login: loginOf(id, env),
   }));
 

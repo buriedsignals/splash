@@ -389,6 +389,42 @@ describe("the runtime's own login", () => {
   });
 });
 
+// I1: `selectable` is what the radio must gate on — `verified` alone let a Windows install pick a
+// macOS-only app (goose-desktop, claude-desktop ship no .ps1), type its keys, sit through the
+// whole install, and only then die at bootstrap.ps1's dispatch.
+describe("runtime selectability is platform-scoped (I1)", () => {
+  it("offers the macOS-only desktop apps on macOS, not on Windows", () => {
+    const mac = model({ platform: "darwin" });
+    expect(mac.runtimes.find((r) => r.id === "goose-desktop")?.selectable).toBe(
+      true,
+    );
+    expect(
+      mac.runtimes.find((r) => r.id === "claude-desktop")?.selectable,
+    ).toBe(true);
+
+    const win = model({ platform: "win32" });
+    expect(win.runtimes.find((r) => r.id === "goose-desktop")?.selectable).toBe(
+      false,
+    );
+    expect(
+      win.runtimes.find((r) => r.id === "claude-desktop")?.selectable,
+    ).toBe(false);
+  });
+
+  it("still offers the four CLI runtimes on Windows — each ships a .ps1", () => {
+    const win = model({ platform: "win32" });
+    for (const id of ["claude", "codex", "gemini", "goose"])
+      expect(win.runtimes.find((r) => r.id === id)?.selectable).toBe(true);
+  });
+
+  it("verified alone is not enough — selectable is false without a module for the platform", () => {
+    const win = model({ platform: "win32" });
+    const goose = win.runtimes.find((r) => r.id === "goose-desktop")!;
+    expect(goose.verified).toBe(true);
+    expect(goose.selectable).toBe(false);
+  });
+});
+
 // The page lets a journalist tick a capability that the SAVED state has disabled — and must then
 // say what that tick means ("Missing: needs a MapTiler key"), without the client re-implementing
 // readiness. So the model carries both: the status as saved, and the status this capability
