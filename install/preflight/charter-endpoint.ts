@@ -13,7 +13,7 @@ import type {
   Measurement,
   TypeMeasurement,
 } from "../../lib/newsroom/charter.ts";
-import { SIGNAL_LABEL } from "../../lib/newsroom/charter.ts";
+import { SIGNAL_LABEL, WEIGHT } from "../../lib/newsroom/charter.ts";
 
 export type CharterReadout = {
   /** Ranked, best first. Empty means the site declared nothing — a legitimate answer. */
@@ -67,16 +67,24 @@ function candidateConfidence(candidate: ColourCandidate): CharterConfidence {
 }
 
 /**
- * The reading behind a candidate's displayed hex: `rank()` in charter.ts sets `candidate.value`
- * to the `.value` of the best-declared evidence entry, so the evidence item with a matching
- * value IS that same reading — pointing the receipt at it keeps the sentence consistent with the
- * hex actually shown. Falls back to the first reading if none matches (defensive; should not
- * happen given how `rank()` builds candidates).
+ * The reading that most earns a candidate's receipt: the HIGHEST-weighted entry in its evidence,
+ * by the exact same rule `rank()` in charter.ts uses to pick a merged candidate's representative
+ * value (`WEIGHT[c.signal] > WEIGHT[a.signal]`, first element as the seed so ties keep the
+ * earliest-scanned reading).
+ *
+ * Deliberately NOT `evidence.find(e => e.value === candidate.value)`: `rank()` buckets by EXACT
+ * hex first (a `Map` keyed on the literal `#rrggbb`), and that bucket's `value` field is simply
+ * whichever measurement was pushed into it first — the weight-based reassignment only runs on
+ * the MERGE path, across buckets whose hexes are merely close. Two different signals that declare
+ * the identical hex (`--accent:#0a5c36` then `--brand:#0a5c36`) land in the SAME bucket and never
+ * hit that reassignment, so value-equality returns whichever was scanned first — the accent, even
+ * though the brand property is the higher-weighted, more deliberate declaration. Selecting by
+ * weight directly is correct in both cases (same-bucket and merged-bucket) and needs no bucketing
+ * knowledge here at all.
  */
 function bestEvidence(candidate: ColourCandidate): Measurement {
-  return (
-    candidate.evidence.find((e) => e.value === candidate.value) ??
-    candidate.evidence[0]!
+  return candidate.evidence.reduce((a, c) =>
+    WEIGHT[c.signal] > WEIGHT[a.signal] ? c : a,
   );
 }
 

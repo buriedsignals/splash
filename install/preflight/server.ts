@@ -151,7 +151,13 @@ async function bundleClient(): Promise<string> {
 }
 
 async function readSubmission(req: Request): Promise<PreflightSubmission> {
-  const body = (await req.json()) as Partial<PreflightSubmission>;
+  const parsed = (await req.json()) as unknown;
+  // Same guard as /charter below: valid JSON is not necessarily an object (`null`, a bare
+  // string, a number all parse fine), and every field read below assumes one.
+  const body: Partial<PreflightSubmission> =
+    parsed && typeof parsed === "object"
+      ? (parsed as Partial<PreflightSubmission>)
+      : {};
   return {
     runtime: typeof body.runtime === "string" ? body.runtime : "claude",
     uiLang: typeof body.uiLang === "string" ? body.uiLang : "en",
@@ -303,13 +309,21 @@ const server = Bun.serve({
       });
 
     if (req.method === "POST" && url.pathname === "/charter") {
-      let body: { url?: unknown };
+      let body: unknown;
       try {
-        body = (await req.json()) as { url?: unknown };
+        body = await req.json();
       } catch {
         return new Response("invalid request body", { status: 400 });
       }
-      const siteUrl = typeof body.url === "string" ? body.url : "";
+      // Valid JSON is not necessarily an object — `null`, `"x"`, `42`, `[]` all parse fine and
+      // none of them has a `.url` to read. Guarding the SHAPE here (not just the parse) is what
+      // keeps this route from throwing outside the try/catch above on a body like literal `null`.
+      const siteUrl =
+        body &&
+        typeof body === "object" &&
+        typeof (body as { url?: unknown }).url === "string"
+          ? (body as { url: string }).url
+          : "";
       // measureSite is total (see its own comment) — nothing below can throw, so this route
       // always renders JSON, matching the setup page's own rule of always rendering.
       return new Response(JSON.stringify(await measureSite(siteUrl)), {

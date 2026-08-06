@@ -16,6 +16,33 @@ test("turns a measured proposal into values with their receipts", () => {
   const readout = readoutFrom(proposal);
   expect(readout.palette[0]!.hex).toBe("#0a5c36");
   expect(readout.palette[0]!.receipt).not.toBe("");
+  // Content, not just presence: the receipt must name the ACTUAL origin (theme-color), or a
+  // wrong-signal regression (Finding 1) reddens nothing here.
+  expect(readout.palette[0]!.receipt).toContain("theme-color");
+});
+
+// Two signals declaring the SAME hex: `rank()` in charter.ts buckets by exact hex first, so this
+// pair never takes the merge-across-buckets path that reassigns a candidate's representative
+// value by weight — both readings sit in one bucket, in scan order (accent, then brand). The
+// receipt still has to point at the HIGHER-weighted, more deliberate declaration (the --brand
+// property), not merely at whichever was read first, or a "declared" badge sits over a sentence
+// that undercuts it.
+test("when two signals declare the same hex, the receipt names the higher-weighted one", () => {
+  const proposal = proposeCharter({
+    url: "https://example.news",
+    html: "<p>hello</p>",
+    sheets: [
+      {
+        href: "https://example.news/site.css",
+        css: ":root { --accent: #0a5c36; } :root { --brand: #0a5c36; }",
+      },
+    ],
+  });
+  const readout = readoutFrom(proposal);
+  expect(readout.palette[0]!.hex).toBe("#0a5c36");
+  expect(readout.palette[0]!.confidence).toBe("declared");
+  expect(readout.palette[0]!.receipt).toContain("brand");
+  expect(readout.palette[0]!.receipt).not.toContain("ACCENT");
 });
 
 // An empty measurement stays empty and keeps the extractor's own caveats. A white site with black
@@ -61,6 +88,8 @@ test("relays the extractor's own confidence per candidate, never raised", () => 
   );
   expect(inferred.palette.length).toBeGreaterThan(0);
   expect(inferred.palette[0]!.confidence).toBe("inferred");
+  // The receipt must name the inferred origin (the links), not a declared one it never saw.
+  expect(inferred.palette[0]!.receipt).toContain("links");
 });
 
 // The ground and the typography, when the site declares them, pass through with a receipt too.
