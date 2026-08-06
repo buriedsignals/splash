@@ -357,6 +357,63 @@ describe("the login is only ever checked against the runtime that declared it", 
   }, 15000);
 });
 
+// I2: production keys are asked outright, above every want group (Task 4 of this branch) — but
+// `verifyAll` only iterated `sub.enabled`, so a key typed in "Your accounts" for a capability the
+// journalist never ticked was written to .env yet never checked, silently, while the page's own
+// lede promises every key IS checked. A real network call (project convention: no mock), not just
+// a shape assertion — the point is that the capability appears in the verdict at all.
+describe("an upfront production key is verified even when its capability is unticked (I2)", () => {
+  it("checks a typed Datawrapper token for BOTH capabilities it serves, neither ticked", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({
+          credentials: { DATAWRAPPER_API_TOKEN: "not-a-real-token" },
+          enabled: [], // neither "dw-chart" nor "map-dw" is ticked
+        }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).toHaveProperty("dw-chart");
+      expect(out).toHaveProperty("map-dw");
+    });
+  }, 15000);
+
+  it("says nothing about a capability nobody typed a key for, ticked or not", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({ credentials: {}, enabled: [] }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).not.toHaveProperty("dw-chart");
+      expect(out).not.toHaveProperty("map-dw");
+    });
+  });
+
+  it("still verifies a TICKED capability that carries no upfront key value (unchanged behaviour)", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({
+          credentials: {},
+          enabled: ["dw-chart"],
+        }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      // Blank credential: the shared verifier short-circuits before any fetch and reports
+      // "rejected" (verify.ts's documented behaviour for an empty key) — still present, which is
+      // the point: ticking alone is still enough to be checked, as before.
+      expect(out).toHaveProperty("dw-chart");
+    });
+  });
+});
+
 describe("the setup page probes the delivered skills tree on a packed install", () => {
   it("reads image-native as ready when its dependencies are at .dist/node_modules", async () => {
     const dest = root();
