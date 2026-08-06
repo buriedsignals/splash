@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import {
   collectSiteSources,
+  MAX_REDIRECTS,
   normalizeSiteUrl,
   stylesheetHrefs,
 } from "./charter-fetch";
@@ -273,5 +274,117 @@ describe("collectSiteSources — a linked stylesheet's href is also an SSRF surf
     ]);
     expect(got.notes.join(" ")).toContain("192.168.1.1");
     expect(got.notes.join(" ")).toContain("127.0.0.1");
+  });
+});
+
+// Vetting an href's SHAPE before dialling it stops a link that NAMES a private address. It does
+// not stop a link that names a public address which REDIRECTS to one — and a redirect is chosen
+// by whoever answers, not by the page. Before the same-host filter was lifted an href could only
+// ever be the already-vetted host, so this was unreachable; now a page's markup names arbitrary
+// hosts, and the GET that lands on `http://192.168.1.1/reboot?confirm=1` is a blind write on the
+// operator's own network, not a read whose body can simply be discarded.
+describe("collectSiteSources — a redirect is an address nobody vetted", () => {
+  /**
+   * A fetch that HONOURS the `redirect` option the way a real one does — which is the whole
+   * point: the defect is a choice of that option, and with "follow" the round trip to the
+   * destination has already happened by the time any code inspects where it landed. A fake that
+   * ignored the option could not tell the fixed code from the broken code.
+   */
+  function redirectingFetch(
+    hops: Record<string, string>,
+    bodies: Record<string, string>,
+    calls: string[],
+  ): typeof fetch {
+    const impl = async (input: string | URL, init?: RequestInit): Promise<Response> => {
+      const url = String(input);
+      calls.push(url);
+      const to = hops[url];
+      if (to) {
+        if (init?.redirect === "manual")
+          return new Response(null, { status: 302, headers: { location: to } });
+        // "follow": the runtime itself dials the destination. The request HAS happened.
+        const res = await impl(to, init);
+        Object.defineProperty(res, "url", { value: to, configurable: true });
+        return res;
+      }
+      const body = bodies[url];
+      if (body === undefined) return new Response("", { status: 404 });
+      const res = new Response(body, { status: 200 });
+      Object.defineProperty(res, "url", { value: url, configurable: true });
+      return res;
+    };
+    return impl as unknown as typeof fetch;
+  }
+
+  it("should refuse a stylesheet whose href redirects into the private network, without ever dialling it", async () => {
+    const calls: string[] = [];
+    const fetchImpl = redirectingFetch(
+      { "https://attacker.example/a.css": "http://192.168.1.1/reboot?confirm=1" },
+      {
+        "https://example.org/":
+          '<link rel="stylesheet" href="https://attacker.example/a.css">',
+        "http://192.168.1.1/reboot?confirm=1": "pwned",
+      },
+      calls,
+    );
+    const got = await collectSiteSources("https://example.org/", { fetchImpl });
+    if ("error" in got) throw new Error(got.error);
+    expect(calls).not.toContain("http://192.168.1.1/reboot?confirm=1");
+    expect(got.sheets).toEqual([]);
+    expect(got.notes.join(" ")).toContain("non-public");
+  });
+
+  it("should refuse a PAGE that redirects onto the cloud metadata address", async () => {
+    const calls: string[] = [];
+    const fetchImpl = redirectingFetch(
+      { "https://redirector.example/": "http://169.254.169.254/latest/meta-data/" },
+      { "http://169.254.169.254/latest/meta-data/": "AccessKeyId" },
+      calls,
+    );
+    const got = await collectSiteSources("https://redirector.example/", {
+      fetchImpl,
+    });
+    expect("error" in got).toBe(true);
+    expect(calls).not.toContain("http://169.254.169.254/latest/meta-data/");
+  });
+
+  it("should still follow an ordinary public redirect and read what it lands on", async () => {
+    const calls: string[] = [];
+    const fetchImpl = redirectingFetch(
+      { "https://example.org/a.css": "https://cdn.example.net/a.v2.css" },
+      {
+        "https://example.org/":
+          '<link rel="stylesheet" href="https://example.org/a.css">',
+        "https://cdn.example.net/a.v2.css": "a{color:#c8102e}",
+      },
+      calls,
+    );
+    const got = await collectSiteSources("https://example.org/", { fetchImpl });
+    if ("error" in got) throw new Error(got.error);
+    expect(got.sheets.length).toBe(1);
+    expect(got.sheets[0]!.css).toContain("#c8102e");
+  });
+
+  it("should give up after a bounded number of hops rather than chase a chain", async () => {
+    const calls: string[] = [];
+    const hops: Record<string, string> = {};
+    const n = MAX_REDIRECTS + 3;
+    for (let i = 0; i < n; i++)
+      hops[`https://example.org/h${i}`] = `https://example.org/h${i + 1}`;
+    const fetchImpl = redirectingFetch(
+      hops,
+      {
+        "https://example.org/":
+          '<link rel="stylesheet" href="https://example.org/h0">',
+        [`https://example.org/h${n}`]: "a{color:#c8102e}",
+      },
+      calls,
+    );
+    const got = await collectSiteSources("https://example.org/", { fetchImpl });
+    if ("error" in got) throw new Error(got.error);
+    expect(got.sheets).toEqual([]);
+    expect(got.notes.join(" ")).toContain("redirect");
+    // The page, plus the capped chain — never the whole chain to its end.
+    expect(calls.length).toBeLessThanOrEqual(MAX_REDIRECTS + 2);
   });
 });
