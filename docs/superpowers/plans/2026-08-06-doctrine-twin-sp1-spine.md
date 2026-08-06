@@ -1685,7 +1685,7 @@ export function checkReferenceSet(markdown) {
 - `editorial-standard.md` — every visible layer must encode data, supply context, establish hierarchy, support verification, or direct attention; if removing a layer does not reduce comprehension, remove it. Visual interest comes from sequencing, comparison, annotation and the arrival of evidence, never from ornament.
 - `visual-system.md` — flat field; neutral colours for history and comparison; **one semantic accent** reserved for the subject; flat fills, gradients only when they encode quantity; endpoint labels and direct annotation over detached legends; **all furniture derived from the newsroom ground, never a hard-coded colour**; contrast measured on the real background, with escalation to the pure pole on the mid-grey band.
 - `anti-patterns.md` — decoration that encodes nothing; fake texture, glassmorphism, dashboard chrome; gradients without quantitative meaning; repeated years or values; detached legends; tiny footer sources; missing scale, unit, source or honest baseline; accent colour on every mark; a title that claims more than the source; copying a reference's styling instead of its information logic.
-- `reference-set.md` — at least six rows, each with a real link, a locator (a timecode for a video row, otherwise whatever actually identifies the spot in a published static or motion graphic — its own title, caption, or embedded image file), and the transferable lesson. **Superseded twice — see Step 8, then Step 10, for the full account**: the first-shipped set (Hans Rosling, Alan Smith ×2, NYT Visual Investigations, Vox Atlas, Kurzgesagt, David McCandless) drifted to six-of-seven video/stage-presentation references with zero static newsroom charts, three of them doctrine-contradicting (Step 8's fix). The Step 8 replacement set was itself verified only by metadata, and three of its four new rows turned out to assert things about their own artifact that direct inspection refuted (Step 10's fix). The final, shipped set (Step 10) is six newsroom graphics — FiveThirtyEight, NYT Upshot, Reuters Graphics, Washington Post, NYT Visual Investigations, Vox — three static, one motion, two video, every row personally verified against the actual downloaded image or extracted video frame, zero non-newsroom rows.
+- `reference-set.md` — at least six rows, each with a real link, a locator (a timecode for a video row, otherwise whatever actually identifies the spot in a published static or motion graphic — its own title, caption, or embedded image file), and the transferable lesson. **Superseded three times — see Steps 8, 10 and 12 for the full account**: the first-shipped set (Hans Rosling, Alan Smith ×2, NYT Visual Investigations, Vox Atlas, Kurzgesagt, David McCandless) drifted to six-of-seven video/stage-presentation references with zero static newsroom charts, three of them doctrine-contradicting (Step 8's fix). The Step 8 replacement set was verified only by metadata, and three of its four new rows turned out to assert things about their own artifact that direct inspection refuted (Step 10's fix). The Step 10 set was looked at correctly but not read around: one row was a design mockup its own caption disclosed as placeholder data, another's lesson asserted a mechanic its cropped promo card could not show (Step 12's fix). **The set as it now stands (Step 12) is four rows — NYT Upshot, Washington Post, NYT Visual Investigations, Vox — below the six-row floor `checkReferenceSet` still enforces; the gap is stated on the record in both `reference-set.md` and `SKILL.md` rather than filled with a fifth stretched row.**
 
 - [ ] **Step 5: Run the test and confirm it passes**
 
@@ -1847,6 +1847,76 @@ mechanism).
 ```bash
 git add twin/skills/twin-doctrine
 git commit -m "fix(twin-doctrine): verify the pixels, not the metadata — three refuted rows corrected, FT and the slide dropped, static bar met"
+```
+
+- [ ] **Step 12: Review correction, round 3 — looked at the pixels, not at the caption two lines away**
+
+Third quality review confirmed rows 5–6 (NYT Visual Investigations, Vox) as clean and exemplary —
+the reviewer independently re-extracted both frames — and rows 2 and 4 (NYT Upshot, Washington
+Post) as holding. Two rows failed on a *third* shape of the same root cause: round 1 verified
+metadata, round 2 described artifacts not actually looked at, round 3's own submission looked at
+the right pixels but never read the caption sitting next to them.
+
+- **Row 1 (FiveThirtyEight) — removed.** The article's own `<figcaption>` for that exact `<figure>`
+  reads: "A few early versions of what became the final design, **with placeholder data and
+  annotations**." The card even carries the literal string "There could be another annotation here
+  about another state!" — a design-process mockup, not published evidence. It also happened to be
+  the row carrying the static bar, so the bar fell with it.
+- **Row 3 (Reuters) — removed.** The cited `og:image`/`twitter:image` is a perspective-tilted,
+  drop-shadowed, hard-cropped social-preview montage — no axis, no year ticks, no legend, no scale,
+  no title, no source (several `anti-patterns.md` entries at once) — and the asserted mechanic (two
+  coloured lines crossing back and forth across labelled past elections) is not something that
+  cropped card can show: the lines swap sides once, and with no year labels the per-election
+  reading does not exist. No genuine published-graphic replacement was found in the time available;
+  removed rather than shipped with an unverifiable claim.
+
+**The structural point, named rather than worked around**: four of the six round-2 rows were
+verified through `og:image`/`twitter:image` assets, not the published interactive graphic itself —
+modern newsroom interactives are client-rendered, so there is often no fetchable static image of
+the actual thing, only a simplified, cropped promotional derivative stripped of axis, scale and
+source. Two rows survive this round (NYT Upshot, Washington Post) precisely because their specific
+promotional assets turned out to be bare `<meta>` tag references with **no separate in-article
+caption to have missed** (confirmed by re-checking the surrounding markup directly) — an
+importantly different, more defensible situation than Row 1, which *was* an embedded `<figure>`
+with its own caption that simply went unread. Both surviving promo-card rows now say so in plain
+words in `reference-set.md`'s own text, and their lessons describe only what that specific
+derivative shows, per the review's explicit "two honest ways through."
+
+**Minor corrections to the surviving rows** (all from re-reading the actual pixels and the
+surrounding frames more carefully, not from new sourcing): Row 2's lesson no longer names a
+specific colour ("[orange]") for the chart's swatches — the actual colour is a yellow/gold
+(`#FFCC33`), and a colour claim does not belong in the lesson column regardless. Row 5's lesson no
+longer claims "the same two doors" — a third door is visible at 4:32; the 3D model is fixed, the
+camera is not, so only the fixed-model claim is kept. Row 6's lesson now says the dotted line
+"traces the outline of the disputed, hatched-orange territory" rather than "separates a green
+region from an orange one" (re-examined: it bounds one shaded region, it is not a single dividing
+line across the whole frame), and "appearing a few seconds after (not immediately after: one
+intervening archival photograph plays first)" replaces the round-2 wording that compressed out a
+real intervening shot at 3:53–3:54.
+
+**Row count: four, not six — the floor is not lowered this round, because doing so requires
+touching `scripts/check-reference-set.mjs` / `test/reference-set.test.ts`, and this round's
+process constraint scoped changes to `reference-set.md`, `SKILL.md` and this plan file only.**
+`test/reference-set.test.ts`'s shipped-file row-count assertion is therefore **failing as of this
+version, honestly** — `countReferenceRows` returns 4 against a floor of 6 — and this is stated
+plainly in both `reference-set.md`'s preamble and `SKILL.md`'s Files section, with what's owed
+named (two more genuinely-static, in-article `<img>` rows with real non-placeholder captions,
+never yet found and verified) rather than papered over with a stretched row. `checkReferenceSet`
+itself still returns `[]` for all four rows — the mechanism's per-row structural check passes
+cleanly; only the separate minimum-count assertion is red, and it is red because the content is
+smaller and truer than it was, not because it is broken.
+
+Run: `cd twin && bun test skills/twin-doctrine`
+Expected: **10 pass, 1 fail** — the shipped-file row-count assertion fails by design
+(`countReferenceRows` = 4 < 6); every other test, including `checkReferenceSet(shipped)` returning
+`[]`, passes. This is the first round where `bun test skills/twin-doctrine` is not fully green,
+and that redness is the honest signal, not a regression to hide.
+
+- [ ] **Step 13: Commit**
+
+```bash
+git add twin/skills/twin-doctrine
+git commit -m "fix(twin-doctrine): read the caption, not just the pixels — two more rows dropped, four honest rows remain, floor gap on the record"
 ```
 
 ---
