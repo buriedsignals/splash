@@ -4,7 +4,7 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
-## Session 2026-08-06 — La charte lit un vrai site de rédaction : filtre same-host levé, `recurrent-role`, provenance, second essai rendu, `oklch()` (branche `feat/charter-reads-real-sites`, HEAD `46d8098e`)
+## Session 2026-08-06 — La charte lit un vrai site de rédaction : filtre same-host levé, `recurrent-role`, provenance, second essai rendu, `oklch()` (branche `feat/charter-reads-real-sites`, gate 23/23 @ `93e37a07`)
 
 Le point de départ : `proposeCharter` mesuré à froid contre heidi.news ne lisait **aucune**
 feuille de style (le CDN `heidi-17455.kxcdn.com` échouait le filtre same-host), une seule couleur
@@ -49,6 +49,49 @@ JavaScript réel qui tourne, et ses requêtes sortantes ne sont pas vérifiées 
 **Reste non lu** : `color-mix()` (4 occurrences dans la feuille CDN de heidi.news, une composition
 sur d'autres couleurs plutôt qu'une notation de couleur, laissée de côté volontairement). Détail
 complet, avant/après par site : `docs/installer/charter-measurement.md`.
+
+**Ronde de revue finale — ce que la relecture a trouvé, et ce qui a été gravé.** Onze constats,
+dont quatre importants ; les quatre touchent tous la même chose — *ce que le journaliste voit du
+travail de la machine*.
+
+- **Une police mesurée s'écrivait dans le profil sans jamais s'afficher.** Avant ce chantier
+  heidi.news ne rendait aucune typographie, donc rien n'atterrissait ; désormais
+  `Sang Bleu Kingdom` était écrit dans le corps d'un `NEWSROOM-PROFILE.md` neuf, sans présence à
+  l'écran et sans moyen de le rayer — la seule valeur mesurée que le journaliste ne pouvait pas
+  rectifier, contre l'exigence même qui a lancé le chantier (« il faut laisser ensuite la
+  possibilité à l'utilisateur de rectifier ce qui a été récupéré »). Les polices sont maintenant
+  montrées avec le même traitement de reçu que la palette (la valeur à côté d'où elle a été lue),
+  chacune avec un bouton qui la raye ; seul ce qui survit est écrit. Prouvé au navigateur réel sur
+  heidi.news : `Sang Bleu Kingdom` visible avec sa source CDN, rayé, remis.
+- **Un échec disait la mauvaise cause, en anglais, sur une page française.** Toute erreur du
+  collecteur était préfixée `the site did not answer:` et imprimée telle quelle : un Chromium
+  absent donnait à un journaliste francophone « the site did not answer: could not open a browser
+  to render https://… Executable doesn't exist ». `failureReadout` distingue désormais *le
+  navigateur ne démarre pas* de *le site ne répond pas*, le dit dans la langue de la page, et garde
+  le détail machine — subordonné, entre parenthèses, jamais en titre. Le couplage à la formulation
+  de `charter-render.ts` est lui-même testé : un lancement qui échoue pour de vrai traverse le
+  classifieur dans le test.
+- **Le second essai était offert alors que rien n'avait été tenté.** Cliquer « Lire mon site » avec
+  le champ vide répondait « Entrez d'abord l'adresse » ET proposait d'ouvrir la page dans un vrai
+  navigateur, ce qui échouait pareil. L'offre est maintenant conditionnée à une lecture qui a
+  réellement quitté la page.
+- **Le résultat du gate n'était consigné nulle part** — ni dans `CLAUDE.md`, ni ici, ni dans le
+  document de mesure, alors que chaque entrée voisine en porte un. Mesuré : `bun run check`
+  **23/23** sur la branche @ `93e37a07`, avant cette ronde de correctifs. (Le gate exige
+  `VITE_MAPTILER_KEY` dans `.env` : sans elle `skills/scrolly` et `skills/image-native` rougissent
+  à l'import — clé manquante, pas défaut de code.)
+- **Deux chiffres du document de mesure ne correspondaient pas au code**, re-mesurés plutôt que
+  rapiécés : le relabel therecord est de **8** entrées sur 12 (pas 7), et « relabel » est
+  maintenant une affirmation vérifiée entrée par entrée (12/12 tokens identiques au même index)
+  parce que le douzième emplacement d'`evidence` est remplaçable en général ; et le bloc du mode
+  rendu se contredisait en imprimant un signal par couleur d'un côté et le meilleur signal de
+  l'autre — les deux runs sont désormais imprimés en entier, et ils donnent bien le même verdict.
+- Le reste est de la mécanique : `CharterMode` déclaré une fois au lieu de trois unions à la main
+  (une faute de frappe côté client dégradait silencieusement en lecture statique) ; le parse du
+  mode sorti d'une route qui démarre un serveur à l'import, donc testable — « seul le mot exact
+  ouvre un navigateur » est un test, plus un commentaire ; « environ 20 secondes » corrigé en 30
+  (le budget de navigation seul ne comptait ni le lancement, ni le settle, ni la fermeture) ; et un
+  commentaire de frontière qui revendiquait une protection inexistante dit maintenant le vrai.
 
 ## Session 2026-08-06 — Task 6 « la page de setup tient sur UN écran » : profil éditable + case cochées supprimées, gate 23/23 (branche `feat/setup-page-one-screen`, HEAD `3fc8e0c9`)
 
