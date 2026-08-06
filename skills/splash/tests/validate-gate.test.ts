@@ -44,6 +44,10 @@ const tempAnomaly: AcceptedProposal = {
   id: "temp-anomaly-line-video",
   producer: "chart-native",
   format: "video",
+  // Every chart video states its narrative kind now — the kinds differ in what they carry, and
+  // an unstated one is an open question rather than a default (2026-08-06). This fixture carries
+  // no walk, so `reveal` is what it is: the data animates and no sentence is shown.
+  narrativeKind: "reveal",
   spec: {
     producer: "chart-native",
     nativeType: "line",

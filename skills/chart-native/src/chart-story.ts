@@ -3,6 +3,7 @@ import type { NarrativeBeat, NativeSpec } from "./spec-to-config";
 import { computeChartLayout } from "./chart-geometry";
 import type { Dims } from "./chart-geometry";
 import { localizeDecimal } from "./core/locale";
+import { chartWalk } from "./core/chart-walk";
 import { storyCopy } from "../../../lib/core/story-copy";
 
 // ARC_ROLES/ArcRole/arcErrors moved to lib/core/claim-arc (shared by chart-native +
@@ -133,7 +134,26 @@ export const AUTHORABLE_SCROLLY_TYPES = ["line", "bar"] as const;
 // (skills/splash/src/validate-gate.ts) can surface a typo BEFORE production;
 // deriveChartStory throws on the same errors at derive time (defense in depth
 // for a bypassed gate).
-export function narrativeBeatErrors(spec: NativeSpec): string[] {
+/**
+ * WHICH SURFACE the beats are being validated for, because the two accept different plans.
+ *
+ * `scrolly` — the reader advances the steps, and the walk is DERIVED into a story by
+ * `deriveChartStory`, which handles `line` and `bar` alone (AUTHORABLE_SCROLLY_TYPES).
+ *
+ * `video` — the clock advances the steps and the words ride the caption stage, which every one
+ * of the 41 types now renders through. What differs per type is the GRAIN (core/chart-walk.ts):
+ * an anchored type's beat names its subject, a sequenced type's beat has only its sentence and
+ * its rank, because it has no subject a beat could address.
+ *
+ * The default is `scrolly` so every caller that predates the video surface keeps its exact
+ * behaviour — the invariant this widening is bounded by.
+ */
+export type BeatSurface = "scrolly" | "video";
+
+export function narrativeBeatErrors(
+  spec: NativeSpec,
+  surface: BeatSurface = "scrolly",
+): string[] {
   const beats = spec.beats;
   if (beats === undefined) return [];
   let parsed: ReturnType<typeof specToNativeConfig>;
@@ -155,7 +175,27 @@ export function narrativeBeatErrors(spec: NativeSpec): string[] {
     ];
   }
   const { type, config } = parsed;
-  if (!(AUTHORABLE_SCROLLY_TYPES as readonly string[]).includes(type)) {
+  if (surface === "video") {
+    const walk = chartWalk(type);
+    if (!walk)
+      return [
+        `"${type}" is not a native chart type, so no walk can be validated for its video`,
+      ];
+    // ★ A SEQUENCED TYPE'S BEAT MAY NOT CLAIM AN ANCHOR. Its video has no per-subject entrance,
+    // so an anchor would promise an alignment the render cannot make — accepting it and quietly
+    // ignoring it is exactly the "validated then dropped" defect this seam exists to prevent.
+    if (walk.grain === "sequenced") {
+      const anchored = beats
+        .map((b, i) => ({ i, key: b.category !== undefined ? "category" : b.x !== undefined ? "x" : null }))
+        .filter((e) => e.key !== null);
+      return anchored.map(
+        (e) =>
+          `beat ${e.i + 1}: a "${type}" video carries its steps in the order written, not pinned ` +
+          `to a subject — ${walk.why}. Drop the \`${e.key}\` anchor and keep the sentence.`,
+      );
+    }
+    // An anchored type validates its anchor exactly as the scrolly path does below.
+  } else if (!(AUTHORABLE_SCROLLY_TYPES as readonly string[]).includes(type)) {
     return [
       `explicit \`beats\` override supports ${AUTHORABLE_SCROLLY_TYPES.join(" and ")} chart scrollies only (got "${type}")`,
     ];
@@ -185,13 +225,17 @@ export function narrativeBeatErrors(spec: NativeSpec): string[] {
     });
     return [...errors, ...arcErrors(beats)];
   }
-  const catField = config.catField as string;
+  // The field naming the subjects differs per anchored type (`catField`, `labelField`,
+  // `categoryField`, `bandField`…) — read from the walk registry, the same one the component
+  // staggers on, rather than assumed to be `catField` as it was when `bar` was alone.
+  const anchorField = chartWalk(type)?.anchorField ?? "catField";
+  const catField = config[anchorField] as string;
   const rows = config.rows as Record<string, string | number>[];
   const categories = rows.map((r) => String(r[catField]));
   beats.forEach((b, i) => {
     if (b.category === undefined) {
       errors.push(
-        `beat ${i + 1}: a bar walk beat must anchor on a \`category\` value from the data`,
+        `beat ${i + 1}: a "${type}" walk beat must anchor on a \`category\` value from the data`,
       );
       return;
     }

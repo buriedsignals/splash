@@ -814,8 +814,21 @@ function validateByProducer(p: AcceptedProposal): ValidationOutcome {
       return validateMapNative(p.spec);
     case "scrolly":
       return validateScrolly(p.spec);
-    case "chart-native":
-      return validateNative(p.spec, "chart-native");
+    case "chart-native": {
+      const outcome = validateNative(p.spec, "chart-native");
+      // ★ A VIDEO'S WALK IS VALIDATED TOO, and it was not. `narrativeBeatErrors` ran on the
+      // scrolly path alone, so a typo'd anchor on a chart VIDEO reached production unchecked —
+      // invisible while `bar` was the only walk-capable video, and a live hole the moment every
+      // type became one. Validated against the type's own GRAIN: an anchored type's anchor must
+      // exist in the data, a sequenced type must not claim one it cannot honour.
+      if (p.format !== "video") return outcome;
+      const beatErrors = narrativeBeatErrors(p.spec as NativeSpec, "video");
+      if (!beatErrors.length) return outcome;
+      return {
+        ok: false,
+        errors: [...(outcome.ok ? [] : outcome.errors), ...beatErrors],
+      };
+    }
     case "image-native":
       return validateImageNative(p.spec, p.format);
     default: {
