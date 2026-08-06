@@ -1953,42 +1953,253 @@ git commit -m "feat(twin-chart-beat): a seed that teaches the anatomy, and a sti
 
 - [ ] **Step 1: Write the failing test**
 
+AMENDED 2026-08-06, twice — see both notes below Step 3. The block here is the final test file,
+44 tests across the whole skill (26 in this file), matching what actually shipped.
+
 ```ts
 // twin/skills/twin-chart-beat/test/inspect-render.test.ts
 import { describe, it, expect } from "bun:test";
 import { inspectSvg } from "../scripts/inspect-render.mjs";
 
-const svg = (body: string) => `<svg role="img" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+const svg = (body: string) =>
+  `<svg role="img" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
 
 describe("inspectSvg", () => {
   it("should measure contrast against the real ground, not against assumed white", () => {
-    const dark = inspectSvg(svg('<text fill="#767676">x</text>'), { ground: "#101820" });
-    const light = inspectSvg(svg('<text fill="#767676">x</text>'), { ground: "#FFFFFF" });
+    const dark = inspectSvg(svg('<text fill="#767676">x</text>'), {
+      ground: "#101820",
+    });
+    const light = inspectSvg(svg('<text fill="#767676">x</text>'), {
+      ground: "#FFFFFF",
+    });
     expect(dark.contrast[0].ratio).not.toBeCloseTo(light.contrast[0].ratio, 1);
   });
 
   it("should fail a fill below 4.5:1 on the given ground", () => {
-    const result = inspectSvg(svg('<text fill="#AAAAAA">x</text>'), { ground: "#FFFFFF" });
+    const result = inspectSvg(svg('<text fill="#AAAAAA">x</text>'), {
+      ground: "#FFFFFF",
+    });
     expect(result.contrast[0].pass).toBe(false);
   });
 
   it("should pass black on white", () => {
-    const result = inspectSvg(svg('<text fill="#000000">x</text>'), { ground: "#FFFFFF" });
+    const result = inspectSvg(svg('<text fill="#000000">x</text>'), {
+      ground: "#FFFFFF",
+    });
     expect(result.contrast[0].ratio).toBeCloseTo(21, 0);
     expect(result.contrast[0].pass).toBe(true);
   });
 
   it("should report alt text missing when there is no desc", () => {
-    expect(inspectSvg(svg("<text>x</text>"), { ground: "#FFFFFF" }).altText.present).toBe(false);
+    expect(
+      inspectSvg(svg("<text>x</text>"), { ground: "#FFFFFF" }).altText.present,
+    ).toBe(false);
   });
 
   it("should read the alt text out of desc", () => {
-    const result = inspectSvg(svg("<desc>A falling line.</desc>"), { ground: "#FFFFFF" });
+    const result = inspectSvg(svg("<desc>A falling line.</desc>"), {
+      ground: "#FFFFFF",
+    });
     expect(result.altText).toEqual({ present: true, text: "A falling line." });
   });
 
   it("should flag a root title, which becomes a redundant cursor tooltip", () => {
-    expect(inspectSvg(svg("<title>Chart</title>"), { ground: "#FFFFFF" }).rootTitle).toBe(true);
+    expect(
+      inspectSvg(svg("<title>Chart</title>"), { ground: "#FFFFFF" }).rootTitle,
+    ).toBe(true);
+  });
+
+  // --- Beyond the six above: the plan's own regexes miss real SVG shapes. These pin the fixes. ---
+
+  it("should see a fill inherited from an ancestor <g>, not just a fill attribute on <text> itself", () => {
+    const result = inspectSvg(svg('<g fill="#AAAAAA"><text>x</text></g>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast.length).toBe(1);
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should read a fill declared in a style attribute, not only a fill attribute", () => {
+    const result = inspectSvg(svg('<text style="fill:#AAAAAA">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast.length).toBe(1);
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should expand a three-digit hex fill", () => {
+    // Not #000: black would also be the default-black fallback for an undeclared fill, so
+    // #000 would pass even if 3-digit expansion were silently broken. #abc has no such
+    // collision — a correct expansion to "#AABBCC" is the only way to pass.
+    const result = inspectSvg(svg('<text fill="#abc">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].fill).toBe("#AABBCC");
+  });
+
+  it("should not mistake an attribute whose name merely ends in 'fill' for the fill attribute", () => {
+    // No real fill declared anywhere: the effective fill is the SVG initial value (black), which
+    // reads fine on white. A regex that matches `fill="..."` as a substring instead of an
+    // attribute name would grab "#AAAAAA" here and silently under-report an unreadable label.
+    const result = inspectSvg(svg('<text data-nofill="#AAAAAA">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].fill).toBe("#000000");
+    expect(result.contrast[0].pass).toBe(true);
+  });
+
+  it("should flag a root title even when a comment or a <desc> precedes it", () => {
+    const result = inspectSvg(
+      svg("<!-- accessible --><desc>d</desc><title>Chart</title>"),
+      {
+        ground: "#FFFFFF",
+      },
+    );
+    expect(result.rootTitle).toBe(true);
+  });
+
+  it("should not flag a <title> nested inside a child element as the root title", () => {
+    // A <title> on a sub-group is a legitimate accessible name for that group, not a redundant
+    // cursor tooltip on the whole chart.
+    const result = inspectSvg(svg("<g><title>Nested label</title></g>"), {
+      ground: "#FFFFFF",
+    });
+    expect(result.rootTitle).toBe(false);
+  });
+
+  it("should judge a big bold title against the 3:1 large-text floor, not 4.5:1", () => {
+    // #949494 on white is 3.03:1: below the normal-text floor, above the large-text one.
+    const result = inspectSvg(
+      svg('<text fill="#949494" font-size="26" font-weight="700">Title</text>'),
+      {
+        ground: "#FFFFFF",
+      },
+    );
+    expect(result.contrast[0].ratio).toBeCloseTo(3.03, 1);
+    expect(result.contrast[0].pass).toBe(true);
+  });
+
+  it("should still hold small text at that same ratio to 4.5:1", () => {
+    const result = inspectSvg(svg('<text fill="#949494">small</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  // --- Round 2, review-driven: the walker still had five silent-pass holes. Never default an
+  // unresolvable colour to black — silence and a pass must not look alike. ---
+
+  it("should prefer a style fill over a presentation fill attribute (CSS cascade order)", () => {
+    const result = inspectSvg(
+      svg('<text fill="#000000" style="fill:#AAAAAA">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should resolve an rgb() fill instead of silently dropping it", () => {
+    const result = inspectSvg(svg('<text fill="rgb(170,170,170)">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+    expect(result.contrast[0].unresolved).toBe(false);
+  });
+
+  it("should mark an unparseable fill as unresolved rather than defaulting it to black", () => {
+    const result = inspectSvg(svg('<text fill="url(#grad)">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0]).toEqual({
+      fill: "url(#grad)",
+      ratio: null,
+      pass: false,
+      unresolved: true,
+    });
+  });
+
+  it("should resolve a named colour the table actually carries, e.g. rebeccapurple", () => {
+    const result = inspectSvg(svg('<text fill="rebeccapurple">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].fill).toBe("#663399");
+    expect(result.contrast[0].unresolved).toBe(false);
+  });
+
+  it("should mark a named colour outside the table as unresolved, not guess a hex for it", () => {
+    const result = inspectSvg(svg('<text fill="mediumspringgreen">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].unresolved).toBe(true);
+    expect(result.contrast[0].fill).toBe("mediumspringgreen");
+  });
+
+  it("should resolve currentColor via the nearest ancestor's color attribute", () => {
+    const result = inspectSvg(
+      svg('<g color="#AAAAAA"><text fill="currentColor">x</text></g>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+    expect(result.contrast[0].unresolved).toBe(false);
+  });
+
+  it("should mark currentColor unresolved when no ancestor declares a color", () => {
+    const result = inspectSvg(svg('<text fill="currentColor">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].unresolved).toBe(true);
+  });
+
+  it("should see a fill override on a nested tspan, not just on the parent text", () => {
+    const result = inspectSvg(
+      svg('<text fill="#000000">ok<tspan fill="#AAAAAA">bad</tspan></text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast.length).toBe(2);
+    expect(
+      result.contrast.some((c) => c.fill === "#000000" && c.pass === true),
+    ).toBe(true);
+    expect(
+      result.contrast.some((c) => c.fill === "#AAAAAA" && c.pass === false),
+    ).toBe(true);
+  });
+
+  it("should not truncate tag parsing on a stray > inside a quoted attribute value", () => {
+    const result = inspectSvg(
+      svg('<text data-note="a > b" fill="#AAAAAA">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should refuse a non-px font-size unit rather than granting it the large-text floor", () => {
+    // 50% is really ~8px; parseFloat("50%") reads 50 and would wrongly clear the >=24 bar.
+    const result = inspectSvg(
+      svg('<text fill="#949494" font-size="50%" font-weight="700">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(false); // held to 4.5:1, not granted 3:1
+  });
+
+  it("should grant the large-text floor to a bold keyword, not only a numeric weight", () => {
+    const result = inspectSvg(
+      svg('<text fill="#949494" font-size="20" font-weight="bold">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(true); // 20px + bold clears the 18.66px/bold large floor
+  });
+
+  it("should exclude text inside <defs> from the contrast report — it never renders", () => {
+    const result = inspectSvg(
+      svg('<defs><text fill="#AAAAAA">hidden</text></defs>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast.length).toBe(0);
   });
 });
 ```
@@ -2001,6 +2212,12 @@ each pinning one of the defects fixed in Step 3 — an ancestor `<g fill="...">`
 for the sub-group, not a redundant tooltip), and the WCAG large-text floor (3:1, not 4.5:1) for a
 big bold title. Every one of the 14 tests was confirmed to fail when the specific line it targets
 is broken, and to pass again once reverted.
+
+**AMENDED AGAIN 2026-08-06 (coordinator review, five Critical findings — all proven against a real
+render, not just against the spec).** 12 more tests were added on top of the 14 above, one per
+finding below (Critical 2 produced two: the genuinely-unparseable case and the outside-the-table
+named colour). Every test was confirmed to fail when the line it targets is broken, then to pass
+again once reverted — see the Step 3 note below for what changed and why.
 
 - [ ] **Step 2: Run it and record the failure**
 
@@ -2039,6 +2256,72 @@ probe:
 `contrast` is imported from `render-still.mjs` (Task 7) rather than re-derived — the maths must be
 identical, not merely similar, to what `deriveFurniture` used to choose the fill in the first place.
 
+**AMENDED AGAIN 2026-08-06 (coordinator review — five Critical, two Important; the walker above
+still had silent-pass holes, each proven by rendering the SVG with the project's own rasteriser
+and sampling the actually-painted pixel, not by reading the spec).**
+
+**Governing rule adopted for this round: never default an unresolvable colour to black.** Black is
+near-maximum contrast on a light ground, so defaulting turns "I could not read this colour" into
+"this passes" — silence and a pass must not look alike. Every fill this file cannot parse is now
+reported with `unresolved: true, pass: false` in the returned `contrast[]` entry, carrying the raw
+declared token so a reader can see what wasn't judged. The ONE place black is still used as an
+answer, not a guess, is a fill NEVER declared anywhere in the ancestor chain at all — SVG's actual
+initial value for `fill`, not something this tool failed to read; that case is unaffected.
+
+1. **Critical — `style` vs `fill` precedence was inverted.** The CSS cascade gives an inline
+   `style` PRIORITY over the `fill` presentation attribute; `ownFill` checked the attribute first.
+   Proven: `fill="#000000" style="fill:#AAAAAA"` rendered at 2.32:1 (sampled pixel `#AAAAAA`) while
+   the tool reported 21:1 pass. Fixed — `readStyleProperty("fill")` is checked before the
+   attribute.
+2. **Critical — declared-but-unparsed colours were conflated with never-declared, and both
+   defaulted to black.** `rgb(170,170,170)`, `url(#grad)`, an unlisted named colour
+   (`rebeccapurple` was the example that named a real gap; the reviewer's `mediumspringgreen` is
+   used as the still-outside-the-table negative case), and `currentColor` with no ancestor `color`
+   all reported `#000000` pass true while the real paint (where resolvable — `rgb()`) sampled at
+   `#AAAAAA`, 2.32:1, fail. Fixed with `resolveColour` returning three distinct outcomes instead of
+   collapsing to one: a resolved hex, `{ unresolved: true, raw }` for anything genuinely
+   unparseable (governing rule above — reported, never guessed), and `{ currentColour: true }` for
+   the one keyword that IS resolvable, one level up. `RGB` parses classic `rgb(r,g,b)`; the named
+   table grew from 18 to roughly 90 entries (not the full 148-name CSS Color 4 list — hand-typing
+   that from memory risks a silently WRONG hex, worse than an honest unresolved) and gained
+   `rebeccapurple`; `currentColor` resolves via a parallel `colour` context threaded through the
+   same ancestor stack (own `color` attribute/style, else inherited), honestly unresolved when no
+   ancestor declares one.
+3. **Critical — a `<tspan fill="...">` override inside a `<text>` was invisible.** Only the parent
+   `<text>` tag's own attribute was walked; `<text fill="#000000">ok<tspan fill="#AAAAAA">bad</tspan></text>`
+   reported one entry, `#000000` pass true, while the real render carries both `#000000` and
+   `#AAAAAA` pixels (sampled from a solid-fill glyph). Fixed by making `<tspan>` text-bearing too:
+   the walker now records one contrast candidate per text-bearing element (`text` or `tspan`) that
+   is OBSERVED to carry actual non-whitespace character data of its own — tracked by diffing the
+   raw string between consecutive tag matches and attributing that gap to whichever element is on
+   top of the stack at that point, so a `<text>` that only wraps `<tspan>` children isn't also
+   double-counted for text it never directly contains.
+4. **Critical — a stray `>` inside a quoted attribute value truncated tag parsing.** A raw `>` in a
+   quoted attribute value is well-formed XML (only `<` and `&` are forbidden); the plan's
+   `TAG_RE = /<(\/?)([a-zA-Z][\w:-]*)((?:\s+[^<>]*?)?)\s*(\/?)>/` cannot match past it, cutting the
+   tag short and losing whatever attribute followed in source order. Order-dependent, so
+   intermittent. Fixed by replacing the single global regex with `nextTag`/`parseTag`: a
+   quote-tracking scanner that only treats an UNQUOTED `>` as the tag's real close.
+5. **Critical — `font-size="50%"` granted the easier large-text floor.** `parseFloat("50%")` reads
+   `50`, clears the `>=24` bar, and the 3:1 floor was granted to text that rendered at 8px real
+   height (measured from the sampled non-background pixel bounds) and needed 4.5:1. **Decision:
+   refuse to trust any non-px unit rather than attempt to convert it** — `ownFontSizePx` now only
+   accepts a bare number or an explicit `px` suffix; anything else (`%`, `em`, `pt`, garbage) falls
+   through to the inherited/default size, landing in the harder normal-text bucket. Converting `%`
+   correctly would need the full CSS font cascade (inherited size chain, viewport units for `vw`,
+   etc.); refusing is the same "never guess, report the safe answer" posture as the colour fix.
+6. **Important — `font-weight="bold"`/`"bolder"` were not parsed** (`parseFloat` on a keyword is
+   `NaN`, silently treated as 400), spuriously denying genuinely bold large text its 3:1 floor —
+   the safe direction, but it defeated the whole point of the size-aware split for exactly the
+   keyword form authors normally write. `ownFontWeight` now maps `bold`/`bolder` to 700, `normal`
+   to 400, `lighter` to 300, before falling back to numeric parsing.
+7. **Important — `<defs>` contents were counted.** Text inside `<defs>` never renders on its own
+   (only via a `<use>` reference elsewhere); including it risked a false alarm on markup that draws
+   nothing. `inDefs` is now tracked down the same ancestor stack and excludes any text-bearing
+   descendant of a `<defs>`.
+
+`contrast` continues to be imported from `render-still.mjs` (Task 7), unchanged by this round.
+
 ```js
 // twin/skills/twin-chart-beat/scripts/inspect-render.mjs
 //
@@ -2046,41 +2329,96 @@ identical, not merely similar, to what `deriveFurniture` used to choose the fill
 // ground (never an assumed white), the presence of an alt-text <desc>, and a root <title> that
 // SVG turns into a redundant cursor tooltip. A tool the model runs and reads — not a gate. SP1
 // ships no conformance engine.
+//
+// GOVERNING RULE: never default an unresolvable colour to black. Black is near-maximum contrast
+// on a light ground, so defaulting turns "I could not read this colour" into "this passes" —
+// silence and a pass must not look alike. A fill this file cannot parse is reported with
+// `unresolved: true` and `pass: false` instead. The ONE place black is used as an answer, not a
+// guess, is a fill that was never declared anywhere in the ancestor chain at all — that is SVG's
+// own initial value for `fill`, not something this tool failed to read.
 
 import { contrast } from "./render-still.mjs";
 
 const HEX6 = /^#[0-9a-fA-F]{6}$/;
 const HEX3 = /^#[0-9a-fA-F]{3}$/;
+const RGB = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i;
 
-// A defensible subset of CSS named colours a hand-written SVG might use instead of hex. Not
-// exhaustive: anything outside this table and outside hex falls through to the SVG initial
-// fill value (black) in resolveEffectiveFill() below, rather than being silently dropped —
-// silently seeing no text at all is the one failure this tool must never produce.
+// A practical subset of CSS named colours, not the full 148-name CSS Color 4 keyword list —
+// hand-typing that from memory risks a silently WRONG hex, which is worse than an honest
+// UNRESOLVED. Anything outside this table (however common) falls through to unresolved() below.
 const NAMED_COLOURS = {
-  black: "#000000", white: "#ffffff", red: "#ff0000", green: "#008000",
-  blue: "#0000ff", gray: "#808080", grey: "#808080", silver: "#c0c0c0",
-  yellow: "#ffff00", orange: "#ffa500", purple: "#800080", navy: "#000080",
-  teal: "#008080", maroon: "#800000", olive: "#808000", lime: "#00ff00",
-  aqua: "#00ffff", fuchsia: "#ff00ff",
+  black: "#000000", white: "#FFFFFF", red: "#FF0000", green: "#008000", blue: "#0000FF",
+  gray: "#808080", grey: "#808080", silver: "#C0C0C0", yellow: "#FFFF00", orange: "#FFA500",
+  purple: "#800080", navy: "#000080", teal: "#008080", maroon: "#800000", olive: "#808000",
+  lime: "#00FF00", aqua: "#00FFFF", fuchsia: "#FF00FF", magenta: "#FF00FF", cyan: "#00FFFF",
+  pink: "#FFC0CB", hotpink: "#FF69B4", deeppink: "#FF1493", brown: "#A52A2A", chocolate: "#D2691E",
+  coral: "#FF7F50", salmon: "#FA8072", khaki: "#F0E68C", crimson: "#DC143C", gold: "#FFD700",
+  tan: "#D2B48C", beige: "#F5F5DC", turquoise: "#40E0D0", violet: "#EE82EE", orchid: "#DA70D6",
+  plum: "#DDA0DD", indigo: "#4B0082", orangered: "#FF4500", skyblue: "#87CEEB",
+  royalblue: "#4169E1", steelblue: "#4682B4", slateblue: "#6A5ACD", seagreen: "#2E8B57",
+  forestgreen: "#228B22", darkgreen: "#006400", lightgreen: "#90EE90", springgreen: "#00FF7F",
+  darkred: "#8B0000", firebrick: "#B22222", indianred: "#CD5C5C", darkorchid: "#9932CC",
+  mediumpurple: "#9370DB", cornflowerblue: "#6495ED", dodgerblue: "#1E90FF",
+  deepskyblue: "#00BFFF", lightblue: "#ADD8E6", powderblue: "#B0E0E6", aquamarine: "#7FFFD4",
+  olivedrab: "#6B8E23", darkolivegreen: "#556B2F", yellowgreen: "#9ACD32", chartreuse: "#7FFF00",
+  limegreen: "#32CD32", greenyellow: "#ADFF2F", darkgoldenrod: "#B8860B", goldenrod: "#DAA520",
+  peru: "#CD853F", sienna: "#A0522D", sandybrown: "#F4A460", wheat: "#F5DEB3", ivory: "#FFFFF0",
+  snow: "#FFFAFA", linen: "#FAF0E6", azure: "#F0FFFF", lavender: "#E6E6FA", mintcream: "#F5FFFA",
+  honeydew: "#F0FFF0", aliceblue: "#F0F8FF", ghostwhite: "#F8F8FF", whitesmoke: "#F5F5F5",
+  gainsboro: "#DCDCDC", lightgray: "#D3D3D3", lightgrey: "#D3D3D3", darkgray: "#A9A9A9",
+  darkgrey: "#A9A9A9", dimgray: "#696969", dimgrey: "#696969", lightslategray: "#778899",
+  slategray: "#708090", darkslategray: "#2F4F4F", midnightblue: "#191970",
+  rebeccapurple: "#663399",
 };
 
+function unresolved(raw) {
+  return { unresolved: true, raw: raw.trim() };
+}
+function isUnresolved(value) {
+  return value !== null && typeof value === "object" && value.unresolved === true;
+}
+function isCurrentColourMarker(value) {
+  return value !== null && typeof value === "object" && value.currentColour === true;
+}
+
 /**
- * Resolves a raw colour token to a #rrggbb hex, or a sentinel:
- *  - null      explicitly unpainted ("none" / "transparent") — not a contrast question.
- *  - undefined not declared at all here — the caller inherits from its ancestor.
+ * Resolves a raw colour token to one of:
+ *  - a #RRGGBB hex string          resolved.
+ *  - null                          explicitly unpainted ("none"/"transparent") — not a contrast
+ *                                   question, nothing is drawn there.
+ *  - { currentColour: true }       resolves via the nearest ancestor `color`, handled by the
+ *                                   caller (this function does not chase inheritance).
+ *  - { unresolved: true, raw }     declared, but this file cannot parse it — NEVER coerced to
+ *                                   black. rgba()/hsl() carry alpha or a colour space this tool
+ *                                   does not blend against the ground, so they are honestly
+ *                                   reported as unresolved rather than guessed.
+ *  - undefined                     nothing declared at all here.
  */
 function resolveColour(raw) {
   if (raw === null || raw === undefined) return undefined;
   const value = raw.trim();
+  if (value === "") return undefined;
   if (HEX6.test(value)) return value.toUpperCase();
   if (HEX3.test(value)) {
     const [r, g, b] = value.slice(1);
     return `#${r}${r}${g}${g}${b}${b}`.toUpperCase();
   }
+  const rgbMatch = RGB.exec(value);
+  if (rgbMatch) {
+    return (
+      "#" +
+      rgbMatch
+        .slice(1, 4)
+        .map((n) => Math.min(255, Number(n)).toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase()
+    );
+  }
   const lower = value.toLowerCase();
   if (lower === "none" || lower === "transparent") return null;
-  if (NAMED_COLOURS[lower]) return NAMED_COLOURS[lower].toUpperCase();
-  return undefined; // e.g. currentColor, or a keyword this table does not know
+  if (lower === "currentcolor") return { currentColour: true };
+  if (NAMED_COLOURS[lower]) return NAMED_COLOURS[lower];
+  return unresolved(value); // rgba(), hsl(), url(#gradient), an unlisted keyword, garbage
 }
 
 /** Reads one attribute by NAME — anchored, so `data-nofill="..."` can never be read as `fill`. */
@@ -2091,22 +2429,54 @@ function readAttr(rawAttrs, name) {
   return match[1] ?? match[2];
 }
 
-/** The fill declared directly on this tag — as an attribute or inside its style attribute. */
-function ownFill(rawAttrs) {
-  const direct = resolveColour(readAttr(rawAttrs, "fill"));
-  if (direct !== undefined) return direct;
+function readStyleProperty(rawAttrs, property) {
   const style = readAttr(rawAttrs, "style");
-  if (style) {
-    const declared = /fill\s*:\s*([^;]+)/.exec(style);
-    if (declared) return resolveColour(declared[1]);
-  }
+  if (!style) return null;
+  const re = new RegExp(`(?:^|;)\\s*${property}\\s*:\\s*([^;]+)`);
+  const match = re.exec(style);
+  return match ? match[1] : null;
+}
+
+/**
+ * The fill declared directly on this tag. The CSS cascade gives an inline `style` property
+ * PRIORITY over the `fill` presentation attribute — a naive "check the attribute first" reading
+ * has that backwards, and `fill="#000000" style="fill:#AAAAAA"` genuinely renders the style
+ * colour, not the attribute's.
+ */
+function ownFill(rawAttrs) {
+  const styled = resolveColour(readStyleProperty(rawAttrs, "fill"));
+  if (styled !== undefined) return styled;
+  return resolveColour(readAttr(rawAttrs, "fill"));
+}
+
+/** The CSS `color` this tag declares, used only to resolve a `currentColor` fill. */
+function ownColour(rawAttrs) {
+  const styled = resolveColour(readStyleProperty(rawAttrs, "color"));
+  if (styled !== undefined && !isCurrentColourMarker(styled) && !isUnresolved(styled)) return styled;
+  const attr = resolveColour(readAttr(rawAttrs, "color"));
+  if (attr !== undefined && !isCurrentColourMarker(attr) && !isUnresolved(attr)) return attr;
   return undefined;
 }
 
-function ownNumber(rawAttrs, name) {
-  const value = readAttr(rawAttrs, name);
+function ownFontSizePx(rawAttrs) {
+  const value = readAttr(rawAttrs, "font-size");
   if (value === null) return undefined;
-  const parsed = parseFloat(value);
+  // Refuse to trust a non-px unit rather than mis-scale it: `50%` is really ~8px, but
+  // parseFloat("50%") reads 50 and would wrongly clear the >=24 large-text bar. A bare number or
+  // an explicit "px" suffix is trusted; anything else falls through to the inherited/default
+  // size, which puts it in the normal-text (harder, 4.5:1) bucket rather than the easier one.
+  const match = /^(\d+(?:\.\d+)?)(px)?$/.exec(value.trim());
+  return match ? Number(match[1]) : undefined;
+}
+
+function ownFontWeight(rawAttrs) {
+  const value = readAttr(rawAttrs, "font-weight");
+  if (value === null) return undefined;
+  const trimmed = value.trim().toLowerCase();
+  if (trimmed === "bold" || trimmed === "bolder") return 700;
+  if (trimmed === "normal") return 400;
+  if (trimmed === "lighter") return 300;
+  const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
@@ -2118,62 +2488,142 @@ function isLargeText(fontSize, fontWeight) {
   return fontSize >= 18.66 && fontWeight >= 700;
 }
 
-const TAG_RE = /<(\/?)([a-zA-Z][\w:-]*)((?:\s+[^<>]*?)?)\s*(\/?)>/g;
+/**
+ * Finds the next tag starting at or after `from`, tracking quotes so a stray `>` INSIDE a
+ * quoted attribute value — well-formed XML; only `<` and `&` are forbidden raw — cannot be
+ * mistaken for the tag's own closing bracket. A regex without quote-awareness truncates the tag
+ * right there, and whatever attribute follows the stray `>` in source order (e.g. `fill=`) is
+ * silently never seen — an intermittent miss, since it depends on attribute order.
+ */
+function nextTag(text, from) {
+  const start = text.indexOf("<", from);
+  if (start === -1) return null;
+  let i = start + 1;
+  let quote = null;
+  while (i < text.length) {
+    const ch = text[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === ">") {
+      break;
+    }
+    i++;
+  }
+  return { raw: text.slice(start, i + 1), start, end: i + 1 };
+}
+
+function parseTag(raw) {
+  const closing = raw[1] === "/";
+  let inner = closing ? raw.slice(2, -1) : raw.slice(1, -1);
+  const selfClosing = !closing && /\/\s*$/.test(inner);
+  if (selfClosing) inner = inner.replace(/\/\s*$/, "");
+  const nameMatch = /^([a-zA-Z][\w:-]*)/.exec(inner);
+  const name = nameMatch ? nameMatch[1] : "";
+  return { closing, name, rawAttrs: inner.slice(name.length), selfClosing };
+}
+
+const TEXT_BEARING = new Set(["text", "tspan"]);
 
 /**
- * Walks the tag stream once, carrying the fill/font-size/font-weight context each <text>
- * actually inherits down through its ancestors — a `<g fill="...">` wrapping a bare `<text>`
- * is real, legal SVG, and a per-tag regex that only looks at the <text> tag itself misses it
- * completely. Also tracks nesting depth so a `<title>` is only "the root title" when it is a
- * direct child of the root <svg> — a `<title>` on a sub-group is a legitimate accessible name,
- * not a redundant cursor tooltip on the whole chart.
+ * Walks the tag stream once, carrying fill/colour/font context down through ancestors (a
+ * `<g fill="...">` wrapping a bare `<text>` is real, legal SVG) and recording one contrast
+ * candidate per text-bearing element (`<text>` AND `<tspan>` — a `<tspan fill="...">` override
+ * inside a `<text>` is ordinary inline-highlight SVG, and only walking `<text>` misses it
+ * completely) that is observed to carry actual, non-whitespace character data of its own. Text
+ * under `<defs>` never renders and is excluded. Tracks nesting depth so a `<title>` only counts
+ * as the root title when it is a direct child of the root `<svg>`.
  */
 function walk(svg) {
   const stripped = svg.replace(/<!--[\s\S]*?-->/g, "");
-  const stack = [{ fill: undefined, fontSize: 16, fontWeight: 400 }];
+  const root = {
+    tag: "",
+    fill: undefined,
+    colour: undefined,
+    fontSize: 16,
+    fontWeight: 400,
+    inDefs: false,
+    recorded: false,
+  };
+  const stack = [root];
   const texts = [];
   let depth = 0;
   let rootTitle = false;
-  let match;
-  TAG_RE.lastIndex = 0;
-  while ((match = TAG_RE.exec(stripped))) {
-    const [, closing, name, rawAttrs, selfClosing] = match;
-    const tag = name.toLowerCase();
+  let cursor = 0;
+  let tag = nextTag(stripped, cursor);
+
+  while (tag) {
+    const gap = stripped.slice(cursor, tag.start);
+    if (gap.trim()) {
+      const owner = stack[stack.length - 1];
+      if (TEXT_BEARING.has(owner.tag) && !owner.inDefs && !owner.recorded) {
+        texts.push(owner);
+        owner.recorded = true;
+      }
+    }
+    cursor = tag.end;
+
+    const { closing, name, rawAttrs, selfClosing } = parseTag(tag.raw);
+    const tagName = name.toLowerCase();
 
     if (closing) {
       if (stack.length > 1) stack.pop();
       depth = Math.max(0, depth - 1);
+      tag = nextTag(stripped, cursor);
       continue;
     }
 
     const parent = stack[stack.length - 1];
-    const ownedFill = ownFill(rawAttrs);
-    const ownedSize = ownNumber(rawAttrs, "font-size");
-    const ownedWeight = ownNumber(rawAttrs, "font-weight");
+    const declaredFill = ownFill(rawAttrs);
+    const declaredColour = ownColour(rawAttrs);
+    const ownedSize = ownFontSizePx(rawAttrs);
+    const ownedWeight = ownFontWeight(rawAttrs);
+
+    const colour = declaredColour !== undefined ? declaredColour : parent.colour;
+
+    let fill;
+    if (declaredFill === undefined) {
+      fill = parent.fill;
+    } else if (isCurrentColourMarker(declaredFill)) {
+      fill = colour !== undefined ? colour : unresolved("currentColor");
+    } else {
+      fill = declaredFill;
+    }
+
     const context = {
-      fill: ownedFill !== undefined ? ownedFill : parent.fill,
+      tag: tagName,
+      fill,
+      colour,
       fontSize: ownedSize !== undefined ? ownedSize : parent.fontSize,
       fontWeight: ownedWeight !== undefined ? ownedWeight : parent.fontWeight,
+      inDefs: tagName === "defs" || parent.inDefs,
+      recorded: false,
     };
     depth++;
 
-    if (tag === "title" && depth === 2) rootTitle = true; // direct child of the root <svg>
-    if (tag === "text") texts.push(context);
+    if (tagName === "title" && depth === 2) rootTitle = true; // direct child of the root <svg>
 
     if (selfClosing) {
       depth--; // no children can follow; nothing will close this tag later
     } else {
       stack.push(context);
     }
+
+    tag = nextTag(stripped, cursor);
   }
+
   return { texts, rootTitle };
 }
 
-/** Skip fills the beat CHOSE not to paint; default the never-declared case to black, the SVG
- *  initial value — never drop the text silently, which is the worst failure this tool can make. */
-function effectiveFill(fill) {
-  if (fill === null) return null;
-  return fill === undefined ? "#000000" : fill;
+/** Classifies a walked fill for reporting. Black is used ONLY for the truly-never-declared
+ *  case (SVG's real initial value) — every other unreadable case is reported, not guessed. */
+function classifyFill(fill) {
+  if (fill === null) return { skip: true }; // explicitly unpainted
+  if (fill === undefined) return { hex: "#000000" }; // never declared anywhere: SVG initial value
+  if (typeof fill === "string") return { hex: fill };
+  if (isUnresolved(fill)) return { unresolvedRaw: fill.raw };
+  return { skip: true };
 }
 
 export function inspectSvg(svg, { ground }) {
@@ -2182,11 +2632,16 @@ export function inspectSvg(svg, { ground }) {
 
   const contrastEntries = [];
   for (const text of texts) {
-    const fill = effectiveFill(text.fill);
-    if (fill === null) continue; // explicitly unpainted; there is nothing to read the contrast of
+    const classified = classifyFill(text.fill);
+    if (classified.skip) continue;
+    if (classified.unresolvedRaw !== undefined) {
+      contrastEntries.push({ fill: classified.unresolvedRaw, ratio: null, pass: false, unresolved: true });
+      continue;
+    }
+    const fill = classified.hex;
     const value = contrast(fill, ground);
     const threshold = isLargeText(text.fontSize, text.fontWeight) ? 3 : 4.5;
-    contrastEntries.push({ fill, ratio: Number(value.toFixed(2)), pass: value >= threshold });
+    contrastEntries.push({ fill, ratio: Number(value.toFixed(2)), pass: value >= threshold, unresolved: false });
   }
 
   const desc = /<desc>([\s\S]*?)<\/desc>/.exec(stripped);
@@ -2203,6 +2658,7 @@ export function inspectSvg(svg, { ground }) {
 
 Run: `cd twin && bun test skills/twin-chart-beat/test/inspect-render.test.ts`
 Expected: PASS, 6 tests. AMENDED 2026-08-06: 14 tests, not 6 — see the Step 1 amendment above.
+AMENDED AGAIN 2026-08-06: 26 tests, not 14 — see the second Step 1 amendment above.
 
 - [ ] **Step 5: Run the tool on the real render from Task 7**
 
