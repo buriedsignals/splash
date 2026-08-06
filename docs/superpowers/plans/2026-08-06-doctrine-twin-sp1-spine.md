@@ -1685,7 +1685,7 @@ export function checkReferenceSet(markdown) {
 - `editorial-standard.md` — every visible layer must encode data, supply context, establish hierarchy, support verification, or direct attention; if removing a layer does not reduce comprehension, remove it. Visual interest comes from sequencing, comparison, annotation and the arrival of evidence, never from ornament.
 - `visual-system.md` — flat field; neutral colours for history and comparison; **one semantic accent** reserved for the subject; flat fills, gradients only when they encode quantity; endpoint labels and direct annotation over detached legends; **all furniture derived from the newsroom ground, never a hard-coded colour**; contrast measured on the real background, with escalation to the pure pole on the mid-grey band.
 - `anti-patterns.md` — decoration that encodes nothing; fake texture, glassmorphism, dashboard chrome; gradients without quantitative meaning; repeated years or values; detached legends; tiny footer sources; missing scale, unit, source or honest baseline; accent colour on every mark; a title that claims more than the source; copying a reference's styling instead of its information logic.
-- `reference-set.md` — at least six rows, each with a real link, a locator (a timecode for the rare video row, otherwise whatever actually identifies the spot in a published static graphic — its own title, caption, or element id), and the transferable lesson. **Superseded by Step 8 below**: the first-shipped set (Hans Rosling, Alan Smith ×2, NYT Visual Investigations, Vox Atlas, Kurzgesagt, David McCandless) drifted to six-of-seven video/stage-presentation references with zero static newsroom charts, and three of those references contradicted the doctrine they exemplified. The corrected, shipped set is six clean published newsroom graphics (FT/Burn-Murdoch, NYT Upshot, Reuters Graphics, Washington Post, NYT Visual Investigations, Vox) plus one explicitly caveated non-newsroom slide (Alan Smith's isotype pictogram) — see Step 8 for the full account.
+- `reference-set.md` — at least six rows, each with a real link, a locator (a timecode for a video row, otherwise whatever actually identifies the spot in a published static or motion graphic — its own title, caption, or embedded image file), and the transferable lesson. **Superseded twice — see Step 8, then Step 10, for the full account**: the first-shipped set (Hans Rosling, Alan Smith ×2, NYT Visual Investigations, Vox Atlas, Kurzgesagt, David McCandless) drifted to six-of-seven video/stage-presentation references with zero static newsroom charts, three of them doctrine-contradicting (Step 8's fix). The Step 8 replacement set was itself verified only by metadata, and three of its four new rows turned out to assert things about their own artifact that direct inspection refuted (Step 10's fix). The final, shipped set (Step 10) is six newsroom graphics — FiveThirtyEight, NYT Upshot, Reuters Graphics, Washington Post, NYT Visual Investigations, Vox — three static, one motion, two video, every row personally verified against the actual downloaded image or extracted video frame, zero non-newsroom rows.
 
 - [ ] **Step 5: Run the test and confirm it passes**
 
@@ -1779,6 +1779,74 @@ the two row-detection regressions for a missing leading pipe and an indented tab
 ```bash
 git add twin/skills/twin-doctrine
 git commit -m "fix(twin-doctrine): locator not timecode, a reference set that survives its own doctrine, information-architecture.md"
+```
+
+- [ ] **Step 10: Review correction, round 2 — metadata is not verification; every row now checked against the actual pixels**
+
+Second quality review (2 Critical, plus a static-ratio finding restated from round 1) found the
+round-1 correction had fixed *which* rows were doctrine-compliant on paper but had verified them by
+`og:title`, `datePublished` and caption tracks — metadata, not the graphic itself. Three of the four
+round-1 replacements turned out to assert things about their own artifact that the artifact, once
+actually looked at, refuted:
+
+- **FT / Burn-Murdoch** — the lesson claimed "Italy and Spain in colour, every other country grey."
+  The actual chart (downloaded and viewed directly: `pbs.twimg.com/media/ETLLZCdWsAA__3V`) carries
+  eight saturated categorical colours and draws Italy — the claimed subject — in dark grey. Exactly
+  the "accent colour on every mark" anti-pattern, the opposite of the lesson shipped. Also posted
+  2020-03-15, not the 16th as shipped.
+- **Washington Post corona-simulator** — the locator claimed "four panels running side by side
+  under one shared clock." The archived page's own text says the opposite: "The four simulations
+  you just watched … were random. That means the results of each one were unique to your reading of
+  this article" — four *sequential*, independently-randomized runs, not a deterministic
+  side-by-side comparison.
+- **Reuters "Behind the Battleground States"** — the cited element (`#g-margin-box`) is real, but
+  is client-rendered into an empty `<div>`; the quoted sentence actually sits ~4,900 characters
+  later, next to a *different* chart (`#g-count-box`). The lesson described something that could
+  not have been seen from the fetched markup — it was inferred from alt text.
+
+**Fix — look at the artifact, not its metadata.** For every row kept or added this round: a real
+chart image was downloaded with `curl` and read directly (`ffmpeg` used to convert WebP → PNG where
+needed for the two promotional images that shipped in that format), or, for the two video rows, the
+exact cited frame was extracted with `yt-dlp --download-sections` + `ffmpeg -ss` and read directly
+— never inferred from a transcript or a scraped DOM class alone. This caught a fourth error before
+it shipped: the Vox row's cited frame at 3:51 turned out to show archival UN Security Council
+footage, not the map; sampling frames at finer granularity located the map (dotted boundary line
+already drawn) actually on screen at 3:55, within the same spoken sentence — timecode corrected.
+
+**FT and the Alan Smith isotype-slide rows are dropped, not repaired.** FT's chart is real and
+striking, but every URL available for it is either the live, continuously-updated
+`ft.com/coronavirus-latest` tracker (does not pin this specific chart) or an X/Twitter post
+(deletable, and not a newsroom-hosted surface) — review explicitly instructed dropping the
+X/Twitter URL, and no stable FT-hosted alternative could be found. Alan Smith's isotype pictogram
+(the round-1 "kept but caveated as a stage slide, not a published graphic" row) is dropped outright
+this round: keeping the one non-newsroom row was itself the direct cause of the `SKILL.md`
+internal contradiction review flagged (line 20 promises "not a person narrating over a slide" while
+line 152 called the set "seven verified, published newsroom graphics" including that slide) —
+removing the row resolves the contradiction at its root instead of rewording around it.
+
+**Replacement found for the static-ratio gap**: FiveThirtyEight (ABC News) — "How We Designed The
+Look Of Our 2020 Forecast," its embedded card "The winding path to 270 electoral votes"
+(2020-08-13, verified via an `archive.org` snapshot of the original article, since the
+`fivethirtyeight.com` domain now redirects to `abcnews.com/politics`; the image itself confirmed
+present in the article's own `<figure>` markup, not just linked). This closes the "at least half
+static" requirement restated from round 1 for the first time: the shipped six-row set is now
+**3 static (FiveThirtyEight, NYT Upshot, Reuters) : 1 motion (Washington Post) : 2 video (NYT
+Visual Investigations, Vox)**, six distinct outlets, zero non-newsroom rows.
+
+The six-row floor in `checkReferenceSet`/`test/reference-set.test.ts` is **not** lowered — the
+round-2 set still carries exactly six rows, all personally verified against the actual artifact,
+matching the existing floor without needing the "smaller true set" authorisation.
+
+Run: `cd twin && bun test skills/twin-doctrine`
+Expected: PASS, 11 tests (unchanged from Step 9 — this round corrected `reference-set.md` and
+`SKILL.md` content only, per explicit review instruction not to touch the already mutation-proven
+mechanism).
+
+- [ ] **Step 11: Commit**
+
+```bash
+git add twin/skills/twin-doctrine
+git commit -m "fix(twin-doctrine): verify the pixels, not the metadata — three refuted rows corrected, FT and the slide dropped, static bar met"
 ```
 
 ---
