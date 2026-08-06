@@ -118,6 +118,18 @@ bunx playwright install chromium
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
 Pop-Location
 
+# The render browser Remotion itself uses — a DIFFERENT cache from Playwright's, written only by
+# Remotion, and located per skill directory: it walks up from its cwd to the nearest package.json,
+# and each packed skill keeps its own (measured: docs/installer/remotion-cache-measurement.md).
+# So it is fetched once per video engine, and the setup page's probe finds it where it looks.
+foreach ($engine in @("chart-native", "map-native")) {
+  Write-Host "-> Downloading the video renderer for $engine…"
+  Push-Location (Join-Path $Dest ".dist\skills\$engine")
+  bunx remotion browser ensure
+  if ($LASTEXITCODE -ne 0) { Pop-Location; throw "The video renderer could not be downloaded for $engine — re-run this installer to resume." }
+  Pop-Location
+}
+
 # 6. Local setup page — pick runtime + enter keys (verified live); writes .env
 Write-Host "-> Opening the setup page in your browser to collect your keys…"
 Push-Location $Dest

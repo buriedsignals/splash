@@ -227,6 +227,20 @@ test("packages and installs BEFORE opening the setup page", () => {
   expect(runtime).toBeGreaterThan(page);
 });
 
+// The page's readiness probe for the two video engines is a filesystem stat on a cache only
+// Remotion ever writes, per skill directory (docs/installer/remotion-cache-measurement.md).
+// `playwright install chromium` fills a different cache entirely, so it cannot stand in: without
+// this step the page reports two healthy engines as missing on every install.
+test("fetches the video renderer for BOTH video engines, before the page", () => {
+  const pack = sh.indexOf("bun run pack-skills");
+  const ensure = sh.indexOf("remotion browser ensure");
+  const page = sh.indexOf("bun install/configurator.ts");
+  expect(ensure).toBeGreaterThan(pack);
+  expect(page).toBeGreaterThan(ensure);
+  for (const engine of ["chart-native", "map-native"])
+    expect(sh).toContain(engine);
+});
+
 test("the installer links the DELIVERED tree, not the engine checkout", () => {
   // Pointing the helper at $DEST/skills would ship a host the whole engine — the failure this
   // whole chantier exists to close. Asserted on the EXECUTABLE lines: `toContain(".dist/skills")`

@@ -129,6 +129,17 @@ if ! ( cd "$DEST/.dist/skills/chart-native" && bunx playwright install chromium 
   echo "Playwright Chromium download failed (see above) — re-run this installer to resume." >&2
   exit 1
 fi
+# The render browser Remotion itself uses — a DIFFERENT cache from Playwright's, written only by
+# Remotion, and located per skill directory: it walks up from its cwd to the nearest package.json,
+# and each packed skill keeps its own (measured: docs/installer/remotion-cache-measurement.md).
+# So it is fetched once per video engine, and the setup page's probe finds it where it looks.
+for engine in chart-native map-native; do
+  echo "-> Downloading the video renderer for $engine…"
+  if ! ( cd "$DEST/.dist/skills/$engine" && bunx remotion browser ensure ); then
+    echo "The video renderer could not be downloaded for $engine — re-run this installer to resume." >&2
+    exit 1
+  fi
+done
 
 # 5. Local setup page — pick runtime + enter keys (verified live); writes ~/Splash/.env.
 # Skip it on a re-run that already has a verified .env (set SPLASH_RECONFIGURE=1 to force it),
