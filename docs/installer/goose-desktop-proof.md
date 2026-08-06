@@ -42,7 +42,9 @@ separating what was proven from what was not.
   not). `runtime_launch_cmd` echoes `open -a Goose` — an application, never a terminal session.
 - `docs/installer/goose-desktop-runtime.test.ts` — 11 hermetic tests, no network, no real Goose
   required. Each guard was mutation-verified with the mutation confirmed landed by checksum first.
-- `RUNTIMES["goose-desktop"]` in `install/configurator-core.ts`, **`verified: false`**.
+- `RUNTIMES["goose-desktop"]` in `install/configurator-core.ts`, **`verified: false`** at the time
+  this proof was written. **Update (2026-08-06):** raised to `true` by decision — see "Verdict"
+  below.
 
 ## Proof result — Layer A (2026-08-03)
 

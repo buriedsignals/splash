@@ -22,18 +22,33 @@ test("the two desktop runtimes are selectable", () => {
 // convention — but never in silence. The motive lives beside the flag, and this reads the source
 // as text to keep it there: the same method docs/installer/bootstrap-sh.test.ts uses on the
 // install scripts.
+//
+// The lookback is scoped to the ENTRY's own comment block, not a fixed number of lines — a fixed
+// window can reach into a dense neighbour's motive and let a silent entry hide behind it. This
+// file's actual shape makes the entry's boundary reliable: every top-level RUNTIMES property sits
+// at 2-space indent (`key: {` or `"key-with-dash": { ... }`), and its motive, if any, is the
+// contiguous run of `//` comment lines directly above that property line — no blank line and no
+// code line ever separates one entry's comment from another's in this file.
 test("every raised flag says why, right where it is raised", () => {
   const src = readFileSync(
     join(import.meta.dir, "configurator-core.ts"),
     "utf8",
   );
   const lines = src.split("\n");
+  const ENTRY_OPEN = /^ {2}(?:"[^"]+"|[A-Za-z_]\w*):\s*\{/;
   for (const [i, line] of lines.entries()) {
     if (!/verified:\s*true/.test(line)) continue;
-    const preamble = lines.slice(Math.max(0, i - 12), i).join("\n");
+    // Walk up to this entry's own top-level opening line — it IS this line for a single-line
+    // entry (e.g. `goose: { ..., verified: true },`), or an ancestor for a multi-line one.
+    let openIdx = i;
+    while (openIdx > 0 && !ENTRY_OPEN.test(lines[openIdx]!)) openIdx--;
+    // Walk up from there through this entry's own contiguous comment block only.
+    let start = openIdx;
+    while (start > 0 && /^\s*\/\//.test(lines[start - 1]!)) start--;
+    const ownBlock = lines.slice(start, i + 1).join("\n");
     expect(
-      /proven|decision/i.test(preamble),
-      `verified: true at line ${i + 1} carries no stated motive`,
+      /proven|decision/i.test(ownBlock),
+      `verified: true at line ${i + 1} carries no stated motive of its own`,
     ).toBe(true);
   }
 });
