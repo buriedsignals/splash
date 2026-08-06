@@ -27,6 +27,23 @@ export interface AcceptedProposal {
   // semantic (render-review's job, Gate 3a), but the PRESENCE of the confirmed claim
   // is mechanical — without it the review has nothing authoritative to quote against.
   confirmedTakeaway: string;
+  /**
+   * THE NARRATIVE KIND the journalist chose for a VIDEO — `story`, `stepped` or `reveal`.
+   *
+   * A video is not one thing, and until 2026-08-06 nobody asked: `cameraMode` sat at its default
+   * and nothing could honestly depend on it. It has to travel on the PROPOSAL rather than only
+   * inside the spec because the walk guard needs it: a `reveal` shows no words, so demanding a
+   * storyboard for one makes a journalist write sentences that will never appear — and a
+   * `stepped` that carries no walk is a step plan nobody wrote.
+   *
+   * Map track: translated to the spec's `cameraMode`, the field the engines already read
+   * (CAMERA_MODE_FOR_KIND). Chart track: this is the ONLY carrier — the same *Reveal composition
+   * renders both kinds, and what tells them apart is the walk.
+   *
+   * Absent on a video ⇒ an open question, refused by name. That is "no silent default" made
+   * mechanical rather than left to the orchestrator's discipline (design spec § 6.1).
+   */
+  narrativeKind?: "story" | "stepped" | "reveal";
   provenance?: "table" | "prose" | "none";
   confirmedTable?: boolean; // Gate 2b: set true only after the human confirms the prose table
   // CADRAGE Q3's confirmed distribution channel (skills/splash/src/channel.ts). Absent

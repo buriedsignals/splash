@@ -10,6 +10,7 @@ const p = (
   producer: string,
   format: string,
   spec: Record<string, unknown>,
+  narrativeKind?: "story" | "stepped" | "reveal",
 ): AcceptedProposal =>
   ({
     id: "e1",
@@ -17,6 +18,7 @@ const p = (
     format,
     spec,
     confirmedTakeaway: "t",
+    ...(narrativeKind ? { narrativeKind } : {}),
   }) as unknown as AcceptedProposal;
 
 const WALK = [
@@ -38,7 +40,12 @@ describe("narrativeWalkError — what it refuses", () => {
 
   it("refuses a map video with no walk, and names ITS field", () => {
     const err = narrativeWalkError(
-      p("map-native", "video", { type: "choropleth" }),
+      p(
+        "map-native",
+        "video",
+        { type: "choropleth", cameraMode: "guided-tour" },
+        "story",
+      ),
     );
     expect(err).not.toBeNull();
     expect(err!).toContain("arcBeats");
@@ -46,7 +53,9 @@ describe("narrativeWalkError — what it refuses", () => {
 
   it("refuses a BAR video with no walk — the type whose video can carry words", () => {
     expect(
-      narrativeWalkError(p("chart-native", "video", { nativeType: "bar" })),
+      narrativeWalkError(
+        p("chart-native", "video", { nativeType: "bar" }, "stepped"),
+      ),
     ).not.toBeNull();
   });
 
@@ -72,7 +81,12 @@ describe("narrativeWalkError — what it lets through, and why", () => {
     ).toBeNull();
     expect(
       narrativeWalkError(
-        p("map-native", "video", { type: "choropleth", arcBeats: WALK }),
+        p(
+          "map-native",
+          "video",
+          { type: "choropleth", cameraMode: "guided-tour", arcBeats: WALK },
+          "story",
+        ),
       ),
     ).toBeNull();
   });
@@ -147,7 +161,9 @@ describe("the image track carries its walk in its frames", () => {
 
   it("refuses one whose captions are unwritten", () => {
     expect(
-      narrativeWalkError(p("image-native", "scrolly", { frames: frames("  ") })),
+      narrativeWalkError(
+        p("image-native", "scrolly", { frames: frames("  ") }),
+      ),
     ).not.toBeNull();
   });
 });
@@ -206,14 +222,104 @@ describe("a map video's narrative kind decides whether words are owed", () => {
   });
 
   it("the guard follows: a fixed-camera map video is not refused for a missing walk", () => {
+    // Declared either way — as the journalist's own choice, or in the older vocabulary the map
+    // engines have always read. Both are answers; neither is a default.
     expect(
       narrativeWalkError(
         p("map-native", "video", { type: "choropleth", cameraMode: "simple" }),
       ),
     ).toBeNull();
-    // …while the default (guided tour) still is.
     expect(
-      narrativeWalkError(p("map-native", "video", { type: "choropleth" })),
-    ).not.toBeNull();
+      narrativeWalkError(
+        p(
+          "map-native",
+          "video",
+          { type: "choropleth", cameraMode: "simple" },
+          "reveal",
+        ),
+      ),
+    ).toBeNull();
+  });
+});
+
+// ★ NO SILENT DEFAULT. Until 2026-08-06 a map video's kind sat at whatever the engine fell back
+// to and nobody was asked — so nothing could honestly depend on it, and the guard demanded a
+// storyboard for reveals that show no words. The kind is now an ANSWER or an open question, never
+// an assumption.
+describe("the narrative kind is answered, never assumed", () => {
+  it("refuses a video that was never told which kind it is, and says how to ask", () => {
+    const err = narrativeWalkError(
+      p("map-native", "video", { type: "choropleth" }),
+    );
+    expect(err).not.toBeNull();
+    expect(err!).toMatch(/narrative kind/i);
+    // ROUTED: the act that resolves it — the question is ASKABLE, not recited.
+    expect(err!).toContain("narrative-kinds --producer map-native");
+    expect(err!).toContain("narrativeKind");
+  });
+
+  it("asks nothing where there is nothing to choose — one offer is not a question", () => {
+    // A pie video renders one kind and one only; refusing it for an unanswered question would
+    // block legitimate work over a menu of one.
+    expect(
+      narrativeWalkError(p("chart-native", "video", { nativeType: "pie" })),
+    ).toBeNull();
+  });
+
+  it("a chart video chosen as a reveal owes NO storyboard — it shows no words", () => {
+    expect(
+      narrativeWalkError(
+        p("chart-native", "video", { nativeType: "bar" }, "reveal"),
+      ),
+    ).toBeNull();
+  });
+
+  it("…and the same chart chosen as stepped, with no walk, is refused", () => {
+    const err = narrativeWalkError(
+      p("chart-native", "video", { nativeType: "bar" }, "stepped"),
+    );
+    expect(err).not.toBeNull();
+    expect(err!).toContain("beats");
+  });
+
+  // The engines read `cameraMode` and have never heard of `narrativeKind`. A choice that never
+  // reached that field is a choice that never reached the render — the whole point of asking.
+  it("refuses a map choice the spec contradicts", () => {
+    const err = narrativeWalkError(
+      p(
+        "map-native",
+        "video",
+        { type: "choropleth", cameraMode: "guided-tour", arcBeats: WALK },
+        "reveal",
+      ),
+    );
+    expect(err).not.toBeNull();
+    expect(err!).toContain("cameraMode");
+  });
+
+  it("refuses a map choice the spec never carried — silence drops it just as surely", () => {
+    const err = narrativeWalkError(
+      p(
+        "map-native",
+        "video",
+        { type: "choropleth", arcBeats: WALK },
+        "stepped",
+      ),
+    );
+    expect(err).not.toBeNull();
+    expect(err!).toContain('cameraMode to "stepped"');
+  });
+
+  it("accepts the translation done — including a route's own reveal", () => {
+    expect(
+      narrativeWalkError(
+        p(
+          "map-native",
+          "video",
+          { type: "route", cameraMode: "route-reveal" },
+          "reveal",
+        ),
+      ),
+    ).toBeNull();
   });
 });

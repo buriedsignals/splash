@@ -67,6 +67,35 @@ describe("every offered kind can be expressed to the engines", () => {
       expect(CAMERA_MODE_FOR_KIND[k.kind]).toBeTruthy();
   });
 
+  // ★ THE OFFER CARRIES THE FIELD, not just the name. The engines select their family from
+  // `cameraMode` and have never heard of `narrativeKind`, so an offer a caller cannot write down
+  // is a choice that dies between the question and the render — and the walk gate refuses exactly
+  // that. Answered from the registry so the two cannot drift.
+  it("every map offer says which cameraMode writes it down", () => {
+    expect(
+      narrativeKindsFor("map-native", "choropleth").map((k) => [
+        k.kind,
+        k.cameraMode,
+      ]),
+    ).toEqual([
+      ["story", "guided-tour"],
+      ["stepped", "stepped"],
+      ["reveal", "simple"],
+    ]);
+  });
+
+  it("a route's reveal is its OWN animation, not a held camera", () => {
+    const reveal = narrativeKindsFor("map-native", "route").find(
+      (k) => k.kind === "reveal",
+    );
+    expect(reveal?.cameraMode).toBe("route-reveal");
+  });
+
+  it("a chart offer names no cameraMode — the chart track has no such field", () => {
+    for (const k of narrativeKindsFor("chart-native", "bar"))
+      expect(k.cameraMode).toBeUndefined();
+  });
+
   it("the narrating kinds are exactly those that owe a storyboard", () => {
     for (const [producer, type] of [
       ["map-native", "choropleth"],
@@ -74,6 +103,8 @@ describe("every offered kind can be expressed to the engines", () => {
       ["chart-native", "pie"],
     ] as const)
       for (const k of narrativeKindsFor(producer, type))
-        expect(k.owesStoryboard).toBe(k.kind !== "reveal" ? k.owesStoryboard : false);
+        expect(k.owesStoryboard).toBe(
+          k.kind !== "reveal" ? k.owesStoryboard : false,
+        );
   });
 });

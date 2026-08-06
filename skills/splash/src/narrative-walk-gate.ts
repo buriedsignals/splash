@@ -17,6 +17,11 @@
 // below is therefore a list of DEMONSTRATED capability, not of intent.
 
 import type { AcceptedProposal } from "./producer-spec";
+import {
+  narrativeKindsFor,
+  KIND_FOR_CAMERA_MODE,
+  CAMERA_MODE_FOR_KIND,
+} from "./narrative-kinds";
 
 /**
  * WHERE A CONFIRMED WALK REACHES THE READER TODAY — (producer, format) pairs, each entry earned
@@ -79,21 +84,18 @@ function nativeTypeOf(spec: unknown): string {
  *     it did, on its first run, against a perfectly valid image scrolly.
  */
 function hasConfirmedWalk(spec: unknown): boolean {
-  const s = spec as
-    | {
-        beats?: unknown;
-        arcBeats?: unknown;
-        frames?: { caption?: unknown }[];
-      }
-    | null;
+  const s = spec as {
+    beats?: unknown;
+    arcBeats?: unknown;
+    frames?: { caption?: unknown }[];
+  } | null;
   if (s && Array.isArray(s.frames))
     return (
       s.frames.length > 0 &&
       s.frames.every((f) => String(f?.caption ?? "").trim().length > 0)
     );
   const walk = (Array.isArray(s?.beats) ? s?.beats : s?.arcBeats) as
-    | { text?: unknown }[]
-    | undefined;
+    { text?: unknown }[] | undefined;
   if (!Array.isArray(walk) || walk.length === 0) return false;
   // WRITTEN, not merely present. A walk of anchors with no claims is the shape `draft-beats`
   // hands over BEFORE the journalist writes — accepting it here would let the machine's skeleton
@@ -149,7 +151,11 @@ export function walkCapability(
         `a ${format} produced by ${producer} tells no story in steps — there is no surface ` +
         `for a step's sentence, so a walk would be written and dropped`,
     };
-  if (producer === "map-native" && format === "video" && isRevealKind(cameraMode))
+  if (
+    producer === "map-native" &&
+    format === "video" &&
+    isRevealKind(cameraMode)
+  )
     return {
       carriesWalk: false,
       why:
@@ -158,7 +164,10 @@ export function walkCapability(
         `what appears when, but its sentences would never be shown — so none are owed. Choose ` +
         `the guided tour or the stepped kind if the words are to be read`,
     };
-  if (producer === "chart-native" && !WALK_CAPABLE_CHART_TYPES.includes(nativeType))
+  if (
+    producer === "chart-native" &&
+    !WALK_CAPABLE_CHART_TYPES.includes(nativeType)
+  )
     return {
       carriesWalk: false,
       why:
@@ -174,7 +183,72 @@ export function walkCapability(
   };
 }
 
+/**
+ * The kind this video was TOLD it is — from the journalist's own choice, or, failing that, from an
+ * explicit `cameraMode` already on the spec.
+ *
+ * Reading `cameraMode` is not a silent default sneaking back in: it is the field the map engines
+ * have always read, and a spec that carries one has answered the question in the older vocabulary.
+ * Refusing it would be asking the same question twice, and would break the invariant this whole
+ * lot is bounded by — a run from yesterday resumes. What is NOT read is the engine's own fallback:
+ * a spec with no `cameraMode` at all has said nothing, and silence is not an answer.
+ */
+function declaredKind(p: AcceptedProposal): string | undefined {
+  if (p.narrativeKind) return p.narrativeKind;
+  const mode = cameraModeOf(p.spec);
+  return mode ? KIND_FOR_CAMERA_MODE[mode] : undefined;
+}
+
 export function narrativeWalkError(p: AcceptedProposal): string | null {
+  // ★ THE KIND DECIDES, and its absence is a QUESTION, not a default. A video that never said
+  // which narrative kind it is cannot be judged: demanding a walk might make a journalist write
+  // for a reveal that shows no words, and demanding nothing would let a stepped ship unwritten.
+  // Refused by name — "no silent default" made mechanical (design spec 2026-08-06 § 6.1).
+  if (p.format === "video") {
+    // A CHOICE is only owed where there IS one. A pie video offers the reveal and nothing else;
+    // a Datawrapper form offers no narrative kind at all. Asking a journalist to pick from a
+    // list of one is noise, and refusing for a missing answer to a question with one possible
+    // reply would block legitimate work — the failure this whole line of work exists to avoid.
+    const offered = narrativeKindsFor(p.producer, nativeTypeOf(p.spec));
+    if (offered.length <= 1) return null;
+    const kind = declaredKind(p);
+    if (!kind)
+      return (
+        `this video has not been told which narrative kind it is, and the kinds differ in what ` +
+        `they carry: a guided tour and a stepped video show each step's sentence, a reveal ` +
+        `shows none at all. Ask the journalist — ` +
+        `\`bun lib/host/cli.ts narrative-kinds --producer ${p.producer} --type ` +
+        `${nativeTypeOf(p.spec)}\` lists what this type can be — and put their choice on the ` +
+        `proposal as \`narrativeKind\``
+      );
+    // ★ ON THE MAP TRACK, A CHOICE THAT WAS NOT TRANSLATED IS A CHOICE THAT WAS DROPPED. The
+    // engines select their component family from `cameraMode` and have never read `narrativeKind`
+    // — so a proposal that states a kind the spec does not carry renders whatever the engine falls
+    // back to, and the journalist's answer evaporates between the question and the pixels. That is
+    // the un-threaded-field failure this repo keeps paying for, and the only reason to have asked
+    // at all is that the answer arrives.
+    //
+    // Refused rather than repaired here: writing the spec from the guard would make a validator
+    // that mutates, and a stated kind disagreeing with a stated cameraMode has no honest winner.
+    if (p.producer === "map-native" && p.narrativeKind) {
+      const mode = cameraModeOf(p.spec);
+      // Any mode that RESOLVES to the chosen kind is the translation done — `route-reveal` is a
+      // reveal too, and a route has no other video animation to offer.
+      if (!mode || KIND_FOR_CAMERA_MODE[mode] !== kind)
+        return (
+          `this map video was chosen as a "${kind}", but its spec ` +
+          (mode
+            ? `carries cameraMode "${mode}", which renders a "${KIND_FOR_CAMERA_MODE[mode] ?? "different kind"}"`
+            : `carries no cameraMode at all`) +
+          ` — the engines read cameraMode and have never heard of narrativeKind, so the choice ` +
+          `would be dropped on the way to the render. Set cameraMode to ` +
+          `"${CAMERA_MODE_FOR_KIND[kind]}" on the spec` +
+          (mode ? `, or change the chosen kind to match.` : `.`)
+        );
+    }
+    // A reveal owes nothing: it paints no words, so a walk written for it would never be read.
+    if (kind === "reveal") return null;
+  }
   // ONE answer, asked here and by the CLI alike — a guard that refuses on different knowledge
   // from the one a caller can query is two truths about the same product.
   if (

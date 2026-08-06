@@ -22,6 +22,14 @@ export type NarrativeKindOffer = {
   why: string;
   /** Does choosing it oblige a confirmed walk? `reveal` never does: it shows no words. */
   owesStoryboard: boolean;
+  /**
+   * THE FIELD THAT MAKES IT REAL, on the map track — the `cameraMode` this choice must be written
+   * as. Answered here rather than left to the caller because the engines read `cameraMode` and
+   * have never heard of `narrativeKind`: a choice that stops at the proposal is a choice the
+   * render discards. Absent on the chart track, where the composition is the same either way and
+   * the walk itself is what tells the kinds apart.
+   */
+  cameraMode?: string;
 };
 
 /** The map video's cameraMode that selects each kind (skills/map-native's storyComps). Kept here
@@ -31,6 +39,21 @@ export const CAMERA_MODE_FOR_KIND: Record<string, string> = {
   stepped: "stepped",
   reveal: "simple",
 };
+
+/**
+ * …and the way back. A map spec that ALREADY carries an explicit `cameraMode` has said which kind
+ * it is, in the older vocabulary — so reading it here is not a silent default, it is refusing to
+ * ask the same question twice. `route-reveal` has no `narrativeKind` going the other way (nothing
+ * chooses it; a route's one video animation is not a choice), which is why this is written out
+ * rather than inverted from the map above.
+ */
+export const KIND_FOR_CAMERA_MODE: Record<string, NarrativeKindOffer["kind"]> =
+  {
+    "guided-tour": "story",
+    stepped: "stepped",
+    simple: "reveal",
+    "route-reveal": "reveal",
+  };
 
 const REVEAL_OFFER = (why: string): NarrativeKindOffer => ({
   kind: "reveal",
@@ -49,8 +72,12 @@ export function narrativeKindsFor(
   nativeType: string,
 ): NarrativeKindOffer[] {
   if (producer === "map-native") {
-    const narrates = walkCapability(producer, nativeType, "video", "guided-tour")
-      .carriesWalk;
+    const narrates = walkCapability(
+      producer,
+      nativeType,
+      "video",
+      "guided-tour",
+    ).carriesWalk;
     // ★ NARRATING AND PROPOSABLE ARE TWO QUESTIONS. A route and a hex-grid DO show their beats'
     // words — their Story family paints them like any other map's. But no walk can be DRAFTED
     // for them: their anchor is computed at produce time (`resolveRouteArc`,
@@ -70,24 +97,29 @@ export function narrativeKindsFor(
             ? ""
             : " (its steps are written by hand — this type's anchors only exist once the map is built, so none can be proposed to you)"),
         owesStoryboard: proposable,
+        cameraMode: CAMERA_MODE_FOR_KIND.story,
       });
       offers.push({
         kind: "stepped",
         why:
           "the map holds still and advances by discrete steps, each with its own sentence — " +
           "the same reading as a scrolly, but the clock turns the pages" +
-          (proposable
-            ? ""
-            : " (its steps are written by hand — see above)"),
+          (proposable ? "" : " (its steps are written by hand — see above)"),
         owesStoryboard: proposable,
+        cameraMode: CAMERA_MODE_FOR_KIND.stepped,
       });
     }
-    offers.push(
-      REVEAL_OFFER(
+    offers.push({
+      ...REVEAL_OFFER(
         "the camera holds the frame and the DATA animates — no sentence is shown at all, so " +
           "nothing has to be written; the story has to be in what appears, not in what is said",
       ),
-    );
+      // A route's reveal is its OWN animation — the line draws itself, and `simple` would hold a
+      // camera over a route that never appears. One type, one name, read from the type rather
+      // than from the kind alone.
+      cameraMode:
+        nativeType === "route" ? "route-reveal" : CAMERA_MODE_FOR_KIND.reveal,
+    });
     return offers;
   }
 

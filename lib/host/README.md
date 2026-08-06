@@ -1318,6 +1318,14 @@ $ bun lib/host/cli.ts narrative-kinds --producer chart-native --type bar
 An empty list is the honest answer for a producer that renders no narrative video at all, and its
 absence from a proposal is the point.
 
+**On the map track each entry also carries `cameraMode` — the field that writes the choice down.**
+The engines select their component family from `cameraMode` and have never heard of
+`narrativeKind`, so a choice that stops at the proposal is one the render discards. Put the chosen
+kind on the proposal as `narrativeKind` **and** its `cameraMode` on the spec; the spine's walk
+guard refuses a map video whose spec does not carry the cameraMode its chosen kind resolves to.
+A route's reveal is its own animation (`route-reveal`), which is why the field is read from the
+answer rather than assembled by the caller.
+
 ### `can-carry-walk --producer <p> --format <f> [--type <t>] [--camera-mode <m>]`
 
 **Does a confirmed walk reach a reader through this form?** Read-only, and deliberately without
