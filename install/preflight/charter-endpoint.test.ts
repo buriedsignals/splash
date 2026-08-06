@@ -1,7 +1,7 @@
 // charter-endpoint.test.ts — readoutFrom turns a CharterProposal (raw measurements, weights,
 // signals) into values a page can show, each with the sentence saying where it was read. No
 // network here: proposeCharter runs on fixed sources, never collectSiteSources.
-import { expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { proposeCharter } from "../../lib/newsroom/charter.ts";
 import { readoutFrom } from "./charter-endpoint.ts";
 
@@ -107,6 +107,120 @@ test("builds the receipt in the requested language", () => {
   expect(fr.palette[0]!.receipt).not.toContain("Read from");
   // The token itself (the literal CSS/meta snippet) is language-neutral and survives either way.
   expect(fr.palette[0]!.receipt).toContain("#0A5C36");
+});
+
+// Task 4 (2026-08-06): the receipt used to carry WHAT was read and never WHERE it came from — a
+// colour from the newsroom's own CDN and one from an analytics widget's stylesheet read
+// identically. `Measurement.source` has carried that since task 2 lifted the same-host filter;
+// this is the first thing that actually DISPLAYS it.
+test("the receipt names the sheet a colour was read from — the newsroom's own, or a third party's", () => {
+  const ownCdn = readoutFrom(
+    proposeCharter({
+      url: "https://example.news",
+      html: "<p>hello</p>",
+      sheets: [
+        {
+          href: "https://cdn.example.news/site.css",
+          css: `a { color: #c8102e; }`.repeat(40),
+        },
+      ],
+    }),
+  );
+  expect(ownCdn.palette[0]!.receipt).toContain(
+    "https://cdn.example.news/site.css",
+  );
+
+  const thirdParty = readoutFrom(
+    proposeCharter({
+      url: "https://example.news",
+      html: "<p>hello</p>",
+      sheets: [
+        {
+          href: "https://widget.analytics-co.example/embed.css",
+          css: `a { color: #c8102e; }`.repeat(40),
+        },
+      ],
+    }),
+  );
+  expect(thirdParty.palette[0]!.receipt).toContain(
+    "https://widget.analytics-co.example/embed.css",
+  );
+  // The two receipts read the SAME evidence (a repeated link colour) but must not be
+  // indistinguishable — that is the entire point of naming the source.
+  expect(thirdParty.palette[0]!.receipt).not.toBe(ownCdn.palette[0]!.receipt);
+});
+
+test("the typeface receipt names its source the same way", () => {
+  const readout = readoutFrom(
+    proposeCharter({
+      url: "https://example.news",
+      html: "<p>hello</p>",
+      sheets: [
+        {
+          href: "https://fonts.example.news/type.css",
+          css: `body { font-family: "Publico Text", serif; }`,
+        },
+      ],
+    }),
+  );
+  expect(readout.typefaces[0]!.receipt).toContain(
+    "https://fonts.example.news/type.css",
+  );
+});
+
+// Task 4, Step 4: "a guess must look like a guess" — on screen, not merely in `confidence`. Both
+// directions, so a regression that stops appending the mention, or one that starts appending it
+// to a DECLARED reading, reddens here.
+describe("the receipt marks an inferred candidate as a guess, and a declared one is not", () => {
+  test("an inferred top candidate's receipt carries the guess mention", () => {
+    const readout = readoutFrom(
+      proposeCharter({
+        url: "https://link-only.news",
+        html: "<p>hello</p>",
+        sheets: [
+          {
+            href: "https://link-only.news/site.css",
+            css: `a { color: #c8102e; }`.repeat(40),
+          },
+        ],
+      }),
+    );
+    expect(readout.palette[0]!.confidence).toBe("inferred");
+    expect(readout.palette[0]!.receipt).toContain(
+      "a guess — not a colour your site names as its own",
+    );
+  });
+
+  test("a declared top candidate's receipt does not carry the guess mention", () => {
+    const readout = readoutFrom(
+      proposeCharter({
+        url: "https://example.news",
+        html: '<meta name="theme-color" content="#0A5C36">',
+        sheets: [],
+      }),
+    );
+    expect(readout.palette[0]!.confidence).toBe("declared");
+    expect(readout.palette[0]!.receipt).not.toContain("a guess");
+  });
+
+  test("holds in French too", () => {
+    const readout = readoutFrom(
+      proposeCharter({
+        url: "https://link-only.news",
+        html: "<p>hello</p>",
+        sheets: [
+          {
+            href: "https://link-only.news/site.css",
+            css: `a { color: #c8102e; }`.repeat(40),
+          },
+        ],
+      }),
+      "fr",
+    );
+    expect(readout.palette[0]!.receipt).toContain(
+      "une supposition — pas une couleur",
+    );
+  });
 });
 
 // The ground and the typography, when the site declares them, pass through with a receipt too.

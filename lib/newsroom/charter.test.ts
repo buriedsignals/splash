@@ -427,6 +427,87 @@ describe("regression — the score floor", () => {
     expect(p.notes.join(" ")).toContain("#e00000");
     expect(p.notes.join(" ")).toContain("nothing is proposed");
   });
+
+  it("should still refuse a colour on only TWO brand-carrying declarations — the bbc.com reading this floor exists for", () => {
+    // Same live case the constant's own comment cites: three hashed, unrelated classes, one
+    // colour, and only two of the three properties (background-color, border-top-color) are on
+    // the closed set `recurrent-role` reads — RECURRENT_ROLE_MIN_COUNT keeps this below evidence.
+    const css =
+      ".css-1ab { color: #e00000 } .css-2cd { background-color: #e00000 } .css-3ef { border-top-color: #e00000 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates).toEqual([]);
+    expect(p.confidence).toBe("none");
+  });
+});
+
+// A compiled stylesheet does not name its brand in a custom property — it repeats the colour on
+// the roles that carry a brand: button fills, banner backgrounds, accented borders. Repetition on
+// those roles is evidence; repetition anywhere is not, which is why a neutral never qualifies.
+describe("recurrent-role — a colour repeated on brand-carrying roles, with no name anywhere", () => {
+  it("finds a brand colour repeated on brand-carrying roles", () => {
+    const css = Array.from(
+      { length: 12 },
+      (_, i) => `.btn-${i}{background:#d5121e}`,
+    ).join("");
+    const p = proposeCharter({
+      url: "https://x.news",
+      html: "",
+      sheets: [{ href: "a.css", css }],
+    });
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    expect(p.confidence).not.toBe("declared");
+  });
+
+  // Never the least-grey pixel: a repeated neutral is a layout colour, not a brand.
+  it("a repeated neutral is not a brand colour", () => {
+    const css = Array.from(
+      { length: 20 },
+      (_, i) => `.x-${i}{background:#f4f4f4}`,
+    ).join("");
+    const p = proposeCharter({
+      url: "https://x.news",
+      html: "",
+      sheets: [{ href: "a.css", css }],
+    });
+    expect(p.candidates).toEqual([]);
+  });
+
+  it("finds it even when the class names are hashed and carry no readable role", () => {
+    // The actual defect this signal fixes: no `.btn`, no `.masthead` — nothing a selector-text
+    // regex can read, which is what a CSS-modules/atomic build produces. Six on `background`,
+    // four on `border-color`: the closed property set, not the selector, is what fires here.
+    const css = [
+      ...Array.from({ length: 6 }, (_, i) => `.h${i}x9{background:#3355aa}`),
+      ...Array.from({ length: 4 }, (_, i) => `.q${i}z2{border-color:#3355aa}`),
+    ].join("");
+    const p = proposeCharter({
+      url: "https://x.news",
+      html: "",
+      sheets: [{ href: "a.css", css }],
+    });
+    expect(p.candidates[0]!.value).toBe("#3355aa");
+    expect(p.candidates[0]!.evidence[0]!.signal).toBe("recurrent-role");
+    expect(p.confidence).toBe("inferred");
+  });
+
+  it("does not promote a colour repeated only on `color` — running prose, not a brand role", () => {
+    const css = Array.from(
+      { length: 12 },
+      (_, i) => `.p${i}{color:#3355aa}`,
+    ).join("");
+    const p = proposeCharter(bare({ sheets: [{ href: "a.css", css }] }));
+    expect(p.candidates).toEqual([]);
+  });
+
+  it("stays below every declared signal even at high frequency", () => {
+    const css = [
+      ":root { --brand: #0a5c36 }",
+      ...Array.from({ length: 200 }, (_, i) => `.h${i}z{background:#3355aa}`),
+    ].join("\n");
+    const p = proposeCharter(bare({ sheets: [{ href: "a.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#0a5c36");
+    expect(p.confidence).toBe("declared");
+  });
 });
 
 describe("regression — the ground", () => {
@@ -514,6 +595,7 @@ describe("regression — every signal a reading can carry is explainable", () =>
     "masthead",
     "link",
     "control",
+    "recurrent-role",
     "declared",
   ];
 

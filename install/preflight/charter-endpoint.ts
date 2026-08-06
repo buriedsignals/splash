@@ -39,15 +39,17 @@ export type CharterReadout = {
 
 /**
  * The receipt sentence for one colour reading: what kind of declaration it is (`copy.signalLabel`,
- * translated the same way the page around it is) plus the literal token it was read from, so the
- * journalist can find it on their own site.
+ * translated the same way the page around it is), the literal token it was read from, and WHERE
+ * that token was read from (`m.source` — the newsroom's own page, or the exact stylesheet href,
+ * same host or not). The source is what actually lets the journalist tell their own CDN apart
+ * from a third-party widget's sheet — see `copy.receiptSource`'s own doc comment.
  */
 function receiptFor(m: Measurement, copy: PageCopy): string {
-  return `${copy.receiptReadFrom} ${copy.signalLabel[m.signal]}: \`${m.token}\`.`;
+  return `${copy.receiptReadFrom} ${copy.signalLabel[m.signal]}: \`${m.token}\`. ${copy.receiptSource} ${m.source}`;
 }
 
 function typeReceiptFor(t: TypeMeasurement, copy: PageCopy): string {
-  return `${copy.receiptReadFont} ${copy.typeRoleLabel[t.role]}: \`${t.token}\`.`;
+  return `${copy.receiptReadFont} ${copy.typeRoleLabel[t.role]}: \`${t.token}\`. ${copy.receiptSource} ${t.source}`;
 }
 
 /**
@@ -95,6 +97,21 @@ function bestEvidence(candidate: ColourCandidate): Measurement {
 }
 
 /**
+ * A palette candidate's receipt: the best evidence's own sentence, with the "this is a guess"
+ * mention appended when the candidate's confidence is `inferred` — never merely a `confidence`
+ * field a page has to remember to check. Built here, once, in the module that already carries
+ * `charter-endpoint.test.ts`, rather than as a ternary in `client.ts`: that file's own header
+ * comment is explicit that it decides nothing a test cannot see, and a mention that only a DOM
+ * ternary produced was exactly the kind of thing that file exists to not be responsible for.
+ */
+function paletteReceiptFor(candidate: ColourCandidate, copy: PageCopy): string {
+  const receipt = receiptFor(bestEvidence(candidate), copy);
+  return candidateConfidence(candidate) === "inferred"
+    ? `${receipt} ${copy.charterInferred}`
+    : receipt;
+}
+
+/**
  * `lang` picks the receipt vocabulary (`pageCopy`, the same fallback-to-English table the rest
  * of the page uses) — it does not touch `proposal` itself, which is language-neutral (hex
  * values, literal CSS tokens). Defaults to English so every existing caller (this module's own
@@ -107,7 +124,7 @@ export function readoutFrom(
   const copy = pageCopy(lang);
   const palette = proposal.candidates.map((candidate) => ({
     hex: candidate.value,
-    receipt: receiptFor(bestEvidence(candidate), copy),
+    receipt: paletteReceiptFor(candidate, copy),
     confidence: candidateConfidence(candidate),
   }));
 

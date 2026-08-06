@@ -61,10 +61,18 @@ export type PageCopy = {
   signalLabel: Record<ColourSignal, string>;
   /** What a measured typeface role is called — keyed like `TypeMeasurement["role"]`. */
   typeRoleLabel: Record<TypeMeasurement["role"], string>;
-  /** "${this} ${signalLabel}: `${token}`." — a colour receipt. */
+  /** "${this} ${signalLabel}: `${token}`. ${receiptSource} ${source}" — a colour receipt. */
   receiptReadFrom: string;
-  /** "${this} ${typeRoleLabel}: `${token}`." — a typeface receipt. */
+  /** "${this} ${typeRoleLabel}: `${token}`. ${receiptSource} ${source}" — a typeface receipt. */
   receiptReadFont: string;
+  /**
+   * Names WHERE the token was read from — the newsroom's own page/CDN, or a third-party
+   * stylesheet (an analytics widget, a CDN unrelated to the newsroom) the page happens to link.
+   * This is the whole reason `Measurement.source`/`TypeMeasurement.source` exist: since the
+   * same-host filter on stylesheets was lifted, a reading can come from any sheet the page
+   * links, and only naming it lets the journalist judge whether it is really their own.
+   */
+  receiptSource: string;
 
   /** The publication language field — a profile field, edited here (the profile is where it lives). */
   languageContent: string;
@@ -153,6 +161,7 @@ const EN: PageCopy = {
   },
   receiptReadFrom: "Read from",
   receiptReadFont: "Read as the font of",
+  receiptSource: "Source:",
 
   languageContent: "Language your visuals are published in",
 
@@ -242,6 +251,8 @@ const FR: PageCopy = {
     masthead: "le remplissage d'un SVG dans l'élément bandeau/logo",
     link: "la couleur des liens",
     control: "le fond des boutons",
+    "recurrent-role":
+      "une couleur répétée sur plusieurs déclarations bouton/bandeau/bordure, sans que rien ne la nomme comme la marque",
     declared: "une couleur déclarée quelque part dans la feuille de style",
   },
   typeRoleLabel: {
@@ -251,6 +262,7 @@ const FR: PageCopy = {
   },
   receiptReadFrom: "Lu depuis",
   receiptReadFont: "Lu comme police de",
+  receiptSource: "Source :",
 
   languageContent: "Langue de publication de vos visuels",
 

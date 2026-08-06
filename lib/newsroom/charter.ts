@@ -85,6 +85,12 @@ export type ColourSignal =
   | "masthead" // fill/stroke of the logo or masthead SVG
   | "link" // the colour of a link
   | "control" // a button / CTA / tag background
+  // A colour NOBODY named, but that repeats across the closed set of brand-carrying properties
+  // (see RECURRENT_ROLE_PROPERTIES) — a compiled stylesheet's answer to "the button fills, the
+  // banner backgrounds, the accented borders", when the class names themselves are hashed and
+  // unreadable. Never a `declared` signal (DECLARED_SIGNALS excludes it): repetition is not a
+  // site's own say-so, and the journalist is told so on screen.
+  | "recurrent-role"
   | "declared"; // any other colour declared in the stylesheet
 
 /** One reading, with where it came from. This is the unit the journalist is shown. */
@@ -452,6 +458,8 @@ export const SIGNAL_LABEL: Record<ColourSignal, string> = {
   masthead: "the fill of an SVG inside the masthead/logo element",
   link: "the colour of the links",
   control: "the background of the buttons",
+  "recurrent-role":
+    "a colour repeated across several button/banner/border declarations, though nothing names it as the brand",
   declared: "a colour declared somewhere in the stylesheet",
 };
 
@@ -473,6 +481,16 @@ export const WEIGHT: Record<ColourSignal, number> = {
   // declaration, so it outranks an unlabelled one, but it does not outrank the link colour and it
   // does not license `declared` confidence.
   "accent-property": 70,
+  /**
+   * Strictly between `control` (55, the proposal floor) and `accent-property` (70). It must clear
+   * MIN_CANDIDATE_SCORE — repetition on a closed set of brand-carrying properties is real
+   * evidence, the whole reason this signal exists — but it must sit under EVERY declared signal,
+   * `control` included: a colour a site's own markup labels a button with (`.btn{…}`) is still a
+   * more deliberate act than a colour that merely turns up on several buttons/banners/borders
+   * with no such label anywhere. 60 is the midpoint of the (55, 70) gap this signal is
+   * constrained to, not tuned to any one site's numbers.
+   */
+  "recurrent-role": 60,
   control: 55,
   declared: 8,
 };
@@ -501,6 +519,41 @@ const MASTHEAD_SELECTOR = /(logo|masthead|brand|wordmark|site-?title)/i;
 const LINK_SELECTOR = /(^|[\s,>+~])a(?![\w-])/;
 const COLOUR_PROP =
   /^(?:color|background(?:-color)?|border(?:-[a-z]+)?-color|fill|stroke|outline-color|text-decoration-color)$/;
+/**
+ * The CLOSED set of properties `recurrent-role` counts. Each one paints a filled area or a drawn
+ * edge — a button fill, a banner background, an accented border, a masthead SVG's fill/stroke —
+ * which is the surface a brand colour actually occupies. `color` (running body text) and
+ * `outline-color`/`text-decoration-color` are deliberately left out even though `COLOUR_PROP`
+ * reads them too: prose repeats far more than any brand hue does, and a focus ring is a state
+ * indicator, not a house colour, so counting either would manufacture "evidence" out of noise
+ * that has nothing to do with the brand.
+ */
+const RECURRENT_ROLE_PROPERTIES = new Set([
+  "background",
+  "background-color",
+  "border-color",
+  "border-top-color",
+  "border-right-color",
+  "border-bottom-color",
+  "border-left-color",
+  "fill",
+  "stroke",
+]);
+/**
+ * How many separate declarations must repeat a colour, on RECURRENT_ROLE_PROPERTIES, before the
+ * repetition itself counts as evidence.
+ *
+ * Three, not two — because two is already pinned as NOT evidence, by a regression test this
+ * signal must not quietly overturn ("regression — the score floor" in charter.test.ts): bbc.com
+ * repeats `#e00000` across exactly two brand-carrying declarations (`background-color` on one
+ * hashed Emotion class, `border-top-color` on another), and the project's own conclusion about
+ * that live reading is "not evidence of anything… ask the question". Two independent
+ * declarations is indistinguishable from two components coincidentally sharing an "error red";
+ * three is the point past which coincidence stops being the simpler explanation. This number is
+ * not fit to any one captured site — see charter-fixtures.test.ts for what it actually turns up,
+ * including a case (heidi.news) where nothing clears it at all.
+ */
+const RECURRENT_ROLE_MIN_COUNT = 3;
 const GROUND_SELECTOR = /^(?::root|html|body|\*)$/;
 // Same tightening as BRAND_PROPERTY, and for a sharper reason: `theme:` is the profile field a
 // wrong reading makes visible on EVERY visual. The loose first cut matched Le Monde's
@@ -853,6 +906,50 @@ function rank(measurements: Measurement[]): ColourCandidate[] {
     .slice(0, CANDIDATE_CAP);
 }
 
+/**
+ * Recovers the CSS property a `declared`-signal `Measurement` was read from, by re-reading its
+ * own `token` — every such token was written by `scanCss` in the exact `${selector} { ${prop}:
+ * ${value} }` shape. Reused rather than threading a sixth field onto `Measurement` for the sake
+ * of one signal: the token already carries the property, this just recovers it.
+ */
+function propertyFromToken(token: string): string | null {
+  const m = /\{\s*([a-z-]+)\s*:/i.exec(token);
+  return m ? m[1]!.toLowerCase() : null;
+}
+
+/**
+ * Promotes `declared` readings to `recurrent-role` IN PLACE, when their colour repeats at least
+ * RECURRENT_ROLE_MIN_COUNT times on RECURRENT_ROLE_PROPERTIES.
+ *
+ * Only `declared` is a candidate for promotion — never `control`/`masthead`/`link`/`brand`/etc.
+ * Those already came from a more deliberate reading (a role SELECTOR matched the rule, or the
+ * property was NAMED as the brand/accent/link), and this signal's whole job is to give the
+ * UNLABELLED bucket — a colour that matched none of those — a way to still be evidence, when it
+ * turns up again and again on the same kind of surface. `declared` alone earns almost nothing
+ * (weight 8); repeated on brand-carrying properties, it earns 60.
+ *
+ * Mutates in place rather than pushing new measurements alongside the old ones, so a single
+ * physical CSS declaration is never counted twice (once as `declared`, again as
+ * `recurrent-role`) — `count` on the resulting candidate stays the number of distinct
+ * declarations actually read, not a doubled tally.
+ */
+function promoteRecurrentRoles(measurements: Measurement[]): void {
+  const counts = new Map<string, number>();
+  for (const m of measurements) {
+    if (m.signal !== "declared" || isNeutral(m.value)) continue;
+    const prop = propertyFromToken(m.token);
+    if (!prop || !RECURRENT_ROLE_PROPERTIES.has(prop)) continue;
+    counts.set(m.value, (counts.get(m.value) ?? 0) + 1);
+  }
+  for (const m of measurements) {
+    if (m.signal !== "declared") continue;
+    if ((counts.get(m.value) ?? 0) < RECURRENT_ROLE_MIN_COUNT) continue;
+    const prop = propertyFromToken(m.token);
+    if (!prop || !RECURRENT_ROLE_PROPERTIES.has(prop)) continue;
+    m.signal = "recurrent-role";
+  }
+}
+
 /** The best reading that did NOT clear the floor, so the refusal can name what it saw. */
 function belowFloor(
   measurements: Measurement[],
@@ -933,6 +1030,10 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
       "the page could not be read to the end; what follows is partial",
     );
   }
+
+  // A colour nobody named still deserves a look when it recurs on the surfaces a brand actually
+  // occupies — run AFTER every source has been scanned, since the whole point is a GLOBAL count.
+  promoteRecurrentRoles(raw.measurements);
 
   const candidates = rank(raw.measurements);
   const top = candidates[0];

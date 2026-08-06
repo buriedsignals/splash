@@ -18,6 +18,14 @@ import { loadSiteFixture } from "./fixtures/sites/load.ts";
 
 test("heidi.news, as captured — the colour theme-color declares", () => {
   const p = proposeCharter(loadSiteFixture("heidi-news"));
+  // Still ONE candidate after task 4's `recurrent-role` signal — measured, not assumed. Heidi's
+  // CSS is a design-token system: real colour values are declared once per token name
+  // (`--lt-color-red-500-rgb`, `--lt-color-primary-500-rgb`, …) and almost every rule that PAINTS
+  // something references those tokens via `var(--…)`, which this extractor does not resolve — so
+  // very few literal hexes ever land on a brand-carrying property twice, let alone
+  // RECURRENT_ROLE_MIN_COUNT (3) times. The closest is `#569ff7` at exactly two (flatpickr's
+  // bundled date-picker default, not Heidi's brand — see this task's report) — below the floor,
+  // and correctly so.
   expect(p.candidates).toHaveLength(1);
   expect(p.candidates[0]?.value).toBe("#d5121e");
   // 101, not 100: task 2 lifted the same-host filter, so the CDN stylesheet is now read too, and
@@ -60,13 +68,20 @@ test("heidi.news, as captured — typography, now that the CDN stylesheet is rea
 test("therecord.media, as captured — no declared brand, only inferred colour", () => {
   const p = proposeCharter(loadSiteFixture("therecord-media"));
   expect(p.confidence).toBe("inferred");
+  // Before task 4: #e06b2c's first-scanned reading (`.article__categories a
+  // {background-color:#e06b2c}`) was just `declared` (weight 8) — an unlabelled colour picked out
+  // of the bundle. After task 4: the same colour repeats on `background-color`/`border-color`
+  // (category pills, the warning box, search-result highlights, pagination) far past
+  // RECURRENT_ROLE_MIN_COUNT, so that reading is promoted in place to `recurrent-role` (weight
+  // 60) — still `inferred`, never `declared`, but now the STRONGEST reason this candidate ranks
+  // where it does is named honestly, instead of the weakest one.
   expect(
     p.candidates.map((c) => ({
       value: c.value,
       signal: c.evidence[0]?.signal,
     })),
   ).toEqual([
-    { value: "#e06b2c", signal: "declared" },
+    { value: "#e06b2c", signal: "recurrent-role" },
     { value: "#fca532", signal: "link" },
   ]);
   expect(p.notes).toEqual([

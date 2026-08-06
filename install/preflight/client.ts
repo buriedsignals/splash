@@ -392,15 +392,11 @@ function renderNewsroom(copy: PageCopy): void {
   const chosenCandidate = palette.find(
     (c) => c.hex.toLowerCase() === form.newsroom.color.toLowerCase(),
   );
+  // The "this is a guess" mention is already part of `receipt` for an inferred candidate
+  // (charter-endpoint.ts's `paletteReceiptFor`) — this file renders it, it does not decide it.
   if (chosenCandidate)
     colourField.append(
-      el(
-        "p",
-        { class: "charter-receipt" },
-        chosenCandidate.confidence === "inferred"
-          ? `${chosenCandidate.receipt} ${copy.charterInferred}`
-          : chosenCandidate.receipt,
-      ),
+      el("p", { class: "charter-receipt" }, chosenCandidate.receipt),
     );
   // An existing profile's series colours (`palette[1+]`) — read-only, just visible. The primary
   // field above can only ever edit index 0 (`updateProfileMarkdown` grafts the rest back on
