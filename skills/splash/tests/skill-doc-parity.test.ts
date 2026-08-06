@@ -528,3 +528,30 @@ describe("E24 — a failure is told, its internals are not", () => {
     );
   });
 });
+
+// ★ THE NARRATIVE KIND IS PROPOSED, NOT DEFAULTED. The guard refuses a video that was never told
+// its kind (`narrative-walk-gate.ts`), so meeting that refusal means the question was skipped —
+// and the question lives in prose alone. These pins are the tripwire against a rewrite that drops
+// it: a proposal step nobody prescribes is a step that stops happening, which is exactly how the
+// walk proposal was lost on this chain before.
+describe("the narrative kind is asked before a video is produced", () => {
+  it("the flow prescribes proposing the kinds, read from the registry", () => {
+    expect(splash).toContain("bun lib/host/cli.ts narrative-kinds --producer");
+    expect(splash).toContain("A VIDEO IS NOT ONE THING");
+  });
+
+  it("it says what a reveal costs — no sentence at all, known BEFORE choosing", () => {
+    expect(splash).toContain("shows **no sentence at all**");
+  });
+
+  it("it says where the answer is written down — both places, or the render drops it", () => {
+    expect(splash).toContain("`narrativeKind` on the proposal");
+    expect(splash).toContain("`cameraMode` on the spec");
+  });
+
+  it("it chains: a narrating kind owes the storyboard, a reveal does not", () => {
+    const kind = splash.slice(splash.indexOf("A VIDEO IS NOT ONE THING"));
+    expect(kind).toContain("the storyboard is proposed straight away");
+    expect(kind).toContain("nothing is owed: produce");
+  });
+});
