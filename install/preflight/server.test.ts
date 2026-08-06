@@ -74,7 +74,6 @@ function submission(over: Record<string, unknown> = {}) {
     contentLang: "en",
     login: "",
     credentials: {},
-    enabled: [],
     publisher: "zip",
     verified: {},
     ...over,
@@ -95,7 +94,40 @@ describe("the setup page as served", () => {
         html.indexOf("</script>", html.indexOf(`id="${MODEL_SCRIPT_ID}"`)),
       );
       expect(payload).toContain('"runtimes"');
-      expect(payload).toContain('"engines"');
+      expect(payload).toContain('"producible"');
+    });
+  });
+
+  // Task 6 (2026-08-06): the page collapsed to one screen — a recap of what the newsroom can
+  // PRODUCE (derived, Task 5) rather than a ticked list, and an editable profile (Task 2/3) —
+  // read from what the server actually SERVES, not from the functions that feed it.
+  it("serves one screen: no ticks, a recap, and an editable profile", async () => {
+    const dest = root();
+    writeFileSync(
+      join(dest, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "palette:",
+        '  - "#0A5C36"   # your house colour',
+        "source:",
+        '  name: "Heidi.news"',
+        "---",
+        "",
+        "# Newsroom profile",
+        "",
+      ].join("\n"),
+    );
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const model = JSON.parse(html.slice(start, end));
+
+      expect(model.producible.length).toBeGreaterThan(0);
+      expect(model).not.toHaveProperty("engines");
+      expect(model.profile?.palette?.[0]).toBeTruthy();
     });
   });
 
@@ -143,7 +175,6 @@ describe("what a submission writes", () => {
         method: "POST",
         body: submission({
           runtime: "goose",
-          enabled: ["dw-chart", "zip"],
           credentials: { DATAWRAPPER_API_TOKEN: "dw-token" },
         }),
       });
@@ -194,7 +225,7 @@ describe("what a submission writes", () => {
     await withServer(dest, async (port) => {
       const r = await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
-        body: submission({ enabled: ["dw-chart"] }),
+        body: submission(),
       });
       expect(r.status).toBe(200);
     });
@@ -226,7 +257,7 @@ describe("what a submission writes", () => {
     expect(env).toContain('DATAWRAPPER_API_TOKEN="new"');
   });
 
-  it("creates the newsroom profile once, and never rewrites an existing one", async () => {
+  it("creates the newsroom profile once, then an edit rewrites the fields it knows and keeps the rest", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
       await fetch(`http://127.0.0.1:${port}/submit`, {
@@ -241,14 +272,144 @@ describe("what a submission writes", () => {
     expect(profile).toContain('name: "Heidi.news"');
     expect(profile).toContain('lang: "fr"');
 
-    writeFileSync(join(dest, "NEWSROOM-PROFILE.md"), "MINE, HAND EDITED\n");
+    // The newsroom made this file theirs: a hand-added key this version does not author
+    // (`requiredSigners`) and a comment in the body. Neither came from the setup page.
+    writeFileSync(
+      join(dest, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "palette:",
+        '  - "#0a5c36"   # your house colour',
+        "source:",
+        '  name: "Heidi.news"',
+        'lang: "fr"',
+        'requiredSigners: ["yvan"]',
+        "---",
+        "",
+        "# Newsroom profile",
+        "",
+        "Ne pas toucher : notre rouge vient de la charte 2019.",
+        "",
+      ].join("\n"),
+    );
     await withServer(dest, async (port) => {
       await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
         body: submission({
-          newsroom: { name: "Someone else", lang: "de" },
+          contentLang: "de",
+          newsroom: { name: "Someone else", color: "#d5121e", lang: "de" },
         }),
       });
+    });
+    const edited = readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8");
+    // Rewritten: the fields the page knows.
+    expect(edited).toContain('name: "Someone else"');
+    expect(edited).toContain('lang: "de"');
+    expect(edited).toContain('"#d5121e"');
+    expect(edited).not.toContain('"#0a5c36"');
+    // Preserved: the key and the prose the page never touched.
+    expect(edited).toContain('requiredSigners: ["yvan"]');
+    expect(edited).toContain(
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+    );
+  });
+
+  // Task 6 (2026-08-06): the inverse of what this branch's OWN earlier assertion said before
+  // Task 2 landed — "creates the newsroom profile once, and never rewrites an existing one"
+  // (server.test.ts before 256423ab). The section is editable again: a submission carrying
+  // `newsroom` on an EXISTING profile rewrites the file AND preserves its body — and, closing the
+  // loop this task is about, the NEXT served page reflects the edit through the model, not just
+  // on disk. This is the one test that walks page → serialize → disk → page again.
+  it("an existing profile is genuinely editable: the edit lands on disk AND the next served page shows it", async () => {
+    const dest = root();
+    writeFileSync(
+      join(dest, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "palette:",
+        '  - "#0a5c36"   # your house colour',
+        "source:",
+        '  name: "Heidi.news"',
+        'lang: "fr"',
+        'requiredSigners: ["yvan"]',
+        "---",
+        "",
+        "# Newsroom profile",
+        "",
+        "Ne pas toucher : notre rouge vient de la charte 2019.",
+        "",
+      ].join("\n"),
+    );
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({
+          contentLang: "de",
+          newsroom: { name: "Someone else", color: "#d5121e", lang: "de" },
+        }),
+      });
+      expect(r.status).toBe(200);
+    });
+
+    // On disk: rewritten, and the newsroom's own key and prose survive.
+    const edited = readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8");
+    expect(edited).toContain('name: "Someone else"');
+    expect(edited).not.toContain('"#0a5c36"');
+    expect(edited).toContain('requiredSigners: ["yvan"]');
+    expect(edited).toContain(
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+    );
+
+    // Re-served: the model the NEXT page load embeds reflects the edit — not read-only.
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const model = JSON.parse(html.slice(start, end));
+      expect(model.profile?.name).toBe("Someone else");
+      expect(model.profile?.palette?.[0]).toBe("#d5121e");
+    });
+  });
+
+  // Task 3's own carry-through: `PreflightSubmission.newsroom` is typed as `NewsroomFacts`
+  // already (serialize.ts), so `theme` and `notes` — the ground and the measured-typeface
+  // caveats the client now collects — must reach the file untouched, and `notes` must land in
+  // the BODY as prose, never as a frontmatter key (spec 2026-08-06 §3.1: "les typos vont dans le
+  // corps, pas dans le frontmatter").
+  it("carries the ground and the measured notes through to the file, notes in the body only", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({
+          contentLang: "en",
+          newsroom: {
+            name: "Heidi.news",
+            color: "#0a5c36",
+            theme: "#111318",
+            notes: ["body: Publico Text — read from body { font-family: … }"],
+          },
+        }),
+      });
+    });
+    const profile = readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8");
+    const [frontmatter, body] = profile.split(/^---$/m).slice(1);
+    expect(frontmatter).toContain('theme: "#111318"');
+    expect(frontmatter).not.toContain("Publico Text");
+    expect(body).toContain("Publico Text");
+  });
+
+  it("writes nothing when no newsroom facts are submitted — the human gesture is required", async () => {
+    const dest = root();
+    writeFileSync(join(dest, "NEWSROOM-PROFILE.md"), "MINE, HAND EDITED\n");
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission(),
+      });
+      expect(r.status).toBe(200);
     });
     expect(readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8")).toBe(
       "MINE, HAND EDITED\n",
@@ -357,20 +518,20 @@ describe("the login is only ever checked against the runtime that declared it", 
   }, 15000);
 });
 
-// I2: production keys are asked outright, above every want group (Task 4 of this branch) — but
-// `verifyAll` only iterated `sub.enabled`, so a key typed in "Your accounts" for a capability the
-// journalist never ticked was written to .env yet never checked, silently, while the page's own
-// lede promises every key IS checked. A real network call (project convention: no mock), not just
-// a shape assertion — the point is that the capability appears in the verdict at all.
-describe("an upfront production key is verified even when its capability is unticked (I2)", () => {
-  it("checks a typed Datawrapper token for BOTH capabilities it serves, neither ticked", async () => {
+// Task 5 (2026-08-06) collapses I2's old distinction ("a typed-but-unticked key" vs "a ticked
+// capability") entirely: there is no tick left at all, so every ENGINE is checked outright,
+// whatever the submission carries — the page's own lede promises every key IS checked, and that
+// is no longer conditional on a box nobody can tick any more. A real network call (project
+// convention: no mock), not just a shape assertion — the point is that the capability appears in
+// the verdict at all.
+describe("every engine's key is verified outright — there is no tick left to gate it", () => {
+  it("checks a typed Datawrapper token for BOTH capabilities it serves", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
       const r = await fetch(`http://127.0.0.1:${port}/verify`, {
         method: "POST",
         body: submission({
           credentials: { DATAWRAPPER_API_TOKEN: "not-a-real-token" },
-          enabled: [], // neither "dw-chart" nor "map-dw" is ticked
         }),
       });
       expect(r.status).toBe(200);
@@ -380,36 +541,33 @@ describe("an upfront production key is verified even when its capability is unti
     });
   }, 15000);
 
-  it("says nothing about a capability nobody typed a key for, ticked or not", async () => {
+  it("still checks an engine even when nothing was typed for it — blank reads as rejected, never silence", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
       const r = await fetch(`http://127.0.0.1:${port}/verify`, {
         method: "POST",
-        body: submission({ credentials: {}, enabled: [] }),
-      });
-      expect(r.status).toBe(200);
-      const out = (await r.json()) as Record<string, unknown>;
-      expect(out).not.toHaveProperty("dw-chart");
-      expect(out).not.toHaveProperty("map-dw");
-    });
-  });
-
-  it("still verifies a TICKED capability that carries no upfront key value (unchanged behaviour)", async () => {
-    const dest = root();
-    await withServer(dest, async (port) => {
-      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
-        method: "POST",
-        body: submission({
-          credentials: {},
-          enabled: ["dw-chart"],
-        }),
+        body: submission({ credentials: {} }),
       });
       expect(r.status).toBe(200);
       const out = (await r.json()) as Record<string, unknown>;
       // Blank credential: the shared verifier short-circuits before any fetch and reports
-      // "rejected" (verify.ts's documented behaviour for an empty key) — still present, which is
-      // the point: ticking alone is still enough to be checked, as before.
+      // "rejected" (verify.ts's documented behaviour for an empty key) — present regardless,
+      // because every engine is checked now, whatever this submission typed.
       expect(out).toHaveProperty("dw-chart");
+      expect(out).toHaveProperty("map-dw");
+    });
+  });
+
+  it("also checks the chosen publisher, and no other delivery destination", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({ credentials: {}, publisher: "embed-cloudflare" }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).toHaveProperty("embed-cloudflare");
     });
   });
 });
@@ -433,7 +591,7 @@ describe("the setup page probes the delivered skills tree on a packed install", 
       // Submit state to enable image-native
       const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
-        body: submission({ enabled: ["image-native"] }),
+        body: submission(),
       });
       expect(submitRes.status).toBe(200);
     });
@@ -449,12 +607,12 @@ describe("the setup page probes the delivered skills tree on a packed install", 
       const payload = html.slice(start, end);
       const model = JSON.parse(payload);
 
-      // Verify image-native reports as ready when probing .dist/skills
-      const imageNative = model.engines.find(
-        (e: { id: string; status: string }) => e.id === "image-native",
+      // Verify image-native reports as available when probing .dist/skills
+      const imageNative = model.producible.find(
+        (e: { id: string; available: boolean }) => e.id === "image-native",
       );
       expect(imageNative).toBeDefined();
-      expect(imageNative!.status).toBe("ready");
+      expect(imageNative!.available).toBe(true);
     });
   });
 
@@ -489,7 +647,7 @@ describe("the setup page probes the delivered skills tree on a packed install", 
     await withServer(dest, async (port) => {
       const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
-        body: submission({ enabled: ["image-native"] }),
+        body: submission(),
       });
       expect(submitRes.status).toBe(200);
     });
@@ -502,11 +660,11 @@ describe("the setup page probes the delivered skills tree on a packed install", 
       const end = html.indexOf("</script>", start);
       const model = JSON.parse(html.slice(start, end));
 
-      const imageNative = model.engines.find(
-        (e: { id: string; status: string }) => e.id === "image-native",
+      const imageNative = model.producible.find(
+        (e: { id: string; available: boolean }) => e.id === "image-native",
       );
       expect(imageNative).toBeDefined();
-      expect(imageNative!.status).toBe("missing");
+      expect(imageNative!.available).toBe(false);
     });
   });
 });

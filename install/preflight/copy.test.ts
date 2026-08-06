@@ -1,5 +1,17 @@
 import { describe, expect, it } from "bun:test";
-import { CONTENT_LANGUAGES, UI_LANGUAGES, pageCopy } from "./copy.ts";
+import {
+  CONTENT_LANGUAGES,
+  PAGE_SECTIONS,
+  UI_LANGUAGES,
+  pageCopy,
+} from "./copy.ts";
+
+// The publication language is a profile field. Asking it a second time, in another vocabulary,
+// produced the visible contradiction the previous branch shipped: the read-out showed `fr` while
+// the selector showed "Français" — one value, two names, one screen.
+it("no longer carries a section that re-asks the publication language", () => {
+  expect(PAGE_SECTIONS).not.toContain("language");
+});
 
 describe("the languages the setup page offers", () => {
   // A2: the selector used to list Deutsch and Italiano while the copy table knew en/fr only,

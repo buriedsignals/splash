@@ -135,12 +135,24 @@ describe("capability readiness", () => {
     expect(r.reason).toContain("rejected");
   });
 
-  it("is disabled — never red — when the newsroom did not enable it", () => {
-    const r = capabilityReadiness(DW, DEFAULT_NEWSROOM_STATE, {
+  // Task 5 (2026-08-06): an ENGINE no longer has a tick to gate on — DW is evaluated straight
+  // from its own config now (the "is missing, with newsroom-language remediation" case above).
+  // The "disabled — never red — until chosen" rule survives only for a DELIVERY destination,
+  // which is still a newsroom CHOICE (the publisher radio), not a declared want.
+  it("is disabled — never red — when the newsroom has not chosen this destination", () => {
+    const r = capabilityReadiness(S3, DEFAULT_NEWSROOM_STATE, {
       env: {},
       resolveDep: ALL_DEPS_PRESENT,
     });
     expect(r.status).toBe("disabled");
+  });
+
+  it("an engine is never disabled by a tick — it is missing outright when unconfigured", () => {
+    const r = capabilityReadiness(DW, DEFAULT_NEWSROOM_STATE, {
+      env: {},
+      resolveDep: ALL_DEPS_PRESENT,
+    });
+    expect(r.status).toBe("missing");
   });
 
   it("is disabled for a capability that is only declared", () => {
@@ -364,19 +376,34 @@ describe("capability readiness", () => {
 
 describe("the decor's readiness report", () => {
   it("reports every capability, and blockers exclude what is disabled", () => {
-    const s = state({
-      "dw-chart": { enabled: true },
-      "chart-native": { enabled: true },
-    });
+    // Every engine is asked for outright now (Task 5) — none needs an `enabled` entry to be
+    // judged. Only "zip" (a delivery destination) is given one, standing in for the newsroom's
+    // chosen publisher; the rest of the delivery capabilities stay unchosen, hence disabled.
+    const s = state({ zip: { enabled: true } });
     const all = decorReadiness(s, {
-      env: {},
+      env: { DATAWRAPPER_API_TOKEN: "t", VITE_MAPTILER_KEY: "k" },
       resolveDep: ALL_DEPS_PRESENT,
       probeBrowser: ALL_BROWSERS_READY,
     });
     expect(all.length).toBe(Object.keys(NEWSROOM_CAPABILITIES).length);
 
+    // Nothing blocks: every engine's key is present, and the one chosen destination (zip) needs
+    // none. A capability nobody chose (embed-cloudflare, embed-s3, …) is disabled, not a blocker.
+    expect(readinessBlockers(all)).toEqual([]);
+  });
+
+  it("blocks on an engine missing its key — it is always in play, tick or not", () => {
+    const s = state({});
+    const all = decorReadiness(s, {
+      env: {},
+      resolveDep: ALL_DEPS_PRESENT,
+      probeBrowser: ALL_BROWSERS_READY,
+    });
     const blockers = readinessBlockers(all);
-    expect(blockers.map((b) => b.id)).toEqual(["dw-chart"]);
-    for (const b of blockers) expect(b.status).toBe("missing");
+    expect(blockers.map((b) => b.id)).toContain("dw-chart");
+    expect(blockers.map((b) => b.id)).toContain("map-native");
+    // No delivery destination was chosen, so none of them appear.
+    for (const b of blockers)
+      expect(NEWSROOM_CAPABILITIES[b.id]?.kind).toBe("engine");
   });
 });

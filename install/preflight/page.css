@@ -265,33 +265,15 @@ details.tech code {
 
 /* ── capabilities ─────────────────────────────────────────────────────── */
 
-/* One group per want (charts, maps, …): the want leads, the tools underneath stay their own
-   choosable rows. */
-.want-title {
-  margin: 1.1rem 0 0.35rem;
-  font-size: 0.95rem;
-  font-weight: 640;
-  color: var(--ink);
-}
-
-.want:first-child .want-title {
-  margin-top: 0;
-}
-
+/* Task 5 (2026-08-06): a .capability row is only ever a delivery destination now — the engine
+   rows that used to sit grouped under a want heading are gone (the checkbox they carried is
+   gone with them), so this is a flat list again and needs no nested-heading border rule. */
 .capability {
   border-top: 1px solid var(--line);
   padding: 0.9rem 0;
 }
 
 .capability:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-/* The engine rows sit inside a .want block now, behind their heading — so the first row there is
-   never :first-child (the h3 is). This is that same "no border right under the heading" rule for
-   the nested case; :first-child above still covers the flat delivery list, which has no heading. */
-.want-title + .capability {
   border-top: 0;
   padding-top: 0;
 }
@@ -339,37 +321,6 @@ details.tech code {
   color: var(--muted);
 }
 
-.profile-readout {
-  margin-top: 1rem;
-}
-
-.profile-row {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-top: 1px solid var(--line);
-}
-
-.profile-row:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.profile-label {
-  flex: none;
-  width: 9rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.profile-value {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.95rem;
-}
-
 .swatch {
   display: inline-block;
   width: 1rem;
@@ -378,9 +329,30 @@ details.tech code {
   border: 1px solid var(--line-strong);
 }
 
-.swatch-hex {
-  font-family: ui-monospace, monospace;
-  font-size: 0.82rem;
+/* Ranked colour candidates from a site measurement — each swatch is a button, clicking one
+   picks it as the house colour without losing the ability to type any other hex afterwards. */
+.charter-candidates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.swatch-btn {
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatch-btn:hover,
+.swatch-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The receipt under a measured value: where it was read, relayed verbatim from the extractor. */
+.charter-receipt {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
@@ -420,6 +392,40 @@ details.tech code {
 
 .spacer {
   margin-left: auto;
+}
+
+/* ── the constat ──────────────────────────────────────────────────────── */
+
+/* What the newsroom will be able to produce (Task 5, 2026-08-06) — no "missing" pill, no colour
+   alone: an unavailable engine gets its plain label plus the key that would open it, never the
+   tone the rest of the page reserves for an actual blocker. */
+.producible {
+  margin: 0 0 1.1rem;
+}
+
+.producible-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.producible-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.producible-label {
+  font-weight: 550;
+}
+
+.producible-opens {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 /* ── readiness list ───────────────────────────────────────────────────── */

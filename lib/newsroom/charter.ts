@@ -441,7 +441,12 @@ export const SIGNAL_LABEL: Record<ColourSignal, string> = {
 //
 // The ordering IS the method: a colour the site's own authors LABELLED as the brand outranks a
 // colour that merely appears often. Every number is a knob.
-const WEIGHT: Record<ColourSignal, number> = {
+//
+// Exported: `rank()` below reassigns a candidate's representative value to the evidence entry
+// with the highest weight (see the merge loop), and any caller that wants to explain WHICH
+// evidence backs that value has to apply the identical rule — duplicating the table beside it
+// would drift the moment a weight changes here. One source.
+export const WEIGHT: Record<ColourSignal, number> = {
   "theme-color": 100,
   "brand-property": 90,
   masthead: 85,

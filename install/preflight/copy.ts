@@ -4,14 +4,17 @@
 // choice. The page is the first thing that speaks, so it obeys the same rule as the emitted
 // export block (lib/newsroom/ui-copy.ts): one table, English default, unknown language falls
 // back to English rather than showing a half-translated form.
-import type { WantId } from "../../lib/newsroom/capabilities.ts";
+import {
+  SIGNAL_LABEL,
+  type ColourSignal,
+  type TypeMeasurement,
+} from "../../lib/newsroom/charter.ts";
 
 export const MODEL_SCRIPT_ID = "preflight-model";
 
 /** The section ids, in the order a newsroom lives them (spec 2026-07-26 §3). */
 export const PAGE_SECTIONS = [
   "newsroom",
-  "language",
   "assistant",
   "capabilities",
   "publishing",
@@ -32,10 +35,38 @@ export type PageCopy = {
   newsroomColor: string;
   profileOwned: string;
   profileGround: string;
+  /** What the ground field actually accepts (M2) — it is free text over a reader that silently
+   *  DROPS anything that is not "dark", "light" or a `#rrggbb` hex; nothing else says so. */
+  profileGroundHelp: string;
 
-  languageTitle: string;
-  languageHint: string;
-  languageUi: string;
+  /** The action that measures the address just typed above ("read my site"). */
+  measureAction: string;
+  measuring: string;
+  measureNeedsUrl: string;
+  measureFailed: string;
+  /** Shown when a measurement's palette comes back empty — a legitimate answer, not an error. */
+  siteDeclaresNothing: string;
+  /** Appended to an INFERRED (not declared) colour reading, so it reads as the guess it is. */
+  charterInferred: string;
+  /** Caption over an existing profile's series colours (`palette[1+]`) — shown, not editable. */
+  seriesColoursKept: string;
+
+  // M1 — the charter receipt vocabulary (lib/newsroom/charter.ts's `SIGNAL_LABEL` plus
+  // charter-endpoint.ts's TYPE_ROLE_LABEL, and the two sentence shapes those labels fill into).
+  // These are the flagship feature of this branch — "a journalist can only disagree with a value
+  // whose origin they can see" — read by a French newsroom exactly as often as an English one.
+  /** What kind of declaration a colour was read from — keyed like `ColourSignal`. `en` is the
+   *  SAME strings as charter.ts's `SIGNAL_LABEL` (one English source, not a second copy that can
+   *  drift from it); `fr` is this table's own translation. */
+  signalLabel: Record<ColourSignal, string>;
+  /** What a measured typeface role is called — keyed like `TypeMeasurement["role"]`. */
+  typeRoleLabel: Record<TypeMeasurement["role"], string>;
+  /** "${this} ${signalLabel}: `${token}`." — a colour receipt. */
+  receiptReadFrom: string;
+  /** "${this} ${typeRoleLabel}: `${token}`." — a typeface receipt. */
+  receiptReadFont: string;
+
+  /** The publication language field — a profile field, edited here (the profile is where it lives). */
   languageContent: string;
 
   assistantTitle: string;
@@ -44,21 +75,24 @@ export type PageCopy = {
 
   capabilitiesTitle: string;
   capabilitiesHint: string;
-  /** The heading over the production keys asked outright, above every want group. */
-  productionKeysTitle: string;
   /**
-   * Under a capability whose field is upfront (asked once, above): `${field.label} — ${this}`.
-   * Every engine field is upfront now, so this fires under every engine capability.
+   * Shown under a DELIVERY row (the only capability that still renders as a row —
+   * `capabilityRow`, Task 5 2026-08-06 retired the engine one) in place of a field it needs but
+   * does not own: `${field.label} — ${this}`. That is a production key an engine already asks
+   * for upfront, above, in "Your accounts" — or, occasionally, a field two delivery destinations
+   * happen to name the same (`endpoint`). Engines themselves never fire this any more: they do
+   * not render as capability rows at all, so "asked once, above" always means "asked in the
+   * accounts section", never "asked by another engine row" — that second row no longer exists.
    */
   askedOnceAbove: string;
-  /** The heading over each group of tools that serve the same want (charts, maps, …). */
-  wants: Record<WantId, string>;
   publishingTitle: string;
   publishingHint: string;
   unavailable: string;
 
   readinessTitle: string;
   readinessHint: string;
+  /** Prefixes the field(s) that would open an engine not yet available: `${this} ${opensWith}`. */
+  opensWith: string;
   nothingBlocking: string;
   /** Introduces the list of fields a capability still needs. */
   needs: string;
@@ -97,13 +131,29 @@ const EN: PageCopy = {
   newsroomUrl: "Website (optional)",
   newsroomColor: "House colour",
   profileOwned:
-    "You already have a newsroom profile. It is yours to edit — Splash will not rewrite it. Open NEWSROOM-PROFILE.md to change the house style or the language of your visuals.",
+    "You already have a newsroom profile. Editing the fields below and saving updates it — the rest of NEWSROOM-PROFILE.md, your prose and any comment on its own line included, is left exactly as it is. (A comment on the SAME line as a field you change here does not survive that edit.)",
   profileGround: "House ground",
+  profileGroundHelp:
+    'One of three things: "light", "dark", or a hex colour such as #12161c. Anything else is not saved.',
 
-  languageTitle: "Language",
-  languageHint:
-    "Splash can talk to you in one language and publish in another.",
-  languageUi: "Language Splash talks to you in",
+  measureAction: "Read my site",
+  measuring: "Reading…",
+  measureNeedsUrl: "Enter your website address first.",
+  measureFailed: "Could not read your site — check the address and try again.",
+  siteDeclaresNothing:
+    "Your site does not declare a house colour we can read — a legitimate answer. Type one in below.",
+  charterInferred: "(a guess — not a colour your site names as its own)",
+  seriesColoursKept: "Also part of your palette, kept as they are:",
+
+  signalLabel: SIGNAL_LABEL,
+  typeRoleLabel: {
+    body: "the body text",
+    headings: "the headings",
+    webfont: "a self-hosted webfont",
+  },
+  receiptReadFrom: "Read from",
+  receiptReadFont: "Read as the font of",
+
   languageContent: "Language your visuals are published in",
 
   assistantTitle: "Your assistant",
@@ -111,24 +161,18 @@ const EN: PageCopy = {
   loginOptionalHint:
     "Leave blank if you have a subscription — you will sign in on first launch.",
 
-  capabilitiesTitle: "What you want to be able to do",
-  capabilitiesHint:
-    "The keys below are asked once, whatever you use. Tick what your newsroom will produce — anything left unticked is never reported as a blocker.",
-  productionKeysTitle: "Your accounts",
+  capabilitiesTitle: "Your accounts",
+  capabilitiesHint: "The keys below are asked once, whatever you use.",
   askedOnceAbove: "asked once, above.",
-  wants: {
-    charts: "Charts",
-    maps: "Maps",
-    scrollys: "Scrollytelling",
-    "photo-stories": "Photo narratives",
-  },
   publishingTitle: "Publishing",
   publishingHint:
     "Where a finished visual goes. A downloadable package always works, with no account at all.",
   unavailable: "Not available yet",
 
-  readinessTitle: "Where you stand",
-  readinessHint: "What is ready, and what is still in the way.",
+  readinessTitle: "What you'll be able to produce",
+  readinessHint:
+    "From what you've just entered. An account with no key is a choice, not a defect.",
+  opensWith: "Opens with:",
   nothingBlocking: "Nothing is in the way.",
   needs: "needs",
   rejectedByProvider:
@@ -148,7 +192,7 @@ const EN: PageCopy = {
   savedHint: "Return to your Terminal — the install continues.",
   saveFailed: "Could not save",
   blankRequired:
-    "Some capabilities you ticked are still missing a key. Save anyway? You can re-run the setup later.",
+    "The destination you chose to publish through still needs a key. Save anyway? You can re-run the setup later.",
 
   summaryReady: "ready",
   summaryMissing: "missing",
@@ -168,13 +212,46 @@ const FR: PageCopy = {
   newsroomUrl: "Site web (facultatif)",
   newsroomColor: "Couleur maison",
   profileOwned:
-    "Vous avez déjà un profil de rédaction. Il vous appartient — Splash ne le réécrira pas. Ouvrez NEWSROOM-PROFILE.md pour changer le style maison ou la langue de vos visuels.",
+    "Vous avez déjà un profil de rédaction. Modifier les champs ci-dessous puis enregistrer le met à jour — le reste de NEWSROOM-PROFILE.md, votre texte et tout commentaire sur sa propre ligne compris, reste exactement tel quel. (Un commentaire sur la MÊME ligne qu'un champ que vous modifiez ici ne survit pas à cette modification.)",
   profileGround: "Fond maison",
+  profileGroundHelp:
+    "Trois formes acceptées : « light », « dark », ou une couleur hexadécimale comme #12161c. Toute autre valeur n'est pas enregistrée.",
 
-  languageTitle: "Langue",
-  languageHint:
-    "Splash peut vous parler dans une langue et publier dans une autre.",
-  languageUi: "Langue dans laquelle Splash vous parle",
+  measureAction: "Lire mon site",
+  measuring: "Lecture…",
+  measureNeedsUrl: "Entrez d'abord l'adresse de votre site.",
+  measureFailed:
+    "Impossible de lire votre site — vérifiez l'adresse et réessayez.",
+  siteDeclaresNothing:
+    "Votre site ne déclare aucune couleur maison lisible — une réponse légitime. Saisissez-en une ci-dessous.",
+  charterInferred:
+    "(une supposition — pas une couleur que votre site déclare comme la sienne)",
+  seriesColoursKept:
+    "Font aussi partie de votre palette, conservées telles quelles :",
+
+  // FR translations of lib/newsroom/charter.ts's SIGNAL_LABEL (English source, see the EN table
+  // above) — kept in the same order so a diff of the two tables reads as a translation, not a
+  // reshuffle.
+  signalLabel: {
+    "theme-color":
+      "la couleur que le site déclare aux navigateurs comme la sienne (<meta theme-color>)",
+    "brand-property":
+      "une couleur que la feuille de style du site NOMME comme sa couleur de marque/primaire",
+    "accent-property":
+      "une couleur que la feuille de style nomme comme un ACCENT (souvent un survol ou un badge, pas le bandeau)",
+    masthead: "le remplissage d'un SVG dans l'élément bandeau/logo",
+    link: "la couleur des liens",
+    control: "le fond des boutons",
+    declared: "une couleur déclarée quelque part dans la feuille de style",
+  },
+  typeRoleLabel: {
+    body: "le texte courant",
+    headings: "les titres",
+    webfont: "une police auto-hébergée",
+  },
+  receiptReadFrom: "Lu depuis",
+  receiptReadFont: "Lu comme police de",
+
   languageContent: "Langue de publication de vos visuels",
 
   assistantTitle: "Votre assistant",
@@ -182,24 +259,19 @@ const FR: PageCopy = {
   loginOptionalHint:
     "Laissez vide si vous avez un abonnement — vous vous connecterez au premier lancement.",
 
-  capabilitiesTitle: "Ce que vous voulez pouvoir faire",
+  capabilitiesTitle: "Vos comptes",
   capabilitiesHint:
-    "Les clés ci-dessous sont demandées une fois, quel que soit votre usage. Cochez ce que votre rédaction produira — ce que vous laissez décoché n'est jamais signalé comme un blocage.",
-  productionKeysTitle: "Vos comptes",
+    "Les clés ci-dessous sont demandées une fois, quel que soit votre usage.",
   askedOnceAbove: "déjà demandée plus haut.",
-  wants: {
-    charts: "Des graphiques",
-    maps: "Des cartes",
-    scrollys: "Des scrollys",
-    "photo-stories": "Des récits photo",
-  },
   publishingTitle: "Publication",
   publishingHint:
     "Où va un visuel terminé. Le paquet téléchargeable marche toujours, sans aucun compte.",
   unavailable: "Pas encore disponible",
 
-  readinessTitle: "Où vous en êtes",
-  readinessHint: "Ce qui est prêt, et ce qui bloque encore.",
+  readinessTitle: "Ce que vous pourrez produire",
+  readinessHint:
+    "À partir de ce que vous venez de saisir. Un compte sans clé est un choix, pas un défaut.",
+  opensWith: "S'ouvre avec :",
   nothingBlocking: "Rien ne bloque.",
   needs: "nécessite",
   rejectedByProvider:
@@ -219,7 +291,7 @@ const FR: PageCopy = {
   savedHint: "Retournez dans le Terminal — l'installation continue.",
   saveFailed: "Impossible d'enregistrer",
   blankRequired:
-    "Certaines capacités cochées n'ont pas encore de clé. Enregistrer quand même ? Vous pourrez relancer la configuration plus tard.",
+    "La destination choisie pour publier a encore besoin d'une clé. Enregistrer quand même ? Vous pourrez relancer la configuration plus tard.",
 
   summaryReady: "prêt",
   summaryMissing: "manquant",

@@ -9,14 +9,15 @@ import {
   CONTENT_LANGUAGES,
   MODEL_SCRIPT_ID,
   pageCopy,
-  UI_LANGUAGES,
-  type LanguageOption,
   type PageCopy,
 } from "./copy.ts";
-import { groupEnginesByWant } from "./group-by-want.ts";
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
+// Type-only: charter-endpoint.ts's own imports reach lib/newsroom/charter.ts, and this file is
+// bundled for the browser. A value import here would pull that module graph into the bundle;
+// `import type` is erased at compile time, so only the shape crosses the boundary.
+import type { CharterReadout } from "./charter-endpoint.ts";
 
 type FormState = {
   uiLang: string;
@@ -24,12 +25,31 @@ type FormState = {
   runtime: string;
   login: string;
   credentials: Record<string, string>;
-  enabled: Set<string>;
+  /** The delivery destination to publish through — the only thing left to "enable" (Task 5,
+   *  2026-08-06: an engine has no tick any more, so a single field replaces the old `enabled`
+   *  set). */
   publisher: string;
-  newsroom: { name: string; url: string; color: string };
+  newsroom: {
+    name: string;
+    url: string;
+    color: string;
+    /** "light" | "dark" | "#rrggbb" | "" — NEWSROOM-PROFILE.md's `theme:`. */
+    theme: string;
+    /** Measured but not (yet) a frontmatter field — typefaces, extractor caveats. Verbatim. */
+    notes: string[];
+  };
   /** Live verdicts from the last check, per capability id. */
   verified: Record<string, VerifyOutcome>;
 };
+
+/** The state of the "read my site" action — a measurement, never a decision (see charter.ts). */
+type CharterState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "done"; readout: CharterReadout }
+  | { status: "error"; message: string };
+
+let charter: CharterState = { status: "idle" };
 
 const model: PreflightModel = JSON.parse(
   document.getElementById(MODEL_SCRIPT_ID)!.textContent!,
@@ -41,13 +61,14 @@ const form: FormState = {
   runtime: model.runtime,
   login: "",
   credentials: {},
-  enabled: new Set(
-    [...model.engines, ...model.delivery]
-      .filter((c) => c.enabled)
-      .map((c) => c.id),
-  ),
   publisher: model.publisher ?? "zip",
-  newsroom: { name: "", url: "", color: "#0072b2" },
+  newsroom: {
+    name: model.profile?.name ?? "",
+    url: model.profile?.url ?? "",
+    color: model.profile?.palette?.[0] ?? "#0072b2",
+    theme: model.profile?.theme ?? "",
+    notes: [],
+  },
   verified: {},
 };
 
@@ -162,10 +183,12 @@ function fieldControl(name: string, copy: PageCopy): HTMLElement | null {
   return wrapper;
 }
 
+// Radio-only now (Task 5, 2026-08-06): an engine has no tick left to render, so the only
+// remaining caller of this row is the publisher choice in "Publishing" — a checkbox variant
+// would be dead code.
 function capabilityRow(
   capability: PreflightCapability,
   copy: PageCopy,
-  kind: "checkbox" | "radio",
 ): HTMLElement {
   const row = el("div", {
     class: `capability${capability.available ? "" : " unavailable"}`,
@@ -175,28 +198,24 @@ function capabilityRow(
   const inputId = `enable-${capability.id}`;
   const input = el("input", {
     id: inputId,
-    type: kind,
-    ...(kind === "radio" ? { name: "publisher" } : {}),
+    type: "radio",
+    name: "publisher",
     ...(capability.available ? {} : { disabled: "disabled" }),
   }) as HTMLInputElement;
-  input.checked =
-    kind === "radio"
-      ? form.publisher === capability.id
-      : form.enabled.has(capability.id);
+  input.checked = form.publisher === capability.id;
 
   const label = el("label", { for: inputId });
-  // The row's OWN caption when the registry gives it one (an engine, under its want heading) —
-  // every other reader of a capability's name wants `label` instead (readiness.ts, the blocker
-  // line below, skills/splash's ENGINE_LABELS): reusing a caption there is what broke those
-  // sentences (fix round 1, Finding 1).
+  // The row's OWN caption when the registry gives it one — every other reader of a capability's
+  // name wants `label` instead (readiness.ts, skills/splash's ENGINE_LABELS): reusing a caption
+  // there is what broke those sentences (fix round 1, Finding 1).
   label.append(input, capability.choice ?? capability.label);
   head.append(label);
   const status = el("span", { class: "spacer" });
   head.append(status);
   row.append(head);
 
-  // A capability the newsroom did not tick carries NO pill: it is neither ready nor failing, and
-  // a column of grey "off" badges buries the two states that actually need reading.
+  // A destination the newsroom has not chosen carries NO pill: it is neither ready nor failing,
+  // and a column of grey "off" badges buries the one state that actually needs reading.
   const paintStatus = (): void => {
     if (!capability.available) {
       status.replaceChildren(
@@ -215,8 +234,8 @@ function capabilityRow(
   for (const name of capability.fields) {
     const field = model.fields.find((f) => f.name === name);
     if (!field) continue;
-    // A production key (`upfront`) is asked once, above every want group — never nested under a
-    // tick, whichever capability owns it first, so it is never doubled and never gated on a tick.
+    // A production key (`upfront`) is asked once, above every account block — never nested under
+    // a choice, whichever capability owns it first, so it is never doubled and never gated on it.
     if (field.upfront || field.capabilities[0] !== capability.id) {
       fields.append(
         el(
@@ -236,21 +255,8 @@ function capabilityRow(
   }
 
   input.addEventListener("change", () => {
-    if (kind === "radio") {
-      // Choosing where to publish IS enabling it: a publisher recorded as disabled would be
-      // reported as neither ready nor blocking, and would never be checked.
-      form.publisher = capability.id;
-      form.enabled.add(capability.id);
-      render();
-      return;
-    }
-    if (input.checked) form.enabled.add(capability.id);
-    else form.enabled.delete(capability.id);
-    fields.hidden = !input.checked;
-    // The pill is the answer to the tick that just happened — repainting only the summary left
-    // a freshly enabled capability showing the status it had before anyone touched it.
-    paintStatus();
-    renderReadiness(pageCopy(form.uiLang));
+    form.publisher = capability.id;
+    render();
   });
   return row;
 }
@@ -259,14 +265,14 @@ function capabilityRow(
 function liveStatus(
   capability: PreflightCapability,
 ): PreflightCapability["status"] {
-  if (!form.enabled.has(capability.id)) return "disabled";
+  if (form.publisher !== capability.id) return "disabled";
   const verdict = form.verified[capability.id];
   if (verdict === "ok") return "ready";
   if (verdict === "rejected") return "missing";
   if (verdict === "unreachable") return "unverified";
-  // `statusIfEnabled`, not `status`: the saved state may have this capability off, and the
-  // journalist just turned it on. The server computed both answers precisely so this line does
-  // not have to re-derive readiness in the browser.
+  // `statusIfEnabled`, not `status`: the saved state may have a different destination chosen,
+  // and the journalist just picked this one. The server computed both answers precisely so this
+  // line does not have to re-derive readiness in the browser.
   return capability.statusIfEnabled;
 }
 
@@ -286,95 +292,21 @@ function textField(
   return wrapper;
 }
 
-function languageSelect(
-  id: string,
-  label: string,
-  value: string,
-  disabled: boolean,
-  // The two selectors do NOT offer the same list: the page can only be READ in the languages
-  // it has copy for, while a newsroom may PUBLISH in any of them (copy.ts).
-  options: LanguageOption[],
-  onChange: (v: string) => void,
-): HTMLElement {
-  const wrapper = el("div", { class: "field" });
-  wrapper.append(el("label", { for: id }, label));
-  const select = el("select", {
-    id,
-    ...(disabled ? { disabled: "disabled" } : {}),
-  }) as HTMLSelectElement;
-  for (const lang of options)
-    select.append(el("option", { value: lang.id }, lang.label));
-  if (!options.some((l) => l.id === value))
-    select.append(el("option", { value }, value));
-  select.value = value;
-  select.addEventListener("change", () => onChange(select.value));
-  wrapper.append(select);
-  return wrapper;
-}
-
+/**
+ * The newsroom section: editable fields, prefilled from an existing profile when there is one,
+ * and fillable by measuring the site. A measurement is never a decision (skills/newsroom-charter)
+ * — every value it fills in stays editable, and its receipt is shown right beside it so the
+ * journalist can tell where it came from and disagree with it.
+ */
 function renderNewsroom(copy: PageCopy): void {
   const { name, hint, body } = section("newsroom");
   name.textContent = copy.newsroomTitle;
   hint.textContent = copy.newsroomHint;
   body.replaceChildren();
-  if (model.profileExists) {
+
+  if (model.profileExists)
     body.append(el("p", { class: "shared-note" }, copy.profileOwned));
-    const p = model.profile;
-    if (!p) return; // a file that declares nothing readable — the sentence is the whole answer
-    const readout = el("div", { class: "profile-readout" });
-    const row = (label: string, value: string) => {
-      const r = el("div", { class: "profile-row" });
-      r.append(el("span", { class: "profile-label" }, label));
-      r.append(el("span", { class: "profile-value" }, value));
-      readout.append(r);
-    };
-    if (p.name) row(copy.newsroomName, p.url ? `${p.name} — ${p.url}` : p.name);
-    if (p.palette?.length) {
-      const r = el("div", { class: "profile-row" });
-      r.append(el("span", { class: "profile-label" }, copy.newsroomColor));
-      const swatches = el("span", { class: "profile-value" });
-      p.palette.forEach((hex, i) => {
-        const dot = el("span", { class: "swatch" });
-        dot.style.background = hex;
-        dot.title = hex;
-        swatches.append(dot);
-        // The house colour's hex sits right after the FIRST swatch, not after the last — on a
-        // multi-colour palette, printing it after the final dot reads as that dot's own value,
-        // even though the text was always the first colour's.
-        if (i === 0) swatches.append(el("span", { class: "swatch-hex" }, hex));
-      });
-      r.append(swatches);
-      readout.append(r);
-    }
-    // The token stored on disk (a BCP-47-ish id), not a caption — the same list the language
-    // SELECT just below shows as "Français". Printing the raw id here read as the page failing to
-    // resolve its own data (a "fr" nobody asked for) right next to a select that got it right.
-    if (p.lang) {
-      const label =
-        CONTENT_LANGUAGES.find((l) => l.id === p.lang)?.label ?? p.lang;
-      row(copy.languageContent, label);
-    }
-    if (p.theme) {
-      // "light" | "dark" are words, not colours — only a #rrggbb ground gets a swatch, the same
-      // treatment the house-colour row above already gives a palette. Printing the hex bare (the
-      // regression this closes) read as an English leftover under a French label.
-      if (/^#[0-9a-fA-F]{6}$/.test(p.theme)) {
-        const r = el("div", { class: "profile-row" });
-        r.append(el("span", { class: "profile-label" }, copy.profileGround));
-        const swatches = el("span", { class: "profile-value" });
-        const dot = el("span", { class: "swatch" });
-        dot.style.background = p.theme;
-        dot.title = p.theme;
-        swatches.append(dot, el("span", { class: "swatch-hex" }, p.theme));
-        r.append(swatches);
-        readout.append(r);
-      } else {
-        row(copy.profileGround, p.theme);
-      }
-    }
-    body.append(readout);
-    return;
-  }
+
   body.append(
     textField("newsroom-name", copy.newsroomName, form.newsroom.name, (v) => {
       form.newsroom.name = v;
@@ -391,45 +323,199 @@ function renderNewsroom(copy: PageCopy): void {
       "url",
     ),
   );
-  const colour = el("div", { class: "field shrink" });
-  colour.append(el("label", { for: "newsroom-color" }, copy.newsroomColor));
-  const input = el("input", { id: "newsroom-color", type: "color" });
-  input.value = form.newsroom.color;
-  input.addEventListener("input", () => {
-    form.newsroom.color = input.value;
+
+  // "Read my site": the one action that turns the address just typed above into a measurement.
+  const measureField = el("div", { class: "field" });
+  const measureBtn = el(
+    "button",
+    { type: "button", id: "newsroom-measure", class: "btn" },
+    charter.status === "loading" ? copy.measuring : copy.measureAction,
+  ) as HTMLButtonElement;
+  measureBtn.disabled = charter.status === "loading";
+  measureBtn.addEventListener("click", () => void measureSite(copy));
+  measureField.append(measureBtn);
+  if (charter.status === "error")
+    measureField.append(el("p", { class: "field-help" }, charter.message));
+  body.append(measureField);
+
+  const palette = charter.status === "done" ? charter.readout.palette : [];
+
+  // The extractor's own caveats — shown whenever there are any, not gated on the palette being
+  // empty: a caution like "confirm the dark ground by eye before accepting it" (charter.ts)
+  // applies just as much to a site that DID declare a good palette. Relayed verbatim, in one
+  // place, so the common path (a site that names a colour) never hides them.
+  if (charter.status === "done" && charter.readout.notes.length) {
+    const notes = el("div", { class: "field" });
+    for (const note of charter.readout.notes)
+      notes.append(el("p", { class: "charter-receipt" }, note));
+    body.append(notes);
+  }
+
+  // House colour — the primary field. Ranked candidates from a measurement are offered as
+  // swatches to pick from; the colour input underneath always reflects whichever is current, and
+  // stays open to any hex the journalist wants to type or pick instead.
+  const colourField = el("div", { class: "field" });
+  colourField.append(
+    el("label", { for: "newsroom-color" }, copy.newsroomColor),
+  );
+  if (charter.status === "done" && palette.length === 0)
+    colourField.append(
+      el("p", { class: "field-help" }, copy.siteDeclaresNothing),
+    );
+  if (palette.length) {
+    const swatches = el("div", { class: "charter-candidates" });
+    for (const candidate of palette) {
+      const swatchBtn = el("button", {
+        type: "button",
+        class: "swatch swatch-btn",
+        title: candidate.hex,
+      }) as HTMLButtonElement;
+      swatchBtn.style.background = candidate.hex;
+      swatchBtn.addEventListener("click", () => {
+        form.newsroom.color = candidate.hex;
+        renderNewsroom(copy);
+      });
+      swatches.append(swatchBtn);
+    }
+    colourField.append(swatches);
+  }
+  const colourInput = el("input", {
+    id: "newsroom-color",
+    type: "color",
+  }) as HTMLInputElement;
+  colourInput.value = form.newsroom.color;
+  colourInput.addEventListener("input", () => {
+    form.newsroom.color = colourInput.value;
+    renderNewsroom(copy); // may reveal/hide the matching candidate's receipt below
   });
-  colour.append(input);
-  body.append(colour);
+  colourField.append(colourInput);
+  const chosenCandidate = palette.find(
+    (c) => c.hex.toLowerCase() === form.newsroom.color.toLowerCase(),
+  );
+  if (chosenCandidate)
+    colourField.append(
+      el(
+        "p",
+        { class: "charter-receipt" },
+        chosenCandidate.confidence === "inferred"
+          ? `${chosenCandidate.receipt} ${copy.charterInferred}`
+          : chosenCandidate.receipt,
+      ),
+    );
+  // An existing profile's series colours (`palette[1+]`) — read-only, just visible. The primary
+  // field above can only ever edit index 0 (`updateProfileMarkdown` grafts the rest back on
+  // unchanged), and a journalist editing it had no on-page sign a second colour even existed.
+  const seriesColours = (model.profile?.palette ?? []).slice(1);
+  if (seriesColours.length) {
+    colourField.append(
+      el("p", { class: "field-help" }, copy.seriesColoursKept),
+    );
+    const swatches = el("div", { class: "charter-candidates" });
+    for (const hex of seriesColours) {
+      const dot = el("span", { class: "swatch" });
+      dot.style.background = hex;
+      dot.title = hex;
+      swatches.append(dot);
+    }
+    colourField.append(swatches);
+  }
+  body.append(colourField);
+
+  // House ground — a word ("light"/"dark") or a #rrggbb, exactly what NEWSROOM-PROFILE.md's
+  // `theme:` accepts. A plain text field: the extractor may measure none at all.
+  const groundField = el("div", { class: "field" });
+  groundField.append(
+    el("label", { for: "newsroom-ground" }, copy.profileGround),
+  );
+  // M2: a bare text input over a reader that silently DROPS anything that is not "dark",
+  // "light" or a `#rrggbb` hex (brand-profile.ts's `buildProfile`) — a journalist typing "gris"
+  // would have it written to the file and then never applied, with nothing saying why.
+  groundField.append(el("p", { class: "field-help" }, copy.profileGroundHelp));
+  const groundInput = el("input", {
+    id: "newsroom-ground",
+    type: "text",
+    autocomplete: "off",
+  }) as HTMLInputElement;
+  groundInput.value = form.newsroom.theme;
+  groundInput.addEventListener("input", () => {
+    form.newsroom.theme = groundInput.value;
+    renderNewsroom(copy);
+  });
+  groundField.append(groundInput);
+  if (
+    charter.status === "done" &&
+    charter.readout.ground &&
+    charter.readout.ground.value.toLowerCase() ===
+      form.newsroom.theme.toLowerCase()
+  )
+    groundField.append(
+      el("p", { class: "charter-receipt" }, charter.readout.ground.receipt),
+    );
+  body.append(groundField);
+
+  // Publication language — a profile field (Task 4 removed the section that re-asked it in a
+  // second vocabulary; CONTENT_LANGUAGES is the same list, so "fr" reads as "Français" here too).
+  const langField = el("div", { class: "field" });
+  langField.append(el("label", { for: "newsroom-lang" }, copy.languageContent));
+  const langSelect = el("select", {
+    id: "newsroom-lang",
+  }) as HTMLSelectElement;
+  for (const option of CONTENT_LANGUAGES)
+    langSelect.append(el("option", { value: option.id }, option.label));
+  langSelect.value = form.contentLang;
+  langSelect.addEventListener("change", () => {
+    form.contentLang = langSelect.value;
+  });
+  langField.append(langSelect);
+  body.append(langField);
 }
 
-function renderLanguage(copy: PageCopy): void {
-  const { name, hint, body } = section("language");
-  name.textContent = copy.languageTitle;
-  hint.textContent = copy.languageHint;
-  body.replaceChildren(
-    languageSelect(
-      "ui-lang",
-      copy.languageUi,
-      form.uiLang,
-      false,
-      UI_LANGUAGES,
-      (v) => {
-        form.uiLang = v;
-        render();
-      },
-    ),
-    languageSelect(
-      "content-lang",
-      copy.languageContent,
-      form.contentLang,
-      // Decision 6: an existing profile belongs to the newsroom; the page never rewrites it.
-      model.profileExists,
-      CONTENT_LANGUAGES,
-      (v) => {
-        form.contentLang = v;
-      },
-    ),
-  );
+/**
+ * Read the address just typed into the newsroom section, over `/charter`, and prefill the
+ * fields above with what it found. Total on the client's side too: a network failure or a `/charter`
+ * `{ error }` answer both render as a plain sentence, never a thrown exception — matching
+ * `measureSite` on the server, which never throws either.
+ */
+async function measureSite(copy: PageCopy): Promise<void> {
+  const url = form.newsroom.url.trim();
+  if (!url) {
+    charter = { status: "error", message: copy.measureNeedsUrl };
+    renderNewsroom(copy);
+    return;
+  }
+  charter = { status: "loading" };
+  renderNewsroom(copy);
+  try {
+    const response = await fetch("/charter", {
+      method: "POST",
+      // `lang` (M1): the receipt sentences the server builds are read in the page's own
+      // interface language, not relayed as an English literal to a French page.
+      body: JSON.stringify({ url, lang: form.uiLang }),
+    });
+    const data = (await response.json()) as CharterReadout | { error: string };
+    if ("error" in data) {
+      charter = { status: "error", message: data.error };
+      renderNewsroom(copy);
+      return;
+    }
+    charter = { status: "done", readout: data };
+    // Prefill only — never raise the confidence the extractor states, never invent a value it did
+    // not return. Every field this touches remains editable afterwards.
+    const top = data.palette[0];
+    if (top) form.newsroom.color = top.hex;
+    if (data.ground) form.newsroom.theme = data.ground.value;
+    // The measured typefaces have no frontmatter field of their own (no engine applies them yet)
+    // — they, and the extractor's own caveats, go into `notes`: prose `profileMarkdown` appends
+    // to the body on a FRESH profile, never a frontmatter key (spec 2026-08-06 §3.1).
+    form.newsroom.notes = [
+      ...data.notes,
+      ...data.typefaces.map((t) => `${t.role}: ${t.family} — ${t.receipt}`),
+    ];
+    renderNewsroom(copy);
+  } catch {
+    charter = { status: "error", message: copy.measureFailed };
+    renderNewsroom(copy);
+  }
 }
 
 function renderAssistant(copy: PageCopy): void {
@@ -496,66 +582,74 @@ function renderAssistant(copy: PageCopy): void {
 }
 
 function renderCapabilities(copy: PageCopy): void {
-  const engines = section("capabilities");
-  engines.name.textContent = copy.capabilitiesTitle;
-  engines.hint.textContent = copy.capabilitiesHint;
-  const blocks: HTMLElement[] = [];
+  const accounts = section("capabilities");
+  accounts.name.textContent = copy.capabilitiesTitle;
+  accounts.hint.textContent = copy.capabilitiesHint;
 
-  // Production keys (`upfront`) sit ABOVE every want group, asked outright — a newsroom should
-  // not have to tick a box to be allowed to hand over a token it already has (model.ts's
-  // `upfront`, derived from the registry). Publication destinations stay under their own tick,
-  // below, unchanged.
-  const upfrontFields = model.fields.filter((f) => f.upfront);
-  if (upfrontFields.length) {
-    const block = el("div", { class: "want production-keys" });
-    block.append(el("h3", { class: "want-title" }, copy.productionKeysTitle));
-    for (const field of upfrontFields) {
-      const control = fieldControl(field.name, copy);
-      if (control) block.append(control);
-    }
-    blocks.push(block);
-  }
-
-  // The want leads, the tool underneath stays its own choosable checkbox (the project owner's
-  // explicit "do not collapse the two engines of a want into one"). The grouping itself is
-  // group-by-want.ts's groupEnginesByWant (pure, tested there — client.ts has no DOM test
-  // harness); this only turns its result into DOM nodes. It lives in its own file rather than
-  // model.ts because this IS a value import (unlike the type-only ones above), and model.ts's
-  // module graph is server-only (readiness.ts's node:url) — pulling it in breaks the browser
-  // bundle Bun.build produces for this file.
-  for (const { want, capabilities } of groupEnginesByWant(model.engines)) {
-    const block = el("div", { class: "want" });
-    // `want` is undefined only for a capability the registry never assigns one — no engine does
-    // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
-    // than asserted: PreflightCapability#want is optional by type, and a malformed model must
-    // still render its rows instead of throwing on a wantless heading.
-    if (want)
-      block.append(el("h3", { class: "want-title" }, copy.wants[want] ?? want));
-    for (const c of capabilities)
-      block.append(capabilityRow(c, copy, "checkbox"));
-    blocks.push(block);
-  }
-  engines.body.replaceChildren(...blocks);
+  // Production keys (`upfront`) are asked outright — a newsroom should not have to tick a box to
+  // be allowed to hand over a token it already has (model.ts's `upfront`, derived from the
+  // registry). There is nothing else to render here now (Task 5, 2026-08-06): the tick that used
+  // to sit under a want heading is gone, and what it used to gate — what the newsroom will be
+  // able to produce — is `model.producible`, rendered last in `renderReadiness`.
+  accounts.body.replaceChildren(
+    ...model.fields
+      .filter((f) => f.upfront)
+      .map((f) => fieldControl(f.name, copy))
+      .filter((c): c is HTMLElement => c !== null),
+  );
 
   const publishing = section("publishing");
   publishing.name.textContent = copy.publishingTitle;
   publishing.hint.textContent = copy.publishingHint;
   publishing.body.replaceChildren(
-    ...model.delivery.map((c) => capabilityRow(c, copy, "radio")),
+    ...model.delivery.map((c) => capabilityRow(c, copy)),
   );
+}
+
+/**
+ * The constat: from what was just entered, what this newsroom can produce, and for what it
+ * cannot, the key that would open it. No "missing", no tick — an account with no key is a
+ * choice, not a defect (spec 2026-08-06 §3.4), so this never reuses the "missing" pill/word the
+ * rest of the page uses for an actual blocker.
+ */
+function renderProducible(copy: PageCopy): HTMLElement {
+  const list = el("div", { class: "producible" });
+  for (const p of model.producible) {
+    const row = el("div", { class: "producible-row" });
+    if (p.available) {
+      row.append(pill("ready", form.uiLang));
+      row.append(el("span", { class: "producible-label" }, p.label));
+    } else {
+      row.append(el("span", { class: "producible-label" }, p.label));
+      if (p.opensWith)
+        row.append(
+          el(
+            "p",
+            { class: "producible-opens" },
+            `${copy.opensWith} ${p.opensWith}`,
+          ),
+        );
+    }
+    list.append(row);
+  }
+  return list;
 }
 
 function renderReadiness(copy: PageCopy): void {
   const { name, hint, body } = section("readiness");
   name.textContent = copy.readinessTitle;
   hint.textContent = copy.readinessHint;
+  body.replaceChildren(renderProducible(copy));
 
-  const live = [...model.engines, ...model.delivery].map((c) => ({
+  // The one place a "blocking" framing is still honest: a PUBLISHING destination the newsroom
+  // explicitly chose (the radio above), still missing what it needs. An engine never appears
+  // here — it is not a choice the newsroom made, so it has no business blocking anything; it is
+  // simply a row in the constat above.
+  const live = model.delivery.map((c) => ({
     capability: c,
     status: liveStatus(c),
   }));
   const blocking = live.filter((l) => l.status === "missing");
-  body.replaceChildren();
   if (!blocking.length) {
     body.append(el("p", { class: "all-clear" }, copy.nothingBlocking));
   } else {
@@ -642,7 +736,6 @@ function render(): void {
   (document.getElementById("save") as HTMLButtonElement).textContent =
     copy.save;
   renderNewsroom(copy);
-  renderLanguage(copy);
   renderAssistant(copy);
   renderCapabilities(copy);
   renderReadiness(copy);
@@ -663,19 +756,19 @@ function payload() {
     contentLang: form.contentLang,
     login: form.login,
     credentials: form.credentials,
-    enabled: [...form.enabled],
     publisher: form.publisher,
     verified: form.verified,
-    ...(model.profileExists
-      ? {}
-      : {
-          newsroom: {
-            name: form.newsroom.name,
-            url: form.newsroom.url,
-            color: form.newsroom.color,
-            lang: form.contentLang,
-          },
-        }),
+    // Sent on every submission now, edit or first creation alike (Task 3, 2026-08-06) — the
+    // section is editable either way, and `sub.newsroom` being present IS the human gesture
+    // `persist()` gates the write on (server.ts). `contentLang` above carries the language;
+    // `updateProfileMarkdown`/`profileMarkdown` leave `theme`/`notes` out when they are unset.
+    newsroom: {
+      name: form.newsroom.name,
+      url: form.newsroom.url,
+      color: form.newsroom.color,
+      ...(form.newsroom.theme ? { theme: form.newsroom.theme } : {}),
+      ...(form.newsroom.notes.length ? { notes: form.newsroom.notes } : {}),
+    },
   };
 }
 
@@ -700,9 +793,9 @@ async function check(): Promise<void> {
 async function save(event: Event): Promise<void> {
   event.preventDefault();
   const copy = pageCopy(form.uiLang);
-  const stillMissing = [...model.engines, ...model.delivery].some(
-    (c) => liveStatus(c) === "missing",
-  );
+  // Only the CHOSEN publisher can block a save — an engine with no key is a choice, never a
+  // reason to interrupt saving (Task 5, 2026-08-06: no blame, no confirm for what nobody chose).
+  const stillMissing = model.delivery.some((c) => liveStatus(c) === "missing");
   if (stillMissing && !confirm(copy.blankRequired)) return;
 
   const button = document.getElementById("save") as HTMLButtonElement;

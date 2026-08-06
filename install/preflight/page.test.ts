@@ -43,19 +43,32 @@ describe("the page is a real file, not a template literal", () => {
       expect(CSS).toContain(`.pill-${tone}`);
   });
 
-  // The read-only view of an existing profile needs a style of its own; without it the values fall
-  // back to the form's field spacing and read as editable, which they are not.
-  it("styles the profile read-out", () => {
-    expect(CSS).toContain(".profile-readout");
+  // The newsroom section's colour candidates (from a measurement) and an existing profile's
+  // series colours (read-only) both render as swatches, styled distinctly from a plain field —
+  // superseded the old "profile read-out" style (Fix round 1) now that the section is editable
+  // and there is no separate read-only view to give a style of its own.
+  it("styles the colour swatches — clickable candidates and the read-only series colours alike", () => {
+    expect(CSS).toContain(".charter-candidates");
+    expect(CSS).toContain(".swatch-btn");
   });
 
-  // Fix round 1, Finding 2: engine rows now sit inside a .want block behind their heading, so the
-  // first row there is never plain :first-child (the h3 is) — .capability:first-child alone went
-  // dead for them, leaving a stray border under every heading. This is the rule that reaches it.
-  it("removes the row border directly under a want heading, not only at the very top of a list", () => {
-    const block = CSS.match(/\.want-title \+ \.capability\s*{([^}]*)}/);
-    expect(block).not.toBeNull();
-    expect(block![1]).toContain("border-top: 0");
+  // Task 5 (2026-08-06): a .capability row is a delivery destination only now — the engine rows
+  // that used to sit grouped under a .want-title heading (and needed this rule to lose their
+  // border there) are gone, and so is the checkbox that carried them.
+  it("carries no leftover styling for the removed want-grouped engine rows", () => {
+    expect(CSS).not.toContain(".want-title");
+  });
+});
+
+describe("the newsroom section is editable, and offers a measurement", () => {
+  // The newsroom section's fields are built at runtime by client.ts (this suite has no DOM
+  // harness to render them into), so "the served page" here means the source that IS served
+  // byte-for-byte as /client.js — the same idiom the rest of this file uses on page.html/page.css.
+  const CLIENT = readFileSync(join(import.meta.dir, "client.ts"), "utf8");
+
+  it("offers the site address as the way to fill the profile", () => {
+    expect(CLIENT).toContain('"newsroom-url"');
+    expect(CSS).toContain(".charter-receipt");
   });
 });
 

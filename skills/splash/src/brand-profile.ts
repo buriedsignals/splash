@@ -208,7 +208,11 @@ export function seedBrandColor<
 // Strip a YAML line comment: a `#` that is NOT inside a quoted span AND is at line-start or
 // preceded by whitespace (so an unquoted `http://x#frag` and a quoted `"#0A5C36"` both survive,
 // while a trailing `  # note` is dropped). Handles both single and double quotes.
-function stripComment(line: string): string {
+//
+// Exported so a WRITER (lib/newsroom/profile-write.ts) can tell a comment-only line apart from a
+// blank one the same way this reader does — the reader SKIPPING a comment while walking a block
+// boundary is not licence for the writer to DELETE it when it regenerates that block.
+export function stripComment(line: string): string {
   let inQuote: '"' | "'" | null = null;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
@@ -240,13 +244,20 @@ function unquote(v: string): string {
   return t;
 }
 
+// What counts as "the frontmatter" of a NEWSROOM-PROFILE.md: a `---` fence, its body, a closing
+// `---`. Exported so a WRITER (lib/newsroom/profile-write.ts's `updateProfileMarkdown`) splits a
+// file the same way this reader does — a second notion of "frontmatter" that drifted from this
+// one would let the writer silently mishandle a file this parser reads fine.
+export const NEWSROOM_FRONTMATTER_RE =
+  /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(\r?\n|$)/;
+
 /**
  * Parse the YAML frontmatter of a NEWSROOM-PROFILE.md into a BrandProfile. Reads only the known
  * fields (palette list, source.name/url, lang, credit, signers, requiredSigners); unknown keys are ignored. No
  * frontmatter, or no usable field → null. Pure.
  */
 export function parseNewsroomMarkdown(md: string): BrandProfile | null {
-  const fm = md.match(/^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(\r?\n|$)/);
+  const fm = md.match(NEWSROOM_FRONTMATTER_RE);
   if (!fm) return null;
   const lines = fm[1].split(/\r?\n/).map(stripComment);
   const fields: {

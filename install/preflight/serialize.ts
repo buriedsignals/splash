@@ -28,6 +28,7 @@ import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
 // existing importer of this module is unaffected.
 export {
   profileMarkdown,
+  updateProfileMarkdown,
   type NewsroomFacts,
 } from "../../lib/newsroom/profile-write.ts";
 import type { NewsroomFacts } from "../../lib/newsroom/profile-write.ts";
@@ -35,16 +36,25 @@ import type { NewsroomFacts } from "../../lib/newsroom/profile-write.ts";
 export type PreflightSubmission = {
   runtime: string;
   uiLang: string;
-  /** The deliverables' language — only used when the profile is being created. */
+  /**
+   * The deliverables' language, carried to NEWSROOM-PROFILE.md's `lang` field on every write —
+   * a first creation exactly like a later edit (`persist()` in server.ts applies it either way).
+   */
   contentLang?: string;
   /** The runtime's own sign-in. Blank = the subscription / interactive path. */
   login?: string;
   /** Keyed by the registry's field names. A blank value means "leave what is there". */
   credentials: Record<string, string>;
-  enabled: string[];
   publisher?: string;
   /** Live check verdicts gathered by the page, per capability id. */
   verified?: Record<string, VerifyOutcome>;
+  /**
+   * The newsroom section's fields — sent on every submission now (Task 3, 2026-08-06), not only
+   * when there is no profile yet: the page edits an existing one exactly as freely as it creates
+   * one. Typed as `NewsroomFacts` itself, so `palette`/`theme`/`notes` ride along unpicked —
+   * nothing here reaches into the object, so a field `NewsroomFacts` grows later needs no second
+   * edit to this type.
+   */
   newsroom?: NewsroomFacts;
 };
 
@@ -179,9 +189,17 @@ export function settingsUpdates(
 }
 
 /**
- * The state a submission produces. Every registry capability gets an explicit `enabled`, so
- * unticking one is recorded rather than forgotten, and a live verdict is stamped only when this
- * submission actually obtained one — an absent `lastVerified` truthfully reads "never checked".
+ * The state a submission produces. Every registry capability gets an explicit `enabled`, kept
+ * for a DELIVERY destination exactly as before — it is enabled by being CHOSEN as the publisher,
+ * the only gesture left that means anything for one, now that the page no longer submits a
+ * separate tick list. An ENGINE always reads `true`: there is no tick to withhold it any more
+ * (Task 5, 2026-08-06 — readiness.ts stopped consulting this flag for `kind: "engine"`), so the
+ * value is inert for one rather than meaningful, and an existing `newsroom.json` that still
+ * carries an engine ticked off from before this change is silently superseded on the next save,
+ * never read as a reason to refuse anything.
+ *
+ * A live verdict is stamped only when this submission actually obtained one — an absent
+ * `lastVerified` truthfully reads "never checked".
  */
 export function submittedState(
   sub: PreflightSubmission,
@@ -189,27 +207,28 @@ export function submittedState(
   at: string = new Date().toISOString(),
 ): NewsroomState {
   const settings = settingsUpdates(sub, previous);
+  // The payload names things; the registry decides whether those names exist. A publisher or a
+  // runtime is read back out of this file to build a path or to launch a program, so an unknown
+  // one is dropped here rather than persisted and dealt with later.
+  const validPublisher =
+    sub.publisher && NEWSROOM_CAPABILITIES[sub.publisher]?.kind === "delivery"
+      ? sub.publisher
+      : undefined;
+  const publisher = validPublisher ?? previous.publisher;
   const capabilities: Record<string, CapabilityState> = {};
-  for (const id of Object.keys(NEWSROOM_CAPABILITIES)) {
+  for (const [id, cap] of Object.entries(NEWSROOM_CAPABILITIES)) {
     const verdict = sub.verified?.[id];
     const lastVerified = verdict
       ? { at, result: verdict }
       : previous.capabilities[id]?.lastVerified;
     capabilities[id] = {
-      enabled: sub.enabled.includes(id),
+      enabled: cap.kind === "delivery" ? id === publisher : true,
       ...(settings[id] && Object.keys(settings[id]!).length
         ? { settings: settings[id]! }
         : {}),
       ...(lastVerified ? { lastVerified } : {}),
     };
   }
-  // The payload names things; the registry decides whether those names exist. A publisher or a
-  // runtime is read back out of this file to build a path or to launch a program, so an unknown
-  // one is dropped here rather than persisted and dealt with later.
-  const publisher =
-    sub.publisher && NEWSROOM_CAPABILITIES[sub.publisher]?.kind === "delivery"
-      ? sub.publisher
-      : undefined;
   const runtime =
     sub.runtime && RUNTIMES[sub.runtime] ? sub.runtime : undefined;
   return {

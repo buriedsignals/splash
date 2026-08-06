@@ -281,6 +281,15 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+## ★ État courant — 2026-08-06 — LA PAGE DE SETUP TIENT SUR UN ÉCRAN (branche `feat/setup-page-one-screen` @ `3fc8e0c9`, gate 23/23)
+
+Profil rédaction éditable et prérempli-avec-reçu depuis l'adresse du site (`POST /charter`),
+écriture qui préserve (`updateProfileMarkdown`), section Langue et cases à cocher supprimées — ce
+que la rédaction peut produire est **dérivé**, pas coché. Preuve mutation-testée (22/22, régresse
+à 20/22 si l'ancien refus-de-réécrire est restauré). **La clé MapTiler était morte (`403 Invalid
+key`, cause des 20/23 notés ci-dessous le même jour) — Rémy l'a régénérée, gate repassé 23/23,
+cartes re-rendues.** Détail : `docs/splash/CHANGELOG.md`, `docs/installer/setup-page-proof.md`.
+
 ## ★ État courant — 2026-08-06 (nuit) — TOUTE VIDÉO DE GRAPHIQUE PORTE LES MOTS DE SA MARCHE
 
 Spec `docs/superpowers/specs/2026-08-06-every-chart-video-carries-its-words-design.md`, plan

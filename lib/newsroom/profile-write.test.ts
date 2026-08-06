@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { profileMarkdown } from "./profile-write";
+import { profileMarkdown, updateProfileMarkdown } from "./profile-write";
 import { parseNewsroomMarkdown } from "../../skills/splash/src/brand-profile";
 
 describe("profileMarkdown — the setup page's shape is unchanged", () => {
@@ -120,5 +120,308 @@ describe("profileMarkdown — the reader must accept what the writer produces", 
   it("should round-trip the dark preset", () => {
     const md = profileMarkdown({ palette: ["#e8b100"], theme: "dark" });
     expect(parseNewsroomMarkdown(md)?.theme).toBe("dark");
+  });
+});
+
+describe("updateProfileMarkdown — an edit rewrites what it knows, keeps the rest", () => {
+  // The file belongs to the newsroom: Splash created it, the journalist owns it. An edit from the
+  // setup page rewrites the fields the page knows and touches nothing else — the comments they
+  // wrote, and any key a later version (or a human) added.
+  it("keeps the body and the keys it does not know", () => {
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#000000"',
+      'lang: "en"',
+      'requiredSigners: ["yvan"]',
+      "---",
+      "",
+      "# Newsroom profile",
+      "",
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      palette: ["#d5121e"],
+      lang: "fr",
+    });
+    expect(out).toContain('"#d5121e"');
+    expect(out).not.toContain('"#000000"');
+    expect(out).toContain('lang: "fr"');
+    expect(out).toContain('requiredSigners: ["yvan"]');
+    expect(out).toContain(
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+    );
+  });
+
+  // Fix round 1: an edit through the setup page only ever supplies name/url/color — never
+  // `theme`, and never a multi-entry `palette`. A known key `facts` says nothing about must be
+  // preserved exactly like a key this function has never heard of, not dropped because it
+  // happens to be one of the four this function CAN author.
+  it("keeps a theme and a palette the edit did not mention", () => {
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#0a5c36"   # your house colour',
+      '  - "#f2c14e"',
+      'lang: "en"',
+      'theme: "dark"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    // Only a name is supplied — the setup page's real payload always carries a `color` too, but
+    // this proves the general rule: absent from `facts` means untouched, for every known key.
+    const out = updateProfileMarkdown(existing, { name: "Heidi.news" });
+    expect(out).toContain('theme: "dark"');
+    expect(out).toContain('"#0a5c36"');
+    expect(out).toContain('"#f2c14e"');
+    expect(out).toContain('name: "Heidi.news"');
+  });
+
+  it("keeps an untouched theme, and grafts the new colour onto the primary while keeping the series colour", () => {
+    // Fix round 2: the scenario named in review — a profile with a dark theme and a two-colour
+    // palette, edited with only a name and a colour (the real setup-page payload shape,
+    // client.ts's `{name, url, color}`). The theme is not in that payload and must survive. The
+    // colour IS in it — but per NEWSROOM-PROFILE.example.md, palette[0] is the primary and
+    // palette[1+] are distinct series colours, two roles, not one list — and a single hex field
+    // can only ever express the primary. So it replaces index 0 and grafts index 1+ back on; it
+    // does not delete a series colour the journalist never touched.
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#0a5c36"   # your house colour',
+      '  - "#f2c14e"',
+      "source:",
+      '  name: "Heidi.news"',
+      'lang: "en"',
+      'theme: "dark"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      name: "Someone else",
+      color: "#d5121e",
+    });
+    expect(out).toContain('theme: "dark"');
+    expect(out).toContain('"#d5121e"'); // the new primary
+    expect(out).not.toContain('"#0a5c36"'); // the old primary, replaced
+    expect(out).toContain('"#f2c14e"'); // the series colour, grafted back on
+    expect(out).toContain('name: "Someone else"');
+  });
+
+  it("still replaces the whole palette when facts supplies a real palette array", () => {
+    // The charter flow's shape (a whole site measured) genuinely means "here is the new list" —
+    // grafting a single index onto it would be wrong in the other direction.
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#0a5c36"',
+      '  - "#f2c14e"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      palette: ["#111111", "#222222", "#333333"],
+    });
+    expect(out).toContain('"#111111"');
+    expect(out).toContain('"#222222"');
+    expect(out).toContain('"#333333"');
+    expect(out).not.toContain('"#0a5c36"');
+    expect(out).not.toContain('"#f2c14e"');
+  });
+
+  it("grafts a new name onto the existing url when only a name is supplied", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  name: "Heidi.news"',
+      '  url: "https://heidi.news"',
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { name: "Someone else" });
+    expect(out).toContain('name: "Someone else"');
+    expect(out).toContain('url: "https://heidi.news"');
+  });
+
+  it("grafts a new url onto the existing name when only a url is supplied", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  name: "Heidi.news"',
+      '  url: "https://heidi.news"',
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { url: "https://new.example" });
+    expect(out).toContain('name: "Heidi.news"');
+    expect(out).toContain('url: "https://new.example"');
+    expect(out).not.toContain("https://heidi.news");
+  });
+
+  // Fix round 1, finding 2: `parseNewsroomMarkdown`'s palette reader stops at the first line
+  // that is not a `  - item`, even while still indented, so a stray indented non-dash line is
+  // never attributed to the palette it sits under. This writer must use the same boundary when
+  // it drops and regenerates that block — deleting a line the reader itself does not consume
+  // would be silent data loss of exactly the kind this function exists to prevent.
+  it("does not delete a stray indented line under palette the reader itself never consumed", () => {
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#000000"',
+      "  a hand-typed note, not a list item",
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { color: "#d5121e" });
+    expect(out).toContain("a hand-typed note, not a list item");
+    expect(out).toContain('"#d5121e"');
+    expect(out).not.toContain('"#000000"');
+  });
+
+  // Minors: the input shapes the review asked to see committed, not just checked by hand.
+  it("gives a file with no frontmatter a fresh one and keeps its whole body", () => {
+    const existing = "Just a body, no fence at all.\n";
+    const out = updateProfileMarkdown(existing, {
+      lang: "fr",
+      palette: ["#111111"],
+    });
+    expect(out).toContain('"#111111"');
+    expect(out).toContain('lang: "fr"');
+    expect(out).toContain("Just a body, no fence at all.");
+  });
+
+  it("keeps a standalone comment line inside the frontmatter", () => {
+    const existing = [
+      "---",
+      "# a note from the newsroom, not attached to any field",
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain(
+      "# a note from the newsroom, not attached to any field",
+    );
+    expect(out).toContain('lang: "fr"');
+  });
+
+  it("treats a fence with no closing marker as one whole body, rather than losing data", () => {
+    const existing = '---\npalette:\n  - "#000"\nHalf a file, never closed.\n';
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain('lang: "fr"');
+    // Total: nothing thrown, and every original byte is still present somewhere in the output —
+    // it just lands in the body instead of being parsed as frontmatter, since there was no
+    // closing fence for `NEWSROOM_FRONTMATTER_RE` to find.
+    expect(out).toContain("Half a file, never closed.");
+    expect(out).toContain('- "#000"');
+  });
+
+  // A comment on the SAME line as a field being replaced is a conscious trade-off, not an
+  // accident: the whole line is regenerated, so a trailing comment attached to the OLD value
+  // does not survive onto the new one. A standalone comment line (above) does survive; this does
+  // not, because there is no old value left for it to still describe.
+  it("drops a same-line comment attached to a field it replaces", () => {
+    const existing = [
+      "---",
+      'lang: "en"  # confirmed by Yvan',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain('lang: "fr"');
+    expect(out).not.toContain("confirmed by Yvan");
+  });
+
+  // I1 — a comment written INSIDE a `source:` block (its own line, not attached to a field) used
+  // to vanish on every save: `persist` always supplies name+url, so `source:` is regenerated on
+  // every edit, and the old boundary walk (`indentedBlockEnd`) consumed a comment-only line as
+  // silently as a blank one. The page promises "your own comments included, is left exactly as
+  // it is" — this is the promise under test.
+  it("keeps a comment written on its own line inside the source block, across a save", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  name: "Heidi.news"',
+      "  # our legal name is different, do not change",
+      '  url: "https://heidi.news"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      name: "Heidi.news",
+      url: "https://heidi.news",
+    });
+    expect(out).toContain("# our legal name is different, do not change");
+    expect(out).toContain('name: "Heidi.news"');
+    expect(out).toContain('url: "https://heidi.news"');
+  });
+
+  // I1 (deferred item folded in) — a url-only graft against a profile whose EXISTING source has
+  // no name (so `current.source` is undefined — `buildProfile` drops a nameless source block
+  // entirely) must not erase the raw block that IS on disk. `updatedSource` still returns a
+  // truthy `{url}` object (name undefined), and `sourceLines` on that returns `[]` — before the
+  // guard, an empty array was registered anyway, so `preserveLines` dropped the existing block on
+  // the strength of a replacement with nothing in it.
+  it("does not delete the source block when a url-only edit grafts onto a profile with no existing name", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  url: "https://old.example"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      url: "https://new.example",
+    });
+    expect(out).toContain("source:");
+    expect(out).toContain('url: "https://old.example"');
+  });
+
+  // I3 — `parseNewsroomMarkdown` throws when `requiredSigners` names a signer `signers` never
+  // registered (brand-profile.ts's `buildProfile`). Every other reader of a profile catches that
+  // and treats it as "no usable profile"; this function must too, or a malformed profile turns
+  // Save into a thrown exception the caller (the setup page's `/submit`) does not catch either.
+  it("does not throw on an existing profile that parseNewsroomMarkdown cannot parse, and still writes what it can", () => {
+    const existing = [
+      "---",
+      "requiredSigners:",
+      "  - editor",
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    expect(() => updateProfileMarkdown(existing, { lang: "fr" })).not.toThrow();
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain('lang: "fr"');
+    // requiredSigners is not a key this function authors (not in KNOWN_KEYS) — its raw lines are
+    // ordinary "kept" lines regardless of `current`, so the (still unregistered) signer name
+    // survives untouched rather than being silently dropped by the crash-recovery path.
+    expect(out).toContain("requiredSigners:");
+    expect(out).toContain("- editor");
   });
 });

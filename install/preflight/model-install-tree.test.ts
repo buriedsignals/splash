@@ -29,15 +29,12 @@ for (const name of ["react", "vite", "remotion", "sharp"]) pkg(name);
 
 test("an engine whose dependencies are installed reads ready on a packed install", () => {
   const model = preflightModel({
-    state: {
-      ...DEFAULT_NEWSROOM_STATE,
-      capabilities: { "image-native": { enabled: true } },
-    },
+    state: { ...DEFAULT_NEWSROOM_STATE, capabilities: {} },
     env: {},
     skillsRoot: resolveSkillsRoot(root),
   });
-  const photo = model.engines.find((e) => e.id === "image-native")!;
-  expect(photo.status).toBe("ready");
+  const photo = model.producible.find((e) => e.id === "image-native")!;
+  expect(photo.available).toBe(true);
 });
 
 // The mutation: point the probe back at the source tree — the state before this task — and the
@@ -45,14 +42,11 @@ test("an engine whose dependencies are installed reads ready on a packed install
 // nothing about the defect.
 test("probing the source tree instead reports it missing (the defect this closes)", () => {
   const model = preflightModel({
-    state: {
-      ...DEFAULT_NEWSROOM_STATE,
-      capabilities: { "image-native": { enabled: true } },
-    },
+    state: { ...DEFAULT_NEWSROOM_STATE, capabilities: {} },
     env: {},
     skillsRoot: join(root, "skills"),
   });
-  expect(model.engines.find((e) => e.id === "image-native")!.status).toBe(
-    "missing",
+  expect(model.producible.find((e) => e.id === "image-native")!.available).toBe(
+    false,
   );
 });

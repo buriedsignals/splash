@@ -19,12 +19,17 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { NEWSROOM_CAPABILITIES } from "../../lib/newsroom/capabilities.ts";
+import { proposeCharter } from "../../lib/newsroom/charter.ts";
+import {
+  collectSiteSources,
+  normalizeSiteUrl,
+} from "../../lib/newsroom/charter-fetch.ts";
 import { loadDecor } from "../../lib/newsroom/decor.ts";
 import {
   LEGACY_PREFLIGHT_FILE,
   LEGACY_RUNTIME_FILE,
 } from "../../lib/newsroom/migrate-decor.ts";
-import { isSet, parseEnvFile } from "../../lib/newsroom/probe.ts";
+import { parseEnvFile } from "../../lib/newsroom/probe.ts";
 import { writeNewsroomState } from "../../lib/newsroom/state.ts";
 import {
   verifyAnthropic,
@@ -34,6 +39,7 @@ import {
 import { parseNewsroomMarkdown } from "../../skills/splash/src/brand-profile.ts";
 import { RUNTIMES } from "../configurator-core.ts";
 import { MODEL_SCRIPT_ID } from "./copy.ts";
+import { readoutFrom, type CharterReadout } from "./charter-endpoint.ts";
 import { preflightModel, type PreflightProfile } from "./model.ts";
 import { resolveSkillsRoot } from "./skills-root.ts";
 import {
@@ -41,6 +47,7 @@ import {
   mergeEnvFile,
   profileMarkdown,
   submittedState,
+  updateProfileMarkdown,
   type PreflightSubmission,
 } from "./serialize.ts";
 
@@ -145,7 +152,13 @@ async function bundleClient(): Promise<string> {
 }
 
 async function readSubmission(req: Request): Promise<PreflightSubmission> {
-  const body = (await req.json()) as Partial<PreflightSubmission>;
+  const parsed = (await req.json()) as unknown;
+  // Same guard as /charter below: valid JSON is not necessarily an object (`null`, a bare
+  // string, a number all parse fine), and every field read below assumes one.
+  const body: Partial<PreflightSubmission> =
+    parsed && typeof parsed === "object"
+      ? (parsed as Partial<PreflightSubmission>)
+      : {};
   return {
     runtime: typeof body.runtime === "string" ? body.runtime : "claude",
     uiLang: typeof body.uiLang === "string" ? body.uiLang : "en",
@@ -157,7 +170,6 @@ async function readSubmission(req: Request): Promise<PreflightSubmission> {
       body.credentials && typeof body.credentials === "object"
         ? body.credentials
         : {},
-    enabled: Array.isArray(body.enabled) ? body.enabled : [],
     ...(typeof body.publisher === "string"
       ? { publisher: body.publisher }
       : {}),
@@ -171,40 +183,37 @@ async function readSubmission(req: Request): Promise<PreflightSubmission> {
 }
 
 /**
- * Which capability ids own a production key (`kind === "engine"`) the journalist actually TYPED a
- * value for — regardless of whether its capability is ticked (I2). Production keys are asked
- * outright, above every want group (model.ts's `upfront`, derived from this same `kind`); a
- * newsroom can type its Datawrapper token in "Your accounts" and never tick "Datawrapper charts",
- * and the page's own lede promises every key IS checked — so a typed value has to be verifiable on
- * its own, not only when the capability using it happens to also be enabled.
+ * Which capabilities the live check covers. An ENGINE is asked for outright now (Task 5,
+ * 2026-08-06) — there is no tick left to gate it on, so every implemented one is checked
+ * against whatever credentials this submission carries or .env already holds; the page's own
+ * lede promises every key IS checked, and that is no longer conditional on a box nobody ticks
+ * any more. A DELIVERY destination is checked only once the newsroom has chosen it as the
+ * publisher — checking one nobody chose would report a verdict about an account they may not
+ * even hold.
  */
-function upfrontIdsWithTypedValue(sub: PreflightSubmission): string[] {
-  return Object.values(NEWSROOM_CAPABILITIES)
-    .filter(
-      (cap) =>
-        cap.kind === "engine" &&
-        cap.implemented &&
-        (cap.settingsFields ?? []).some((f) => isSet(sub.credentials[f.name])),
-    )
+function idsToVerify(sub: PreflightSubmission): string[] {
+  const engines = Object.values(NEWSROOM_CAPABILITIES)
+    .filter((cap) => cap.kind === "engine" && cap.implemented)
     .map((cap) => cap.id);
+  const chosenPublisher =
+    sub.publisher && NEWSROOM_CAPABILITIES[sub.publisher]?.kind === "delivery"
+      ? [sub.publisher]
+      : [];
+  return [...engines, ...chosenPublisher];
 }
 
 /**
- * Check every capability the newsroom ticked, against the credentials it just typed — falling
- * back to what .env already holds, so re-opening the page on one section does not report the
- * rest as rejected. A capability with no live check is simply absent from the answer.
- *
- * Also checks any UNTICKED capability whose upfront production key was typed (I2): the tick
- * governs what is reported as a BLOCKER, never whether a key that was actually entered gets
- * checked at all.
+ * Check every engine, and the chosen publishing destination, against the credentials just
+ * typed — falling back to what .env already holds, so re-opening the page on one section does
+ * not report the rest as rejected. A capability with no live check is simply absent from the
+ * answer.
  */
 async function verifyAll(
   sub: PreflightSubmission,
 ): Promise<Record<string, VerifyOutcome>> {
   const values = { ...fileEnv(), ...envUpdates(sub) };
   const out: Record<string, VerifyOutcome> = {};
-  const ids = new Set([...sub.enabled, ...upfrontIdsWithTypedValue(sub)]);
-  for (const id of ids) {
+  for (const id of idsToVerify(sub)) {
     const outcome = await verifyCapability(id, values);
     if (outcome) out[id] = outcome;
   }
@@ -243,14 +252,44 @@ function persist(sub: PreflightSubmission): void {
     if (existsSync(legacy)) rmSync(legacy, { force: true });
   }
 
-  // Created ONCE, never round-tripped: after this the file belongs to the newsroom, comments and
-  // all (spec 2026-07-24, decision 6).
+  // The human gesture that gates this write is `sub.newsroom` — a measurement from `measureSite`
+  // never reaches here on its own. What changed (spec 2026-08-06): the file used to be created
+  // ONCE and never round-tripped; now the setup page can also EDIT an existing one, rewriting the
+  // fields it knows (updateProfileMarkdown) while leaving the newsroom's own comments, prose and
+  // any field this version does not author exactly as they were.
   const profilePath = join(ROOT, PROFILE_FILE);
-  if (sub.newsroom && !existsSync(profilePath))
+  if (sub.newsroom) {
+    const facts = { ...sub.newsroom, lang: sub.contentLang ?? "en" };
     writeFileSync(
       profilePath,
-      profileMarkdown({ ...sub.newsroom, lang: sub.contentLang ?? "en" }),
+      existsSync(profilePath)
+        ? updateProfileMarkdown(readFileSync(profilePath, "utf8"), facts)
+        : profileMarkdown(facts),
     );
+  }
+}
+
+/**
+ * Measure a newsroom's own site for its house colours, ground and typefaces — read `{ url }`,
+ * fetch it, and translate the extractor's raw proposal into values with receipts.
+ *
+ * This is the one thing on the setup page that touches the open network on a journalist's say-so,
+ * and the page has to keep rendering no matter what answers back — a slow DNS, a dead cert, a
+ * 403, a site with no CSS at all. So every failure here becomes a plain `{ error }` string, never
+ * a thrown exception: `normalizeSiteUrl` and `collectSiteSources` are already total (they return
+ * `null`/`{ error }` rather than throw), so this only has to relay their answer honestly.
+ */
+async function measureSite(
+  rawUrl: string,
+  lang?: string,
+): Promise<CharterReadout | { error: string }> {
+  const url = normalizeSiteUrl(rawUrl);
+  if (!url) return { error: `not a usable site address: ${rawUrl}` };
+  const sources = await collectSiteSources(url);
+  if ("error" in sources)
+    return { error: `the site did not answer: ${sources.error}` };
+  const proposal = proposeCharter(sources);
+  return readoutFrom(proposal, lang);
 }
 
 const server = Bun.serve({
@@ -273,6 +312,38 @@ const server = Bun.serve({
       return new Response(await bundleClient(), {
         headers: { "content-type": "text/javascript; charset=utf-8" },
       });
+
+    if (req.method === "POST" && url.pathname === "/charter") {
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return new Response("invalid request body", { status: 400 });
+      }
+      // Valid JSON is not necessarily an object — `null`, `"x"`, `42`, `[]` all parse fine and
+      // none of them has a `.url` to read. Guarding the SHAPE here (not just the parse) is what
+      // keeps this route from throwing outside the try/catch above on a body like literal `null`.
+      const siteUrl =
+        body &&
+        typeof body === "object" &&
+        typeof (body as { url?: unknown }).url === "string"
+          ? (body as { url: string }).url
+          : "";
+      // `lang` (M1) — the page's own interface language, so a receipt reads in the same language
+      // as the rest of the page around it. Absent/malformed falls through to `readoutFrom`'s own
+      // "en" default, the same fallback `pageCopy` gives an unknown tag.
+      const lang =
+        body &&
+        typeof body === "object" &&
+        typeof (body as { lang?: unknown }).lang === "string"
+          ? (body as { lang: string }).lang
+          : undefined;
+      // measureSite is total (see its own comment) — nothing below can throw, so this route
+      // always renders JSON, matching the setup page's own rule of always rendering.
+      return new Response(JSON.stringify(await measureSite(siteUrl, lang)), {
+        headers: { "content-type": "application/json" },
+      });
+    }
 
     if (req.method === "POST" && url.pathname === "/verify") {
       let sub: PreflightSubmission;

@@ -93,9 +93,15 @@ describe("loading the decor", () => {
       "image-native",
       "zip",
     ]);
+    // Task 5 (2026-08-06): an engine is asked for outright now — dw-chart is judged straight
+    // from its own config (no key here), never "disabled" for want of a tick nobody could act
+    // on. A delivery destination the newsroom did not choose still reads as disabled.
     expect(decor.readiness.find((r) => r.id === "dw-chart")?.status).toBe(
-      "disabled",
+      "missing",
     );
+    expect(
+      decor.readiness.find((r) => r.id === "embed-cloudflare")?.status,
+    ).toBe("disabled");
   });
 
   it("takes the deliverable language from the newsroom profile", () => {
