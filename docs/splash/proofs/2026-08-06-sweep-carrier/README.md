@@ -78,3 +78,18 @@ du locator est faite avec `space` : le porteur se lit dans la donnée, il ne se 
 **Sans porteur, rien ne change** — vérifié mécaniquement, pas affirmé : le même `symbol.json`
 (sans `sweepCarrier`) rendu sur le commit d'avant le lot et sur le lot donne le MÊME mp4,
 `sha256 270323089e2959c65f2bb34146a1fd6cf4ce90e468bbb3b24ad41c985b64f492` des deux côtés.
+
+### Les trois types peints en masse, rendus eux aussi
+
+Même porteur `threshold`, mêmes échantillons du skill, 948 frames chacun. Ces trois-là ne mettent
+pas en scène marque par marque : ils cuisent `__stop` sur la feature et comparent dans UNE
+expression data-driven — la couture du choroplèthe, pas une seconde.
+
+| type | frame « premier » | frame « en descente » |
+|---|---|---|
+| cartogramme (`cartogram-scaled.json`) | `cartogram-threshold-1-largest-alone.png` (150) : **la Chine seule**, le plus gros émetteur | `cartogram-threshold-2-descending.png` (940) : Chine, Inde, Russie, Japon… peints, les plus petits encore éteints |
+| densité de points (`dot-density-uni.json`) | `dotdensity-threshold-1-largest-alone.png` (150) : **les points de l'Allemagne seuls** (le pays le plus peuplé du jeu) | `dotdensity-threshold-2-descending.png` (940) : France, Royaume-Uni, Italie, Espagne, pays nordiques stipplés à leur tour |
+| grille hexagonale (`hex-grid-count.json`) | `hexgrid-threshold-1-densest-alone.png` (150) : **trois hexagones seulement**, les plus denses | `hexgrid-threshold-2-descending.png` (940) : toute la grille allumée, les bacs les plus clairs arrivés en dernier |
+
+Dans les trois, la caméra fait toujours sa visite guidée pendant que le balayage peint : les beats
+narrent, le porteur allume.
