@@ -7,33 +7,47 @@ information-design lesson** — never a styling description. This is what the re
 lift out of it and apply to your own data." Copying the rule, not the surface, is the whole
 point — see `anti-patterns.md`'s closing entry.
 
-**Every row below is a published, standalone, evidence-led newsroom graphic — six different
-outlets, no presenter, no slide.** Nothing here is narrated over a stage deck: the two video rows
-are produced newsroom pieces (their narration is part of the published artifact itself, not a
-conference talk), and the other four are static or motion graphics with no presenter at all.
+**Four rows, not six.** This file has twice shipped more rows than could be honestly defended, and
+been cut back both times on review. The floor `checkReferenceSet` currently enforces
+(`test/reference-set.test.ts`, at least six rows) is **not met by this file as of this version** —
+see the note at the end of this preamble. Four true rows that survived being looked at, read
+around, and checked against `editorial-standard.md` and `anti-patterns.md` are worth more than six
+where two are stretched, because the entire purpose of this file is that a model can trust it.
 
-**Metadata is not enough — every row was verified by looking directly at the actual pixels, not
-by reading `og:title`, a caption, or a caption track alone.** For the four static/motion rows, the
-image actually shown was downloaded and inspected. For the two video rows, the exact cited frame
-was extracted with `ffmpeg` and inspected. The lesson for each row describes only what was
-directly seen, not what a headline or a secondary source claimed was there — an earlier draft of
-this file shipped three rows whose lessons were contradicted by their own artifact once actually
-looked at (a chart with eight categorical colours cited as an example of "one accent against
-grey"; a sequential, randomized simulation cited as "four panels under one shared clock"; a
-locator that pointed at empty, client-rendered markup with a quoted sentence that in fact belonged
-to a different chart four thousand characters away) — all three are corrected or replaced below.
+**What "verified" means here, precisely, after three rounds of getting it wrong in three different
+ways:** round 1 verified metadata (`og:title`, `datePublished`) and never looked at a pixel; round
+2 downloaded and looked at images and video frames, but described things the artifact itself did
+not show (a chart's actual colours, a simulation's actual mechanism, a locator that pointed at the
+wrong element); round 3's own submission looked at the right pixels but never read the caption two
+lines away from them — one row turned out to be a design mockup captioned, in the article's own
+words, "placeholder data and annotations," and another's lesson asserted a mechanic (two lines
+crossing back and forth across dated elections) that the cropped promotional card it was verified
+against cannot actually show (no year labels, one crossing, no legend). Both are removed here.
+**The rule going forward**: look at the actual pixels, AND read whatever text sits next to them —
+a `<figcaption>`, a byline, a credit line, the surrounding paragraph — before writing a lesson.
 
-The **Moment** column is a locator, not necessarily a timecode: a published static or motion
-graphic has no timecode, so its locator is the thing that actually identifies where in the piece
-the graphic sits — here, the image file embedded in the article, or the labelled panel within it.
-The two video rows carry a real timecode instead, each independently confirmed against an actual
-extracted frame, not just a caption track.
+**Two different kinds of "looked at" are mixed in the table below, and each row says which:**
+
+- **Extracted video frame** (rows 3–4): the actual published artifact, at the actual cited
+  timecode, pulled with `yt-dlp` + `ffmpeg` and read directly. This is the strongest form of
+  verification in this file.
+- **The piece's own social-preview image** (rows 1–2): what `og:image`/`twitter:image` serves is a
+  `<meta>` tag reference, not a `<figure>` embedded in the article body — there is no separate
+  caption to have missed for these two specific assets (confirmed by re-checking the surrounding
+  markup: both are bare `<meta>` tags, with no `<figcaption>` anywhere near them). This is real,
+  newsroom-produced content — NYT's and the Post's own CDNs serve it, it is what the piece looks
+  like when shared — but it is a simplified, cropped derivative of the interactive page, not the
+  page itself. The lesson for each row describes only what is visible in that specific derivative.
+
+**Owed, on the record**: the static bar (at least half the set genuinely static) is not met by
+this file — 1 of 4 rows (row 1, a still image) is unambiguously static; row 2 is motion; rows 3–4
+are video. A genuinely published, in-article static `<img>` — not a promo card, not a design
+mockup — with a real, non-placeholder caption has not yet been found and verified. See
+`SKILL.md`'s Files section for the same statement in the skill's own voice.
 
 | Reference | Moment | Transferable lesson |
 | --- | ---: | --- |
-| FiveThirtyEight (ABC News) — [How We Designed The Look Of Our 2020 Forecast](https://web.archive.org/web/20210104235440/https://fivethirtyeight.com/features/how-we-designed-the-look-of-our-2020-forecast/) (13 August 2020) | the embedded image `cards-desktop-1.png`, its foreground card "The winding path to 270 electoral votes" | The 270-vote threshold is drawn as a physical line straight through the ribbon of states, not just marked on an axis — states are ordered by how favourable they are to each candidate (snaking end to end) AND sized by their electoral-vote weight, so rank and magnitude are both encoded by the same shape, in the same glance, with no separate axis for either. |
-| The New York Times, The Upshot — [Extensive Data Shows Punishing Reach of Racism for Black Boys](https://www.nytimes.com/interactive/2018/03/19/upshot/race-class-white-and-black-men.html) (19 March 2018) | the article's own promotional rendering of its opening chart (`race-class-white-and-black-men-promo-facebookJumbo.png`) | Individual dot-marks — one per child in the underlying study, coloured by race — flow from a single "Grew up rich" band into five adult-outcome bands, and the finding is set directly on the graphic as its own sentence: "Most white boys[orange] raised in wealthy families will stay rich or upper middle class as adults, but black boys[blue] raised in similarly rich households will not." The annotation states the claim outright while the individual dots keep the honest texture of exceptions — a reader can see both the rule and that it is not universal. |
-| Reuters Graphics — [Behind the Battleground States](https://www.reuters.com/graphics/USA-ELECTION/SWING-STATES/myvmadqlzvr/) (24 September 2024) | the piece's own preview image (`reuters-graphics.jpg`), its small-multiples panel of state-by-state margin history (Michigan, Nevada, Pennsylvania, Wisconsin) | Every state gets an identically-shaped step-chart panel — two coloured lines crossing back and forth to trace which party led in each past election. Once a reader has learned to read Michigan's panel, Wisconsin's and Pennsylvania's cost nothing extra, because the shape-to-meaning mapping never changes between panels — small multiples make comparison the default reading rather than a task the reader has to set up for themselves each time. |
-| Harry Stevens — The Washington Post — ["These simulations show how to flatten the coronavirus growth curve"](https://web.archive.org/web/2020/https://www.washingtonpost.com/graphics/2020/world/corona-simulator/) (14 March 2020) | the four labelled result panels — Free-for-all, Attempted quarantine, Moderate distancing, Extensive distancing — drawn on one shared scale | Each of the four simulations is its own random, reader-triggered run — the piece says so directly: "The four simulations you just watched … were random. That means the results of each one were unique to your reading of this article." Yet all four still converge on the same qualitative shape, a visibly lower and longer infection curve as distancing increases. Demonstrating a pattern through many honestly-random instances, instead of asserting it from one staged run, is what makes the evidence convincing rather than cherry-picked. |
-| The New York Times Visual Investigations — [How the Police Killed Breonna Taylor](https://www.youtube.com/watch?v=lDaNU7yDnsc) (2020) | 4:20 | The video renders the scene as one fixed, grey 3D model — the same breezeway, the same two doors, officers rendered as ghosted grey figures — and layers each account into that unchanging space rather than cutting to a different depiction per witness. Contradictory testimony accumulates inside a shared frame instead of asking the viewer to hold each version separately in their head. |
-| Vox — [The conflict in Kashmir, explained](https://www.youtube.com/watch?v=cyayif_nla8) (2019) | 3:55 | The map cuts to the disputed boundary — a dotted line separating a green region from an orange one — right as the narration names the 1949 ceasefire that created it, immediately after archival footage of the UN session that brokered it. Geography arrives paired with the specific historical moment that produced it, instead of being shown whole up front and explained afterward. |
+| The New York Times, The Upshot — [Extensive Data Shows Punishing Reach of Racism for Black Boys](https://www.nytimes.com/interactive/2018/03/19/upshot/race-class-white-and-black-men.html) (19 March 2018) | the piece's own social-preview image (`race-class-white-and-black-men-promo-facebookJumbo.png`, a `<meta>` asset — no separate in-article caption exists for it) | Individual dot-marks — one per child in the underlying study, each carrying its own small coloured swatch — flow from a single "Grew up rich" band into five adult-outcome bands, and the finding is set directly on the graphic as its own sentence: "Most white boys ▪ raised in wealthy families will stay rich or upper middle class as adults, but black boys ▪ raised in similarly rich households will not," each group identified by its swatch rather than a colour named in the sentence itself. The annotation states the claim outright while the individual dots keep the honest texture of exceptions — a reader can see both the rule and that it is not universal. |
+| Harry Stevens — The Washington Post — ["These simulations show how to flatten the coronavirus growth curve"](https://web.archive.org/web/2020/https://www.washingtonpost.com/graphics/2020/world/corona-simulator/) (14 March 2020) | the piece's own social-preview image (`promo2-coronavirus-simulator-0313.jpg`, a `<meta>` asset — no separate in-article caption exists for it), showing the four labelled result panels — Free-for-all, Attempted quarantine, Moderate distancing, Extensive distancing — on one shared scale | Each of the four simulations is its own random, reader-triggered run — the piece says so directly, in its own body text: "The four simulations you just watched … were random. That means the results of each one were unique to your reading of this article." Yet all four still converge on the same qualitative shape, a visibly lower and longer infection curve as distancing increases. Demonstrating a pattern through many honestly-random instances, instead of asserting it from one staged run, is what makes the evidence convincing rather than cherry-picked. |
+| The New York Times Visual Investigations — [How the Police Killed Breonna Taylor](https://www.youtube.com/watch?v=lDaNU7yDnsc) (2020) | 4:20 | The video renders the scene as one fixed, grey 3D model — the same breezeway, officers rendered as ghosted grey figures — and layers each account into that unchanging space rather than cutting to a different depiction per witness; the camera moves around the model over the course of the sequence, but the model itself never changes. Contradictory testimony accumulates inside a shared frame instead of asking the viewer to hold each version separately in their head. |
+| Vox — [The conflict in Kashmir, explained](https://www.youtube.com/watch?v=cyayif_nla8) (2019) | 3:55 | The map cuts to a dotted line tracing the outline of the disputed, hatched-orange territory against the green backdrop around it — appearing a few seconds after (not immediately after: one intervening archival photograph plays first) the archival UN Security Council footage — timed to land while the narration is still naming the 1949 ceasefire that fixed that boundary. Geography arrives paired with the specific historical moment that produced it, instead of being shown whole up front and explained afterward. |

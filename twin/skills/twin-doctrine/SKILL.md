@@ -40,8 +40,8 @@ true after the next edit.
   geometry, or render call. The doctrine is the frame the first sketch is drawn inside, not a
   style pass applied afterward.
 - `twin-storyboard`'s reference loop (movement ④ of `references/exchange.md`) draws its named
-  set from `reference-set.md` directly — when it shows a journalist "Reuters treated this
-  argument structure one way, the Post another," those are rows from this file.
+  set from `reference-set.md` directly — when it shows a journalist "the Post treated this
+  argument structure one way, Vox another," those are rows from this file.
 - **Live reference research** — going out and finding a new real treatment, with its own verified
   link and locator — runs only when the argument structure a story needs is new to the shipped
   set. If an existing row already names the structure, use it; do not re-research what is already
@@ -51,28 +51,33 @@ true after the next edit.
 
 ## The one gotcha that will waste your day (read first)
 
-**Metadata proves a graphic exists and when — it says nothing about what the graphic shows, and a
-reference verified only by its metadata is not verified.** `og:title`, `datePublished`, a caption
-track: all of these can be real and correct while the *lesson* describing the graphic is fiction,
-because nobody actually looked at the pixels. This file's own history proves it three separate
-ways in the same round: a chart cited as "one accent colour against grey comparators" that in fact
-carries eight saturated categorical colours with the claimed subject drawn in dark grey; a
-simulation cited as "four panels running side by side under one shared clock" that is in fact four
-sequential, independently-randomized runs (the piece says so in its own words); and a locator that
-pointed at real, existing markup — but the quoted sentence sitting next to it, on the actual page,
-belonged to a *different* chart several thousand characters away, and the cited element itself was
-an empty div waiting on client-side JavaScript nobody had run. All three shipped, all three read
-as plausible, and all three were wrong. **The only fix that works: download the actual image, or
-extract the actual video frame at the actual cited timecode, and look at it — every row currently
-in `reference-set.md` was verified this way.** A reference can also be real, on-topic, correctly
-described, and still fail this file on a second axis: a decorative flat-illustration channel, or a
-talk literally titled after "the beauty of" data visualization, is real and findable and still
-contradicts `editorial-standard.md` and `visual-system.md` on their own terms — colour on every
-mark, no on-canvas source, the argument carried by a presenter's voice instead of the graphic
-itself. Checking "is this real, and does the lesson match what is actually on screen" is necessary
-and not sufficient — every row also has to survive being read against `editorial-standard.md`,
-`visual-system.md` and `anti-patterns.md` before it ships, the same test any production skill's
-own output has to survive.
+**Looking at the pixels is necessary and still not sufficient — read what sits next to them too.**
+This file has been wrong in three different shapes across three rounds of review, each one a
+stricter version of "actually check" than the last. Round 1 verified metadata — `og:title`,
+`datePublished`, a caption track — and never looked at a single pixel; a chart described as "one
+accent colour against grey comparators" in fact carried eight saturated categorical colours with
+the claimed subject drawn in dark grey. Round 2 downloaded and looked at real images and real
+video frames — genuinely — and still got three rows wrong, because *looking* was not the same as
+*describing only what was there*: a simulation cited as "four panels running side by side under one
+shared clock" was in fact four sequential, independently-randomized runs (the piece says so in its
+own body text); a locator pointed at real markup whose quoted sentence, on the actual page,
+belonged to a *different* chart several thousand characters away. Round 3 fixed those, looked at
+the right pixels this time — and still shipped a chart that was a **design mockup**, because the
+`<figcaption>` sitting immediately next to the image, in the article's own words, said "placeholder
+data and annotations," and nobody read it. **The rule now: look at the actual pixels, AND read the
+caption, the credit line, and the surrounding paragraph, before writing a lesson.** A row verified
+only against a promotional/social-preview derivative (not the article's own embedded image) must
+say so in plain words in the file, and its lesson may describe only what that specific derivative
+actually shows — see `reference-set.md`'s preamble for which rows this applies to and why. A
+reference can also be real, accurately described, correctly sourced, and still fail this file on a
+different axis entirely: a decorative flat-illustration channel, or a talk literally titled after
+"the beauty of" data visualization, is real and findable and still contradicts
+`editorial-standard.md` and `visual-system.md` on their own terms — colour on every mark, no
+on-canvas source, the argument carried by a presenter's voice instead of the graphic itself.
+Verification is: is this real, does the lesson match only what is actually on screen, does the
+surrounding text confirm rather than contradict that, AND does it survive being read against
+`editorial-standard.md`, `visual-system.md` and `anti-patterns.md` — the same test any production
+skill's own output has to survive.
 
 ## Architecture
 
@@ -156,12 +161,25 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
 - `references/information-architecture.md` — reading order, the stack, proximity, alignment, density.
 - `references/visual-system.md` — the concrete colour, label and furniture rules.
 - `references/anti-patterns.md` — named recurring failures, one entry per anti-pattern.
-- `references/reference-set.md` — six verified, published newsroom graphics (FiveThirtyEight/ABC
-  News, NYT, Reuters, Washington Post, NYT, Vox — six distinct outlets, three static, one motion,
-  two video) with a link, a locator and a lesson; `checkReferenceSet` requires at least six, this
-  ships exactly at the floor because every row currently shipped has been personally verified by
-  looking at the actual artifact, and a smaller true set beats a larger one padded with a row that
-  passed the mechanical check but not a real look.
+- `references/reference-set.md` — **four** rows, not the six `checkReferenceSet` currently
+  requires (`test/reference-set.test.ts`'s shipped-file test is red as of this version, honestly:
+  `countReferenceRows` returns 4). Two outlets, three counting NYT's two desks separately (The
+  Upshot, Visual Investigations) as distinct rows — The New York Times (×2), The Washington Post,
+  Vox. One row (The Upshot) is a static image; one (The Washington Post) is motion; two (NYT
+  Visual Investigations, Vox) are video with a real extracted frame at the cited timecode. **The
+  static bar (at least half genuinely static) is not met** — this is stated here and in the file's
+  own preamble rather than papered over with a row that would pass the mechanical check but not a
+  real look. Two rows dropped this round: a FiveThirtyEight design mockup (its own `<figcaption>`
+  read "placeholder data and annotations" — a process illustration, not published evidence) and a
+  Reuters social-preview card whose lesson asserted a mechanic (two lines crossing repeatedly
+  across labelled years) the actual cropped card cannot show. **Owed**: two more rows, ideally
+  genuinely static `<img>`s embedded in an article body (not a `<meta>` promo asset) with a real,
+  non-placeholder caption — `SP1`'s own audit found this general class of artifact ("daily-chart
+  formats, print-origin graphics, explainer stills") should exist in quantity; none has yet been
+  found, downloaded, and verified against both its pixels and its surrounding text. Raising the
+  count back toward the floor — or lowering the floor to match an honestly smaller set — is a
+  `scripts/check-reference-set.mjs` / `test/reference-set.test.ts` change, out of scope for the
+  content-only round that produced this file's current state.
 - `references/motion-grammar.md` — **does not exist yet**; deferred to the video sub-project, see
   Overview. Do not write it ahead of the motion work it would govern.
 - `scripts/check-reference-set.mjs` — `checkReferenceSet(markdown)`, `countReferenceRows(markdown)`.
