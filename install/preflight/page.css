@@ -265,6 +265,19 @@ details.tech code {
 
 /* ── capabilities ─────────────────────────────────────────────────────── */
 
+/* One group per want (charts, maps, …): the want leads, the tools underneath stay their own
+   choosable rows. */
+.want-title {
+  margin: 1.1rem 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 640;
+  color: var(--ink);
+}
+
+.want:first-child .want-title {
+  margin-top: 0;
+}
+
 .capability {
   border-top: 1px solid var(--line);
   padding: 0.9rem 0;

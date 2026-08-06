@@ -16,6 +16,7 @@ import {
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
+import type { WantId } from "../../lib/newsroom/capabilities.ts";
 
 type FormState = {
   uiLang: string;
@@ -434,9 +435,26 @@ function renderCapabilities(copy: PageCopy): void {
   const engines = section("capabilities");
   engines.name.textContent = copy.capabilitiesTitle;
   engines.hint.textContent = copy.capabilitiesHint;
-  engines.body.replaceChildren(
-    ...model.engines.map((c) => capabilityRow(c, copy, "checkbox")),
-  );
+  // Group by want, in the order each want first appears in the registry — the want leads, the
+  // tool underneath stays its own choosable checkbox (the project owner's explicit "do not
+  // collapse the two engines of a want into one").
+  const groups = new Map<string, PreflightCapability[]>();
+  for (const c of model.engines) {
+    const key = c.want ?? "";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(c);
+  }
+  const blocks: HTMLElement[] = [];
+  for (const [want, caps] of groups) {
+    const block = el("div", { class: "want" });
+    if (want)
+      block.append(
+        el("h3", { class: "want-title" }, copy.wants[want as WantId] ?? want),
+      );
+    for (const c of caps) block.append(capabilityRow(c, copy, "checkbox"));
+    blocks.push(block);
+  }
+  engines.body.replaceChildren(...blocks);
 
   const publishing = section("publishing");
   publishing.name.textContent = copy.publishingTitle;

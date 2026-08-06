@@ -60,7 +60,7 @@ export const ENGINE_REQUIREMENTS: Record<Producer, EngineRequirements> =
     ]),
   ) as Record<Producer, EngineRequirements>;
 
-// The newsroom-facing NAME of each engine — "Scrollytelling stories", never `scrolly`. The
+// The newsroom-facing NAME of each engine — "Scroll-driven stories", never `scrolly`. The
 // GREEN preflight path needs it as much as the red one does: a report keyed only on producer
 // ids is what makes a run announce « les six moteurs sont prêts », which tells a journalist
 // nothing about what he can actually make. The labels are the registry's own

@@ -14,6 +14,7 @@
 import {
   NEWSROOM_CAPABILITIES,
   type NewsroomCapability,
+  type WantId,
 } from "../../lib/newsroom/capabilities.ts";
 import { resolveLanguage } from "../../lib/newsroom/language.ts";
 import {
@@ -51,6 +52,8 @@ export type PreflightCapability = {
   id: string;
   label: string;
   kind: NewsroomCapability["kind"];
+  /** The want this engine serves — copied from the registry. Delivery capabilities have none. */
+  want?: WantId;
   enabled: boolean;
   /** false = declared, not built yet. Unavailable is not a failure. */
   available: boolean;
@@ -244,6 +247,7 @@ export function describeCapability(
     id: cap.id,
     label: cap.label,
     kind: cap.kind,
+    want: cap.want,
     enabled: state.capabilities[cap.id]?.enabled === true,
     available: cap.implemented,
     fields: (cap.settingsFields ?? []).map((f) => f.name),

@@ -25,12 +25,17 @@ export type CapabilitySettingField = {
   required?: boolean;
 };
 
+/** What the journalist wants to be able to make. The engine is how, not what. */
+export type WantId = "charts" | "maps" | "scrollys" | "photo-stories";
+
 export type NewsroomCapability = {
   /** Registry key. Engine ids are producer names; delivery ids name the publisher. */
   id: string;
   /** Newsroom-facing label. NEVER an env var name — that is issue #5's complaint. */
   label: string;
   kind: "engine" | "delivery";
+  /** The want this engine serves; the setup page groups the tools under it. Delivery has none. */
+  want?: WantId;
   /** Each inner array is an ALTERNATIVES group: at least one member must be set. */
   env: string[][];
   /** Per-var: where the journalist gets it. */
@@ -60,8 +65,9 @@ const MT_FIELD: CapabilitySettingField = {
 export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   "dw-chart": {
     id: "dw-chart",
-    label: "Datawrapper charts",
+    label: "With a Datawrapper account",
     kind: "engine",
+    want: "charts",
     env: [["DATAWRAPPER_API_TOKEN"]],
     envHelp: { DATAWRAPPER_API_TOKEN: DW_HELP },
     settingsFields: [DW_FIELD],
@@ -70,8 +76,9 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   "map-dw": {
     id: "map-dw",
-    label: "Datawrapper maps",
+    label: "With a Datawrapper account",
     kind: "engine",
+    want: "maps",
     env: [["DATAWRAPPER_API_TOKEN"]],
     envHelp: { DATAWRAPPER_API_TOKEN: DW_HELP },
     settingsFields: [DW_FIELD],
@@ -80,8 +87,9 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   "chart-native": {
     id: "chart-native",
-    label: "Charts built in-house (no account needed)",
+    label: "In-house, no account needed (includes video)",
     kind: "engine",
+    want: "charts",
     env: [],
     envHelp: {},
     // remotion (its video render path) is a critical dep like react/vite: an incident showed
@@ -96,8 +104,9 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   "map-native": {
     id: "map-native",
-    label: "Maps built in-house (interactive and video)",
+    label: "In-house, needs a MapTiler key (includes video)",
     kind: "engine",
+    want: "maps",
     env: [["VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"]],
     envHelp: { VITE_MAPTILER_KEY: MT_HELP, REMOTION_MAPTILER_KEY: MT_HELP },
     settingsFields: [MT_FIELD],
@@ -112,8 +121,9 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   scrolly: {
     id: "scrolly",
-    label: "Scrollytelling stories",
+    label: "Scroll-driven stories",
     kind: "engine",
+    want: "scrollys",
     env: [["VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"]],
     envHelp: { VITE_MAPTILER_KEY: MT_HELP, REMOTION_MAPTILER_KEY: MT_HELP },
     settingsFields: [MT_FIELD],
@@ -125,8 +135,9 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   // dep (the exact "binary missing after a bare clone" crash class C2 exists for).
   "image-native": {
     id: "image-native",
-    label: "Photo narratives",
+    label: "From the newsroom's own photographs",
     kind: "engine",
+    want: "photo-stories",
     env: [],
     envHelp: {},
     criticalDeps: { fromSkillDir: "image-native", packages: ["sharp"] },

@@ -70,7 +70,7 @@ describe("preflight CLI", () => {
       expect(engine.label.length).toBeGreaterThan(0);
       expect(engine.label).not.toBe(id);
     }
-    expect(report.engines["scrolly"].label).toBe("Scrollytelling stories");
+    expect(report.engines["scrolly"].label).toBe("Scroll-driven stories");
   });
 
   it("should exit 1 on an unknown producer", () => {

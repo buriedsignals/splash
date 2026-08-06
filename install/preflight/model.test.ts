@@ -151,7 +151,7 @@ describe("the capabilities the page offers", () => {
     });
     expect(capability(m, "dw-chart")?.status).toBe("missing");
     expect(m.blockers.map((b) => b.id)).toEqual(["dw-chart"]);
-    expect(m.blockers[0]!.reason).toContain("Datawrapper charts");
+    expect(m.blockers[0]!.reason).toContain("With a Datawrapper account");
   });
 
   it("never reports a capability the newsroom did not enable — not green, not red", () => {

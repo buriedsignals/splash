@@ -145,4 +145,25 @@ describe("the newsroom capability registry", () => {
       for (const f of cap.settingsFields ?? [])
         if (f.secret) expect(f.required).toBeUndefined();
   });
+
+  // The journalist picks what he wants to be able to make; the engine is a means. Every engine
+  // therefore belongs to a want, and the tools that serve the same want group under one heading.
+  test("every engine declares the want it serves", () => {
+    for (const cap of engineCapabilities()) expect(cap.want).toBeTruthy();
+    const charts = engineCapabilities()
+      .filter((c) => c.want === "charts")
+      .map((c) => c.id)
+      .sort();
+    expect(charts).toEqual(["chart-native", "dw-chart"]);
+    const maps = engineCapabilities()
+      .filter((c) => c.want === "maps")
+      .map((c) => c.id)
+      .sort();
+    expect(maps).toEqual(["map-dw", "map-native"]);
+  });
+
+  // A delivery destination is not a want: it answers "where does it go", which is its own section.
+  test("delivery capabilities declare no want", () => {
+    for (const cap of deliveryCapabilities()) expect(cap.want).toBeUndefined();
+  });
 });
