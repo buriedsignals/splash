@@ -40,7 +40,7 @@ document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
 ## The sixteen commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `precheck`, `probe`. Acting:
+Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `can-carry-walk`, `precheck`, `probe`. Acting:
 `init`, `advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
 `present`.
 
@@ -1282,6 +1282,40 @@ behaviour. (A `NEWSROOM-PROFILE.md`, if one is present in the directory read, re
 own `brand.json` cache beside it — `loadNewsroomProfile`'s long-standing best-effort
 behaviour, and the one write `--dir` can still reach, into a directory that already exists
 and already holds the profile it caches.)
+
+### `can-carry-walk --producer <p> --format <f> [--type <t>] [--camera-mode <m>]`
+
+**Does a confirmed walk reach a reader through this form?** Read-only, and deliberately without
+`--run`: the chain that runs today has no run manifest, and the question is useful exactly one
+turn before a journalist is told a form is impossible.
+
+It exists because of a measured failure. On 2026-08-06 a journalist was told his bar video could
+not carry his two sentences — nine minutes after the merge that made it carry them, with the prose
+saying so already loaded. A capability held in memory is wrong eventually, and a refusal is
+CREDIBLE: he had no reason to argue, so the capability would have died unnoticed. A guard cannot
+catch this — a guard refuses what is ATTEMPTED, and nothing is attempted when the form is talked
+out of existence first.
+
+`--camera-mode` matters for a map video, which is not one thing: `guided-tour` and `stepped`
+narrate and carry the words; `simple` and `route-reveal` are the reveal family, which shows none
+by design, so no walk is owed there.
+
+```
+$ bun lib/host/cli.ts can-carry-walk --producer chart-native --type bar --format video
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "carriesWalk": true,
+    "why": "a video on chart-native (\"bar\") carries a confirmed walk: each step's sentence appears with the subject it is about"
+  }
+}
+```
+
+`why` is written to be said to a journalist as-is — a refusal names what to choose instead, never
+just "unsupported".
 
 ### `precheck --stage <production|export> --dir <dir> [--format <f>] [--form <f>]`
 
