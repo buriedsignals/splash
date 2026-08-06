@@ -1692,6 +1692,8 @@ git commit -m "feat(twin-doctrine): the standard, the anti-patterns, and a refer
 
 Two candidates: `@resvg/resvg-js` (no browser, fast) and a headless browser screenshot. Write a five-line scratch script under `/tmp` that rasterises a trivial SVG containing text with each candidate and open both PNGs. Record which one renders the text correctly with the fonts available on this machine, and use that one. If neither works, stop and report — do not design around it.
 
+DECIDED 2026-08-06: **`@resvg/resvg-js`**. Both candidates rendered the probe text correctly with this machine's fonts (bold sans title, muted sans source, serif label). resvg wins on prerequisites — puppeteer could not find a Chrome on a clean install and only worked when pointed at the system `/Applications/Google Chrome.app`, a prerequisite a journalist's laptop may not have. resvg also exposes `getBBox()`, the real ink extent of laid-out text, which is what makes a MEASURED gutter possible at all; `measureText` is exported from `render-still.mjs` for that reason and the seed lays out both gutters with it.
+
 - [ ] **Step 2: Write the failing test**
 
 ```ts
@@ -1777,20 +1779,29 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
+// AMENDED 2026-08-06 (standing ruling: correctness governs a plan-origin defect).
+// Two defects in the block this plan first carried:
+//   1. `luminance > 0.5` picks the WRONG ink pole on the mid-grey band — on #808080 it chooses
+//      white at 3.95:1 over black at 5.32:1. The pole is now chosen by MEASURING both.
+//   2. `muted: mix(0.62)` carried no contrast floor: on #808080 it lands at 3.29:1, below the
+//      4.5:1 a source line needs. It now escalates toward the ink until it clears 4.5:1, which
+//      always terminates (the worst ground for its own better pole still measures 4.58:1).
+// `contrast` is exported because Task 8 measures against the real ground with the same maths.
+
+export function contrast(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 export function deriveFurniture(ground) {
   if (!HEX.test(ground)) throw new Error(`ground must be #rrggbb, got ${JSON.stringify(ground)}`);
-  const [r, g, b] = [1, 3, 5].map((i) => parseInt(ground.slice(i, i + 2), 16) / 255);
-  const channel = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
-  const luminance = 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-  const ink = luminance > 0.5 ? "#000000" : "#FFFFFF";
-  const mix = (ratio) => {
-    const base = ink === "#000000" ? 0 : 255;
-    const groundChannels = [1, 3, 5].map((i) => parseInt(ground.slice(i, i + 2), 16));
-    return "#" + groundChannels
-      .map((value) => Math.round(value + (base - value) * ratio).toString(16).padStart(2, "0"))
-      .join("");
-  };
-  return { ink, muted: mix(0.62), grid: mix(0.18) };
+  const ink = contrast("#000000", ground) >= contrast("#FFFFFF", ground) ? "#000000" : "#FFFFFF";
+  let muted = ink;
+  for (let step = 31; step <= 50; step++) {
+    const candidate = mix(ground, ink, step / 50);
+    if (contrast(candidate, ground) >= 4.5) { muted = candidate; break; }
+  }
+  return { ink, muted, grid: mix(ground, ink, 0.18) };
 }
 
 export async function renderStill({ element, width, height, outDir, name }) {
@@ -1809,7 +1820,7 @@ export async function renderStill({ element, width, height, outDir, name }) {
 - [ ] **Step 6: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-chart-beat/test/render-still.test.ts`
-Expected: PASS, 5 tests.
+Expected: PASS. AMENDED 2026-08-06: 14 tests, not 5 — the five above plus the ink pole on a mid grey, the muted contrast floor across six grounds, the two `lineGeometry` tests (the gap that breaks the line, the honest zero), the closed-palette test that actually catches a NEW hard-coded colour (the `#333333`/`#666666` blacklist above cannot), the measured right gutter under a subject name long enough to break a constant, the refusal of a series with fewer than two readings, the refusal to rasterise at a size the element was not drawn at, and the alt text as `<desc>` with no root `<title>`.
 
 - [ ] **Step 7: Look at the render**
 
