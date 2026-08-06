@@ -42,12 +42,18 @@ type FormState = {
   verified: Record<string, VerifyOutcome>;
 };
 
+/** Which read produced the current state — the fast static fetch, or the slower render (Task 5,
+ *  2026-08-06). The render is a SECOND, journalist-requested try, never a default: `mode` is
+ *  what lets the render offer show only after a static attempt, and never re-show once it is
+ *  itself the one that ran. */
+type CharterMode = "static" | "rendered";
+
 /** The state of the "read my site" action — a measurement, never a decision (see charter.ts). */
 type CharterState =
   | { status: "idle" }
-  | { status: "loading" }
-  | { status: "done"; readout: CharterReadout }
-  | { status: "error"; message: string };
+  | { status: "loading"; mode: CharterMode }
+  | { status: "done"; readout: CharterReadout; mode: CharterMode }
+  | { status: "error"; message: string; mode: CharterMode };
 
 let charter: CharterState = { status: "idle" };
 
@@ -329,14 +335,54 @@ function renderNewsroom(copy: PageCopy): void {
   const measureBtn = el(
     "button",
     { type: "button", id: "newsroom-measure", class: "btn" },
-    charter.status === "loading" ? copy.measuring : copy.measureAction,
+    charter.status === "loading" && charter.mode === "static"
+      ? copy.measuring
+      : copy.measureAction,
   ) as HTMLButtonElement;
   measureBtn.disabled = charter.status === "loading";
-  measureBtn.addEventListener("click", () => void measureSite(copy));
+  measureBtn.addEventListener("click", () => void measureSite(copy, "static"));
   measureField.append(measureBtn);
-  if (charter.status === "error")
+  if (charter.status === "error" && charter.mode === "static")
     measureField.append(el("p", { class: "field-help" }, charter.message));
   body.append(measureField);
+
+  // The SECOND try (Task 5): opening the page in a real browser instead of a plain fetch, for a
+  // site that builds its colours in JavaScript. OFFERED, never automatic — it only appears once
+  // the static read has come back with nothing (an empty palette, or an outright failure), it
+  // stays visible while it runs and if it itself fails (so a journalist can retry), and it
+  // disappears the moment a rendered read has actually completed: there is no third mechanism to
+  // fall back to.
+  const staticFoundNothing =
+    (charter.status === "done" &&
+      charter.mode === "static" &&
+      charter.readout.palette.length === 0) ||
+    (charter.status === "error" && charter.mode === "static");
+  const renderOfferVisible =
+    staticFoundNothing ||
+    (charter.status === "loading" && charter.mode === "rendered") ||
+    (charter.status === "error" && charter.mode === "rendered");
+  if (renderOfferVisible) {
+    const renderField = el("div", { class: "field" });
+    renderField.append(
+      el("p", { class: "field-help" }, copy.measureRenderHint),
+    );
+    const renderBtn = el(
+      "button",
+      { type: "button", id: "newsroom-measure-render", class: "btn" },
+      charter.status === "loading" && charter.mode === "rendered"
+        ? copy.measureRendering
+        : copy.measureRenderAction,
+    ) as HTMLButtonElement;
+    renderBtn.disabled = charter.status === "loading";
+    renderBtn.addEventListener(
+      "click",
+      () => void measureSite(copy, "rendered"),
+    );
+    renderField.append(renderBtn);
+    if (charter.status === "error" && charter.mode === "rendered")
+      renderField.append(el("p", { class: "field-help" }, charter.message));
+    body.append(renderField);
+  }
 
   const palette = charter.status === "done" ? charter.readout.palette : [];
 
@@ -471,30 +517,37 @@ function renderNewsroom(copy: PageCopy): void {
  * fields above with what it found. Total on the client's side too: a network failure or a `/charter`
  * `{ error }` answer both render as a plain sentence, never a thrown exception — matching
  * `measureSite` on the server, which never throws either.
+ *
+ * `mode`: `"static"` is the ordinary first try (the "Read my site" button); `"rendered"` is the
+ * SECOND try, only ever invoked from the render-offer button, and only once the static read has
+ * already come back with nothing — see `renderOfferVisible` in `renderNewsroom`. This function
+ * itself does not decide when the offer is allowed; it only relays whichever mode it was called
+ * with.
  */
-async function measureSite(copy: PageCopy): Promise<void> {
+async function measureSite(copy: PageCopy, mode: CharterMode): Promise<void> {
   const url = form.newsroom.url.trim();
   if (!url) {
-    charter = { status: "error", message: copy.measureNeedsUrl };
+    charter = { status: "error", message: copy.measureNeedsUrl, mode };
     renderNewsroom(copy);
     return;
   }
-  charter = { status: "loading" };
+  charter = { status: "loading", mode };
   renderNewsroom(copy);
   try {
     const response = await fetch("/charter", {
       method: "POST",
       // `lang` (M1): the receipt sentences the server builds are read in the page's own
-      // interface language, not relayed as an English literal to a French page.
-      body: JSON.stringify({ url, lang: form.uiLang }),
+      // interface language, not relayed as an English literal to a French page. `mode` (Task 5):
+      // which read the server performs — never sent unless the journalist asked for the render.
+      body: JSON.stringify({ url, lang: form.uiLang, mode }),
     });
     const data = (await response.json()) as CharterReadout | { error: string };
     if ("error" in data) {
-      charter = { status: "error", message: data.error };
+      charter = { status: "error", message: data.error, mode };
       renderNewsroom(copy);
       return;
     }
-    charter = { status: "done", readout: data };
+    charter = { status: "done", readout: data, mode };
     // Prefill only — never raise the confidence the extractor states, never invent a value it did
     // not return. Every field this touches remains editable afterwards.
     const top = data.palette[0];
@@ -509,7 +562,12 @@ async function measureSite(copy: PageCopy): Promise<void> {
     ];
     renderNewsroom(copy);
   } catch {
-    charter = { status: "error", message: copy.measureFailed };
+    charter = {
+      status: "error",
+      message:
+        mode === "rendered" ? copy.measureRenderFailed : copy.measureFailed,
+      mode,
+    };
     renderNewsroom(copy);
   }
 }

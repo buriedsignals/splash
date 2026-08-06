@@ -24,6 +24,7 @@ import {
   collectSiteSources,
   normalizeSiteUrl,
 } from "../../lib/newsroom/charter-fetch.ts";
+import { renderSiteSources } from "../../lib/newsroom/charter-render.ts";
 import { loadDecor } from "../../lib/newsroom/decor.ts";
 import {
   LEGACY_PREFLIGHT_FILE,
@@ -273,19 +274,31 @@ function persist(sub: PreflightSubmission): void {
  * Measure a newsroom's own site for its house colours, ground and typefaces — read `{ url }`,
  * fetch it, and translate the extractor's raw proposal into values with receipts.
  *
+ * `mode` picks WHICH reading: `"static"` (default) is a plain fetch of the page and the
+ * stylesheets it links (charter-fetch.ts) — fast, and enough for a site whose CSS is a file.
+ * `"rendered"` opens the page in a real browser instead (charter-render.ts) — slower, and the
+ * only thing that can see a site that builds its styles in JavaScript. The client only ever
+ * asks for `"rendered"` as a second, journalist-requested try (Task 5) — this route never picks
+ * one over the other on its own.
+ *
  * This is the one thing on the setup page that touches the open network on a journalist's say-so,
  * and the page has to keep rendering no matter what answers back — a slow DNS, a dead cert, a
  * 403, a site with no CSS at all. So every failure here becomes a plain `{ error }` string, never
- * a thrown exception: `normalizeSiteUrl` and `collectSiteSources` are already total (they return
- * `null`/`{ error }` rather than throw), so this only has to relay their answer honestly.
+ * a thrown exception: `normalizeSiteUrl`, `collectSiteSources` and `renderSiteSources` are all
+ * already total (they return `null`/`{ error }` rather than throw), so this only has to relay
+ * their answer honestly.
  */
 async function measureSite(
   rawUrl: string,
   lang?: string,
+  mode: "static" | "rendered" = "static",
 ): Promise<CharterReadout | { error: string }> {
   const url = normalizeSiteUrl(rawUrl);
   if (!url) return { error: `not a usable site address: ${rawUrl}` };
-  const sources = await collectSiteSources(url);
+  const sources =
+    mode === "rendered"
+      ? await renderSiteSources(url)
+      : await collectSiteSources(url);
   if ("error" in sources)
     return { error: `the site did not answer: ${sources.error}` };
   const proposal = proposeCharter(sources);
@@ -338,11 +351,23 @@ const server = Bun.serve({
         typeof (body as { lang?: unknown }).lang === "string"
           ? (body as { lang: string }).lang
           : undefined;
+      // The second attempt (Task 5) is opt-in, never a default the client falls into by
+      // accident: anything other than the literal string "rendered" reads as "static", the
+      // fast path every first read still uses.
+      const mode: "static" | "rendered" =
+        body &&
+        typeof body === "object" &&
+        (body as { mode?: unknown }).mode === "rendered"
+          ? "rendered"
+          : "static";
       // measureSite is total (see its own comment) — nothing below can throw, so this route
       // always renders JSON, matching the setup page's own rule of always rendering.
-      return new Response(JSON.stringify(await measureSite(siteUrl, lang)), {
-        headers: { "content-type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify(await measureSite(siteUrl, lang, mode)),
+        {
+          headers: { "content-type": "application/json" },
+        },
+      );
     }
 
     if (req.method === "POST" && url.pathname === "/verify") {

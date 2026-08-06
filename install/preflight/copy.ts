@@ -46,6 +46,16 @@ export type PageCopy = {
   measureFailed: string;
   /** Shown when a measurement's palette comes back empty — a legitimate answer, not an error. */
   siteDeclaresNothing: string;
+  /**
+   * The SECOND try (Task 5, 2026-08-06): offered ONLY once the first (static) read comes back
+   * with nothing to propose — never automatic, never silent. Says what it does (opens the site
+   * in a real browser, for a site that builds its styles in JavaScript) and that it costs time,
+   * because it does: a page load plus a settle, not the plain fetch the first try was.
+   */
+  measureRenderAction: string;
+  measureRenderHint: string;
+  measureRendering: string;
+  measureRenderFailed: string;
   /** Appended to an INFERRED (not declared) colour reading, so it reads as the guess it is. */
   charterInferred: string;
   /** Caption over an existing profile's series colours (`palette[1+]`) — shown, not editable. */
@@ -150,6 +160,12 @@ const EN: PageCopy = {
   measureFailed: "Could not read your site — check the address and try again.",
   siteDeclaresNothing:
     "Your site does not declare a house colour we can read — a legitimate answer. Type one in below.",
+  measureRenderAction: "Try opening the page instead",
+  measureRenderHint:
+    "Some sites build their colours in JavaScript, invisible to a plain read. Opening your site in a real browser can find them — this takes longer than the first try, up to about 20 seconds.",
+  measureRendering: "Opening your site in a browser…",
+  measureRenderFailed:
+    "Could not open your site in a browser either — check the address and try again.",
   charterInferred: "(a guess — not a colour your site names as its own)",
   seriesColoursKept: "Also part of your palette, kept as they are:",
 
@@ -233,6 +249,12 @@ const FR: PageCopy = {
     "Impossible de lire votre site — vérifiez l'adresse et réessayez.",
   siteDeclaresNothing:
     "Votre site ne déclare aucune couleur maison lisible — une réponse légitime. Saisissez-en une ci-dessous.",
+  measureRenderAction: "Essayer en ouvrant la page",
+  measureRenderHint:
+    "Certains sites construisent leurs couleurs en JavaScript, invisibles à une lecture simple. Ouvrir votre site dans un vrai navigateur peut les trouver — c'est plus long que le premier essai, jusqu'à environ 20 secondes.",
+  measureRendering: "Ouverture de votre site dans un navigateur…",
+  measureRenderFailed:
+    "Impossible d'ouvrir votre site dans un navigateur non plus — vérifiez l'adresse et réessayez.",
   charterInferred:
     "(une supposition — pas une couleur que votre site déclare comme la sienne)",
   seriesColoursKept:
