@@ -4,6 +4,11 @@
 // choice. The page is the first thing that speaks, so it obeys the same rule as the emitted
 // export block (lib/newsroom/ui-copy.ts): one table, English default, unknown language falls
 // back to English rather than showing a half-translated form.
+import {
+  SIGNAL_LABEL,
+  type ColourSignal,
+  type TypeMeasurement,
+} from "../../lib/newsroom/charter.ts";
 
 export const MODEL_SCRIPT_ID = "preflight-model";
 
@@ -30,6 +35,9 @@ export type PageCopy = {
   newsroomColor: string;
   profileOwned: string;
   profileGround: string;
+  /** What the ground field actually accepts (M2) — it is free text over a reader that silently
+   *  DROPS anything that is not "dark", "light" or a `#rrggbb` hex; nothing else says so. */
+  profileGroundHelp: string;
 
   /** The action that measures the address just typed above ("read my site"). */
   measureAction: string;
@@ -43,6 +51,21 @@ export type PageCopy = {
   /** Caption over an existing profile's series colours (`palette[1+]`) — shown, not editable. */
   seriesColoursKept: string;
 
+  // M1 — the charter receipt vocabulary (lib/newsroom/charter.ts's `SIGNAL_LABEL` plus
+  // charter-endpoint.ts's TYPE_ROLE_LABEL, and the two sentence shapes those labels fill into).
+  // These are the flagship feature of this branch — "a journalist can only disagree with a value
+  // whose origin they can see" — read by a French newsroom exactly as often as an English one.
+  /** What kind of declaration a colour was read from — keyed like `ColourSignal`. `en` is the
+   *  SAME strings as charter.ts's `SIGNAL_LABEL` (one English source, not a second copy that can
+   *  drift from it); `fr` is this table's own translation. */
+  signalLabel: Record<ColourSignal, string>;
+  /** What a measured typeface role is called — keyed like `TypeMeasurement["role"]`. */
+  typeRoleLabel: Record<TypeMeasurement["role"], string>;
+  /** "${this} ${signalLabel}: `${token}`." — a colour receipt. */
+  receiptReadFrom: string;
+  /** "${this} ${typeRoleLabel}: `${token}`." — a typeface receipt. */
+  receiptReadFont: string;
+
   /** The publication language field — a profile field, edited here (the profile is where it lives). */
   languageContent: string;
 
@@ -53,8 +76,13 @@ export type PageCopy = {
   capabilitiesTitle: string;
   capabilitiesHint: string;
   /**
-   * Under a capability whose field is upfront (asked once, above): `${field.label} — ${this}`.
-   * Every engine field is upfront now, so this fires under every engine capability.
+   * Shown under a DELIVERY row (the only capability that still renders as a row —
+   * `capabilityRow`, Task 5 2026-08-06 retired the engine one) in place of a field it needs but
+   * does not own: `${field.label} — ${this}`. That is a production key an engine already asks
+   * for upfront, above, in "Your accounts" — or, occasionally, a field two delivery destinations
+   * happen to name the same (`endpoint`). Engines themselves never fire this any more: they do
+   * not render as capability rows at all, so "asked once, above" always means "asked in the
+   * accounts section", never "asked by another engine row" — that second row no longer exists.
    */
   askedOnceAbove: string;
   publishingTitle: string;
@@ -103,8 +131,10 @@ const EN: PageCopy = {
   newsroomUrl: "Website (optional)",
   newsroomColor: "House colour",
   profileOwned:
-    "You already have a newsroom profile. Editing the fields below and saving updates it — everything else in NEWSROOM-PROFILE.md, your own comments included, is left exactly as it is.",
+    "You already have a newsroom profile. Editing the fields below and saving updates it — the rest of NEWSROOM-PROFILE.md, your prose and any comment on its own line included, is left exactly as it is. (A comment on the SAME line as a field you change here does not survive that edit.)",
   profileGround: "House ground",
+  profileGroundHelp:
+    'One of three things: "light", "dark", or a hex colour such as #12161c. Anything else is not saved.',
 
   measureAction: "Read my site",
   measuring: "Reading…",
@@ -114,6 +144,15 @@ const EN: PageCopy = {
     "Your site does not declare a house colour we can read — a legitimate answer. Type one in below.",
   charterInferred: "(a guess — not a colour your site names as its own)",
   seriesColoursKept: "Also part of your palette, kept as they are:",
+
+  signalLabel: SIGNAL_LABEL,
+  typeRoleLabel: {
+    body: "the body text",
+    headings: "the headings",
+    webfont: "a self-hosted webfont",
+  },
+  receiptReadFrom: "Read from",
+  receiptReadFont: "Read as the font of",
 
   languageContent: "Language your visuals are published in",
 
@@ -173,8 +212,10 @@ const FR: PageCopy = {
   newsroomUrl: "Site web (facultatif)",
   newsroomColor: "Couleur maison",
   profileOwned:
-    "Vous avez déjà un profil de rédaction. Modifier les champs ci-dessous puis enregistrer le met à jour — le reste de NEWSROOM-PROFILE.md, y compris vos propres commentaires, reste exactement tel quel.",
+    "Vous avez déjà un profil de rédaction. Modifier les champs ci-dessous puis enregistrer le met à jour — le reste de NEWSROOM-PROFILE.md, votre texte et tout commentaire sur sa propre ligne compris, reste exactement tel quel. (Un commentaire sur la MÊME ligne qu'un champ que vous modifiez ici ne survit pas à cette modification.)",
   profileGround: "Fond maison",
+  profileGroundHelp:
+    "Trois formes acceptées : « light », « dark », ou une couleur hexadécimale comme #12161c. Toute autre valeur n'est pas enregistrée.",
 
   measureAction: "Lire mon site",
   measuring: "Lecture…",
@@ -187,6 +228,29 @@ const FR: PageCopy = {
     "(une supposition — pas une couleur que votre site déclare comme la sienne)",
   seriesColoursKept:
     "Font aussi partie de votre palette, conservées telles quelles :",
+
+  // FR translations of lib/newsroom/charter.ts's SIGNAL_LABEL (English source, see the EN table
+  // above) — kept in the same order so a diff of the two tables reads as a translation, not a
+  // reshuffle.
+  signalLabel: {
+    "theme-color":
+      "la couleur que le site déclare aux navigateurs comme la sienne (<meta theme-color>)",
+    "brand-property":
+      "une couleur que la feuille de style du site NOMME comme sa couleur de marque/primaire",
+    "accent-property":
+      "une couleur que la feuille de style nomme comme un ACCENT (souvent un survol ou un badge, pas le bandeau)",
+    masthead: "le remplissage d'un SVG dans l'élément bandeau/logo",
+    link: "la couleur des liens",
+    control: "le fond des boutons",
+    declared: "une couleur déclarée quelque part dans la feuille de style",
+  },
+  typeRoleLabel: {
+    body: "le texte courant",
+    headings: "les titres",
+    webfont: "une police auto-hébergée",
+  },
+  receiptReadFrom: "Lu depuis",
+  receiptReadFont: "Lu comme police de",
 
   languageContent: "Langue de publication de vos visuels",
 

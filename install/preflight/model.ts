@@ -107,21 +107,24 @@ export type PreflightCapability = {
   fields: string[];
   status: ReadinessStatus;
   /**
-   * The status this capability WOULD have if it were enabled. The page lets a journalist tick a
-   * capability the saved state has off, and must answer that tick immediately ("Missing — needs a
-   * MapTiler key") — computed here, so the browser never re-implements readiness to say it.
+   * The status this DELIVERY DESTINATION would have if it were chosen. The page lets a
+   * journalist pick a destination the saved state has off (the publisher radio — the one tick
+   * left, since Task 5, 2026-08-06 removed the engine one this type used to also describe), and
+   * must answer that choice immediately ("Missing — needs a Cloudflare account ID") — computed
+   * here, so the browser never re-implements readiness to say it.
    */
   statusIfEnabled: ReadinessStatus;
   /**
    * Why it is not ready — the saved state's reason, or, when the saved state simply has it
-   * switched off, the reason it would give once ticked. The page needs the second one the
-   * instant a box is ticked; the summary of BLOCKERS is unaffected, since a capability that is
-   * off is not a blocker whatever this string says.
+   * switched off, the reason it would give once chosen. The page needs the second one the
+   * instant a destination is picked; the summary of BLOCKERS is unaffected, since a destination
+   * that is off is not a blocker whatever this string says.
    */
   reason: string;
   /**
-   * The names of the fields this capability still needs — the page's way of saying what is
-   * missing in its own vocabulary ("Needs: MapTiler key"), instead of repeating readiness's env
+   * The names of the fields this DELIVERY DESTINATION still needs — the page's way of saying
+   * what is missing in its own vocabulary ("Needs: Cloudflare account ID"), instead of repeating
+   * readiness's env
    * var names, which is exactly the complaint issue #5 makes. Empty when nothing is missing, and
    * empty for a missing DEPENDENCY, which no field can supply (the reason covers that).
    */

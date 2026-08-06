@@ -6,6 +6,16 @@
 // "a journalist can only disagree with a value whose origin they can see". `readoutFrom` is that
 // translation, pure and total: it never raises the confidence the extractor states, and it never
 // invents a signal beyond the ones charter.ts actually emits (`ColourSignal`, `SIGNAL_LABEL`).
+//
+// M1 (final review, 2026-08-06): the receipt SENTENCES used to be English literals, relayed
+// verbatim to a page that may be reading in French — the one flagship feature of this branch,
+// unreadable to the newsroom it was built for. They now route through `PageCopy`
+// (`signalLabel`/`typeRoleLabel`/`receiptReadFrom`/`receiptReadFont`), so `readoutFrom` takes a
+// language and builds the sentence in it. `SIGNAL_LABEL` (English, charter.ts's own diagnostic
+// vocabulary) stays that module's source of truth — `copy.ts`'s EN table re-exports it by
+// reference rather than re-typing it, so the two cannot drift apart the way a hand-copied second
+// table would. The extractor's own free-text `notes` (caveats it writes itself) are a separate,
+// larger job and are NOT translated here — see docs/installer/setup-page-proof.md.
 import type {
   CharterConfidence,
   CharterProposal,
@@ -13,7 +23,8 @@ import type {
   Measurement,
   TypeMeasurement,
 } from "../../lib/newsroom/charter.ts";
-import { SIGNAL_LABEL, WEIGHT } from "../../lib/newsroom/charter.ts";
+import { WEIGHT } from "../../lib/newsroom/charter.ts";
+import { pageCopy, type PageCopy } from "./copy.ts";
 
 export type CharterReadout = {
   /** Ranked, best first. Empty means the site declared nothing — a legitimate answer. */
@@ -21,27 +32,22 @@ export type CharterReadout = {
   ground?: { value: string; receipt: string };
   /** Measured, never written to frontmatter — see Task 2. */
   typefaces: { family: string; role: string; receipt: string }[];
-  /** Verbatim caveats from the extractor, for the page to relay unchanged. */
+  /** Verbatim caveats from the extractor, for the page to relay unchanged. English only — see
+   *  the module comment above. */
   notes: string[];
 };
 
 /**
- * The receipt sentence for one colour reading: what kind of declaration it is (`SIGNAL_LABEL`,
- * the same table charter.ts uses to keep every signal labelled) plus the literal token it was
- * read from, so the journalist can find it on their own site.
+ * The receipt sentence for one colour reading: what kind of declaration it is (`copy.signalLabel`,
+ * translated the same way the page around it is) plus the literal token it was read from, so the
+ * journalist can find it on their own site.
  */
-function receiptFor(m: Measurement): string {
-  return `Read from ${SIGNAL_LABEL[m.signal]}: \`${m.token}\`.`;
+function receiptFor(m: Measurement, copy: PageCopy): string {
+  return `${copy.receiptReadFrom} ${copy.signalLabel[m.signal]}: \`${m.token}\`.`;
 }
 
-const TYPE_ROLE_LABEL: Record<TypeMeasurement["role"], string> = {
-  body: "the body text",
-  headings: "the headings",
-  webfont: "a self-hosted webfont",
-};
-
-function typeReceiptFor(t: TypeMeasurement): string {
-  return `Read as the font of ${TYPE_ROLE_LABEL[t.role]}: \`${t.token}\`.`;
+function typeReceiptFor(t: TypeMeasurement, copy: PageCopy): string {
+  return `${copy.receiptReadFont} ${copy.typeRoleLabel[t.role]}: \`${t.token}\`.`;
 }
 
 /**
@@ -88,17 +94,27 @@ function bestEvidence(candidate: ColourCandidate): Measurement {
   );
 }
 
-export function readoutFrom(proposal: CharterProposal): CharterReadout {
+/**
+ * `lang` picks the receipt vocabulary (`pageCopy`, the same fallback-to-English table the rest
+ * of the page uses) — it does not touch `proposal` itself, which is language-neutral (hex
+ * values, literal CSS tokens). Defaults to English so every existing caller (this module's own
+ * tests included) is byte-identical without passing one.
+ */
+export function readoutFrom(
+  proposal: CharterProposal,
+  lang = "en",
+): CharterReadout {
+  const copy = pageCopy(lang);
   const palette = proposal.candidates.map((candidate) => ({
     hex: candidate.value,
-    receipt: receiptFor(bestEvidence(candidate)),
+    receipt: receiptFor(bestEvidence(candidate), copy),
     confidence: candidateConfidence(candidate),
   }));
 
   const typefaces = proposal.typography.map((t) => ({
     family: t.family,
     role: t.role,
-    receipt: typeReceiptFor(t),
+    receipt: typeReceiptFor(t, copy),
   }));
 
   return {
@@ -107,7 +123,7 @@ export function readoutFrom(proposal: CharterProposal): CharterReadout {
       ? {
           ground: {
             value: proposal.ground.value,
-            receipt: receiptFor(proposal.ground),
+            receipt: receiptFor(proposal.ground, copy),
           },
         }
       : {}),

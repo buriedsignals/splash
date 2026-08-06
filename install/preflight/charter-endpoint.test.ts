@@ -92,6 +92,23 @@ test("relays the extractor's own confidence per candidate, never raised", () => 
   expect(inferred.palette[0]!.receipt).toContain("links");
 });
 
+// M1 — the receipt sentence is built from PageCopy, so a French `lang` produces a French
+// sentence, not the English literal relayed verbatim to a page the journalist reads in French.
+test("builds the receipt in the requested language", () => {
+  const proposal = proposeCharter({
+    url: "https://example.news",
+    html: '<meta name="theme-color" content="#0A5C36">',
+    sheets: [],
+  });
+  const en = readoutFrom(proposal);
+  const fr = readoutFrom(proposal, "fr");
+  expect(en.palette[0]!.receipt).toContain("Read from");
+  expect(fr.palette[0]!.receipt).toContain("Lu depuis");
+  expect(fr.palette[0]!.receipt).not.toContain("Read from");
+  // The token itself (the literal CSS/meta snippet) is language-neutral and survives either way.
+  expect(fr.palette[0]!.receipt).toContain("#0A5C36");
+});
+
 // The ground and the typography, when the site declares them, pass through with a receipt too.
 test("carries the ground and the typography through, each with a receipt", () => {
   const proposal = proposeCharter({

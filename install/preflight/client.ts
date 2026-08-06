@@ -427,6 +427,10 @@ function renderNewsroom(copy: PageCopy): void {
   groundField.append(
     el("label", { for: "newsroom-ground" }, copy.profileGround),
   );
+  // M2: a bare text input over a reader that silently DROPS anything that is not "dark",
+  // "light" or a `#rrggbb` hex (brand-profile.ts's `buildProfile`) — a journalist typing "gris"
+  // would have it written to the file and then never applied, with nothing saying why.
+  groundField.append(el("p", { class: "field-help" }, copy.profileGroundHelp));
   const groundInput = el("input", {
     id: "newsroom-ground",
     type: "text",
@@ -484,7 +488,9 @@ async function measureSite(copy: PageCopy): Promise<void> {
   try {
     const response = await fetch("/charter", {
       method: "POST",
-      body: JSON.stringify({ url }),
+      // `lang` (M1): the receipt sentences the server builds are read in the page's own
+      // interface language, not relayed as an English literal to a French page.
+      body: JSON.stringify({ url, lang: form.uiLang }),
     });
     const data = (await response.json()) as CharterReadout | { error: string };
     if ("error" in data) {

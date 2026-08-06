@@ -281,6 +281,7 @@ function persist(sub: PreflightSubmission): void {
  */
 async function measureSite(
   rawUrl: string,
+  lang?: string,
 ): Promise<CharterReadout | { error: string }> {
   const url = normalizeSiteUrl(rawUrl);
   if (!url) return { error: `not a usable site address: ${rawUrl}` };
@@ -288,7 +289,7 @@ async function measureSite(
   if ("error" in sources)
     return { error: `the site did not answer: ${sources.error}` };
   const proposal = proposeCharter(sources);
-  return readoutFrom(proposal);
+  return readoutFrom(proposal, lang);
 }
 
 const server = Bun.serve({
@@ -328,9 +329,18 @@ const server = Bun.serve({
         typeof (body as { url?: unknown }).url === "string"
           ? (body as { url: string }).url
           : "";
+      // `lang` (M1) — the page's own interface language, so a receipt reads in the same language
+      // as the rest of the page around it. Absent/malformed falls through to `readoutFrom`'s own
+      // "en" default, the same fallback `pageCopy` gives an unknown tag.
+      const lang =
+        body &&
+        typeof body === "object" &&
+        typeof (body as { lang?: unknown }).lang === "string"
+          ? (body as { lang: string }).lang
+          : undefined;
       // measureSite is total (see its own comment) — nothing below can throw, so this route
       // always renders JSON, matching the setup page's own rule of always rendering.
-      return new Response(JSON.stringify(await measureSite(siteUrl)), {
+      return new Response(JSON.stringify(await measureSite(siteUrl, lang)), {
         headers: { "content-type": "application/json" },
       });
     }
