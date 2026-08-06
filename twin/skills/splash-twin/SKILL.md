@@ -49,25 +49,35 @@ had stopped producing.
 
 ## The one gotcha that will waste your day (read first)
 
-**The phase named `framing` and the phase named `storyboard` do not split the work the way their
-names suggest.** Read `where.mjs` closely: `framing` is reported whenever `STORYBOARD.md` does not
-exist yet on disk — *before* a single word of it has been written, takeaway included. `storyboard`
-is reported once the file exists, for as long as its front matter has no confirmed `takeaway`. So
-the transition **out of** `framing` is gated on the file merely existing, and the transition **out
-of** `storyboard` is gated on the takeaway inside that same file being confirmed — not on the
-richer G2 checklist (`twin-storyboard`'s own `checkStoryboard`: the journalist's hand, the reference
-loop, every slot resolved) that skill enforces during the actual exchange. If you assume `framing`
-closes on the confirmed takeaway (matching spec §4's G1 row) and `storyboard` closes on the full
-contract (G2), you will misread what `whereIs` is actually telling you to resume. `whereIs` is a
-**light** recovery check — good enough to say "there is unfinished work here, and roughly where" —
-not a re-run of `checkStoryboard`'s full gate. Trust `checkStoryboard` for whether G2 has genuinely
-closed; trust `whereIs` only for which skill to dispatch to next.
+**A confirmed takeaway is G1, not G2 — and a resumed session that treats it as "storyboard done"
+dispatches a producer against a contract nobody actually confirmed.** The concrete failure this
+guards against: the editorial exchange writes a `takeaway` into `STORYBOARD.md`, then the session
+is interrupted before the journalist's hand (all six fields — `subject`, `comparison`, `limits`,
+`placement`, `credit`, `effectiveDate`) or the slots are filled in. Three days later a fresh session
+calls `whereIs`. If it trusted the takeaway alone, it would report `production` — no renders or
+exports exist yet either — and this skill's own dispatch table would send the craft skill straight
+at a storyboard that `twin-storyboard`'s own `checkStoryboard` would refuse outright. `whereIs`
+closes the gap: `missingForGate2` (in `where.mjs`) holds a story in the `storyboard` phase, naming every
+reason in `missing`, until the takeaway **and** every hand field **and** every slot's `chosen` (each
+one actually drawn from its own listed `candidates`) are present — the real G2 condition, not a
+truthy takeaway standing in for it.
+
+That condition is reimplemented in `where.mjs`, not imported from `twin-storyboard`'s
+`checkStoryboard` — skills in this branch do not import each other's code, only the file format
+they share. `where.mjs` already had exactly this precedent before this fix: its `hasConfirmedTakeaway`
+and `twin-storyboard`'s own null-sentinel handling were already two independent readings of the
+same rule, cross-referenced by comment in both files rather than unified by an import (see that
+file's own `isNullSentinel` note). `HAND` and the slot/candidate check here follow the same pattern,
+sharpened with a mechanical guard the sentinel case didn't have: `test/where.test.ts` pins every
+branch of `missingForGate2` directly (missing hand field, empty slots, unchosen slot, chosen off
+the candidate list), so a change to one side that silently stops matching the other fails a test
+instead of shipping a resumed session past a gate that never really closed.
 
 ## Architecture
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in" |
+| Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, every slot resolved) before ever reporting `production` |
 | Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` — dependencies installed, `NEWSROOM.md` present and valid, `MAPTILER_KEY` **probed** with a real call, not just present |
 | Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed |
 | Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces) |
@@ -90,15 +100,19 @@ closed; trust `whereIs` only for which skill to dispatch to next.
    | --- | --- | --- | --- |
    | `intake` | Article and data frozen and profiled, silently — `twin-intake` asks nothing. | — | `source/article.md`, `source/profile.json` |
    | `framing` | Intent named, the editorial exchange opens, `STORYBOARD.md` is created. | G1 | `STORYBOARD.md` (created) |
-   | `storyboard` | Restitution, the journalist's hand, the reference loop, slots and candidates — `twin-storyboard`'s exchange completes the contract. | G2 | `STORYBOARD.md`'s front matter carries a confirmed `takeaway` |
+   | `storyboard` | Restitution, the journalist's hand, the reference loop, slots and candidates — `twin-storyboard`'s exchange completes the contract. | G2 | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, and every slot's `chosen` drawn from its own `candidates` |
    | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. | G3, per beat | `beats/<n>-<slug>/renders/*` |
    | `delivery` | Per beat, `twin-deliver` offers the forms its genre allows; the journalist chooses; only that one is materialised. | — | `export/*` |
    | `done` | Terminal — the story has been delivered. | — | (`export/` already holds the chosen form) |
 
-4. **Dispatch, one `invoke-skill` per phase** — every action in this skill is named with the
-   abstract verb vocabulary (`read-file`, `write-file`, `execute-shell`, `search`, `fetch`,
-   `invoke-skill`) precisely so this doctrine can leave Claude Code for a different runtime without
-   a rewrite:
+4. **Dispatch, one `invoke-skill` per phase** — every action in this skill is named with an
+   abstract verb, precisely so this doctrine can move to a different runtime without a rewrite.
+   This skill uses four of spec §8's six verbs — `read-file` (a story's directory, `NEWSROOM.md`),
+   `execute-shell` (the dependency check), `fetch` (the MapTiler probe), and `invoke-skill` (every
+   dispatch below). It never uses the other two: `write-file` and `search` belong to the skills it
+   dispatches to (`twin-intake` writes the frozen source, `twin-doctrine`'s reference loop searches
+   for a new reference) — naming a verb this skill never itself performs would be decoration, not
+   vocabulary:
 
    | Phase | `invoke-skill` |
    | --- | --- |
@@ -156,6 +170,7 @@ if (missing.length > 0) {
 | How many phases the state machine recognises | `6` (`intake`, `framing`, `storyboard`, `production`, `delivery`, `done`) | `scripts/where.mjs` |
 | How many responsibilities this skill holds | `4`, and no fifth | this document, `Overview` |
 | Source files intake must freeze before leaving `intake` | `2` (`article.md`, `profile.json`) | `whereIs` |
+| Hand-of-the-journalist fields `whereIs` itself requires before leaving `storyboard` | `6` (`HAND.length` — mirrors `twin-storyboard`'s own `HAND` constant) | `scripts/where.mjs` |
 | Turns a beat gets before production stalls | `3` | spec §8, `How it works` step 5 |
 
 ## Files
