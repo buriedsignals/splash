@@ -1685,7 +1685,7 @@ export function checkReferenceSet(markdown) {
 - `editorial-standard.md` — every visible layer must encode data, supply context, establish hierarchy, support verification, or direct attention; if removing a layer does not reduce comprehension, remove it. Visual interest comes from sequencing, comparison, annotation and the arrival of evidence, never from ornament.
 - `visual-system.md` — flat field; neutral colours for history and comparison; **one semantic accent** reserved for the subject; flat fills, gradients only when they encode quantity; endpoint labels and direct annotation over detached legends; **all furniture derived from the newsroom ground, never a hard-coded colour**; contrast measured on the real background, with escalation to the pure pole on the mid-grey band.
 - `anti-patterns.md` — decoration that encodes nothing; fake texture, glassmorphism, dashboard chrome; gradients without quantitative meaning; repeated years or values; detached legends; tiny footer sources; missing scale, unit, source or honest baseline; accent colour on every mark; a title that claims more than the source; copying a reference's styling instead of its information logic.
-- `reference-set.md` — at least six rows, each with a real link, a locator (a timecode for a video row, otherwise whatever actually identifies the spot in a published static or motion graphic — its own title, caption, or embedded image file), and the transferable lesson. **Superseded three times — see Steps 8, 10 and 12 for the full account**: the first-shipped set (Hans Rosling, Alan Smith ×2, NYT Visual Investigations, Vox Atlas, Kurzgesagt, David McCandless) drifted to six-of-seven video/stage-presentation references with zero static newsroom charts, three of them doctrine-contradicting (Step 8's fix). The Step 8 replacement set was verified only by metadata, and three of its four new rows turned out to assert things about their own artifact that direct inspection refuted (Step 10's fix). The Step 10 set was looked at correctly but not read around: one row was a design mockup its own caption disclosed as placeholder data, another's lesson asserted a mechanic its cropped promo card could not show (Step 12's fix). **The set as it now stands (Step 12) is four rows — NYT Upshot, Washington Post, NYT Visual Investigations, Vox — below the six-row floor `checkReferenceSet` still enforces; the gap is stated on the record in both `reference-set.md` and `SKILL.md` rather than filled with a fifth stretched row.**
+- `reference-set.md` — at least six rows, each with a real link, a locator (a timecode for a video row, otherwise whatever actually identifies the spot in a published static or motion graphic — its own title, caption, or embedded image file), and the transferable lesson. **Superseded three times — see Steps 8, 10 and 12 for the full account**: the first-shipped set (Hans Rosling, Alan Smith ×2, NYT Visual Investigations, Vox Atlas, Kurzgesagt, David McCandless) drifted to six-of-seven video/stage-presentation references with zero static newsroom charts, three of them doctrine-contradicting (Step 8's fix). The Step 8 replacement set was verified only by metadata, and three of its four new rows turned out to assert things about their own artifact that direct inspection refuted (Step 10's fix). The Step 10 set was looked at correctly but not read around: one row was a design mockup its own caption disclosed as placeholder data, another's lesson asserted a mechanic its cropped promo card could not show (Step 12's fix). **The set as it now stands is four rows — NYT Upshot, Washington Post, NYT Visual Investigations, Vox. As of Step 12 this sat below the six-row floor `checkReferenceSet` still enforced, standing red; Step 14 corrected the floor itself to track the shipped reality (`4`), carrying the six-row target as a named, on-the-record aspiration in prose (`reference-set.md`'s preamble, `SKILL.md`'s Files section) rather than a permanently-failing assertion.**
 
 - [ ] **Step 5: Run the test and confirm it passes**
 
@@ -1894,29 +1894,67 @@ line across the whole frame), and "appearing a few seconds after (not immediatel
 intervening archival photograph plays first)" replaces the round-2 wording that compressed out a
 real intervening shot at 3:53–3:54.
 
-**Row count: four, not six — the floor is not lowered this round, because doing so requires
-touching `scripts/check-reference-set.mjs` / `test/reference-set.test.ts`, and this round's
-process constraint scoped changes to `reference-set.md`, `SKILL.md` and this plan file only.**
-`test/reference-set.test.ts`'s shipped-file row-count assertion is therefore **failing as of this
-version, honestly** — `countReferenceRows` returns 4 against a floor of 6 — and this is stated
-plainly in both `reference-set.md`'s preamble and `SKILL.md`'s Files section, with what's owed
-named (two more genuinely-static, in-article `<img>` rows with real non-placeholder captions,
-never yet found and verified) rather than papered over with a stretched row. `checkReferenceSet`
-itself still returns `[]` for all four rows — the mechanism's per-row structural check passes
-cleanly; only the separate minimum-count assertion is red, and it is red because the content is
-smaller and truer than it was, not because it is broken.
+**Row count: four, not six.** At the time this step was executed, the floor was left at six and
+`test/reference-set.test.ts`'s shipped-file row-count assertion failed by design
+(`countReferenceRows` = 4 < 6) — the process constraint for that round scoped file changes to
+`reference-set.md`, `SKILL.md` and the plan only, which does not include the test file. **This was
+corrected the following round — see Step 14** — the coordinator pointed out that the floor lives
+in `test/reference-set.test.ts`, which is a doctrine-skill file like any other, and a permanently
+red test destroys the whole suite's signal value. `checkReferenceSet` itself returned `[]` for all
+four rows even at this step — the mechanism's per-row structural check passed cleanly; only the
+separate minimum-count assertion was red.
 
-Run: `cd twin && bun test skills/twin-doctrine`
-Expected: **10 pass, 1 fail** — the shipped-file row-count assertion fails by design
-(`countReferenceRows` = 4 < 6); every other test, including `checkReferenceSet(shipped)` returning
-`[]`, passes. This is the first round where `bun test skills/twin-doctrine` is not fully green,
-and that redness is the honest signal, not a regression to hide.
+Run (as executed at this step): `cd twin && bun test skills/twin-doctrine`
+Result at this step: **10 pass, 1 fail** — see Step 14 for the fix that makes this **11 pass, 0
+fail** going forward.
 
 - [ ] **Step 13: Commit**
 
 ```bash
 git add twin/skills/twin-doctrine
 git commit -m "fix(twin-doctrine): read the caption, not just the pixels — two more rows dropped, four honest rows remain, floor gap on the record"
+```
+
+- [ ] **Step 14: Review correction, round 4 — the floor itself, not the content**
+
+Fourth review confirmed the reference-set content from Step 12 as exactly the authorised outcome —
+four true rows, promo-card rows labelled as such, video-row over-claims corrected, the gap stated
+on the record — and instructed: do not touch the rows again. The one thing to close was narrower
+and mechanical: `test/reference-set.test.ts`'s floor was still `6` against a shipped set of `4`,
+so `bun test skills/twin-doctrine` was permanently red. The review was explicit that this is not a
+files-outside-scope problem — the floor lives in `test/reference-set.test.ts`, which is this
+skill's own test file, not outside `twin/`, and lowering it had already been authorised in the
+prior two rounds; Step 12's "out of scope" reasoning conflated a *content* scope restriction
+(don't touch the rows) with a test-file edit that was never actually excluded.
+
+**Fix**: `test/reference-set.test.ts`'s assertion changed from `toBeGreaterThanOrEqual(6)` to
+`toBeGreaterThanOrEqual(4)`, with a comment beside it explaining that the floor tracks what the
+file actually ships (not an unmet aspiration) and pointing to `reference-set.md`'s preamble and
+`SKILL.md`'s Files section for what six-row target is still owed. `SKILL.md`'s Overview, "How it
+works" step 3, and Tuning-knobs table (all of which stated "six" as the enforced floor) and
+`reference-set.md`'s own preamble (which stated the floor was "not met... as of this version")
+were corrected to describe the floor as `4`, carrying the `6` target as an explicit, named
+aspiration rather than a failing assertion — the prose statement of what is owed (the static bar,
+the two specific dropped rows, the two rows still needed) was kept exactly as written in Step 12,
+only the now-stale "the test is red" / "out of scope" framing around it was corrected.
+
+**Mutation-verified the floor still bites**: dropped the shipped file's last data row (Vox) with a
+direct `sed` edit (bypassing the content-authoring path entirely, so this exercises the test
+against a file the row-count logic has never seen crafted for it), confirmed
+`countReferenceRows` = 3 and the suite RED (`Expected: >= 4, Received: 3`,
+"should require at least four references in the shipped file" failing, 10 pass / 1 fail); restored
+the file from a pre-mutation backup, confirmed `countReferenceRows` = 4 again, confirmed
+`git diff` against the restored file showed only the intended Step 14 preamble edit (nothing left
+over from the mutation), and confirmed the suite GREEN again (11 pass, 0 fail).
+
+Run: `cd twin && bun test skills/twin-doctrine`
+Expected: **11 pass, 0 fail.**
+
+- [ ] **Step 15: Commit**
+
+```bash
+git add twin/skills/twin-doctrine/SKILL.md twin/skills/twin-doctrine/references/reference-set.md twin/skills/twin-doctrine/test/reference-set.test.ts
+git commit -m "fix(twin-doctrine): floor tracks what the set actually ships — four, not a standing-red six"
 ```
 
 ---
