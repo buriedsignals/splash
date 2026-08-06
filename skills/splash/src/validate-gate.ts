@@ -4,6 +4,7 @@
 // weak spec. This lives in CODE, at the spine, precisely because prose in a SKILL.md
 // cannot force an LLM host to validate.
 import type { AcceptedProposal } from "./producer-spec";
+import { narrativeWalkError } from "./narrative-walk-gate";
 import { validateChartSpec } from "../../dw-chart/src/chart-spec";
 import { validateMapSpec } from "../../map-dw/src/map-spec";
 import {
@@ -737,6 +738,13 @@ export function validateAccepted(
   if (duplicateTakeaway) extraErrors.push(duplicateTakeaway);
   const placeholder = placeholderSourceError(p.spec);
   if (placeholder) extraErrors.push(placeholder);
+  // GUARD — a narrative visual is not produced from a plan nobody wrote. The loop holds this
+  // rule too (draft-beats → unauthoredBeats), but the journalist's own path never enters the
+  // loop: /using-splash walks the prose chain and writes no run manifest. Measured on three real
+  // runs, 2026-08-05/06 — the walk was proposed once. Re-stated here, on the chain they actually
+  // walk, at the gate produce-all already calls before any engine runs.
+  const walkOwed = narrativeWalkError(p);
+  if (walkOwed) extraErrors.push(walkOwed);
   // GUARD 2b/2c — source attribution fidelity (Defects B & D). Consume the article's captured
   // citation (`p.sourceHint`, from suggest-article) so a named org is never discarded for the
   // generic prose fallback, and a journalist-provided URL is never silently upgraded. sourceHint is
