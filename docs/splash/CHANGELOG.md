@@ -22,8 +22,8 @@ lui-même, donc un nouveau moteur en hérite sans édition ; les destinations de
 (Cloudflare, S3, We.Publish) restent conditionnées au choix. **⑤ La page servie est assertée** :
 `install/preflight/server.test.ts` écrit un vrai `NEWSROOM-PROFILE.md` dans un ROOT temporaire,
 requête la page en HTTP, parse le modèle depuis le tag `<script type="application/json"
-id="preflight-model">`, et asserte les valeurs du profil, les six runtimes sélectionnables et les
-deux clés d'emblée.
+id="preflight-model">`, et asserte les valeurs du profil, les six runtimes sélectionnables et —
+parmi les champs — la présence des deux clés d'emblée.
 
 **Preuve, établie par le contrôleur (non ré-exécutée par cette tâche)** : muter le mapping de
 `install/preflight/server.ts` (`parsed.source?.name` → `parsed.source?.nam`) fait échouer `bun test
@@ -35,8 +35,14 @@ install/configurator-core.test.ts` à **4 pass / 1 fail** ; restauré, **5 / 5**
 antérieure cherchait sur une fenêtre fixe de 12 lignes et passait sur le motif d'un VOISIN. **Le
 gate reste à 22/23, et le rouge n'est pas cette branche** : `lib/newsroom/verify.test.ts` (« true
 for the real key ») échoue identiquement dans le worktree `splash-merge`, sur `main`, sans aucun de
-ce travail — un appel direct à MapTiler confirme la cause, `403 Invalid key`, la même clé morte qui
-explique aussi les rouges `skills/map-native`/`skills/scrolly`.
+ce travail — un appel direct à MapTiler confirme la cause, `403 Invalid key`. `skills/map-native`
+et `skills/scrolly` ont aussi été observés rouges sur un run de ce worktree — **leur cause n'est
+pas établie** : ne pas y lire la même clé morte. Ces deux suites ont leurs tests e2e live de produce
+recensés ailleurs dans la preuve comme **skip** (pas fail) faute de `VITE_MAPTILER_KEY` atteignant
+le skill (le chargement `.env` de Bun ne remonte pas depuis un `cwd` de skill) — un trou de chemin
+structurel, indépendant de la validité de la clé, que le gate ne compte même pas comme rouge. Un
+seul run en échec ne prouve pas une cause commune ; les deux explications ne sont pas fusionnées
+ici.
 
 **Non prouvé, nommé sans détour** : aucun visuel n'est jamais sorti de l'une ou l'autre app desktop
 (Couche B non observée pour les deux, offertes sur décision) · le chemin Windows

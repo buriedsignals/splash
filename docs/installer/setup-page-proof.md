@@ -289,7 +289,7 @@ are now asked outright, `PreflightField.upfront` derived from the registry's own
 conditional on choosing them; and `install/preflight/server.test.ts` now writes a real
 `NEWSROOM-PROFILE.md` into a temporary ROOT, fetches the page over HTTP, parses the model out of
 the `<script type="application/json" id="preflight-model">` tag, and asserts the profile's values,
-the six selectable runtimes and the two upfront keys.
+the six selectable runtimes, and — among the fields — that the two upfront keys are present.
 
 **Evidence, established by the controller:**
 
@@ -307,9 +307,15 @@ the six selectable runtimes and the two upfront keys.
   "verifyMapTiler: true for the real key" fails identically in the `splash-merge` worktree, which
   is on `main` and contains none of this work. A direct call settles the cause:
   `GET https://api.maptiler.com/maps/dataviz/style.json?key=$VITE_MAPTILER_KEY` returns **403
-  "Invalid key - Get your FREE key at https://cloud.maptiler.com/account/keys/"**. The same dead
-  key explains the `skills/map-native` and `skills/scrolly` reds. This is a real-world
-  consequence, not a test artifact: no map can render until the key is renewed.
+  "Invalid key - Get your FREE key at https://cloud.maptiler.com/account/keys/"**. This is a
+  real-world consequence, not a test artifact: no map can render until the key is renewed.
+  `skills/map-native` and `skills/scrolly` were also observed red in one run of this worktree —
+  **their cause is not established.** Do not read this as the same dead key: those two suites'
+  live e2e produce tests are separately recorded above, under "What is NOT proven by this run", as
+  **skipping**, not failing, because `VITE_MAPTILER_KEY` does not reach them at all (Bun's `.env`
+  loading does not walk up from a skill-dir `cwd`) — a structural path gap, unrelated to whether
+  the key is valid, and one the gate does not even count as red. A single failed run is not proof
+  of a shared root cause; the two explanations are not merged here.
 
 **What is NOT proven by this branch:**
 
