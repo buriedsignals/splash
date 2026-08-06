@@ -359,6 +359,17 @@ function renderNewsroom(copy: PageCopy): void {
 
   const palette = charter.status === "done" ? charter.readout.palette : [];
 
+  // The extractor's own caveats — shown whenever there are any, not gated on the palette being
+  // empty: a caution like "confirm the dark ground by eye before accepting it" (charter.ts)
+  // applies just as much to a site that DID declare a good palette. Relayed verbatim, in one
+  // place, so the common path (a site that names a colour) never hides them.
+  if (charter.status === "done" && charter.readout.notes.length) {
+    const notes = el("div", { class: "field" });
+    for (const note of charter.readout.notes)
+      notes.append(el("p", { class: "charter-receipt" }, note));
+    body.append(notes);
+  }
+
   // House colour — the primary field. Ranked candidates from a measurement are offered as
   // swatches to pick from; the colour input underneath always reflects whichever is current, and
   // stays open to any hex the journalist wants to type or pick instead.
@@ -366,13 +377,10 @@ function renderNewsroom(copy: PageCopy): void {
   colourField.append(
     el("label", { for: "newsroom-color" }, copy.newsroomColor),
   );
-  if (charter.status === "done" && palette.length === 0) {
+  if (charter.status === "done" && palette.length === 0)
     colourField.append(
       el("p", { class: "field-help" }, copy.siteDeclaresNothing),
     );
-    for (const note of charter.readout.notes)
-      colourField.append(el("p", { class: "charter-receipt" }, note));
-  }
   if (palette.length) {
     const swatches = el("div", { class: "charter-candidates" });
     for (const candidate of palette) {
@@ -413,6 +421,23 @@ function renderNewsroom(copy: PageCopy): void {
           : chosenCandidate.receipt,
       ),
     );
+  // An existing profile's series colours (`palette[1+]`) — read-only, just visible. The primary
+  // field above can only ever edit index 0 (`updateProfileMarkdown` grafts the rest back on
+  // unchanged), and a journalist editing it had no on-page sign a second colour even existed.
+  const seriesColours = (model.profile?.palette ?? []).slice(1);
+  if (seriesColours.length) {
+    colourField.append(
+      el("p", { class: "field-help" }, copy.seriesColoursKept),
+    );
+    const swatches = el("div", { class: "charter-candidates" });
+    for (const hex of seriesColours) {
+      const dot = el("span", { class: "swatch" });
+      dot.style.background = hex;
+      dot.title = hex;
+      swatches.append(dot);
+    }
+    colourField.append(swatches);
+  }
   body.append(colourField);
 
   // House ground — a word ("light"/"dark") or a #rrggbb, exactly what NEWSROOM-PROFILE.md's

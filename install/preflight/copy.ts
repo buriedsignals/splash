@@ -41,6 +41,8 @@ export type PageCopy = {
   siteDeclaresNothing: string;
   /** Appended to an INFERRED (not declared) colour reading, so it reads as the guess it is. */
   charterInferred: string;
+  /** Caption over an existing profile's series colours (`palette[1+]`) — shown, not editable. */
+  seriesColoursKept: string;
 
   /** The publication language field — a profile field, edited here (the profile is where it lives). */
   languageContent: string;
@@ -114,6 +116,7 @@ const EN: PageCopy = {
   siteDeclaresNothing:
     "Your site does not declare a house colour we can read — a legitimate answer. Type one in below.",
   charterInferred: "(a guess — not a colour your site names as its own)",
+  seriesColoursKept: "Also part of your palette, kept as they are:",
 
   languageContent: "Language your visuals are published in",
 
@@ -191,6 +194,8 @@ const FR: PageCopy = {
     "Votre site ne déclare aucune couleur maison lisible — une réponse légitime. Saisissez-en une ci-dessous.",
   charterInferred:
     "(une supposition — pas une couleur que votre site déclare comme la sienne)",
+  seriesColoursKept:
+    "Font aussi partie de votre palette, conservées telles quelles :",
 
   languageContent: "Langue de publication de vos visuels",
 

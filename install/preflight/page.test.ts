@@ -43,10 +43,13 @@ describe("the page is a real file, not a template literal", () => {
       expect(CSS).toContain(`.pill-${tone}`);
   });
 
-  // The read-only view of an existing profile needs a style of its own; without it the values fall
-  // back to the form's field spacing and read as editable, which they are not.
-  it("styles the profile read-out", () => {
-    expect(CSS).toContain(".profile-readout");
+  // The newsroom section's colour candidates (from a measurement) and an existing profile's
+  // series colours (read-only) both render as swatches, styled distinctly from a plain field —
+  // superseded the old "profile read-out" style (Fix round 1) now that the section is editable
+  // and there is no separate read-only view to give a style of its own.
+  it("styles the colour swatches — clickable candidates and the read-only series colours alike", () => {
+    expect(CSS).toContain(".charter-candidates");
+    expect(CSS).toContain(".swatch-btn");
   });
 
   // Fix round 1, Finding 2: engine rows now sit inside a .want block behind their heading, so the
