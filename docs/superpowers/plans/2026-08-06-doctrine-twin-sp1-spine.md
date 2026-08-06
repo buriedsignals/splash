@@ -2295,6 +2295,40 @@ git add twin/skills/splash-twin
 git commit -m "feat(splash-twin): the orchestrator, and a test that its prose cannot drift from its code"
 ```
 
+**Amended after implementation review.** The prescribed test was itself flagged as the weakest part
+of this task — correctness governs over the prescription:
+
+1. `expect(skill.toLowerCase()).toContain(phase)` is nearly vacuous: the word "done" occurs in
+   ordinary prose regardless of whether the document names `done` *as a phase*. **Fixed** by
+   requiring each phase to appear as a backtick-quoted identifier (`` `phase` ``) — verified by
+   mutation: scrubbing every backtick mention of a phase from `SKILL.md` turns the test RED;
+   removing a single occurrence while a redundant mention survives elsewhere does not, which is
+   accepted as correct (the document, as a whole, still names the phase).
+2. `[...code.matchAll(/phase:\s*"([a-z]+)"/g)]` scrapes `where.mjs`'s source text and silently
+   stops detecting drift the moment that file's style changes (single quotes, a template literal,
+   a variable). **Fixed** by replacing source-scraping with a behavioural test: a real story
+   directory is driven through every transition `whereIs` recognises (mirroring Task 3's own
+   fixture), the actually-returned `.phase` values are collected into a `Set`, and that set is
+   asserted both to be a subset of `PHASES` and (in a second test) to equal `PHASES` exactly — so a
+   phase renamed, added, or dropped in the *running* code is caught regardless of how the source is
+   written. Verified by mutation against a scratch-copied, edited `where.mjs` (never the committed
+   file): renaming `"delivery"` to `"review"` in the copy turned both new tests RED.
+3. The skill-id test read no id at all as a vacuous pass — an `SKILL.md` that named zero
+   `twin-*` skills would satisfy "does not name one that doesn't exist" trivially, silently
+   dropping the "dispatch to the craft skill" responsibility this task also requires. **Fixed** by
+   additionally asserting `named.length > 0`. Verified by mutation: scrubbing every backtick
+   `twin-*` mention from `SKILL.md` turns the test RED on this new assertion specifically.
+
+Test count is unchanged (4), but two of the four were rewritten and the fourth strengthened; only
+the anti-improvisation test survives unmodified. All four were confirmed RED on their targeted
+mutation and GREEN after revert, including the code-side mutation performed against a scratch copy
+of `where.mjs` rather than the committed file.
+
+```bash
+git add docs/superpowers/plans/2026-08-06-doctrine-twin-sp1-spine.md
+git commit -m "docs(plan): Task 9 amended — the prescribed drift test was vacuous or brittle in three places, hardened"
+```
+
 ---
 
 ## Task 10: Delivery — offer the forms, build only the chosen one
