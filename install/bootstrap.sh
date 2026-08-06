@@ -134,7 +134,12 @@ fi
 # and each packed skill keeps its own (measured: docs/installer/remotion-cache-measurement.md).
 # So it is fetched once per video engine, and the setup page's probe finds it where it looks.
 for engine in chart-native map-native; do
-  echo "-> Downloading the video renderer for $engine…"
+  # Braced on purpose: macOS ships bash 3.2, whose nounset variable-name scan misreads the byte
+  # right after an unbraced "$engine" when it is immediately followed by a multibyte character
+  # (the "…" here) under a UTF-8 locale — it reports "engine<mangled-byte>: unbound variable"
+  # and set -e kills the installer, even though $engine is set. Reproduced on this machine's
+  # default fr_FR.UTF-8 (and en_US.UTF-8, and C.UTF-8 — only the plain C locale escaped it).
+  echo "-> Downloading the video renderer for ${engine}…"
   if ! ( cd "$DEST/.dist/skills/$engine" && bunx remotion browser ensure ); then
     echo "The video renderer could not be downloaded for $engine — re-run this installer to resume." >&2
     exit 1
