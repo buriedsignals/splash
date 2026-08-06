@@ -1018,11 +1018,16 @@ function propertyFromToken(token: string): string | null {
  * physical CSS declaration is never counted twice (once as `declared`, again as
  * `recurrent-role`) — `count` on the resulting candidate stays the number of distinct
  * declarations actually read, not a doubled tally.
+ *
+ * Neutrals are NOT re-excluded here. `rank` already drops every neutral before a candidate can
+ * exist, and a second copy of that rule made the test for it ("a repeated neutral is not a brand
+ * colour") pass whichever of the two was deleted — a guard no test can feel is not a guard, it is
+ * a claim. One place decides that a grey is never a brand hue: `isNeutral` in `rank`.
  */
 function promoteRecurrentRoles(measurements: Measurement[]): void {
   const counts = new Map<string, number>();
   for (const m of measurements) {
-    if (m.signal !== "declared" || isNeutral(m.value)) continue;
+    if (m.signal !== "declared") continue;
     const prop = propertyFromToken(m.token);
     if (!prop || !RECURRENT_ROLE_PROPERTIES.has(prop)) continue;
     counts.set(m.value, (counts.get(m.value) ?? 0) + 1);
