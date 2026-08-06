@@ -2060,7 +2060,8 @@ git commit -m "feat(splash-twin): the orchestrator, and a test that its prose ca
 - Consumes: the beat directory shape from Tasks 2 and 7.
 - Produces:
   - `offerForms({medium, genre}): Array<{id: string, label: string, gives: string}>`
-  - `materialise({form, beatDir, exportDir}): Promise<string[]>` — the paths written.
+  - `materialise({form, genre, beatDir, exportDir}): Promise<string[]>` — the paths written.
+    (`genre` added in the second review round below — validates the `{form, genre}` pair.)
 
 Materialisation is **lazy**: nothing is built before the journalist chooses. That reverses `main`'s habit of producing every form up front.
 
@@ -2085,15 +2086,31 @@ before merge — correctness governs over the prescription:
    codebase's skills are built not to share — but `bun install && bun run build` genuinely
    executes and produces a bundled file, proven in Step 6 by actually running it.
 4. `offerForms` genre-gates on `"static"`, but `materialise` validated `form` only against the
-   shared `FORMS` table, with no `genre` parameter to check against. For SP1 this cannot yet be
-   exploited — one genre exists, and `FORMS` *is* everything `offerForms` can ever return — so no
-   signature change was made; a genre-scoped check would be speculative generality ahead of the
-   second genre that would actually need it. Left as a named limitation for the skill that adds
-   genre 2, not a defect within SP1's own scope.
+   shared `FORMS` table, with no `genre` parameter to check against.
 
 Everything else in the prescribed code held up under mutation testing (every line targeted by a
-test was confirmed to flip that test red when broken, then reverted). The test and implementation
-blocks below are corrected to match what was actually shipped.
+test was confirmed to flip that test red when broken, then reverted).
+
+**Amended again after coordinator review.** Item 4 above was first closed as a documented,
+uncoded limitation — locally sound while SP1 has exactly one genre and `FORMS` *is* everything
+`offerForms` can ever return, so no case could be constructed to exploit it. The coordinator's
+review agreed it was sound today but pushed back on shape: "cannot happen today" while nothing
+in the code prevents it tomorrow is exactly the shape that breaks silently the moment a second
+genre adds any `FORMS` entry not valid for `"static"` — `materialise` would accept a form for a
+genre that never offered it, because it validates against the shared table, not the pair. Closed
+structurally rather than left documented: `FORMS` is now `FORMS_BY_GENRE`, keyed by genre;
+`materialise` takes `genre` and validates `FORMS_BY_GENRE[genre]?.[form]` — the `{form, genre}`
+PAIR, not the form id alone. A form id real for one genre is refused for a different genre with
+the same "not an offered form" error, proven by a dedicated test (`materialise({form:
+"owned-file", genre: "video", ...})` rejects, even though `"owned-file"` is a real id under
+`"static"`). A second gap surfaced by mutation-testing this fix: none of the three original
+`offerForms` tests call it with an invalid genre, so a mutation that made `offerForms` stop
+reading `genre` at all (hardcoding the lookup to `"static"`) survived every test unnoticed —
+closed with a direct test of that refusal path. The MINOR gap the coordinator also named — the
+`owned-file` form's `copyTree` call was never exercised against a nested subdirectory, only
+`source-bundle`'s — is closed the same way, with a `renders/social/` fixture. The test and
+implementation blocks below are corrected to match what was actually shipped, across both review
+rounds.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2134,11 +2151,17 @@ describe("offerForms", () => {
       expect(form.gives.split(/\s+/).length).toBeGreaterThan(4);
     }
   });
+
+  // Direct coverage of the genre-rejection path — the three tests above only ever call
+  // offerForms with genre "static", so none would notice if this check stopped reading genre.
+  it("should refuse to offer anything for a genre it does not know", () => {
+    expect(() => offerForms({ medium: "chart", genre: "video" })).toThrow("static genre only");
+  });
 });
 
 describe("materialise", () => {
   it("should write only the owned file when that form is chosen", async () => {
-    const written = await materialise({ form: "owned-file", beatDir, exportDir });
+    const written = await materialise({ form: "owned-file", genre: "static", beatDir, exportDir });
     const files = await readdir(exportDir);
     expect(files).toContain("still.png");
     expect(files).toContain("still.svg");
@@ -2146,8 +2169,21 @@ describe("materialise", () => {
     expect(written).toHaveLength(2);
   });
 
+  // The shared copyTree helper is exercised at depth by the source-bundle test below; this
+  // pins that the owned-file path walks a nested subdirectory under "renders" identically.
+  it("should copy a subdirectory nested inside renders when the owned-file form is chosen", async () => {
+    await mkdir(join(beatDir, "renders", "social"), { recursive: true });
+    await writeFile(join(beatDir, "renders", "social", "insta.png"), "png-bytes");
+    const written = await materialise({ form: "owned-file", genre: "static", beatDir, exportDir });
+    const files = await readdir(exportDir);
+    expect(files).toContain("social");
+    const nested = await readdir(join(exportDir, "social"));
+    expect(nested).toContain("insta.png");
+    expect(written).toContain(join(exportDir, "social", "insta.png"));
+  });
+
   it("should write a runnable bundle only when the source form is chosen", async () => {
-    await materialise({ form: "source-bundle", beatDir, exportDir });
+    await materialise({ form: "source-bundle", genre: "static", beatDir, exportDir });
     const files = await readdir(exportDir);
     expect(files).toContain("package.json");
     expect(files).toContain("Rainfall.tsx");
@@ -2156,27 +2192,40 @@ describe("materialise", () => {
   });
 
   it("should refuse a form that was never offered", async () => {
-    await expect(materialise({ form: "embed", beatDir, exportDir })).rejects.toThrow("not an offered form");
+    await expect(
+      materialise({ form: "embed", genre: "static", beatDir, exportDir }),
+    ).rejects.toThrow("not an offered form");
   });
 
-  // Defect 2: refusing an unoffered form is a validation failure, not a delivery — it must not
-  // destroy a form the journalist already has sitting in exportDir.
+  // A form id real for one genre must not be accepted for a different genre just because the
+  // id matches — the check is on the {form, genre} PAIR, never the form id alone. "owned-file"
+  // is a real id under "static", but genre "video" offers nothing (SP1 has one genre).
+  it("should refuse a form that exists for a different genre than the one given", async () => {
+    await expect(
+      materialise({ form: "owned-file", genre: "video", beatDir, exportDir }),
+    ).rejects.toThrow("not an offered form");
+  });
+
+  // Refusing an unoffered form is a validation failure, not a delivery — it must not destroy a
+  // form the journalist already has sitting in exportDir.
   it("should leave an already-delivered form untouched when a later choice is refused", async () => {
-    await materialise({ form: "owned-file", beatDir, exportDir });
-    await expect(materialise({ form: "embed", beatDir, exportDir })).rejects.toThrow("not an offered form");
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir });
+    await expect(
+      materialise({ form: "embed", genre: "static", beatDir, exportDir }),
+    ).rejects.toThrow("not an offered form");
     const files = await readdir(exportDir);
     expect(files).toContain("still.png");
     expect(files).toContain("still.svg");
   });
 
-  // Defect 1: a beat directory can carry a subdirectory other than "renders" (an "assets"
-  // folder holding a logo), nested more than one level deep. copyFile throws on a directory —
-  // the source-bundle form must walk the whole tree, at every depth.
+  // A beat directory can carry a subdirectory other than "renders" (an "assets" folder holding
+  // a logo), nested more than one level deep. copyFile throws on a directory — the
+  // source-bundle form must walk the whole tree, at every depth.
   it("should copy a subdirectory nested two levels deep inside the beat, not throw on it", async () => {
     await mkdir(join(beatDir, "assets", "icons"), { recursive: true });
     await writeFile(join(beatDir, "assets", "logo.svg"), "<svg/>");
     await writeFile(join(beatDir, "assets", "icons", "pin.svg"), "<svg/>");
-    const written = await materialise({ form: "source-bundle", beatDir, exportDir });
+    const written = await materialise({ form: "source-bundle", genre: "static", beatDir, exportDir });
     const files = await readdir(exportDir);
     expect(files).toContain("assets");
     const nested = await readdir(join(exportDir, "assets"));
@@ -2188,23 +2237,23 @@ describe("materialise", () => {
     expect(written).toContain(join(exportDir, "assets", "icons", "pin.svg"));
   });
 
-  // Defect 2: a journalist can change their mind. The second materialise must not leave the
-  // first form's files sitting alongside the new one.
+  // A journalist can change their mind. The second materialise must not leave the first form's
+  // files sitting alongside the new one.
   it("should clear a previous choice's files when a different form is materialised next", async () => {
-    await materialise({ form: "owned-file", beatDir, exportDir });
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir });
     expect(await readdir(exportDir)).toContain("still.png");
-    await materialise({ form: "source-bundle", beatDir, exportDir });
+    await materialise({ form: "source-bundle", genre: "static", beatDir, exportDir });
     const files = await readdir(exportDir);
     expect(files).not.toContain("still.png");
     expect(files).not.toContain("still.svg");
     expect(files).toContain("package.json");
   });
 
-  // Defect 3: "bun install && bun run build" is a claim, not decoration. The build script the
-  // bundle ships must actually run — via the bundle's own package.json "build" script, the
-  // exact command named in the "gives" text — and produce something.
+  // "bun install && bun run build" is a claim, not decoration. The build script the bundle
+  // ships must actually run — via the bundle's own package.json "build" script, the exact
+  // command named in the "gives" text — and produce something.
   it("should ship a build script that genuinely runs and bundles the component", async () => {
-    await materialise({ form: "source-bundle", beatDir, exportDir });
+    await materialise({ form: "source-bundle", genre: "static", beatDir, exportDir });
     const files = await readdir(exportDir);
     expect(files).toContain("build.ts");
     const proc = Bun.spawnSync(["bun", "run", "build"], { cwd: exportDir });
@@ -2225,36 +2274,44 @@ Expected: FAIL — module not found.
 ```js
 // twin/skills/twin-deliver/scripts/deliver.mjs
 // Lazy by design: nothing is built before the journalist has chosen. `offerForms` and
-// `materialise` read the same `FORMS` table — one source of truth — so "not an offered form"
-// can never drift from what was actually offered.
+// `materialise` both read `FORMS_BY_GENRE` — one source of truth keyed by genre — so
+// "not an offered form" can never drift from what was actually offered FOR THAT GENRE. A form
+// id that happens to exist under one genre is not automatically valid for another; the check
+// is always on the {form, genre} pair, never on the form id alone.
 
 import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const REACT_VERSION = "^19.1.0";
 
-const FORMS = {
-  "owned-file": {
-    label: "The file itself",
-    gives: "a PNG and an SVG the newsroom owns outright, nothing else to run",
-  },
-  "source-bundle": {
-    label: "Runnable source",
-    gives:
-      "a folder with this chart's component and data, plus a real build.ts that bun install and bun run build actually execute",
+// SP1 has one genre. `medium` is accepted on `offerForms`'s own interface for its future (a map
+// beat's forms will not read identically to a chart beat's), but is not yet branched on.
+const FORMS_BY_GENRE = {
+  static: {
+    "owned-file": {
+      label: "The file itself",
+      gives: "a PNG and an SVG the newsroom owns outright, nothing else to run",
+    },
+    "source-bundle": {
+      label: "Runnable source",
+      gives:
+        "a folder with this chart's component and data, plus a real build.ts that bun install and bun run build actually execute",
+    },
   },
 };
 
 export function offerForms({ medium, genre }) {
-  if (genre !== "static") {
+  const forms = FORMS_BY_GENRE[genre];
+  if (!forms) {
     throw new Error(`SP1 delivers the static genre only, got ${JSON.stringify(genre)}`);
   }
-  return Object.keys(FORMS).map((id) => ({ id, ...FORMS[id] }));
+  return Object.keys(forms).map((id) => ({ id, ...forms[id] }));
 }
 
 // Recursively copies one directory's contents into another, collecting every file path
-// written. Directories are walked, never handed to `copyFile` directly (defect 1: a
-// subdirectory anywhere other than "renders" must be copied whole, not throw EISDIR).
+// written. Directories are walked, never handed to `copyFile` directly — a beat carrying a
+// subdirectory anywhere other than "renders" (an "assets" folder, say) must be copied whole,
+// not throw EISDIR.
 async function copyTree(srcDir, destDir, written) {
   await mkdir(destDir, { recursive: true });
   for (const entry of await readdir(srcDir, { withFileTypes: true })) {
@@ -2269,11 +2326,11 @@ async function copyTree(srcDir, destDir, written) {
   }
 }
 
-// A real, dependency-free build entry point (defect 3): Bun's own bundler ships inside the Bun
-// runtime, so "bun install && bun run build" genuinely executes. It does not reproduce the
-// raster pipeline that made the owned PNG/SVG — that belongs to the chart-beat skill, and
+// A real, dependency-free build entry point: Bun's own bundler ships inside the Bun runtime,
+// so "bun install && bun run build" genuinely executes. It does not reproduce the raster
+// pipeline that made the owned PNG/SVG — that pipeline belongs to the chart-beat skill, and
 // duplicating it here would be exactly the shared-utility coupling this codebase avoids. It
-// bundles the component source it was actually given, a claim this file can back.
+// bundles the component source it was actually given, which is a claim this file can back.
 const BUILD_SCRIPT = `// Bundles this beat's own component source with Bun's native bundler.
 // This reproduces the runnable source, not the raster pipeline that made the owned PNG/SVG.
 import { readdir } from "node:fs/promises";
@@ -2289,12 +2346,20 @@ if (!result.success) {
 console.log(\`built \${entrypoints.join(", ")} -> ./dist\`);
 `;
 
-export async function materialise({ form, beatDir, exportDir }) {
-  if (!FORMS[form]) throw new Error(`${form} is not an offered form`);
+export async function materialise({ form, genre, beatDir, exportDir }) {
+  // Validate the {form, genre} PAIR, not the form id in isolation — a form id that exists for
+  // some other genre must not be accepted here just because it happens to share a name. Reading
+  // the same FORMS_BY_GENRE table offerForms reads means a form genre two adds under a
+  // different genre is refused automatically, with no separate list to keep in sync.
+  const forms = FORMS_BY_GENRE[genre];
+  if (!forms || !forms[form]) {
+    throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
+  }
 
-  // Defect 2: exportDir may already hold a previous choice's files — clear it first so the
-  // chosen form is the ONLY thing delivered. Validation above runs before this, so a rejected
-  // form never destroys whatever was already delivered.
+  // A journalist can change their mind. exportDir may already hold a previous choice's
+  // files — clear it first so the chosen form is the ONLY thing delivered, never a mix of
+  // this choice and the last one. Validation above runs before this, so a rejected form never
+  // destroys whatever was already delivered.
   await rm(exportDir, { recursive: true, force: true });
   await mkdir(exportDir, { recursive: true });
   const written = [];
@@ -2344,8 +2409,10 @@ export async function materialise({ form, beatDir, exportDir }) {
 - [ ] **Step 4: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-deliver/test/deliver.test.ts`
-Expected: PASS, 10 tests (the four defect-regression tests above were added during
-implementation review, on top of the six originally prescribed).
+Expected: PASS, 13 tests (the six originally prescribed, plus four defect-regression tests added
+during the first implementation review, plus three more added during the coordinator's review of
+the genre-pair fix: refusing a form real for a different genre, refusing an unknown genre from
+`offerForms` directly, and the `owned-file` path copying a nested subdirectory under `renders/`).
 
 - [ ] **Step 5: Write `twin-deliver/SKILL.md`**
 
@@ -2356,6 +2423,13 @@ Eight sections. It must state that the forms are **offered and then waited on** 
 ```bash
 git add twin/skills/twin-deliver
 git commit -m "feat(twin-deliver): offer the forms, wait, then build only the chosen one"
+```
+
+- [ ] **Step 7: Second review round — close the genre gap structurally**
+
+```bash
+git add twin/skills/twin-deliver
+git commit -m "fix(twin-deliver): validate the {form, genre} pair, not the form id alone"
 ```
 
 ---
