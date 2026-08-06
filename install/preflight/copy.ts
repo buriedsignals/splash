@@ -46,6 +46,11 @@ export type PageCopy = {
   capabilitiesHint: string;
   /** The heading over the production keys asked outright, above every want group. */
   productionKeysTitle: string;
+  /**
+   * Under a capability whose field is upfront (asked once, above): `${field.label} — ${this}`.
+   * Every engine field is upfront now, so this fires under every engine capability.
+   */
+  askedOnceAbove: string;
   /** The heading over each group of tools that serve the same want (charts, maps, …). */
   wants: Record<WantId, string>;
   publishingTitle: string;
@@ -110,6 +115,7 @@ const EN: PageCopy = {
   capabilitiesHint:
     "The keys below are asked once, whatever you use. Tick what your newsroom will produce — anything left unticked is never reported as a blocker.",
   productionKeysTitle: "Your accounts",
+  askedOnceAbove: "asked once, above.",
   wants: {
     charts: "Charts",
     maps: "Maps",
@@ -180,6 +186,7 @@ const FR: PageCopy = {
   capabilitiesHint:
     "Les clés ci-dessous sont demandées une fois, quel que soit votre usage. Cochez ce que votre rédaction produira — ce que vous laissez décoché n'est jamais signalé comme un blocage.",
   productionKeysTitle: "Vos comptes",
+  askedOnceAbove: "déjà demandée plus haut.",
   wants: {
     charts: "Des graphiques",
     maps: "Des cartes",
