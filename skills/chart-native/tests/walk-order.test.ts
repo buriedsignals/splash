@@ -193,29 +193,53 @@ test("the bar entrance schedule is exactly these numbers", () => {
 });
 
 describe("captionAt — the sentence on screen", () => {
+  // The chart's own categories, in DATA order. The walk runs against them, deliberately in a
+  // different order — which is the only shape that can catch the bug this function shipped with.
+  const CATS = ["Central", "Riverside", "Hilltop", "Eastgate", "Westpark"];
   const beats = [
-    { text: "Westpark opens." },
-    { text: "Then Eastgate." },
-    { text: "Central closes." },
+    { category: "Westpark", text: "Westpark ouvre la marche." },
+    { category: "Eastgate", text: "Eastgate suit de peu." },
+    { category: "Central", text: "Central écrase tout le reste." },
   ];
-  const order = [0, 1, 2];
 
-  it("gives the journalist's own words for the beat that is entering", () => {
-    expect(captionAt(beats, order, 0)!.text).toBe("Westpark opens.");
-    expect(captionAt(beats, order, 1)!.text).toBe("Central closes.");
+  it("names the beat whose bar is entering, not the subject at that index", () => {
+    // ★ THE BUG THIS PINS: the first version asked which SUBJECT was entering and then indexed
+    // the BEATS array with it — two different spaces. Beat 0 is about Westpark, which is
+    // subject 4; reading beats[4] gave undefined, and reading beats[0] for subject 0 gave
+    // Westpark's sentence over CENTRAL's bar.
+    expect(captionAt(beats, CATS, 0)!.text).toBe("Westpark ouvre la marche.");
+    // Second window: Eastgate's beat, not "the second category".
+    const second = BAR_ENTRANCE.start + BAR_ENTRANCE.step(CATS.length) + 1e-4;
+    expect(captionAt(beats, CATS, second)!.text).toBe("Eastgate suit de peu.");
+    // Third: Central closes the walk, though it is the FIRST row of the data.
+    const third = BAR_ENTRANCE.start + 2 * BAR_ENTRANCE.step(CATS.length) + 1e-4;
+    expect(captionAt(beats, CATS, third)!.text).toBe(
+      "Central écrase tout le reste.",
+    );
+  });
+
+  it("holds the last sentence once the un-walked subjects enter", () => {
+    // Rows the walk never names have no sentence; the caption stays on the last beat rather
+    // than blanking mid-clip.
+    expect(captionAt(beats, CATS, 1)!.text).toBe("Central écrase tout le reste.");
   });
 
   it("gives NOTHING when there is no walk — a video nobody storyboarded is unchanged", () => {
-    expect(captionAt(undefined, order, 0.5)).toBeNull();
-    expect(captionAt([], order, 0.5)).toBeNull();
+    expect(captionAt(undefined, CATS, 0.5)).toBeNull();
+    expect(captionAt([], CATS, 0.5)).toBeNull();
   });
 
   it("gives nothing rather than an empty band for an unwritten beat", () => {
-    expect(captionAt([{ text: "" }, { text: "  " }], [0, 1], 0.5)).toBeNull();
+    expect(
+      captionAt([{ category: "Central", text: "  " }], CATS, 0.5),
+    ).toBeNull();
   });
 
-  it("follows the walk's order, not the data's", () => {
-    // Subject 2 enters first: its sentence is the one that opens.
-    expect(captionAt(beats, [2, 1, 0], 0)!.text).toBe("Central closes.");
+  it("ignores a beat whose anchor the chart does not carry", () => {
+    const withGhost = [{ category: "Atlantide", text: "nulle part" }, ...beats];
+    expect(captionAt(withGhost, CATS, 1)!.text).toBe(
+      "Central écrase tout le reste.",
+    );
   });
 });
+

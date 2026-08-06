@@ -11,8 +11,9 @@
 // pixel.
 
 import React from "react";
-import { walkPositions, captionAt } from "../../src/core/walk";
-import { themeColors, FONT } from "../../src/core/tokens";
+import { captionAt } from "../../src/core/walk";
+import { themeColors, FONT, TYPE } from "../../src/core/tokens";
+import { sourceFooterReserve } from "../../../../lib/core/text-fit";
 
 /** What the stage needs off a chart config — the walk, and the ground its furniture derives from.
  *  Typed structurally rather than against one chart's Config, because every walk-capable type
@@ -41,7 +42,6 @@ const BAND = {
   /** of the frame height — the band never eats more than this, whatever the sentence */
   maxHeightRatio: 0.38,
   paddingScale: 0.035,
-  bottomScale: 0.045,
   /** the ground the band paints, over the chart's own */
   opacity: 0.92,
 } as const;
@@ -61,11 +61,7 @@ export const RevealStage: React.FC<{
   const anchors = (config.rows ?? []).map((r) =>
     String(r[config.catField ?? ""] ?? ""),
   );
-  const caption = captionAt(
-    config.beats,
-    walkPositions(anchors, config.beats as never),
-    progress,
-  );
+  const caption = captionAt(config.beats, anchors, progress);
 
   // NO WALK ⇒ the exact element these wrappers rendered before this component existed.
   if (!caption)
@@ -84,7 +80,12 @@ export const RevealStage: React.FC<{
           position: "absolute",
           left: padding,
           right: padding,
-          bottom: Math.round(short * BAND.bottomScale),
+          // ABOVE the frame's source line, never over it. The first render of this band sat on
+          // top of "Source: Riverton city open data" — the exact defect this repo already fixed
+          // once for the x-axis title, and `sourceFooterReserve` is the answer it settled on.
+          // Read from the same helper, at the same unscaled source type size, so a change to the
+          // footer moves the caption with it.
+          bottom: sourceFooterReserve(TYPE.source),
           // AUTO height, capped. The sentence is never cut: it wraps and the band grows with it,
           // up to the cap. This repo has already shipped a truncation that ate DATA (slope's
           // "Interm."), so silently clipping a journalist's own sentence is the one behaviour

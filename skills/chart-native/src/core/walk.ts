@@ -111,22 +111,44 @@ export function activeBeatAt(
 /**
  * THE SENTENCE ON SCREEN at this progress — the journalist's own words, or nothing.
  *
- * Pure, so the "which words" decision is unit-testable without a browser and the video stage
- * that shows them stays a thin renderer. Returns `null` when there is no walk, which is what
- * keeps a video nobody storyboarded byte-identical to before.
+ * ★ WORKS IN BEAT SPACE, and the first version did not. It asked `activeBeatAt` for the SUBJECT
+ * whose bar was entering and then indexed the BEATS array with it — two different spaces. Beat k
+ * is about whichever subject its anchor names, which is rarely subject k; the walk exists
+ * precisely because those two orders differ. The result was a sentence over the wrong bar: the
+ * failure this file's own header warns about, written into the function under the warning.
  *
- * A beat with an EMPTY text yields null rather than an empty band: `produce` already refuses to
- * build a walk whose claims are unwritten (`unauthoredBeats`), so an empty string here can only
- * come from a hand-authored spec — and an empty caption box is a worse answer than none.
+ * Each beat's window opens when ITS subject enters. The active beat is the one whose window
+ * opened most recently — what the reader's eye has just been drawn to — and a subject the walk
+ * does not name never becomes a caption at all, because it has no sentence.
+ *
+ * Returns `null` when there is no walk, which keeps a video nobody storyboarded byte-identical.
+ * An EMPTY text yields null rather than an empty band: `produce` already refuses to build a walk
+ * whose claims are unwritten (`unauthoredBeats`), so a blank here can only come from a
+ * hand-authored spec — and an empty caption box is a worse answer than none.
  */
 export function captionAt(
-  beats: readonly { text?: string }[] | undefined,
-  entryOrder: readonly number[],
+  beats: readonly { x?: string; category?: string; text?: string }[] | undefined,
+  anchors: readonly string[],
   progress: number,
 ): { text: string; index: number } | null {
   if (!beats?.length) return null;
-  const i = activeBeatAt(progress, entryOrder, beats.length);
-  if (i < 0) return null;
-  const text = beats[i]?.text?.trim();
-  return text ? { text, index: i } : null;
+  const entryOrder = walkPositions([...anchors], beats);
+  const start = BAR_ENTRANCE.start;
+  const step = BAR_ENTRANCE.step(Math.max(1, anchors.length));
+  let active = -1;
+  let bestBegin = -Infinity;
+  beats.forEach((b, k) => {
+    const subject = anchors.indexOf(String(b.category ?? b.x ?? ""));
+    if (subject < 0) return;
+    const begin = start + (entryOrder[subject] ?? subject) * step;
+    if (begin <= progress && begin >= bestBegin) {
+      bestBegin = begin;
+      active = k;
+    }
+  });
+  // Before the first window opens, the opening beat is already the one being announced — a frame
+  // with no sentence is not something the journalist asked for.
+  if (active < 0) active = 0;
+  const text = beats[active]?.text?.trim();
+  return text ? { text, index: active } : null;
 }
