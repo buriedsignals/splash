@@ -1044,6 +1044,62 @@ function belowFloor(
   return best;
 }
 
+/**
+ * The last two labels of a hostname: `cdn.heidi.news` and `www.heidi.news` both reduce to
+ * `heidi.news`, `cdn.consent.example` reduces to `consent.example`.
+ *
+ * An APPROXIMATION of "the same site", and deliberately a cheap one — the exact answer needs the
+ * public suffix list, which is a dependency and a list that goes stale, and what this decides is
+ * the wording of a NOTE, never whether a reading is kept. It errs towards saying nothing: two
+ * unrelated `*.co.uk` sites read as the same site and no note is emitted. Comparing whole
+ * hostnames instead would fire on every newsroom that serves its CSS from its own `cdn.` — which
+ * is most of them — and a warning that fires on the ordinary case teaches its reader to skip it.
+ */
+function siteOf(hostname: string): string {
+  return hostname.toLowerCase().split(".").slice(-2).join(".");
+}
+
+/**
+ * A FACT about the top candidate, when its strongest evidence was read from a stylesheet served
+ * by another site: which host it came from.
+ *
+ * NOT a filter and NOT a penalty — the decision that a sheet the newsroom's own document links is
+ * the newsroom's, whatever host carries the bytes, stands (see charter-fetch.ts's
+ * `stylesheetHrefs`; heidi.news's real CSS lives on a CDN with an unrelated name). But that
+ * decision has a measured cost: a consent banner repeating its blue across five
+ * `background-color` declarations earns `recurrent-role` (60) and takes first place off the
+ * newsroom's own `.btn{background:#0a5c36}` (`control`, 55). The reading is honest; what was
+ * missing is the one thing that lets the journalist overrule it, which is knowing where it came
+ * from. `Measurement.source` has carried that all along — this puts it in front of him.
+ */
+function foreignTopCandidateNote(
+  top: ColourCandidate,
+  pageUrl: string | undefined,
+): string | null {
+  if (!pageUrl) return null;
+  let site: string;
+  try {
+    site = siteOf(new URL(pageUrl).hostname);
+  } catch {
+    return null;
+  }
+  // The evidence that actually earned the candidate its rank — the same "best weight wins" rule
+  // `rank` uses to pick the representative value, not the first reading in the list.
+  const strongest = top.evidence.reduce((a, c) =>
+    WEIGHT[c.signal] > WEIGHT[a.signal] ? c : a,
+  );
+  let host: string;
+  try {
+    // A source that is not a URL at all — "the page itself", a fixture's bare filename, the
+    // rendered path's "computed styles of the rendered page" — is not a foreign site.
+    host = new URL(strongest.source).hostname;
+  } catch {
+    return null;
+  }
+  if (!host || siteOf(host) === site) return null;
+  return `the colour proposed first (${top.value}) was read from a stylesheet served by ${host}, which is not part of ${site} — the newsroom's own page links that sheet, so it is read and ranked like any other, but the colour may belong to a third party (a consent banner, an embedded widget) rather than to the newsroom`;
+}
+
 const DECLARED_SIGNALS = new Set<ColourSignal>([
   "theme-color",
   "brand-property",
@@ -1114,6 +1170,11 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
     : top.evidence.some((e) => DECLARED_SIGNALS.has(e.signal))
       ? "declared"
       : "inferred";
+
+  if (top) {
+    const foreign = foreignTopCandidateNote(top, sources.url);
+    if (foreign) notes.push(foreign);
+  }
 
   // A reading that did not clear the floor is NAMED but not proposed — hiding it would be as
   // dishonest as proposing it, and the journalist may recognise their own colour in it.

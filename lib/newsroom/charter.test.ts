@@ -732,3 +732,66 @@ describe("regression — accent removed from the charter", () => {
     expect(mod.accentCandidate).toBeUndefined();
   });
 });
+
+// A sheet the newsroom's own document links is the newsroom's, whatever host serves it (a real
+// newsroom's CSS lives on a CDN it does not share a name with) — so no host filter, by decision.
+// But that decision has a cost the journalist must be able to see: a consent banner's stylesheet
+// repeats its own blue on five backgrounds and takes the TOP candidate off the newsroom's own
+// green. The answer is not to drop the reading, it is to SAY where it was read.
+describe("a top candidate read from a third party's stylesheet is named as such", () => {
+  const CONSENT = Array.from(
+    { length: 5 },
+    (_, i) => `.cmp-${i}{background-color:#1f4fd8}`,
+  ).join("");
+
+  it("should still rank the third party's colour first — no filtering, no score change", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        { href: "https://cdn.consent.example/banner.css", css: CONSENT },
+        {
+          href: "https://cdn.heidi.news/app.css",
+          css: ".btn{background:#0a5c36}",
+        },
+      ],
+    });
+    expect(p.candidates[0]!.value).toBe("#1f4fd8");
+    expect(p.candidates[1]!.value).toBe("#0a5c36");
+  });
+
+  it("should say plainly that the colour it proposes first came from another site, and name it", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        { href: "https://cdn.consent.example/banner.css", css: CONSENT },
+        {
+          href: "https://cdn.heidi.news/app.css",
+          css: ".btn{background:#0a5c36}",
+        },
+      ],
+    });
+    const notes = p.notes.join(" ");
+    expect(notes).toContain("cdn.consent.example");
+    expect(notes).toContain("#1f4fd8");
+  });
+
+  // The newsroom's own CDN is the newsroom. Comparing whole hostnames would flag every site that
+  // serves its CSS from `cdn.` or `static.` — which is most of them — and a warning that fires on
+  // the ordinary case teaches the journalist to ignore it.
+  it("should NOT flag the newsroom's own CDN, which shares the site's last two labels", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        {
+          href: "https://cdn.heidi.news/app.css",
+          css: CONSENT.replace(/cmp/g, "btn"),
+        },
+      ],
+    });
+    expect(p.candidates[0]!.value).toBe("#1f4fd8");
+    expect(p.notes.join(" ")).not.toContain("cdn.heidi.news");
+  });
+});
