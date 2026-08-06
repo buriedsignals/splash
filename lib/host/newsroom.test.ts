@@ -15,7 +15,13 @@ function newsroomDir(uiLang: string): string {
       schemaVersion: 1,
       runtime: "goose",
       uiLang,
-      capabilities: { "dw-chart": { enabled: true } },
+      // "embed-s3" is a DELIVERY capability (chosen, not merely available) — the one kind of
+      // capability README.md's `blockers` actually describes. "dw-chart" (an engine) used to sit
+      // here instead, back when engines were gated on the same tick delivery still is; Task 5
+      // (2026-08-06) removed that tick for engines, so an engine fixture no longer demonstrates
+      // a blocker at all — it demonstrates the bug this file's `DELIVERY_IDS` filter now guards
+      // against (every unconfigured engine reading as a blocker, README or not).
+      capabilities: { "embed-s3": { enabled: true } },
     }),
   );
   return d;
@@ -40,11 +46,11 @@ describe("describeNewsroom", () => {
     expect(value.runtime).toBe("goose");
     expect(value.language.ui).toBe("de");
     expect(value.capabilities.length).toBeGreaterThan(0);
-    // Every engine is asked for outright now (Task 5, 2026-08-06) — this temp dir has none of
-    // their keys, so every keyed engine is a blocker, not only the one this fixture ticked.
-    expect(value.blockers.map((b) => b.id).sort()).toEqual(
-      ["dw-chart", "map-dw", "map-native", "scrolly"].sort(),
-    );
+    // `capabilities` still carries every registered capability, engines included (this dir's
+    // engines are all keyless-missing) — but `blockers` is DELIVERY-only, matching README.md's
+    // "the subset of those that are enabled but not currently usable": embed-s3 is enabled but
+    // has neither key, so it is the only blocker, whatever the unconfigured engines report.
+    expect(value.blockers.map((b) => b.id)).toEqual(["embed-s3"]);
   });
 
   it("never throws on a directory that holds nothing", () => {
