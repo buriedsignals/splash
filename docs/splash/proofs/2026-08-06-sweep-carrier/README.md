@@ -47,3 +47,34 @@ jamais COMMENT.
 > fenêtre se ferme une entrée complète avant la fin. `ChoroplethStory` reste à recâbler dessus ;
 > le défaut est antérieur au lot A et commun aux cinq porteurs (visible aussi sous `threshold`,
 > où c'est la valeur la plus basse qui ne s'allume pas).
+
+## Le même dispositif sur les autres types de carte (lot B)
+
+Deux vrais mp4 de plus, `cameraMode: "guided-tour"`, rendus depuis les échantillons du skill.
+
+**Symbole — porteur `threshold`** (`assets/sample-data/symbol.json`, 948 frames) : six villes,
+financement en $bn. Le porteur descend du plus élevé au plus bas ; chaque point fait son entrée
+échelonnée (cercle qui grandit, opacité, étiquette) à SON passage, pas à celui de son beat.
+
+| frame | ce qu'on voit |
+|---|---|
+| `symbol-threshold-1-highest-alone.png` (130) | **Londres seule** (296) — les cinq autres villes sont noires |
+| `symbol-threshold-2-five-in-lowest-dark.png` (880) | Londres, Paris, Madrid, Berlin pleins ; **Rome (67) en cours d'entrée** ; Amsterdam (52, la plus basse) toujours absente |
+| `symbol-threshold-3-all-six.png` (946) | **les six**, Amsterdam comprise : la fenêtre du balayage se ferme une entrée complète avant la dernière frame, donc la marque atteinte en dernier a le temps de fleurir |
+
+**Locator — porteur `space`** (`assets/sample-data/locator-few.json`, 948 frames) : cinq sites
+parisiens, aucune valeur numérique. Le porteur balaie d'ouest en est (cap 90° par défaut).
+
+| frame | ce qu'on voit |
+|---|---|
+| `locator-space-1-westernmost-alone.png` (140) | **Tour Eiffel / Trocadéro seule** — le point le plus à l'ouest |
+| `locator-space-2-second-entering.png` (450) | le **Pont Alexandre III** entre à son tour ; les trois sites à l'est restent noirs |
+| `locator-space-3-all-five.png` (946) | les cinq, **Pont d'Austerlitz** (le plus à l'est) en dernier |
+
+`threshold` sur un locator n'aurait rien donné — ses marqueurs ne portent aucune valeur, et le
+cœur pose alors chaque marque à la FIN plutôt que d'inventer un rang. C'est pour ça que la preuve
+du locator est faite avec `space` : le porteur se lit dans la donnée, il ne se récite pas.
+
+**Sans porteur, rien ne change** — vérifié mécaniquement, pas affirmé : le même `symbol.json`
+(sans `sweepCarrier`) rendu sur le commit d'avant le lot et sur le lot donne le MÊME mp4,
+`sha256 270323089e2959c65f2bb34146a1fd6cf4ce90e468bbb3b24ad41c985b64f492` des deux côtés.
