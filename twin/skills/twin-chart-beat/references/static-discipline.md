@@ -32,13 +32,32 @@ inputs. `deriveFurniture(ground)` produces the rest:
 
 Contrast is measured **on the real ground**, never on an assumed white.
 
-## Honest baseline, visible zero
+## Honest scale — and zero is a rule about BARS
 
-The scale starts at zero and the zero line is drawn. The cost is real and worth naming: when the
-values sit far above zero — rainfall between 604 and 912 mm on a 0–1000 scale — the lower third of
-the plot is empty. That emptiness is information (these are large numbers), and it is the price of
-not manufacturing a slope. A beat that genuinely cannot start at zero says so on the axis; it does
-not simply crop and hope.
+**Show zero when the mark's LENGTH encodes the value: bars, columns, areas, anything read by how
+far it extends.** Halve a bar's length and you halve what it claims, so a truncated bar axis is a
+false statement about the data. This is not negotiable.
+
+**A line is a different instrument.** It encodes change by SLOPE, and a line anchored at zero when
+its values sit far above zero flattens the very change the beat exists to show. Rainfall running
+604–912 mm drawn on a 0–1000 scale is a gentle sag under a title that says it fell by a third: the
+chart contradicts its own claim, and it does so while looking scrupulous. That is worse than a
+truncation the reader can see.
+
+For a line, the honest choice is a scale **fitted to the readings** — and the honesty lives in the
+labelling, not in the floor:
+
+- all three ticks carry their value, so the span is stated and cannot be misread;
+- the unit is on the top tick;
+- a series of positive values never dips below zero (that would be inventing room);
+- a series that **crosses** zero always draws the zero line, because the sign change is the story.
+
+`yTickValues` implements exactly that: 15% padding around the readings, a round step, three ticks,
+clamped at zero for positive data. The check is not "does the axis start at zero" — it is
+**does the reader see the span, and does the slope tell the truth about the change**.
+
+This rule was written the wrong way round in the first draft of this file, and the render is what
+exposed it: 45% of the frame empty, and a decline of a third drawn as a shrug.
 
 ## Sparse ticks
 

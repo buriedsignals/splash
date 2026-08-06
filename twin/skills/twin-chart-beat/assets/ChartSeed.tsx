@@ -27,16 +27,47 @@ const AXIS = { fontSize: 13, fontWeight: 400 };
 const LABEL = { fontSize: 15, fontWeight: 600 };
 const UNIT = "mm"; // this story's unit. The next beat's is not mm — it rewrites this file.
 
-/** Round a maximum up to a round number, so the top tick is a number a reader recognises. */
-function niceTop(max: number): number {
-  const magnitude = 10 ** Math.floor(Math.log10(max));
-  return Math.ceil(max / magnitude) * magnitude;
+/** A round increment near `raw`, so every tick is a number a reader recognises. */
+function niceStep(raw: number): number {
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const f = raw / magnitude;
+  return (f <= 1 ? 1 : f <= 1.5 ? 1.5 : f <= 2 ? 2 : f <= 3 ? 3 : f <= 5 ? 5 : 10) * magnitude;
 }
 
-/** Sparse by construction: the floor, the middle, the top. Nothing between them is read. */
+/**
+ * Sparse by construction: the floor, the middle, the top. Nothing between them is read.
+ *
+ * The scale is fitted to the readings, not anchored at zero. Zero belongs under a mark whose
+ * LENGTH carries the value — a bar, a column, an area. A line carries it by slope, so anchoring
+ * it at zero when the values sit far above zero flattens the very change the beat is about:
+ * rainfall running 604–912 mm on a 0–1000 scale draws a gentle sag under a title that says it
+ * fell by a third. The honest answer for a line is a fitted scale whose ticks state the span,
+ * which is why all three are labelled and the unit is on the top one.
+ *
+ * Two floors remain: a series of positive values never dips below zero, and a series that
+ * crosses zero always shows the zero line (`zeroY`), because the sign change is the story.
+ */
 export function yTickValues(data: Reading[]): number[] {
-  const top = niceTop(Math.max(...data.map((d) => d.value ?? 0)));
-  return [0, top / 2, top];
+  const values = data
+    .map((d) => d.value)
+    .filter((v): v is number => v !== null);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const pad = (max - min) * 0.15 || Math.abs(max) * 0.1 || 1;
+  let lowPad = min - pad;
+  let highPad = max + pad;
+  if (min >= 0) lowPad = Math.max(0, lowPad);
+  if (max <= 0) highPad = Math.min(0, highPad);
+
+  const step = niceStep((highPad - lowPad) / 10);
+  let low = Math.floor(lowPad / step) * step;
+  let high = Math.ceil(highPad / step) * step;
+  // Three ticks means an even number of steps; spend the odd one where it costs nothing.
+  if (Math.round((high - low) / step) % 2 === 1) {
+    if (min < 0 || low - step >= 0) low -= step;
+    else high += step;
+  }
+  return [low, (low + high) / 2, high].map((v) => Number(v.toFixed(6)));
 }
 
 /**
@@ -60,12 +91,13 @@ export function lineGeometry(
   const years = data.map((d) => d.year);
   const [first, last] = [Math.min(...years), Math.max(...years)];
   const ticks = yTickValues(data);
-  const top = ticks[ticks.length - 1];
+  const [floor, , ceiling] = ticks;
 
   const x = (year: number) =>
     plot.left + ((year - first) / (last - first)) * (plot.right - plot.left);
   const y = (value: number) =>
-    plot.bottom - (value / top) * (plot.bottom - plot.top);
+    plot.bottom -
+    ((value - floor) / (ceiling - floor)) * (plot.bottom - plot.top);
 
   const points = data.map((d) => ({
     year: d.year,
@@ -84,25 +116,38 @@ export function lineGeometry(
   }
   if (run.length > 0) segments.push(run);
 
+  // One note per RUN of missing readings, placed at the midpoint of the readings it separates —
+  // not on the missing slot, which on unevenly spaced data is nowhere near the middle of the hole.
+  const gaps: { years: number[]; x: number; y: number }[] = [];
+  for (let i = 0; i < points.length; i++) {
+    if (points[i].value !== null) continue;
+    const start = i;
+    while (i + 1 < points.length && points[i + 1].value === null) i++;
+    const neighbours = [
+      points.slice(0, start).findLast((p) => p.value !== null),
+      points.slice(i + 1).find((p) => p.value !== null),
+    ].filter((p) => p !== undefined);
+    const middle = (pick: (p: (typeof points)[number]) => number) =>
+      neighbours.reduce((sum, p) => sum + pick(p), 0) / neighbours.length;
+    gaps.push({
+      years: points.slice(start, i + 1).map((p) => p.year),
+      x: neighbours.length > 0 ? middle((p) => p.x) : points[start].x,
+      y: neighbours.length > 0 ? middle((p) => p.y as number) : (plot.top + plot.bottom) / 2,
+    });
+  }
+
   return {
     plot,
     points,
     segments,
-    gaps: points.filter((p) => p.value === null).map((p) => p.year),
+    gaps,
+    zeroY: floor < 0 && ceiling > 0 ? y(0) : null,
     ticksY: ticks.map((value) => ({ value, y: y(value) })),
     ticksX: [first, years[Math.floor(years.length / 2)], last].map((year) => ({
       year,
       x: x(year),
     })),
   };
-}
-
-/** A gap note is drawn where the missing reading would have been: between its two neighbours. */
-function gapLabelY(points: { y: number | null }[], index: number): number {
-  const before = points.slice(0, index).findLast((p) => p.y !== null)?.y;
-  const after = points.slice(index + 1).find((p) => p.y !== null)?.y;
-  const known = [before, after].filter((y): y is number => y !== undefined);
-  return known.reduce((a, b) => a + b, 0) / known.length + 5;
 }
 
 /** Wrap on the measured width of the real string, never on a character count. */
@@ -172,7 +217,7 @@ export function ChartSeed({
       Math.max(...tickLabels.map((label) => measureText(label, AXIS))),
   };
 
-  const { plot, segments, points, ticksY, ticksX } = lineGeometry(data, {
+  const { plot, segments, gaps, ticksY, ticksX, zeroY } = lineGeometry(data, {
     width,
     height,
     padding,
@@ -248,23 +293,34 @@ export function ChartSeed({
         </text>
       ))}
 
-      {points.map((point, i) =>
-        point.value !== null ? null : (
-          // The break in the line is the fact; this only names it. It sits IN the hole, at the
-          // height of its neighbours — a full-height rule would shout louder than the subject,
-          // and a dashed bridge across the hole would read as data nobody measured.
-          <text
-            key={point.year}
-            x={point.x}
-            y={gapLabelY(points, i)}
-            fill={muted}
-            fontSize={12}
-            textAnchor="middle"
-          >
-            {`no data ${point.year}`}
-          </text>
-        ),
+      {zeroY === null ? null : (
+        <line
+          x1={plot.left}
+          x2={plot.right}
+          y1={zeroY}
+          y2={zeroY}
+          stroke={muted}
+          strokeWidth={1}
+        />
       )}
+
+      {gaps.map((gap) => (
+        // The break in the line is the fact; this only names it. It sits IN the hole, centred
+        // between the readings it separates — a full-height rule would shout louder than the
+        // subject, and a dashed bridge across the hole would read as data nobody measured.
+        <text
+          key={gap.years[0]}
+          x={gap.x}
+          y={gap.y + 5}
+          fill={muted}
+          fontSize={12}
+          textAnchor="middle"
+        >
+          {gap.years.length > 1
+            ? `no data ${gap.years[0]}–${gap.years[gap.years.length - 1]}`
+            : `no data ${gap.years[0]}`}
+        </text>
+      ))}
 
       {segments.map((run) => (
         <path

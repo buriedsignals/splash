@@ -58,8 +58,13 @@ selects a behaviour. That is the line between an input and a parameter.
 - The header is laid out first; the plot starts where the header stops. Nothing is positioned by a
   constant that "looked about right".
 - Both gutters are measured — see `static-discipline.md`.
-- The zero baseline is drawn in `muted`, the other gridlines in `grid`: zero is a fact, the others
-  are a reading aid, and they should not weigh the same.
-- The gap note sits IN the hole, at the height of its neighbours. The first draft put a full-height
-  dashed rule at the missing year with the label above the plot; rendered, it shouted louder than
-  the subject and read as a subtitle of the whole chart. Looking at the still is what caught it.
+- The scale is fitted to the readings, not anchored at zero — zero is a rule about marks read by
+  length (see `static-discipline.md`). When a series crosses zero the zero line IS drawn, in
+  `muted` rather than `grid`: there, zero is a fact and the other gridlines are a reading aid, and
+  they should not weigh the same.
+- The gap note sits IN the hole, centred between the two readings it separates — not on the missing
+  slot, which on unevenly spaced data is nowhere near the middle of the hole. A run of consecutive
+  missing readings collapses into one note (`no data 2016–2017`) rather than stacking notes on top
+  of each other. The first draft put a full-height dashed rule at the missing year with the label
+  above the plot; rendered, it shouted louder than the subject and read as a subtitle of the whole
+  chart. Looking at the still is what caught it — twice.

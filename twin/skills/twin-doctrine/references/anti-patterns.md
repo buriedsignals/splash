@@ -64,6 +64,17 @@ information required to read them correctly is not, and the graphic is asking to
 rather than showing its work. A truncated baseline in particular is not a "stylistic" shortcut —
 it changes what the graphic claims, and is why an honest baseline is not negotiable per element.
 
+**Zero is a rule about marks read by LENGTH — bars, columns, areas.** Halve a bar and you halve
+what it claims, so its axis starts at zero, always. A line is a different instrument: it encodes
+change by SLOPE, and anchoring a line at zero when its values sit far above zero flattens the very
+change the graphic is about. Rainfall running 604–912 mm drawn on a 0–1000 scale is a gentle sag
+under a headline that says it fell by a third — the graphic contradicting its own claim while
+looking scrupulous, which is worse than a truncation a reader can see. For a line the honest scale
+is one **fitted to the readings with every tick labelled**, so the span is stated and cannot be
+misread; a positive series never dips below zero, and a series that crosses zero always draws the
+zero line, because the sign change is the story. Applying the bar rule to a line is itself an
+anti-pattern, and it is a tempting one because it feels like the cautious choice.
+
 ## Accent colour on every mark
 
 Reserving the one semantic accent for the subject only works if it is actually reserved. A chart

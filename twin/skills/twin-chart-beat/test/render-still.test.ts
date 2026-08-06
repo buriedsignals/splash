@@ -69,6 +69,12 @@ describe("deriveFurniture", () => {
   });
 });
 
+const PLOT = {
+  width: 900,
+  height: 560,
+  padding: { top: 120, right: 160, bottom: 60, left: 70 },
+};
+
 describe("lineGeometry", () => {
   it("should break the line where a year is missing rather than drawing across the gap", () => {
     const geometry = lineGeometry(rainfall, {
@@ -77,16 +83,54 @@ describe("lineGeometry", () => {
       padding: { top: 120, right: 160, bottom: 60, left: 70 },
     });
     expect(geometry.segments.length).toBe(2);
-    expect(geometry.gaps).toEqual([2019]);
+    expect(geometry.gaps.map((gap) => gap.years)).toEqual([[2019]]);
   });
 
-  it("should keep the baseline honest by starting the scale at zero", () => {
-    const geometry = lineGeometry(rainfall, {
-      width: 900,
-      height: 560,
-      padding: { top: 120, right: 160, bottom: 60, left: 70 },
-    });
-    expect(geometry.ticksY[0].value).toBe(0);
+  it("should choose a scale that shows the change rather than flattening it", () => {
+    // A line encodes change by slope. Anchoring it at zero when the values sit far above zero
+    // draws a gentle sag under a title that says the rainfall fell by a third.
+    const geometry = lineGeometry(rainfall, PLOT);
+    const ys = geometry.points
+      .map((point) => point.y)
+      .filter((y): y is number => y !== null);
+    const traced = Math.max(...ys) - Math.min(...ys);
+    expect(traced / (geometry.plot.bottom - geometry.plot.top)).toBeGreaterThan(0.55);
+  });
+
+  it("should never take a series of positive values below zero", () => {
+    const geometry = lineGeometry([{ year: 2015, value: 5 }, { year: 2016, value: 100 }], PLOT);
+    expect(geometry.ticksY[0].value).toBeGreaterThanOrEqual(0);
+  });
+
+  it("should draw the zero line when the series crosses it", () => {
+    const crossing = lineGeometry([{ year: 2015, value: -40 }, { year: 2016, value: 60 }], PLOT);
+    expect(crossing.zeroY).not.toBeNull();
+    expect(lineGeometry(rainfall, PLOT).zeroY).toBeNull();
+  });
+
+  it("should centre a gap note between the readings it separates, not on the missing slot", () => {
+    // Unevenly spaced readings: the missing 2018 slot is nowhere near the middle of the hole.
+    const geometry = lineGeometry(
+      [{ year: 2015, value: 900 }, { year: 2018, value: null }, { year: 2025, value: 600 }],
+      PLOT,
+    );
+    const [before, , after] = geometry.points;
+    expect(geometry.gaps[0].x).toBeCloseTo((before.x + after.x) / 2, 6);
+    expect(geometry.gaps[0].x).not.toBeCloseTo(geometry.points[1].x, 0);
+  });
+
+  it("should collapse a run of missing readings into a single note", () => {
+    const geometry = lineGeometry(
+      [
+        { year: 2015, value: 900 },
+        { year: 2016, value: null },
+        { year: 2017, value: null },
+        { year: 2018, value: 600 },
+      ],
+      PLOT,
+    );
+    expect(geometry.gaps.length).toBe(1);
+    expect(geometry.gaps[0].years).toEqual([2016, 2017]);
   });
 });
 

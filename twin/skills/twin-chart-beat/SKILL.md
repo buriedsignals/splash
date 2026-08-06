@@ -49,10 +49,11 @@ measures 3.95:1. A mid-grey newsroom ground is exactly where the obvious rule is
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/static-discipline.md` | The rules a static beat is written under — one accent, derived furniture, honest baseline, sparse ticks, measured gutters, gaps shown not bridged, no root `<title>` |
+| Doctrine | `references/static-discipline.md` | The rules a static beat is written under — one accent, derived furniture, an honest scale (zero is a rule about bars, not about lines), sparse ticks, measured gutters, gaps shown not bridged, no root `<title>` |
 | Doctrine | `references/seed-anatomy.md` | What the seed teaches and what it refuses to become |
 | Seed | `assets/ChartSeed.tsx` | One beat, written out: `lineGeometry` (pure), `yTickValues` (pure), and the component. Replaced per story |
 | Sample | `assets/sample-data/rainfall.json` | Eleven readings, one of them genuinely missing, so the seed has to show how a hole is handled |
+| Preview | `assets/preview.png` | The seed rendered on a light ground — what this skill produces, without running it |
 | Render | `scripts/render-still.mjs` | `deriveFurniture`, `contrast`, `measureText`, `renderStill` |
 
 `scripts/render-still.mjs` is the twin's one script with dependencies — `react-dom/server` and
@@ -118,6 +119,7 @@ const { svgPath, pngPath } = await renderStill({
 | The margin around everything | `40` (`PAD`) | `ChartSeed.tsx` |
 | Title size and line spacing | `26` / `34` | `TITLE`, `ChartSeed.tsx` |
 | How many y ticks are read | `3` (floor, middle, top) | `yTickValues`, `ChartSeed.tsx` |
+| Air kept above and below the readings when fitting the scale | `0.15` of the span | `yTickValues`, `ChartSeed.tsx` |
 | The air between the end label and the plot | `10` px, on top of a measured gutter of `12` | `ChartSeed.tsx` |
 | Readings below which the beat refuses to draw | `2` | `ChartSeed.tsx` |
 
@@ -127,7 +129,10 @@ const { svgPath, pngPath } = await renderStill({
 - `references/seed-anatomy.md` — what the seed teaches, and what adding a prop to it would cost.
 - `assets/ChartSeed.tsx` — the seed. `lineGeometry` and `yTickValues` are pure and exported.
 - `assets/sample-data/rainfall.json` — eleven readings, one missing.
+- `assets/preview.png` — the seed rendered on a light ground, so a reader of this skill sees what
+  it produces without running anything. Regenerate it whenever the seed changes.
 - `scripts/render-still.mjs` — `deriveFurniture`, `contrast`, `measureText`, `renderStill`.
 - `test/render-still.test.ts` — `bun:test` coverage: the ink pole on a mid grey, the muted contrast
-  floor on six grounds, the gap that breaks the line, the honest zero, the closed palette, the
+  floor on six grounds, the gap that breaks the line, the fitted scale and its zero floors, the
+  gap note centred between the readings it separates, the closed palette, the
   measured gutter under a name long enough to break a constant, and the alt text as `<desc>`.
