@@ -281,6 +281,49 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+## ★ État courant — 2026-08-06 (nuit) — TOUTE VIDÉO DE GRAPHIQUE PORTE LES MOTS DE SA MARCHE
+
+Spec `docs/superpowers/specs/2026-08-06-every-chart-video-carries-its-words-design.md`, plan
+`.../plans/2026-08-06-every-chart-video-carries-its-words.md` (8 tâches), branche
+`feat/chart-video-walk-everywhere` **fusionnée dans `main`**.
+
+**Le trou** : sur 41 types de graphiques, **un seul** (`bar`) pouvait porter une marche. Les 40
+autres n'offraient qu'un genre → une offre n'est pas une question → **le genre n'était jamais
+demandé et aucun storyboard proposé**. Cause : on avait confondu AFFICHER la phrase du beat et
+RÉORDONNER l'entrée des sujets ; seul le premier est le critère du garde.
+
+**Deux grains, tous les deux honnêtes et tous les deux DITS au journaliste** (registre
+`skills/chart-native/src/core/chart-walk.ts`, couvrant les 41) :
+- **ancré** (7 types : bar, diverging, lollipop, dumbbell, slope, radial-bar, pyramid) — le sujet
+  entre au moment de sa phrase, dans l'ordre du journaliste ;
+- **séquencé** (34) — les phrases se suivent dans l'ordre écrit, sur l'animation telle qu'elle est.
+  Leurs beats n'ont **pas d'ancre** : une ancre y est refusée fort (jamais acceptée puis ignorée).
+
+Le calendrier d'entrée est **lu** du registre par les composants (plus de littéraux à faire
+dériver) ; les 41 enveloppes vidéo passent par `RevealStage` ; `WALK_CAPABLE_CHART_TYPES` est
+dérivé du registre ; `narrativeBeatErrors` connaît la surface (scrolly inchangé / vidéo par grain,
+ancre résolue par le champ propre au type) et **la colonne vertébrale l'appelle enfin sur le chemin
+vidéo**, ce qu'elle ne faisait pas.
+
+**★ Ce que seule la preuve rendue a montré** (`docs/splash/proofs/2026-08-06-chart-video-walk/`) :
+1. **`beats` n'arrivait JAMAIS jusqu'à la config du composant** — aucun mapper ne les copiait, donc
+   la marche était écrite, validée, puis jetée entre la spec et le rendu. Ça emportait aussi le
+   réordonnancement de `bar` livré le matin même. Les deux mécanismes n'avaient été éprouvés que
+   contre une config écrite à la main. Threadé au point d'injection unique (comme lang/altInsight).
+2. **Le récit passait dans l'ordre des données** — `establish` en deuxième — car seul `bar`
+   permutait. Tous les types ancrés permutent désormais, et la permutation se construit sur les
+   **libellés MIS EN PAGE** (la géométrie du lollipop trie par valeur : un ordre sur les lignes non
+   triées vise des positions jamais rendues).
+   ⇒ **Invariant** : le sujet du beat k entre en position k. La légende ne résout plus aucun sujet
+   (deux versions antérieures le faisaient, les deux étaient fausses).
+
+**Conséquence assumée** : une vidéo de graphique sans `narrativeKind` est refusée (message routé).
+
+**⚠️ Gate 20/23 à la fusion — les 3 rouges sont EXTERNES et identiques sur `main`** : la clé
+MapTiler du `.env` répond **`403 Invalid key`**. Tout ce qui touche les tuiles échoue (`lib`,
+`skills/scrolly`, `skills/map-native` produce). `skills/splash` + `skills/chart-native` = 2571/0.
+**À FAIRE (Rémy) : régénérer la clé MapTiler**, puis re-runner le gate.
+
 ## ★ État courant — 2026-08-06 (soir) — LE GENRE NARRATIF D'UNE VIDÉO EST PROPOSÉ (fusionné, gate 23/23)
 
 Spec `docs/superpowers/specs/2026-08-06-the-narrative-kind-is-proposed-design.md`, plan
