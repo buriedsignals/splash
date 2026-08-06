@@ -1607,15 +1607,34 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Write the minimal implementation**
 
+**Correction (caught in implementation review):** the naive `row.split("|")` shown below
+mis-parses any cell that legitimately needs a literal pipe, written as the standard markdown
+escape `\|` — the raw split treats the escaped pipe as an extra column boundary, shifting every
+following cell. On a lesson cell this silently truncates real content, which can turn a genuinely
+substantive lesson into a false `"lesson is too thin"` rejection (or, coincidentally, a false
+accept on the truncated remainder). `splitRow` below splits on unescaped pipes only
+(`/(?<!\\)\|/`) and un-escapes `\|` back to `|` in the resulting cells, so escaped-pipe content
+survives intact. All five specified tests pass unchanged with this fix — it only changes behaviour
+on the escaped-pipe case the original tests do not exercise.
+
 ```js
 // twin/skills/twin-doctrine/scripts/check-reference-set.mjs
 // A reference without a link, a timecode and a lesson is decoration.
+
+// Splits a markdown table row on unescaped pipes, so a cell that needs a
+// literal "|" (written as the standard markdown escape "\|") is not itself
+// mistaken for an extra column boundary — a naive `row.split("|")` shifts
+// every following cell, and can turn a real, well-formed lesson into a
+// false "too thin" rejection (or worse, a false accept on truncated text).
+function splitRow(row) {
+  return row.split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, "|"));
+}
 
 export function checkReferenceSet(markdown) {
   const errors = [];
   const rows = markdown.split("\n").filter((line) => line.startsWith("|") && !/^\|\s*:?-+/.test(line));
   rows.slice(1).forEach((row, index) => {
-    const [, reference = "", moment = "", lesson = ""] = row.split("|").map((cell) => cell.trim());
+    const [, reference = "", moment = "", lesson = ""] = splitRow(row);
     const label = `reference ${index + 1}`;
     if (!/\]\(https?:\/\/\S+\)/.test(reference)) errors.push(`${label}: no link`);
     if (!/\d+:\d{2}/.test(moment)) errors.push(`${label}: no timecode`);
@@ -1630,7 +1649,7 @@ export function checkReferenceSet(markdown) {
 - `editorial-standard.md` — every visible layer must encode data, supply context, establish hierarchy, support verification, or direct attention; if removing a layer does not reduce comprehension, remove it. Visual interest comes from sequencing, comparison, annotation and the arrival of evidence, never from ornament.
 - `visual-system.md` — flat field; neutral colours for history and comparison; **one semantic accent** reserved for the subject; flat fills, gradients only when they encode quantity; endpoint labels and direct annotation over detached legends; **all furniture derived from the newsroom ground, never a hard-coded colour**; contrast measured on the real background, with escalation to the pure pole on the mid-grey band.
 - `anti-patterns.md` — decoration that encodes nothing; fake texture, glassmorphism, dashboard chrome; gradients without quantitative meaning; repeated years or values; detached legends; tiny footer sources; missing scale, unit, source or honest baseline; accent colour on every mark; a title that claims more than the source; copying a reference's styling instead of its information logic.
-- `reference-set.md` — at least six rows, each with a real link, a timecode, and the transferable lesson.
+- `reference-set.md` — at least six rows, each with a real link, a timecode, and the transferable lesson. Shipped with seven: Hans Rosling's TED talk (Gapminder bubble animation), Alan Smith's TED talk (sorted-bar extremes; isotype pictogram, two rows), NYT Visual Investigations' Breonna Taylor reconstruction, Vox Atlas's Kashmir explainer, Kurzgesagt's coronavirus explainer, and David McCandless's TED talk (proportional-area comparison) — each link, timecode and quoted moment verified against the real video's own captions before shipping, not guessed at.
 
 - [ ] **Step 5: Run the test and confirm it passes**
 
