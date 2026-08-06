@@ -94,7 +94,8 @@ Pop-Location
 # part of the same delivered tree (mirrors bootstrap.sh, which bundles it into the same step).
 # This runs BEFORE the setup page (step 6) for two reasons: the page MEASURES this tree — a page
 # opened first reports every in-house engine as missing (chart-native/map-native included, whose
-# readiness probe is a filesystem stat for the extracted Playwright browser) — and a failure here
+# readiness probe reads a Remotion-only cache — Playwright's chromium here is only for the
+# static-render screenshots, docs/installer/remotion-cache-measurement.md) — and a failure here
 # must stop the install before anyone fills in a form for a tree that will not work. It also runs
 # before step 7, whose Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
 Write-Host "-> Packaging the skills…"

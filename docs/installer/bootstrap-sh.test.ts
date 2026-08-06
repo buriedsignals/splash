@@ -211,10 +211,11 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
 
 // The page measures the tree; the tree must therefore exist. Packaging and installing after the
 // page is what made it report four healthy engines as missing on every real install. The browser
-// download is part of that same tree — chart-native/map-native's readiness probe is a filesystem
-// stat for the extracted Playwright browser — so it must land before the page too, not just
-// pack-skills; a script that moved only the packaging call back after the page would still fail
-// this test via the chromium leg.
+// download is part of that same tree — Playwright's chromium is what the static-render
+// screenshots use (the readiness probe and the video render read a different, Remotion-only
+// cache: docs/installer/remotion-cache-measurement.md) — so it must land before the page too, not
+// just pack-skills; a script that moved only the packaging call back after the page would still
+// fail this test via the chromium leg.
 test("packages and installs BEFORE opening the setup page", () => {
   const pack = sh.indexOf("bun run pack-skills");
   const chromium = sh.indexOf("playwright install chromium");
