@@ -1,0 +1,41 @@
+{
+  "mp4": "output-proof/landscape/flyover.mp4",
+  "still": "output-proof/landscape/still-frame-360.png",
+  "finalStill": null,
+  "stillFrame": 360,
+  "probe": {
+    "sizeBytes": 8643844,
+    "width": 1280,
+    "height": 720,
+    "durationSeconds": 24,
+    "nbFrames": 720,
+    "fps": 30
+  },
+  "expected": {
+    "frames": 720,
+    "width": 1280,
+    "height": 720
+  },
+  "thresholds": {
+    "REVEAL_MIN_MEAN_DIFF": 0.5,
+    "PROGRESSION_MIN_MEAN_DIFF": 0.15,
+    "MIN_LUMA_VARIANCE": 10,
+    "STILL_MATCH_CHANNEL_TOLERANCE": 40,
+    "STILL_MATCH_MAX_DIFF_RATIO": 0.01,
+    "DURATION_TOLERANCE_FRAMES": 1,
+    "MIN_MP4_BYTES": 2048
+  },
+  "measurements": {
+    "mp4Bytes": 8643844,
+    "durationFrames": 720,
+    "variance_early": 3125.054570569223,
+    "variance_mid": 4477.577561171572,
+    "variance_late": 3205.2188423856087,
+    "variance_final": 3186.37725343326,
+    "revealMeanDiff": 40.561869936342596,
+    "midVsEarlyMeanDiff": 43.601533203125,
+    "midVsFinalMeanDiff": 45.289150390625,
+    "stillDiffRatio": 0.0007345920138888889
+  },
+  "violations": []
+}

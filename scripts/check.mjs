@@ -32,7 +32,7 @@ const LIB_DIRS = readdirSync("lib", { withFileTypes: true })
   .sort();
 const BROWSER_SUITE = "lib/verify";
 
-const TSC_DIRS = ["lib", "skills/splash", "skills/chart-native", "skills/map-native", "skills/scrolly", "skills/image-native", "skills/dw-chart", "skills/map-dw", "install"];
+const TSC_DIRS = ["lib", "skills/splash", "skills/chart-native", "skills/map-native", "skills/cesium-flyover", "skills/scrolly", "skills/image-native", "skills/dw-chart", "skills/map-dw", "install"];
 
 const TEST_DIRS = [
   // Everything under lib EXCEPT the browser suite, in one process…
@@ -42,6 +42,7 @@ const TEST_DIRS = [
   "skills/dw-chart",
   "skills/chart-native",
   "skills/map-native",
+  "skills/cesium-flyover",
   "skills/scrolly",
   "skills/image-native",
   "skills/map-dw/eval",
