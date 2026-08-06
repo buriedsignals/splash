@@ -33,29 +33,26 @@ export type StageConfig = {
 /**
  * WHICH CLOCK this type's caption follows — read from the walk registry, never guessed.
  *
- * An anchored type has a per-subject entrance the sentence can ride; a sequenced one has not, and
- * its beats share the timeline in equal parts. Passing the wrong clock is the two-clock defect
- * this file's own header warns about, so it is answered once, here, from the same registry the
- * component drives its stagger from.
+ * An anchored type has a per-subject entrance the sentence rides; a sequenced one has not, and its
+ * beats share the timeline in equal parts. The anchored clock needs only the ENTRANCE and how many
+ * subjects share it: beat k's subject enters at position k, because every anchored type permutes
+ * its entrance into the walk's order (`walkEntryOrder`).
+ *
+ * ★ IT USED TO RESOLVE EACH BEAT'S SUBJECT through `config.rows`, and a rendered frame showed why
+ * that was wrong: a lollipop's geometry SORTS its rows, so the index the caption computed was not
+ * the position the component staggered on, and the sentence sat on another subject. Nothing but a
+ * frame could have caught it.
  */
 export function captionClock(
   nativeType: string | undefined,
   config: StageConfig,
 ): CaptionClock {
   const walk = nativeType ? chartWalk(nativeType) : undefined;
-  if (!walk || walk.grain !== "anchored" || !walk.anchorField)
-    return { grain: "sequenced" };
-  // The field naming the subjects differs per type (`catField`, `labelField`, `categoryField`,
-  // `bandField`…), so it is read off the registry and looked up dynamically. Structural typing
-  // cannot express "whichever key this type declares" without an index signature that would stop
-  // every real chart Config from being assignable here.
-  const field = walk.anchorField;
-  const rows = config.rows ?? [];
+  if (!walk || walk.grain !== "anchored") return { grain: "sequenced" };
   return {
     grain: "anchored",
-    anchors: rows.map((r) => String(r[field] ?? "")),
     entrance: entranceOf(nativeType!),
-    reorder: walk.reorders === true,
+    count: (config.rows ?? []).length,
   };
 }
 

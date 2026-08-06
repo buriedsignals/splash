@@ -18,6 +18,7 @@ import {
 } from "./diverging-bar-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
 import { entranceOf } from "./core/chart-walk";
+import { walkEntryOrder, type ConfigWalkBeats } from "./core/walk";
 import {
   COLORS,
   FONT,
@@ -47,6 +48,11 @@ export interface DivergingBarConfig {
    *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
   baseColor?: string;
   rows: Record<string, string | number>[];
+
+  /** The journalist's confirmed walk, when this element carries one. Present ⇒ the subjects
+   *  enter in ITS order and the video caption shows each step's sentence. Absent ⇒
+   *  unchanged, byte for byte. */
+  beats?: ConfigWalkBeats;
 }
 
 export interface DivergingBarChartProps {
@@ -209,7 +215,15 @@ function DivergingSvg({
   // The entrance schedule is READ from the walk registry, never retyped here: the video
   // caption reads the same one, and two copies of it is a sentence over the wrong subject.
   const E = entranceOf("diverging");
-  const barP = (i: number) => stagger(p, i, n, E.start, E.step(n), E.span);
+  // The confirmed walk leads: the subjects the journalist named enter first, in their order.
+  // Built from the LAID-OUT labels, not from `config.rows` — this geometry sorts, and a
+  // permutation over the unsorted rows addresses positions the component never renders.
+  // Identity without a walk, so an un-storyboarded chart is byte-identical.
+  const entry = walkEntryOrder(
+    bars.map((r) => r.rawCat),
+    config.beats,
+  );
+  const barP = (i: number) => stagger(p, entry(i), n, E.start, E.step(n), E.span);
 
   return (
     <svg

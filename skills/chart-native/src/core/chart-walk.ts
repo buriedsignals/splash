@@ -42,7 +42,10 @@ export type ChartWalk = {
   /** The Config field whose value each beat's `category` names. Anchored only. */
   anchorField?: string;
   entrance?: Entrance;
-  /** Does the component PERMUTE its entrance into the walk's order? `bar` alone, today. */
+  /** Does the component PERMUTE its entrance into the walk's order? True for every anchored
+   *  type since 2026-08-06: the first rendered proof of a non-bar walk played the sentences in
+   *  the DATA's order — establish second, payoff first — because only `bar` permuted. A walk
+   *  whose steps arrive out of order is not a walk. */
   reorders?: boolean;
   /** Why this type is where it is — measured, and sayable to a journalist. */
   why: string;
@@ -73,11 +76,8 @@ const anchored = (
   component,
   anchorField,
   entrance,
-  why:
-    "each subject enters at the moment of its own sentence, in the order you choose" +
-    (extra?.reorders
-      ? ""
-      : " (its entrance keeps the data's order; the sentence follows it)"),
+  reorders: true,
+  why: "each subject enters at the moment of its own sentence, in the order you choose",
   ...extra,
 });
 
@@ -92,12 +92,7 @@ const sequenced = (why: string): ChartWalk => ({ grain: "sequenced", why });
  */
 export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
   // --- ANCHORED: a per-subject entrance indexed by the subject's own row, and a field naming it.
-  bar: anchored("BarChart", "catField", BAR_FAMILY, {
-    reorders: true,
-    why:
-      "each subject enters at the moment of its own sentence, and the walk REORDERS the entrance " +
-      "into your order — the subjects you name come first",
-  }),
+  bar: anchored("BarChart", "catField", BAR_FAMILY),
   diverging: anchored("DivergingBarChart", "catField", BAR_FAMILY),
   lollipop: anchored("LollipopChart", "catField", BAR_FAMILY),
   "radial-bar": anchored("RadialBarChart", "categoryField", {

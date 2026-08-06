@@ -204,9 +204,8 @@ describe("captionAt — the sentence on screen", () => {
   // `bar`'s own clock: its entrance, and the permutation only it performs.
   const BAR_CLOCK = {
     grain: "anchored" as const,
-    anchors: CATS,
     entrance: BAR_ENTRANCE,
-    reorder: true,
+    count: CATS.length,
   };
 
   it("names the beat whose bar is entering, not the subject at that index", () => {
@@ -261,40 +260,38 @@ describe("captionAt — the sentence on screen", () => {
 // ---------------------------------------------------------------------------
 import { entranceOf } from "../src/core/chart-walk";
 
-describe("captionAt — the anchored clock of a type that does NOT reorder", () => {
+describe("captionAt — the anchored clock is the WALK's order, not the data's", () => {
   const CATS = ["Central", "Riverside", "Hilltop", "Eastgate", "Westpark"];
   const beats = [
     { category: "Westpark", text: "Westpark ouvre la marche." },
     { category: "Central", text: "Central ferme." },
   ];
-  const clock = (reorder: boolean) => ({
+  const clock = {
     grain: "anchored" as const,
-    anchors: CATS,
     entrance: entranceOf("lollipop"),
-    reorder,
-  });
+    count: CATS.length,
+  };
 
-  it("follows the DATA order — Westpark's sentence lands when Westpark's own row enters", () => {
+  // ★ THE INVARIANT: beat k's subject enters at position k, because every anchored type permutes
+  // its entrance (`walkEntryOrder`). So the k-th window is the k-th sentence, and the caption
+  // resolves no subject at all. The version that resolved one read `config.rows` — not the order
+  // a sorting component renders — and only a rendered frame showed it.
+  it("the k-th window carries the k-th sentence — Westpark opens because the walk opens on it", () => {
     const E = entranceOf("lollipop");
-    // Westpark is row 4. Without a permutation its entrance is the fifth window, near the end.
-    const westparkEnters = E.start + 4 * E.step(CATS.length) + 1e-4;
-    expect(captionAt(beats, clock(false), westparkEnters)!.text).toBe(
+    expect(captionAt(beats, clock, E.start + 1e-4)!.text).toBe(
       "Westpark ouvre la marche.",
     );
-    // …and at the very first window it is CENTRAL (row 0) that is entering, so Central's own
-    // sentence is the one on screen — not the walk's opening beat.
-    const firstWindow = E.start + 1e-4;
-    expect(captionAt(beats, clock(false), firstWindow)!.text).toBe(
-      "Central ferme.",
-    );
+    expect(
+      captionAt(beats, clock, E.start + E.step(CATS.length) + 1e-4)!.text,
+    ).toBe("Central ferme.");
   });
 
-  it("…and the reordering clock says the opposite, which is why it must not be assumed", () => {
-    const E = entranceOf("lollipop");
-    const firstWindow = E.start + 1e-4;
-    expect(captionAt(beats, clock(true), firstWindow)!.text).toBe(
-      "Westpark ouvre la marche.",
-    );
+  it("holds the closing sentence through the un-walked subjects' entrance", () => {
+    expect(captionAt(beats, clock, 1)!.text).toBe("Central ferme.");
+  });
+
+  it("announces the opening sentence before the first window", () => {
+    expect(captionAt(beats, clock, 0)!.text).toBe("Westpark ouvre la marche.");
   });
 });
 

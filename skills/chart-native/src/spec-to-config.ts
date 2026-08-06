@@ -984,6 +984,19 @@ export function specToNativeConfig(spec: NativeSpec): {
     typeof out.config.source === "object"
   )
     (out.config.source as { kind?: SourceKind }).kind = spec.sourceKind;
+  // ★ THE CONFIRMED WALK, threaded onto EVERY produced config — and it was threaded onto NONE.
+  //
+  // The video caption stage reads `config.beats`, and so does BarChart's entrance reorder. No
+  // mapper ever copied them, so a spec carrying a journalist's storyboard produced a config with
+  // none: the sentences were written, validated, and then dropped between the spec and the
+  // render. Exactly the defect the whole beats seam exists to prevent, sitting inside the code
+  // built to prevent it — invisible because both mechanisms were only ever proven against a
+  // hand-built config, never against a real spec.
+  //
+  // Single injection point, like lang/subject/altInsight: 41 mappers cannot each be trusted to
+  // remember. Only set when present, so a spec with no walk produces a byte-identical config.
+  if (Array.isArray(spec.beats) && spec.beats.length > 0)
+    out.config.beats = spec.beats;
   return out;
 }
 
