@@ -43,6 +43,12 @@ describe("the page is a real file, not a template literal", () => {
       expect(CSS).toContain(`.pill-${tone}`);
   });
 
+  // The read-only view of an existing profile needs a style of its own; without it the values fall
+  // back to the form's field spacing and read as editable, which they are not.
+  it("styles the profile read-out", () => {
+    expect(CSS).toContain(".profile-readout");
+  });
+
   // Fix round 1, Finding 2: engine rows now sit inside a .want block behind their heading, so the
   // first row there is never plain :first-child (the h3 is) — .capability:first-child alone went
   // dead for them, leaving a stray border under every heading. This is the rule that reaches it.

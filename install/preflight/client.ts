@@ -317,6 +317,33 @@ function renderNewsroom(copy: PageCopy): void {
   body.replaceChildren();
   if (model.profileExists) {
     body.append(el("p", { class: "shared-note" }, copy.profileOwned));
+    const p = model.profile;
+    if (!p) return; // a file that declares nothing readable — the sentence is the whole answer
+    const readout = el("div", { class: "profile-readout" });
+    const row = (label: string, value: string) => {
+      const r = el("div", { class: "profile-row" });
+      r.append(el("span", { class: "profile-label" }, label));
+      r.append(el("span", { class: "profile-value" }, value));
+      readout.append(r);
+    };
+    if (p.name) row(copy.newsroomName, p.url ? `${p.name} — ${p.url}` : p.name);
+    if (p.palette?.length) {
+      const r = el("div", { class: "profile-row" });
+      r.append(el("span", { class: "profile-label" }, copy.newsroomColor));
+      const swatches = el("span", { class: "profile-value" });
+      for (const hex of p.palette) {
+        const dot = el("span", { class: "swatch" });
+        dot.style.background = hex;
+        dot.title = hex;
+        swatches.append(dot);
+      }
+      swatches.append(el("span", { class: "swatch-hex" }, p.palette[0]!));
+      r.append(swatches);
+      readout.append(r);
+    }
+    if (p.lang) row(copy.languageContent, p.lang);
+    if (p.theme) row(copy.profileGround, p.theme);
+    body.append(readout);
     return;
   }
   body.append(

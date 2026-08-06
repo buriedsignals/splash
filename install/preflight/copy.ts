@@ -31,6 +31,7 @@ export type PageCopy = {
   newsroomUrl: string;
   newsroomColor: string;
   profileOwned: string;
+  profileGround: string;
 
   languageTitle: string;
   languageHint: string;
@@ -90,6 +91,7 @@ const EN: PageCopy = {
   newsroomColor: "House colour",
   profileOwned:
     "You already have a newsroom profile. It is yours to edit — Splash will not rewrite it. Open NEWSROOM-PROFILE.md to change the house style or the language of your visuals.",
+  profileGround: "House ground",
 
   languageTitle: "Language",
   languageHint:
@@ -158,6 +160,7 @@ const FR: PageCopy = {
   newsroomColor: "Couleur maison",
   profileOwned:
     "Vous avez déjà un profil de rédaction. Il vous appartient — Splash ne le réécrira pas. Ouvrez NEWSROOM-PROFILE.md pour changer le style maison ou la langue de vos visuels.",
+  profileGround: "Fond maison",
 
   languageTitle: "Langue",
   languageHint:
