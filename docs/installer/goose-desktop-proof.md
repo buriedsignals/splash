@@ -655,6 +655,52 @@ preuve qui manquait : un garde qu'on ne peut pas satisfaire honnêtement pousse 
 écrire « B1 est vert » serait précisément le geste qu'E19 et E20 viennent de fermer chez le modèle.
 `verified` reste `false` jusqu'à ce qu'un hôte fasse les six critères dans un run.
 
+## Tentative du 2026-08-06 — la vraie cause du « 400 », et une quatrième forme d'improvisation
+
+**Le 400 n'était ni la session, ni l'image, ni la capacité du modèle.** Trois sondes directes l'ont
+écarté avant de conclure : appels d'outils seuls ✔, image seule ✔, **outils + image ensemble** ✔ sur
+le même modèle gratuit. Le corps réel de l'erreur ne s'obtient qu'en lisant
+`~/.local/state/goose/logs/cli/<date>/*.log` — l'écran de Goose n'en montre rien :
+
+```
+Google AI Studio → 429  « temporarily rate-limited upstream »
+        ↓ bascule automatique d'OpenRouter vers le provider secondaire
+Darkbloom        → 400  « auto tool schema uses unsupported assertions
+                          or reserved metadata »
+```
+
+**OpenRouter reroute quand le provider principal sature, et le secondaire refuse le schéma d'outils
+de Goose.** Le symptôme se présente comme un problème de modèle ; c'en est un de routage. Remède :
+choisir un modèle servi par **un seul** provider — `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`
+et `nvidia/nemotron-nano-12b-v2-vl:free` répondent tous deux `provider=Nvidia`, acceptent le schéma
+d'outils **et** l'image. Sur eux, plus aucun 400.
+
+**Ce que le run a alors montré.** Le 30B **charge `splash-export`** et **délègue** au skill — la
+phase s'ouvre correctement. Puis, au lieu d'appeler `export-code.mjs`, il **écrit un fichier texte
+nommé `export-annemasse-budget-personnel`, contenant son propre nom**, et le réécrit une vingtaine
+de fois jusqu'à épuisement du palier journalier. L'exporteur n'a jamais été appelé.
+
+C'est la **quatrième forme distincte** d'improvisation observée sur ce chemin, et la liste vaut
+d'être lue d'un bloc, parce qu'elle dit ce qu'un garde de colonne vertébrale peut et ne peut pas :
+
+| Date | Ce que le modèle a fabriqué | Ce qui l'a attrapé |
+|---|---|---|
+| 2026-08-03 | un graphique dessiné dans le chat, aucun fichier | rien dans le dépôt — d'où E11 |
+| 2026-08-04 | son propre producteur (`/tmp/produce-chart.ts`) | le registre de session, a posteriori |
+| 2026-08-05 | le PNG copié à la main dans `exports/`, après deux refus du gate | `verify-delivery.mjs` |
+| 2026-08-06 | un **fichier** dont le NOM ressemble à un dossier de livraison | `assertDelivered` (jamais appelé) + le reçu absent |
+
+**Une chance, pas un dispositif, et il faut le dire.** Ma condition d'arrêt globait `*-export` ; la
+fabrication s'appelait `export-*`. Elle n'a donc pas produit de faux « livré » — mais par la forme
+du glob, pas par une garde. Un nom une lettre plus proche et j'aurais lu « livré » sur du vide.
+Le contrôle qui, lui, ne dépend pas de la chance est le reçu `.splash-export.json` d'E19 : il n'est
+écrit que par `assertDelivered`, et son absence est le tell.
+
+**`verified` reste `false`.** Cinq critères sur six sont satisfaits par l'état sur disque
+(`renderApproved`, `_shown`, `approvedHash` = sha256 réel, `publicUrl` présent au produce) ; seul
+l'appel `export-code.mjs` manque. Palier journalier OpenRouter re-épuisé (50/jour, remise à zéro à
+18 h locales). **Toujours pas lancé à la main** — pour la raison écrite plus haut.
+
 ---
 
 ## À QUI ce document fait crédit — précision du 2026-08-05
