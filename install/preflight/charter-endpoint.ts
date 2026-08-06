@@ -265,11 +265,20 @@ export type CharterState =
  * own "enter your website address first", so an empty field answered with that sentence AND an
  * offer to open the empty address in a real browser, which fails in exactly the same way. An
  * error from a read that never happened is not a read that found nothing.
+ *
+ * That rule holds on BOTH branches, and at first it was written on only one. Clearing the address
+ * field and clicking the render offer refused client-side with `mode:"rendered", attempted:false`
+ * — the identical case, on the identical sentence, with the offer left standing. The condition is
+ * therefore stated once per branch rather than once for the static one: `attempted` gates every
+ * error, whichever read raised it.
  */
 export function offersRenderRetry(state: CharterState): boolean {
   if (state.status === "idle") return false;
   if (state.mode === "rendered")
-    return state.status === "loading" || state.status === "error";
+    return (
+      state.status === "loading" ||
+      (state.status === "error" && state.attempted)
+    );
   return (
     (state.status === "done" && state.readout.palette.length === 0) ||
     (state.status === "error" && state.attempted)

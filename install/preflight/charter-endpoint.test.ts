@@ -460,6 +460,20 @@ describe("the browser retry is offered only after a read that actually happened"
     ).toBe(false);
   });
 
+  // The same shape as the static-branch finding above, surviving on the other branch: the
+  // journalist clears the address field, clicks « Essayer en ouvrant la page », is told to enter
+  // an address — and the offer to open that empty address in a browser is still standing.
+  test("not when the RENDERED branch refused on its own either", () => {
+    expect(
+      offersRenderRetry({
+        status: "error",
+        message: "Enter your website address first.",
+        mode: "rendered",
+        attempted: false,
+      }),
+    ).toBe(false);
+  });
+
   test("stays up while the render runs and if it fails, and goes once it has answered", () => {
     expect(offersRenderRetry({ status: "loading", mode: "rendered" })).toBe(
       true,
