@@ -288,6 +288,14 @@ details.tech code {
   padding-top: 0;
 }
 
+/* The engine rows sit inside a .want block now, behind their heading — so the first row there is
+   never :first-child (the h3 is). This is that same "no border right under the heading" rule for
+   the nested case; :first-child above still covers the flat delivery list, which has no heading. */
+.want-title + .capability {
+  border-top: 0;
+  padding-top: 0;
+}
+
 .capability-head {
   display: flex;
   align-items: center;

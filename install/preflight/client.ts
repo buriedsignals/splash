@@ -13,10 +13,10 @@ import {
   type LanguageOption,
   type PageCopy,
 } from "./copy.ts";
+import { groupEnginesByWant } from "./group-by-want.ts";
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
-import type { WantId } from "../../lib/newsroom/capabilities.ts";
 
 type FormState = {
   uiLang: string;
@@ -185,7 +185,11 @@ function capabilityRow(
       : form.enabled.has(capability.id);
 
   const label = el("label", { for: inputId });
-  label.append(input, capability.label);
+  // The row's OWN caption when the registry gives it one (an engine, under its want heading) —
+  // every other reader of a capability's name wants `label` instead (readiness.ts, the blocker
+  // line below, skills/splash's ENGINE_LABELS): reusing a caption there is what broke those
+  // sentences (fix round 1, Finding 1).
+  label.append(input, capability.choice ?? capability.label);
   head.append(label);
   const status = el("span", { class: "spacer" });
   head.append(status);
@@ -435,25 +439,29 @@ function renderCapabilities(copy: PageCopy): void {
   const engines = section("capabilities");
   engines.name.textContent = copy.capabilitiesTitle;
   engines.hint.textContent = copy.capabilitiesHint;
-  // Group by want, in the order each want first appears in the registry — the want leads, the
-  // tool underneath stays its own choosable checkbox (the project owner's explicit "do not
-  // collapse the two engines of a want into one").
-  const groups = new Map<string, PreflightCapability[]>();
-  for (const c of model.engines) {
-    const key = c.want ?? "";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(c);
-  }
-  const blocks: HTMLElement[] = [];
-  for (const [want, caps] of groups) {
-    const block = el("div", { class: "want" });
-    if (want)
-      block.append(
-        el("h3", { class: "want-title" }, copy.wants[want as WantId] ?? want),
-      );
-    for (const c of caps) block.append(capabilityRow(c, copy, "checkbox"));
-    blocks.push(block);
-  }
+  // The want leads, the tool underneath stays its own choosable checkbox (the project owner's
+  // explicit "do not collapse the two engines of a want into one"). The grouping itself is
+  // group-by-want.ts's groupEnginesByWant (pure, tested there — client.ts has no DOM test
+  // harness); this only turns its result into DOM nodes. It lives in its own file rather than
+  // model.ts because this IS a value import (unlike the type-only ones above), and model.ts's
+  // module graph is server-only (readiness.ts's node:url) — pulling it in breaks the browser
+  // bundle Bun.build produces for this file.
+  const blocks = groupEnginesByWant(model.engines).map(
+    ({ want, capabilities }) => {
+      const block = el("div", { class: "want" });
+      // `want` is undefined only for a capability the registry never assigns one — no engine does
+      // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
+      // than asserted: PreflightCapability#want is optional by type, and a malformed model must
+      // still render its rows instead of throwing on a wantless heading.
+      if (want)
+        block.append(
+          el("h3", { class: "want-title" }, copy.wants[want] ?? want),
+        );
+      for (const c of capabilities)
+        block.append(capabilityRow(c, copy, "checkbox"));
+      return block;
+    },
+  );
   engines.body.replaceChildren(...blocks);
 
   const publishing = section("publishing");

@@ -1233,14 +1233,14 @@ $ bun lib/host/cli.ts newsroom
     "capabilities": [
       {
         "id": "dw-chart",
-        "label": "With a Datawrapper account",
+        "label": "Datawrapper charts",
         "help": [],
         "status": "disabled",
         "reason": ""
       },
       {
         "id": "chart-native",
-        "label": "In-house, no account needed (includes video)",
+        "label": "The in-house chart engine",
         "help": [],
         "status": "ready",
         "reason": ""

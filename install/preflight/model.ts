@@ -50,7 +50,10 @@ export type PreflightField = {
 
 export type PreflightCapability = {
   id: string;
+  /** A standalone name — the subject of readiness prose. NEVER the checkbox caption; see `choice`. */
   label: string;
+  /** The checkbox/radio row's own caption. Absent ⇒ the row falls back to `label`. */
+  choice?: string;
   kind: NewsroomCapability["kind"];
   /** The want this engine serves — copied from the registry. Delivery capabilities have none. */
   want?: WantId;
@@ -246,6 +249,7 @@ export function describeCapability(
   return {
     id: cap.id,
     label: cap.label,
+    choice: cap.choice,
     kind: cap.kind,
     want: cap.want,
     enabled: state.capabilities[cap.id]?.enabled === true,

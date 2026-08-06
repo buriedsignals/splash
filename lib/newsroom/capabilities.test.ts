@@ -166,4 +166,34 @@ describe("the newsroom capability registry", () => {
   test("delivery capabilities declare no want", () => {
     for (const cap of deliveryCapabilities()) expect(cap.want).toBeUndefined();
   });
+
+  // Fix round 1, Finding 1: `label` is a standalone NAME — readiness.ts, the setup page's
+  // blocker line, and skills/splash's ENGINE_LABELS all interpolate it as the SUBJECT of a
+  // sentence their own template supplies the verb for ("${label} needs …", "${label} was not
+  // installed completely …"). `choice` is the checkbox row's own caption, read only by
+  // capabilityRow. The regression this guards: a caption put back into `label` reads fine in
+  // isolation but breaks the second it's interpolated — "With a Datawrapper account needs
+  // DATAWRAPPER_API_TOKEN" and "In-house, needs a MapTiler key (includes video) needs
+  // VITE_MAPTILER_KEY" are both real sentences that shipped before this was caught.
+  test("an engine's label reads as a sentence subject, never the checkbox caption it opens on", () => {
+    // Every readiness.ts template supplies its own verb right after `${cap.label}` — a label
+    // that already contains one of these words doubles it up mid-sentence, which is the exact
+    // shape of the "needs … needs …" break above.
+    const wordTheTemplateSupplies =
+      /\b(needs|missing|installed|available|configured|reached|rejected)\b/i;
+    // A checkbox caption opens on how/where/what-with the tool works — "With a Datawrapper
+    // account", "In-house, needs a MapTiler key…", "From the newsroom's own photographs",
+    // "Scroll-driven stories". A name that stands as a sentence subject never leads this way.
+    const opensLikeACaption =
+      /^(with|without|from|in-house|scroll-driven|for|using)\b/i;
+    for (const cap of engineCapabilities()) {
+      expect(cap.label).not.toMatch(wordTheTemplateSupplies);
+      expect(cap.label).not.toMatch(opensLikeACaption);
+      // Every engine's row wants its own caption today; only delivery falls back silently to
+      // `label` (asserted above: delivery never declares a `want`, and none carries a `choice`
+      // distinct from its name because none needs one).
+      expect(cap.choice).toBeTruthy();
+      expect(cap.choice).not.toBe(cap.label);
+    }
+  });
 });

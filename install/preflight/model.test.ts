@@ -9,6 +9,7 @@ import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
+import { groupEnginesByWant } from "./group-by-want.ts";
 import {
   describeCapability,
   preflightModel,
@@ -151,7 +152,10 @@ describe("the capabilities the page offers", () => {
     });
     expect(capability(m, "dw-chart")?.status).toBe("missing");
     expect(m.blockers.map((b) => b.id)).toEqual(["dw-chart"]);
-    expect(m.blockers[0]!.reason).toContain("With a Datawrapper account");
+    // The reason interpolates `label` (a standalone name), never `choice` (the checkbox
+    // caption) — fix round 1, Finding 1: a caption reused as the sentence's subject broke it
+    // ("With a Datawrapper account needs DATAWRAPPER_API_TOKEN…" reads as a dangling phrase).
+    expect(m.blockers[0]!.reason).toContain("Datawrapper charts");
   });
 
   it("never reports a capability the newsroom did not enable — not green, not red", () => {
@@ -192,6 +196,77 @@ describe("the capabilities the page offers", () => {
     });
     expect(capability(m, "dw-chart")?.status).toBe("unverified");
     expect(m.blockers).toEqual([]);
+  });
+
+  // Fix round 1, Finding 1: `label` (the sentence-subject name) and `choice` (the checkbox
+  // caption) are two different fields now — the second one broke real readiness/blocker
+  // sentences the first time it was reused as the first.
+  it("carries the checkbox caption separately from the sentence-subject label", () => {
+    const m = model();
+    expect(capability(m, "dw-chart")?.label).toBe("Datawrapper charts");
+    expect(capability(m, "dw-chart")?.choice).toBe(
+      "With a Datawrapper account",
+    );
+    expect(capability(m, "chart-native")?.label).toBe(
+      "The in-house chart engine",
+    );
+    expect(capability(m, "chart-native")?.choice).toBe(
+      "In-house, no account needed (includes video)",
+    );
+    // Delivery never had a caption of its own — capabilityRow falls back to `label` for it.
+    expect(capability(m, "zip")?.choice).toBeUndefined();
+  });
+
+  // Fix round 1, Finding 3: nothing in the suite went red when `want: cap.want` was dropped from
+  // describeCapability, or when renderCapabilities reverted to a flat list. This is the
+  // model-level half of that guard — mutation-tested, see task-6-report.md.
+  it("carries each engine's want, and never assigns one to a delivery capability", () => {
+    const m = model();
+    expect(capability(m, "dw-chart")?.want).toBe("charts");
+    expect(capability(m, "chart-native")?.want).toBe("charts");
+    expect(capability(m, "map-dw")?.want).toBe("maps");
+    expect(capability(m, "map-native")?.want).toBe("maps");
+    expect(capability(m, "scrolly")?.want).toBe("scrollys");
+    expect(capability(m, "image-native")?.want).toBe("photo-stories");
+    for (const c of m.delivery) expect(c.want).toBeUndefined();
+  });
+});
+
+// client.ts has no DOM test harness (page.test.ts only greps the raw HTML/CSS text as strings —
+// there is no jsdom/happy-dom anywhere in this suite), so the grouping it renders cannot be
+// asserted through a rendered tree. groupEnginesByWant is the pure seam BELOW that rendering —
+// client.ts's renderCapabilities calls it and only turns the result into DOM nodes — so this is
+// what stands in for a rendering test (fix round 1, Finding 3).
+describe("grouping engines under their want — the seam the page's grouped rendering renders from", () => {
+  it("puts one heading per want, in first-appearance order, with the right tools under each", () => {
+    const groups = groupEnginesByWant(model().engines);
+    expect(groups.map((g) => g.want)).toEqual([
+      "charts",
+      "maps",
+      "scrollys",
+      "photo-stories",
+    ]);
+    expect(
+      groups.find((g) => g.want === "charts")?.capabilities.map((c) => c.id),
+    ).toEqual(["dw-chart", "chart-native"]);
+    expect(
+      groups.find((g) => g.want === "maps")?.capabilities.map((c) => c.id),
+    ).toEqual(["map-dw", "map-native"]);
+    expect(
+      groups.find((g) => g.want === "scrollys")?.capabilities.map((c) => c.id),
+    ).toEqual(["scrolly"]);
+    expect(
+      groups
+        .find((g) => g.want === "photo-stories")
+        ?.capabilities.map((c) => c.id),
+    ).toEqual(["image-native"]);
+  });
+
+  it("puts every wantless capability (delivery, fed through it) in a single ungrouped bucket", () => {
+    const groups = groupEnginesByWant(model().delivery);
+    expect(groups).toEqual([
+      { want: undefined, capabilities: model().delivery },
+    ]);
   });
 });
 

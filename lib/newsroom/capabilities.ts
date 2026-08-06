@@ -31,8 +31,21 @@ export type WantId = "charts" | "maps" | "scrollys" | "photo-stories";
 export type NewsroomCapability = {
   /** Registry key. Engine ids are producer names; delivery ids name the publisher. */
   id: string;
-  /** Newsroom-facing label. NEVER an env var name — that is issue #5's complaint. */
+  /**
+   * A standalone NAME that stands as the subject of a sentence on its own — NEVER an env var
+   * name (issue #5's complaint). This is what readiness.ts, the setup page's blocker line, and
+   * skills/splash's ENGINE_LABELS interpolate into prose: "${label} needs …", "${label}'s video
+   * renderer …". A chattier caption belongs in `choice`, not here — reusing a checkbox caption
+   * as this field is what broke those sentences the first time (fix round 1, Finding 1).
+   */
   label: string;
+  /**
+   * The checkbox/radio row's OWN caption, read under its want heading ("Charts" → "With a
+   * Datawrapper account"). Only `capabilityRow` renders it; every other reader wants `label`.
+   * Absent ⇒ falls back to `label` — true of every delivery capability today, none of which
+   * needs a caption distinct from its name.
+   */
+  choice?: string;
   kind: "engine" | "delivery";
   /** The want this engine serves; the setup page groups the tools under it. Delivery has none. */
   want?: WantId;
@@ -65,7 +78,8 @@ const MT_FIELD: CapabilitySettingField = {
 export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   "dw-chart": {
     id: "dw-chart",
-    label: "With a Datawrapper account",
+    label: "Datawrapper charts",
+    choice: "With a Datawrapper account",
     kind: "engine",
     want: "charts",
     env: [["DATAWRAPPER_API_TOKEN"]],
@@ -76,7 +90,8 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   "map-dw": {
     id: "map-dw",
-    label: "With a Datawrapper account",
+    label: "Datawrapper maps",
+    choice: "With a Datawrapper account",
     kind: "engine",
     want: "maps",
     env: [["DATAWRAPPER_API_TOKEN"]],
@@ -87,7 +102,8 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   "chart-native": {
     id: "chart-native",
-    label: "In-house, no account needed (includes video)",
+    label: "The in-house chart engine",
+    choice: "In-house, no account needed (includes video)",
     kind: "engine",
     want: "charts",
     env: [],
@@ -104,7 +120,8 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   "map-native": {
     id: "map-native",
-    label: "In-house, needs a MapTiler key (includes video)",
+    label: "The in-house map engine",
+    choice: "In-house, needs a MapTiler key (includes video)",
     kind: "engine",
     want: "maps",
     env: [["VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"]],
@@ -121,7 +138,8 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   },
   scrolly: {
     id: "scrolly",
-    label: "Scroll-driven stories",
+    label: "The scrolly engine",
+    choice: "Scroll-driven stories",
     kind: "engine",
     want: "scrollys",
     env: [["VITE_MAPTILER_KEY", "REMOTION_MAPTILER_KEY"]],
@@ -135,7 +153,8 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
   // dep (the exact "binary missing after a bare clone" crash class C2 exists for).
   "image-native": {
     id: "image-native",
-    label: "From the newsroom's own photographs",
+    label: "The photo-narrative engine",
+    choice: "From the newsroom's own photographs",
     kind: "engine",
     want: "photo-stories",
     env: [],
