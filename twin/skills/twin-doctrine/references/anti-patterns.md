@@ -1,0 +1,94 @@
+# Anti-patterns
+
+Each entry here is a recurring failure, named by its usual shape, with the rule it violates and
+why the violation costs the reader something real. This is not a style blacklist to be scanned
+for banned words — it is the standing's negative space: what `editorial-standard.md` and
+`visual-system.md` rule out, catalogued so a production skill (or the model writing one) can
+recognise the shape of the mistake before it is halfway built.
+
+## Decoration that encodes nothing
+
+Any mark, fill, icon or flourish present on the canvas that does not carry data, context,
+hierarchy, verification or attention — see the five jobs in `editorial-standard.md`. This is the
+parent category every other entry below is an instance of. The test is always the same: remove
+it, and see whether comprehension survives. If it does, it was decoration.
+
+## Fake texture, glassmorphism, dashboard chrome
+
+Frosted-glass panels, drop shadows on flat cards, beveled buttons, skeuomorphic borders, a
+background noise texture "for depth." These borrow the visual vocabulary of software UI —
+where chrome signals "this is a control you can interact with" — and apply it to an editorial
+graphic, where there is nothing to control and the chrome signals nothing but production
+expense. It also actively costs contrast budget: a translucent panel over a busy background is
+one more layer the reader's eye has to cut through before reaching the actual evidence.
+
+## Gradients without quantitative meaning
+
+A gradient used to make a bar, a card or a background feel less flat, where the gradient itself
+does not encode a value. The single legitimate use of a gradient in this system is a colour ramp
+that stands for a quantity (a choropleth scale, a heatmap). Everywhere else, a gradient is a flat
+fill wearing a costume — visually busier, and lying about there being a second dimension of data
+that is not actually there.
+
+## Repeated years or values
+
+The same number or date appearing more than once where a single, well-placed instance would do —
+a year printed in the title, again on the x-axis, and again in a subtitle; a value stated in an
+annotation that the axis already makes readable at a glance. Repetition like this is not
+reinforcement, it is redundant decoding work: the reader re-verifies information they have
+already registered, instead of receiving the one new fact the second mention could have carried.
+The fix is not "delete the repeat" in isolation — it is to ask what the paragraph next to the
+chart already says, and let the chart supply what the prose has not, per the "journalist's hand"
+exchange in `twin-storyboard`.
+
+## Detached legends where a direct label would do
+
+A colour key sitting apart from the marks it explains, forcing a look-away, hold, look-back cycle
+that a label touching the line collapses to one glance. See `visual-system.md`'s "labels are
+direct" rule — a legend is the fallback for genuine crowding, not the default layout choice.
+
+## Tiny footer sources
+
+A source line set so small, so low-contrast, or so far from the graphic it credits that a reader
+would need to search for it to find out where the numbers came from. This is a verification
+failure disguised as a layout choice: the source exists on the page in a technical sense, but not
+in the sense that a skeptical reader can actually use it. If a source line is not legible at the
+same casual glance the headline gets, it does not satisfy the "support verification" job.
+
+## Missing scale, unit, source or honest baseline
+
+A bar chart with no axis values, a map with no legend for what the colour means, a number with no
+unit attached, or — most consequentially — a truncated y-axis that makes a small difference look
+like a large one. Each of these is a context failure: the marks are on the page, but the
+information required to read them correctly is not, and the graphic is asking to be trusted
+rather than showing its work. A truncated baseline in particular is not a "stylistic" shortcut —
+it changes what the graphic claims, and is why an honest baseline is not negotiable per element.
+
+## Accent colour on every mark
+
+Reserving the one semantic accent for the subject only works if it is actually reserved. A chart
+where every bar, every line, every region carries the bright colour has no accent at all — it has
+lost the one signal that told the reader where to look first, which is the entire point of having
+an accent in the first place. If everything is highlighted, nothing is.
+
+## A title that claims more than the source supports
+
+A headline that states causation where the data shows correlation, a superlative ("the worst,"
+"the fastest") the underlying series does not actually establish, or a claim that quietly drops
+the caveat the journalist stated in the framing exchange (`twin-storyboard`'s "what does this data
+NOT let you conclude" question). This is the anti-overclaim check made concrete: a title's job is
+to state what the evidence proves, not what it would be more dramatic to imply.
+
+## Copying a reference's styling instead of its information logic
+
+The single most common misreading of the reference loop (`reference-set.md`, and
+`twin-storyboard`'s movement ④). A journalist or a model shown "the FT treats this argument
+structure by establishing the distribution first, then adding the conclusion" can extract one of
+two things: the *information logic* (distribution before conclusion — a transferable sequencing
+rule, applicable to any dataset with that shape), or the *surface* (the FT's specific typeface, a
+particular shade of red, a rounded-corner card). Copying the surface produces a graphic that looks
+like the reference and argues nothing like it. Copying the logic produces a graphic that may not
+resemble the reference at all and still does the same editorial job. The reference set exists
+for the second kind of extraction; the transferable-lesson column in `reference-set.md` is written
+the way it is — an information-design rule, never a styling description — specifically to make the
+first kind of extraction harder to default into.
