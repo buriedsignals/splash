@@ -41,11 +41,21 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
+// Gate-2-complete, matching what where.mjs's missingForGate2 actually requires: a confirmed
+// takeaway, all six hand-of-the-journalist fields, and a slot whose chosen candidate is drawn
+// from its own listed candidates.
 const confirmedStoryboard = `---
 takeaway: "Rainfall fell by a third in ten years."
+subject: "Rainfall trends in the Rhône basin"
+comparison: "the last decade against the one before it"
+limits: "single weather station, not basin-wide"
+placement: "above the fold, article-web"
+credit: "Data: MeteoSwiss"
+effectiveDate: "2026-08-01"
 slots:
   - id: 1
     chosen: trajectory
+    candidates: [trajectory, comparison]
 ---
 `;
 

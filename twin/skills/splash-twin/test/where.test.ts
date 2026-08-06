@@ -14,11 +14,21 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
+// Gate-2-complete: a confirmed takeaway, all six hand-of-the-journalist fields, and one slot
+// whose `chosen` is drawn from its own listed `candidates` — everything `missingForGate2` in
+// `where.mjs` requires before a story may leave the `storyboard` phase.
 const storyboard = `---
 takeaway: "Rainfall fell by a third in ten years."
+subject: "Rainfall trends in the Rhône basin"
+comparison: "the last decade against the one before it"
+limits: "single weather station, not basin-wide"
+placement: "above the fold, article-web"
+credit: "Data: MeteoSwiss"
+effectiveDate: "2026-08-01"
 slots:
   - id: 1
     chosen: trajectory
+    candidates: [trajectory, comparison]
 ---
 `;
 
@@ -54,12 +64,53 @@ describe("whereIs", () => {
     expect(state.missing).toContain("STORYBOARD.md");
   });
 
-  it("should report production once the storyboard carries a takeaway", async () => {
+  it("should report production once the storyboard's takeaway, hand fields, and every slot are all resolved", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
+  });
+
+  it("should stay in storyboard when the takeaway and hand fields are confirmed but no slot exists — the resumed-session case", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots: []\n---\n`,
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain("no slot: nothing would be produced");
+  });
+
+  it("should stay in storyboard when a slot has nothing chosen", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    candidates: [trajectory, comparison]\n---\n`,
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain("slot 1: nothing chosen");
+  });
+
+  it("should stay in storyboard when a hand-of-the-journalist field is missing — the resumed-session case", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain(
+      'the hand-of-the-journalist field "credit"',
+    );
+    expect(state.missing).toContain(
+      'the hand-of-the-journalist field "effectiveDate"',
+    );
   });
 
   it("should stay in storyboard when STORYBOARD.md exists but has no takeaway", async () => {
