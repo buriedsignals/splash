@@ -62,16 +62,28 @@ reason in `missing`, until the takeaway **and** every hand field **and** every s
 one actually drawn from its own listed `candidates`) are present — the real G2 condition, not a
 truthy takeaway standing in for it.
 
-That condition is reimplemented in `where.mjs`, not imported from `twin-storyboard`'s
-`checkStoryboard` — skills in this branch do not import each other's code, only the file format
-they share. `where.mjs` already had exactly this precedent before this fix: its `hasConfirmedTakeaway`
-and `twin-storyboard`'s own null-sentinel handling were already two independent readings of the
-same rule, cross-referenced by comment in both files rather than unified by an import (see that
-file's own `isNullSentinel` note). `HAND` and the slot/candidate check here follow the same pattern,
-sharpened with a mechanical guard the sentinel case didn't have: `test/where.test.ts` pins every
-branch of `missingForGate2` directly (missing hand field, empty slots, unchosen slot, chosen off
-the candidate list), so a change to one side that silently stops matching the other fails a test
-instead of shipping a resumed session past a gate that never really closed.
+That condition is reimplemented in `where.mjs`'s own `missingForGate2`, not imported from
+`twin-storyboard`'s `checkStoryboard` — this branch's runtime code never imports across a skill
+boundary, only the file format two skills share. `where.mjs` already had precedent for this before
+the fix: its `hasConfirmedTakeaway` and `twin-storyboard`'s null-sentinel handling were already two
+independent readings of the same rule, cross-referenced by comment rather than unified by an import
+(see that file's own `isNullSentinel` note). `HAND` and the slot/candidate check follow the same
+pattern — and a reimplementation is exactly the shape of risk that got this document written in the
+first place, so it does not rest on the comment alone. Two things are mechanically closed, by two
+different tests, and neither claims more than it proves:
+
+- **Every branch of `missingForGate2` is pinned directly** in `test/where.test.ts` (missing hand
+  field, empty slots, an unchosen slot, a chosen value with no `candidates` key at all, a chosen
+  value present but off the candidate list) — this catches a break in `where.mjs`'s *own* logic,
+  the same way any other function's tests would.
+- **A second, narrower test proves the two implementations still agree with each other.** Runtime
+  code never crosses a skill boundary — this one test does, for exactly this reason: it imports
+  `checkStoryboard`/`parseStoryboard` from `twin-storyboard` and feeds nine shared fixtures to both
+  gates, asserting they reach the same open/closed verdict every time. This is the one that catches
+  the failure a same-file mutation cannot: a rule changed on `checkStoryboard`'s side alone (a
+  seventh `HAND` field added there, say) with `where.mjs` left untouched. Verified in both
+  directions — a rule mutated on the `twin-storyboard` side only, and a rule mutated on the
+  `where.mjs` side only, both turn this test red.
 
 ## Architecture
 
@@ -183,6 +195,8 @@ if (missing.length > 0) {
 - `assets/root-template/` — `package.json`, `tsconfig.json`, `NEWSROOM.example.md` copied into a
   fresh Splash root.
 - `test/{where,preflight,keys,newsroom,new-story}.test.ts` — `bun:test` coverage for each script
-  above.
+  above. `where.test.ts` also carries this skill's one deliberate exception to "no cross-skill
+  imports": a `checkStoryboard`/`parseStoryboard` import from `twin-storyboard`, used only to
+  assert the two gates agree on nine shared fixtures — never in runtime code.
 - `test/phases.test.ts` — drives `whereIs` through a real story directory across all six phases and
   asserts this document names every phase it actually returned, never a phase it did not.
