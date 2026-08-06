@@ -17,7 +17,8 @@ function fakePage(overrides: Partial<RenderPage> = {}): RenderPage {
   return {
     goto: async () => ({ ok: () => true, status: () => 200 }),
     waitForTimeout: async () => {},
-    evaluate: async () => ({ sheets: [], blockedHrefs: [], computedCss: null }),
+    evaluate: async () =>
+      ({ sheets: [], blockedHrefs: [], computedCss: null }) as never,
     content: async () => "<html></html>",
     url: () => "https://x.news/",
     close: async () => {},
