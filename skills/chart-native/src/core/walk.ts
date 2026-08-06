@@ -55,3 +55,55 @@ export function walkPositions(
   });
   return pos;
 }
+
+/**
+ * THE BAR ENTRANCE SCHEDULE — the one BarChart drives its bars from, named here so a caption can
+ * read it instead of redefining it.
+ *
+ * Exported as data rather than duplicated as numbers: a caption computed from a second set of
+ * windows is a second clock, and a second clock is a sentence sitting over the wrong bar. That is
+ * not hypothetical — it is what route-story.ts's header documents at length, from a caption that
+ * followed a confirmed arc while the camera kept following the geographic walk.
+ */
+export const BAR_ENTRANCE = {
+  start: 0.18,
+  step: (count: number) => 0.5 / count,
+  span: 0.35,
+} as const;
+
+/**
+ * WHICH BEAT a caption should name at this progress — the subject whose entrance has most
+ * recently BEGUN, in the journalist's order.
+ *
+ * Most recently begun, not nearest to finishing: a caption names what the reader's eye has just
+ * been drawn to. Clamped at both ends, so progress 0 reads the first beat and progress 1 the
+ * last — never -1, never past the end.
+ *
+ * `entryOrder` is `walkPositions`' output: position i tells where subject i enters. The answer is
+ * a SUBJECT index, which is what a caption needs to find its beat.
+ */
+export function activeBeatAt(
+  progress: number,
+  entryOrder: readonly number[],
+  count: number,
+): number {
+  if (count <= 0 || !entryOrder.length) return -1;
+  const start = BAR_ENTRANCE.start;
+  const step = BAR_ENTRANCE.step(count);
+  let active = -1;
+  let bestBegin = -Infinity;
+  for (let subject = 0; subject < entryOrder.length; subject++) {
+    const begin = start + (entryOrder[subject] ?? subject) * step;
+    if (begin <= progress && begin >= bestBegin) {
+      bestBegin = begin;
+      active = subject;
+    }
+  }
+  // Before the first window opens nothing has begun — the caption still names the opening beat,
+  // because a title card with no sentence is a frame the journalist did not ask for.
+  if (active < 0) {
+    const first = entryOrder.indexOf(Math.min(...entryOrder));
+    return first < 0 ? 0 : first;
+  }
+  return active;
+}

@@ -26,7 +26,7 @@ import {
   labelReveal,
   stagger,
 } from "./core/math";
-import { walkPositions } from "./core/walk";
+import { walkPositions, BAR_ENTRANCE } from "./core/walk";
 import { unitSuffix, type Lang } from "./core/locale";
 import {
   COLORS,
@@ -297,7 +297,14 @@ function BarSvg({
     config.beats,
   );
   const barP = (i: number) =>
-    stagger(p, entryOrder[i] ?? i, n, 0.18, 0.5 / n, 0.35);
+    stagger(
+      p,
+      entryOrder[i] ?? i,
+      n,
+      BAR_ENTRANCE.start,
+      BAR_ENTRANCE.step(n),
+      BAR_ENTRANCE.span,
+    );
 
   return (
     <svg
