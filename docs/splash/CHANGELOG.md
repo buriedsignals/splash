@@ -4,6 +4,52 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-08-06 — La charte lit un vrai site de rédaction : filtre same-host levé, `recurrent-role`, provenance, second essai rendu, `oklch()` (branche `feat/charter-reads-real-sites`, HEAD `46d8098e`)
+
+Le point de départ : `proposeCharter` mesuré à froid contre heidi.news ne lisait **aucune**
+feuille de style (le CDN `heidi-17455.kxcdn.com` échouait le filtre same-host), une seule couleur
+(le `<meta name="theme-color">`), zéro typographie, et une note qui accusait le JavaScript d'un
+fetch jamais tenté. Quatre correctifs d'extraction (`58d3add8`, `463e89df`, `0f7a9d89`,
+`359444d7`) puis deux capacités neuves (`5761a176`, `46d8098e`) ferment ce chantier, mesurés
+avant/après sur trois sites réels captés en fixtures (`lib/newsroom/fixtures/sites/`).
+
+**Ce qui a changé.** La feuille CDN de heidi.news est désormais lue (557 642 octets débloqués) ;
+chaque preuve nomme sa source (`evidence[].source`) ; une couleur répétée sur des propriétés
+porteuses de marque (`recurrent-role`, seuil 3) devient un signal propre au lieu de rester
+`declared` par accident ; une famille de police nomme la feuille dont elle vient, et une police
+d'icônes (`icomoon`) ne passe plus pour une typo maison ; `oklch()` (`46d8098e`, ancré sur
+l'exemple travaillé de la spec CSS Color 4 et recoupé contre la suite de tests de Culori) est
+désormais converti. **Un second essai qui rend la page** (`lib/newsroom/charter-render.ts`,
+`5761a176`) ouvre un navigateur réel quand la lecture statique ne trouve rien — lancement
+injectable, 14 tests, **aucun navigateur ne s'ouvre dans la suite** — offert par `/charter` en
+mode `rendered` (défaut `static`), dans les deux langues, jamais automatique.
+
+**Ce qui n'a PAS changé, et c'est le constat honnête du chantier : heidi.news n'a jamais gagné de
+nouvelle couleur.** Il n'y en avait pas à trouver. L'extraction corrobore désormais `#d5121e` par
+trois déclarations indépendantes plutôt qu'une (le `<meta theme-color>`, une propriété `oklch()`
+`declared`, une propriété hex `declared`) — mesuré en vrai sur le site, après coup :
+
+```
+couleur : #d5121e | confiance: declared | preuves: 8
+typo    : Sang Bleu Kingdom
+```
+
+contre, avant ce chantier, sur le même site réel : 0 feuille lue, une couleur, aucune typo. Baisser
+`RECURRENT_ROLE_MIN_COUNT` aurait pu fabriquer une deuxième candidate — mais la seule qu'il aurait
+fait surgir est `#569ff7`, un défaut de date-picker flatpickr embarqué, pas une couleur déclarée
+par la rédaction ; refusé.
+
+**Preuve par la main, pas seulement par la suite** — le mode rendu tourne une fois sur un vrai
+site (`therecord.media`, 4,3 s, 1 feuille lue, même verdict que le chemin statique sur ce site-là
+puisque son CSS y est déjà lisible statiquement) : ça prouve que le chemin navigateur s'exécute de
+bout en bout, pas qu'il trouve plus. Limite nommée, acceptée : une fois la page ouverte, c'est du
+JavaScript réel qui tourne, et ses requêtes sortantes ne sont pas vérifiées comme le sont les
+`href` du chemin statique.
+
+**Reste non lu** : `color-mix()` (4 occurrences dans la feuille CDN de heidi.news, une composition
+sur d'autres couleurs plutôt qu'une notation de couleur, laissée de côté volontairement). Détail
+complet, avant/après par site : `docs/installer/charter-measurement.md`.
+
 ## Session 2026-08-06 — Task 6 « la page de setup tient sur UN écran » : profil éditable + case cochées supprimées, gate 23/23 (branche `feat/setup-page-one-screen`, HEAD `3fc8e0c9`)
 
 Suite de la Task 5 ci-dessous. La page de setup tient désormais sur un seul écran : *Votre

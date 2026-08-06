@@ -281,6 +281,16 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+## ★ État courant — 2026-08-06 — LA CHARTE LIT UN VRAI SITE DE RÉDACTION (branche `feat/charter-reads-real-sites` @ `46d8098e`, non fusionnée)
+
+`proposeCharter` lisait 0 feuille de style sur heidi.news avant ce chantier (filtre same-host,
+`oklch()` non lu) ; mesuré en vrai après coup : `#d5121e` corroboré par 3 déclarations
+indépendantes (au lieu d'1) + `Sang Bleu Kingdom`, **aucune nouvelle couleur — il n'y en avait pas
+à trouver**, refusé de baisser le seuil pour en fabriquer une. Second essai qui **rend** la page
+(navigateur réel, 14 tests par lancement injecté, jamais automatique) prouvé exécutable de bout en
+bout à la main sur `therecord.media`, mais pas exercé par la suite ; `color-mix()` reste non lu.
+Détail : `docs/splash/CHANGELOG.md`, `docs/installer/charter-measurement.md`.
+
 ## ★ État courant — 2026-08-06 — LA PAGE DE SETUP TIENT SUR UN ÉCRAN (branche `feat/setup-page-one-screen` @ `3fc8e0c9`, gate 23/23)
 
 Profil rédaction éditable et prérempli-avec-reçu depuis l'adresse du site (`POST /charter`),

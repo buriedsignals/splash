@@ -2,8 +2,11 @@
 
 Measures `proposeCharter` (`lib/newsroom/charter.ts`) against the three committed fixtures
 (`lib/newsroom/fixtures/sites/`, loaded through `load.ts`) on this branch
-(`feat/charter-reads-real-sites`, `359444d7`), and against the state immediately before this
-chantier's four fixes.
+(`feat/charter-reads-real-sites`, HEAD `46d8098e`), and against the state immediately before this
+chantier's fixes. The three fixture tables below reflect the four extraction fixes
+(`58d3add8`, `463e89df`, `0f7a9d89`, `359444d7`); the `oklch()` fix (`46d8098e`) and the rendered
+mode (`5761a176`) that landed after are covered in their own sections, since neither existed when
+the fixture "before" state was chosen.
 
 ## "Before" is not the merge-base — here is why
 
@@ -32,21 +35,41 @@ the "after" numbers below against the same fixtures independently of this docume
 
 ## heidi-news (`https://www.heidi.news/`)
 
-| | Before (`a7ed5844`) | After (`359444d7`) |
+| | Before (`a7ed5844`) | After (`46d8098e`) |
 |---|---|---|
-| Colour candidates | `#d5121e` — `theme-color`, score 100, `declared` (1 measurement) | `#d5121e` — `theme-color` + 3 stylesheet declarations (`--lt-color-red-500-rgb`, `--lt-color-primary-500-rgb`, `--color-danger-400`), score **101**, `declared` (4 measurements) |
+| Colour candidates | `#d5121e` — `theme-color`, score 100, `declared` (1 measurement) | `#d5121e` — `theme-color` + 3 hex stylesheet declarations (`--lt-color-red-500-rgb`, `--lt-color-primary-500-rgb`, `--color-danger-400`) + 4 more via `oklch()` (`--lt-color-red-500: oklch(55.41% .2189 26.74)` and 3 siblings, each converting to the same `#d5121e`), score **101**, `declared` (8 measurements) |
 | Typography | none (stylesheet never read) | `Sang Bleu Kingdom` (webfont, from the CDN sheet) |
 | Ground | none | none — unchanged |
 | Confidence | `declared` | `declared` — unchanged |
-| Notes | *"no stylesheet was read — the page may build its styles in JavaScript, in which case nothing here is reliable"* — wrong cause: the CSS was never fetched because the CDN host (`heidi-17455.kxcdn.com`) failed the same-host filter, not because it doesn't exist | *"the site declares colours in color-mix/oklch() notation, which is NOT read here — a brand colour expressed only that way was missed"* — a real, honest gap, and the JS-blame sentence is gone because the stylesheet now IS read |
-| `evidence[].source` | absent (field didn't exist) | every entry names its origin: `https://www.heidi.news/` for the `theme-color`, the CDN href for the three stylesheet declarations |
+| Notes | *"no stylesheet was read — the page may build its styles in JavaScript, in which case nothing here is reliable"* — wrong cause: the CSS was never fetched because the CDN host (`heidi-17455.kxcdn.com`) failed the same-host filter, not because it doesn't exist | *"the site declares colours in color-mix() notation, which is NOT read here — a brand colour expressed only that way was missed"* — narrowed from `color-mix()`+`oklch()` (4 occurrences of `color-mix()` remain in that stylesheet, now the only unread notation) |
+| `evidence[].source` | absent (field didn't exist) | every entry names its origin: `https://www.heidi.news/` for the `theme-color`, the CDN href for all 7 stylesheet declarations (hex and oklch alike) |
 
-What did **not** change: the top colour and its hex. What changed: the CDN stylesheet is now
-read at all (557 642 bytes unblocked), which is why the same colour now has 3 corroborating
-declarations instead of 1, one webfont appears where none did, and the failure note names the
-right gap instead of blaming JavaScript for a fetch that was never attempted. **No new colour
-candidate appeared** — see "What this does not establish" below for why that is the correct
-outcome, not a shortfall.
+What did **not** change: the top colour and its hex. What changed, across both fixes: the CDN
+stylesheet is now read at all (557 642 bytes unblocked), and the `oklch()` values inside it now
+resolve — so the same colour has 8 corroborating declarations instead of 1 (4 hex, 4 oklch), one
+webfont appears where none did, the unread-notation note narrowed to `color-mix()` alone, and the
+failure note names the right gap instead of blaming JavaScript for a fetch that was never
+attempted. **No new colour candidate appeared** — see "What this does not establish" below for
+why that is the correct outcome, not a shortfall.
+
+### heidi.news, live (not the fixture) — measured after everything above landed
+
+The fixture is a capture from 2026-08-06; the site itself was measured again, live, once this
+chantier's last commit (`46d8098e`) was in place:
+
+```
+couleur : #d5121e | confiance: declared | preuves: 8
+   - theme-color   <meta name="theme-color" content="#d5121e"/>
+   - declared      :root { --lt-color-red-500: oklch(55.41% .2189 26.74) }
+   - declared      :root { --lt-color-red-500-rgb: #d5121e }
+typo    : Sang Bleu Kingdom
+```
+
+Before this chantier, the same live site yielded: **0 stylesheets read**, one colour from the
+`<meta>` tag alone, **no typography at all**, and a note blaming JavaScript for a stylesheet that
+was never fetched. The live run and the fixture agree — 8 evidence entries, `#d5121e`, `declared`,
+`Sang Bleu Kingdom` — which is the fixture's own claim to still being representative, checked
+against the real site rather than assumed.
 
 ## therecord-media (`https://therecord.media/`)
 
@@ -90,32 +113,60 @@ on every evidence entry — visible, but not a behaviour change for this particu
   can change its markup, its CDN, or its CSS tomorrow, and this measurement — before or after —
   would not know.
 
-- **heidi.news getting zero new colour candidates is the honest outcome, not a shortfall.** The
-  implementer looked at lowering `RECURRENT_ROLE_MIN_COUNT` (currently 3) to see whether that
-  would surface a second candidate on heidi.news, and refused: the only colour it would have
-  surfaced there is `#569ff7`, traced to a bundled flatpickr date-picker default, not anything the
-  newsroom declared. Lowering the floor to 2 would also have overturned a locked regression test —
-  bbc.com's `#e00000`, which repeats on exactly two brand-carrying declarations and is the project's
-  own worked example of "not evidence of anything… ask the question" (`charter.ts`,
-  `RECURRENT_ROLE_MIN_COUNT` comment). heidi.news's single reported colour, `#d5121e` — read from
-  `<meta name="theme-color">` — is exactly the palette entry already in heidi.news's own
-  `NEWSROOM-PROFILE.md`. The extraction is right, not thin.
+- **`color-mix()` is still unread.** `oklch()` moved from unread to read this chantier; `color-mix()`
+  did not — it is a computation over other colours rather than a colour notation on its own, and
+  was deliberately left alone. On heidi.news's CDN stylesheet it accounts for the 4 occurrences
+  that remain in `notes` after this chantier's fixes. A brand colour expressed only that way would
+  still be missed.
 
-- **The rendered (browser) mode is not exercised here.** This measurement, and the test suite it
-  mirrors, both read HTML and CSS as static text — the same thing `collectSiteSources` fetches
-  today. A site that builds its presentation in JavaScript with no static declaration
-  (`therecord-media` is close to this case, though its CSS module still ships static hex values) is
-  the case the spec's rendered-mode plan targets. That mode is being written in the files this
-  measurement was kept away from (`lib/newsroom/charter-render.ts`,
-  `install/preflight/server.ts`/`client.ts`/`copy.ts`) while this document was produced, in
-  parallel, on the same branch.
+- **The rendered (browser) mode is exercised by hand, not by the suite.** `charter-render.ts`
+  (`5761a176`) opens the page with an injectable launch, reads `document.styleSheets` where
+  readable, and falls back to computed styles of link/control/masthead/ground elements
+  synthesized as real CSS declarations when it cannot. `/charter` offers it as a second attempt —
+  `mode: "static" | "rendered"`, `"static"` by default — surfaced by the page only once the static
+  read finds nothing, in both languages, never triggered automatically. Its 14 tests all substitute
+  an injected `launch`; **no browser opens in `bun test`**, by design (a real Playwright download
+  does not belong between a contributor and a green suite).
 
-  **Placeholder — rendered mode, to be measured by hand once landed:**
+  That leaves the browser path itself unproven by anything the suite runs. Run by hand, once,
+  against a live site:
 
-  > *(not yet measurable — the browser-rendered path did not exist when this document was written.
-  > When it lands, run the same three fixtures — or, better, the live sites, since rendered mode's
-  > whole point is reading what a static fetch cannot — through it and fill in this section with
-  > the same before/after shape as above.)*
+  ```
+  renderSiteSources("https://therecord.media") → 4.3s, 1 sheet read
+  colours: #e06b2c [recurrent-role], #fca532 [link]
+  typography: Inter, Inter Fallback
+  ```
+
+  Same yield as the static path on that site — its CSS is same-origin and readable statically, so
+  there was nothing extra for the browser to find. What this run proves is narrower than "renders
+  better": it proves **the browser path executes end to end** against a real site (navigation,
+  settle, stylesheet read, teardown), not that it yields more than the static path does. The case
+  it is meant for — a site whose styles exist only after client-side JavaScript runs, with no
+  static declaration at all — was not one of the three fixtures and was not run by hand here.
+
+  Its named, accepted limit: once the page is open, it is a real browser executing the page's own
+  JavaScript, and that script can issue outbound requests — a fetch, an image load, a redirect —
+  to addresses this module does not vet. The static path checks every stylesheet href against a
+  same-host/forbidden-host list before fetching it; the rendered path has no equivalent, because a
+  rendered page's outbound traffic is not a list of hrefs read in advance, it is arbitrary code
+  running inside Chromium. The entry address itself is vetted exactly like the static path
+  (`normalizeSiteUrl`, the same function); what happens after the page opens is not.
+
+- **The honest headline: on heidi.news, no new colour was found, because there was none to
+  find.** Across this whole chantier's colour work on that site — same-host CDN fix, then
+  `oklch()` — the extraction never surfaced a second candidate. What changed is how well-supported
+  the one candidate it already had is: the extraction now corroborates `#d5121e` through three
+  independent declarations rather than one (a `<meta name="theme-color">` tag, a `declared`
+  `oklch()` custom property, a `declared` hex custom property — the live proof above shows exactly
+  this), not through a second colour appearing. The implementer looked at lowering
+  `RECURRENT_ROLE_MIN_COUNT` (currently 3) to manufacture a second candidate on heidi.news, and
+  refused: the only colour it would have surfaced is `#569ff7`, traced to a bundled flatpickr
+  date-picker default, not anything the newsroom declared. Lowering the floor to 2 would also have
+  overturned a locked regression test — bbc.com's `#e00000`, which repeats on exactly two
+  brand-carrying declarations and is the project's own worked example of "not evidence of
+  anything… ask the question" (`charter.ts`, `RECURRENT_ROLE_MIN_COUNT` comment). heidi.news's
+  reported colour, `#d5121e`, is exactly the palette entry already in heidi.news's own
+  `NEWSROOM-PROFILE.md`. The extraction is right, not thin — corroborated, not padded.
 
 ## Commands run
 
