@@ -97,6 +97,26 @@ Each skill owns its scripts and its tests. Files that change together live toget
 
 **Why the probe is real:** `main` is blocked today by a MapTiler key that is *present* and returns 403. A preflight that checks presence reports green while production fails. This task's entire point is that `status: 'pass'` means a real call succeeded.
 
+**Amended after mutation-testing review (post-implementation).** The test lists below were run
+through mutation testing and five mutations survived — the suite stayed green against deliberately
+broken code. This amendment folds the four fixes back into the plan so this test list is no longer
+prescribed as sufficient when it demonstrably wasn't:
+- `probeMapTiler`/`probeDatawrapper` need assertions on the *shape* of the request handed to
+  `fetchFn` (the key present in the URL, the bearer token present in the header) — not just on the
+  response translated back. A probe that silently stopped sending the key would have stayed green
+  forever.
+- `runPreflight`'s `maptiler-key` check needs a case with `env: {}` (key absent) asserting
+  `"missing"` — nothing in the original list ever exercised the fail-vs-missing branch on the
+  absent side.
+- `runPreflight`'s `newsroom-profile` check needs to tell "file could not be read" (`"missing"`)
+  apart from "file read but unparseable" (`"fail"`, with the parse error in `detail`) — the
+  original bare `catch` collapsed both into the same false diagnosis. It also needs a
+  present-but-incomplete-profile case asserting `"fail"`, since the pass/fail branch itself was
+  untested.
+- The real-network test must not pass vacuously when `MAPTILER_KEY` is absent from the environment
+  (the empty-key guard short-circuits before any network call). It now skips explicitly with a
+  printed reason when the key is absent, and asserts `result.status !== null` when it runs.
+
 - [ ] **Step 1: Write the failing test for the key probes**
 
 ```ts
@@ -135,6 +155,13 @@ describe("probeMapTiler", () => {
     expect(result.status).toBe(null);
     expect(result.detail).toContain("ENOTFOUND");
   });
+
+  it("should send the key in the request URL, not silently drop it", async () => {
+    let capturedUrl = "";
+    const fetchFn = async (url) => { capturedUrl = String(url); return new Response("{}", { status: 200 }); };
+    await probeMapTiler("secret-key-123", fetchFn);
+    expect(capturedUrl).toContain("secret-key-123");
+  });
 });
 
 describe("probeDatawrapper", () => {
@@ -148,6 +175,13 @@ describe("probeDatawrapper", () => {
     const result = await probeDatawrapper("token", fetchFn);
     expect(result.ok).toBe(false);
     expect(result.status).toBe(401);
+  });
+
+  it("should send the bearer token in the Authorization header, not silently drop it", async () => {
+    let capturedInit;
+    const fetchFn = async (url, init) => { capturedInit = init; return new Response("{}", { status: 200 }); };
+    await probeDatawrapper("secret-token-456", fetchFn);
+    expect(capturedInit?.headers?.Authorization).toBe("Bearer secret-token-456");
   });
 });
 ```
@@ -192,7 +226,7 @@ export async function probeDatawrapper(token, fetchFn) {
 - [ ] **Step 4: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/splash-twin/test/keys.test.ts`
-Expected: PASS, 6 tests.
+Expected: PASS, 8 tests (6 original + 2 request-shape assertions added post-review).
 
 - [ ] **Step 5: Write the failing test for the NEWSROOM contract**
 
@@ -349,6 +383,34 @@ describe("runPreflight", () => {
     const verdict = await runPreflight({ root, env: { MAPTILER_KEY: "k" }, fetchFn: okFetch });
     expect(verdict.checks.find((c) => c.id === "dependencies").status).toBe("missing");
   });
+
+  it("should report the maptiler key as missing, not failed, when MAPTILER_KEY is absent from env", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    await mkdir(join(root, "node_modules"), { recursive: true });
+    const verdict = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = verdict.checks.find((c) => c.id === "maptiler-key");
+    expect(check.status).toBe("missing");
+    expect(verdict.ok).toBe(false);
+  });
+
+  it("should report the newsroom profile as failed, not missing, when the file exists but cannot be parsed", async () => {
+    // A leading blank line breaks the front-matter regex without ever making the file unreadable.
+    await writeFile(join(root, "NEWSROOM.md"), `\n${complete}`);
+    await mkdir(join(root, "node_modules"), { recursive: true });
+    const verdict = await runPreflight({ root, env: { MAPTILER_KEY: "k" }, fetchFn: okFetch });
+    const check = verdict.checks.find((c) => c.id === "newsroom-profile");
+    expect(check.status).toBe("fail");
+    expect(check.detail).toContain("front matter");
+  });
+
+  it("should report the newsroom profile as failed when NEWSROOM.md is present but incomplete", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), "---\nname: X\n---\n");
+    await mkdir(join(root, "node_modules"), { recursive: true });
+    const verdict = await runPreflight({ root, env: { MAPTILER_KEY: "k" }, fetchFn: okFetch });
+    const check = verdict.checks.find((c) => c.id === "newsroom-profile");
+    expect(check.status).toBe("fail");
+    expect(verdict.ok).toBe(false);
+  });
 });
 ```
 
@@ -379,13 +441,24 @@ export async function runPreflight({ root, env, fetchFn }) {
     ? { id: "dependencies", status: "pass", detail: "root dependencies are installed" }
     : { id: "dependencies", status: "missing", detail: "run bun install in the Splash root" });
 
+  let newsroomText;
   try {
-    const errors = validateNewsroom(parseNewsroom(await readFile(join(root, "NEWSROOM.md"), "utf8")));
-    checks.push(errors.length === 0
-      ? { id: "newsroom-profile", status: "pass", detail: "NEWSROOM.md is complete" }
-      : { id: "newsroom-profile", status: "fail", detail: errors.join("; ") });
+    newsroomText = await readFile(join(root, "NEWSROOM.md"), "utf8");
   } catch {
+    // The file could not be read at all: missing, or inaccessible. Not a parse question.
     checks.push({ id: "newsroom-profile", status: "missing", detail: "NEWSROOM.md is absent" });
+  }
+
+  if (newsroomText !== undefined) {
+    try {
+      const errors = validateNewsroom(parseNewsroom(newsroomText));
+      checks.push(errors.length === 0
+        ? { id: "newsroom-profile", status: "pass", detail: "NEWSROOM.md is complete" }
+        : { id: "newsroom-profile", status: "fail", detail: errors.join("; ") });
+    } catch (error) {
+      // The file exists but is not what we expect: a real failure, distinct from absent.
+      checks.push({ id: "newsroom-profile", status: "fail", detail: `NEWSROOM.md could not be parsed: ${error.message}` });
+    }
   }
 
   const maptiler = await probeMapTiler(env.MAPTILER_KEY ?? "", fetchFn);
@@ -399,28 +472,41 @@ export async function runPreflight({ root, env, fetchFn }) {
 }
 ```
 
+(The split of the `newsroom-profile` check into a read step and a parse step — rather than one
+`try` with a single bare `catch` — is itself a fix folded in after mutation-testing review: a bare
+catch swallowed "file could not be read" and "file read but unparseable" into the same `"missing"`
+verdict, which is a false diagnosis for the second case.)
+
 - [ ] **Step 12: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/splash-twin/test/preflight.test.ts`
-Expected: PASS, 4 tests.
+Expected: PASS, 7 tests (4 original + 3 added post-review: maptiler-key absent → `"missing"`,
+newsroom-profile present-but-unparseable → `"fail"`, newsroom-profile present-but-incomplete →
+`"fail"`).
 
 - [ ] **Step 13: Add one real-network integration test**
 
-External APIs are never mocked in this codebase. This test asserts the probe *returns a verdict about reality*, not that the key is currently good — the MapTiler key is expected to be red today, and a test that demanded green would be a lie.
+External APIs are never mocked in this codebase. This test asserts the probe *returns a verdict about reality*, not that the key is currently good — the MapTiler key is expected to be red today, and a test that demanded green would be a lie. It must also not pass vacuously: if `MAPTILER_KEY` is absent from the environment the empty-key guard in `probeMapTiler` short-circuits before any network call, so the test skips explicitly (with a printed reason) rather than silently passing on an untested path; when the key is present it asserts `result.status !== null`, i.e. that a real call actually happened.
 
 ```ts
 // append to twin/skills/splash-twin/test/keys.test.ts
 describe("probeMapTiler against the real endpoint", () => {
-  it("should return a concrete verdict using the key in the environment", async () => {
-    const result = await probeMapTiler(process.env.MAPTILER_KEY ?? "", fetch);
+  const key = process.env.MAPTILER_KEY ?? "";
+  if (!key) {
+    console.log("Skipping real MapTiler probe: MAPTILER_KEY is not set in the environment.");
+  }
+
+  it.skipIf(!key)("should return a concrete verdict using the key in the environment", async () => {
+    const result = await probeMapTiler(key, fetch);
     expect(typeof result.ok).toBe("boolean");
+    expect(result.status).not.toBe(null);
     expect(result.detail.length).toBeGreaterThan(0);
     console.log(`MapTiler verdict: ok=${result.ok} status=${result.status} — ${result.detail}`);
   });
 });
 ```
 
-Run: `cd twin && bun test skills/splash-twin/test/keys.test.ts` and read the logged verdict. Record it in the commit message.
+Run: `cd twin && MAPTILER_KEY=<key> bun test skills/splash-twin/test/keys.test.ts` and read the logged verdict. Record it in the commit message. Without `MAPTILER_KEY` set, the same run must show the test as skipped with the printed reason, not silently passed.
 
 - [ ] **Step 14: Write the root template and the twin package manifest**
 
