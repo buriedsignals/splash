@@ -51,11 +51,23 @@ describe("narrativeKindsFor — what this type can actually be", () => {
     expect(stepped.why).not.toMatch(/subject it is about/);
   });
 
-  it("an anchored type says its stepped pins each sentence to its subject", () => {
+  // Two ways a chart's `stepped` can pin a sentence to its subject, and the offer says WHICH —
+  // they read differently on screen, so telling a journalist the wrong one is a false promise.
+  it("a scrolly-staged type says the chart stands complete and the accent walks", () => {
     const stepped = narrativeKindsFor("chart-native", "lollipop").find(
       (k) => k.kind === "stepped",
     )!;
-    expect(stepped.why).toMatch(/each subject enters at the moment of its own sentence/);
+    expect(stepped.why).toMatch(/stands complete/);
+    expect(stepped.why).toMatch(/scrolly/);
+  });
+
+  it("an entrance-staged type says its subjects ENTER in the order chosen", () => {
+    const stepped = narrativeKindsFor("chart-native", "dumbbell").find(
+      (k) => k.kind === "stepped",
+    )!;
+    expect(stepped.why).toMatch(
+      /each subject enters at the moment of its own sentence/,
+    );
   });
 
   // These two narrate like any other map — their Story family paints the beats' words — so a
