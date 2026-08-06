@@ -36,6 +36,7 @@ import {
 import { describePrecheck, describeProbeRun, presentIn } from "./gates";
 import { describeNewsroom } from "./newsroom";
 import { walkCapability } from "../../skills/splash/src/narrative-walk-gate";
+import { narrativeKindsFor } from "../../skills/splash/src/narrative-kinds";
 import { outDirRefusal } from "./path-safety";
 import { describeIntentQuestion } from "./suggest-intent";
 import { RENDER_SOURCE_POLICY_MARK } from "./source-mark";
@@ -413,6 +414,28 @@ async function main(): Promise<never> {
   // the prose that says so already loaded. Prose was not enough; an orchestrator asserted an
   // incapacity it never checked. A guard cannot catch that (it refuses what is attempted, and
   // nothing was attempted), so the fix is to make the question answerable.
+  // WHICH NARRATIVE KINDS this type can be — the question that must be ASKED before a video is
+  // proposed. A video is not one thing: a map can be a guided tour, a run of steps, or a
+  // fixed-camera reveal, and a chart has two of those. Nobody ever asked the journalist, so
+  // `cameraMode` sat at its default and nothing could honestly depend on it.
+  //
+  // Sibling of can-carry-walk below, same posture: read-only, no --run, answerable at the turn
+  // the proposal is composed. Its answer is the registry's, so a proposal is composed FROM it
+  // rather than from what an orchestrator remembers.
+  if (command === "narrative-kinds") {
+    const parsed = parseFlags(rest, ["--producer", "--type"]);
+    if (!parsed.ok) usage(parsed.message);
+    const producer = parsed.flags["--producer"];
+    if (!producer) usage("narrative-kinds needs --producer <p>");
+    emit(
+      {
+        ok: true,
+        value: { kinds: narrativeKindsFor(producer, parsed.flags["--type"] ?? "") },
+      },
+      0,
+    );
+  }
+
   if (command === "can-carry-walk") {
     const parsed = parseFlags(rest, [
       "--producer",

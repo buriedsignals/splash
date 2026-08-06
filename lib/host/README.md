@@ -40,7 +40,7 @@ document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
 ## The sixteen commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `can-carry-walk`, `precheck`, `probe`. Acting:
+Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `narrative-kinds`, `can-carry-walk`, `precheck`, `probe`. Acting:
 `init`, `advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
 `present`.
 
@@ -1282,6 +1282,41 @@ behaviour. (A `NEWSROOM-PROFILE.md`, if one is present in the directory read, re
 own `brand.json` cache beside it — `loadNewsroomProfile`'s long-standing best-effort
 behaviour, and the one write `--dir` can still reach, into a directory that already exists
 and already holds the profile it caches.)
+
+### `narrative-kinds --producer <p> [--type <t>]`
+
+**Which narrative kinds can this type's VIDEO be?** A video is not one thing: a map can be a
+guided tour (`story`), a run of discrete steps (`stepped`), or a fixed-camera `reveal` — three
+component families rendering three different objects. A chart has two of them; it owns no camera
+that travels, so it has no `story`.
+
+Nobody ever asked the journalist which one, so `cameraMode` sat at its default and nothing could
+honestly depend on it — the walk guard demanded a storyboard even for a reveal, which shows no
+words at all. **The kind is proposed, and this is what the proposal is composed from.**
+
+Each entry carries `owesStoryboard`: `story` and `stepped` narrate and owe one; `reveal` never
+does. Two types narrate but owe nothing — `route` and `hex-grid` DO paint their beats' words, yet
+no walk can be drafted for them (their anchors only exist once the map is built), so their steps
+are written by hand and `why` says so.
+
+```
+$ bun lib/host/cli.ts narrative-kinds --producer chart-native --type bar
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "kinds": [
+      { "kind": "stepped", "owesStoryboard": true, "why": "the subjects enter one after another, in the order you choose, and each one's sentence appears while it does" },
+      { "kind": "reveal", "owesStoryboard": false, "why": "everything animates in together and no sentence is shown — the chart makes the point on its own" }
+    ]
+  }
+}
+```
+
+An empty list is the honest answer for a producer that renders no narrative video at all, and its
+absence from a proposal is the point.
 
 ### `can-carry-walk --producer <p> --format <f> [--type <t>] [--camera-mode <m>]`
 

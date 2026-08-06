@@ -56,3 +56,24 @@ describe("narrativeKindsFor — what this type can actually be", () => {
     expect(narrativeKindsFor("dw-chart", "d3-bars")).toEqual([]);
   });
 });
+
+// The kinds a caller can QUERY and the kinds the code offers must be one list — two truths about
+// the same product is how a journalist gets told "impossible" about something that works.
+import { CAMERA_MODE_FOR_KIND } from "./narrative-kinds";
+
+describe("every offered kind can be expressed to the engines", () => {
+  it("each map kind maps to the cameraMode that selects it", () => {
+    for (const k of narrativeKindsFor("map-native", "choropleth"))
+      expect(CAMERA_MODE_FOR_KIND[k.kind]).toBeTruthy();
+  });
+
+  it("the narrating kinds are exactly those that owe a storyboard", () => {
+    for (const [producer, type] of [
+      ["map-native", "choropleth"],
+      ["chart-native", "bar"],
+      ["chart-native", "pie"],
+    ] as const)
+      for (const k of narrativeKindsFor(producer, type))
+        expect(k.owesStoryboard).toBe(k.kind !== "reveal" ? k.owesStoryboard : false);
+  });
+});
