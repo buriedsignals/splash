@@ -2915,6 +2915,50 @@ git add docs/superpowers/plans/2026-08-06-doctrine-twin-sp1-spine.md
 git commit -m "docs(plan): Task 3 and Task 9 amended — whereIs's real Gate 2 condition, SKILL.md literal and verb vocabulary"
 ```
 
+**Amended a third time in the same review round — the previous amendment's own claim was
+overstated, and the fix corrects the claim rather than just the code.** The prior round's report
+said residual drift between `where.mjs`'s `missingForGate2` and `twin-storyboard`'s
+`checkStoryboard` was "closed mechanically... so a future divergence... fails a test instead of
+shipping silently." That is not what the tests at the time actually did. The reviewer proved it two
+ways: adding a seventh `HAND` field to `checkStoryboard`'s side alone left `where.mjs` completely
+unaware (`bun test skills/splash-twin` stayed 49/49 green); and two of `missingForGate2`'s own new
+branches (`candidates.length === 0`, `!candidates.includes(slot.chosen)`) had no test naming them at
+all, despite the report's mutation table implying otherwise.
+
+**Controller ruling, stated for the record:** the no-cross-skill-import rule (Task 9's gotcha,
+verified empirically by grepping every import in the branch) binds **runtime** code. A **test** may
+import from another skill for the sole, narrow purpose of asserting two implementations agree —
+coupling as the explicit point of the test, not a leak into shipped code.
+
+**Fixed:**
+1. The two previously-unpinned branches of `missingForGate2` are now pinned directly in
+   `test/where.test.ts` (a slot's `chosen` present with no `candidates` key at all; a slot's
+   `chosen` present but absent from its own `candidates`).
+2. A new test block imports `checkStoryboard`/`parseStoryboard` from `twin-storyboard` — the one
+   deliberate, documented exception to the no-cross-import rule — and feeds nine shared
+   `STORYBOARD.md` fixtures (complete; missing a hand field; no slots; unchosen slot; chosen off
+   the candidate list; chosen with no candidates key; bare `null` takeaway; quoted `"null"`
+   takeaway as a control; a quoted comma inside an inline candidates array) to both `whereIs` and
+   `checkStoryboard`, asserting they reach the same open/closed verdict on every one.
+3. Verified in both directions, per the reviewer's own recipe: a `HAND` field added to
+   `twin-storyboard/scripts/storyboard.mjs` alone turned the new cross-implementation test red (3
+   of the 9 fixtures disagreed); a rule mutated in `where.mjs` alone also turned it red (plus the
+   two newly-pinned direct tests, independently). Both reverted clean, full suite reconfirmed green
+   (154/154).
+4. `SKILL.md`'s gotcha section was rewritten again to state precisely what is now mechanically
+   closed and by which of the two tests, replacing the earlier overstated single sentence.
+
+```bash
+git add twin/skills/splash-twin/test/where.test.ts
+git commit -m "test(splash-twin): pin the two unpinned Gate 2 branches and prove agreement with checkStoryboard in both drift directions"
+
+git add twin/skills/splash-twin/SKILL.md
+git commit -m "docs(splash-twin): SKILL.md states precisely what is mechanically closed, and by which test"
+
+git add docs/superpowers/plans/2026-08-06-doctrine-twin-sp1-spine.md
+git commit -m "docs(plan): Task 9 amended again — the prior amendment's own drift-coverage claim was overstated, corrected with a cross-implementation test"
+```
+
 ---
 
 ## Task 10: Delivery — offer the forms, build only the chosen one
