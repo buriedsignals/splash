@@ -26,6 +26,9 @@ export const RUNTIMES: Record<
   string,
   { label: string; verified: boolean; login?: RuntimeLogin }
 > = {
+  // The reference runtime: proven by the live install of 2026-08-05 recorded in
+  // docs/installer/setup-page-proof.md (`"runtime": "claude"`, ran the runtime + launcher steps
+  // through to `Done!`).
   claude: {
     label: "Claude Code",
     verified: true,
@@ -36,6 +39,9 @@ export const RUNTIMES: Record<
       optional: true,
     },
   },
+  // Proven end-to-end (2026-07-13, commit 92613a66): discovery of all 8 skills, and native nested
+  // skill invocation (splash -> suggest-article -> suggest-chart -> dw-chart) driving a correct
+  // accepted.json. See docs/installer/codex-proof.md.
   codex: {
     label: "Codex",
     verified: true,

@@ -1,9 +1,10 @@
 # Codex runtime — end-to-end proof plan
 
-Status: **module shipped, proof PENDING.** This documents the manual proof that gates flipping
-`codex.verified` to `true` in `install/configurator-core.ts`. It cannot be run in CI or from this
-repo's dev sandbox: there is no Codex binary here and Codex needs an interactive OpenAI login. Run it
-on a real machine with a Codex account. `codex.verified` stays `false` until all three layers pass.
+Status: **proof PASSED (2026-07-13, commit `92613a66`) — `codex.verified` is `true`.** This
+documents the manual proof that gated flipping `codex.verified` in `install/configurator-core.ts`;
+see "Proof result" below for what ran. It cannot be run in CI or from this repo's dev sandbox: there
+is no Codex binary here and Codex needs an interactive OpenAI login. Re-run this on a real machine
+with a Codex account to re-verify after a change to the adapter or to Codex itself.
 
 ## What is already mechanically verified (no live Codex)
 
