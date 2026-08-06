@@ -11,7 +11,6 @@ export const MODEL_SCRIPT_ID = "preflight-model";
 /** The section ids, in the order a newsroom lives them (spec 2026-07-26 §3). */
 export const PAGE_SECTIONS = [
   "newsroom",
-  "language",
   "assistant",
   "capabilities",
   "publishing",
@@ -33,9 +32,7 @@ export type PageCopy = {
   profileOwned: string;
   profileGround: string;
 
-  languageTitle: string;
-  languageHint: string;
-  languageUi: string;
+  /** The publication language row in the profile read-out — the profile is where it lives now. */
   languageContent: string;
 
   assistantTitle: string;
@@ -100,10 +97,6 @@ const EN: PageCopy = {
     "You already have a newsroom profile. It is yours to edit — Splash will not rewrite it. Open NEWSROOM-PROFILE.md to change the house style or the language of your visuals.",
   profileGround: "House ground",
 
-  languageTitle: "Language",
-  languageHint:
-    "Splash can talk to you in one language and publish in another.",
-  languageUi: "Language Splash talks to you in",
   languageContent: "Language your visuals are published in",
 
   assistantTitle: "Your assistant",
@@ -171,10 +164,6 @@ const FR: PageCopy = {
     "Vous avez déjà un profil de rédaction. Il vous appartient — Splash ne le réécrira pas. Ouvrez NEWSROOM-PROFILE.md pour changer le style maison ou la langue de vos visuels.",
   profileGround: "Fond maison",
 
-  languageTitle: "Langue",
-  languageHint:
-    "Splash peut vous parler dans une langue et publier dans une autre.",
-  languageUi: "Langue dans laquelle Splash vous parle",
   languageContent: "Langue de publication de vos visuels",
 
   assistantTitle: "Votre assistant",

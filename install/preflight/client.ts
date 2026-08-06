@@ -9,8 +9,6 @@ import {
   CONTENT_LANGUAGES,
   MODEL_SCRIPT_ID,
   pageCopy,
-  UI_LANGUAGES,
-  type LanguageOption,
   type PageCopy,
 } from "./copy.ts";
 import { groupEnginesByWant } from "./group-by-want.ts";
@@ -286,32 +284,6 @@ function textField(
   return wrapper;
 }
 
-function languageSelect(
-  id: string,
-  label: string,
-  value: string,
-  disabled: boolean,
-  // The two selectors do NOT offer the same list: the page can only be READ in the languages
-  // it has copy for, while a newsroom may PUBLISH in any of them (copy.ts).
-  options: LanguageOption[],
-  onChange: (v: string) => void,
-): HTMLElement {
-  const wrapper = el("div", { class: "field" });
-  wrapper.append(el("label", { for: id }, label));
-  const select = el("select", {
-    id,
-    ...(disabled ? { disabled: "disabled" } : {}),
-  }) as HTMLSelectElement;
-  for (const lang of options)
-    select.append(el("option", { value: lang.id }, lang.label));
-  if (!options.some((l) => l.id === value))
-    select.append(el("option", { value }, value));
-  select.value = value;
-  select.addEventListener("change", () => onChange(select.value));
-  wrapper.append(select);
-  return wrapper;
-}
-
 function renderNewsroom(copy: PageCopy): void {
   const { name, hint, body } = section("newsroom");
   name.textContent = copy.newsroomTitle;
@@ -400,36 +372,6 @@ function renderNewsroom(copy: PageCopy): void {
   });
   colour.append(input);
   body.append(colour);
-}
-
-function renderLanguage(copy: PageCopy): void {
-  const { name, hint, body } = section("language");
-  name.textContent = copy.languageTitle;
-  hint.textContent = copy.languageHint;
-  body.replaceChildren(
-    languageSelect(
-      "ui-lang",
-      copy.languageUi,
-      form.uiLang,
-      false,
-      UI_LANGUAGES,
-      (v) => {
-        form.uiLang = v;
-        render();
-      },
-    ),
-    languageSelect(
-      "content-lang",
-      copy.languageContent,
-      form.contentLang,
-      // Decision 6: an existing profile belongs to the newsroom; the page never rewrites it.
-      model.profileExists,
-      CONTENT_LANGUAGES,
-      (v) => {
-        form.contentLang = v;
-      },
-    ),
-  );
 }
 
 function renderAssistant(copy: PageCopy): void {
@@ -642,7 +584,6 @@ function render(): void {
   (document.getElementById("save") as HTMLButtonElement).textContent =
     copy.save;
   renderNewsroom(copy);
-  renderLanguage(copy);
   renderAssistant(copy);
   renderCapabilities(copy);
   renderReadiness(copy);
