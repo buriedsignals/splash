@@ -39,6 +39,13 @@ import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { centroid } from "@turf/turf";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import { sweepStops, type SweepMark, type SweepStops } from "../sweep-carrier";
+import {
+  sweepFrameWindow,
+  sweptFraction,
+  SWEEP_BLOOM,
+  type SweepFrameWindow,
+} from "../sweep-schedule";
 import { computeHexGrid, type HexCell } from "../hex-grid-geo";
 import { deriveHexGridStory } from "../hex-grid-story";
 import { resolveMapStyle } from "../route-geo";
@@ -89,6 +96,9 @@ interface HGStoryMapState {
   beats: Beat[];
   phases: Phase[];
   solutions: CameraSolution[];
+  /** The frames the sweep runs between — null when no carrier was declared, which is what
+   *  leaves the beat-driven paint below exactly as it was. */
+  sweepWindow: SweepFrameWindow | null;
   triggers: Map<string, number>;
   borderByKey: Map<string, DrawEntry>;
   anchorByKey: Map<string, [number, number]>;
@@ -102,7 +112,7 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
   const legendRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps, width, height, durationInFrames } = useVideoConfig();
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mode = resolveRevealMode(config);
@@ -170,6 +180,31 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
       // so a reveal beat can dim non-highlighted cells via a data-driven expression.
       const layout = computeHexGrid(config);
 
+      // ★ WHERE EACH CELL SITS ON THE SWEEP — baked onto the feature as `__stop` (0 = lights up
+      // first, 1 = last) so the per-frame paint expression compares it against the sweep's own
+      // progress without re-deriving anything. A hex cell is an anonymous bin: its aggregate is
+      // the only thing it carries besides its position, which is exactly what `threshold` and
+      // `space` read. Empty without a declared carrier, and the paint below then stays the
+      // beat-driven one it always was.
+      const sweepStopsByCell: SweepStops = config.sweepCarrier
+        ? sweepStops(
+            config.sweepCarrier,
+            layout.cells.map((cell, idx): SweepMark => {
+              const mark: SweepMark = { name: String(idx), value: cell.value };
+              try {
+                const [lon, lat] = centroid(cell.feature as GeoJSON.Feature)
+                  .geometry.coordinates as [number, number];
+                mark.lon = lon;
+                mark.lat = lat;
+              } catch {
+                // Degenerate geometry — this cell has no position, so `space` lands it at the
+                // end rather than somewhere invented.
+              }
+              return mark;
+            }),
+          )
+        : {};
+
       const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell, idx) => ({
         type: "Feature",
         properties: {
@@ -177,6 +212,7 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
           __count: cell.count,
           __value: cell.value,
           __cellIdx: String(idx),
+          __stop: sweepStopsByCell[String(idx)] ?? 1,
         },
         geometry: cell.feature.geometry,
       }));
@@ -288,12 +324,19 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
         aggregateLabel: layout.aggregateLabel,
       });
 
+      const p0 = phases[0];
       continueWhenMapSettles(m, () => {
         setMapState({
           map: m,
           beats,
           phases,
           solutions,
+          sweepWindow: config.sweepCarrier
+            ? sweepFrameWindow(
+                p0.startFrame + p0.moveFrames + p0.holdFrames,
+                durationInFrames,
+              )
+            : null,
           triggers,
           borderByKey,
           anchorByKey,
@@ -312,6 +355,7 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
       beats,
       phases,
       solutions,
+      sweepWindow,
       triggers,
       borderByKey,
       anchorByKey,
@@ -374,7 +418,27 @@ export const HexGridStory: React.FC<{ config: HexGridConfigShape }> = ({
     //    opacity.
     //  - sequential: nothing lit from establish — every subject's own bloom layer (above)
     //    carries its full entrance instead.
-    if (beatIndex !== lastBeatIndex.current) {
+    if (sweepWindow) {
+      // ★ THE SWEEP PAINTS, not the beat. Every cell blooms when the advancing scalar reaches its
+      // own `__stop` — the densest bin first under `threshold`, one side of the territory then
+      // the other under `space`. The per-subject trail and bloom above still belong to the beats:
+      // the tour narrates, the sweep lights.
+      //
+      // ONE data-driven expression, re-set each frame, rather than a per-cell setPaintProperty
+      // loop: a hex grid carries hundreds of cells and the renderer re-parses the style on each
+      // mutation. Set every frame (not on beat change) because the sweep advances continuously.
+      const swept = sweptFraction(frame, sweepWindow);
+      map.setPaintProperty(CELL_LAYER, "fill-opacity", [
+        "interpolate",
+        ["linear"],
+        ["-", swept, ["get", "__stop"]],
+        0,
+        0,
+        SWEEP_BLOOM,
+        FULL_OPACITY,
+      ] as never);
+      lastBeatIndex.current = beatIndex;
+    } else if (beatIndex !== lastBeatIndex.current) {
       lastBeatIndex.current = beatIndex;
       if (mode === "sequential") {
         map.setPaintProperty(CELL_LAYER, "fill-opacity", 0);

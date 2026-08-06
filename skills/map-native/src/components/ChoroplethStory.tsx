@@ -43,6 +43,19 @@ import { TitleCard, CaptionCard } from "./StoryCards";
 import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene } from "../video-scene";
+import {
+  sweepStops,
+  type CarrierKind,
+  type SweepStops,
+} from "../sweep-carrier";
+import {
+  SWEEP_BLOOM,
+  SWEEP_ENTRANCE_TAIL_S,
+  sweepFrameWindow,
+  sweptFraction,
+} from "../sweep-schedule";
+import { choroplethSweepMarks } from "../choropleth-sweep";
+import { regionCentroids } from "../choropleth-sweep-geo";
 import { legendTheme } from "../theme/legend-theme";
 import { resolveMapStyle } from "../route-geo";
 import { fmtBinRange } from "../core/legend-format";
@@ -63,13 +76,21 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
 const NUM_BINS = 5;
 
-// Enriched GeoJSON world — adds __value, __hasData, __binIdx.
+// Enriched GeoJSON world — adds __value, __hasData, __binIdx, and __stop.
+//
+// ★ `__stop` is WHERE THIS REGION SITS ON THE SWEEP (0 = lights up first, 1 = last), baked onto
+// the feature so the per-frame paint expression can compare it against the sweep's own progress
+// without re-deriving anything. Which scalar produced it — a threshold falling, a clock advancing,
+// a line crossing the territory — is the CARRIER's business alone (sweep-carrier.ts). 1 for a
+// region the carrier cannot place, so it arrives at the close rather than asserting a rank the
+// data never gave.
 function enrichWorld(
   worldGeoJson: GeoJSON.FeatureCollection,
   joined: { key: string; value: number | null }[],
   sortedBins: { min: number; max: number; color: string }[],
   beat: Beat,
   joinKey: string,
+  stops: SweepStops = {},
 ): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -88,6 +109,7 @@ function enrichWorld(
           __value: j.value,
           __hasData: j.value !== null,
           __binIdx: binIdx,
+          __stop: stops[j.key] ?? 1,
         },
       };
     }),
@@ -106,6 +128,11 @@ interface MapStory {
   triggers: Map<string, number>;
   borderByRegion: Map<string, DrawEntry>;
   joinKey: string;
+  /** Where each region sits on the sweep. Empty when no carrier is declared — which is what
+   *  keeps an un-swept story rendering exactly as it always did. Held here rather than in a
+   *  top-level memo because `space` needs the region centroids, and those only exist once the
+   *  geometry has been resolved inside the map's own load handler. */
+  stops: SweepStops;
 }
 
 export type ChoroplethStoryConfig = ChoroplethData & {
@@ -139,6 +166,15 @@ export type ChoroplethStoryConfig = ChoroplethData & {
   lang?: string;
   /** context (default) blooms the subject over the full distribution; sequential — Task 9. */
   revealMode?: string;
+  /** ★ WHAT MAKES THIS STORY ADVANCE (sweep-carrier.ts). Absent ⇒ nothing changes: the beats
+   *  drive the reveal exactly as they always did. Present ⇒ every region blooms when the sweep
+   *  reaches it, whatever the beat structure — the map-explainer device, with the carrier chosen
+   *  for the subject instead of a river the subject may not have. */
+  sweepCarrier?: CarrierKind;
+  /** The data column holding each region's DATE — a bare year, or an ISO date. What the `time`
+   *  carrier advances on. Absent ⇒ `time` is not offered (validate-config refuses it by name),
+   *  never guessed from a column that merely looks temporal. */
+  timeField?: string;
   /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
   brandHue?: string;
   /** Journalist-confirmed claim-arc (S2) — honoured by deriveMapStory. Dropping it here would render a
@@ -154,9 +190,10 @@ export const ChoroplethStory: React.FC<{
   const legendRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps, width, height, durationInFrames } = useVideoConfig();
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mode = resolveRevealMode(config);
+
   const houseHue = config.brandHue ?? config.brandPalette?.[0];
   const theme = useMemo(
     () => legendTheme(dark, undefined, houseHue),
@@ -232,6 +269,37 @@ export const ChoroplethStory: React.FC<{
         config,
         "choropleth-story",
       );
+
+      // ★ THE SWEEP'S STOPS — computed HERE, where the geometry exists, because two of the five
+      // carriers need something the rows alone do not carry: `time` needs the declared temporal
+      // column parsed onto each mark, and `space` needs each region's position. Building the
+      // marks from `{name, value}` alone (as this did) left both carriers written, tested, and
+      // unreachable — every mark landed at 1 and the map filled at the close.
+      //
+      // Guarded on `config.sweepCarrier`: with no carrier declared not even the centroid pass
+      // runs, so an un-swept story does exactly the work it did before.
+      const rows = (config.rows ?? []) as Record<string, unknown>[];
+      const centroids = config.sweepCarrier
+        ? regionCentroids(
+            worldGeoJson,
+            joinKey,
+            rows.map((r) => String(r[config.regionKey] ?? "")),
+          )
+        : new Map<string, [number, number]>();
+      const stops: SweepStops = config.sweepCarrier
+        ? sweepStops(
+            config.sweepCarrier,
+            choroplethSweepMarks(
+              rows,
+              {
+                regionKey: config.regionKey,
+                valueField: config.valueField,
+                timeField: config.timeField,
+              },
+              (key) => centroids.get(key),
+            ),
+          )
+        : {};
 
       // Compute choropleth layout.
       const layout = computeChoropleth(config, worldGeoJson, joinKey, {
@@ -333,6 +401,7 @@ export const ChoroplethStory: React.FC<{
         sortedBins,
         beats[0],
         joinKey,
+        stops,
       );
 
       // Build fill-color expression (static — color per value, same as ChoroplethReveal).
@@ -376,9 +445,7 @@ export const ChoroplethStory: React.FC<{
       // A subject region's own feature, isolated as a one-feature FeatureCollection —
       // the bloom fill source (filtered so the transient overshoot only ever paints
       // that region, never the rest of the distribution).
-      const singleRegionFeature = (
-        key: string,
-      ): GeoJSON.FeatureCollection => ({
+      const singleRegionFeature = (key: string): GeoJSON.FeatureCollection => ({
         type: "FeatureCollection",
         features: worldGeoJson.features.filter(
           (f) => String(f.properties?.[joinKey]) === key,
@@ -425,6 +492,7 @@ export const ChoroplethStory: React.FC<{
           triggers,
           borderByRegion,
           joinKey,
+          stops,
         });
         continueRender(handle);
       });
@@ -446,6 +514,7 @@ export const ChoroplethStory: React.FC<{
       triggers,
       borderByRegion,
       joinKey,
+      stops,
     } = mapState;
 
     const h = delayRender(`story-frame-${frame}`);
@@ -510,6 +579,7 @@ export const ChoroplethStory: React.FC<{
         sortedBins,
         beats[beatIndex],
         joinKey,
+        stops,
       );
       (map.getSource("choropleth-world") as maptilersdk.GeoJSONSource).setData(
         enriched,
@@ -521,7 +591,42 @@ export const ChoroplethStory: React.FC<{
     //    regions are painted, no-data regions stay unpainted → default basemap.
     //  - sequential: nothing lit from establish — every subject's own bloom layer
     //    (above) carries its full entrance instead.
-    if (mode === "sequential") {
+    if (config.sweepCarrier) {
+      // ★ THE SWEEP PAINTS, not the beat. Each region blooms when the advancing scalar reaches
+      // its own `__stop` — the map-explainer device (a river arriving at a country), with the
+      // carrier chosen for the subject rather than a river the subject may not have.
+      //
+      // Done as ONE data-driven expression rather than a per-region setPaintProperty loop: a
+      // choropleth can carry hundreds of regions, and a loop would issue hundreds of style
+      // mutations per frame on a renderer that re-parses on each one.
+      // The window and the scalar both come from `sweep-schedule` — the SAME pair the five other
+      // sweeping types read. This wiring predated that module and carried its own: it ran the
+      // scalar to exactly 1, so the mark at `__stop = 1` never reached the bloom threshold and
+      // the last region the carrier ordered stayed dark for the whole video. Only a frame pulled
+      // from the END of an mp4 shows that, and the first proof sampled the start and the middle.
+      const swept = sweptFraction(
+        frame,
+        sweepFrameWindow(
+          titleSceneEndFrame,
+          durationInFrames,
+          Math.round(SWEEP_ENTRANCE_TAIL_S * fps),
+        ),
+      );
+      map.setPaintProperty("choropleth-fill", "fill-opacity", [
+        "case",
+        ["==", ["get", "__hasData"], false],
+        0, // no-data: unpainted → default basemap, as always
+        [
+          "interpolate",
+          ["linear"],
+          ["-", swept, ["get", "__stop"]],
+          0,
+          0,
+          SWEEP_BLOOM,
+          0.9,
+        ],
+      ] as never);
+    } else if (mode === "sequential") {
       map.setPaintProperty("choropleth-fill", "fill-opacity", 0);
     } else {
       map.setPaintProperty("choropleth-fill", "fill-opacity", [

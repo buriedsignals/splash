@@ -557,3 +557,37 @@ describe("the narrative kind is asked before a video is produced", () => {
     expect(kind).toContain("nothing is owed: produce");
   });
 });
+
+// ★ THE SWEEP CARRIER IS ASKED, NOT ASSUMED. What makes a map story advance used to be one thing
+// — a route drawing on — so a subject with no route had nothing. It is a choice now, and nothing
+// mechanical can notice that the question was skipped: an unasked carrier renders as the beats'
+// own reveal, which looks exactly like a map whose journalist chose that. The prose IS the
+// enforcement, so these pins are its tripwire.
+describe("the sweep carrier is proposed, not assumed", () => {
+  const carrier = splash.slice(splash.indexOf("WHAT MAKES THE MAP ADVANCE"));
+
+  it("the flow prescribes reading the offer from the command, on this map's own config", () => {
+    expect(splash).toContain("bun lib/host/cli.ts sweep-carriers --config");
+    expect(splash).toContain("WHAT MAKES THE MAP ADVANCE");
+    expect(carrier).toContain("The list is READ, never recited");
+  });
+
+  it("a carrier the data cannot drive is explained, never silently absent", () => {
+    expect(carrier).toContain(
+      "A carrier the data cannot drive is EXPLAINED, not silently absent",
+    );
+    expect(carrier).toContain("notOffered");
+  });
+
+  it("the recommendation comes from the argument, and the journalist chooses", () => {
+    expect(carrier).toContain("Recommend one, from the ARGUMENT");
+    expect(carrier).toContain(
+      "The journalist chooses; the recommendation carries its reason",
+    );
+  });
+
+  it("it says where the answer is written down — the field the engine reads", () => {
+    expect(carrier).toContain("`sweepCarrier` on the spec");
+    expect(carrier).toContain("the field the engine reads");
+  });
+});

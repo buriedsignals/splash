@@ -12,6 +12,12 @@ import {
   type MapArcBeat,
 } from "./map-arc";
 import type { RevealMode } from "./map-story";
+import {
+  CARRIER_KINDS,
+  whyNotOffered,
+  type CarrierKind,
+} from "./sweep-carrier";
+import { choroplethCarriers } from "./choropleth-sweep";
 // Structural-only claim-arc validation (role sequence, non-empty text) — the piece of
 // mapArcErrors that does NOT need a region list. validateRouteConfig uses this alone
 // (see its own comment): a route's valid regions (the territories it crosses) only exist
@@ -104,7 +110,117 @@ export type ChoroplethConfigShape = ChoroplethData & {
   // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
   // Anchors on regionKey values; validated by validateChoroplethConfig below.
   arcBeats?: MapArcBeat[];
+  // ★ What makes the video story ADVANCE (sweep-carrier.ts). Absent ⇒ nothing changes: the
+  // beats drive the reveal exactly as they always did.
+  sweepCarrier?: CarrierKind;
+  // The data column holding each region's DATE — a bare year, or an ISO date. What the `time`
+  // carrier advances on; without it `time` is refused BY NAME rather than guessed from a
+  // column that merely looks temporal.
+  timeField?: string;
 };
+
+// The temporal column, and the carrier that advances on it.
+//
+// Two refusals, and both must NAME THE ACT that resolves them — a validator that says "invalid"
+// leaves the journalist to guess which of six fields it meant.
+//
+// The carrier check runs `choroplethCarriers`, i.e. the SAME derivation the component will run,
+// so what is refused here is exactly what could not have been driven there. Read from the rows,
+// never recited from a list of what the engine "supports".
+function sweepErrors(
+  s: Record<string, unknown>,
+  regionKey: string,
+  valueField: string,
+): string[] {
+  const errors: string[] = [];
+  const rows = Array.isArray(s.rows)
+    ? (s.rows as Record<string, unknown>[])
+    : [];
+
+  let timeField: string | undefined;
+  if (s.timeField !== undefined) {
+    if (typeof s.timeField !== "string" || !s.timeField.trim()) {
+      errors.push(
+        "timeField must be a non-empty string naming a column of rows",
+      );
+    } else if (
+      rows.length &&
+      !rows.some((r) => r && (s.timeField as string) in r)
+    ) {
+      const columns = [...new Set(rows.flatMap((r) => Object.keys(r ?? {})))];
+      errors.push(
+        `timeField "${s.timeField}" is not a column of rows — name one of: ${columns.join(", ")}`,
+      );
+    } else {
+      timeField = s.timeField;
+    }
+  }
+
+  if (s.sweepCarrier !== undefined) {
+    if (
+      typeof s.sweepCarrier !== "string" ||
+      !(CARRIER_KINDS as readonly string[]).includes(s.sweepCarrier)
+    ) {
+      errors.push(
+        `sweepCarrier "${String(s.sweepCarrier)}" is not a carrier — choose one of: ${CARRIER_KINDS.join(", ")}`,
+      );
+    } else if (regionKey && valueField) {
+      const kind = s.sweepCarrier as CarrierKind;
+      const offered = choroplethCarriers(rows, {
+        regionKey,
+        valueField,
+        timeField,
+      });
+      if (!offered.some((o) => o.kind === kind))
+        errors.push(
+          `sweepCarrier "${kind}": ${whyNotOffered(kind)}. ${resolvingAct(kind)} ` +
+            `— or choose a carrier this data drives: ${offered.map((o) => o.kind).join(", ")}.`,
+        );
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * The carrier check the OTHER map types share — the name only.
+ *
+ * A misspelled carrier is not a missing one: `sweepStops` deliberately lands a mark it cannot
+ * place at the END of the sweep, which is right for a region with no date and catastrophic for
+ * "treshold" — every mark would land at the end and the video would play out dark. So the name
+ * fails loud here, before a render burns.
+ *
+ * It stops at the name. Whether a carrier is DRIVABLE by this particular config is derived from
+ * the marks, and each type builds its marks from its own shape (points, markers, cells) at render
+ * time — the choropleth's own `sweepErrors` above shows what that costs. Until each type has its
+ * adapter, a nameable-but-undrivable carrier still renders: every mark lands at the end, together,
+ * which reads as a map that fills at the close — never as one that pretends the sweep ran.
+ */
+function carrierKindError(s: Record<string, unknown>): string | null {
+  if (s.sweepCarrier === undefined) return null;
+  if (
+    typeof s.sweepCarrier !== "string" ||
+    !(CARRIER_KINDS as readonly string[]).includes(s.sweepCarrier)
+  )
+    return `sweepCarrier "${String(s.sweepCarrier)}" is not a carrier — choose one of: ${CARRIER_KINDS.join(", ")}`;
+  return null;
+}
+
+// What to DO about a carrier this choropleth cannot drive. One sentence, one act.
+function resolvingAct(kind: CarrierKind): string {
+  switch (kind) {
+    case "route":
+      return "A choropleth shades regions, it draws no line: produce this story as a route map, which carries its own path";
+    case "time":
+      return 'Set `timeField` to the column holding each region\'s date (a year like 2019, or an ISO date like "2019-03-04"), on at least two rows';
+    case "threshold":
+      return "Make `valueField` numeric on at least two rows — the threshold falls through those numbers";
+    case "space":
+      return "Give the map at least two regions to sweep across: one region is a place, not a direction";
+    case "order":
+      return "The order carrier is always available";
+  }
+}
 
 // Shared basemap validation — every map type must use a registered basemap.
 function validateBasemap(basemap: unknown, errors: string[]): void {
@@ -197,6 +313,7 @@ export function validateChoroplethConfig(
   const cmErr = cameraModeError(s, "choropleth");
   if (cmErr) errors.push(cmErr);
   errors.push(...paletteErrors(s));
+  errors.push(...sweepErrors(s, regionKey, valueField));
 
   if (
     s.valueKind !== undefined &&
@@ -300,6 +417,9 @@ export type SymbolConfigShape = {
   // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
   // Anchors on point labels; validated by validateSymbolConfig below.
   arcBeats?: MapArcBeat[];
+  /** ★ WHAT MAKES THE VIDEO STORY ADVANCE (sweep-carrier.ts) — read by SymbolStory. Absent ⇒
+   *  nothing changes: each point enters on its own beat, as it always did. */
+  sweepCarrier?: CarrierKind;
 };
 
 // Framework-free structural validation of a symbol-map config (pre-render — no
@@ -329,6 +449,8 @@ export function validateSymbolConfig(
   if (cmErr) errors.push(cmErr);
   const bhErrSymbol = brandHueError(s);
   if (bhErrSymbol) errors.push(bhErrSymbol);
+  const scErrSymbol = carrierKindError(s);
+  if (scErrSymbol) errors.push(scErrSymbol);
 
   const title = typeof s.title === "string" ? s.title.trim() : "";
   if (title.length < 12)
@@ -548,6 +670,10 @@ export type LocatorConfigShape = {
   // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
   // Anchors on marker names; validated by validateLocatorConfig below.
   arcBeats?: MapArcBeat[];
+  /** ★ WHAT MAKES THE VIDEO STORY ADVANCE (sweep-carrier.ts) — read by LocatorStory. Markers
+   *  carry no value, so `space` and `order` are the ones this type's data can drive. Absent ⇒
+   *  nothing changes: each marker enters on its own beat, as it always did. */
+  sweepCarrier?: CarrierKind;
 };
 
 export function validateLocatorConfig(
@@ -582,6 +708,8 @@ export function validateLocatorConfig(
   if (cmErrLocator) errors.push(cmErrLocator);
   const bhErrLocator = brandHueError(s);
   if (bhErrLocator) errors.push(bhErrLocator);
+  const scErrLocator = carrierKindError(s);
+  if (scErrLocator) errors.push(scErrLocator);
 
   if (
     s.markerStyle !== undefined &&
@@ -712,6 +840,10 @@ export type DotDensityConfigShape = {
   // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors. Anchors on
   // `regionKey` values (rows[].{regionKey}); validated by validateDotDensityConfig below.
   arcBeats?: MapArcBeat[];
+  /** ★ WHAT MAKES THE VIDEO STORY ADVANCE (sweep-carrier.ts) — read by DotDensityStory, where
+   *  the marks are the REGIONS and their dots stipple in when the sweep reaches them. Absent ⇒
+   *  nothing changes. */
+  sweepCarrier?: CarrierKind;
 };
 
 export function validateDotDensityConfig(
@@ -747,6 +879,8 @@ export function validateDotDensityConfig(
   if (cmErrDotDensity) errors.push(cmErrDotDensity);
   const bhErrDotDensity = brandHueError(s);
   if (bhErrDotDensity) errors.push(bhErrDotDensity);
+  const scErrDotDensity = carrierKindError(s);
+  if (scErrDotDensity) errors.push(scErrDotDensity);
 
   const hasCats =
     Array.isArray(s.categories) && (s.categories as unknown[]).length > 0;
@@ -869,6 +1003,9 @@ export type HexGridConfigShape = {
   // the same asymmetry as RouteConfigShape's arcBeats — see deriveHexGridStory's
   // resolveHexGridArc.
   arcBeats?: MapArcBeat[];
+  /** ★ WHAT MAKES THE VIDEO STORY ADVANCE (sweep-carrier.ts) — read by HexGridStory, where the
+   *  marks are the CELLS (anonymous bins, ordered by their aggregate). Absent ⇒ nothing changes. */
+  sweepCarrier?: CarrierKind;
 };
 
 export function validateHexGridConfig(
@@ -940,6 +1077,8 @@ export function validateHexGridConfig(
     errors.push("revealMode must be one of: context, sequential");
   const cmErrHexGrid = cameraModeError(s, "hex-grid");
   if (cmErrHexGrid) errors.push(cmErrHexGrid);
+  const scErrHexGrid = carrierKindError(s);
+  if (scErrHexGrid) errors.push(scErrHexGrid);
   if (
     s.binShape !== undefined &&
     !["hex", "square"].includes(s.binShape as string)
@@ -1072,6 +1211,9 @@ export type CartogramConfigShape = {
   // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
   // Anchors on `values[].id`; validated by validateCartogramConfig below.
   arcBeats?: MapArcBeat[];
+  /** ★ WHAT MAKES THE VIDEO STORY ADVANCE (sweep-carrier.ts) — read by CartogramStory, where the
+   *  marks are the CELLS. Absent ⇒ nothing changes. */
+  sweepCarrier?: CarrierKind;
 };
 
 export function validateCartogramConfig(
@@ -1124,6 +1266,8 @@ export function validateCartogramConfig(
     errors.push("revealMode must be one of: context, sequential");
   const cmErrCartogram = cameraModeError(s, "cartogram");
   if (cmErrCartogram) errors.push(cmErrCartogram);
+  const scErrCartogram = carrierKindError(s);
+  if (scErrCartogram) errors.push(scErrCartogram);
 
   errors.push(...paletteErrors(s));
 

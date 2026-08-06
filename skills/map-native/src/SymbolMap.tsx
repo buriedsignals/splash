@@ -14,6 +14,7 @@ import {
   type SymbolData,
 } from "./symbol-geo";
 import type { CameraMode } from "./camera-mode";
+import type { CarrierKind } from "./sweep-carrier";
 import {
   symbolLabels,
   labelRadialOffset,
@@ -70,6 +71,11 @@ export interface SymbolConfig extends SymbolData {
   /** Reveal camera choreography ("context" default | "sequential"). See map-story.ts
    * resolveRevealMode — unset/unknown falls back to "context". Consumed by SymbolStory. */
   revealMode?: string;
+  /** ★ WHAT MAKES THIS STORY ADVANCE (sweep-carrier.ts) — consumed by SymbolStory only.
+   *  Absent ⇒ nothing changes: each point enters on its own beat exactly as it always did.
+   *  Present ⇒ each point enters when the sweep reaches it (highest value first under
+   *  `threshold`, west-to-east under `space`, …), whatever the beat structure. */
+  sweepCarrier?: CarrierKind;
   filters?: MapFilter[];
   /** deliverable language — localizes symbol value labels + "Source". Default English. */
   lang?: string;

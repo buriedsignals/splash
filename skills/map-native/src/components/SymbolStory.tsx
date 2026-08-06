@@ -44,6 +44,12 @@ import {
   AREAL_LABEL_START_S,
 } from "../story-choreography";
 import { stagedEntrance, clampOpacity } from "../core/staged-reveal";
+import { sweepStops, type SweepMark } from "../sweep-carrier";
+import {
+  sweepFrameWindow,
+  sweepTriggerFrames,
+  SWEEP_ENTRANCE_TAIL_S,
+} from "../sweep-schedule";
 import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapStyle } from "../route-geo";
 import { houseFill } from "../theme/house-ramp";
@@ -94,7 +100,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
   const ref = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps, width, height, durationInFrames } = useVideoConfig();
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mapFrame = resolveMapFrame(width, height, {
     titleLines: 2,
@@ -187,6 +193,36 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         revealTriggers,
       );
 
+      // ★ THE SWEEP DECIDES WHEN, when the journalist chose a carrier. Same device, same
+      // envelope: only the trigger changes hands — from the beat that happens to visit a point
+      // to the point's own place on the advancing scalar (highest value first under `threshold`,
+      // west→east under `space`, its own date under `time`). A point the carrier cannot place
+      // lands at the end of the window, never at the start.
+      //
+      // The window opens once the title card has cleared and closes a full entrance before the
+      // last frame, so the point the sweep reaches LAST still blooms and writes its label inside
+      // the video. Absent a carrier this is null and `markTriggers` stands untouched — the
+      // invariant that makes a carrier-less render byte-identical.
+      const p0 = phases[0];
+      const sweepTriggers = config.sweepCarrier
+        ? sweepTriggerFrames(
+            sweepStops(
+              config.sweepCarrier,
+              geo.symbols.map((s): SweepMark => ({
+                name: s.label ?? "",
+                value: s.value,
+                lon: s.lon,
+                lat: s.lat,
+              })),
+            ),
+            sweepFrameWindow(
+              p0.startFrame + p0.moveFrames + p0.holdFrames,
+              durationInFrames,
+              Math.round(fps * SWEEP_ENTRANCE_TAIL_S),
+            ),
+          )
+        : null;
+
       const labels = symbolLabels(geo.symbols, config.lang);
       // `anchor` starts at the FT/NYT direct-label default (text to the RIGHT of the point,
       // MapLibre "left") and is re-derived per frame from each symbol's projected position.
@@ -209,7 +245,8 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
           __triggerFrame:
-            markTriggers.get(s.label ?? "") ?? Number.POSITIVE_INFINITY,
+            (sweepTriggers ?? markTriggers).get(s.label ?? "") ??
+            Number.POSITIVE_INFINITY,
           __radius: 0,
           __opacity: 0,
           __labelOpacity: 0,

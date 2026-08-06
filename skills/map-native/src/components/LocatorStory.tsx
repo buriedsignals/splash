@@ -55,6 +55,12 @@ import {
   AREAL_LABEL_START_S,
 } from "../story-choreography";
 import { stagedEntrance, clampOpacity } from "../core/staged-reveal";
+import { sweepStops, type SweepMark } from "../sweep-carrier";
+import {
+  sweepFrameWindow,
+  sweepTriggerFrames,
+  SWEEP_ENTRANCE_TAIL_S,
+} from "../sweep-schedule";
 import type { LocatorConfigShape } from "../validate-config";
 import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
@@ -109,7 +115,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
   const legendRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps, width, height, durationInFrames } = useVideoConfig();
 
   const geo = locatorGeometry({
     markers: config.markers,
@@ -214,6 +220,33 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         revealTriggers,
       );
 
+      // ★ THE SWEEP DECIDES WHEN, when the journalist chose a carrier. Same envelope, same
+      // dim/highlight tour on top — only the trigger changes hands, from the beat that happens
+      // to visit a marker to the marker's own place on the advancing scalar.
+      //
+      // A locator's markers carry no value, so the carriers this type's data drives are `space`
+      // (a line crossing the territory on a bearing) and `order` (the walk itself). Nothing here
+      // says so: `sweepStops` reads what the marks carry, and a carrier it cannot read lands
+      // every marker at the end of the window rather than inventing a rank.
+      const p0 = phases[0];
+      const sweepTriggers = config.sweepCarrier
+        ? sweepTriggerFrames(
+            sweepStops(
+              config.sweepCarrier,
+              geo.markers.map((mk): SweepMark => ({
+                name: mk.label,
+                lon: mk.lon,
+                lat: mk.lat,
+              })),
+            ),
+            sweepFrameWindow(
+              p0.startFrame + p0.moveFrames + p0.holdFrames,
+              durationInFrames,
+              Math.round(fps * SWEEP_ENTRANCE_TAIL_S),
+            ),
+          )
+        : null;
+
       const features: GeoJSON.Feature[] = geo.markers.map((mk, i) => ({
         type: "Feature",
         id: i,
@@ -227,7 +260,8 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
           anchor: "left", // MapLibre text-anchor; recomputed per frame (edge-aware)
           __highlight: true, // establish: all markers full; recomputed per beat
           __triggerFrame:
-            markTriggers.get(mk.label) ?? Number.POSITIVE_INFINITY,
+            (sweepTriggers ?? markTriggers).get(mk.label) ??
+            Number.POSITIVE_INFINITY,
           __radius: 0,
           __opacity: 0,
           __strokeOpacity: 0,

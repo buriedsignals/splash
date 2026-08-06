@@ -40,8 +40,16 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { centroid } from "@turf/turf";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { poleOfInaccessibility } from "../core/label-anchor";
+import { sweepStops, type SweepMark, type SweepStops } from "../sweep-carrier";
+import {
+  sweepFrameWindow,
+  sweptFraction,
+  SWEEP_BLOOM,
+  type SweepFrameWindow,
+} from "../sweep-schedule";
 import { resolveVideoGeometry } from "../core/video-geometry";
 import { mainlandFeature } from "../choropleth-geo";
 import {
@@ -100,6 +108,9 @@ interface DotStoryMapState {
   beats: Beat[];
   phases: Phase[];
   solutions: CameraSolution[];
+  /** The frames the sweep runs between — null when no carrier was declared, which is what
+   *  leaves the beat-driven dot opacity below exactly as it was. */
+  sweepWindow: SweepFrameWindow | null;
   triggers: Map<string, number>;
   borderByKey: Map<string, DrawEntry>;
   anchorByKey: Map<string, [number, number]>;
@@ -121,7 +132,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
   const legendRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps, width, height, durationInFrames } = useVideoConfig();
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mode = resolveRevealMode(config);
@@ -204,24 +215,49 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
       // the region's total dot count, across all its groups) so the entrance can stipple
       // dots in with a per-dot stagger instead of fading the whole region uniformly (see
       // buildDotOpacityExpression, dot-density-story.ts).
+      // ★ WHERE EACH REGION SITS ON THE SWEEP — the marks here are the REGIONS (a single dot is
+      // a unit of the quantity, not a subject), and each of a region's dots carries its region's
+      // `__stop` (0 = stipples in first, 1 = last) so the per-frame opacity expression compares
+      // it against the sweep's own progress without re-deriving anything. A region's value is
+      // its dot count: every dot stands for the same quantity (layout.dotValue), so the count IS
+      // the mapped quantity, at the scale the map itself chose. Empty without a declared
+      // carrier, and the dot opacity below then stays the beat-driven one it always was.
+      const sweepStopsByRegion: SweepStops = config.sweepCarrier
+        ? sweepStops(
+            config.sweepCarrier,
+            layout.regions.map((region): SweepMark => {
+              const mark: SweepMark = {
+                name: region.key,
+                value: region.groups.reduce((s, g) => s + g.count, 0),
+              };
+              try {
+                const [lon, lat] = centroid(region.feature).geometry
+                  .coordinates as [number, number];
+                mark.lon = lon;
+                mark.lat = lat;
+              } catch {
+                // Degenerate geometry — this region has no position, so `space` lands it at the
+                // end rather than somewhere invented.
+              }
+              return mark;
+            }),
+          )
+        : {};
+
       const dotFeatures: GeoJSON.Feature[] = [];
       for (const region of layout.regions) {
         const regionDotCount = region.groups.reduce((s, g) => s + g.count, 0);
         let dotIndex = 0;
         for (const group of region.groups) {
-          const pts = scatterInPolygon(
-            region.feature,
-            group.count,
-            group.seed,
-          );
+          const pts = scatterInPolygon(region.feature, group.count, group.seed);
           for (const [lon, lat] of pts) {
             dotFeatures.push({
               type: "Feature",
               properties: {
                 color: group.color,
                 __region: region.key,
-                __dotOrder:
-                  regionDotCount > 0 ? dotIndex / regionDotCount : 0,
+                __dotOrder: regionDotCount > 0 ? dotIndex / regionDotCount : 0,
+                __stop: sweepStopsByRegion[region.key] ?? 1,
               },
               geometry: { type: "Point", coordinates: [lon, lat] },
             });
@@ -265,9 +301,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
           "circle-color": ["get", "color"],
           "circle-opacity": 1,
           "circle-stroke-width": 0.3,
-          "circle-stroke-color": dark
-            ? "rgba(0,0,0,0.4)"
-            : "rgba(0,0,0,0.15)",
+          "circle-stroke-color": dark ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0.15)",
           "circle-stroke-opacity": 1,
         },
       });
@@ -372,12 +406,19 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
         legend: layout.legend,
       });
 
+      const p0 = phases[0];
       continueWhenMapSettles(m, () => {
         setMapState({
           map: m,
           beats,
           phases,
           solutions,
+          sweepWindow: config.sweepCarrier
+            ? sweepFrameWindow(
+                p0.startFrame + p0.moveFrames + p0.holdFrames,
+                durationInFrames,
+              )
+            : null,
           triggers,
           borderByKey,
           anchorByKey,
@@ -396,6 +437,7 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
       beats,
       phases,
       solutions,
+      sweepWindow,
       triggers,
       borderByKey,
       anchorByKey,
@@ -433,12 +475,23 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
     // Dots STIPPLE IN: the fill channel is the dot layer itself, not a bloom fill — a per-frame
     // data-driven circle-opacity expression built from each subject's own staged fillOpacity
     // (pure helper, unit-tested — see dot-density-story.ts).
-    const opacityExpr = buildDotOpacityExpression(
-      mode,
-      beat,
-      stagedMap,
-      DIM_OPACITY,
-    );
+    // ★ THE SWEEP STIPPLES, not the beat, when a carrier was declared: every region's dots come
+    // up when the advancing scalar reaches that region's own `__stop` — the densest first under
+    // `threshold`, one side of the territory then the other under `space` — whatever the camera
+    // happens to be visiting. Same channel (the dots themselves), same single data-driven
+    // expression; only what decides WHEN has changed hands. The per-subject border trail above
+    // still belongs to the beats: the tour narrates, the sweep lights.
+    const opacityExpr = sweepWindow
+      ? [
+          "interpolate",
+          ["linear"],
+          ["-", sweptFraction(frame, sweepWindow), ["get", "__stop"]],
+          0,
+          0,
+          SWEEP_BLOOM,
+          1,
+        ]
+      : buildDotOpacityExpression(mode, beat, stagedMap, DIM_OPACITY);
     map.setPaintProperty(DOT_LAYER, "circle-opacity", opacityExpr as never);
     map.setPaintProperty(
       DOT_LAYER,

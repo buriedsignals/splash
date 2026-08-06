@@ -39,8 +39,16 @@ import {
 } from "remotion";
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
+import { centroid } from "@turf/turf";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { poleOfInaccessibility } from "../core/label-anchor";
+import { sweepStops, type SweepMark, type SweepStops } from "../sweep-carrier";
+import {
+  sweepFrameWindow,
+  sweptFraction,
+  SWEEP_BLOOM,
+  type SweepFrameWindow,
+} from "../sweep-schedule";
 import { resolveVideoGeometry } from "../core/video-geometry";
 import { computeCartogram, type CartogramCell } from "../cartogram-geo";
 import { deriveCartogramStory } from "../cartogram-story";
@@ -93,6 +101,9 @@ interface CGStoryMapState {
   beats: Beat[];
   phases: Phase[];
   solutions: CameraSolution[];
+  /** The frames the sweep runs between — null when no carrier was declared, which is what
+   *  leaves the beat-driven paint below exactly as it was. */
+  sweepWindow: SweepFrameWindow | null;
   triggers: Map<string, number>;
   borderByKey: Map<string, DrawEntry>;
   anchorByKey: Map<string, [number, number]>;
@@ -106,7 +117,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
   const legendRef = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   const frame = useCurrentFrame();
-  const { fps, width, height } = useVideoConfig();
+  const { fps, width, height, durationInFrames } = useVideoConfig();
 
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mode = resolveRevealMode(config);
@@ -187,6 +198,31 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
       // scaled variant: keep basemap, strip symbol clutter.
       applyCartogramBasemap(m, dark, layout.variant);
 
+      // ★ WHERE EACH CELL SITS ON THE SWEEP — baked onto the feature as `__stop` (0 = lights up
+      // first, 1 = last) so the per-frame paint expression compares it against the sweep's own
+      // progress without re-deriving anything. Which scalar produced it — a threshold falling
+      // through the values, a line crossing the territory, the walk's own order — is the
+      // CARRIER's business alone (sweep-carrier.ts). Empty without a declared carrier, and the
+      // paint below then stays the beat-driven one it always was.
+      const sweepStopsByCell: SweepStops = config.sweepCarrier
+        ? sweepStops(
+            config.sweepCarrier,
+            layout.cells.map((cell): SweepMark => {
+              const mark: SweepMark = { name: cell.id, value: cell.value };
+              try {
+                const [lon, lat] = centroid(cell.feature as GeoJSON.Feature)
+                  .geometry.coordinates as [number, number];
+                mark.lon = lon;
+                mark.lat = lat;
+              } catch {
+                // Degenerate geometry — this cell has no position, so `space` lands it at the
+                // end rather than somewhere invented.
+              }
+              return mark;
+            }),
+          )
+        : {};
+
       // Build cell GeoJSON. Each feature is tagged with __id (the region id string)
       // so a reveal beat can dim non-highlighted cells via a data-driven expression.
       const cellFeatures: GeoJSON.Feature[] = layout.cells.map((cell) => ({
@@ -195,6 +231,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
           __color: cell.color,
           __id: cell.id,
           __value: cell.value,
+          __stop: sweepStopsByCell[cell.id] ?? 1,
         },
         geometry: cell.feature.geometry,
       }));
@@ -280,10 +317,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
       for (const key of triggers.keys()) {
         const cell = cellById.get(key);
         if (!cell || cell.feature.geometry.type !== "Polygon") continue;
-        borderByKey.set(
-          key,
-          buildDraw([cell.feature.geometry.coordinates[0]]),
-        );
+        borderByKey.set(key, buildDraw([cell.feature.geometry.coordinates[0]]));
         try {
           anchorByKey.set(
             key,
@@ -313,12 +347,19 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
         valueLabel: layout.valueLabel,
       });
 
+      const p0 = phases[0];
       continueWhenMapSettles(m, () => {
         setMapState({
           map: m,
           beats,
           phases,
           solutions,
+          sweepWindow: config.sweepCarrier
+            ? sweepFrameWindow(
+                p0.startFrame + p0.moveFrames + p0.holdFrames,
+                durationInFrames,
+              )
+            : null,
           triggers,
           borderByKey,
           anchorByKey,
@@ -337,6 +378,7 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
       beats,
       phases,
       solutions,
+      sweepWindow,
       triggers,
       borderByKey,
       anchorByKey,
@@ -398,7 +440,28 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
     //    data-driven expression (unchanged prior behaviour); otherwise all cells at full opacity.
     //  - sequential: nothing lit from establish — every subject's own bloom layer (above)
     //    carries its full entrance instead.
-    if (beatIndex !== lastBeatIndex.current) {
+    if (sweepWindow) {
+      // ★ THE SWEEP PAINTS, not the beat. Every cell blooms when the advancing scalar reaches its
+      // own `__stop` — so a cartogram whose story is "who is worst hit, then who follows" lights
+      // up in that order, whatever the camera happens to be visiting. The per-subject trail and
+      // bloom above still belong to the beats: the tour narrates, the sweep lights.
+      //
+      // ONE data-driven expression, re-set each frame, rather than a per-cell setPaintProperty
+      // loop: a cartogram carries a cell per region, and a loop would issue hundreds of style
+      // mutations per frame on a renderer that re-parses on each one. Set every frame (not on
+      // beat change) because the sweep, unlike a beat, advances continuously.
+      const swept = sweptFraction(frame, sweepWindow);
+      map.setPaintProperty(CELL_LAYER, "fill-opacity", [
+        "interpolate",
+        ["linear"],
+        ["-", swept, ["get", "__stop"]],
+        0,
+        0,
+        SWEEP_BLOOM,
+        FULL_OPACITY,
+      ] as never);
+      lastBeatIndex.current = beatIndex;
+    } else if (beatIndex !== lastBeatIndex.current) {
       lastBeatIndex.current = beatIndex;
       if (mode === "sequential") {
         map.setPaintProperty(CELL_LAYER, "fill-opacity", 0);

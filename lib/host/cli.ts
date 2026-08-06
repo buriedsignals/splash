@@ -20,6 +20,7 @@
 // for its side effect — a lone side-effect import is exactly the line a future "unused
 // import" cleanup deletes, and the failure that causes is a runtime `unknown-engine`, not
 // a compile error.
+import { readFileSync } from "node:fs";
 import { ENGINES_REGISTERED } from "../loop/engines";
 import { runVerb } from "../core/verbs";
 import { capabilities, HOST_ONLY_VERBS } from "./capabilities";
@@ -37,6 +38,12 @@ import { describePrecheck, describeProbeRun, presentIn } from "./gates";
 import { describeNewsroom } from "./newsroom";
 import { walkCapability } from "../../skills/splash/src/narrative-walk-gate";
 import { narrativeKindsFor } from "../../skills/splash/src/narrative-kinds";
+import {
+  CARRIER_KINDS,
+  carriersFor,
+  whyNotOffered,
+} from "../../skills/map-native/src/sweep-carrier";
+import { sweepMarksFrom } from "../../skills/map-native/src/sweep-marks";
 import { outDirRefusal } from "./path-safety";
 import { describeIntentQuestion } from "./suggest-intent";
 import { RENDER_SOURCE_POLICY_MARK } from "./source-mark";
@@ -430,7 +437,70 @@ async function main(): Promise<never> {
     emit(
       {
         ok: true,
-        value: { kinds: narrativeKindsFor(producer, parsed.flags["--type"] ?? "") },
+        value: {
+          kinds: narrativeKindsFor(producer, parsed.flags["--type"] ?? ""),
+        },
+      },
+      0,
+    );
+  }
+
+  // ★ WHAT MAKES THIS MAP ADVANCE — read from the data, never assumed. A map story's sweep has
+  // five possible carriers (a route drawing on, a clock, a falling threshold, a line crossing the
+  // territory, or the walk's own order) and they are NOT interchangeable: each one needs
+  // something of the data. A subject with no route had nothing until 2026-08-06, because the one
+  // carrier that existed demanded one.
+  //
+  // Same posture as its two sisters above: read-only, no --run, answerable at the turn the
+  // proposal is composed. It takes the CONFIG rather than a producer/type pair because the
+  // question is about this map's own data, not about what the type could do in principle — a
+  // choropleth of shares can fall from the highest to the lowest, and the same choropleth without
+  // a declared date cannot advance a clock.
+  if (command === "sweep-carriers") {
+    const parsed = parseFlags(rest, ["--config"]);
+    if (!parsed.ok) usage(parsed.message);
+    const configPath = parsed.flags["--config"];
+    if (!configPath)
+      usage(
+        "sweep-carriers needs --config <path> — the map config whose data the sweep would run on",
+      );
+    let config: unknown;
+    try {
+      config = JSON.parse(readFileSync(configPath, "utf8"));
+    } catch (e) {
+      usage(
+        `sweep-carriers could not read ${JSON.stringify(configPath)}: ${(e as Error)?.message ?? String(e)}`,
+      );
+    }
+    const read = sweepMarksFrom(config);
+    // A file that is not a map config at all is an INPUT problem (exit 2), and it is the only
+    // one: a real map whose marks only exist after produce is a truthful ANSWER about that map,
+    // not a malformed request, so it comes back ok with its reason attached.
+    if (!read.ok && read.type === null) usage(`sweep-carriers: ${read.why}`);
+    if (!read.ok)
+      emit(
+        {
+          ok: true,
+          value: { type: read.type, readable: false, why: read.why },
+        },
+        0,
+      );
+    const offered = carriersFor(read.marks);
+    emit(
+      {
+        ok: true,
+        value: {
+          type: read.type,
+          readFrom: read.readFrom,
+          marks: read.marks.length,
+          readable: true,
+          carriers: offered,
+          // The ones this data cannot drive are NAMED with their reason. A carrier missing from
+          // a list a journalist never sees is a capability that dies unnoticed.
+          notOffered: CARRIER_KINDS.filter(
+            (k) => !offered.some((o) => o.kind === k),
+          ).map((kind) => ({ kind, why: whyNotOffered(kind) })),
+        },
       },
       0,
     );
