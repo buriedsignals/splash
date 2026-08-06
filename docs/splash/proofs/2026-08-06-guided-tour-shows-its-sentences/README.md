@@ -16,6 +16,14 @@ La carte apparaît quelques dizaines de frames après l'arrivée de la caméra s
 premier échantillonnage (frame 1098) qui ne la montrait pas encore, et qu'il a fallu re-sonder pour
 ne pas conclure trop vite.
 
+## Un seul objet de texte par étape
+
+Premier jet : le nom du lieu ressortait **en grand au centre** ET la phrase en bas, dans un autre
+traitement typographique — deux objets pour une seule chose, en deux styles (Rémy : « il faut
+homogénéiser »). Le nom (et sa valeur, quand le type en a une) est maintenant un **surtitre** sur
+la même carte, et le libellé central n'est plus dessiné pour une étape écrite. Les récits DÉRIVÉS,
+qui n'ont pas de phrase, gardent le libellé central inchangé.
+
 Cause : les six composants `*Story` masquaient la carte de légende sur tout beat `reveal`. Juste
 pour un reveal DÉRIVÉ (son texte répète le nom et la valeur que la carte écrit déjà), faux pour un
 reveal ÉCRIT. Le drapeau qui distingue les deux (`authored`) existait depuis toujours et aucun

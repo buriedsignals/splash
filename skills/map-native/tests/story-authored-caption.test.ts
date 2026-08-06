@@ -54,6 +54,24 @@ describe("the confirmed walk is marked, and the Story components honour the mark
     expect(STORIES().length).toBe(6);
   });
 
+  // ★ ONE TEXT OBJECT PER STEP. An authored step used to draw the subject TWICE — a giant centred
+  // overlay and a card at the bottom, in two different type treatments. Rémy: « tu ressors le titre
+  // en gros au centre et tu mets le texte en bas d'un autre style. Il faut homogénéiser. »
+  it("an authored step draws no centred label — its subject rides the caption instead", () => {
+    for (const f of STORIES()) {
+      const src = readFileSync(join(DIR, f), "utf8");
+      expect({ f, guarded: src.includes("!beat?.authored && (") }).toEqual({
+        f,
+        guarded: true,
+      });
+      // …and the card is the one that carries the name (and its value, where there is one).
+      expect({ f, eyebrow: src.includes("eyebrow: beat.callout.name") }).toEqual({
+        f,
+        eyebrow: true,
+      });
+    }
+  });
+
   it("…and still suppresses it for a DERIVED reveal, which would only repeat the map", () => {
     for (const f of STORIES()) {
       const src = readFileSync(join(DIR, f), "utf8");

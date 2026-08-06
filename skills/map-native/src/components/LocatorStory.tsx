@@ -580,7 +580,10 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       {overlay &&
         beat?.callout &&
         overlay.calloutPt &&
-        overlay.labelReveal > 0 && (
+        overlay.labelReveal > 0 &&
+        // The centred label is the DERIVED story's caption. An authored step carries its
+        // subject on the CaptionCard instead — one text object, one type scale.
+        !beat?.authored && (
           <CountryLabel
             name={beat.callout.name}
             color={overlay.calloutColor}
@@ -605,7 +608,13 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         (beat?.kind !== "reveal" || beat?.authored) &&
         beat?.copy &&
         overlay.captionReveal > 0 && (
-          <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
+          <CaptionCard
+            text={beat.copy}
+            reveal={overlay.captionReveal}
+            {...(beat.authored && beat.callout
+              ? { eyebrow: beat.callout.name, value: beat.callout.value }
+              : {})}
+          />
         )}
 
       {/* Title card — shown from frame 0, fades out as map scene begins. */}
