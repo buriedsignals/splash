@@ -977,172 +977,101 @@ git commit -m "docs(proof): the setup page tells the truth on a real install"
 
 ---
 
-### Task 9: La vidéo est un choix, et l'installeur peuple ce que la sonde lit
+### Task 9: L'installeur peuple ce que la sonde lit
 
-> Née de la mesure de la Task 2. **Doit passer APRÈS la Task 6** (qui introduit `WantId` et le
-> regroupement par envie) : elle ajoute une envie de plus.
+> Née de la mesure de la Task 2. **Doit passer APRÈS la Task 4** (qui a posé l'ordre des étapes) —
+> elle n'a plus de dépendance à la Task 6 depuis la décision ci-dessous.
+>
+> **Décision (Rémy, 2026-08-05) — on demande tout, pour l'instant.** La première version de cette
+> tâche faisait de la vidéo une case à cocher (ne rien réclamer par défaut, informer, et ne
+> télécharger que si le journaliste coche). Cette version est **écartée pour le moment** : l'install
+> télécharge tout, sans condition. Prix assumé : ~93 Mo par moteur vidéo (deux moteurs) et le temps
+> correspondant, pour une rédaction qui ne fera peut-être jamais de vidéo. L'alternative reste
+> notée ici pour le jour où ce prix dérange : capacité `video-render` avec son `want`, étape
+> conditionnelle APRÈS la page (comme `runtime_install`), et un `install/read-capability.ts` qui
+> répond `1`/`0` au shell.
 
 **Files:**
-- Modify: `lib/newsroom/capabilities.ts` (type `criticalDeps`, les deux moteurs vidéo, nouvelle capacité `video-render`)
-- Modify: `lib/newsroom/readiness.ts:102-133` (normaliser une liste de `criticalDeps`)
-- Modify: `install/preflight/copy.ts` (titre de l'envie `videos` + sa phrase d'information, deux tables)
-- Create: `install/read-capability.ts`
-- Modify: `install/bootstrap.sh`, `install/bootstrap.ps1` (étape conditionnelle après la page)
-- Modify: `lib/newsroom/capabilities.test.ts`, `lib/newsroom/readiness.test.ts`, `docs/installer/bootstrap-sh.test.ts`, `docs/installer/bootstrap-ps1.test.ts`
+- Modify: `install/bootstrap.sh` (bloc d'empaquetage, après le téléchargement Playwright)
+- Modify: `install/bootstrap.ps1` (miroir Windows)
+- Modify: `docs/installer/bootstrap-sh.test.ts`, `docs/installer/bootstrap-ps1.test.ts`
 
 **Interfaces:**
-- Consomme : `WantId` (Task 6), `resolveSkillsRoot` (Task 1).
-- Produit : `WantId` gagne `"videos"` · `NewsroomCapability.criticalDeps: CriticalDeps | CriticalDeps[] | null` · la capacité `video-render`.
+- Consomme : l'ordre posé par la Task 4 (`pack < chromium < page < runtime`).
+- Produit : rien de nouveau à l'API ; une étape d'install et deux assertions d'ordre de plus.
 
 **Le problème, mesuré (Task 2) :** le cache du navigateur de rendu est **par dossier de skill**
-(`<skill>/node_modules/.remotion/…`) et n'est rempli que par Remotion lui-même, au premier rendu ou
-sur `bunx remotion browser ensure`. L'installeur, lui, exécute `bunx playwright install chromium`,
-qui remplit un tout autre cache. Donc aujourd'hui la page annonce « missing » sur les deux moteurs
-vidéo après une install parfaitement saine — et `map-native` n'a jamais de navigateur du tout.
+(`<skill>/node_modules/.remotion/…`) et n'est rempli que par Remotion lui-même. L'installeur
+exécute `bunx playwright install chromium`, qui remplit un tout autre cache — celui de Playwright,
+utilisé par les captures statiques. Donc aujourd'hui, après une install parfaitement saine, la page
+lit « missing » sur `chart-native` et `map-native`, et `map-native` n'a jamais de navigateur du
+tout. Ce n'est pas une question de position : c'est la mauvaise commande.
 
-**La décision (Rémy, 2026-08-05) :** on ne réclame rien au journaliste par défaut, on lui **montre
-l'information**, et **il coche s'il veut des vidéos**. Non coché ⇒ un cache vide n'est jamais un
-manque. Coché ⇒ l'installeur télécharge, et la page dit vrai.
-
-L'étape Playwright reste **avant** la page (elle sert le rendu statique, pas la vidéo). La nouvelle
-étape Remotion est **après** la page, comme `runtime_install`, parce qu'elle dépend d'une réponse
-que seule la page connaît.
-
-- [ ] **Step 1: Write the failing capability test**
+- [ ] **Step 1: Write the failing order tests**
 
 ```ts
-// lib/newsroom/capabilities.test.ts — ADD
-// Video is the one thing the install cannot silently provide: its renderer downloads a ~93 MB
-// browser PER ENGINE DIRECTORY, and Remotion only ever writes that cache itself. So it is the
-// journalist's choice, and an unticked video capability never reports anything missing.
-test("video is its own capability, covering both engines that render it", () => {
-  const video = NEWSROOM_CAPABILITIES["video-render"]!;
-  expect(video.want).toBe("videos");
-  expect(video.env).toEqual([]);
-  expect(video.implemented).toBe(true);
-  const dirs = [video.criticalDeps].flat().map((d) => d!.fromSkillDir).sort();
-  expect(dirs).toEqual(["chart-native", "map-native"]);
-  for (const d of [video.criticalDeps].flat())
-    expect(d!.packages).toContain("remotion");
-});
-
-// The engines keep their own dependencies, but not the video renderer's: an unticked video
-// capability must leave a chart engine ready on a machine that has never rendered a video.
-test("the in-house engines no longer carry the video renderer", () => {
-  for (const id of ["chart-native", "map-native"]) {
-    const cap = NEWSROOM_CAPABILITIES[id]!;
-    for (const d of [cap.criticalDeps].flat())
-      expect(d!.packages).not.toContain("remotion");
-  }
+// docs/installer/bootstrap-sh.test.ts — ADD (the file already reads the shipped script into `sh`)
+// The page's readiness probe for the two video engines is a filesystem stat on a cache only
+// Remotion ever writes, per skill directory (docs/installer/remotion-cache-measurement.md).
+// `playwright install chromium` fills a different cache entirely, so it cannot stand in: without
+// this step the page reports two healthy engines as missing on every install.
+test("fetches the video renderer for BOTH video engines, before the page", () => {
+  const pack = sh.indexOf("bun run pack-skills");
+  const ensure = sh.indexOf("remotion browser ensure");
+  const page = sh.indexOf("bun install/configurator.ts");
+  expect(ensure).toBeGreaterThan(pack);
+  expect(page).toBeGreaterThan(ensure);
+  for (const engine of ["chart-native", "map-native"])
+    expect(sh).toContain(engine);
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+Écrire le jumeau dans `docs/installer/bootstrap-ps1.test.ts`, avec les chaînes du script
+PowerShell.
 
-Run: `bun test lib/newsroom/capabilities.test.ts`
-Expected: FAIL — `video-render` n'existe pas.
+- [ ] **Step 2: Run them to verify they fail**
 
-- [ ] **Step 3: Declare the capability and move the renderer onto it**
+Run: `bun test docs/installer/bootstrap-sh.test.ts docs/installer/bootstrap-ps1.test.ts`
+Expected: FAIL — `remotion browser ensure` n'apparaît dans aucun des deux scripts (`indexOf` → -1).
 
-Dans `lib/newsroom/capabilities.ts` : ajouter `"videos"` à `WantId` ; extraire le type de
-`criticalDeps` sous le nom `CriticalDeps` et autoriser une liste
-(`criticalDeps: CriticalDeps | CriticalDeps[] | null`) ; retirer `"remotion"` des `packages` de
-`chart-native` et `map-native` ; ajouter :
+- [ ] **Step 3: Fetch the renderer, in the packaging block**
 
-```ts
-  // The video renderer, as ONE capability across the two engines that render video. It is
-  // separate because it is the only thing the install cannot quietly provide: Remotion writes
-  // its browser cache itself, per skill directory (measured — docs/installer/remotion-cache-
-  // measurement.md), and it weighs ~93 MB each. So the journalist ticks it, and an unticked
-  // video capability reports nothing missing on a newsroom that will never make one.
-  "video-render": {
-    id: "video-render",
-    label: "Video versions of your charts and maps",
-    want: "videos",
-    kind: "engine",
-    env: [],
-    envHelp: {},
-    criticalDeps: [
-      { fromSkillDir: "chart-native", packages: ["remotion"] },
-      { fromSkillDir: "map-native", packages: ["remotion"] },
-    ],
-    implemented: true,
-  },
-```
-
-- [ ] **Step 4: Make readiness read a list**
-
-Dans `lib/newsroom/readiness.ts`, remplacer `if (cap.criticalDeps) {` par une boucle sur
-`[cap.criticalDeps].flat().filter(Boolean)`, en gardant le corps identique (résolution des
-paquets, puis sonde du navigateur quand `packages` contient `"remotion"`). Le premier groupe qui
-manque quelque chose rend la raison, comme aujourd'hui — mais la raison doit nommer le moteur
-concerné, sinon « missing » ne dit pas lequel des deux.
-
-- [ ] **Step 5: Run the readiness tests**
-
-Run: `bun test lib/newsroom`
-Expected: PASS. Ajouter un cas : `video-render` activé, le navigateur présent pour `chart-native`
-et absent pour `map-native` ⇒ `missing`, et la raison cite `map-native`.
-
-- [ ] **Step 6: Say it on the page**
-
-Dans `install/preflight/copy.ts`, ajouter à `wants` l'entrée `videos` — EN `"Video"`, FR
-`"Des vidéos"` — et une phrase d'information, affichée sous ce groupe :
-
-EN : `"Videos are rendered on your machine by Remotion. Ticking this downloads its renderer (about 93 MB per engine) during the install; leaving it unticked changes nothing else."`
-FR : `"Les vidéos sont rendues sur votre machine par Remotion. Cocher télécharge son moteur de rendu (environ 93 Mo par moteur) pendant l'installation ; laisser décoché ne change rien d'autre."`
-
-Le groupe se rend comme les autres (Task 6) ; la phrase est le `want-hint` du groupe.
-
-- [ ] **Step 7: Let the installer read the answer**
-
-```ts
-// install/read-capability.ts
-// Is one capability enabled in the newsroom's decor? Prints "1" or "0" and nothing else — the
-// bootstrap is bash and PowerShell, and neither should parse JSON. Mirrors read-runtime.ts,
-// which resolves the same decor for the same reason.
-import { loadDecor } from "../lib/newsroom/decor.ts";
-
-const id = process.argv[2] ?? "";
-const decor = loadDecor(process.cwd());
-console.log(decor.state.capabilities[id]?.enabled === true ? "1" : "0");
-```
-
-- [ ] **Step 8: Fetch the renderer, only when it was asked for**
-
-Dans `install/bootstrap.sh`, APRÈS le bloc de la page et AVANT le module de runtime :
+Dans `install/bootstrap.sh`, juste après le bloc `bunx playwright install chromium` et **dans la
+même étape** (donc toujours avant la page) :
 
 ```sh
-# 6. The video renderer's browser — only if the journalist ticked video on the setup page.
-# It goes here, after the page, for the same reason the runtime module does: it depends on an
-# answer only the page has. Remotion writes this cache itself, per skill directory (measured:
-# docs/installer/remotion-cache-measurement.md), so it is fetched once per video engine.
-if [ "$( cd "$DEST" && bun install/read-capability.ts video-render 2>/dev/null || echo 0 )" = "1" ]; then
-  for engine in chart-native map-native; do
-    echo "-> Downloading the video renderer for $engine…"
-    if ! ( cd "$DEST/.dist/skills/$engine" && bunx remotion browser ensure ); then
-      echo "The video renderer could not be downloaded for $engine — re-run this installer to resume." >&2
-      exit 1
-    fi
-  done
-fi
+# The render browser Remotion itself uses — a DIFFERENT cache from Playwright's, written only by
+# Remotion, and located per skill directory: it walks up from its cwd to the nearest package.json,
+# and each packed skill keeps its own (measured: docs/installer/remotion-cache-measurement.md).
+# So it is fetched once per video engine, and the setup page's probe finds it where it looks.
+for engine in chart-native map-native; do
+  echo "-> Downloading the video renderer for $engine…"
+  if ! ( cd "$DEST/.dist/skills/$engine" && bunx remotion browser ensure ); then
+    echo "The video renderer could not be downloaded for $engine — re-run this installer to resume." >&2
+    exit 1
+  fi
+done
 ```
 
-Miroir équivalent dans `install/bootstrap.ps1`, et renumérotation des étapes suivantes dans les
-deux fichiers.
+Miroir équivalent dans `install/bootstrap.ps1`, à la même place, avec l'idiome
+`Push-Location`/`Pop-Location` du fichier.
 
-- [ ] **Step 9: Guard the order, and verify by mutation**
+- [ ] **Step 4: Run the tests**
 
-Étendre les tests d'ordre des deux scripts : `pack < chromium < page < remotion-ensure < runtime`.
-Puis, pour chaque script, déplacer le bloc `remotion browser ensure` avant la page, relancer
-`bun test docs/installer`, constater le ROUGE, remettre, constater le VERT. Les deux sorties vont
-au rapport.
+Run: `bun test docs/installer` puis `bash -n install/bootstrap.sh`
+Expected: PASS, et `bash -n` silencieux.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 5: Verify by mutation, in both scripts**
+
+Déplacer le bloc `remotion browser ensure` après l'appel à la page, relancer
+`bun test docs/installer`, constater le ROUGE ; remettre, constater le VERT. Faire les deux
+scripts séparément et joindre les deux sorties au rapport.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add lib/newsroom/ install/preflight/copy.ts install/read-capability.ts install/bootstrap.sh install/bootstrap.ps1 docs/installer/
-git commit -m "feat(setup-page): video is a choice, and the installer fetches what the probe reads"
+git add install/bootstrap.sh install/bootstrap.ps1 docs/installer/
+git commit -m "fix(install): fetch the render browser the readiness probe actually reads"
 ```
 
 ---
