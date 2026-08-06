@@ -48,7 +48,14 @@ import {
   type CarrierKind,
   type SweepStops,
 } from "../sweep-carrier";
-import { choroplethSweepMarks, regionCentroids } from "../choropleth-sweep";
+import {
+  SWEEP_BLOOM,
+  SWEEP_ENTRANCE_TAIL_S,
+  sweepFrameWindow,
+  sweptFraction,
+} from "../sweep-schedule";
+import { choroplethSweepMarks } from "../choropleth-sweep";
+import { regionCentroids } from "../choropleth-sweep-geo";
 import { legendTheme } from "../theme/legend-theme";
 import { resolveMapStyle } from "../route-geo";
 import { fmtBinRange } from "../core/legend-format";
@@ -108,10 +115,6 @@ function enrichWorld(
     }),
   };
 }
-
-/** How much of the sweep a region takes to bloom once reached. Constant, like map-explainer's
- *  BORDER_S/FILL_S: driving the bloom by a slice of the sweep makes a dense map flash by. */
-const SWEEP_BLOOM = 0.06;
 
 interface MapStory {
   map: InstanceType<typeof maptilersdk.Map>;
@@ -596,11 +599,18 @@ export const ChoroplethStory: React.FC<{
       // Done as ONE data-driven expression rather than a per-region setPaintProperty loop: a
       // choropleth can carry hundreds of regions, and a loop would issue hundreds of style
       // mutations per frame on a renderer that re-parses on each one.
-      const swept = interpolate(
+      // The window and the scalar both come from `sweep-schedule` — the SAME pair the five other
+      // sweeping types read. This wiring predated that module and carried its own: it ran the
+      // scalar to exactly 1, so the mark at `__stop = 1` never reached the bloom threshold and
+      // the last region the carrier ordered stayed dark for the whole video. Only a frame pulled
+      // from the END of an mp4 shows that, and the first proof sampled the start and the middle.
+      const swept = sweptFraction(
         frame,
-        [titleSceneEndFrame, durationInFrames - 1],
-        [0, 1],
-        { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+        sweepFrameWindow(
+          titleSceneEndFrame,
+          durationInFrames,
+          Math.round(SWEEP_ENTRANCE_TAIL_S * fps),
+        ),
       );
       map.setPaintProperty("choropleth-fill", "fill-opacity", [
         "case",

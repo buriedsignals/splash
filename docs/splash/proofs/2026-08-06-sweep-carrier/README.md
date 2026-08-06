@@ -93,3 +93,18 @@ expression data-driven — la couture du choroplèthe, pas une seconde.
 
 Dans les trois, la caméra fait toujours sa visite guidée pendant que le balayage peint : les beats
 narrent, le porteur allume.
+
+## La dernière marque s'allume — le défaut de la première version, corrigé
+
+`threshold-last-mark.png` — avant-dernière frame du même mp4 : **les huit pays sont peints**, la
+Pologne (21 %, la valeur la plus basse, donc `__stop = 1`) comprise.
+
+La première version de ce câblage faisait courir le scalaire jusqu'à exactement 1, si bien que
+`swept − __stop` n'atteignait jamais le seuil d'éclosion pour la marque de fin : **la dernière
+région ordonnée par le porteur restait noire toute la vidéo**, quel que soit le porteur. Seule une
+frame prise à la FIN pouvait le montrer — les premières preuves n'échantillonnaient que le début et
+le milieu.
+
+Corrigé en branchant le choroplèthe sur `sweep-schedule.ts`, l'horaire partagé que les cinq autres
+types utilisent déjà : la fenêtre se ferme une entrée complète avant la dernière frame et le
+scalaire court jusqu'à `1 + SWEEP_BLOOM`.

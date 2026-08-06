@@ -38,9 +38,9 @@ These three are exhaustive, and they hold for every input: an unreadable stdin, 
 flag, a hostile payload, or a residual defect inside the façade all still leave one JSON
 document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 
-## The sixteen commands
+## The twenty commands
 
-Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `narrative-kinds`, `can-carry-walk`, `precheck`, `probe`. Acting:
+Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `narrative-kinds`, `sweep-carriers`, `can-carry-walk`, `precheck`, `probe`. Acting:
 `init`, `advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
 `present`.
 
@@ -1325,6 +1325,82 @@ kind on the proposal as `narrativeKind` **and** its `cameraMode` on the spec; th
 guard refuses a map video whose spec does not carry the cameraMode its chosen kind resolves to.
 A route's reveal is its own animation (`route-reveal`), which is why the field is read from the
 answer rather than assembled by the caller.
+
+### `sweep-carriers --config <path>`
+
+**What can make THIS map's story advance?** A map story sweeps: a continuous scalar advances and
+each mark lights up when it is reached — border draws, fill blooms, label rises. The scalar has
+five possible **carriers**, and they are not interchangeable, because each one needs something of
+the data: a `route` drawing on, a `time` clock, a `threshold` falling from the highest value to
+the lowest, a `space` line crossing the territory, or the walk's own `order`.
+
+Until 2026-08-06 there was exactly one — the route — so a subject with no route had nothing. The
+carrier is now a CHOICE, and this is what the choice is offered from: the answer is read from the
+config's own data, never recited, so a map with no dates is not offered a clock.
+
+It takes the config rather than a producer/type pair on purpose. The question is about this map's
+own data: a choropleth of shares can fall from the highest to the lowest, and the same choropleth
+without a declared `timeField` cannot advance a clock.
+
+```
+$ bun lib/host/cli.ts sweep-carriers --config skills/map-native/assets/sample-data/symbol.json
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "type": "symbol",
+    "readFrom": "points",
+    "marks": 6,
+    "readable": true,
+    "carriers": [
+      { "kind": "threshold", "why": "a threshold falls from the highest value to the lowest, and each place lights up as it is passed — the story is who is worst hit, then who follows" },
+      { "kind": "space", "why": "a line sweeps across the territory, and each place lights up as it is crossed — the story is geographic: one side, then the other" },
+      { "kind": "order", "why": "the steps advance one by one, in the order you wrote them — even, predictable, no reading of the data itself" }
+    ],
+    "notOffered": [
+      { "kind": "route", "why": "this map carries no route or path, so there is no line to draw and nothing to arrive anywhere" },
+      { "kind": "time", "why": "this data carries no date on its places, so there is no clock to advance" }
+    ]
+  }
+}
+```
+
+`why` is written to be said to a journalist as-is, in `carriers` and in `notOffered` alike — **a
+carrier this data cannot drive is NAMED with its reason, never silently missing.** A capability
+that disappears without a word is one nobody knows to argue with.
+
+`order` is always offered: it advances on the walk itself and needs nothing from the data. It is
+last for the same reason `reveal` is last in `narrative-kinds` — reading it first invites picking
+it by default, which is how the rigid kind became the only kind.
+
+**A region table is read by the choropleth's own adapter** (`skills/map-native/src/choropleth-sweep.ts`),
+not by a second reading of the same rows — the same one `validateChoroplethConfig` refuses on, so
+this cannot offer a carrier the config would then be rejected for. Two consequences a caller
+should expect: the geographic sweep IS offered on a choropleth (a region is a shape on the
+basemap, so it has a centre, resolved from the geometry at render time), and the clock is offered
+only when the config declares its temporal column as `timeField`. Nothing sniffs a column for
+date-shaped strings: a carrier read from a guess is one the journalist never chose.
+
+**Two map types answer `readable: false`, with a reason instead of a list.** A route's marks are
+the territories the line crosses and a hex grid's are its cells: both are computed at produce time
+against the geometry, so they are not in the file, and a list assembled from whatever else the
+config happens to carry would be a guess.
+
+```json
+{
+  "ok": true,
+  "value": {
+    "type": "route",
+    "readable": false,
+    "why": "a route map's marks are the territories the line crosses, and they exist only once the route is run against the map's geometry at produce time (route-geo.ts) — so what they can drive cannot be read from this config"
+  }
+}
+```
+
+A file that is not a map-native config at all is an input problem, not an answer about a map: exit
+2, `code: "usage"`.
 
 ### `can-carry-walk --producer <p> --format <f> [--type <t>] [--camera-mode <m>]`
 

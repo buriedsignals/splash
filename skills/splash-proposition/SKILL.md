@@ -396,6 +396,47 @@ it, never after seeing the render.
 | `story`, `stepped` | the storyboard is proposed straight away — the section below |
 | `reveal` | nothing is owed: produce, and **say** that no sentence will appear |
 
+#### ★ WHAT MAKES THE MAP ADVANCE — propose the SWEEP CARRIER, once the kind is chosen
+
+A map story does not simply appear: **a scalar advances, and each place lights up when it is
+reached** — its border draws, its fill blooms, its label rises. What that scalar IS is a second
+editorial question, and it is not the same one as the kind. A line drawing on and a threshold
+falling from the worst-hit downwards tell two different stories with the same data.
+
+Until 2026-08-06 there was exactly one carrier — a route drawing on — so **a subject with no route
+had nothing**. It is a choice now, and it is the journalist's, on a **map video** whose kind has
+been chosen. Never assume it: an assumed carrier is a claim about what the story is.
+
+**The list is READ, never recited:**
+
+```
+bun lib/host/cli.ts sweep-carriers --config <path to the map config>
+```
+
+Each entry answers `why`, sayable to a journalist as-is. Take the config the proposal would
+produce, so the answer is about THIS map's data — a choropleth of shares can fall from the highest
+value to the lowest, and the same choropleth with no declared date cannot advance a clock.
+
+**A carrier the data cannot drive is EXPLAINED, not silently absent.** The query returns them in
+`notOffered`, each with its own reason. Say the reason when it is close to what the story wants —
+"there is no date on your regions, so nothing can advance a clock; give me the year column and it
+can" is a sentence a journalist can act on, and a carrier that vanishes without a word is a
+capability nobody knows to argue with. Some map types answer `readable: false` instead: their
+marks are computed when the map is built, not carried in the file, and that too is said rather
+than passed over.
+
+**Recommend one, from the ARGUMENT, not from the data's shape.** Match the takeaway's own verb:
+a story that reads *"it spread"* wants the clock, *"who is worst hit, then who follows"* wants the
+falling threshold, *"the line passes through"* wants the route, *"one side of the country, then
+the other"* wants the sweep across the territory. When the argument names no movement at all, the
+walk's own order is the honest choice, and saying so is better than dressing a list as a journey.
+The journalist chooses; the recommendation carries its reason.
+
+**Then the answer is written down: `sweepCarrier` on the spec** — the field the engine reads,
+exactly as `cameraMode` is for the kind. A choice that stops at the proposal is a choice the
+render discards. Absent, nothing changes: the story advances on its beats as it always has, which
+is what makes leaving the question unasked invisible — and therefore worth asking out loud.
+
 #### ★ A NARRATIVE FORM OWES A WALK — propose it here, before producing
 
 A **scrolly** or a **narrative video** does not merely state the takeaway: it proves it step by

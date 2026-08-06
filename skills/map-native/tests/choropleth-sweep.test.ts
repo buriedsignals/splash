@@ -8,8 +8,8 @@ import {
   choroplethCarriers,
   choroplethSweepMarks,
   parseSweepTimes,
-  regionCentroids,
 } from "../src/choropleth-sweep";
+import { regionCentroids } from "../src/choropleth-sweep-geo";
 import { sweepStops } from "../src/sweep-carrier";
 import { validateChoroplethConfig } from "../src/validate-config";
 
