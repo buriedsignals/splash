@@ -349,6 +349,53 @@ source policy, create a run and let `produce` take the credit from the declared 
 
 Only accepted proposals continue.
 
+#### ★ A VIDEO IS NOT ONE THING — propose its NARRATIVE KIND, before anything else
+
+The moment a **video** is pinned, one question is still unanswered, and everything downstream
+depends on it: **which kind of video**. A map can be a **guided tour** (`story`) whose camera
+travels from step to step, a run of discrete **steps** (`stepped`) the clock turns, or a
+**reveal** whose camera holds while the data animates. A chart has two of them — it owns no camera
+that travels, so it has no guided tour.
+
+Until 2026-08-06 nobody asked, so `cameraMode` sat at whatever the engine fell back to and nothing
+could honestly depend on it.
+
+**This is an editorial proposal, not a form to fill in.** Offer the kinds that would serve THIS
+story — what each one gives, what it costs — and recommend one, with the reason coming from the
+argument and the data, not from a default. The journalist chooses.
+
+**The list is READ, never recited:**
+
+```
+bun lib/host/cli.ts narrative-kinds --producer <p> --type <t>
+```
+
+Each entry answers `why` (sayable to a journalist as-is), `owesStoryboard`, and — on the map
+track — the `cameraMode` that writes the choice down. A kind the registry does not return is a
+kind this type does not render: do not offer it, and say why it is missing rather than passing
+over it in silence.
+
+**Say what a reveal costs.** `reveal` shows **no sentence at all** — that is by design, not a
+limitation. Choosing it is choosing to let the data make the point alone, and it means no
+storyboard is written and no words appear on screen. A journalist must know that before choosing
+it, never after seeing the render.
+
+**Then the answer is written down, in BOTH places:**
+
+- `narrativeKind` on the proposal — `"story"`, `"stepped"` or `"reveal"`.
+- **and, on a map, `cameraMode` on the spec** — the value the query returned for that kind. The
+  engines read `cameraMode` and have never heard of `narrativeKind`, so a choice that stops at the
+  proposal is a choice the render discards. `validateAccepted` refuses a map video whose spec does
+  not carry the cameraMode its chosen kind resolves to, and refuses a video that was never told
+  its kind at all — naming the command above. **Not answering is not an answer.**
+
+**What follows from the choice:**
+
+| chosen kind | next |
+|---|---|
+| `story`, `stepped` | the storyboard is proposed straight away — the section below |
+| `reveal` | nothing is owed: produce, and **say** that no sentence will appear |
+
 #### ★ A NARRATIVE FORM OWES A WALK — propose it here, before producing
 
 A **scrolly** or a **narrative video** does not merely state the takeaway: it proves it step by
