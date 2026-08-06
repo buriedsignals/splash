@@ -38,6 +38,21 @@ Beat timeline (`buildTimeline` + `AREAL_TIMELINE_OPTS`), and the entrance each r
 | `frame-645` | **(c)** The close: with the camera pulled back, the rest of the distribution washes in over the takeaway's own hold — Britain, France, Spain, Italy appearing in their bins. |
 | `frame-719` | **(c)** Last frame. The four subjects keep their darker subject borders; the whole distribution reads; the takeaway caption states the gap. |
 
+## Before — the same config on the pre-lot code (`ac3fa76d`), 819 frames
+
+Rendered by checking the four changed source files out at the base commit and running the same
+command. The old sweep ran on its own window (frames 75 → 755) while the camera flew the beats, so
+the two disagree by design:
+
+| frame | what it shows |
+| --- | --- |
+| `before-560` | **(b)** End of Germany's hold. The camera is on Germany — and **Britain is lit**, along with the top of Spain and Italy. None of them is a subject of any beat; the sweep simply passed their values while the camera was elsewhere. |
+| `before-685` | **(c)** End of **Poland's own beat**. The camera is parked on Poland, Poland's border has drawn, the label reads `POLAND / 21%` — and Poland is completely unlit. The sweep does not reach `__stop = 1` until frame 716, by which time the camera has already left. The subject of the beat, on screen, dark, captioned with its own value. |
+
+Defect **(a)** is in the same family and shows in the first *post*-fix render, before the trigger
+moved: at frame 358 of that render, 25 frames into a 39-frame glide toward Germany, Germany's border
+had already drawn most of the way round and its fill had bloomed — all under a moving camera.
+
 ## Answers to the three reported defects
 
 - **(a) Does the camera stay still while the border draws, the fill blooms and the label rises?**
