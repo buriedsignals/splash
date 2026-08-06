@@ -59,6 +59,7 @@ import {
   AREAL_TIMELINE_OPTS,
   stagedByKey,
   addSubjectEmphasisLayers,
+  explainerCloseProgress,
 } from "../story-choreography";
 import {
   buildDraw,
@@ -70,11 +71,6 @@ import {
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
 const NUM_BINS = 5;
-
-/** Seconds the closing distribution takes to appear under the takeaway, once the camera has
- *  finished pulling back. One number, like every other pacing knob (story-choreography.ts).
- *  Explainer stories only — see the branch that reads it. */
-const EXPLAINER_CLOSE_S = 1.2;
 
 // Enriched GeoJSON world — adds __value, __hasData and __binIdx.
 //
@@ -600,32 +596,14 @@ export const ChoroplethStory: React.FC<{
     //    mode (resolveRevealMode), so the explainer path is this branch and not a third
     //    one: the sweep no longer paints anything at all, it only ordered the beats.
     if (mode === "sequential") {
-      // ★ THE CLOSE — carrier only. Everything above is Map Explainer's device faithfully: the
-      // subjects the walk visits light up and stay lit, and the rest of the map is basemap. On
-      // Tom's map that is right, because a country the river never enters is not part of the
-      // claim. On a CHOROPLETH it is a misreading waiting to happen: every region here carries a
-      // value, and an uncoloured region on a choropleth reads as "no data", not as "not a
-      // subject". Frame 719 of the first render showed it — Britain, France, Spain and Italy
-      // grey behind a takeaway about a north–south gradient they are half of.
-      //
-      // So the takeaway beat brings the distribution the walk sat inside. It rides the SAME
-      // clock as everything else (this beat's own hold — the camera pulls back first, then the
-      // rest appears), never a second one. The subjects are excluded: their own bloom layers
-      // already hold them at full, and washing them again would composite them darker than the
-      // scale says they are.
+      // ★ THE CLOSE — carrier only, on the takeaway beat's own hold. See
+      // `explainerCloseProgress` (story-choreography.ts) for why a swept map has to bring the
+      // rest of the distribution back, and why it rides this beat's clock and not a second one.
+      // The subjects are excluded below: their own bloom layers already hold them at full, and
+      // washing them again would composite them darker than the scale says they are.
       const closing =
         config.sweepCarrier && beats[beatIndex]!.kind === "takeaway"
-          ? interpolate(
-              frame,
-              [
-                phases[beatIndex]!.startFrame + phases[beatIndex]!.moveFrames,
-                phases[beatIndex]!.startFrame +
-                  phases[beatIndex]!.moveFrames +
-                  Math.round(EXPLAINER_CLOSE_S * fps),
-              ],
-              [0, 0.9],
-              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-            )
+          ? explainerCloseProgress(frame, phases[beatIndex]!, fps) * 0.9
           : 0;
       const subjectKeys = [...triggers.keys()];
       map.setPaintProperty(

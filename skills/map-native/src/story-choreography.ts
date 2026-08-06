@@ -6,8 +6,10 @@
 // move — ChoroplethStory renders byte-identical.
 
 import * as maptilersdk from "@maptiler/sdk";
+import { interpolate } from "remotion";
 import { stagedEntrance, type StagedEntrance } from "./core/staged-reveal";
 import { EMPTY_FEATURE } from "./core/border-slice";
+import type { Phase } from "./story-timeline";
 import { hexToOklch, oklchToHex } from "../../../lib/core/house-ramp";
 
 /** How far down in OKLCH lightness a "subject" trail sits under the fill it outlines. One number,
@@ -56,6 +58,40 @@ export const AREAL_TIMELINE_OPTS = {
   revealHold: AREAL_REVEAL_HOLD_S,
   move: AREAL_MOVE_S,
 } as const;
+
+/** Seconds the closing wash takes to bring the rest of the distribution in under the takeaway,
+ *  once the camera has finished pulling back. One number, like every other pacing knob. */
+export const EXPLAINER_CLOSE_S = 1.2;
+
+/**
+ * ★ THE CLOSE, 0 → 1 — carrier stories only, and on the takeaway beat's OWN hold.
+ *
+ * Map Explainer's device is faithful while the walk runs: the subjects the walk visits light up
+ * and stay lit, and the rest of the map is basemap. On Tom's map that is right, because a country
+ * the river never enters is not part of the claim. On a map whose EVERY mark carries a value —
+ * a choropleth's regions, a cartogram's cells, a hex grid's bins, a dot-density's regions, a
+ * symbol map's points — an unpainted mark reads as "no data", not as "not a subject". Frame 719
+ * of the first choropleth explainer render showed it: Britain, France, Spain and Italy grey
+ * behind a takeaway about a north–south gradient they are half of.
+ *
+ * So the takeaway beat brings back what the walk sat inside. It rides the SAME clock as
+ * everything else — this beat's own hold, so the camera pulls back first and the rest appears
+ * after — never a second one. Callers scale it by their own channel's settled target and
+ * exclude the subjects, whose own entrance already holds them at full.
+ */
+export function explainerCloseProgress(
+  frame: number,
+  phase: Phase,
+  fps: number,
+): number {
+  const holdStart = phase.startFrame + phase.moveFrames;
+  return interpolate(
+    frame,
+    [holdStart, holdStart + Math.round(EXPLAINER_CLOSE_S * fps)],
+    [0, 1],
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
+}
 
 /**
  * Per-frame staged entrance for every subject key, keyed by its own trigger frame —

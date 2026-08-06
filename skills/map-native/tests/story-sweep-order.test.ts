@@ -6,7 +6,14 @@ import { describe, it, expect } from "bun:test";
 import { orderRevealBeatsBySweep } from "../src/story-sweep-order";
 import { sweepStops } from "../src/sweep-carrier";
 import { resolveRevealMode } from "../src/map-story";
-import { subjectTrailColor } from "../src/story-choreography";
+import {
+  subjectTrailColor,
+  explainerCloseProgress,
+  EXPLAINER_CLOSE_S,
+} from "../src/story-choreography";
+import { markTriggerFrames as symbolMarkTriggerFrames } from "../src/symbol-story";
+import { markTriggerFrames as locatorMarkTriggerFrames } from "../src/locator-story";
+import { buildDotOpacityExpression } from "../src/dot-density-story";
 
 type B = { kind: string; highlight: string[]; authored?: true };
 
@@ -105,6 +112,120 @@ describe("a declared carrier is itself the reveal mode", () => {
     expect(resolveRevealMode({})).toBe("context");
     expect(resolveRevealMode({ revealMode: "sequential" })).toBe("sequential");
     expect(resolveRevealMode({ revealMode: "context" })).toBe("context");
+  });
+});
+
+describe("the close rides the takeaway beat's OWN hold, never a clock of its own", () => {
+  const fps = 30;
+  // One beat: 39 frames of camera move, then a 90-frame hold.
+  const phase = {
+    beatIndex: 5,
+    startFrame: 591,
+    moveFrames: 39,
+    holdFrames: 90,
+  };
+  const holdStart = phase.startFrame + phase.moveFrames;
+
+  it("stays at 0 while the camera is still pulling back", () => {
+    expect(explainerCloseProgress(phase.startFrame, phase, fps)).toBe(0);
+    expect(explainerCloseProgress(holdStart - 1, phase, fps)).toBe(0);
+    expect(explainerCloseProgress(holdStart, phase, fps)).toBe(0);
+  });
+
+  it("reaches full inside the hold, and holds there", () => {
+    const closeFrames = Math.round(EXPLAINER_CLOSE_S * fps);
+    // The whole ramp fits in the takeaway's own hold — otherwise the mp4 ends mid-wash.
+    expect(closeFrames).toBeLessThan(phase.holdFrames);
+    expect(explainerCloseProgress(holdStart + closeFrames, phase, fps)).toBe(1);
+    expect(
+      explainerCloseProgress(holdStart + phase.holdFrames, phase, fps),
+    ).toBe(1);
+  });
+});
+
+describe("the close hands a non-subject mark a TRIGGER FRAME, not a second opacity path", () => {
+  const points = [
+    { lon: 0, lat: 0, value: 9, label: "A" },
+    { lon: 1, lat: 1, value: 1, label: "B" },
+  ];
+  const revealTriggers = new Map([["A", 100]]);
+
+  it("symbol: leaves a mark past maxReveals hidden when no carrier passes a close frame", () => {
+    const t = symbolMarkTriggerFrames(points, "sequential", 0, revealTriggers);
+    expect(t.get("B")).toBe(Number.POSITIVE_INFINITY);
+  });
+
+  it("symbol: enters it on the takeaway's hold when the explainer passes one", () => {
+    const t = symbolMarkTriggerFrames(
+      points,
+      "sequential",
+      0,
+      revealTriggers,
+      630,
+    );
+    expect(t.get("A")).toBe(100); // a subject keeps its own beat
+    expect(t.get("B")).toBe(630);
+  });
+
+  it("locator: same two answers, same default", () => {
+    const markers = [{ label: "A" }, { label: "B" }];
+    expect(
+      locatorMarkTriggerFrames(markers, "sequential", 0, revealTriggers).get(
+        "B",
+      ),
+    ).toBe(Number.POSITIVE_INFINITY);
+    expect(
+      locatorMarkTriggerFrames(
+        markers,
+        "sequential",
+        0,
+        revealTriggers,
+        630,
+      ).get("B"),
+    ).toBe(630);
+  });
+
+  it("context mode never closes — every mark already entered together", () => {
+    const t = symbolMarkTriggerFrames(
+      points,
+      "context",
+      42,
+      revealTriggers,
+      630,
+    );
+    expect([t.get("A"), t.get("B")]).toEqual([42, 42]);
+  });
+});
+
+describe("the dot-density close lands in the expression's EXISTING default branch", () => {
+  const beat = { dim: true, highlight: ["FRA"] };
+
+  it("defaults to the flat 0 every caller had before", () => {
+    const expr = buildDotOpacityExpression(
+      "sequential",
+      beat,
+      new Map(),
+      0.25,
+    ) as unknown[];
+    expect(expr[expr.length - 1]).toBe(0);
+  });
+
+  it("carries the ramp when the takeaway passes one — no extra branch", () => {
+    const bare = buildDotOpacityExpression(
+      "sequential",
+      beat,
+      new Map(),
+      0.25,
+    ) as unknown[];
+    const closing = buildDotOpacityExpression(
+      "sequential",
+      beat,
+      new Map(),
+      0.25,
+      0.7,
+    ) as unknown[];
+    expect(closing.length).toBe(bare.length);
+    expect(closing[closing.length - 1]).toBe(0.7);
   });
 });
 

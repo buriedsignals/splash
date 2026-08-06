@@ -149,14 +149,23 @@ export function deriveSymbolStory(
  *  - sequential: a mark with its own reveal beat (`revealTriggers`, keyed by name/label,
  *    the SAME key `deriveSymbolStory` puts in a reveal beat's `highlight[0]`) triggers at
  *    that beat's start frame — marks appear one-by-one. A mark with no reveal beat (beyond
- *    `maxReveals`) never triggers — it stays hidden (radius/opacity/label all 0) for the
- *    whole story, since sequential's narrative never visits it.
+ *    `maxReveals`) triggers at `closeFrame`, which defaults to never: it stays hidden
+ *    (radius/opacity/label all 0) for the whole story, since sequential's narrative never
+ *    visits it.
+ *
+ * ★ `closeFrame` IS THE CLOSE, and it is a frame off the EXISTING timeline (the takeaway
+ * beat's own hold start), never a clock of its own. An EXPLAINER story (a declared
+ * sweepCarrier) passes it, because a symbol map's missing circle reads as "no funding in
+ * Amsterdam", not as "not a subject of this walk" — the same misreading a grey choropleth
+ * region makes, answered the same way. Handing the mark a trigger frame is the whole of it:
+ * `stagedEntrance` then runs on it exactly as it runs on every other mark.
  */
 export function markTriggerFrames(
   points: SymbolPoint[],
   mode: RevealMode,
   establishStartFrame: number,
   revealTriggers: Map<string, number>,
+  closeFrame = Number.POSITIVE_INFINITY,
 ): Map<string, number> {
   const out = new Map<string, number>();
   for (const p of points) {
@@ -165,7 +174,7 @@ export function markTriggerFrames(
       key,
       mode === "context"
         ? establishStartFrame
-        : (revealTriggers.get(key) ?? Number.POSITIVE_INFINITY),
+        : (revealTriggers.get(key) ?? closeFrame),
     );
   }
   return out;
