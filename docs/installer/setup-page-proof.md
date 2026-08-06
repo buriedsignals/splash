@@ -272,3 +272,53 @@ claim under test, read from the model the page itself served, not inferred.
 
 - `install/bootstrap.sh` — the `${engine}` brace fix (`68e4f767`), found and fixed by this run.
 - `docs/installer/setup-page-proof.md` — this file.
+
+## Update — 2026-08-06: the served model carries the profile, the upfront keys and six runtimes
+
+**Branch:** `feat/setup-page-keys-and-profile` (HEAD `af4a5f27`), off the proof recorded above.
+Five tasks, all reviewed: the two desktop runtimes (`goose-desktop`, `claude-desktop`) went
+`verified: true` by decision, each carrying a comment naming what IS measured (the app discovers
+the skills) and what is NOT (no visual has ever come out of either) — `install/runtimes/README.md`
+now states the rule this implements (a flag rises on a proof OR a written decision, never in
+silence) and `install/configurator-core.test.ts` reads `configurator-core.ts` as text to hold it;
+the model gained the newsroom profile, parsed with the same `parseNewsroomMarkdown` the loop uses,
+total on a missing or malformed file; the page shows that profile read-only, proven at the payload
+level (the submitted body omits the `newsroom` key whenever a profile exists); the production keys
+are now asked outright, `PreflightField.upfront` derived from the registry's own
+`kind === "engine"` so a new engine inherits it with no edit, while publication destinations stay
+conditional on choosing them; and `install/preflight/server.test.ts` now writes a real
+`NEWSROOM-PROFILE.md` into a temporary ROOT, fetches the page over HTTP, parses the model out of
+the `<script type="application/json" id="preflight-model">` tag, and asserts the profile's values,
+the six selectable runtimes and the two upfront keys.
+
+**Evidence, established by the controller:**
+
+- **The served-model test guards the real read-and-map path.** Mutating
+  `install/preflight/server.ts`'s mapping from `parsed.source?.name` to `parsed.source?.nam` makes
+  `bun test install/preflight/server.test.ts` fail **14 pass / 1 fail**; restored, **15 pass /
+  0 fail**. This closes the gap a previous review named: the model tests only exercised a
+  pass-through of an already-built object, so a typo in the real mapping would have returned
+  `undefined` with the suite green.
+- **The motive guard is scoped to its own entry.** Deleting the entire comment block above the
+  `claude-desktop` entry makes `bun test install/configurator-core.test.ts` fail **4 pass /
+  1 fail**; restored, **5 / 5**. An earlier version searched a fixed 12-line window and passed on
+  a neighbour's motive.
+- **The gate stands at 22/23, and the red is not this branch.** `lib/newsroom/verify.test.ts`'s
+  "verifyMapTiler: true for the real key" fails identically in the `splash-merge` worktree, which
+  is on `main` and contains none of this work. A direct call settles the cause:
+  `GET https://api.maptiler.com/maps/dataviz/style.json?key=$VITE_MAPTILER_KEY` returns **403
+  "Invalid key - Get your FREE key at https://cloud.maptiler.com/account/keys/"**. The same dead
+  key explains the `skills/map-native` and `skills/scrolly` reds. This is a real-world
+  consequence, not a test artifact: no map can render until the key is renewed.
+
+**What is NOT proven by this branch:**
+
+- **No visual has ever come out of either desktop app.** Layer B is unobserved for both
+  `goose-desktop` and `claude-desktop`, which are offered on a written decision, not a proof.
+- **The Windows path (`install/bootstrap.ps1`)** is still verified by reading only — unchanged
+  from the caveat above.
+- **This branch was not re-run through a full live install.** The served-model assertion is a
+  test against the real server (a real HTTP round-trip over a real ROOT), not a fresh
+  `bootstrap.sh` run end to end.
+- **The MapTiler key is dead**, so nothing map-shaped was exercised — not the profile's palette
+  reaching a rendered chart, not a live map produce.

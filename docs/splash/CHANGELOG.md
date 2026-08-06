@@ -4,6 +4,48 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-08-06 — Task 5 « ce que la page sert, et la porte » : clés d'emblée + profil affiché + deux runtimes desktop sélectionnables, prouvé sur le vrai serveur (branche `feat/setup-page-keys-and-profile`, HEAD `af4a5f27`)
+
+Cinq tâches, toutes revues. **① Les deux runtimes desktop deviennent sélectionnables** :
+`goose-desktop` et `claude-desktop` passent `verified: true` par décision, chacun avec un
+commentaire nommant ce qui EST mesuré (l'app découvre les skills) et ce qui NE L'EST PAS (aucun
+visuel n'est jamais sorti de l'une ou l'autre) ; la règle de `install/runtimes/README.md` est
+réécrite pour dire ce que le projet fait vraiment — un flag se lève sur une preuve OU une décision
+écrite, jamais en silence — et un guard lit `install/configurator-core.ts` comme du texte pour le
+garder vrai. **② Le modèle porte le profil de la rédaction**, parsé avec le même
+`parseNewsroomMarkdown` que la boucle utilise, jamais un second parseur ; chemin de lecture total
+(fichier absent ou malformé → `null`, jamais un throw). **③ La page montre ce profil** au lieu de
+renvoyer le journaliste vers un éditeur de texte — lecture seule, prouvé au niveau du payload : le
+corps soumis omet la clé `newsroom` entièrement dès qu'un profil existe. **④ Les clés de production
+sont demandées d'emblée** : `PreflightField.upfront` dérive du `kind === "engine"` du registre
+lui-même, donc un nouveau moteur en hérite sans édition ; les destinations de publication
+(Cloudflare, S3, We.Publish) restent conditionnées au choix. **⑤ La page servie est assertée** :
+`install/preflight/server.test.ts` écrit un vrai `NEWSROOM-PROFILE.md` dans un ROOT temporaire,
+requête la page en HTTP, parse le modèle depuis le tag `<script type="application/json"
+id="preflight-model">`, et asserte les valeurs du profil, les six runtimes sélectionnables et les
+deux clés d'emblée.
+
+**Preuve, établie par le contrôleur (non ré-exécutée par cette tâche)** : muter le mapping de
+`install/preflight/server.ts` (`parsed.source?.name` → `parsed.source?.nam`) fait échouer `bun test
+install/preflight/server.test.ts` à **14 pass / 1 fail** ; restauré, **15 pass / 0 fail** — ferme le
+trou nommé par une revue précédente (les tests de modèle ne traversaient qu'un objet déjà
+construit, une faute de frappe dans le vrai mapping serait passée verte). Supprimer TOUT le bloc de
+commentaire au-dessus de l'entrée `claude-desktop` fait échouer `bun test
+install/configurator-core.test.ts` à **4 pass / 1 fail** ; restauré, **5 / 5** — une version
+antérieure cherchait sur une fenêtre fixe de 12 lignes et passait sur le motif d'un VOISIN. **Le
+gate reste à 22/23, et le rouge n'est pas cette branche** : `lib/newsroom/verify.test.ts` (« true
+for the real key ») échoue identiquement dans le worktree `splash-merge`, sur `main`, sans aucun de
+ce travail — un appel direct à MapTiler confirme la cause, `403 Invalid key`, la même clé morte qui
+explique aussi les rouges `skills/map-native`/`skills/scrolly`.
+
+**Non prouvé, nommé sans détour** : aucun visuel n'est jamais sorti de l'une ou l'autre app desktop
+(Couche B non observée pour les deux, offertes sur décision) · le chemin Windows
+(`install/bootstrap.ps1`) reste vérifié par lecture seule · cette branche n'a pas été rejouée via
+une install live complète — l'assertion du modèle servi est un test contre le vrai serveur, pas un
+run `bootstrap.sh` frais · la clé MapTiler est morte, donc rien de cartographique n'a été exercé.
+Détail complet, preuve verbatim : `docs/installer/setup-page-proof.md` (section « Update —
+2026-08-06 »).
+
 ## Session 2026-08-06 — Task 8 « la porte, et la preuve live » : gate 23/23 (3 échecs = env, pas la branche) + preuve d'install réelle sous `$HOME` isolé, un bug bash trouvé et fixé en route (branche `feat/setup-page-truth`, commit `68e4f767`)
 
 **Gate (`bun run check`)** : 20/23 au premier run — `skills/map-native`, `skills/scrolly`,

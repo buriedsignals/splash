@@ -281,6 +281,16 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+## ★ État courant — 2026-08-06 (branche `feat/setup-page-keys-and-profile` @ `af4a5f27`, 5 tâches revues)
+
+**Suite du chantier setup page** : clés de production demandées d'emblée (`PreflightField.upfront`
+dérivé du registre, plus d'édition manuelle par moteur) · profil de rédaction affiché en lecture
+seule (jamais renvoyé dans le payload soumis) · `goose-desktop`/`claude-desktop` sélectionnables
+par décision écrite (Couche B toujours non observée) · page servie assertée sur le vrai serveur.
+Gate 22/23, le rouge (`verifyMapTiler`) = clé MapTiler morte, confirmé indépendant de cette branche
+(même échec sur `main`). Détail + preuve verbatim : `docs/installer/setup-page-proof.md`,
+`docs/splash/CHANGELOG.md` (session 2026-08-06, Task 5).
+
 ## ★ État courant — 2026-08-06 (branche `feat/setup-page-truth` @ `c3567a92`, revue finale close)
 
 **La page de setup dit vrai sur une vraie install, prouvé sous `$HOME` isolé.** Gate 23/23 (les 3
