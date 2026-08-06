@@ -1649,7 +1649,7 @@ export function checkReferenceSet(markdown) {
 - `editorial-standard.md` — every visible layer must encode data, supply context, establish hierarchy, support verification, or direct attention; if removing a layer does not reduce comprehension, remove it. Visual interest comes from sequencing, comparison, annotation and the arrival of evidence, never from ornament.
 - `visual-system.md` — flat field; neutral colours for history and comparison; **one semantic accent** reserved for the subject; flat fills, gradients only when they encode quantity; endpoint labels and direct annotation over detached legends; **all furniture derived from the newsroom ground, never a hard-coded colour**; contrast measured on the real background, with escalation to the pure pole on the mid-grey band.
 - `anti-patterns.md` — decoration that encodes nothing; fake texture, glassmorphism, dashboard chrome; gradients without quantitative meaning; repeated years or values; detached legends; tiny footer sources; missing scale, unit, source or honest baseline; accent colour on every mark; a title that claims more than the source; copying a reference's styling instead of its information logic.
-- `reference-set.md` — at least six rows, each with a real link, a timecode, and the transferable lesson. Shipped with seven: Hans Rosling's TED talk (Gapminder bubble animation), Alan Smith's TED talk (sorted-bar extremes; isotype pictogram, two rows), NYT Visual Investigations' Breonna Taylor reconstruction, Vox Atlas's Kashmir explainer, Kurzgesagt's coronavirus explainer, and David McCandless's TED talk (proportional-area comparison) — each link, timecode and quoted moment verified against the real video's own captions before shipping, not guessed at.
+- `reference-set.md` — at least six rows, each with a real link, a locator (a timecode for the rare video row, otherwise whatever actually identifies the spot in a published static graphic — its own title, caption, or element id), and the transferable lesson. **Superseded by Step 8 below**: the first-shipped set (Hans Rosling, Alan Smith ×2, NYT Visual Investigations, Vox Atlas, Kurzgesagt, David McCandless) drifted to six-of-seven video/stage-presentation references with zero static newsroom charts, and three of those references contradicted the doctrine they exemplified. The corrected, shipped set is six clean published newsroom graphics (FT/Burn-Murdoch, NYT Upshot, Reuters Graphics, Washington Post, NYT Visual Investigations, Vox) plus one explicitly caveated non-newsroom slide (Alan Smith's isotype pictogram) — see Step 8 for the full account.
 
 - [ ] **Step 5: Run the test and confirm it passes**
 
@@ -1665,6 +1665,84 @@ Eight sections. It states that this skill is never invoked alone: every producti
 ```bash
 git add twin/skills/twin-doctrine
 git commit -m "feat(twin-doctrine): the standard, the anti-patterns, and a reference set that must carry its lessons"
+```
+
+- [ ] **Step 8: Review correction — the reference set was mechanically forced to be all-video, and four of seven references contradicted the doctrine they exemplified**
+
+Quality review (2 Critical, 4 Important) found that `checkReferenceSet`'s original design required
+`\d+:\d{2}` in every Moment cell — a real timecode. A published static chart has no timecode, so
+satisfying the check meant fabricating one; the check itself was the structural reason the set
+drifted to six-of-seven video/stage-presentation references and zero static newsroom charts, the
+opposite of what SP1's static-only `chart-beat` needs a reference set for.
+
+**Fix 1 — the check.** `isLocator(moment)` now accepts either a clean, anchored timecode
+(`TIMECODE_RE`) or a non-timecode locator: a figure number, a panel, a section, a chart title —
+anything naming a real spot in the graphic, at least two characters, that is not itself a
+half-formed timecode (a moment containing a colon that isn't a clean timecode is rejected outright,
+rather than falling back to "well, it's non-blank text" — this also closes the "anchor the regex"
+minor: `TIMECODE_RE` is now `^\d{1,3}:\d{2}(?::\d{2})?$`, matched against the whole cell, so a
+timecode-shaped fragment buried in other prose no longer passes). `countReferenceRows` is exported
+alongside `checkReferenceSet`, sharing its row-detection, so the shipped-file test's count and the
+check's own validation cannot silently diverge. Row detection itself (`isTableRow`) now trims each
+line and counts unescaped pipes instead of requiring a leading `|` — a row indented, or missing its
+own leading pipe (both legal GFM), is no longer silently invisible to the check and the count alike.
+The five-word lesson floor is now pinned by a boundary test (a four-word lesson) — mutating `< 5` to
+`< 4` previously survived every existing test.
+
+**Fix 2 — the set.** Judged against `editorial-standard.md`, `visual-system.md` and
+`anti-patterns.md` on their own terms, four of the seven shipped references contradicted the
+doctrine they were meant to exemplify: Kurzgesagt (decorative flat illustration — fails "decoration
+encoding nothing," "gradients without quantitative meaning," "accent colour on every mark," missing
+on-canvas source, all at once), David McCandless's TED talk (titled after "the beauty of data
+visualization" — the aesthetics-first premise this doctrine exists to refuse), Hans Rosling's TED
+talk (categorical colour on every bubble, a detached legend, no on-canvas source, the argument
+carried in the presenter's voice — and the shipped timecode was five and a half minutes off the
+quoted evidence), and Alan Smith's sorted-bar-chart row (the lesson as written was presenter-
+dependent, inverting the doctrine's own "annotation is where the 'so what' lives"). All four are
+removed. Two rows are kept unchanged (NYT Visual Investigations @4:20, Vox's Kashmir explainer
+@3:51, with the "Atlas" series attribution dropped — the video's own metadata credits only "Vox").
+Alan Smith's isotype-pictogram row is kept but recast: correctly timecoded to 8:12 (the quoted
+line — "a great way of representing quantity without resorting to using terms like percentage" —
+was at 8:12, not 7:56, where only the unrelated "isotypes of Otto Neurath" introduction sits), and
+explicitly labelled a stage slide, not a published graphic, kept only because the isotype technique
+is not otherwise represented.
+
+Four references replace them, each verified by fetching the real page (or, where a publisher
+blocked automated fetches, an `archive.org` snapshot of it) and reading real on-page content —
+never guessed at: **John Burn-Murdoch / Financial Times**, the March 2020 coronavirus death-toll
+trajectory chart (verified via a ThreadReaderApp mirror of the source X/Twitter post — one
+highlighted series against grey comparators with direct end labels, the accent rule in the wild);
+**The New York Times, The Upshot**, "Extensive Data Shows Punishing Reach of Racism for Black Boys"
+(19 March 2018) — verified via an `archive.org` snapshot, quoting the real `g-chart-anno` element
+text on the page, where annotation states the finding directly on the chart; **Reuters Graphics**,
+"Behind the Battleground States" (24 September 2024) — verified via a direct fetch of
+`reuters.com`, citing the page's own `g-margin-box` chart element and its surrounding sourced
+number; **Harry Stevens / The Washington Post**, "These simulations show how to flatten the
+coronavirus growth curve" (14 March 2020) — verified via an `archive.org` snapshot (byline, date and
+body text confirmed), the newsroom motion graphic named in review where the data's own arrival is
+the event. The set is now six clean, diverse newsroom references (FT, NYT ×2 desks, Vox, Reuters,
+Washington Post) plus the one explicitly caveated non-newsroom slide — at least half of the four
+replacements are static, none of the four replacements are guessed at.
+
+**Fix 3 — the missing doctrine document.** The design spec (§6) names six doctrine documents:
+editorial standard · information architecture · visual system · motion grammar · anti-patterns ·
+reference set. Only four had been written, and the other two were absent from this plan entirely —
+dropped rather than deferred. `references/information-architecture.md` is written now (reading
+order, the fixed stack, proximity, alignment, density — it governs the static layout work SP1's
+`chart-beat` is doing right now). `references/motion-grammar.md` is genuinely out of SP1's static
+scope and is **not** written; `SKILL.md`'s Overview states explicitly that it is owed, arriving
+with the video sub-project, so it is deferred on the record rather than silently missing.
+
+Run: `cd twin && bun test skills/twin-doctrine`
+Expected: PASS, 11 tests (5 original + 6 from the review round: locator-widening acceptance,
+timecode-fragment-in-prose rejection, the four-word boundary pin, the escaped-pipe regression, and
+the two row-detection regressions for a missing leading pipe and an indented table).
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add twin/skills/twin-doctrine
+git commit -m "fix(twin-doctrine): locator not timecode, a reference set that survives its own doctrine, information-architecture.md"
 ```
 
 ---
