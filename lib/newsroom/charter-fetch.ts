@@ -94,6 +94,27 @@ function isForbiddenHost(hostname: string): boolean {
   return false;
 }
 
+/**
+ * Is an address a request may have LANDED on still a public web address?
+ *
+ * The post-hoc half of the vetting `normalizeSiteUrl` does up front, split out because more than
+ * one path needs it and a second copy would drift: this module re-checks it after every response
+ * (`getText`), and lib/newsroom/charter-render.ts re-checks it after a browser navigation, which
+ * follows redirects the same way. Same forbidden-host table, same function — not a paraphrase.
+ *
+ * Looser than `normalizeSiteUrl` in one respect only: it does not require a dot in the hostname,
+ * because what it judges is where a request went, not what a journalist typed.
+ */
+export function isPublicSiteAddress(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    return !isForbiddenHost(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** http/https only, and a real public host. Anything else — file:, data:, a bare word — is refused. */
 export function normalizeSiteUrl(raw: string): string | null {
   const t = (raw ?? "").trim();
@@ -128,12 +149,8 @@ async function getText(
     // answered: a public site can bounce to 127.0.0.1 or to a metadata address. Re-check where
     // it actually landed, and refuse the body rather than read it.
     const finalUrl = res.url || url;
-    try {
-      if (isForbiddenHost(new URL(finalUrl).hostname))
-        return { error: `${url} redirected to a non-public address — refused` };
-    } catch {
-      return { error: `${url} redirected somewhere unreadable — refused` };
-    }
+    if (!isPublicSiteAddress(finalUrl))
+      return { error: `${url} redirected to a non-public address — refused` };
     if (!res.ok) return { error: `${url} answered ${res.status}` };
     const text = await res.text();
     return {

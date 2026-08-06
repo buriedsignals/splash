@@ -31,6 +31,12 @@
 //     function, not a copy — runs before anything is launched, so the same forbidden-host list
 //     (loopback, link-local metadata, RFC1918 ranges, a dotted quad embedded in a hostname)
 //     refuses `http://169.254.169.254/` here too, before a browser is even opened.
+//   - The LANDING address is vetted too, and this file used to claim that parity without having
+//     it: a browser navigation follows redirects, so a pasted `https://redirector.example` that
+//     302s to `http://169.254.169.254/latest/meta-data/` answered 200 and its body was read back
+//     as the newsroom's page. `isPublicSiteAddress` — the same function the static path re-checks
+//     every response with — now runs on `page.url()` straight after `goto`, BEFORE any CSS or
+//     markup is pulled out of the page.
 //   - What is NOT bounded: once the page is open, it is a real browser executing the page's own
 //     JavaScript, and that script can issue requests of its own — a fetch, an image load, a
 //     redirect — to whatever address it names. The static path vets every `<link>` href it is
@@ -42,7 +48,11 @@
 //     input in this flow, but a malicious or compromised page opened this way could still probe
 //     addresses on the operator's own network the way an unvetted stylesheet href could before
 //     charter-fetch.ts's SSRF fix — this file does not close that door, and does not claim to.
-import { normalizeSiteUrl, type SiteSources } from "./charter-fetch.ts";
+import {
+  isPublicSiteAddress,
+  normalizeSiteUrl,
+  type SiteSources,
+} from "./charter-fetch.ts";
 
 // ── Tuning knobs ──
 
@@ -316,6 +326,20 @@ export async function renderSiteSources(
       if (response && !response.ok())
         return { error: `${url} answered ${response.status()} when rendered` };
 
+      // WHERE THE BROWSER LANDED, vetted before a byte of the page is read. `goto` follows
+      // redirects, so the address vetted above is not necessarily the one answering — the same
+      // hole the static path closed on its own responses, with the same check. Best-effort read
+      // (a test's fake page may not implement `url()`), but a landing address that IS reported
+      // and is non-public is a refusal, never a note.
+      let finalUrl = url;
+      try {
+        finalUrl = page.url() || url;
+      } catch {
+        /* best-effort — the originally-vetted URL is a fine fallback */
+      }
+      if (!isPublicSiteAddress(finalUrl))
+        return { error: `${url} redirected to a non-public address — refused` };
+
       const settleMs = opts.settleMs ?? RENDER_SETTLE_MS;
       if (settleMs > 0) {
         try {
@@ -343,15 +367,6 @@ export async function renderSiteSources(
         return {
           error: `could not read the rendered markup of ${url}: ${errorMessage(e)}`,
         };
-      }
-
-      // The address actually landed on, after any redirect — best-effort: a test's fake page
-      // may not implement it, and the originally-vetted URL is a fine fallback.
-      let finalUrl = url;
-      try {
-        finalUrl = page.url() || url;
-      } catch {
-        /* best-effort */
       }
 
       return toSiteSources(finalUrl, html, applied);

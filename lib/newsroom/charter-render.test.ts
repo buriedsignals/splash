@@ -70,6 +70,55 @@ describe("renderSiteSources — the entry address is vetted before anything open
   });
 });
 
+// Vetting the address the journalist TYPED is not vetting the address the browser ENDED UP on.
+// A pasted redirector that 302s to `http://169.254.169.254/latest/meta-data/` answers 200, and
+// the rendered page is then the cloud's own credentials document, returned as the newsroom's.
+// The static path has refused exactly this since its own SSRF fix (charter-fetch.ts's landing
+// check); this path did not, while its module comment claimed parity.
+describe("renderSiteSources — the address the browser LANDED on is vetted too", () => {
+  test("should refuse a redirect onto the cloud metadata address, before reading a byte of the page", async () => {
+    let evaluated = false;
+    let contentRead = false;
+    const page = fakePage({
+      url: () => "http://169.254.169.254/latest/meta-data/",
+      evaluate: async () => {
+        evaluated = true;
+        return { sheets: [], blockedHrefs: [], computedCss: null } as never;
+      },
+      content: async () => {
+        contentRead = true;
+        return "<html>AccessKeyId</html>";
+      },
+    });
+    const out = await renderSiteSources("https://redirector.example", {
+      launch: async () => fakeBrowser(page),
+    });
+    expect("error" in out).toBe(true);
+    if ("error" in out) expect(out.error).toContain("non-public");
+    // Not merely discarded — never read. A refusal that happens after the body was pulled out of
+    // the page is not a refusal.
+    expect(evaluated).toBe(false);
+    expect(contentRead).toBe(false);
+  });
+
+  test("should refuse a redirect onto a private (RFC1918) address", async () => {
+    const page = fakePage({ url: () => "http://192.168.1.1/router" });
+    const out = await renderSiteSources("https://redirector.example", {
+      launch: async () => fakeBrowser(page),
+    });
+    expect("error" in out).toBe(true);
+  });
+
+  test("should still accept an ordinary apex to www redirect", async () => {
+    const page = fakePage({ url: () => "https://www.x.news/" });
+    const out = await renderSiteSources("https://x.news", {
+      launch: async () => fakeBrowser(page),
+    });
+    if ("error" in out) throw new Error(out.error);
+    expect(out.url).toBe("https://www.x.news/");
+  });
+});
+
 describe("renderSiteSources — total, never throws", () => {
   test("should return an error when the page will not open a new tab", async () => {
     const out = await renderSiteSources("https://x.news", {
