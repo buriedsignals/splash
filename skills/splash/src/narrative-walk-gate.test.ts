@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { narrativeWalkError } from "./narrative-walk-gate";
+import { narrativeWalkError, walkCapability } from "./narrative-walk-gate";
 import type { AcceptedProposal } from "./producer-spec";
 
 // ---------------------------------------------------------------------------
@@ -149,5 +149,35 @@ describe("the image track carries its walk in its frames", () => {
     expect(
       narrativeWalkError(p("image-native", "scrolly", { frames: frames("  ") })),
     ).not.toBeNull();
+  });
+});
+
+// The capability the CLI answers and the capability the guard refuses on must be ONE — two
+// truths about the same product is how a journalist gets told "impossible" about something that
+// works, which is exactly what happened on 2026-08-06.
+describe("walkCapability — the queryable answer, and the guard's own", () => {
+  it("says yes exactly where the guard would demand a walk", () => {
+    const forms: [string, string, string, boolean][] = [
+      ["chart-native", "bar", "video", true],
+      ["chart-native", "line", "video", false],
+      ["chart-native", "pie", "video", false],
+      ["map-native", "choropleth", "video", true],
+      ["scrolly", "bar", "scrolly", true],
+      ["chart-native", "bar", "static", false],
+      ["dw-chart", "d3-bars", "video", false],
+    ];
+    for (const [producer, type, format, expected] of forms) {
+      expect(walkCapability(producer, type, format).carriesWalk).toBe(expected);
+      // …and the guard agrees: it demands a walk on exactly the forms that carry one.
+      const demanded =
+        narrativeWalkError(p(producer, format, { nativeType: type })) !== null;
+      expect(demanded).toBe(expected);
+    }
+  });
+
+  it("explains a refusal in terms a journalist can act on, never 'unsupported'", () => {
+    const why = walkCapability("chart-native", "pie", "video").why;
+    expect(why).toMatch(/continuous scalar|per-subject entrance/);
+    expect(why).not.toMatch(/unsupported|invalid/i);
   });
 });

@@ -94,16 +94,62 @@ function hasConfirmedWalk(spec: unknown): boolean {
  * resolves it — the convention every refusal on this spine follows, because "invalid" leaves the
  * journalist to guess.
  */
-export function narrativeWalkError(p: AcceptedProposal): string | null {
+/**
+ * ★ THE CAPABILITY, ASKABLE — the same knowledge the guard refuses on, exposed so a caller can
+ * QUERY it instead of recalling it.
+ *
+ * This exists because of a measured failure, not a hypothesis. On 2026-08-06 a journalist was
+ * told his bar video could not carry his sentences — nine minutes after the merge that made it
+ * carry them, and with the prose that says so loaded. Prose stating a capability was not enough:
+ * the orchestrator asserted an incapacity it never checked, and a refusal is CREDIBLE, so the
+ * capability would have died unnoticed.
+ *
+ * A guard cannot catch that: it refuses what is attempted, and nothing was attempted. The only
+ * mechanism that can is one that answers the question, so "I don't think I can" becomes "the
+ * registry says I cannot".
+ */
+export type WalkCapability = {
+  /** Does a confirmed walk reach a reader through this form? */
+  carriesWalk: boolean;
+  /** Where the words appear, or why they would not — in the journalist's terms. */
+  why: string;
+};
+
+export function walkCapability(
+  producer: string,
+  nativeType: string,
+  format: string,
+): WalkCapability {
   const reaches = WALK_REACHES_READER.some(
-    (e) => e.producer === p.producer && e.format === p.format,
+    (e) => e.producer === producer && e.format === format,
   );
-  if (!reaches) return null;
-  const type = nativeTypeOf(p.spec);
-  if (
-    p.producer === "chart-native" &&
-    !WALK_CAPABLE_CHART_TYPES.includes(type)
-  )
+  if (!reaches)
+    return {
+      carriesWalk: false,
+      why:
+        `a ${format} produced by ${producer} tells no story in steps — there is no surface ` +
+        `for a step's sentence, so a walk would be written and dropped`,
+    };
+  if (producer === "chart-native" && !WALK_CAPABLE_CHART_TYPES.includes(nativeType))
+    return {
+      carriesWalk: false,
+      why:
+        `a "${nativeType}" video animates by one continuous scalar, so it has no per-subject ` +
+        `entrance for a step to sit on (walk-capable chart videos today: ` +
+        `${WALK_CAPABLE_CHART_TYPES.join(", ")})`,
+    };
+  return {
+    carriesWalk: true,
+    why:
+      `a ${format} on ${producer}${nativeType ? ` ("${nativeType}")` : ""} carries a confirmed ` +
+      `walk: each step's sentence appears with the subject it is about`,
+  };
+}
+
+export function narrativeWalkError(p: AcceptedProposal): string | null {
+  // ONE answer, asked here and by the CLI alike — a guard that refuses on different knowledge
+  // from the one a caller can query is two truths about the same product.
+  if (!walkCapability(p.producer, nativeTypeOf(p.spec), p.format).carriesWalk)
     return null;
   if (hasConfirmedWalk(p.spec)) return null;
   const what = p.format === "scrolly" ? "A scrolly" : "A narrative video";

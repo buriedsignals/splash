@@ -373,7 +373,20 @@ no confirmed walk (`skills/splash/src/narrative-walk-gate.ts`), before any engin
 whose claim is unwritten is not publishable. The refusal names the act that resolves it, but
 meeting it means the proposal was skipped: propose the walk here.
 
-**Where it applies today** — the guard demands a walk only where its words reach the reader:
-every hosted `scrolly`, a **map** video, and a **bar** video. It stays silent for a line video and
-the other chart types, whose video has no per-subject entrance to hang a step on; demanding
-sentences a render would drop is the one thing this rule may not do.
+**★ NEVER TELL A JOURNALIST A FORM CANNOT CARRY THEIR WORDS WITHOUT ASKING.** One command
+answers it, and its answer is the registry's, not yours:
+
+```
+bun lib/host/cli.ts can-carry-walk --producer <p> --type <t> --format <f>
+```
+
+Run it BEFORE saying a narrative form is impossible, and quote what it returns — `why` is written
+to be said to a journalist as-is. This is not advisory. On 2026-08-06 a journalist was told his
+bar video could not carry his two sentences, **nine minutes after the merge that made it carry
+them**, with this very page loaded. Prose stating the capability was not enough: an incapacity was
+asserted and never checked. And a refusal is CREDIBLE — he had no reason to argue, so the
+capability would have died unnoticed.
+
+A guard cannot catch this: a guard refuses what is ATTEMPTED, and nothing is attempted when the
+form is talked out of existence first. Asking is the only mechanism that turns "I don't think I
+can" into "the registry says I cannot".

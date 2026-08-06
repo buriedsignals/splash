@@ -35,6 +35,7 @@ import {
 } from "./drive";
 import { describePrecheck, describeProbeRun, presentIn } from "./gates";
 import { describeNewsroom } from "./newsroom";
+import { walkCapability } from "../../skills/splash/src/narrative-walk-gate";
 import { outDirRefusal } from "./path-safety";
 import { describeIntentQuestion } from "./suggest-intent";
 import { RENDER_SOURCE_POLICY_MARK } from "./source-mark";
@@ -401,6 +402,30 @@ async function main(): Promise<never> {
     // --dir is optional: without it the decor resolves from the install root.
     const r = describeNewsroom(parsed.flags["--dir"]);
     emit(r, r.ok ? 0 : 2);
+  }
+
+  // ★ CAN THIS FORM CARRY A WALK — asked, not recalled. Read-only, no --run, for the same reason
+  // precheck below has none: the chain that runs has no run.json, and the question is useful
+  // exactly one turn before a journalist is told a form is impossible.
+  //
+  // It exists because of a measured failure. On 2026-08-06 a journalist was told his bar video
+  // could not carry his sentences — nine minutes after the merge that made it carry them, with
+  // the prose that says so already loaded. Prose was not enough; an orchestrator asserted an
+  // incapacity it never checked. A guard cannot catch that (it refuses what is attempted, and
+  // nothing was attempted), so the fix is to make the question answerable.
+  if (command === "can-carry-walk") {
+    const parsed = parseFlags(rest, ["--producer", "--type", "--format"]);
+    if (!parsed.ok) usage(parsed.message);
+    const producer = parsed.flags["--producer"];
+    const format = parsed.flags["--format"];
+    if (!producer || !format)
+      usage("can-carry-walk needs --producer <p> and --format <f>");
+    const answer = walkCapability(
+      producer,
+      parsed.flags["--type"] ?? "",
+      format,
+    );
+    emit({ ok: true, value: answer }, 0);
   }
 
   if (command === "precheck") {
