@@ -923,6 +923,42 @@ git add twin/skills/splash-twin
 git commit -m "feat(twin): a story's phase is read from its directory, never remembered"
 ```
 
+**Amended during Task 9's review round.** `whereIs`'s `storyboard → production` transition gated
+on a confirmed `takeaway` alone — G1's condition, not G2's. `twin-storyboard`'s own gate,
+`checkStoryboard`, additionally requires all six hand-of-the-journalist fields and every slot's
+`chosen` drawn from its own `candidates` before Gate 2 genuinely closes. The gap: a session
+interrupted after the takeaway was written but before the hand fields or slots were filled resumes
+into `whereIs` reporting `production` — no renders or exports exist yet to contradict it — and the
+orchestrator's dispatch table (Task 9) would send the craft skill at a storyboard `checkStoryboard`
+would refuse outright. This is exactly the resumed-session case `whereIs` exists to serve, failing
+in exactly that case.
+
+**Fixed** by replacing the single takeaway check with `missingForGate2`, applying the real Gate 2
+condition (takeaway, all six `HAND` fields, every slot resolved) before ever reporting `production`.
+**Constraint honoured without duplicating logic across a skill boundary that isn't crossed with an
+import:** `checkStoryboard` lives in `twin-storyboard`; skills in this branch do not import each
+other's code, only the file format they share. `where.mjs` already had precedent for this exact
+situation before the fix — its `hasConfirmedTakeaway` and `twin-storyboard`'s null-sentinel handling
+were already two independent readings of the same rule, cross-referenced by comment in both files
+(see `where.mjs`'s own `isNullSentinel`-adjacent note) rather than unified by an import. `HAND` and
+the slot/candidate check follow that same established pattern — reimplemented, not imported — and
+the drift risk that creates is closed mechanically, not by discipline alone: `test/where.test.ts`
+pins every branch of `missingForGate2` (missing hand field, empty slots, an unchosen slot, a chosen
+value off the candidate list), each mutation-verified RED on its own targeted break and GREEN on
+revert, so a future change to one side that silently stops matching the other fails a test rather
+than shipping a resumed session past a gate that never really closed. The previously-passing fixture
+`storyboard` (and `phases.test.ts`'s equivalent `confirmedStoryboard`) is now genuinely Gate-2-
+complete — the shared constant every phase-recovery test built off before was, in hindsight,
+under-specified for what "the storyboard is done" is actually supposed to mean.
+
+```bash
+git add twin/skills/splash-twin/scripts/where.mjs twin/skills/splash-twin/test/where.test.ts twin/skills/splash-twin/test/phases.test.ts
+git commit -m "fix(splash-twin): whereIs applies the real Gate 2 condition, not G1's takeaway alone"
+```
+
+(This amendment and the Task 9 amendment covering the same review round are recorded together in
+one `docs(plan):` commit, kept separate from the code above.)
+
 ---
 
 ## Task 4: Intake — freeze the source, profile the data
@@ -2783,6 +2819,32 @@ of `where.mjs` rather than the committed file.
 ```bash
 git add docs/superpowers/plans/2026-08-06-doctrine-twin-sp1-spine.md
 git commit -m "docs(plan): Task 9 amended — the prescribed drift test was vacuous or brittle in three places, hardened"
+```
+
+**Amended again in the same review round — three further fixes to `SKILL.md`, none touching the
+test:**
+
+1. **The gotcha was stylistic, not concrete.** It described the `framing`/`storyboard` naming
+   split as a harmless "light recovery check" — accurate about the mechanism, silent about the
+   real failure it enabled (see the Task 3 amendment above: a resumed session could reach
+   `production` on a takeaway alone). Rewritten to state the concrete resumed-session bug, what
+   `where.mjs` now does about it (`missingForGate2`), and why that's a reimplementation rather than
+   an import (the `isNullSentinel` precedent).
+2. **A forbidden literal.** "leave Claude Code for a different runtime" named a runtime this
+   branch's absolute constraint forbids naming in any artifact. Reworded to "move to a different
+   runtime" — same meaning, no name.
+3. **A vocabulary that named verbs it never used.** `search` and `write-file` appeared only in the
+   enumeration, decoration rather than description. Narrowed the sentence to the four verbs this
+   skill's own actions actually use (`read-file`, `execute-shell`, `fetch`, `invoke-skill`), with an
+   explicit, honest note on why the other two belong to the skills it dispatches to instead of
+   being padded into a list this skill doesn't exercise.
+
+```bash
+git add twin/skills/splash-twin/SKILL.md
+git commit -m "fix(splash-twin): sharpen the gotcha, drop the forbidden literal, narrow the verb vocabulary to what's used"
+
+git add docs/superpowers/plans/2026-08-06-doctrine-twin-sp1-spine.md
+git commit -m "docs(plan): Task 3 and Task 9 amended — whereIs's real Gate 2 condition, SKILL.md literal and verb vocabulary"
 ```
 
 ---
