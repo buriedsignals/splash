@@ -208,7 +208,11 @@ export function seedBrandColor<
 // Strip a YAML line comment: a `#` that is NOT inside a quoted span AND is at line-start or
 // preceded by whitespace (so an unquoted `http://x#frag` and a quoted `"#0A5C36"` both survive,
 // while a trailing `  # note` is dropped). Handles both single and double quotes.
-function stripComment(line: string): string {
+//
+// Exported so a WRITER (lib/newsroom/profile-write.ts) can tell a comment-only line apart from a
+// blank one the same way this reader does — the reader SKIPPING a comment while walking a block
+// boundary is not licence for the writer to DELETE it when it regenerates that block.
+export function stripComment(line: string): string {
   let inQuote: '"' | "'" | null = null;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];

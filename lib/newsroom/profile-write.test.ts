@@ -351,4 +351,77 @@ describe("updateProfileMarkdown — an edit rewrites what it knows, keeps the re
     expect(out).toContain('lang: "fr"');
     expect(out).not.toContain("confirmed by Yvan");
   });
+
+  // I1 — a comment written INSIDE a `source:` block (its own line, not attached to a field) used
+  // to vanish on every save: `persist` always supplies name+url, so `source:` is regenerated on
+  // every edit, and the old boundary walk (`indentedBlockEnd`) consumed a comment-only line as
+  // silently as a blank one. The page promises "your own comments included, is left exactly as
+  // it is" — this is the promise under test.
+  it("keeps a comment written on its own line inside the source block, across a save", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  name: "Heidi.news"',
+      "  # our legal name is different, do not change",
+      '  url: "https://heidi.news"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      name: "Heidi.news",
+      url: "https://heidi.news",
+    });
+    expect(out).toContain("# our legal name is different, do not change");
+    expect(out).toContain('name: "Heidi.news"');
+    expect(out).toContain('url: "https://heidi.news"');
+  });
+
+  // I1 (deferred item folded in) — a url-only graft against a profile whose EXISTING source has
+  // no name (so `current.source` is undefined — `buildProfile` drops a nameless source block
+  // entirely) must not erase the raw block that IS on disk. `updatedSource` still returns a
+  // truthy `{url}` object (name undefined), and `sourceLines` on that returns `[]` — before the
+  // guard, an empty array was registered anyway, so `preserveLines` dropped the existing block on
+  // the strength of a replacement with nothing in it.
+  it("does not delete the source block when a url-only edit grafts onto a profile with no existing name", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  url: "https://old.example"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      url: "https://new.example",
+    });
+    expect(out).toContain("source:");
+    expect(out).toContain('url: "https://old.example"');
+  });
+
+  // I3 — `parseNewsroomMarkdown` throws when `requiredSigners` names a signer `signers` never
+  // registered (brand-profile.ts's `buildProfile`). Every other reader of a profile catches that
+  // and treats it as "no usable profile"; this function must too, or a malformed profile turns
+  // Save into a thrown exception the caller (the setup page's `/submit`) does not catch either.
+  it("does not throw on an existing profile that parseNewsroomMarkdown cannot parse, and still writes what it can", () => {
+    const existing = [
+      "---",
+      "requiredSigners:",
+      "  - editor",
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    expect(() => updateProfileMarkdown(existing, { lang: "fr" })).not.toThrow();
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain('lang: "fr"');
+    // requiredSigners is not a key this function authors (not in KNOWN_KEYS) — its raw lines are
+    // ordinary "kept" lines regardless of `current`, so the (still unregistered) signer name
+    // survives untouched rather than being silently dropped by the crash-recovery path.
+    expect(out).toContain("requiredSigners:");
+    expect(out).toContain("- editor");
+  });
 });

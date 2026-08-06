@@ -19,6 +19,7 @@ import { isSet } from "./probe";
 import {
   NEWSROOM_FRONTMATTER_RE,
   parseNewsroomMarkdown,
+  stripComment,
   type BrandProfile,
 } from "../../skills/splash/src/brand-profile";
 
@@ -176,14 +177,24 @@ function suppliedFieldLines(
   current: BrandProfile | null,
 ): Map<string, string[]> {
   const supplied = new Map<string, string[]>();
+  // A key is registered ONLY when it has something to write. `preserveLines` below drops the
+  // EXISTING block for every registered key, whatever `supplied` holds for it — so a key whose
+  // replacement is an EMPTY array (facts said just enough to count as "supplied", but not enough
+  // to produce a usable line: `sourceLines` returns `[]` when the graft still has no name, e.g. a
+  // url-only edit against a profile whose source never had one) would drop the old block and put
+  // nothing back, deleting it outright. That is the same silent-deletion bug this whole function
+  // exists to prevent, one level up: a key `facts` did not genuinely supply must be treated
+  // exactly like a key it never mentioned.
+  const register = (key: string, lines: string[]): void => {
+    if (lines.length) supplied.set(key, lines);
+  };
   const palette = updatedPalette(facts, current);
-  if (palette !== null) supplied.set("palette", paletteLines(palette));
+  if (palette !== null) register("palette", paletteLines(palette));
   const source = updatedSource(facts, current);
-  if (source) supplied.set("source", sourceLines(source));
-  if (isSet(facts.lang))
-    supplied.set("lang", [`lang: "${scalar(facts.lang!)}"`]);
+  if (source) register("source", sourceLines(source));
+  if (isSet(facts.lang)) register("lang", [`lang: "${scalar(facts.lang!)}"`]);
   if (isSet(facts.theme))
-    supplied.set("theme", [`theme: "${scalar(facts.theme!)}"`]);
+    register("theme", [`theme: "${scalar(facts.theme!)}"`]);
   return supplied;
 }
 
@@ -203,10 +214,38 @@ function indentedBlockEnd(lines: string[], start: number): number {
   return i;
 }
 
-// `palette:`'s block ends differently: `parseNewsroomMarkdown`'s palette reader (and its
-// signers/requiredSigners readers) stop at the first line that is not a `  - item`, even while
-// still indented — a stray indented non-dash line is not consumed as part of the block, so this
-// writer must not delete it either when it drops and regenerates the palette above it.
+// A comment-only line inside [start, end) — a raw line that is not blank, but reads as blank
+// once `stripComment` runs on it, exactly what `parseNewsroomMarkdown` applies to every
+// frontmatter line before it parses a single one. That reader SKIPS such a line while walking a
+// block (it never breaks the loop on it, so the line stays "inside" the block boundary) — it
+// does not DELETE it, because it was never asked to write the block back out. This writer does
+// write the block back out, so skipping past a comment the same way the reader does would erase
+// it; the caller re-emits whatever this returns instead.
+function commentOnlyLines(
+  lines: string[],
+  start: number,
+  end: number,
+): string[] {
+  const out: string[] = [];
+  for (let i = start; i < end; i++)
+    if (lines[i].trim() !== "" && stripComment(lines[i]).trim() === "")
+      out.push(lines[i]);
+  return out;
+}
+
+// `palette:`'s block ends differently, and NOT by the same rule as the reader: this boundary
+// breaks at the first RAW line that does not look like `  - item` — comment lines included, since
+// nothing here strips comments before testing the shape. `parseNewsroomMarkdown`'s palette reader
+// (and its signers/requiredSigners readers) see every line through `stripComment` first, so a
+// comment-only line reads as BLANK to them and is skipped without ending the block — the reader
+// keeps consuming `- item` lines past it. The two rules land on the same boundary for a stray
+// line that is not a comment (a hand-typed note, covered below) — a comment line is where they
+// diverge: this writer stops there and preserves everything from it onward untouched (including
+// any further items), so nothing is lost, but a save that also regenerates `palette` would then
+// place the NEW list above that untouched tail rather than replacing it — a duplicate-growth bug,
+// not the parity this comment used to claim. Not reachable through the setup page today (no
+// caller sends a `palette` edit against a hand-edited list carrying an internal comment), so it is
+// left as a known limit rather than fixed here.
 function paletteBlockEnd(lines: string[], start: number): number {
   let i = start;
   while (i < lines.length) {
@@ -225,7 +264,9 @@ function paletteBlockEnd(lines: string[], start: number): number {
 // block — kept because a continuation line never matches the key:value pattern below and falls
 // through untouched, UNLESS it belongs to a block this call is about to drop and regenerate, in
 // which case it is skipped using that key's own boundary rule (`paletteBlockEnd` for `palette`,
-// `indentedBlockEnd` for `source`).
+// `indentedBlockEnd` for `source`) — and, for `source`, any comment-only line the walk passed
+// over is re-emitted (`commentOnlyLines`), because that walk consumes such a line without it
+// ending the block, the same way the reader does, and consuming is not licence to delete.
 function preserveLines(
   lines: string[],
   supplied: Map<string, string[]>,
@@ -235,12 +276,17 @@ function preserveLines(
   while (i < lines.length) {
     const kv = lines[i].match(/^([A-Za-z_]+):[ \t]*(.*)$/);
     if (kv && KNOWN_KEYS.has(kv[1]) && supplied.has(kv[1])) {
+      const blockStart = i + 1;
       i++;
-      if (kv[2].trim() === "")
-        i =
+      if (kv[2].trim() === "") {
+        const end =
           kv[1] === "palette"
             ? paletteBlockEnd(lines, i)
             : indentedBlockEnd(lines, i);
+        if (kv[1] === "source")
+          kept.push(...commentOnlyLines(lines, blockStart, end));
+        i = end;
+      }
       continue;
     }
     kept.push(lines[i]);
@@ -268,6 +314,16 @@ function preserveLines(
  * The body is never touched, not even to append a note: on an edit the newsroom's own prose is
  * the one thing that must survive byte-for-byte, so `facts.notes` (which `profileMarkdown` folds
  * into the body of a FRESH file) is ignored here.
+ *
+ * `parseNewsroomMarkdown` THROWS on one shape: a `requiredSigners` entry naming a signer that
+ * is not registered in `signers` (brand-profile.ts's `buildProfile`). Every other reader of this
+ * file catches that (`loadNewsroomProfile`, the setup page's own render path) and treats it as
+ * "no usable profile" — this must too, or a newsroom whose profile drifted into that shape (a
+ * signer removed by hand, say) would have Save kill the install's server on the very click meant
+ * to fix it. An unparseable `existing` is therefore `current = null`: every supplied key writes
+ * standalone, exactly as it would for a fresh file, but `preserveLines` below still walks the
+ * RAW frontmatter text (it never reads `current`), so a key this function does not author —
+ * including the very `requiredSigners` line that could not be parsed — still survives untouched.
  */
 export function updateProfileMarkdown(
   existing: string,
@@ -275,7 +331,12 @@ export function updateProfileMarkdown(
 ): string {
   const fm = existing.match(NEWSROOM_FRONTMATTER_RE);
   const body = fm ? existing.slice(fm[0].length) : existing;
-  const current = parseNewsroomMarkdown(existing);
+  let current: BrandProfile | null;
+  try {
+    current = parseNewsroomMarkdown(existing);
+  } catch {
+    current = null;
+  }
   const supplied = suppliedFieldLines(facts, current);
   const preserved = fm ? preserveLines(fm[1].split(/\r?\n/), supplied) : [];
   const inner = [...supplied.values()].flat().concat(preserved);
