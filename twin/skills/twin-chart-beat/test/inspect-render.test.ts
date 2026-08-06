@@ -242,4 +242,99 @@ describe("inspectSvg", () => {
     );
     expect(result.contrast.length).toBe(0);
   });
+
+  // --- Round 3, review-driven: the tool must be conservative BY CONSTRUCTION. Enumerate the
+  // small set of forms it fully understands; everything else — including anything it merely
+  // suspects it cannot see — is unresolved, never a confident wrong answer. ---
+
+  it("should mark every contrast entry unresolved when a <style> block is present anywhere", () => {
+    // The text has its OWN explicit fill, but a <style> block could still repaint it — its mere
+    // presence in the document is enough, this file does not parse stylesheets.
+    const result = inspectSvg(
+      svg(
+        "<style>text { fill: #AAAAAA }</style>" +
+          '<text fill="#000000">x</text>',
+      ),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast.length).toBe(1);
+    expect(result.contrast[0].unresolved).toBe(true);
+    expect(result.contrast[0].pass).toBe(false);
+    expect(result.contrast[0].ratio).toBeNull();
+  });
+
+  it("should still report text under a <style> block even when its local fill is none", () => {
+    // A stylesheet rule could un-hide it; skipping it would be exactly the silent miss this
+    // tool exists to prevent.
+    const result = inspectSvg(
+      svg("<style>text{fill:red}</style>" + '<text fill="none">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast.length).toBe(1);
+    expect(result.contrast[0].unresolved).toBe(true);
+  });
+
+  it("should take the LAST of a fill declared twice in one style attribute", () => {
+    const result = inspectSvg(
+      svg('<text style="fill:#000000; fill:#AAAAAA">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+    expect(result.contrast[0].unresolved).toBe(false);
+  });
+
+  it("should read a font-size declared only in style, overriding a larger attribute value", () => {
+    const result = inspectSvg(
+      svg('<text font-size="30" style="font-size:8px" fill="#949494">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(false); // held to 4.5:1: the real size is 8px, not 30
+  });
+
+  it("should not inherit a large ancestor size when a child declares an unparseable style size", () => {
+    const result = inspectSvg(
+      svg(
+        '<g font-size="30"><text style="font-size:2vw" fill="#949494">x</text></g>',
+      ),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(false); // uncertain size must not buy the easier floor
+  });
+
+  it("should read a font-weight declared only in style as a keyword", () => {
+    const result = inspectSvg(
+      svg(
+        '<text font-size="20" style="font-weight:bold" fill="#949494">x</text>',
+      ),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(true); // 20px + bold clears the large-text floor
+  });
+
+  it("should not inherit a bold ancestor weight when a child declares an unparseable style weight", () => {
+    const result = inspectSvg(
+      svg(
+        '<g font-weight="bold"><text font-size="20" style="font-weight:garbage" fill="#949494">x</text></g>',
+      ),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(false); // uncertain weight must not buy the easier floor
+  });
+
+  // These forms were already unresolved (never a false pass) before this round; explicitly
+  // pinned now because a reviewer twice found the report silent about exactly this.
+  it.each([
+    ["rgb() with percentages", "rgb(60%,60%,60%)"],
+    ["rgb() space syntax", "rgb(170 170 170)"],
+    ["rgb() with slash-alpha", "rgb(170 170 170 / 50%)"],
+    ["rgba()", "rgba(170,170,170,0.5)"],
+    ["hsl()", "hsl(0, 0%, 67%)"],
+  ])("should mark %s as unresolved, never a false pass", (_label, value) => {
+    const result = inspectSvg(svg(`<text fill="${value}">x</text>`), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].unresolved).toBe(true);
+    expect(result.contrast[0].pass).toBe(false);
+  });
 });

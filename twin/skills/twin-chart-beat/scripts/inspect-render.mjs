@@ -5,12 +5,27 @@
 // SVG turns into a redundant cursor tooltip. A tool the model runs and reads — not a gate. SP1
 // ships no conformance engine.
 //
-// GOVERNING RULE: never default an unresolvable colour to black. Black is near-maximum contrast
-// on a light ground, so defaulting turns "I could not read this colour" into "this passes" —
-// silence and a pass must not look alike. A fill this file cannot parse is reported with
-// `unresolved: true` and `pass: false` instead. The ONE place black is used as an answer, not a
-// guess, is a fill that was never declared anywhere in the ancestor chain at all — that is SVG's
-// own initial value for `fill`, not something this tool failed to read.
+// GOVERNING RULE, inverted after two rounds of fresh holes: hand-resolving the CSS cascade from
+// a regex-driven tag walker is a bottomless task, and every attempt to resolve MORE has produced
+// a fresh way to be confidently wrong. So this file does not try to understand SVG/CSS in
+// general — it understands a small, ENUMERATED set of forms, and treats everything else,
+// including anything it merely SUSPECTS it cannot see, as unresolved:
+//   - a `fill` presentation attribute
+//   - a single `fill` declared in a `style` attribute (style wins the cascade over the
+//     attribute; if `fill` is declared more than once in one `style`, the LAST one wins)
+//   - inheritance of fill/font-size/font-weight through <g>/<text>/<tspan> ancestors
+//   - the named colours in NAMED_COLOURS below, 6- and 3-digit hex, and classic `rgb(r,g,b)`
+//   - `font-size`/`font-weight` as a bare number, an explicit "px" suffix, or (weight only) the
+//     keywords bold/bolder/normal/lighter — read from `style` with the same precedence as fill
+// Everything outside that list is `unresolved: true, pass: false` — never a guess, and never
+// silently absent from the report. Two specific consequences:
+//   - a <style> BLOCK anywhere in the document can repaint any element this file cannot predict,
+//     so its mere presence marks EVERY contrast entry unresolved, not just the ones it targets.
+//   - a font-size/font-weight this file cannot confidently parse (a unit outside px, an unknown
+//     weight keyword) is held to the STRICTER 4.5:1 floor rather than inheriting an ancestor's
+//     large-text allowance — uncertainty must never buy leniency.
+// The one place black is used as an answer, not a guess, is a fill never declared anywhere in
+// the ancestor chain at all (and no <style> block exists) — SVG's own initial value for `fill`.
 
 import { contrast } from "./render-still.mjs";
 
@@ -104,12 +119,16 @@ function readAttr(rawAttrs, name) {
   return match[1] ?? match[2];
 }
 
+/** The LAST declaration of `property` in this tag's `style` attribute — CSS applies later
+ *  declarations of the same property over earlier ones within one declaration block, and
+ *  `style="fill:#000000; fill:#AAAAAA"` really paints the second. A single non-global `.exec()`
+ *  returns the first match, which is the cascade LOSER whenever a property repeats. */
 function readStyleProperty(rawAttrs, property) {
   const style = readAttr(rawAttrs, "style");
   if (!style) return null;
-  const re = new RegExp(`(?:^|;)\\s*${property}\\s*:\\s*([^;]+)`);
-  const match = re.exec(style);
-  return match ? match[1] : null;
+  const re = new RegExp(`(?:^|;)\\s*${property}\\s*:\\s*([^;]+)`, "g");
+  const matches = [...style.matchAll(re)];
+  return matches.length > 0 ? matches[matches.length - 1][1] : null;
 }
 
 /**
@@ -133,26 +152,45 @@ function ownColour(rawAttrs) {
   return undefined;
 }
 
-function ownFontSizePx(rawAttrs) {
-  const value = readAttr(rawAttrs, "font-size");
-  if (value === null) return undefined;
-  // Refuse to trust a non-px unit rather than mis-scale it: `50%` is really ~8px, but
-  // parseFloat("50%") reads 50 and would wrongly clear the >=24 large-text bar. A bare number or
-  // an explicit "px" suffix is trusted; anything else falls through to the inherited/default
-  // size, which puts it in the normal-text (harder, 4.5:1) bucket rather than the easier one.
-  const match = /^(\d+(?:\.\d+)?)(px)?$/.exec(value.trim());
-  return match ? Number(match[1]) : undefined;
+// Refuse to trust a non-px unit rather than mis-scale it: `50%` is really ~8px, but
+// parseFloat("50%") reads 50 and would wrongly clear the >=24 large-text bar. A bare number or
+// an explicit "px" suffix is trusted. Anything else returns NaN — DECLARED, but not confidently
+// a size — rather than `undefined` ("nothing declared, inherit the ancestor's"): the ancestor
+// might be large, and an uncertain child that silently inherited that allowance would grant the
+// easier 3:1 floor to text whose real size nobody here actually knows. `NaN` compares false
+// against every threshold in isLargeText() below, which is exactly "hold to the stricter floor"
+// without a second code path — and it is an OWNED value, not `undefined`, so it overrides the
+// parent instead of falling through to it.
+function parsePxSize(raw) {
+  const match = /^(\d+(?:\.\d+)?)(px)?$/.exec(raw.trim());
+  return match ? Number(match[1]) : NaN;
 }
 
-function ownFontWeight(rawAttrs) {
-  const value = readAttr(rawAttrs, "font-weight");
-  if (value === null) return undefined;
-  const trimmed = value.trim().toLowerCase();
+/** `style` wins the cascade over the presentation attribute, same precedence as fill. */
+function ownFontSizePx(rawAttrs) {
+  const styled = readStyleProperty(rawAttrs, "font-size");
+  if (styled !== null) return parsePxSize(styled);
+  const attr = readAttr(rawAttrs, "font-size");
+  return attr === null ? undefined : parsePxSize(attr);
+}
+
+// Same "declared but uncertain returns NaN, not undefined" reasoning as parsePxSize — an
+// unrecognised weight keyword must not silently inherit a bold ancestor's large-text allowance.
+function parseWeight(raw) {
+  const trimmed = raw.trim().toLowerCase();
   if (trimmed === "bold" || trimmed === "bolder") return 700;
   if (trimmed === "normal") return 400;
   if (trimmed === "lighter") return 300;
   const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+/** `style` wins the cascade over the presentation attribute, same precedence as fill. */
+function ownFontWeight(rawAttrs) {
+  const styled = readStyleProperty(rawAttrs, "font-weight");
+  if (styled !== null) return parseWeight(styled);
+  const attr = readAttr(rawAttrs, "font-weight");
+  return attr === null ? undefined : parseWeight(attr);
 }
 
 // WCAG 2.x large text: >=24px regular, or >=18.66px (~14pt) at bold weight (>=700). Large text
@@ -208,7 +246,8 @@ const TEXT_BEARING = new Set(["text", "tspan"]);
  * inside a `<text>` is ordinary inline-highlight SVG, and only walking `<text>` misses it
  * completely) that is observed to carry actual, non-whitespace character data of its own. Text
  * under `<defs>` never renders and is excluded. Tracks nesting depth so a `<title>` only counts
- * as the root title when it is a direct child of the root `<svg>`.
+ * as the root title when it is a direct child of the root `<svg>`, and whether a `<style>`
+ * element appears anywhere at all (see `hasStyleBlock` at the call site).
  */
 function walk(svg) {
   const stripped = svg.replace(/<!--[\s\S]*?-->/g, "");
@@ -225,6 +264,7 @@ function walk(svg) {
   const texts = [];
   let depth = 0;
   let rootTitle = false;
+  let hasStyleBlock = false;
   let cursor = 0;
   let tag = nextTag(stripped, cursor);
 
@@ -241,6 +281,12 @@ function walk(svg) {
 
     const { closing, name, rawAttrs, selfClosing } = parseTag(tag.raw);
     const tagName = name.toLowerCase();
+
+    // A <style> element ANYWHERE can repaint any text this walker resolves — CSS rules apply
+    // document-wide by selector, not by the <style> tag's own position in the tree. This file
+    // does not parse stylesheets, so its mere presence is treated as "cannot trust anything
+    // local" rather than attempting to guess whether it happens to target this element.
+    if (tagName === "style") hasStyleBlock = true;
 
     if (closing) {
       if (stack.length > 1) stack.pop();
@@ -288,7 +334,7 @@ function walk(svg) {
     tag = nextTag(stripped, cursor);
   }
 
-  return { texts, rootTitle };
+  return { texts, rootTitle, hasStyleBlock };
 }
 
 /** Classifies a walked fill for reporting. Black is used ONLY for the truly-never-declared
@@ -301,12 +347,34 @@ function classifyFill(fill) {
   return { skip: true };
 }
 
+/** A human-readable label for what was found LOCALLY, used only when a <style> block makes that
+ *  local answer untrustworthy — shown for context, never treated as the real colour. */
+function describeLocalFill(fill) {
+  if (fill === null) return "none (locally declared) — a <style> block may repaint this";
+  if (fill === undefined) return "no local fill declared — a <style> block may set one";
+  if (typeof fill === "string") return `${fill} (locally declared) — a <style> block may override this`;
+  if (isUnresolved(fill)) return `${fill.raw} — also unresolved locally, and a <style> block is present`;
+  return "unknown — a <style> block is present";
+}
+
 export function inspectSvg(svg, { ground }) {
   const stripped = svg.replace(/<!--[\s\S]*?-->/g, "");
-  const { texts, rootTitle } = walk(svg);
+  const { texts, rootTitle, hasStyleBlock } = walk(svg);
 
   const contrastEntries = [];
   for (const text of texts) {
+    if (hasStyleBlock) {
+      // A stylesheet this file cannot parse could repaint ANY element, including one that
+      // otherwise resolved cleanly, or one whose local fill is "none" (a rule could un-hide it).
+      // Every entry is reported, none skipped, none guessed.
+      contrastEntries.push({
+        fill: describeLocalFill(text.fill),
+        ratio: null,
+        pass: false,
+        unresolved: true,
+      });
+      continue;
+    }
     const classified = classifyFill(text.fill);
     if (classified.skip) continue;
     if (classified.unresolvedRaw !== undefined) {
