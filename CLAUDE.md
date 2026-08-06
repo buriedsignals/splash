@@ -281,6 +281,16 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+## ★ État courant — 2026-08-06 (branche `feat/setup-page-truth` @ `68e4f767`, Task 8 close le plan)
+
+**La page de setup dit vrai sur une vraie install, prouvé sous `$HOME` isolé.** Gate 23/23 (les 3
+échecs du 1er run = `.env` absent dans ce worktree, pas la branche — même classe que le corollaire
+scrolly ci-dessous). La preuve live a trouvé et fixé un **vrai bug** : `install/bootstrap.sh`
+plantait (`unbound variable`) sur macOS/bash 3.2 en UTF-8 avant même d'atteindre la page — accolage
+`${engine}` (`68e4f767`). Une fois fixé : `chart-native`/`map-native`/`scrolly`/`image-native`
+lisent tous `ready` dans le JSON servi, `embed-fly` absent, aucun `bun install` dans le modèle.
+Détail : `docs/installer/setup-page-proof.md`, `docs/splash/CHANGELOG.md` (session 2026-08-06).
+
 ## ★ État courant — 2026-08-02 (LIS CECI EN PREMIER — storyboard carte + géographie vidéo)
 
 **Le storyboard de carte et la géographie vidéo sont fusionnés** (`feat/map-storyboard-and-video-geography`,

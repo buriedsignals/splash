@@ -4,6 +4,48 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-08-06 — Task 8 « la porte, et la preuve live » : gate 23/23 (3 échecs = env, pas la branche) + preuve d'install réelle sous `$HOME` isolé, un bug bash trouvé et fixé en route (branche `feat/setup-page-truth`, commit `68e4f767`)
+
+**Gate (`bun run check`)** : 20/23 au premier run — `skills/map-native`, `skills/scrolly`,
+`skills/image-native` en échec. Root-causé plutôt que balayé : `ScrollyMap.tsx` throw
+`VITE_MAPTILER_KEY missing` **au chargement du module** (pas un skip propre) → cascade qui fait
+échouer 3 fichiers pour UNE seule cause. `git diff` du merge-base sur ces 3 dossiers = **vide**
+(cette branche n'y touche pas) → pré-existant, purement environnemental (ce worktree n'avait
+jamais eu de `.env`). Fix : copié la vraie clé MapTiler d'un worktree voisin (même machine, jamais
+commit). Re-run : **23/23**.
+
+**★ La preuve live a trouvé un vrai bug produit, pas juste vérifié.** `install/bootstrap.sh` sous
+`$HOME` isolé (`~/splash-proof-home`, jamais le vrai `~/Splash` ni `~/.claude/skills`) **plantait**
+en plein milieu — `bash: engine…: unbound variable`. Racine : ligne 137, `$engine` non-accolé
+collé à l'ellipsis `…` — bash 3.2 (celui livré par macOS, jamais mis à jour) mécompte l'octet
+suivant sous `set -u` en locale UTF-8, sous **fr_FR.UTF-8, en_US.UTF-8 ET C.UTF-8** (seul le `C`
+brut y échappe) — donc ç'aurait planté chez **quasi toute rédaction sur un Mac stock**, pile avant
+d'atteindre la page de setup. `git log -S` confirme : la ligne vient de CETTE branche
+(`947f38b6`), le merge-base ne l'a pas. Fix trivial (`${engine}` accolé, `68e4f767`), reproduit
+cassé puis reproduit réparé sous les 3 locales avant de continuer.
+
+**Preuve, une fois le bug fixé** — ordre des phases confirmé dans le vrai transcript : packaging →
+deps → Playwright Chromium → navigateur Remotion pour `chart-native` **puis** `map-native` → page
+de setup. La page ne peut pas être cliquée par un agent : pilotée par les 2 mêmes appels HTTP que
+son propre client (`GET /`, `POST /submit`), puis relue par une instance neuve de
+`bun install/configurator.ts` (le point d'entrée que `bootstrap.sh` lance) pour confirmer l'état
+VRAIMENT persisté plutôt que celui encore en mémoire du premier process. Résultat, mots du modèle
+lui-même : **`chart-native`, `map-native`, `scrolly`, `image-native` lisent tous `"status":
+"ready"`** (les deux premiers l'étaient déjà `ready` par défaut sur un install neuf, sans clé
+demandée) ; aucune occurrence de `bun install` dans le JSON servi ; `embed-fly` absent du registre
+ET du JSON (aucun adaptateur fly.io n'existe) ; `model.login` ne porte que le login Claude Code
+(runtime choisi) ; chaque moteur porte son `want` et son `choice`. Détail + JSON verbatim :
+`docs/installer/setup-page-proof.md`.
+
+**Non prouvé, nommé honnêtement** : le chemin Windows (`bootstrap.ps1`, lu seulement) · les
+runtimes desktop (`goose-desktop`, `claude-desktop`, déjà `verified:false` en amont) · `dw-chart`/
+`map-dw`/la livraison (hors périmètre de cette tâche) · le vrai clic navigateur (le corps HTTP
+envoyé a été reconstruit depuis `client.ts`, pas observé via un navigateur réel).
+
+**★ ÉTAT — `feat/setup-page-truth` @ `68e4f767`, gate 23/23.** Le seul chantier restant nommé dans
+le plan de cette branche était cette tâche 8 ; elle ferme la boucle « la page dit vrai sur une
+vraie install ».
+
 ## Session 2026-07-29 — famille B « ce qui atteint le lecteur » : porteur/lecteur/comparaison fermés (branche `feat/family-b-what-reaches-the-reader`, 18 tâches, gate 21/22 — les 2 échecs sont l'ambiant nommé)
 
 Spec `docs/superpowers/specs/2026-07-28-family-b-what-reaches-the-reader-design.md`, plan
