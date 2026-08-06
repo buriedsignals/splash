@@ -1,10 +1,34 @@
 import { describe, expect, it } from "bun:test";
+import type { NewsroomCapability } from "../../lib/newsroom/capabilities.ts";
 import type { BrowserProbeResult } from "../../lib/newsroom/probe.ts";
+import {
+  capabilityReadiness,
+  readinessBlockers,
+} from "../../lib/newsroom/readiness.ts";
 import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
-import { preflightModel, type PreflightModel } from "./model.ts";
+import {
+  describeCapability,
+  preflightModel,
+  type PreflightModel,
+} from "./model.ts";
+
+// The "declared but not built" exemplar. No capability in the shipped registry is only-declared
+// any more (Fly.io, the last one, was dropped — lib/newsroom/capabilities.test.ts's "every
+// capability the page offers is actually built" enforces that now), so this local stub — the
+// same one lib/newsroom/readiness.test.ts uses — is what stands in for one, fed through the
+// REAL capabilityReadiness/readinessBlockers/describeCapability rather than the real registry.
+const UNBUILT: NewsroomCapability = {
+  id: "embed-nowhere",
+  label: "A destination that is declared but not built",
+  kind: "delivery",
+  env: [],
+  envHelp: {},
+  criticalDeps: null,
+  implemented: false,
+};
 
 // chart-native's criticalDeps include "remotion", which also runs the real browser probe
 // (a filesystem stat) unless stubbed — pinning it here keeps this test's result independent of
@@ -108,14 +132,17 @@ describe("the capabilities the page offers", () => {
   });
 
   it("shows a declared-but-unbuilt adapter as unavailable, with its reason, and never as a blocker", () => {
-    const m = model({
-      state: state({ capabilities: { "embed-fly": { enabled: true } } }),
+    const st = state({
+      capabilities: { "embed-nowhere": { enabled: true } },
     });
-    const fly = capability(m, "embed-fly");
-    expect(fly?.available).toBe(false);
-    expect(fly?.status).toBe("disabled");
-    expect(fly?.reason).not.toBe("");
-    expect(m.blockers.map((b) => b.id)).not.toContain("embed-fly");
+    const readiness = capabilityReadiness(UNBUILT, st, { env: {} });
+    const fly = describeCapability(UNBUILT, readiness, readiness, st, {});
+    expect(fly.available).toBe(false);
+    expect(fly.status).toBe("disabled");
+    expect(fly.reason).not.toBe("");
+    expect(readinessBlockers([readiness]).map((b) => b.id)).not.toContain(
+      "embed-nowhere",
+    );
   });
 
   it("reports an enabled capability whose key is missing as a blocker, in newsroom language", () => {
@@ -281,7 +308,17 @@ describe("the status a capability would have if it were ticked", () => {
   });
 
   it("stays honest for a capability that is only declared", () => {
-    expect(capability(model(), "embed-fly")?.statusIfEnabled).toBe("disabled");
+    // Ticking an unbuilt capability on must not make it read as ready — capabilityReadiness
+    // answers "disabled" for `!implemented` before it even looks at `enabled`, and this is
+    // that guarantee surfacing through the model's own field.
+    const st = state();
+    const allOn = state({
+      capabilities: { "embed-nowhere": { enabled: true } },
+    });
+    const readiness = capabilityReadiness(UNBUILT, st, { env: {} });
+    const ifEnabled = capabilityReadiness(UNBUILT, allOn, { env: {} });
+    const fly = describeCapability(UNBUILT, readiness, ifEnabled, st, {});
+    expect(fly.statusIfEnabled).toBe("disabled");
   });
 });
 

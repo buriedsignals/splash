@@ -228,7 +228,12 @@ function missingFieldsOf(
     .map((f) => f.name);
 }
 
-function describe(
+// Exported: it is the seam the "declared but not built" rendering is tested against.
+// lib/newsroom/capabilities.ts's own invariant (capabilities.test.ts's "every capability the
+// page offers is actually built") means the shipped registry can no longer hold an unbuilt
+// exemplar for this module's tests to reach through NEWSROOM_CAPABILITIES — this function lets
+// a test feed a local NewsroomCapability stub through the REAL shaping logic instead.
+export function describeCapability(
   cap: NewsroomCapability,
   readiness: CapabilityReadiness,
   ifEnabled: CapabilityReadiness,
@@ -279,7 +284,7 @@ export function preflightModel(
     ifEnabled: capabilityReadiness(cap, allOn, opts),
   }));
   const capabilities = described.map(({ cap, readiness, ifEnabled }) =>
-    describe(cap, readiness, ifEnabled, state, env),
+    describeCapability(cap, readiness, ifEnabled, state, env),
   );
   const count = (status: ReadinessStatus) =>
     capabilities.filter((c) => c.status === status).length;
