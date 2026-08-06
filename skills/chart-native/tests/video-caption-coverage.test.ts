@@ -48,3 +48,22 @@ describe("the chart video and the walk's words", () => {
     expect(all.length).toBe(41);
   });
 });
+
+// ★ The caption sits in the SAME pixel space as the frame's furniture. The source line is laid
+// out in scaled pixels; a band positioned in unscaled ones collides with it exactly when the
+// scale is not 1 — which is every portrait and every square, i.e. every social channel. Measured
+// on a real 1080×1920 render: the band bit into "Source: Glamos", and the landscape proof that
+// preceded it (scale 1) could not have shown it.
+describe("the caption clears the source line at every scale", () => {
+  it("the stage takes a scale, and the wrapper passes the one the chart is drawn at", () => {
+    const stage = read("RevealStage.tsx");
+    expect(stage).toContain("sourceFooterReserve(TYPE.source) * scale");
+    // …and the wrapper hands it the same value it hands the chart, not a default of 1.
+    const bar = read("BarReveal.tsx");
+    const stagePropsBlock = bar.slice(
+      bar.indexOf("<RevealStage"),
+      bar.indexOf("<BarChart"),
+    );
+    expect(stagePropsBlock).toContain("scale={scale}");
+  });
+});

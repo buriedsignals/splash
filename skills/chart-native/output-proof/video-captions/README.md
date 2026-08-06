@@ -28,6 +28,19 @@ the BEATS array with that number — two different spaces. Beat 0 is about Westp
 subject 4. It is the failure `core/walk.ts`'s own header warns about, committed ten lines below
 the warning, and only a walk that CONTRADICTS the data order can expose it.
 
+## Le portrait, et la réserve qui doit suivre l'échelle (2026-08-06)
+
+`portrait-clears-source.png` — un 1080×1920 réel, produit après le rendu paysage ci-dessus.
+
+La première correction posait la légende au-dessus de la ligne de source avec
+`sourceFooterReserve(TYPE.source)` — en pixels **non mis à l'échelle**. Le paysage rend à
+`scale: 1`, donc la preuve passait ; un portrait rend le graphique à une autre échelle, et la
+bande mordait « Source : Glamos ».
+
+La réserve est maintenant multipliée par le même `scale` que le graphique reçoit. Autrement dit :
+**une preuve au rendu ne vaut que pour le format qu'elle a rendu.** Le paysage ne dit rien du
+portrait, et c'est le portrait que produit un canal social — le plus courant des trois.
+
 Regenerate:
 
     cd skills/chart-native && bun scripts/produce.mjs bar <config-with-beats>.json <outDir> video

@@ -51,8 +51,13 @@ export const RevealStage: React.FC<{
   progress: number;
   width: number;
   height: number;
+  /** The same factor the chart is rendered at. The frame's own furniture — the source line
+   *  included — is laid out in SCALED pixels, so a caption positioned in unscaled ones drifts
+   *  into it exactly when the scale is not 1. Measured on a real 1080×1920 portrait: the band
+   *  bit into "Source: Glamos". Landscape at scale 1 had hidden it. */
+  scale?: number;
   children: React.ReactNode;
-}> = ({ config, progress, width, height, children }) => {
+}> = ({ config, progress, width, height, scale = 1, children }) => {
   const C = themeColors(config.themeBg, config.baseColor);
 
   // The walk's order, resolved the same way BarChart resolves it — one answer, not two. The
@@ -85,7 +90,7 @@ export const RevealStage: React.FC<{
           // once for the x-axis title, and `sourceFooterReserve` is the answer it settled on.
           // Read from the same helper, at the same unscaled source type size, so a change to the
           // footer moves the caption with it.
-          bottom: sourceFooterReserve(TYPE.source),
+          bottom: sourceFooterReserve(TYPE.source) * scale,
           // AUTO height, capped. The sentence is never cut: it wraps and the band grows with it,
           // up to the cap. This repo has already shipped a truncation that ate DATA (slope's
           // "Interm."), so silently clipping a journalist's own sentence is the one behaviour
