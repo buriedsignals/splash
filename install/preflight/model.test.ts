@@ -112,6 +112,29 @@ describe("the credential fields the page asks for", () => {
     expect(serialized).not.toContain("acct-1234");
   });
 
+  // Decision (2026-08-06): the production keys are asked outright. A newsroom should not have to
+  // tick a box to be allowed to hand over the token it already has. Publication destinations keep
+  // asking on choice — a newsroom that delivers a file has no S3 account to give.
+  it("marks the production keys as asked upfront, and only those", () => {
+    const m = model();
+    const upfront = m.fields
+      .filter((f) => f.upfront)
+      .map((f) => f.name)
+      .sort();
+    expect(upfront).toEqual(["DATAWRAPPER_API_TOKEN", "VITE_MAPTILER_KEY"]);
+    for (const f of m.fields)
+      if (f.name.startsWith("CLOUDFLARE_") || f.name.startsWith("SPLASH_S3_"))
+        expect(f.upfront).toBe(false);
+  });
+
+  // The tick no longer gates the ASK. Nothing is enabled here and the two keys are still there.
+  it("asks for them with no capability ticked at all", () => {
+    const m = model({ state: state({}) });
+    const names = m.fields.filter((f) => f.upfront).map((f) => f.name);
+    expect(names).toContain("DATAWRAPPER_API_TOKEN");
+    expect(names).toContain("VITE_MAPTILER_KEY");
+  });
+
   it("is PURE — an injected empty env wins over a populated process.env", () => {
     process.env.SPLASH_MODEL_PURITY_PROBE = "x";
     try {
@@ -366,6 +389,42 @@ describe("the runtime's own login", () => {
   });
 });
 
+// I1: `selectable` is what the radio must gate on — `verified` alone let a Windows install pick a
+// macOS-only app (goose-desktop, claude-desktop ship no .ps1), type its keys, sit through the
+// whole install, and only then die at bootstrap.ps1's dispatch.
+describe("runtime selectability is platform-scoped (I1)", () => {
+  it("offers the macOS-only desktop apps on macOS, not on Windows", () => {
+    const mac = model({ platform: "darwin" });
+    expect(mac.runtimes.find((r) => r.id === "goose-desktop")?.selectable).toBe(
+      true,
+    );
+    expect(
+      mac.runtimes.find((r) => r.id === "claude-desktop")?.selectable,
+    ).toBe(true);
+
+    const win = model({ platform: "win32" });
+    expect(win.runtimes.find((r) => r.id === "goose-desktop")?.selectable).toBe(
+      false,
+    );
+    expect(
+      win.runtimes.find((r) => r.id === "claude-desktop")?.selectable,
+    ).toBe(false);
+  });
+
+  it("still offers the four CLI runtimes on Windows — each ships a .ps1", () => {
+    const win = model({ platform: "win32" });
+    for (const id of ["claude", "codex", "gemini", "goose"])
+      expect(win.runtimes.find((r) => r.id === id)?.selectable).toBe(true);
+  });
+
+  it("verified alone is not enough — selectable is false without a module for the platform", () => {
+    const win = model({ platform: "win32" });
+    const goose = win.runtimes.find((r) => r.id === "goose-desktop")!;
+    expect(goose.verified).toBe(true);
+    expect(goose.selectable).toBe(false);
+  });
+});
+
 // The page lets a journalist tick a capability that the SAVED state has disabled — and must then
 // say what that tick means ("Missing: needs a MapTiler key"), without the client re-implementing
 // readiness. So the model carries both: the status as saved, and the status this capability
@@ -401,6 +460,39 @@ describe("the status a capability would have if it were ticked", () => {
 // ("needs VITE_MAPTILER_KEY or REMOTION_MAPTILER_KEY"), which is right for a log and wrong for the
 // page a journalist reads. The model therefore also names WHICH FIELDS are missing, so the page
 // can say "Needs: MapTiler key" and put the var name in the technical detail where it belongs.
+// The page had the profile under its hand and showed none of it: it replaced the whole section
+// with a sentence telling the journalist to open a text editor. The model carries the values so
+// the page can show them.
+describe("the newsroom profile the model carries", () => {
+  it("carries the profile the install already has", () => {
+    const m = model({
+      profile: {
+        name: "Heidi.news",
+        url: "https://heidi.news",
+        palette: ["#0A5C36", "#C8102E"],
+        lang: "fr",
+        theme: "dark",
+      },
+    });
+    expect(m.profile?.name).toBe("Heidi.news");
+    expect(m.profile?.palette?.[0]).toBe("#0A5C36");
+    expect(m.profile?.theme).toBe("dark");
+  });
+
+  // A profile that declares little is not an error: no theme means a light ground, no url means a
+  // credit without a link. The model passes through what is there and invents nothing.
+  it("passes a minimal profile through without inventing fields", () => {
+    const m = model({ profile: { name: "Le Temps" } });
+    expect(m.profile?.name).toBe("Le Temps");
+    expect(m.profile?.palette).toBeUndefined();
+    expect(m.profile?.theme).toBeUndefined();
+  });
+
+  it("reports no profile when the install has none", () => {
+    expect(model().profile).toBeNull();
+  });
+});
+
 describe("what is missing, in the page's own words", () => {
   it("names the fields a capability still needs, not its env vars", () => {
     expect(capability(model(), "map-native")?.missingFields).toEqual([

@@ -251,9 +251,19 @@ claim under test, read from the model the page itself served, not inferred.
   either call. The `remotion browser ensure` one now sits before the only interactive screen in the
   installer, with no timeout and no message: a hang there would leave a newsroom staring at
   "Downloading the video renderer for …" with nothing telling them to kill the process by hand.
-- **The desktop runtimes** (`goose-desktop`, `claude-desktop`) — `configurator-core.ts` already
-  marks both `verified: false`; this proof did not touch either (runtime `claude`, the CLI, was
-  the one exercised end-to-end, matching `docs/installer/*-findings.md`'s existing caveats).
+- **The desktop runtimes** (`goose-desktop`, `claude-desktop`) — at the time of this proof,
+  `configurator-core.ts` marked both `verified: false`; this proof did not touch either (runtime
+  `claude`, the CLI, was the one exercised end-to-end, matching `docs/installer/*-findings.md`'s
+  existing caveats). **Update (2026-08-06):** both raised to `verified: true` by decision, the same
+  regime `gemini` and `goose` already carried — Layer B (a visual out of the app) is still
+  unobserved for either. **Note (final-review fix wave, same date, corrected within the wave):** a
+  whole-branch review's Critical finding briefly asserted `goose-desktop` was the exception —
+  citing `docs/installer/goose-desktop-proof.md`'s own "★★★ Layer B — REACHED" section as evidence
+  for that app — and a first pass here followed it. That citation was wrong: every run in that
+  section went through `goose run`, the CLI, never `goose-desktop`'s own window, so the evidence is
+  `goose`'s, already verified above for its own reasons. The proof document's own "À QUI ce
+  document fait crédit" precision (2026-08-05) says this explicitly and warns against exactly the
+  inference that was made — see `install/configurator-core.ts` for the current, corrected motive.
 - **`dw-chart`/`map-dw` and the delivery capabilities** were deliberately left unenabled — this
   proof is scoped to the four claims the task names (the native engines' readiness truth), not a
   re-run of every capability's live verification.
@@ -269,3 +279,70 @@ claim under test, read from the model the page itself served, not inferred.
 
 - `install/bootstrap.sh` — the `${engine}` brace fix (`68e4f767`), found and fixed by this run.
 - `docs/installer/setup-page-proof.md` — this file.
+
+## Update — 2026-08-06: the served model carries the profile, the upfront keys and six runtimes
+
+**Branch:** `feat/setup-page-keys-and-profile` (HEAD `af4a5f27`), off the proof recorded above.
+Five tasks, all reviewed: the two desktop runtimes (`goose-desktop`, `claude-desktop`) went
+`verified: true` by decision, each carrying a comment naming what IS measured (the app discovers
+the skills) and what is NOT (no visual has ever come out of either) — `install/runtimes/README.md`
+now states the rule this implements (a flag rises on a proof OR a written decision, never in
+silence) and `install/configurator-core.test.ts` reads `configurator-core.ts` as text to hold it;
+the model gained the newsroom profile, parsed with the same `parseNewsroomMarkdown` the loop uses,
+total on a missing or malformed file; the page shows that profile read-only, proven at the payload
+level (the submitted body omits the `newsroom` key whenever a profile exists); the production keys
+are now asked outright, `PreflightField.upfront` derived from the registry's own
+`kind === "engine"` so a new engine inherits it with no edit, while publication destinations stay
+conditional on choosing them; and `install/preflight/server.test.ts` now writes a real
+`NEWSROOM-PROFILE.md` into a temporary ROOT, fetches the page over HTTP, parses the model out of
+the `<script type="application/json" id="preflight-model">` tag, and asserts the profile's values,
+the six selectable runtimes, and — among the fields — that the two upfront keys are present.
+
+**Evidence, established by the controller:**
+
+- **The served-model test guards the real read-and-map path.** Mutating
+  `install/preflight/server.ts`'s mapping from `parsed.source?.name` to `parsed.source?.nam` makes
+  `bun test install/preflight/server.test.ts` fail **14 pass / 1 fail**; restored, **15 pass /
+  0 fail**. This closes the gap a previous review named: the model tests only exercised a
+  pass-through of an already-built object, so a typo in the real mapping would have returned
+  `undefined` with the suite green.
+- **The motive guard is scoped to its own entry.** Deleting the entire comment block above the
+  `claude-desktop` entry makes `bun test install/configurator-core.test.ts` fail **4 pass /
+  1 fail**; restored, **5 / 5**. An earlier version searched a fixed 12-line window and passed on
+  a neighbour's motive.
+- **The gate stands at 22/23, and the red is not this branch.** `lib/newsroom/verify.test.ts`'s
+  "verifyMapTiler: true for the real key" fails identically in the `splash-merge` worktree, which
+  is on `main` and contains none of this work. A direct call settles the cause:
+  `GET https://api.maptiler.com/maps/dataviz/style.json?key=$VITE_MAPTILER_KEY` returns **403
+  "Invalid key - Get your FREE key at https://cloud.maptiler.com/account/keys/"**. This is a
+  real-world consequence, not a test artifact: no map can render until the key is renewed.
+  `skills/map-native` and `skills/scrolly` were also observed red in one run of this worktree —
+  **their cause is not established.** Do not read this as the same dead key: those two suites'
+  live e2e produce tests are separately recorded above, under "What is NOT proven by this run", as
+  **skipping**, not failing, because `VITE_MAPTILER_KEY` does not reach them at all (Bun's `.env`
+  loading does not walk up from a skill-dir `cwd`) — a structural path gap, unrelated to whether
+  the key is valid, and one the gate does not even count as red. A single failed run is not proof
+  of a shared root cause; the two explanations are not merged here.
+
+**What is NOT proven by this branch:**
+
+- **No visual has ever come out of either desktop app.** Layer B is unobserved for both
+  `goose-desktop` and `claude-desktop`, which are offered on a written decision, not a proof.
+  (**Note, final-review fix wave, 2026-08-06, corrected within the wave:** an earlier pass here
+  said `goose-desktop` was the exception, on the strength of
+  `docs/installer/goose-desktop-proof.md`'s "★★★ Layer B — REACHED" section — that section's
+  evidence is `goose`'s, the CLI runtime, never `goose-desktop`'s own window; that document's own
+  "À QUI ce document fait crédit" precision, 2026-08-05, says so and was missed. `goose-desktop`
+  and `claude-desktop` are the same case after all.)
+- **Nothing exercises `install/preflight/client.ts`'s render.** The profile read-out this branch
+  added (the fix for Complaint 2) is proven by reading the code and by the payload it produces
+  (`server.test.ts` asserts the submitted body omits `newsroom` once a profile exists), never by a
+  DOM test of what the browser actually paints. Deleting the branch that renders the read-out would
+  leave the suite green — its *visible* closure rests on reading, not on a guard.
+- **The Windows path (`install/bootstrap.ps1`)** is still verified by reading only — unchanged
+  from the caveat above.
+- **This branch was not re-run through a full live install.** The served-model assertion is a
+  test against the real server (a real HTTP round-trip over a real ROOT), not a fresh
+  `bootstrap.sh` run end to end.
+- **The MapTiler key is dead**, so nothing map-shaped was exercised — not the profile's palette
+  reaching a rendered chart, not a live map produce.

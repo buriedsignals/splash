@@ -2,7 +2,10 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { installedRuntime } from "./read-runtime.ts";
+import {
+  hasRuntimeModuleForPlatform,
+  installedRuntime,
+} from "./read-runtime.ts";
 
 function dir(): string {
   return mkdtempSync(join(tmpdir(), "splash-runtime-"));
@@ -84,5 +87,35 @@ describe("the CLI the bootstrap calls", () => {
     expect(r.exitCode).toBe(0);
     expect(r.stdout.toString().trim()).toBe("goose");
     rmSync(d, { recursive: true, force: true });
+  });
+});
+
+// I1: the setup page's runtime radio must offer only what THIS platform can dispatch to — before
+// this, RUNTIMES.verified was the only gate, so a Windows install could pick goose-desktop or
+// claude-desktop, type its keys, sit through the whole install, and only then die at
+// bootstrap.ps1's dispatch ("No runtime module for '<id>'").
+describe("which runtimes ship a module for a given platform", () => {
+  it("offers the macOS-only apps on macOS/Linux, never on Windows", () => {
+    expect(hasRuntimeModuleForPlatform("goose-desktop", "darwin")).toBe(true);
+    expect(hasRuntimeModuleForPlatform("goose-desktop", "linux")).toBe(true);
+    expect(hasRuntimeModuleForPlatform("goose-desktop", "win32")).toBe(false);
+    expect(hasRuntimeModuleForPlatform("claude-desktop", "darwin")).toBe(true);
+    expect(hasRuntimeModuleForPlatform("claude-desktop", "win32")).toBe(false);
+  });
+
+  it("offers every CLI runtime on every platform — each ships both a .sh and a .ps1", () => {
+    for (const id of ["claude", "codex", "gemini", "goose"]) {
+      expect(hasRuntimeModuleForPlatform(id, "darwin")).toBe(true);
+      expect(hasRuntimeModuleForPlatform(id, "win32")).toBe(true);
+    }
+  });
+
+  it("is false for a runtime id with no module at all, on any platform", () => {
+    expect(hasRuntimeModuleForPlatform("not-a-real-runtime", "darwin")).toBe(
+      false,
+    );
+    expect(hasRuntimeModuleForPlatform("not-a-real-runtime", "win32")).toBe(
+      false,
+    );
   });
 });

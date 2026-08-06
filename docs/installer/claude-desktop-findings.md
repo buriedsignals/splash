@@ -64,9 +64,12 @@ here, not guarded here, written down here.
 
 ### Status
 
-`claude-desktop` is registered with **`verified: false`**, the same flag as `goose-desktop` and for
-the same reason: Layer A (the app finds our skills) is measured, Layer B (a visual comes out of it)
-has not been seen. A product decision is not a proof.
+`claude-desktop` is registered with **`verified: true`**, the same flag as `goose-desktop`, `gemini`
+and `goose`: Layer A (the app finds our skills) is measured, Layer B (a visual comes out of it) has
+not been seen. **Update (2026-08-06):** raised by decision anyway — this is one of only two
+runtimes a journalist can use without ever touching a terminal, which is the whole promise of the
+install page. The motive lives beside the flag in `configurator-core.ts`, and
+`configurator-core.test.ts` reads that source to keep it there.
 
 ---
 

@@ -42,7 +42,9 @@ separating what was proven from what was not.
   not). `runtime_launch_cmd` echoes `open -a Goose` — an application, never a terminal session.
 - `docs/installer/goose-desktop-runtime.test.ts` — 11 hermetic tests, no network, no real Goose
   required. Each guard was mutation-verified with the mutation confirmed landed by checksum first.
-- `RUNTIMES["goose-desktop"]` in `install/configurator-core.ts`, **`verified: false`**.
+- `RUNTIMES["goose-desktop"]` in `install/configurator-core.ts`, **`verified: false`** at the time
+  this proof was written. **Update (2026-08-06):** raised to `true` by decision — see "Verdict"
+  below.
 
 ## Proof result — Layer A (2026-08-03)
 
@@ -284,6 +286,18 @@ worse day, silently exits the pipeline and reports success.
 **Consequence for `verified`.** It stays `false`, and this is now the stronger reason: a runtime is
 not verified because a chart appeared. Backlog **E11**.
 
+> **Note appended 2026-08-06 (final-review fix wave, corrected same day).** This was the flag's
+> true state on 2026-08-03, and it still is, for this reason (Layer B unobserved for THIS app) as
+> well as a second, independent one added later: `RUNTIMES["goose-desktop"].verified` is `true`
+> since 2026-08-06, by written decision — the same regime `gemini`/`goose` already carry, not
+> because any Layer B evidence exists for `goose-desktop` itself. A whole-branch review's Critical
+> finding, and the fix wave that first followed it, briefly asserted otherwise — that the "★★★
+> Layer B — REACHED" section further down proved this runtime's Layer B. It does not: every run in
+> that section went through `goose run`, the CLI, never this app's window. This document's own "À
+> QUI ce document fait crédit" precision (2026-08-05) says so explicitly and warns against exactly
+> that inference — read it before citing that section here. E11's finding about an unmechanical
+> floor stands on its own regardless of any of this.
+
 ### What was done about F5/F6/F7, and what it does not reach (2026-08-03)
 
 - **F5** — `skills/splash/SKILL.md` gained « How to invoke a nested skill », before step 2: the act
@@ -405,6 +419,16 @@ than the flag: Goose Desktop discovers, executes, reaches `bun`, opens on the ri
 invokes nested skills by name, drives our producers, and puts a correct, sourced, takeaway-titled
 chart on disk from a journalist's article.
 
+> **Note appended 2026-08-06 (final-review fix wave, corrected same day).** Read this whole
+> section as describing `goose`'s Layer B, not `goose-desktop`'s: every run above went through
+> `goose run`, the CLI, never the app's own window — this document's own later "À QUI ce document
+> fait crédit" precision (2026-08-05) says so explicitly, and warns against exactly the inference
+> "what is now established is stronger than the flag" invites here. It is not, for `goose-desktop`.
+> `RUNTIMES["goose-desktop"].verified` is `true` since 2026-08-06, by written decision on the same
+> footing as `claude-desktop` — not because of the chart described in this section. A whole-branch
+> review's Critical finding, and the fix wave that first followed it, both drew the opposite
+> conclusion from this paragraph before the precision settled it; corrected here, the same day.
+
 ### Both causes fixed; the re-run that would flip the flag is owed
 
 Criterion 2 and criterion 4 each had a cause, and each cause is now closed **in the product**, not in
@@ -496,8 +520,23 @@ trigger, not to a background sweep.
 
 **Layer A: proven.** The module installs-or-detects, repairs a broken skill-link state, wires
 discovery, and the app finds every skill that *is* a skill. **Layer B: not attempted.**
-`RUNTIMES["goose-desktop"].verified` stays `false`, and the test in
-`install/configurator-core.test.ts` pins it there.
+`RUNTIMES["goose-desktop"].verified` stayed `false` on that basis alone. **Update (2026-08-06):**
+raised to `true` by decision — the same regime `gemini` and `goose` already carry — because this is
+one of only two runtimes a journalist can use without ever touching a terminal. The motive is
+written beside the flag in `install/configurator-core.ts`, and the test in
+`install/configurator-core.test.ts` now checks that any such motive is present, not that Layer B is
+proven.
+
+> **Note appended 2026-08-06 (final-review fix wave, corrected same day).** This verdict is
+> accurate as written, then and now, including the "Update (2026-08-06)" line: the flag is `true`
+> by decision, and Layer B stays not attempted from this APP. A whole-branch review's Critical
+> finding briefly asserted the opposite — that the "★★★ Layer B — REACHED" section further up this
+> document was evidence for `goose-desktop`, and this superseded verdict should be rewritten to
+> say so — and a fix wave first followed that instruction. This document's own "À QUI ce document
+> fait crédit" precision (2026-08-05) settles it the other way: that section's evidence is
+> `goose`'s (the CLI runtime), never this app's window, and it warns against exactly the inference
+> that was made. Corrected here, the same day; see `install/configurator-core.ts` for the current
+> motive.
 
 ---
 

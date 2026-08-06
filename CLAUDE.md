@@ -357,6 +357,24 @@ restent les erreurs de forme de la fixture. **Reste de la tâche 5 : un vrai `/u
 Rémy** — la question du genre doit apparaître après le choix de la vidéo, le storyboard ne suivre
 que si le genre narre.
 
+## ★ Suite du chantier setup page — 2026-08-06 (branche `feat/setup-page-keys-and-profile`, fusionnée, 5 tâches revues)
+
+**Suite du chantier setup page** : clés de production demandées d'emblée (`PreflightField.upfront`
+dérivé du registre, plus d'édition manuelle par moteur) · profil de rédaction affiché en lecture
+seule (jamais renvoyé dans le payload soumis) · `goose-desktop`/`claude-desktop` sélectionnables
+par décision écrite (Couche B **non observée pour les deux** — une revue finale de branche avait
+brièvement cru `goose-desktop` « atteinte » le 2026-08-04 en citant la section « ★★★ Layer B —
+REACHED » de `docs/installer/goose-desktop-proof.md`, mais cette preuve appartient à `goose`, la
+CLI, jamais à la fenêtre de l'app : la précision « À QUI ce document fait crédit » du même fichier
+[2026-08-05] le dit explicitement — corrigé dans la même vague de fix qui s'était d'abord trompée)
+· page servie assertée sur le vrai serveur.
+Gate **20/23** mesuré sur l'arbre final : `lib`, `skills/map-native` et `skills/scrolly`, **une seule
+cause** — la clé MapTiler morte. Chaîne établie, pas déduite : `verifyMapTiler` échoue aussi sur
+`main` ; l'API répond `403 Invalid key` sur la clé ; et le snap carte meurt sur
+`waitForSelector('.maplibregl-canvas')` — sans style, pas de canevas, pas de rendu — **aucune carte ne peut se rendre tant que la clé n'est pas régénérée sur
+cloud.maptiler.com**. Détail + preuve verbatim : `docs/installer/setup-page-proof.md`,
+`docs/splash/CHANGELOG.md` (session 2026-08-06, Task 5).
+
 ## ★ État courant — 2026-08-06 (branche `feat/setup-page-truth` @ `c3567a92`, revue finale close)
 
 **La page de setup dit vrai sur une vraie install, prouvé sous `$HOME` isolé.** Gate 23/23 (les 3

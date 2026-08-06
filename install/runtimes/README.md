@@ -23,12 +23,19 @@ Each `<runtime>.ps1` (Windows) is **dot-sourced** by `bootstrap.ps1` and must de
 as PowerShell functions: `Runtime-Install` and `Runtime-LaunchCmd` (the latter returns the launcher
 command string). The shared Windows helper is `Link-AgentsSkills` (junctions into
 `%USERPROFILE%\.agents\skills\`). It takes **no target**, deliberately: the two runtimes that need
-another door — `goose-desktop`, `claude-desktop` — are macOS-only and ship no `.ps1`, and a Windows
-install that somehow recorded one fails loudly at the dispatch (`bootstrap.ps1:110` throws with the
-expected path). Give it a target when the first Windows runtime needs one, not before.
+another door — `goose-desktop`, `claude-desktop` — are macOS-only and ship no `.ps1`. The setup
+page's runtime radio no longer OFFERS either on a Windows install
+(`install/preflight/model.ts`'s `hasRuntimeModuleForPlatform`, read off this same directory, gates
+selectability per platform — I1). What is left, and stays a fail-loud rather than a silent case, is
+a decor edited or carried over by hand that names one anyway: it fails at the dispatch
+(`bootstrap.ps1:168` throws with the expected path). Give `Link-AgentsSkills` a target when the
+first Windows runtime needs one, not before.
 
 Both layers run AFTER the source is unpacked to `$DEST` and BEFORE the launcher is written, with
 `$DEST` (macOS/Linux) / `$Dest` (Windows) in scope.
 
-`configurator-core.ts`'s `RUNTIMES` map gates which runtimes are selectable — flip a runtime's
-`verified` to `true` only once its module exists here AND the end-to-end proof passes.
+`configurator-core.ts`'s `RUNTIMES` map gates which runtimes are selectable. A runtime's
+`verified` goes `true` when its module exists here AND either the end-to-end proof passes, or the
+project decides to ship it without one — in which case the motive is written beside the flag,
+naming what IS measured and what is not. `configurator-core.test.ts` reads this file's source to
+keep that true: a flag raised in silence fails the suite.

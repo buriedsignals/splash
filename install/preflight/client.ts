@@ -215,12 +215,14 @@ function capabilityRow(
   for (const name of capability.fields) {
     const field = model.fields.find((f) => f.name === name);
     if (!field) continue;
-    if (field.capabilities[0] !== capability.id) {
+    // A production key (`upfront`) is asked once, above every want group — never nested under a
+    // tick, whichever capability owns it first, so it is never doubled and never gated on a tick.
+    if (field.upfront || field.capabilities[0] !== capability.id) {
       fields.append(
         el(
           "p",
           { class: "shared-note" },
-          `${field.label} — asked once, above.`,
+          `${field.label} — ${copy.askedOnceAbove}`,
         ),
       );
       continue;
@@ -317,6 +319,60 @@ function renderNewsroom(copy: PageCopy): void {
   body.replaceChildren();
   if (model.profileExists) {
     body.append(el("p", { class: "shared-note" }, copy.profileOwned));
+    const p = model.profile;
+    if (!p) return; // a file that declares nothing readable — the sentence is the whole answer
+    const readout = el("div", { class: "profile-readout" });
+    const row = (label: string, value: string) => {
+      const r = el("div", { class: "profile-row" });
+      r.append(el("span", { class: "profile-label" }, label));
+      r.append(el("span", { class: "profile-value" }, value));
+      readout.append(r);
+    };
+    if (p.name) row(copy.newsroomName, p.url ? `${p.name} — ${p.url}` : p.name);
+    if (p.palette?.length) {
+      const r = el("div", { class: "profile-row" });
+      r.append(el("span", { class: "profile-label" }, copy.newsroomColor));
+      const swatches = el("span", { class: "profile-value" });
+      p.palette.forEach((hex, i) => {
+        const dot = el("span", { class: "swatch" });
+        dot.style.background = hex;
+        dot.title = hex;
+        swatches.append(dot);
+        // The house colour's hex sits right after the FIRST swatch, not after the last — on a
+        // multi-colour palette, printing it after the final dot reads as that dot's own value,
+        // even though the text was always the first colour's.
+        if (i === 0) swatches.append(el("span", { class: "swatch-hex" }, hex));
+      });
+      r.append(swatches);
+      readout.append(r);
+    }
+    // The token stored on disk (a BCP-47-ish id), not a caption — the same list the language
+    // SELECT just below shows as "Français". Printing the raw id here read as the page failing to
+    // resolve its own data (a "fr" nobody asked for) right next to a select that got it right.
+    if (p.lang) {
+      const label =
+        CONTENT_LANGUAGES.find((l) => l.id === p.lang)?.label ?? p.lang;
+      row(copy.languageContent, label);
+    }
+    if (p.theme) {
+      // "light" | "dark" are words, not colours — only a #rrggbb ground gets a swatch, the same
+      // treatment the house-colour row above already gives a palette. Printing the hex bare (the
+      // regression this closes) read as an English leftover under a French label.
+      if (/^#[0-9a-fA-F]{6}$/.test(p.theme)) {
+        const r = el("div", { class: "profile-row" });
+        r.append(el("span", { class: "profile-label" }, copy.profileGround));
+        const swatches = el("span", { class: "profile-value" });
+        const dot = el("span", { class: "swatch" });
+        dot.style.background = p.theme;
+        dot.title = p.theme;
+        swatches.append(dot, el("span", { class: "swatch-hex" }, p.theme));
+        r.append(swatches);
+        readout.append(r);
+      } else {
+        row(copy.profileGround, p.theme);
+      }
+    }
+    body.append(readout);
     return;
   }
   body.append(
@@ -389,7 +445,11 @@ function renderAssistant(copy: PageCopy): void {
       id,
       type: "radio",
       name: "runtime",
-      ...(runtime.verified ? {} : { disabled: "disabled" }),
+      // `selectable`, not `verified`: a runtime can be verified (proof or decision) and still have
+      // no module for THIS platform — goose-desktop/claude-desktop ship no .ps1, so Windows must
+      // never offer them (I1: the install used to die at bootstrap.ps1's dispatch after the keys
+      // were typed and everything else installed).
+      ...(runtime.selectable ? {} : { disabled: "disabled" }),
     }) as HTMLInputElement;
     input.checked = form.runtime === runtime.id;
     input.addEventListener("change", () => {
@@ -439,6 +499,23 @@ function renderCapabilities(copy: PageCopy): void {
   const engines = section("capabilities");
   engines.name.textContent = copy.capabilitiesTitle;
   engines.hint.textContent = copy.capabilitiesHint;
+  const blocks: HTMLElement[] = [];
+
+  // Production keys (`upfront`) sit ABOVE every want group, asked outright — a newsroom should
+  // not have to tick a box to be allowed to hand over a token it already has (model.ts's
+  // `upfront`, derived from the registry). Publication destinations stay under their own tick,
+  // below, unchanged.
+  const upfrontFields = model.fields.filter((f) => f.upfront);
+  if (upfrontFields.length) {
+    const block = el("div", { class: "want production-keys" });
+    block.append(el("h3", { class: "want-title" }, copy.productionKeysTitle));
+    for (const field of upfrontFields) {
+      const control = fieldControl(field.name, copy);
+      if (control) block.append(control);
+    }
+    blocks.push(block);
+  }
+
   // The want leads, the tool underneath stays its own choosable checkbox (the project owner's
   // explicit "do not collapse the two engines of a want into one"). The grouping itself is
   // group-by-want.ts's groupEnginesByWant (pure, tested there — client.ts has no DOM test
@@ -446,22 +523,18 @@ function renderCapabilities(copy: PageCopy): void {
   // model.ts because this IS a value import (unlike the type-only ones above), and model.ts's
   // module graph is server-only (readiness.ts's node:url) — pulling it in breaks the browser
   // bundle Bun.build produces for this file.
-  const blocks = groupEnginesByWant(model.engines).map(
-    ({ want, capabilities }) => {
-      const block = el("div", { class: "want" });
-      // `want` is undefined only for a capability the registry never assigns one — no engine does
-      // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
-      // than asserted: PreflightCapability#want is optional by type, and a malformed model must
-      // still render its rows instead of throwing on a wantless heading.
-      if (want)
-        block.append(
-          el("h3", { class: "want-title" }, copy.wants[want] ?? want),
-        );
-      for (const c of capabilities)
-        block.append(capabilityRow(c, copy, "checkbox"));
-      return block;
-    },
-  );
+  for (const { want, capabilities } of groupEnginesByWant(model.engines)) {
+    const block = el("div", { class: "want" });
+    // `want` is undefined only for a capability the registry never assigns one — no engine does
+    // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
+    // than asserted: PreflightCapability#want is optional by type, and a malformed model must
+    // still render its rows instead of throwing on a wantless heading.
+    if (want)
+      block.append(el("h3", { class: "want-title" }, copy.wants[want] ?? want));
+    for (const c of capabilities)
+      block.append(capabilityRow(c, copy, "checkbox"));
+    blocks.push(block);
+  }
   engines.body.replaceChildren(...blocks);
 
   const publishing = section("publishing");

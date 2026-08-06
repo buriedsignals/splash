@@ -26,6 +26,9 @@ export const RUNTIMES: Record<
   string,
   { label: string; verified: boolean; login?: RuntimeLogin }
 > = {
+  // The reference runtime: proven by the live install of 2026-08-06 recorded in
+  // docs/installer/setup-page-proof.md (`"runtime": "claude"`, ran the runtime + launcher steps
+  // through to `Done!`).
   claude: {
     label: "Claude Code",
     verified: true,
@@ -36,6 +39,9 @@ export const RUNTIMES: Record<
       optional: true,
     },
   },
+  // Proven end-to-end (2026-07-13, commit 92613a66): discovery of all 8 skills, and native nested
+  // skill invocation (splash -> suggest-article -> suggest-chart -> dw-chart) driving a correct
+  // accepted.json. See docs/installer/codex-proof.md.
   codex: {
     label: "Codex",
     verified: true,
@@ -64,15 +70,27 @@ export const RUNTIMES: Record<
   // nested invocation completed, so the full end-to-end is not proven. See docs/installer/goose-proof.md.
   // No login: Goose carries its own provider configuration, outside this page's reach.
   goose: { label: "Goose", verified: true },
-  // The newsroom-facing runtime: installed once, launched from the Dock, no terminal after install.
-  // NOT verified: the gate proved the app discovers our skills, follows the symlinks, executes a
-  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — but nobody has seen a
-  // visual come OUT of it. That is Layer B, and it is what flips this flag.
+  // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
+  // MEASURED — the gate proved the app discovers our skills, follows the symlinks, executes a
+  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — and Layer B, a
+  // visual coming out of the APP, has not been observed. EASY TO MISCONFUSE WITH: `goose` (the
+  // CLI runtime above, already verified) DID reach Layer B — a real, sourced, takeaway-titled
+  // chart on disk — but every one of those runs went through `goose run`, never this app's
+  // window, so that evidence is `goose`'s, not `goose-desktop`'s. Read
+  // docs/installer/goose-desktop-proof.md's "À QUI ce document fait crédit" precision
+  // (2026-08-05) before citing that document's own "★★★ Layer B — REACHED" section as evidence
+  // for THIS runtime — it says plainly that it is not, and this repo has paid for exactly that
+  // inference twice, including once after the precision was already written (2026-08-06: a
+  // whole-branch review's Critical finding, and the fix wave that first followed it). Kept
+  // selectable because this is one of only two runtimes that need no terminal after the install,
+  // which is the whole promise of the install page.
   // No login: the app owns the account it signs into.
-  "goose-desktop": { label: "Goose Desktop", verified: false },
-  // The second desktop runtime. Layer A is measured in the shipped bundle — the app auto-loads
-  // ~/.claude/skills and mounts it into its sandbox — but no visual has come out of the app, so it
-  // gets the same flag as its sibling. See docs/installer/claude-desktop-findings.md.
+  "goose-desktop": { label: "Goose Desktop", verified: true },
+  // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
+  // MEASURED — the app auto-loads ~/.claude/skills and mounts it into its sandbox
+  // (docs/installer/claude-desktop-findings.md) — and Layer B, a visual coming out of the app,
+  // has not been observed. Kept selectable because these two are the only runtimes that need no
+  // terminal after the install, which is the whole promise of the install page.
   // No login: the app owns the account it signs into.
-  "claude-desktop": { label: "Claude Desktop", verified: false },
+  "claude-desktop": { label: "Claude Desktop", verified: true },
 };

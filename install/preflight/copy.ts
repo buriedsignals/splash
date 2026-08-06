@@ -31,6 +31,7 @@ export type PageCopy = {
   newsroomUrl: string;
   newsroomColor: string;
   profileOwned: string;
+  profileGround: string;
 
   languageTitle: string;
   languageHint: string;
@@ -43,6 +44,13 @@ export type PageCopy = {
 
   capabilitiesTitle: string;
   capabilitiesHint: string;
+  /** The heading over the production keys asked outright, above every want group. */
+  productionKeysTitle: string;
+  /**
+   * Under a capability whose field is upfront (asked once, above): `${field.label} — ${this}`.
+   * Every engine field is upfront now, so this fires under every engine capability.
+   */
+  askedOnceAbove: string;
   /** The heading over each group of tools that serve the same want (charts, maps, …). */
   wants: Record<WantId, string>;
   publishingTitle: string;
@@ -90,6 +98,7 @@ const EN: PageCopy = {
   newsroomColor: "House colour",
   profileOwned:
     "You already have a newsroom profile. It is yours to edit — Splash will not rewrite it. Open NEWSROOM-PROFILE.md to change the house style or the language of your visuals.",
+  profileGround: "House ground",
 
   languageTitle: "Language",
   languageHint:
@@ -104,7 +113,9 @@ const EN: PageCopy = {
 
   capabilitiesTitle: "What you want to be able to do",
   capabilitiesHint:
-    "Tick what your newsroom will use. Anything you leave unticked is never reported as missing.",
+    "The keys below are asked once, whatever you use. Tick what your newsroom will produce — anything left unticked is never reported as a blocker.",
+  productionKeysTitle: "Your accounts",
+  askedOnceAbove: "asked once, above.",
   wants: {
     charts: "Charts",
     maps: "Maps",
@@ -158,6 +169,7 @@ const FR: PageCopy = {
   newsroomColor: "Couleur maison",
   profileOwned:
     "Vous avez déjà un profil de rédaction. Il vous appartient — Splash ne le réécrira pas. Ouvrez NEWSROOM-PROFILE.md pour changer le style maison ou la langue de vos visuels.",
+  profileGround: "Fond maison",
 
   languageTitle: "Langue",
   languageHint:
@@ -172,7 +184,9 @@ const FR: PageCopy = {
 
   capabilitiesTitle: "Ce que vous voulez pouvoir faire",
   capabilitiesHint:
-    "Cochez ce que votre rédaction utilisera. Ce que vous laissez décoché n'est jamais signalé comme manquant.",
+    "Les clés ci-dessous sont demandées une fois, quel que soit votre usage. Cochez ce que votre rédaction produira — ce que vous laissez décoché n'est jamais signalé comme un blocage.",
+  productionKeysTitle: "Vos comptes",
+  askedOnceAbove: "déjà demandée plus haut.",
   wants: {
     charts: "Des graphiques",
     maps: "Des cartes",

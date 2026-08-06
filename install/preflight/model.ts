@@ -29,6 +29,23 @@ import {
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
 import { RUNTIMES, type RuntimeLogin } from "../configurator-core.ts";
+import { hasRuntimeModuleForPlatform } from "../read-runtime.ts";
+
+/**
+ * The newsroom's own profile, as declared in NEWSROOM-PROFILE.md — read-only here (task-2's
+ * scope stops at the data; a sibling task renders it). `profileExists` says a file is present;
+ * this says what it declares, which is not the same thing — a profile can exist and name only
+ * the newsroom.
+ */
+export type PreflightProfile = {
+  name?: string;
+  url?: string;
+  /** Ordered; the first is the house colour. */
+  palette?: string[];
+  lang?: string;
+  /** "light" | "dark" | "#rrggbb" */
+  theme?: string;
+};
 
 /** Where a field's value belongs once submitted. Secrets are always `env`. */
 export type FieldDestination = "env" | "settings";
@@ -46,6 +63,15 @@ export type PreflightField = {
   capabilities: string[];
   /** True when a value is already in place. NEVER the value itself. */
   configured: boolean;
+  /**
+   * True when at least one capability this field serves is `kind: "engine"` — a production key,
+   * asked outright rather than gated behind a tick. Derived from the registry (never a
+   * hand-written list of names): a newsroom should not have to tick a box to be allowed to hand
+   * over a token it already has. A field that serves ONLY delivery capabilities (Cloudflare, S3,
+   * We.Publish) stays `false` — a newsroom that delivers a file has no S3 account to give, and
+   * asking for one it will never have is the same fault mirrored.
+   */
+  upfront: boolean;
 };
 
 export type PreflightCapability = {
@@ -97,12 +123,20 @@ export type PreflightModel = {
     id: string;
     label: string;
     verified: boolean;
+    /**
+     * true only when `verified` AND this platform ships a module for it
+     * (`hasRuntimeModuleForPlatform`). What the radio actually gates on — see the type's own
+     * `verified` for the (separate) proof-or-decision judgement.
+     */
+    selectable: boolean;
     login: (RuntimeLogin & { configured: boolean }) | null;
   }[];
   runtime: string;
   language: { ui: string; content: string };
   /** True when NEWSROOM-PROFILE.md exists: the page then refuses to rewrite it. */
   profileExists: boolean;
+  /** What that file declares — null when the install has no profile on disk. */
+  profile: PreflightProfile | null;
   /**
    * The CURRENTLY SELECTED runtime's own sign-in — the same value as
    * `runtimes.find(r => r.id === runtime)?.login`, kept for callers that already have the
@@ -126,9 +160,13 @@ export type PreflightModelInput = {
   profileExists?: boolean;
   /** The deliverables' language declared by that profile, when there is one. */
   profileLang?: string;
+  /** What NEWSROOM-PROFILE.md declares, already parsed — null or absent when there is none. */
+  profile?: PreflightProfile | null;
   focus?: string;
   resolveDep?: (pkg: string, fromDir: string) => boolean;
   skillsRoot?: string;
+  /** The machine serving the page — defaults to `process.platform`. Injectable for tests. */
+  platform?: NodeJS.Platform;
   /** Injectable for tests, exactly like resolveDep — see lib/newsroom/readiness.ts's own opt. */
   probeBrowser?: (fromDir: string) => BrowserProbeResult;
 };
@@ -190,6 +228,7 @@ function collectFields(
         destination: f.secret || envNames.includes(f.name) ? "env" : "settings",
         capabilities: [cap.id],
         configured: false,
+        upfront: false,
       });
       owners.set(f.name, [cap]);
     }
@@ -204,6 +243,9 @@ function collectFields(
         : field.capabilities.some((id) =>
             isSet(state.capabilities[id]?.settings?.[field.name]),
           );
+    field.upfront = owners
+      .get(field.name)!
+      .some((cap) => cap.kind === "engine");
   }
   return [...byName.values()];
 }
@@ -297,10 +339,12 @@ export function preflightModel(
   const count = (status: ReadinessStatus) =>
     capabilities.filter((c) => c.status === status).length;
 
+  const platform = input.platform ?? process.platform;
   const runtimes = Object.entries(RUNTIMES).map(([id, rt]) => ({
     id,
     label: rt.label,
     verified: rt.verified,
+    selectable: rt.verified && hasRuntimeModuleForPlatform(id, platform),
     login: loginOf(id, env),
   }));
 
@@ -312,6 +356,7 @@ export function preflightModel(
       ...(input.profileLang ? { profileLang: input.profileLang } : {}),
     }),
     profileExists: input.profileExists === true,
+    profile: input.profile ?? null,
     login: runtimes.find((r) => r.id === state.runtime)?.login ?? null,
     fields: collectFields(state, env),
     engines: capabilities.filter((c) => c.kind === "engine"),

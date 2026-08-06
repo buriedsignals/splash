@@ -33,6 +33,25 @@ function shippedRuntimes(): Set<string> {
   }
 }
 
+/**
+ * Whether `<id>` ships a module for `platform` — `.sh` on macOS/Linux, `.ps1` on Windows.
+ *
+ * The setup page's runtime radio uses this to decide what to OFFER, not only what to accept: before
+ * this, `RUNTIMES.verified` was the only gate on the radio (install/preflight/client.ts), and
+ * `shippedRuntimes()` above allowlists on `.sh` OR `.ps1` with no platform distinction — so a
+ * macOS-only app (goose-desktop, claude-desktop, which ship no `.ps1`) passed straight through on
+ * Windows. The install would then die at `bootstrap.ps1`'s runtime dispatch ("No runtime module
+ * for '<id>'") after the keys were typed and everything else installed. Scoping the OFFER to the
+ * SERVING machine's platform, with the same disk-derived rule, is what makes that unreachable.
+ */
+export function hasRuntimeModuleForPlatform(
+  id: string,
+  platform: NodeJS.Platform,
+): boolean {
+  const ext = platform === "win32" ? "ps1" : "sh";
+  return existsSync(join(import.meta.dir, "runtimes", `${id}.${ext}`));
+}
+
 function fromDecor(dir: string): string | undefined {
   const path = join(dir, "newsroom.json");
   if (!existsSync(path)) return undefined;

@@ -18,21 +18,23 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { NEWSROOM_CAPABILITIES } from "../../lib/newsroom/capabilities.ts";
 import { loadDecor } from "../../lib/newsroom/decor.ts";
 import {
   LEGACY_PREFLIGHT_FILE,
   LEGACY_RUNTIME_FILE,
 } from "../../lib/newsroom/migrate-decor.ts";
-import { parseEnvFile } from "../../lib/newsroom/probe.ts";
+import { isSet, parseEnvFile } from "../../lib/newsroom/probe.ts";
 import { writeNewsroomState } from "../../lib/newsroom/state.ts";
 import {
   verifyAnthropic,
   verifyCapability,
   type VerifyOutcome,
 } from "../../lib/newsroom/verify.ts";
+import { parseNewsroomMarkdown } from "../../skills/splash/src/brand-profile.ts";
 import { RUNTIMES } from "../configurator-core.ts";
 import { MODEL_SCRIPT_ID } from "./copy.ts";
-import { preflightModel } from "./model.ts";
+import { preflightModel, type PreflightProfile } from "./model.ts";
 import { resolveSkillsRoot } from "./skills-root.ts";
 import {
   envUpdates,
@@ -76,6 +78,26 @@ function profileLang(): string | undefined {
   return loadDecor(ROOT, { env: fileEnv() }).profile.lang;
 }
 
+// The SAME parser the loop uses (lib/newsroom/decor.ts:160 calls it) — a second parser would
+// drift from the file the journalist actually edits.
+function newsroomProfile(): PreflightProfile | null {
+  try {
+    const parsed = parseNewsroomMarkdown(
+      readFileSync(join(ROOT, PROFILE_FILE), "utf8"),
+    );
+    if (!parsed) return null;
+    return {
+      ...(parsed.source?.name ? { name: parsed.source.name } : {}),
+      ...(parsed.source?.url ? { url: parsed.source.url } : {}),
+      ...(parsed.palette?.length ? { palette: parsed.palette } : {}),
+      ...(parsed.lang ? { lang: parsed.lang } : {}),
+      ...(parsed.theme ? { theme: parsed.theme } : {}),
+    };
+  } catch {
+    return null; // no file, or a file this parser cannot read — the page then offers the form
+  }
+}
+
 function renderPage(focus: string | null): string {
   const env = fileEnv();
   const decor = loadDecor(ROOT, { env });
@@ -83,6 +105,7 @@ function renderPage(focus: string | null): string {
     state: decor.state,
     env,
     profileExists: existsSync(join(ROOT, PROFILE_FILE)),
+    profile: newsroomProfile(),
     skillsRoot: resolveSkillsRoot(ROOT),
     ...(profileLang() ? { profileLang: profileLang()! } : {}),
     ...(focus ? { focus } : {}),
@@ -148,16 +171,40 @@ async function readSubmission(req: Request): Promise<PreflightSubmission> {
 }
 
 /**
+ * Which capability ids own a production key (`kind === "engine"`) the journalist actually TYPED a
+ * value for — regardless of whether its capability is ticked (I2). Production keys are asked
+ * outright, above every want group (model.ts's `upfront`, derived from this same `kind`); a
+ * newsroom can type its Datawrapper token in "Your accounts" and never tick "Datawrapper charts",
+ * and the page's own lede promises every key IS checked — so a typed value has to be verifiable on
+ * its own, not only when the capability using it happens to also be enabled.
+ */
+function upfrontIdsWithTypedValue(sub: PreflightSubmission): string[] {
+  return Object.values(NEWSROOM_CAPABILITIES)
+    .filter(
+      (cap) =>
+        cap.kind === "engine" &&
+        cap.implemented &&
+        (cap.settingsFields ?? []).some((f) => isSet(sub.credentials[f.name])),
+    )
+    .map((cap) => cap.id);
+}
+
+/**
  * Check every capability the newsroom ticked, against the credentials it just typed — falling
  * back to what .env already holds, so re-opening the page on one section does not report the
  * rest as rejected. A capability with no live check is simply absent from the answer.
+ *
+ * Also checks any UNTICKED capability whose upfront production key was typed (I2): the tick
+ * governs what is reported as a BLOCKER, never whether a key that was actually entered gets
+ * checked at all.
  */
 async function verifyAll(
   sub: PreflightSubmission,
 ): Promise<Record<string, VerifyOutcome>> {
   const values = { ...fileEnv(), ...envUpdates(sub) };
   const out: Record<string, VerifyOutcome> = {};
-  for (const id of sub.enabled) {
+  const ids = new Set([...sub.enabled, ...upfrontIdsWithTypedValue(sub)]);
+  for (const id of ids) {
     const outcome = await verifyCapability(id, values);
     if (outcome) out[id] = outcome;
   }
