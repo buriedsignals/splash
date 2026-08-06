@@ -11,6 +11,9 @@ export function slugify(title) {
 
 export async function createStory({ root, title }) {
   const slug = slugify(title);
+  if (!slug) {
+    throw new Error(`title carries no usable content for a folder name`);
+  }
   const dir = join(root, "stories", slug);
   try {
     await stat(dir);

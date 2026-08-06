@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdtemp, rm, stat, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { slugify, createStory } from "../scripts/new-story.mjs";
@@ -37,5 +37,50 @@ describe("createStory", () => {
     await expect(createStory({ root, title: "Water Wars" })).rejects.toThrow(
       "already exists",
     );
+  });
+
+  it("should refuse an empty title", async () => {
+    await expect(createStory({ root, title: "" })).rejects.toThrow(
+      "title carries no usable content",
+    );
+    const storiesDir = join(root, "stories");
+    try {
+      const contents = await readdir(storiesDir);
+      expect(contents).not.toContain("source");
+      expect(contents).not.toContain("beats");
+      expect(contents).not.toContain("export");
+    } catch {
+      // stories dir doesn't exist, which is fine
+    }
+  });
+
+  it("should refuse a whitespace-only title", async () => {
+    await expect(createStory({ root, title: "   \t\n  " })).rejects.toThrow(
+      "title carries no usable content",
+    );
+    const storiesDir = join(root, "stories");
+    try {
+      const contents = await readdir(storiesDir);
+      expect(contents).not.toContain("source");
+      expect(contents).not.toContain("beats");
+      expect(contents).not.toContain("export");
+    } catch {
+      // stories dir doesn't exist, which is fine
+    }
+  });
+
+  it("should refuse a punctuation-only title", async () => {
+    await expect(createStory({ root, title: "!!!???..." })).rejects.toThrow(
+      "title carries no usable content",
+    );
+    const storiesDir = join(root, "stories");
+    try {
+      const contents = await readdir(storiesDir);
+      expect(contents).not.toContain("source");
+      expect(contents).not.toContain("beats");
+      expect(contents).not.toContain("export");
+    } catch {
+      // stories dir doesn't exist, which is fine
+    }
   });
 });
