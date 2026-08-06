@@ -563,8 +563,17 @@ export const WEIGHT: Record<ColourSignal, number> = {
   control: 55,
   declared: 8,
 };
-/** The smallest gap between two adjacent weights above. The frequency bonus must stay under it. */
-const SMALLEST_SIGNAL_GAP = 5;
+/**
+ * The smallest gap between two adjacent weights above. The frequency bonus must stay under it.
+ *
+ * Exported because it was declared and never referenced — a constant nothing reads states an
+ * invariant nothing enforces, which is how `recurrent-role` came to sit exactly one gap above
+ * `control` (60 over 55) with nothing checking that the bonus still fits underneath. The check
+ * lives in charter.test.ts ("the frequency bonus stays a tiebreak"), over the WEIGHT table
+ * itself, so narrowing a gap or raising FREQUENCY_BONUS_CAP fails loudly instead of silently
+ * turning frequency back into an argument.
+ */
+export const SMALLEST_SIGNAL_GAP = 5;
 
 // A custom property counts as a BRAND declaration only when the brand word is what the property
 // is ABOUT — its first meaningful segment, after at most one namespace prefix.

@@ -7,7 +7,11 @@ import {
   isNeutral,
   parseCssColour,
   proposeCharter,
+  FREQUENCY_BONUS_CAP,
+  MIN_CANDIDATE_SCORE,
   SIGNAL_LABEL,
+  SMALLEST_SIGNAL_GAP,
+  WEIGHT,
   type ColourSignal,
   type SiteSources,
 } from "./charter";
@@ -828,5 +832,33 @@ describe("an oklch() this parser cannot read is still reported as a gap", () => 
     const css = ".spacer{background: oklch(62.8% 0.2577 29.23 / 0)}";
     const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
     expect(p.notes.join(" ")).not.toContain("oklch");
+  });
+});
+
+// The weights are ordered so that no amount of repetition can outrank a more deliberate
+// declaration. `rank` makes that structural (it sorts on the tuple, not the sum), but the PRINTED
+// score is still an addition, and `SMALLEST_SIGNAL_GAP` was the constant that stated the rule
+// while nothing read it — which is how `recurrent-role` came to sit exactly one gap above
+// `control` with no check that the bonus still fits under it.
+describe("the frequency bonus stays a tiebreak, never an argument", () => {
+  const gaps = (): number[] => {
+    const sorted = [...new Set(Object.values(WEIGHT))].sort((a, b) => a - b);
+    return sorted.slice(1).map((w, i) => w - sorted[i]!);
+  };
+
+  it("should have no two adjacent weights closer than SMALLEST_SIGNAL_GAP", () => {
+    expect(Math.min(...gaps())).toBe(SMALLEST_SIGNAL_GAP);
+  });
+
+  it("should keep the frequency bonus strictly under that gap", () => {
+    expect(FREQUENCY_BONUS_CAP).toBeLessThan(SMALLEST_SIGNAL_GAP);
+  });
+
+  // The gap this constant now guards, named: an unlabelled colour repeated on brand-carrying
+  // roles must stay under a colour the site's own markup labels a button with.
+  it("should keep recurrent-role between the proposal floor and the accent property", () => {
+    expect(WEIGHT["recurrent-role"]).toBeGreaterThan(WEIGHT.control);
+    expect(WEIGHT["recurrent-role"]).toBeLessThan(WEIGHT["accent-property"]);
+    expect(WEIGHT.control).toBe(MIN_CANDIDATE_SCORE);
   });
 });
