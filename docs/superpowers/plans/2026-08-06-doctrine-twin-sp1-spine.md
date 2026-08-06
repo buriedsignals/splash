@@ -1674,6 +1674,7 @@ git commit -m "feat(twin-doctrine): the standard, the anti-patterns, and a refer
 **Files:**
 - Create: `twin/skills/twin-chart-beat/assets/ChartSeed.tsx`
 - Create: `twin/skills/twin-chart-beat/assets/sample-data/rainfall.json`
+- Create: `twin/skills/twin-chart-beat/assets/preview.png`
 - Create: `twin/skills/twin-chart-beat/scripts/render-still.mjs`
 - Create: `twin/skills/twin-chart-beat/SKILL.md`
 - Create: `twin/skills/twin-chart-beat/references/seed-anatomy.md`
@@ -1766,6 +1767,25 @@ Expected: FAIL — modules not found.
 `rainfall.json` is an array of `{year: number, value: number}` covering 2015 to 2025 for one station, with one genuinely missing year so the seed has to show how a gap is handled.
 
 `ChartSeed.tsx` — under 150 lines, in this order: a pure `lineGeometry(data, {width, height, padding})` returning points and ticks; `deriveFurniture(ground)` for every colour; a `<title>`-free SVG (no root tooltip — the inherited `main` fix) carrying `role="img"` and `<desc>{alt}</desc>`; the title, the source line under the header, the plot, sparse ticks, and **one direct end label on the subject in the accent colour, every other mark in muted ink**.
+
+AMENDED 2026-08-06 (review of the first render, correctness governs):
+
+1. **The scale is fitted to the readings, not anchored at zero.** The first implementation showed
+   zero unconditionally and left 45% of the frame empty, drawing a fall of a third as a gentle sag
+   under a title that asserts it — the chart contradicting its own claim while looking scrupulous.
+   Zero is a rule about marks read by **length** (bars, columns, areas). A line encodes change by
+   **slope**. `yTickValues` therefore pads the readings by 15%, snaps to a round step and returns
+   three labelled ticks, with two floors kept: a positive series never dips below zero, and a
+   series that crosses zero always draws the zero line (`zeroY`), because the sign change is the
+   story. The rule is corrected where it is written — `twin-chart-beat/references/static-discipline.md`,
+   `references/seed-anatomy.md`, and `twin-doctrine/references/anti-patterns.md`, which stated it
+   unqualified and would have propagated it to every production skill.
+2. **Gap notes are placed by the geometry, not by the missing slot.** `lineGeometry` returns
+   `gaps: [{years, x, y}]`, one entry per RUN of missing readings, centred on the midpoint of the
+   readings it separates (on unevenly spaced data the missing slot is nowhere near the middle of
+   the hole) and collapsing `no data 2016–2017` into one note instead of stacking two.
+3. **`assets/preview.png`** ships with the skill — the seed rendered on a light ground, so a reader
+   sees what it produces without running anything. Regenerate it whenever the seed changes.
 
 - [ ] **Step 5: Write the render script**
 
