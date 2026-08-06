@@ -397,3 +397,20 @@ page now serves:
   not the same runtime as Goose Desktop.
 - **The Windows path (`install/bootstrap.ps1`)** is still verified by reading only.
 - **This branch was not re-run through a full live `bootstrap.sh` install.**
+
+## Update — 2026-08-06: final fix wave (I1/I2/I3/M1/M2)
+
+**Branch:** `feat/setup-page-one-screen`, off the two proofs above. A whole-branch review found
+five findings (I1–I3 important, M1–M2 triaged); all five were fixed and mutation-proved. Full
+account: `.superpowers/sdd/2026-08-06-setup-page-one-screen/final-fix-report.md`.
+
+**What is NOT done in this wave — recorded here, not left silent:**
+
+- **The charter's receipt SENTENCES are now bilingual (M1)** — `signalLabel`, `typeRoleLabel` and
+  the two sentence templates route through `PageCopy`, so a French setup page gets a French
+  receipt ("Lu depuis la couleur que le site déclare…"). **The extractor's own free-text `notes`
+  (`lib/newsroom/charter.ts`'s caveats, e.g. "confirm the dark ground by eye before accepting
+  it") are still English-only literals, relayed verbatim.** They are authored inside the
+  extractor itself (not a lookup table like `SIGNAL_LABEL`), so translating them properly is a
+  larger job than this wave — deliberately left rather than half-translated. A French newsroom
+  therefore reads its colour/typeface receipts in French, and any caveat sentence in English.
