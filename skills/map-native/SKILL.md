@@ -57,6 +57,26 @@ and does not reinvent it.
    `--gl=angle` is mandatory for MapTiler WebGL under Remotion (headless Chrome). `--concurrency=1`
    prevents two Remotion workers racing on the same map instance.
 
+**Why we still `jumpTo` per frame, and not Tom's fixed map plate.** `map-explainer`'s
+`references/render-stability.md` prescribes a frozen MapTiler camera plus a CSS `translate/scale`
+plate for ANY 2D pan/zoom, because headless capture can resample **hillshade and satellite imagery**
+differently frame to frame. Deliberately not adopted here, for two reasons and one caveat:
+1. **Our basemaps have no such texture.** The story types render on `MapStyle.DATAVIZ` LIGHT/DARK —
+   flat vector fills, no hillshade, no imagery. The symptom the plate exists to cure has not been
+   observed on our output.
+2. **A guided tour does not fit on one plate.** The plate must be rendered once at the highest zoom
+   any waypoint reaches, and must be wide enough to cover the whole route's extent at that zoom,
+   under a ~4096 px canvas ceiling. Tom's own shot pans 0.6° and zooms 4.75→5.05. A beat tour goes
+   from a continental establish to a single country: on the choropleth sample that is ~35° of route
+   extent at a scale of roughly 128 px/°, i.e. a plate on the order of 4500–5000 px per side —
+   past the ceiling `render-stability.md` sets. Its own instruction at that point is to *split the
+   shot into two plates with an editorial transition*, which is a different film, not a render fix.
+
+**Caveat — this is a judgement, not a measurement.** Nobody has run the reference's own diagnostic
+(inspect static basemap texture while the camera moves) on a map-native mp4 and written the result
+down. If a story is ever shot on a satellite or hillshade style, the plate is mandatory and the shot
+must be cut so it fits one.
+
 **The web builds** (static + interactive) use the same `ChoroplethMap.tsx` component via Vite
 (static: `progress=1`, screenshot; interactive: `INTERACTIVE=1` → Vite + `vite-plugin-singlefile`
 → single-file HTML with pan/zoom/hover). The MapTiler SDK key is injected as
@@ -218,6 +238,30 @@ the interactive scrolly play through the same beats. This is the difference betw
   (`CountryLabel` = NAME + large value, e.g. `NORWAY` / `99%`), NOT a lower-third subtitle. The value uses
   a SHORT `valueUnit` (e.g. `%`), never the long legend label. The lower-third caption is reserved for the
   takeaway insight (when distinct from the title).
+- **The EXPLAINER story — `sweepCarrier`** (choropleth today). Buried Signals' map-explainer beat is
+  "a river draws on, and as it reaches each country that country animates in — border draws, fill
+  blooms, label rises, and it stays lit". `src/sweep-carrier.ts` generalises the river to five
+  **carriers** (`route` · `time` · `threshold` · `space` · `order`) — the river is only what carries a
+  scalar, and a subject with no route still has a clock, a value, a geography or a walk. Declaring
+  `sweepCarrier` on a `story` config turns the beat tour into that explainer:
+  - **the carrier ORDERS the reveal beats** (`src/story-sweep-order.ts`) and does nothing else. The
+    beat timeline that already flies the camera stays the ONE clock. There is no second window, no
+    parallel camera and no second entrance — a sweep clock of its own is exactly what made the camera
+    leave a region mid-entrance, lit regions off-screen, and left on-screen regions dark.
+  - **the entrance is the tuned one** (`stagedByKey` → `stagedEntrance`), triggered at the frame the
+    camera STOPS (`triggerFrameByRegion({atHoldStart:true})`), so border → fill → label all run in
+    stillness and finish ~0.9 s before the next move — the arithmetic `AREAL_REVEAL_HOLD_S` claims.
+  - **a visited region stays lit**: a carrier resolves `revealMode` to `sequential`
+    (`resolveRevealMode`), so the map opens dark and each subject's own bloom layer holds at full
+    once its entrance settles.
+  - **the border is a darker shade of the region's own colour** (Map Explainer's rule), so the draw
+    already says which bin the region is in before the fill answers.
+  - **the takeaway brings the rest of the distribution in.** Tom's non-river countries are basemap
+    and that is right for his claim; on a choropleth an uncoloured region reads as *no data*, so the
+    closing beat washes the remaining data regions in over its own hold.
+  - Without `sweepCarrier` **nothing changes** — same beats, same paint, byte-identical mp4.
+  - The other five `*Story` types still run the old sweep clock; `tests/sweep-carrier-coverage.test.ts`
+    holds that gap open as a decision rather than letting it go quiet.
 - **Gate** — `scripts/audit-story.mjs` (`bun run audit:story`) is render-free and deterministic: it asserts
   the beats open on the title, close on takeaway, every reveal has a highlight + callout text, ≥2 distinct
   cameras (the camera moves), and copy on the title + reveal beats. Green before the eye — but ALWAYS

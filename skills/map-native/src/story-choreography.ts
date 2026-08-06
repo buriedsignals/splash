@@ -8,6 +8,25 @@
 import * as maptilersdk from "@maptiler/sdk";
 import { stagedEntrance, type StagedEntrance } from "./core/staged-reveal";
 import { EMPTY_FEATURE } from "./core/border-slice";
+import { hexToOklch, oklchToHex } from "../../../lib/core/house-ramp";
+
+/** How far down in OKLCH lightness a "subject" trail sits under the fill it outlines. One number,
+ *  like every other knob here: 0 would make the border invisible against its own fill, 1 would
+ *  make it black and stop being that region's colour. 0.42 is Map Explainer's own relationship —
+ *  its COUNTRY_DARK values sit ~40% below their COUNTRY counterparts in lightness. */
+export const TRAIL_DARKEN = 0.42;
+
+/**
+ * A darker shade of a subject's own colour — Map Explainer's border rule
+ * (references/architecture.md §5: "The border is a darker shade of the country colour").
+ * OKLCH, so the shade keeps the hue and perceived chroma of the fill instead of drifting the way
+ * an sRGB multiply does. Falls back to the input for anything that is not a #rrggbb.
+ */
+export function subjectTrailColor(fillHex: string): string {
+  if (!/^#[0-9a-f]{6}$/i.test(fillHex.trim())) return fillHex;
+  const { L, C, h } = hexToOklch(fillHex);
+  return oklchToHex({ L: L * (1 - TRAIL_DARKEN), C, h });
+}
 
 // --- Areal entrance pacing (tuning knobs — each a number) --------------------
 // The choropleth is a beat-TOUR: each region is visited for one hold, then the
@@ -91,9 +110,24 @@ export function addSubjectEmphasisLayers(
     colorFor: (k: string) => string;
     dark: boolean;
     bloom?: boolean;
+    /**
+     * What colour the drawn border settles to.
+     *  - "neutral" (default) — one flat near-white/near-black for every subject. What every
+     *    caller did before, so omitting this renders byte-identical.
+     *  - "subject" — a darker shade of THIS subject's own colour (Map Explainer's rule). The
+     *    border then already says which bin the region is in, before the fill answers.
+     */
+    trailShade?: "neutral" | "subject";
   },
 ): void {
-  const { idPrefix, featureFor, colorFor, dark, bloom = true } = opts;
+  const {
+    idPrefix,
+    featureFor,
+    colorFor,
+    dark,
+    bloom = true,
+    trailShade = "neutral",
+  } = opts;
   for (const key of keys) {
     if (bloom) {
       map.addSource(`${idPrefix}-bloom-${key}`, {
@@ -120,7 +154,12 @@ export function addSubjectEmphasisLayers(
       type: "line",
       source: `${idPrefix}-trail-${key}`,
       paint: {
-        "line-color": dark ? "#f4f4f5" : "#1a1a1a",
+        "line-color":
+          trailShade === "subject"
+            ? subjectTrailColor(colorFor(key))
+            : dark
+              ? "#f4f4f5"
+              : "#1a1a1a",
         "line-width": 2.5,
         "line-opacity": 0.95,
       },

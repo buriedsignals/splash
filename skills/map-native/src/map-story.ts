@@ -159,7 +159,17 @@ export function applyMapArc(
 // (Choropleth). Fail-safe: any unset/unknown value resolves to "context".
 export type RevealMode = "context" | "sequential";
 
-export function resolveRevealMode(config: { revealMode?: string }): RevealMode {
+export function resolveRevealMode(config: {
+  revealMode?: string;
+  sweepCarrier?: string;
+}): RevealMode {
+  // ★ A DECLARED CARRIER IS ITSELF A REVEAL MODE, and it can only be this one. The device the
+  // carrier exists to drive (Buried Signals' map-explainer) is "the map is dark, and each subject
+  // lights up when the sweep reaches it, and stays lit". `context` paints the whole distribution
+  // before the first subject is reached — there is nothing left to light up, so a carrier laid
+  // over it would advance an already-finished reveal. Declaring one therefore SELECTS
+  // `sequential`, rather than being ignored on a config that also carries `revealMode: "context"`.
+  if (config.sweepCarrier) return "sequential";
   return config.revealMode === "sequential" ? "sequential" : "context";
 }
 

@@ -16,7 +16,10 @@ import { join } from "node:path";
 // without someone filling a line in — the same guard `story-authored-caption.test.ts` puts on the
 // authored caption.
 //
-// The two SHAPES are pinned too, because the rule is one device, not one device per component:
+// The SHAPES are pinned too, because the rule is one device, not one device per component:
+//   • "beat-order" — the carrier ORDERS THE REVEAL BEATS (orderRevealBeatsBySweep) and the beat
+//     timeline that already flies the camera is the only clock. Each subject's entrance is
+//     triggered by its own beat, so the camera is always where the reveal is.
 //   • "entrance" — the component already staged each mark's own entrance, so the carrier hands it
 //     a trigger frame per mark (sweepTriggerFrames) and `stagedEntrance` runs unchanged. The
 //     carrier decides WHEN, never HOW.
@@ -24,6 +27,16 @@ import { join } from "node:path";
 //     onto its feature and compared against the sweep's progress inside ONE data-driven
 //     expression. A per-mark setPaintProperty loop would issue hundreds of style mutations per
 //     frame on a renderer that re-parses on each one.
+//
+// ★ "entrance" AND "expression" BOTH RUN A SECOND CLOCK — `sweepFrameWindow`, which spans the
+// whole composition and has never heard of a beat. On the choropleth that was measured, on
+// Rémy's own render (2026-08-06), to produce three defects at once: the camera left a region
+// mid-entrance; regions lit outside the frame; regions sat on screen unlit. The choropleth is
+// fixed here, by moving it to "beat-order". THE OTHER FIVE STILL CARRY IT. They are left in the
+// table with their old shape rather than quietly re-labelled, because that is what this table is
+// for: the gap is written down, so somebody decides about it. Each one needs its own render to
+// confirm the same three defects and its own proof that the move fixed them — not a blind sweep
+// of five components on the strength of one.
 //
 // Not listed here because it is not a Story component: RouteReveal, which is where the device
 // came from — the `route` carrier is its own arrival fraction, computed from the line at produce
@@ -33,13 +46,17 @@ const DIR = join(import.meta.dir, "..", "src", "components");
 const STORIES = () => readdirSync(DIR).filter((f) => f.endsWith("Story.tsx"));
 
 type Coverage =
-  | { sweeps: true; shape: "entrance" | "expression"; marks: string }
+  | {
+      sweeps: true;
+      shape: "beat-order" | "entrance" | "expression";
+      marks: string;
+    }
   | { sweeps: false; whyNot: string };
 
 const COVERAGE: Record<string, Coverage> = {
   "ChoroplethStory.tsx": {
     sweeps: true,
-    shape: "expression",
+    shape: "beat-order",
     marks: "its regions — one per data row, each with a value and a place",
   },
   "SymbolStory.tsx": {
@@ -102,6 +119,19 @@ describe("the sweep reaches every map type, or says why not", () => {
     for (const [file, entry] of Object.entries(COVERAGE)) {
       if (!entry.sweeps) continue;
       const src = readFileSync(join(DIR, file), "utf8");
+      if (
+        entry.shape === "beat-order" &&
+        !src.includes("orderRevealBeatsBySweep(")
+      )
+        wrong.push(
+          `${file}: beat-ordered type that does not order its beats by the carrier`,
+        );
+      // …and, the half that matters more: it must not have kept the second clock. A component
+      // that both orders its beats AND runs `sweepFrameWindow` is back to two clocks.
+      if (entry.shape === "beat-order" && src.includes("sweepFrameWindow("))
+        wrong.push(
+          `${file}: beat-ordered type still running a sweep clock of its own`,
+        );
       if (entry.shape === "entrance" && !src.includes("sweepTriggerFrames("))
         wrong.push(
           `${file}: staged-entrance type without a per-mark trigger frame`,

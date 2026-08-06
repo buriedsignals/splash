@@ -48,12 +48,7 @@ import {
   type CarrierKind,
   type SweepStops,
 } from "../sweep-carrier";
-import {
-  SWEEP_BLOOM,
-  SWEEP_ENTRANCE_TAIL_S,
-  sweepFrameWindow,
-  sweptFraction,
-} from "../sweep-schedule";
+import { orderRevealBeatsBySweep } from "../story-sweep-order";
 import { choroplethSweepMarks } from "../choropleth-sweep";
 import { regionCentroids } from "../choropleth-sweep-geo";
 import { legendTheme } from "../theme/legend-theme";
@@ -76,21 +71,23 @@ maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
 const NUM_BINS = 5;
 
-// Enriched GeoJSON world — adds __value, __hasData, __binIdx, and __stop.
+/** Seconds the closing distribution takes to appear under the takeaway, once the camera has
+ *  finished pulling back. One number, like every other pacing knob (story-choreography.ts).
+ *  Explainer stories only — see the branch that reads it. */
+const EXPLAINER_CLOSE_S = 1.2;
+
+// Enriched GeoJSON world — adds __value, __hasData and __binIdx.
 //
-// ★ `__stop` is WHERE THIS REGION SITS ON THE SWEEP (0 = lights up first, 1 = last), baked onto
-// the feature so the per-frame paint expression can compare it against the sweep's own progress
-// without re-deriving anything. Which scalar produced it — a threshold falling, a clock advancing,
-// a line crossing the territory — is the CARRIER's business alone (sweep-carrier.ts). 1 for a
-// region the carrier cannot place, so it arrives at the close rather than asserting a rank the
-// data never gave.
+// It also used to bake a `__stop` (where the region sits on the sweep) for a per-frame paint
+// expression to compare against a sweep clock of its own. Both are gone: the carrier now orders
+// the reveal BEATS and the beat timeline lights each subject (story-sweep-order.ts), so nothing
+// per-frame needs a stop on a feature.
 function enrichWorld(
   worldGeoJson: GeoJSON.FeatureCollection,
   joined: { key: string; value: number | null }[],
   sortedBins: { min: number; max: number; color: string }[],
   beat: Beat,
   joinKey: string,
-  stops: SweepStops = {},
 ): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
@@ -109,7 +106,6 @@ function enrichWorld(
           __value: j.value,
           __hasData: j.value !== null,
           __binIdx: binIdx,
-          __stop: stops[j.key] ?? 1,
         },
       };
     }),
@@ -128,11 +124,6 @@ interface MapStory {
   triggers: Map<string, number>;
   borderByRegion: Map<string, DrawEntry>;
   joinKey: string;
-  /** Where each region sits on the sweep. Empty when no carrier is declared — which is what
-   *  keeps an un-swept story rendering exactly as it always did. Held here rather than in a
-   *  top-level memo because `space` needs the region centroids, and those only exist once the
-   *  geometry has been resolved inside the map's own load handler. */
-  stops: SweepStops;
 }
 
 export type ChoroplethStoryConfig = ChoroplethData & {
@@ -276,6 +267,9 @@ export const ChoroplethStory: React.FC<{
       // marks from `{name, value}` alone (as this did) left both carriers written, tested, and
       // unreachable — every mark landed at 1 and the map filled at the close.
       //
+      // They are read ONCE, below, to order the reveal beats. Nothing per-frame reads them:
+      // the beat timeline is the only clock (story-sweep-order.ts).
+      //
       // Guarded on `config.sweepCarrier`: with no carrier declared not even the centroid pass
       // runs, so an un-swept story does exactly the work it did before.
       const rows = (config.rows ?? []) as Record<string, unknown>[];
@@ -324,9 +318,13 @@ export const ChoroplethStory: React.FC<{
       };
       // Drop the establish beat in `sequential` (dead air on an empty map) — shared
       // rule with Root.tsx's duration calc so the video length matches the animation.
-      const beats = beatsForMode(
-        deriveMapStory(layout, worldGeoJson, joinKey, meta),
-        mode,
+      //
+      // ★ THEN THE CARRIER ORDERS THE REVEALS — and that is the whole of what it does. The beat
+      // COUNT is unchanged by the permutation, so Root.tsx's `calculateMetadata` (which does not
+      // and need not know a carrier exists) still sizes this composition exactly.
+      const beats = orderRevealBeatsBySweep(
+        beatsForMode(deriveMapStory(layout, worldGeoJson, joinKey, meta), mode),
+        stops,
       );
 
       // Precompute camera solutions — cameraForBounds → {center, zoom}.
@@ -361,7 +359,12 @@ export const ChoroplethStory: React.FC<{
       //    its parts, not just the largest one — mainlandFeature is for camera framing
       //    and the anchor, not render geometry), staged-drawn on over the beat's first
       //    ~2.5s via the shared border-slice/staged-reveal core.
-      const triggers = triggerFrameByRegion(beats, phases);
+      // An explainer waits for the camera to land before the place animates in — see
+      // triggerFrameByRegion's own header for the two readings of the tuned pacing and why only
+      // the carrier path opts in.
+      const triggers = triggerFrameByRegion(beats, phases, {
+        atHoldStart: !!config.sweepCarrier,
+      });
       const anchorByKey = new Map<string, [number, number]>();
       const borderByRegion = new Map<string, DrawEntry>();
       for (const key of triggers.keys()) {
@@ -401,7 +404,6 @@ export const ChoroplethStory: React.FC<{
         sortedBins,
         beats[0],
         joinKey,
-        stops,
       );
 
       // Build fill-color expression (static — color per value, same as ChoroplethReveal).
@@ -474,6 +476,13 @@ export const ChoroplethStory: React.FC<{
         featureFor: singleRegionFeature,
         colorFor: binColorForKey,
         dark,
+        // ★ Map Explainer's border rule (references/architecture.md §5): the drawn border is a
+        // DARKER SHADE OF THE REGION'S OWN COLOUR, not a flat neutral. In Tom's map that reads
+        // "the electricity is on the river, not here" — the bright colour belongs to the thing
+        // that is arriving. In ours it does one more thing: it ties the border to the value the
+        // fill is about to bloom to, so the border draw already says which bin this region is in
+        // before the fill answers. Only under a carrier, so an un-swept story is untouched.
+        trailShade: config.sweepCarrier ? "subject" : "neutral",
       });
 
       // Position to beat 0 (global establish view).
@@ -492,7 +501,6 @@ export const ChoroplethStory: React.FC<{
           triggers,
           borderByRegion,
           joinKey,
-          stops,
         });
         continueRender(handle);
       });
@@ -514,7 +522,6 @@ export const ChoroplethStory: React.FC<{
       triggers,
       borderByRegion,
       joinKey,
-      stops,
     } = mapState;
 
     const h = delayRender(`story-frame-${frame}`);
@@ -579,7 +586,6 @@ export const ChoroplethStory: React.FC<{
         sortedBins,
         beats[beatIndex],
         joinKey,
-        stops,
       );
       (map.getSource("choropleth-world") as maptilersdk.GeoJSONSource).setData(
         enriched,
@@ -590,44 +596,53 @@ export const ChoroplethStory: React.FC<{
     //  - context: whole distribution visible (Task 8, untouched) — only data-bearing
     //    regions are painted, no-data regions stay unpainted → default basemap.
     //  - sequential: nothing lit from establish — every subject's own bloom layer
-    //    (above) carries its full entrance instead.
-    if (config.sweepCarrier) {
-      // ★ THE SWEEP PAINTS, not the beat. Each region blooms when the advancing scalar reaches
-      // its own `__stop` — the map-explainer device (a river arriving at a country), with the
-      // carrier chosen for the subject rather than a river the subject may not have.
+    //    (above) carries its full entrance instead. A declared carrier RESOLVES to this
+    //    mode (resolveRevealMode), so the explainer path is this branch and not a third
+    //    one: the sweep no longer paints anything at all, it only ordered the beats.
+    if (mode === "sequential") {
+      // ★ THE CLOSE — carrier only. Everything above is Map Explainer's device faithfully: the
+      // subjects the walk visits light up and stay lit, and the rest of the map is basemap. On
+      // Tom's map that is right, because a country the river never enters is not part of the
+      // claim. On a CHOROPLETH it is a misreading waiting to happen: every region here carries a
+      // value, and an uncoloured region on a choropleth reads as "no data", not as "not a
+      // subject". Frame 719 of the first render showed it — Britain, France, Spain and Italy
+      // grey behind a takeaway about a north–south gradient they are half of.
       //
-      // Done as ONE data-driven expression rather than a per-region setPaintProperty loop: a
-      // choropleth can carry hundreds of regions, and a loop would issue hundreds of style
-      // mutations per frame on a renderer that re-parses on each one.
-      // The window and the scalar both come from `sweep-schedule` — the SAME pair the five other
-      // sweeping types read. This wiring predated that module and carried its own: it ran the
-      // scalar to exactly 1, so the mark at `__stop = 1` never reached the bloom threshold and
-      // the last region the carrier ordered stayed dark for the whole video. Only a frame pulled
-      // from the END of an mp4 shows that, and the first proof sampled the start and the middle.
-      const swept = sweptFraction(
-        frame,
-        sweepFrameWindow(
-          titleSceneEndFrame,
-          durationInFrames,
-          Math.round(SWEEP_ENTRANCE_TAIL_S * fps),
-        ),
+      // So the takeaway beat brings the distribution the walk sat inside. It rides the SAME
+      // clock as everything else (this beat's own hold — the camera pulls back first, then the
+      // rest appears), never a second one. The subjects are excluded: their own bloom layers
+      // already hold them at full, and washing them again would composite them darker than the
+      // scale says they are.
+      const closing =
+        config.sweepCarrier && beats[beatIndex]!.kind === "takeaway"
+          ? interpolate(
+              frame,
+              [
+                phases[beatIndex]!.startFrame + phases[beatIndex]!.moveFrames,
+                phases[beatIndex]!.startFrame +
+                  phases[beatIndex]!.moveFrames +
+                  Math.round(EXPLAINER_CLOSE_S * fps),
+              ],
+              [0, 0.9],
+              { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+            )
+          : 0;
+      const subjectKeys = [...triggers.keys()];
+      map.setPaintProperty(
+        "choropleth-fill",
+        "fill-opacity",
+        closing <= 0
+          ? 0
+          : ([
+              "case",
+              ["==", ["get", "__hasData"], false],
+              0, // no-data: unpainted → default basemap, as everywhere else
+              ...(subjectKeys.length
+                ? [["match", ["get", joinKey], subjectKeys, true, false], 0]
+                : []),
+              closing,
+            ] as never),
       );
-      map.setPaintProperty("choropleth-fill", "fill-opacity", [
-        "case",
-        ["==", ["get", "__hasData"], false],
-        0, // no-data: unpainted → default basemap, as always
-        [
-          "interpolate",
-          ["linear"],
-          ["-", swept, ["get", "__stop"]],
-          0,
-          0,
-          SWEEP_BLOOM,
-          0.9,
-        ],
-      ] as never);
-    } else if (mode === "sequential") {
-      map.setPaintProperty("choropleth-fill", "fill-opacity", 0);
     } else {
       map.setPaintProperty("choropleth-fill", "fill-opacity", [
         "case",
