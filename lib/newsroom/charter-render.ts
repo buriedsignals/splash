@@ -187,8 +187,26 @@ function readAppliedStyles(rawArgs: unknown): AppliedStyles {
   // readable at all. A page whose every sheet read cleanly has nothing to make up for.
   let computedCss: string | null = null;
   if (blockedHrefs.length > 0 || sheets.length === 0) {
-    const selectorOf = (el: Element): string => {
-      const cls = (el.getAttribute("class") ?? "").trim().split(/\s+/)[0];
+    // The selector this writes is what charter.ts's own role detection reads back
+    // (CONTROL_SELECTOR, MASTHEAD_SELECTOR) — so it has to be the class that MATCHED the
+    // `[class*="…"]` query, not simply the element's first class. `<div class="wrapper btn">`
+    // returned `.wrapper`, which matches no role, so the synthetic rule scored `declared` (8) and
+    // fell under the proposal floor: the fallback returned nothing on exactly the JS-built site it
+    // exists for. Among the classes that carry a hint, one whose hint STARTS the class is
+    // preferred, because that is the shape the role regexes read (`.btn-primary` reads as a
+    // control; a hint buried mid-token, as in `ui-badge`, does not, and still scores `declared`).
+    const selectorOf = (el: Element, hints: string[]): string => {
+      const classes = (el.getAttribute("class") ?? "")
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const carries = classes.filter((c) =>
+        hints.some((h) => c.toLowerCase().includes(h)),
+      );
+      const cls =
+        carries.find((c) => hints.some((h) => c.toLowerCase().startsWith(h))) ??
+        carries[0] ??
+        classes[0];
       if (cls) return `.${cls}`;
       const id = el.getAttribute("id");
       if (id) return `#${id}`;
@@ -207,7 +225,12 @@ function readAppliedStyles(rawArgs: unknown): AppliedStyles {
     );
     if (control) {
       const c = getComputedStyle(control).backgroundColor;
-      if (c) rules.push(`${selectorOf(control)} { background-color: ${c} }`);
+      // The same words the query above selected on — one list, so the selector written back can
+      // never name a class the query did not ask for.
+      if (c)
+        rules.push(
+          `${selectorOf(control, ["btn", "button", "cta", "badge", "tag", "pill", "chip"])} { background-color: ${c} }`,
+        );
     }
 
     const masthead = document.querySelector(
@@ -221,7 +244,9 @@ function readAppliedStyles(rawArgs: unknown): AppliedStyles {
       if (svg) {
         const fill = getComputedStyle(svg).fill;
         if (fill && fill !== "none")
-          rules.push(`${selectorOf(masthead)} svg { fill: ${fill} }`);
+          rules.push(
+            `${selectorOf(masthead, ["logo", "masthead", "brand", "wordmark"])} svg { fill: ${fill} }`,
+          );
       }
     }
 
