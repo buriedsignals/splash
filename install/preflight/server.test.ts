@@ -345,4 +345,56 @@ describe("the setup page probes the delivered skills tree on a packed install", 
       expect(imageNative!.status).toBe("ready");
     });
   });
+
+  // The case above is a happy path only: with the wiring at server.ts's
+  // `skillsRoot: resolveSkillsRoot(ROOT)` reverted (falling back to DEFAULT_SKILLS_ROOT, the
+  // REPO'S OWN skills/), it still reads "ready" — this worktree's real
+  // skills/image-native/node_modules/sharp resolves regardless of what the fixture contains, so a
+  // fixture that only ever asks for "ready" can never catch that revert. This case is what makes
+  // the fixture DISCRIMINATING: a packed tree whose engine directory exists but whose dependency
+  // never landed at .dist/node_modules must read "missing" — a status the repo's own skills/
+  // fallback cannot produce, because the repo tree really does have sharp installed. Only the
+  // correct wiring (probing THIS install's own .dist/skills) can answer "missing" here; reverting
+  // the line flips it to "ready" and this test goes red.
+  it("reads image-native as missing when .dist/skills exists but .dist/node_modules never got sharp", async () => {
+    const dest = root();
+    // The packed engine directory exists (a real pack ran), but the dependency install into
+    // .dist/node_modules never completed — exactly the shape a stalled `bun install` at .dist
+    // leaves behind. No node_modules directory at all under .dist.
+    mkdirSync(join(dest, ".dist", "skills", "image-native"), {
+      recursive: true,
+    });
+    // Bun's OWN "bun <script>" execution — unlike bun:test's in-process resolver — silently
+    // falls back to installing an unresolved package from its per-USER global cache
+    // (~/.bun/install/cache) when it is nowhere in the local node_modules chain. On any machine
+    // that has ever `bun install`ed sharp for ANY project, that fallback resolves "sharp" from
+    // this fixture regardless of what .dist/node_modules holds — silently defeating the very
+    // absence this fixture exists to create. Disabling auto-install for this install root is
+    // what a REAL delivered tree wants anyway: readiness must read the tree on disk, never
+    // silently pull a dependency the pack step did not put there.
+    writeFileSync(join(dest, "bunfig.toml"), '[install]\nauto = "disable"\n');
+
+    await withServer(dest, async (port) => {
+      const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({ enabled: ["image-native"] }),
+      });
+      expect(submitRes.status).toBe(200);
+    });
+
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const model = JSON.parse(html.slice(start, end));
+
+      const imageNative = model.engines.find(
+        (e: { id: string; status: string }) => e.id === "image-native",
+      );
+      expect(imageNative).toBeDefined();
+      expect(imageNative!.status).toBe("missing");
+    });
+  });
 });
