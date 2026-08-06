@@ -2044,6 +2044,37 @@ git commit -m "feat(splash-twin): the orchestrator, and a test that its prose ca
 
 Materialisation is **lazy**: nothing is built before the journalist chooses. That reverses `main`'s habit of producing every form up front.
 
+**Amended after implementation review.** The prescribed code had four real defects, all caught
+before merge — correctness governs over the prescription:
+1. `materialise`'s `source-bundle` branch used `copyFile` on every entry of `beatDir` directly.
+   A beat carrying any subdirectory other than `renders` (an `assets` folder, say) would hit
+   `copyFile` on a directory and crash (`ENOTSUP`/`EISDIR` depending on platform) instead of
+   being copied. Fixed with a recursive `copyTree` helper, used by both forms, that walks a
+   directory rather than handing it to `copyFile`.
+2. `exportDir` was never cleared before writing. A journalist who materialises one form, then
+   changes their mind and materialises a different one, would get the second form's files mixed
+   with the first's leftovers — a straightforward violation of "only the chosen form is built".
+   Fixed: `materialise` clears and recreates `exportDir` on every call, but only *after*
+   validating `form` — a refused, unoffered form must not destroy a delivery already made.
+3. The written `package.json` named a build script (`bun run build.ts`) that nothing in the
+   bundle provided — a "runnable source" form that cannot run. Decided in favour of shipping a
+   real, honest, dependency-free build entry over relabelling the promise: `materialise` now
+   writes a genuine `build.ts` that bundles the beat's own `.tsx` file(s) with `Bun.build` (built
+   into the Bun runtime, no added dependency). It does not reproduce the raster pipeline that
+   made the owned PNG/SVG — that would duplicate the chart-beat skill's own logic, which this
+   codebase's skills are built not to share — but `bun install && bun run build` genuinely
+   executes and produces a bundled file, proven in Step 6 by actually running it.
+4. `offerForms` genre-gates on `"static"`, but `materialise` validated `form` only against the
+   shared `FORMS` table, with no `genre` parameter to check against. For SP1 this cannot yet be
+   exploited — one genre exists, and `FORMS` *is* everything `offerForms` can ever return — so no
+   signature change was made; a genre-scoped check would be speculative generality ahead of the
+   second genre that would actually need it. Left as a named limitation for the skill that adds
+   genre 2, not a defect within SP1's own scope.
+
+Everything else in the prescribed code held up under mutation testing (every line targeted by a
+test was confirmed to flip that test red when broken, then reverted). The test and implementation
+blocks below are corrected to match what was actually shipped.
+
 - [ ] **Step 1: Write the failing test**
 
 ```ts
@@ -2100,10 +2131,66 @@ describe("materialise", () => {
     const files = await readdir(exportDir);
     expect(files).toContain("package.json");
     expect(files).toContain("Rainfall.tsx");
+    // The already-rendered PNG/SVG belong to the owned-file form, not the source bundle.
+    expect(files).not.toContain("renders");
   });
 
   it("should refuse a form that was never offered", async () => {
     await expect(materialise({ form: "embed", beatDir, exportDir })).rejects.toThrow("not an offered form");
+  });
+
+  // Defect 2: refusing an unoffered form is a validation failure, not a delivery — it must not
+  // destroy a form the journalist already has sitting in exportDir.
+  it("should leave an already-delivered form untouched when a later choice is refused", async () => {
+    await materialise({ form: "owned-file", beatDir, exportDir });
+    await expect(materialise({ form: "embed", beatDir, exportDir })).rejects.toThrow("not an offered form");
+    const files = await readdir(exportDir);
+    expect(files).toContain("still.png");
+    expect(files).toContain("still.svg");
+  });
+
+  // Defect 1: a beat directory can carry a subdirectory other than "renders" (an "assets"
+  // folder holding a logo), nested more than one level deep. copyFile throws on a directory —
+  // the source-bundle form must walk the whole tree, at every depth.
+  it("should copy a subdirectory nested two levels deep inside the beat, not throw on it", async () => {
+    await mkdir(join(beatDir, "assets", "icons"), { recursive: true });
+    await writeFile(join(beatDir, "assets", "logo.svg"), "<svg/>");
+    await writeFile(join(beatDir, "assets", "icons", "pin.svg"), "<svg/>");
+    const written = await materialise({ form: "source-bundle", beatDir, exportDir });
+    const files = await readdir(exportDir);
+    expect(files).toContain("assets");
+    const nested = await readdir(join(exportDir, "assets"));
+    expect(nested).toContain("logo.svg");
+    expect(nested).toContain("icons");
+    const deeper = await readdir(join(exportDir, "assets", "icons"));
+    expect(deeper).toContain("pin.svg");
+    expect(written).toContain(join(exportDir, "assets", "logo.svg"));
+    expect(written).toContain(join(exportDir, "assets", "icons", "pin.svg"));
+  });
+
+  // Defect 2: a journalist can change their mind. The second materialise must not leave the
+  // first form's files sitting alongside the new one.
+  it("should clear a previous choice's files when a different form is materialised next", async () => {
+    await materialise({ form: "owned-file", beatDir, exportDir });
+    expect(await readdir(exportDir)).toContain("still.png");
+    await materialise({ form: "source-bundle", beatDir, exportDir });
+    const files = await readdir(exportDir);
+    expect(files).not.toContain("still.png");
+    expect(files).not.toContain("still.svg");
+    expect(files).toContain("package.json");
+  });
+
+  // Defect 3: "bun install && bun run build" is a claim, not decoration. The build script the
+  // bundle ships must actually run — via the bundle's own package.json "build" script, the
+  // exact command named in the "gives" text — and produce something.
+  it("should ship a build script that genuinely runs and bundles the component", async () => {
+    await materialise({ form: "source-bundle", beatDir, exportDir });
+    const files = await readdir(exportDir);
+    expect(files).toContain("build.ts");
+    const proc = Bun.spawnSync(["bun", "run", "build"], { cwd: exportDir });
+    expect(proc.exitCode).toBe(0);
+    const dist = await readdir(join(exportDir, "dist"));
+    expect(dist).toContain("Rainfall.js");
   });
 });
 ```
@@ -2117,45 +2204,119 @@ Expected: FAIL — module not found.
 
 ```js
 // twin/skills/twin-deliver/scripts/deliver.mjs
-// Lazy by design: nothing is built before the journalist has chosen.
+// Lazy by design: nothing is built before the journalist has chosen. `offerForms` and
+// `materialise` read the same `FORMS` table — one source of truth — so "not an offered form"
+// can never drift from what was actually offered.
 
-import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
+const REACT_VERSION = "^19.1.0";
+
 const FORMS = {
-  "owned-file": { label: "The file itself", gives: "a PNG and an SVG the newsroom owns outright" },
-  "source-bundle": { label: "Runnable source", gives: "a folder that rebuilds this chart with bun install and bun run build" },
+  "owned-file": {
+    label: "The file itself",
+    gives: "a PNG and an SVG the newsroom owns outright, nothing else to run",
+  },
+  "source-bundle": {
+    label: "Runnable source",
+    gives:
+      "a folder with this chart's component and data, plus a real build.ts that bun install and bun run build actually execute",
+  },
 };
 
 export function offerForms({ medium, genre }) {
-  if (genre !== "static") throw new Error(`SP1 delivers the static genre only, got ${JSON.stringify(genre)}`);
-  return ["owned-file", "source-bundle"].map((id) => ({ id, ...FORMS[id] }));
+  if (genre !== "static") {
+    throw new Error(`SP1 delivers the static genre only, got ${JSON.stringify(genre)}`);
+  }
+  return Object.keys(FORMS).map((id) => ({ id, ...FORMS[id] }));
 }
+
+// Recursively copies one directory's contents into another, collecting every file path
+// written. Directories are walked, never handed to `copyFile` directly (defect 1: a
+// subdirectory anywhere other than "renders" must be copied whole, not throw EISDIR).
+async function copyTree(srcDir, destDir, written) {
+  await mkdir(destDir, { recursive: true });
+  for (const entry of await readdir(srcDir, { withFileTypes: true })) {
+    const srcPath = join(srcDir, entry.name);
+    const destPath = join(destDir, entry.name);
+    if (entry.isDirectory()) {
+      await copyTree(srcPath, destPath, written);
+    } else {
+      await copyFile(srcPath, destPath);
+      written.push(destPath);
+    }
+  }
+}
+
+// A real, dependency-free build entry point (defect 3): Bun's own bundler ships inside the Bun
+// runtime, so "bun install && bun run build" genuinely executes. It does not reproduce the
+// raster pipeline that made the owned PNG/SVG — that belongs to the chart-beat skill, and
+// duplicating it here would be exactly the shared-utility coupling this codebase avoids. It
+// bundles the component source it was actually given, a claim this file can back.
+const BUILD_SCRIPT = `// Bundles this beat's own component source with Bun's native bundler.
+// This reproduces the runnable source, not the raster pipeline that made the owned PNG/SVG.
+import { readdir } from "node:fs/promises";
+
+const entrypoints = (await readdir(".")).filter((file) => file.endsWith(".tsx"));
+if (entrypoints.length === 0) throw new Error("no .tsx component found to build");
+
+const result = await Bun.build({ entrypoints, outdir: "./dist" });
+if (!result.success) {
+  for (const log of result.logs) console.error(log);
+  throw new Error("build failed");
+}
+console.log(\`built \${entrypoints.join(", ")} -> ./dist\`);
+`;
 
 export async function materialise({ form, beatDir, exportDir }) {
   if (!FORMS[form]) throw new Error(`${form} is not an offered form`);
+
+  // Defect 2: exportDir may already hold a previous choice's files — clear it first so the
+  // chosen form is the ONLY thing delivered. Validation above runs before this, so a rejected
+  // form never destroys whatever was already delivered.
+  await rm(exportDir, { recursive: true, force: true });
   await mkdir(exportDir, { recursive: true });
   const written = [];
 
   if (form === "owned-file") {
-    for (const file of await readdir(join(beatDir, "renders"))) {
-      await copyFile(join(beatDir, "renders", file), join(exportDir, file));
-      written.push(join(exportDir, file));
-    }
+    await copyTree(join(beatDir, "renders"), exportDir, written);
     return written;
   }
 
-  for (const file of await readdir(beatDir)) {
-    if (file === "renders") continue;
-    await copyFile(join(beatDir, file), join(exportDir, file));
-    written.push(join(exportDir, file));
+  for (const entry of await readdir(beatDir, { withFileTypes: true })) {
+    if (entry.name === "renders") continue;
+    const srcPath = join(beatDir, entry.name);
+    const destPath = join(exportDir, entry.name);
+    if (entry.isDirectory()) {
+      await copyTree(srcPath, destPath, written);
+    } else {
+      await copyFile(srcPath, destPath);
+      written.push(destPath);
+    }
   }
-  const manifest = join(exportDir, "package.json");
-  await writeFile(manifest, JSON.stringify({
-    name: "splash-beat", private: true, type: "module",
-    scripts: { build: "bun run build.ts" },
-  }, null, 2));
-  written.push(manifest);
+
+  const buildPath = join(exportDir, "build.ts");
+  await writeFile(buildPath, BUILD_SCRIPT);
+  written.push(buildPath);
+
+  const manifestPath = join(exportDir, "package.json");
+  await writeFile(
+    manifestPath,
+    JSON.stringify(
+      {
+        name: "splash-beat",
+        private: true,
+        type: "module",
+        dependencies: { react: REACT_VERSION },
+        scripts: { build: "bun run build.ts" },
+      },
+      null,
+      2,
+    ),
+  );
+  written.push(manifestPath);
+
   return written;
 }
 ```
@@ -2163,7 +2324,8 @@ export async function materialise({ form, beatDir, exportDir }) {
 - [ ] **Step 4: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-deliver/test/deliver.test.ts`
-Expected: PASS, 6 tests.
+Expected: PASS, 10 tests (the four defect-regression tests above were added during
+implementation review, on top of the six originally prescribed).
 
 - [ ] **Step 5: Write `twin-deliver/SKILL.md`**
 
