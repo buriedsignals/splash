@@ -1078,10 +1078,16 @@ function belowFloor(
  *
  * An APPROXIMATION of "the same site", and deliberately a cheap one — the exact answer needs the
  * public suffix list, which is a dependency and a list that goes stale, and what this decides is
- * the wording of a NOTE, never whether a reading is kept. It errs towards saying nothing: two
- * unrelated `*.co.uk` sites read as the same site and no note is emitted. Comparing whole
- * hostnames instead would fire on every newsroom that serves its CSS from its own `cdn.` — which
- * is most of them — and a warning that fires on the ordinary case teaches its reader to skip it.
+ * the wording of a NOTE, never whether a reading is kept.
+ *
+ * It is wrong in BOTH directions, and the note's wording is what makes that affordable. It says
+ * "same site" too readily: two unrelated `*.co.uk` sites reduce alike and no note is emitted.
+ * And it says "other host" too readily: heidi.news's own CDN is `heidi-17455.kxcdn.com`, which
+ * shares no label with it, so the note fires on a newsroom's own stylesheet — which is why that
+ * note states a fact and asks for a confirmation instead of alleging a third party (see
+ * `foreignTopCandidateNote`). What it does buy is the commonest own-CDN shape, `cdn.<site>`:
+ * comparing whole hostnames would fire on every newsroom serving its CSS from its own `cdn.` or
+ * `static.` subdomain, which is most of them.
  */
 function siteOf(hostname: string): string {
   return hostname.toLowerCase().split(".").slice(-2).join(".");
@@ -1089,7 +1095,7 @@ function siteOf(hostname: string): string {
 
 /**
  * A FACT about the top candidate, when its strongest evidence was read from a stylesheet served
- * by another site: which host it came from.
+ * by another host: which host that is, and that it is not the site's own.
  *
  * NOT a filter and NOT a penalty — the decision that a sheet the newsroom's own document links is
  * the newsroom's, whatever host carries the bytes, stands (see charter-fetch.ts's
@@ -1099,6 +1105,16 @@ function siteOf(hostname: string): string {
  * newsroom's own `.btn{background:#0a5c36}` (`control`, 55). The reading is honest; what was
  * missing is the one thing that lets the journalist overrule it, which is knowing where it came
  * from. `Measurement.source` has carried that all along — this puts it in front of him.
+ *
+ * A FACT, and NOT A GUESS ABOUT WHOSE HOST IT IS — that distinction is the whole discipline here.
+ * The note used to add "the colour may belong to a third party (a consent banner, an embedded
+ * widget)", which is a story this module has no evidence for: `siteOf` compares the last two
+ * hostname labels and nothing else, so heidi.news's OWN CDN (`heidi-17455.kxcdn.com`) is foreign
+ * to it and any newsroom on a differently-named CDN — the NORMAL case, the very one decision D1
+ * exists to accommodate — was told its own house colour might be a consent banner's. So the note
+ * says only what was measured (this colour, that host, not your domain) and hands the journalist
+ * the check rather than a verdict. It fires broadly by design; a broad note that states a fact
+ * costs a moment's confirmation, a broad note that speculates teaches its reader to skip it.
  */
 function foreignTopCandidateNote(
   top: ColourCandidate,
@@ -1125,7 +1141,7 @@ function foreignTopCandidateNote(
     return null;
   }
   if (!host || siteOf(host) === site) return null;
-  return `the colour proposed first (${top.value}) was read from a stylesheet served by ${host}, which is not part of ${site} — the newsroom's own page links that sheet, so it is read and ranked like any other, but the colour may belong to a third party (a consent banner, an embedded widget) rather than to the newsroom`;
+  return `the strongest evidence for the colour proposed first (${top.value}) was read from a stylesheet served by ${host}, which is not part of ${site} — that sheet is linked by the newsroom's own page, so it is read and ranked like any other; confirm that ${host} is yours`;
 }
 
 const DECLARED_SIGNALS = new Set<ColourSignal>([

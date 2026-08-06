@@ -742,7 +742,7 @@ describe("regression — accent removed from the charter", () => {
 // But that decision has a cost the journalist must be able to see: a consent banner's stylesheet
 // repeats its own blue on five backgrounds and takes the TOP candidate off the newsroom's own
 // green. The answer is not to drop the reading, it is to SAY where it was read.
-describe("a top candidate read from a third party's stylesheet is named as such", () => {
+describe("a top candidate read from another host's stylesheet names that host", () => {
   const CONSENT = Array.from(
     { length: 5 },
     (_, i) => `.cmp-${i}{background-color:#1f4fd8}`,
@@ -798,6 +798,53 @@ describe("a top candidate read from a third party's stylesheet is named as such"
     expect(p.candidates[0]!.value).toBe("#1f4fd8");
     expect(p.notes.join(" ")).not.toContain("cdn.heidi.news");
   });
+
+  // The case this whole branch exists for (decision D1): heidi.news serves its real CSS from
+  // `heidi-17455.kxcdn.com`. `siteOf` compares the last two labels, so that host IS foreign to it
+  // and the note DOES fire — on a newsroom's own house colour, read from its own stylesheet.
+  // That is fine as a fact ("here is where this came from"); it was NOT fine as a guess ("this
+  // may belong to a consent banner"), which is what a newsroom on a differently-named CDN was
+  // told about its own brand. The note stays; the speculation goes.
+  it("should state a checkable fact, never guess what the other host is", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      // No <meta name="theme-color">: the real fixture's tag outweighs every stylesheet reading
+      // and hides this path. A newsroom that declares no theme-color has nothing hiding it.
+      html: "",
+      sheets: [
+        {
+          href: "https://heidi-17455.kxcdn.com/app.css",
+          css: ".btn{background-color:#d5121e}",
+        },
+      ],
+    });
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    const notes = p.notes.join(" ");
+    // The fact, and enough of it to act on: which colour, which host, and what to do.
+    expect(notes).toContain("heidi-17455.kxcdn.com");
+    expect(notes).toContain("#d5121e");
+    expect(notes).toContain("confirm");
+    // The guess — the newsroom's own CDN described as somebody else's widget.
+    expect(notes).not.toContain("third party");
+    expect(notes).not.toContain("consent banner");
+    expect(notes).not.toContain("embedded widget");
+  });
+
+  // Same discipline on the case the note was originally written for: even when the other host
+  // really IS a consent vendor, the extractor does not know that and must not say it.
+  it("should not guess even when the other host really is a third party's", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        { href: "https://cdn.consent.example/banner.css", css: CONSENT },
+      ],
+    });
+    const notes = p.notes.join(" ");
+    expect(notes).toContain("cdn.consent.example");
+    expect(notes).not.toContain("third party");
+    expect(notes).not.toContain("consent banner");
+  });
 });
 
 // The module's own invariant: "an unparsed notation is reported as a gap, never approximated".
@@ -813,7 +860,8 @@ describe("an oklch() this parser cannot read is still reported as a gap", () => 
   });
 
   it("should report a hue this parser does not read (turn, rad)", () => {
-    const css = ".btn{background: oklch(0.7 0.15 0.5turn)} .x{color: oklch(0.7 0.15 1.2rad)}";
+    const css =
+      ".btn{background: oklch(0.7 0.15 0.5turn)} .x{color: oklch(0.7 0.15 1.2rad)}";
     const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
     expect(p.notes.join(" ")).toContain("oklch");
   });
