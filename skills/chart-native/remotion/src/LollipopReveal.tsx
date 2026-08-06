@@ -5,6 +5,7 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { LollipopChart, type LollipopConfig } from "../../src/LollipopChart";
 import sample from "../../assets/sample-data/lollipop.json";
 import { RevealStage } from "./RevealStage";
+import { steppedFrame } from "../../src/core/walk";
 
 const sampleConfig = sample as unknown as LollipopConfig;
 
@@ -19,6 +20,11 @@ export const LollipopReveal: React.FC<{ scale?: number; config?: LollipopConfig 
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+  // ★ A STEPPED VIDEO IS THE SCROLLY, IN TIME. The chart stands complete and each step
+  // accents the subject its sentence is about — `ScrollyChart`'s own staging, with the
+  // clock turning the pages. Null without a walk, so an un-storyboarded video is unchanged.
+  const step = steppedFrame("lollipop", config, progress);
+
   return (
     <RevealStage
       config={config}
@@ -29,8 +35,8 @@ export const LollipopReveal: React.FC<{ scale?: number; config?: LollipopConfig 
       nativeType="lollipop"
     >
       <LollipopChart
-        config={config}
-        progress={progress}
+        config={step ? ({ ...config, ...step.accent } as typeof config) : config}
+        progress={step ? step.chartProgress : progress}
         width={width}
         height={height}
         scale={scale}

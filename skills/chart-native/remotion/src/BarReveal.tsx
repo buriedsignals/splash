@@ -5,6 +5,7 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { BarChart, type BarConfig } from "../../src/BarChart";
 import sample from "../../assets/sample-data/bars.json";
 import { RevealStage } from "./RevealStage";
+import { steppedFrame } from "../../src/core/walk";
 
 const sampleConfig = sample as unknown as BarConfig;
 
@@ -20,6 +21,11 @@ export const BarReveal: React.FC<{ scale?: number; config?: BarConfig }> = ({ sc
     extrapolateRight: "clamp",
   });
 
+  // ★ A STEPPED VIDEO IS THE SCROLLY, IN TIME. The chart stands complete and each step
+  // accents the subject its sentence is about — `ScrollyChart`'s own staging, with the
+  // clock turning the pages. Null without a walk, so an un-storyboarded video is unchanged.
+  const step = steppedFrame("bar", config, progress);
+
   return (
     <RevealStage
       config={config}
@@ -30,8 +36,8 @@ export const BarReveal: React.FC<{ scale?: number; config?: BarConfig }> = ({ sc
       nativeType="bar"
     >
       <BarChart
-        config={config}
-        progress={progress}
+        config={step ? ({ ...config, ...step.accent } as typeof config) : config}
+        progress={step ? step.chartProgress : progress}
         width={width}
         height={height}
         scale={scale}

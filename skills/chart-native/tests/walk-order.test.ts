@@ -203,7 +203,7 @@ describe("captionAt — the sentence on screen", () => {
   ];
   // `bar`'s own clock: its entrance, and the permutation only it performs.
   const BAR_CLOCK = {
-    grain: "anchored" as const,
+    grain: "entrance" as const,
     entrance: BAR_ENTRANCE,
     count: CATS.length,
   };
@@ -267,7 +267,7 @@ describe("captionAt — the anchored clock is the WALK's order, not the data's",
     { category: "Central", text: "Central ferme." },
   ];
   const clock = {
-    grain: "anchored" as const,
+    grain: "entrance" as const,
     entrance: entranceOf("lollipop"),
     count: CATS.length,
   };

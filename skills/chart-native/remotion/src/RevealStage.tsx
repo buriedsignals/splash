@@ -48,9 +48,12 @@ export function captionClock(
   config: StageConfig,
 ): CaptionClock {
   const walk = nativeType ? chartWalk(nativeType) : undefined;
-  if (!walk || walk.grain !== "anchored") return { grain: "sequenced" };
+  // `accent` stages like a scrolly: the chart stands complete and the accent walks, so its steps
+  // share the timeline equally — there is no entrance for a sentence to ride. Only `entrance`
+  // reads the stagger schedule.
+  if (!walk || walk.grain !== "entrance") return { grain: "sequenced" };
   return {
-    grain: "anchored",
+    grain: "entrance",
     entrance: entranceOf(nativeType!),
     count: (config.rows ?? []).length,
   };
@@ -69,11 +72,18 @@ export function captionClock(
 const BAND = {
   /** of the shorter side — the type size */
   fontScale: 0.045,
-  /** of the frame height — the band never eats more than this, whatever the sentence */
-  maxHeightRatio: 0.38,
   paddingScale: 0.035,
   /** the ground the band paints, over the chart's own */
   opacity: 0.92,
+  /**
+   * ★ THE BAND TAKES ITS SPACE FROM THE CHART, it does not sit ON it.
+   *
+   * The first version was an overlay, and the render showed the cost: it covered the category
+   * labels — "Libéré dans les Alpes" was simply gone behind the sentence. A caption that hides the
+   * name of the subject it is about is worse than no caption. So the chart is drawn into the
+   * remaining height and the band lives below it.
+   */
+  reserveRatio: 0.2,
 } as const;
 
 export const RevealStage: React.FC<{
@@ -106,13 +116,24 @@ export const RevealStage: React.FC<{
   if (!caption)
     return <div style={{ width, height, background: C.bg }}>{children}</div>;
 
+  // The chart is re-sized into what the band leaves it. Done by cloning the single chart element
+  // each wrapper passes, rather than by threading a height through all 41 of them.
+  const bandBox = Math.round(height * BAND.reserveRatio);
+  const chartHeight = height - bandBox;
+  const sized = React.isValidElement(children)
+    ? React.cloneElement(
+        children as React.ReactElement<{ height?: number }>,
+        { height: chartHeight },
+      )
+    : children;
+
   const short = Math.min(width, height);
   const fontSize = Math.round(short * BAND.fontScale);
   const padding = Math.round(short * BAND.paddingScale);
 
   return (
     <div style={{ width, height, background: C.bg, position: "relative" }}>
-      {children}
+      {sized}
       <div
         data-testid="reveal-caption"
         style={{
@@ -125,12 +146,9 @@ export const RevealStage: React.FC<{
           // Read from the same helper, at the same unscaled source type size, so a change to the
           // footer moves the caption with it.
           bottom: sourceFooterReserve(TYPE.source) * scale,
-          // AUTO height, capped. The sentence is never cut: it wraps and the band grows with it,
-          // up to the cap. This repo has already shipped a truncation that ate DATA (slope's
-          // "Interm."), so silently clipping a journalist's own sentence is the one behaviour
-          // this band may not have. What happens past the cap is settled at the render proof,
-          // not guessed here.
-          maxHeight: `${Math.round(BAND.maxHeightRatio * 100)}%`,
+          // …and never taller than the room reserved for it, so it cannot climb back over the
+          // chart's own labels the way the overlay version did.
+          maxHeight: bandBox - sourceFooterReserve(TYPE.source) * scale,
           overflow: "hidden",
           boxSizing: "border-box",
           padding: `${Math.round(padding * 0.7)}px ${padding}px`,
