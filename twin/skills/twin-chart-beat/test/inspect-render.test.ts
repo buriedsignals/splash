@@ -128,4 +128,118 @@ describe("inspectSvg", () => {
     });
     expect(result.contrast[0].pass).toBe(false);
   });
+
+  // --- Round 2, review-driven: the walker still had five silent-pass holes. Never default an
+  // unresolvable colour to black — silence and a pass must not look alike. ---
+
+  it("should prefer a style fill over a presentation fill attribute (CSS cascade order)", () => {
+    const result = inspectSvg(
+      svg('<text fill="#000000" style="fill:#AAAAAA">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should resolve an rgb() fill instead of silently dropping it", () => {
+    const result = inspectSvg(svg('<text fill="rgb(170,170,170)">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+    expect(result.contrast[0].unresolved).toBe(false);
+  });
+
+  it("should mark an unparseable fill as unresolved rather than defaulting it to black", () => {
+    const result = inspectSvg(svg('<text fill="url(#grad)">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0]).toEqual({
+      fill: "url(#grad)",
+      ratio: null,
+      pass: false,
+      unresolved: true,
+    });
+  });
+
+  it("should resolve a named colour the table actually carries, e.g. rebeccapurple", () => {
+    const result = inspectSvg(svg('<text fill="rebeccapurple">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].fill).toBe("#663399");
+    expect(result.contrast[0].unresolved).toBe(false);
+  });
+
+  it("should mark a named colour outside the table as unresolved, not guess a hex for it", () => {
+    const result = inspectSvg(svg('<text fill="mediumspringgreen">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].unresolved).toBe(true);
+    expect(result.contrast[0].fill).toBe("mediumspringgreen");
+  });
+
+  it("should resolve currentColor via the nearest ancestor's color attribute", () => {
+    const result = inspectSvg(
+      svg('<g color="#AAAAAA"><text fill="currentColor">x</text></g>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+    expect(result.contrast[0].unresolved).toBe(false);
+  });
+
+  it("should mark currentColor unresolved when no ancestor declares a color", () => {
+    const result = inspectSvg(svg('<text fill="currentColor">x</text>'), {
+      ground: "#FFFFFF",
+    });
+    expect(result.contrast[0].unresolved).toBe(true);
+  });
+
+  it("should see a fill override on a nested tspan, not just on the parent text", () => {
+    const result = inspectSvg(
+      svg('<text fill="#000000">ok<tspan fill="#AAAAAA">bad</tspan></text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast.length).toBe(2);
+    expect(
+      result.contrast.some((c) => c.fill === "#000000" && c.pass === true),
+    ).toBe(true);
+    expect(
+      result.contrast.some((c) => c.fill === "#AAAAAA" && c.pass === false),
+    ).toBe(true);
+  });
+
+  it("should not truncate tag parsing on a stray > inside a quoted attribute value", () => {
+    const result = inspectSvg(
+      svg('<text data-note="a > b" fill="#AAAAAA">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#AAAAAA");
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should refuse a non-px font-size unit rather than granting it the large-text floor", () => {
+    // 50% is really ~8px; parseFloat("50%") reads 50 and would wrongly clear the >=24 bar.
+    const result = inspectSvg(
+      svg('<text fill="#949494" font-size="50%" font-weight="700">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(false); // held to 4.5:1, not granted 3:1
+  });
+
+  it("should grant the large-text floor to a bold keyword, not only a numeric weight", () => {
+    const result = inspectSvg(
+      svg('<text fill="#949494" font-size="20" font-weight="bold">x</text>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].pass).toBe(true); // 20px + bold clears the 18.66px/bold large floor
+  });
+
+  it("should exclude text inside <defs> from the contrast report — it never renders", () => {
+    const result = inspectSvg(
+      svg('<defs><text fill="#AAAAAA">hidden</text></defs>'),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast.length).toBe(0);
+  });
 });
