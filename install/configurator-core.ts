@@ -72,24 +72,25 @@ export const RUNTIMES: Record<
   goose: { label: "Goose", verified: true },
   // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
   // MEASURED — the gate proved the app discovers our skills, follows the symlinks, executes a
-  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md). Layer B — a visual
-  // coming out of the app — was REACHED once (2026-08-04): a real, sourced, takeaway-titled chart
-  // on disk from a real article, run through Goose Desktop's runtime, with nested skill invocation
-  // by name and a live Datawrapper URL before review (docs/installer/goose-desktop-proof.md,
-  // "★★★ Layer B — REACHED"). 4 of its 6 judged criteria passed there; 2 failed (`report.json` was
-  // never persisted, no `_shown/` receipt was written) — both causes are now fixed in the product,
-  // and a 6/6 re-run is owed before the flag would rest on more than a decision. Kept selectable
-  // regardless, because this is one of only two runtimes that need no terminal after the install,
+  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — and Layer B, a
+  // visual coming out of the APP, has not been observed. EASY TO MISCONFUSE WITH: `goose` (the
+  // CLI runtime above, already verified) DID reach Layer B — a real, sourced, takeaway-titled
+  // chart on disk — but every one of those runs went through `goose run`, never this app's
+  // window, so that evidence is `goose`'s, not `goose-desktop`'s. Read
+  // docs/installer/goose-desktop-proof.md's "À QUI ce document fait crédit" precision
+  // (2026-08-05) before citing that document's own "★★★ Layer B — REACHED" section as evidence
+  // for THIS runtime — it says plainly that it is not, and this repo has paid for exactly that
+  // inference twice, including once after the precision was already written (2026-08-06: a
+  // whole-branch review's Critical finding, and the fix wave that first followed it). Kept
+  // selectable because this is one of only two runtimes that need no terminal after the install,
   // which is the whole promise of the install page.
   // No login: the app owns the account it signs into.
   "goose-desktop": { label: "Goose Desktop", verified: true },
   // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
   // MEASURED — the app auto-loads ~/.claude/skills and mounts it into its sandbox
-  // (docs/installer/claude-desktop-findings.md). Layer B — a visual coming out of the app — is
-  // GENUINELY UNATTEMPTED here: unlike goose-desktop, no run of any kind has been made against this
-  // runtime; there is no partial-criteria result to report. Kept selectable because these two are
-  // the only runtimes that need no terminal after the install, which is the whole promise of the
-  // install page.
+  // (docs/installer/claude-desktop-findings.md) — and Layer B, a visual coming out of the app,
+  // has not been observed. Kept selectable because these two are the only runtimes that need no
+  // terminal after the install, which is the whole promise of the install page.
   // No login: the app owns the account it signs into.
   "claude-desktop": { label: "Claude Desktop", verified: true },
 };

@@ -17,13 +17,21 @@ décisions ; il ferme trois manques que seul l'usage réel a montrés.
 dans le code : la Couche A (l'hôte découvre les skills) est mesurée pour les deux, la Couche B
 (**un visuel sort de l'app**) n'a jamais été observée.
 
-> **Note ajoutée (revue finale de branche, 2026-08-06) :** cette dernière phrase amalgame les deux
-> apps et c'est devenu faux pour l'une d'elles. Pour `goose-desktop`, la Couche B a en réalité été
-> **atteinte** une fois (2026-08-04, `docs/installer/goose-desktop-proof.md` § « ★★★ Layer B —
-> REACHED ») — 4 critères sur 6, les 2 causes d'échec sont depuis corrigées dans le produit, et
-> c'est un re-run à 6/6 qui manque, pas une tentative. Pour `claude-desktop`, la Couche B est
-> réellement **jamais tentée**. Les deux ne sont plus dans le même état ; voir le motif distinct
-> dans `install/configurator-core.ts`.
+> **Note ajoutée (revue finale de branche, 2026-08-06) — cette dernière phrase était juste depuis
+> le début ; l'histoire de comment on a failli la casser vaut d'être écrite.** Une revue finale de
+> branche a formulé un Critical affirmant que cette phrase amalgamait les deux apps à tort — que
+> `goose-desktop` avait en réalité **atteint** la Couche B une fois (2026-08-04, citant
+> `docs/installer/goose-desktop-proof.md` § « ★★★ Layer B — REACHED »). Le contrôleur qui a rédigé
+> ce Critical, et la première vague de fix qui l'a exécuté à la lettre, ont donc tous les deux eu
+> tort. La preuve qui tranche est dans le document cité lui-même, à sa toute fin, dans une
+> précision datée du **2026-08-05** — donc ANTÉRIEURE au Critical du 2026-08-06 — sous le titre
+> « À QUI ce document fait crédit » : *« Tout ce qui est mesuré ici passe par `goose run`, la CLI
+> […] Aucun run n'est parti de la fenêtre de l'application. Le PNG produit prouve donc la couche B
+> de `goose` […] et pas celle de `goose-desktop` »*, avec l'avertissement explicite *« ne jamais
+> inférer le comportement de l'une depuis l'autre »*. La phrase d'origine ci-dessus est donc
+> restée exacte tout du long : Couche B non observée pour les deux apps de bureau, sélectionnables
+> uniquement sur décision écrite. Voir `install/configurator-core.ts` pour le motif à jour, qui
+> nomme maintenant cette confusion pour qu'un troisième lecteur ne la refasse pas.
 
 **Le précédent qui tranche** : `install/configurator-core.test.ts:9-10` montre que `gemini` et
 `goose` sont déjà ouverts **« by decision »**, Couche B en attente — pour gemini parce que le

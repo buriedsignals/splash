@@ -52,12 +52,16 @@ run `bootstrap.sh` frais · la clé MapTiler est morte, donc rien de cartographi
 Détail complet, preuve verbatim : `docs/installer/setup-page-proof.md` (section « Update —
 2026-08-06 »).
 
-> **Correctif (revue finale de branche, 2026-08-06) :** la phrase ci-dessus amalgame les deux apps
-> à tort. `goose-desktop` a en réalité **atteint** la Couche B une fois (2026-08-04, 4 critères sur
-> 6, les 2 causes d'échec sont depuis corrigées dans le produit, il manque un re-run à 6/6 — pas
-> une première tentative ; voir `docs/installer/goose-desktop-proof.md`, « ★★★ Layer B — REACHED »).
-> `claude-desktop`, lui, n'a **jamais** été tenté — c'est le seul des deux dans l'état que la phrase
-> ci-dessus décrit. Le motif à jour, distinct pour chacun, vit dans `install/configurator-core.ts`.
+> **Note (revue finale de branche, 2026-08-06, corrigée dans la même vague) :** la phrase ci-dessus
+> était juste depuis le début. Une première correction écrite ici affirmait que `goose-desktop`
+> avait « atteint » la Couche B le 2026-08-04, en citant la section « ★★★ Layer B — REACHED » de
+> `docs/installer/goose-desktop-proof.md` — cette citation était fausse : tous les runs de cette
+> section passent par `goose run`, la CLI, jamais par la fenêtre de l'app `goose-desktop` ; la
+> preuve appartient donc à `goose` (déjà `verified` pour ses propres raisons), pas à
+> `goose-desktop`. La précision « À QUI ce document fait crédit » du même fichier (2026-08-05) le
+> dit explicitement et met en garde contre exactement cette inférence — manquée une première fois.
+> `goose-desktop` et `claude-desktop` sont donc bien dans le même état : Couche B non observée pour
+> les deux, sélectionnables sur décision écrite. Motif à jour : `install/configurator-core.ts`.
 
 ## Session 2026-08-06 — Task 8 « la porte, et la preuve live » : gate 23/23 (3 échecs = env, pas la branche) + preuve d'install réelle sous `$HOME` isolé, un bug bash trouvé et fixé en route (branche `feat/setup-page-truth`, commit `68e4f767`)
 

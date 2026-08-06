@@ -255,11 +255,15 @@ claim under test, read from the model the page itself served, not inferred.
   `configurator-core.ts` marked both `verified: false`; this proof did not touch either (runtime
   `claude`, the CLI, was the one exercised end-to-end, matching `docs/installer/*-findings.md`'s
   existing caveats). **Update (2026-08-06):** both raised to `verified: true` by decision, the same
-  regime `gemini` and `goose` already carried. **Correction (final-review fix wave, same date):**
-  Layer B is NOT unobserved for both — `goose-desktop` reached it once (2026-08-04, 4 of 6 judged
-  criteria, both failing causes now fixed, a 6/6 re-run owed; `docs/installer/goose-desktop-proof.md`
-  "★★★ Layer B — REACHED"). `claude-desktop` is the one genuinely unattempted. The two do not share
-  a state and the motive beside each flag in `install/configurator-core.ts` says so distinctly.
+  regime `gemini` and `goose` already carried — Layer B (a visual out of the app) is still
+  unobserved for either. **Note (final-review fix wave, same date, corrected within the wave):** a
+  whole-branch review's Critical finding briefly asserted `goose-desktop` was the exception —
+  citing `docs/installer/goose-desktop-proof.md`'s own "★★★ Layer B — REACHED" section as evidence
+  for that app — and a first pass here followed it. That citation was wrong: every run in that
+  section went through `goose run`, the CLI, never `goose-desktop`'s own window, so the evidence is
+  `goose`'s, already verified above for its own reasons. The proof document's own "À QUI ce
+  document fait crédit" precision (2026-08-05) says this explicitly and warns against exactly the
+  inference that was made — see `install/configurator-core.ts` for the current, corrected motive.
 - **`dw-chart`/`map-dw` and the delivery capabilities** were deliberately left unenabled — this
   proof is scoped to the four claims the task names (the native engines' readiness truth), not a
   re-run of every capability's live verification.
@@ -322,11 +326,14 @@ the six selectable runtimes, and — among the fields — that the two upfront k
 
 **What is NOT proven by this branch:**
 
-- **No visual has ever come out of `claude-desktop`.** It is offered on a written decision, not a
-  proof, and Layer B there is genuinely unattempted. **`goose-desktop` is not the same case**
-  (correction, final-review fix wave, 2026-08-06): a visual DID come out of it once, 2026-08-04 —
-  4 of 6 judged criteria, both failing causes since fixed in the product, a 6/6 re-run owed rather
-  than a first attempt (`docs/installer/goose-desktop-proof.md`, "★★★ Layer B — REACHED").
+- **No visual has ever come out of either desktop app.** Layer B is unobserved for both
+  `goose-desktop` and `claude-desktop`, which are offered on a written decision, not a proof.
+  (**Note, final-review fix wave, 2026-08-06, corrected within the wave:** an earlier pass here
+  said `goose-desktop` was the exception, on the strength of
+  `docs/installer/goose-desktop-proof.md`'s "★★★ Layer B — REACHED" section — that section's
+  evidence is `goose`'s, the CLI runtime, never `goose-desktop`'s own window; that document's own
+  "À QUI ce document fait crédit" precision, 2026-08-05, says so and was missed. `goose-desktop`
+  and `claude-desktop` are the same case after all.)
 - **Nothing exercises `install/preflight/client.ts`'s render.** The profile read-out this branch
   added (the fix for Complaint 2) is proven by reading the code and by the payload it produces
   (`server.test.ts` asserts the submitted body omits `newsroom` once a profile exists), never by a
