@@ -255,6 +255,61 @@ describe("what a submission writes", () => {
     );
   });
 
+  // The three things this branch changed, read from what the server actually serves — not from
+  // the functions that feed it (Task 2's model tests only exercise a pass-through of an
+  // already-built PreflightProfile; a typo in server.ts's own read-and-map path, e.g.
+  // `parsed.source?.nam`, would return undefined there and `bun test install` would stay green).
+  it("serves the profile, the upfront keys and the six runtimes", async () => {
+    const dest = root();
+    writeFileSync(
+      join(dest, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "palette:",
+        '  - "#0A5C36"   # your house colour',
+        '  - "#F2C14E"',
+        "source:",
+        '  name: "Heidi.news"',
+        '  url: "https://heidi.news"',
+        'lang: "fr"',
+        'theme: "dark"',
+        "---",
+        "",
+        "# Newsroom profile",
+        "",
+      ].join("\n"),
+    );
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const model = JSON.parse(html.slice(start, end));
+
+      expect(model.profile?.palette?.[0]).toBe("#0A5C36");
+      expect(model.profile?.name).toBe("Heidi.news");
+      expect(model.profile?.lang).toBe("fr");
+      expect(model.profile?.theme).toBe("dark");
+
+      expect(
+        model.runtimes.filter((r: { verified: boolean }) => r.verified),
+      ).toHaveLength(6);
+
+      const upfront = model.fields
+        .filter((f: { upfront: boolean }) => f.upfront)
+        .map((f: { name: string }) => f.name);
+      expect(upfront).toContain("DATAWRAPPER_API_TOKEN");
+      expect(upfront).toContain("VITE_MAPTILER_KEY");
+      // A publication-only field (Cloudflare's account id serves no engine, only the
+      // Cloudflare-Pages delivery capability) must stay ungated.
+      const cloudflareAccountId = model.fields.find(
+        (f: { name: string }) => f.name === "CLOUDFLARE_ACCOUNT_ID",
+      );
+      expect(cloudflareAccountId?.upfront).toBe(false);
+    });
+  });
+
   it("opens on the section a caller pointed at (?section=)", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
