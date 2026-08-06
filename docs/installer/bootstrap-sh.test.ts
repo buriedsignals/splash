@@ -209,6 +209,52 @@ test("link_agents_skills removes a dead symlink before linking (a rename must no
   }
 });
 
+// The page measures the tree; the tree must therefore exist. Packaging and installing after the
+// page is what made it report four healthy engines as missing on every real install. The browser
+// download is part of that same tree — Playwright's chromium is what the static-render
+// screenshots use (the readiness probe and the video render read a different, Remotion-only
+// cache: docs/installer/remotion-cache-measurement.md) — so it must land before the page too, not
+// just pack-skills; a script that moved only the packaging call back after the page would still
+// fail this test via the chromium leg.
+test("packages and installs BEFORE opening the setup page", () => {
+  const pack = sh.indexOf("bun run pack-skills");
+  const chromium = sh.indexOf("playwright install chromium");
+  const page = sh.indexOf("bun install/configurator.ts");
+  const runtime = sh.indexOf("bun install/read-runtime.ts");
+  expect(pack).toBeGreaterThan(0);
+  expect(chromium).toBeGreaterThan(pack);
+  expect(page).toBeGreaterThan(chromium);
+  // The runtime module is chosen BY the page, so it still comes after it.
+  expect(runtime).toBeGreaterThan(page);
+});
+
+// The page's readiness probe for the two video engines is a filesystem stat on a cache only
+// Remotion ever writes, per skill directory (docs/installer/remotion-cache-measurement.md).
+// `playwright install chromium` fills a different cache entirely, so it cannot stand in: without
+// this step the page reports two healthy engines as missing on every install.
+test("fetches the video renderer for BOTH video engines, before the page", () => {
+  const pack = sh.indexOf("bun run pack-skills");
+  const ensure = sh.indexOf("remotion browser ensure");
+  const page = sh.indexOf("bun install/configurator.ts");
+  expect(ensure).toBeGreaterThan(pack);
+  expect(page).toBeGreaterThan(ensure);
+  for (const engine of ["chart-native", "map-native"])
+    expect(sh).toContain(engine);
+});
+
+// The check above (`toContain(engine)`) is satisfied by `map-native` appearing ANYWHERE in the
+// file — and it does, in the skills-symlink helper's own comment and in the delivered-tree
+// assertions elsewhere in this file — so dropping `map-native` from the loop that actually
+// downloads its render browser left that check green. This asserts the LOOP ITSELF names both
+// engines, not merely that the string occurs somewhere in 5000+ characters of shell.
+test("the render-browser loop's own engine list names both video engines, not just the file", () => {
+  const m = sh.match(/for engine in ([^;]+); do\n([\s\S]*?)\ndone\n/);
+  expect(m).not.toBeNull();
+  const [, listText, body] = m!;
+  expect(listText!.trim().split(/\s+/)).toEqual(["chart-native", "map-native"]);
+  expect(body).toContain("remotion browser ensure");
+});
+
 test("the installer links the DELIVERED tree, not the engine checkout", () => {
   // Pointing the helper at $DEST/skills would ship a host the whole engine — the failure this
   // whole chantier exists to close. Asserted on the EXECUTABLE lines: `toContain(".dist/skills")`

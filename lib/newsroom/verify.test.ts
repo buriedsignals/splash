@@ -119,8 +119,10 @@ describe("verifyCapability — verification at the grain of a capability", () =>
     expect(capabilityVerifiable("dw-chart")).toBe(true);
   });
 
-  it("answers undefined for a capability that is only declared", async () => {
-    expect(await verifyCapability("embed-fly", {})).toBeUndefined();
+  // No capability in the registry is only-declared any more (Fly.io, the last one, was
+  // dropped) — verifyCapability answers the same way for an id it does not recognize at all:
+  // silence, never a fabricated verdict.
+  it("answers undefined for an id this install does not recognize", async () => {
     expect(
       await verifyCapability("nonexistent-capability", {}),
     ).toBeUndefined();

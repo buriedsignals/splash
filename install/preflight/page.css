@@ -265,12 +265,33 @@ details.tech code {
 
 /* ── capabilities ─────────────────────────────────────────────────────── */
 
+/* One group per want (charts, maps, …): the want leads, the tools underneath stay their own
+   choosable rows. */
+.want-title {
+  margin: 1.1rem 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 640;
+  color: var(--ink);
+}
+
+.want:first-child .want-title {
+  margin-top: 0;
+}
+
 .capability {
   border-top: 1px solid var(--line);
   padding: 0.9rem 0;
 }
 
 .capability:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* The engine rows sit inside a .want block now, behind their heading — so the first row there is
+   never :first-child (the h3 is). This is that same "no border right under the heading" rule for
+   the nested case; :first-child above still covers the flat delivery list, which has no heading. */
+.want-title + .capability {
   border-top: 0;
   padding-top: 0;
 }

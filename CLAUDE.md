@@ -281,6 +281,29 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+## ★ État courant — 2026-08-06 (branche `feat/setup-page-truth` @ `c3567a92`, revue finale close)
+
+**La page de setup dit vrai sur une vraie install, prouvé sous `$HOME` isolé.** Gate 23/23 (les 3
+échecs du 1er run = `.env` absent dans ce worktree, pas la branche — même classe que le corollaire
+scrolly ci-dessous). La preuve live a trouvé et fixé un **vrai bug** : `install/bootstrap.sh`
+plantait (`unbound variable`) sur macOS/bash 3.2 en UTF-8 avant même d'atteindre la page — accolage
+`${engine}` (`68e4f767`). Une fois fixé : `chart-native`/`map-native`/`scrolly`/`image-native`
+lisent tous `ready` dans le JSON servi, `embed-fly` absent, aucun `bun install` dans le modèle.
+Détail : `docs/installer/setup-page-proof.md`, `docs/splash/CHANGELOG.md` (session 2026-08-06).
+
+**Revue finale de branche (2026-08-06) — 1 vague de fix, mutation-prouvée par finding, gate 23/23
+re-vérifié :** fixture readiness discriminante (`server.test.ts` répondait `ready` même la ligne de
+wiring `skillsRoot` retirée — corrigé + un vrai piège Bun découvert au passage : un `bun` en vrai
+sous-processus auto-résout un paquet absent depuis `~/.bun/install/cache`, neutralisé pour la
+fixture via `bunfig.toml` `install.auto = "disable"`) · boucle vidéo `bootstrap.sh`/`bootstrap.ps1`
+enfin testée sur sa PROPRE liste de moteurs (le test précédent se contentait de `toContain` sur tout
+le fichier, où `map-native` apparaît déjà ailleurs) · cache navigateur Remotion **par skill**
+(`.dist/skills/<engine>/node_modules/.remotion`) désormais reporté au re-pack, comme
+`node_modules` l'était déjà — sans ça, chaque re-run retéléchargeait ~187 Mo · risque `bunx` sous
+Bun (pas Node) sur Windows nommé en commentaire + dans `setup-page-proof.md` (pas de redesign non
+vérifiable) · nettoyage Fly.io résiduel (`guardrails.md`, exemple `bootstrap.ps1`). Rapport détaillé
++ preuves de mutation : `.superpowers/sdd/2026-08-05-setup-page-truth/final-fix-report.md`.
+
 ## ★ État courant — 2026-08-02 (LIS CECI EN PREMIER — storyboard carte + géographie vidéo)
 
 **Le storyboard de carte et la géographie vidéo sont fusionnés** (`feat/map-storyboard-and-video-geography`,

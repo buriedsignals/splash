@@ -19,6 +19,21 @@ test("goose-desktop is registered but NOT yet verified — Layer B is unproven",
   expect(RUNTIMES["goose-desktop"]!.verified).toBe(false);
 });
 
+// An Anthropic key is written to .env for whoever picked Goose, and Codex and Gemini have no
+// path for their own. The login belongs to the runtime that uses it — including the runtimes
+// that need none, which own their account (the two desktop apps) or their own config (Goose).
+test("each runtime declares its own login, or none", () => {
+  expect(RUNTIMES.claude!.login?.name).toBe("ANTHROPIC_API_KEY");
+  expect(RUNTIMES.codex!.login?.name).toBe("OPENAI_API_KEY");
+  expect(RUNTIMES.gemini!.login?.name).toBe("GEMINI_API_KEY");
+  for (const id of ["goose", "goose-desktop", "claude-desktop"])
+    expect(RUNTIMES[id]!.login).toBeUndefined();
+  // Every declared login is optional today: all three runtimes also accept a subscription or an
+  // interactive sign-in at first launch.
+  for (const rt of Object.values(RUNTIMES))
+    if (rt.login) expect(rt.login.optional).toBe(true);
+});
+
 // The setup page dispatches on the key: bootstrap.sh sources install/runtimes/<key>.sh. A key with
 // no module behind it selects an install that dies at the dispatch, and nothing else would catch it.
 test("every registered runtime key has a module file of the same name", () => {

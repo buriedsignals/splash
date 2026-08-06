@@ -4,6 +4,8 @@
 // choice. The page is the first thing that speaks, so it obeys the same rule as the emitted
 // export block (lib/newsroom/ui-copy.ts): one table, English default, unknown language falls
 // back to English rather than showing a half-translated form.
+import type { WantId } from "../../lib/newsroom/capabilities.ts";
+
 export const MODEL_SCRIPT_ID = "preflight-model";
 
 /** The section ids, in the order a newsroom lives them (spec 2026-07-26 §3). */
@@ -37,11 +39,12 @@ export type PageCopy = {
 
   assistantTitle: string;
   assistantHint: string;
-  anthropicLabel: string;
-  anthropicHint: string;
+  loginOptionalHint: string;
 
   capabilitiesTitle: string;
   capabilitiesHint: string;
+  /** The heading over each group of tools that serve the same want (charts, maps, …). */
+  wants: Record<WantId, string>;
   publishingTitle: string;
   publishingHint: string;
   unavailable: string;
@@ -96,13 +99,18 @@ const EN: PageCopy = {
 
   assistantTitle: "Your assistant",
   assistantHint: "The AI runtime that drives Splash on this machine.",
-  anthropicLabel: "Anthropic API key",
-  anthropicHint:
-    "Leave blank if you have a Claude subscription — you will log in on first launch.",
+  loginOptionalHint:
+    "Leave blank if you have a subscription — you will sign in on first launch.",
 
   capabilitiesTitle: "What you want to be able to do",
   capabilitiesHint:
     "Tick what your newsroom will use. Anything you leave unticked is never reported as missing.",
+  wants: {
+    charts: "Charts",
+    maps: "Maps",
+    scrollys: "Scrollytelling",
+    "photo-stories": "Photo narratives",
+  },
   publishingTitle: "Publishing",
   publishingHint:
     "Where a finished visual goes. A downloadable package always works, with no account at all.",
@@ -159,13 +167,18 @@ const FR: PageCopy = {
 
   assistantTitle: "Votre assistant",
   assistantHint: "Le runtime IA qui pilote Splash sur cette machine.",
-  anthropicLabel: "Clé API Anthropic",
-  anthropicHint:
-    "Laissez vide si vous avez un abonnement Claude — vous vous connecterez au premier lancement.",
+  loginOptionalHint:
+    "Laissez vide si vous avez un abonnement — vous vous connecterez au premier lancement.",
 
   capabilitiesTitle: "Ce que vous voulez pouvoir faire",
   capabilitiesHint:
     "Cochez ce que votre rédaction utilisera. Ce que vous laissez décoché n'est jamais signalé comme manquant.",
+  wants: {
+    charts: "Des graphiques",
+    maps: "Des cartes",
+    scrollys: "Des scrollys",
+    "photo-stories": "Des récits photo",
+  },
   publishingTitle: "Publication",
   publishingHint:
     "Où va un visuel terminé. Le paquet téléchargeable marche toujours, sans aucun compte.",

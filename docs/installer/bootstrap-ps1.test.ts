@@ -113,16 +113,71 @@ test("packages the payload before anything links it, exactly as the POSIX instal
 test("junctions the PACKAGED skills, never the engine tree", () => {
   expect(ps).toContain(".dist\\skills");
   // The pre-packaging glob is gone: linking `$Dest\skills` is what shipped the engine.
-  expect(ps).not.toMatch(/Get-ChildItem \(Join-Path \$Dest "skills"\) -Directory/);
+  expect(ps).not.toMatch(
+    /Get-ChildItem \(Join-Path \$Dest "skills"\) -Directory/,
+  );
 });
 
 test("installs the packaged tree's dependencies ONCE, above the skills, not per engine", () => {
   // Above the skill directories is where Bun resolves them and no host walks — that placement is
   // the reason the payload stays small, not an optimisation.
   expect(ps).toMatch(/Join-Path \$Dest "\.dist"/);
-  expect(ps).not.toContain('$NativeSkills = @("skills\\chart-native", "skills\\map-native")');
+  expect(ps).not.toContain(
+    '$NativeSkills = @("skills\\chart-native", "skills\\map-native")',
+  );
 });
 
 test("downloads Chromium from the packaged chart-native, so the browser lands for the delivered tree", () => {
   expect(ps).toContain(".dist\\skills\\chart-native");
+});
+
+// The page measures the tree; the tree must therefore exist. Packaging and installing after the
+// page is what made it report four healthy engines as missing on every real install. The browser
+// download is part of that same tree — Playwright's chromium is what the static-render
+// screenshots use (the readiness probe and the video render read a different, Remotion-only
+// cache: docs/installer/remotion-cache-measurement.md) — so it must land before the page too, not
+// just pack-skills; a script that moved only the packaging call back after the page would still
+// fail this test via the chromium leg.
+test("packages and installs BEFORE opening the setup page", () => {
+  const pack = ps.indexOf("bun run pack-skills");
+  const chromium = ps.indexOf("playwright install chromium");
+  const page = ps.indexOf("bun install/configurator.ts");
+  const runtime = ps.indexOf("bun install/read-runtime.ts");
+  expect(pack).toBeGreaterThan(0);
+  expect(chromium).toBeGreaterThan(pack);
+  expect(page).toBeGreaterThan(chromium);
+  // The runtime module is chosen BY the page, so it still comes after it.
+  expect(runtime).toBeGreaterThan(page);
+});
+
+// The page's readiness probe for the two video engines is a filesystem stat on a cache only
+// Remotion ever writes, per skill directory (docs/installer/remotion-cache-measurement.md).
+// `playwright install chromium` fills a different cache entirely, so it cannot stand in: without
+// this step the page reports two healthy engines as missing on every install.
+test("fetches the video renderer for BOTH video engines, before the page", () => {
+  const pack = ps.indexOf("bun run pack-skills");
+  const ensure = ps.indexOf("remotion browser ensure");
+  const page = ps.indexOf("bun install/configurator.ts");
+  expect(ensure).toBeGreaterThan(pack);
+  expect(page).toBeGreaterThan(ensure);
+  for (const engine of ["chart-native", "map-native"])
+    expect(ps).toContain(engine);
+});
+
+// The check above (`toContain(engine)`) is satisfied by `map-native` appearing ANYWHERE in the
+// file — and it does, in Link-AgentsSkills's own comments and the payload-parity assertions
+// elsewhere in this file — so dropping `map-native` from the loop that actually downloads its
+// render browser left that check green. This asserts the LOOP ITSELF names both engines, not
+// merely that the string occurs somewhere in the script.
+test("the render-browser loop's own engine list names both video engines, not just the file", () => {
+  const m = ps.match(
+    /foreach \(\$engine in @\(([^)]+)\)\) \{\n([\s\S]*?)\n\}\n/,
+  );
+  expect(m).not.toBeNull();
+  const [, listText, body] = m!;
+  const engines = listText!
+    .split(",")
+    .map((s) => s.trim().replace(/^"|"$/g, ""));
+  expect(engines).toEqual(["chart-native", "map-native"]);
+  expect(body).toContain("remotion browser ensure");
 });

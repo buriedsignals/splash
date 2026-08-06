@@ -103,7 +103,7 @@ describe("absorbing the legacy decor", () => {
     const d = dir();
     writeFileSync(join(d, LEGACY_RUNTIME_FILE), "claude\n");
     const state = migrateDecor(d, FULL_ENV);
-    for (const id of ["embed-cms", "embed-fly"])
+    for (const id of ["embed-cms"])
       expect(state.capabilities[id]?.enabled).toBe(false);
   });
 

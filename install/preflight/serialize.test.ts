@@ -96,13 +96,28 @@ describe("what a submission writes to .env", () => {
     expect(updates.REMOTION_MAPTILER_KEY).toBe("mt");
   });
 
-  it("omits a blank Anthropic key so the runtime falls back to its subscription login", () => {
-    expect(envUpdates(submission({ anthropic: "  " }))).not.toHaveProperty(
-      "ANTHROPIC_API_KEY",
-    );
+  it("omits a blank login so the runtime falls back to its subscription login", () => {
     expect(
-      envUpdates(submission({ anthropic: "sk-ant-X" })).ANTHROPIC_API_KEY,
+      envUpdates(submission({ runtime: "claude", login: "  " })),
+    ).not.toHaveProperty("ANTHROPIC_API_KEY");
+    expect(
+      envUpdates(submission({ runtime: "claude", login: "sk-ant-X" }))
+        .ANTHROPIC_API_KEY,
     ).toBe("sk-ant-X");
+  });
+
+  it("writes the login under the name the CHOSEN runtime declares", () => {
+    expect(
+      envUpdates(submission({ runtime: "gemini", login: "gk-X" })),
+    ).toEqual({ GEMINI_API_KEY: "gk-X" });
+  });
+
+  // The payload arrives over a socket. A runtime that declares no login must write nothing —
+  // otherwise the page becomes a way to set an arbitrary environment variable.
+  it("writes nothing when the chosen runtime declares no login", () => {
+    expect(envUpdates(submission({ runtime: "goose", login: "gk-X" }))).toEqual(
+      {},
+    );
   });
 
   it("routes only the fields the registry reads from the environment", () => {
@@ -189,7 +204,7 @@ describe("what a submission writes to newsroom.json", () => {
     const s = submittedState(
       submission({
         enabled: ["dw-chart", "embed-cloudflare", "embed-s3"],
-        anthropic: "sk-ant-secret",
+        login: "sk-ant-secret",
         credentials: {
           DATAWRAPPER_API_TOKEN: "dw-secret-value",
           CLOUDFLARE_API_TOKEN: "cf-secret-value",
@@ -297,7 +312,9 @@ describe("a submission is never trusted to name things itself", () => {
     // The hostile text survives as literal characters INSIDE the value — harmless. What must
     // not exist is a new frontmatter line: that is how a forged field would take effect.
     const frontmatter = md.split("---")[1]!.split("\n");
-    expect(frontmatter.some((l) => l.startsWith("requiredSigners"))).toBe(false);
+    expect(frontmatter.some((l) => l.startsWith("requiredSigners"))).toBe(
+      false,
+    );
     expect(frontmatter.filter((l) => l.startsWith("  name:"))).toHaveLength(1);
   });
 });

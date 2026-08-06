@@ -1,9 +1,44 @@
 import { describe, expect, it } from "bun:test";
+import type { NewsroomCapability } from "../../lib/newsroom/capabilities.ts";
+import type { BrowserProbeResult } from "../../lib/newsroom/probe.ts";
+import {
+  capabilityReadiness,
+  readinessBlockers,
+} from "../../lib/newsroom/readiness.ts";
 import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
-import { preflightModel, type PreflightModel } from "./model.ts";
+import { groupEnginesByWant } from "./group-by-want.ts";
+import {
+  describeCapability,
+  preflightModel,
+  type PreflightModel,
+} from "./model.ts";
+
+// The "declared but not built" exemplar. No capability in the shipped registry is only-declared
+// any more (Fly.io, the last one, was dropped — lib/newsroom/capabilities.test.ts's "every
+// capability the page offers is actually built" enforces that now), so this local stub — the
+// same one lib/newsroom/readiness.test.ts uses — is what stands in for one, fed through the
+// REAL capabilityReadiness/readinessBlockers/describeCapability rather than the real registry.
+const UNBUILT: NewsroomCapability = {
+  id: "embed-nowhere",
+  label: "A destination that is declared but not built",
+  kind: "delivery",
+  env: [],
+  envHelp: {},
+  criticalDeps: null,
+  implemented: false,
+};
+
+// chart-native's criticalDeps include "remotion", which also runs the real browser probe
+// (a filesystem stat) unless stubbed — pinning it here keeps this test's result independent of
+// whatever happens to be extracted under skills/chart-native/node_modules/.remotion on the
+// machine running it. Same DI pattern as resolveDep, see lib/newsroom/readiness.test.ts.
+const BROWSER_READY = (): BrowserProbeResult => ({
+  status: "ready",
+  executablePath: "/stub/chrome-headless-shell",
+});
 
 function state(over: Partial<NewsroomState> = {}): NewsroomState {
   return { ...DEFAULT_NEWSROOM_STATE, capabilities: {}, ...over };
@@ -98,14 +133,17 @@ describe("the capabilities the page offers", () => {
   });
 
   it("shows a declared-but-unbuilt adapter as unavailable, with its reason, and never as a blocker", () => {
-    const m = model({
-      state: state({ capabilities: { "embed-fly": { enabled: true } } }),
+    const st = state({
+      capabilities: { "embed-nowhere": { enabled: true } },
     });
-    const fly = capability(m, "embed-fly");
-    expect(fly?.available).toBe(false);
-    expect(fly?.status).toBe("disabled");
-    expect(fly?.reason).not.toBe("");
-    expect(m.blockers.map((b) => b.id)).not.toContain("embed-fly");
+    const readiness = capabilityReadiness(UNBUILT, st, { env: {} });
+    const fly = describeCapability(UNBUILT, readiness, readiness, st, {});
+    expect(fly.available).toBe(false);
+    expect(fly.status).toBe("disabled");
+    expect(fly.reason).not.toBe("");
+    expect(readinessBlockers([readiness]).map((b) => b.id)).not.toContain(
+      "embed-nowhere",
+    );
   });
 
   it("reports an enabled capability whose key is missing as a blocker, in newsroom language", () => {
@@ -114,6 +152,9 @@ describe("the capabilities the page offers", () => {
     });
     expect(capability(m, "dw-chart")?.status).toBe("missing");
     expect(m.blockers.map((b) => b.id)).toEqual(["dw-chart"]);
+    // The reason interpolates `label` (a standalone name), never `choice` (the checkbox
+    // caption) — fix round 1, Finding 1: a caption reused as the sentence's subject broke it
+    // ("With a Datawrapper account needs DATAWRAPPER_API_TOKEN…" reads as a dangling phrase).
     expect(m.blockers[0]!.reason).toContain("Datawrapper charts");
   });
 
@@ -156,6 +197,77 @@ describe("the capabilities the page offers", () => {
     expect(capability(m, "dw-chart")?.status).toBe("unverified");
     expect(m.blockers).toEqual([]);
   });
+
+  // Fix round 1, Finding 1: `label` (the sentence-subject name) and `choice` (the checkbox
+  // caption) are two different fields now — the second one broke real readiness/blocker
+  // sentences the first time it was reused as the first.
+  it("carries the checkbox caption separately from the sentence-subject label", () => {
+    const m = model();
+    expect(capability(m, "dw-chart")?.label).toBe("Datawrapper charts");
+    expect(capability(m, "dw-chart")?.choice).toBe(
+      "With a Datawrapper account",
+    );
+    expect(capability(m, "chart-native")?.label).toBe(
+      "The in-house chart engine",
+    );
+    expect(capability(m, "chart-native")?.choice).toBe(
+      "In-house, no account needed (includes video)",
+    );
+    // Delivery never had a caption of its own — capabilityRow falls back to `label` for it.
+    expect(capability(m, "zip")?.choice).toBeUndefined();
+  });
+
+  // Fix round 1, Finding 3: nothing in the suite went red when `want: cap.want` was dropped from
+  // describeCapability, or when renderCapabilities reverted to a flat list. This is the
+  // model-level half of that guard — mutation-tested, see task-6-report.md.
+  it("carries each engine's want, and never assigns one to a delivery capability", () => {
+    const m = model();
+    expect(capability(m, "dw-chart")?.want).toBe("charts");
+    expect(capability(m, "chart-native")?.want).toBe("charts");
+    expect(capability(m, "map-dw")?.want).toBe("maps");
+    expect(capability(m, "map-native")?.want).toBe("maps");
+    expect(capability(m, "scrolly")?.want).toBe("scrollys");
+    expect(capability(m, "image-native")?.want).toBe("photo-stories");
+    for (const c of m.delivery) expect(c.want).toBeUndefined();
+  });
+});
+
+// client.ts has no DOM test harness (page.test.ts only greps the raw HTML/CSS text as strings —
+// there is no jsdom/happy-dom anywhere in this suite), so the grouping it renders cannot be
+// asserted through a rendered tree. groupEnginesByWant is the pure seam BELOW that rendering —
+// client.ts's renderCapabilities calls it and only turns the result into DOM nodes — so this is
+// what stands in for a rendering test (fix round 1, Finding 3).
+describe("grouping engines under their want — the seam the page's grouped rendering renders from", () => {
+  it("puts one heading per want, in first-appearance order, with the right tools under each", () => {
+    const groups = groupEnginesByWant(model().engines);
+    expect(groups.map((g) => g.want)).toEqual([
+      "charts",
+      "maps",
+      "scrollys",
+      "photo-stories",
+    ]);
+    expect(
+      groups.find((g) => g.want === "charts")?.capabilities.map((c) => c.id),
+    ).toEqual(["dw-chart", "chart-native"]);
+    expect(
+      groups.find((g) => g.want === "maps")?.capabilities.map((c) => c.id),
+    ).toEqual(["map-dw", "map-native"]);
+    expect(
+      groups.find((g) => g.want === "scrollys")?.capabilities.map((c) => c.id),
+    ).toEqual(["scrolly"]);
+    expect(
+      groups
+        .find((g) => g.want === "photo-stories")
+        ?.capabilities.map((c) => c.id),
+    ).toEqual(["image-native"]);
+  });
+
+  it("puts every wantless capability (delivery, fed through it) in a single ungrouped bucket", () => {
+    const groups = groupEnginesByWant(model().delivery);
+    expect(groups).toEqual([
+      { want: undefined, capabilities: model().delivery },
+    ]);
+  });
 });
 
 describe("the rest of the decor the page renders", () => {
@@ -189,10 +301,68 @@ describe("the rest of the decor the page renders", () => {
         },
       }),
       resolveDep: () => true,
+      probeBrowser: BROWSER_READY,
     });
     expect(m.summary.ready).toBe(1);
     expect(m.summary.missing).toBe(1);
     expect(m.summary.degraded).toBe(0);
+  });
+});
+
+// The runtime's own sign-in — declared by the registry, never a capability. The page shows one
+// login field for the SELECTED runtime, but the journalist can switch runtimes before saving, so
+// `configured` must be correct for every runtime the page can offer, not only the one it opened
+// with (Finding 1: switching runtimes used to report a configured key as missing).
+describe("the runtime's own login", () => {
+  it("reports the selected runtime's login as configured when its env var is set", () => {
+    const m = model({
+      state: state({ runtime: "claude" }),
+      env: { ANTHROPIC_API_KEY: "sk-ant-x" },
+    });
+    expect(m.login?.name).toBe("ANTHROPIC_API_KEY");
+    expect(m.login?.configured).toBe(true);
+  });
+
+  it("reports the selected runtime's login as NOT configured when its env var is unset", () => {
+    const m = model({ state: state({ runtime: "claude" }), env: {} });
+    expect(m.login?.name).toBe("ANTHROPIC_API_KEY");
+    expect(m.login?.configured).toBe(false);
+  });
+
+  it("reports null for a runtime that declares no login", () => {
+    expect(model({ state: state({ runtime: "goose" }) }).login).toBeNull();
+  });
+
+  // NEVER carries the value — same rule as every other credential (probe.ts's isSet), asserted
+  // here because a login is not routed through collectFields like the rest of the credentials.
+  it("never echoes the login's actual value — only whether it is set", () => {
+    const serialized = JSON.stringify(
+      model({
+        state: state({ runtime: "claude" }),
+        env: { ANTHROPIC_API_KEY: "sk-ant-super-secret" },
+      }),
+    );
+    expect(serialized).not.toContain("sk-ant-super-secret");
+  });
+
+  // Finding 1's fix: EVERY runtime's login carries its own `configured`, not only the one the
+  // page happened to be served with — a journalist who set up Gemini earlier and reopens the
+  // page on Claude must see Gemini reported as configured the instant they pick it, without a
+  // round trip to the server.
+  it("carries a configured flag PER RUNTIME, independent of which one is selected", () => {
+    const m = model({
+      state: state({ runtime: "claude" }),
+      env: { GEMINI_API_KEY: "gk-x" },
+    });
+    const runtime = (id: string) => m.runtimes.find((r) => r.id === id);
+    expect(runtime("gemini")?.login?.configured).toBe(true);
+    expect(runtime("claude")?.login?.configured).toBe(false);
+  });
+
+  it("carries null for every runtime that declares no login, in the runtimes list too", () => {
+    const m = model();
+    for (const id of ["goose", "goose-desktop", "claude-desktop"])
+      expect(m.runtimes.find((r) => r.id === id)?.login).toBeNull();
   });
 });
 
@@ -213,7 +383,17 @@ describe("the status a capability would have if it were ticked", () => {
   });
 
   it("stays honest for a capability that is only declared", () => {
-    expect(capability(model(), "embed-fly")?.statusIfEnabled).toBe("disabled");
+    // Ticking an unbuilt capability on must not make it read as ready — capabilityReadiness
+    // answers "disabled" for `!implemented` before it even looks at `enabled`, and this is
+    // that guarantee surfacing through the model's own field.
+    const st = state();
+    const allOn = state({
+      capabilities: { "embed-nowhere": { enabled: true } },
+    });
+    const readiness = capabilityReadiness(UNBUILT, st, { env: {} });
+    const ifEnabled = capabilityReadiness(UNBUILT, allOn, { env: {} });
+    const fly = describeCapability(UNBUILT, readiness, ifEnabled, st, {});
+    expect(fly.statusIfEnabled).toBe("disabled");
   });
 });
 

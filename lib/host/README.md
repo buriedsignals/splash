@@ -1240,7 +1240,7 @@ $ bun lib/host/cli.ts newsroom
       },
       {
         "id": "chart-native",
-        "label": "Charts built in-house (no account needed)",
+        "label": "The in-house chart engine",
         "help": [],
         "status": "ready",
         "reason": ""

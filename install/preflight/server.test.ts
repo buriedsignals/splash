@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from "bun:test";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -71,7 +72,7 @@ function submission(over: Record<string, unknown> = {}) {
     runtime: "claude",
     uiLang: "en",
     contentLang: "en",
-    anthropic: "",
+    login: "",
     credentials: {},
     enabled: [],
     publisher: "zip",
@@ -261,6 +262,139 @@ describe("what a submission writes", () => {
         await fetch(`http://127.0.0.1:${port}/?section=embed-cloudflare`)
       ).text();
       expect(html).toContain('"focus":"embed-cloudflare"');
+    });
+  });
+});
+
+// A login typed for a runtime that is NOT Claude must never reach Anthropic's endpoint — the
+// registry decides which runtime's login is even Anthropic-shaped, and `verifyAll` is gated on
+// it (Finding 3: this gate had no test in either direction). Real requests, not mocks (project
+// convention) — the claude case genuinely calls out to api.anthropic.com with a bogus key, which
+// this environment reaches in well under a second; the assertion only needs the `anthropic` key
+// to be PRESENT, not any particular verdict, so it stays correct whether the key is rejected or
+// the provider is unreachable. The gemini case makes NO claim needing network: the gate returns
+// before any fetch, so the absence of the key is deterministic offline as well as online.
+describe("the login is only ever checked against the runtime that declared it", () => {
+  it("does not attempt an Anthropic check for a runtime whose login is not Anthropic's", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({ runtime: "gemini", login: "gk-not-a-real-key" }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).not.toHaveProperty("anthropic");
+    });
+  });
+
+  it("does attempt an Anthropic check when Claude is the chosen runtime", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({ runtime: "claude", login: "sk-ant-not-a-real-key" }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).toHaveProperty("anthropic");
+    });
+  }, 15000);
+});
+
+describe("the setup page probes the delivered skills tree on a packed install", () => {
+  it("reads image-native as ready when its dependencies are at .dist/node_modules", async () => {
+    const dest = root();
+    // Create the packed-install shape: .dist/skills/{engine}/ + .dist/node_modules/{pkg}/
+    mkdirSync(join(dest, ".dist", "skills", "image-native"), {
+      recursive: true,
+    });
+    const sharpDir = join(dest, ".dist", "node_modules", "sharp");
+    mkdirSync(sharpDir, { recursive: true });
+    writeFileSync(
+      join(sharpDir, "package.json"),
+      JSON.stringify({ name: "sharp", version: "0.0.0", main: "index.js" }),
+    );
+    writeFileSync(join(sharpDir, "index.js"), "module.exports = {};\n");
+
+    await withServer(dest, async (port) => {
+      // Submit state to enable image-native
+      const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({ enabled: ["image-native"] }),
+      });
+      expect(submitRes.status).toBe(200);
+    });
+
+    // Request the page again to see the updated model
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      // Extract the JSON model from the script tag
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const payload = html.slice(start, end);
+      const model = JSON.parse(payload);
+
+      // Verify image-native reports as ready when probing .dist/skills
+      const imageNative = model.engines.find(
+        (e: { id: string; status: string }) => e.id === "image-native",
+      );
+      expect(imageNative).toBeDefined();
+      expect(imageNative!.status).toBe("ready");
+    });
+  });
+
+  // The case above is a happy path only: with the wiring at server.ts's
+  // `skillsRoot: resolveSkillsRoot(ROOT)` reverted (falling back to DEFAULT_SKILLS_ROOT, the
+  // REPO'S OWN skills/), it still reads "ready" — this worktree's real
+  // skills/image-native/node_modules/sharp resolves regardless of what the fixture contains, so a
+  // fixture that only ever asks for "ready" can never catch that revert. This case is what makes
+  // the fixture DISCRIMINATING: a packed tree whose engine directory exists but whose dependency
+  // never landed at .dist/node_modules must read "missing" — a status the repo's own skills/
+  // fallback cannot produce, because the repo tree really does have sharp installed. Only the
+  // correct wiring (probing THIS install's own .dist/skills) can answer "missing" here; reverting
+  // the line flips it to "ready" and this test goes red.
+  it("reads image-native as missing when .dist/skills exists but .dist/node_modules never got sharp", async () => {
+    const dest = root();
+    // The packed engine directory exists (a real pack ran), but the dependency install into
+    // .dist/node_modules never completed — exactly the shape a stalled `bun install` at .dist
+    // leaves behind. No node_modules directory at all under .dist.
+    mkdirSync(join(dest, ".dist", "skills", "image-native"), {
+      recursive: true,
+    });
+    // Bun's OWN "bun <script>" execution — unlike bun:test's in-process resolver — silently
+    // falls back to installing an unresolved package from its per-USER global cache
+    // (~/.bun/install/cache) when it is nowhere in the local node_modules chain. On any machine
+    // that has ever `bun install`ed sharp for ANY project, that fallback resolves "sharp" from
+    // this fixture regardless of what .dist/node_modules holds — silently defeating the very
+    // absence this fixture exists to create. Disabling auto-install for this install root is
+    // what a REAL delivered tree wants anyway: readiness must read the tree on disk, never
+    // silently pull a dependency the pack step did not put there.
+    writeFileSync(join(dest, "bunfig.toml"), '[install]\nauto = "disable"\n');
+
+    await withServer(dest, async (port) => {
+      const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({ enabled: ["image-native"] }),
+      });
+      expect(submitRes.status).toBe(200);
+    });
+
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const model = JSON.parse(html.slice(start, end));
+
+      const imageNative = model.engines.find(
+        (e: { id: string; status: string }) => e.id === "image-native",
+      );
+      expect(imageNative).toBeDefined();
+      expect(imageNative!.status).toBe("missing");
     });
   });
 });

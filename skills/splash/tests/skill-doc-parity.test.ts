@@ -439,8 +439,8 @@ describe("Task 12 — the flow calls the gates instead of restating them", () =>
 // The bridge between the two chains, first production segment beyond the guarantees family A laid.
 // INPUT's readiness now comes from the LOOP (`lib/host/cli.ts newsroom`) rather than from
 // `preflight.mjs`, because the loop's answer is strictly larger and the difference is one the
-// journalist feels: preflight reports six production engines, `newsroom` reports twelve
-// capabilities — the same six PLUS the six delivery routes, each with a status. Without that, INPUT
+// journalist feels: preflight reports six production engines, `newsroom` reports eleven
+// capabilities — the same six PLUS the five delivery routes, each with a status. Without that, INPUT
 // could say what he can MAKE and nothing about how he can PUBLISH, so a missing delivery route
 // surfaced at EXPORT, on a finished visual.
 //
@@ -451,8 +451,8 @@ describe("INPUT readiness comes from the loop (bridge, 2026-07-30)", () => {
   it("names the loop command, not preflight, as the readiness source", () => {
     expect(splash).toContain("bun lib/host/cli.ts newsroom");
   });
-  it("states the measured reason — twelve capabilities against six engines", () => {
-    expect(splash).toContain("twelve");
+  it("states the measured reason — eleven capabilities against six engines", () => {
+    expect(splash).toContain("eleven");
     expect(splash).toContain("embed-cloudflare");
   });
   it("still collects keys through save-key.mjs, which the loop cannot do", () => {
@@ -475,7 +475,9 @@ describe("what the journalist reads at PROPOSITION (manual-run feedback, 2026-07
     expect(splash).toContain("A description is not a reason");
   });
   it("a narrative format is offered on the same footing, not as an afterthought", () => {
-    expect(splash).toContain("A narrative format is an option, not an afterthought");
+    expect(splash).toContain(
+      "A narrative format is an option, not an afterthought",
+    );
     expect(splash).toContain("ON THE SAME FOOTING");
   });
   it("a ruled-out narrative is said, not silently dropped", () => {

@@ -30,8 +30,10 @@ import {
   verifyCapability,
   type VerifyOutcome,
 } from "../../lib/newsroom/verify.ts";
+import { RUNTIMES } from "../configurator-core.ts";
 import { MODEL_SCRIPT_ID } from "./copy.ts";
 import { preflightModel } from "./model.ts";
+import { resolveSkillsRoot } from "./skills-root.ts";
 import {
   envUpdates,
   mergeEnvFile,
@@ -81,6 +83,7 @@ function renderPage(focus: string | null): string {
     state: decor.state,
     env,
     profileExists: existsSync(join(ROOT, PROFILE_FILE)),
+    skillsRoot: resolveSkillsRoot(ROOT),
     ...(profileLang() ? { profileLang: profileLang()! } : {}),
     ...(focus ? { focus } : {}),
   });
@@ -126,9 +129,7 @@ async function readSubmission(req: Request): Promise<PreflightSubmission> {
     ...(typeof body.contentLang === "string"
       ? { contentLang: body.contentLang }
       : {}),
-    ...(typeof body.anthropic === "string"
-      ? { anthropic: body.anthropic }
-      : {}),
+    ...(typeof body.login === "string" ? { login: body.login } : {}),
     credentials:
       body.credentials && typeof body.credentials === "object"
         ? body.credentials
@@ -160,8 +161,13 @@ async function verifyAll(
     const outcome = await verifyCapability(id, values);
     if (outcome) out[id] = outcome;
   }
-  if (sub.anthropic?.trim()) {
-    const result = await verifyAnthropic(sub.anthropic);
+  // Only Claude's login is a key this page knows how to check live — the registry says so, and
+  // a key typed for a different runtime's login must never be sent to Anthropic's endpoint.
+  if (
+    RUNTIMES[sub.runtime]?.login?.name === "ANTHROPIC_API_KEY" &&
+    sub.login?.trim()
+  ) {
+    const result = await verifyAnthropic(sub.login);
     out.anthropic =
       result === null ? "unreachable" : result ? "ok" : "rejected";
   }

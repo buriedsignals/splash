@@ -15,9 +15,9 @@ topic. Normalise to `{ article?, data?, topic? }`. Do not proceed until you have
 `status`, and a `reason` carrying the get-it URL), plus `language`, `publisher` and `blockers`.
 
 **Why that command and not `preflight.mjs`:** measured, the loop's readiness knows strictly more.
-Preflight reports SIX production engines and nothing else. `newsroom` reports **twelve**
-capabilities — those six engines PLUS the six delivery routes (`embed-cloudflare`, `zip`,
-`embed-cms`, `embed-s3`, `embed-fly`, `embed-hosted`), each with its own status. It also resolves
+Preflight reports SIX production engines and nothing else. `newsroom` reports **eleven**
+capabilities — those six engines PLUS the five delivery routes (`embed-cloudflare`, `zip`,
+`embed-cms`, `embed-s3`, `embed-hosted`), each with its own status. It also resolves
 env alternative groups, non-secret settings from `newsroom.json`, installed npm dependencies, and
 probes the headless browser Remotion needs against a 1 MB floor.
 
@@ -59,9 +59,9 @@ the keys had been verified at all. One clause is enough and it belongs in the sa
 capability line — « j'ai vérifié tes accès : … ». A silent check and an absent check read identically
 from the outside, and the whole point of doing it at INPUT is that he stops worrying about it.
 
-**Then one line on PUBLISHING, from the same answer** — the six delivery capabilities, grouped the
+**Then one line on PUBLISHING, from the same answer** — the five delivery capabilities, grouped the
 same way and never listed one by one: `zip` ⇒ « un paquet à télécharger » · `embed-cloudflare` /
-`embed-fly` / `embed-s3` ⇒ « un lien intégrable » · `embed-cms` ⇒ « directement dans We.Publish ».
+`embed-s3` ⇒ « un lien intégrable » · `embed-cms` ⇒ « directement dans We.Publish ».
 Say what is `ready`, and name a `disabled` route only when he asks for it or when it is the one he
 will want. This is the line preflight could never produce, and its absence is why a journalist
 could reach EXPORT with a finished visual and no way to ship it:

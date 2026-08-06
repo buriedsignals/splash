@@ -207,7 +207,7 @@ describe("installer parity", () => {
         envUpdates({
           runtime: "claude",
           uiLang: "en",
-          anthropic: "x",
+          login: "x",
           enabled: [],
           credentials,
         }),

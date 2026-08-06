@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -48,15 +48,13 @@ describe("the newsroom capability registry", () => {
       expect(cap.id).toBe(key);
   });
 
-  it("marks a declared-but-unbuilt capability as delivery and not implemented", () => {
+  // Fly.io was superseded by Cloudflare Pages and never built. A destination the page announces
+  // as "not available yet" is a promise nobody intends to keep.
+  test("every capability the page offers is actually built", () => {
     const declared = Object.values(NEWSROOM_CAPABILITIES).filter(
       (c) => !c.implemented,
     );
-    // The publisher adapters the Livraison sub-project (#4) will fill in. embed-s3 left this
-    // set in L2, and embed-cms in L3 (measured against a real We.Publish, 2026-07-27) — so
-    // embed-fly is the last one still declared without a body.
-    expect(declared.map((c) => c.id).sort()).toEqual(["embed-fly"]);
-    for (const cap of declared) expect(cap.kind).toBe("delivery");
+    expect(declared).toEqual([]);
   });
 
   it("asks for the credentials a publisher needs, and says which are secret", () => {
@@ -146,5 +144,56 @@ describe("the newsroom capability registry", () => {
     for (const cap of Object.values(NEWSROOM_CAPABILITIES))
       for (const f of cap.settingsFields ?? [])
         if (f.secret) expect(f.required).toBeUndefined();
+  });
+
+  // The journalist picks what he wants to be able to make; the engine is a means. Every engine
+  // therefore belongs to a want, and the tools that serve the same want group under one heading.
+  test("every engine declares the want it serves", () => {
+    for (const cap of engineCapabilities()) expect(cap.want).toBeTruthy();
+    const charts = engineCapabilities()
+      .filter((c) => c.want === "charts")
+      .map((c) => c.id)
+      .sort();
+    expect(charts).toEqual(["chart-native", "dw-chart"]);
+    const maps = engineCapabilities()
+      .filter((c) => c.want === "maps")
+      .map((c) => c.id)
+      .sort();
+    expect(maps).toEqual(["map-dw", "map-native"]);
+  });
+
+  // A delivery destination is not a want: it answers "where does it go", which is its own section.
+  test("delivery capabilities declare no want", () => {
+    for (const cap of deliveryCapabilities()) expect(cap.want).toBeUndefined();
+  });
+
+  // Fix round 1, Finding 1: `label` is a standalone NAME — readiness.ts, the setup page's
+  // blocker line, and skills/splash's ENGINE_LABELS all interpolate it as the SUBJECT of a
+  // sentence their own template supplies the verb for ("${label} needs …", "${label} was not
+  // installed completely …"). `choice` is the checkbox row's own caption, read only by
+  // capabilityRow. The regression this guards: a caption put back into `label` reads fine in
+  // isolation but breaks the second it's interpolated — "With a Datawrapper account needs
+  // DATAWRAPPER_API_TOKEN" and "In-house, needs a MapTiler key (includes video) needs
+  // VITE_MAPTILER_KEY" are both real sentences that shipped before this was caught.
+  test("an engine's label reads as a sentence subject, never the checkbox caption it opens on", () => {
+    // Every readiness.ts template supplies its own verb right after `${cap.label}` — a label
+    // that already contains one of these words doubles it up mid-sentence, which is the exact
+    // shape of the "needs … needs …" break above.
+    const wordTheTemplateSupplies =
+      /\b(needs|missing|installed|available|configured|reached|rejected)\b/i;
+    // A checkbox caption opens on how/where/what-with the tool works — "With a Datawrapper
+    // account", "In-house, needs a MapTiler key…", "From the newsroom's own photographs",
+    // "Scroll-driven stories". A name that stands as a sentence subject never leads this way.
+    const opensLikeACaption =
+      /^(with|without|from|in-house|scroll-driven|for|using)\b/i;
+    for (const cap of engineCapabilities()) {
+      expect(cap.label).not.toMatch(wordTheTemplateSupplies);
+      expect(cap.label).not.toMatch(opensLikeACaption);
+      // Every engine's row wants its own caption today; only delivery falls back silently to
+      // `label` (asserted above: delivery never declares a `want`, and none carries a `choice`
+      // distinct from its name because none needs one).
+      expect(cap.choice).toBeTruthy();
+      expect(cap.choice).not.toBe(cap.label);
+    }
   });
 });

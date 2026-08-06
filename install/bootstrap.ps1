@@ -89,21 +89,15 @@ bun install | Out-Null
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "bun install failed in $Dest — check your connection, then re-run this installer." }
 Pop-Location
 
-# 5. Local setup page — pick runtime + enter keys (verified live); writes .env
-Write-Host "-> Opening the setup page in your browser to collect your keys…"
-Push-Location $Dest
-bun install/configurator.ts
-Pop-Location
-# $ErrorActionPreference = "Stop" does NOT stop on a native command's non-zero exit, so check
-# both the exit code and the file — this also catches a Ctrl-C out of the configurator.
-if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
-  throw "Configuration was not completed — re-run this installer."
-}
-
-
-# 5b. Package what a host receives, then install its dependencies ONCE, ABOVE the skill
-# directories — where Bun resolves them and no host walks. This MUST run before the runtime
-# module: Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
+# 5. Package what a host receives, then install its dependencies ONCE, ABOVE the skill
+# directories — where Bun resolves them and no host walks. The browser download that follows is
+# part of the same delivered tree (mirrors bootstrap.sh, which bundles it into the same step).
+# This runs BEFORE the setup page (step 6) for two reasons: the page MEASURES this tree — a page
+# opened first reports every in-house engine as missing (chart-native/map-native included, whose
+# readiness probe reads a Remotion-only cache — Playwright's chromium here is only for the
+# static-render screenshots, docs/installer/remotion-cache-measurement.md) — and a failure here
+# must stop the install before anyone fills in a form for a tree that will not work. It also runs
+# before step 7, whose Runtime-Install calls Link-AgentsSkills, which globs $Dest\.dist\skills.
 Write-Host "-> Packaging the skills…"
 Push-Location $Dest
 bun run pack-skills
@@ -116,7 +110,50 @@ bun install | Out-Null
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Dependency install failed in the packaged skills — check your connection, then re-run this installer." }
 Pop-Location
 
-# 6. Runtime — install the one the setup page recorded, via its module in install\runtimes\.
+# ONE download, from one skill, on purpose: Playwright caches per user and per browser revision,
+# so map-native — and every other renderer — resolves the same executable this call fetches
+# (mirrors bootstrap.sh, and install/native-browser.test.ts keeps the versions pinned together,
+# which is the condition that makes one download enough).
+Push-Location (Join-Path $Dest ".dist\skills\chart-native")
+bunx playwright install chromium
+if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
+Pop-Location
+
+# The render browser Remotion itself uses — a DIFFERENT cache from Playwright's, written only by
+# Remotion, and located per skill directory: it walks up from its cwd to the nearest package.json,
+# and each packed skill keeps its own (measured: docs/installer/remotion-cache-measurement.md).
+# So it is fetched once per video engine, and the setup page's probe finds it where it looks.
+#
+# KNOWN HAZARD, not fixed here: `bunx remotion browser ensure` still runs under BUN, even though
+# step 2 above installs Node.js precisely so that Playwright/Remotion's own browser automation does
+# not hang under Bun on Windows (Bun #15679) — `bunx` was never rerouted through `node` for either
+# this call or the `bunx playwright install chromium` one above. Unlike a stalled render (which the
+# shipped skills already drive through `tsx` for exactly this reason, see the CHANGELOG's "Garde
+# rendu natif Windows"), a hang HERE has no timeout and prints no message, and it now sits before
+# the only interactive screen in the whole installer — a newsroom would see nothing after
+# "Downloading the video renderer for …" and have no prompt telling them to kill the process by
+# hand. Left as a named risk rather than a redesign: recorded in
+# docs/installer/setup-page-proof.md's "what is not proven" section.
+foreach ($engine in @("chart-native", "map-native")) {
+  Write-Host "-> Downloading the video renderer for $engine…"
+  Push-Location (Join-Path $Dest ".dist\skills\$engine")
+  bunx remotion browser ensure
+  if ($LASTEXITCODE -ne 0) { Pop-Location; throw "The video renderer could not be downloaded for $engine — re-run this installer to resume." }
+  Pop-Location
+}
+
+# 6. Local setup page — pick runtime + enter keys (verified live); writes .env
+Write-Host "-> Opening the setup page in your browser to collect your keys…"
+Push-Location $Dest
+bun install/configurator.ts
+Pop-Location
+# $ErrorActionPreference = "Stop" does NOT stop on a native command's non-zero exit, so check
+# both the exit code and the file — this also catches a Ctrl-C out of the configurator.
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $Dest ".env"))) {
+  throw "Configuration was not completed — re-run this installer."
+}
+
+# 7. Runtime — install the one the setup page recorded, via its module in install\runtimes\.
 # Adding a runtime is a new install\runtimes\<name>.ps1 (see that dir's README), never a change here.
 # The runtime lives in newsroom.json (the decor). install\read-runtime.ts resolves it — including
 # the legacy .splash-runtime of an install that predates the setup page — and validates it against
@@ -133,23 +170,13 @@ if (-not (Test-Path $runtimeModule)) {
 . $runtimeModule
 Runtime-Install
 
-# 7. Render engine. The dependencies themselves were installed once at step 5b, above the
-# packaged skills; only the browser is left, and ONE download serves every renderer: Playwright
-# caches per user and per browser revision, so map-native resolves the same executable this call
-# fetches (mirrors bootstrap.sh, and install/native-browser.test.ts keeps the versions pinned
-# together, which is the condition that makes one download enough).
-Push-Location (Join-Path $Dest ".dist\skills\chart-native")
-bunx playwright install chromium
-if ($LASTEXITCODE -ne 0) { Pop-Location; throw "Playwright Chromium download failed — re-run this installer to resume." }
-Pop-Location
-
 # 8. Local double-click launcher (.cmd — created locally → no MOTW → clean re-launch)
 $launcher = Join-Path $Dest "Launch Splash.cmd"
 $launchCmd = Runtime-LaunchCmd
 @"
 @echo off
 cd /d "%~dp0"
-rem .env values are double-quoted so spaces (e.g. fly tokens "FlyV1 fm2_…") survive; %%~b strips the quotes.
+rem .env values are double-quoted so spaces in a value survive; %%~b strips the quotes.
 for /f "usebackq tokens=1,* delims==" %%a in (".env") do set "%%a=%%~b"
 $launchCmd
 "@ | Set-Content -Path $launcher -Encoding ascii

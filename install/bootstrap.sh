@@ -10,7 +10,7 @@ DEST="$HOME/Splash"
 
 # Shared skill-discovery helper for runtimes that read a skills directory (Codex, Gemini native
 # skills, Goose). Symlinks every skill dir there by name; globs .dist/skills/*/ — the PACKAGED
-# tree (step 5), never the engine checkout — so a skill added later is covered automatically.
+# tree (step 4), never the engine checkout — so a skill added later is covered automatically.
 # Claude Code uses --plugin-dir instead and does not call this.
 #
 # The target defaults to ~/.agents/skills and is overridable because not every host reads the same
@@ -101,23 +101,15 @@ if ! ( cd "$DEST" && bun install >/dev/null ); then
   exit 1
 fi
 
-# 4. Local setup page — pick runtime + enter keys (verified live); writes ~/Splash/.env.
-# Skip it on a re-run that already has a verified .env (set SPLASH_RECONFIGURE=1 to force it),
-# so recovering from a later failure doesn't force re-entering and re-verifying every key.
-if [ ! -f "$DEST/.env" ] || [ "${SPLASH_RECONFIGURE:-0}" = "1" ]; then
-  echo "-> Opening the setup page in your browser to collect your keys…"
-  if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
-    echo "Configuration was not completed — re-run this installer." >&2
-    exit 1
-  fi
-fi
-
-# 5. Package what a host receives, then install its dependencies ONCE.
+# 4. Package what a host receives, then install its dependencies ONCE.
 # The repo is the engine (20 640 files for map-native alone) and a host enumerates all of it,
 # filters nothing and follows symlinks — load_skill then overflows and SKILL.md never reaches
 # the model. The delivered tree drops node_modules/dist/tests/output-proof, and its dependencies
-# install ABOVE the skill directories, where Bun resolves them and no host walks. This must run
-# before step 6: runtime_install calls link_agents_skills, which globs $DEST/.dist/skills/*/.
+# install ABOVE the skill directories, where Bun resolves them and no host walks.
+# This runs BEFORE the setup page (step 5) for two reasons: the page MEASURES this tree — a page
+# opened first reports every in-house engine as missing — and a failure here must stop the install
+# before anyone fills in a form for a tree that will not work. It also runs before step 6, whose
+# runtime_install globs $DEST/.dist/skills/*/.
 echo "-> Packaging the skills…"
 if ! ( cd "$DEST" && bun run pack-skills ); then
   echo "Packaging failed (see the error above) — re-run this installer." >&2
@@ -136,6 +128,33 @@ fi
 if ! ( cd "$DEST/.dist/skills/chart-native" && bunx playwright install chromium ); then
   echo "Playwright Chromium download failed (see above) — re-run this installer to resume." >&2
   exit 1
+fi
+# The render browser Remotion itself uses — a DIFFERENT cache from Playwright's, written only by
+# Remotion, and located per skill directory: it walks up from its cwd to the nearest package.json,
+# and each packed skill keeps its own (measured: docs/installer/remotion-cache-measurement.md).
+# So it is fetched once per video engine, and the setup page's probe finds it where it looks.
+for engine in chart-native map-native; do
+  # Braced on purpose: macOS ships bash 3.2, whose nounset variable-name scan misreads the byte
+  # right after an unbraced "$engine" when it is immediately followed by a multibyte character
+  # (the "…" here) under a UTF-8 locale — it reports "engine<mangled-byte>: unbound variable"
+  # and set -e kills the installer, even though $engine is set. Reproduced on this machine's
+  # default fr_FR.UTF-8 (and en_US.UTF-8, and C.UTF-8 — only the plain C locale escaped it).
+  echo "-> Downloading the video renderer for ${engine}…"
+  if ! ( cd "$DEST/.dist/skills/$engine" && bunx remotion browser ensure ); then
+    echo "The video renderer could not be downloaded for $engine — re-run this installer to resume." >&2
+    exit 1
+  fi
+done
+
+# 5. Local setup page — pick runtime + enter keys (verified live); writes ~/Splash/.env.
+# Skip it on a re-run that already has a verified .env (set SPLASH_RECONFIGURE=1 to force it),
+# so recovering from a later failure doesn't force re-entering and re-verifying every key.
+if [ ! -f "$DEST/.env" ] || [ "${SPLASH_RECONFIGURE:-0}" = "1" ]; then
+  echo "-> Opening the setup page in your browser to collect your keys…"
+  if ! ( cd "$DEST" && bun install/configurator.ts ) || [ ! -f "$DEST/.env" ]; then
+    echo "Configuration was not completed — re-run this installer." >&2
+    exit 1
+  fi
 fi
 
 # 6. Runtime — install the one the setup page recorded, via its module in install/runtimes/.

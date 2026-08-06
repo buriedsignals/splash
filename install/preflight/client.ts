@@ -13,6 +13,7 @@ import {
   type LanguageOption,
   type PageCopy,
 } from "./copy.ts";
+import { groupEnginesByWant } from "./group-by-want.ts";
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
@@ -21,7 +22,7 @@ type FormState = {
   uiLang: string;
   contentLang: string;
   runtime: string;
-  anthropic: string;
+  login: string;
   credentials: Record<string, string>;
   enabled: Set<string>;
   publisher: string;
@@ -38,7 +39,7 @@ const form: FormState = {
   uiLang: model.language.ui,
   contentLang: model.language.content,
   runtime: model.runtime,
-  anthropic: "",
+  login: "",
   credentials: {},
   enabled: new Set(
     [...model.engines, ...model.delivery]
@@ -184,7 +185,11 @@ function capabilityRow(
       : form.enabled.has(capability.id);
 
   const label = el("label", { for: inputId });
-  label.append(input, capability.label);
+  // The row's OWN caption when the registry gives it one (an engine, under its want heading) —
+  // every other reader of a capability's name wants `label` instead (readiness.ts, the blocker
+  // line below, skills/splash's ENGINE_LABELS): reusing a caption there is what broke those
+  // sentences (fix round 1, Finding 1).
+  label.append(input, capability.choice ?? capability.label);
   head.append(label);
   const status = el("span", { class: "spacer" });
   head.append(status);
@@ -389,6 +394,8 @@ function renderAssistant(copy: PageCopy): void {
     input.checked = form.runtime === runtime.id;
     input.addEventListener("change", () => {
       form.runtime = runtime.id;
+      form.login = "";
+      renderAssistant(copy);
     });
     const label = el("label", { for: id });
     label.append(input, runtime.label);
@@ -397,35 +404,65 @@ function renderAssistant(copy: PageCopy): void {
   }
   body.append(group);
 
-  const anthropic = el("div", { class: "field" });
-  anthropic.append(el("label", { for: "anthropic" }, copy.anthropicLabel));
-  anthropic.append(
-    el("p", { class: "field-help", id: "anthropic-help" }, copy.anthropicHint),
+  // Every runtime's login carries its OWN `configured` flag (Finding 1 fix): a key configured
+  // for a runtime in an earlier session must read as configured the instant that runtime is
+  // picked again, even though the page was served with a different runtime selected.
+  const login = model.runtimes.find((r) => r.id === form.runtime)?.login;
+  if (!login) return; // this runtime owns its own sign-in — nothing to ask
+  const field = el("div", { class: "field" });
+  field.append(el("label", { for: "login" }, login.label));
+  field.append(
+    el(
+      "p",
+      { class: "field-help", id: "login-help" },
+      login.optional ? copy.loginOptionalHint : login.help,
+    ),
   );
   const key = el("input", {
-    id: "anthropic",
+    id: "login",
     type: "password",
     autocomplete: "off",
-    "aria-describedby": "anthropic-help",
-    ...(model.anthropicConfigured
+    "aria-describedby": "login-help",
+    ...(login.configured
       ? { placeholder: `${copy.configured} — ${copy.configuredHint}` }
       : {}),
   });
-  key.value = form.anthropic;
+  key.value = form.login;
   key.addEventListener("input", () => {
-    form.anthropic = key.value;
+    form.login = key.value;
   });
-  anthropic.append(key);
-  body.append(anthropic);
+  field.append(key);
+  body.append(field);
 }
 
 function renderCapabilities(copy: PageCopy): void {
   const engines = section("capabilities");
   engines.name.textContent = copy.capabilitiesTitle;
   engines.hint.textContent = copy.capabilitiesHint;
-  engines.body.replaceChildren(
-    ...model.engines.map((c) => capabilityRow(c, copy, "checkbox")),
+  // The want leads, the tool underneath stays its own choosable checkbox (the project owner's
+  // explicit "do not collapse the two engines of a want into one"). The grouping itself is
+  // group-by-want.ts's groupEnginesByWant (pure, tested there — client.ts has no DOM test
+  // harness); this only turns its result into DOM nodes. It lives in its own file rather than
+  // model.ts because this IS a value import (unlike the type-only ones above), and model.ts's
+  // module graph is server-only (readiness.ts's node:url) — pulling it in breaks the browser
+  // bundle Bun.build produces for this file.
+  const blocks = groupEnginesByWant(model.engines).map(
+    ({ want, capabilities }) => {
+      const block = el("div", { class: "want" });
+      // `want` is undefined only for a capability the registry never assigns one — no engine does
+      // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
+      // than asserted: PreflightCapability#want is optional by type, and a malformed model must
+      // still render its rows instead of throwing on a wantless heading.
+      if (want)
+        block.append(
+          el("h3", { class: "want-title" }, copy.wants[want] ?? want),
+        );
+      for (const c of capabilities)
+        block.append(capabilityRow(c, copy, "checkbox"));
+      return block;
+    },
   );
+  engines.body.replaceChildren(...blocks);
 
   const publishing = section("publishing");
   publishing.name.textContent = copy.publishingTitle;
@@ -551,7 +588,7 @@ function payload() {
     runtime: form.runtime,
     uiLang: form.uiLang,
     contentLang: form.contentLang,
-    anthropic: form.anthropic,
+    login: form.login,
     credentials: form.credentials,
     enabled: [...form.enabled],
     publisher: form.publisher,

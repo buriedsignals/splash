@@ -37,8 +37,8 @@ export type PreflightSubmission = {
   uiLang: string;
   /** The deliverables' language — only used when the profile is being created. */
   contentLang?: string;
-  /** The runtime's own API key. Blank = the subscription/OAuth login path. */
-  anthropic?: string;
+  /** The runtime's own sign-in. Blank = the subscription / interactive path. */
+  login?: string;
   /** Keyed by the registry's field names. A blank value means "leave what is there". */
   credentials: Record<string, string>;
   enabled: string[];
@@ -94,7 +94,10 @@ function envValue(raw: string): string {
  */
 export function envUpdates(sub: PreflightSubmission): Record<string, string> {
   const updates: Record<string, string> = {};
-  if (isSet(sub.anthropic)) updates.ANTHROPIC_API_KEY = sub.anthropic!;
+  // The registry decides the NAME: a payload that arrives over a socket never gets to choose
+  // which environment variable it writes, and a runtime that declares no login writes nothing.
+  const login = RUNTIMES[sub.runtime]?.login;
+  if (login && isSet(sub.login)) updates[login.name] = sub.login!;
 
   const declared = declaredFields();
   for (const [name, value] of Object.entries(sub.credentials)) {

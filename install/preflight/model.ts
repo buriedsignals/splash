@@ -14,6 +14,7 @@
 import {
   NEWSROOM_CAPABILITIES,
   type NewsroomCapability,
+  type WantId,
 } from "../../lib/newsroom/capabilities.ts";
 import { resolveLanguage } from "../../lib/newsroom/language.ts";
 import {
@@ -22,12 +23,12 @@ import {
   type CapabilityReadiness,
   type ReadinessStatus,
 } from "../../lib/newsroom/readiness.ts";
-import { isSet } from "../../lib/newsroom/probe.ts";
+import { isSet, type BrowserProbeResult } from "../../lib/newsroom/probe.ts";
 import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
-import { RUNTIMES } from "../configurator-core.ts";
+import { RUNTIMES, type RuntimeLogin } from "../configurator-core.ts";
 
 /** Where a field's value belongs once submitted. Secrets are always `env`. */
 export type FieldDestination = "env" | "settings";
@@ -49,8 +50,13 @@ export type PreflightField = {
 
 export type PreflightCapability = {
   id: string;
+  /** A standalone name — the subject of readiness prose. NEVER the checkbox caption; see `choice`. */
   label: string;
+  /** The checkbox/radio row's own caption. Absent ⇒ the row falls back to `label`. */
+  choice?: string;
   kind: NewsroomCapability["kind"];
+  /** The want this engine serves — copied from the registry. Delivery capabilities have none. */
+  want?: WantId;
   enabled: boolean;
   /** false = declared, not built yet. Unavailable is not a failure. */
   available: boolean;
@@ -81,13 +87,28 @@ export type PreflightCapability = {
 };
 
 export type PreflightModel = {
-  runtimes: { id: string; label: string; verified: boolean }[];
+  /**
+   * Every runtime's OWN sign-in, `configured` included — not only the currently selected one's.
+   * The page lets a journalist switch runtimes before saving, and a runtime configured in an
+   * earlier session must not be reported as missing just because it is not the one the page
+   * opened with (that was Finding 1: the flag used to go stale on switch).
+   */
+  runtimes: {
+    id: string;
+    label: string;
+    verified: boolean;
+    login: (RuntimeLogin & { configured: boolean }) | null;
+  }[];
   runtime: string;
   language: { ui: string; content: string };
   /** True when NEWSROOM-PROFILE.md exists: the page then refuses to rewrite it. */
   profileExists: boolean;
-  /** The runtime's own API key is not a capability — it is the assistant's login. */
-  anthropicConfigured: boolean;
+  /**
+   * The CURRENTLY SELECTED runtime's own sign-in — the same value as
+   * `runtimes.find(r => r.id === runtime)?.login`, kept for callers that already have the
+   * runtime pinned and want its login without filtering the array.
+   */
+  login: (RuntimeLogin & { configured: boolean }) | null;
   fields: PreflightField[];
   engines: PreflightCapability[];
   delivery: PreflightCapability[];
@@ -108,6 +129,8 @@ export type PreflightModelInput = {
   focus?: string;
   resolveDep?: (pkg: string, fromDir: string) => boolean;
   skillsRoot?: string;
+  /** Injectable for tests, exactly like resolveDep — see lib/newsroom/readiness.ts's own opt. */
+  probeBrowser?: (fromDir: string) => BrowserProbeResult;
 };
 
 /**
@@ -124,6 +147,16 @@ function aliasesOf(
     for (const group of cap.env)
       if (group.includes(field)) for (const n of group) names.add(n);
   return [...names];
+}
+
+/** The chosen runtime's own sign-in, with whether it is already set in .env — or null when the
+ * runtime needs none. */
+function loginOf(
+  runtime: string,
+  env: Record<string, string | undefined>,
+): (RuntimeLogin & { configured: boolean }) | null {
+  const login = RUNTIMES[runtime]?.login;
+  return login ? { ...login, configured: isSet(env[login.name]) } : null;
 }
 
 function collectFields(
@@ -201,7 +234,12 @@ function missingFieldsOf(
     .map((f) => f.name);
 }
 
-function describe(
+// Exported: it is the seam the "declared but not built" rendering is tested against.
+// lib/newsroom/capabilities.ts's own invariant (capabilities.test.ts's "every capability the
+// page offers is actually built") means the shipped registry can no longer hold an unbuilt
+// exemplar for this module's tests to reach through NEWSROOM_CAPABILITIES — this function lets
+// a test feed a local NewsroomCapability stub through the REAL shaping logic instead.
+export function describeCapability(
   cap: NewsroomCapability,
   readiness: CapabilityReadiness,
   ifEnabled: CapabilityReadiness,
@@ -211,7 +249,9 @@ function describe(
   return {
     id: cap.id,
     label: cap.label,
+    choice: cap.choice,
     kind: cap.kind,
+    want: cap.want,
     enabled: state.capabilities[cap.id]?.enabled === true,
     available: cap.implemented,
     fields: (cap.settingsFields ?? []).map((f) => f.name),
@@ -232,6 +272,7 @@ export function preflightModel(
     env,
     ...(input.resolveDep ? { resolveDep: input.resolveDep } : {}),
     ...(input.skillsRoot ? { skillsRoot: input.skillsRoot } : {}),
+    ...(input.probeBrowser ? { probeBrowser: input.probeBrowser } : {}),
   };
 
   // The same state with everything switched on, so each capability can also be asked what it
@@ -251,20 +292,27 @@ export function preflightModel(
     ifEnabled: capabilityReadiness(cap, allOn, opts),
   }));
   const capabilities = described.map(({ cap, readiness, ifEnabled }) =>
-    describe(cap, readiness, ifEnabled, state, env),
+    describeCapability(cap, readiness, ifEnabled, state, env),
   );
   const count = (status: ReadinessStatus) =>
     capabilities.filter((c) => c.status === status).length;
 
+  const runtimes = Object.entries(RUNTIMES).map(([id, rt]) => ({
+    id,
+    label: rt.label,
+    verified: rt.verified,
+    login: loginOf(id, env),
+  }));
+
   return {
-    runtimes: Object.entries(RUNTIMES).map(([id, rt]) => ({ id, ...rt })),
+    runtimes,
     runtime: state.runtime,
     language: resolveLanguage({
       uiLang: state.uiLang,
       ...(input.profileLang ? { profileLang: input.profileLang } : {}),
     }),
     profileExists: input.profileExists === true,
-    anthropicConfigured: isSet(env.ANTHROPIC_API_KEY),
+    login: runtimes.find((r) => r.id === state.runtime)?.login ?? null,
     fields: collectFields(state, env),
     engines: capabilities.filter((c) => c.kind === "engine"),
     delivery: capabilities.filter((c) => c.kind === "delivery"),
