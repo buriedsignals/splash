@@ -3,6 +3,14 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { whereIs } from "../scripts/where.mjs";
+// A test-only cross-skill import, permitted specifically for this purpose: asserting that two
+// independent implementations of the same rule agree. Runtime code in this branch never imports
+// across a skill boundary (see the gotcha in ../SKILL.md); this file does, once, to prove
+// where.mjs's reimplementation of Gate 2 has not drifted from twin-storyboard's own gate.
+import {
+  checkStoryboard,
+  parseStoryboard,
+} from "../../twin-storyboard/scripts/storyboard.mjs";
 
 let dir: string;
 beforeEach(async () => {
@@ -94,6 +102,34 @@ describe("whereIs", () => {
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
     expect(state.missing).toContain("slot 1: nothing chosen");
+  });
+
+  it("should stay in storyboard when a slot's chosen has no candidates key at all", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    chosen: trajectory\n---\n`,
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain(
+      "slot 1: chosen but no candidates were ever listed",
+    );
+  });
+
+  it("should stay in storyboard when a slot's chosen is not among its candidates", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [comparison, dumbbell]\n---\n`,
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain(
+      "slot 1: chosen is not among its candidates",
+    );
   });
 
   it("should stay in storyboard when a hand-of-the-journalist field is missing — the resumed-session case", async () => {
@@ -222,4 +258,73 @@ describe("whereIs", () => {
     expect(state.phase).toBe("production");
     expect(state.missing).toContain("no renders exist in any beat");
   });
+});
+
+// A hand-of-the-journalist block that is complete on its own, reused verbatim by every fixture
+// below except the one that deliberately drops a field from it.
+const COMPLETE_HAND = `subject: "Rainfall trends in the Rhône basin"
+comparison: "the last decade against the one before it"
+limits: "single weather station, not basin-wide"
+placement: "above the fold, article-web"
+credit: "Data: MeteoSwiss"
+effectiveDate: "2026-08-01"`;
+
+// Nine STORYBOARD.md texts, each otherwise Gate-2-complete except for the one thing its name
+// says it deviates on. Fed to BOTH gates below — where.mjs's missingForGate2 (via whereIs) and
+// twin-storyboard's own checkStoryboard (via parseStoryboard) — asserting they always agree on
+// whether Gate 2 has closed.
+const GATE2_FIXTURES: Array<{ name: string; text: string }> = [
+  {
+    name: "complete: takeaway, all hand fields, one resolved slot",
+    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
+  },
+  {
+    name: "missing a hand field (credit)",
+    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
+  },
+  {
+    name: "no slots",
+    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots: []\n---\n`,
+  },
+  {
+    name: "slot with no chosen",
+    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    candidates: [trajectory, comparison]\n---\n`,
+  },
+  {
+    name: "slot with chosen absent from its candidates",
+    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [comparison, dumbbell]\n---\n`,
+  },
+  {
+    name: "slot with chosen and no candidates key at all",
+    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n---\n`,
+  },
+  {
+    name: "bare null takeaway",
+    text: `---\ntakeaway: null\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
+  },
+  {
+    name: 'quoted "null" takeaway (control — a literal string, not the sentinel)',
+    text: `---\ntakeaway: "null"\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
+  },
+  {
+    name: "quoted comma inside an inline candidates array",
+    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: "a, b"\n    candidates: ["a, b", "c"]\n---\n`,
+  },
+];
+
+describe("gate 2: where.mjs and twin-storyboard's own checkStoryboard agree on every fixture", () => {
+  for (const { name, text } of GATE2_FIXTURES) {
+    it(`should agree on: ${name}`, async () => {
+      await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "profile.json"), "{}");
+      await writeFile(join(dir, "STORYBOARD.md"), text);
+
+      const whereIsClosed = (await whereIs(dir)).phase !== "storyboard";
+
+      const { meta } = parseStoryboard(text);
+      const checkStoryboardClosed = checkStoryboard(meta).length === 0;
+
+      expect(whereIsClosed).toBe(checkStoryboardClosed);
+    });
+  }
 });
