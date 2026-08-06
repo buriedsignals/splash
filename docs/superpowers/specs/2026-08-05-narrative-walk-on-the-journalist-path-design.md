@@ -118,6 +118,27 @@ garde doit rougir, et rougir en nommant l'acte qui débloque.
 
 **L'ordre est contraint** : ② avant ① ferait écrire pour rien. C'est la seule séquence honnête.
 
+## 6 bis. ★ « Que tout soit oui » — la mesure, faite le 2026-08-06
+
+Rémy veut que **toutes les vidéos** portent leur marche. La mesure dit que ce n'est pas un
+chantier mais deux, et la frontière est mécanique, pas une question d'effort.
+
+**27 types de graphiques partagent l'entrée échelonnée de `bar`** (le helper `stagger` de
+`core/math.ts`). Pour eux, tout le mécanisme existe déjà — `walkPositions` ordonne, `activeBeatAt`
+choisit la phrase, `RevealStage` l'affiche. Ce qui manque par type est **une déclaration d'ancre**
+(l'équivalent du `catField` d'une barre) et l'acceptation d'un `beats` par le moteur
+(`AUTHORABLE_SCROLLY_TYPES`, `narrativeBeatErrors`). C'est du câblage répété, pas de l'invention.
+
+**14 types plus la ligne n'ont aucune entrée par sujet** — camembert, sankey, heatmap, aire
+empilée, sunburst, violon, bump, calendrier, connected-scatter, dot-strip, éventail, lorenz,
+parallèle, pictogramme. Ils s'animent par **un scalaire continu** : un balayage, une essuie, un
+tracé. Il n'y a rien à réordonner, donc une marche y demande un **révélateur segmenté** — mettre
+le balayage en pause à chaque beat. Mécanisme neuf, et le même pour les quinze.
+
+**Conséquence sur l'ordre** : le garde de ② liste les couples (producteur, format) dont les mots
+atteignent le lecteur, et s'élargit par AJOUT à cette liste. Ouvrir un type ne demande donc jamais
+de réécrire le garde — c'est ce qui rend les deux lots ci-dessus indépendants et sûrs.
+
 ## 7. Hors périmètre
 
 - **Relier la boucle et la prose.** Décidé contre, § 3. La boucle garde sa règle ; on l'écrit.
