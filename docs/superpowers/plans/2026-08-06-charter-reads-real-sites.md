@@ -20,6 +20,7 @@
 - **Aucun appel réseau dans la suite de tests.** Les sites réels entrent par des **fixtures capturées**, jamais par `fetch`.
 - **Une mesure n'est jamais une décision** (invariant de `skills/newsroom-charter`) : rien n'est écrit sans geste humain, la confiance annoncée par l'extracteur n'est jamais élevée, et chaque valeur garde le reçu qui dit d'où elle vient.
 - **Ne jamais deviner une marque que le site ne porte pas.** Un site qui ne déclare rien reste une réponse légitime.
+- **★ Tout ce qui est mesuré doit rester rectifiable, et une déduction doit se voir comme telle** (Rémy, 2026-08-06). Ce chantier ajoute des couleurs **devinées** : plus la mesure est large, plus elle peut se tromper, donc plus la correction doit être évidente. Trois choses existent déjà et ne doivent pas régresser — chaque candidat est un bouton qui pose la couleur (`install/preflight/client.ts:366-380`), le champ reste saisissable à la main, et le reçu **disparaît** dès que la valeur ne correspond plus au candidat, de sorte qu'une valeur tapée ne se réclame jamais d'une origine qu'elle n'a pas. Ce que ce chantier doit ajouter : une valeur `inferred` **se présente comme une supposition à l'écran**, pas seulement dans la donnée.
 - Worktree `../splash-charter`, branche `feat/charter-reads-real-sites`.
 
 ---
@@ -140,7 +141,7 @@ L'assertion typographique de `charter-fixtures.test.ts` passe maintenant : la fi
 
 Remettre `if (abs.hostname !== base.hostname) continue;`, relancer `bun test lib/newsroom` : le test de l'étape 1 ET l'assertion typo de la fixture DOIVENT rougir. Rétablir.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add lib/newsroom/charter-fetch.ts lib/newsroom/charter-fetch.test.ts lib/newsroom/charter-fixtures.test.ts
@@ -240,11 +241,20 @@ Le scanner : compter les occurrences d'une couleur non neutre sur un ensemble **
 Run: `bun test lib/newsroom/charter-fixtures.test.ts`
 Le test Heidi doit maintenant rendre **au moins un candidat autre que `#d5121e` (theme-color)**, classé `inferred`. Mettre à jour l'assertion de la Task 1 pour épingler ce qui est désormais trouvé — et écrire dans le rapport ce que la couleur trouvée vaut : si elle n'est pas la bonne, **le dire**, c'est une mesure, pas un succès à décrocher.
 
-- [ ] **Step 4: Verify by mutation**
+- [ ] **Step 4: A guess must look like a guess, and stay correctable**
 
-Ramener le poids du nouveau signal sous `MIN_CANDIDATE_SCORE` : le candidat disparaît, le test rougit. Rétablir.
+La contrainte globale ★ s'applique ici, parce que c'est cette tâche qui produit des valeurs devinées. Sur la page :
 
-- [ ] **Step 5: Commit**
+- une valeur dont la confiance est `inferred` porte, **à l'écran**, une mention qui le dit — pas seulement un champ `confidence` dans la donnée ;
+- les trois acquis ne régressent pas : le candidat reste un bouton qui pose la couleur, le champ reste saisissable, et le reçu disparaît quand la valeur ne correspond plus.
+
+Le test : un modèle servi dont le candidat de tête est `inferred` doit rendre cette mention ; le même avec `declared` ne la rend pas. Ajouter la clé dans les **deux** tables de `install/preflight/copy.ts`.
+
+- [ ] **Step 5: Verify by mutation**
+
+Ramener le poids du nouveau signal sous `MIN_CANDIDATE_SCORE` : le candidat disparaît, le test rougit. Rétablir. Puis retirer la mention `inferred` : le test de l'étape 4 doit rougir aussi.
+
+- [ ] **Step 6: Commit**
 
 ```bash
 git add lib/newsroom/charter.ts lib/newsroom/charter.test.ts lib/newsroom/charter-fixtures.test.ts install/preflight/copy.ts
@@ -299,7 +309,7 @@ La route `/charter` accepte un mode (`static` par défaut, `rendered` sur demand
 Run: `bun test lib/newsroom install && bun x tsc --noEmit -p install/tsconfig.json`
 Expected: PASS, et **aucun navigateur lancé** par la suite.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add lib/newsroom/charter-render.ts lib/newsroom/charter-render.test.ts install/preflight/
@@ -333,7 +343,7 @@ Expected: **23/23**. Diagnostiquer tout rouge plutôt que de l'hériter.
 
 Puis une entrée datée dans `docs/splash/CHANGELOG.md` et deux ou trois lignes dans « État courant » de `CLAUDE.md` — ces deux fichiers sont en **français**.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add docs/ CLAUDE.md
