@@ -52,13 +52,11 @@ describe("the page is a real file, not a template literal", () => {
     expect(CSS).toContain(".swatch-btn");
   });
 
-  // Fix round 1, Finding 2: engine rows now sit inside a .want block behind their heading, so the
-  // first row there is never plain :first-child (the h3 is) — .capability:first-child alone went
-  // dead for them, leaving a stray border under every heading. This is the rule that reaches it.
-  it("removes the row border directly under a want heading, not only at the very top of a list", () => {
-    const block = CSS.match(/\.want-title \+ \.capability\s*{([^}]*)}/);
-    expect(block).not.toBeNull();
-    expect(block![1]).toContain("border-top: 0");
+  // Task 5 (2026-08-06): a .capability row is a delivery destination only now — the engine rows
+  // that used to sit grouped under a .want-title heading (and needed this rule to lose their
+  // border there) are gone, and so is the checkbox that carried them.
+  it("carries no leftover styling for the removed want-grouped engine rows", () => {
+    expect(CSS).not.toContain(".want-title");
   });
 });
 

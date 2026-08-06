@@ -59,7 +59,16 @@ export function capabilityReadiness(
       reason: `${cap.label} is not available yet — it arrives with the publisher adapters`,
     };
 
-  if (state.capabilities[cap.id]?.enabled !== true)
+  // An ENGINE is asked for outright now (Task 5, 2026-08-06): there is no tick left to gate it
+  // on — ticking used to open nothing once the production keys moved above every want group, so
+  // its only remaining job was deciding what the page called a blocker. An engine's readiness is
+  // therefore answered directly from what is configured: a key that is there makes it ready, a
+  // key that is missing makes it missing, never "disabled" for want of a tick nobody could act on.
+  // A DELIVERY destination keeps the older rule — it is in play only once the newsroom has chosen
+  // it (the setup page's publisher radio, or a caller naming it explicitly; request-delivery.ts
+  // checks several destinations this way at once, which is why this stays a per-capability flag
+  // rather than a single "the chosen one" field).
+  if (cap.kind === "delivery" && state.capabilities[cap.id]?.enabled !== true)
     return { ...base, status: "disabled", reason: "" };
 
   const missingGroups = cap.env.filter(

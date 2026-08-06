@@ -29,7 +29,7 @@ import {
   LEGACY_PREFLIGHT_FILE,
   LEGACY_RUNTIME_FILE,
 } from "../../lib/newsroom/migrate-decor.ts";
-import { isSet, parseEnvFile } from "../../lib/newsroom/probe.ts";
+import { parseEnvFile } from "../../lib/newsroom/probe.ts";
 import { writeNewsroomState } from "../../lib/newsroom/state.ts";
 import {
   verifyAnthropic,
@@ -170,7 +170,6 @@ async function readSubmission(req: Request): Promise<PreflightSubmission> {
       body.credentials && typeof body.credentials === "object"
         ? body.credentials
         : {},
-    enabled: Array.isArray(body.enabled) ? body.enabled : [],
     ...(typeof body.publisher === "string"
       ? { publisher: body.publisher }
       : {}),
@@ -184,40 +183,37 @@ async function readSubmission(req: Request): Promise<PreflightSubmission> {
 }
 
 /**
- * Which capability ids own a production key (`kind === "engine"`) the journalist actually TYPED a
- * value for — regardless of whether its capability is ticked (I2). Production keys are asked
- * outright, above every want group (model.ts's `upfront`, derived from this same `kind`); a
- * newsroom can type its Datawrapper token in "Your accounts" and never tick "Datawrapper charts",
- * and the page's own lede promises every key IS checked — so a typed value has to be verifiable on
- * its own, not only when the capability using it happens to also be enabled.
+ * Which capabilities the live check covers. An ENGINE is asked for outright now (Task 5,
+ * 2026-08-06) — there is no tick left to gate it on, so every implemented one is checked
+ * against whatever credentials this submission carries or .env already holds; the page's own
+ * lede promises every key IS checked, and that is no longer conditional on a box nobody ticks
+ * any more. A DELIVERY destination is checked only once the newsroom has chosen it as the
+ * publisher — checking one nobody chose would report a verdict about an account they may not
+ * even hold.
  */
-function upfrontIdsWithTypedValue(sub: PreflightSubmission): string[] {
-  return Object.values(NEWSROOM_CAPABILITIES)
-    .filter(
-      (cap) =>
-        cap.kind === "engine" &&
-        cap.implemented &&
-        (cap.settingsFields ?? []).some((f) => isSet(sub.credentials[f.name])),
-    )
+function idsToVerify(sub: PreflightSubmission): string[] {
+  const engines = Object.values(NEWSROOM_CAPABILITIES)
+    .filter((cap) => cap.kind === "engine" && cap.implemented)
     .map((cap) => cap.id);
+  const chosenPublisher =
+    sub.publisher && NEWSROOM_CAPABILITIES[sub.publisher]?.kind === "delivery"
+      ? [sub.publisher]
+      : [];
+  return [...engines, ...chosenPublisher];
 }
 
 /**
- * Check every capability the newsroom ticked, against the credentials it just typed — falling
- * back to what .env already holds, so re-opening the page on one section does not report the
- * rest as rejected. A capability with no live check is simply absent from the answer.
- *
- * Also checks any UNTICKED capability whose upfront production key was typed (I2): the tick
- * governs what is reported as a BLOCKER, never whether a key that was actually entered gets
- * checked at all.
+ * Check every engine, and the chosen publishing destination, against the credentials just
+ * typed — falling back to what .env already holds, so re-opening the page on one section does
+ * not report the rest as rejected. A capability with no live check is simply absent from the
+ * answer.
  */
 async function verifyAll(
   sub: PreflightSubmission,
 ): Promise<Record<string, VerifyOutcome>> {
   const values = { ...fileEnv(), ...envUpdates(sub) };
   const out: Record<string, VerifyOutcome> = {};
-  const ids = new Set([...sub.enabled, ...upfrontIdsWithTypedValue(sub)]);
-  for (const id of ids) {
+  for (const id of idsToVerify(sub)) {
     const outcome = await verifyCapability(id, values);
     if (outcome) out[id] = outcome;
   }

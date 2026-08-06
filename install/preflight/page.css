@@ -265,33 +265,15 @@ details.tech code {
 
 /* ── capabilities ─────────────────────────────────────────────────────── */
 
-/* One group per want (charts, maps, …): the want leads, the tools underneath stay their own
-   choosable rows. */
-.want-title {
-  margin: 1.1rem 0 0.35rem;
-  font-size: 0.95rem;
-  font-weight: 640;
-  color: var(--ink);
-}
-
-.want:first-child .want-title {
-  margin-top: 0;
-}
-
+/* Task 5 (2026-08-06): a .capability row is only ever a delivery destination now — the engine
+   rows that used to sit grouped under a want heading are gone (the checkbox they carried is
+   gone with them), so this is a flat list again and needs no nested-heading border rule. */
 .capability {
   border-top: 1px solid var(--line);
   padding: 0.9rem 0;
 }
 
 .capability:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-/* The engine rows sit inside a .want block now, behind their heading — so the first row there is
-   never :first-child (the h3 is). This is that same "no border right under the heading" rule for
-   the nested case; :first-child above still covers the flat delivery list, which has no heading. */
-.want-title + .capability {
   border-top: 0;
   padding-top: 0;
 }
@@ -410,6 +392,40 @@ details.tech code {
 
 .spacer {
   margin-left: auto;
+}
+
+/* ── the constat ──────────────────────────────────────────────────────── */
+
+/* What the newsroom will be able to produce (Task 5, 2026-08-06) — no "missing" pill, no colour
+   alone: an unavailable engine gets its plain label plus the key that would open it, never the
+   tone the rest of the page reserves for an actual blocker. */
+.producible {
+  margin: 0 0 1.1rem;
+}
+
+.producible-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.producible-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.producible-label {
+  font-weight: 550;
+}
+
+.producible-opens {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
 }
 
 /* ── readiness list ───────────────────────────────────────────────────── */

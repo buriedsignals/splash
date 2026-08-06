@@ -9,7 +9,6 @@ import {
   DEFAULT_NEWSROOM_STATE,
   type NewsroomState,
 } from "../../lib/newsroom/state.ts";
-import { groupEnginesByWant } from "./group-by-want.ts";
 import {
   describeCapability,
   preflightModel,
@@ -18,9 +17,9 @@ import {
 
 // The "declared but not built" exemplar. No capability in the shipped registry is only-declared
 // any more (Fly.io, the last one, was dropped — lib/newsroom/capabilities.test.ts's "every
-// capability the page offers is actually built" enforces that now), so this local stub — the
-// same one lib/newsroom/readiness.test.ts uses — is what stands in for one, fed through the
-// REAL capabilityReadiness/readinessBlockers/describeCapability rather than the real registry.
+// capability the page offers is actually built") — this local stub — the same one
+// lib/newsroom/readiness.test.ts uses — is what stands in for one, fed through the REAL
+// capabilityReadiness/readinessBlockers/describeCapability rather than the real registry.
 const UNBUILT: NewsroomCapability = {
   id: "embed-nowhere",
   label: "A destination that is declared but not built",
@@ -54,8 +53,14 @@ function field(m: PreflightModel, name: string) {
   return m.fields.find((f) => f.name === name);
 }
 
+// Task 5 (2026-08-06): only a DELIVERY destination is still a ticked `PreflightCapability` row —
+// an engine renders from `producible` instead (see the `producible` helper below).
 function capability(m: PreflightModel, id: string) {
-  return [...m.engines, ...m.delivery].find((c) => c.id === id);
+  return m.delivery.find((c) => c.id === id);
+}
+
+function producible(m: PreflightModel, id: string) {
+  return m.producible.find((p) => p.id === id);
 }
 
 describe("the credential fields the page asks for", () => {
@@ -127,8 +132,9 @@ describe("the credential fields the page asks for", () => {
         expect(f.upfront).toBe(false);
   });
 
-  // The tick no longer gates the ASK. Nothing is enabled here and the two keys are still there.
-  it("asks for them with no capability ticked at all", () => {
+  // There is no tick left to gate the ASK at all (Task 5, 2026-08-06 — the checkbox itself is
+  // gone, not only its effect on the field). The two keys are still there on a bare fresh state.
+  it("asks for them on a completely fresh, unconfigured install", () => {
     const m = model({ state: state({}) });
     const names = m.fields.filter((f) => f.upfront).map((f) => f.name);
     expect(names).toContain("DATAWRAPPER_API_TOKEN");
@@ -146,12 +152,84 @@ describe("the credential fields the page asks for", () => {
   });
 });
 
-describe("the capabilities the page offers", () => {
-  it("offers every engine and every delivery target, split by kind", () => {
+describe("what the newsroom will be able to produce — no tick, ever (Task 5, 2026-08-06)", () => {
+  it("derives what the newsroom can produce from what is configured", () => {
+    const m = model({ env: { DATAWRAPPER_API_TOKEN: "t" } });
+    const byId = Object.fromEntries(m.producible.map((p) => [p.id, p]));
+    expect(byId["chart-native"]!.available).toBe(true); // no account needed
+    expect(byId["dw-chart"]!.available).toBe(true); // its token is set
+    expect(byId["map-native"]!.available).toBe(false); // no MapTiler key here
+    expect(byId["map-native"]!.opensWith).toContain("MapTiler");
+  });
+
+  // The submission stops carrying a tick list at all, and so does the model: there is no
+  // `engines` array left to render as checkboxes.
+  it("no longer carries a ticked engines list", () => {
+    expect(Object.keys(model())).not.toContain("engines");
+  });
+
+  it("names the checkbox caption, not the plain label, as the producible row's own words", () => {
     const m = model();
-    expect(m.engines.map((c) => c.id)).toContain("chart-native");
+    expect(producible(m, "dw-chart")?.label).toBe("With a Datawrapper account");
+    expect(producible(m, "chart-native")?.label).toBe(
+      "In-house, no account needed (includes video)",
+    );
+  });
+
+  // A live check that could not REACH the provider is not a failure (readiness.ts's own rule) —
+  // withholding it from the constat would tell a journalist their key is broken when it may well
+  // still work.
+  it("counts an engine whose last check could not reach the provider as available", () => {
+    const m = model({
+      state: state({
+        capabilities: {
+          "dw-chart": {
+            enabled: true, // vestigial for an engine — readiness.ts ignores it now
+            lastVerified: { at: "2026-07-26T10:00:00Z", result: "unreachable" },
+          },
+        },
+      }),
+      env: { DATAWRAPPER_API_TOKEN: "tok" },
+    });
+    expect(producible(m, "dw-chart")?.available).toBe(true);
+  });
+
+  // The old blocker-and-checkbox system reported an unticked engine as neither ready nor
+  // failing; the new one reports it as UNAVAILABLE outright, in `producible`, and never as a
+  // BLOCKER — blockers are for a publishing choice, which an engine is not.
+  it("lists an unconfigured engine as unavailable in producible, never as a blocker", () => {
+    const m = model({ env: {} });
+    expect(producible(m, "dw-chart")?.available).toBe(false);
+    expect(producible(m, "dw-chart")?.opensWith).toContain("Datawrapper");
+    expect(m.blockers.map((b) => b.id)).not.toContain("dw-chart");
+  });
+
+  it("names nothing when the keys are in place — a missing DEPENDENCY is not a missing field", () => {
+    const m = model({ env: { VITE_MAPTILER_KEY: "mt" } });
+    expect(producible(m, "map-native")?.opensWith).toBeUndefined();
+    expect(producible(m, "image-native")?.opensWith).toBeUndefined();
+  });
+
+  it("counts every engine once, matching the registry's own engine list", () => {
+    const m = model();
+    expect(m.producible).toHaveLength(6);
+    expect(m.producible.map((p) => p.id).sort()).toEqual(
+      [
+        "dw-chart",
+        "map-dw",
+        "chart-native",
+        "map-native",
+        "scrolly",
+        "image-native",
+      ].sort(),
+    );
+  });
+});
+
+describe("the delivery destinations the page still gates on a choice", () => {
+  it("offers every delivery target, all of kind delivery", () => {
+    const m = model();
     expect(m.delivery.map((c) => c.id)).toContain("embed-cloudflare");
-    expect(m.engines.every((c) => c.kind === "engine")).toBe(true);
     expect(m.delivery.every((c) => c.kind === "delivery")).toBe(true);
   });
 
@@ -169,22 +247,19 @@ describe("the capabilities the page offers", () => {
     );
   });
 
-  it("reports an enabled capability whose key is missing as a blocker, in newsroom language", () => {
+  // Task 5 (2026-08-06): the OLD "never reports a capability the newsroom did not enable" rule —
+  // the one just retired for engines — is exactly what a DELIVERY destination keeps: it is a
+  // choice, not a want, so an unchosen one stays disabled whatever credentials sit beside it.
+  it("never reports an unchosen delivery destination — not green, not red", () => {
     const m = model({
-      state: state({ capabilities: { "dw-chart": { enabled: true } } }),
+      env: {
+        CLOUDFLARE_API_TOKEN: "x",
+        CLOUDFLARE_ACCOUNT_ID: "y",
+        SPLASH_EMBED_PROJECT: "z",
+      },
     });
-    expect(capability(m, "dw-chart")?.status).toBe("missing");
-    expect(m.blockers.map((b) => b.id)).toEqual(["dw-chart"]);
-    // The reason interpolates `label` (a standalone name), never `choice` (the checkbox
-    // caption) — fix round 1, Finding 1: a caption reused as the sentence's subject broke it
-    // ("With a Datawrapper account needs DATAWRAPPER_API_TOKEN…" reads as a dangling phrase).
-    expect(m.blockers[0]!.reason).toContain("Datawrapper charts");
-  });
-
-  it("never reports a capability the newsroom did not enable — not green, not red", () => {
-    const m = model({ env: { DATAWRAPPER_API_TOKEN: "x" } });
-    expect(capability(m, "dw-chart")?.status).toBe("disabled");
-    expect(capability(m, "dw-chart")?.reason).toBe("");
+    expect(capability(m, "embed-cloudflare")?.status).toBe("disabled");
+    expect(capability(m, "embed-cloudflare")?.reason).toBe("");
     expect(m.blockers).toEqual([]);
   });
 
@@ -195,101 +270,18 @@ describe("the capabilities the page offers", () => {
     expect(capability(m, "zip")?.status).toBe("ready");
   });
 
-  it("carries each capability's fields so the page can nest them under their checkbox", () => {
+  it("carries each destination's fields so the page can nest them under their choice", () => {
     const m = model();
     expect(capability(m, "embed-cloudflare")?.fields).toEqual([
       "CLOUDFLARE_API_TOKEN",
       "CLOUDFLARE_ACCOUNT_ID",
       "SPLASH_EMBED_PROJECT",
     ]);
-    expect(capability(m, "chart-native")?.fields).toEqual([]);
   });
 
-  it("reports a live check that could not reach the provider as degraded, never as invalid", () => {
-    const m = model({
-      state: state({
-        capabilities: {
-          "dw-chart": {
-            enabled: true,
-            lastVerified: { at: "2026-07-26T10:00:00Z", result: "unreachable" },
-          },
-        },
-      }),
-      env: { DATAWRAPPER_API_TOKEN: "tok" },
-    });
-    expect(capability(m, "dw-chart")?.status).toBe("unverified");
-    expect(m.blockers).toEqual([]);
-  });
-
-  // Fix round 1, Finding 1: `label` (the sentence-subject name) and `choice` (the checkbox
-  // caption) are two different fields now — the second one broke real readiness/blocker
-  // sentences the first time it was reused as the first.
-  it("carries the checkbox caption separately from the sentence-subject label", () => {
-    const m = model();
-    expect(capability(m, "dw-chart")?.label).toBe("Datawrapper charts");
-    expect(capability(m, "dw-chart")?.choice).toBe(
-      "With a Datawrapper account",
-    );
-    expect(capability(m, "chart-native")?.label).toBe(
-      "The in-house chart engine",
-    );
-    expect(capability(m, "chart-native")?.choice).toBe(
-      "In-house, no account needed (includes video)",
-    );
-    // Delivery never had a caption of its own — capabilityRow falls back to `label` for it.
-    expect(capability(m, "zip")?.choice).toBeUndefined();
-  });
-
-  // Fix round 1, Finding 3: nothing in the suite went red when `want: cap.want` was dropped from
-  // describeCapability, or when renderCapabilities reverted to a flat list. This is the
-  // model-level half of that guard — mutation-tested, see task-6-report.md.
-  it("carries each engine's want, and never assigns one to a delivery capability", () => {
-    const m = model();
-    expect(capability(m, "dw-chart")?.want).toBe("charts");
-    expect(capability(m, "chart-native")?.want).toBe("charts");
-    expect(capability(m, "map-dw")?.want).toBe("maps");
-    expect(capability(m, "map-native")?.want).toBe("maps");
-    expect(capability(m, "scrolly")?.want).toBe("scrollys");
-    expect(capability(m, "image-native")?.want).toBe("photo-stories");
-    for (const c of m.delivery) expect(c.want).toBeUndefined();
-  });
-});
-
-// client.ts has no DOM test harness (page.test.ts only greps the raw HTML/CSS text as strings —
-// there is no jsdom/happy-dom anywhere in this suite), so the grouping it renders cannot be
-// asserted through a rendered tree. groupEnginesByWant is the pure seam BELOW that rendering —
-// client.ts's renderCapabilities calls it and only turns the result into DOM nodes — so this is
-// what stands in for a rendering test (fix round 1, Finding 3).
-describe("grouping engines under their want — the seam the page's grouped rendering renders from", () => {
-  it("puts one heading per want, in first-appearance order, with the right tools under each", () => {
-    const groups = groupEnginesByWant(model().engines);
-    expect(groups.map((g) => g.want)).toEqual([
-      "charts",
-      "maps",
-      "scrollys",
-      "photo-stories",
-    ]);
-    expect(
-      groups.find((g) => g.want === "charts")?.capabilities.map((c) => c.id),
-    ).toEqual(["dw-chart", "chart-native"]);
-    expect(
-      groups.find((g) => g.want === "maps")?.capabilities.map((c) => c.id),
-    ).toEqual(["map-dw", "map-native"]);
-    expect(
-      groups.find((g) => g.want === "scrollys")?.capabilities.map((c) => c.id),
-    ).toEqual(["scrolly"]);
-    expect(
-      groups
-        .find((g) => g.want === "photo-stories")
-        ?.capabilities.map((c) => c.id),
-    ).toEqual(["image-native"]);
-  });
-
-  it("puts every wantless capability (delivery, fed through it) in a single ungrouped bucket", () => {
-    const groups = groupEnginesByWant(model().delivery);
-    expect(groups).toEqual([
-      { want: undefined, capabilities: model().delivery },
-    ]);
+  // Delivery never had a caption of its own — capabilityRow falls back to `label` for it.
+  it("has no checkbox caption distinct from its label", () => {
+    expect(capability(model(), "zip")?.choice).toBeUndefined();
   });
 });
 
@@ -315,20 +307,31 @@ describe("the rest of the decor the page renders", () => {
     expect(model().focus).toBeUndefined();
   });
 
+  // The summary now counts EVERY capability's real readiness (engines included — they are always
+  // in play), not only whichever ones a fixture happened to tick before this task.
   it("counts the three states the page summarises", () => {
     const m = model({
-      state: state({
-        capabilities: {
-          "chart-native": { enabled: true },
-          "dw-chart": { enabled: true },
-        },
-      }),
+      env: {
+        DATAWRAPPER_API_TOKEN: "t",
+        VITE_MAPTILER_KEY: "k",
+      },
       resolveDep: () => true,
       probeBrowser: BROWSER_READY,
     });
-    expect(m.summary.ready).toBe(1);
-    expect(m.summary.missing).toBe(1);
+    // Every one of the 6 engines resolves ready with both keys present and every dependency
+    // stubbed ready; no delivery destination was chosen, so none of the 5 counts either way.
+    expect(m.summary.ready).toBe(6);
+    expect(m.summary.missing).toBe(0);
     expect(m.summary.degraded).toBe(0);
+  });
+
+  it("counts an engine missing its key as missing in the summary", () => {
+    const m = model({
+      env: { DATAWRAPPER_API_TOKEN: "t" }, // no MapTiler key
+      resolveDep: () => true,
+      probeBrowser: BROWSER_READY,
+    });
+    expect(m.summary.missing).toBeGreaterThan(0);
   });
 });
 
@@ -425,24 +428,31 @@ describe("runtime selectability is platform-scoped (I1)", () => {
   });
 });
 
-// The page lets a journalist tick a capability that the SAVED state has disabled — and must then
-// say what that tick means ("Missing: needs a MapTiler key"), without the client re-implementing
-// readiness. So the model carries both: the status as saved, and the status this capability
-// WOULD have if it were on.
-describe("the status a capability would have if it were ticked", () => {
-  it("says what a currently-disabled capability is missing", () => {
+// The page lets a journalist choose a delivery destination the SAVED state has not chosen — and
+// must then say what that choice means ("Missing: needs a Cloudflare token"), without the client
+// re-implementing readiness. So the model carries both: the status as saved, and the status this
+// destination WOULD have if it were chosen. An engine has no such preview any more: there is
+// nothing left to choose, so `producible.available` already IS the real answer.
+describe("the status a delivery destination would have if it were chosen", () => {
+  it("says what a currently-unchosen destination is missing, if it were chosen", () => {
     const m = model();
-    expect(capability(m, "map-native")?.status).toBe("disabled");
-    expect(capability(m, "map-native")?.statusIfEnabled).toBe("missing");
+    expect(capability(m, "embed-cloudflare")?.status).toBe("disabled");
+    expect(capability(m, "embed-cloudflare")?.statusIfEnabled).toBe("missing");
   });
 
-  it("says ready when the key is already in .env, so ticking it is instantly green", () => {
-    const m = model({ env: { DATAWRAPPER_API_TOKEN: "tok" } });
-    expect(capability(m, "dw-chart")?.statusIfEnabled).toBe("ready");
+  it("says ready when the keys are already in .env, so choosing it is instantly green", () => {
+    const m = model({
+      env: {
+        CLOUDFLARE_API_TOKEN: "tok",
+        CLOUDFLARE_ACCOUNT_ID: "acct",
+        SPLASH_EMBED_PROJECT: "proj",
+      },
+    });
+    expect(capability(m, "embed-cloudflare")?.statusIfEnabled).toBe("ready");
   });
 
   it("stays honest for a capability that is only declared", () => {
-    // Ticking an unbuilt capability on must not make it read as ready — capabilityReadiness
+    // Choosing an unbuilt capability must not make it read as ready — capabilityReadiness
     // answers "disabled" for `!implemented` before it even looks at `enabled`, and this is
     // that guarantee surfacing through the model's own field.
     const st = state();
@@ -494,21 +504,12 @@ describe("the newsroom profile the model carries", () => {
 });
 
 describe("what is missing, in the page's own words", () => {
-  it("names the fields a capability still needs, not its env vars", () => {
-    expect(capability(model(), "map-native")?.missingFields).toEqual([
-      "VITE_MAPTILER_KEY",
-    ]);
+  it("names the field a delivery destination still needs, not its env vars", () => {
     expect(capability(model(), "embed-cloudflare")?.missingFields).toEqual([
       "CLOUDFLARE_API_TOKEN",
       "CLOUDFLARE_ACCOUNT_ID",
       "SPLASH_EMBED_PROJECT",
     ]);
-  });
-
-  it("names nothing when the keys are in place — a missing DEPENDENCY is not a missing field", () => {
-    const m = model({ env: { VITE_MAPTILER_KEY: "mt" } });
-    expect(capability(m, "map-native")?.missingFields).toEqual([]);
-    expect(capability(m, "image-native")?.missingFields).toEqual([]);
   });
 
   // A23's page half. Readiness now answers `missing` for a destination whose non-secret

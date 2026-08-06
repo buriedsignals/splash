@@ -21,7 +21,6 @@ function submission(
   return {
     runtime: "claude",
     uiLang: "en",
-    enabled: [],
     credentials: {},
     ...over,
   };
@@ -158,22 +157,21 @@ describe("what a submission writes to newsroom.json", () => {
     expect(s.publisher).toBe("zip");
   });
 
-  it("enables exactly what was ticked, and disables the rest", () => {
-    const s = submittedState(
-      submission({ enabled: ["dw-chart", "zip"] }),
-      previous,
-    );
+  // Task 5 (2026-08-06): the page no longer submits a tick list at all. An ENGINE is always
+  // `enabled: true` now — there is no tick left to gate it on, and readiness.ts stopped
+  // consulting the flag for one. A DELIVERY destination is enabled by being CHOSEN as the
+  // publisher, and only that one.
+  it("enables every engine unconditionally, and only the chosen publisher among deliveries", () => {
+    const s = submittedState(submission({ publisher: "zip" }), previous);
     expect(s.capabilities["dw-chart"]?.enabled).toBe(true);
+    expect(s.capabilities["map-native"]?.enabled).toBe(true);
     expect(s.capabilities["zip"]?.enabled).toBe(true);
-    expect(s.capabilities["map-native"]?.enabled).toBe(false);
+    expect(s.capabilities["embed-cloudflare"]?.enabled).toBe(false);
   });
 
-  it("stamps the verdict of a live check, and leaves an unchecked capability unstamped", () => {
+  it("stamps the verdict of a live check regardless of publisher, and leaves an unchecked capability unstamped", () => {
     const s = submittedState(
-      submission({
-        enabled: ["dw-chart"],
-        verified: { "dw-chart": "ok" },
-      }),
+      submission({ verified: { "dw-chart": "ok" } }),
       previous,
       "2026-07-26T12:00:00.000Z",
     );
@@ -194,16 +192,28 @@ describe("what a submission writes to newsroom.json", () => {
         },
       },
     };
-    const s = submittedState(submission({ enabled: ["dw-chart"] }), stamped);
+    const s = submittedState(submission(), stamped);
     expect(s.capabilities["dw-chart"]?.lastVerified?.at).toBe(
       "2026-07-01T00:00:00.000Z",
     );
   });
 
+  // An existing newsroom.json written before this change can still carry a ticked-off engine
+  // (`enabled: false`) — a submission simply supersedes it with `true` on the next save, rather
+  // than crashing or preserving a flag nothing reads any more.
+  it("supersedes an engine that a pre-existing decor had ticked off, without crashing", () => {
+    const legacy: NewsroomState = {
+      ...previous,
+      capabilities: { "map-native": { enabled: false } },
+    };
+    const s = submittedState(submission(), legacy);
+    expect(s.capabilities["map-native"]?.enabled).toBe(true);
+  });
+
   it("NEVER lets a credential value into the state — .env is its one home", () => {
     const s = submittedState(
       submission({
-        enabled: ["dw-chart", "embed-cloudflare", "embed-s3"],
+        publisher: "embed-s3",
         login: "sk-ant-secret",
         credentials: {
           DATAWRAPPER_API_TOKEN: "dw-secret-value",
@@ -238,7 +248,7 @@ describe("what a submission writes to newsroom.json", () => {
     };
     expect(
       settingsUpdates(
-        submission({ enabled: ["embed-s3"], credentials: { bucket: "" } }),
+        submission({ credentials: { bucket: "" } }),
         withSettings,
       )["embed-s3"]?.bucket,
     ).toBe("kept");

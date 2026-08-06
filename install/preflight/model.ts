@@ -74,11 +74,28 @@ export type PreflightField = {
   upfront: boolean;
 };
 
+/**
+ * What the newsroom will be able to PRODUCE — one row per engine, derived from what is
+ * configured, never from a tick (Task 5, 2026-08-06: the checkbox that used to decide this is
+ * gone). No "missing", no blame: an account with no key is a choice, not a defect, so an
+ * unavailable engine names the key that would open it rather than reporting a failure.
+ */
+export type PreflightProducible = {
+  id: string;
+  /** The journalist's own words for it — `choice ?? label` from the registry. */
+  label: string;
+  /** True once this engine's own requirements are met (or it needs none). Never gated on a tick. */
+  available: boolean;
+  /** The field(s), in the page's own vocabulary, that would make it available. Absent when ready. */
+  opensWith?: string;
+};
+
 export type PreflightCapability = {
   id: string;
   /** A standalone name — the subject of readiness prose. NEVER the checkbox caption; see `choice`. */
   label: string;
-  /** The checkbox/radio row's own caption. Absent ⇒ the row falls back to `label`. */
+  /** The radio row's own caption — only a delivery destination reaches this type now (engines
+   *  render from `producible` instead). Absent ⇒ the row falls back to `label`. */
   choice?: string;
   kind: NewsroomCapability["kind"];
   /** The want this engine serves — copied from the registry. Delivery capabilities have none. */
@@ -149,9 +166,16 @@ export type PreflightModel = {
    */
   login: (RuntimeLogin & { configured: boolean }) | null;
   fields: PreflightField[];
-  engines: PreflightCapability[];
+  /** What the newsroom will be able to produce — see `PreflightProducible`. Replaces the old
+   *  ticked `engines` list (Task 5, 2026-08-06): there is no tick left to render. */
+  producible: PreflightProducible[];
   delivery: PreflightCapability[];
   publisher: string | null;
+  /**
+   * What still stands in the way of a PUBLISHING CHOICE — never an engine (an unconfigured
+   * engine is not a blocker, it is a row in `producible`). A destination is a blocker only once
+   * the newsroom has chosen it; one nobody chose is `disabled`, not missing.
+   */
   blockers: CapabilityReadiness[];
   summary: { ready: number; missing: number; degraded: number };
   /** The section to open on — `?section=<id>`, issue #5's "reopen at the relevant section". */
@@ -281,6 +305,33 @@ function missingFieldsOf(
     .map((f) => f.name);
 }
 
+/**
+ * What this ENGINE lets the newsroom produce — Task 5's replacement for the ticked
+ * `PreflightCapability` row. `available` comes straight from `readiness` (never a tick: an
+ * engine has none any more), and a live check that could not REACH the provider still counts as
+ * available — "unverified" is not "invalid" (readiness.ts's own rule), and a key that may well
+ * work is not something to withhold from a constat that carries no blame either way.
+ */
+function producibleOf(
+  cap: NewsroomCapability,
+  readiness: CapabilityReadiness,
+  state: NewsroomState,
+  env: Record<string, string | undefined>,
+  fields: PreflightField[],
+): PreflightProducible {
+  const available =
+    readiness.status === "ready" || readiness.status === "unverified";
+  const opensWith = missingFieldsOf(cap, state, env)
+    .map((n) => fields.find((f) => f.name === n)?.label)
+    .filter((l): l is string => Boolean(l));
+  return {
+    id: cap.id,
+    label: cap.choice ?? cap.label,
+    available,
+    ...(opensWith.length ? { opensWith: opensWith.join(", ") } : {}),
+  };
+}
+
 // Exported: it is the seam the "declared but not built" rendering is tested against.
 // lib/newsroom/capabilities.ts's own invariant (capabilities.test.ts's "every capability the
 // page offers is actually built") means the shipped registry can no longer hold an unbuilt
@@ -338,11 +389,9 @@ export function preflightModel(
     readiness: capabilityReadiness(cap, state, opts),
     ifEnabled: capabilityReadiness(cap, allOn, opts),
   }));
-  const capabilities = described.map(({ cap, readiness, ifEnabled }) =>
-    describeCapability(cap, readiness, ifEnabled, state, env),
-  );
   const count = (status: ReadinessStatus) =>
-    capabilities.filter((c) => c.status === status).length;
+    described.filter((d) => d.readiness.status === status).length;
+  const fields = collectFields(state, env);
 
   const platform = input.platform ?? process.platform;
   const runtimes = Object.entries(RUNTIMES).map(([id, rt]) => ({
@@ -363,11 +412,21 @@ export function preflightModel(
     profileExists: input.profileExists === true,
     profile: input.profile ?? null,
     login: runtimes.find((r) => r.id === state.runtime)?.login ?? null,
-    fields: collectFields(state, env),
-    engines: capabilities.filter((c) => c.kind === "engine"),
-    delivery: capabilities.filter((c) => c.kind === "delivery"),
+    fields,
+    producible: described
+      .filter((d) => d.cap.kind === "engine")
+      .map((d) => producibleOf(d.cap, d.readiness, state, env, fields)),
+    delivery: described
+      .filter((d) => d.cap.kind === "delivery")
+      .map((d) =>
+        describeCapability(d.cap, d.readiness, d.ifEnabled, state, env),
+      ),
     publisher: state.publisher ?? null,
-    blockers: readinessBlockers(described.map((d) => d.readiness)),
+    blockers: readinessBlockers(
+      described
+        .filter((d) => d.cap.kind === "delivery")
+        .map((d) => d.readiness),
+    ),
     summary: {
       ready: count("ready"),
       missing: count("missing"),

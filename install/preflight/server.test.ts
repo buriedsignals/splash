@@ -74,7 +74,6 @@ function submission(over: Record<string, unknown> = {}) {
     contentLang: "en",
     login: "",
     credentials: {},
-    enabled: [],
     publisher: "zip",
     verified: {},
     ...over,
@@ -95,7 +94,7 @@ describe("the setup page as served", () => {
         html.indexOf("</script>", html.indexOf(`id="${MODEL_SCRIPT_ID}"`)),
       );
       expect(payload).toContain('"runtimes"');
-      expect(payload).toContain('"engines"');
+      expect(payload).toContain('"producible"');
     });
   });
 
@@ -143,7 +142,6 @@ describe("what a submission writes", () => {
         method: "POST",
         body: submission({
           runtime: "goose",
-          enabled: ["dw-chart", "zip"],
           credentials: { DATAWRAPPER_API_TOKEN: "dw-token" },
         }),
       });
@@ -194,7 +192,7 @@ describe("what a submission writes", () => {
     await withServer(dest, async (port) => {
       const r = await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
-        body: submission({ enabled: ["dw-chart"] }),
+        body: submission(),
       });
       expect(r.status).toBe(200);
     });
@@ -428,20 +426,20 @@ describe("the login is only ever checked against the runtime that declared it", 
   }, 15000);
 });
 
-// I2: production keys are asked outright, above every want group (Task 4 of this branch) — but
-// `verifyAll` only iterated `sub.enabled`, so a key typed in "Your accounts" for a capability the
-// journalist never ticked was written to .env yet never checked, silently, while the page's own
-// lede promises every key IS checked. A real network call (project convention: no mock), not just
-// a shape assertion — the point is that the capability appears in the verdict at all.
-describe("an upfront production key is verified even when its capability is unticked (I2)", () => {
-  it("checks a typed Datawrapper token for BOTH capabilities it serves, neither ticked", async () => {
+// Task 5 (2026-08-06) collapses I2's old distinction ("a typed-but-unticked key" vs "a ticked
+// capability") entirely: there is no tick left at all, so every ENGINE is checked outright,
+// whatever the submission carries — the page's own lede promises every key IS checked, and that
+// is no longer conditional on a box nobody can tick any more. A real network call (project
+// convention: no mock), not just a shape assertion — the point is that the capability appears in
+// the verdict at all.
+describe("every engine's key is verified outright — there is no tick left to gate it", () => {
+  it("checks a typed Datawrapper token for BOTH capabilities it serves", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
       const r = await fetch(`http://127.0.0.1:${port}/verify`, {
         method: "POST",
         body: submission({
           credentials: { DATAWRAPPER_API_TOKEN: "not-a-real-token" },
-          enabled: [], // neither "dw-chart" nor "map-dw" is ticked
         }),
       });
       expect(r.status).toBe(200);
@@ -451,36 +449,33 @@ describe("an upfront production key is verified even when its capability is unti
     });
   }, 15000);
 
-  it("says nothing about a capability nobody typed a key for, ticked or not", async () => {
+  it("still checks an engine even when nothing was typed for it — blank reads as rejected, never silence", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
       const r = await fetch(`http://127.0.0.1:${port}/verify`, {
         method: "POST",
-        body: submission({ credentials: {}, enabled: [] }),
-      });
-      expect(r.status).toBe(200);
-      const out = (await r.json()) as Record<string, unknown>;
-      expect(out).not.toHaveProperty("dw-chart");
-      expect(out).not.toHaveProperty("map-dw");
-    });
-  });
-
-  it("still verifies a TICKED capability that carries no upfront key value (unchanged behaviour)", async () => {
-    const dest = root();
-    await withServer(dest, async (port) => {
-      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
-        method: "POST",
-        body: submission({
-          credentials: {},
-          enabled: ["dw-chart"],
-        }),
+        body: submission({ credentials: {} }),
       });
       expect(r.status).toBe(200);
       const out = (await r.json()) as Record<string, unknown>;
       // Blank credential: the shared verifier short-circuits before any fetch and reports
-      // "rejected" (verify.ts's documented behaviour for an empty key) — still present, which is
-      // the point: ticking alone is still enough to be checked, as before.
+      // "rejected" (verify.ts's documented behaviour for an empty key) — present regardless,
+      // because every engine is checked now, whatever this submission typed.
       expect(out).toHaveProperty("dw-chart");
+      expect(out).toHaveProperty("map-dw");
+    });
+  });
+
+  it("also checks the chosen publisher, and no other delivery destination", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({ credentials: {}, publisher: "embed-cloudflare" }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).toHaveProperty("embed-cloudflare");
     });
   });
 });
@@ -504,7 +499,7 @@ describe("the setup page probes the delivered skills tree on a packed install", 
       // Submit state to enable image-native
       const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
-        body: submission({ enabled: ["image-native"] }),
+        body: submission(),
       });
       expect(submitRes.status).toBe(200);
     });
@@ -520,12 +515,12 @@ describe("the setup page probes the delivered skills tree on a packed install", 
       const payload = html.slice(start, end);
       const model = JSON.parse(payload);
 
-      // Verify image-native reports as ready when probing .dist/skills
-      const imageNative = model.engines.find(
-        (e: { id: string; status: string }) => e.id === "image-native",
+      // Verify image-native reports as available when probing .dist/skills
+      const imageNative = model.producible.find(
+        (e: { id: string; available: boolean }) => e.id === "image-native",
       );
       expect(imageNative).toBeDefined();
-      expect(imageNative!.status).toBe("ready");
+      expect(imageNative!.available).toBe(true);
     });
   });
 
@@ -560,7 +555,7 @@ describe("the setup page probes the delivered skills tree on a packed install", 
     await withServer(dest, async (port) => {
       const submitRes = await fetch(`http://127.0.0.1:${port}/submit`, {
         method: "POST",
-        body: submission({ enabled: ["image-native"] }),
+        body: submission(),
       });
       expect(submitRes.status).toBe(200);
     });
@@ -573,11 +568,11 @@ describe("the setup page probes the delivered skills tree on a packed install", 
       const end = html.indexOf("</script>", start);
       const model = JSON.parse(html.slice(start, end));
 
-      const imageNative = model.engines.find(
-        (e: { id: string; status: string }) => e.id === "image-native",
+      const imageNative = model.producible.find(
+        (e: { id: string; available: boolean }) => e.id === "image-native",
       );
       expect(imageNative).toBeDefined();
-      expect(imageNative!.status).toBe("missing");
+      expect(imageNative!.available).toBe(false);
     });
   });
 });

@@ -11,7 +11,6 @@ import {
   pageCopy,
   type PageCopy,
 } from "./copy.ts";
-import { groupEnginesByWant } from "./group-by-want.ts";
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
@@ -26,7 +25,9 @@ type FormState = {
   runtime: string;
   login: string;
   credentials: Record<string, string>;
-  enabled: Set<string>;
+  /** The delivery destination to publish through — the only thing left to "enable" (Task 5,
+   *  2026-08-06: an engine has no tick any more, so a single field replaces the old `enabled`
+   *  set). */
   publisher: string;
   newsroom: {
     name: string;
@@ -60,11 +61,6 @@ const form: FormState = {
   runtime: model.runtime,
   login: "",
   credentials: {},
-  enabled: new Set(
-    [...model.engines, ...model.delivery]
-      .filter((c) => c.enabled)
-      .map((c) => c.id),
-  ),
   publisher: model.publisher ?? "zip",
   newsroom: {
     name: model.profile?.name ?? "",
@@ -187,10 +183,12 @@ function fieldControl(name: string, copy: PageCopy): HTMLElement | null {
   return wrapper;
 }
 
+// Radio-only now (Task 5, 2026-08-06): an engine has no tick left to render, so the only
+// remaining caller of this row is the publisher choice in "Publishing" — a checkbox variant
+// would be dead code.
 function capabilityRow(
   capability: PreflightCapability,
   copy: PageCopy,
-  kind: "checkbox" | "radio",
 ): HTMLElement {
   const row = el("div", {
     class: `capability${capability.available ? "" : " unavailable"}`,
@@ -200,28 +198,24 @@ function capabilityRow(
   const inputId = `enable-${capability.id}`;
   const input = el("input", {
     id: inputId,
-    type: kind,
-    ...(kind === "radio" ? { name: "publisher" } : {}),
+    type: "radio",
+    name: "publisher",
     ...(capability.available ? {} : { disabled: "disabled" }),
   }) as HTMLInputElement;
-  input.checked =
-    kind === "radio"
-      ? form.publisher === capability.id
-      : form.enabled.has(capability.id);
+  input.checked = form.publisher === capability.id;
 
   const label = el("label", { for: inputId });
-  // The row's OWN caption when the registry gives it one (an engine, under its want heading) —
-  // every other reader of a capability's name wants `label` instead (readiness.ts, the blocker
-  // line below, skills/splash's ENGINE_LABELS): reusing a caption there is what broke those
-  // sentences (fix round 1, Finding 1).
+  // The row's OWN caption when the registry gives it one — every other reader of a capability's
+  // name wants `label` instead (readiness.ts, skills/splash's ENGINE_LABELS): reusing a caption
+  // there is what broke those sentences (fix round 1, Finding 1).
   label.append(input, capability.choice ?? capability.label);
   head.append(label);
   const status = el("span", { class: "spacer" });
   head.append(status);
   row.append(head);
 
-  // A capability the newsroom did not tick carries NO pill: it is neither ready nor failing, and
-  // a column of grey "off" badges buries the two states that actually need reading.
+  // A destination the newsroom has not chosen carries NO pill: it is neither ready nor failing,
+  // and a column of grey "off" badges buries the one state that actually needs reading.
   const paintStatus = (): void => {
     if (!capability.available) {
       status.replaceChildren(
@@ -240,8 +234,8 @@ function capabilityRow(
   for (const name of capability.fields) {
     const field = model.fields.find((f) => f.name === name);
     if (!field) continue;
-    // A production key (`upfront`) is asked once, above every want group — never nested under a
-    // tick, whichever capability owns it first, so it is never doubled and never gated on a tick.
+    // A production key (`upfront`) is asked once, above every account block — never nested under
+    // a choice, whichever capability owns it first, so it is never doubled and never gated on it.
     if (field.upfront || field.capabilities[0] !== capability.id) {
       fields.append(
         el(
@@ -261,21 +255,8 @@ function capabilityRow(
   }
 
   input.addEventListener("change", () => {
-    if (kind === "radio") {
-      // Choosing where to publish IS enabling it: a publisher recorded as disabled would be
-      // reported as neither ready nor blocking, and would never be checked.
-      form.publisher = capability.id;
-      form.enabled.add(capability.id);
-      render();
-      return;
-    }
-    if (input.checked) form.enabled.add(capability.id);
-    else form.enabled.delete(capability.id);
-    fields.hidden = !input.checked;
-    // The pill is the answer to the tick that just happened — repainting only the summary left
-    // a freshly enabled capability showing the status it had before anyone touched it.
-    paintStatus();
-    renderReadiness(pageCopy(form.uiLang));
+    form.publisher = capability.id;
+    render();
   });
   return row;
 }
@@ -284,14 +265,14 @@ function capabilityRow(
 function liveStatus(
   capability: PreflightCapability,
 ): PreflightCapability["status"] {
-  if (!form.enabled.has(capability.id)) return "disabled";
+  if (form.publisher !== capability.id) return "disabled";
   const verdict = form.verified[capability.id];
   if (verdict === "ok") return "ready";
   if (verdict === "rejected") return "missing";
   if (verdict === "unreachable") return "unverified";
-  // `statusIfEnabled`, not `status`: the saved state may have this capability off, and the
-  // journalist just turned it on. The server computed both answers precisely so this line does
-  // not have to re-derive readiness in the browser.
+  // `statusIfEnabled`, not `status`: the saved state may have a different destination chosen,
+  // and the journalist just picked this one. The server computed both answers precisely so this
+  // line does not have to re-derive readiness in the browser.
   return capability.statusIfEnabled;
 }
 
@@ -595,66 +576,74 @@ function renderAssistant(copy: PageCopy): void {
 }
 
 function renderCapabilities(copy: PageCopy): void {
-  const engines = section("capabilities");
-  engines.name.textContent = copy.capabilitiesTitle;
-  engines.hint.textContent = copy.capabilitiesHint;
-  const blocks: HTMLElement[] = [];
+  const accounts = section("capabilities");
+  accounts.name.textContent = copy.capabilitiesTitle;
+  accounts.hint.textContent = copy.capabilitiesHint;
 
-  // Production keys (`upfront`) sit ABOVE every want group, asked outright — a newsroom should
-  // not have to tick a box to be allowed to hand over a token it already has (model.ts's
-  // `upfront`, derived from the registry). Publication destinations stay under their own tick,
-  // below, unchanged.
-  const upfrontFields = model.fields.filter((f) => f.upfront);
-  if (upfrontFields.length) {
-    const block = el("div", { class: "want production-keys" });
-    block.append(el("h3", { class: "want-title" }, copy.productionKeysTitle));
-    for (const field of upfrontFields) {
-      const control = fieldControl(field.name, copy);
-      if (control) block.append(control);
-    }
-    blocks.push(block);
-  }
-
-  // The want leads, the tool underneath stays its own choosable checkbox (the project owner's
-  // explicit "do not collapse the two engines of a want into one"). The grouping itself is
-  // group-by-want.ts's groupEnginesByWant (pure, tested there — client.ts has no DOM test
-  // harness); this only turns its result into DOM nodes. It lives in its own file rather than
-  // model.ts because this IS a value import (unlike the type-only ones above), and model.ts's
-  // module graph is server-only (readiness.ts's node:url) — pulling it in breaks the browser
-  // bundle Bun.build produces for this file.
-  for (const { want, capabilities } of groupEnginesByWant(model.engines)) {
-    const block = el("div", { class: "want" });
-    // `want` is undefined only for a capability the registry never assigns one — no engine does
-    // (capabilities.test.ts's "every engine declares the want it serves"). Kept defensive rather
-    // than asserted: PreflightCapability#want is optional by type, and a malformed model must
-    // still render its rows instead of throwing on a wantless heading.
-    if (want)
-      block.append(el("h3", { class: "want-title" }, copy.wants[want] ?? want));
-    for (const c of capabilities)
-      block.append(capabilityRow(c, copy, "checkbox"));
-    blocks.push(block);
-  }
-  engines.body.replaceChildren(...blocks);
+  // Production keys (`upfront`) are asked outright — a newsroom should not have to tick a box to
+  // be allowed to hand over a token it already has (model.ts's `upfront`, derived from the
+  // registry). There is nothing else to render here now (Task 5, 2026-08-06): the tick that used
+  // to sit under a want heading is gone, and what it used to gate — what the newsroom will be
+  // able to produce — is `model.producible`, rendered last in `renderReadiness`.
+  accounts.body.replaceChildren(
+    ...model.fields
+      .filter((f) => f.upfront)
+      .map((f) => fieldControl(f.name, copy))
+      .filter((c): c is HTMLElement => c !== null),
+  );
 
   const publishing = section("publishing");
   publishing.name.textContent = copy.publishingTitle;
   publishing.hint.textContent = copy.publishingHint;
   publishing.body.replaceChildren(
-    ...model.delivery.map((c) => capabilityRow(c, copy, "radio")),
+    ...model.delivery.map((c) => capabilityRow(c, copy)),
   );
+}
+
+/**
+ * The constat: from what was just entered, what this newsroom can produce, and for what it
+ * cannot, the key that would open it. No "missing", no tick — an account with no key is a
+ * choice, not a defect (spec 2026-08-06 §3.4), so this never reuses the "missing" pill/word the
+ * rest of the page uses for an actual blocker.
+ */
+function renderProducible(copy: PageCopy): HTMLElement {
+  const list = el("div", { class: "producible" });
+  for (const p of model.producible) {
+    const row = el("div", { class: "producible-row" });
+    if (p.available) {
+      row.append(pill("ready", form.uiLang));
+      row.append(el("span", { class: "producible-label" }, p.label));
+    } else {
+      row.append(el("span", { class: "producible-label" }, p.label));
+      if (p.opensWith)
+        row.append(
+          el(
+            "p",
+            { class: "producible-opens" },
+            `${copy.opensWith} ${p.opensWith}`,
+          ),
+        );
+    }
+    list.append(row);
+  }
+  return list;
 }
 
 function renderReadiness(copy: PageCopy): void {
   const { name, hint, body } = section("readiness");
   name.textContent = copy.readinessTitle;
   hint.textContent = copy.readinessHint;
+  body.replaceChildren(renderProducible(copy));
 
-  const live = [...model.engines, ...model.delivery].map((c) => ({
+  // The one place a "blocking" framing is still honest: a PUBLISHING destination the newsroom
+  // explicitly chose (the radio above), still missing what it needs. An engine never appears
+  // here — it is not a choice the newsroom made, so it has no business blocking anything; it is
+  // simply a row in the constat above.
+  const live = model.delivery.map((c) => ({
     capability: c,
     status: liveStatus(c),
   }));
   const blocking = live.filter((l) => l.status === "missing");
-  body.replaceChildren();
   if (!blocking.length) {
     body.append(el("p", { class: "all-clear" }, copy.nothingBlocking));
   } else {
@@ -761,7 +750,6 @@ function payload() {
     contentLang: form.contentLang,
     login: form.login,
     credentials: form.credentials,
-    enabled: [...form.enabled],
     publisher: form.publisher,
     verified: form.verified,
     // Sent on every submission now, edit or first creation alike (Task 3, 2026-08-06) — the
@@ -799,9 +787,9 @@ async function check(): Promise<void> {
 async function save(event: Event): Promise<void> {
   event.preventDefault();
   const copy = pageCopy(form.uiLang);
-  const stillMissing = [...model.engines, ...model.delivery].some(
-    (c) => liveStatus(c) === "missing",
-  );
+  // Only the CHOSEN publisher can block a save — an engine with no key is a choice, never a
+  // reason to interrupt saving (Task 5, 2026-08-06: no blame, no confirm for what nobody chose).
+  const stillMissing = model.delivery.some((c) => liveStatus(c) === "missing");
   if (stillMissing && !confirm(copy.blankRequired)) return;
 
   const button = document.getElementById("save") as HTMLButtonElement;

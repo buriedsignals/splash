@@ -1,11 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
-import {
-  existsSync,
-  mkdtempSync,
-  readdirSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describeNewsroom } from "./newsroom";
@@ -45,12 +40,18 @@ describe("describeNewsroom", () => {
     expect(value.runtime).toBe("goose");
     expect(value.language.ui).toBe("de");
     expect(value.capabilities.length).toBeGreaterThan(0);
-    // dw-chart is enabled but this temp dir has no token: a blocker, and the only one.
-    expect(value.blockers.map((b) => b.id)).toEqual(["dw-chart"]);
+    // Every engine is asked for outright now (Task 5, 2026-08-06) — this temp dir has none of
+    // their keys, so every keyed engine is a blocker, not only the one this fixture ticked.
+    expect(value.blockers.map((b) => b.id).sort()).toEqual(
+      ["dw-chart", "map-dw", "map-native", "scrolly"].sort(),
+    );
   });
 
   it("never throws on a directory that holds nothing", () => {
-    const r = describeNewsroom(mkdtempSync(join(tmpdir(), "host-empty-")), NO_ENV);
+    const r = describeNewsroom(
+      mkdtempSync(join(tmpdir(), "host-empty-")),
+      NO_ENV,
+    );
     expect(r.ok).toBe(true);
   });
 

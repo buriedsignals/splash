@@ -4,7 +4,6 @@
 // choice. The page is the first thing that speaks, so it obeys the same rule as the emitted
 // export block (lib/newsroom/ui-copy.ts): one table, English default, unknown language falls
 // back to English rather than showing a half-translated form.
-import type { WantId } from "../../lib/newsroom/capabilities.ts";
 
 export const MODEL_SCRIPT_ID = "preflight-model";
 
@@ -53,21 +52,19 @@ export type PageCopy = {
 
   capabilitiesTitle: string;
   capabilitiesHint: string;
-  /** The heading over the production keys asked outright, above every want group. */
-  productionKeysTitle: string;
   /**
    * Under a capability whose field is upfront (asked once, above): `${field.label} — ${this}`.
    * Every engine field is upfront now, so this fires under every engine capability.
    */
   askedOnceAbove: string;
-  /** The heading over each group of tools that serve the same want (charts, maps, …). */
-  wants: Record<WantId, string>;
   publishingTitle: string;
   publishingHint: string;
   unavailable: string;
 
   readinessTitle: string;
   readinessHint: string;
+  /** Prefixes the field(s) that would open an engine not yet available: `${this} ${opensWith}`. */
+  opensWith: string;
   nothingBlocking: string;
   /** Introduces the list of fields a capability still needs. */
   needs: string;
@@ -125,24 +122,18 @@ const EN: PageCopy = {
   loginOptionalHint:
     "Leave blank if you have a subscription — you will sign in on first launch.",
 
-  capabilitiesTitle: "What you want to be able to do",
-  capabilitiesHint:
-    "The keys below are asked once, whatever you use. Tick what your newsroom will produce — anything left unticked is never reported as a blocker.",
-  productionKeysTitle: "Your accounts",
+  capabilitiesTitle: "Your accounts",
+  capabilitiesHint: "The keys below are asked once, whatever you use.",
   askedOnceAbove: "asked once, above.",
-  wants: {
-    charts: "Charts",
-    maps: "Maps",
-    scrollys: "Scrollytelling",
-    "photo-stories": "Photo narratives",
-  },
   publishingTitle: "Publishing",
   publishingHint:
     "Where a finished visual goes. A downloadable package always works, with no account at all.",
   unavailable: "Not available yet",
 
-  readinessTitle: "Where you stand",
-  readinessHint: "What is ready, and what is still in the way.",
+  readinessTitle: "What you'll be able to produce",
+  readinessHint:
+    "From what you've just entered. An account with no key is a choice, not a defect.",
+  opensWith: "Opens with:",
   nothingBlocking: "Nothing is in the way.",
   needs: "needs",
   rejectedByProvider:
@@ -162,7 +153,7 @@ const EN: PageCopy = {
   savedHint: "Return to your Terminal — the install continues.",
   saveFailed: "Could not save",
   blankRequired:
-    "Some capabilities you ticked are still missing a key. Save anyway? You can re-run the setup later.",
+    "The destination you chose to publish through still needs a key. Save anyway? You can re-run the setup later.",
 
   summaryReady: "ready",
   summaryMissing: "missing",
@@ -204,24 +195,19 @@ const FR: PageCopy = {
   loginOptionalHint:
     "Laissez vide si vous avez un abonnement — vous vous connecterez au premier lancement.",
 
-  capabilitiesTitle: "Ce que vous voulez pouvoir faire",
+  capabilitiesTitle: "Vos comptes",
   capabilitiesHint:
-    "Les clés ci-dessous sont demandées une fois, quel que soit votre usage. Cochez ce que votre rédaction produira — ce que vous laissez décoché n'est jamais signalé comme un blocage.",
-  productionKeysTitle: "Vos comptes",
+    "Les clés ci-dessous sont demandées une fois, quel que soit votre usage.",
   askedOnceAbove: "déjà demandée plus haut.",
-  wants: {
-    charts: "Des graphiques",
-    maps: "Des cartes",
-    scrollys: "Des scrollys",
-    "photo-stories": "Des récits photo",
-  },
   publishingTitle: "Publication",
   publishingHint:
     "Où va un visuel terminé. Le paquet téléchargeable marche toujours, sans aucun compte.",
   unavailable: "Pas encore disponible",
 
-  readinessTitle: "Où vous en êtes",
-  readinessHint: "Ce qui est prêt, et ce qui bloque encore.",
+  readinessTitle: "Ce que vous pourrez produire",
+  readinessHint:
+    "À partir de ce que vous venez de saisir. Un compte sans clé est un choix, pas un défaut.",
+  opensWith: "S'ouvre avec :",
   nothingBlocking: "Rien ne bloque.",
   needs: "nécessite",
   rejectedByProvider:
@@ -241,7 +227,7 @@ const FR: PageCopy = {
   savedHint: "Retournez dans le Terminal — l'installation continue.",
   saveFailed: "Impossible d'enregistrer",
   blankRequired:
-    "Certaines capacités cochées n'ont pas encore de clé. Enregistrer quand même ? Vous pourrez relancer la configuration plus tard.",
+    "La destination choisie pour publier a encore besoin d'une clé. Enregistrer quand même ? Vous pourrez relancer la configuration plus tard.",
 
   summaryReady: "prêt",
   summaryMissing: "manquant",
