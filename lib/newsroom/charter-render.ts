@@ -31,23 +31,31 @@
 //     function, not a copy — runs before anything is launched, so the same forbidden-host list
 //     (loopback, link-local metadata, RFC1918 ranges, a dotted quad embedded in a hostname)
 //     refuses `http://169.254.169.254/` here too, before a browser is even opened.
-//   - The LANDING address is vetted too, and this file used to claim that parity without having
-//     it: a browser navigation follows redirects, so a pasted `https://redirector.example` that
-//     302s to `http://169.254.169.254/latest/meta-data/` answered 200 and its body was read back
-//     as the newsroom's page. `isPublicSiteAddress` — the same function the static path re-checks
-//     every response with — now runs on `page.url()` straight after `goto`, BEFORE any CSS or
-//     markup is pulled out of the page.
-//   - What is NOT bounded: once the page is open, it is a real browser executing the page's own
-//     JavaScript, and that script can issue requests of its own — a fetch, an image load, a
-//     redirect — to whatever address it names. The static path vets every `<link>` href it is
-//     about to fetch, one at a time, before fetching it (`collectSiteSources`); there is no
-//     equivalent here, because a rendered page's outbound traffic is not a list of hrefs this
-//     module reads in advance and can vet — it is arbitrary code running inside Chromium, and
-//     stopping it would mean intercepting and re-vetting every request the page context makes,
-//     which this task does not implement. The URL is one the journalist typed, not adversarial
-//     input in this flow, but a malicious or compromised page opened this way could still probe
-//     addresses on the operator's own network the way an unvetted stylesheet href could before
-//     charter-fetch.ts's SSRF fix — this file does not close that door, and does not claim to.
+//   - The LANDING address is vetted too — but only far enough to close the READ, not the write,
+//     and this file used to claim more. A pasted `https://redirector.example` that 302s to
+//     `http://169.254.169.254/latest/meta-data/` answered 200 and its body was read back as the
+//     newsroom's page; `isPublicSiteAddress` — the same function the static path re-checks every
+//     response with — now runs on `page.url()` straight after `goto`, BEFORE any CSS or markup is
+//     pulled out of the page, so that body never becomes a reading.
+//   - What is NOT bounded, first: the NAVIGATION CHAIN itself. The landing check runs AFTER
+//     `goto` has resolved, by which point Chromium has already dialled every hop — so a pasted
+//     redirector that 302s onto `http://192.168.1.1/reboot?confirm=1` still causes that GET, and
+//     is only refused afterwards. This is NOT parity with the static path, which uses
+//     `redirect: "manual"` and re-vets before each hop is requested (`collectSiteSources`); here
+//     the request is refused as a SOURCE, never prevented as a request. Closing it would mean
+//     intercepting navigation inside the browser context, which this task does not implement.
+//   - What is NOT bounded, second: once the page is open, it is a real browser executing the
+//     page's own JavaScript, and that script can issue requests of its own — a fetch, an image
+//     load, a redirect — to whatever address it names. The static path vets every `<link>` href
+//     it is about to fetch, one at a time, before fetching it; there is no equivalent here,
+//     because a rendered page's outbound traffic is not a list of hrefs this module reads in
+//     advance and can vet — it is arbitrary code running inside Chromium, and stopping it would
+//     mean intercepting and re-vetting every request the page context makes.
+//     Both of those are the same shape: the URL is one the journalist typed, not adversarial
+//     input in this flow, but a malicious or compromised page opened this way could still cause
+//     a request to an address on the operator's own network the way an unvetted stylesheet href
+//     could before charter-fetch.ts's SSRF fix — this file does not close that door, and does
+//     not claim to.
 import {
   isPublicSiteAddress,
   MAX_BYTES,
@@ -372,10 +380,14 @@ export async function renderSiteSources(
         return { error: `${url} answered ${response.status()} when rendered` };
 
       // WHERE THE BROWSER LANDED, vetted before a byte of the page is read. `goto` follows
-      // redirects, so the address vetted above is not necessarily the one answering — the same
-      // hole the static path closed on its own responses, with the same check. Best-effort read
-      // (a test's fake page may not implement `url()`), but a landing address that IS reported
-      // and is non-public is a refusal, never a note.
+      // redirects, so the address vetted above is not necessarily the one answering, and the same
+      // check the static path re-runs on every response runs here on the landing address.
+      // It closes the READ, not the request: `goto` has already resolved, so every hop of the
+      // chain — including the last, non-public one — has already been dialled by the time this
+      // line runs (see the module comment's first NOT-bounded clause). The static path refuses
+      // BEFORE each hop; this refuses after all of them. Best-effort read (a test's fake page may
+      // not implement `url()`), but a landing address that IS reported and is non-public is a
+      // refusal, never a note.
       let finalUrl = url;
       try {
         finalUrl = page.url() || url;
