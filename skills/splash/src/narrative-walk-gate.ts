@@ -50,6 +50,18 @@ const WALK_REACHES_READER: readonly { producer: string; format: string }[] = [
  */
 const WALK_CAPABLE_CHART_TYPES: readonly string[] = ["bar"];
 
+/** The two `cameraMode` values that resolve to the REVEAL family (skills/map-native's
+ *  storyComps): a fixed camera and a route's own draw-on. Both animate the DATA and paint no
+ *  beat text — Rémy, 2026-08-06: "le reveal n'inclut pas des mots, c'est normal". */
+function isRevealKind(cameraMode?: string): boolean {
+  return cameraMode === "simple" || cameraMode === "route-reveal";
+}
+
+function cameraModeOf(spec: unknown): string | undefined {
+  const s = spec as { cameraMode?: unknown } | null;
+  return typeof s?.cameraMode === "string" ? s.cameraMode : undefined;
+}
+
 function nativeTypeOf(spec: unknown): string {
   const s = spec as { type?: unknown; nativeType?: unknown } | null;
   return String(s?.nativeType ?? s?.type ?? "");
@@ -119,6 +131,13 @@ export function walkCapability(
   producer: string,
   nativeType: string,
   format: string,
+  /** The map video's narrative KIND, as `cameraMode` names it. A map video is not one thing:
+   *  `guided-tour` (the default) and `stepped` NARRATE — their families paint the beat's words
+   *  (`CaptionCard`, `ScrollyPanel`). `simple` and `route-reveal` are the REVEAL family, which
+   *  by design shows no words at all: the camera holds and the DATA animates. A walk still
+   *  orders a reveal's entrances (sub-project ④), but its sentences never appear — so demanding
+   *  them would make a journalist write for a screen that will not show them. */
+  cameraMode?: string,
 ): WalkCapability {
   const reaches = WALK_REACHES_READER.some(
     (e) => e.producer === producer && e.format === format,
@@ -129,6 +148,15 @@ export function walkCapability(
       why:
         `a ${format} produced by ${producer} tells no story in steps — there is no surface ` +
         `for a step's sentence, so a walk would be written and dropped`,
+    };
+  if (producer === "map-native" && format === "video" && isRevealKind(cameraMode))
+    return {
+      carriesWalk: false,
+      why:
+        `a fixed-camera map video (cameraMode "${cameraMode}") is a REVEAL: the camera holds ` +
+        `and the data animates, with no caption surface at all. A confirmed walk still orders ` +
+        `what appears when, but its sentences would never be shown — so none are owed. Choose ` +
+        `the guided tour or the stepped kind if the words are to be read`,
     };
   if (producer === "chart-native" && !WALK_CAPABLE_CHART_TYPES.includes(nativeType))
     return {
@@ -149,7 +177,14 @@ export function walkCapability(
 export function narrativeWalkError(p: AcceptedProposal): string | null {
   // ONE answer, asked here and by the CLI alike — a guard that refuses on different knowledge
   // from the one a caller can query is two truths about the same product.
-  if (!walkCapability(p.producer, nativeTypeOf(p.spec), p.format).carriesWalk)
+  if (
+    !walkCapability(
+      p.producer,
+      nativeTypeOf(p.spec),
+      p.format,
+      cameraModeOf(p.spec),
+    ).carriesWalk
+  )
     return null;
   if (hasConfirmedWalk(p.spec)) return null;
   const what = p.format === "scrolly" ? "A scrolly" : "A narrative video";

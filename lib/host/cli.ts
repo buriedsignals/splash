@@ -414,7 +414,12 @@ async function main(): Promise<never> {
   // incapacity it never checked. A guard cannot catch that (it refuses what is attempted, and
   // nothing was attempted), so the fix is to make the question answerable.
   if (command === "can-carry-walk") {
-    const parsed = parseFlags(rest, ["--producer", "--type", "--format"]);
+    const parsed = parseFlags(rest, [
+      "--producer",
+      "--type",
+      "--format",
+      "--camera-mode",
+    ]);
     if (!parsed.ok) usage(parsed.message);
     const producer = parsed.flags["--producer"];
     const format = parsed.flags["--format"];
@@ -424,6 +429,7 @@ async function main(): Promise<never> {
       producer,
       parsed.flags["--type"] ?? "",
       format,
+      parsed.flags["--camera-mode"],
     );
     emit({ ok: true, value: answer }, 0);
   }

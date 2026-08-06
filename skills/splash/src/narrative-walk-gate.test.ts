@@ -181,3 +181,39 @@ describe("walkCapability — the queryable answer, and the guard's own", () => {
     expect(why).not.toMatch(/unsupported|invalid/i);
   });
 });
+
+// ★ A map video is not ONE thing. The guided tour and the stepped kind narrate — their families
+// paint the beat's words. The REVEAL family shows none, by design (Rémy, 2026-08-06: "le reveal
+// n'inclut pas des mots, c'est normal"): the camera holds and the data animates.
+//
+// So demanding a walk for a reveal would make a journalist write sentences that will never be
+// shown — the one thing this gate may not do, and the thing it DID until this was measured.
+describe("a map video's narrative kind decides whether words are owed", () => {
+  it("owes a walk for the guided tour and the stepped kind", () => {
+    for (const mode of [undefined, "guided-tour", "stepped"])
+      expect(
+        walkCapability("map-native", "choropleth", "video", mode).carriesWalk,
+      ).toBe(true);
+  });
+
+  it("owes NOTHING for a reveal — it paints no words at all", () => {
+    for (const mode of ["simple", "route-reveal"]) {
+      const cap = walkCapability("map-native", "choropleth", "video", mode);
+      expect(cap.carriesWalk).toBe(false);
+      // …and it says WHY in a way a journalist can act on: choose another kind.
+      expect(cap.why).toMatch(/guided tour|stepped/);
+    }
+  });
+
+  it("the guard follows: a fixed-camera map video is not refused for a missing walk", () => {
+    expect(
+      narrativeWalkError(
+        p("map-native", "video", { type: "choropleth", cameraMode: "simple" }),
+      ),
+    ).toBeNull();
+    // …while the default (guided tour) still is.
+    expect(
+      narrativeWalkError(p("map-native", "video", { type: "choropleth" })),
+    ).not.toBeNull();
+  });
+});

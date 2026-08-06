@@ -377,8 +377,14 @@ meeting it means the proposal was skipped: propose the walk here.
 answers it, and its answer is the registry's, not yours:
 
 ```
-bun lib/host/cli.ts can-carry-walk --producer <p> --type <t> --format <f>
+bun lib/host/cli.ts can-carry-walk --producer <p> --type <t> --format <f> [--camera-mode <m>]
 ```
+
+**A map video is not one thing** — pass its `cameraMode`. The **guided tour** and the **stepped**
+kind narrate: their families paint each beat's sentence. The **reveal** (`simple`, and a route's
+`route-reveal`) shows no words at all, by design — the camera holds and the data animates. A walk
+still orders what appears when, but nothing of it is read, so none is owed. If the journalist's
+sentences are meant to be seen, that is a reason to choose the guided tour, and to say so.
 
 Run it BEFORE saying a narrative form is impossible, and quote what it returns — `why` is written
 to be said to a journalist as-is. This is not advisory. On 2026-08-06 a journalist was told his
