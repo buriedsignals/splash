@@ -76,21 +76,19 @@ test("therecord.media, as captured — no declared brand, only inferred colour",
 
 test("therecord.media, as captured — webfonts, no house colour to pair them with", () => {
   const p = proposeCharter(loadSiteFixture("therecord-media"));
+  // "icomoon" no longer appears here: it is an icon font, not a house typeface (ICON_FAMILY).
   expect(p.typography).toEqual([
-    {
-      family: "icomoon",
-      role: "webfont",
-      token: "@font-face { font-family: icomoon }",
-    },
     {
       family: "Inter",
       role: "webfont",
       token: "@font-face { font-family: Inter }",
+      source: "https://therecord.media/_next/static/chunks/3t3yknc51puyw.css",
     },
     {
       family: "Inter Fallback",
       role: "webfont",
       token: "@font-face { font-family: Inter Fallback }",
+      source: "https://therecord.media/_next/static/chunks/3t3yknc51puyw.css",
     },
   ]);
 });

@@ -97,6 +97,19 @@ describe("firstFamily", () => {
       firstFamily("-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"),
     ).toBeNull();
   });
+
+  // heidi.news: a `var(--font-x, Roboto)` fallback arrived here as "Roboto)" once split on the
+  // comma, and the trailing paren hid the generic from GENERIC_FAMILY — reported as the house
+  // typeface. The paren must be stripped BEFORE the generic test.
+  it("should strip a trailing paren before testing for a generic family", () => {
+    expect(firstFamily("var(--font-x, Roboto)")).toBeNull();
+  });
+
+  // therecord.media: "icomoon" was reported alongside the real typeface. An icon font ships
+  // glyphs, not a house typeface, and telling a newsroom "your typeface is icomoon" is false.
+  it("should skip an icon font rather than report it as the newsroom typeface", () => {
+    expect(firstFamily("icomoon")).toBeNull();
+  });
 });
 
 describe("proposeCharter — what the site declares", () => {

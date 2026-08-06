@@ -121,6 +121,14 @@ export type TypeMeasurement = {
   family: string;
   role: "body" | "headings" | "webfont";
   token: string;
+  /**
+   * WHERE this family was read — the stylesheet's URL, or the page itself for an inline style.
+   * The same duty `Measurement.source` carries for colour, and for the same reason: since the
+   * same-host filter was lifted, a font family can come from any sheet the page links, and a
+   * third-party sheet is precisely where a webfont often lives. Without this, a family read from
+   * an unrelated CDN is indistinguishable from the newsroom's own.
+   */
+  source: string;
 };
 
 /**
@@ -624,6 +632,7 @@ function scanCss(css: string, raw: Raw, source: string): void {
               family,
               role,
               token: `${sel} { font-family: ${value.trim()} }`,
+              source,
             });
         }
         continue;
@@ -707,6 +716,7 @@ function scanCss(css: string, raw: Raw, source: string): void {
           family,
           role: "webfont",
           token: `@font-face { font-family: ${value.trim()} }`,
+          source,
         });
     }
   }
@@ -714,6 +724,14 @@ function scanCss(css: string, raw: Raw, source: string): void {
 
 const GENERIC_FAMILY =
   /^(?:inherit|initial|unset|revert|serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-serif|ui-sans-serif|ui-monospace|ui-rounded|-apple-system|blinkmacsystemfont|segoe ui|roboto|helvetica(?: neue)?|arial|sans|apple color emoji|segoe ui emoji|segoe ui symbol|noto color emoji)$/i;
+
+/**
+ * Icon fonts are not a house typeface. They ship glyphs — a burger menu, a share arrow — and a
+ * newsroom told "your typeface is icomoon" learns something false about its own site. Measured on
+ * therecord.media 2026-08-06, where `icomoon` was reported alongside the real one.
+ */
+const ICON_FAMILY =
+  /^(?:icomoon|icon[-_ ]?font|fontawesome|font awesome(?: \d+ (?:free|brands|pro))?|fa[-_](?:solid|regular|brands|light)|material icons(?: outlined| round| sharp)?|material symbols(?: outlined| rounded| sharp)?|glyphicons(?: halflings)?|feather|bootstrap-icons|remixicon|ionicons|typicons|octicons)$/i;
 
 /**
  * The first NAMED family in a `font-family` stack. The generics and the system-font stack are
@@ -726,9 +744,15 @@ export function firstFamily(value: string): string | null {
   for (const part of value.replace(/!\s*important\s*$/i, "").split(",")) {
     const name = part
       .trim()
+      // A `var(--font-x, Roboto)` fallback arrives here as `Roboto)` once the stack is split on
+      // the comma. Measured on heidi.news 2026-08-06: the trailing paren stopped GENERIC_FAMILY
+      // from recognising a generic, and "Roboto)" was reported to the journalist as their house
+      // typeface. Strip it BEFORE the generic test — the paren was the whole disguise.
+      .replace(/\)+$/, "")
       .replace(/^["']|["']$/g, "")
       .trim();
     if (!name || GENERIC_FAMILY.test(name)) continue;
+    if (ICON_FAMILY.test(name)) continue;
     if (name.startsWith("var(")) continue;
     return name;
   }
