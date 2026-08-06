@@ -94,6 +94,16 @@ export type Measurement = {
   signal: ColourSignal;
   /** The literal snippet it was read from — the receipt (`--brand: #c8102e`). */
   token: string;
+  /**
+   * WHERE the text carrying `token` was read: the page itself, or the exact href of the
+   * stylesheet it came from. This is what actually distinguishes the newsroom's own declaration
+   * from a third party's — not the hostname `stylesheetHrefs` no longer filters on
+   * (lib/newsroom/charter-fetch.ts). A `--brand` declared inside an analytics widget's sheet is
+   * still read (it may be exactly the typography being looked for), but it carries that widget's
+   * URL here, not the newsroom's, so it stays distinguishable rather than passing for the site's
+   * own say-so.
+   */
+  source: string;
 };
 
 export type ColourCandidate = {
@@ -501,8 +511,12 @@ const VARIANT_SELECTOR =
 
 // ── HTML scanning ──
 
-/** `<meta name="theme-color" content="#…">` — the strongest declaration a site can make. */
-function themeColorMeta(html: string): Measurement | null {
+/**
+ * `<meta name="theme-color" content="#…">` — the strongest declaration a site can make. Read
+ * from the page itself, so its `source` is filled in by the caller (always the page's own URL,
+ * never a stylesheet's) — see `Measurement.source`.
+ */
+function themeColorMeta(html: string): Omit<Measurement, "source"> | null {
   for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
     const tag = m[0];
     if (!/name\s*=\s*["']?theme-color["']?/i.test(tag)) continue;
@@ -522,10 +536,11 @@ function themeColorMeta(html: string): Measurement | null {
  * A crude window (the 4000 characters after a `logo`/`masthead`/`brand` attribute) rather than a
  * DOM walk, because this module takes no HTML-parsing dependency. It over-reads — a colour in
  * the header next to the logo can land here — which is exactly why the measurement is shown to
- * the journalist with its receipt instead of being applied.
+ * the journalist with its receipt instead of being applied. Read from the page itself, like
+ * `themeColorMeta` — `source` is filled in by the caller.
  */
-function mastheadColours(html: string): Measurement[] {
-  const out: Measurement[] = [];
+function mastheadColours(html: string): Omit<Measurement, "source">[] {
+  const out: Omit<Measurement, "source">[] = [];
   const anchors =
     /(class|id)\s*=\s*["'][^"']*(?:logo|masthead|wordmark|site-?title|brand)[^"']*["']/gi;
   for (const a of html.matchAll(anchors)) {
@@ -574,7 +589,13 @@ type Raw = {
   unparsed: Set<string>;
 };
 
-function scanCss(css: string, raw: Raw): void {
+/**
+ * @param source WHERE `css` was read from — the page's own URL for an inline `<style>` block, or
+ * the exact href of the linked stylesheet. Threaded onto every `Measurement` this produces, so a
+ * reading from a third-party sheet stays distinguishable from the newsroom's own (see
+ * `Measurement.source`) — a hostname is no longer the guard, this is.
+ */
+function scanCss(css: string, raw: Raw, source: string): void {
   for (const rule of cssRules(stripDarkSchemeBlocks(stripComments(css)))) {
     const sel = rule.selector;
     // A rule scoped to a theme VARIANT is not what a reader sees by default. Skipping it whole
@@ -631,7 +652,7 @@ function scanCss(css: string, raw: Raw): void {
           // reported a dark ground — and inline <style> is scanned before the linked sheets that
           // normally override it.
           if (alphaOf(tok) >= GROUND_MIN_ALPHA)
-            raw.ground = { value: hex, signal: "declared", token };
+            raw.ground = { value: hex, signal: "declared", token, source };
           continue;
         }
         if (custom) {
@@ -640,16 +661,29 @@ function scanCss(css: string, raw: Raw): void {
               value: hex,
               signal: "brand-property",
               token,
+              source,
             });
           else if (ACCENT_PROPERTY.test(prop))
             raw.measurements.push({
               value: hex,
               signal: "accent-property",
               token,
+              source,
             });
           else if (LINK_PROPERTY.test(prop))
-            raw.measurements.push({ value: hex, signal: "link", token });
-          else raw.measurements.push({ value: hex, signal: "declared", token });
+            raw.measurements.push({
+              value: hex,
+              signal: "link",
+              token,
+              source,
+            });
+          else
+            raw.measurements.push({
+              value: hex,
+              signal: "declared",
+              token,
+              source,
+            });
           continue;
         }
         const signal: ColourSignal = isMasthead
@@ -659,7 +693,7 @@ function scanCss(css: string, raw: Raw): void {
             : isControl
               ? "control"
               : "declared";
-        raw.measurements.push({ value: hex, signal, token });
+        raw.measurements.push({ value: hex, signal, token, source });
       }
     }
   }
@@ -834,16 +868,23 @@ const DECLARED_SIGNALS = new Set<ColourSignal>([
 export function proposeCharter(sources: SiteSources): CharterProposal {
   const raw: Raw = { measurements: [], type: [], unparsed: new Set() };
   const notes: string[] = [];
+  // What every page-derived reading (theme-color, masthead SVG, inline <style>, an inline
+  // style="" attribute) carries as its `source` — as opposed to a linked stylesheet, which
+  // carries ITS OWN href. `sources.url` is optional (a captured fixture may omit it); a reading
+  // still needs SOME source string rather than none.
+  const pageSource = sources.url ?? "the page itself";
   try {
     const html = sources.html ?? "";
     const meta = themeColorMeta(html);
-    if (meta) raw.measurements.push(meta);
-    raw.measurements.push(...mastheadColours(html));
+    if (meta) raw.measurements.push({ ...meta, source: pageSource });
+    raw.measurements.push(
+      ...mastheadColours(html).map((m) => ({ ...m, source: pageSource })),
+    );
     const inline = inlineStyles(html);
-    if (inline.trim()) scanCss(inline, raw);
+    if (inline.trim()) scanCss(inline, raw, pageSource);
     for (const sheet of sources.sheets ?? []) {
       try {
-        scanCss(sheet.css, raw);
+        scanCss(sheet.css, raw, sheet.href);
       } catch {
         notes.push(`stylesheet not readable: ${sheet.href}`);
       }
@@ -859,6 +900,7 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
             value: hex,
             signal: "brand-property",
             token: `style="${prop}: ${value}"`,
+            source: pageSource,
           });
       }
     }
@@ -886,9 +928,15 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
       );
   }
 
+  // Hedged the same way `collectSiteSources`'s own note is (lib/newsroom/charter-fetch.ts): this
+  // condition cannot tell "no stylesheet was linked" apart from "one was linked but failed" — it
+  // only knows nothing was SCANNED — so it must not assert the JavaScript guess as a flat fact.
+  // The two notes can both appear (this module is fed by more than `collectSiteSources`, so it
+  // cannot rely on that one having run) — CLI output that shows both should now read as the same
+  // claim twice, not as two different claims in two different registers.
   if (!sources.sheets?.length && !inlineStyles(sources.html ?? "").trim())
     notes.push(
-      "no stylesheet was read — the page may build its styles in JavaScript, in which case nothing here is reliable",
+      "no stylesheet was read — one possibility is that the page builds its styles in JavaScript, but that is a guess this reading cannot confirm",
     );
   if (raw.unparsed.size)
     notes.push(

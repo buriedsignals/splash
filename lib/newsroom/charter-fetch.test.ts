@@ -219,3 +219,59 @@ describe("collectSiteSources", () => {
     expect(got.html.length).toBe(100);
   });
 });
+
+describe("collectSiteSources — a linked stylesheet's href is also an SSRF surface", () => {
+  // Lifting the same-host filter (task 2) means an href no longer has to equal the already-vetted
+  // top-level host — a page's own markup now names an arbitrary open-web address, and until this
+  // guard, `getText` fired the real outbound GET before ever inspecting where it landed. The
+  // fetchImpl call log is the only way to prove a request did NOT happen: a body-shaped assertion
+  // can't distinguish "never dialled" from "dialled, then discarded".
+  it("should refuse a linked stylesheet at the cloud metadata address, without ever fetching it", async () => {
+    const calls: string[] = [];
+    const fetchImpl = (async (input: string | URL) => {
+      const u = String(input);
+      calls.push(u);
+      if (u === "https://example.org/")
+        return new Response(
+          '<link rel="stylesheet" href="http://169.254.169.254/latest/meta-data/">',
+          { status: 200 },
+        );
+      return new Response("unexpected fetch", { status: 200 });
+    }) as unknown as typeof fetch;
+    const got = await collectSiteSources("https://example.org/", { fetchImpl });
+    if ("error" in got) throw new Error(got.error);
+    expect(got.sheets).toEqual([]);
+    expect(calls).toEqual(["https://example.org/"]);
+    expect(got.notes.join(" ")).toContain("169.254.169.254");
+  });
+
+  it("should refuse a linked stylesheet on a private (RFC1918) or loopback host, without fetching it", async () => {
+    const calls: string[] = [];
+    const fetchImpl = (async (input: string | URL) => {
+      const u = String(input);
+      calls.push(u);
+      if (u === "https://example.org/")
+        return new Response(
+          '<link rel="stylesheet" href="http://192.168.1.1/router.css">' +
+            '<link rel="stylesheet" href="http://127.0.0.1/admin.css">' +
+            '<link rel="stylesheet" href="/ok.css">',
+          { status: 200 },
+        );
+      if (u === "https://example.org/ok.css")
+        return new Response("a{color:#c8102e}", { status: 200 });
+      return new Response("unexpected fetch", { status: 200 });
+    }) as unknown as typeof fetch;
+    const got = await collectSiteSources("https://example.org/", { fetchImpl });
+    if ("error" in got) throw new Error(got.error);
+    // Only the page and the one legitimate sheet were ever dialled — never the two forbidden ones.
+    expect(calls).toEqual([
+      "https://example.org/",
+      "https://example.org/ok.css",
+    ]);
+    expect(got.sheets).toEqual([
+      { href: "https://example.org/ok.css", css: "a{color:#c8102e}" },
+    ]);
+    expect(got.notes.join(" ")).toContain("192.168.1.1");
+    expect(got.notes.join(" ")).toContain("127.0.0.1");
+  });
+});

@@ -160,6 +160,38 @@ describe("proposeCharter — what the site declares", () => {
     );
     expect(p.candidates[0]!.evidence[0]!.token).toContain("--primary");
   });
+
+  // The same-host filter used to be what kept a third party's stylesheet from being read at all
+  // (deleted with it: charter-fetch.test.ts's "should drop a third-party stylesheet"). Now that
+  // any linked sheet is read (lib/newsroom/charter-fetch.ts, task 2), a `--brand` declared inside
+  // an analytics widget's own CSS is read too — correctly, since a third-party font sheet is
+  // exactly where the typography this measurement wants can live. What must NOT happen is that
+  // widget's declaration passing for the newsroom's OWN say-so: `Measurement.source` is the
+  // sheet's href, not the page's, so it stays distinguishable rather than reaching
+  // `DECLARED_SIGNALS` disguised as the site's own brand declaration.
+  it("keeps a third-party sheet's declaration distinguishable from the newsroom's own", () => {
+    const p = proposeCharter(
+      bare({
+        url: "https://example.news/",
+        sheets: [
+          {
+            href: "https://cdn.ads.example/consent.css",
+            css: ":root{--brand:#d5121e}",
+          },
+        ],
+      }),
+    );
+    const evidence = p.candidates[0]!.evidence[0]!;
+    expect(evidence.signal).toBe("brand-property");
+    expect(evidence.source).toBe("https://cdn.ads.example/consent.css");
+    expect(evidence.source).not.toBe("https://example.news/");
+  });
+
+  it("marks a page-derived reading (theme-color) with the page's own URL as its source", () => {
+    const html = '<meta name="theme-color" content="#d5121e">';
+    const p = proposeCharter(bare({ html, url: "https://example.news/" }));
+    expect(p.candidates[0]!.evidence[0]!.source).toBe("https://example.news/");
+  });
 });
 
 describe("proposeCharter — refusing rather than inventing", () => {

@@ -10,12 +10,19 @@
 // the fetching tool swappable and the measurement identical.
 //
 // Bounded on every axis, because the URL comes from a journalist and points at the open web:
-// a timeout, a byte cap, a stylesheet cap, http/https only. It is NOT bounded by hostname: a
+// a timeout, a byte cap, a stylesheet cap, http/https only, and — since a stylesheet's href is
+// as much an open-web address as the page's own URL — every href is checked against the same
+// forbidden-host list BEFORE it is fetched, not after (see `collectSiteSources`).
+//
+// It is NOT bounded by hostname in the OTHER sense — which host AUTHORED the CSS: a
 // <link rel="stylesheet"> in the newsroom's own document is the design system it chose to serve,
 // whatever host carries the bytes — a serious newsroom's own CSS routinely lives on its CDN
-// (heidi.news serves from heidi-17455.kxcdn.com). What protects against absorbing a third
-// party's brand is not the hostname, it's the RECEIPT: every value this module's caller derives
-// carries where it was read, so a journalist can see and reject it.
+// (heidi.news serves from heidi-17455.kxcdn.com). What distinguishes a third party's brand from
+// the newsroom's own is not the hostname, it is the RECEIPT: `lib/newsroom/charter.ts`'s
+// `Measurement.source` names the exact page or stylesheet href every reading came from, all the
+// way down to `scanCss`. That makes a foreign declaration distinguishable in the data this module
+// feeds `proposeCharter` — whether a given surface (the CLI, the setup page) goes on to DISPLAY
+// that source to the journalist is that surface's own job, not proven here.
 //
 // Total: returns a `{ error }` instead of throwing, at every step.
 
@@ -209,6 +216,26 @@ export async function collectSiteSources(
       `${hrefs.length} stylesheets linked; the first ${cap} were read (a colour declared only in a later one was missed)`,
     );
   for (const href of hrefs.slice(0, cap)) {
+    // Vet the href BEFORE fetching it, exactly like the top-level URL — never after. The
+    // same-host filter used to make this redundant: an href could only ever equal the
+    // already-vetted host. Lifting it (task 2) means a stylesheet's href is now, on its own, an
+    // open-web address a page's markup controls, so it gets the same SSRF check `normalizeSiteUrl`
+    // gives the top-level URL — a `getText`-style post-hoc check would be too late, because the
+    // outbound request has already reached `169.254.169.254` (or a router, or the loopback) by
+    // the time the response comes back to be inspected.
+    let hostname: string;
+    try {
+      hostname = new URL(href).hostname;
+    } catch {
+      notes.push(`${href} is not a fetchable address — refused`);
+      continue;
+    }
+    if (isForbiddenHost(hostname)) {
+      notes.push(
+        `${href} points at a non-public address — refused before fetching`,
+      );
+      continue;
+    }
     const css = await getText(href, cfg);
     // Case 2: a stylesheet WAS linked but did not answer — named per href, never blamed on
     // JavaScript (the link itself proves the page is not building its styles at runtime).
