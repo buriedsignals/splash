@@ -451,6 +451,35 @@ test("carries the previous delivery's node_modules across the re-pack", () => {
   }
 });
 
+test("carries each packaged skill's own Remotion browser cache across the re-pack", () => {
+  // `bunx remotion browser ensure` (install/bootstrap.sh, once per video engine, AFTER pack-skills
+  // runs) writes ~93 MB into <skill>/node_modules/.remotion — NOT the hoisted node_modules the
+  // test above covers, because Remotion's own cache algorithm walks up from ITS cwd to the nearest
+  // package.json, which is the skill directory itself (docs/installer/
+  // remotion-cache-measurement.md). copyTree never carries node_modules forward (it is an
+  // excluded name), so without this fix every re-pack silently discarded a browser bootstrap.sh
+  // had just spent a real download filling, and the installer's own recovery guidance
+  // ("re-run this installer to resume") paid for it again on the very next run.
+  const src = repo();
+  const out = mkdtempSync(join(tmpdir(), "splash-packout-"));
+  try {
+    pack(src, out);
+    const cache = join(out, "skills", "alpha", "node_modules", ".remotion");
+    mkdirSync(join(cache, "chrome-headless-shell"), { recursive: true });
+    writeFileSync(
+      join(cache, "chrome-headless-shell", "marker"),
+      "stand-in for the real ~93 MB binary",
+    );
+    pack(src, out);
+    expect(existsSync(join(cache, "chrome-headless-shell", "marker"))).toBe(
+      true,
+    );
+  } finally {
+    rmSync(src, { recursive: true, force: true });
+    rmSync(out, { recursive: true, force: true });
+  }
+});
+
 // ── The packer must decide exactly what the simulator decides ──
 //
 // The budgets are measured by lib/host/skill-payload.ts and the tree is written by the packer. Any

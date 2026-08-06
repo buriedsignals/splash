@@ -217,6 +217,26 @@ try {
 // previous dependencies" instead of "none"; the install that follows reconciles them.
 if (hadPrevious && existsSync(join(retired, "node_modules")))
   renameSync(join(retired, "node_modules"), join(outDir, "node_modules"));
+
+// Carry each packaged skill's OWN Remotion browser cache over too — the other half of the same
+// failure. `bunx remotion browser ensure` (install/bootstrap.sh, run once per video engine AFTER
+// this step) writes its ~93 MB chrome-headless-shell not into the hoisted node_modules above, but
+// into <skill>/node_modules/.remotion — Remotion walks up from its OWN cwd to the nearest
+// package.json, and each packed skill directory carries its own (docs/installer/
+// remotion-cache-measurement.md). copyTree never copies it forward (node_modules is an excluded
+// name, by design — see EXCLUDED_NAMES), so without this every re-pack silently discarded a
+// browser bootstrap.sh had just spent two 93 MB downloads filling, and the very next run — the
+// installer's OWN "re-run this installer to resume" guidance — paid for both again.
+if (hadPrevious && existsSync(join(retired, "skills")))
+  for (const entry of readdirSync(join(retired, "skills"), { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const cache = join(retired, "skills", entry.name, "node_modules", ".remotion");
+    if (!existsSync(cache)) continue;
+    const destDir = join(outDir, "skills", entry.name, "node_modules");
+    mkdirSync(destDir, { recursive: true });
+    renameSync(cache, join(destDir, ".remotion"));
+  }
+
 rmSync(retired, { recursive: true, force: true });
 
 console.log(`packed ${packed} skills into ${outDir}`);
