@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -48,15 +48,13 @@ describe("the newsroom capability registry", () => {
       expect(cap.id).toBe(key);
   });
 
-  it("marks a declared-but-unbuilt capability as delivery and not implemented", () => {
+  // Fly.io was superseded by Cloudflare Pages and never built. A destination the page announces
+  // as "not available yet" is a promise nobody intends to keep.
+  test("every capability the page offers is actually built", () => {
     const declared = Object.values(NEWSROOM_CAPABILITIES).filter(
       (c) => !c.implemented,
     );
-    // The publisher adapters the Livraison sub-project (#4) will fill in. embed-s3 left this
-    // set in L2, and embed-cms in L3 (measured against a real We.Publish, 2026-07-27) — so
-    // embed-fly is the last one still declared without a body.
-    expect(declared.map((c) => c.id).sort()).toEqual(["embed-fly"]);
-    for (const cap of declared) expect(cap.kind).toBe("delivery");
+    expect(declared).toEqual([]);
   });
 
   it("asks for the credentials a publisher needs, and says which are secret", () => {

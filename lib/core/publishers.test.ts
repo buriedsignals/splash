@@ -68,12 +68,12 @@ describe("publisher registry", () => {
 
   it("should list every registered publisher, declared-but-unimplemented ones included", () => {
     registerPublisher(stub("zip"));
-    registerPublisher(stub("embed-fly", false));
+    registerPublisher(stub("embed-nowhere", false));
     expect(
       allPublishers()
         .map((p) => p.id)
         .sort(),
-    ).toEqual(["embed-fly", "zip"]);
+    ).toEqual(["embed-nowhere", "zip"]);
   });
 });
 

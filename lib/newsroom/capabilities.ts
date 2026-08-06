@@ -305,15 +305,6 @@ export const NEWSROOM_CAPABILITIES: Record<string, NewsroomCapability> = {
     criticalDeps: null,
     implemented: true,
   },
-  "embed-fly": {
-    id: "embed-fly",
-    label: "Publish to Fly.io",
-    kind: "delivery",
-    env: [],
-    envHelp: {},
-    criticalDeps: null,
-    implemented: false,
-  },
 };
 
 export function engineCapabilities(): NewsroomCapability[] {

@@ -97,10 +97,10 @@ describe("the publish verb", () => {
   });
 
   it("should refuse a declared-but-unimplemented publisher without touching the filesystem", async () => {
-    registerPublisher(publisher({ id: "embed-fly", implemented: false }));
+    registerPublisher(publisher({ id: "embed-nowhere", implemented: false }));
     const r = await runVerb("publish", {
       ...request(),
-      settings: { publisherId: "embed-fly" },
+      settings: { publisherId: "embed-nowhere" },
     });
     expect(r).toMatchObject({ ok: false, code: "not-implemented" });
     expect(existsSync(NEVER_CREATED)).toBe(false);

@@ -313,6 +313,10 @@ describe("defaultCapabilities", () => {
     ).toBe(false);
   });
 
+  // embed-cms and embed-s3 stay false here for their OWN missing keys (SPLASH_WEPUBLISH_*,
+  // SPLASH_S3_*, absent from the env below) — both are implemented capabilities now. Fly.io
+  // was the last capability this env could exercise the only-declared rule with; it is gone,
+  // and no id in the registry is only-declared any more (see readiness.test.ts's local stub).
   it("never enables a capability that is only declared, however many keys are set", () => {
     const caps = defaultCapabilities({
       DATAWRAPPER_API_TOKEN: "x",
@@ -321,7 +325,7 @@ describe("defaultCapabilities", () => {
       CLOUDFLARE_ACCOUNT_ID: "x",
       SPLASH_EMBED_PROJECT: "x",
     });
-    for (const id of ["embed-cms", "embed-s3", "embed-fly"])
+    for (const id of ["embed-cms", "embed-s3"])
       expect(caps[id]?.enabled).toBe(false);
     expect(caps["embed-cloudflare"]?.enabled).toBe(true);
   });

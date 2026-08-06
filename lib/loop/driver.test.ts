@@ -748,16 +748,17 @@ test("advance() delivers a requested destination, merging the delivery record on
 test("advance() records a deliver failure as a bounded event, without advancing the element's delivery", async () => {
   const runDir = mkdtempSync(join(tmpdir(), "loop-driver-deliver-fail-"));
   const { run: base, el } = deliverableRun(runDir);
-  // "embed-fly" is DECLARED in NEWSROOM_CAPABILITIES but not yet implemented — readiness
-  // refuses it deterministically, with no dependency on credentials or the network, so this
+  // "embed-nowhere" names no delivery capability at all — deliver() refuses it before any
+  // credential or network check runs (the `!cap` branch, lib/loop/deliver.ts), so this
   // failure path can't flake on whatever happens to be in the real environment. (embed-s3
-  // used to be this case; it is implemented now, so its refusal here would come from
-  // `enabled !== true`, not from the declared-but-unimplemented branch this test means to
-  // exercise.)
+  // used to be usable for this; it is implemented now, so its refusal here would come from
+  // `enabled !== true`. Fly.io, the registry's last declared-but-unimplemented capability,
+  // was dropped — nothing in the real registry exercises that branch any more, only the local
+  // NewsroomCapability stub in readiness.test.ts does.)
   const run: RunManifest = {
     ...base,
     elements: [
-      { ...el, delivery: { requested: ["embed-fly"], delivered: [] } },
+      { ...el, delivery: { requested: ["embed-nowhere"], delivered: [] } },
     ],
   };
   expect(nextActions(run)).toEqual(["deliver"]);

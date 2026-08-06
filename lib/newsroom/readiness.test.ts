@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { BrowserProbeResult } from "./probe";
-import { NEWSROOM_CAPABILITIES } from "./capabilities";
+import { NEWSROOM_CAPABILITIES, type NewsroomCapability } from "./capabilities";
 import {
   capabilityReadiness,
   decorReadiness,
@@ -28,9 +28,19 @@ function state(capabilities: NewsroomState["capabilities"]): NewsroomState {
 const DW = NEWSROOM_CAPABILITIES["dw-chart"]!;
 const MAP = NEWSROOM_CAPABILITIES["map-native"]!;
 const CHART = NEWSROOM_CAPABILITIES["chart-native"]!;
-// The declared-but-unbuilt exemplar. Was embed-cms until L3 built it (2026-07-27); embed-fly
-// is now the only capability still waiting for its own tranche.
-const UNBUILT = NEWSROOM_CAPABILITIES["embed-fly"]!;
+// The "declared but not built" exemplar. It used to be a REAL capability (embed-cms until L3
+// built it, then embed-fly until it was dropped) — which meant a test could only exercise the
+// unbuilt branch while some shipped capability happened to be unfinished. A local stub keeps
+// the branch covered without holding a dead destination in the product.
+const UNBUILT: NewsroomCapability = {
+  id: "embed-nowhere",
+  label: "A destination that is declared but not built",
+  kind: "delivery",
+  env: [],
+  envHelp: {},
+  criticalDeps: null,
+  implemented: false,
+};
 // The destination whose non-secret provider identifiers live in newsroom.json, not in .env.
 const S3 = NEWSROOM_CAPABILITIES["embed-s3"]!;
 
@@ -136,7 +146,7 @@ describe("capability readiness", () => {
   it("is disabled for a capability that is only declared", () => {
     const r = capabilityReadiness(
       UNBUILT,
-      state({ "embed-fly": { enabled: true } }),
+      state({ "embed-nowhere": { enabled: true } }),
       { env: {}, resolveDep: ALL_DEPS_PRESENT },
     );
     expect(r.status).toBe("disabled");

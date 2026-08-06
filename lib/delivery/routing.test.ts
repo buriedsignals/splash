@@ -54,7 +54,7 @@ describe("defaultDestinationsFor", () => {
     ).toEqual(["embed-cms"]);
     // Verify the preference order holds for other pairs.
     expect(
-      defaultDestinationsFor("scrolly", ["embed-fly", "embed-cloudflare"]),
+      defaultDestinationsFor("scrolly", ["embed-nowhere", "embed-cloudflare"]),
     ).toEqual(["embed-cloudflare"]);
   });
 });
@@ -69,7 +69,11 @@ describe("a print deliverable is a file, never an embed", () => {
 
   it("leaves the other destinations reading the format's genre, as before", () => {
     expect(
-      defaultDestinationsFor("interactive", ["embed-cloudflare"], "article-web"),
+      defaultDestinationsFor(
+        "interactive",
+        ["embed-cloudflare"],
+        "article-web",
+      ),
     ).toEqual(["embed-cloudflare"]);
     expect(
       defaultDestinationsFor("interactive", ["embed-cloudflare"], "social"),
