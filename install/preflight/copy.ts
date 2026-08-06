@@ -56,6 +56,16 @@ export type PageCopy = {
   measureRenderHint: string;
   measureRendering: string;
   measureRenderFailed: string;
+  /**
+   * The measured TYPEFACES (final review, F3). They have no profile field of their own — they are
+   * written into the profile's prose — and were the one measured thing that never appeared on
+   * screen, so they could not be disagreed with. Shown with their receipts, and strikeable.
+   */
+  measuredTypefaces: string;
+  measuredTypefacesHint: string;
+  /** Strike a measured typeface off before saving / put it back. */
+  typefaceDrop: string;
+  typefaceRestore: string;
   /** Appended to an INFERRED (not declared) colour reading, so it reads as the guess it is. */
   charterInferred: string;
   /** Caption over an existing profile's series colours (`palette[1+]`) — shown, not editable. */
@@ -162,10 +172,15 @@ const EN: PageCopy = {
     "Your site does not declare a house colour we can read — a legitimate answer. Type one in below.",
   measureRenderAction: "Try opening the page instead",
   measureRenderHint:
-    "Some sites build their colours in JavaScript, invisible to a plain read. Opening your site in a real browser can find them — this takes longer than the first try, up to about 20 seconds.",
+    "Some sites build their colours in JavaScript, invisible to a plain read. Opening your site in a real browser can find them — this takes longer than the first try, up to about 30 seconds.",
   measureRendering: "Opening your site in a browser…",
   measureRenderFailed:
     "Could not open your site in a browser either — check the address and try again.",
+  measuredTypefaces: "Typefaces read on your site",
+  measuredTypefacesHint:
+    "Noted in your profile as text — no visual uses them yet. Remove any that are not your newsroom's, and only the rest is saved.",
+  typefaceDrop: "Remove",
+  typefaceRestore: "Put back",
   charterInferred: "(a guess — not a colour your site names as its own)",
   seriesColoursKept: "Also part of your palette, kept as they are:",
 
@@ -251,10 +266,15 @@ const FR: PageCopy = {
     "Votre site ne déclare aucune couleur maison lisible — une réponse légitime. Saisissez-en une ci-dessous.",
   measureRenderAction: "Essayer en ouvrant la page",
   measureRenderHint:
-    "Certains sites construisent leurs couleurs en JavaScript, invisibles à une lecture simple. Ouvrir votre site dans un vrai navigateur peut les trouver — c'est plus long que le premier essai, jusqu'à environ 20 secondes.",
+    "Certains sites construisent leurs couleurs en JavaScript, invisibles à une lecture simple. Ouvrir votre site dans un vrai navigateur peut les trouver — c'est plus long que le premier essai, jusqu'à environ 30 secondes.",
   measureRendering: "Ouverture de votre site dans un navigateur…",
   measureRenderFailed:
     "Impossible d'ouvrir votre site dans un navigateur non plus — vérifiez l'adresse et réessayez.",
+  measuredTypefaces: "Polices lues sur votre site",
+  measuredTypefacesHint:
+    "Notées dans votre profil sous forme de texte — aucun visuel ne les utilise encore. Retirez celles qui ne sont pas celles de votre rédaction : seules les autres sont enregistrées.",
+  typefaceDrop: "Retirer",
+  typefaceRestore: "Remettre",
   charterInferred:
     "(une supposition — pas une couleur que votre site déclare comme la sienne)",
   seriesColoursKept:

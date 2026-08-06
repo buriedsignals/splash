@@ -179,11 +179,19 @@ h1 {
   margin-bottom: 0;
 }
 
-.field > label {
+.field > label,
+.field > .field-title {
   display: block;
   margin-bottom: 0.3rem;
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+/* `.field-title`, not a second <label>: the measured typefaces are a GROUP of readings with no
+   single control of their own, and a <label> pointing at nothing is a label a screen reader
+   announces for a form field that does not exist. */
+.field > .field-title {
+  margin-top: 0;
 }
 
 .field-help {

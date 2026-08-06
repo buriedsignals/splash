@@ -70,6 +70,22 @@ describe("the newsroom section is editable, and offers a measurement", () => {
     expect(CLIENT).toContain('"newsroom-url"');
     expect(CSS).toContain(".charter-receipt");
   });
+
+  // Final review, F3: the measured typefaces were folded straight into the profile's prose and
+  // rendered nowhere — written into a fresh NEWSROOM-PROFILE.md with no on-screen presence and
+  // no way to strike one. `notesFrom` (charter-endpoint.test.ts) proves a struck typeface stops
+  // being written; what THIS pins is that the journalist can see them at all, since no suite
+  // here can render client.ts. Deleting the readout block reddens both halves.
+  it("shows the measured typefaces, with a way to strike one before saving", () => {
+    expect(CLIENT).toContain("copy.measuredTypefaces");
+    expect(CLIENT).toContain("copy.typefaceDrop");
+    expect(CLIENT).toContain("droppedTypefaces.add(key)");
+    // The notes written to the profile are DERIVED from what survived, never assembled inline
+    // from the whole measurement — that inline map is exactly what made them uncorrectable.
+    expect(CLIENT).toContain("notesFrom(charter.readout, droppedTypefaces)");
+    expect(CLIENT).not.toContain("data.typefaces.map");
+    expect(CSS).toContain(".field-title");
+  });
 });
 
 describe("the page's own copy", () => {
