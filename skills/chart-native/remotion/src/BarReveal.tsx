@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { BarChart, type BarConfig } from "../../src/BarChart";
 import sample from "../../assets/sample-data/bars.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as BarConfig;
 
@@ -20,7 +21,12 @@ export const BarReveal: React.FC<{ scale?: number; config?: BarConfig }> = ({ sc
   });
 
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+    >
       <BarChart
         config={config}
         progress={progress}
@@ -28,6 +34,6 @@ export const BarReveal: React.FC<{ scale?: number; config?: BarConfig }> = ({ sc
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

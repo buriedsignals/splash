@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, test, expect } from "bun:test";
-import { walkPositions } from "../src/core/walk";
+import { walkPositions, captionAt } from "../src/core/walk";
 
 // ---------------------------------------------------------------------------
 // SUB-PROJECT ④ — the chart track's VIDEO learns the journalist's order.
@@ -190,4 +190,32 @@ test("the bar entrance schedule is exactly these numbers", () => {
           BAR_ENTRANCE.span,
         ),
       ).toBeGreaterThan(0.999);
+});
+
+describe("captionAt — the sentence on screen", () => {
+  const beats = [
+    { text: "Westpark opens." },
+    { text: "Then Eastgate." },
+    { text: "Central closes." },
+  ];
+  const order = [0, 1, 2];
+
+  it("gives the journalist's own words for the beat that is entering", () => {
+    expect(captionAt(beats, order, 0)!.text).toBe("Westpark opens.");
+    expect(captionAt(beats, order, 1)!.text).toBe("Central closes.");
+  });
+
+  it("gives NOTHING when there is no walk — a video nobody storyboarded is unchanged", () => {
+    expect(captionAt(undefined, order, 0.5)).toBeNull();
+    expect(captionAt([], order, 0.5)).toBeNull();
+  });
+
+  it("gives nothing rather than an empty band for an unwritten beat", () => {
+    expect(captionAt([{ text: "" }, { text: "  " }], [0, 1], 0.5)).toBeNull();
+  });
+
+  it("follows the walk's order, not the data's", () => {
+    // Subject 2 enters first: its sentence is the one that opens.
+    expect(captionAt(beats, [2, 1, 0], 0)!.text).toBe("Central closes.");
+  });
 });

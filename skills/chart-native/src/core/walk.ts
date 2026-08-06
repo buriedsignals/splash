@@ -107,3 +107,26 @@ export function activeBeatAt(
   }
   return active;
 }
+
+/**
+ * THE SENTENCE ON SCREEN at this progress — the journalist's own words, or nothing.
+ *
+ * Pure, so the "which words" decision is unit-testable without a browser and the video stage
+ * that shows them stays a thin renderer. Returns `null` when there is no walk, which is what
+ * keeps a video nobody storyboarded byte-identical to before.
+ *
+ * A beat with an EMPTY text yields null rather than an empty band: `produce` already refuses to
+ * build a walk whose claims are unwritten (`unauthoredBeats`), so an empty string here can only
+ * come from a hand-authored spec — and an empty caption box is a worse answer than none.
+ */
+export function captionAt(
+  beats: readonly { text?: string }[] | undefined,
+  entryOrder: readonly number[],
+  progress: number,
+): { text: string; index: number } | null {
+  if (!beats?.length) return null;
+  const i = activeBeatAt(progress, entryOrder, beats.length);
+  if (i < 0) return null;
+  const text = beats[i]?.text?.trim();
+  return text ? { text, index: i } : null;
+}
