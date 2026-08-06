@@ -299,3 +299,14 @@ _(Under the hood `produce-all` dispatches to `chart-native/scripts/produce-from-
 `map-native/scripts/produce.mjs`, `scrolly/scripts/produce.mjs`, and the Datawrapper producers — you
 call `produce-all`, not them directly. An omitted map-native format still defaults to `static`, never
 the full video set.)_
+
+#### A narrative form arrives here WITH its walk
+
+If PRODUCTION is reached for a scrolly or a narrative video, the confirmed walk is already on the
+spec — Gate 2 proposed it and the journalist confirmed it (see `splash-proposition`). Production
+does not ask for it and does not invent it.
+
+A `produce-all` refusal naming a missing walk therefore means the proposal step was skipped, not
+that something is wrong with the data: go back and propose the steps, do not hand-write beats onto
+the spec to satisfy the gate. The words belong to the journalist, and a walk they never saw is the
+defect the gate exists to catch.

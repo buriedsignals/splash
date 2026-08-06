@@ -26,7 +26,7 @@ import {
   labelReveal,
   stagger,
 } from "./core/math";
-import { walkPositions } from "./core/walk";
+import { walkPositions, BAR_ENTRANCE } from "./core/walk";
 import { unitSuffix, type Lang } from "./core/locale";
 import {
   COLORS,
@@ -62,12 +62,21 @@ export interface BarConfig {
   /** newsroom dark theme (F2 house `theme: dark`): flips the chrome furniture. */
   themeBg?: string;
   rows: Record<string, string | number>[];
-  /** The journalist's confirmed walk (lib/core/production-brief.ts's BriefBeat, threaded by
+  /** The journalist's confirmed walk (lib/core/production-brief.ts's BriefBeat, threaded whole by
    *  lib/loop/assemble/chart-native.ts). Present ⇒ the bars enter in ITS order rather than in
-   *  reading order — sub-project ④. Absent ⇒ unchanged, byte for byte. Typed loosely on
-   *  purpose: this component needs the ANCHOR only, and re-declaring the loop's beat shape here
-   *  would be a second copy to keep true. */
-  beats?: readonly { x?: string; category?: string }[];
+   *  reading order. Absent ⇒ unchanged, byte for byte.
+   *
+   *  ★ `text` was NOT declared here when the ordering landed (2026-08-04) — the comment said
+   *  "this component needs the ANCHOR only", which was true of ordering and false of the config:
+   *  the assembler passes the brief's beats WHOLE, sentences included. The narrow type then
+   *  blocked the video from showing the very words the journalist had written. Declared now,
+   *  still as a subset of BriefBeat rather than a second copy of it. */
+  beats?: readonly {
+    x?: string;
+    category?: string;
+    role?: string;
+    text?: string;
+  }[];
 }
 
 export interface BarChartProps {
@@ -297,7 +306,14 @@ function BarSvg({
     config.beats,
   );
   const barP = (i: number) =>
-    stagger(p, entryOrder[i] ?? i, n, 0.18, 0.5 / n, 0.35);
+    stagger(
+      p,
+      entryOrder[i] ?? i,
+      n,
+      BAR_ENTRANCE.start,
+      BAR_ENTRANCE.step(n),
+      BAR_ENTRANCE.span,
+    );
 
   return (
     <svg
