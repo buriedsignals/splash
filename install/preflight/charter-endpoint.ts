@@ -187,17 +187,26 @@ export function charterModeFrom(body: unknown): CharterMode {
 }
 
 /**
- * The two message shapes charter-render.ts reports when THIS MACHINE's browser, not the
- * newsroom's site, is what failed: a Chromium that never started (`could not open a browser to
- * render …` — a missing install, a version drift) and one that started but handed back no page.
+ * The FOUR message shapes charter-render.ts reports when THIS MACHINE's browser, not the
+ * newsroom's site, is what failed. A Chromium that never started (`could not open a browser to
+ * render …` — a missing install, a version drift) was the only one covered here at first, which
+ * left the same wrong-cause sentence standing on three narrower paths: a browser that starts and
+ * hands back no page, one whose execution context dies before the CSS can be read, and one whose
+ * target crashes before the markup can be. In all three the journalist was told to check their
+ * address — their site is fine, their browser died. All four failures happen on THIS side of the
+ * network and none of them is the newsroom's site answering badly (`… answered 503`,
+ * `… could not be rendered`), which stay on the site sentence.
  *
  * Matched on the message because charter-render.ts reports a plain string, not a tagged error,
  * and this module does not own that module. `charter-endpoint.test.ts` runs the REAL
- * `renderSiteSources` with a launch that throws and asserts this pattern still matches what it
- * says — so the coupling reddens here if that wording ever moves, instead of silently telling a
- * journalist their site is down when their browser is.
+ * `renderSiteSources` against each of the four failure points — a launch that throws, and a page
+ * that throws in `newPage`, in `evaluate`, in `content` — and asserts this pattern still matches
+ * what it says, so the coupling reddens here if any of that wording moves, instead of silently
+ * telling a journalist their site is down when their browser is. A hand-written copy of the
+ * message in a test would pin nothing: it agrees with itself whatever charter-render.ts says.
  */
-const BROWSER_UNAVAILABLE = /^could not open (?:a browser|a page) to render /;
+const BROWSER_UNAVAILABLE =
+  /^could not (?:open (?:a browser|a page) to render|read the (?:CSS applied to|rendered markup of)) /;
 
 /**
  * A collector failure, said to the journalist in the language the page is being read in.

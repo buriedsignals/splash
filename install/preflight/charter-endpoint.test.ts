@@ -3,7 +3,10 @@
 // network here: proposeCharter runs on fixed sources, never collectSiteSources.
 import { describe, expect, test } from "bun:test";
 import { proposeCharter } from "../../lib/newsroom/charter.ts";
-import { renderSiteSources } from "../../lib/newsroom/charter-render.ts";
+import {
+  renderSiteSources,
+  type RenderBrowser,
+} from "../../lib/newsroom/charter-render.ts";
 import {
   charterModeFrom,
   failureReadout,
@@ -281,8 +284,10 @@ describe("a failure says WHAT failed, in the language the page is read in", () =
       "Impossible de lire votre site",
     );
     expect(
-      failureReadout("could not open a page to render https://x.news/: boom", "fr")
-        .error,
+      failureReadout(
+        "could not open a page to render https://x.news/: boom",
+        "fr",
+      ).error,
     ).toContain("Impossible d'ouvrir votre site dans un navigateur");
   });
 
@@ -302,6 +307,84 @@ describe("a failure says WHAT failed, in the language the page is read in", () =
     const said = failureReadout((failed as { error: string }).error);
     expect(said.error).toContain("Could not open your site in a browser");
     expect(said.error).not.toContain("Could not read your site");
+  });
+
+  // A launch that throws is only the FIRST of four machine-side failures. Chromium that starts
+  // and then dies mid-read — no page handed back, the evaluate context destroyed, the target
+  // crashed before `content()` — reported as the site not answering, which is the exact defect
+  // this chantier was raised to fix, surviving on a narrower path.
+  //
+  // Pinned the same way the launch case is: the REAL renderSiteSources, with a fake that throws
+  // at each of those three points. A hand-written literal of the message is not a pin — reword
+  // charter-render.ts and this reddens.
+  describe("a browser that starts and then dies mid-read is still the browser, not the site", () => {
+    type ThrowAt = "newPage" | "evaluate" | "content";
+
+    const dyingBrowser = (at: ThrowAt): RenderBrowser =>
+      ({
+        newPage: async () => {
+          if (at === "newPage")
+            throw new Error("Target page, context or browser has been closed");
+          return {
+            goto: async () => ({ ok: () => true, status: () => 200 }),
+            waitForTimeout: async () => {},
+            evaluate: async () => {
+              if (at === "evaluate")
+                throw new Error("Execution context was destroyed");
+              return { sheets: [], blockedHrefs: [], computedCss: null };
+            },
+            content: async () => {
+              if (at === "content") throw new Error("Target crashed");
+              return "<html></html>";
+            },
+            url: () => "https://example.news/",
+            close: async () => {},
+          };
+        },
+        close: async () => {},
+      }) as unknown as RenderBrowser;
+
+    const cases: { at: ThrowAt; what: string }[] = [
+      { at: "newPage", what: "hands back no page" },
+      { at: "evaluate", what: "loses the context the CSS is read in" },
+      { at: "content", what: "crashes before the markup is read" },
+    ];
+
+    for (const { at, what } of cases)
+      test(`a browser that ${what} reads as the browser failing`, async () => {
+        const failed = await renderSiteSources("https://example.news", {
+          launch: async () => dyingBrowser(at),
+          settleMs: 0,
+        });
+        expect("error" in failed).toBe(true);
+        const said = failureReadout((failed as { error: string }).error);
+        expect(said.error).toContain("Could not open your site in a browser");
+        expect(said.error).not.toContain("Could not read your site");
+      });
+
+    // The counterweight: the classifier must not swallow the site's OWN failures into the
+    // browser sentence. A site that answers 503, or will not load at all, is still the site.
+    test("a site that will not load is still reported as the site", async () => {
+      const failed = await renderSiteSources("https://example.news", {
+        launch: async () =>
+          ({
+            newPage: async () => ({
+              goto: async () => {
+                throw new Error("net::ERR_NAME_NOT_RESOLVED");
+              },
+              waitForTimeout: async () => {},
+              evaluate: async () => ({}),
+              content: async () => "",
+              url: () => "https://example.news/",
+              close: async () => {},
+            }),
+            close: async () => {},
+          }) as unknown as RenderBrowser,
+      });
+      const said = failureReadout((failed as { error: string }).error);
+      expect(said.error).toContain("Could not read your site");
+      expect(said.error).not.toContain("Could not open your site in a browser");
+    });
   });
 });
 
@@ -357,7 +440,11 @@ describe("the browser retry is offered only after a read that actually happened"
 
   test("yes when a static read succeeded and found no colour", () => {
     expect(
-      offersRenderRetry({ status: "done", readout: readout([]), mode: "static" }),
+      offersRenderRetry({
+        status: "done",
+        readout: readout([]),
+        mode: "static",
+      }),
     ).toBe(true);
   });
 
@@ -374,7 +461,9 @@ describe("the browser retry is offered only after a read that actually happened"
   });
 
   test("stays up while the render runs and if it fails, and goes once it has answered", () => {
-    expect(offersRenderRetry({ status: "loading", mode: "rendered" })).toBe(true);
+    expect(offersRenderRetry({ status: "loading", mode: "rendered" })).toBe(
+      true,
+    );
     expect(
       offersRenderRetry({
         status: "error",
@@ -399,7 +488,11 @@ describe("only the typefaces the journalist keeps are written into the profile",
   const measured: CharterReadout = {
     palette: [],
     typefaces: [
-      { family: "Sang Bleu Kingdom", role: "webfont", receipt: "read from the CDN sheet" },
+      {
+        family: "Sang Bleu Kingdom",
+        role: "webfont",
+        receipt: "read from the CDN sheet",
+      },
       { family: "Inter", role: "body", receipt: "read from site.css" },
       { family: "Inter", role: "headings", receipt: "read from site.css" },
     ],
