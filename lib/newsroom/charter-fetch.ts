@@ -10,9 +10,22 @@
 // the fetching tool swappable and the measurement identical.
 //
 // Bounded on every axis, because the URL comes from a journalist and points at the open web:
-// a timeout, a byte cap, a stylesheet cap, http/https only, and SAME-HOST stylesheets only (a
-// news site's third-party CSS is advertising and consent-banner styling — measuring it would
-// give the newsroom an ad network's brand colour).
+// a timeout, a byte cap, a stylesheet cap, a redirect cap, http/https only, and — since a
+// stylesheet's href is as much an open-web address as the page's own URL — every href is checked
+// against the same forbidden-host list BEFORE it is fetched, not after (see `collectSiteSources`),
+// as is every REDIRECT that href turns out to name (see `getText`): vetting only the first hop
+// would leave the destination of a 302 unvetted, and the destination is chosen by whoever
+// answered, not by the page.
+//
+// It is NOT bounded by hostname in the OTHER sense — which host AUTHORED the CSS: a
+// <link rel="stylesheet"> in the newsroom's own document is the design system it chose to serve,
+// whatever host carries the bytes — a serious newsroom's own CSS routinely lives on its CDN
+// (heidi.news serves from heidi-17455.kxcdn.com). What distinguishes a third party's brand from
+// the newsroom's own is not the hostname, it is the RECEIPT: `lib/newsroom/charter.ts`'s
+// `Measurement.source` names the exact page or stylesheet href every reading came from, all the
+// way down to `scanCss`. That makes a foreign declaration distinguishable in the data this module
+// feeds `proposeCharter` — whether a given surface (the CLI, the setup page) goes on to DISPLAY
+// that source to the journalist is that surface's own job, not proven here.
 //
 // Total: returns a `{ error }` instead of throwing, at every step.
 
@@ -36,6 +49,18 @@ export type FetchOptions = {
 export const MAX_SHEETS = 8;
 export const MAX_BYTES = 2_000_000;
 export const TIMEOUT_MS = 10_000;
+/**
+ * How many redirects are followed, each one vetted before it is followed (see `getText`).
+ *
+ * Five. A newsroom's real chains are one or two hops — apex→www, http→https, an occasional
+ * country or paywall bounce — so five leaves ordinary sites untouched while ending a redirect
+ * loop in five requests instead of the twenty a runtime's own default allows. The number is a
+ * knob, and it is small on purpose: past a couple of hops, a stylesheet href is not behaving like
+ * a stylesheet href.
+ */
+export const MAX_REDIRECTS = 5;
+/** The statuses that mean "go somewhere else" — the ones a `Location` header accompanies. */
+const REDIRECT_STATUS = new Set([301, 302, 303, 307, 308]);
 
 // A browser-shaped UA: a fair number of newsroom CDNs answer a default runtime UA with a 403,
 // and the request is a plain GET of a public home page either way.
@@ -84,6 +109,27 @@ function isForbiddenHost(hostname: string): boolean {
   return false;
 }
 
+/**
+ * Is an address a request may have LANDED on still a public web address?
+ *
+ * The post-hoc half of the vetting `normalizeSiteUrl` does up front, split out because more than
+ * one path needs it and a second copy would drift: this module re-checks it after every response
+ * (`getText`), and lib/newsroom/charter-render.ts re-checks it after a browser navigation, which
+ * follows redirects the same way. Same forbidden-host table, same function — not a paraphrase.
+ *
+ * Looser than `normalizeSiteUrl` in one respect only: it does not require a dot in the hostname,
+ * because what it judges is where a request went, not what a journalist typed.
+ */
+export function isPublicSiteAddress(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    return !isForbiddenHost(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** http/https only, and a real public host. Anything else — file:, data:, a bare word — is refused. */
 export function normalizeSiteUrl(raw: string): string | null {
   const t = (raw ?? "").trim();
@@ -109,26 +155,54 @@ async function getText(
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs);
   try {
-    const res = await opts.fetchImpl(url, {
-      signal: ctrl.signal,
-      redirect: "follow",
-      headers: { "user-agent": UA, accept: "text/html,text/css,*/*" },
-    });
-    // `redirect: "follow"` means the host that was vetted is not necessarily the host that
-    // answered: a public site can bounce to 127.0.0.1 or to a metadata address. Re-check where
-    // it actually landed, and refuse the body rather than read it.
-    const finalUrl = res.url || url;
-    try {
-      if (isForbiddenHost(new URL(finalUrl).hostname))
+    // `redirect: "manual"` — the hop is vetted BEFORE it is dialled, which "follow" makes
+    // impossible: the runtime has already sent the request by the time anything can look at where
+    // it went. The address a redirect names is chosen by whoever answered, not by the caller and
+    // not by the page, so it is exactly as untrusted as the href that started the chain — and a
+    // GET on `http://192.168.1.1/reboot?confirm=1` is a write on the operator's own network, not
+    // a body that can simply be discarded once it comes back.
+    let current = url;
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      const res = await opts.fetchImpl(current, {
+        signal: ctrl.signal,
+        redirect: "manual",
+        headers: { "user-agent": UA, accept: "text/html,text/css,*/*" },
+      });
+      if (REDIRECT_STATUS.has(res.status)) {
+        const location = res.headers.get("location");
+        if (!location)
+          return {
+            error: `${url} answered ${res.status} without saying where to — refused`,
+          };
+        let next: string;
+        try {
+          // Relative Locations are legal and common (`Location: /fr/`), so resolve against the
+          // address that issued them — then vet the RESULT, never the raw header.
+          next = new URL(location, current).toString();
+        } catch {
+          return { error: `${url} redirected somewhere unreadable — refused` };
+        }
+        if (!isPublicSiteAddress(next))
+          return {
+            error: `${url} redirected to a non-public address — refused`,
+          };
+        current = next;
+        continue;
+      }
+      // Belt and braces: a fetch implementation that followed anyway still has its landing
+      // address checked, the way this module has checked it since its own SSRF fix.
+      const finalUrl = res.url || current;
+      if (!isPublicSiteAddress(finalUrl))
         return { error: `${url} redirected to a non-public address — refused` };
-    } catch {
-      return { error: `${url} redirected somewhere unreadable — refused` };
+      if (!res.ok) return { error: `${url} answered ${res.status}` };
+      const text = await res.text();
+      return {
+        text: text.length > opts.maxBytes ? text.slice(0, opts.maxBytes) : text,
+        finalUrl,
+      };
     }
-    if (!res.ok) return { error: `${url} answered ${res.status}` };
-    const text = await res.text();
     return {
-      text: text.length > opts.maxBytes ? text.slice(0, opts.maxBytes) : text,
-      finalUrl,
+      error: `${url} redirected more than ${MAX_REDIRECTS} times — refused`,
     };
   } catch (e) {
     return {
@@ -150,10 +224,11 @@ export function stylesheetHrefs(html: string, baseUrl: string): string[] {
     try {
       const abs = new URL(h[1]!, baseUrl);
       if (abs.protocol !== "http:" && abs.protocol !== "https:") continue;
-      const base = new URL(baseUrl);
-      // Same host only. A newsroom's own CSS carries its brand; a third-party sheet carries
-      // somebody else's, and there is no way to tell them apart after the fact.
-      if (abs.hostname !== base.hostname) continue;
+      // No host filter here. A hostname says nothing about who authored the CSS — a newsroom's
+      // own stylesheet routinely lives on a CDN it does not share a name with — and a third-party
+      // font sheet is precisely where the typography this measurement wants might live. What
+      // protects against mistaking somebody else's brand for the newsroom's is the receipt each
+      // reading carries downstream, not a guess made here from the href alone.
       if (!out.includes(abs.toString())) out.push(abs.toString());
     } catch {
       continue;
@@ -163,9 +238,14 @@ export function stylesheetHrefs(html: string, baseUrl: string): string[] {
 }
 
 /**
- * Fetch a newsroom's page and its same-host stylesheets. Never throws: an unreachable site
- * returns `{ error }`, and an unreachable stylesheet becomes a note on an otherwise usable
- * result — a partial measurement stated as partial is worth more than a failure.
+ * Fetch a newsroom's page and the stylesheets it links, whatever host serves them. Never throws:
+ * an unreachable site returns `{ error }`, and an unreachable stylesheet becomes a note on an
+ * otherwise usable result — a partial measurement stated as partial is worth more than a failure.
+ *
+ * `notes` tells apart the three shapes a stylesheet reading can take, because they call for
+ * different next steps: the page linked nothing at all (a guess, not a finding, about why);
+ * something was linked but did not answer (named per href, already handled below the fold); or
+ * sheets were read (no failure note at all).
  */
 export async function collectSiteSources(
   rawUrl: string,
@@ -182,20 +262,51 @@ export async function collectSiteSources(
   if ("error" in page) return { error: page.error };
   const notes: string[] = [];
   const sheets: { href: string; css: string }[] = [];
-  // Resolve and same-host-filter against where the page ACTUALLY came from. Filtering against
-  // the typed URL means an ordinary apex→www redirect (heidi.news → www.heidi.news) makes the
-  // site's own stylesheets look third-party, and every one of them is silently dropped.
+  // Resolve against where the page ACTUALLY came from, not the typed URL: an ordinary apex→www
+  // redirect (heidi.news → www.heidi.news) changes what a relative href resolves to.
   const base = page.finalUrl;
   const hrefs = stylesheetHrefs(page.text, base);
+  if (hrefs.length === 0) {
+    // Case 1: no <link rel="stylesheet"> at all. This is the ONLY case that may guess at
+    // JavaScript-built styles — and it must read as a guess, because a page can just as well have
+    // no stylesheet for an ordinary reason (inline styles only, or genuinely no CSS).
+    notes.push(
+      "the page links no stylesheet — one possibility is that it builds its styles in JavaScript, but that is a guess this reading cannot confirm",
+    );
+  }
   const cap = opts.maxSheets ?? MAX_SHEETS;
   if (hrefs.length > cap)
     notes.push(
       `${hrefs.length} stylesheets linked; the first ${cap} were read (a colour declared only in a later one was missed)`,
     );
   for (const href of hrefs.slice(0, cap)) {
+    // Vet the href BEFORE fetching it, exactly like the top-level URL — never after. This is the
+    // FIRST hop only; the hops a redirect adds are vetted one by one, before each is followed, by
+    // `getText`, because an href that passes here can still name a host that bounces inward. The
+    // same-host filter used to make this redundant: an href could only ever equal the
+    // already-vetted host. Lifting it (task 2) means a stylesheet's href is now, on its own, an
+    // open-web address a page's markup controls, so it gets the same SSRF check `normalizeSiteUrl`
+    // gives the top-level URL — a `getText`-style post-hoc check would be too late, because the
+    // outbound request has already reached `169.254.169.254` (or a router, or the loopback) by
+    // the time the response comes back to be inspected.
+    let hostname: string;
+    try {
+      hostname = new URL(href).hostname;
+    } catch {
+      notes.push(`${href} is not a fetchable address — refused`);
+      continue;
+    }
+    if (isForbiddenHost(hostname)) {
+      notes.push(
+        `${href} points at a non-public address — refused before fetching`,
+      );
+      continue;
+    }
     const css = await getText(href, cfg);
+    // Case 2: a stylesheet WAS linked but did not answer — named per href, never blamed on
+    // JavaScript (the link itself proves the page is not building its styles at runtime).
     if ("error" in css) notes.push(css.error);
-    else sheets.push({ href, css: css.text });
+    else sheets.push({ href, css: css.text }); // Case 3: read. No failure note.
   }
   return { url: base, html: page.text, sheets, notes };
 }

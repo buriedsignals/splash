@@ -85,6 +85,12 @@ export type ColourSignal =
   | "masthead" // fill/stroke of the logo or masthead SVG
   | "link" // the colour of a link
   | "control" // a button / CTA / tag background
+  // A colour NOBODY named, but that repeats across the closed set of brand-carrying properties
+  // (see RECURRENT_ROLE_PROPERTIES) — a compiled stylesheet's answer to "the button fills, the
+  // banner backgrounds, the accented borders", when the class names themselves are hashed and
+  // unreadable. Never a `declared` signal (DECLARED_SIGNALS excludes it): repetition is not a
+  // site's own say-so, and the journalist is told so on screen.
+  | "recurrent-role"
   | "declared"; // any other colour declared in the stylesheet
 
 /** One reading, with where it came from. This is the unit the journalist is shown. */
@@ -94,6 +100,16 @@ export type Measurement = {
   signal: ColourSignal;
   /** The literal snippet it was read from — the receipt (`--brand: #c8102e`). */
   token: string;
+  /**
+   * WHERE the text carrying `token` was read: the page itself, or the exact href of the
+   * stylesheet it came from. This is what actually distinguishes the newsroom's own declaration
+   * from a third party's — not the hostname `stylesheetHrefs` no longer filters on
+   * (lib/newsroom/charter-fetch.ts). A `--brand` declared inside an analytics widget's sheet is
+   * still read (it may be exactly the typography being looked for), but it carries that widget's
+   * URL here, not the newsroom's, so it stays distinguishable rather than passing for the site's
+   * own say-so.
+   */
+  source: string;
 };
 
 export type ColourCandidate = {
@@ -111,6 +127,14 @@ export type TypeMeasurement = {
   family: string;
   role: "body" | "headings" | "webfont";
   token: string;
+  /**
+   * WHERE this family was read — the stylesheet's URL, or the page itself for an inline style.
+   * The same duty `Measurement.source` carries for colour, and for the same reason: since the
+   * same-host filter was lifted, a font family can come from any sheet the page links, and a
+   * third-party sheet is precisely where a webfont often lives. Without this, a family read from
+   * an unrelated CDN is indistinguishable from the newsroom's own.
+   */
+  source: string;
 };
 
 /**
@@ -176,13 +200,77 @@ function hslToRgb(h: number, s: number, l: number): Rgb {
 }
 
 /**
+ * OKLCH → sRGB: OKLCH polar → OKLab cartesian, then Björn Ottosson's OKLab↔linear-sRGB matrix,
+ * then the standard sRGB gamma encode. That matrix is the algebraic composition of the two-step
+ * OKLab→XYZ→linear-sRGB path published as the CSS Color 4 spec's own sample code
+ * (https://drafts.csswg.org/css-color-4/conversions.js, functions `OKLab_to_XYZ` +
+ * `XYZ_to_lin_sRGB`) — the two paths were computed independently and checked to agree, which is
+ * how the constants below were verified rather than merely remembered. Gamut clamp happens where
+ * every other notation here clamps: `toHex`'s `clamp255`, at the very end.
+ */
+function oklchToRgb(l: number, c: number, hDeg: number): Rgb {
+  const hRad = (hDeg * Math.PI) / 180;
+  const a = c * Math.cos(hRad);
+  const b = c * Math.sin(hRad);
+  const l_ = l + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = l - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = l - 0.0894841775 * a - 1.291485548 * b;
+  const ll = l_ ** 3;
+  const mm = m_ ** 3;
+  const ss = s_ ** 3;
+  const rLin = 4.0767416621 * ll - 3.3077115913 * mm + 0.2309699292 * ss;
+  const gLin = -1.2684380046 * ll + 2.6097574011 * mm - 0.3413193965 * ss;
+  const bLin = -0.0041960863 * ll - 0.7034186147 * mm + 1.707614701 * ss;
+  const gamma = (v: number): number => {
+    const sign = v < 0 ? -1 : 1;
+    const av = Math.abs(v);
+    const enc = av <= 0.0031308 ? 12.92 * av : 1.055 * av ** (1 / 2.4) - 0.055;
+    return sign * enc;
+  };
+  return { r: gamma(rLin) * 255, g: gamma(gLin) * 255, b: gamma(bLin) * 255 };
+}
+
+/**
+ * `oklch(L C H)` / `oklch(L C H / A)` — the body between the parens, already lowercase-trimmed.
+ * L accepts a percentage or the unit-interval CSS also allows (`97.98%` and `0.9798` are the same
+ * lightness); C accepts a bare number or a percentage (100% = 0.4, the CSS Color 4 reference
+ * range); H is degrees, bare or with a `deg` suffix — the two forms the committed fixtures and the
+ * spec both use. Returns null, never throws, on anything else — same discipline as `rgb()`/`hsl()`.
+ */
+function parseOklch(inner: string): Rgb | null {
+  const parts = inner
+    .replace(/\//g, " ")
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  if (parts.length < 3) return null;
+  const num = (s: string, pctOf: number): number | null => {
+    const m = /^(-?[\d.]+)(%?)$/.exec(s);
+    if (!m) return null;
+    const v = Number(m[1]);
+    if (!Number.isFinite(v)) return null;
+    return m[2] === "%" ? (v / 100) * pctOf : v;
+  };
+  if (parts.length >= 4) {
+    const a = num(parts[3]!, 1);
+    if (a !== null && a <= 0) return null;
+  }
+  const l = num(parts[0]!, 1);
+  const c = num(parts[1]!, 0.4);
+  const hm = /^(-?[\d.]+)(deg)?$/i.exec(parts[2]!);
+  if (l === null || c === null || !hm) return null;
+  const h = Number(hm[1]);
+  if (!Number.isFinite(h)) return null;
+  return oklchToRgb(Math.max(0, Math.min(1, l)), Math.max(0, c), h);
+}
+
+/**
  * Parse ONE CSS colour token to #rrggbb. Understands `#rgb`, `#rrggbb`, `#rrggbbaa`, `rgb()`,
- * `rgba()`, `hsl()`, `hsla()` in both comma and space syntax.
+ * `rgba()`, `hsl()`, `hsla()` in both comma and space syntax, and `oklch()` (see `parseOklch`).
  *
- * Deliberately does NOT understand `oklch()`, `lab()`, `color()` or `color-mix()`: converting
- * those correctly is real colour science, and a wrong conversion here becomes a wrong house
- * colour on every chart the newsroom ever publishes. An unparsed notation is reported as a gap
- * (`notes`), never approximated. Named colours are likewise skipped — `red` on a news site is
+ * Deliberately does NOT understand `oklab()`, `lab()`, `lch()`, `color()` or `color-mix()`:
+ * converting those correctly is real colour science, and a wrong conversion here becomes a wrong
+ * house colour on every chart the newsroom ever publishes. An unparsed notation is reported as a
+ * gap (`notes`), never approximated. Named colours are likewise skipped — `red` on a news site is
  * almost always a browser default or an error state, not a masthead.
  *
  * Fully transparent values return null: `rgba(0,0,0,0)` is a spacer, not a colour.
@@ -203,6 +291,11 @@ export function parseCssColour(raw: string): string | null {
       return `#${d.slice(0, 6)}`;
     }
     return null;
+  }
+  const oklch = /^oklch\(([^)]*)\)$/.exec(t);
+  if (oklch) {
+    const rgb = parseOklch(oklch[1]!);
+    return rgb ? toHex(rgb) : null;
   }
   const fn = /^(rgba?|hsla?)\(([^)]*)\)$/.exec(t);
   if (!fn) return null;
@@ -256,7 +349,7 @@ export function alphaOf(raw: string): number {
     const a = d.length === 4 ? d[3]! + d[3]! : d.slice(6);
     return parseInt(a, 16) / 255;
   }
-  const fn = /^(?:rgba?|hsla?)\(([^)]*)\)$/.exec(t);
+  const fn = /^(?:rgba?|hsla?|oklch)\(([^)]*)\)$/.exec(t);
   if (!fn) return 1;
   const parts = fn[1]!
     .replace(/\//g, " ")
@@ -408,7 +501,7 @@ function declarations(decls: string): { prop: string; value: string }[] {
 /** The colour tokens inside a declaration value (a shorthand can carry several). */
 function colourTokens(value: string): string[] {
   const out: string[] = [];
-  const re = /(#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?)\([^)]*\))/g;
+  const re = /(#[0-9a-fA-F]{3,8}\b|(?:rgba?|hsla?|oklch)\([^)]*\))/g;
   for (const m of value.matchAll(re)) out.push(m[1]!);
   return out;
 }
@@ -434,6 +527,8 @@ export const SIGNAL_LABEL: Record<ColourSignal, string> = {
   masthead: "the fill of an SVG inside the masthead/logo element",
   link: "the colour of the links",
   control: "the background of the buttons",
+  "recurrent-role":
+    "a colour repeated across several button/banner/border declarations, though nothing names it as the brand",
   declared: "a colour declared somewhere in the stylesheet",
 };
 
@@ -455,11 +550,30 @@ export const WEIGHT: Record<ColourSignal, number> = {
   // declaration, so it outranks an unlabelled one, but it does not outrank the link colour and it
   // does not license `declared` confidence.
   "accent-property": 70,
+  /**
+   * Strictly between `control` (55, the proposal floor) and `accent-property` (70). It must clear
+   * MIN_CANDIDATE_SCORE — repetition on a closed set of brand-carrying properties is real
+   * evidence, the whole reason this signal exists — but it must sit under EVERY declared signal,
+   * `control` included: a colour a site's own markup labels a button with (`.btn{…}`) is still a
+   * more deliberate act than a colour that merely turns up on several buttons/banners/borders
+   * with no such label anywhere. 60 is the midpoint of the (55, 70) gap this signal is
+   * constrained to, not tuned to any one site's numbers.
+   */
+  "recurrent-role": 60,
   control: 55,
   declared: 8,
 };
-/** The smallest gap between two adjacent weights above. The frequency bonus must stay under it. */
-const SMALLEST_SIGNAL_GAP = 5;
+/**
+ * The smallest gap between two adjacent weights above. The frequency bonus must stay under it.
+ *
+ * Exported because it was declared and never referenced — a constant nothing reads states an
+ * invariant nothing enforces, which is how `recurrent-role` came to sit exactly one gap above
+ * `control` (60 over 55) with nothing checking that the bonus still fits underneath. The check
+ * lives in charter.test.ts ("the frequency bonus stays a tiebreak"), over the WEIGHT table
+ * itself, so narrowing a gap or raising FREQUENCY_BONUS_CAP fails loudly instead of silently
+ * turning frequency back into an argument.
+ */
+export const SMALLEST_SIGNAL_GAP = 5;
 
 // A custom property counts as a BRAND declaration only when the brand word is what the property
 // is ABOUT — its first meaningful segment, after at most one namespace prefix.
@@ -483,6 +597,41 @@ const MASTHEAD_SELECTOR = /(logo|masthead|brand|wordmark|site-?title)/i;
 const LINK_SELECTOR = /(^|[\s,>+~])a(?![\w-])/;
 const COLOUR_PROP =
   /^(?:color|background(?:-color)?|border(?:-[a-z]+)?-color|fill|stroke|outline-color|text-decoration-color)$/;
+/**
+ * The CLOSED set of properties `recurrent-role` counts. Each one paints a filled area or a drawn
+ * edge — a button fill, a banner background, an accented border, a masthead SVG's fill/stroke —
+ * which is the surface a brand colour actually occupies. `color` (running body text) and
+ * `outline-color`/`text-decoration-color` are deliberately left out even though `COLOUR_PROP`
+ * reads them too: prose repeats far more than any brand hue does, and a focus ring is a state
+ * indicator, not a house colour, so counting either would manufacture "evidence" out of noise
+ * that has nothing to do with the brand.
+ */
+const RECURRENT_ROLE_PROPERTIES = new Set([
+  "background",
+  "background-color",
+  "border-color",
+  "border-top-color",
+  "border-right-color",
+  "border-bottom-color",
+  "border-left-color",
+  "fill",
+  "stroke",
+]);
+/**
+ * How many separate declarations must repeat a colour, on RECURRENT_ROLE_PROPERTIES, before the
+ * repetition itself counts as evidence.
+ *
+ * Three, not two — because two is already pinned as NOT evidence, by a regression test this
+ * signal must not quietly overturn ("regression — the score floor" in charter.test.ts): bbc.com
+ * repeats `#e00000` across exactly two brand-carrying declarations (`background-color` on one
+ * hashed Emotion class, `border-top-color` on another), and the project's own conclusion about
+ * that live reading is "not evidence of anything… ask the question". Two independent
+ * declarations is indistinguishable from two components coincidentally sharing an "error red";
+ * three is the point past which coincidence stops being the simpler explanation. This number is
+ * not fit to any one captured site — see charter-fixtures.test.ts for what it actually turns up,
+ * including a case (heidi.news) where nothing clears it at all.
+ */
+const RECURRENT_ROLE_MIN_COUNT = 3;
 const GROUND_SELECTOR = /^(?::root|html|body|\*)$/;
 // Same tightening as BRAND_PROPERTY, and for a sharper reason: `theme:` is the profile field a
 // wrong reading makes visible on EVERY visual. The loose first cut matched Le Monde's
@@ -501,8 +650,12 @@ const VARIANT_SELECTOR =
 
 // ── HTML scanning ──
 
-/** `<meta name="theme-color" content="#…">` — the strongest declaration a site can make. */
-function themeColorMeta(html: string): Measurement | null {
+/**
+ * `<meta name="theme-color" content="#…">` — the strongest declaration a site can make. Read
+ * from the page itself, so its `source` is filled in by the caller (always the page's own URL,
+ * never a stylesheet's) — see `Measurement.source`.
+ */
+function themeColorMeta(html: string): Omit<Measurement, "source"> | null {
   for (const m of html.matchAll(/<meta\b[^>]*>/gi)) {
     const tag = m[0];
     if (!/name\s*=\s*["']?theme-color["']?/i.test(tag)) continue;
@@ -522,10 +675,11 @@ function themeColorMeta(html: string): Measurement | null {
  * A crude window (the 4000 characters after a `logo`/`masthead`/`brand` attribute) rather than a
  * DOM walk, because this module takes no HTML-parsing dependency. It over-reads — a colour in
  * the header next to the logo can land here — which is exactly why the measurement is shown to
- * the journalist with its receipt instead of being applied.
+ * the journalist with its receipt instead of being applied. Read from the page itself, like
+ * `themeColorMeta` — `source` is filled in by the caller.
  */
-function mastheadColours(html: string): Measurement[] {
-  const out: Measurement[] = [];
+function mastheadColours(html: string): Omit<Measurement, "source">[] {
+  const out: Omit<Measurement, "source">[] = [];
   const anchors =
     /(class|id)\s*=\s*["'][^"']*(?:logo|masthead|wordmark|site-?title|brand)[^"']*["']/gi;
   for (const a of html.matchAll(anchors)) {
@@ -574,7 +728,13 @@ type Raw = {
   unparsed: Set<string>;
 };
 
-function scanCss(css: string, raw: Raw): void {
+/**
+ * @param source WHERE `css` was read from — the page's own URL for an inline `<style>` block, or
+ * the exact href of the linked stylesheet. Threaded onto every `Measurement` this produces, so a
+ * reading from a third-party sheet stays distinguishable from the newsroom's own (see
+ * `Measurement.source`) — a hostname is no longer the guard, this is.
+ */
+function scanCss(css: string, raw: Raw, source: string): void {
   for (const rule of cssRules(stripDarkSchemeBlocks(stripComments(css)))) {
     const sel = rule.selector;
     // A rule scoped to a theme VARIANT is not what a reader sees by default. Skipping it whole
@@ -586,9 +746,15 @@ function scanCss(css: string, raw: Raw): void {
     const isLink = LINK_SELECTOR.test(sel);
     const isGround = sel.split(",").some((s) => GROUND_SELECTOR.test(s.trim()));
     for (const { prop, value } of declarations(rule.decls)) {
-      if (/\b(?:oklch|oklab|lab|lch|color-mix|color)\(/.test(value))
+      // `oklch` is deliberately absent from this list — the absolute form is read (see
+      // `parseOklch`), so a value expressed in it is no longer a gap. The forms it does NOT read
+      // are reported where they actually fail, token by token, in the parse loop below — a blanket
+      // entry here would report a site that declares a perfectly readable oklch() as a gap.
+      // `oklab`/`lab`/`lch`/`color()`/`color-mix()` remain unread whatever their form, and a value
+      // that only ever appears in one of THOSE is still reported as missed.
+      if (/\b(?:oklab|lab|lch|color-mix|color)\(/.test(value))
         raw.unparsed.add(
-          /\b(oklch|oklab|lab|lch|color-mix|color)\(/.exec(value)![1]!,
+          /\b(oklab|lab|lch|color-mix|color)\(/.exec(value)![1]!,
         );
       if (prop === "font-family") {
         const family = firstFamily(value);
@@ -603,6 +769,7 @@ function scanCss(css: string, raw: Raw): void {
               family,
               role,
               token: `${sel} { font-family: ${value.trim()} }`,
+              source,
             });
         }
         continue;
@@ -614,7 +781,18 @@ function scanCss(css: string, raw: Raw): void {
       if (!custom && !COLOUR_PROP.test(prop)) continue;
       for (const tok of tokens) {
         const hex = parseCssColour(tok);
-        if (!hex) continue;
+        if (!hex) {
+          // An `oklch()` this parser could not read is a GAP, and has to be reported as one —
+          // the module's own invariant ("an unparsed notation is reported as a gap, never
+          // approximated"). Dropping `oklch` from the list above was right for the absolute form
+          // that IS read now, and wrong for the forms that are not: relative-colour syntax
+          // (`oklch(from var(--base) l c h)`) and a hue in `turn`/`rad` both still fail here, and
+          // without this they vanished silently. A fully transparent colour is excluded: that is
+          // a deliberate skip (a spacer), not a notation this parser failed on.
+          if (/^oklch\(/i.test(tok.trim()) && alphaOf(tok) > 0)
+            raw.unparsed.add("oklch");
+          continue;
+        }
         const token = `${sel.length > 60 ? sel.slice(0, 57) + "…" : sel} { ${prop}: ${tok} }`;
         // GROUND first: a near-white/near-black on :root or body is the page, not a brand hue.
         if (
@@ -631,7 +809,7 @@ function scanCss(css: string, raw: Raw): void {
           // reported a dark ground — and inline <style> is scanned before the linked sheets that
           // normally override it.
           if (alphaOf(tok) >= GROUND_MIN_ALPHA)
-            raw.ground = { value: hex, signal: "declared", token };
+            raw.ground = { value: hex, signal: "declared", token, source };
           continue;
         }
         if (custom) {
@@ -640,16 +818,29 @@ function scanCss(css: string, raw: Raw): void {
               value: hex,
               signal: "brand-property",
               token,
+              source,
             });
           else if (ACCENT_PROPERTY.test(prop))
             raw.measurements.push({
               value: hex,
               signal: "accent-property",
               token,
+              source,
             });
           else if (LINK_PROPERTY.test(prop))
-            raw.measurements.push({ value: hex, signal: "link", token });
-          else raw.measurements.push({ value: hex, signal: "declared", token });
+            raw.measurements.push({
+              value: hex,
+              signal: "link",
+              token,
+              source,
+            });
+          else
+            raw.measurements.push({
+              value: hex,
+              signal: "declared",
+              token,
+              source,
+            });
           continue;
         }
         const signal: ColourSignal = isMasthead
@@ -659,7 +850,7 @@ function scanCss(css: string, raw: Raw): void {
             : isControl
               ? "control"
               : "declared";
-        raw.measurements.push({ value: hex, signal, token });
+        raw.measurements.push({ value: hex, signal, token, source });
       }
     }
   }
@@ -673,6 +864,7 @@ function scanCss(css: string, raw: Raw): void {
           family,
           role: "webfont",
           token: `@font-face { font-family: ${value.trim()} }`,
+          source,
         });
     }
   }
@@ -680,6 +872,14 @@ function scanCss(css: string, raw: Raw): void {
 
 const GENERIC_FAMILY =
   /^(?:inherit|initial|unset|revert|serif|sans-serif|monospace|cursive|fantasy|system-ui|ui-serif|ui-sans-serif|ui-monospace|ui-rounded|-apple-system|blinkmacsystemfont|segoe ui|roboto|helvetica(?: neue)?|arial|sans|apple color emoji|segoe ui emoji|segoe ui symbol|noto color emoji)$/i;
+
+/**
+ * Icon fonts are not a house typeface. They ship glyphs — a burger menu, a share arrow — and a
+ * newsroom told "your typeface is icomoon" learns something false about its own site. Measured on
+ * therecord.media 2026-08-06, where `icomoon` was reported alongside the real one.
+ */
+const ICON_FAMILY =
+  /^(?:icomoon|icon[-_ ]?font|fontawesome|font awesome(?: \d+ (?:free|brands|pro))?|fa[-_](?:solid|regular|brands|light)|material icons(?: outlined| round| sharp)?|material symbols(?: outlined| rounded| sharp)?|glyphicons(?: halflings)?|feather|bootstrap-icons|remixicon|ionicons|typicons|octicons)$/i;
 
 /**
  * The first NAMED family in a `font-family` stack. The generics and the system-font stack are
@@ -692,9 +892,15 @@ export function firstFamily(value: string): string | null {
   for (const part of value.replace(/!\s*important\s*$/i, "").split(",")) {
     const name = part
       .trim()
+      // A `var(--font-x, Roboto)` fallback arrives here as `Roboto)` once the stack is split on
+      // the comma. Measured on heidi.news 2026-08-06: the trailing paren stopped GENERIC_FAMILY
+      // from recognising a generic, and "Roboto)" was reported to the journalist as their house
+      // typeface. Strip it BEFORE the generic test — the paren was the whole disguise.
+      .replace(/\)+$/, "")
       .replace(/^["']|["']$/g, "")
       .trim();
     if (!name || GENERIC_FAMILY.test(name)) continue;
+    if (ICON_FAMILY.test(name)) continue;
     if (name.startsWith("var(")) continue;
     return name;
   }
@@ -795,6 +1001,55 @@ function rank(measurements: Measurement[]): ColourCandidate[] {
     .slice(0, CANDIDATE_CAP);
 }
 
+/**
+ * Recovers the CSS property a `declared`-signal `Measurement` was read from, by re-reading its
+ * own `token` — every such token was written by `scanCss` in the exact `${selector} { ${prop}:
+ * ${value} }` shape. Reused rather than threading a sixth field onto `Measurement` for the sake
+ * of one signal: the token already carries the property, this just recovers it.
+ */
+function propertyFromToken(token: string): string | null {
+  const m = /\{\s*([a-z-]+)\s*:/i.exec(token);
+  return m ? m[1]!.toLowerCase() : null;
+}
+
+/**
+ * Promotes `declared` readings to `recurrent-role` IN PLACE, when their colour repeats at least
+ * RECURRENT_ROLE_MIN_COUNT times on RECURRENT_ROLE_PROPERTIES.
+ *
+ * Only `declared` is a candidate for promotion — never `control`/`masthead`/`link`/`brand`/etc.
+ * Those already came from a more deliberate reading (a role SELECTOR matched the rule, or the
+ * property was NAMED as the brand/accent/link), and this signal's whole job is to give the
+ * UNLABELLED bucket — a colour that matched none of those — a way to still be evidence, when it
+ * turns up again and again on the same kind of surface. `declared` alone earns almost nothing
+ * (weight 8); repeated on brand-carrying properties, it earns 60.
+ *
+ * Mutates in place rather than pushing new measurements alongside the old ones, so a single
+ * physical CSS declaration is never counted twice (once as `declared`, again as
+ * `recurrent-role`) — `count` on the resulting candidate stays the number of distinct
+ * declarations actually read, not a doubled tally.
+ *
+ * Neutrals are NOT re-excluded here. `rank` already drops every neutral before a candidate can
+ * exist, and a second copy of that rule made the test for it ("a repeated neutral is not a brand
+ * colour") pass whichever of the two was deleted — a guard no test can feel is not a guard, it is
+ * a claim. One place decides that a grey is never a brand hue: `isNeutral` in `rank`.
+ */
+function promoteRecurrentRoles(measurements: Measurement[]): void {
+  const counts = new Map<string, number>();
+  for (const m of measurements) {
+    if (m.signal !== "declared") continue;
+    const prop = propertyFromToken(m.token);
+    if (!prop || !RECURRENT_ROLE_PROPERTIES.has(prop)) continue;
+    counts.set(m.value, (counts.get(m.value) ?? 0) + 1);
+  }
+  for (const m of measurements) {
+    if (m.signal !== "declared") continue;
+    if ((counts.get(m.value) ?? 0) < RECURRENT_ROLE_MIN_COUNT) continue;
+    const prop = propertyFromToken(m.token);
+    if (!prop || !RECURRENT_ROLE_PROPERTIES.has(prop)) continue;
+    m.signal = "recurrent-role";
+  }
+}
+
 /** The best reading that did NOT clear the floor, so the refusal can name what it saw. */
 function belowFloor(
   measurements: Measurement[],
@@ -817,6 +1072,78 @@ function belowFloor(
   return best;
 }
 
+/**
+ * The last two labels of a hostname: `cdn.heidi.news` and `www.heidi.news` both reduce to
+ * `heidi.news`, `cdn.consent.example` reduces to `consent.example`.
+ *
+ * An APPROXIMATION of "the same site", and deliberately a cheap one — the exact answer needs the
+ * public suffix list, which is a dependency and a list that goes stale, and what this decides is
+ * the wording of a NOTE, never whether a reading is kept.
+ *
+ * It is wrong in BOTH directions, and the note's wording is what makes that affordable. It says
+ * "same site" too readily: two unrelated `*.co.uk` sites reduce alike and no note is emitted.
+ * And it says "other host" too readily: heidi.news's own CDN is `heidi-17455.kxcdn.com`, which
+ * shares no label with it, so the note fires on a newsroom's own stylesheet — which is why that
+ * note states a fact and asks for a confirmation instead of alleging a third party (see
+ * `foreignTopCandidateNote`). What it does buy is the commonest own-CDN shape, `cdn.<site>`:
+ * comparing whole hostnames would fire on every newsroom serving its CSS from its own `cdn.` or
+ * `static.` subdomain, which is most of them.
+ */
+function siteOf(hostname: string): string {
+  return hostname.toLowerCase().split(".").slice(-2).join(".");
+}
+
+/**
+ * A FACT about the top candidate, when its strongest evidence was read from a stylesheet served
+ * by another host: which host that is, and that it is not the site's own.
+ *
+ * NOT a filter and NOT a penalty — the decision that a sheet the newsroom's own document links is
+ * the newsroom's, whatever host carries the bytes, stands (see charter-fetch.ts's
+ * `stylesheetHrefs`; heidi.news's real CSS lives on a CDN with an unrelated name). But that
+ * decision has a measured cost: a consent banner repeating its blue across five
+ * `background-color` declarations earns `recurrent-role` (60) and takes first place off the
+ * newsroom's own `.btn{background:#0a5c36}` (`control`, 55). The reading is honest; what was
+ * missing is the one thing that lets the journalist overrule it, which is knowing where it came
+ * from. `Measurement.source` has carried that all along — this puts it in front of him.
+ *
+ * A FACT, and NOT A GUESS ABOUT WHOSE HOST IT IS — that distinction is the whole discipline here.
+ * The note used to add "the colour may belong to a third party (a consent banner, an embedded
+ * widget)", which is a story this module has no evidence for: `siteOf` compares the last two
+ * hostname labels and nothing else, so heidi.news's OWN CDN (`heidi-17455.kxcdn.com`) is foreign
+ * to it and any newsroom on a differently-named CDN — the NORMAL case, the very one decision D1
+ * exists to accommodate — was told its own house colour might be a consent banner's. So the note
+ * says only what was measured (this colour, that host, not your domain) and hands the journalist
+ * the check rather than a verdict. It fires broadly by design; a broad note that states a fact
+ * costs a moment's confirmation, a broad note that speculates teaches its reader to skip it.
+ */
+function foreignTopCandidateNote(
+  top: ColourCandidate,
+  pageUrl: string | undefined,
+): string | null {
+  if (!pageUrl) return null;
+  let site: string;
+  try {
+    site = siteOf(new URL(pageUrl).hostname);
+  } catch {
+    return null;
+  }
+  // The evidence that actually earned the candidate its rank — the same "best weight wins" rule
+  // `rank` uses to pick the representative value, not the first reading in the list.
+  const strongest = top.evidence.reduce((a, c) =>
+    WEIGHT[c.signal] > WEIGHT[a.signal] ? c : a,
+  );
+  let host: string;
+  try {
+    // A source that is not a URL at all — "the page itself", a fixture's bare filename, the
+    // rendered path's "computed styles of the rendered page" — is not a foreign site.
+    host = new URL(strongest.source).hostname;
+  } catch {
+    return null;
+  }
+  if (!host || siteOf(host) === site) return null;
+  return `the strongest evidence for the colour proposed first (${top.value}) was read from a stylesheet served by ${host}, which is not part of ${site} — that sheet is linked by the newsroom's own page, so it is read and ranked like any other; confirm that ${host} is yours`;
+}
+
 const DECLARED_SIGNALS = new Set<ColourSignal>([
   "theme-color",
   "brand-property",
@@ -834,16 +1161,23 @@ const DECLARED_SIGNALS = new Set<ColourSignal>([
 export function proposeCharter(sources: SiteSources): CharterProposal {
   const raw: Raw = { measurements: [], type: [], unparsed: new Set() };
   const notes: string[] = [];
+  // What every page-derived reading (theme-color, masthead SVG, inline <style>, an inline
+  // style="" attribute) carries as its `source` — as opposed to a linked stylesheet, which
+  // carries ITS OWN href. `sources.url` is optional (a captured fixture may omit it); a reading
+  // still needs SOME source string rather than none.
+  const pageSource = sources.url ?? "the page itself";
   try {
     const html = sources.html ?? "";
     const meta = themeColorMeta(html);
-    if (meta) raw.measurements.push(meta);
-    raw.measurements.push(...mastheadColours(html));
+    if (meta) raw.measurements.push({ ...meta, source: pageSource });
+    raw.measurements.push(
+      ...mastheadColours(html).map((m) => ({ ...m, source: pageSource })),
+    );
     const inline = inlineStyles(html);
-    if (inline.trim()) scanCss(inline, raw);
+    if (inline.trim()) scanCss(inline, raw, pageSource);
     for (const sheet of sources.sheets ?? []) {
       try {
-        scanCss(sheet.css, raw);
+        scanCss(sheet.css, raw, sheet.href);
       } catch {
         notes.push(`stylesheet not readable: ${sheet.href}`);
       }
@@ -859,6 +1193,7 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
             value: hex,
             signal: "brand-property",
             token: `style="${prop}: ${value}"`,
+            source: pageSource,
           });
       }
     }
@@ -868,6 +1203,10 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
     );
   }
 
+  // A colour nobody named still deserves a look when it recurs on the surfaces a brand actually
+  // occupies — run AFTER every source has been scanned, since the whole point is a GLOBAL count.
+  promoteRecurrentRoles(raw.measurements);
+
   const candidates = rank(raw.measurements);
   const top = candidates[0];
   const confidence: CharterConfidence = !top
@@ -875,6 +1214,11 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
     : top.evidence.some((e) => DECLARED_SIGNALS.has(e.signal))
       ? "declared"
       : "inferred";
+
+  if (top) {
+    const foreign = foreignTopCandidateNote(top, sources.url);
+    if (foreign) notes.push(foreign);
+  }
 
   // A reading that did not clear the floor is NAMED but not proposed — hiding it would be as
   // dishonest as proposing it, and the journalist may recognise their own colour in it.
@@ -886,9 +1230,15 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
       );
   }
 
+  // Hedged the same way `collectSiteSources`'s own note is (lib/newsroom/charter-fetch.ts): this
+  // condition cannot tell "no stylesheet was linked" apart from "one was linked but failed" — it
+  // only knows nothing was SCANNED — so it must not assert the JavaScript guess as a flat fact.
+  // The two notes can both appear (this module is fed by more than `collectSiteSources`, so it
+  // cannot rely on that one having run) — CLI output that shows both should now read as the same
+  // claim twice, not as two different claims in two different registers.
   if (!sources.sheets?.length && !inlineStyles(sources.html ?? "").trim())
     notes.push(
-      "no stylesheet was read — the page may build its styles in JavaScript, in which case nothing here is reliable",
+      "no stylesheet was read — one possibility is that the page builds its styles in JavaScript, but that is a guess this reading cannot confirm",
     );
   if (raw.unparsed.size)
     notes.push(

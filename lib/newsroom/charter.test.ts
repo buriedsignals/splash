@@ -1,12 +1,17 @@
 import { describe, it, expect } from "bun:test";
 import {
+  alphaOf,
   cssRules,
   firstFamily,
   groundTheme,
   isNeutral,
   parseCssColour,
   proposeCharter,
+  FREQUENCY_BONUS_CAP,
+  MIN_CANDIDATE_SCORE,
   SIGNAL_LABEL,
+  SMALLEST_SIGNAL_GAP,
+  WEIGHT,
   type ColourSignal,
   type SiteSources,
 } from "./charter";
@@ -45,7 +50,7 @@ describe("parseCssColour", () => {
   });
 
   it("should refuse a notation it cannot convert rather than approximate it", () => {
-    expect(parseCssColour("oklch(0.7 0.15 30)")).toBeNull();
+    expect(parseCssColour("lab(29.2345% 39.3825 20.0664)")).toBeNull();
     expect(parseCssColour("color-mix(in srgb, red, blue)")).toBeNull();
     expect(parseCssColour("rebeccapurple")).toBeNull();
   });
@@ -54,6 +59,72 @@ describe("parseCssColour", () => {
     expect(parseCssColour("")).toBeNull();
     expect(parseCssColour("#")).toBeNull();
     expect(parseCssColour("rgb(")).toBeNull();
+  });
+});
+
+// Reference values, not the fixture's own output — each is independently checkable:
+// - oklch(62.8% 0.2577 29.23) ≈ #ff0000 is the CSS Color 4 spec's own worked example for pure
+//   red (drafts.csswg.org's relative-color examples resolve `oklch(from hsl(0 100% 50%) l c h)`
+//   to `oklch(0.627966 0.257704 29.2346)`; the Culori colour library's test suite pins the same
+//   round trip to full precision — github.com/Evercoder/culori, test/oklch.test.js, `oklch('red')`
+//   = { l: 0.6279553639214311, c: 0.2576833038053608, h: 29.233880279627854 }).
+// - oklch(0% 0 0) = #000000 and oklch(100% 0 0) = #ffffff are definitional (zero/full lightness,
+//   zero chroma).
+// - oklch(17.764% 0 0) ≈ #111111 is the same Culori test suite, `oklch('#111')` = { l:
+//   0.17763777307657064, c: 0 } — a second, independent published pair, chosen because it is a
+//   pure-grey case (c: 0) where the hue term cannot mask an error in the a/b split.
+// All three were also cross-checked against the CSS Color 4 spec's own two-step conversion code
+// (OKLab_to_XYZ + XYZ_to_lin_sRGB, drafts.csswg.org/css-color-4/conversions.js) composed
+// independently of the direct matrix this module uses — the two paths agree to sub-integer
+// precision on every value below.
+describe("parseCssColour — oklch()", () => {
+  it("should convert the CSS Color 4 spec's own reference red", () => {
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23)")).toBe("#ff0000");
+  });
+
+  it("should convert pure black and white", () => {
+    expect(parseCssColour("oklch(0% 0 0)")).toBe("#000000");
+    expect(parseCssColour("oklch(100% 0 0)")).toBe("#ffffff");
+  });
+
+  it("should convert a pure-grey reference pinned from the Culori library's test suite", () => {
+    expect(parseCssColour("oklch(17.764% 0 0)")).toBe("#111111");
+  });
+
+  it("should accept unit-interval lightness as the same value as the percentage", () => {
+    expect(parseCssColour("oklch(0.628 0.2577 29.23)")).toBe(
+      parseCssColour("oklch(62.8% 0.2577 29.23)"),
+    );
+  });
+
+  it("should accept the site's real syntax — percentage lightness, bare chroma, bare degrees", () => {
+    // The exact form heidi.news declares its red scale in.
+    expect(parseCssColour("oklch(55.41% .2189 26.74)")).toBe("#d5121e");
+  });
+
+  it("should accept an explicit deg suffix on the hue", () => {
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23deg)")).toBe("#ff0000");
+  });
+
+  it("should read the alpha channel and treat a fully transparent one as no colour", () => {
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23 / 0)")).toBeNull();
+    expect(parseCssColour("oklch(62.8% 0.2577 29.23 / 50%)")).toBe("#ff0000");
+  });
+
+  it("should refuse a malformed oklch() rather than guess", () => {
+    expect(parseCssColour("oklch(not a colour)")).toBeNull();
+    expect(parseCssColour("oklch(50% 0.1)")).toBeNull();
+  });
+});
+
+describe("alphaOf — oklch()", () => {
+  it("should read a low alpha the same as any other translucent colour", () => {
+    expect(alphaOf("oklch(62.8% 0.2577 29.23 / 10%)")).toBeCloseTo(0.1, 5);
+    expect(alphaOf("oklch(62.8% 0.2577 29.23 / 0.1)")).toBeCloseTo(0.1, 5);
+  });
+
+  it("should default to fully opaque when no alpha is declared", () => {
+    expect(alphaOf("oklch(62.8% 0.2577 29.23)")).toBe(1);
   });
 });
 
@@ -96,6 +167,19 @@ describe("firstFamily", () => {
     expect(
       firstFamily("-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"),
     ).toBeNull();
+  });
+
+  // heidi.news: a `var(--font-x, Roboto)` fallback arrived here as "Roboto)" once split on the
+  // comma, and the trailing paren hid the generic from GENERIC_FAMILY — reported as the house
+  // typeface. The paren must be stripped BEFORE the generic test.
+  it("should strip a trailing paren before testing for a generic family", () => {
+    expect(firstFamily("var(--font-x, Roboto)")).toBeNull();
+  });
+
+  // therecord.media: "icomoon" was reported alongside the real typeface. An icon font ships
+  // glyphs, not a house typeface, and telling a newsroom "your typeface is icomoon" is false.
+  it("should skip an icon font rather than report it as the newsroom typeface", () => {
+    expect(firstFamily("icomoon")).toBeNull();
   });
 });
 
@@ -160,6 +244,56 @@ describe("proposeCharter — what the site declares", () => {
     );
     expect(p.candidates[0]!.evidence[0]!.token).toContain("--primary");
   });
+
+  // The same-host filter used to be what kept a third party's stylesheet from being read at all
+  // (deleted with it: charter-fetch.test.ts's "should drop a third-party stylesheet"). Now that
+  // any linked sheet is read (lib/newsroom/charter-fetch.ts, task 2), a `--brand` declared inside
+  // an analytics widget's own CSS is read too — correctly, since a third-party font sheet is
+  // exactly where the typography this measurement wants can live. What must NOT happen is that
+  // widget's declaration passing for the newsroom's OWN say-so: `Measurement.source` is the
+  // sheet's href, not the page's, so it stays distinguishable rather than reaching
+  // `DECLARED_SIGNALS` disguised as the site's own brand declaration.
+  it("keeps a third-party sheet's declaration distinguishable from the newsroom's own", () => {
+    const p = proposeCharter(
+      bare({
+        url: "https://example.news/",
+        sheets: [
+          {
+            href: "https://cdn.ads.example/consent.css",
+            css: ":root{--brand:#d5121e}",
+          },
+        ],
+      }),
+    );
+    const evidence = p.candidates[0]!.evidence[0]!;
+    expect(evidence.signal).toBe("brand-property");
+    expect(evidence.source).toBe("https://cdn.ads.example/consent.css");
+    expect(evidence.source).not.toBe("https://example.news/");
+  });
+
+  it("marks a page-derived reading (theme-color) with the page's own URL as its source", () => {
+    const html = '<meta name="theme-color" content="#d5121e">';
+    const p = proposeCharter(bare({ html, url: "https://example.news/" }));
+    expect(p.candidates[0]!.evidence[0]!.source).toBe("https://example.news/");
+  });
+
+  // heidi.news declares its red scale only in oklch() — this is the shape of that declaration
+  // (lib/newsroom/fixtures/sites/heidi-news.css: `--lt-color-red-500: oklch(55.41% .2189 26.74)`),
+  // and it must read as a --brand declaration, at `declared` confidence, exactly like a hex would.
+  it("should take a --brand declared in oklch() at the same confidence as hex", () => {
+    const css = ":root { --brand: oklch(55.41% .2189 26.74) }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    expect(p.candidates[0]!.evidence[0]!.signal).toBe("brand-property");
+    expect(p.confidence).toBe("declared");
+  });
+
+  it("should not propose a near-white/grey read only in oklch() — the neutral rule applies after conversion too", () => {
+    // oklch(96% 0.005 90) is a near-white; isNeutral must still catch it once converted to hex.
+    const css = ":root { --brand: oklch(96% 0.005 90) }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates).toEqual([]);
+  });
 });
 
 describe("proposeCharter — refusing rather than inventing", () => {
@@ -177,10 +311,12 @@ describe("proposeCharter — refusing rather than inventing", () => {
   });
 
   it("should report an unreadable colour notation instead of guessing it", () => {
-    const css = ":root{--brand: oklch(0.62 0.19 25)}";
+    // oklch() is read now (see "proposeCharter — what the site declares"); lab() is still not —
+    // this is the notation the refuse-rather-than-invent path is proven against today.
+    const css = ":root{--brand: lab(29.2345% 39.3825 20.0664)}";
     const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
     expect(p.candidates).toEqual([]);
-    expect(p.notes.join(" ")).toContain("oklch");
+    expect(p.notes.join(" ")).toContain("lab");
   });
 
   it("should never throw, whatever it is handed", () => {
@@ -382,6 +518,87 @@ describe("regression — the score floor", () => {
     expect(p.notes.join(" ")).toContain("#e00000");
     expect(p.notes.join(" ")).toContain("nothing is proposed");
   });
+
+  it("should still refuse a colour on only TWO brand-carrying declarations — the bbc.com reading this floor exists for", () => {
+    // Same live case the constant's own comment cites: three hashed, unrelated classes, one
+    // colour, and only two of the three properties (background-color, border-top-color) are on
+    // the closed set `recurrent-role` reads — RECURRENT_ROLE_MIN_COUNT keeps this below evidence.
+    const css =
+      ".css-1ab { color: #e00000 } .css-2cd { background-color: #e00000 } .css-3ef { border-top-color: #e00000 }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates).toEqual([]);
+    expect(p.confidence).toBe("none");
+  });
+});
+
+// A compiled stylesheet does not name its brand in a custom property — it repeats the colour on
+// the roles that carry a brand: button fills, banner backgrounds, accented borders. Repetition on
+// those roles is evidence; repetition anywhere is not, which is why a neutral never qualifies.
+describe("recurrent-role — a colour repeated on brand-carrying roles, with no name anywhere", () => {
+  it("finds a brand colour repeated on brand-carrying roles", () => {
+    const css = Array.from(
+      { length: 12 },
+      (_, i) => `.btn-${i}{background:#d5121e}`,
+    ).join("");
+    const p = proposeCharter({
+      url: "https://x.news",
+      html: "",
+      sheets: [{ href: "a.css", css }],
+    });
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    expect(p.confidence).not.toBe("declared");
+  });
+
+  // Never the least-grey pixel: a repeated neutral is a layout colour, not a brand.
+  it("a repeated neutral is not a brand colour", () => {
+    const css = Array.from(
+      { length: 20 },
+      (_, i) => `.x-${i}{background:#f4f4f4}`,
+    ).join("");
+    const p = proposeCharter({
+      url: "https://x.news",
+      html: "",
+      sheets: [{ href: "a.css", css }],
+    });
+    expect(p.candidates).toEqual([]);
+  });
+
+  it("finds it even when the class names are hashed and carry no readable role", () => {
+    // The actual defect this signal fixes: no `.btn`, no `.masthead` — nothing a selector-text
+    // regex can read, which is what a CSS-modules/atomic build produces. Six on `background`,
+    // four on `border-color`: the closed property set, not the selector, is what fires here.
+    const css = [
+      ...Array.from({ length: 6 }, (_, i) => `.h${i}x9{background:#3355aa}`),
+      ...Array.from({ length: 4 }, (_, i) => `.q${i}z2{border-color:#3355aa}`),
+    ].join("");
+    const p = proposeCharter({
+      url: "https://x.news",
+      html: "",
+      sheets: [{ href: "a.css", css }],
+    });
+    expect(p.candidates[0]!.value).toBe("#3355aa");
+    expect(p.candidates[0]!.evidence[0]!.signal).toBe("recurrent-role");
+    expect(p.confidence).toBe("inferred");
+  });
+
+  it("does not promote a colour repeated only on `color` — running prose, not a brand role", () => {
+    const css = Array.from(
+      { length: 12 },
+      (_, i) => `.p${i}{color:#3355aa}`,
+    ).join("");
+    const p = proposeCharter(bare({ sheets: [{ href: "a.css", css }] }));
+    expect(p.candidates).toEqual([]);
+  });
+
+  it("stays below every declared signal even at high frequency", () => {
+    const css = [
+      ":root { --brand: #0a5c36 }",
+      ...Array.from({ length: 200 }, (_, i) => `.h${i}z{background:#3355aa}`),
+    ].join("\n");
+    const p = proposeCharter(bare({ sheets: [{ href: "a.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#0a5c36");
+    expect(p.confidence).toBe("declared");
+  });
 });
 
 describe("regression — the ground", () => {
@@ -469,6 +686,7 @@ describe("regression — every signal a reading can carry is explainable", () =>
     "masthead",
     "link",
     "control",
+    "recurrent-role",
     "declared",
   ];
 
@@ -516,5 +734,179 @@ describe("regression — accent removed from the charter", () => {
     // that named a colour nothing in the product renders.
     const mod = (await import("./charter")) as Record<string, unknown>;
     expect(mod.accentCandidate).toBeUndefined();
+  });
+});
+
+// A sheet the newsroom's own document links is the newsroom's, whatever host serves it (a real
+// newsroom's CSS lives on a CDN it does not share a name with) — so no host filter, by decision.
+// But that decision has a cost the journalist must be able to see: a consent banner's stylesheet
+// repeats its own blue on five backgrounds and takes the TOP candidate off the newsroom's own
+// green. The answer is not to drop the reading, it is to SAY where it was read.
+describe("a top candidate read from another host's stylesheet names that host", () => {
+  const CONSENT = Array.from(
+    { length: 5 },
+    (_, i) => `.cmp-${i}{background-color:#1f4fd8}`,
+  ).join("");
+
+  it("should still rank the third party's colour first — no filtering, no score change", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        { href: "https://cdn.consent.example/banner.css", css: CONSENT },
+        {
+          href: "https://cdn.heidi.news/app.css",
+          css: ".btn{background:#0a5c36}",
+        },
+      ],
+    });
+    expect(p.candidates[0]!.value).toBe("#1f4fd8");
+    expect(p.candidates[1]!.value).toBe("#0a5c36");
+  });
+
+  it("should say plainly that the colour it proposes first came from another site, and name it", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        { href: "https://cdn.consent.example/banner.css", css: CONSENT },
+        {
+          href: "https://cdn.heidi.news/app.css",
+          css: ".btn{background:#0a5c36}",
+        },
+      ],
+    });
+    const notes = p.notes.join(" ");
+    expect(notes).toContain("cdn.consent.example");
+    expect(notes).toContain("#1f4fd8");
+  });
+
+  // The newsroom's own CDN is the newsroom. Comparing whole hostnames would flag every site that
+  // serves its CSS from `cdn.` or `static.` — which is most of them — and a warning that fires on
+  // the ordinary case teaches the journalist to ignore it.
+  it("should NOT flag the newsroom's own CDN, which shares the site's last two labels", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        {
+          href: "https://cdn.heidi.news/app.css",
+          css: CONSENT.replace(/cmp/g, "btn"),
+        },
+      ],
+    });
+    expect(p.candidates[0]!.value).toBe("#1f4fd8");
+    expect(p.notes.join(" ")).not.toContain("cdn.heidi.news");
+  });
+
+  // The case this whole branch exists for (decision D1): heidi.news serves its real CSS from
+  // `heidi-17455.kxcdn.com`. `siteOf` compares the last two labels, so that host IS foreign to it
+  // and the note DOES fire — on a newsroom's own house colour, read from its own stylesheet.
+  // That is fine as a fact ("here is where this came from"); it was NOT fine as a guess ("this
+  // may belong to a consent banner"), which is what a newsroom on a differently-named CDN was
+  // told about its own brand. The note stays; the speculation goes.
+  it("should state a checkable fact, never guess what the other host is", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      // No <meta name="theme-color">: the real fixture's tag outweighs every stylesheet reading
+      // and hides this path. A newsroom that declares no theme-color has nothing hiding it.
+      html: "",
+      sheets: [
+        {
+          href: "https://heidi-17455.kxcdn.com/app.css",
+          css: ".btn{background-color:#d5121e}",
+        },
+      ],
+    });
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    const notes = p.notes.join(" ");
+    // The fact, and enough of it to act on: which colour, which host, and what to do.
+    expect(notes).toContain("heidi-17455.kxcdn.com");
+    expect(notes).toContain("#d5121e");
+    expect(notes).toContain("confirm");
+    // The guess — the newsroom's own CDN described as somebody else's widget.
+    expect(notes).not.toContain("third party");
+    expect(notes).not.toContain("consent banner");
+    expect(notes).not.toContain("embedded widget");
+  });
+
+  // Same discipline on the case the note was originally written for: even when the other host
+  // really IS a consent vendor, the extractor does not know that and must not say it.
+  it("should not guess even when the other host really is a third party's", () => {
+    const p = proposeCharter({
+      url: "https://www.heidi.news/",
+      html: "",
+      sheets: [
+        { href: "https://cdn.consent.example/banner.css", css: CONSENT },
+      ],
+    });
+    const notes = p.notes.join(" ");
+    expect(notes).toContain("cdn.consent.example");
+    expect(notes).not.toContain("third party");
+    expect(notes).not.toContain("consent banner");
+  });
+});
+
+// The module's own invariant: "an unparsed notation is reported as a gap, never approximated".
+// Reading oklch() dropped it from the unparsed list wholesale — but the parser reads only the
+// ABSOLUTE form. Relative-colour syntax and a hue in turns/radians are still unread, and with the
+// notation off the list they vanished silently instead of being reported.
+describe("an oklch() this parser cannot read is still reported as a gap", () => {
+  it("should report relative-colour syntax rather than drop it in silence", () => {
+    const css = ":root{--brand: oklch(from var(--base) l c h)}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates).toEqual([]);
+    expect(p.notes.join(" ")).toContain("oklch");
+  });
+
+  it("should report a hue this parser does not read (turn, rad)", () => {
+    const css =
+      ".btn{background: oklch(0.7 0.15 0.5turn)} .x{color: oklch(0.7 0.15 1.2rad)}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.notes.join(" ")).toContain("oklch");
+  });
+
+  // An oklch() that IS read stays read: the gap note must mean "something was missed", not
+  // "oklch appeared somewhere".
+  it("should not call a readable oklch() a gap", () => {
+    const css = ":root { --brand: oklch(55.41% .2189 26.74) }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    expect(p.notes.join(" ")).not.toContain("oklch");
+  });
+
+  // A fully transparent colour is a deliberate skip, not a notation this parser failed on.
+  it("should not call a fully transparent oklch() a gap", () => {
+    const css = ".spacer{background: oklch(62.8% 0.2577 29.23 / 0)}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.notes.join(" ")).not.toContain("oklch");
+  });
+});
+
+// The weights are ordered so that no amount of repetition can outrank a more deliberate
+// declaration. `rank` makes that structural (it sorts on the tuple, not the sum), but the PRINTED
+// score is still an addition, and `SMALLEST_SIGNAL_GAP` was the constant that stated the rule
+// while nothing read it — which is how `recurrent-role` came to sit exactly one gap above
+// `control` with no check that the bonus still fits under it.
+describe("the frequency bonus stays a tiebreak, never an argument", () => {
+  const gaps = (): number[] => {
+    const sorted = [...new Set(Object.values(WEIGHT))].sort((a, b) => a - b);
+    return sorted.slice(1).map((w, i) => w - sorted[i]!);
+  };
+
+  it("should have no two adjacent weights closer than SMALLEST_SIGNAL_GAP", () => {
+    expect(Math.min(...gaps())).toBe(SMALLEST_SIGNAL_GAP);
+  });
+
+  it("should keep the frequency bonus strictly under that gap", () => {
+    expect(FREQUENCY_BONUS_CAP).toBeLessThan(SMALLEST_SIGNAL_GAP);
+  });
+
+  // The gap this constant now guards, named: an unlabelled colour repeated on brand-carrying
+  // roles must stay under a colour the site's own markup labels a button with.
+  it("should keep recurrent-role between the proposal floor and the accent property", () => {
+    expect(WEIGHT["recurrent-role"]).toBeGreaterThan(WEIGHT.control);
+    expect(WEIGHT["recurrent-role"]).toBeLessThan(WEIGHT["accent-property"]);
+    expect(WEIGHT.control).toBe(MIN_CANDIDATE_SCORE);
   });
 });

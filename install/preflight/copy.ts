@@ -46,6 +46,26 @@ export type PageCopy = {
   measureFailed: string;
   /** Shown when a measurement's palette comes back empty — a legitimate answer, not an error. */
   siteDeclaresNothing: string;
+  /**
+   * The SECOND try (Task 5, 2026-08-06): offered ONLY once the first (static) read comes back
+   * with nothing to propose — never automatic, never silent. Says what it does (opens the site
+   * in a real browser, for a site that builds its styles in JavaScript) and that it costs time,
+   * because it does: a page load plus a settle, not the plain fetch the first try was.
+   */
+  measureRenderAction: string;
+  measureRenderHint: string;
+  measureRendering: string;
+  measureRenderFailed: string;
+  /**
+   * The measured TYPEFACES (final review, F3). They have no profile field of their own — they are
+   * written into the profile's prose — and were the one measured thing that never appeared on
+   * screen, so they could not be disagreed with. Shown with their receipts, and strikeable.
+   */
+  measuredTypefaces: string;
+  measuredTypefacesHint: string;
+  /** Strike a measured typeface off before saving / put it back. */
+  typefaceDrop: string;
+  typefaceRestore: string;
   /** Appended to an INFERRED (not declared) colour reading, so it reads as the guess it is. */
   charterInferred: string;
   /** Caption over an existing profile's series colours (`palette[1+]`) — shown, not editable. */
@@ -61,10 +81,18 @@ export type PageCopy = {
   signalLabel: Record<ColourSignal, string>;
   /** What a measured typeface role is called — keyed like `TypeMeasurement["role"]`. */
   typeRoleLabel: Record<TypeMeasurement["role"], string>;
-  /** "${this} ${signalLabel}: `${token}`." — a colour receipt. */
+  /** "${this} ${signalLabel}: `${token}`. ${receiptSource} ${source}" — a colour receipt. */
   receiptReadFrom: string;
-  /** "${this} ${typeRoleLabel}: `${token}`." — a typeface receipt. */
+  /** "${this} ${typeRoleLabel}: `${token}`. ${receiptSource} ${source}" — a typeface receipt. */
   receiptReadFont: string;
+  /**
+   * Names WHERE the token was read from — the newsroom's own page/CDN, or a third-party
+   * stylesheet (an analytics widget, a CDN unrelated to the newsroom) the page happens to link.
+   * This is the whole reason `Measurement.source`/`TypeMeasurement.source` exist: since the
+   * same-host filter on stylesheets was lifted, a reading can come from any sheet the page
+   * links, and only naming it lets the journalist judge whether it is really their own.
+   */
+  receiptSource: string;
 
   /** The publication language field — a profile field, edited here (the profile is where it lives). */
   languageContent: string;
@@ -142,6 +170,17 @@ const EN: PageCopy = {
   measureFailed: "Could not read your site — check the address and try again.",
   siteDeclaresNothing:
     "Your site does not declare a house colour we can read — a legitimate answer. Type one in below.",
+  measureRenderAction: "Try opening the page instead",
+  measureRenderHint:
+    "Some sites build their colours in JavaScript, invisible to a plain read. Opening your site in a real browser can find them — this takes longer than the first try, up to about 30 seconds.",
+  measureRendering: "Opening your site in a browser…",
+  measureRenderFailed:
+    "Could not open your site in a browser either — check the address and try again.",
+  measuredTypefaces: "Typefaces read on your site",
+  measuredTypefacesHint:
+    "Noted in your profile as text — no visual uses them yet. Remove any that are not your newsroom's, and only the rest is saved.",
+  typefaceDrop: "Remove",
+  typefaceRestore: "Put back",
   charterInferred: "(a guess — not a colour your site names as its own)",
   seriesColoursKept: "Also part of your palette, kept as they are:",
 
@@ -153,6 +192,7 @@ const EN: PageCopy = {
   },
   receiptReadFrom: "Read from",
   receiptReadFont: "Read as the font of",
+  receiptSource: "Source:",
 
   languageContent: "Language your visuals are published in",
 
@@ -224,6 +264,17 @@ const FR: PageCopy = {
     "Impossible de lire votre site — vérifiez l'adresse et réessayez.",
   siteDeclaresNothing:
     "Votre site ne déclare aucune couleur maison lisible — une réponse légitime. Saisissez-en une ci-dessous.",
+  measureRenderAction: "Essayer en ouvrant la page",
+  measureRenderHint:
+    "Certains sites construisent leurs couleurs en JavaScript, invisibles à une lecture simple. Ouvrir votre site dans un vrai navigateur peut les trouver — c'est plus long que le premier essai, jusqu'à environ 30 secondes.",
+  measureRendering: "Ouverture de votre site dans un navigateur…",
+  measureRenderFailed:
+    "Impossible d'ouvrir votre site dans un navigateur non plus — vérifiez l'adresse et réessayez.",
+  measuredTypefaces: "Polices lues sur votre site",
+  measuredTypefacesHint:
+    "Notées dans votre profil sous forme de texte — aucun visuel ne les utilise encore. Retirez celles qui ne sont pas celles de votre rédaction : seules les autres sont enregistrées.",
+  typefaceDrop: "Retirer",
+  typefaceRestore: "Remettre",
   charterInferred:
     "(une supposition — pas une couleur que votre site déclare comme la sienne)",
   seriesColoursKept:
@@ -242,6 +293,8 @@ const FR: PageCopy = {
     masthead: "le remplissage d'un SVG dans l'élément bandeau/logo",
     link: "la couleur des liens",
     control: "le fond des boutons",
+    "recurrent-role":
+      "une couleur répétée sur plusieurs déclarations bouton/bandeau/bordure, sans que rien ne la nomme comme la marque",
     declared: "une couleur déclarée quelque part dans la feuille de style",
   },
   typeRoleLabel: {
@@ -251,6 +304,7 @@ const FR: PageCopy = {
   },
   receiptReadFrom: "Lu depuis",
   receiptReadFont: "Lu comme police de",
+  receiptSource: "Source :",
 
   languageContent: "Langue de publication de vos visuels",
 

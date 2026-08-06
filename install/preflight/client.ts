@@ -14,10 +14,23 @@ import {
 import type { PreflightCapability, PreflightModel } from "./model.ts";
 import { statusView } from "./status-view.ts";
 import type { VerifyOutcome } from "../../lib/newsroom/verify.ts";
-// Type-only: charter-endpoint.ts's own imports reach lib/newsroom/charter.ts, and this file is
-// bundled for the browser. A value import here would pull that module graph into the bundle;
-// `import type` is erased at compile time, so only the shape crosses the boundary.
-import type { CharterReadout } from "./charter-endpoint.ts";
+// charter-endpoint.ts reaches lib/newsroom/charter.ts, and this file is bundled for the browser.
+// That module graph IS in the bundle and always was — copy.ts value-imports `SIGNAL_LABEL` from
+// charter.ts and this file imports copy.ts for values, so the boundary the earlier comment here
+// claimed to be holding was never in force (final review, F9). It costs a pure module
+// (core/contrast and some tables, no I/O), which is why the decisions below are allowed to live
+// there rather than as untestable expressions in this file: nothing in this repo can import
+// client.ts — it reads `document` at module load — so a rule written HERE is a rule no suite can
+// contradict. What must NOT cross is anything that opens a file, a socket or a browser; keep
+// server-side work behind server.ts, which is a separate bundle entry.
+import {
+  notesFrom,
+  offersRenderRetry,
+  typefaceKey,
+  type CharterMode,
+  type CharterReadout,
+  type CharterState,
+} from "./charter-endpoint.ts";
 
 type FormState = {
   uiLang: string;
@@ -42,14 +55,16 @@ type FormState = {
   verified: Record<string, VerifyOutcome>;
 };
 
-/** The state of the "read my site" action — a measurement, never a decision (see charter.ts). */
-type CharterState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "done"; readout: CharterReadout }
-  | { status: "error"; message: string };
-
+/** The state of the "read my site" action — a measurement, never a decision (see charter.ts).
+ *  `CharterState` and the rule that reads it (`offersRenderRetry`) live in charter-endpoint.ts,
+ *  where a test can reach them. */
 let charter: CharterState = { status: "idle" };
+
+/** The measured typefaces the journalist struck off before saving, keyed by `typefaceKey`. They
+ *  are the only measured values with no field of their own — they go into the profile's prose —
+ *  so this set is what makes them as correctable as everything else on the page (F3). Reset by
+ *  each new measurement: a fresh reading is a fresh set of proposals to accept or refuse. */
+let droppedTypefaces = new Set<string>();
 
 const model: PreflightModel = JSON.parse(
   document.getElementById(MODEL_SCRIPT_ID)!.textContent!,
@@ -329,14 +344,44 @@ function renderNewsroom(copy: PageCopy): void {
   const measureBtn = el(
     "button",
     { type: "button", id: "newsroom-measure", class: "btn" },
-    charter.status === "loading" ? copy.measuring : copy.measureAction,
+    charter.status === "loading" && charter.mode === "static"
+      ? copy.measuring
+      : copy.measureAction,
   ) as HTMLButtonElement;
   measureBtn.disabled = charter.status === "loading";
-  measureBtn.addEventListener("click", () => void measureSite(copy));
+  measureBtn.addEventListener("click", () => void measureSite(copy, "static"));
   measureField.append(measureBtn);
-  if (charter.status === "error")
+  if (charter.status === "error" && charter.mode === "static")
     measureField.append(el("p", { class: "field-help" }, charter.message));
   body.append(measureField);
+
+  // The SECOND try (Task 5): opening the page in a real browser instead of a plain fetch, for a
+  // site that builds its colours in JavaScript. OFFERED, never automatic — `offersRenderRetry`
+  // (charter-endpoint.ts) owns when, and is tested there; it used to be an expression here that
+  // nothing could reach, and it counted "you have not typed an address" as a read that found
+  // nothing (final review, F4).
+  if (offersRenderRetry(charter)) {
+    const renderField = el("div", { class: "field" });
+    renderField.append(
+      el("p", { class: "field-help" }, copy.measureRenderHint),
+    );
+    const renderBtn = el(
+      "button",
+      { type: "button", id: "newsroom-measure-render", class: "btn" },
+      charter.status === "loading" && charter.mode === "rendered"
+        ? copy.measureRendering
+        : copy.measureRenderAction,
+    ) as HTMLButtonElement;
+    renderBtn.disabled = charter.status === "loading";
+    renderBtn.addEventListener(
+      "click",
+      () => void measureSite(copy, "rendered"),
+    );
+    renderField.append(renderBtn);
+    if (charter.status === "error" && charter.mode === "rendered")
+      renderField.append(el("p", { class: "field-help" }, charter.message));
+    body.append(renderField);
+  }
 
   const palette = charter.status === "done" ? charter.readout.palette : [];
 
@@ -349,6 +394,56 @@ function renderNewsroom(copy: PageCopy): void {
     for (const note of charter.readout.notes)
       notes.append(el("p", { class: "charter-receipt" }, note));
     body.append(notes);
+  }
+
+  // The measured TYPEFACES. They have no field of their own — no engine applies a house typeface
+  // yet, so they are written into the profile's prose (`form.newsroom.notes`) — and until the
+  // final review that is all they were: written into a fresh NEWSROOM-PROFILE.md having never
+  // appeared on screen, the one measured thing a journalist could not correct (F3). Now they get
+  // the same treatment as a colour candidate — the value beside where it was read — plus the one
+  // affordance a prose line needs: striking it before saving. What is left here is what
+  // `notesFrom` writes.
+  if (charter.status === "done" && charter.readout.typefaces.length) {
+    const typeField = el("div", { class: "field" });
+    // `.field-title`, not a <label>: this heads a GROUP of readings, and there is no one control
+    // for a label to point at.
+    typeField.append(el("p", { class: "field-title" }, copy.measuredTypefaces));
+    typeField.append(
+      el("p", { class: "field-help" }, copy.measuredTypefacesHint),
+    );
+    for (const typeface of charter.readout.typefaces) {
+      const key = typefaceKey(typeface);
+      const dropped = droppedTypefaces.has(key);
+      const value = el("strong", {}, typeface.family);
+      if (dropped) value.style.textDecoration = "line-through";
+      const toggle = el(
+        "button",
+        {
+          type: "button",
+          class: "btn",
+          // "Remove" three times over reads as one ambiguous control repeated; the name says
+          // WHICH reading it strikes.
+          "aria-label": `${dropped ? copy.typefaceRestore : copy.typefaceDrop} — ${typeface.family}`,
+        },
+        dropped ? copy.typefaceRestore : copy.typefaceDrop,
+      ) as HTMLButtonElement;
+      toggle.addEventListener("click", () => {
+        if (dropped) droppedTypefaces.delete(key);
+        else droppedTypefaces.add(key);
+        refreshNotes();
+        renderNewsroom(copy);
+      });
+      typeField.append(
+        el(
+          "p",
+          { class: "charter-receipt" },
+          value,
+          ` — ${typeface.receipt} `,
+          toggle,
+        ),
+      );
+    }
+    body.append(typeField);
   }
 
   // House colour — the primary field. Ranked candidates from a measurement are offered as
@@ -392,15 +487,11 @@ function renderNewsroom(copy: PageCopy): void {
   const chosenCandidate = palette.find(
     (c) => c.hex.toLowerCase() === form.newsroom.color.toLowerCase(),
   );
+  // The "this is a guess" mention is already part of `receipt` for an inferred candidate
+  // (charter-endpoint.ts's `paletteReceiptFor`) — this file renders it, it does not decide it.
   if (chosenCandidate)
     colourField.append(
-      el(
-        "p",
-        { class: "charter-receipt" },
-        chosenCandidate.confidence === "inferred"
-          ? `${chosenCandidate.receipt} ${copy.charterInferred}`
-          : chosenCandidate.receipt,
-      ),
+      el("p", { class: "charter-receipt" }, chosenCandidate.receipt),
     );
   // An existing profile's series colours (`palette[1+]`) — read-only, just visible. The primary
   // field above can only ever edit index 0 (`updateProfileMarkdown` grafts the rest back on
@@ -475,47 +566,78 @@ function renderNewsroom(copy: PageCopy): void {
  * fields above with what it found. Total on the client's side too: a network failure or a `/charter`
  * `{ error }` answer both render as a plain sentence, never a thrown exception — matching
  * `measureSite` on the server, which never throws either.
+ *
+ * `mode`: `"static"` is the ordinary first try (the "Read my site" button); `"rendered"` is the
+ * SECOND try, only ever invoked from the render-offer button, and only once the static read has
+ * already come back with nothing — see `renderOfferVisible` in `renderNewsroom`. This function
+ * itself does not decide when the offer is allowed; it only relays whichever mode it was called
+ * with.
  */
-async function measureSite(copy: PageCopy): Promise<void> {
+async function measureSite(copy: PageCopy, mode: CharterMode): Promise<void> {
   const url = form.newsroom.url.trim();
   if (!url) {
-    charter = { status: "error", message: copy.measureNeedsUrl };
+    // `attempted: false` — nothing left the page. This is the journalist being asked for
+    // something, not their site failing to give it, and the browser retry must not be offered
+    // for it: opening an empty address in a real browser fails in exactly the same way (F4).
+    charter = {
+      status: "error",
+      message: copy.measureNeedsUrl,
+      mode,
+      attempted: false,
+    };
     renderNewsroom(copy);
     return;
   }
-  charter = { status: "loading" };
+  charter = { status: "loading", mode };
   renderNewsroom(copy);
   try {
     const response = await fetch("/charter", {
       method: "POST",
       // `lang` (M1): the receipt sentences the server builds are read in the page's own
-      // interface language, not relayed as an English literal to a French page.
-      body: JSON.stringify({ url, lang: form.uiLang }),
+      // interface language, not relayed as an English literal to a French page. `mode` (Task 5):
+      // which read the server performs — never sent unless the journalist asked for the render.
+      body: JSON.stringify({ url, lang: form.uiLang, mode }),
     });
     const data = (await response.json()) as CharterReadout | { error: string };
     if ("error" in data) {
-      charter = { status: "error", message: data.error };
+      // `attempted: true`: the server answered, so this IS a read that happened and came back
+      // with nothing — the case the browser retry exists for.
+      charter = { status: "error", message: data.error, mode, attempted: true };
       renderNewsroom(copy);
       return;
     }
-    charter = { status: "done", readout: data };
+    charter = { status: "done", readout: data, mode };
     // Prefill only — never raise the confidence the extractor states, never invent a value it did
     // not return. Every field this touches remains editable afterwards.
     const top = data.palette[0];
     if (top) form.newsroom.color = top.hex;
     if (data.ground) form.newsroom.theme = data.ground.value;
-    // The measured typefaces have no frontmatter field of their own (no engine applies them yet)
-    // — they, and the extractor's own caveats, go into `notes`: prose `profileMarkdown` appends
-    // to the body on a FRESH profile, never a frontmatter key (spec 2026-08-06 §3.1).
-    form.newsroom.notes = [
-      ...data.notes,
-      ...data.typefaces.map((t) => `${t.role}: ${t.family} — ${t.receipt}`),
-    ];
+    // A new reading is a new set of proposals: nothing struck off the previous one carries over.
+    droppedTypefaces = new Set();
+    refreshNotes();
     renderNewsroom(copy);
   } catch {
-    charter = { status: "error", message: copy.measureFailed };
+    charter = {
+      status: "error",
+      message:
+        mode === "rendered" ? copy.measureRenderFailed : copy.measureFailed,
+      mode,
+      attempted: true,
+    };
     renderNewsroom(copy);
   }
+}
+
+/**
+ * What the measurement will write into the profile's BODY: the extractor's own caveats, plus one
+ * line per measured typeface the journalist has not struck. Typefaces have no frontmatter field
+ * of their own (no engine applies them yet), so prose is where they land — `profileMarkdown`
+ * appends `notes` to the body on a FRESH profile, never as a frontmatter key (spec 2026-08-06
+ * §3.1). Recomputed rather than accumulated, so striking a typeface really removes it.
+ */
+function refreshNotes(): void {
+  if (charter.status !== "done") return;
+  form.newsroom.notes = notesFrom(charter.readout, droppedTypefaces);
 }
 
 function renderAssistant(copy: PageCopy): void {
