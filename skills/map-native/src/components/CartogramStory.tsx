@@ -556,7 +556,14 @@ export const CartogramStory: React.FC<{ config: CartogramConfigShape }> = ({
           central CountryLabel; title beat uses the full TitleCard) */}
       {overlay &&
         beat?.kind !== "title" &&
-        beat?.kind !== "reveal" &&
+        // ★ AN AUTHORED REVEAL SHOWS ITS SENTENCE. A derived reveal's `copy` restates what the
+        // map already writes on itself (the region's name and value), so a card would duplicate
+        // it — that is why reveals were excluded. But a CONFIRMED walk's copy is the
+        // journalist's own claim, and excluding it meant the guided tour demanded nine sentences
+        // and displayed none of them. Measured on Rémy's own run, 2026-08-06: "La visite guidée
+        // n'affiche pas les phrases que tu as validées." The `authored` flag has existed on the
+        // beat since applyMapArc was written, documented at length — and no component read it.
+        (beat?.kind !== "reveal" || beat?.authored) &&
         beat?.copy &&
         overlay.captionReveal > 0 && (
           <CaptionCard text={beat.copy} reveal={overlay.captionReveal} />
