@@ -123,6 +123,17 @@ Pop-Location
 # Remotion, and located per skill directory: it walks up from its cwd to the nearest package.json,
 # and each packed skill keeps its own (measured: docs/installer/remotion-cache-measurement.md).
 # So it is fetched once per video engine, and the setup page's probe finds it where it looks.
+#
+# KNOWN HAZARD, not fixed here: `bunx remotion browser ensure` still runs under BUN, even though
+# step 2 above installs Node.js precisely so that Playwright/Remotion's own browser automation does
+# not hang under Bun on Windows (Bun #15679) — `bunx` was never rerouted through `node` for either
+# this call or the `bunx playwright install chromium` one above. Unlike a stalled render (which the
+# shipped skills already drive through `tsx` for exactly this reason, see the CHANGELOG's "Garde
+# rendu natif Windows"), a hang HERE has no timeout and prints no message, and it now sits before
+# the only interactive screen in the whole installer — a newsroom would see nothing after
+# "Downloading the video renderer for …" and have no prompt telling them to kill the process by
+# hand. Left as a named risk rather than a redesign: recorded in
+# docs/installer/setup-page-proof.md's "what is not proven" section.
 foreach ($engine in @("chart-native", "map-native")) {
   Write-Host "-> Downloading the video renderer for $engine…"
   Push-Location (Join-Path $Dest ".dist\skills\$engine")
@@ -165,7 +176,7 @@ $launchCmd = Runtime-LaunchCmd
 @"
 @echo off
 cd /d "%~dp0"
-rem .env values are double-quoted so spaces (e.g. fly tokens "FlyV1 fm2_…") survive; %%~b strips the quotes.
+rem .env values are double-quoted so spaces in a value survive; %%~b strips the quotes.
 for /f "usebackq tokens=1,* delims==" %%a in (".env") do set "%%a=%%~b"
 $launchCmd
 "@ | Set-Content -Path $launcher -Encoding ascii

@@ -244,6 +244,13 @@ claim under test, read from the model the page itself served, not inferred.
 
 - **The Windows path (`install/bootstrap.ps1`)** — still verified only by reading the script and
   by the hermetic tests in `docs/installer/bootstrap-ps1.test.ts`. No Windows machine was run.
+  Named hazard within it: `bootstrap.ps1:126-133` (`bunx remotion browser ensure`) and the
+  `bunx playwright install chromium` call above it both still run under Bun, not Node, even though
+  `bootstrap.ps1:54` installs Node specifically because Playwright/Remotion's own browser
+  automation hangs under Bun on Windows (Bun #15679) — `bunx` was never rerouted through `node` for
+  either call. The `remotion browser ensure` one now sits before the only interactive screen in the
+  installer, with no timeout and no message: a hang there would leave a newsroom staring at
+  "Downloading the video renderer for …" with nothing telling them to kill the process by hand.
 - **The desktop runtimes** (`goose-desktop`, `claude-desktop`) — `configurator-core.ts` already
   marks both `verified: false`; this proof did not touch either (runtime `claude`, the CLI, was
   the one exercised end-to-end, matching `docs/installer/*-findings.md`'s existing caveats).
@@ -254,6 +261,9 @@ claim under test, read from the model the page itself served, not inferred.
   clicking the same checkboxes and typing the same key produces the same `POST /submit` body rests
   on reading `install/preflight/client.ts` (the client bundle the server serves), not on operating
   a browser.
+- **`map-native` and `scrolly`'s live e2e produce tests still print "skipping" under the gate** —
+  they gate on `VITE_MAPTILER_KEY` reaching them, and Bun's `.env` loading does not walk up from a
+  skill-dir `cwd`, so the 23/23 headline above does not exercise those two live render paths.
 
 ## Files touched by this proof
 
