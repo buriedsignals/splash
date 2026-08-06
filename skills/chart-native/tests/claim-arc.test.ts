@@ -218,3 +218,132 @@ describe("flagged salience fallback (narrativeFallbackWarning)", () => {
     ).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// ★ THE VIDEO SURFACE — every type carries a walk now, and each is validated at ITS grain.
+//
+// While `bar` was the only walk-capable video, this whole surface was unreachable and the
+// scrolly-only list was harmless. It stopped being harmless the moment 41 types opened.
+// ---------------------------------------------------------------------------
+describe("narrativeBeatErrors — the VIDEO surface, per grain", () => {
+  // A spec carries its DATA as csv — the mappers parse it. Building `rows` by hand made
+  // `specToNativeConfig` throw, and the throw is swallowed (the producer validator's job), so
+  // every one of these tests passed while checking nothing. Caught by writing a refusal test
+  // first and watching it stay green.
+  const spec = (nativeType: string, beats: unknown[]) =>
+    ({
+      nativeType,
+      title: "t",
+      altInsight: "a",
+      source: { name: "S" },
+      unit: "u",
+      data: "region,value\nGenève,12\nVaud,8\nValais,5\n",
+      beats,
+    }) as unknown as NativeSpec;
+
+  it("accepts an anchored NON-BAR video walk — lollipop names its subjects", () => {
+    expect(
+      narrativeBeatErrors(
+        spec("lollipop", [
+          { category: "Vaud", role: "establish", text: "Vaud ouvre." },
+          { category: "Valais", role: "build", text: "Le Valais suit." },
+          { category: "Genève", role: "payoff", text: "Genève ferme." },
+        ]),
+        "video",
+      ),
+    ).toEqual([]);
+  });
+
+  it("still refuses an anchor the data does not carry, and names the valid ones", () => {
+    const errs = narrativeBeatErrors(
+      spec("lollipop", [
+        { category: "Atlantide", role: "establish", text: "nulle part" },
+        { category: "Valais", role: "build", text: "Le Valais suit." },
+        { category: "Genève", role: "payoff", text: "Genève ferme." },
+      ]),
+      "video",
+    );
+    expect(errs.length).toBe(1);
+    expect(errs[0]!).toContain("Atlantide");
+    expect(errs[0]!).toContain("Genève");
+  });
+
+  it("refuses an anchor a SEQUENCED type cannot honour — never accepts then ignores it", () => {
+    const errs = narrativeBeatErrors(
+      spec("pie", [
+        { category: "Vaud", role: "establish", text: "Vaud d'abord." },
+        { role: "build", text: "Puis ceci." },
+        { role: "payoff", text: "Et le point." },
+      ]),
+      "video",
+    );
+    expect(errs.length).toBe(1);
+    // ROUTED: it names the act that resolves it, and why.
+    expect(errs[0]!).toMatch(/Drop the `category` anchor and keep the sentence/);
+    expect(errs[0]!).toMatch(/order written/);
+  });
+
+  it("accepts a SEQUENCED walk that is only sentences — the shape that type can render", () => {
+    expect(
+      narrativeBeatErrors(
+        spec("pie", [
+          { role: "establish", text: "D'abord ceci." },
+          { role: "build", text: "Puis cela." },
+          { role: "payoff", text: "Et le point." },
+        ]),
+        "video",
+      ),
+    ).toEqual([]);
+  });
+
+
+  // ★ THE ANCHOR FIELD IS NOT `catField` FOR EVERY TYPE. A dumbbell names its rows by
+  // `labelField`, a pyramid by `bandField`, a radial bar by `categoryField`. While `bar` was
+  // alone the hard-coded `catField` was right by accident; reading it from the registry is what
+  // makes it right on purpose — and this is the test that can tell the difference.
+  it("resolves the anchor by the type's OWN field — dumbbell names rows by labelField", () => {
+    const paired = (beats: unknown[]) =>
+      ({
+        nativeType: "dumbbell",
+        title: "t",
+        altInsight: "a",
+        source: { name: "S" },
+        unit: "u",
+        data: "region,2000,2020\nGenève,12,20\nVaud,8,14\nValais,5,9\n",
+        beats,
+      }) as unknown as NativeSpec;
+    expect(
+      narrativeBeatErrors(
+        paired([
+          { category: "Vaud", role: "establish", text: "Vaud ouvre." },
+          { category: "Valais", role: "build", text: "Le Valais suit." },
+          { category: "Genève", role: "payoff", text: "Genève ferme." },
+        ]),
+        "video",
+      ),
+    ).toEqual([]);
+    // …and an unknown one is still named, against the right column.
+    const errs = narrativeBeatErrors(
+      paired([
+        { category: "Atlantide", role: "establish", text: "nulle part" },
+        { category: "Valais", role: "build", text: "Le Valais suit." },
+        { category: "Genève", role: "payoff", text: "Genève ferme." },
+      ]),
+      "video",
+    );
+    expect(errs.length).toBe(1);
+    expect(errs[0]!).toContain("Vaud");
+  });
+
+  it("the SCROLLY surface is unchanged — a lollipop scrolly is still refused", () => {
+    const errs = narrativeBeatErrors(
+      spec("lollipop", [
+        { category: "Vaud", role: "establish", text: "Vaud ouvre." },
+        { category: "Valais", role: "build", text: "Le Valais suit." },
+        { category: "Genève", role: "payoff", text: "Genève ferme." },
+      ]),
+    );
+    expect(errs.length).toBe(1);
+    expect(errs[0]!).toContain("chart scrollies only");
+  });
+});

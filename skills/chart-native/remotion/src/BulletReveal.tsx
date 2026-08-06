@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { BulletChart, type BulletConfig } from "../../src/BulletChart";
 import sample from "../../assets/sample-data/bullet.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as BulletConfig;
 
@@ -19,7 +20,14 @@ export const BulletReveal: React.FC<{ scale?: number; config?: BulletConfig }> =
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="bullet"
+    >
       <BulletChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const BulletReveal: React.FC<{ scale?: number; config?: BulletConfig }> =
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

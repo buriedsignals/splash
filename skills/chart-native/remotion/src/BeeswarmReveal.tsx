@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { BeeswarmChart, type BeeswarmConfig } from "../../src/BeeswarmChart";
 import sample from "../../assets/sample-data/beeswarm.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as BeeswarmConfig;
 
@@ -19,7 +20,14 @@ export const BeeswarmReveal: React.FC<{ scale?: number; config?: BeeswarmConfig 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="beeswarm"
+    >
       <BeeswarmChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const BeeswarmReveal: React.FC<{ scale?: number; config?: BeeswarmConfig 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

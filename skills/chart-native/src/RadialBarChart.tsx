@@ -20,6 +20,8 @@ import {
   type RadialBarLayout,
 } from "./radial-bar-geometry";
 import { clamp01, easeOutCubic, stagger } from "./core/math";
+import { entranceOf } from "./core/chart-walk";
+import { walkEntryOrder, type ConfigWalkBeats } from "./core/walk";
 import {
   COLORS,
   FONT,
@@ -46,6 +48,11 @@ export interface RadialBarConfig {
    *  Absent → the OKABE_ITO.blue default. */
   baseColor?: string;
   rows: Record<string, string | number>[];
+
+  /** The journalist's confirmed walk, when this element carries one. Present ⇒ the subjects
+   *  enter in ITS order and the video caption shows each step's sentence. Absent ⇒
+   *  unchanged, byte for byte. */
+  beats?: ConfigWalkBeats;
 }
 
 export interface RadialBarChartProps {
@@ -189,6 +196,14 @@ function RadialBarSvg({
 }) {
   const { cx, cy, innerR, outerR, bars, ticks } = layout;
   const n = bars.length;
+  // The entrance schedule is READ from the walk registry, never retyped here: the video
+  // caption reads the same one, and two copies of it is a sentence over the wrong subject.
+  const E = entranceOf("radial-bar");
+  // The confirmed walk leads, built from the LAID-OUT labels (this geometry may sort).
+  const entry = walkEntryOrder(
+    bars.map((r) => r.category),
+    config.beats,
+  );
   const C = themeColors(config.themeBg, config.baseColor);
   const chrome = easeOutCubic(p / 0.18);
   const ox = padding.left + cx;
@@ -237,7 +252,7 @@ function RadialBarSvg({
         {/* bars (grow outward, staggered clockwise) */}
         <g>
           {bars.map((b) => {
-            const grow = stagger(p, b.index, n, 0.15, 0.5 / n, 0.5);
+            const grow = stagger(p, entry(b.index), n, E.start, E.step(n), E.span);
             const isPeak = peakSet.has(b.index);
             const focused = interactive && hover === b.index;
             const dim = interactive && hover !== null && !focused;

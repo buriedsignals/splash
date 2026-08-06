@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { ScatterChart, type ScatterConfig } from "../../src/ScatterChart";
 import sample from "../../assets/sample-data/scatter.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as ScatterConfig;
 
@@ -19,7 +20,14 @@ export const ScatterReveal: React.FC<{ scale?: number; config?: ScatterConfig }>
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="scatter"
+    >
       <ScatterChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const ScatterReveal: React.FC<{ scale?: number; config?: ScatterConfig }>
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

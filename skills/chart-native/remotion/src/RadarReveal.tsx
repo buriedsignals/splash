@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { RadarChart, type RadarConfig } from "../../src/RadarChart";
 import sample from "../../assets/sample-data/radar.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as RadarConfig;
 
@@ -19,7 +20,14 @@ export const RadarReveal: React.FC<{ scale?: number; config?: RadarConfig }> = (
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="radar"
+    >
       <RadarChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const RadarReveal: React.FC<{ scale?: number; config?: RadarConfig }> = (
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

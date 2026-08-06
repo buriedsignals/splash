@@ -10,7 +10,24 @@
 /** The shape a brief beat arrives in (lib/core/production-brief.ts's BriefBeat, narrowed to what
  *  an order needs). `x` is a line's axis value, `category` a bar's category — the two anchors
  *  chart-native itself validates against (chart-story.ts's narrativeBeatErrors). */
+import { entranceOf, type EntranceSchedule } from "./chart-walk";
+
 export type WalkBeat = { x?: string; category?: string };
+
+/**
+ * THE WALK AS A COMPONENT CONFIG CARRIES IT — anchor, role and the journalist's SENTENCE.
+ *
+ * Declared once here rather than copied into each anchored type's Config. `BarChart` learned why
+ * the hard way: its own copy left `text` out, so the caption stage was handed beats with no words
+ * and the video showed none of the sentences the journalist had written. Six more copies would be
+ * six more chances to make the same omission.
+ */
+export type ConfigWalkBeats = readonly {
+  x?: string;
+  category?: string;
+  role?: string;
+  text?: string;
+}[];
 
 /**
  * WHICH POSITION each subject enters at, given the chart's own anchor values in data order.
@@ -65,11 +82,7 @@ export function walkPositions(
  * not hypothetical — it is what route-story.ts's header documents at length, from a caption that
  * followed a confirmed arc while the camera kept following the geographic walk.
  */
-export const BAR_ENTRANCE = {
-  start: 0.18,
-  step: (count: number) => 0.5 / count,
-  span: 0.35,
-} as const;
+export const BAR_ENTRANCE = entranceOf("bar");
 
 /**
  * WHICH BEAT a caption should name at this progress — the subject whose entrance has most
@@ -111,36 +124,57 @@ export function activeBeatAt(
 /**
  * THE SENTENCE ON SCREEN at this progress — the journalist's own words, or nothing.
  *
- * ★ WORKS IN BEAT SPACE, and the first version did not. It asked `activeBeatAt` for the SUBJECT
- * whose bar was entering and then indexed the BEATS array with it — two different spaces. Beat k
- * is about whichever subject its anchor names, which is rarely subject k; the walk exists
- * precisely because those two orders differ. The result was a sentence over the wrong bar: the
- * failure this file's own header warns about, written into the function under the warning.
+ * ★ IT WORKS IN BEAT SPACE, and two earlier versions did not. The first asked which SUBJECT was
+ * entering and then indexed the BEATS array with it — two different spaces, so a sentence landed
+ * over the wrong bar. The second resolved each beat's subject through `config.rows`, which is not
+ * the order a component that SORTS actually renders — same wrong bar, one layer down, and only a
+ * rendered frame could show it.
  *
- * Each beat's window opens when ITS subject enters. The active beat is the one whose window
- * opened most recently — what the reader's eye has just been drawn to — and a subject the walk
- * does not name never becomes a caption at all, because it has no sentence.
+ * Now there is nothing to resolve: every anchored type permutes its entrance so that beat k's
+ * subject enters at position k (`walkEntryOrder`), so the k-th window is the k-th sentence.
  *
  * Returns `null` when there is no walk, which keeps a video nobody storyboarded byte-identical.
  * An EMPTY text yields null rather than an empty band: `produce` already refuses to build a walk
  * whose claims are unwritten (`unauthoredBeats`), so a blank here can only come from a
  * hand-authored spec — and an empty caption box is a worse answer than none.
  */
+export type CaptionClock =
+  /**
+   * The type's own per-subject entrance, and how many subjects share it.
+   *
+   * ★ NO ANCHORS. Beat k's subject enters at position k — `walkEntryOrder` guarantees it, and
+   * every anchored type now permutes. So the window opens at `start + k * step`, and the caption
+   * never re-derives a subject index. The version that did was wrong twice over: it read
+   * `config.rows`, which is not the order a component that sorts actually renders, and it needed
+   * to know whether the type permuted at all.
+   */
+  | { grain: "anchored"; entrance: EntranceSchedule; count: number }
+  /** No per-subject entrance to sit on: the beats share the timeline in equal parts, in the order
+   *  the journalist wrote them. A stepped video in the plainest sense — the step carries the
+   *  argument and the clock turns the page. */
+  | { grain: "sequenced" };
+
 export function captionAt(
   beats: readonly { x?: string; category?: string; text?: string }[] | undefined,
-  anchors: readonly string[],
+  clock: CaptionClock,
   progress: number,
 ): { text: string; index: number } | null {
   if (!beats?.length) return null;
-  const entryOrder = walkPositions([...anchors], beats);
-  const start = BAR_ENTRANCE.start;
-  const step = BAR_ENTRANCE.step(Math.max(1, anchors.length));
+  if (clock.grain === "sequenced") {
+    // Equal segments, clamped: progress 0 reads the first sentence and progress 1 the last.
+    const k = Math.min(
+      beats.length - 1,
+      Math.max(0, Math.floor(progress * beats.length)),
+    );
+    const t = beats[k]?.text?.trim();
+    return t ? { text: t, index: k } : null;
+  }
+  const start = clock.entrance.start;
+  const step = clock.entrance.step(Math.max(1, clock.count));
   let active = -1;
   let bestBegin = -Infinity;
-  beats.forEach((b, k) => {
-    const subject = anchors.indexOf(String(b.category ?? b.x ?? ""));
-    if (subject < 0) return;
-    const begin = start + (entryOrder[subject] ?? subject) * step;
+  beats.forEach((_, k) => {
+    const begin = start + k * step;
     if (begin <= progress && begin >= bestBegin) {
       bestBegin = begin;
       active = k;
@@ -151,4 +185,34 @@ export function captionAt(
   if (active < 0) active = 0;
   const text = beats[active]?.text?.trim();
   return text ? { text, index: active } : null;
+}
+
+/**
+ * ★ THE ENTRANCE ORDER OF AN ANCHORED TYPE — the walk leads, the rest follows.
+ *
+ * Measured on the first rendered proof of a non-bar walk (lollipop, 2026-08-06): the sentences
+ * played in the DATA's order, not the journalist's — their `establish` beat second, their
+ * `payoff` first — because only `bar` permuted its entrance. A walk whose steps arrive out of
+ * order is not a walk, so every anchored type permutes now, through this one helper rather than
+ * six copies of BarChart's four lines.
+ *
+ * ★ THE LABELS MUST BE THE ONES THE COMPONENT ACTUALLY STAGGERS OVER. The same render proof
+ * caught the second half of it: a lollipop's geometry SORTS its rows by value, so a permutation
+ * built from `config.rows` addressed positions the component never used and the caption sat on
+ * the wrong subject anyway. Each component therefore hands its own laid-out labels here.
+ *
+ * The result is the invariant everything else rests on: **beat k's subject enters at position
+ * k**. That is what lets a caption ask "which step is it now" without re-deriving any anchor —
+ * see `captionAt`'s anchored clock.
+ *
+ * With no walk it returns the identity, so a chart nobody storyboarded is byte-identical.
+ */
+export function walkEntryOrder(
+  /** The subjects' labels IN THE ORDER THE COMPONENT LAYS THEM OUT (after any sort). */
+  laidOutLabels: readonly string[],
+  beats: readonly WalkBeat[] | undefined,
+): (i: number) => number {
+  if (!beats?.length) return (i) => i;
+  const order = walkPositions([...laidOutLabels], beats);
+  return (i) => order[i] ?? i;
 }

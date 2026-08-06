@@ -7,6 +7,7 @@ import {
   type StreamgraphConfig,
 } from "../../src/StreamgraphChart";
 import sample from "../../assets/sample-data/streamgraph.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as StreamgraphConfig;
 
@@ -22,7 +23,14 @@ export const StreamgraphReveal: React.FC<{ scale?: number; config?: StreamgraphC
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="streamgraph"
+    >
       <StreamgraphChart
         config={config}
         progress={progress}
@@ -30,6 +38,6 @@ export const StreamgraphReveal: React.FC<{ scale?: number; config?: StreamgraphC
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

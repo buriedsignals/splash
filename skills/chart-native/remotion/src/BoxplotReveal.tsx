@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { BoxplotChart, type BoxplotConfig } from "../../src/BoxplotChart";
 import sample from "../../assets/sample-data/boxplot.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as BoxplotConfig;
 
@@ -19,7 +20,14 @@ export const BoxplotReveal: React.FC<{ scale?: number; config?: BoxplotConfig }>
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="boxplot"
+    >
       <BoxplotChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const BoxplotReveal: React.FC<{ scale?: number; config?: BoxplotConfig }>
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

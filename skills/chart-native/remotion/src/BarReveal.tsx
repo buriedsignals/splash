@@ -27,6 +27,7 @@ export const BarReveal: React.FC<{ scale?: number; config?: BarConfig }> = ({ sc
       width={width}
       height={height}
       scale={scale}
+      nativeType="bar"
     >
       <BarChart
         config={config}

@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { TreemapChart, type TreemapConfig } from "../../src/TreemapChart";
 import sample from "../../assets/sample-data/treemap.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as TreemapConfig;
 
@@ -19,7 +20,14 @@ export const TreemapReveal: React.FC<{ scale?: number; config?: TreemapConfig }>
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="treemap"
+    >
       <TreemapChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const TreemapReveal: React.FC<{ scale?: number; config?: TreemapConfig }>
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

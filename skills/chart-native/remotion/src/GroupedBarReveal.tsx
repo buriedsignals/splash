@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { GroupedBarChart, type GroupedConfig } from "../../src/GroupedBarChart";
 import sample from "../../assets/sample-data/grouped.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as GroupedConfig;
 
@@ -19,7 +20,14 @@ export const GroupedBarReveal: React.FC<{ scale?: number; config?: GroupedConfig
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="grouped"
+    >
       <GroupedBarChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const GroupedBarReveal: React.FC<{ scale?: number; config?: GroupedConfig
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

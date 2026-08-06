@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { ComboChart, type ComboConfig } from "../../src/ComboChart";
 import sample from "../../assets/sample-data/combo.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as ComboConfig;
 
@@ -19,7 +20,14 @@ export const ComboReveal: React.FC<{ scale?: number; config?: ComboConfig }> = (
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="combo"
+    >
       <ComboChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const ComboReveal: React.FC<{ scale?: number; config?: ComboConfig }> = (
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

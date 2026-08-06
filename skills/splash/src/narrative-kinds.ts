@@ -15,6 +15,7 @@
 
 import { walkCapability } from "./narrative-walk-gate";
 import { PROPOSABLE_MAP_TYPES } from "../../../lib/brain/beats";
+import { chartWalk } from "../../chart-native/src/core/chart-walk";
 
 export type NarrativeKindOffer = {
   kind: "story" | "stepped" | "reveal";
@@ -130,14 +131,18 @@ export function narrativeKindsFor(
   if (producer === "chart-native") {
     const cap = walkCapability(producer, nativeType, "video");
     if (!cap.carriesWalk) return [REVEAL_OFFER(cap.why)];
+    // ★ THE GRAIN IS SAID, not glossed over. "Each subject enters as its sentence appears" and
+    // "your sentences follow one another over the animation" are not the same promise, and
+    // letting a journalist believe the first while getting the second is the one way this offer
+    // can lie. Read from the engine's registry, never described from memory.
+    // The registry's own sentence IS the answer — an anchored type's says the subjects enter
+    // with their sentences, a sequenced type's says the sentences follow the order written.
+    // Restating it here would be a second wording of the same fact, free to drift.
+    const stepped =
+      chartWalk(nativeType)?.why ??
+      "your sentences follow one another, in the order you write them";
     return [
-      {
-        kind: "stepped",
-        why:
-          "the subjects enter one after another, in the order you choose, and each one's " +
-          "sentence appears while it does",
-        owesStoryboard: true,
-      },
+      { kind: "stepped", why: stepped, owesStoryboard: true },
       REVEAL_OFFER(
         "everything animates in together and no sentence is shown — the chart makes the point " +
           "on its own",

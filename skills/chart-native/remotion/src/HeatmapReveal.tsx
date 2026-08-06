@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { HeatmapChart, type HeatmapConfig } from "../../src/HeatmapChart";
 import sample from "../../assets/sample-data/heatmap.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as HeatmapConfig;
 
@@ -19,7 +20,14 @@ export const HeatmapReveal: React.FC<{ scale?: number; config?: HeatmapConfig }>
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="heatmap"
+    >
       <HeatmapChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const HeatmapReveal: React.FC<{ scale?: number; config?: HeatmapConfig }>
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

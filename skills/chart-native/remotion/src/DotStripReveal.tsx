@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { DotStripChart, type DotStripConfig } from "../../src/DotStripChart";
 import sample from "../../assets/sample-data/dot-strip.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as DotStripConfig;
 
@@ -19,7 +20,14 @@ export const DotStripReveal: React.FC<{ scale?: number; config?: DotStripConfig 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="dot-strip"
+    >
       <DotStripChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const DotStripReveal: React.FC<{ scale?: number; config?: DotStripConfig 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

@@ -98,19 +98,41 @@ describe("narrativeWalkError — what it lets through, and why", () => {
       ).toBeNull();
   });
 
-  it("says NOTHING about a LINE video — its walk does not exist yet", () => {
-    // The rule of this gate: never demand words the render would drop. A line draws
-    // continuously, has no per-subject entrance, and so carries no walk at all today.
+  // ★ THESE TWO USED TO PIN THE HOLE. A line, a pie, a sankey were "types whose video cannot
+  // carry a walk", and the gate stayed silent for them — so their kind was never asked and no
+  // storyboard was ever proposed. They carry the words now, at the SEQUENCED grain: the
+  // sentences follow the order written over the animation. Chosen as a reveal they still owe
+  // nothing; chosen as stepped they owe their steps like any other.
+  it("a LINE video chosen as a reveal owes nothing — and chosen as stepped, it owes its steps", () => {
     expect(
-      narrativeWalkError(p("chart-native", "video", { nativeType: "line" })),
+      narrativeWalkError(
+        p("chart-native", "video", { nativeType: "line" }, "reveal"),
+      ),
     ).toBeNull();
+    expect(
+      narrativeWalkError(
+        p("chart-native", "video", { nativeType: "line" }, "stepped"),
+      ),
+    ).not.toBeNull();
   });
 
-  it("says NOTHING about the chart types whose video cannot carry a walk", () => {
-    for (const t of ["pie", "sankey", "heatmap", "stacked-area", "treemap"])
+  it("the same holds for every sequenced type — words reach the reader there too", () => {
+    for (const t of ["pie", "sankey", "heatmap", "stacked-area", "treemap"]) {
       expect(
-        narrativeWalkError(p("chart-native", "video", { nativeType: t })),
+        narrativeWalkError(p("chart-native", "video", { nativeType: t }, "reveal")),
       ).toBeNull();
+      expect(
+        narrativeWalkError(p("chart-native", "video", { nativeType: t }, "stepped")),
+      ).not.toBeNull();
+    }
+  });
+
+  it("says NOTHING about a type this engine does not render at all", () => {
+    expect(
+      narrativeWalkError(
+        p("chart-native", "video", { nativeType: "no-such-chart" }),
+      ),
+    ).toBeNull();
   });
 
   it("says NOTHING about a Datawrapper form — it renders no walk of its own", () => {
@@ -175,8 +197,10 @@ describe("walkCapability — the queryable answer, and the guard's own", () => {
   it("says yes exactly where the guard would demand a walk", () => {
     const forms: [string, string, string, boolean][] = [
       ["chart-native", "bar", "video", true],
-      ["chart-native", "line", "video", false],
-      ["chart-native", "pie", "video", false],
+      // Sequenced types carry the words too, since the caption stage covers all 41.
+      ["chart-native", "line", "video", true],
+      ["chart-native", "pie", "video", true],
+      ["chart-native", "no-such-chart", "video", false],
       ["map-native", "choropleth", "video", true],
       ["scrolly", "bar", "scrolly", true],
       ["chart-native", "bar", "static", false],
@@ -185,15 +209,19 @@ describe("walkCapability — the queryable answer, and the guard's own", () => {
     for (const [producer, type, format, expected] of forms) {
       expect(walkCapability(producer, type, format).carriesWalk).toBe(expected);
       // …and the guard agrees: it demands a walk on exactly the forms that carry one.
+      // A video is judged at its chosen kind — an unstated one is its own refusal, tested
+      // elsewhere, so the sweep states `stepped` and reads the walk demand alone.
       const demanded =
-        narrativeWalkError(p(producer, format, { nativeType: type })) !== null;
+        narrativeWalkError(
+          p(producer, format, { nativeType: type }, format === "video" ? "stepped" : undefined),
+        ) !== null;
       expect(demanded).toBe(expected);
     }
   });
 
   it("explains a refusal in terms a journalist can act on, never 'unsupported'", () => {
-    const why = walkCapability("chart-native", "pie", "video").why;
-    expect(why).toMatch(/continuous scalar|per-subject entrance/);
+    const why = walkCapability("chart-native", "no-such-chart", "video").why;
+    expect(why).toMatch(/not a chart type this engine renders/);
     expect(why).not.toMatch(/unsupported|invalid/i);
   });
 });
@@ -259,10 +287,10 @@ describe("the narrative kind is answered, never assumed", () => {
   });
 
   it("asks nothing where there is nothing to choose — one offer is not a question", () => {
-    // A pie video renders one kind and one only; refusing it for an unanswered question would
-    // block legitimate work over a menu of one.
+    // A Datawrapper form renders no narrative video at all: refusing it for an unanswered
+    // question would block legitimate work over a menu of none.
     expect(
-      narrativeWalkError(p("chart-native", "video", { nativeType: "pie" })),
+      narrativeWalkError(p("dw-chart", "video", { nativeType: "d3-bars" })),
     ).toBeNull();
   });
 
@@ -321,5 +349,59 @@ describe("the narrative kind is answered, never assumed", () => {
         ),
       ),
     ).toBeNull();
+  });
+});
+
+// ★ THROUGH THE SPINE, on the VIDEO path — which had no beat validation at all.
+// `narrativeBeatErrors` ran on the scrolly branch only, so a typo'd anchor on a chart video
+// reached production unchecked. Invisible while `bar` was the sole walk-capable video; a live
+// hole the moment all 41 opened.
+describe("the spine validates a chart VIDEO's walk", () => {
+  const videoSpec = (nativeType: string, beats: unknown[]) => ({
+    nativeType,
+    title: "t",
+    altInsight: "a",
+    source: { name: "S" },
+    unit: "u",
+    data: "region,value\nGenève,12\nVaud,8\nValais,5\n",
+    beats,
+  });
+
+  it("refuses an anchor the data does not carry, by name", () => {
+    const r = validateAccepted({
+      ...p("chart-native", "video", videoSpec("lollipop", [
+        { category: "Atlantide", role: "establish", text: "nulle part" },
+        { category: "Valais", role: "build", text: "suit" },
+        { category: "Genève", role: "payoff", text: "ferme" },
+      ])),
+      narrativeKind: "stepped",
+    } as never);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toContain("Atlantide");
+  });
+
+  it("refuses an anchor a SEQUENCED type cannot honour", () => {
+    const r = validateAccepted({
+      ...p("chart-native", "video", videoSpec("pie", [
+        { category: "Vaud", role: "establish", text: "d'abord" },
+        { role: "build", text: "puis" },
+        { role: "payoff", text: "enfin" },
+      ])),
+      narrativeKind: "stepped",
+    } as never);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" ")).toMatch(/order written/);
+  });
+
+  it("lets a well-formed walk through", () => {
+    const r = validateAccepted({
+      ...p("chart-native", "video", videoSpec("lollipop", [
+        { category: "Vaud", role: "establish", text: "Vaud ouvre." },
+        { category: "Valais", role: "build", text: "Le Valais suit." },
+        { category: "Genève", role: "payoff", text: "Genève ferme." },
+      ])),
+      narrativeKind: "stepped",
+    } as never);
+    expect(r.ok).toBe(true);
   });
 });

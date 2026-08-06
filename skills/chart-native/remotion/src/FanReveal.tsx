@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { FanChart, type FanConfig } from "../../src/FanChart";
 import sample from "../../assets/sample-data/fan.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as FanConfig;
 
@@ -19,7 +20,14 @@ export const FanReveal: React.FC<{ scale?: number; config?: FanConfig }> = ({ sc
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="fan"
+    >
       <FanChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const FanReveal: React.FC<{ scale?: number; config?: FanConfig }> = ({ sc
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

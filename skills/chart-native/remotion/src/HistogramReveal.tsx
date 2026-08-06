@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { HistogramChart, type HistogramConfig } from "../../src/HistogramChart";
 import sample from "../../assets/sample-data/histogram.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as HistogramConfig;
 
@@ -19,7 +20,14 @@ export const HistogramReveal: React.FC<{ scale?: number; config?: HistogramConfi
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="histogram"
+    >
       <HistogramChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const HistogramReveal: React.FC<{ scale?: number; config?: HistogramConfi
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

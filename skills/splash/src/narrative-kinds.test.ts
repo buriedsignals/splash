@@ -30,12 +30,32 @@ describe("narrativeKindsFor — what this type can actually be", () => {
     expect(kinds.find((k) => k.kind === "reveal")!.owesStoryboard).toBe(false);
   });
 
-  it("a chart that can carry no walk offers only the reveal, and says why", () => {
-    const kinds = narrativeKindsFor("chart-native", "pie");
+  it("a type this engine does not render offers only the reveal, and says why", () => {
+    const kinds = narrativeKindsFor("chart-native", "no-such-chart");
     expect(kinds.map((k) => k.kind)).toEqual(["reveal"]);
     expect(kinds[0]!.owesStoryboard).toBe(false);
     // The absence is EXPLAINED, not silent — a journalist reads why the steps are not offered.
-    expect(kinds[0]!.why).toMatch(/continuous scalar|per-subject entrance/);
+    expect(kinds[0]!.why).toMatch(/not a chart type this engine renders/);
+  });
+
+  // ★ A SEQUENCED TYPE OFFERS THE CHOICE TOO — this is the hole that closed. A pie used to offer
+  // one kind, and one offer is not a question, so nobody was ever asked and no storyboard was
+  // ever proposed. Its stepped grain is named in the offer rather than glossed: the sentences
+  // follow the order written, they do not pin to a subject.
+  it("a sequenced type offers both kinds, and says which grain its stepped is", () => {
+    const kinds = narrativeKindsFor("chart-native", "pie");
+    expect(kinds.map((k) => k.kind).sort()).toEqual(["reveal", "stepped"]);
+    const stepped = kinds.find((k) => k.kind === "stepped")!;
+    expect(stepped.owesStoryboard).toBe(true);
+    expect(stepped.why).toMatch(/order written/);
+    expect(stepped.why).not.toMatch(/subject it is about/);
+  });
+
+  it("an anchored type says its stepped pins each sentence to its subject", () => {
+    const stepped = narrativeKindsFor("chart-native", "lollipop").find(
+      (k) => k.kind === "stepped",
+    )!;
+    expect(stepped.why).toMatch(/each subject enters at the moment of its own sentence/);
   });
 
   // These two narrate like any other map — their Story family paints the beats' words — so a
@@ -158,9 +178,11 @@ describe("what an offer PROMISES is what the guard DEMANDS", () => {
     ["map-native", "route"],
     ["map-native", "hex-grid"],
     ["chart-native", "bar"],
+    // …and the two grains of chart video, which used to offer nothing to choose from.
+    ["chart-native", "lollipop"],
     ["chart-native", "line"],
     ["chart-native", "pie"],
-    ["chart-native", "stacked-bar"],
+    ["chart-native", "sankey"],
   ];
 
   for (const [producer, type] of MATRIX)

@@ -19,6 +19,8 @@ import {
   type DumbbellLayout,
 } from "./dumbbell-geometry";
 import { clamp01, easeOutCubic, labelReveal, stagger } from "./core/math";
+import { entranceOf } from "./core/chart-walk";
+import { walkEntryOrder, type ConfigWalkBeats } from "./core/walk";
 import {
   COLORS,
   TYPE,
@@ -51,6 +53,11 @@ export interface DumbbellConfig {
    *  hue would collapse the categories it separates. Undefined = untinted (byte-identical). */
   baseColor?: string;
   rows: Record<string, string | number>[];
+
+  /** The journalist's confirmed walk, when this element carries one. Present ⇒ the subjects
+   *  enter in ITS order and the video caption shows each step's sentence. Absent ⇒
+   *  unchanged, byte for byte. */
+  beats?: ConfigWalkBeats;
 }
 
 export interface DumbbellChartProps {
@@ -233,7 +240,18 @@ function DumbbellSvg({
   const n = rows.length;
 
   const chrome = easeOutCubic(p / 0.18);
-  const rowP = (i: number) => stagger(p, i, n, 0.18, 0.5 / n, 0.4);
+  // The entrance schedule is READ from the walk registry, never retyped here: the video
+  // caption reads the same one, and two copies of it is a sentence over the wrong subject.
+  const E = entranceOf("dumbbell");
+  // The confirmed walk leads: the subjects the journalist named enter first, in their order.
+  // Built from the LAID-OUT labels, not from `config.rows` — this geometry sorts, and a
+  // permutation over the unsorted rows addresses positions the component never renders.
+  // Identity without a walk, so an un-storyboarded chart is byte-identical.
+  const entry = walkEntryOrder(
+    rows.map((r) => r.rawLabel),
+    config.beats,
+  );
+  const rowP = (i: number) => stagger(p, entry(i), n, E.start, E.step(n), E.span);
 
   const legendTop = innerHeight + 32 * sc;
   const legend = layoutLegend(

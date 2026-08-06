@@ -201,19 +201,25 @@ describe("captionAt — the sentence on screen", () => {
     { category: "Eastgate", text: "Eastgate suit de peu." },
     { category: "Central", text: "Central écrase tout le reste." },
   ];
+  // `bar`'s own clock: its entrance, and the permutation only it performs.
+  const BAR_CLOCK = {
+    grain: "anchored" as const,
+    entrance: BAR_ENTRANCE,
+    count: CATS.length,
+  };
 
   it("names the beat whose bar is entering, not the subject at that index", () => {
     // ★ THE BUG THIS PINS: the first version asked which SUBJECT was entering and then indexed
     // the BEATS array with it — two different spaces. Beat 0 is about Westpark, which is
     // subject 4; reading beats[4] gave undefined, and reading beats[0] for subject 0 gave
     // Westpark's sentence over CENTRAL's bar.
-    expect(captionAt(beats, CATS, 0)!.text).toBe("Westpark ouvre la marche.");
+    expect(captionAt(beats, BAR_CLOCK, 0)!.text).toBe("Westpark ouvre la marche.");
     // Second window: Eastgate's beat, not "the second category".
     const second = BAR_ENTRANCE.start + BAR_ENTRANCE.step(CATS.length) + 1e-4;
-    expect(captionAt(beats, CATS, second)!.text).toBe("Eastgate suit de peu.");
+    expect(captionAt(beats, BAR_CLOCK, second)!.text).toBe("Eastgate suit de peu.");
     // Third: Central closes the walk, though it is the FIRST row of the data.
     const third = BAR_ENTRANCE.start + 2 * BAR_ENTRANCE.step(CATS.length) + 1e-4;
-    expect(captionAt(beats, CATS, third)!.text).toBe(
+    expect(captionAt(beats, BAR_CLOCK, third)!.text).toBe(
       "Central écrase tout le reste.",
     );
   });
@@ -221,25 +227,99 @@ describe("captionAt — the sentence on screen", () => {
   it("holds the last sentence once the un-walked subjects enter", () => {
     // Rows the walk never names have no sentence; the caption stays on the last beat rather
     // than blanking mid-clip.
-    expect(captionAt(beats, CATS, 1)!.text).toBe("Central écrase tout le reste.");
+    expect(captionAt(beats, BAR_CLOCK, 1)!.text).toBe("Central écrase tout le reste.");
   });
 
   it("gives NOTHING when there is no walk — a video nobody storyboarded is unchanged", () => {
-    expect(captionAt(undefined, CATS, 0.5)).toBeNull();
-    expect(captionAt([], CATS, 0.5)).toBeNull();
+    expect(captionAt(undefined, BAR_CLOCK, 0.5)).toBeNull();
+    expect(captionAt([], BAR_CLOCK, 0.5)).toBeNull();
   });
 
   it("gives nothing rather than an empty band for an unwritten beat", () => {
     expect(
-      captionAt([{ category: "Central", text: "  " }], CATS, 0.5),
+      captionAt([{ category: "Central", text: "  " }], BAR_CLOCK, 0.5),
     ).toBeNull();
   });
 
   it("ignores a beat whose anchor the chart does not carry", () => {
     const withGhost = [{ category: "Atlantide", text: "nulle part" }, ...beats];
-    expect(captionAt(withGhost, CATS, 1)!.text).toBe(
+    expect(captionAt(withGhost, BAR_CLOCK, 1)!.text).toBe(
       "Central écrase tout le reste.",
     );
   });
 });
 
+
+// ---------------------------------------------------------------------------
+// ★ TWO GRAINS, ONE CLOCK EACH — and the wrong one is a sentence over the wrong subject.
+//
+// `bar` permutes its entrance into the journalist's order; the six other anchored types do NOT —
+// they keep the data's order and the caption must follow the index the component actually
+// staggers on. Assuming bar's permutation for them is the two-clock defect this file opens with,
+// wearing a shared helper.
+// ---------------------------------------------------------------------------
+import { entranceOf } from "../src/core/chart-walk";
+
+describe("captionAt — the anchored clock is the WALK's order, not the data's", () => {
+  const CATS = ["Central", "Riverside", "Hilltop", "Eastgate", "Westpark"];
+  const beats = [
+    { category: "Westpark", text: "Westpark ouvre la marche." },
+    { category: "Central", text: "Central ferme." },
+  ];
+  const clock = {
+    grain: "anchored" as const,
+    entrance: entranceOf("lollipop"),
+    count: CATS.length,
+  };
+
+  // ★ THE INVARIANT: beat k's subject enters at position k, because every anchored type permutes
+  // its entrance (`walkEntryOrder`). So the k-th window is the k-th sentence, and the caption
+  // resolves no subject at all. The version that resolved one read `config.rows` — not the order
+  // a sorting component renders — and only a rendered frame showed it.
+  it("the k-th window carries the k-th sentence — Westpark opens because the walk opens on it", () => {
+    const E = entranceOf("lollipop");
+    expect(captionAt(beats, clock, E.start + 1e-4)!.text).toBe(
+      "Westpark ouvre la marche.",
+    );
+    expect(
+      captionAt(beats, clock, E.start + E.step(CATS.length) + 1e-4)!.text,
+    ).toBe("Central ferme.");
+  });
+
+  it("holds the closing sentence through the un-walked subjects' entrance", () => {
+    expect(captionAt(beats, clock, 1)!.text).toBe("Central ferme.");
+  });
+
+  it("announces the opening sentence before the first window", () => {
+    expect(captionAt(beats, clock, 0)!.text).toBe("Westpark ouvre la marche.");
+  });
+});
+
+describe("captionAt — the sequenced clock", () => {
+  const beats = [
+    { text: "D'abord ceci." },
+    { text: "Puis cela." },
+    { text: "Enfin le point." },
+  ];
+  const SEQ = { grain: "sequenced" as const };
+
+  it("gives each sentence an equal share of the timeline, in the order written", () => {
+    expect(captionAt(beats, SEQ, 0)!.index).toBe(0);
+    expect(captionAt(beats, SEQ, 0.5)!.index).toBe(1);
+    expect(captionAt(beats, SEQ, 0.9)!.index).toBe(2);
+  });
+
+  it("clamps at both ends — the last frame still carries the closing sentence", () => {
+    expect(captionAt(beats, SEQ, 1)!.text).toBe("Enfin le point.");
+    expect(captionAt(beats, SEQ, -0.2)!.text).toBe("D'abord ceci.");
+  });
+
+  it("needs no anchor at all — a sequenced type has no subject a beat could name", () => {
+    expect(captionAt([{ text: "Seule." }], SEQ, 0.5)!.text).toBe("Seule.");
+  });
+
+  it("stays silent with no walk — a video nobody storyboarded is unchanged", () => {
+    expect(captionAt(undefined, SEQ, 0.5)).toBeNull();
+    expect(captionAt([{ text: "  " }], SEQ, 0.5)).toBeNull();
+  });
+});

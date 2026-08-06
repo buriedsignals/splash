@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { LollipopChart, type LollipopConfig } from "../../src/LollipopChart";
 import sample from "../../assets/sample-data/lollipop.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as LollipopConfig;
 
@@ -19,7 +20,14 @@ export const LollipopReveal: React.FC<{ scale?: number; config?: LollipopConfig 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="lollipop"
+    >
       <LollipopChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const LollipopReveal: React.FC<{ scale?: number; config?: LollipopConfig 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { MarimekkoChart, type MarimekkoConfig } from "../../src/MarimekkoChart";
 import sample from "../../assets/sample-data/marimekko.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as MarimekkoConfig;
 
@@ -19,7 +20,14 @@ export const MarimekkoReveal: React.FC<{ scale?: number; config?: MarimekkoConfi
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="marimekko"
+    >
       <MarimekkoChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const MarimekkoReveal: React.FC<{ scale?: number; config?: MarimekkoConfi
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

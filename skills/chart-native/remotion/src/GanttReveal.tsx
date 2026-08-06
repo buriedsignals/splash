@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { GanttChart, type GanttConfig } from "../../src/GanttChart";
 import sample from "../../assets/sample-data/gantt.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as GanttConfig;
 
@@ -19,7 +20,14 @@ export const GanttReveal: React.FC<{ scale?: number; config?: GanttConfig }> = (
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="gantt"
+    >
       <GanttChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const GanttReveal: React.FC<{ scale?: number; config?: GanttConfig }> = (
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };

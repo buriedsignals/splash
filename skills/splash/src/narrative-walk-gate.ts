@@ -17,6 +17,7 @@
 // below is therefore a list of DEMONSTRATED capability, not of intent.
 
 import type { AcceptedProposal } from "./producer-spec";
+import { chartWalk } from "../../chart-native/src/core/chart-walk";
 import {
   narrativeKindsFor,
   KIND_FOR_CAMERA_MODE,
@@ -30,7 +31,7 @@ import {
  * `scrolly` for every hosted track: the browser scrolly walks its steps and shows the sentence of
  * each (skills/scrolly). `map-native` + `video`: the Story family paints its beat's words
  * (`CaptionCard`). `chart-native` + `video`: since 2026-08-06, and for the types that can carry a
- * walk at all — see `WALK_CAPABLE_CHART_TYPES`.
+ * walk at all — which, since the walk registry opened, is every type it ships.
  *
  * A pair NOT in this list is not "unsupported", it is "the words would not reach anyone" — and
  * the guard stays silent for it rather than demanding writing nobody will read.
@@ -43,17 +44,21 @@ const WALK_REACHES_READER: readonly { producer: string; format: string }[] = [
 ];
 
 /**
- * The chart types whose VIDEO can carry a walk — read from the same measurement that opened
- * them: a walk needs a per-subject entrance to order, and a caption surface to speak through.
+ * WHETHER THIS CHART TYPE'S VIDEO CAN CARRY A WALK — read from the engine's own walk registry.
  *
- * `bar` alone today. 27 of the 41 chart components share the same staggered entrance and could
- * join with a per-type anchor declaration; the remaining 14 (pie, sankey, heatmap, stacked-area,
- * sunburst, violin, bump, calendar, connected-scatter, dot-strip, fan, lorenz, parallel,
- * pictogram) plus `line` animate by ONE continuous scalar — a sweep, a wipe, a draw — so they
- * have no per-subject entrance at all and need a segmented reveal, which is a different
- * mechanism. Measured 2026-08-06, not assumed.
+ * It was a hand-typed list holding one name, `bar`, and that list WAS the hole: forty types
+ * offered a single narrative kind, one offer is not a question, so the journalist was never asked
+ * and no storyboard was ever proposed. The cause was a conflation — SHOWING the beat's sentence
+ * and REORDERING the entrance into the journalist's order were treated as one capability, when
+ * only the first is what this guard asks about.
+ *
+ * Every type now renders through the caption stage, at one of two grains (anchored / sequenced —
+ * `core/chart-walk.ts`), so the question reduces to: is this a type the engine ships? DERIVED
+ * rather than retyped, so a type that joins the registry is covered the day it joins.
  */
-const WALK_CAPABLE_CHART_TYPES: readonly string[] = ["bar"];
+function chartVideoCarriesWalk(nativeType: string): boolean {
+  return chartWalk(nativeType) !== undefined;
+}
 
 /** The two `cameraMode` values that resolve to the REVEAL family (skills/map-native's
  *  storyComps): a fixed camera and a route's own draw-on. Both animate the DATA and paint no
@@ -164,16 +169,12 @@ export function walkCapability(
         `what appears when, but its sentences would never be shown — so none are owed. Choose ` +
         `the guided tour or the stepped kind if the words are to be read`,
     };
-  if (
-    producer === "chart-native" &&
-    !WALK_CAPABLE_CHART_TYPES.includes(nativeType)
-  )
+  if (producer === "chart-native" && !chartVideoCarriesWalk(nativeType))
     return {
       carriesWalk: false,
       why:
-        `a "${nativeType}" video animates by one continuous scalar, so it has no per-subject ` +
-        `entrance for a step to sit on (walk-capable chart videos today: ` +
-        `${WALK_CAPABLE_CHART_TYPES.join(", ")})`,
+        `"${nativeType}" is not a chart type this engine renders, so it has no video to carry ` +
+        `a walk`,
     };
   return {
     carriesWalk: true,

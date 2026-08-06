@@ -4,6 +4,7 @@
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import { BumpChart, type BumpConfig } from "../../src/BumpChart";
 import sample from "../../assets/sample-data/bump.json";
+import { RevealStage } from "./RevealStage";
 
 const sampleConfig = sample as unknown as BumpConfig;
 
@@ -19,7 +20,14 @@ export const BumpReveal: React.FC<{ scale?: number; config?: BumpConfig }> = ({ 
     extrapolateRight: "clamp",
   });
   return (
-    <div style={{ width, height, background: "#FFFFFF" }}>
+    <RevealStage
+      config={config}
+      progress={progress}
+      width={width}
+      height={height}
+      scale={scale}
+      nativeType="bump"
+    >
       <BumpChart
         config={config}
         progress={progress}
@@ -27,6 +35,6 @@ export const BumpReveal: React.FC<{ scale?: number; config?: BumpConfig }> = ({ 
         height={height}
         scale={scale}
       />
-    </div>
+    </RevealStage>
   );
 };
