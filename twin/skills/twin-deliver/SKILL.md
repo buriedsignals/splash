@@ -10,9 +10,9 @@ description: Use to run the DELIVERY phase of the doctrine twin — offer the jo
 Runs the DELIVERY phase: the last step of a beat's life, after a still has already been
 rendered into `<beatDir>/renders/`. `offerForms({medium, genre})` names the delivery forms a
 beat's genre allows, each with a plain-language `gives` so the choice is informed. Nothing is
-built at this point — `offerForms` only lists what could be built. `materialise({form, beatDir,
-exportDir})` is the only function that writes anything, and it writes exactly one form: the one
-named in `form`, nothing else, into `exportDir`.
+built at this point — `offerForms` only lists what could be built. `materialise({form, genre,
+beatDir, exportDir})` is the only function that writes anything, and it writes exactly one form:
+the one named in `form`, for the `genre` actually given, nothing else, into `exportDir`.
 
 **The forms are offered, then WAITED on. Silence is not a choice.** A conversation running this
 phase presents the list `offerForms` returns and stops — it does not default to a form, does not
@@ -26,7 +26,7 @@ until the choice does.
 - At the end of a beat's production, once `<beatDir>/renders/` holds a still — call
   `offerForms` with the beat's medium and genre, present the list, and wait.
 - Once the journalist has named a form (its `id`, exactly), call `materialise` with that id, the
-  beat's directory, and the export directory. Nothing before that call.
+  *same* genre, the beat's directory, and the export directory. Nothing before that call.
 - **Not** for production. This skill never renders a chart or a map — it only decides which
   already-rendered (or already-written) files leave the beat directory, and in what shape.
 
@@ -36,31 +36,33 @@ until the choice does.
 their mind and materialises `source-bundle` into the same `exportDir`, the first form's files do
 not linger. `materialise` clears `exportDir` before writing, every call, so the directory always
 holds exactly the most recently chosen form — never a mix of two. That clearing happens *after*
-`form` is validated against the offered forms, in that order deliberately: a refused, unoffered
-`form` (see `materialise` refusing `"embed"`) must not destroy a form that was already delivered
-by a previous, valid call. Swap that order and a bad second choice silently wipes out a good
-first one.
+`{form, genre}` is validated as a pair, in that order deliberately: a refused, unoffered
+`form` (see `materialise` refusing `"embed"`, or `"owned-file"` under a genre that never offered
+it) must not destroy a form that was already delivered by a previous, valid call. Swap that
+order and a bad second choice silently wipes out a good first one.
 
 ## Architecture
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Menu | `scripts/deliver.mjs` — `FORMS`, `offerForms` | The forms one genre allows, and what each honestly gives |
+| Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries |
 
 ## How it works (the shape)
 
-1. **`offerForms({medium, genre})`** checks the genre. SP1 delivers `"static"` only — any other
-   genre throws rather than returning an empty or partial list, so a caller can never mistake
-   "no forms for this genre yet" for "this beat has nothing to deliver". For `"static"` it
-   returns both forms from `FORMS`, in the same order every time, each carrying an `id`, a
-   `label`, and a `gives` long enough to inform a real choice.
+1. **`offerForms({medium, genre})`** looks `genre` up in `FORMS_BY_GENRE`. SP1 has one entry,
+   `"static"` — any other genre throws rather than returning an empty or partial list, so a
+   caller can never mistake "no forms for this genre yet" for "this beat has nothing to
+   deliver". For `"static"` it returns both forms in that genre's table, in the same order every
+   time, each carrying an `id`, a `label`, and a `gives` long enough to inform a real choice.
 2. **The conversation presents the list and waits.** This skill's code stops here; the doctrine
    of waiting is enforced by the calling conversation, the same way `twin-storyboard` enforces
    its exchange in prose, not in code that could be skipped.
-3. **`materialise({form, beatDir, exportDir})`** validates `form` against the same `FORMS` table
-   `offerForms` reads — one source of truth, so "not an offered form" can never drift from what
-   was actually offered. It then clears and recreates `exportDir` (the gotcha above), and:
+3. **`materialise({form, genre, beatDir, exportDir})`** validates the **`{form, genre}` pair**
+   against `FORMS_BY_GENRE[genre][form]` — the same table `offerForms` reads, so "not an offered
+   form" can never drift from what was actually offered, and a form id that happens to exist
+   under one genre is never accepted for a different genre just because the id matches. It then
+   clears and recreates `exportDir` (the gotcha above), and:
    - `"owned-file"` copies every entry of `<beatDir>/renders/` into `exportDir`, walking any
      subdirectory with `copyTree` rather than handing a directory straight to `copyFile` (which
      throws on it).
@@ -87,6 +89,7 @@ const forms = offerForms({ medium: "chart", genre: "static" });
 
 const written = await materialise({
   form: chosenId, // must be one of forms[*].id
+  genre: "static", // the same genre offerForms was called with
   beatDir: "stories/water-wars/beats/1-rainfall",
   exportDir: "stories/water-wars/export",
 });
@@ -97,18 +100,20 @@ const written = await materialise({
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| How many forms SP1 offers for the static genre | `2` (`owned-file`, `source-bundle`) | `FORMS` |
-| Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS` entries |
-| Genres this skill knows how to deliver | `1` (`"static"` — everything else throws) | `offerForms` |
+| How many genres this skill knows how to deliver | `1` (`"static"` — everything else throws, in both `offerForms` and `materialise`) | `FORMS_BY_GENRE` |
+| How many forms SP1 offers for the static genre | `2` (`owned-file`, `source-bundle`) | `FORMS_BY_GENRE.static` |
+| Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS_BY_GENRE` entries |
 | Which subdirectory of a beat never travels into the source-bundle form | `1` (`"renders"` — the other form's output) | `materialise` |
 
 ## Files
 
 - `scripts/deliver.mjs` — `offerForms`, `materialise`, `copyTree` (its recursive helper), and
   the `BUILD_SCRIPT` template written into every `source-bundle` delivery.
-- `test/deliver.test.ts` — `bun:test` coverage: what each form offers and describes, that only
-  the chosen form's files land in `exportDir`, that a nested subdirectory two levels deep is
-  walked rather than crashing `copyFile`, that a second choice clears the first's files, that an
-  unoffered form is refused without touching a delivery already made, and that the shipped
-  `build.ts` is run for real (`bun run build`, via the bundle's own `package.json`) and produces
-  a bundled file, not just a promise.
+- `test/deliver.test.ts` — `bun:test` coverage: what each form offers and describes, that
+  `offerForms` itself refuses an unknown genre, that only the chosen form's files land in
+  `exportDir`, that a nested subdirectory (two levels deep for `source-bundle`, one level for
+  `owned-file`) is walked rather than crashing `copyFile`, that a second choice clears the
+  first's files, that an unoffered form — including a form id that is real for a *different*
+  genre — is refused without touching a delivery already made, and that the shipped `build.ts`
+  is run for real (`bun run build`, via the bundle's own `package.json`) and produces a bundled
+  file, not just a promise.

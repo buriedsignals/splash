@@ -1,31 +1,36 @@
 // Lazy by design: nothing is built before the journalist has chosen. `offerForms` and
-// `materialise` read the same `FORMS` table — one source of truth — so "not an offered form"
-// can never drift from what was actually offered.
+// `materialise` both read `FORMS_BY_GENRE` — one source of truth keyed by genre — so
+// "not an offered form" can never drift from what was actually offered FOR THAT GENRE. A form
+// id that happens to exist under one genre is not automatically valid for another; the check
+// is always on the {form, genre} pair, never on the form id alone.
 
 import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const REACT_VERSION = "^19.1.0";
 
-const FORMS = {
-  "owned-file": {
-    label: "The file itself",
-    gives: "a PNG and an SVG the newsroom owns outright, nothing else to run",
-  },
-  "source-bundle": {
-    label: "Runnable source",
-    gives:
-      "a folder with this chart's component and data, plus a real build.ts that bun install and bun run build actually execute",
+// SP1 has one genre. `medium` is accepted on `offerForms`'s own interface for its future (a map
+// beat's forms will not read identically to a chart beat's), but is not yet branched on.
+const FORMS_BY_GENRE = {
+  static: {
+    "owned-file": {
+      label: "The file itself",
+      gives: "a PNG and an SVG the newsroom owns outright, nothing else to run",
+    },
+    "source-bundle": {
+      label: "Runnable source",
+      gives:
+        "a folder with this chart's component and data, plus a real build.ts that bun install and bun run build actually execute",
+    },
   },
 };
 
 export function offerForms({ medium, genre }) {
-  // SP1 has one genre. `medium` is accepted for the interface's own future (a map beat's
-  // forms will not read identically to a chart beat's), but is not yet branched on.
-  if (genre !== "static") {
+  const forms = FORMS_BY_GENRE[genre];
+  if (!forms) {
     throw new Error(`SP1 delivers the static genre only, got ${JSON.stringify(genre)}`);
   }
-  return Object.keys(FORMS).map((id) => ({ id, ...FORMS[id] }));
+  return Object.keys(forms).map((id) => ({ id, ...forms[id] }));
 }
 
 // Recursively copies one directory's contents into another, collecting every file path
@@ -66,8 +71,15 @@ if (!result.success) {
 console.log(\`built \${entrypoints.join(", ")} -> ./dist\`);
 `;
 
-export async function materialise({ form, beatDir, exportDir }) {
-  if (!FORMS[form]) throw new Error(`${form} is not an offered form`);
+export async function materialise({ form, genre, beatDir, exportDir }) {
+  // Validate the {form, genre} PAIR, not the form id in isolation — a form id that exists for
+  // some other genre must not be accepted here just because it happens to share a name. Reading
+  // the same FORMS_BY_GENRE table offerForms reads means a form genre two adds under a
+  // different genre is refused automatically, with no separate list to keep in sync.
+  const forms = FORMS_BY_GENRE[genre];
+  if (!forms || !forms[form]) {
+    throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
+  }
 
   // A journalist can change their mind. exportDir may already hold a previous choice's
   // files — clear it first so the chosen form is the ONLY thing delivered, never a mix of

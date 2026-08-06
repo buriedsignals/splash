@@ -42,12 +42,22 @@ describe("offerForms", () => {
       expect(form.gives.split(/\s+/).length).toBeGreaterThan(4);
     }
   });
+
+  // Direct coverage of the genre-rejection path itself — the three tests above only ever call
+  // offerForms with genre "static", so none of them would notice if this check stopped reading
+  // the given genre at all.
+  it("should refuse to offer anything for a genre it does not know", () => {
+    expect(() => offerForms({ medium: "chart", genre: "video" })).toThrow(
+      "static genre only",
+    );
+  });
 });
 
 describe("materialise", () => {
   it("should write only the owned file when that form is chosen", async () => {
     const written = await materialise({
       form: "owned-file",
+      genre: "static",
       beatDir,
       exportDir,
     });
@@ -58,8 +68,37 @@ describe("materialise", () => {
     expect(written).toHaveLength(2);
   });
 
+  // The shared copyTree helper is exercised at depth by the source-bundle test below; this
+  // pins that the owned-file path walks a nested subdirectory under "renders" identically,
+  // rather than assuming the shared helper "presumably" behaves the same there too.
+  it("should copy a subdirectory nested inside renders when the owned-file form is chosen", async () => {
+    await mkdir(join(beatDir, "renders", "social"), { recursive: true });
+    await writeFile(
+      join(beatDir, "renders", "social", "insta.png"),
+      "png-bytes",
+    );
+
+    const written = await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir,
+    });
+
+    const files = await readdir(exportDir);
+    expect(files).toContain("social");
+    const nested = await readdir(join(exportDir, "social"));
+    expect(nested).toContain("insta.png");
+    expect(written).toContain(join(exportDir, "social", "insta.png"));
+  });
+
   it("should write a runnable bundle only when the source form is chosen", async () => {
-    await materialise({ form: "source-bundle", beatDir, exportDir });
+    await materialise({
+      form: "source-bundle",
+      genre: "static",
+      beatDir,
+      exportDir,
+    });
     const files = await readdir(exportDir);
     expect(files).toContain("package.json");
     expect(files).toContain("Rainfall.tsx");
@@ -70,17 +109,32 @@ describe("materialise", () => {
 
   it("should refuse a form that was never offered", async () => {
     await expect(
-      materialise({ form: "embed", beatDir, exportDir }),
+      materialise({ form: "embed", genre: "static", beatDir, exportDir }),
+    ).rejects.toThrow("not an offered form");
+  });
+
+  // A form id that exists under one genre must not be accepted for a different genre just
+  // because the id matches — the check is on the {form, genre} PAIR, never on the form id
+  // alone. "owned-file" is a real id in FORMS_BY_GENRE.static, but genre "video" offers nothing
+  // (SP1 has one genre), so it must be refused exactly like an id that never existed anywhere.
+  it("should refuse a form that exists for a different genre than the one given", async () => {
+    await expect(
+      materialise({ form: "owned-file", genre: "video", beatDir, exportDir }),
     ).rejects.toThrow("not an offered form");
   });
 
   // Probe: refusing an unoffered form is a validation failure, not a delivery — it must not
   // destroy a form the journalist already has sitting in exportDir.
   it("should leave an already-delivered form untouched when a later choice is refused", async () => {
-    await materialise({ form: "owned-file", beatDir, exportDir });
+    await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir,
+    });
 
     await expect(
-      materialise({ form: "embed", beatDir, exportDir }),
+      materialise({ form: "embed", genre: "static", beatDir, exportDir }),
     ).rejects.toThrow("not an offered form");
 
     const files = await readdir(exportDir);
@@ -99,6 +153,7 @@ describe("materialise", () => {
 
     const written = await materialise({
       form: "source-bundle",
+      genre: "static",
       beatDir,
       exportDir,
     });
@@ -117,10 +172,20 @@ describe("materialise", () => {
   // Probe: a journalist can change their mind. The second materialise must not leave the
   // first form's files sitting alongside the new one — only the chosen form is delivered.
   it("should clear a previous choice's files when a different form is materialised next", async () => {
-    await materialise({ form: "owned-file", beatDir, exportDir });
+    await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir,
+    });
     expect(await readdir(exportDir)).toContain("still.png");
 
-    await materialise({ form: "source-bundle", beatDir, exportDir });
+    await materialise({
+      form: "source-bundle",
+      genre: "static",
+      beatDir,
+      exportDir,
+    });
     const files = await readdir(exportDir);
     expect(files).not.toContain("still.png");
     expect(files).not.toContain("still.svg");
@@ -130,7 +195,12 @@ describe("materialise", () => {
   // Probe: "bun install && bun run build" is a claim, not decoration. The build script the
   // bundle ships must actually run and produce something, not name a file that never exists.
   it("should ship a build script that genuinely runs and bundles the component", async () => {
-    await materialise({ form: "source-bundle", beatDir, exportDir });
+    await materialise({
+      form: "source-bundle",
+      genre: "static",
+      beatDir,
+      exportDir,
+    });
 
     const files = await readdir(exportDir);
     expect(files).toContain("build.ts");
