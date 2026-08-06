@@ -98,6 +98,39 @@ describe("the setup page as served", () => {
     });
   });
 
+  // Task 6 (2026-08-06): the page collapsed to one screen — a recap of what the newsroom can
+  // PRODUCE (derived, Task 5) rather than a ticked list, and an editable profile (Task 2/3) —
+  // read from what the server actually SERVES, not from the functions that feed it.
+  it("serves one screen: no ticks, a recap, and an editable profile", async () => {
+    const dest = root();
+    writeFileSync(
+      join(dest, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "palette:",
+        '  - "#0A5C36"   # your house colour',
+        "source:",
+        '  name: "Heidi.news"',
+        "---",
+        "",
+        "# Newsroom profile",
+        "",
+      ].join("\n"),
+    );
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const model = JSON.parse(html.slice(start, end));
+
+      expect(model.producible.length).toBeGreaterThan(0);
+      expect(model).not.toHaveProperty("engines");
+      expect(model.profile?.palette?.[0]).toBeTruthy();
+    });
+  });
+
   it("serves the stylesheet and a bundled client module", async () => {
     const dest = root();
     await withServer(dest, async (port) => {
@@ -279,6 +312,65 @@ describe("what a submission writes", () => {
     expect(edited).toContain(
       "Ne pas toucher : notre rouge vient de la charte 2019.",
     );
+  });
+
+  // Task 6 (2026-08-06): the inverse of what this branch's OWN earlier assertion said before
+  // Task 2 landed — "creates the newsroom profile once, and never rewrites an existing one"
+  // (server.test.ts before 256423ab). The section is editable again: a submission carrying
+  // `newsroom` on an EXISTING profile rewrites the file AND preserves its body — and, closing the
+  // loop this task is about, the NEXT served page reflects the edit through the model, not just
+  // on disk. This is the one test that walks page → serialize → disk → page again.
+  it("an existing profile is genuinely editable: the edit lands on disk AND the next served page shows it", async () => {
+    const dest = root();
+    writeFileSync(
+      join(dest, "NEWSROOM-PROFILE.md"),
+      [
+        "---",
+        "palette:",
+        '  - "#0a5c36"   # your house colour',
+        "source:",
+        '  name: "Heidi.news"',
+        'lang: "fr"',
+        'requiredSigners: ["yvan"]',
+        "---",
+        "",
+        "# Newsroom profile",
+        "",
+        "Ne pas toucher : notre rouge vient de la charte 2019.",
+        "",
+      ].join("\n"),
+    );
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/submit`, {
+        method: "POST",
+        body: submission({
+          contentLang: "de",
+          newsroom: { name: "Someone else", color: "#d5121e", lang: "de" },
+        }),
+      });
+      expect(r.status).toBe(200);
+    });
+
+    // On disk: rewritten, and the newsroom's own key and prose survive.
+    const edited = readFileSync(join(dest, "NEWSROOM-PROFILE.md"), "utf8");
+    expect(edited).toContain('name: "Someone else"');
+    expect(edited).not.toContain('"#0a5c36"');
+    expect(edited).toContain('requiredSigners: ["yvan"]');
+    expect(edited).toContain(
+      "Ne pas toucher : notre rouge vient de la charte 2019.",
+    );
+
+    // Re-served: the model the NEXT page load embeds reflects the edit — not read-only.
+    await withServer(dest, async (port) => {
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const start =
+        html.indexOf(`id="${MODEL_SCRIPT_ID}">`) +
+        `id="${MODEL_SCRIPT_ID}">`.length;
+      const end = html.indexOf("</script>", start);
+      const model = JSON.parse(html.slice(start, end));
+      expect(model.profile?.name).toBe("Someone else");
+      expect(model.profile?.palette?.[0]).toBe("#d5121e");
+    });
   });
 
   // Task 3's own carry-through: `PreflightSubmission.newsroom` is typed as `NewsroomFacts`
