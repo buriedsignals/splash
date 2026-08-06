@@ -266,6 +266,42 @@ describe("what a submission writes", () => {
   });
 });
 
+// A login typed for a runtime that is NOT Claude must never reach Anthropic's endpoint — the
+// registry decides which runtime's login is even Anthropic-shaped, and `verifyAll` is gated on
+// it (Finding 3: this gate had no test in either direction). Real requests, not mocks (project
+// convention) — the claude case genuinely calls out to api.anthropic.com with a bogus key, which
+// this environment reaches in well under a second; the assertion only needs the `anthropic` key
+// to be PRESENT, not any particular verdict, so it stays correct whether the key is rejected or
+// the provider is unreachable. The gemini case makes NO claim needing network: the gate returns
+// before any fetch, so the absence of the key is deterministic offline as well as online.
+describe("the login is only ever checked against the runtime that declared it", () => {
+  it("does not attempt an Anthropic check for a runtime whose login is not Anthropic's", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({ runtime: "gemini", login: "gk-not-a-real-key" }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).not.toHaveProperty("anthropic");
+    });
+  });
+
+  it("does attempt an Anthropic check when Claude is the chosen runtime", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const r = await fetch(`http://127.0.0.1:${port}/verify`, {
+        method: "POST",
+        body: submission({ runtime: "claude", login: "sk-ant-not-a-real-key" }),
+      });
+      expect(r.status).toBe(200);
+      const out = (await r.json()) as Record<string, unknown>;
+      expect(out).toHaveProperty("anthropic");
+    });
+  }, 15000);
+});
+
 describe("the setup page probes the delivered skills tree on a packed install", () => {
   it("reads image-native as ready when its dependencies are at .dist/node_modules", async () => {
     const dest = root();

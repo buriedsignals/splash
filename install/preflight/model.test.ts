@@ -207,6 +207,63 @@ describe("the rest of the decor the page renders", () => {
   });
 });
 
+// The runtime's own sign-in — declared by the registry, never a capability. The page shows one
+// login field for the SELECTED runtime, but the journalist can switch runtimes before saving, so
+// `configured` must be correct for every runtime the page can offer, not only the one it opened
+// with (Finding 1: switching runtimes used to report a configured key as missing).
+describe("the runtime's own login", () => {
+  it("reports the selected runtime's login as configured when its env var is set", () => {
+    const m = model({
+      state: state({ runtime: "claude" }),
+      env: { ANTHROPIC_API_KEY: "sk-ant-x" },
+    });
+    expect(m.login?.name).toBe("ANTHROPIC_API_KEY");
+    expect(m.login?.configured).toBe(true);
+  });
+
+  it("reports the selected runtime's login as NOT configured when its env var is unset", () => {
+    const m = model({ state: state({ runtime: "claude" }), env: {} });
+    expect(m.login?.name).toBe("ANTHROPIC_API_KEY");
+    expect(m.login?.configured).toBe(false);
+  });
+
+  it("reports null for a runtime that declares no login", () => {
+    expect(model({ state: state({ runtime: "goose" }) }).login).toBeNull();
+  });
+
+  // NEVER carries the value — same rule as every other credential (probe.ts's isSet), asserted
+  // here because a login is not routed through collectFields like the rest of the credentials.
+  it("never echoes the login's actual value — only whether it is set", () => {
+    const serialized = JSON.stringify(
+      model({
+        state: state({ runtime: "claude" }),
+        env: { ANTHROPIC_API_KEY: "sk-ant-super-secret" },
+      }),
+    );
+    expect(serialized).not.toContain("sk-ant-super-secret");
+  });
+
+  // Finding 1's fix: EVERY runtime's login carries its own `configured`, not only the one the
+  // page happened to be served with — a journalist who set up Gemini earlier and reopens the
+  // page on Claude must see Gemini reported as configured the instant they pick it, without a
+  // round trip to the server.
+  it("carries a configured flag PER RUNTIME, independent of which one is selected", () => {
+    const m = model({
+      state: state({ runtime: "claude" }),
+      env: { GEMINI_API_KEY: "gk-x" },
+    });
+    const runtime = (id: string) => m.runtimes.find((r) => r.id === id);
+    expect(runtime("gemini")?.login?.configured).toBe(true);
+    expect(runtime("claude")?.login?.configured).toBe(false);
+  });
+
+  it("carries null for every runtime that declares no login, in the runtimes list too", () => {
+    const m = model();
+    for (const id of ["goose", "goose-desktop", "claude-desktop"])
+      expect(m.runtimes.find((r) => r.id === id)?.login).toBeNull();
+  });
+});
+
 // The page lets a journalist tick a capability that the SAVED state has disabled — and must then
 // say what that tick means ("Missing: needs a MapTiler key"), without the client re-implementing
 // readiness. So the model carries both: the status as saved, and the status this capability

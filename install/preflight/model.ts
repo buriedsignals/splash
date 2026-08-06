@@ -81,17 +81,27 @@ export type PreflightCapability = {
 };
 
 export type PreflightModel = {
+  /**
+   * Every runtime's OWN sign-in, `configured` included — not only the currently selected one's.
+   * The page lets a journalist switch runtimes before saving, and a runtime configured in an
+   * earlier session must not be reported as missing just because it is not the one the page
+   * opened with (that was Finding 1: the flag used to go stale on switch).
+   */
   runtimes: {
     id: string;
     label: string;
     verified: boolean;
-    login?: RuntimeLogin;
+    login: (RuntimeLogin & { configured: boolean }) | null;
   }[];
   runtime: string;
   language: { ui: string; content: string };
   /** True when NEWSROOM-PROFILE.md exists: the page then refuses to rewrite it. */
   profileExists: boolean;
-  /** The runtime's own sign-in — declared by the chosen runtime, absent when it needs none. */
+  /**
+   * The CURRENTLY SELECTED runtime's own sign-in — the same value as
+   * `runtimes.find(r => r.id === runtime)?.login`, kept for callers that already have the
+   * runtime pinned and want its login without filtering the array.
+   */
   login: (RuntimeLogin & { configured: boolean }) | null;
   fields: PreflightField[];
   engines: PreflightCapability[];
@@ -274,15 +284,22 @@ export function preflightModel(
   const count = (status: ReadinessStatus) =>
     capabilities.filter((c) => c.status === status).length;
 
+  const runtimes = Object.entries(RUNTIMES).map(([id, rt]) => ({
+    id,
+    label: rt.label,
+    verified: rt.verified,
+    login: loginOf(id, env),
+  }));
+
   return {
-    runtimes: Object.entries(RUNTIMES).map(([id, rt]) => ({ id, ...rt })),
+    runtimes,
     runtime: state.runtime,
     language: resolveLanguage({
       uiLang: state.uiLang,
       ...(input.profileLang ? { profileLang: input.profileLang } : {}),
     }),
     profileExists: input.profileExists === true,
-    login: loginOf(state.runtime, env),
+    login: runtimes.find((r) => r.id === state.runtime)?.login ?? null,
     fields: collectFields(state, env),
     engines: capabilities.filter((c) => c.kind === "engine"),
     delivery: capabilities.filter((c) => c.kind === "delivery"),

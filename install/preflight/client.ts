@@ -399,12 +399,11 @@ function renderAssistant(copy: PageCopy): void {
   }
   body.append(group);
 
+  // Every runtime's login carries its OWN `configured` flag (Finding 1 fix): a key configured
+  // for a runtime in an earlier session must read as configured the instant that runtime is
+  // picked again, even though the page was served with a different runtime selected.
   const login = model.runtimes.find((r) => r.id === form.runtime)?.login;
   if (!login) return; // this runtime owns its own sign-in — nothing to ask
-  const configured =
-    form.runtime === model.runtime && model.login
-      ? model.login.configured
-      : false;
   const field = el("div", { class: "field" });
   field.append(el("label", { for: "login" }, login.label));
   field.append(
@@ -419,10 +418,10 @@ function renderAssistant(copy: PageCopy): void {
     type: "password",
     autocomplete: "off",
     "aria-describedby": "login-help",
-    ...(configured
+    ...(login.configured
       ? { placeholder: `${copy.configured} — ${copy.configuredHint}` }
       : {}),
-  }) as HTMLInputElement;
+  });
   key.value = form.login;
   key.addEventListener("input", () => {
     form.login = key.value;
