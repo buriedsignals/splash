@@ -401,6 +401,39 @@ describe("the status a capability would have if it were ticked", () => {
 // ("needs VITE_MAPTILER_KEY or REMOTION_MAPTILER_KEY"), which is right for a log and wrong for the
 // page a journalist reads. The model therefore also names WHICH FIELDS are missing, so the page
 // can say "Needs: MapTiler key" and put the var name in the technical detail where it belongs.
+// The page had the profile under its hand and showed none of it: it replaced the whole section
+// with a sentence telling the journalist to open a text editor. The model carries the values so
+// the page can show them.
+describe("the newsroom profile the model carries", () => {
+  it("carries the profile the install already has", () => {
+    const m = model({
+      profile: {
+        name: "Heidi.news",
+        url: "https://heidi.news",
+        palette: ["#0A5C36", "#C8102E"],
+        lang: "fr",
+        theme: "dark",
+      },
+    });
+    expect(m.profile?.name).toBe("Heidi.news");
+    expect(m.profile?.palette?.[0]).toBe("#0A5C36");
+    expect(m.profile?.theme).toBe("dark");
+  });
+
+  // A profile that declares little is not an error: no theme means a light ground, no url means a
+  // credit without a link. The model passes through what is there and invents nothing.
+  it("passes a minimal profile through without inventing fields", () => {
+    const m = model({ profile: { name: "Le Temps" } });
+    expect(m.profile?.name).toBe("Le Temps");
+    expect(m.profile?.palette).toBeUndefined();
+    expect(m.profile?.theme).toBeUndefined();
+  });
+
+  it("reports no profile when the install has none", () => {
+    expect(model().profile).toBeNull();
+  });
+});
+
 describe("what is missing, in the page's own words", () => {
   it("names the fields a capability still needs, not its env vars", () => {
     expect(capability(model(), "map-native")?.missingFields).toEqual([

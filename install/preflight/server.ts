@@ -30,9 +30,10 @@ import {
   verifyCapability,
   type VerifyOutcome,
 } from "../../lib/newsroom/verify.ts";
+import { parseNewsroomMarkdown } from "../../skills/splash/src/brand-profile.ts";
 import { RUNTIMES } from "../configurator-core.ts";
 import { MODEL_SCRIPT_ID } from "./copy.ts";
-import { preflightModel } from "./model.ts";
+import { preflightModel, type PreflightProfile } from "./model.ts";
 import { resolveSkillsRoot } from "./skills-root.ts";
 import {
   envUpdates,
@@ -76,6 +77,26 @@ function profileLang(): string | undefined {
   return loadDecor(ROOT, { env: fileEnv() }).profile.lang;
 }
 
+// The SAME parser the loop uses (lib/newsroom/decor.ts:160 calls it) — a second parser would
+// drift from the file the journalist actually edits.
+function newsroomProfile(): PreflightProfile | null {
+  try {
+    const parsed = parseNewsroomMarkdown(
+      readFileSync(join(ROOT, PROFILE_FILE), "utf8"),
+    );
+    if (!parsed) return null;
+    return {
+      ...(parsed.source?.name ? { name: parsed.source.name } : {}),
+      ...(parsed.source?.url ? { url: parsed.source.url } : {}),
+      ...(parsed.palette?.length ? { palette: parsed.palette } : {}),
+      ...(parsed.lang ? { lang: parsed.lang } : {}),
+      ...(parsed.theme ? { theme: parsed.theme } : {}),
+    };
+  } catch {
+    return null; // no file, or a file this parser cannot read — the page then offers the form
+  }
+}
+
 function renderPage(focus: string | null): string {
   const env = fileEnv();
   const decor = loadDecor(ROOT, { env });
@@ -83,6 +104,7 @@ function renderPage(focus: string | null): string {
     state: decor.state,
     env,
     profileExists: existsSync(join(ROOT, PROFILE_FILE)),
+    profile: newsroomProfile(),
     skillsRoot: resolveSkillsRoot(ROOT),
     ...(profileLang() ? { profileLang: profileLang()! } : {}),
     ...(focus ? { focus } : {}),

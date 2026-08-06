@@ -30,6 +30,22 @@ import {
 } from "../../lib/newsroom/state.ts";
 import { RUNTIMES, type RuntimeLogin } from "../configurator-core.ts";
 
+/**
+ * The newsroom's own profile, as declared in NEWSROOM-PROFILE.md — read-only here (task-2's
+ * scope stops at the data; a sibling task renders it). `profileExists` says a file is present;
+ * this says what it declares, which is not the same thing — a profile can exist and name only
+ * the newsroom.
+ */
+export type PreflightProfile = {
+  name?: string;
+  url?: string;
+  /** Ordered; the first is the house colour. */
+  palette?: string[];
+  lang?: string;
+  /** "light" | "dark" | "#rrggbb" */
+  theme?: string;
+};
+
 /** Where a field's value belongs once submitted. Secrets are always `env`. */
 export type FieldDestination = "env" | "settings";
 
@@ -103,6 +119,8 @@ export type PreflightModel = {
   language: { ui: string; content: string };
   /** True when NEWSROOM-PROFILE.md exists: the page then refuses to rewrite it. */
   profileExists: boolean;
+  /** What that file declares — null when the install has no profile on disk. */
+  profile: PreflightProfile | null;
   /**
    * The CURRENTLY SELECTED runtime's own sign-in — the same value as
    * `runtimes.find(r => r.id === runtime)?.login`, kept for callers that already have the
@@ -126,6 +144,8 @@ export type PreflightModelInput = {
   profileExists?: boolean;
   /** The deliverables' language declared by that profile, when there is one. */
   profileLang?: string;
+  /** What NEWSROOM-PROFILE.md declares, already parsed — null or absent when there is none. */
+  profile?: PreflightProfile | null;
   focus?: string;
   resolveDep?: (pkg: string, fromDir: string) => boolean;
   skillsRoot?: string;
@@ -312,6 +332,7 @@ export function preflightModel(
       ...(input.profileLang ? { profileLang: input.profileLang } : {}),
     }),
     profileExists: input.profileExists === true,
+    profile: input.profile ?? null,
     login: runtimes.find((r) => r.id === state.runtime)?.login ?? null,
     fields: collectFields(state, env),
     engines: capabilities.filter((c) => c.kind === "engine"),
