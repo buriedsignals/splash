@@ -102,20 +102,36 @@ describe("stylesheetHrefs", () => {
     ]);
   });
 
-  it("should drop a third-party stylesheet", () => {
-    const html =
-      '<link rel="stylesheet" href="https://cdn.ads.example/consent.css">';
-    expect(stylesheetHrefs(html, "https://example.org/")).toEqual([]);
-  });
-
   it("should ignore a link that is not a stylesheet", () => {
     const html = '<link rel="icon" href="/favicon.ico">';
     expect(stylesheetHrefs(html, "https://example.org/")).toEqual([]);
   });
+
+  // A newsroom serves its assets from a CDN; that is the normal shape, not a third party. A
+  // <link rel="stylesheet"> in the newsroom's OWN document is the design system it chose to serve,
+  // whatever hostname carries the bytes. Measured 2026-08-06: heidi.news links
+  // heidi-17455.kxcdn.com, and the same-host rule dropped its entire stylesheet.
+  it("should keep a stylesheet the document links from another host", () => {
+    const html =
+      '<link rel="stylesheet" href="https://cdn.example.net/app.css">';
+    expect(stylesheetHrefs(html, "https://www.example.news/")).toEqual([
+      "https://cdn.example.net/app.css",
+    ]);
+  });
+
+  // The note must say what happened, not guess why. Blaming JavaScript for a stylesheet that was
+  // never fetched sent a real investigation down the wrong path.
+  it("should say no sheet was linked, without blaming JavaScript", () => {
+    expect(stylesheetHrefs("<p>no link here</p>", "https://x.news/")).toEqual(
+      [],
+    );
+  });
 });
 
 describe("collectSiteSources", () => {
-  it("should return the page and its same-host stylesheets", async () => {
+  // The three shapes `notes` must tell apart: nothing linked at all, something linked that did
+  // not answer, and sheets actually read. Only the first carries the JavaScript hypothesis.
+  it("should read sheets cleanly and add no failure note", async () => {
     const html = '<link rel="stylesheet" href="/a.css">';
     const got = await collectSiteSources("https://example.org/", {
       fetchImpl: fakeFetch({
@@ -127,9 +143,10 @@ describe("collectSiteSources", () => {
     if ("error" in got) return;
     expect(got.sheets.length).toBe(1);
     expect(got.sheets[0]!.css).toContain("#c8102e");
+    expect(got.notes).toEqual([]);
   });
 
-  it("should keep the page when a stylesheet fails, and say which one", async () => {
+  it("should keep the page when a linked stylesheet fails, and say which one — not blame JavaScript", async () => {
     const got = await collectSiteSources("https://example.org/", {
       fetchImpl: fakeFetch({
         "https://example.org/": '<link rel="stylesheet" href="/gone.css">',
@@ -138,6 +155,21 @@ describe("collectSiteSources", () => {
     if ("error" in got) throw new Error(got.error);
     expect(got.sheets).toEqual([]);
     expect(got.notes.join(" ")).toContain("gone.css");
+    expect(got.notes.join(" ")).not.toContain("JavaScript");
+  });
+
+  // Measured 2026-08-06: heidi.news's stylesheet used to be silently dropped by the same-host
+  // filter, and this note blamed JavaScript for a sheet that was never even attempted. A page
+  // that truly links no stylesheet is a different, weaker claim — a guess, stated as one.
+  it("should say no stylesheet was linked, as a guess, when the page links none", async () => {
+    const got = await collectSiteSources("https://example.org/", {
+      fetchImpl: fakeFetch({ "https://example.org/": "<p>no link here</p>" }),
+    });
+    if ("error" in got) throw new Error(got.error);
+    expect(got.sheets).toEqual([]);
+    expect(got.notes).toHaveLength(1);
+    expect(got.notes[0]).toContain("JavaScript");
+    expect(got.notes[0]!.toLowerCase()).toMatch(/guess|may|might|hypothes/);
   });
 
   it("should return an error instead of throwing when the site is unreachable", async () => {

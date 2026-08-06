@@ -10,9 +10,12 @@
 // the fetching tool swappable and the measurement identical.
 //
 // Bounded on every axis, because the URL comes from a journalist and points at the open web:
-// a timeout, a byte cap, a stylesheet cap, http/https only, and SAME-HOST stylesheets only (a
-// news site's third-party CSS is advertising and consent-banner styling — measuring it would
-// give the newsroom an ad network's brand colour).
+// a timeout, a byte cap, a stylesheet cap, http/https only. It is NOT bounded by hostname: a
+// <link rel="stylesheet"> in the newsroom's own document is the design system it chose to serve,
+// whatever host carries the bytes — a serious newsroom's own CSS routinely lives on its CDN
+// (heidi.news serves from heidi-17455.kxcdn.com). What protects against absorbing a third
+// party's brand is not the hostname, it's the RECEIPT: every value this module's caller derives
+// carries where it was read, so a journalist can see and reject it.
 //
 // Total: returns a `{ error }` instead of throwing, at every step.
 
@@ -150,10 +153,11 @@ export function stylesheetHrefs(html: string, baseUrl: string): string[] {
     try {
       const abs = new URL(h[1]!, baseUrl);
       if (abs.protocol !== "http:" && abs.protocol !== "https:") continue;
-      const base = new URL(baseUrl);
-      // Same host only. A newsroom's own CSS carries its brand; a third-party sheet carries
-      // somebody else's, and there is no way to tell them apart after the fact.
-      if (abs.hostname !== base.hostname) continue;
+      // No host filter here. A hostname says nothing about who authored the CSS — a newsroom's
+      // own stylesheet routinely lives on a CDN it does not share a name with — and a third-party
+      // font sheet is precisely where the typography this measurement wants might live. What
+      // protects against mistaking somebody else's brand for the newsroom's is the receipt each
+      // reading carries downstream, not a guess made here from the href alone.
       if (!out.includes(abs.toString())) out.push(abs.toString());
     } catch {
       continue;
@@ -163,9 +167,14 @@ export function stylesheetHrefs(html: string, baseUrl: string): string[] {
 }
 
 /**
- * Fetch a newsroom's page and its same-host stylesheets. Never throws: an unreachable site
- * returns `{ error }`, and an unreachable stylesheet becomes a note on an otherwise usable
- * result — a partial measurement stated as partial is worth more than a failure.
+ * Fetch a newsroom's page and the stylesheets it links, whatever host serves them. Never throws:
+ * an unreachable site returns `{ error }`, and an unreachable stylesheet becomes a note on an
+ * otherwise usable result — a partial measurement stated as partial is worth more than a failure.
+ *
+ * `notes` tells apart the three shapes a stylesheet reading can take, because they call for
+ * different next steps: the page linked nothing at all (a guess, not a finding, about why);
+ * something was linked but did not answer (named per href, already handled below the fold); or
+ * sheets were read (no failure note at all).
  */
 export async function collectSiteSources(
   rawUrl: string,
@@ -182,11 +191,18 @@ export async function collectSiteSources(
   if ("error" in page) return { error: page.error };
   const notes: string[] = [];
   const sheets: { href: string; css: string }[] = [];
-  // Resolve and same-host-filter against where the page ACTUALLY came from. Filtering against
-  // the typed URL means an ordinary apex→www redirect (heidi.news → www.heidi.news) makes the
-  // site's own stylesheets look third-party, and every one of them is silently dropped.
+  // Resolve against where the page ACTUALLY came from, not the typed URL: an ordinary apex→www
+  // redirect (heidi.news → www.heidi.news) changes what a relative href resolves to.
   const base = page.finalUrl;
   const hrefs = stylesheetHrefs(page.text, base);
+  if (hrefs.length === 0) {
+    // Case 1: no <link rel="stylesheet"> at all. This is the ONLY case that may guess at
+    // JavaScript-built styles — and it must read as a guess, because a page can just as well have
+    // no stylesheet for an ordinary reason (inline styles only, or genuinely no CSS).
+    notes.push(
+      "the page links no stylesheet — one possibility is that it builds its styles in JavaScript, but that is a guess this reading cannot confirm",
+    );
+  }
   const cap = opts.maxSheets ?? MAX_SHEETS;
   if (hrefs.length > cap)
     notes.push(
@@ -194,8 +210,10 @@ export async function collectSiteSources(
     );
   for (const href of hrefs.slice(0, cap)) {
     const css = await getText(href, cfg);
+    // Case 2: a stylesheet WAS linked but did not answer — named per href, never blamed on
+    // JavaScript (the link itself proves the page is not building its styles at runtime).
     if ("error" in css) notes.push(css.error);
-    else sheets.push({ href, css: css.text });
+    else sheets.push({ href, css: css.text }); // Case 3: read. No failure note.
   }
   return { url: base, html: page.text, sheets, notes };
 }

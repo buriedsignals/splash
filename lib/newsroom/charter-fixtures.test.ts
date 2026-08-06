@@ -20,35 +20,36 @@ test("heidi.news, as captured — the colour theme-color declares", () => {
   const p = proposeCharter(loadSiteFixture("heidi-news"));
   expect(p.candidates).toHaveLength(1);
   expect(p.candidates[0]?.value).toBe("#d5121e");
-  expect(p.candidates[0]?.score).toBe(100);
+  // 101, not 100: task 2 lifted the same-host filter, so the CDN stylesheet is now read too, and
+  // it repeats #d5121e in three more `declared` custom properties — one point of frequency bonus
+  // on top of the theme-color signal's weight. The colour and its top signal are unchanged.
+  expect(p.candidates[0]?.score).toBe(101);
   expect(p.candidates[0]?.evidence[0]?.signal).toBe("theme-color");
   expect(p.confidence).toBe("declared");
   expect(p.ground).toBeUndefined();
 });
 
-test("heidi.news, as captured — zero stylesheets read, today", () => {
+test("heidi.news, as captured — the CDN stylesheet is read, and what it still misses", () => {
   const p = proposeCharter(loadSiteFixture("heidi-news"));
-  // heidi.news links its CSS from heidi-17455.kxcdn.com — its own CDN, a different host than
-  // www.heidi.news. `stylesheetHrefs`'s same-host filter drops it, and the note below blames
-  // JavaScript for a stylesheet that was never even attempted. Both are what task 2 fixes.
+  // Before task 2: heidi.news links its CSS from heidi-17455.kxcdn.com — its own CDN, a
+  // different host than www.heidi.news. `stylesheetHrefs`'s same-host filter dropped it, and the
+  // note this test used to pin blamed JavaScript for a stylesheet that was never even attempted.
+  // After task 2: the filter is lifted, the 557 KB sheet is read, and the note that survives is
+  // an honest, different one — the sheet uses `color-mix()`/`oklch()` colour notation this
+  // extractor does not parse, so a brand colour expressed only that way would still be missed.
   expect(p.notes).toEqual([
-    "no stylesheet was read — the page may build its styles in JavaScript, in which case nothing here is reliable",
+    "the site declares colours in color-mix/oklch() notation, which is NOT read here — a brand colour expressed only that way was missed",
   ]);
 });
 
-// Pending: the same-host filter above means this reads NO typography today, even though the CSS
-// sitting in fixtures/sites/heidi-news.css (captured alongside the page, from the CDN) carries
-// "Sang Bleu Kingdom" — heidi.news's real headline face. Task 2 of this chantier lifts the
-// same-host filter in `stylesheetHrefs`; once it does, `loadSiteFixture` starts passing that CSS
-// through with no change here, and this assertion is expected to start finding it. Do not delete
-// this record in the meantime — it is the "before" half of the evidence task 2 provides.
-test.todo(
-  "heidi.news, as captured — typography (blocked on task 2's same-host fix)",
-  () => {
-    const p = proposeCharter(loadSiteFixture("heidi-news"));
-    expect(p.typography.map((t) => t.family)).toContain("Sang Bleu Kingdom");
-  },
-);
+// Was pending on task 2's same-host fix in `stylesheetHrefs`. Now that the CDN stylesheet is
+// read, "Sang Bleu Kingdom" — heidi.news's real headline face — is found. This is the "after"
+// half of the evidence task 2 provides; the "before" half is preserved in git history (see the
+// commit that lifted the same-host filter).
+test("heidi.news, as captured — typography, now that the CDN stylesheet is read", () => {
+  const p = proposeCharter(loadSiteFixture("heidi-news"));
+  expect(p.typography.map((t) => t.family)).toContain("Sang Bleu Kingdom");
+});
 
 // therecord.media — builds on Next.js: its CSS ships as hashed webpack/Tailwind-utility chunks
 // with no --brand/--primary/--accent property, no <meta theme-color>, and no masthead SVG naming
