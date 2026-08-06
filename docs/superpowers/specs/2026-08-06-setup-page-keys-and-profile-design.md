@@ -17,6 +17,14 @@ décisions ; il ferme trois manques que seul l'usage réel a montrés.
 dans le code : la Couche A (l'hôte découvre les skills) est mesurée pour les deux, la Couche B
 (**un visuel sort de l'app**) n'a jamais été observée.
 
+> **Note ajoutée (revue finale de branche, 2026-08-06) :** cette dernière phrase amalgame les deux
+> apps et c'est devenu faux pour l'une d'elles. Pour `goose-desktop`, la Couche B a en réalité été
+> **atteinte** une fois (2026-08-04, `docs/installer/goose-desktop-proof.md` § « ★★★ Layer B —
+> REACHED ») — 4 critères sur 6, les 2 causes d'échec sont depuis corrigées dans le produit, et
+> c'est un re-run à 6/6 qui manque, pas une tentative. Pour `claude-desktop`, la Couche B est
+> réellement **jamais tentée**. Les deux ne sont plus dans le même état ; voir le motif distinct
+> dans `install/configurator-core.ts`.
+
 **Le précédent qui tranche** : `install/configurator-core.test.ts:9-10` montre que `gemini` et
 `goose` sont déjà ouverts **« by decision »**, Couche B en attente — pour gemini parce que le
 quota gratuit a bloqué la preuve, pour goose parce que le même quota a coupé l'invocation

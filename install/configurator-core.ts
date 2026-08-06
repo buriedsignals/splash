@@ -72,17 +72,24 @@ export const RUNTIMES: Record<
   goose: { label: "Goose", verified: true },
   // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
   // MEASURED — the gate proved the app discovers our skills, follows the symlinks, executes a
-  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — and Layer B, a
-  // visual coming out of the app, has not been observed. Kept selectable because this is one of
-  // only two runtimes that need no terminal after the install, which is the whole promise of the
-  // install page.
+  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md). Layer B — a visual
+  // coming out of the app — was REACHED once (2026-08-04): a real, sourced, takeaway-titled chart
+  // on disk from a real article, run through Goose Desktop's runtime, with nested skill invocation
+  // by name and a live Datawrapper URL before review (docs/installer/goose-desktop-proof.md,
+  // "★★★ Layer B — REACHED"). 4 of its 6 judged criteria passed there; 2 failed (`report.json` was
+  // never persisted, no `_shown/` receipt was written) — both causes are now fixed in the product,
+  // and a 6/6 re-run is owed before the flag would rest on more than a decision. Kept selectable
+  // regardless, because this is one of only two runtimes that need no terminal after the install,
+  // which is the whole promise of the install page.
   // No login: the app owns the account it signs into.
   "goose-desktop": { label: "Goose Desktop", verified: true },
   // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
   // MEASURED — the app auto-loads ~/.claude/skills and mounts it into its sandbox
-  // (docs/installer/claude-desktop-findings.md) — and Layer B, a visual coming out of the app,
-  // has not been observed. Kept selectable because these two are the only runtimes that need no
-  // terminal after the install, which is the whole promise of the install page.
+  // (docs/installer/claude-desktop-findings.md). Layer B — a visual coming out of the app — is
+  // GENUINELY UNATTEMPTED here: unlike goose-desktop, no run of any kind has been made against this
+  // runtime; there is no partial-criteria result to report. Kept selectable because these two are
+  // the only runtimes that need no terminal after the install, which is the whole promise of the
+  // install page.
   // No login: the app owns the account it signs into.
   "claude-desktop": { label: "Claude Desktop", verified: true },
 };

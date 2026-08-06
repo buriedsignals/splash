@@ -286,6 +286,14 @@ worse day, silently exits the pipeline and reports success.
 **Consequence for `verified`.** It stays `false`, and this is now the stronger reason: a runtime is
 not verified because a chart appeared. Backlog **E11**.
 
+> **Note appended 2026-08-06 (final-review fix wave).** This was the flag's true state on
+> 2026-08-03, the day this section was written. It no longer is:
+> `RUNTIMES["goose-desktop"].verified` is `true` since 2026-08-06, by written decision — not
+> because E11's floor concern was resolved, which it was not. The two are independent: the flag
+> now rests on the "★★★ Layer B — REACHED" section below plus the decision recorded in
+> `install/configurator-core.ts`; E11's finding about an unmechanical floor stands on its own
+> regardless of the flag.
+
 ### What was done about F5/F6/F7, and what it does not reach (2026-08-03)
 
 - **F5** — `skills/splash/SKILL.md` gained « How to invoke a nested skill », before step 2: the act
@@ -407,6 +415,13 @@ than the flag: Goose Desktop discovers, executes, reaches `bun`, opens on the ri
 invokes nested skills by name, drives our producers, and puts a correct, sourced, takeaway-titled
 chart on disk from a journalist's article.
 
+> **Note appended 2026-08-06 (final-review fix wave).** "This plan's own rule" (all 6 criteria or
+> nothing) is still the rule for a PROOF; it is no longer the only route to the flag.
+> `RUNTIMES["goose-desktop"].verified` is `true` since 2026-08-06, by written decision — the 4/6
+> result above, with both failing causes now fixed in the product, is exactly the "what is now
+> established is stronger than the flag" case that justified making the decision explicit rather
+> than waiting. A 6/6 re-run is still owed to replace the decision with a proof.
+
 ### Both causes fixed; the re-run that would flip the flag is owed
 
 Criterion 2 and criterion 4 each had a cause, and each cause is now closed **in the product**, not in
@@ -504,6 +519,15 @@ one of only two runtimes a journalist can use without ever touching a terminal. 
 written beside the flag in `install/configurator-core.ts`, and the test in
 `install/configurator-core.test.ts` now checks that any such motive is present, not that Layer B is
 proven.
+
+> **Note appended 2026-08-06 (final-review fix wave) — this verdict is superseded, not corrected in
+> place.** "Layer B: not attempted" was true when this section was written (2026-08-03); it no
+> longer describes the full record. The "★★★ Layer B — REACHED" section further up this document
+> (2026-08-04) reached 4 of 6 judged criteria — a real, sourced, takeaway-titled chart on disk,
+> nested skill invocation by name, a live public URL before review — and both causes of the 2
+> that failed are now fixed in the product; a 6/6 re-run is owed, not a fresh attempt. The current
+> motive lives beside the flag in `install/configurator-core.ts`; read that, not this paragraph in
+> isolation, for the state that matters today.
 
 ---
 

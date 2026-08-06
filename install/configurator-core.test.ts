@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test";
+import { describe, expect, it, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { RUNTIMES } from "./configurator-core.ts";
@@ -29,28 +29,113 @@ test("the two desktop runtimes are selectable", () => {
 // at 2-space indent (`key: {` or `"key-with-dash": { ... }`), and its motive, if any, is the
 // contiguous run of `//` comment lines directly above that property line — no blank line and no
 // code line ever separates one entry's comment from another's in this file.
+//
+// I3 fix, two lines: (1) `['"]` instead of `"` alone, so a single-quoted key is recognised too;
+// (2) the walk-up's result is ASSERTED to actually match ENTRY_OPEN before use — an earlier
+// version had no failure branch, so an unrecognised entry shape (a key/brace split across two
+// lines, or a quote style the pattern does not know) walked all the way to line 0 and silently
+// treated "the whole file" as this entry's own block, letting a neighbour's "decision" or
+// "proven" satisfy a check that should have found nothing. See resolveOwnBlock's own throw below,
+// and the mutation-proof describe block that reproduces both shapes against synthetic fixtures.
+const ENTRY_OPEN = /^ {2}(?:['"][^'"]+['"]|[A-Za-z_]\w*):\s*\{/;
+
+function resolveOwnBlock(lines: string[], i: number): string {
+  // Walk up to this entry's own top-level opening line — it IS this line for a single-line entry
+  // (e.g. `goose: { ..., verified: true },`), or an ancestor for a multi-line one.
+  let openIdx = i;
+  while (openIdx > 0 && !ENTRY_OPEN.test(lines[openIdx]!)) openIdx--;
+  if (!ENTRY_OPEN.test(lines[openIdx]!))
+    throw new Error(
+      `line ${i + 1}: walked up to line 1 without finding this entry's own opening line — an ` +
+        `unrecognised entry shape must fail loud, not silently widen the lookback to the whole file`,
+    );
+  // Walk up from there through this entry's own contiguous comment block only.
+  let start = openIdx;
+  while (start > 0 && /^\s*\/\//.test(lines[start - 1]!)) start--;
+  return lines.slice(start, i + 1).join("\n");
+}
+
 test("every raised flag says why, right where it is raised", () => {
   const src = readFileSync(
     join(import.meta.dir, "configurator-core.ts"),
     "utf8",
   );
   const lines = src.split("\n");
-  const ENTRY_OPEN = /^ {2}(?:"[^"]+"|[A-Za-z_]\w*):\s*\{/;
   for (const [i, line] of lines.entries()) {
     if (!/verified:\s*true/.test(line)) continue;
-    // Walk up to this entry's own top-level opening line — it IS this line for a single-line
-    // entry (e.g. `goose: { ..., verified: true },`), or an ancestor for a multi-line one.
-    let openIdx = i;
-    while (openIdx > 0 && !ENTRY_OPEN.test(lines[openIdx]!)) openIdx--;
-    // Walk up from there through this entry's own contiguous comment block only.
-    let start = openIdx;
-    while (start > 0 && /^\s*\/\//.test(lines[start - 1]!)) start--;
-    const ownBlock = lines.slice(start, i + 1).join("\n");
+    const ownBlock = resolveOwnBlock(lines, i);
     expect(
       /proven|decision/i.test(ownBlock),
       `verified: true at line ${i + 1} carries no stated motive of its own`,
     ).toBe(true);
   }
+});
+
+// Mutation proof (I3): two formatting shapes that made the OLD `ENTRY_OPEN` (double-quote only,
+// no assertion on the walk-up's result) silently widen its lookback to the whole file, instead of
+// failing loud. Reproduced against synthetic fixtures — independent of configurator-core.ts's own
+// current shape, so this proof does not go stale if that file's formatting ever changes.
+describe("the motive guard's block resolution does not silently widen (I3 mutation proof)", () => {
+  const OLD_ENTRY_OPEN = /^ {2}(?:"[^"]+"|[A-Za-z_]\w*):\s*\{/;
+
+  // The pre-fix algorithm, reproduced verbatim (OLD pattern, no throw) — the baseline every case
+  // below is diffed against.
+  function oldResolveOwnBlock(lines: string[], i: number): string {
+    let openIdx = i;
+    while (openIdx > 0 && !OLD_ENTRY_OPEN.test(lines[openIdx]!)) openIdx--;
+    let start = openIdx;
+    while (start > 0 && /^\s*\/\//.test(lines[start - 1]!)) start--;
+    return lines.slice(start, i + 1).join("\n");
+  }
+
+  it("a single-quoted key: the OLD pattern reached into the neighbour's own motive", () => {
+    const lines = [
+      "export const RUNTIMES = {",
+      "  // decision: this is the NEIGHBOUR's motive — must never leak into 'lonely' below",
+      "  neighbour: { label: 'x', verified: true },",
+      "  'lonely': { label: 'y', verified: true },",
+      "};",
+    ];
+    const i = 3; // the "'lonely': { ..." line — a single-quoted key, its own opening line
+
+    // Reproduce the bug: the OLD pattern never matches a single-quoted key, so the walk-up skips
+    // straight past `lonely`'s own line to the nearest line that DOES match — the neighbour's —
+    // and the comment-walk from there picks up the NEIGHBOUR's "decision", which is not
+    // `lonely`'s own motive at all.
+    const oldBlock = oldResolveOwnBlock(lines, i);
+    expect(oldBlock).toContain("decision"); // the bug: silently borrows a neighbour's motive
+
+    // The fix: resolveOwnBlock recognises the single-quoted line as `lonely`'s own opening line,
+    // so its own block is just its own (motive-less) line — correctly failing the real guard
+    // instead of passing on borrowed prose.
+    const fixedBlock = resolveOwnBlock(lines, i);
+    expect(fixedBlock).not.toContain("decision");
+    expect(/proven|decision/i.test(fixedBlock)).toBe(false);
+  });
+
+  it("a key/brace split across two lines: fails LOUD instead of widening the window", () => {
+    const lines = [
+      "export const RUNTIMES = {",
+      "  // decision: belongs to an entry nowhere near this one — must never leak downward",
+      "  someLegacyNote: 1,", // no trailing `{` — not an entry-open line either
+      '  "split-entry":',
+      "  { label: 'y', verified: true },",
+      "};",
+    ];
+    const i = 4; // "{ label: 'y', verified: true }," — the key and its opening brace are split
+
+    // Nothing between the split entry and the top of the object matches ENTRY_OPEN (old or new):
+    // the walk-up runs all the way to line 0. The OLD code had no failure branch for that, so it
+    // silently treated "the whole file down to here" as this entry's own block — which is exactly
+    // how an unrelated "decision" comment several lines above ends up satisfying a check that
+    // should have found nothing for `split-entry`.
+    const oldBlock = oldResolveOwnBlock(lines, i);
+    expect(oldBlock).toContain("decision"); // the bug: whole-file window, wrong motive borrowed
+
+    // The fix: resolveOwnBlock asserts the walk-up actually landed on a real entry-open line, and
+    // throws instead — an unrecognised shape must fail the test loudly, not widen the window.
+    expect(() => resolveOwnBlock(lines, i)).toThrow();
+  });
 });
 
 // An Anthropic key is written to .env for whoever picked Goose, and Codex and Gemini have no

@@ -286,9 +286,13 @@ comparer à la base de fusion ou monter un worktree de contrôle.
 **Suite du chantier setup page** : clés de production demandées d'emblée (`PreflightField.upfront`
 dérivé du registre, plus d'édition manuelle par moteur) · profil de rédaction affiché en lecture
 seule (jamais renvoyé dans le payload soumis) · `goose-desktop`/`claude-desktop` sélectionnables
-par décision écrite (Couche B toujours non observée) · page servie assertée sur le vrai serveur.
+par décision écrite (Couche B **atteinte une fois** pour `goose-desktop` le 2026-08-04 — 4/6
+critères jugés, les 2 causes d'échec depuis corrigées dans le produit, reste un re-run à 6/6 dû ;
+**toujours non tentée** pour `claude-desktop` — les deux ne sont pas dans le même état, cf. le
+motif distinct dans `install/configurator-core.ts`) · page servie assertée sur le vrai serveur.
 Gate 22/23, le rouge (`verifyMapTiler`) = clé MapTiler morte, confirmé indépendant de cette branche
-(même échec sur `main`). Détail + preuve verbatim : `docs/installer/setup-page-proof.md`,
+(même échec sur `main`) — **aucune carte ne peut se rendre tant que la clé n'est pas régénérée sur
+cloud.maptiler.com**. Détail + preuve verbatim : `docs/installer/setup-page-proof.md`,
 `docs/splash/CHANGELOG.md` (session 2026-08-06, Task 5).
 
 ## ★ État courant — 2026-08-06 (branche `feat/setup-page-truth` @ `c3567a92`, revue finale close)
