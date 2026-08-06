@@ -737,9 +737,12 @@ function scanCss(css: string, raw: Raw, source: string): void {
     const isLink = LINK_SELECTOR.test(sel);
     const isGround = sel.split(",").some((s) => GROUND_SELECTOR.test(s.trim()));
     for (const { prop, value } of declarations(rule.decls)) {
-      // `oklch` is deliberately absent from this list — it is read (see `parseOklch`), so a value
-      // expressed in it is no longer a gap. `oklab`/`lab`/`lch`/`color()`/`color-mix()` remain
-      // unread, and a value that only ever appears in one of THOSE is still reported as missed.
+      // `oklch` is deliberately absent from this list — the absolute form is read (see
+      // `parseOklch`), so a value expressed in it is no longer a gap. The forms it does NOT read
+      // are reported where they actually fail, token by token, in the parse loop below — a blanket
+      // entry here would report a site that declares a perfectly readable oklch() as a gap.
+      // `oklab`/`lab`/`lch`/`color()`/`color-mix()` remain unread whatever their form, and a value
+      // that only ever appears in one of THOSE is still reported as missed.
       if (/\b(?:oklab|lab|lch|color-mix|color)\(/.test(value))
         raw.unparsed.add(
           /\b(oklab|lab|lch|color-mix|color)\(/.exec(value)![1]!,
@@ -769,7 +772,18 @@ function scanCss(css: string, raw: Raw, source: string): void {
       if (!custom && !COLOUR_PROP.test(prop)) continue;
       for (const tok of tokens) {
         const hex = parseCssColour(tok);
-        if (!hex) continue;
+        if (!hex) {
+          // An `oklch()` this parser could not read is a GAP, and has to be reported as one —
+          // the module's own invariant ("an unparsed notation is reported as a gap, never
+          // approximated"). Dropping `oklch` from the list above was right for the absolute form
+          // that IS read now, and wrong for the forms that are not: relative-colour syntax
+          // (`oklch(from var(--base) l c h)`) and a hue in `turn`/`rad` both still fail here, and
+          // without this they vanished silently. A fully transparent colour is excluded: that is
+          // a deliberate skip (a spacer), not a notation this parser failed on.
+          if (/^oklch\(/i.test(tok.trim()) && alphaOf(tok) > 0)
+            raw.unparsed.add("oklch");
+          continue;
+        }
         const token = `${sel.length > 60 ? sel.slice(0, 57) + "…" : sel} { ${prop}: ${tok} }`;
         // GROUND first: a near-white/near-black on :root or body is the page, not a brand hue.
         if (

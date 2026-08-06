@@ -795,3 +795,38 @@ describe("a top candidate read from a third party's stylesheet is named as such"
     expect(p.notes.join(" ")).not.toContain("cdn.heidi.news");
   });
 });
+
+// The module's own invariant: "an unparsed notation is reported as a gap, never approximated".
+// Reading oklch() dropped it from the unparsed list wholesale — but the parser reads only the
+// ABSOLUTE form. Relative-colour syntax and a hue in turns/radians are still unread, and with the
+// notation off the list they vanished silently instead of being reported.
+describe("an oklch() this parser cannot read is still reported as a gap", () => {
+  it("should report relative-colour syntax rather than drop it in silence", () => {
+    const css = ":root{--brand: oklch(from var(--base) l c h)}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates).toEqual([]);
+    expect(p.notes.join(" ")).toContain("oklch");
+  });
+
+  it("should report a hue this parser does not read (turn, rad)", () => {
+    const css = ".btn{background: oklch(0.7 0.15 0.5turn)} .x{color: oklch(0.7 0.15 1.2rad)}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.notes.join(" ")).toContain("oklch");
+  });
+
+  // An oklch() that IS read stays read: the gap note must mean "something was missed", not
+  // "oklch appeared somewhere".
+  it("should not call a readable oklch() a gap", () => {
+    const css = ":root { --brand: oklch(55.41% .2189 26.74) }";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.candidates[0]!.value).toBe("#d5121e");
+    expect(p.notes.join(" ")).not.toContain("oklch");
+  });
+
+  // A fully transparent colour is a deliberate skip, not a notation this parser failed on.
+  it("should not call a fully transparent oklch() a gap", () => {
+    const css = ".spacer{background: oklch(62.8% 0.2577 29.23 / 0)}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.notes.join(" ")).not.toContain("oklch");
+  });
+});
