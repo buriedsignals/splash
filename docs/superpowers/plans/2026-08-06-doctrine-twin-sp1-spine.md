@@ -977,6 +977,10 @@ describe("parseCsv", () => {
   it("should not emit a trailing empty row", () => {
     expect(parseCsv("a\n1\n")).toHaveLength(2);
   });
+
+  it("should treat a lone CR (no paired LF) as a row terminator, not field text", () => {
+    expect(parseCsv("a,b\r1,2\r")).toEqual([["a", "b"], ["1", "2"]]);
+  });
 });
 ```
 
@@ -986,6 +990,8 @@ Run: `cd twin && bun test skills/twin-intake/test/csv.test.ts`
 Expected: FAIL — module not found.
 
 - [ ] **Step 3: Write the minimal implementation**
+
+**Corrected from the first draft** (probed and fixed during Task 4 — see task-4-report.md): the original single-line CR/LF check (`if (char === "\r" && text[i + 1] === "\n")`) only ever recognised `\r\n`. A lone `\r` (classic Mac line endings, stray CR from copy-paste) fell through to `field += char`, silently corrupting the row into garbled field text instead of being rejected or reported. Fixed by treating any `\r` as a row terminator, consuming a following `\n` when present.
 
 ```js
 // twin/skills/twin-intake/scripts/csv.mjs
@@ -1009,7 +1015,9 @@ export function parseCsv(text) {
     }
     if (char === '"') { quoted = true; i += 1; continue; }
     if (char === ",") { row.push(field); field = ""; i += 1; continue; }
-    if (char === "\r" && text[i + 1] === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 2; continue; }
+    // A lone CR (no paired LF) still terminates a row — classic Mac line endings,
+    // and stray CRs from copy-paste, must not be swallowed into field text.
+    if (char === "\r") { row.push(field); rows.push(row); row = []; field = ""; i += (text[i + 1] === "\n") ? 2 : 1; continue; }
     if (char === "\n") { row.push(field); rows.push(row); row = []; field = ""; i += 1; continue; }
     field += char; i += 1;
   }
@@ -1021,7 +1029,7 @@ export function parseCsv(text) {
 - [ ] **Step 4: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-intake/test/csv.test.ts`
-Expected: PASS, 6 tests.
+Expected: PASS, 7 tests.
 
 - [ ] **Step 5: Write the failing test for the profiler**
 
@@ -1059,6 +1067,17 @@ describe("profileTable", () => {
     expect(commune.min).toBe(null);
     expect(commune.distinct).toBe(2);
   });
+
+  it("should not crash on an entirely empty table", () => {
+    expect(profileTable([])).toEqual({ rowCount: 0, columns: [] });
+  });
+
+  it("should not type a hex-looking value as a number", () => {
+    const table = profileTable([["v"], ["0x10"], ["10"]]);
+    const v = table.columns.find((c) => c.name === "v");
+    expect(v.type).toBe("text");
+    expect(v.min).toBe(null);
+  });
 });
 ```
 
@@ -1069,19 +1088,32 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 7: Write the minimal implementation**
 
+**Corrected from the first draft** (probed and fixed during Task 4 — see task-4-report.md): two real defects.
+1. `const [header, ...body] = rows` crashed with a raw `TypeError` when `rows` was `[]` (an entirely empty CSV file) — `header` was `undefined`, so `header.map` threw before any domain-shaped error could be reported. Fixed with a destructuring default (`header = []`), so an empty table profiles to `{rowCount: 0, columns: []}` instead of crashing.
+2. `typeOf` trusted `Number(v)` directly, which silently accepts things a journalist's CSV cell was never meant to mean as a number — `Number("0x10")` is `16`. Fixed by checking a strict decimal-literal regex before `Number()` is trusted at all; `Number.isFinite` is kept alongside it as a second guard (catches `"1e400"` overflowing to `Infinity`).
+
 ```js
 // twin/skills/twin-intake/scripts/profile.mjs
+
+// A plain decimal literal: optional sign, digits, optional exponent.
+// Deliberately narrower than Number() — Number("0x10") is 16 and Number("Infinity")
+// is a finite check away from slipping through; a blank/whitespace value never matches.
+const NUMERIC_RE = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
+
+function isNumeric(v) {
+  return NUMERIC_RE.test(v) && Number.isFinite(Number(v));
+}
 
 function typeOf(values) {
   const present = values.filter((v) => v !== "");
   if (present.length === 0) return "text";
-  if (present.every((v) => Number.isFinite(Number(v)))) return "number";
+  if (present.every(isNumeric)) return "number";
   if (present.every((v) => /^\d{4}(-\d{2}(-\d{2})?)?$/.test(v))) return "date";
   return "text";
 }
 
 export function profileTable(rows) {
-  const [header, ...body] = rows;
+  const [header = [], ...body] = rows;
   const columns = header.map((name, index) => {
     const values = body.map((row) => (row[index] ?? "").trim());
     const type = typeOf(values);
@@ -1102,7 +1134,7 @@ export function profileTable(rows) {
 - [ ] **Step 8: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-intake/test/profile.test.ts`
-Expected: PASS, 4 tests.
+Expected: PASS, 6 tests.
 
 - [ ] **Step 9: Write the failing test for the freeze**
 
