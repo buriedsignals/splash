@@ -119,6 +119,15 @@ const BUILD_TOOLING_REASONS = new Map<string, string>([
     // Same as audit-story.mjs, for the scrolly sibling's `audit:scrolly` script.
     "standalone `bun run audit:scrolly` dev script, not part of the gate; reads via readFileSync, never bundled",
   ],
+  [
+    join("skills", "cesium-flyover", "scripts", "prep-path.mjs"),
+    // Line 27: the default INPUT path of the hand-run camera-path preparation script
+    // (`bun scripts/prep-path.mjs`), which turns a route centerline into the flyover's camera
+    // path JSON. The .geojson is this script's own sample INPUT, read by readFileSync at author
+    // time; the flyover component imports the derived .json, never a geojson, and nothing here
+    // touches the shipped world asset or any render path.
+    "hand-run camera-path prep script; the .geojson is its own sample input read via readFileSync, never bundled or rendered",
+  ],
 ]);
 const BUILD_TOOLING_PATHS = new Set(
   [...BUILD_TOOLING_REASONS.keys()].map((p) => join(ROOT, p)),

@@ -1,0 +1,21 @@
+{
+  "name": "cesium-flyover",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "prep": "bun scripts/prep-path.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.482",
+    "@remotion/cli": "4.0.482"
+  },
+  "devDependencies": {
+    "@types/node": "26.1.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "6.0.3"
+  }
+}
