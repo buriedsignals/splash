@@ -66,11 +66,15 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    journalist actually reads.
 3. **`parseStoryboard`** reads that file back: a dependency-free reader for the narrow YAML subset
    in use here — scalars (quoted or bare, with `null`/`~` resolved to a real missing value), and a
-   list of slot maps whose values are scalars or inline string arrays (`["trajectory", "comparison"]`).
+   list of slot maps whose values are scalars or quote-aware inline string arrays (a comma inside
+   a quoted element, e.g. `["a, b", "c"]`, does not split it — a naive `.split(",")` would silently
+   fragment a candidate name that happens to contain one).
 4. **`checkStoryboard`** names every reason the gate has not closed: a missing or unconfirmed
    takeaway, any missing hand-of-the-journalist field, zero slots (nothing would be produced), a
-   slot with nothing chosen, or a slot whose `chosen` value is not one of its own `candidates`. An
-   empty array is the only "yes" — Gate 2 closes into this file, or it has not closed.
+   slot with nothing chosen, a slot whose `chosen` value has no `candidates` ever listed to verify
+   it against (malformed — a real choice can only be confirmed from a list that was actually
+   shown), or a slot whose `chosen` value is not one of its own listed `candidates`. An empty array
+   is the only "yes" — Gate 2 closes into this file, or it has not closed.
 
 ## Quick start
 
@@ -95,7 +99,7 @@ if (errors.length > 0) {
 | --- | --- | --- |
 | How many hand-of-the-journalist fields are required | `6` (`HAND.length`: subject, comparison, limits, placement, credit, effectiveDate) | `scripts/storyboard.mjs` |
 | Minimum slots before the storyboard can produce anything | `1` (`slots.length === 0` is the refusal threshold) | `checkStoryboard` |
-| Minimum listed candidates before "chosen must be among them" is enforced | `1` (`candidates.length > 0`) | `checkStoryboard` |
+| Fewest candidates a slot may list once something is `chosen` | `1` (`candidates.length === 0` refuses as malformed, not silently passed) | `checkStoryboard` |
 | Leading spaces that mark a line as a slot's own field, not a top-level one | `4` (`/^\s{4,}[A-Za-z]+:/`) | `parseStoryboard` |
 
 ## Files
