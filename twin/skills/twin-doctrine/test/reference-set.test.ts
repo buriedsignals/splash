@@ -1,7 +1,10 @@
 // twin/skills/twin-doctrine/test/reference-set.test.ts
 import { describe, it, expect } from "bun:test";
 import { readFile } from "node:fs/promises";
-import { checkReferenceSet } from "../scripts/check-reference-set.mjs";
+import {
+  checkReferenceSet,
+  countReferenceRows,
+} from "../scripts/check-reference-set.mjs";
 
 const GOOD = `| Reference | Moment | Transferable lesson |
 | --- | ---: | --- |
@@ -21,9 +24,22 @@ describe("checkReferenceSet", () => {
     expect(checkReferenceSet(bad)[0]).toContain("no link");
   });
 
-  it("should reject a row with no timecode", () => {
+  it("should reject a row with no locator at all (a published graphic has no timecode, but it still needs one)", () => {
     const bad = GOOD.replace("| 0:48 |", "|  |");
-    expect(checkReferenceSet(bad)[0]).toContain("no timecode");
+    expect(checkReferenceSet(bad)[0]).toContain("no locator");
+  });
+
+  it("should accept a non-timecode locator — a figure number, a panel, a section, a chart title", () => {
+    const withFigure = GOOD.replace("| 0:48 |", "| Fig. 3 |");
+    expect(checkReferenceSet(withFigure)).toEqual([]);
+  });
+
+  it("should reject a moment that merely contains a timecode-shaped fragment inside other text", () => {
+    // Anchored: "around 0:48 or so" is prose, not cleanly a timecode, and it is
+    // not accepted as a generic locator either, because it read as an attempted
+    // (half-formed) timecode the moment it contains a colon at all.
+    const bad = GOOD.replace("| 0:48 |", "| around 0:48 or so |");
+    expect(checkReferenceSet(bad)[0]).toContain("no locator");
   });
 
   it("should reject a lesson shorter than five words", () => {
@@ -34,15 +50,53 @@ describe("checkReferenceSet", () => {
     expect(checkReferenceSet(bad)[0]).toContain("lesson is too thin");
   });
 
+  it("should reject a lesson of exactly four words (pins the five-word floor)", () => {
+    const bad = GOOD.replace(
+      "Warm paper field, source under the title, stable timeline.",
+      "Only four words here.",
+    );
+    expect(checkReferenceSet(bad)[0]).toContain("lesson is too thin");
+  });
+
+  it("should not mis-split a lesson that needs a literal pipe", () => {
+    // A naive `row.split("|")` treats the escaped "\|" below as an extra column
+    // boundary, truncating the lesson to everything before it — "Sixty \" is two
+    // words, well under the five-word floor, so a broken split rejects this
+    // genuinely substantive (12-word) lesson as "too thin". The pipe is placed
+    // early in the sentence deliberately, so a truncation can't coincidentally
+    // still clear five words the way a later pipe could.
+    const withEscapedPipe = GOOD.replace(
+      "Warm paper field, source under the title, stable timeline.",
+      "Sixty \\| forty, always shown before any framing claim appears clearly stated.",
+    );
+    expect(checkReferenceSet(withEscapedPipe)).toEqual([]);
+  });
+
+  it("should validate a row even when it is missing its own leading pipe", () => {
+    // GFM tables do not require a leading "|". A row-detector that requires one
+    // makes a malformed row invisible instead of catching it — the row is
+    // skipped from the count and from validation alike.
+    const bad = `| Reference | Moment | Transferable lesson |
+| --- | ---: | --- |
+some video without a link | 0:48 | Warm paper field, source under the title, stable timeline. |
+`;
+    expect(checkReferenceSet(bad)[0]).toContain("no link");
+  });
+
+  it("should validate a row even when the table is indented", () => {
+    const bad = `| Reference | Moment | Transferable lesson |
+| --- | ---: | --- |
+  | some video without a link | 0:48 | Warm paper field, source under the title, stable timeline. |
+`;
+    expect(checkReferenceSet(bad)[0]).toContain("no link");
+  });
+
   it("should require at least six references in the shipped file", async () => {
     const shipped = await readFile(
       new URL("../references/reference-set.md", import.meta.url),
       "utf8",
     );
-    const rows = shipped
-      .split("\n")
-      .filter((line) => /^\|/.test(line) && !/^\|\s*-+/.test(line));
-    expect(rows.length - 1).toBeGreaterThanOrEqual(6);
+    expect(countReferenceRows(shipped)).toBeGreaterThanOrEqual(6);
     expect(checkReferenceSet(shipped)).toEqual([]);
   });
 });

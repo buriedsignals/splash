@@ -2,9 +2,13 @@
 
 Each entry here is a recurring failure, named by its usual shape, with the rule it violates and
 why the violation costs the reader something real. This is not a style blacklist to be scanned
-for banned words — it is the standing's negative space: what `editorial-standard.md` and
-`visual-system.md` rule out, catalogued so a production skill (or the model writing one) can
-recognise the shape of the mistake before it is halfway built.
+for banned words — it is the standing's negative space: what `editorial-standard.md`,
+`information-architecture.md` and `visual-system.md` rule out, catalogued so a production skill
+(or the model writing one) can recognise the shape of the mistake before it is halfway built.
+"Detached legends," "tiny footer sources" and "repeated years or values" below are, specifically,
+information-architecture failures — proximity, fixed positioning and density broken, in that
+order — even though every entry here is filed together rather than split by which document it
+answers to.
 
 ## Decoration that encodes nothing
 

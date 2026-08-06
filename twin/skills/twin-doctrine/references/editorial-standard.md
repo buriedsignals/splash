@@ -74,6 +74,7 @@ Every production skill in this twin reads this file before it writes a line of r
 not as a checklist run after the fact, but as the frame the first sketch is drawn inside. When a
 beat brief proposes an element, the standard is the question asked of every layer that element
 will carry: what job is this doing, and would comprehension survive its removal. `anti-patterns.md`
-names the recurring failures of this test by their usual shape; `visual-system.md` names the
+names the recurring failures of this test by their usual shape; `information-architecture.md`
+names where each surviving layer is placed relative to the others; `visual-system.md` names the
 concrete rules — colour, contrast, furniture — that keep an element compliant with it once it
 exists on the canvas.

@@ -1,6 +1,7 @@
 # The visual system
 
-Where `editorial-standard.md` says what a layer is allowed to be *for*, this file says what it is
+Where `editorial-standard.md` says what a layer is allowed to be *for* and
+`information-architecture.md` says where it sits relative to the others, this file says what it is
 allowed to look like — the concrete rules a production skill applies once it has decided an
 element earns its place on the canvas.
 
