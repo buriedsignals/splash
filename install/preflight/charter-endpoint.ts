@@ -26,8 +26,27 @@ import type {
 import { WEIGHT } from "../../lib/newsroom/charter.ts";
 import { pageCopy, type PageCopy } from "./copy.ts";
 
+/**
+ * Which read produced a measurement: the fast static fetch (charter-fetch.ts), or the slower
+ * browser render (charter-render.ts). Declared HERE, once, and imported by both ends — server.ts
+ * parses it off the wire and client.ts sends it. It used to be spelt out as a bare union in
+ * three places, which is exactly how a client typo (`"render"`) degrades into a static read with
+ * nothing anywhere saying so: three literals cannot disagree with each other, only with the
+ * truth (final review, F7).
+ */
+export type CharterMode = "static" | "rendered";
+
 export type CharterReadout = {
-  /** Ranked, best first. Empty means the site declared nothing — a legitimate answer. */
+  /**
+   * Ranked, best first. Empty means the site declared nothing — a legitimate answer.
+   *
+   * `confidence` is the MACHINE-READABLE half of `receipt`, not a leftover: the page renders the
+   * "this is a guess" mention out of the sentence (`paletteReceiptFor` below), so nothing on
+   * screen reads this field, and its only readers are this module's tests. Keep it — it is what
+   * lets a caller that is not a DOM (a test, a future writer of NEWSROOM-PROFILE.md, anything
+   * that has to sort or filter by how well-founded a reading is) ask the question without
+   * parsing a translated sentence back apart (final review, F10).
+   */
   palette: { hex: string; receipt: string; confidence: CharterConfidence }[];
   ground?: { value: string; receipt: string };
   /** Measured, never written to frontmatter — see Task 2. */
@@ -147,4 +166,131 @@ export function readoutFrom(
     typefaces,
     notes: proposal.notes,
   };
+}
+
+/**
+ * The mode a `/charter` request body asks for. Anything that is not the literal string
+ * `"rendered"` — absent, misspelt, a number, a whole other type — reads as `"static"`: opening a
+ * real browser is opt-in, and a body that fails to say so must never buy one.
+ *
+ * A function rather than a ternary inside the route, because the route lives in a module that
+ * starts a server at import and so cannot be unit-tested: with the decision here, replacing
+ * `=== "rendered"` with `!== "static"` reddens a test instead of nothing at all (final review,
+ * F8). `server.test.ts` pins the same rule again at the HTTP boundary.
+ */
+export function charterModeFrom(body: unknown): CharterMode {
+  return body !== null &&
+    typeof body === "object" &&
+    (body as { mode?: unknown }).mode === "rendered"
+    ? "rendered"
+    : "static";
+}
+
+/**
+ * The two message shapes charter-render.ts reports when THIS MACHINE's browser, not the
+ * newsroom's site, is what failed: a Chromium that never started (`could not open a browser to
+ * render …` — a missing install, a version drift) and one that started but handed back no page.
+ *
+ * Matched on the message because charter-render.ts reports a plain string, not a tagged error,
+ * and this module does not own that module. `charter-endpoint.test.ts` runs the REAL
+ * `renderSiteSources` with a launch that throws and asserts this pattern still matches what it
+ * says — so the coupling reddens here if that wording ever moves, instead of silently telling a
+ * journalist their site is down when their browser is.
+ */
+const BROWSER_UNAVAILABLE = /^could not open (?:a browser|a page) to render /;
+
+/**
+ * A collector failure, said to the journalist in the language the page is being read in.
+ *
+ * Before this, `server.ts` prefixed EVERY failure with the English literal `the site did not
+ * answer:` and the client printed it verbatim — so a French newsroom whose shared Chromium is
+ * missing read `the site did not answer: could not open a browser to render https://… Executable
+ * doesn't exist`: the wrong cause, in the wrong language, with the machine detail as the
+ * headline (final review, F1). Two things are fixed here at once — WHICH sentence (the browser
+ * could not run, or the site could not be read) and WHOSE language it is in — because they are
+ * the same sentence.
+ *
+ * The technical tail is kept, never dropped: a journalist has to be able to paste it to whoever
+ * maintains their install. It is subordinate — after the sentence that says what happened, in
+ * parentheses — rather than the first thing they read.
+ */
+export function failureReadout(error: string, lang = "en"): { error: string } {
+  const copy = pageCopy(lang);
+  const headline = BROWSER_UNAVAILABLE.test(error)
+    ? copy.measureRenderFailed
+    : copy.measureFailed;
+  return { error: `${headline} (${copy.technicalDetail} — ${error})` };
+}
+
+/**
+ * What the page knows about the current measurement. Lives beside the wire contract rather than
+ * inside client.ts because the one decision it drives — whether to OFFER the browser retry —
+ * has to be testable: client.ts reads `document` at module load and no suite in this repo can
+ * import it, so a rule written as a boolean expression in its render function is a rule nothing
+ * can contradict.
+ */
+export type CharterState =
+  | { status: "idle" }
+  | { status: "loading"; mode: CharterMode }
+  | { status: "done"; readout: CharterReadout; mode: CharterMode }
+  | {
+      status: "error";
+      message: string;
+      mode: CharterMode;
+      /**
+       * Did a request actually leave the page? `false` for the refusals the client makes on its
+       * own — an empty address field, above all — which are the journalist being asked for
+       * something, not the site failing to give it.
+       */
+      attempted: boolean;
+    };
+
+/**
+ * Whether the page offers the SECOND, browser-rendering attempt.
+ *
+ * Offered only once a static read has actually been made and come back with nothing to propose;
+ * it stays up while the render runs and if the render itself fails (so it can be retried), and
+ * it disappears the moment a render has completed — there is no third mechanism behind it.
+ *
+ * `attempted` is what the final review added (F4): "found nothing" used to include the client's
+ * own "enter your website address first", so an empty field answered with that sentence AND an
+ * offer to open the empty address in a real browser, which fails in exactly the same way. An
+ * error from a read that never happened is not a read that found nothing.
+ */
+export function offersRenderRetry(state: CharterState): boolean {
+  if (state.status === "idle") return false;
+  if (state.mode === "rendered")
+    return state.status === "loading" || state.status === "error";
+  return (
+    (state.status === "done" && state.readout.palette.length === 0) ||
+    (state.status === "error" && state.attempted)
+  );
+}
+
+/** How a measured typeface is identified across a re-render — role AND family, because a site
+ *  can name the same family for its body and its headings and dropping one must not drop both. */
+export function typefaceKey(t: { family: string; role: string }): string {
+  return `${t.role}:${t.family}`;
+}
+
+/**
+ * What a measurement writes into the profile body: the extractor's own caveats, then one line
+ * per measured typeface the journalist did NOT strike.
+ *
+ * The `dropped` argument is the whole point. Typefaces have no frontmatter field of their own
+ * yet (no engine applies them), so they land in the profile's prose — and until the final review
+ * they landed there UNSEEN: written into a fresh NEWSROOM-PROFILE.md with no on-screen presence
+ * and no way to disagree, the one measured thing a journalist could not correct (F3). Only what
+ * survives the readout goes in.
+ */
+export function notesFrom(
+  readout: CharterReadout,
+  dropped: ReadonlySet<string>,
+): string[] {
+  return [
+    ...readout.notes,
+    ...readout.typefaces
+      .filter((t) => !dropped.has(typefaceKey(t)))
+      .map((t) => `${t.role}: ${t.family} — ${t.receipt}`),
+  ];
 }

@@ -40,7 +40,13 @@ import {
 import { parseNewsroomMarkdown } from "../../skills/splash/src/brand-profile.ts";
 import { RUNTIMES } from "../configurator-core.ts";
 import { MODEL_SCRIPT_ID } from "./copy.ts";
-import { readoutFrom, type CharterReadout } from "./charter-endpoint.ts";
+import {
+  charterModeFrom,
+  failureReadout,
+  readoutFrom,
+  type CharterMode,
+  type CharterReadout,
+} from "./charter-endpoint.ts";
 import { preflightModel, type PreflightProfile } from "./model.ts";
 import { resolveSkillsRoot } from "./skills-root.ts";
 import {
@@ -287,20 +293,26 @@ function persist(sub: PreflightSubmission): void {
  * a thrown exception: `normalizeSiteUrl`, `collectSiteSources` and `renderSiteSources` are all
  * already total (they return `null`/`{ error }` rather than throw), so this only has to relay
  * their answer honestly.
+ *
+ * Honestly, and READABLY: the client prints this string verbatim, so `failureReadout`
+ * (charter-endpoint.ts) is what turns a collector's machine sentence into one saying what
+ * failed, in the language the page is being read in, with the machine detail kept but
+ * subordinate. This route used to prefix all three failures below with the same English literal
+ * `the site did not answer:` — including a missing Chromium, which is not the site's fault and
+ * not the journalist's to fix by re-typing their address (final review, F1).
  */
 async function measureSite(
   rawUrl: string,
   lang?: string,
-  mode: "static" | "rendered" = "static",
+  mode: CharterMode = "static",
 ): Promise<CharterReadout | { error: string }> {
   const url = normalizeSiteUrl(rawUrl);
-  if (!url) return { error: `not a usable site address: ${rawUrl}` };
+  if (!url) return failureReadout(`not a usable site address: ${rawUrl}`, lang);
   const sources =
     mode === "rendered"
       ? await renderSiteSources(url)
       : await collectSiteSources(url);
-  if ("error" in sources)
-    return { error: `the site did not answer: ${sources.error}` };
+  if ("error" in sources) return failureReadout(sources.error, lang);
   const proposal = proposeCharter(sources);
   return readoutFrom(proposal, lang);
 }
@@ -353,13 +365,10 @@ const server = Bun.serve({
           : undefined;
       // The second attempt (Task 5) is opt-in, never a default the client falls into by
       // accident: anything other than the literal string "rendered" reads as "static", the
-      // fast path every first read still uses.
-      const mode: "static" | "rendered" =
-        body &&
-        typeof body === "object" &&
-        (body as { mode?: unknown }).mode === "rendered"
-          ? "rendered"
-          : "static";
+      // fast path every first read still uses. Decided in `charterModeFrom` rather than here,
+      // because this module starts a server at import and nothing can unit-test a ternary
+      // inside it — "never the default" used to rest on this comment alone (final review, F8).
+      const mode = charterModeFrom(body);
       // measureSite is total (see its own comment) — nothing below can throw, so this route
       // always renders JSON, matching the setup page's own rule of always rendering.
       return new Response(

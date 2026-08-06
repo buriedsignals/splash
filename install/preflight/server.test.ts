@@ -165,6 +165,38 @@ describe("the setup page as served", () => {
       expect((await fetch(`http://127.0.0.1:${port}/nope`)).status).toBe(404);
     });
   });
+
+  // /charter's `mode` decides whether this machine LAUNCHES A BROWSER on a journalist's say-so.
+  // Nothing used to test it — `charterModeFrom` is unit-tested in charter-endpoint.test.ts, and
+  // this pins the same rule where it actually arrives: over the wire, on the real route.
+  //
+  // Read against an address that resolves nowhere, so the answer is the failure sentence and no
+  // real newsroom is fetched by a test run. Deep equality is the assertion: the static read and
+  // the rendered read fail in visibly different words (a fetch that could not be made, versus a
+  // browser or a navigation), so if a misspelt mode ever bought a render, these stop matching.
+  // No browser is launched by this test as it stands — that is the whole point of it.
+  it("only the literal word rendered opens a browser — a misspelt mode reads as static", async () => {
+    const dest = root();
+    await withServer(dest, async (port) => {
+      const read = async (mode?: unknown): Promise<string> => {
+        const r = await fetch(`http://127.0.0.1:${port}/charter`, {
+          method: "POST",
+          body: JSON.stringify({
+            url: "https://splash-no-such-newsroom.invalid/",
+            lang: "en",
+            ...(mode === undefined ? {} : { mode }),
+          }),
+        });
+        return await r.text();
+      };
+      const asStatic = await read("static");
+      expect(asStatic).toContain("Could not read your site");
+      expect(await read("render")).toBe(asStatic);
+      expect(await read("RENDERED")).toBe(asStatic);
+      expect(await read(42)).toBe(asStatic);
+      expect(await read()).toBe(asStatic);
+    });
+  }, 30_000);
 });
 
 describe("what a submission writes", () => {
