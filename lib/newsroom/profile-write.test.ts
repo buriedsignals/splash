@@ -153,4 +153,140 @@ describe("updateProfileMarkdown — an edit rewrites what it knows, keeps the re
       "Ne pas toucher : notre rouge vient de la charte 2019.",
     );
   });
+
+  // Fix round 1: an edit through the setup page only ever supplies name/url/color — never
+  // `theme`, and never a multi-entry `palette`. A known key `facts` says nothing about must be
+  // preserved exactly like a key this function has never heard of, not dropped because it
+  // happens to be one of the four this function CAN author.
+  it("keeps a theme and a palette the edit did not mention", () => {
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#0a5c36"   # your house colour',
+      '  - "#f2c14e"',
+      'lang: "en"',
+      'theme: "dark"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    // Only a name is supplied — the setup page's real payload always carries a `color` too, but
+    // this proves the general rule: absent from `facts` means untouched, for every known key.
+    const out = updateProfileMarkdown(existing, { name: "Heidi.news" });
+    expect(out).toContain('theme: "dark"');
+    expect(out).toContain('"#0a5c36"');
+    expect(out).toContain('"#f2c14e"');
+    expect(out).toContain('name: "Heidi.news"');
+  });
+
+  it("keeps an untouched theme while replacing the colour it was actually asked to change", () => {
+    // The scenario named in review: a profile with a dark theme and a two-colour palette, edited
+    // with only a name and a colour (the real setup-page payload shape, client.ts's
+    // `{name, url, color}`). The theme is not in that payload and must survive; the colour IS in
+    // it, so the palette legitimately collapses to the one colour the journalist just typed —
+    // that is the one-colour form's documented contract, not a regression.
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#0a5c36"   # your house colour',
+      '  - "#f2c14e"',
+      "source:",
+      '  name: "Heidi.news"',
+      'lang: "en"',
+      'theme: "dark"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      name: "Someone else",
+      color: "#d5121e",
+    });
+    expect(out).toContain('theme: "dark"');
+    expect(out).toContain('"#d5121e"');
+    expect(out).toContain('name: "Someone else"');
+  });
+
+  // Fix round 1, finding 2: `parseNewsroomMarkdown`'s palette reader stops at the first line
+  // that is not a `  - item`, even while still indented, so a stray indented non-dash line is
+  // never attributed to the palette it sits under. This writer must use the same boundary when
+  // it drops and regenerates that block — deleting a line the reader itself does not consume
+  // would be silent data loss of exactly the kind this function exists to prevent.
+  it("does not delete a stray indented line under palette the reader itself never consumed", () => {
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#000000"',
+      "  a hand-typed note, not a list item",
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { color: "#d5121e" });
+    expect(out).toContain("a hand-typed note, not a list item");
+    expect(out).toContain('"#d5121e"');
+    expect(out).not.toContain('"#000000"');
+  });
+
+  // Minors: the input shapes the review asked to see committed, not just checked by hand.
+  it("gives a file with no frontmatter a fresh one and keeps its whole body", () => {
+    const existing = "Just a body, no fence at all.\n";
+    const out = updateProfileMarkdown(existing, {
+      lang: "fr",
+      palette: ["#111111"],
+    });
+    expect(out).toContain('"#111111"');
+    expect(out).toContain('lang: "fr"');
+    expect(out).toContain("Just a body, no fence at all.");
+  });
+
+  it("keeps a standalone comment line inside the frontmatter", () => {
+    const existing = [
+      "---",
+      "# a note from the newsroom, not attached to any field",
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain(
+      "# a note from the newsroom, not attached to any field",
+    );
+    expect(out).toContain('lang: "fr"');
+  });
+
+  it("treats a fence with no closing marker as one whole body, rather than losing data", () => {
+    const existing = '---\npalette:\n  - "#000"\nHalf a file, never closed.\n';
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain('lang: "fr"');
+    // Total: nothing thrown, and every original byte is still present somewhere in the output —
+    // it just lands in the body instead of being parsed as frontmatter, since there was no
+    // closing fence for `NEWSROOM_FRONTMATTER_RE` to find.
+    expect(out).toContain("Half a file, never closed.");
+    expect(out).toContain('- "#000"');
+  });
+
+  // A comment on the SAME line as a field being replaced is a conscious trade-off, not an
+  // accident: the whole line is regenerated, so a trailing comment attached to the OLD value
+  // does not survive onto the new one. A standalone comment line (above) does survive; this does
+  // not, because there is no old value left for it to still describe.
+  it("drops a same-line comment attached to a field it replaces", () => {
+    const existing = [
+      "---",
+      'lang: "en"  # confirmed by Yvan',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { lang: "fr" });
+    expect(out).toContain('lang: "fr"');
+    expect(out).not.toContain("confirmed by Yvan");
+  });
 });

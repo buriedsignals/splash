@@ -39,38 +39,39 @@ function scalar(raw: string): string {
   return raw.trim().replace(/[\r\n"]/g, "");
 }
 
-// The frontmatter keys `NewsroomFacts` covers — the ones `profileMarkdown`/`updateProfileMarkdown`
-// author. Every other frontmatter key (`credit`, `signers`, `requiredSigners`, or one this
-// version has never heard of) is the newsroom's, not this function's, to write.
+// The frontmatter keys `NewsroomFacts` CAN cover — the ones `profileMarkdown`/`updateProfileMarkdown`
+// are allowed to author. Every other frontmatter key (`credit`, `signers`, `requiredSigners`, or
+// one this version has never heard of) is the newsroom's, not this function's, to write. Whether
+// one of THESE keys is actually replaced on a given call is a separate question — see
+// `suppliedFieldLines`: a key in this set that `facts` leaves unset is preserved exactly like an
+// unknown key, not dropped.
 const KNOWN_KEYS = new Set(["palette", "source", "lang", "theme"]);
 
-/**
- * The frontmatter lines `facts` produce — palette, source, lang, theme, in that order, each
- * omitted when unset (lang alone always renders, defaulting to "en"). No delimiters: shared by
- * `profileMarkdown` (a fresh file) and `updateProfileMarkdown` (an existing one's known fields).
- */
-function knownFieldLines(facts: NewsroomFacts): string[] {
-  const palette = (
+/** The effective palette: `facts.palette` when given, else `facts.color` wrapped in a list, else
+ * empty. Shared so "does `facts` supply a palette" (empty vs not) and "what to write" agree. */
+function effectivePalette(facts: NewsroomFacts): string[] {
+  return (
     facts.palette?.length ? facts.palette : facts.color ? [facts.color] : []
   ).filter((c) => isSet(c));
-  const lines: string[] = [];
-  if (palette.length) {
-    lines.push("palette:");
-    palette.forEach((c, i) => {
-      lines.push(
-        i === 0
-          ? `  - "${scalar(c)}"   # your house colour`
-          : `  - "${scalar(c)}"`,
-      );
-    });
-  }
-  if (isSet(facts.name)) {
-    lines.push("source:");
-    lines.push(`  name: "${scalar(facts.name!)}"`);
-    if (isSet(facts.url)) lines.push(`  url: "${scalar(facts.url!)}"`);
-  }
-  lines.push(`lang: "${scalar(facts.lang || "en")}"`);
-  if (isSet(facts.theme)) lines.push(`theme: "${scalar(facts.theme!)}"`);
+}
+
+function paletteLines(palette: string[]): string[] {
+  if (!palette.length) return [];
+  const lines = ["palette:"];
+  palette.forEach((c, i) => {
+    lines.push(
+      i === 0
+        ? `  - "${scalar(c)}"   # your house colour`
+        : `  - "${scalar(c)}"`,
+    );
+  });
+  return lines;
+}
+
+function sourceLines(facts: NewsroomFacts): string[] {
+  if (!isSet(facts.name)) return [];
+  const lines = ["source:", `  name: "${scalar(facts.name!)}"`];
+  if (isSet(facts.url)) lines.push(`  url: "${scalar(facts.url!)}"`);
   return lines;
 }
 
@@ -82,7 +83,14 @@ function knownFieldLines(facts: NewsroomFacts): string[] {
  * skills/newsroom-charter/SKILL.md.
  */
 export function profileMarkdown(facts: NewsroomFacts): string {
-  const lines = ["---", ...knownFieldLines(facts), "---"];
+  const lines = [
+    "---",
+    ...paletteLines(effectivePalette(facts)),
+    ...sourceLines(facts),
+    `lang: "${scalar(facts.lang || "en")}"`, // a fresh file always gets a lang, defaulting to "en"
+    ...(isSet(facts.theme) ? [`theme: "${scalar(facts.theme!)}"`] : []),
+    "---",
+  ];
   lines.push("");
   lines.push("# Newsroom profile");
   lines.push("");
@@ -101,11 +109,28 @@ export function profileMarkdown(facts: NewsroomFacts): string {
   return lines.join("\n");
 }
 
-// Where a block a KNOWN key opened (an empty-value line, e.g. `palette:`) ends: the same
-// blank-line-skip / dedent-stops rule `parseNewsroomMarkdown` uses to find the end of `palette`,
-// `source`, `signers` and `requiredSigners`. Reused here so a dropped known block does not leave
-// its old indented lines behind as orphans.
-function blockEnd(lines: string[], start: number): number {
+// The lines to WRITE for each known key `facts` actually supplies a value for, keyed by the
+// frontmatter key they replace — never all four unconditionally. A key `facts` leaves unset is
+// simply absent here, which is what tells `preserveLines` below to leave the newsroom's existing
+// line(s) for that key alone instead of dropping them (an edit that only changes a colour must
+// not also erase a `theme` no caller of `updateProfileMarkdown` even asked about).
+function suppliedFieldLines(facts: NewsroomFacts): Map<string, string[]> {
+  const supplied = new Map<string, string[]>();
+  const palette = effectivePalette(facts);
+  if (palette.length) supplied.set("palette", paletteLines(palette));
+  const source = sourceLines(facts);
+  if (source.length) supplied.set("source", source);
+  if (isSet(facts.lang))
+    supplied.set("lang", [`lang: "${scalar(facts.lang!)}"`]);
+  if (isSet(facts.theme))
+    supplied.set("theme", [`theme: "${scalar(facts.theme!)}"`]);
+  return supplied;
+}
+
+// Where the block a KNOWN key opened (an empty-value line, e.g. `source:`) ends, using the SAME
+// rule `parseNewsroomMarkdown`'s `source` reader uses: skip blank lines, stop at the first
+// non-indented line, consume everything indented in between regardless of its own shape.
+function indentedBlockEnd(lines: string[], start: number): number {
   let i = start;
   while (i < lines.length) {
     if (lines[i].trim() === "") {
@@ -118,17 +143,44 @@ function blockEnd(lines: string[], start: number): number {
   return i;
 }
 
-// Every frontmatter line NOT belonging to a KNOWN key, in its original order: comments, blank
-// lines, a key this version has never heard of, and every line of ITS block (kept because those
-// continuation lines never match the key:value pattern below, so they fall through untouched).
-function preserveUnknownLines(lines: string[]): string[] {
+// `palette:`'s block ends differently: `parseNewsroomMarkdown`'s palette reader (and its
+// signers/requiredSigners readers) stop at the first line that is not a `  - item`, even while
+// still indented — a stray indented non-dash line is not consumed as part of the block, so this
+// writer must not delete it either when it drops and regenerates the palette above it.
+function paletteBlockEnd(lines: string[], start: number): number {
+  let i = start;
+  while (i < lines.length) {
+    if (lines[i].trim() === "") {
+      i++;
+      continue;
+    }
+    if (!/^[ \t]+-/.test(lines[i])) break;
+    i++;
+  }
+  return i;
+}
+
+// Every frontmatter line the update should NOT touch, in its original order: comments, blank
+// lines, a key `facts` does not supply a replacement for (known or not), and every line of ITS
+// block — kept because a continuation line never matches the key:value pattern below and falls
+// through untouched, UNLESS it belongs to a block this call is about to drop and regenerate, in
+// which case it is skipped using that key's own boundary rule (`paletteBlockEnd` for `palette`,
+// `indentedBlockEnd` for `source`).
+function preserveLines(
+  lines: string[],
+  supplied: Map<string, string[]>,
+): string[] {
   const kept: string[] = [];
   let i = 0;
   while (i < lines.length) {
     const kv = lines[i].match(/^([A-Za-z_]+):[ \t]*(.*)$/);
-    if (kv && KNOWN_KEYS.has(kv[1])) {
+    if (kv && KNOWN_KEYS.has(kv[1]) && supplied.has(kv[1])) {
       i++;
-      if (kv[2].trim() === "") i = blockEnd(lines, i);
+      if (kv[2].trim() === "")
+        i =
+          kv[1] === "palette"
+            ? paletteBlockEnd(lines, i)
+            : indentedBlockEnd(lines, i);
       continue;
     }
     kept.push(lines[i]);
@@ -138,9 +190,11 @@ function preserveUnknownLines(lines: string[]): string[] {
 }
 
 /**
- * Rewrite the fields of an EXISTING NEWSROOM-PROFILE.md that `facts` covers, and leave everything
- * else exactly as it was: the newsroom's prose in the body, its comments, and any frontmatter key
- * this function does not author (a key a later version added, or one a human typed by hand).
+ * Rewrite the fields of an EXISTING NEWSROOM-PROFILE.md that `facts` ACTUALLY SUPPLIES a value
+ * for, and leave everything else exactly as it was: the newsroom's prose in the body, its
+ * comments, any frontmatter key this function does not author, and — just as important — a KNOWN
+ * key (`palette`/`source`/`lang`/`theme`) that this particular call simply did not mention. An
+ * edit that only changes a colour must not delete an existing `theme` no one asked to touch.
  *
  * Splits frontmatter from body the same way `parseNewsroomMarkdown` does (`NEWSROOM_FRONTMATTER_RE`),
  * so a file that parser reads is a file this rewrites the same way. A file with no frontmatter at
@@ -156,7 +210,8 @@ export function updateProfileMarkdown(
 ): string {
   const fm = existing.match(NEWSROOM_FRONTMATTER_RE);
   const body = fm ? existing.slice(fm[0].length) : existing;
-  const preserved = fm ? preserveUnknownLines(fm[1].split(/\r?\n/)) : [];
-  const inner = [...knownFieldLines(facts), ...preserved];
+  const supplied = suppliedFieldLines(facts);
+  const preserved = fm ? preserveLines(fm[1].split(/\r?\n/), supplied) : [];
+  const inner = [...supplied.values()].flat().concat(preserved);
   return ["---", ...inner, "---", ""].join("\n") + body;
 }
