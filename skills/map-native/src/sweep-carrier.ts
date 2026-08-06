@@ -23,7 +23,17 @@
 // two narrative kinds stop being two engines and become one engine with a choice of carrier, the
 // most rigid of which advances on nothing but rank.
 
-export type CarrierKind = "route" | "time" | "threshold" | "space" | "order";
+/** The five carriers, as a runtime list — so a config's declared carrier can be checked against
+ *  the same set the type is built from, rather than a second list typed out in a validator. */
+export const CARRIER_KINDS = [
+  "route",
+  "time",
+  "threshold",
+  "space",
+  "order",
+] as const;
+
+export type CarrierKind = (typeof CARRIER_KINDS)[number];
 
 /** One mark, as any carrier needs to see it. Deliberately not a map type's own row shape: the
  *  carriers are pure and testable, and each component adapts its own marks to this. */

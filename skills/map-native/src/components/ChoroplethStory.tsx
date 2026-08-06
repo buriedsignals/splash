@@ -44,12 +44,11 @@ import { resolveMapFrame } from "../core/map-format";
 import { MapFrame } from "../core/MapFrame";
 import { resolveScene } from "../video-scene";
 import {
-  carriersFor,
   sweepStops,
   type CarrierKind,
-  type SweepMark,
   type SweepStops,
 } from "../sweep-carrier";
+import { choroplethSweepMarks, regionCentroids } from "../choropleth-sweep";
 import { legendTheme } from "../theme/legend-theme";
 import { resolveMapStyle } from "../route-geo";
 import { fmtBinRange } from "../core/legend-format";
@@ -126,6 +125,11 @@ interface MapStory {
   triggers: Map<string, number>;
   borderByRegion: Map<string, DrawEntry>;
   joinKey: string;
+  /** Where each region sits on the sweep. Empty when no carrier is declared — which is what
+   *  keeps an un-swept story rendering exactly as it always did. Held here rather than in a
+   *  top-level memo because `space` needs the region centroids, and those only exist once the
+   *  geometry has been resolved inside the map's own load handler. */
+  stops: SweepStops;
 }
 
 export type ChoroplethStoryConfig = ChoroplethData & {
@@ -164,6 +168,10 @@ export type ChoroplethStoryConfig = ChoroplethData & {
    *  reaches it, whatever the beat structure — the map-explainer device, with the carrier chosen
    *  for the subject instead of a river the subject may not have. */
   sweepCarrier?: CarrierKind;
+  /** The data column holding each region's DATE — a bare year, or an ISO date. What the `time`
+   *  carrier advances on. Absent ⇒ `time` is not offered (validate-config refuses it by name),
+   *  never guessed from a column that merely looks temporal. */
+  timeField?: string;
   /** Newsroom house hue — tints frame/legend furniture toward the house colour. */
   brandHue?: string;
   /** Journalist-confirmed claim-arc (S2) — honoured by deriveMapStory. Dropping it here would render a
@@ -183,20 +191,6 @@ export const ChoroplethStory: React.FC<{
   const dark = resolveMapStyle(config.mapStyle) === "dataviz-dark";
   const mode = resolveRevealMode(config);
 
-  // The sweep's stops — one number per region, derived from the carrier the journalist chose.
-  // Empty when no carrier is declared, which is what keeps an un-swept story byte-identical.
-  const sweepMarks: SweepMark[] = React.useMemo(
-    () =>
-      (config.rows ?? []).map((r) => ({
-        name: String(r[config.regionKey] ?? ""),
-        value: Number(r[config.valueField]),
-      })),
-    [config.rows, config.regionKey, config.valueField],
-  );
-  const stops: SweepStops = React.useMemo(
-    () => (config.sweepCarrier ? sweepStops(config.sweepCarrier, sweepMarks) : {}),
-    [config.sweepCarrier, sweepMarks],
-  );
   const houseHue = config.brandHue ?? config.brandPalette?.[0];
   const theme = useMemo(
     () => legendTheme(dark, undefined, houseHue),
@@ -272,6 +266,37 @@ export const ChoroplethStory: React.FC<{
         config,
         "choropleth-story",
       );
+
+      // ★ THE SWEEP'S STOPS — computed HERE, where the geometry exists, because two of the five
+      // carriers need something the rows alone do not carry: `time` needs the declared temporal
+      // column parsed onto each mark, and `space` needs each region's position. Building the
+      // marks from `{name, value}` alone (as this did) left both carriers written, tested, and
+      // unreachable — every mark landed at 1 and the map filled at the close.
+      //
+      // Guarded on `config.sweepCarrier`: with no carrier declared not even the centroid pass
+      // runs, so an un-swept story does exactly the work it did before.
+      const rows = (config.rows ?? []) as Record<string, unknown>[];
+      const centroids = config.sweepCarrier
+        ? regionCentroids(
+            worldGeoJson,
+            joinKey,
+            rows.map((r) => String(r[config.regionKey] ?? "")),
+          )
+        : new Map<string, [number, number]>();
+      const stops: SweepStops = config.sweepCarrier
+        ? sweepStops(
+            config.sweepCarrier,
+            choroplethSweepMarks(
+              rows,
+              {
+                regionKey: config.regionKey,
+                valueField: config.valueField,
+                timeField: config.timeField,
+              },
+              (key) => centroids.get(key),
+            ),
+          )
+        : {};
 
       // Compute choropleth layout.
       const layout = computeChoropleth(config, worldGeoJson, joinKey, {
@@ -417,9 +442,7 @@ export const ChoroplethStory: React.FC<{
       // A subject region's own feature, isolated as a one-feature FeatureCollection —
       // the bloom fill source (filtered so the transient overshoot only ever paints
       // that region, never the rest of the distribution).
-      const singleRegionFeature = (
-        key: string,
-      ): GeoJSON.FeatureCollection => ({
+      const singleRegionFeature = (key: string): GeoJSON.FeatureCollection => ({
         type: "FeatureCollection",
         features: worldGeoJson.features.filter(
           (f) => String(f.properties?.[joinKey]) === key,
@@ -466,6 +489,7 @@ export const ChoroplethStory: React.FC<{
           triggers,
           borderByRegion,
           joinKey,
+          stops,
         });
         continueRender(handle);
       });
@@ -487,6 +511,7 @@ export const ChoroplethStory: React.FC<{
       triggers,
       borderByRegion,
       joinKey,
+      stops,
     } = mapState;
 
     const h = delayRender(`story-frame-${frame}`);
