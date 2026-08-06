@@ -16,7 +16,11 @@
 // Splash has measured but cannot yet apply — the newsroom's typefaces — goes in the BODY, as
 // prose, labelled as not yet applied.
 import { isSet } from "./probe";
-import { NEWSROOM_FRONTMATTER_RE } from "../../skills/splash/src/brand-profile";
+import {
+  NEWSROOM_FRONTMATTER_RE,
+  parseNewsroomMarkdown,
+  type BrandProfile,
+} from "../../skills/splash/src/brand-profile";
 
 export type NewsroomFacts = {
   name?: string;
@@ -47,8 +51,10 @@ function scalar(raw: string): string {
 // unknown key, not dropped.
 const KNOWN_KEYS = new Set(["palette", "source", "lang", "theme"]);
 
-/** The effective palette: `facts.palette` when given, else `facts.color` wrapped in a list, else
- * empty. Shared so "does `facts` supply a palette" (empty vs not) and "what to write" agree. */
+/** The palette for a FRESH file: no existing palette to graft onto, so `facts.palette` (the whole
+ * list) or `facts.color` (wrapped as the one primary colour) is all there is to write. Used by
+ * `profileMarkdown` only — an EDIT grafts onto what already exists instead, see `updatedPalette`
+ * below, because a partial supply must not delete the part it didn't mention. */
 function effectivePalette(facts: NewsroomFacts): string[] {
   return (
     facts.palette?.length ? facts.palette : facts.color ? [facts.color] : []
@@ -68,10 +74,15 @@ function paletteLines(palette: string[]): string[] {
   return lines;
 }
 
-function sourceLines(facts: NewsroomFacts): string[] {
-  if (!isSet(facts.name)) return [];
-  const lines = ["source:", `  name: "${scalar(facts.name!)}"`];
-  if (isSet(facts.url)) lines.push(`  url: "${scalar(facts.url!)}"`);
+/** Source lines for a `{name, url}` pair with a usable name — `parseNewsroomMarkdown`'s reader
+ * (`buildProfile` in brand-profile.ts) drops a `source:` block that has no name, so this must
+ * too, or the write would be silently invisible to the very reader it targets. */
+function sourceLines(
+  source: { name?: string; url?: string } | null | undefined,
+): string[] {
+  if (!source || !isSet(source.name)) return [];
+  const lines = ["source:", `  name: "${scalar(source.name!)}"`];
+  if (isSet(source.url)) lines.push(`  url: "${scalar(source.url!)}"`);
   return lines;
 }
 
@@ -86,7 +97,7 @@ export function profileMarkdown(facts: NewsroomFacts): string {
   const lines = [
     "---",
     ...paletteLines(effectivePalette(facts)),
-    ...sourceLines(facts),
+    ...sourceLines({ name: facts.name, url: facts.url }),
     `lang: "${scalar(facts.lang || "en")}"`, // a fresh file always gets a lang, defaulting to "en"
     ...(isSet(facts.theme) ? [`theme: "${scalar(facts.theme!)}"`] : []),
     "---",
@@ -109,17 +120,66 @@ export function profileMarkdown(facts: NewsroomFacts): string {
   return lines.join("\n");
 }
 
-// The lines to WRITE for each known key `facts` actually supplies a value for, keyed by the
-// frontmatter key they replace — never all four unconditionally. A key `facts` leaves unset is
-// simply absent here, which is what tells `preserveLines` below to leave the newsroom's existing
-// line(s) for that key alone instead of dropping them (an edit that only changes a colour must
-// not also erase a `theme` no caller of `updateProfileMarkdown` even asked about).
-function suppliedFieldLines(facts: NewsroomFacts): Map<string, string[]> {
+/**
+ * The palette an EDIT should write, or `null` when `facts` says nothing about it at all (nothing
+ * to graft; the existing block, if any, is left untouched by `preserveLines`).
+ *
+ * A PARTIAL supply grafts onto `current` (the existing profile) rather than replacing the whole
+ * list — the same principle round 1 applied to a key `facts` never mentions, one level deeper:
+ * `facts.color` alone (the setup page's one-colour field) only ever expresses the PRIMARY colour
+ * (NEWSROOM-PROFILE.example.md: palette[0] is the primary, palette[1+] are distinct series
+ * colours — two roles, not one list). It replaces index 0 and grafts the rest of `current.palette`
+ * back on unchanged; it has no way to say "and delete the others", so it must not.
+ *
+ * `facts.palette` — a real array, the shape the charter flow (which measures a WHOLE site) sends
+ * — means the caller genuinely intends to replace the whole list, and is used as-is.
+ *
+ * Known limit, not fixed here (no live caller sends it — review round 2): `facts.palette: []`,
+ * an explicit "clear the palette", is indistinguishable from "palette not supplied" (both read as
+ * falsy via `.length`). Making that distinction expressible is a follow-up if a caller ever needs
+ * it, not a feature to build ahead of one.
+ */
+function updatedPalette(
+  facts: NewsroomFacts,
+  current: BrandProfile | null,
+): string[] | null {
+  if (facts.palette?.length) return facts.palette.filter((c) => isSet(c));
+  if (!isSet(facts.color)) return null;
+  return [facts.color!, ...(current?.palette ?? []).slice(1)];
+}
+
+/**
+ * The source an EDIT should write, or `null` when `facts` supplies neither a name nor a url
+ * (nothing to graft). `facts.name` without `facts.url` keeps `current`'s existing url, and vice
+ * versa — the field the caller didn't mention survives, same graft principle as the palette above.
+ */
+function updatedSource(
+  facts: NewsroomFacts,
+  current: BrandProfile | null,
+): { name?: string; url?: string } | null {
+  if (!isSet(facts.name) && !isSet(facts.url)) return null;
+  return {
+    name: isSet(facts.name) ? facts.name : current?.source?.name,
+    url: isSet(facts.url) ? facts.url : current?.source?.url,
+  };
+}
+
+// The lines to WRITE for each known key `facts` actually supplies a value for (grafted onto
+// `current`, the existing profile, for a PARTIAL supply — see `updatedPalette`/`updatedSource`),
+// keyed by the frontmatter key they replace — never all four unconditionally, and never a whole
+// block for a partial mention. A key `facts` leaves entirely unset is simply absent here, which is
+// what tells `preserveLines` below to leave the newsroom's existing line(s) for that key alone
+// instead of dropping them (an edit that only changes a colour must not also erase a `theme` no
+// caller of `updateProfileMarkdown` even asked about).
+function suppliedFieldLines(
+  facts: NewsroomFacts,
+  current: BrandProfile | null,
+): Map<string, string[]> {
   const supplied = new Map<string, string[]>();
-  const palette = effectivePalette(facts);
-  if (palette.length) supplied.set("palette", paletteLines(palette));
-  const source = sourceLines(facts);
-  if (source.length) supplied.set("source", source);
+  const palette = updatedPalette(facts, current);
+  if (palette !== null) supplied.set("palette", paletteLines(palette));
+  const source = updatedSource(facts, current);
+  if (source) supplied.set("source", sourceLines(source));
   if (isSet(facts.lang))
     supplied.set("lang", [`lang: "${scalar(facts.lang!)}"`]);
   if (isSet(facts.theme))
@@ -192,13 +252,18 @@ function preserveLines(
 /**
  * Rewrite the fields of an EXISTING NEWSROOM-PROFILE.md that `facts` ACTUALLY SUPPLIES a value
  * for, and leave everything else exactly as it was: the newsroom's prose in the body, its
- * comments, any frontmatter key this function does not author, and — just as important — a KNOWN
- * key (`palette`/`source`/`lang`/`theme`) that this particular call simply did not mention. An
- * edit that only changes a colour must not delete an existing `theme` no one asked to touch.
+ * comments, any frontmatter key this function does not author, a KNOWN key
+ * (`palette`/`source`/`lang`/`theme`) that this particular call simply did not mention (an edit
+ * that only changes a colour must not delete an existing `theme` no one asked to touch), and — one
+ * level deeper — the PART of a key a partial supply didn't mention (a colour edit keeps the
+ * series colours it never mentioned; a name edit keeps the url it never mentioned). See
+ * `updatedPalette` / `updatedSource` for the graft.
  *
  * Splits frontmatter from body the same way `parseNewsroomMarkdown` does (`NEWSROOM_FRONTMATTER_RE`),
- * so a file that parser reads is a file this rewrites the same way. A file with no frontmatter at
- * all — someone deleted it, or it never had one — gets a fresh one and keeps its whole body.
+ * so a file that parser reads is a file this rewrites the same way — and reads the SAME parse of
+ * `existing` (`current`) to know what a partial supply should graft onto. A file with no
+ * frontmatter at all — someone deleted it, or it never had one — gets a fresh one and keeps its
+ * whole body; `current` is then simply `null` and every supplied key writes standalone.
  *
  * The body is never touched, not even to append a note: on an edit the newsroom's own prose is
  * the one thing that must survive byte-for-byte, so `facts.notes` (which `profileMarkdown` folds
@@ -210,7 +275,8 @@ export function updateProfileMarkdown(
 ): string {
   const fm = existing.match(NEWSROOM_FRONTMATTER_RE);
   const body = fm ? existing.slice(fm[0].length) : existing;
-  const supplied = suppliedFieldLines(facts);
+  const current = parseNewsroomMarkdown(existing);
+  const supplied = suppliedFieldLines(facts, current);
   const preserved = fm ? preserveLines(fm[1].split(/\r?\n/), supplied) : [];
   const inner = [...supplied.values()].flat().concat(preserved);
   return ["---", ...inner, "---", ""].join("\n") + body;

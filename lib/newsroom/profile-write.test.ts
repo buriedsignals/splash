@@ -180,12 +180,14 @@ describe("updateProfileMarkdown — an edit rewrites what it knows, keeps the re
     expect(out).toContain('name: "Heidi.news"');
   });
 
-  it("keeps an untouched theme while replacing the colour it was actually asked to change", () => {
-    // The scenario named in review: a profile with a dark theme and a two-colour palette, edited
-    // with only a name and a colour (the real setup-page payload shape, client.ts's
-    // `{name, url, color}`). The theme is not in that payload and must survive; the colour IS in
-    // it, so the palette legitimately collapses to the one colour the journalist just typed —
-    // that is the one-colour form's documented contract, not a regression.
+  it("keeps an untouched theme, and grafts the new colour onto the primary while keeping the series colour", () => {
+    // Fix round 2: the scenario named in review — a profile with a dark theme and a two-colour
+    // palette, edited with only a name and a colour (the real setup-page payload shape,
+    // client.ts's `{name, url, color}`). The theme is not in that payload and must survive. The
+    // colour IS in it — but per NEWSROOM-PROFILE.example.md, palette[0] is the primary and
+    // palette[1+] are distinct series colours, two roles, not one list — and a single hex field
+    // can only ever express the primary. So it replaces index 0 and grafts index 1+ back on; it
+    // does not delete a series colour the journalist never touched.
     const existing = [
       "---",
       "palette:",
@@ -205,8 +207,68 @@ describe("updateProfileMarkdown — an edit rewrites what it knows, keeps the re
       color: "#d5121e",
     });
     expect(out).toContain('theme: "dark"');
-    expect(out).toContain('"#d5121e"');
+    expect(out).toContain('"#d5121e"'); // the new primary
+    expect(out).not.toContain('"#0a5c36"'); // the old primary, replaced
+    expect(out).toContain('"#f2c14e"'); // the series colour, grafted back on
     expect(out).toContain('name: "Someone else"');
+  });
+
+  it("still replaces the whole palette when facts supplies a real palette array", () => {
+    // The charter flow's shape (a whole site measured) genuinely means "here is the new list" —
+    // grafting a single index onto it would be wrong in the other direction.
+    const existing = [
+      "---",
+      "palette:",
+      '  - "#0a5c36"',
+      '  - "#f2c14e"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, {
+      palette: ["#111111", "#222222", "#333333"],
+    });
+    expect(out).toContain('"#111111"');
+    expect(out).toContain('"#222222"');
+    expect(out).toContain('"#333333"');
+    expect(out).not.toContain('"#0a5c36"');
+    expect(out).not.toContain('"#f2c14e"');
+  });
+
+  it("grafts a new name onto the existing url when only a name is supplied", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  name: "Heidi.news"',
+      '  url: "https://heidi.news"',
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { name: "Someone else" });
+    expect(out).toContain('name: "Someone else"');
+    expect(out).toContain('url: "https://heidi.news"');
+  });
+
+  it("grafts a new url onto the existing name when only a url is supplied", () => {
+    const existing = [
+      "---",
+      "source:",
+      '  name: "Heidi.news"',
+      '  url: "https://heidi.news"',
+      'lang: "en"',
+      "---",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const out = updateProfileMarkdown(existing, { url: "https://new.example" });
+    expect(out).toContain('name: "Heidi.news"');
+    expect(out).toContain('url: "https://new.example"');
+    expect(out).not.toContain("https://heidi.news");
   });
 
   // Fix round 1, finding 2: `parseNewsroomMarkdown`'s palette reader stops at the first line
