@@ -139,11 +139,12 @@ runtime_install
 });
 
 // The registry is what the setup page reads. Layer A (does the app discover our skills) is measured
-// in the bundle; Layer B (does a visual come out of it) has not been seen, and this project does not
-// let a product decision stand in for a proof.
-test("claude-desktop is registered but NOT verified — no visual has come out of it", async () => {
+// in the bundle; Layer B (does a visual come out of it) has not been seen — enabled by decision
+// (2026-08-06) anyway, the same regime gemini and goose already carry, because this is one of the
+// only two runtimes a journalist can use without ever touching a terminal.
+test("claude-desktop is registered and selectable — Layer B remains unproven", async () => {
   const { RUNTIMES: REG } = await import("../../install/configurator-core");
   expect(REG["claude-desktop"]).toBeDefined();
   expect(REG["claude-desktop"]!.label).toBe("Claude Desktop");
-  expect(REG["claude-desktop"]!.verified).toBe(false);
+  expect(REG["claude-desktop"]!.verified).toBe(true);
 });

@@ -30,5 +30,8 @@ expected path). Give it a target when the first Windows runtime needs one, not b
 Both layers run AFTER the source is unpacked to `$DEST` and BEFORE the launcher is written, with
 `$DEST` (macOS/Linux) / `$Dest` (Windows) in scope.
 
-`configurator-core.ts`'s `RUNTIMES` map gates which runtimes are selectable — flip a runtime's
-`verified` to `true` only once its module exists here AND the end-to-end proof passes.
+`configurator-core.ts`'s `RUNTIMES` map gates which runtimes are selectable. A runtime's
+`verified` goes `true` when its module exists here AND either the end-to-end proof passes, or the
+project decides to ship it without one — in which case the motive is written beside the flag,
+naming what IS measured and what is not. `configurator-core.test.ts` reads this file's source to
+keep that true: a flag raised in silence fails the suite.

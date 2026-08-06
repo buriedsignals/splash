@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { RUNTIMES } from "./configurator-core.ts";
 
@@ -10,13 +10,32 @@ test("the four CLI runtimes are verified (codex proven; gemini + goose enabled b
   expect(RUNTIMES.goose.verified).toBe(true); // enabled by decision; Layer A proven + drove the flow, Layer B cut by Gemini quota
 });
 
-test("goose-desktop is registered but NOT yet verified — Layer B is unproven", () => {
-  expect(RUNTIMES["goose-desktop"]).toBeDefined();
-  expect(RUNTIMES["goose-desktop"]!.label).toBe("Goose Desktop");
-  // Flipped to true ONLY once a visual comes out of the app — see docs/installer/
-  // goose-desktop-proof.md. A product decision is not a proof, and this project already carries
-  // two runtimes marked verified by decision rather than by evidence.
-  expect(RUNTIMES["goose-desktop"]!.verified).toBe(false);
+// The two runtimes a journalist can use WITHOUT a terminal — installed once, launched from the
+// Dock. Enabled by decision, exactly as gemini and goose were: Layer A (the app discovers the
+// skills) is measured on the shipped bundle, Layer B (a visual comes OUT of the app) is not.
+test("the two desktop runtimes are selectable", () => {
+  expect(RUNTIMES["goose-desktop"]!.verified).toBe(true);
+  expect(RUNTIMES["claude-desktop"]!.verified).toBe(true);
+});
+
+// A flag is allowed to be raised on a decision rather than a proof — that is this project's
+// convention — but never in silence. The motive lives beside the flag, and this reads the source
+// as text to keep it there: the same method docs/installer/bootstrap-sh.test.ts uses on the
+// install scripts.
+test("every raised flag says why, right where it is raised", () => {
+  const src = readFileSync(
+    join(import.meta.dir, "configurator-core.ts"),
+    "utf8",
+  );
+  const lines = src.split("\n");
+  for (const [i, line] of lines.entries()) {
+    if (!/verified:\s*true/.test(line)) continue;
+    const preamble = lines.slice(Math.max(0, i - 12), i).join("\n");
+    expect(
+      /proven|decision/i.test(preamble),
+      `verified: true at line ${i + 1} carries no stated motive`,
+    ).toBe(true);
+  }
 });
 
 // An Anthropic key is written to .env for whoever picked Goose, and Codex and Gemini have no

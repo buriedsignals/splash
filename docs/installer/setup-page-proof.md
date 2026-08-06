@@ -251,9 +251,12 @@ claim under test, read from the model the page itself served, not inferred.
   either call. The `remotion browser ensure` one now sits before the only interactive screen in the
   installer, with no timeout and no message: a hang there would leave a newsroom staring at
   "Downloading the video renderer for …" with nothing telling them to kill the process by hand.
-- **The desktop runtimes** (`goose-desktop`, `claude-desktop`) — `configurator-core.ts` already
-  marks both `verified: false`; this proof did not touch either (runtime `claude`, the CLI, was
-  the one exercised end-to-end, matching `docs/installer/*-findings.md`'s existing caveats).
+- **The desktop runtimes** (`goose-desktop`, `claude-desktop`) — at the time of this proof,
+  `configurator-core.ts` marked both `verified: false`; this proof did not touch either (runtime
+  `claude`, the CLI, was the one exercised end-to-end, matching `docs/installer/*-findings.md`'s
+  existing caveats). **Update (2026-08-06):** both raised to `verified: true` by decision, the same
+  regime `gemini` and `goose` already carried — Layer B (a visual out of the app) is still
+  unobserved for either.
 - **`dw-chart`/`map-dw` and the delivery capabilities** were deliberately left unenabled — this
   proof is scoped to the four claims the task names (the native engines' readiness truth), not a
   re-run of every capability's live verification.

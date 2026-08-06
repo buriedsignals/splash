@@ -64,15 +64,19 @@ export const RUNTIMES: Record<
   // nested invocation completed, so the full end-to-end is not proven. See docs/installer/goose-proof.md.
   // No login: Goose carries its own provider configuration, outside this page's reach.
   goose: { label: "Goose", verified: true },
-  // The newsroom-facing runtime: installed once, launched from the Dock, no terminal after install.
-  // NOT verified: the gate proved the app discovers our skills, follows the symlinks, executes a
-  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — but nobody has seen a
-  // visual come OUT of it. That is Layer B, and it is what flips this flag.
+  // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
+  // MEASURED — the gate proved the app discovers our skills, follows the symlinks, executes a
+  // command, and can reach `bun` (docs/installer/goose-desktop-findings.md) — and Layer B, a
+  // visual coming out of the app, has not been observed. Kept selectable because this is one of
+  // only two runtimes that need no terminal after the install, which is the whole promise of the
+  // install page.
   // No login: the app owns the account it signs into.
-  "goose-desktop": { label: "Goose Desktop", verified: false },
-  // The second desktop runtime. Layer A is measured in the shipped bundle — the app auto-loads
-  // ~/.claude/skills and mounts it into its sandbox — but no visual has come out of the app, so it
-  // gets the same flag as its sibling. See docs/installer/claude-desktop-findings.md.
+  "goose-desktop": { label: "Goose Desktop", verified: true },
+  // Enabled by decision (2026-08-06), the same regime gemini and goose already carry: Layer A is
+  // MEASURED — the app auto-loads ~/.claude/skills and mounts it into its sandbox
+  // (docs/installer/claude-desktop-findings.md) — and Layer B, a visual coming out of the app,
+  // has not been observed. Kept selectable because these two are the only runtimes that need no
+  // terminal after the install, which is the whole promise of the install page.
   // No login: the app owns the account it signs into.
-  "claude-desktop": { label: "Claude Desktop", verified: false },
+  "claude-desktop": { label: "Claude Desktop", verified: true },
 };

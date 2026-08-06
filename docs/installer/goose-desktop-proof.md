@@ -496,8 +496,12 @@ trigger, not to a background sweep.
 
 **Layer A: proven.** The module installs-or-detects, repairs a broken skill-link state, wires
 discovery, and the app finds every skill that *is* a skill. **Layer B: not attempted.**
-`RUNTIMES["goose-desktop"].verified` stays `false`, and the test in
-`install/configurator-core.test.ts` pins it there.
+`RUNTIMES["goose-desktop"].verified` stayed `false` on that basis alone. **Update (2026-08-06):**
+raised to `true` by decision — the same regime `gemini` and `goose` already carry — because this is
+one of only two runtimes a journalist can use without ever touching a terminal. The motive is
+written beside the flag in `install/configurator-core.ts`, and the test in
+`install/configurator-core.test.ts` now checks that any such motive is present, not that Layer B is
+proven.
 
 ---
 
