@@ -50,6 +50,7 @@
 //     charter-fetch.ts's SSRF fix — this file does not close that door, and does not claim to.
 import {
   isPublicSiteAddress,
+  MAX_BYTES,
   normalizeSiteUrl,
   type SiteSources,
 } from "./charter-fetch.ts";
@@ -66,6 +67,12 @@ export const RENDER_SETTLE_MS = 1_500;
 export const MAX_RENDER_SHEETS = 8;
 /** Per-sheet character cap — same purpose as `MAX_BYTES` in charter-fetch.ts. */
 export const MAX_RENDER_SHEET_CHARS = 2_000_000;
+/**
+ * Cap on the rendered markup. `page.content()` used to come back uncapped, where the static path
+ * has always capped a response at `MAX_BYTES` — a second reading route looser than the first is a
+ * way around the first. Imported rather than restated, so the two cannot drift apart.
+ */
+export const MAX_RENDER_HTML_CHARS = MAX_BYTES;
 /** Per-sheet rule cap applied INSIDE the page, before the text ever crosses back to Node — a
  *  pathological sheet with hundreds of thousands of rules must not stall serialisation. */
 export const MAX_RULES_PER_SHEET = 4_000;
@@ -239,10 +246,15 @@ function toSiteSources(
     "this reading comes from opening the page in a browser and reading the CSS actually applied after the network settled, not from fetching a stylesheet file",
   ];
 
-  const kept = applied.sheets.slice(0, MAX_RENDER_SHEETS);
-  if (applied.sheets.length > MAX_RENDER_SHEETS)
+  // The synthetic computed-styles sheet is appended below and counts INSIDE this cap, so it gets
+  // a slot reserved here rather than riding on top (the real cap used to be MAX_RENDER_SHEETS+1).
+  // It keeps its place rather than being dropped last: it exists precisely BECAUSE a sheet could
+  // not be read, so it is the reading a blocked page most needs.
+  const room = applied.computedCss ? MAX_RENDER_SHEETS - 1 : MAX_RENDER_SHEETS;
+  const kept = applied.sheets.slice(0, room);
+  if (applied.sheets.length > room)
     notes.push(
-      `${applied.sheets.length} applied stylesheets were read after rendering; the first ${MAX_RENDER_SHEETS} were kept (a colour declared only in a later one was missed)`,
+      `${applied.sheets.length} applied stylesheets were read after rendering; the first ${room} were kept (a colour declared only in a later one was missed)`,
     );
 
   const sheets = kept.map((s) => ({
@@ -277,7 +289,15 @@ function toSiteSources(
       "no CSS could be read at all, even after rendering — the page may apply no styling of its own, or every stylesheet it applies is cross-origin and unreadable from within it",
     );
 
-  return { url, html, sheets, notes };
+  return {
+    url,
+    html:
+      html.length > MAX_RENDER_HTML_CHARS
+        ? html.slice(0, MAX_RENDER_HTML_CHARS)
+        : html,
+    sheets,
+    notes,
+  };
 }
 
 /**

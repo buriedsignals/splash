@@ -7,6 +7,8 @@
 import { describe, expect, test } from "bun:test";
 import { proposeCharter } from "./charter.ts";
 import {
+  MAX_RENDER_HTML_CHARS,
+  MAX_RENDER_SHEETS,
   renderSiteSources,
   type RenderBrowser,
   type RenderPage,
@@ -309,5 +311,46 @@ describe("renderSiteSources — the returned shape", () => {
     });
     if ("error" in out) throw new Error(out.error);
     expect(out.url).toBe("https://x.news/");
+  });
+});
+
+// The rendered path's bounds have to be the static path's bounds — a second reading route that
+// is looser than the first is a way around the first. Two were: the markup came back uncapped,
+// and the synthetic computed-styles sheet was appended AFTER the sheet cap was applied, so the
+// real cap was 8 + 1.
+describe("renderSiteSources — bounded exactly like the static path", () => {
+  test("should cap the rendered markup, the way the static path caps a response", async () => {
+    const page = fakePage({
+      content: async () => "x".repeat(MAX_RENDER_HTML_CHARS + 10),
+    });
+    const out = await renderSiteSources("https://x.news", {
+      launch: async () => fakeBrowser(page),
+    });
+    if ("error" in out) throw new Error(out.error);
+    expect(out.html.length).toBe(MAX_RENDER_HTML_CHARS);
+  });
+
+  test("should count the computed-styles sheet INSIDE the cap, not on top of it", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({
+      href: `https://x.news/s${i}.css`,
+      css: `a{color:#00000${i}}`,
+    }));
+    const page = fakePage({
+      evaluate: async () =>
+        ({
+          sheets: many,
+          blockedHrefs: ["https://fonts.example.net/webfont.css"],
+          computedCss: "a { color: rgb(200, 16, 30) }",
+        }) as never,
+    });
+    const out = await renderSiteSources("https://x.news", {
+      launch: async () => fakeBrowser(page),
+    });
+    if ("error" in out) throw new Error(out.error);
+    expect(out.sheets.length).toBe(MAX_RENDER_SHEETS);
+    // The fallback keeps its place — it is the reading that exists BECAUSE a sheet was blocked.
+    expect(out.sheets.at(-1)!.href).toBe("computed styles of the rendered page");
+    // And the note says how many were really kept, not the cap in the abstract.
+    expect(out.notes.join(" ")).toContain(`first ${MAX_RENDER_SHEETS - 1}`);
   });
 });
