@@ -1243,6 +1243,18 @@ git commit -m "feat(twin-intake): freeze the source once, profile it with an RFC
 
 A gate closes into a file. `STORYBOARD.md` carries YAML front matter that is machine-checkable and prose beneath it that the journalist actually reads.
 
+**Amended after implementation review.** The prescribed `scalar()` only trims and strips quotes,
+which turns a bare `takeaway: null` (or `takeaway: ~`) into the non-empty string `"null"` — truthy,
+so `checkStoryboard` would call Gate 2 closed. But `twin/skills/splash-twin/scripts/where.mjs`'s
+`hasConfirmedTakeaway` explicitly refuses those same two raw tokens, so `whereIs` would still report
+`phase: "storyboard"`. The two gates this task's own interface note requires to agree
+("`whereIs` reads `takeaway:` out of this file") would disagree on the one input that matters most —
+a takeaway nobody actually set. Step 3's `scalar()` below is corrected to resolve the bare `null`/`~`
+sentinels to a real `null` before `checkStoryboard` sees them; a regression test locks this in
+Step 1. Everything else in the prescribed code, including the rest of the hand-rolled YAML subset
+reader, held up under mutation testing (every line targeted by a test was confirmed to flip that
+test red when broken, then reverted).
+
 - [ ] **Step 1: Write the failing test**
 
 ```ts
@@ -1315,6 +1327,23 @@ describe("checkStoryboard", () => {
     delete meta.slots[0].chosen;
     expect(checkStoryboard(meta)).toContain("slot 1: nothing chosen — gate 2 is not closed");
   });
+
+  it("should not consider a bare YAML null or tilde takeaway confirmed, agreeing with whereIs", () => {
+    // where.mjs's hasConfirmedTakeaway (twin/skills/splash-twin/scripts/where.mjs) refuses the
+    // raw tokens "null" and "~" as a confirmed takeaway. parseStoryboard must resolve the same
+    // two YAML null sentinels to a real missing value, or the two gates would disagree about
+    // whether G1 has closed.
+    const nullText = VALID.replace(
+      'takeaway: "Rainfall over Annemasse fell by a third in ten years."',
+      "takeaway: null",
+    );
+    const tildeText = VALID.replace(
+      'takeaway: "Rainfall over Annemasse fell by a third in ten years."',
+      "takeaway: ~",
+    );
+    expect(checkStoryboard(parseStoryboard(nullText).meta)).toContain("takeaway is missing");
+    expect(checkStoryboard(parseStoryboard(tildeText).meta)).toContain("takeaway is missing");
+  });
 });
 ```
 
@@ -1325,18 +1354,27 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Write the minimal implementation**
 
-A dependency-free reader for the narrow YAML subset used here: scalars, and a list of maps whose values are scalars or inline string arrays.
+A dependency-free reader for the narrow YAML subset used here: scalars, and a list of maps whose values are scalars or inline string arrays. `scalar()` resolves the bare `null`/`~` sentinels to a real `null` (see the amendment above) so this parser and `where.mjs` cannot disagree about what a confirmed takeaway is.
 
 ```js
 // twin/skills/twin-storyboard/scripts/storyboard.mjs
 
 const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
 
+// Bare (unquoted) YAML null sentinels. where.mjs's hasConfirmedTakeaway refuses these same two
+// raw tokens as a confirmed takeaway — this parser has to resolve them to a real missing value
+// too, or the two gates would disagree about whether G1 has closed. A *quoted* "null" or "~" is
+// a literal string, not the sentinel, so this only fires on the bare form.
+function isNullSentinel(value) {
+  return value === "null" || value === "~";
+}
+
 function scalar(raw) {
   const value = raw.trim();
   if (value.startsWith("[") && value.endsWith("]")) {
     return value.slice(1, -1).split(",").map((item) => item.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
   }
+  if (isNullSentinel(value)) return null;
   return value.replace(/^["']|["']$/g, "");
 }
 
@@ -1389,7 +1427,7 @@ export function checkStoryboard(meta) {
 - [ ] **Step 4: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/twin-storyboard/test/storyboard.test.ts`
-Expected: PASS, 7 tests.
+Expected: PASS, 8 tests (7 original + 1 null/tilde regression added post-review).
 
 - [ ] **Step 5: Write `references/exchange.md`**
 
