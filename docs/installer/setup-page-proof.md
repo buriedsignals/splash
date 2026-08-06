@@ -346,3 +346,54 @@ the six selectable runtimes, and — among the fields — that the two upfront k
   `bootstrap.sh` run end to end.
 - **The MapTiler key is dead**, so nothing map-shaped was exercised — not the profile's palette
   reaching a rendered chart, not a live map produce.
+
+## Update — 2026-08-06: the setup page is one screen
+
+**Branch:** `feat/setup-page-one-screen` (HEAD `3fc8e0c9`), off the proof recorded above. What the
+page now serves:
+
+1. **The newsroom section is editable, and the site address fills it.** Paste the address,
+   `POST /charter` measures the site through the deterministic extractor
+   (`lib/newsroom/charter.ts`), and each value arrives prefilled with a receipt naming where it
+   was read — a journalist can only disagree with a value whose origin they can see. The
+   extractor's own caveats are relayed verbatim whenever it emits one, its stated confidence is
+   never raised, and a site that declares nothing is a legitimate answer the page says out loud.
+   Series colours are shown read-only beside the primary. The publication language is a field
+   here.
+2. **Writing preserves.** `updateProfileMarkdown` rewrites only the fields it is given: the
+   journalist's comments, keys it does not know, a `theme` the form does not carry, and palette
+   entries beyond the first all survive. A partial supply grafts rather than replaces — a colour
+   replaces palette entry 0 and keeps the rest; a name without a url keeps the url.
+3. **The Language section is gone** — the profile carries `lang`.
+4. **The tick boxes are gone.** What the newsroom can produce is derived from what is configured
+   (`lib/newsroom/readiness.ts`'s `capabilityReadiness`: an engine is judged directly from its
+   env/settings/deps, never from a tick nobody could act on) and read as a closing constat;
+   publication destinations are still chosen. `/verify` now checks every engine plus the chosen
+   destination, so a key typed without ticking anything is no longer written to `.env` unverified.
+
+**Evidence:**
+
+- `bun test install/preflight/server.test.ts` → **22 pass / 0 fail**. Restoring the old behaviour
+  (refusing to write an existing profile) makes **2 of them fail (20 pass / 2 fail)**; restored,
+  22/22. The second test (`"an existing profile is genuinely editable: the edit lands on disk AND
+  the next served page shows it"`) walks page → serialize → disk → next served page: it asserts
+  the edit lands in the file (name changed, old colour gone), that an unknown key
+  `requiredSigners: ["yvan"]` and the body survive, and that the next served model shows the new
+  values.
+- **★ The gate is 23/23 — fully green.** Earlier the same day it stood at 20/23, and those three
+  reds (`lib`, `skills/map-native`, `skills/scrolly`) were traced to a dead MapTiler key:
+  `verifyMapTiler` failed identically on `main`, the API answered `403 Invalid key`, and the map
+  snap died on `waitForSelector('.maplibregl-canvas')` because no style ever loaded. Rémy has since
+  regenerated the key — a direct call now returns `200` — and the gate went green. The chain
+  verifies in reverse. Maps render again.
+
+**What is NOT proven by this branch:**
+
+- **The `/charter` route is not exercised by the suite** — it reaches the network, so only its
+  pure translation layer (`readoutFrom`) is tested; the route itself has been tried by hand only.
+- **No visual has ever come out of either desktop runtime.** Layer B remains unobserved for both
+  `goose-desktop` and `claude-desktop`, and they are offered on a written decision, not a proof —
+  and note the trap this repo has now paid for twice: Goose's CLI *did* reach Layer B, which is
+  not the same runtime as Goose Desktop.
+- **The Windows path (`install/bootstrap.ps1`)** is still verified by reading only.
+- **This branch was not re-run through a full live `bootstrap.sh` install.**

@@ -4,6 +4,58 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-08-06 — Task 6 « la page de setup tient sur UN écran » : profil éditable + case cochées supprimées, gate 23/23 (branche `feat/setup-page-one-screen`, HEAD `3fc8e0c9`)
+
+Suite de la Task 5 ci-dessous. La page de setup tient désormais sur un seul écran : *Votre
+rédaction · Votre assistant · Vos comptes · Ce que vous pourrez produire.*
+
+**① La section rédaction est éditable, et l'adresse du site la remplit.** Coller l'adresse,
+`POST /charter` mesure le site via l'extracteur déterministe (`lib/newsroom/charter.ts`), et
+chaque valeur arrive préremplie **avec un reçu nommant où elle a été lue** — un journaliste ne
+peut contester qu'une valeur dont il voit l'origine. Les réserves propres de l'extracteur sont
+relayées **verbatim** dès qu'il en émet, sa confiance annoncée n'est jamais relevée, et un site qui
+ne déclare rien est une réponse légitime que la page dit explicitement. Les couleurs de série sont
+montrées en lecture seule à côté de la primaire. La langue de publication est un champ ici.
+
+**② L'écriture préserve.** `updateProfileMarkdown` ne réécrit que les champs qu'on lui donne : les
+commentaires du journaliste, les clés qu'il ne connaît pas, un `theme` que le formulaire ne porte
+pas, et les entrées de palette au-delà de la première survivent toutes. Un apport partiel greffe
+plutôt que remplace — une couleur remplace l'entrée 0 de la palette et garde le reste ; un nom sans
+url garde l'url.
+
+**③ La section Langue disparaît** — le profil porte `lang`.
+
+**④ Les cases à cocher disparaissent.** Ce que la rédaction peut produire est **dérivé** de ce qui
+est configuré (`lib/newsroom/readiness.ts`) et lu comme un constat de clôture ; les destinations de
+publication restent choisies. `/verify` vérifie désormais chaque moteur plus la destination
+choisie, donc une clé tapée sans aucune case cochée n'est plus écrite dans `.env` sans avoir été
+vérifiée.
+
+**Preuve** : `bun test install/preflight/server.test.ts` → **22 pass / 0 fail**. Restaurer
+l'ancien comportement (refuser d'écrire un profil existant) fait échouer **2 tests (20 pass /
+2 fail)** ; restauré, 22/22. Le second test parcourt la chaîne complète page → serialize →
+**disque** → prochaine page servie : il asserte que l'édition atterrit dans le fichier (nom
+changé, ancienne couleur disparue), qu'une clé inconnue `requiredSigners: ["yvan"]` et le corps
+survivent, et que le prochain modèle servi montre les nouvelles valeurs.
+
+**★ Le gate est à 23/23 — entièrement vert.** Plus tôt dans la journée il était à 20/23, et ces
+trois rouges (`lib`, `skills/map-native`, `skills/scrolly`) ont été tracés à une clé MapTiler
+morte : `verifyMapTiler` échouait identiquement sur `main`, l'API répondait `403 Invalid key`, et
+le snap carte mourait sur `waitForSelector('.maplibregl-canvas')` faute de style jamais chargé.
+**Rémy a depuis régénéré la clé** — un appel direct répond désormais `200` — et le gate est passé
+vert. La chaîne se vérifie en sens inverse. Les cartes rendent à nouveau.
+
+**Ce qui N'est PAS prouvé** : la route `/charter` n'est pas exercée par la suite (elle sort sur le
+réseau, seule sa couche de traduction pure `readoutFrom` est testée) — la route elle-même n'a été
+essayée qu'à la main ; aucun visuel n'est jamais sorti de l'un ou l'autre runtime de bureau (Couche
+B non observée pour `goose-desktop` et `claude-desktop`, offerts sur décision écrite — et le piège
+déjà payé deux fois par ce repo : le CLI de Goose ATTEINT la Couche B, ce qui n'est pas le même
+runtime que Goose Desktop) ; le chemin Windows (`install/bootstrap.ps1`) reste vérifié à la
+lecture ; cette branche n'a pas été rejouée via un `bootstrap.sh` complet en live.
+
+Détail : `docs/installer/setup-page-proof.md` (section « Update — 2026-08-06: the setup page is
+one screen »).
+
 ## Session 2026-08-06 — Task 5 « ce que la page sert, et la porte » : clés d'emblée + profil affiché + deux runtimes desktop sélectionnables, prouvé sur le vrai serveur (branche `feat/setup-page-keys-and-profile`, HEAD `af4a5f27`)
 
 Cinq tâches, toutes revues. **① Les deux runtimes desktop deviennent sélectionnables** :
