@@ -63,23 +63,34 @@ export type Decor = {
   readiness: CapabilityReadiness[];
   /** What a delivery prints and what it requires. Empty when the install has no profile. */
   profile: DeliveryProfile;
-  /** The house ground: "light" | "dark" | "#rrggbb". Absent ⇒ the install declared none.
-   *  It is the STYLE axis's only input: a dark ground is what makes a Datawrapper form
-   *  physically unrenderable (spec §4.1). */
-  theme?: string;
-  /** THE NEWSROOM'S CHARTER, whole — the parsed NEWSROOM-PROFILE.md, carried so the one
-   *  function that knows what a charter MEANS for a given producer (`mergeProfileDefaults`,
-   *  applied by lib/loop/assemble/index.ts) can be handed it.
+  /** THE NEWSROOM'S CHARTER, whole — the parsed NEWSROOM-PROFILE.md, and the ONE home of every
+   *  house-style fact the loop reads, the ground included (`house.theme`).
    *
-   *  Why the whole profile and not the two fields the loop reads today: the ruling is
-   *  per-producer and it has moved before (a map's auto palette is CLEARED so the house ramp
-   *  can derive; a diverging scale keeps its registry palette; a furniture-only chart type
-   *  takes the hue without the mark-paint permission). A Decor carrying `palette` and `theme`
-   *  as loose fields would force this module to re-decide that, which is the "deux chaînes sans
-   *  pont" defect one layer down.
+   *  Why the whole profile and not the fields the loop happens to read: what a charter MEANS is
+   *  a per-producer ruling that has moved before (a map's auto palette is CLEARED so the house
+   *  ramp can derive; a diverging scale keeps its registry palette; a furniture-only chart type
+   *  takes the hue without the mark-paint permission). That ruling lives in ONE function,
+   *  `mergeProfileDefaults`, applied by lib/loop/assemble/index.ts. A Decor carrying loose
+   *  copies would force this module to re-decide it, which is the "two chains, no bridge"
+   *  defect one layer down.
    *
-   *  `theme` above stays as it is: it answers a DIFFERENT question (can a Datawrapper form
-   *  render this ground at all) and is read by the style axis, not by the colour merge.
+   *  ★ THERE IS NO SEPARATE `Decor.theme`. There was, for one commit: the charter fix added
+   *  `house` beside a pre-existing `theme?: string`, and both were filled from `profile.theme`
+   *  in the SAME return expression — one value, two homes. The argument for keeping them was
+   *  that they answer different questions, and that much is true (see the two readers below).
+   *  But a different QUESTION does not make a different FACT: the ground is one string the
+   *  newsroom declared once, and a second field holding a copy of it is only a place for the
+   *  two to be made to disagree. The distinction that is real now lives at the two readers,
+   *  which is where the question is actually asked:
+   *
+   *    · lib/loop/propose.ts — OFFER time. Reads `house.theme` to answer "can a Datawrapper
+   *      form render this ground at all", passing it as `themeBg` into the brain's eligibility
+   *      style exclusion (lib/brain/eligibility.ts's isDark). A physical limit, not a taste.
+   *    · lib/loop/produce.ts — BUILD time. Hands the whole profile to `assemblerFor`, where
+   *      `mergeProfileDefaults` decides what the marks are actually painted.
+   *
+   *  Pinned by lib/newsroom/house-ground-single-home.test.ts, so the split cannot grow back
+   *  silently the way the last one did.
    *
    *  Absent ⇒ the install declared no house style, and everything downstream builds exactly
    *  what it built before this field existed. */
@@ -152,7 +163,9 @@ export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
     language,
     readiness: decorReadiness(state, { env }),
     profile: deliveryProfile(profile, language.content),
-    ...(profile?.theme ? { theme: profile.theme } : {}),
+    // The ground rides HERE and only here — `house.theme`. It used to be lifted a second time
+    // into a `theme` field on this same literal; see the Decor.house doc for why one value with
+    // two homes was a drift surface rather than a convenience.
     ...(profile ? { house: profile } : {}),
   };
 }
