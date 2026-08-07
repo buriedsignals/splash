@@ -112,14 +112,14 @@ export interface PlacedLabel {
 export function estimateLabelBox(
   labelText: string,
   textSize: number,
+  maxEm = 8,
 ): { width: number; height: number } {
   const CHAR_RATIO = 0.62; // generous avg glyph width (bias high → flip early, never late)
   const HALO = 4; // white halo padding, both sides
-  const MAX_EM = 8; // MapLibre text-max-width
   const LINE_HEIGHT = 1.3; // matches the symbol-labels layer
   const lines = labelText.split("\n");
   const longest = lines.reduce((m, l) => Math.max(m, l.length), 0);
-  const width = Math.min(longest * CHAR_RATIO, MAX_EM) * textSize + HALO;
+  const width = Math.min(longest * CHAR_RATIO, maxEm) * textSize + HALO;
   const height = lines.length * textSize * LINE_HEIGHT + HALO;
   return { width, height };
 }
@@ -127,7 +127,16 @@ export function estimateLabelBox(
 // The label box for a given anchor, in screen px. `offset` is the radial gap from the
 // point centre to the near edge of the text; left/right placements sit vertically centred
 // on the point, top/bottom placements sit horizontally centred.
-function boxForAnchor(anchor: LabelAnchor, i: PlaceLabelInput): LabelBox {
+//
+// Exported because the locator placement needs to ASK about sides `placeSymbolLabel` did not
+// choose: it walks the candidates itself so a label whose default side is taken by a
+// neighbour can move instead of being dropped. One definition of where a label sits, two
+// callers — the alternative was a second copy of this switch, and a copy is how the anchor
+// and the collision box came to disagree in the first place.
+export function boxForAnchor(
+  anchor: LabelAnchor,
+  i: PlaceLabelInput,
+): LabelBox {
   const { cx, cy, offset, width: w, height: h } = i;
   switch (anchor) {
     case "left": // text to the RIGHT of the point
