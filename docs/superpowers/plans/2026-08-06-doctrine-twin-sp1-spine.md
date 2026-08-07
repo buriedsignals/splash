@@ -2292,9 +2292,44 @@ git commit -m "feat(twin-chart-beat): a seed that teaches the anatomy, and a sti
 >
 > **The code blocks below are the round-3 record and no longer match what ships.** The shipped
 > files are the source of truth: `twin/skills/twin-chart-beat/scripts/inspect-render.mjs` and
-> `twin/skills/twin-chart-beat/test/inspect-render.test.ts` (53 tests across the skill, 39 in this
+> `twin/skills/twin-chart-beat/test/inspect-render.test.ts` (57 tests across the skill, 39 in this
 > file). Full history, per-round findings and round 4's real-pixel verification are in
 > `.superpowers/sdd/2026-08-06-doctrine-twin-sp1-spine/task-8-report.md`.
+
+> **AMENDED 2026-08-06, round 5 — two tunables deleted; the method above is unchanged.**
+> Round 4's measurement retired a whole defect class, and the two Critical findings that outlived
+> it were both in this file's own tunables, where uncertainty had been allowed to buy leniency.
+> Neither is retuned; both are removed.
+>
+> - **The WCAG large-text carve-out is DELETED. One 4.5:1 floor for every text node.** Round 4
+>   granted the 3:1 floor on MEASURED ink height (`LARGE_TEXT_MEASURED_PX = 17`), which descenders
+>   inflate: `"Growth by region"` in `#949494` on white at font-size 18 — an ordinary axis label at
+>   a true 3.03:1 — was reported `pass: true` purely because its `g`/`y` descenders pushed the
+>   measured height past the threshold, while the identical label without descenders, same size,
+>   same fill, same ratio, correctly failed. A verdict that flips on which letters a word contains
+>   is not a measurement, and re-deriving the threshold from cap-height cannot rescue it without
+>   knowing which glyphs are present — the markup-reading this file exists to avoid. The leniency
+>   bought almost nothing: the only chart text large enough to earn 3:1 is a title, and titles are
+>   set in the max-contrast ink `deriveFurniture` derives (the seed's reads 21:1 light, 17.89:1
+>   dark). A large title at genuinely low contrast is now a reported failure, which is the point.
+>   The fourth bullet of the round-4 note above is therefore superseded: glyph height is no longer
+>   measured for a floor, because there is no second floor.
+> - **The "discard the worst 1% of core pixels" trim is replaced by a connected-region test.** It
+>   reported 4.54:1 `pass: true` over a long `#767676` label crossing a 15px-wide `#8C8C8C` strip,
+>   whose ~1000 solid, genuinely-illegible 1.35:1 pixels fell under 1% of the label's ~93k core
+>   pixels. A percentage is the wrong instrument: what makes a bad reading credible is that it is
+>   CONNECTED, and connectedness does not scale with how long the rest of the label is. A union-find
+>   sweep now walks core pixels worst-first and credits the first reading whose own 8-connected
+>   region reaches `MIN_CREDIBLE_REGION_PX = 7`. Setting the trim to zero instead was measured and
+>   rejected: the raw minimum reports 2.61:1 on a clean 4.54:1 label and 6.39:1 on a clean 21:1
+>   title — false failures. 7 is one above the largest anti-aliasing residue region measured over
+>   156 renders (14 sizes 9–48px, six strings, regular and bold, four fill/ground pairs, both
+>   grounds; distribution 0×40 1×52 2×21 3×17 4×10 5×14 6×2); real crossings measure 7 to 1086.
+>
+> The seed still reports 10 entries, none unresolved, none failing, on both grounds — and two of
+> them are now MORE accurate: its source line had been read at 5.41:1 light / 6.65:1 dark, which is
+> an anti-aliasing blend, and now reads its true 6.19:1 / 7.40:1, so all eight muted entries agree
+> with each other as they always should have.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3231,6 +3266,10 @@ Run: `cd twin && bun test skills/twin-chart-beat/test/inspect-render.test.ts`
 Expected: PASS, 6 tests. AMENDED 2026-08-06: 14 tests, not 6 — see the Step 1 amendment above.
 AMENDED AGAIN 2026-08-06: 26 tests, not 14 — see the second Step 1 amendment above.
 AMENDED A THIRD TIME 2026-08-06: 38 tests, not 26 — see the third Step 1 amendment above.
+AMENDED A FOURTH TIME 2026-08-06: 39 tests, not 38 — round 5 rewrote the large-text test into its
+opposite (no carve-out: a 3.03:1 title now FAILS) and added three: descender-independence at a
+fixed size, the narrow crossing that the 1% trim hid, and the clean control that proves the
+replacement does not manufacture false failures. A fourth pins the small-text fallback direction.
 
 - [ ] **Step 5: Run the tool on the real render from Task 7**
 
