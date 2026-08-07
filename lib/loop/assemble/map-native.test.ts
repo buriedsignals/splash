@@ -378,6 +378,112 @@ test("a dot-density against any basemap but world is refused, not silently rende
   expect(r.message).toContain("world");
 });
 
+// THE SIBLING THE REFUSAL ABOVE FORGOT. `cartogram` sits in the same family and fails the same
+// way: CartogramMap.tsx (the static AND interactive component) calls `computeCartogram(config,
+// world)` at :194 without threading a key, and cartogram-geo.ts:62 falls back to
+// `data.joinKey ?? "iso_a3"`. Nothing on the loop's cartogram branch ever set `config.joinKey`,
+// so a us-states cartogram assembled, built, and produced an artifact.
+//
+// MEASURED end-to-end through the loop's own CLI (2026-08-07, init → advance → confirm-angle →
+// phrase → choose-form → advance, four US states with rents): the interactive build succeeded
+// and the delivered self-contained index.html renders a bare basemap of EUROPE — the
+// journalist's title, their alt-insight and their source credit painted over Poland and Turkey,
+// with not one region of data and no `cartogram-cells` layer at all. The page's only console
+// output is `choropleth: no region matched the data — nothing to map`, thrown inside the browser,
+// which is why produce then died on a 60 s (static: 90 s) Playwright `waitForFunction` timeout —
+// after the full vite build, with a stack trace instead of a sentence the journalist can act on.
+//
+// SCOPED BY FORMAT, exactly like the prose chain's own gate (skills/splash/src/validate-gate.ts's
+// regionJoinError) and for the reason region-join-support.ts's header measured: only
+// CartogramMap.tsx pins the key. CartogramStory, CartogramReveal and CartogramScrolly all thread
+// it through resolveVideoGeometry, so a non-world cartogram video/scrolly is a WORKING capability
+// and a format-blind refusal would delete it.
+test("a cartogram against any basemap but world is refused in the formats whose component pins the key", () => {
+  const r = assembleMapNative({
+    ...REGION_BRIEF,
+    nativeType: "cartogram",
+    format: "static",
+    dataCsv: "state,rent\nNY,3200\nCA,2900",
+    geo: {
+      column: "state",
+      geography: {
+        origin: "shipped",
+        set: "us-states",
+        level: "state",
+        joinKey: "postal",
+        joinKeyFamily: "postal",
+      },
+      matched: 2,
+      total: 2,
+      unmatched: [],
+    },
+  });
+  expect(r.ok).toBe(false);
+  if (r.ok) return;
+  expect(r.code).toBe("invalid-request");
+  expect(r.message).toContain("cartogram");
+  expect(r.message).toContain("us-states");
+  expect(r.message).toContain("world");
+});
+
+// THE OTHER HALF OF THE SCOPE, and the reason the refusal above says `isoA3PinnedInFormat`
+// instead of refusing outright. Without this test the scope is unguarded: widening the sibling
+// refusal to every format would leave every test green while silently deleting a capability
+// that demonstrably works.
+//
+// MEASURED, not reasoned: the SAME us-states cartogram, driven through the same loop CLI in the
+// video format (2026-08-07), produced a clean 27.3 s / 819-frame landscape.mp4 —
+// video-verify.json reports ZERO violations, revealMeanDiff 198.2 against a 0.5 floor — and the
+// still shows all four states joined, shaded by rent, over correct North-American bounds. That
+// works because CartogramStory/CartogramReveal/CartogramScrolly resolve the key through
+// resolveVideoGeometry; only CartogramMap.tsx pins it. Scrolly rides the same components (the
+// scrolly assembler delegates straight to this function), so it is covered here too.
+for (const format of ["video", "scrolly"] as const) {
+  test(`a non-world cartogram is ACCEPTED in ${format}, whose components resolve the join key`, () => {
+    const r = assembleMapNative({
+      ...REGION_BRIEF,
+      nativeType: "cartogram",
+      format,
+      dataCsv: "state,rent\nNY,3200\nCA,2900",
+      geo: {
+        column: "state",
+        geography: {
+          origin: "shipped",
+          set: "us-states",
+          level: "state",
+          joinKey: "postal",
+          joinKeyFamily: "postal",
+        },
+        matched: 2,
+        total: 2,
+        unmatched: [],
+      },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // Beyond "not refused": the emitted config must still name the geography the video path
+    // reads its join key OFF, or the acceptance is vacuous.
+    const cfg = r.value as Record<string, unknown>;
+    expect(cfg.type).toBe("cartogram");
+    expect((cfg.geography as { joinKey?: string } | undefined)?.joinKey).toBe(
+      "postal",
+    );
+  });
+}
+
+// The world basemap is the one case the pinned key is RIGHT for — it must keep assembling in
+// every format, or the guard has eaten the ordinary path.
+test("a world cartogram still assembles in the pinned formats", () => {
+  for (const format of ["static", "interactive"] as const) {
+    const r = assembleMapNative({
+      ...REGION_BRIEF,
+      nativeType: "cartogram",
+      format,
+    });
+    expect(r.ok).toBe(true);
+  }
+});
+
 // Task 13 (task-13-brief.md, Step 1) — a deliberate pre-condition breadcrumb, not a bug in this
 // task. The plan sequences Task 13's refusal rewrite AFTER Task 17 (skills/map-native geometry
 // de-inlining: DotDensityMap.tsx stops hard-importing world.geojson + hard-coding join key
@@ -554,7 +660,11 @@ describe("arcBeats — the journalist's confirmed walk, threaded to the engine",
   const WALK = [
     { region: "TCD", role: "establish" as const, text: "Chad starts lowest." },
     { region: "NER", role: "build" as const, text: "Niger is barely ahead." },
-    { region: "CHE", role: "payoff" as const, text: "Switzerland is universal." },
+    {
+      region: "CHE",
+      role: "payoff" as const,
+      text: "Switzerland is universal.",
+    },
   ];
 
   it("threads the walk onto a region-family config, verbatim", () => {
@@ -612,7 +722,11 @@ it("threads a beat's camera decision into arcBeats, and omits it when there is n
   const r = assembleMapNative({
     ...REGION_BRIEF,
     beats: [
-      { region: "TCD", role: "establish" as const, text: "Chad starts lowest." },
+      {
+        region: "TCD",
+        role: "establish" as const,
+        text: "Chad starts lowest.",
+      },
       {
         region: "NER",
         role: "build" as const,

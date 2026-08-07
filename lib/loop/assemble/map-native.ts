@@ -17,7 +17,11 @@ import { BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps";
 import { basemapKeyFor, resolveGeographyRef } from "../../geo/ref";
 // One wording for one fact, shared with the prose chain's own gate — see the dot-density
 // branch below for why only the sentence is shared and not the condition.
-import { isoA3PinnedJoinRefusal } from "../../../skills/map-native/src/region-join-support";
+import {
+  ISO_A3_BASEMAP,
+  isoA3PinnedInFormat,
+  isoA3PinnedJoinRefusal,
+} from "../../../skills/map-native/src/region-join-support";
 
 const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 const POINT_TYPES = new Set(["symbol", "hex-grid", "locator", "route"]);
@@ -211,6 +215,34 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   const unit = brief.angle.unit;
 
   if (brief.nativeType === "cartogram") {
+    // THE SAME FACT AS THE dot-density BRANCH BELOW, on the type that branch forgot.
+    // CartogramMap.tsx — the component behind BOTH the static and the interactive format —
+    // calls `computeCartogram(config, world)` at :194 without threading a key, and
+    // cartogram-geo.ts:62 resolves it as `data.joinKey ?? "iso_a3"`. Nothing here ever set
+    // `config.joinKey`, so a us-states cartogram assembled, cleared validate-config, built,
+    // and produced an artifact: a bare basemap of EUROPE carrying the journalist's title,
+    // alt-insight and source credit over Poland and Turkey, with no data layer at all
+    // (measured end-to-end through lib/host/cli.ts, 2026-08-07 — see this branch's test).
+    //
+    // SCOPED BY FORMAT, unlike the dot-density branch below and deliberately so. Only
+    // CartogramMap.tsx pins the key; CartogramStory, CartogramReveal and CartogramScrolly all
+    // resolve it through resolveVideoGeometry (core/video-geometry.ts), which prefers
+    // `config.geography.joinKey`. A blanket refusal here would delete a working capability, so
+    // this asks the shared module WHICH formats the pinning actually reaches — the same
+    // question, through the same function, that the prose chain's regionJoinError asks
+    // (skills/splash/src/validate-gate.ts). The dot-density branch's own broader condition is
+    // left as it stands: narrowing it would ADMIT a pairing that is refused today, which is a
+    // capability decision owed its own rendered proof, not a side effect of fixing this one.
+    //
+    // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` — "world"'s
+    // own set is "natural-earth-admin-0" (lib/geo/ref.ts), so this reads the same identifier the
+    // config below writes.
+    const basemapKey = basemapKeyFor(geo.geography);
+    if (basemapKey !== ISO_A3_BASEMAP && isoA3PinnedInFormat(brief.format))
+      return fail(
+        "invalid-request",
+        isoA3PinnedJoinRefusal("cartogram", basemapKey),
+      );
     const values = rows.map((row) => ({
       id: row[geo.column]!,
       value: Number(row[valueField]),
