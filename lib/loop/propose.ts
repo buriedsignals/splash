@@ -64,7 +64,14 @@ export function propose(
     // `m.route` is deliberately NOT threaded: what a run DECLARES it wants is not evidence about
     // what this build can do, and legality must not move with a field any caller may set (I2).
     ...(decor ? { readiness: decor.readiness } : {}),
-    ...(decor?.theme ? { themeBg: decor.theme } : {}),
+    // The house ground, off the charter itself (`decor.house`) — the profile is the one home of
+    // every house-style fact, and this is the OFFER-time question asked of it: not "what colour
+    // are the marks" (that is mergeProfileDefaults' ruling at build time, lib/loop/produce.ts)
+    // but "can a Datawrapper form render this ground at all". A dark ground is a PHYSICAL limit
+    // on both Datawrapper engines — their background is plan-gated light-only — so eligibility
+    // excludes them by reason rather than letting the journalist pick a form that dies at
+    // produce (lib/brain/eligibility.ts's isDark).
+    ...(decor?.house?.theme ? { themeBg: decor.house.theme } : {}),
     ...(element.requestedFormat
       ? { requestedFormat: element.requestedFormat }
       : {}),

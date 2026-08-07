@@ -147,11 +147,13 @@ describe("loading the decor", () => {
       ["---", 'theme: "#12233A"', "---", "", "# guide", ""].join("\n"),
     );
     const decor = loadDecor(d, NO_ENV);
-    expect(decor.theme).toBe("#12233A");
+    // On the charter, not on a second field beside it: `Decor.theme` was a copy of this exact
+    // string and has been collapsed into its one home (see Decor.house's doc).
+    expect(decor.house?.theme).toBe("#12233A");
   });
 
   it("an install with no profile has no theme, not a fabricated light one", () => {
-    expect(loadDecor(dir(), NO_ENV).theme).toBeUndefined();
+    expect(loadDecor(dir(), NO_ENV).house?.theme).toBeUndefined();
   });
 
   it("fills the credit template's {name} from the profile source", () => {
