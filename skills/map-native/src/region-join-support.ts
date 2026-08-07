@@ -1,0 +1,101 @@
+// WHICH (type, basemap, format) TRIPLES THIS ENGINE CAN ACTUALLY JOIN — the two facts that
+// decide it, in one home, so the two chains that need them refuse in one wording.
+//
+// Both were MEASURED on real produce runs (2026-08-07, `bun skills/splash/scripts/produce-all.mjs`
+// against a four-region table), not read off the source:
+//
+// ── FACT A — the static and interactive components PIN the join key to "iso_a3" ────────────────
+// `dot-density` reads a module-level `const JOIN_KEY = "iso_a3"` (DotDensityMap.tsx:41);
+// `cartogram` never threads a key into computeCartogram (CartogramMap.tsx:194), which falls back
+// to its own `data.joinKey ?? "iso_a3"` default (cartogram-geo.ts:62). Neither consults
+// `config.geography.joinKey`. A subset of any OTHER basemap carries a different property —
+// us-states keeps "postal", natural-earth-admin-1 keeps "name" (lib/geo/ref.ts) — so the join
+// matches nothing, and the two types fail differently and both badly:
+//   · dot-density → 0 regions, bounds fall back to the whole globe: the delivered
+//     interactive.png is a WORLD map with a title, a legend ("1 dot = 10") and not one dot.
+//   · cartogram  → computeChoropleth throws "no region matched the data" INSIDE the browser
+//     render, so the run dies on a 60 s Playwright `waitForFunction` timeout instead.
+// Measured against the produced config.json: joinKey "iso_a3" → 0 regions; joinKey "postal" →
+// 4 regions and real US bounds.
+//
+// VIDEO AND SCROLLY ARE NOT AFFECTED, and this is the reason the refusal below is scoped by
+// format rather than blanket. Their components resolve the key through resolveVideoGeometry
+// (core/video-geometry.ts), which prefers `config.geography.joinKey`. Proven, not assumed: a
+// us-states dot-density video produced clean on the prose chain — status "produced",
+// video-verify.json with 0 violations and revealMeanDiff 203.7 against a 0.5 floor. A
+// format-blind refusal would delete that.
+//
+// ── FACT B — the prose chain has no geography match for these two types ───────────────────────
+// The loop chain runs `orient` and threads `featureIdsByValue` (lib/loop/assemble/map-native.ts).
+// The prose chain — the one a journalist walks — has no such step; its only match is
+// `backfillAdm1FeatureIds` (adm1-backfill.ts), deliberately choropleth-only for exactly Fact A.
+// So an admin-1 cartogram/dot-density reaches produce with no resolved ids in ANY format and
+// hits lib/geo/resolve-for-produce.ts:351, whose message tells the journalist to "re-run the
+// geography match (orient)" — a step their chain does not have.
+//
+// Every other member of resolve-for-produce's JOINING_TYPES is clear of both facts:
+//   · choropleth — ChoroplethMap.tsx reads `config.geography.joinKey` (:265-267), and the
+//     backfill supplies the ids. This is the case that already produces.
+//   · route — no per-row region join exists to get wrong. computeRoute derives its territories
+//     FROM the geometry the line crosses, keyed `iso_a3 ?? name ?? index` (route-geo.ts:162,235)
+//     — already tolerant of a missing iso_a3 — and those keys only drive optional label/colour
+//     overrides, never a value. resolve-for-produce excludes route from the featureIdsByValue
+//     requirement structurally (:351) and scans its id list off the source file, so Fact B
+//     cannot fire for it either.
+import type { VisualFormat } from "../../../lib/core/vocabulary";
+
+/** The map types whose STATIC and INTERACTIVE components pin the join key to "iso_a3" — Fact A.
+ *  A type joins this set only by pinning the key; lift a component onto
+ *  `config.geography.joinKey` and it leaves, with its own render proof. */
+export const ISO_A3_PINNED_JOIN_TYPES: ReadonlySet<string> = new Set([
+  "cartogram",
+  "dot-density",
+]);
+
+/** The basemap whose join key those components happen to pin. A config naming it is the ONE
+ *  case Fact A does not bite — not a special case, just the key they hardcoded. */
+export const ISO_A3_BASEMAP = "world";
+
+/** The formats rendered by the components that pin the key. Video and scrolly go through
+ *  resolveVideoGeometry instead — see the header's measurement. */
+export function isoA3PinnedInFormat(format: VisualFormat): boolean {
+  return format === "static" || format === "interactive";
+}
+
+/**
+ * FACT A's refusal. Deliberately the sentence lib/loop/assemble/map-native.ts already refuses a
+ * non-world dot-density with, so the two chains say ONE thing about one fact — the loop keeps
+ * its own (broader, format-blind) condition, only the wording is shared. The middle clause is
+ * the one correction: the loop's copy said the component "joins against world.geojson
+ * unconditionally", which stopped being true when Task 17 moved it onto an injected geometry —
+ * the loop's own comment flags that; only the "iso_a3" literal survives, and that is what is
+ * named here.
+ */
+export function isoA3PinnedJoinRefusal(
+  type: string,
+  basemapKey: string,
+): string {
+  return (
+    `${type} only renders against the ${ISO_A3_BASEMAP} basemap today — its static and ` +
+    `interactive components pin the join key to "iso_a3", so a "${basemapKey}" join, whose ` +
+    `features carry a different key, would render silently wrong rather than merely fail`
+  );
+}
+
+/**
+ * FACT B's refusal. A SECOND wording for a SECOND fact, not a variant of the first: Fact A is
+ * about what the components would draw, Fact B is about this chain having nothing to give them.
+ * They are separable — lift the components onto `config.geography.joinKey` and Fact A goes away
+ * while this one remains until the backfill covers the type.
+ *
+ * Never mentions `orient`. That is the whole defect it replaces: the resolver's fallback throw
+ * sends the journalist to a step the prose chain does not have.
+ */
+export function adm1UnmatchedTypeRefusal(type: string): string {
+  return (
+    `an admin-1 map (cantons, départements, states, provinces) needs its regions matched to ` +
+    `the basemap before it can be produced, and this flow only matches them for a choropleth — ` +
+    `a "${type}" has no matched regions to draw, in any format. Produce this geography as a ` +
+    `choropleth, or map it at country level.`
+  );
+}

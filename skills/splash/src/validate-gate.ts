@@ -28,6 +28,18 @@ import {
 } from "../../chart-native/src/chart-story";
 import { mapNarrativeFallbackWarning } from "../../map-native/src/map-arc";
 import {
+  ISO_A3_PINNED_JOIN_TYPES,
+  ISO_A3_BASEMAP,
+  isoA3PinnedInFormat,
+  isoA3PinnedJoinRefusal,
+  adm1UnmatchedTypeRefusal,
+} from "../../map-native/src/region-join-support";
+import {
+  BASEMAP_NAMES,
+  basemapKeyFor,
+  type GeographyRef,
+} from "../../map-native/src/basemaps";
+import {
   checkImageConformance,
   type ImageStory,
   type ImageFormat,
@@ -716,6 +728,58 @@ function deferredTypeError(p: AcceptedProposal): string | null {
   );
 }
 
+// GUARD — A REGION JOIN THIS ENGINE, OR THIS CHAIN, CANNOT MAKE. Same family as
+// `deferredTypeError` above (a pairing the engine does not render is refused HERE, before any
+// producer runs, in the engine's own words) and placed here for the same reason: the failure it
+// replaces happened deep inside produce, where the only vocabulary left is a stack trace.
+//
+// Both facts, both measurements and the reasoning for every type it does NOT touch live in
+// skills/map-native/src/region-join-support.ts — this function is only the chain-side wiring.
+// In short: `cartogram`/`dot-density` pin the join key to "iso_a3" in their static and
+// interactive components (FACT A), and this chain's only geography match — the choropleth-only
+// `backfillAdm1FeatureIds` — leaves an admin-1 one of them with no resolved region ids in ANY
+// format (FACT B).
+//
+// FACT A IS CHECKED FIRST, and not only because it is the loop's own wording: it is the deeper
+// reason. Even if the chain matched the regions, those two components would still draw the
+// wrong thing. FACT B is what is left over — the video and scrolly formats, which resolve the
+// key correctly and are refused only because nothing matched their regions.
+//
+// Reads BOTH producers that carry a map-native config: `map-native` itself, and a `scrolly`
+// map track (whose spec IS one of the family — see validateScrolly's own dispatch).
+function regionJoinError(p: AcceptedProposal): string | null {
+  if (p.producer !== "map-native" && p.producer !== "scrolly") return null;
+  const spec = p.spec as {
+    type?: unknown;
+    basemap?: unknown;
+    geography?: unknown;
+  } | null;
+  // Absent `type` is choropleth, the mount default — the same convention validateMapNative and
+  // resolve-for-produce both already apply.
+  const type =
+    typeof spec?.type === "string" && spec.type ? spec.type : "choropleth";
+  if (!ISO_A3_PINNED_JOIN_TYPES.has(type)) return null;
+
+  // Derived exactly as validateCartogramConfig derives it: a literal `basemap` when the spec
+  // names one, else the registry key behind an injected `geography` (the assembler's cartogram
+  // branch sets only the latter). An UNREGISTERED name is `validateBasemap`'s refusal to make,
+  // with its own sentence and the list of valid names — never guessed at here.
+  const basemapKey =
+    typeof spec?.basemap === "string"
+      ? spec.basemap
+      : spec?.geography
+        ? basemapKeyFor(spec.geography as GeographyRef)
+        : undefined;
+  if (!basemapKey || !BASEMAP_NAMES.includes(basemapKey)) return null;
+  if (basemapKey === ISO_A3_BASEMAP) return null;
+
+  if (isoA3PinnedInFormat(p.format))
+    return isoA3PinnedJoinRefusal(type, basemapKey);
+  if (basemapKey === "natural-earth-admin-1")
+    return adm1UnmatchedTypeRefusal(type);
+  return null;
+}
+
 // Run the producer-appropriate validator on an accepted proposal's spec, then the
 // cross-producer source-URL guard (GUARD 2), then the deterministic guardrail-parity gate
 // (ENFORCEMENT SLICE 2 — the deterministic guardrails that lived only in suggest-chart's
@@ -731,6 +795,12 @@ export function validateAccepted(
 ): ValidationOutcome {
   const deferred = deferredTypeError(p);
   if (deferred) return { ok: false, errors: [deferred] };
+  // Same early return as `deferred` above, and for the same reason: a pairing that cannot be
+  // joined has nothing useful to say about the rest of the spec, and stacking a producer
+  // validator's field-level complaints on top of "this map cannot be drawn at all" buries the
+  // one sentence the journalist has to act on.
+  const regionJoin = regionJoinError(p);
+  if (regionJoin) return { ok: false, errors: [regionJoin] };
   const outcome = validateByProducer(p);
   const extraErrors: string[] = [];
   const missingTakeaway = missingConfirmedTakeawayError(p);
