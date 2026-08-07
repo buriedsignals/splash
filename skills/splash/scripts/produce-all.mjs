@@ -24,6 +24,11 @@ import {
   attestationRefusal,
   attestationWarnings,
 } from "../src/attestation-corroboration.ts";
+import {
+  readPlaceProvenance,
+  placeProvenanceRefusal,
+  placeProvenanceWarnings,
+} from "../src/place-provenance.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -104,6 +109,29 @@ if (uncorroborated) {
 }
 for (const w of attestationWarnings(corroboration))
   console.error(`[attestation] warning: ${w}`);
+
+// ③ EVERY PLOTTED COORDINATE ANSWERS FOR WHERE IT CAME FROM, before any engine runs.
+//
+// GUARD 6 (validate-gate.ts) already checks a resolution once `resolvedPlaces` is threaded, and
+// the threading itself was prose: dropping the field disarmed every record-based leg and cost
+// nothing. That is how "Cervin" shipped 1063 m off its own summit AFTER the journalist said so —
+// the warning had no field to land in. The run directory answers instead: the sanctioned resolver
+// (skills/suggest-chart/scripts/resolve-place.mjs) leaves places.json here, so what the machine
+// resolved is a FACT this gate can hold the proposal to, rather than a memory it can drop.
+//
+// Terminal for the batch, like ① and ②, and for ①'s reason: a refused run leaves no half-built
+// artifact for a later step to hand-plant around.
+const placeProvenance = readPlaceProvenance(dirname(acceptedPath));
+const placeRefusals = accepted
+  .map((p) => placeProvenanceRefusal(p, placeProvenance))
+  .filter(Boolean);
+if (placeRefusals.length) {
+  for (const r of placeRefusals) console.error(`[produce] ${refusalSentence(r)}`);
+  process.exit(1);
+}
+for (const p of accepted)
+  for (const w of placeProvenanceWarnings(p, placeProvenance))
+    console.error(`[place-provenance] warning: ${w}`);
 
 // Flow-decision gate: decisions.jsonl sits beside accepted.json, like candidates.json. A required
 // decision never recorded fails the run; an optional one warns. Staged: the first-cut trio ships

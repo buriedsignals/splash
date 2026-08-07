@@ -27,8 +27,23 @@
 //
 // G1 is the one that matters most, because it needs nothing threaded to fire: a sentence that says
 // "at the summit, at 4478 metres" is a testable claim about a coordinate, and a map making it must
-// be able to say what it plotted. Everything else is dormant-when-absent in the style of
-// source-guard.ts, which is honest about the same limitation.
+// be able to say what it plotted.
+//
+// 2026-08-07 — THE THREADING IS NO LONGER PROSE. This file used to end its note by saying that
+// `resolvedPlaces` reached the proposal only because §5b asked for it, exactly like `sourceHint`,
+// and that G1 plus the G5 warning were the compensation for that seam rather than a closure of it.
+// The two are not actually the same case: `sourceHint` is a value a model READS out of an article,
+// and nothing but the model is in that gap, while a coordinate is the return value of a FUNCTION
+// CALL that already happened there (suggest-chart/SKILL.md sends the host to lib/geo/geocode.ts).
+// That call now leaves a receipt — skills/suggest-chart/scripts/resolve-place.mjs writes
+// <runDir>/places.json — and skills/splash/src/place-provenance.ts makes produce-all refuse a
+// proposal that does not account for it. So G2/G3/G4 below are no longer disarmable by simply
+// declining to write the record: the run directory remembers what the machine resolved.
+//
+// What is unchanged, and what those guards still own: G1 fires on the SPEC alone, so it holds even
+// for a run that skipped the resolver entirely (verified end to end — an element that declares
+// `coordinatesFromData` clears the provenance gate and STILL fails G1 on a summit claim). G5 stays
+// a warning, because place-provenance.ts refuses total absence and the two must not double-report.
 
 /** What the machine (or the journalist) settled on for one named place, and where it came from. */
 export interface ResolvedPlace {
@@ -109,13 +124,16 @@ export function claimsASummit(text: string): boolean {
 
 // --- reading the places out of the spec ----------------------------------------------------
 
-interface SpecPlace {
+export interface SpecPlace {
   label: string;
   lon: number;
   lat: number;
 }
 
-/** Every plotted place in a point spec — `markers[]` (locator) and `points[]` (symbol) both. */
+/** Every plotted place in a point spec — `markers[]` (locator) and `points[]` (symbol) both.
+ *  Exported as `plottedPlaces` below: "what does this spec actually plot" must have exactly ONE
+ *  answer in the tree, or a guard reading the spec a second way would go dormant on shapes this
+ *  one catches (skills/splash/src/place-provenance.ts is the second reader). */
 function specPlaces(spec: unknown): SpecPlace[] {
   const s = (spec ?? {}) as Record<string, unknown>;
   const out: SpecPlace[] = [];
@@ -133,6 +151,8 @@ function specPlaces(spec: unknown): SpecPlace[] {
   }
   return out;
 }
+
+export { specPlaces as plottedPlaces };
 
 /** Every piece of prose that could make a claim about a given place: the beats naming it, plus the
  *  spec's own title and description (a title can carry the claim just as well as a beat can). */
@@ -182,11 +202,12 @@ function samePoint(
 /**
  * Every hard finding about the places this spec plots. Empty array ⇒ nothing to say.
  *
- * `resolvedPlaces` is threaded onto the accepted proposal by the orchestrator, exactly like
- * `sourceHint` / `confirmedTakeaway` — there is no script between suggest-chart's in-context
- * output and accepted.json to mechanize it (see source-guard.ts's note on the same seam). G1 is
- * written so that the absence of the thread is itself catchable for the case that produced this
- * defect; the rest go dormant, and G5 makes the dormancy visible.
+ * `resolvedPlaces` is threaded onto the accepted proposal by the orchestrator at §5b. Unlike
+ * `sourceHint`, that threading is now ENFORCED rather than asked for: the resolver leaves a
+ * receipt in the run directory and skills/splash/src/place-provenance.ts refuses a proposal that
+ * does not carry it across (see this file's header note). These legs therefore run on every point
+ * map whose places were resolved here. G1 remains spec-only on top of that, for the run that never
+ * touched the resolver at all.
  */
 export function resolvedPlaceErrors(
   spec: unknown,
@@ -283,10 +304,12 @@ export function resolvedPlaceErrors(
 }
 
 /**
- * ADVISORY (never a hard failure). Threading `resolvedPlaces` is prose-enforced, so its absence
- * silently disarms G2/G3/G4 — the same disarm `droppedSourceHintWarning` exists to make visible
- * for the source guards. Fires only when the map actually plots points and NO record was
- * threaded; G1 already fails hard for the summit case, so this covers everything else.
+ * ADVISORY (never a hard failure), and deliberately kept as one now that place-provenance.ts
+ * REFUSES the same condition before any engine runs: a run reaching here with no records has
+ * already answered for that (it declared `coordinatesFromData`, or its places carry records under
+ * other labels), so hardening this would double-report a gap the spine already decided about. It
+ * stays as the render-gate's visible note that G2/G3/G4 had nothing to read — the same service
+ * `droppedSourceHintWarning` performs for the source guards, which really are still prose-fed.
  */
 export function resolvedPlaceWarnings(
   spec: unknown,

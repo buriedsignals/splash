@@ -311,6 +311,18 @@ const SINGLE_MATCH_KINDS: Record<string, (c: GeocodeCandidate) => boolean> = {
   settlement: isSettlementCandidate,
 };
 
+/** Every kind this module will actually hold a lookup to, AT RUNTIME — `ExpectedPlaceKind` is a
+ *  type and vanishes at the boundary where it is most needed: a CLI flag, a field read out of
+ *  JSON. Derived from the matcher table plus `peak` (which is not in it, having its own
+ *  elevation-corroborated path), so a kind cannot be resolvable here and unknown to a caller
+ *  that validates against this list. `skills/suggest-chart/scripts/resolve-place.mjs` reads it
+ *  rather than keeping a copy: it kept one, and the copy lagged three kinds behind within a day
+ *  of them landing. */
+export const RESOLVABLE_PLACE_KINDS: readonly ExpectedPlaceKind[] = [
+  "peak",
+  ...(Object.keys(SINGLE_MATCH_KINDS) as ExpectedPlaceKind[]),
+];
+
 /**
  * Only the candidates that answer the QUERY as well as the best one does.
  *
