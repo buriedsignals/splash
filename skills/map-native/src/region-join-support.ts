@@ -25,6 +25,16 @@
 // video-verify.json with 0 violations and revealMeanDiff 203.7 against a 0.5 floor. A
 // format-blind refusal would delete that.
 //
+// The SAME measurement now exists for the other type, on the other chain (2026-08-07, driven
+// through lib/host/cli.ts): a us-states CARTOGRAM video produced a 27.3 s / 819-frame mp4,
+// video-verify.json 0 violations, revealMeanDiff 198.2 — and the still shows all four states
+// joined and shaded over correct North-American bounds. Both members of the set are therefore
+// measured working in video, on both chains, which is what the format scope protects.
+// Symmetrically measured on the failing side, so the scope is not merely permissive: the same
+// cartogram built as `static`/`interactive` renders a bare basemap of EUROPE with no data layer,
+// and an ADM1 (Swiss cantons) cartogram built `static` dies the same way — both on
+// `choropleth: no region matched the data`, thrown inside the browser, after a full build.
+//
 // ── FACT B — the prose chain has no geography match for these two types ───────────────────────
 // The loop chain runs `orient` and threads `featureIdsByValue` (lib/loop/assemble/map-native.ts).
 // The prose chain — the one a journalist walks — has no such step; its only match is

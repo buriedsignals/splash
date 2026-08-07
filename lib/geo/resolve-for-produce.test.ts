@@ -530,7 +530,18 @@ describe("resolveGeometryForProduce", () => {
       const brief: ProductionBrief = {
         elementId: "e1",
         nativeType: "cartogram",
-        format: "static",
+        // "video", not "static" — and the change is a CORRECTION, not an accommodation of a new
+        // guard. This fixture is an ADM1 cartogram, and MEASURED 2026-08-07 (real produce, real
+        // browser): built as `static` it renders EMPTY, dying on `choropleth: no region matched
+        // the data — nothing to map`, because CartogramMap.tsx (the static AND interactive
+        // component) resolves its join key as `data.joinKey ?? "iso_a3"` while these features are
+        // keyed on `name`. The assembler now refuses that pairing, so the old fixture asserted
+        // `assembled.ok` for a config that could never draw. Video is the format where an ADM1
+        // cartogram actually works — CartogramStory/Reveal/Scrolly read the key through
+        // resolveVideoGeometry — and it costs this test NOTHING: featureIdsByValue threading and
+        // resolveGeometryForProduce's subsetting are both format-independent, which is all this
+        // case was ever pinning.
+        format: "video",
         angle: {
           confirmedTakeaway: "Geneva rents run highest among these two cantons",
           altInsight: "A cartogram of two Swiss cantons sized by rent",

@@ -32,10 +32,13 @@ describe("isoA3PinnedInFormat", () => {
     expect(isoA3PinnedInFormat("interactive")).toBe(true);
   });
 
-  // MEASURED, not assumed: a us-states dot-density VIDEO produced clean on the prose chain
-  // (video-verify.json, 0 violations, revealMeanDiff 203.7) because the video/scrolly
+  // MEASURED, not assumed, and now for BOTH members of the set: a us-states dot-density VIDEO
+  // produced clean on the prose chain (video-verify.json, 0 violations, revealMeanDiff 203.7),
+  // and a us-states CARTOGRAM video produced clean on the LOOP chain (0 violations,
+  // revealMeanDiff 198.2, all four states joined in the still) — because the video/scrolly
   // components resolve the key through resolveVideoGeometry. Refusing those would delete a
-  // working capability.
+  // working capability. Both loop callers depend on this staying false: the assembler's
+  // cartogram branch asks this exact question (lib/loop/assemble/map-native.ts).
   it("should NOT hold for video or scrolly, which resolve the key from config.geography", () => {
     expect(isoA3PinnedInFormat("video")).toBe(false);
     expect(isoA3PinnedInFormat("scrolly")).toBe(false);
