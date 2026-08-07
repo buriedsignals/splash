@@ -43,7 +43,7 @@ describe("narrativeWalkError — what it refuses", () => {
       p(
         "map-native",
         "video",
-        { type: "choropleth", cameraMode: "guided-tour" },
+        { type: "choropleth", cameraMode: "guided-tour", sweepCarrier: "threshold" },
         "story",
       ),
     );
@@ -84,7 +84,12 @@ describe("narrativeWalkError — what it lets through, and why", () => {
         p(
           "map-native",
           "video",
-          { type: "choropleth", cameraMode: "guided-tour", arcBeats: WALK },
+          {
+            type: "choropleth",
+            cameraMode: "guided-tour",
+            sweepCarrier: "threshold",
+            arcBeats: WALK,
+          },
           "story",
         ),
       ),
@@ -403,5 +408,49 @@ describe("the spine validates a chart VIDEO's walk", () => {
       narrativeKind: "stepped",
     } as never);
     expect(r.ok).toBe(true);
+  });
+});
+
+// ★ A STORY OWES A CARRIER. A map `story` is the Map Explainer shape; with no carrier it falls
+// back to the beat-to-beat tour, i.e. to `stepped`. Rémy produced both kinds of one subject and
+// could not tell them apart — this refusal is what stops the fallback from silently handing him
+// the kind he ruled out.
+describe("a map story is asked what makes it advance", () => {
+  const mapStory = (spec: Record<string, unknown>) =>
+    ({
+      id: "e1",
+      producer: "map-native",
+      format: "video",
+      confirmedTakeaway: "t",
+      narrativeKind: "story",
+      spec: { type: "choropleth", cameraMode: "guided-tour", ...spec },
+    }) as never;
+
+  it("refuses a story with no carrier, and says how to ask", () => {
+    const err = narrativeWalkError(mapStory({ arcBeats: WALK }));
+    expect(err).not.toBeNull();
+    expect(err!).toContain("sweep-carriers --config");
+    expect(err!).toContain("sweepCarrier");
+  });
+
+  it("accepts one that declares its carrier", () => {
+    expect(
+      narrativeWalkError(
+        mapStory({ arcBeats: WALK, sweepCarrier: "threshold" }),
+      ),
+    ).toBeNull();
+  });
+
+  it("says nothing to a STEPPED map video — touring IS what it is", () => {
+    expect(
+      narrativeWalkError({
+        id: "e1",
+        producer: "map-native",
+        format: "video",
+        confirmedTakeaway: "t",
+        narrativeKind: "stepped",
+        spec: { type: "choropleth", cameraMode: "stepped", arcBeats: WALK },
+      } as never),
+    ).toBeNull();
   });
 });
