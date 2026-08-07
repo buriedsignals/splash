@@ -1,46 +1,56 @@
-# Defect — the loop chain never applies the newsroom house palette to a map (2026-08-07)
+# Defect — three faults found on one journalist run (2026-08-07) — CLOSED
 
-Found on a real `/using-splash` run (Heidi.news, « Pourquoi les prisons genevoises sont-elles
+Opened by a real `/using-splash` run (Heidi.news, « Pourquoi les prisons genevoises sont-elles
 pleines à craquer ? »), run dirs `exports/prisons-genevoises` and `exports/prisons-map`.
 
-> **Two of the three defects this file opened are CLOSED** and have been removed from it rather
-> than left as a to-do list nobody trusts:
->
-> - **an admin-1 choropleth could not be produced from the prose chain** — the chain has no
->   `orient` step, so `config.featureIdsByValue` was never written and every admin-1 map was
->   offerable, validatable and unbuildable. Closed by `skills/map-native/src/adm1-backfill.ts`,
->   called at the top of both native producers, with the join re-pointed at the column that
->   actually resolves (`canton_code` = "CH-GE" resolves nothing; `canton` = "Genève" resolves
->   4/4) and the confirmed storyboard carried across with it. Proven on a produced render, plus
->   a keyless produce-level test on each of the two producers.
-> - **the interactive choropleth popup omitted the space before a word unit** — shipped
->   « Genève — 157détenus / 100 000 hab. » beside a legend that read « 43–65,8 détenus / 100 000
->   hab. ». Both renderers now build that string in one place
->   (`skills/map-native/src/core/region-popup.ts`), and the cartogram and hex-grid callouts route
->   through the shared formatter too. A `%` prints identically either way, which is how it
->   survived every earlier review — the word-unit case is now the asserted one.
+> **CLOSED 2026-08-07.** All three are fixed, each proven on a render rather than on a config.
+> The note is struck rather than left standing: a defect note that still lists what is fixed
+> becomes a to-do list nobody trusts, and this file had already become one once — it kept its
+> "the loop never applies the charter" title for hours after that had been closed and proven.
 
-## D3 — the loop chain never applies the newsroom house palette to a map
+## 1 — an admin-1 choropleth could not be produced from the prose chain
 
-`NEWSROOM-PROFILE.md` declares `palette: ["#d5121e"]` (Heidi.news red). The produced
-`config.json` carries **no** `palette` / `brandHue` / `themeBg`, and the map ships default blue.
+The chain has no `orient` step, so `config.featureIdsByValue` was never written and every
+admin-1 map — Swiss cantons, French départements, US counties — was offerable, validatable and
+unbuildable.
 
-On the PROSE chain this is `mergeProfileDefaults`' job (`produce-all.mjs`), which erases a map's
-auto palette so `houseRamp` derives from the brand hue (CLAUDE.md, session 2026-07-14). The loop
-chain has no equivalent: `lib/loop/assemble/map-native.ts` contains no `palette`/`theme`/`brand`
-reference at all, and `lib/loop/produce.ts` never sees `decor` (grepped: zero hits for
-`decor|theme|palette|brandHue` in both). `Decor` does carry `theme` (`lib/newsroom/decor.ts:69`)
-— it is simply never threaded to a map assembler.
+**Closed** by `skills/map-native/src/adm1-backfill.ts`, called at the top of both native
+producers. The join is re-pointed at the column that actually resolves (`canton_code` = "CH-GE"
+resolves nothing; `canton` = "Genève" resolves 4/4), a declared key that DOES resolve always
+wins, and the journalist's confirmed storyboard is carried across the re-point. Proven on a
+produced render, plus a keyless produce-level test on each producer. `dot-density` and
+`cartogram` are deliberately excluded — their components pin the join key to `iso_a3` — and now
+carry their own refusal on both chains (`skills/map-native/src/region-join-support.ts`).
 
-⇒ **Every visual built through the loop ignores the newsroom's charter.** That directly
-contradicts what INPUT announces to the journalist ("j'applique la charte Heidi.news"), which
-makes it worse than a missing feature: the flow promises it in words.
+## 2 — the interactive choropleth popup omitted the space before a word unit
 
-Fix: thread `decor` into `assemble/map-native.ts` (and its siblings) and apply the same
-house-palette rule the prose chain applies, then prove it on a render — a config-level test would
-pass on a map that still renders blue.
+Shipped « Genève — 157détenus / 100 000 hab. » beside a legend that read « 43–65,8 détenus /
+100 000 hab. » on the same render.
+
+**Closed**: both renderers build that string in one place (`lib/core/region-popup.ts`), and the
+cartogram and hex-grid callouts route through the shared formatter too. A `%` prints identically
+either way, which is how this survived every earlier review — the word-unit case is the asserted
+one now.
+
+## 3 — the loop chain never applied the newsroom house palette to a map
+
+`NEWSROOM-PROFILE.md` declared `palette: ["#d5121e"]` and the map shipped default blue. The prose
+chain applied the charter through `mergeProfileDefaults`; the loop had no equivalent, and `Decor`
+carried the profile without ever handing it to a map assembler. Worse than a missing feature: the
+INPUT phase announces « j'applique la charte » in words.
+
+**Closed** at `assemblerFor` (`lib/loop/assemble/index.ts`) — one wrap covering every engine,
+with the policy *imported* from `mergeProfileDefaults` rather than restated, so the two chains
+cannot drift on what a charter means. Proven on the pixels: legend swatches are exactly
+`houseRamp("#d5121e", 5)`, Genève's polygon `rgb(40,92,160)` → `rgb(142,34,34)`.
+
+Proving the other half of a charter — the **ground** — then found that a dark charter could not
+produce at all: `snap-theme.mjs` wrote its debug screenshot into the delivery directory, so the
+run died on *"static format requires exactly one image file, found 2"*. The first newsroom to
+write `theme: dark` would have been the one to find it. Also closed, with pixel proofs for a
+dark, a navy and a pink ground.
 
 ## Cost on the run
 
-The journalist was told the map could not be produced and was offered the chart fallback. No visual
-was shipped for the map. Nothing was patched, nothing hand-planted.
+The journalist was told the map could not be produced and was offered the chart fallback. No
+visual was shipped for the map. Nothing was patched, nothing hand-planted.
