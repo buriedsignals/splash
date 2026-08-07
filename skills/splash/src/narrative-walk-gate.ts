@@ -67,6 +67,11 @@ function isRevealKind(cameraMode?: string): boolean {
   return cameraMode === "simple" || cameraMode === "route-reveal";
 }
 
+function sweepCarrierOf(spec: unknown): string | undefined {
+  const s = spec as { sweepCarrier?: unknown } | null;
+  return typeof s?.sweepCarrier === "string" ? s.sweepCarrier : undefined;
+}
+
 function cameraModeOf(spec: unknown): string | undefined {
   const s = spec as { cameraMode?: unknown } | null;
   return typeof s?.cameraMode === "string" ? s.cameraMode : undefined;
@@ -248,6 +253,24 @@ export function narrativeWalkError(p: AcceptedProposal): string | null {
         );
     }
     // A reveal owes nothing: it paints no words, so a walk written for it would never be read.
+    // ★ A STORY OWES A CARRIER. A map `story` is the Map Explainer shape: the camera visits each
+    // subject in the CARRIER's order and the subject stages in as it arrives. With no carrier
+    // declared it falls back to the beat-to-beat tour ordered by salience — which is the
+    // `stepped` kind, so a journalist who chose a story is handed the one thing they ruled out.
+    // Rémy produced both of the same subject and could not tell them apart; that fallback is why.
+    //
+    // Refused rather than defaulted, for the same reason the KIND is: choosing a carrier is
+    // choosing what the story is ABOUT. A threshold falling says "who is worst hit"; a clock says
+    // "when it happened". Neither is the machine's to pick.
+    if (p.producer === "map-native" && kind === "story" && !sweepCarrierOf(p.spec))
+      return (
+        `this map video was chosen as a guided story, which narrates by letting a process ` +
+        `advance across the map — but nothing was chosen to BE that process, so it would fall ` +
+        `back to the step-by-step tour the journalist did not pick. Ask them what makes their ` +
+        `story advance — \`bun lib/host/cli.ts sweep-carriers --config <spec>\` lists what this ` +
+        `data can actually drive, and says why it cannot drive the rest — and put the answer on ` +
+        `the spec as \`sweepCarrier\`.`
+      );
     if (kind === "reveal") return null;
   }
   // ONE answer, asked here and by the CLI alike — a guard that refuses on different knowledge
