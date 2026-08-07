@@ -1,7 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { MODEL_SCRIPT_ID, pageCopy, PAGE_SECTIONS } from "./copy.ts";
+import {
+  MODEL_SCRIPT_ID,
+  pageCopy,
+  PAGE_SECTIONS,
+  UI_LANGUAGES,
+} from "./copy.ts";
 
 const HTML = readFileSync(join(import.meta.dir, "page.html"), "utf8");
 const CSS = readFileSync(join(import.meta.dir, "page.css"), "utf8");
@@ -99,5 +104,30 @@ describe("the page's own copy", () => {
     expect(Object.keys(pageCopy("fr")).sort()).toEqual(
       Object.keys(pageCopy("en")).sort(),
     );
+  });
+
+  // E27: the check above compares TOP-LEVEL keys only, so a nested table (`signalLabel`,
+  // `typeRoleLabel`, and now `capabilityName`/`capabilityChoice`/`readinessReason`) could be
+  // present-but-incomplete and pass — which is exactly how sections 4 and 5 shipped English
+  // labels onto the French page. This walks into every nested table instead. `capabilityName`'s
+  // English side is DERIVED from lib/newsroom/capabilities.ts, so a capability added to the
+  // registry with no French name reddens here too, without this test naming any capability.
+  it("translates every NESTED entry too, not only the top-level keys", () => {
+    const en = pageCopy("en") as unknown as Record<string, unknown>;
+    const missing: string[] = [];
+    for (const { id } of UI_LANGUAGES) {
+      const copy = pageCopy(id) as unknown as Record<string, unknown>;
+      for (const [key, table] of Object.entries(en)) {
+        if (typeof table !== "object" || table === null || Array.isArray(table))
+          continue;
+        const theirs = copy[key] as Record<string, unknown> | undefined;
+        for (const entry of Object.keys(table as Record<string, unknown>)) {
+          const value = theirs?.[entry];
+          if (typeof value !== "string" || !value.trim())
+            missing.push(`${id}.${key}.${entry}`);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
   });
 });

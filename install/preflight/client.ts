@@ -198,6 +198,22 @@ function fieldControl(name: string, copy: PageCopy): HTMLElement | null {
   return wrapper;
 }
 
+/**
+ * A capability's words in the page's own language (E27). The REGISTRY holds the id and the
+ * English label — it is also read by the CLI and the delivery paths, which is why it stays
+ * English; `copy.ts` holds every translation, keyed by that id. The registry's own string is the
+ * last-resort fallback, so a capability added without a translation still renders (in English)
+ * instead of rendering blank — `page.test.ts` is what makes that state fail loudly instead.
+ */
+function capName(id: string, registryLabel: string, copy: PageCopy): string {
+  return copy.capabilityName[id] ?? registryLabel;
+}
+
+/** Its caption where it is offered or listed — the registry's `choice`, else its name. */
+function capCaption(id: string, registryLabel: string, copy: PageCopy): string {
+  return copy.capabilityChoice[id] ?? capName(id, registryLabel, copy);
+}
+
 // Radio-only now (Task 5, 2026-08-06): an engine has no tick left to render, so the only
 // remaining caller of this row is the publisher choice in "Publishing" — a checkbox variant
 // would be dead code.
@@ -223,7 +239,10 @@ function capabilityRow(
   // The row's OWN caption when the registry gives it one — every other reader of a capability's
   // name wants `label` instead (readiness.ts, skills/splash's ENGINE_LABELS): reusing a caption
   // there is what broke those sentences (fix round 1, Finding 1).
-  label.append(input, capability.choice ?? capability.label);
+  label.append(
+    input,
+    capCaption(capability.id, capability.choice ?? capability.label, copy),
+  );
   head.append(label);
   const status = el("span", { class: "spacer" });
   head.append(status);
@@ -738,11 +757,12 @@ function renderProducible(copy: PageCopy): HTMLElement {
   const list = el("div", { class: "producible" });
   for (const p of model.producible) {
     const row = el("div", { class: "producible-row" });
+    const caption = capCaption(p.id, p.label, copy);
     if (p.available) {
       row.append(pill("ready", form.uiLang));
-      row.append(el("span", { class: "producible-label" }, p.label));
+      row.append(el("span", { class: "producible-label" }, caption));
     } else {
-      row.append(el("span", { class: "producible-label" }, p.label));
+      row.append(el("span", { class: "producible-label" }, caption));
       if (p.opensWith)
         row.append(
           el(
@@ -794,13 +814,18 @@ function renderReadiness(copy: PageCopy): void {
       // made, and telling a journalist their empty field was refused sends them hunting for a
       // problem with a key they never entered.
       const verdict = missing.length ? undefined : form.verified[capability.id];
+      // E27: never `capability.reason` — that string is English whatever the page is being read
+      // in. The reason's CODE picks the sentence out of the copy table instead.
+      const name = capName(capability.id, capability.label, copy);
       const explanation = missing.length
-        ? `${capability.label} — ${copy.needs} ${missing.join(", ")}`
+        ? `${name} — ${copy.needs} ${missing.join(", ")}`
         : verdict === "rejected"
-          ? `${capability.label} — ${copy.rejectedByProvider}`
+          ? `${name} — ${copy.rejectedByProvider}`
           : verdict === "unreachable"
-            ? `${capability.label} — ${copy.unreachableProvider}`
-            : capability.reason || capability.label;
+            ? `${name} — ${copy.unreachableProvider}`
+            : capability.reasonCode
+              ? `${name} — ${copy.readinessReason[capability.reasonCode]}`
+              : name;
       text.append(el("p", {}, explanation));
       for (const name of capability.missingFields) {
         const help = model.fields.find((f) => f.name === name)?.help;

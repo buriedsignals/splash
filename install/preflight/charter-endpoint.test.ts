@@ -16,6 +16,14 @@ import {
   typefaceKey,
   type CharterReadout,
 } from "./charter-endpoint.ts";
+import { pageCopy } from "./copy.ts";
+
+// The two sentences, taken from the copy table rather than re-typed: these tests pin WHICH
+// classification a failure gets, never the wording of it — a copy edit (D2 reworded the browser
+// one) must not redden a classification test, and a wording literal here would pin the words in
+// the wrong file anyway.
+const SITE_FAILED = pageCopy("en").measureFailed;
+const BROWSER_FAILED = pageCopy("en").measureRenderFailed;
 
 // A site that declares its brand: the readout carries the value AND where it was read, because a
 // journalist can only disagree with a value whose origin they can see (skills/newsroom-charter).
@@ -180,6 +188,53 @@ test("the typeface receipt names its source the same way", () => {
   );
 });
 
+// D1: the receipt is TWO copy entries concatenated (`receiptReadFont` + `typeRoleLabel[role]`),
+// and each half read fine on its own while the sentence they make did not — the served French
+// page said "Lu comme police de une police auto-hébergée", and would have said "de le texte
+// courant" / "de les titres" for the other two roles; English said "the font of a self-hosted
+// webfont". Pinned as whole sentences, at the seam that actually builds them, because that is the
+// only place the fault exists: a test on either half alone is what let this ship.
+describe("the typeface receipt is a sentence, in every language and for every role", () => {
+  // One fixture carries all three roles: a @font-face (webfont), a body rule, an h1 rule.
+  const readout = (lang: string): Record<string, string> => {
+    const proposal = proposeCharter({
+      url: "https://example.news",
+      html: "<p>hello</p>",
+      sheets: [
+        {
+          href: "https://example.news/site.css",
+          css: `@font-face { font-family: 'Sang Bleu Kingdom'; src: url(/f.woff2); }
+                body { font-family: "Publico Text", serif; }
+                h1 { font-family: "Sang Bleu Kingdom", serif; }`,
+        },
+      ],
+    });
+    return Object.fromEntries(
+      readoutFrom(proposal, lang).typefaces.map((t) => [
+        t.role,
+        t.receipt.split(":")[0]!,
+      ]),
+    );
+  };
+
+  test("French reads as French — no 'de une', no 'de le', no 'de les'", () => {
+    const fr = readout("fr");
+    expect(fr).toEqual({
+      body: "Lu comme police du texte courant",
+      headings: "Lu comme police des titres",
+      webfont: "Lu comme police auto-hébergée",
+    });
+  });
+
+  test("English stays natural — a webfont is not the font of a webfont", () => {
+    expect(readout("en")).toEqual({
+      body: "Read as the font of the body text",
+      headings: "Read as the font of the headings",
+      webfont: "Read as a self-hosted webfont",
+    });
+  });
+});
+
 // Task 4, Step 4: "a guess must look like a guess" — on screen, not merely in `confidence`. Both
 // directions, so a regression that stops appending the mention, or one that starts appending it
 // to a DECLARED reading, reddens here.
@@ -261,11 +316,11 @@ test("carries the ground and the typography through, each with a receipt", () =>
 describe("a failure says WHAT failed, in the language the page is read in", () => {
   test("a site that would not answer reads as a site that would not answer", () => {
     const en = failureReadout("https://example.news answered 503");
-    expect(en.error).toContain("Could not read your site");
+    expect(en.error).toContain(SITE_FAILED);
     expect(en.error).not.toContain("browser");
     // The machine detail survives — subordinate, after the sentence, never the headline.
     expect(en.error).toContain("answered 503");
-    expect(en.error.indexOf("Could not read your site")).toBeLessThan(
+    expect(en.error.indexOf(SITE_FAILED)).toBeLessThan(
       en.error.indexOf("answered 503"),
     );
   });
@@ -274,21 +329,43 @@ describe("a failure says WHAT failed, in the language the page is read in", () =
     const en = failureReadout(
       "could not open a browser to render https://example.news/: Executable doesn't exist",
     );
-    expect(en.error).toContain("Could not open your site in a browser");
-    expect(en.error).not.toContain("Could not read your site");
+    expect(en.error).toContain(BROWSER_FAILED);
+    expect(en.error).not.toContain(SITE_FAILED);
     expect(en.error).toContain("Executable doesn't exist");
+  });
+
+  // D2: the classification was already right — the sentence DID say the browser failed — and it
+  // still closed with "check the address and try again", which blames the journalist for a
+  // missing Chromium. Both languages, because the French one is the one that was served.
+  test("does not send the journalist back to their address for a failure that is not theirs", () => {
+    for (const [lang, blame] of [
+      ["en", "check the address"],
+      ["fr", "vérifiez l'adresse"],
+    ] as const) {
+      const said = failureReadout(
+        "could not open a browser to render https://x.news/: Executable doesn't exist",
+        lang,
+      ).error;
+      expect(said).toContain(pageCopy(lang).measureRenderFailed);
+      expect(said.toLowerCase()).not.toContain(blame);
+      // The technical tail stays, and stays subordinate — after the sentence, not the headline.
+      expect(said).toContain("Executable doesn't exist");
+      expect(said.indexOf(pageCopy(lang).measureRenderFailed)).toBeLessThan(
+        said.indexOf("Executable doesn't exist"),
+      );
+    }
   });
 
   test("both sentences are read in French on a French page", () => {
     expect(failureReadout("https://x.news answered 503", "fr").error).toContain(
-      "Impossible de lire votre site",
+      pageCopy("fr").measureFailed,
     );
     expect(
       failureReadout(
         "could not open a page to render https://x.news/: boom",
         "fr",
       ).error,
-    ).toContain("Impossible d'ouvrir votre site dans un navigateur");
+    ).toContain(pageCopy("fr").measureRenderFailed);
   });
 
   // The classification matches on charter-render.ts's own wording, and this module does not own
@@ -305,8 +382,8 @@ describe("a failure says WHAT failed, in the language the page is read in", () =
     });
     expect("error" in failed).toBe(true);
     const said = failureReadout((failed as { error: string }).error);
-    expect(said.error).toContain("Could not open your site in a browser");
-    expect(said.error).not.toContain("Could not read your site");
+    expect(said.error).toContain(BROWSER_FAILED);
+    expect(said.error).not.toContain(SITE_FAILED);
   });
 
   // A launch that throws is only the FIRST of four machine-side failures. Chromium that starts
@@ -358,8 +435,8 @@ describe("a failure says WHAT failed, in the language the page is read in", () =
         });
         expect("error" in failed).toBe(true);
         const said = failureReadout((failed as { error: string }).error);
-        expect(said.error).toContain("Could not open your site in a browser");
-        expect(said.error).not.toContain("Could not read your site");
+        expect(said.error).toContain(BROWSER_FAILED);
+        expect(said.error).not.toContain(SITE_FAILED);
       });
 
     // The counterweight: the classifier must not swallow the site's OWN failures into the
@@ -382,8 +459,8 @@ describe("a failure says WHAT failed, in the language the page is read in", () =
           }) as unknown as RenderBrowser,
       });
       const said = failureReadout((failed as { error: string }).error);
-      expect(said.error).toContain("Could not read your site");
-      expect(said.error).not.toContain("Could not open your site in a browser");
+      expect(said.error).toContain(SITE_FAILED);
+      expect(said.error).not.toContain(BROWSER_FAILED);
     });
   });
 });
@@ -431,7 +508,7 @@ describe("the browser retry is offered only after a read that actually happened"
     expect(
       offersRenderRetry({
         status: "error",
-        message: "Could not read your site",
+        message: SITE_FAILED,
         mode: "static",
         attempted: true,
       }),
