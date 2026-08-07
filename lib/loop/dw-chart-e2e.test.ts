@@ -20,6 +20,7 @@ import { deliver } from "./deliver";
 import { previewStep } from "./preview";
 import { freezeInput } from "./freeze";
 import { assembleDwChart } from "./assemble/dw-chart";
+import { decodePng, modalColor, toHex } from "./fixtures/render-pixels";
 import { heightPolicyFor } from "./assemble";
 import { isLoopBuildable } from "./buildable";
 import { captureStep, reviewStep } from "./verify";
@@ -47,6 +48,9 @@ const proof = RUN_IT ? test : test.skip;
 // stop a pinned box cropping rows. A fixed-aspect type is what makes "the PNG is the channel's
 // media size" a checkable statement at all.
 const RECYCLING_CSV = "city,rate\nBasel,54\nZurich,49\nGeneva,41\nBern,38";
+
+// The newsroom's house colour, as a NEWSROOM-PROFILE.md would declare it.
+const HOUSE_HUE = "#d5121e";
 
 const FIXTURE_BRIEF: ProductionBrief = {
   elementId: "e1",
@@ -631,6 +635,67 @@ proof(
       expect(pinned.value.images[0]!.artifactSha256).toBe(
         slot.images[0]!.artifactSha256,
       );
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  },
+  180_000,
+);
+
+// ── THE NEWSROOM'S CHARTER, ON A HOSTED CHART ─────────────────────────────────────────────────
+//
+// A charter declares two things about colour, and Datawrapper can honour exactly one of them.
+//
+//   · THE MARKS — `palette[0]` becomes the spec's `baseColor`, Datawrapper paints it, and that
+//     is what this proof measures off the delivered PNG.
+//   · THE GROUND — `theme` does NOT reach this engine, and the exclusion is deliberate rather
+//     than an omission: this repo MEASURED that a house background cannot be rendered on this
+//     Datawrapper plan (POST /v3/themes answers 401 ADMIN_ROLE_REQUIRED, and
+//     metadata.publish.background is accepted by the API and render-proven white). So
+//     mergeProfileDefaults threads `themeBg` to the native engines only.
+//
+// A limit that is real is not the same as a limit that is silent, so the second half is asserted
+// too — the chart comes back on Datawrapper's own white — and it is the brain, not this engine,
+// that tells the journalist so before they choose (lib/brain/eligibility.ts: a dark ground drops
+// both Datawrapper engines from the offer with a stated reason, and a light-but-not-white ground
+// keeps the row and marks it with the mismatch in words).
+proof(
+  "the charter's house colour is painted on the chart, and the ground stays Datawrapper's own",
+  async () => {
+    const runDir = mkdtempSync(join(tmpdir(), "splash-dw-charter-e2e-"));
+    try {
+      const src = join(runDir, "data.csv");
+      writeFileSync(src, RECYCLING_CSV);
+      const run = chartRun(runDir, src, "static");
+      const el = run.elements[0]!;
+      // A LIGHT-but-not-white ground, on purpose: a dark one never reaches produce (the brain
+      // drops the engine), so this is the case that actually travels this far.
+      const house = { palette: [HOUSE_HUE], theme: "#F7D9E3" };
+      const result = await produce(run, el, runDir, { house } as unknown as Decor);
+      expect(result.ok ? "produced" : `${result.code}: ${result.message}`).toBe(
+        "produced",
+      );
+      if (!result.ok) return;
+
+      const px = decodePng(
+        readFileSync(join(runDir, fileArtifact(result.value.artifact)!.path)),
+      );
+      // The emphasised column ("Basel") is the one the house colour paints — the others stay the
+      // neutral grey, which is the whole point of an emphasis.
+      const emphasised = toHex(modalColor(px, 80, 200, 290, 540));
+      const rest = toHex(modalColor(px, 370, 220, 580, 540));
+      const ground = toHex(modalColor(px, 600, 620, 1150, 650));
+      console.log(
+        `[dw-charter-e2e] emphasised bar ${emphasised} · other bars ${rest} · ground ${ground}`,
+      );
+      // EXACT, not near: Datawrapper is handed a hex and rasterizes a flat fill, so anything but
+      // the declared hue means the charter did not arrive.
+      expect(emphasised).toBe(HOUSE_HUE);
+      expect(rest).not.toBe(HOUSE_HUE);
+      // …and the ground is Datawrapper's white, NOT the declared #F7D9E3. This assertion is the
+      // measured vendor limit, kept where a future plan change would surface it: if this ever
+      // stops being white, the exclusion in mergeProfileDefaults is the thing to revisit.
+      expect(ground).toBe("#ffffff");
     } finally {
       rmSync(runDir, { recursive: true, force: true });
     }

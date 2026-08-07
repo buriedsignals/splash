@@ -8,3 +8,9 @@ out
 # disclosed gap, CLAUDE.md follow-up #8 — so a real failing run appends its refusal record
 # inside the repo. Ignored here so it cannot be committed by accident while the gap is open.
 output-proof/**/late-refusals.jsonl
+
+# The dark-basemap guard's debug screenshot. It USED to be written into the produce outDir,
+# which is the delivery — a "static" form then held two image files and the run was refused.
+# It now lands here, on snap-theme.mjs's own default, and this directory is not repo content:
+# a byproduct a human can open, not an artifact anyone reviews in a diff.
+output-proof/theme/
