@@ -556,12 +556,16 @@ the check tested `node_modules` exists, the same "present is not working" mistak
 check exists to avoid one level down. It now reads the root template's own declared dependency
 names and resolves each of them from the root with `Bun.resolveSync` — a present `node_modules`
 with an unresolvable package inside it now reports `"fail"`, naming the package, instead of
-`"pass"`. **Named limit, not silently closed:** `@resvg/resvg-js` itself is not declared in
-`assets/root-template/package.json` (react, react-dom and the three d3 packages are) — declaring
-it belongs to that file, not to the preflight script, so today's fix makes the mechanism honest for
-every dependency the template *does* declare without yet closing the exact case the proof hit.
-Confirmed live: a root with `node_modules` stubbed for all five declared packages but not
-`@resvg/resvg-js` still reports `dependencies: "pass"`. That gap is recorded, not designed around.)
+`"pass"`.
+
+**Follow-up closed (2026-08-06):** the paragraph above originally recorded a named limit —
+`@resvg/resvg-js` was not declared in `assets/root-template/package.json` (only react, react-dom
+and the three d3 packages were), so a root missing it still reported `dependencies: "pass"`. That
+gap is now closed: `@resvg/resvg-js` is declared in the root template's `package.json` (Step 14
+below) at the version `twin/package.json` already pins, `^2.6.2`, so `checkDependencies` resolves
+it like every other declared package. A pinning test (`preflight.test.ts`) asserts a root missing
+it reports `dependencies: "fail"` naming `@resvg/resvg-js` — verified red on a root template
+without the declaration, green with it restored.)
 
 - [ ] **Step 12: Run the test and confirm it passes**
 
@@ -614,6 +618,7 @@ Run: `cd twin && MAPTILER_KEY=<key> bun test skills/splash-twin/test/keys.test.t
   "private": true,
   "type": "module",
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "d3-array": "^3.2.4",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
@@ -623,6 +628,8 @@ Run: `cd twin && MAPTILER_KEY=<key> bun test skills/splash-twin/test/keys.test.t
   "devDependencies": { "typescript": "^5.6.0" }
 }
 ```
+(`@resvg/resvg-js` added 2026-08-06 — see the follow-up note above; version pinned to match
+`twin/package.json`'s own `^2.6.2`.)
 
 ```json
 // twin/skills/splash-twin/assets/root-template/tsconfig.json
