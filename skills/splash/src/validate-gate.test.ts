@@ -936,3 +936,192 @@ describe("an unknown nativeType is not a silent pass (Task 8)", () => {
     }
   });
 });
+
+// GUARD — PLACE RESOLUTION (lib/geo/place-resolution.ts). The spec below is the REAL one from
+// exports/glaciers-requiem-2026, whose "Cervin" marker sat 1063 m from the summit on the
+// Matterhorn glacier while its beat named the 4478 m summit — after the journalist had said so
+// BEFORE production ran. Everything here asserts against that run, not against an invented shape.
+describe("validateAccepted — a machine-resolved coordinate must be accountable", () => {
+  const CERVIN_GLACIER = { lon: 7.661000215400804, lat: 45.986011489842674 };
+  const CERVIN_SUMMIT = { lon: 7.658602260053158, lat: 45.97642633812452 };
+
+  function locator(over: Record<string, unknown> = {}) {
+    return {
+      type: "locator",
+      basemap: "world",
+      lang: "fr",
+      title: "L'été 2026 a mis les glaciers alpins à nu, d'Aletsch au Cervin",
+      description:
+        "Les quatre glaciers alpins où l'article observe la fonte de l'été 2026.",
+      source: { name: "Observations rapportées dans cet article" },
+      markers: [
+        {
+          lon: 8.077508042316026,
+          lat: 46.451632464223096,
+          label: "Glacier d'Aletsch",
+        },
+        { ...CERVIN_GLACIER, label: "Cervin" },
+        {
+          lon: 8.39847520305841,
+          lat: 46.62606149864873,
+          label: "Glacier du Rhône",
+        },
+        {
+          lon: 7.547186841148459,
+          lat: 46.00520315741525,
+          label: "Glacier du Mont Miné",
+        },
+      ],
+      arcBeats: [
+        {
+          region: "Glacier d'Aletsch",
+          role: "establish",
+          text: "Sur le glacier d'Aletsch, une immense étendue de neige a fondu en deux semaines, entre le 11 et le 29 juin.",
+        },
+        {
+          region: "Cervin",
+          role: "build",
+          text: "Au sommet du Cervin, à 4478 mètres, des cascades torrentielles — un phénomène rarissime.",
+        },
+        {
+          region: "Glacier du Rhône",
+          role: "turn",
+          text: "En seize jours, le glacier du Rhône a perdu 1,60 mètre de glace — et l'été commence à peine.",
+        },
+        {
+          region: "Glacier du Mont Miné",
+          role: "payoff",
+          text: "Le 29 juin, les glaciers suisses avaient épuisé toute la neige de l'hiver — six semaines avant la date habituelle.",
+        },
+      ],
+      ...over,
+    };
+  }
+
+  // The four markers exactly as the run shipped them, with only Cervin moved to its summit.
+  const MARKERS_WITH_SUMMIT = [
+    {
+      lon: 8.077508042316026,
+      lat: 46.451632464223096,
+      label: "Glacier d'Aletsch",
+    },
+    { ...CERVIN_SUMMIT, label: "Cervin" },
+    {
+      lon: 8.39847520305841,
+      lat: 46.62606149864873,
+      label: "Glacier du Rhône",
+    },
+    {
+      lon: 7.547186841148459,
+      lat: 46.00520315741525,
+      label: "Glacier du Mont Miné",
+    },
+  ];
+
+  it("REJECTS the real failing spec, with nothing threaded", () => {
+    const r = validateAccepted(accept("map-native", locator()));
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      const joined = r.errors.join(" | ");
+      expect(joined).toContain("Cervin");
+      expect(joined).toMatch(/SUMMIT/);
+    }
+  });
+
+  it("ACCEPTS it once the peak is resolved, shown, and actually plotted", () => {
+    const r = validateAccepted({
+      ...base,
+      producer: "map-native",
+      spec: locator({ markers: MARKERS_WITH_SUMMIT }),
+      resolvedPlaces: [
+        {
+          label: "Cervin",
+          origin: "geocoder",
+          ...CERVIN_SUMMIT,
+          resolvedName: "Cervin, Zermatt",
+          categories: ["peak"],
+          elevationM: 4478,
+          shownToJournalist: true,
+        },
+      ],
+    });
+    expect(r.ok).toBe(true);
+  });
+
+  it("REJECTS a correction that was recorded and then not applied", () => {
+    const r = validateAccepted({
+      ...base,
+      producer: "map-native",
+      // The spec still plots the glacier…
+      spec: locator(),
+      // …while the record says the journalist moved it to the summit.
+      resolvedPlaces: [
+        {
+          label: "Cervin",
+          origin: "journalist",
+          ...CERVIN_SUMMIT,
+          categories: ["peak"],
+          elevationM: 4478,
+          correctedFrom: CERVIN_GLACIER,
+          shownToJournalist: true,
+        },
+      ],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" | ")).toMatch(/CORRECTION/);
+  });
+
+  it("REJECTS a geocoded coordinate the journalist was never shown", () => {
+    const r = validateAccepted({
+      ...base,
+      producer: "map-native",
+      spec: locator({ markers: MARKERS_WITH_SUMMIT }),
+      resolvedPlaces: [
+        {
+          label: "Cervin",
+          origin: "geocoder" as const,
+          ...CERVIN_SUMMIT,
+          resolvedName: "Cervin, Zermatt",
+          categories: ["peak"],
+          elevationM: 4478,
+        },
+      ],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.join(" | ")).toMatch(/never shown/);
+  });
+
+  it("WARNS, without blocking, when a point map threads no records and claims no summit", () => {
+    const r = validateAccepted(
+      accept(
+        "map-native",
+        locator({
+          arcBeats: [
+            {
+              region: "Glacier d'Aletsch",
+              role: "establish",
+              text: "Sur le glacier d'Aletsch, une immense étendue de neige a fondu.",
+            },
+            {
+              region: "Cervin",
+              role: "build",
+              text: "Le Cervin a vu ses cascades grossir cet été.",
+            },
+            {
+              region: "Glacier du Rhône",
+              role: "turn",
+              text: "Le glacier du Rhône a perdu 1,60 mètre de glace.",
+            },
+            {
+              region: "Glacier du Mont Miné",
+              role: "payoff",
+              text: "Les glaciers suisses avaient épuisé toute la neige de l'hiver.",
+            },
+          ],
+        }),
+      ),
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.warnings.join(" ")).toContain("resolvedPlaces");
+  });
+});
