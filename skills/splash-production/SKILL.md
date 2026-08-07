@@ -68,7 +68,10 @@ source; if it did, thread the hint and re-produce". It is advisory only; it neve
   geocoded place never shown, and — reading the spec ALONE, threaded or not — a marker whose prose
   claims a summit with no record at all. Resolve peaks with
   `geocodePlace(name, { expect: "peak" })` (`lib/geo/geocode.ts`); MapTiler's default layer has no
-  peaks in it.
+  peaks in it. `"lake"`, `"glacier"` and `"settlement"` are wired too, and refuse rather than
+  approximate — including when two real places share the name, which `country: "ch"` resolves.
+  `river`, `massif`, `landmark` and `admin-area` are refused outright, each with the measurement
+  that closed it in `UNRESOLVABLE_PLACE_KINDS`.
 - **`skillsInvoked`** (REQUIRED on new proposals): the skills you actually invoked for this
   element, first entry declaring the branch — `"splash:cadrage-guided"` or
   `"splash:cadrage-direct"` — then e.g. `"suggest-article"`, `"suggest-chart"`. Copied across
