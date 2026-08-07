@@ -2159,14 +2159,53 @@ git commit -m "feat(twin-chart-beat): a seed that teaches the anatomy, and a sti
 
 **Interfaces:**
 - Consumes: `deriveFurniture` from Task 7 (contrast is measured against the real ground).
-- Produces: `inspectSvg(svg: string, {ground: string}): {contrast: Array<{fill: string, ratio: number, pass: boolean}>, altText: {present: boolean, text: string|null}, rootTitle: boolean}`
+- Produces: `inspectSvg(svg: string, {ground: string}): {contrast: Array<{fill: string, ratio: number|null, pass: boolean, unresolved: boolean}>, altText: {present: boolean, text: string|null}, rootTitle: boolean}`
+- Also consumes `@resvg/resvg-js` directly, as `render-still.mjs` does — since round 4 this file
+  measures the render rather than reading the markup, so it needs the same rasteriser.
 
 **This is a tool the model runs and reads, not a gate that blocks.** SP1 ships no conformance engine. It exists because three items on the checklist cannot be judged by eye — a 4.4:1 ratio looks fine.
 
+> **AMENDED 2026-08-06, round 4 — the METHOD changed; everything inlined below is superseded.**
+> Rounds 1–3 hand-resolved the CSS cascade from a regex-driven tag walker, and each round closed
+> real holes while opening fresh ones of the same shape: a `style` fill, `rgb()`, `currentColor`, a
+> `<tspan>` override, a stray `>`, a `%` font-size, a `<style>` block, then `opacity` and a CSS
+> comment before a property name. That list has no end, and each attempt to resolve more of the
+> cascade by hand leaned the reassuring way — the two holes left open at the end of round 3 both
+> reported a confident 21:1 `pass: true` on text that renders illegibly.
+>
+> Round 4 stops parsing. For each text-bearing element it renders the SVG twice — once with that
+> element's own direct characters present (nested `<tspan>` children removed, since each is
+> measured as its own node) and once with the element removed entirely — and diffs the two images.
+> The pixels that changed ARE that element's glyph; the colour painted and the background revealed
+> behind it are ground truth, because they are what the renderer actually applied. This retires the
+> whole defect class instead of patching its next instance: no `NAMED_COLOURS` table, no cascade
+> parser, no attribute list. Four properties carry it:
+> - the changed-pixel mask is eroded GEOMETRICALLY (an interior pixel survives only if all 8 of its
+>   neighbours also changed), which strips the anti-aliased rim regardless of what colour it blends
+>   toward. A delta-based filter conflated "faint because anti-aliased" with "close because this
+>   background is harder", and silently discarded the worst-contrast region.
+> - the WORST core-pixel ratio is reported, never the average — a reader must be able to read every
+>   part of a label, so a label crossing a gridline is judged on the hard side.
+> - two identical renders mean the element was never painted (`<defs>`, `<symbol>`, `fill="none"`,
+>   `opacity="0"`, `visibility="hidden"`, a dangling gradient reference) — no entry, not a pass.
+> - glyph height is MEASURED from the changed region, so the WCAG large-text floor tracks real ink
+>   instead of a parsed `font-size` this file cannot trust the units of.
+>
+> `unresolved: true` is now reserved for a genuine render failure (invalid XML the rasteriser
+> rejects, a canvas-size change), always carries `ratio: null, pass: false`, and never coexists with
+> `pass: true`. A `<style>` block no longer forces the whole document unresolved — the renderer
+> applies it, so it is simply measured correctly.
+>
+> **The code blocks below are the round-3 record and no longer match what ships.** The shipped
+> files are the source of truth: `twin/skills/twin-chart-beat/scripts/inspect-render.mjs` and
+> `twin/skills/twin-chart-beat/test/inspect-render.test.ts` (53 tests across the skill, 39 in this
+> file). Full history, per-round findings and round 4's real-pixel verification are in
+> `.superpowers/sdd/2026-08-06-doctrine-twin-sp1-spine/task-8-report.md`.
+
 - [ ] **Step 1: Write the failing test**
 
-AMENDED 2026-08-06, three times — see the notes below Step 3. The block here is the final test
-file, 56 tests across the whole skill (38 in this file), matching what actually shipped.
+AMENDED 2026-08-06, three times — see the notes below Step 3, then the round-4 note above, which
+supersedes them. The block here is the round-3 test file, kept as the record.
 
 ```ts
 // twin/skills/twin-chart-beat/test/inspect-render.test.ts
