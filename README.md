@@ -30,7 +30,7 @@ Three layers, composed silently:
 |-------|-----------|-------|
 | ① Knowledge base | Layered dataviz knowledge (global × type × format), grounded and wired to conformance checks | `knowledge/references/` |
 | ② Suggester | Reads the article → vetoable proposals; routes each to the right element & format | `skills/suggest-article`, `skills/suggest-chart` |
-| ③ Producers | Turn a validated spec into static / interactive / video output | `skills/{dw-chart,chart-native,map-dw,map-native,scrolly,image-native}` |
+| ③ Producers | Turn a validated spec into static / interactive / video output | `skills/{dw-chart,chart-native,map-dw,map-native,scrolly,image-native,cesium-flyover}` |
 
 The whole flow is sequenced by the `splash` skill (`skills/splash/`).
 
