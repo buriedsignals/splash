@@ -425,6 +425,11 @@ describe("deriveMapStory — applyMapArc wiring", () => {
     }
   });
 
+  // Recaptured 2026-08-07: the reveals no longer sit on the establishing bounds. The
+  // few-annotated regime frames each place in a scaled-down copy of the establishing box
+  // (locator-story.ts / core/tour-box.ts's `tourStopBox`) — dLon 0.6°, dLat 0.3°, i.e. half
+  // this set's own 2.4° × 1.2° spread, centred on the named marker. Pinning all three reveals
+  // to [6.1, 46.2, 8.5, 47.4] is what made a locator scrolly of this shape unbuildable.
   it("without arcBeats: byte-identical to the captured salience baseline", () => {
     const beats = deriveMapStory(
       choroplethLayout,
@@ -764,7 +769,7 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [6.1, 46.2, 8.5, 47.4],
+        camera: [5.5, 45.900000000000006, 6.699999999999999, 46.5],
         highlight: ["Geneva"],
         dim: true,
         callout: {
@@ -777,7 +782,7 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [6.1, 46.2, 8.5, 47.4],
+        camera: [6, 46.2, 7.199999999999999, 46.8],
         highlight: ["Lausanne"],
         dim: true,
         callout: {
@@ -790,7 +795,7 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [6.1, 46.2, 8.5, 47.4],
+        camera: [7.9, 47.1, 9.1, 47.699999999999996],
         highlight: ["Zurich"],
         dim: true,
         callout: {

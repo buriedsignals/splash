@@ -10,9 +10,10 @@
 //       beats are often the SAME full-extent camera by narrative design (scrolly-
 //       camera.ts's own comment: "an establish/takeaway transition ... widens to
 //       [the extent]") — testing the last step's transition would be a no-op that
-//       proves nothing, so the animation check targets a mid-story REVEAL step
-//       instead (where the camera actually moves), with a vacuity guard that fails
-//       loud if that assumption doesn't hold for a given story.
+//       proves nothing. WHICH transition to test is therefore read off the story
+//       itself: every step's settled camera is sampled first, and the pair that
+//       actually moves nearest the middle is the one put under test. See
+//       src/reduced-motion-verdict.ts for what that replaced and why.
 // Track-agnostic: probes whichever of the three sticky-graphic kinds (map / chart /
 // image) the built config produced, detected at runtime.
 //   - map   (window.__map__, exposed by every Scrolly*Map component): camera
@@ -30,6 +31,10 @@
 import { chromium } from "playwright";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  chooseReducedMotionTransition,
+  STILL_STORY_NOTE,
+} from "../src/reduced-motion-verdict.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -111,46 +116,60 @@ const snapshot = track === "map" ? snapshotMap : track === "image" ? snapshotIma
 const goToStep = (idx) => steps.nth(idx).scrollIntoViewIfNeeded();
 
 const violations = [];
-let before, after, endState;
+let before, after, endState, verdict;
 
 if (track === "map") {
-  // Pick a mid-story REVEAL step for the animation check — never step 0 (title) and
-  // never the last step (the takeaway, which per the header comment often shares its
-  // camera with the establish beat, making its own transition a no-op). stepCount >= 1
-  // is already guaranteed above.
-  const midIdx = Math.max(1, Math.min(stepCount - 2, Math.floor(stepCount / 2)));
-  const prevIdx = Math.max(0, midIdx - 1);
+  // WHICH pair to test is read off the story, not guessed from the step count. Walk every
+  // step once and record where its camera settles. Each settle is generous enough for the
+  // 1200ms flight this build would perform if it were IGNORING reduced motion — and the
+  // error direction is safe either way: a scan that caught a camera mid-flight would report
+  // MORE distinct steps, never fewer, so it can only send the timing assertion below to a
+  // real transition, never hide one.
+  const settledCameras = [];
+  for (let i = 0; i < stepCount; i++) {
+    await goToStep(i);
+    await page.waitForTimeout(1400);
+    settledCameras.push(await snapshot());
+  }
+  verdict = chooseReducedMotionTransition(settledCameras);
 
-  // Settle fully on the step BEFORE the one under test — this just establishes the
-  // natural "from" camera the app would have, not part of the timing assertion.
-  await goToStep(prevIdx);
-  await page.waitForTimeout(1400);
-  const baseline = await snapshot();
+  if (verdict.kind === "still") {
+    // Not a violation, and not something to paper over either: every step of this story
+    // frames the same box, so there is no flight whose lingering could be tested. Say so.
+    console.log(`[snap-reduced-motion scrolly] STILL STORY — ${STILL_STORY_NOTE}.`);
+    before = after = settledCameras[0];
+  } else {
+    const { from, to } = verdict;
+    // Settle fully on the step BEFORE the one under test — this just establishes the
+    // natural "from" camera the app would have, not part of the timing assertion.
+    await goToStep(from);
+    await page.waitForTimeout(1400);
+    const baseline = await snapshot();
 
-  // Trigger the transition under test, then sample twice: almost immediately (would
-  // catch mid-flight motion) and again ~900ms later.
-  await goToStep(midIdx);
-  await page.waitForTimeout(80);
-  before = await snapshot();
-  await page.waitForTimeout(900);
-  after = await snapshot();
+    // Trigger the transition under test, then sample twice: almost immediately (would
+    // catch mid-flight motion) and again ~900ms later.
+    await goToStep(to);
+    await page.waitForTimeout(80);
+    before = await snapshot();
+    await page.waitForTimeout(900);
+    after = await snapshot();
 
-  // Vacuity guard: confirm the transition was actually real (target != baseline) once
-  // fully settled (extra margin past a full 1200ms flight) — otherwise this story's
-  // mid-step happens to be a no-op and the check above proves nothing. Fail loud
-  // rather than silently rubber-stamping.
-  await page.waitForTimeout(500);
-  const settled = await snapshot();
-  const moved =
-    settled.lng !== baseline.lng || settled.lat !== baseline.lat || settled.zoom !== baseline.zoom;
-  if (!moved) {
-    violations.push(
-      `vacuous check: step ${midIdx}'s camera equals step ${prevIdx}'s (${JSON.stringify(baseline)}) — no real transition to test for lingering animation on this story`,
-    );
-  } else if (before.lng !== after.lng || before.lat !== after.lat || before.zoom !== after.zoom) {
-    violations.push(
-      `camera kept moving after settling under reduced motion (before=${JSON.stringify(before)} after=${JSON.stringify(after)}) — flyTo is not honoring prefers-reduced-motion`,
-    );
+    // The scan said this pair moves. Re-confirm it on the pair actually under test (extra
+    // margin past a full 1200ms flight): if it does not move here, the two passes disagree
+    // and the timing check below proved nothing — report that rather than rubber-stamp it.
+    await page.waitForTimeout(500);
+    const settled = await snapshot();
+    const moved =
+      settled.lng !== baseline.lng || settled.lat !== baseline.lat || settled.zoom !== baseline.zoom;
+    if (!moved) {
+      violations.push(
+        `step ${to} settled on step ${from}'s camera (${JSON.stringify(baseline)}) on the second pass, after moving away from it on the first — the map is not landing on the same frame twice for the same step, so nothing about lingering animation could be tested here`,
+      );
+    } else if (before.lng !== after.lng || before.lat !== after.lat || before.zoom !== after.zoom) {
+      violations.push(
+        `camera kept moving after settling under reduced motion (before=${JSON.stringify(before)} after=${JSON.stringify(after)}) — flyTo is not honoring prefers-reduced-motion`,
+      );
+    }
   }
 
   // Informational end-state: the LAST step (takeaway) must render, not blank.
@@ -203,7 +222,7 @@ if (track === "map") {
 
 await browser.close();
 
-console.log(JSON.stringify({ track, stepCount, before, after, endState }, null, 2));
+console.log(JSON.stringify({ track, stepCount, verdict, before, after, endState }, null, 2));
 
 if (violations.length) {
   console.error("[snap-reduced-motion scrolly] FAIL:");
