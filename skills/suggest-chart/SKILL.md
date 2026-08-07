@@ -461,6 +461,26 @@ Therefore, for every place YOU resolved (not ones read from the newsroom's own l
   `natural=peak`, usually with `ele`. Passing the elevation the sentence states also disambiguates the
   two real "Matterhorn" peaks (4478 m in the Alps, 3250 m in Nevada). If it returns `null`, it found no
   summit — **say so and ask**, never plot the nearest thing.
+
+  Three more kinds are wired, each measured the same way, and each returning **null rather than an
+  approximation**: `expect: "lake"` (the point is in the water), `expect: "glacier"` (on the ice — NOT
+  the snout, so a retreat story's "the front has withdrawn 800 m" is not this), and
+  `expect: "settlement"` for a town, village or hamlet (the point is the town **centre**, not the middle
+  of the commune — Zermatt's commune is 26 × 16 km and contains the Matterhorn).
+
+  **These three refuse when two features answer the name equally well**, because MapTiler ranks
+  ALGERIA's *Lac Noir* above the Fribourg one and a village in **DJIBOUTI** above the Randa under the
+  Matterhorn. Pass **`country`** (ISO 3166-1 alpha-2 — `"ch"`, or `"ch,fr"` for a border feature) to
+  resolve it; it is a hard server-side filter. A `null` with several candidates is the geocoder telling
+  you the article has not said which country — **ask**, do not pick.
+
+  **`river`, `massif`, `landmark` and `admin-area` are REFUSED**, with the measurement, in
+  `UNRESOLVABLE_PLACE_KINDS` (`lib/geo/geocode.ts`) — quote it to the journalist. Briefly: a river has
+  no coordinate (asking for "Le Rhône" returns disjoint fragments of the channel, one of them with a
+  point 500–1000 m from the water, on a road); no massif feature exists in the layers reachable here;
+  "landmark" has no tag to filter on, and result order cannot stand in for one (*Gare de Cornavin*
+  returns a supermarket first); and a region's point is a label anchor, not a place (Valais's lands on
+  a bench on a footpath) — shade the region instead.
 - **Show the journalist what it resolved to**, before producing: the place name, **what kind of feature
   it is**, its elevation when it has one, and the coordinate. « Cervin → *Cervin, Zermatt* (sommet,
   4478 m) » is correctable; « Cervin → 7.66, 45.99 » is not.
