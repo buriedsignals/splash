@@ -281,7 +281,7 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
-## ★ État courant — 2026-08-06 — LA CHARTE LIT UN VRAI SITE DE RÉDACTION (branche `feat/charter-reads-real-sites`, non fusionnée, gate 23/23 mesuré @ `93e37a07`)
+## ★ État courant — 2026-08-06 — LA CHARTE LIT UN VRAI SITE DE RÉDACTION (**fusionnée** dans `main` @ `dcfff3c3`)
 
 `proposeCharter` lisait 0 feuille de style sur heidi.news avant ce chantier (filtre same-host,
 `oklch()` non lu) ; mesuré en vrai après coup : `#d5121e` corroboré par 3 déclarations
@@ -292,11 +292,41 @@ bout à la main sur `therecord.media`, mais pas exercé par la suite ; `color-mi
 **Ce qui est mesuré se corrige** : les polices lues (`Sang Bleu Kingdom`) s'affichaient nulle part
 tout en étant écrites dans le profil — désormais montrées avec leur reçu et rayables avant
 l'enregistrement ; un échec dit CE QUI a échoué (navigateur absent ≠ site muet) dans la langue de
-la page, détail machine subordonné. `bun run check` **23/23** mesuré @ `93e37a07`, avant la ronde
-de correctifs de revue finale (à re-mesurer après fusion ; le gate exige `VITE_MAPTILER_KEY` dans
-`.env`, sans quoi `skills/scrolly` + `skills/image-native` rougissent à l'import — clé manquante,
-pas défaut de code). Détail : `docs/splash/CHANGELOG.md`,
-`docs/installer/charter-measurement.md`.
+la page, détail machine subordonné.
+
+**Revue finale en deux mandats + re-revue ciblée** (le diff entier faisait caler les reviewers) →
+19 correctifs, dont **deux trous SSRF ouverts par la levée du filtre same-host** : le chemin rendu
+ne vérifiait pas l'adresse où le navigateur avait ATTERRI (un redirecteur collé menait à
+`169.254.169.254`, dont le corps repartait comme la page de la rédaction), et `getText` suivait les
+redirections d'une feuille de style avant de les vérifier (une `<link>` qui rebondit sur
+`http://192.168.1.1/reboot?confirm=1` — primitive d'écriture, pas seulement de lecture). Fermés,
+vérifiés par mutation. Trois résidus parqués **avec la forme du correctif** : E29 (écrêtage
+`oklch()` hors gamut), E30 (`readAppliedStyles` sans couverture, par construction), E31 (regex de
+rôle qui rate une classe préfixée).
+
+**Prouvé en vrai sur `main` fusionnée** (page servie, navigateur réel) : heidi.news mesurée en
+2,3 s → `#d5121e` + `Sang Bleu Kingdom` avec leurs reçus ; une police se raye, une couleur s'édite,
+et c'est **la valeur validée** qui est écrite — commentaire du journaliste, clé inconnue et corps du
+profil intacts ; Chromium absent → « Impossible d'ouvrir votre site dans un navigateur non plus »,
+pas « votre site n'a pas répondu ». **Limite nommée** : sur un profil EXISTANT, `facts.notes` est
+ignoré (le corps n'est jamais réécrit — `profile-write.ts:314`), donc les polices ne touchent le
+disque que sur un profil NEUF.
+
+`bun run check` **23/25** sur le résultat fusionné, les 2 rouges étant `bunx mapshaper` non déclaré
+(cause fermée juste après, voir ci-dessous). Le gate exige `VITE_MAPTILER_KEY` dans `.env`, sans quoi
+`skills/scrolly` + `skills/image-native` rougissent à l'import — clé manquante, pas défaut de code.
+Détail : `docs/splash/CHANGELOG.md`, `docs/installer/charter-measurement.md`.
+
+## ★ 2026-08-06 — `mapshaper` n'était déclaré nulle part (classe de flake du gate, fermée)
+
+`lib/geo/subset.ts` appelait `bunx mapshaper` sans que le paquet soit une dépendance : chaque appel
+le **re-résolvait depuis le réseau** dans le cache d'install partagé, donc deux subsets simultanés —
+ce que la suite fait couramment — se tuaient sur `Failed to link <dep>: EEXIST`, et le run entier
+échouait hors-ligne. Le symptôme arrivait déguisé : un `ENOENT: … config.json` dans un test
+map-native sans rapport, parce qu'un `produce.mjs` dont l'étape géométrie throw n'écrit simplement
+jamais sa sortie — et un test DIFFÉRENT rougissait à chaque run. Déclaré en devDependency racine
+(`mapshaper@0.7.51`). Mesuré : `lib/geo` 105 s → **6,9 s** (87/87), `skills/map-native` 0 échec
+(1251 pass) au lieu d'un rouge tournant.
 
 ## ★ État courant — 2026-08-06 — LA PAGE DE SETUP TIENT SUR UN ÉCRAN (branche `feat/setup-page-one-screen` @ `3fc8e0c9`, gate 23/23)
 
