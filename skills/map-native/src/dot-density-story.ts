@@ -191,13 +191,18 @@ function staggeredDotOpacityExpr(regionProgress: number): unknown[] {
  * - `sequential`: nothing is lit from the base map. Every region that has EVER triggered
  *   (past or present reveal beat) shows its own staged fillOpacity, staggered per-dot (0 while
  *   not yet entered, rippling 0→1 once its beat starts, holding at 1 after); anything never
- *   triggered is 0.
+ *   triggered is `closing` — 0 for the whole walk, and on an EXPLAINER story's takeaway the
+ *   ramp that brings the rest of the map back (see explainerCloseProgress). A region with no
+ *   dots reads as a region with no people, not as "not a subject", so a takeaway about where
+ *   the population sits needs the distribution it sat inside. Defaults to 0, which is what
+ *   every caller had before, so omitting it renders byte-identical.
  */
 export function buildDotOpacityExpression(
   mode: RevealMode,
   beat: Pick<Beat, "dim" | "highlight">,
   stagedMap: Map<string, StagedEntrance>,
   dimOpacity: number,
+  closing = 0,
 ): unknown {
   if (mode === "sequential") {
     const expr: unknown[] = ["case"];
@@ -207,7 +212,7 @@ export function buildDotOpacityExpression(
         staggeredDotOpacityExpr(staged.fillEnvelope),
       );
     }
-    expr.push(0); // default: not (yet) a reveal subject
+    expr.push(closing); // default: not (yet) a reveal subject
     return expr;
   }
 

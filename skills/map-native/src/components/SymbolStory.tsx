@@ -45,11 +45,7 @@ import {
 } from "../story-choreography";
 import { stagedEntrance, clampOpacity } from "../core/staged-reveal";
 import { sweepStops, type SweepMark } from "../sweep-carrier";
-import {
-  sweepFrameWindow,
-  sweepTriggerFrames,
-  SWEEP_ENTRANCE_TAIL_S,
-} from "../sweep-schedule";
+import { orderRevealBeatsBySweep } from "../story-sweep-order";
 import type { SymbolConfig } from "../SymbolMap";
 import { resolveMapStyle } from "../route-geo";
 import { houseFill } from "../theme/house-ramp";
@@ -167,11 +163,41 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
         // The confirmed walk reaches the deriver — see map-arc.ts.
         arcBeats: config.arcBeats,
       };
-      const beats = beatsForMode(
-        deriveSymbolStory(config.points, meta, {
-          maxReveals: config.maxReveals,
-        }),
-        mode,
+      // ★ WHERE EACH POINT SITS ON THE SWEEP — highest value first under `threshold`,
+      // west→east under `space`, its own date under `time`. A point carries a value AND
+      // coordinates, so it drives every derived carrier.
+      //
+      // These stops are read ONCE, below, to ORDER THE REVEAL BEATS. They used to be turned into
+      // a TRIGGER FRAME PER MARK on a window of their own — a second clock, spanning the whole
+      // composition, that had never heard of a beat while the camera flew those very beats. It
+      // is gone; see story-sweep-order.ts for the three defects that split produced.
+      //
+      // Empty without a declared carrier, and `orderRevealBeatsBySweep` then returns the
+      // deriver's beats untouched — the invariant that makes a carrier-less render
+      // byte-identical.
+      const stops = config.sweepCarrier
+        ? sweepStops(
+            config.sweepCarrier,
+            geo.symbols.map((s): SweepMark => ({
+              name: s.label ?? "",
+              value: s.value,
+              lon: s.lon,
+              lat: s.lat,
+            })),
+          )
+        : {};
+
+      // ★ THEN THE CARRIER ORDERS THE REVEALS — and that is the whole of what it does. The beat
+      // COUNT is unchanged by the permutation, so Root.tsx's `calculateMetadata` (which does not
+      // and need not know a carrier exists) still sizes this composition exactly.
+      const beats = orderRevealBeatsBySweep(
+        beatsForMode(
+          deriveSymbolStory(config.points, meta, {
+            maxReveals: config.maxReveals,
+          }),
+          mode,
+        ),
+        stops,
       );
 
       const kinds = beats.map((b) => b.kind);
@@ -179,49 +205,34 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
 
       // Reveal-beat marks only (the top-N the tour actually visits), keyed by mark
       // label — `deriveSymbolStory` puts each reveal beat's mark name in `highlight[0]`.
-      const revealTriggers = triggerFrameByRegion(beats, phases);
+      // An explainer waits for the camera to land before the place animates in — see
+      // triggerFrameByRegion's own header for the two readings of the tuned pacing and why only
+      // the carrier path opts in.
+      const revealTriggers = triggerFrameByRegion(beats, phases, {
+        atHoldStart: !!config.sweepCarrier,
+      });
       const establishIdx = beats.findIndex((b) => b.kind === "establish");
       const establishStartFrame =
         establishIdx >= 0 ? phases[establishIdx].startFrame : 0;
+      // The close — carrier only: a point past `maxReveals` enters on the TAKEAWAY beat's own
+      // hold instead of never, because a missing circle reads as "no funding here", not as "not
+      // a subject of this walk" (markTriggerFrames' own header). A frame off this timeline, not
+      // a clock.
+      const takeawayIdx = beats.findIndex((b) => b.kind === "takeaway");
+      const closeFrame =
+        config.sweepCarrier && takeawayIdx >= 0
+          ? phases[takeawayIdx].startFrame + phases[takeawayIdx].moveFrames
+          : Number.POSITIVE_INFINITY;
       // EVERY mark's own entrance trigger — context: all together at the establish
-      // beat's start; sequential: each mark's own reveal beat start, or never (stays
-      // hidden) for a mark beyond maxReveals.
+      // beat's start; sequential: each mark's own reveal beat start, or `closeFrame` for a mark
+      // beyond maxReveals.
       const markTriggers = markTriggerFrames(
         config.points,
         mode,
         establishStartFrame,
         revealTriggers,
+        closeFrame,
       );
-
-      // ★ THE SWEEP DECIDES WHEN, when the journalist chose a carrier. Same device, same
-      // envelope: only the trigger changes hands — from the beat that happens to visit a point
-      // to the point's own place on the advancing scalar (highest value first under `threshold`,
-      // west→east under `space`, its own date under `time`). A point the carrier cannot place
-      // lands at the end of the window, never at the start.
-      //
-      // The window opens once the title card has cleared and closes a full entrance before the
-      // last frame, so the point the sweep reaches LAST still blooms and writes its label inside
-      // the video. Absent a carrier this is null and `markTriggers` stands untouched — the
-      // invariant that makes a carrier-less render byte-identical.
-      const p0 = phases[0];
-      const sweepTriggers = config.sweepCarrier
-        ? sweepTriggerFrames(
-            sweepStops(
-              config.sweepCarrier,
-              geo.symbols.map((s): SweepMark => ({
-                name: s.label ?? "",
-                value: s.value,
-                lon: s.lon,
-                lat: s.lat,
-              })),
-            ),
-            sweepFrameWindow(
-              p0.startFrame + p0.moveFrames + p0.holdFrames,
-              durationInFrames,
-              Math.round(fps * SWEEP_ENTRANCE_TAIL_S),
-            ),
-          )
-        : null;
 
       const labels = symbolLabels(geo.symbols, config.lang);
       // `anchor` starts at the FT/NYT direct-label default (text to the RIGHT of the point,
@@ -245,8 +256,7 @@ export const SymbolStory: React.FC<{ config: SymbolConfig }> = ({ config }) => {
           labelOffset: labelRadialOffset(s.radius, textSize),
           anchor: "left",
           __triggerFrame:
-            (sweepTriggers ?? markTriggers).get(s.label ?? "") ??
-            Number.POSITIVE_INFINITY,
+            markTriggers.get(s.label ?? "") ?? Number.POSITIVE_INFINITY,
           __radius: 0,
           __opacity: 0,
           __labelOpacity: 0,

@@ -44,12 +44,7 @@ import { centroid } from "@turf/turf";
 import { continueWhenMapSettles } from "../core/frame-ready";
 import { poleOfInaccessibility } from "../core/label-anchor";
 import { sweepStops, type SweepMark, type SweepStops } from "../sweep-carrier";
-import {
-  sweepFrameWindow,
-  sweptFraction,
-  SWEEP_BLOOM,
-  type SweepFrameWindow,
-} from "../sweep-schedule";
+import { orderRevealBeatsBySweep } from "../story-sweep-order";
 import { resolveVideoGeometry } from "../core/video-geometry";
 import { mainlandFeature } from "../choropleth-geo";
 import {
@@ -75,6 +70,7 @@ import {
   AREAL_TIMELINE_OPTS,
   stagedByKey,
   addSubjectEmphasisLayers,
+  explainerCloseProgress,
 } from "../story-choreography";
 import {
   buildDraw,
@@ -108,9 +104,6 @@ interface DotStoryMapState {
   beats: Beat[];
   phases: Phase[];
   solutions: CameraSolution[];
-  /** The frames the sweep runs between — null when no carrier was declared, which is what
-   *  leaves the beat-driven dot opacity below exactly as it was. */
-  sweepWindow: SweepFrameWindow | null;
   triggers: Map<string, number>;
   borderByKey: Map<string, DrawEntry>;
   anchorByKey: Map<string, [number, number]>;
@@ -216,12 +209,18 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
       // dots in with a per-dot stagger instead of fading the whole region uniformly (see
       // buildDotOpacityExpression, dot-density-story.ts).
       // ★ WHERE EACH REGION SITS ON THE SWEEP — the marks here are the REGIONS (a single dot is
-      // a unit of the quantity, not a subject), and each of a region's dots carries its region's
-      // `__stop` (0 = stipples in first, 1 = last) so the per-frame opacity expression compares
-      // it against the sweep's own progress without re-deriving anything. A region's value is
-      // its dot count: every dot stands for the same quantity (layout.dotValue), so the count IS
-      // the mapped quantity, at the scale the map itself chose. Empty without a declared
-      // carrier, and the dot opacity below then stays the beat-driven one it always was.
+      // a unit of the quantity, not a subject). A region's value is its dot count: every dot
+      // stands for the same quantity (layout.dotValue), so the count IS the mapped quantity, at
+      // the scale the map itself chose.
+      //
+      // These stops are read ONCE, below, to ORDER THE REVEAL BEATS. Each of a region's dots
+      // used to carry its `__stop` and be compared per frame against a sweep clock of its own —
+      // a second clock, spanning the whole composition, that had never heard of a beat while the
+      // camera flew those very beats. Both are gone; see story-sweep-order.ts for the three
+      // defects that split produced.
+      //
+      // Empty without a declared carrier, and the dot opacity below then stays the beat-driven
+      // one it always was.
       const sweepStopsByRegion: SweepStops = config.sweepCarrier
         ? sweepStops(
             config.sweepCarrier,
@@ -257,7 +256,6 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
                 color: group.color,
                 __region: region.key,
                 __dotOrder: regionDotCount > 0 ? dotIndex / regionDotCount : 0,
-                __stop: sweepStopsByRegion[region.key] ?? 1,
               },
               geometry: { type: "Point", coordinates: [lon, lat] },
             });
@@ -320,7 +318,13 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
         // The confirmed walk reaches the deriver — see map-arc.ts.
         arcBeats: config.arcBeats,
       };
-      const beats = beatsForMode(deriveDotDensityStory(layout, meta), mode);
+      // ★ THEN THE CARRIER ORDERS THE REVEALS — and that is the whole of what it does. The beat
+      // COUNT is unchanged by the permutation, so Root.tsx's `calculateMetadata` (which does not
+      // and need not know a carrier exists) still sizes this composition exactly.
+      const beats = orderRevealBeatsBySweep(
+        beatsForMode(deriveDotDensityStory(layout, meta), mode),
+        sweepStopsByRegion,
+      );
 
       // Camera solution per beat — cameraForBounds on the beat's [w,s,e,n] bbox, padded.
       const solutions: CameraSolution[] = beats.map((b) => {
@@ -352,7 +356,12 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
       //    offshore-islands part that wins the search but sits outside the framed
       //    viewport, projecting off-screen (mirrors ChoroplethStory's guard).
       const regionByKey = new Map(layout.regions.map((r) => [r.key, r]));
-      const triggers = triggerFrameByRegion(beats, phases);
+      // An explainer waits for the camera to land before the place animates in — see
+      // triggerFrameByRegion's own header for the two readings of the tuned pacing and why only
+      // the carrier path opts in.
+      const triggers = triggerFrameByRegion(beats, phases, {
+        atHoldStart: !!config.sweepCarrier,
+      });
       const borderByKey = new Map<string, DrawEntry>();
       const anchorByKey = new Map<string, [number, number]>();
       for (const key of triggers.keys()) {
@@ -396,6 +405,10 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
         },
         dark,
         bloom: false,
+        // Map Explainer's border rule — a darker shade of the region's own dominant colour, so
+        // the border draw already says which group this region belongs to before the dots
+        // answer. Carrier only, so an un-swept story is untouched (see ChoroplethStory).
+        trailShade: config.sweepCarrier ? "subject" : "neutral",
       });
 
       m.jumpTo({ center: solutions[0].center, zoom: solutions[0].zoom });
@@ -406,19 +419,12 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
         legend: layout.legend,
       });
 
-      const p0 = phases[0];
       continueWhenMapSettles(m, () => {
         setMapState({
           map: m,
           beats,
           phases,
           solutions,
-          sweepWindow: config.sweepCarrier
-            ? sweepFrameWindow(
-                p0.startFrame + p0.moveFrames + p0.holdFrames,
-                durationInFrames,
-              )
-            : null,
           triggers,
           borderByKey,
           anchorByKey,
@@ -437,7 +443,6 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
       beats,
       phases,
       solutions,
-      sweepWindow,
       triggers,
       borderByKey,
       anchorByKey,
@@ -475,23 +480,23 @@ export const DotDensityStory: React.FC<{ config: DotDensityConfigShape }> = ({
     // Dots STIPPLE IN: the fill channel is the dot layer itself, not a bloom fill — a per-frame
     // data-driven circle-opacity expression built from each subject's own staged fillOpacity
     // (pure helper, unit-tested — see dot-density-story.ts).
-    // ★ THE SWEEP STIPPLES, not the beat, when a carrier was declared: every region's dots come
-    // up when the advancing scalar reaches that region's own `__stop` — the densest first under
-    // `threshold`, one side of the territory then the other under `space` — whatever the camera
-    // happens to be visiting. Same channel (the dots themselves), same single data-driven
-    // expression; only what decides WHEN has changed hands. The per-subject border trail above
-    // still belongs to the beats: the tour narrates, the sweep lights.
-    const opacityExpr = sweepWindow
-      ? [
-          "interpolate",
-          ["linear"],
-          ["-", sweptFraction(frame, sweepWindow), ["get", "__stop"]],
-          0,
-          0,
-          SWEEP_BLOOM,
-          1,
-        ]
-      : buildDotOpacityExpression(mode, beat, stagedMap, DIM_OPACITY);
+    // ★ THE CLOSE — carrier only, on the takeaway beat's own hold. A region left un-stippled
+    // reads as a region with no people, not as "not a subject", so the takeaway brings back the
+    // distribution the walk sat inside (see explainerCloseProgress, story-choreography.ts). It
+    // lands in the ONE place the expression already had for a non-subject region — its default
+    // branch — so no second opacity path is introduced. 0 without a carrier, which is what that
+    // default already was.
+    const closing =
+      config.sweepCarrier && beat.kind === "takeaway"
+        ? explainerCloseProgress(frame, phase, fps)
+        : 0;
+    const opacityExpr = buildDotOpacityExpression(
+      mode,
+      beat,
+      stagedMap,
+      DIM_OPACITY,
+      closing,
+    );
     map.setPaintProperty(DOT_LAYER, "circle-opacity", opacityExpr as never);
     map.setPaintProperty(
       DOT_LAYER,

@@ -164,16 +164,25 @@ export function deriveLocatorStory(
  * subject per reveal beat — true for Symbol/Choropleth, but NOT for Locator's categorized
  * regime, where a single reveal beat highlights EVERY marker in that category. A marker
  * absent from every reveal beat's highlight (beyond `maxReveals`) is simply not in the map.
+ *
+ * `atHoldStart` mirrors `triggerFrameByRegion`'s own option, for the same reason and with the
+ * same default: an EXPLAINER story (a declared sweepCarrier) wants the camera to LAND before
+ * the place animates in, and every other caller keeps the beat-start frame it already got. See
+ * story-triggers.ts's header for the two readings of the tuned pacing.
  */
 export function revealTriggersByLabel(
   beats: Beat[],
   phases: Phase[],
+  opts: { atHoldStart?: boolean } = {},
 ): Map<string, number> {
   const out = new Map<string, number>();
   for (let i = 0; i < beats.length; i++) {
     if (beats[i].kind !== "reveal") continue;
+    const trigger = opts.atHoldStart
+      ? phases[i].startFrame + phases[i].moveFrames
+      : phases[i].startFrame;
     for (const label of beats[i].highlight) {
-      if (!out.has(label)) out.set(label, phases[i].startFrame);
+      if (!out.has(label)) out.set(label, trigger);
     }
   }
   return out;
@@ -188,14 +197,21 @@ export function revealTriggersByLabel(
  *    `revealTriggersByLabel` above so a categorized beat's every marker gets a trigger, not
  *    just the first) triggers at that beat's start frame — markers appear one-by-one (few-
  *    annotated) or category-by-category (categorized). A marker with no reveal beat (beyond
- *    `maxReveals`) never triggers — it stays hidden (radius/opacity/label all 0) for the
- *    whole story, since sequential's narrative never visits it.
+ *    `maxReveals`) triggers at `closeFrame`, which defaults to never: it stays hidden
+ *    (radius/opacity/label all 0) for the whole story, since sequential's narrative never
+ *    visits it.
+ *
+ * ★ `closeFrame` IS THE CLOSE, and it is a frame off the EXISTING timeline (the takeaway
+ * beat's own hold start), never a clock of its own — see symbol-story.ts's twin for the full
+ * reading. An EXPLAINER story (a declared sweepCarrier) passes it; everyone else gets the
+ * `never` that was hard-coded here, so omitting it renders byte-identical.
  */
 export function markTriggerFrames(
   markers: { label: string }[],
   mode: RevealMode,
   establishStartFrame: number,
   revealTriggers: Map<string, number>,
+  closeFrame = Number.POSITIVE_INFINITY,
 ): Map<string, number> {
   const out = new Map<string, number>();
   for (const m of markers) {
@@ -203,7 +219,7 @@ export function markTriggerFrames(
       m.label,
       mode === "context"
         ? establishStartFrame
-        : (revealTriggers.get(m.label) ?? Number.POSITIVE_INFINITY),
+        : (revealTriggers.get(m.label) ?? closeFrame),
     );
   }
   return out;

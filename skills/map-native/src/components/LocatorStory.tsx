@@ -56,11 +56,7 @@ import {
 } from "../story-choreography";
 import { stagedEntrance, clampOpacity } from "../core/staged-reveal";
 import { sweepStops, type SweepMark } from "../sweep-carrier";
-import {
-  sweepFrameWindow,
-  sweepTriggerFrames,
-  SWEEP_ENTRANCE_TAIL_S,
-} from "../sweep-schedule";
+import { orderRevealBeatsBySweep } from "../story-sweep-order";
 import type { LocatorConfigShape } from "../validate-config";
 import { CountryLabel } from "./CountryLabel";
 import { TitleCard, CaptionCard } from "./StoryCards";
@@ -196,9 +192,41 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         // The confirmed walk reaches the deriver — see map-arc.ts.
         arcBeats: config.arcBeats,
       };
-      const beats = beatsForMode(
-        deriveLocatorStory(config.markers, meta),
-        mode,
+      // ★ WHERE EACH MARKER SITS ON THE SWEEP. A locator's markers carry no value, so the
+      // carriers this type's data drives are `space` (a line crossing the territory on a
+      // bearing) and `order` (the walk itself). Nothing here says so: `sweepStops` reads what
+      // the marks carry, and a carrier it cannot read lands every marker at 1, which
+      // `orderRevealBeatsBySweep` then leaves in the deriver's own order rather than inventing
+      // a rank.
+      //
+      // These stops are read ONCE, below, to ORDER THE REVEAL BEATS. They used to be turned into
+      // a TRIGGER FRAME PER MARKER on a window of their own — a second clock, spanning the whole
+      // composition, that had never heard of a beat while the camera flew those very beats. It
+      // is gone; see story-sweep-order.ts for the three defects that split produced.
+      //
+      // Empty without a declared carrier, and `orderRevealBeatsBySweep` then returns the
+      // deriver's beats untouched — the invariant that makes a carrier-less render
+      // byte-identical.
+      const stops = config.sweepCarrier
+        ? sweepStops(
+            config.sweepCarrier,
+            geo.markers.map((mk): SweepMark => ({
+              name: mk.label,
+              lon: mk.lon,
+              lat: mk.lat,
+            })),
+          )
+        : {};
+
+      // ★ THEN THE CARRIER ORDERS THE REVEALS — and that is the whole of what it does. The beat
+      // COUNT is unchanged by the permutation, so Root.tsx's `calculateMetadata` (which does not
+      // and need not know a carrier exists) still sizes this composition exactly. In the
+      // CATEGORIZED regime a reveal beat carries a whole category, and `highlight[0]` — the
+      // first marker of that category — is what places the beat: the category's own foothold on
+      // the sweep, not a per-marker re-sort that would split a category across the walk.
+      const beats = orderRevealBeatsBySweep(
+        beatsForMode(deriveLocatorStory(config.markers, meta), mode),
+        stops,
       );
 
       const kinds = beats.map((b) => b.kind);
@@ -207,45 +235,33 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       // EVERY marker's own entrance trigger — context: all together at the establish beat's
       // start; sequential: its own reveal beat's start (a categorized beat's marker labels ALL
       // share that beat's trigger — revealTriggersByLabel, unlike the generic
-      // triggerFrameByRegion, keys on every label in highlight[], not just [0]), or never for a
-      // marker beyond maxReveals.
+      // triggerFrameByRegion, keys on every label in highlight[], not just [0]), or `closeFrame`
+      // for a marker beyond maxReveals.
       const establishIdx = beats.findIndex((b) => b.kind === "establish");
       const establishStartFrame =
         establishIdx >= 0 ? phases[establishIdx].startFrame : 0;
-      const revealTriggers = revealTriggersByLabel(beats, phases);
+      // An explainer waits for the camera to land before the place animates in — see
+      // story-triggers.ts's header for the two readings of the tuned pacing and why only the
+      // carrier path opts in.
+      const revealTriggers = revealTriggersByLabel(beats, phases, {
+        atHoldStart: !!config.sweepCarrier,
+      });
+      // The close — carrier only: a marker past `maxReveals` enters on the TAKEAWAY beat's own
+      // hold instead of never, because a missing pin reads as "nothing happened there", not as
+      // "not a subject of this walk" (markTriggerFrames' own header). A frame off this timeline,
+      // not a clock.
+      const takeawayIdx = beats.findIndex((b) => b.kind === "takeaway");
+      const closeFrame =
+        config.sweepCarrier && takeawayIdx >= 0
+          ? phases[takeawayIdx].startFrame + phases[takeawayIdx].moveFrames
+          : Number.POSITIVE_INFINITY;
       const markTriggers = markTriggerFrames(
         config.markers,
         mode,
         establishStartFrame,
         revealTriggers,
+        closeFrame,
       );
-
-      // ★ THE SWEEP DECIDES WHEN, when the journalist chose a carrier. Same envelope, same
-      // dim/highlight tour on top — only the trigger changes hands, from the beat that happens
-      // to visit a marker to the marker's own place on the advancing scalar.
-      //
-      // A locator's markers carry no value, so the carriers this type's data drives are `space`
-      // (a line crossing the territory on a bearing) and `order` (the walk itself). Nothing here
-      // says so: `sweepStops` reads what the marks carry, and a carrier it cannot read lands
-      // every marker at the end of the window rather than inventing a rank.
-      const p0 = phases[0];
-      const sweepTriggers = config.sweepCarrier
-        ? sweepTriggerFrames(
-            sweepStops(
-              config.sweepCarrier,
-              geo.markers.map((mk): SweepMark => ({
-                name: mk.label,
-                lon: mk.lon,
-                lat: mk.lat,
-              })),
-            ),
-            sweepFrameWindow(
-              p0.startFrame + p0.moveFrames + p0.holdFrames,
-              durationInFrames,
-              Math.round(fps * SWEEP_ENTRANCE_TAIL_S),
-            ),
-          )
-        : null;
 
       const features: GeoJSON.Feature[] = geo.markers.map((mk, i) => ({
         type: "Feature",
@@ -260,8 +276,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
           anchor: "left", // MapLibre text-anchor; recomputed per frame (edge-aware)
           __highlight: true, // establish: all markers full; recomputed per beat
           __triggerFrame:
-            (sweepTriggers ?? markTriggers).get(mk.label) ??
-            Number.POSITIVE_INFINITY,
+            markTriggers.get(mk.label) ?? Number.POSITIVE_INFINITY,
           __radius: 0,
           __opacity: 0,
           __strokeOpacity: 0,

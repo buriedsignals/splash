@@ -1,9 +1,10 @@
 // story-sweep-order.ts — THE CARRIER DECIDES *WHEN*, AND NOTHING ELSE.
 //
-// `sweep-carrier.ts` says where each mark sits on the sweep. `sweep-schedule.ts` turned those
-// stops into their OWN frame window — a second clock, running from the end of the title card to
-// the end of the video, independent of the beat timeline the camera is flying. That is the shape
-// this module replaces for the areal story, and the reason is not taste:
+// `sweep-carrier.ts` says where each mark sits on the sweep. `sweep-schedule.ts` (deleted with
+// the last of its callers) turned those stops into their OWN frame window — a second clock,
+// running from the end of the title card to the end of the video, independent of the beat
+// timeline the camera is flying. That is the shape this module replaces, and the reason is not
+// taste:
 //
 //   the camera tours BEATS (buildTimeline: move, hold, move, hold), and the sweep lit regions on
 //   a clock that had never heard of a beat. Measured on Rémy's own run, 2026-08-06 — three

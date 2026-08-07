@@ -16,27 +16,21 @@ import { join } from "node:path";
 // without someone filling a line in — the same guard `story-authored-caption.test.ts` puts on the
 // authored caption.
 //
-// The SHAPES are pinned too, because the rule is one device, not one device per component:
+// The SHAPE is pinned too, because the rule is one device, not one device per component:
 //   • "beat-order" — the carrier ORDERS THE REVEAL BEATS (orderRevealBeatsBySweep) and the beat
 //     timeline that already flies the camera is the only clock. Each subject's entrance is
 //     triggered by its own beat, so the camera is always where the reveal is.
-//   • "entrance" — the component already staged each mark's own entrance, so the carrier hands it
-//     a trigger frame per mark (sweepTriggerFrames) and `stagedEntrance` runs unchanged. The
-//     carrier decides WHEN, never HOW.
-//   • "expression" — the component paints its marks in bulk, so each mark's `__stop` is baked
-//     onto its feature and compared against the sweep's progress inside ONE data-driven
-//     expression. A per-mark setPaintProperty loop would issue hundreds of style mutations per
-//     frame on a renderer that re-parses on each one.
 //
-// ★ "entrance" AND "expression" BOTH RUN A SECOND CLOCK — `sweepFrameWindow`, which spans the
-// whole composition and has never heard of a beat. On the choropleth that was measured, on
-// Rémy's own render (2026-08-06), to produce three defects at once: the camera left a region
-// mid-entrance; regions lit outside the frame; regions sat on screen unlit. The choropleth is
-// fixed here, by moving it to "beat-order". THE OTHER FIVE STILL CARRY IT. They are left in the
-// table with their old shape rather than quietly re-labelled, because that is what this table is
-// for: the gap is written down, so somebody decides about it. Each one needs its own render to
-// confirm the same three defects and its own proof that the move fixed them — not a blind sweep
-// of five components on the strength of one.
+// ★ AND IT IS THE ONLY SHAPE, NOW. There used to be two more — "entrance" (a trigger frame per
+// mark, from `sweepTriggerFrames`) and "expression" (each mark's `__stop` baked onto its feature
+// and compared against `sweptFraction` in one data-driven expression). Both ran a SECOND CLOCK,
+// `sweepFrameWindow`, which spanned the whole composition and had never heard of a beat. On the
+// choropleth that was measured, on Rémy's own render (2026-08-06), to produce three defects at
+// once: the camera left a region mid-entrance; regions lit outside the frame; regions sat on
+// screen unlit. The choropleth moved to "beat-order" first; the other five followed, each with
+// its own render checking those same three defects by name (see
+// docs/splash/proofs/2026-08-06-sweep-order-all/). `sweep-schedule.ts` was deleted with its last
+// caller, so the second clock cannot come back by import — only by someone writing it again.
 //
 // Not listed here because it is not a Story component: RouteReveal, which is where the device
 // came from — the `route` carrier is its own arrival fraction, computed from the line at produce
@@ -46,11 +40,7 @@ const DIR = join(import.meta.dir, "..", "src", "components");
 const STORIES = () => readdirSync(DIR).filter((f) => f.endsWith("Story.tsx"));
 
 type Coverage =
-  | {
-      sweeps: true;
-      shape: "beat-order" | "entrance" | "expression";
-      marks: string;
-    }
+  | { sweeps: true; shape: "beat-order"; marks: string }
   | { sweeps: false; whyNot: string };
 
 const COVERAGE: Record<string, Coverage> = {
@@ -61,31 +51,31 @@ const COVERAGE: Record<string, Coverage> = {
   },
   "SymbolStory.tsx": {
     sweeps: true,
-    shape: "entrance",
+    shape: "beat-order",
     marks:
       "its points — each with a value AND coordinates, so it drives every derived carrier",
   },
   "LocatorStory.tsx": {
     sweeps: true,
-    shape: "entrance",
+    shape: "beat-order",
     marks:
       "its markers — coordinates and no values, so `space` and `order` are what its data drives",
   },
   "DotDensityStory.tsx": {
     sweeps: true,
-    shape: "expression",
+    shape: "beat-order",
     marks:
-      "its regions — a dot is a unit of the quantity, not a subject, so a region's dots all carry its stop",
+      "its regions — a dot is a unit of the quantity, not a subject, so a region is what the walk visits",
   },
   "CartogramStory.tsx": {
     sweeps: true,
-    shape: "expression",
+    shape: "beat-order",
     marks:
       "its cells — one per region, carrying the value the cell's area already encodes",
   },
   "HexGridStory.tsx": {
     sweeps: true,
-    shape: "expression",
+    shape: "beat-order",
     marks:
       "its cells — anonymous bins, ordered by their own aggregate or by where they sit",
   },
@@ -114,32 +104,46 @@ describe("the sweep reaches every map type, or says why not", () => {
     expect(failing).toEqual([]);
   });
 
-  it("each sweeping type uses the shape its own painting calls for", () => {
+  it("every sweeping type ORDERS ITS BEATS, and none of them runs a clock of its own", () => {
     const wrong: string[] = [];
+    // Anything that would put a second clock back: the deleted schedule module's exports, and a
+    // per-frame fraction or per-mark stop compared inside a paint expression. Names, not
+    // behaviour — a grep is what keeps a component from quietly re-growing the shape that was
+    // measured wrong, and the render proofs are what check the behaviour.
+    const SECOND_CLOCK = [
+      "sweep-schedule",
+      "sweepFrameWindow(",
+      "sweepTriggerFrames(",
+      "sweptFraction(",
+      '["get", "__stop"]',
+    ];
     for (const [file, entry] of Object.entries(COVERAGE)) {
       if (!entry.sweeps) continue;
       const src = readFileSync(join(DIR, file), "utf8");
-      if (
-        entry.shape === "beat-order" &&
-        !src.includes("orderRevealBeatsBySweep(")
-      )
+      if (!src.includes("orderRevealBeatsBySweep("))
         wrong.push(
-          `${file}: beat-ordered type that does not order its beats by the carrier`,
+          `${file}: sweeping type that does not order its beats by the carrier`,
         );
-      // …and, the half that matters more: it must not have kept the second clock. A component
-      // that both orders its beats AND runs `sweepFrameWindow` is back to two clocks.
-      if (entry.shape === "beat-order" && src.includes("sweepFrameWindow("))
-        wrong.push(
-          `${file}: beat-ordered type still running a sweep clock of its own`,
-        );
-      if (entry.shape === "entrance" && !src.includes("sweepTriggerFrames("))
-        wrong.push(
-          `${file}: staged-entrance type without a per-mark trigger frame`,
-        );
-      if (entry.shape === "expression" && !src.includes('["get", "__stop"]'))
-        wrong.push(`${file}: bulk-painted type without the __stop expression`);
+      for (const token of SECOND_CLOCK)
+        if (src.includes(token))
+          wrong.push(`${file}: back to two clocks — carries \`${token}\``);
     }
     expect(wrong).toEqual([]);
+  });
+
+  it("an explainer waits for the camera to LAND before the subject animates in", () => {
+    // Defect (a): the camera left a region before its entrance had finished. The fix is one
+    // opt-in on the trigger, and it is only correct if every sweeping type takes it.
+    const missing = Object.entries(COVERAGE)
+      .filter(([, e]) => e.sweeps)
+      .filter(
+        ([file]) =>
+          !/atHoldStart:\s*!!config\.sweepCarrier/.test(
+            readFileSync(join(DIR, file), "utf8"),
+          ),
+      )
+      .map(([file]) => file);
+    expect(missing).toEqual([]);
   });
 
   it("a type that does NOT sweep states why, and its code agrees", () => {
