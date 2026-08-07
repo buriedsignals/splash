@@ -109,6 +109,25 @@ describe("runPreflight", () => {
     expect(verdict.ok).toBe(false);
   });
 
+  it("should report dependencies as fail, naming @resvg/resvg-js, when the rasteriser is not resolvable — the original incident this suite pins", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const declared = await declaredDependencyNames();
+    expect(declared).toContain("@resvg/resvg-js");
+    for (const name of declared) {
+      if (name === "@resvg/resvg-js") continue;
+      await installResolvableDependency(name);
+    }
+    const verdict = await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "k" },
+      fetchFn: okFetch,
+    });
+    const check = verdict.checks.find((c) => c.id === "dependencies");
+    expect(check.status).toBe("fail");
+    expect(check.detail).toContain("@resvg/resvg-js");
+    expect(verdict.ok).toBe(false);
+  });
+
   it("should report dependencies missing when node_modules is absent", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const verdict = await runPreflight({

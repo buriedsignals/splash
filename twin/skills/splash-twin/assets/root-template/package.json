@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "d3-array": "^3.2.4",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",
