@@ -6,6 +6,7 @@ import {
   cpSync,
   rmSync,
   existsSync,
+  readFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -265,6 +266,67 @@ test("run dir handoff: copying the entire run dir elsewhere still resolves the a
 
   const packageRec = reopened.elements[0]!.delivery!.delivered[0]!;
   expect(existsSync(join(newRunDir, packageRec.artifact!.path))).toBe(true);
+}, 90000);
+
+// THE LAST LINK OF THE CHARTER'S CHAIN. `decor` reaches `deliver` and, until D3, did NOT reach
+// `produce` — so a newsroom's house colour was read at every step and applied at none
+// (docs/splash/defect-2026-08-07-adm1-unreachable-from-prose-chain.md). The seam is proved
+// without a render in assemble/house-style.test.ts and produce()'s own threading in
+// produce.test.ts; nothing but this asks whether the DRIVER hands the decor over, which is the
+// link the journalist actually walks.
+//
+// Measured on the config the engine rendered from, on a chart rather than a map: the seam is
+// engine-agnostic and a MapLibre produce is 60-120s.
+test("advance() carries the newsroom's house style into what it produces", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-driver-house-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,premium\nGenève,583\nVaud,531");
+  const run: RunManifest = {
+    runId: "house",
+    schemaVersion: 7,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "premium"],
+        numericColumns: ["premium"],
+        rowCount: 2,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Geneva pays the higher premium",
+          altInsight:
+            "Geneva's monthly adult premium is 583 CHF against Vaud's 531.",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [{ id: "bar", nativeType: "bar", why: "one value per row" }],
+          excluded: [],
+          chosenId: "bar",
+        },
+      },
+    ],
+    events: [],
+  };
+  expect(nextActions(run)).toEqual(["produce"]);
+  const after = await advance(run, runDir, {
+    ...NEUTRAL_DECOR,
+    house: { palette: ["#d5121e"] },
+  });
+  expect(after.events).toEqual([]);
+  const config = JSON.parse(
+    readFileSync(join(runDir, "elements", "e1", "config.json"), "utf8"),
+  ) as { baseColor?: string };
+  expect(config.baseColor).toBe("#d5121e");
 }, 90000);
 
 test("advance() records a produce failure as a bounded event without advancing state", async () => {

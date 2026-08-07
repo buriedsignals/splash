@@ -190,7 +190,9 @@ export async function advanceStep(
     }
     case "produce": {
       if (!live) return { run, ran: null };
-      const result = await produce(run, live, runDir);
+      // The decor rides along for the newsroom's house style, exactly as it does for `deliver`
+      // below — the loop's two steps that must speak in the newsroom's own voice.
+      const result = await produce(run, live, runDir, decor);
       if (result.ok)
         return {
           run: { ...run, elements: withLive(result.value) },

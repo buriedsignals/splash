@@ -67,6 +67,23 @@ export type Decor = {
    *  It is the STYLE axis's only input: a dark ground is what makes a Datawrapper form
    *  physically unrenderable (spec §4.1). */
   theme?: string;
+  /** THE NEWSROOM'S CHARTER, whole — the parsed NEWSROOM-PROFILE.md, carried so the one
+   *  function that knows what a charter MEANS for a given producer (`mergeProfileDefaults`,
+   *  applied by lib/loop/assemble/index.ts) can be handed it.
+   *
+   *  Why the whole profile and not the two fields the loop reads today: the ruling is
+   *  per-producer and it has moved before (a map's auto palette is CLEARED so the house ramp
+   *  can derive; a diverging scale keeps its registry palette; a furniture-only chart type
+   *  takes the hue without the mark-paint permission). A Decor carrying `palette` and `theme`
+   *  as loose fields would force this module to re-decide that, which is the "deux chaînes sans
+   *  pont" defect one layer down.
+   *
+   *  `theme` above stays as it is: it answers a DIFFERENT question (can a Datawrapper form
+   *  render this ground at all) and is read by the style axis, not by the colour merge.
+   *
+   *  Absent ⇒ the install declared no house style, and everything downstream builds exactly
+   *  what it built before this field existed. */
+  house?: BrandProfile;
 };
 
 /**
@@ -136,6 +153,7 @@ export function loadDecor(dir?: string, opts: LoadDecorOpts = {}): Decor {
     readiness: decorReadiness(state, { env }),
     profile: deliveryProfile(profile, language.content),
     ...(profile?.theme ? { theme: profile.theme } : {}),
+    ...(profile ? { house: profile } : {}),
   };
 }
 
