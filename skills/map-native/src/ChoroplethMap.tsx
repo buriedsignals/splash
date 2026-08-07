@@ -32,7 +32,7 @@ import type { MapFilter } from "./core/map-filter";
 import { resolveMapStyle } from "./route-geo";
 import { legendTheme } from "./theme/legend-theme";
 import { fmtBinRange } from "./core/legend-format";
-import { formatLocaleNumber } from "./core/locale";
+import { regionPopupHtml } from "./core/region-popup";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -405,13 +405,15 @@ export const ChoroplethMap: React.FC<Props> = ({
           map.getCanvas().style.cursor = "pointer";
           const name =
             f.state?.label ?? f.properties?.name ?? f.properties?.iso_a3 ?? "—";
-          const value = f.state?.value;
-          const valueUnit = config.valueUnit ?? "";
-          const shownValue =
-            typeof value === "number"
-              ? formatLocaleNumber(value, config.lang)
-              : value;
-          const html = `<strong>${name} — ${shownValue}${valueUnit}</strong>`;
+          // ONE home for this string — see core/region-popup.ts. It used to be built here AND
+          // in skills/scrolly's ScrollyMap.tsx, by concatenation, which shipped
+          // "157détenus / 100 000 hab." beside a legend that read "43–65,8 détenus / …".
+          const html = regionPopupHtml(
+            name,
+            f.state?.value,
+            config.valueUnit,
+            config.lang,
+          );
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
 

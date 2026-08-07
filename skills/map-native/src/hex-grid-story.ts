@@ -20,7 +20,7 @@
 import type { Beat, MapArcBeat } from "./map-story";
 import type { HexGridLayout } from "./hex-grid-geo";
 import { bbox, booleanPointInPolygon, point as turfPoint } from "@turf/turf";
-import { localizeValueLabel } from "./core/locale";
+import { labelWithUnit, localizeValueLabel } from "./core/locale";
 import { storyCopy } from "../../../lib/core/story-copy";
 
 export interface HexGridStoryMeta {
@@ -143,9 +143,9 @@ export function deriveHexGridStory(
   const copy = storyCopy(meta.lang);
   const fmt = (v: number) =>
     layout.aggregate === "mean"
-      ? copy.meanOf(`${localizeValueLabel(v, meta.lang)}${unit}`)
+      ? copy.meanOf(labelWithUnit(localizeValueLabel(v, meta.lang), unit, meta.lang))
       : layout.aggregate === "sum"
-        ? `${localizeValueLabel(Math.round(v), meta.lang)}${unit}`
+        ? labelWithUnit(localizeValueLabel(Math.round(v), meta.lang), unit, meta.lang)
         : copy.pointCount(localizeValueLabel(Math.round(v), meta.lang));
 
   const beats: Beat[] = [];

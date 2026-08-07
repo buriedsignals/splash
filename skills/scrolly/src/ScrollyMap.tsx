@@ -19,7 +19,7 @@ import {
   type Beat,
   type MapArcBeat,
 } from "../../map-native/src/map-story";
-import { formatLocaleNumber } from "../../../lib/core/locale";
+import { regionPopupHtml } from "../../map-native/src/core/region-popup";
 import { NO_DATA_COLOR } from "../../map-native/src/theme/colors";
 import {
   choroplethFillColor,
@@ -373,15 +373,14 @@ export const ScrollyMap: React.FC<{
           f.properties?.["name"] ??
           f.properties?.["iso_a3"] ??
           "—";
-        const value = f.state?.value;
-        const valueUnit = config.valueUnit ?? "";
-        const shownValue =
-          typeof value === "number"
-            ? formatLocaleNumber(value, config.lang)
-            : value;
+        // The SAME string map-native's ChoroplethMap hovers — one function, so the two cannot
+        // drift again (they had: this one still glued "157détenus / 100 000 hab." after the
+        // other was fixed). See skills/map-native/src/core/region-popup.ts.
         popup
           .setLngLat(e.lngLat)
-          .setHTML(`<strong>${name} — ${shownValue}${valueUnit}</strong>`)
+          .setHTML(
+            regionPopupHtml(name, f.state?.value, config.valueUnit, config.lang),
+          )
           .addTo(map);
       });
 

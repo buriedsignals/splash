@@ -150,6 +150,26 @@ describe("deriveCartogramStory", () => {
     const top = unitBeats.filter((b) => b.kind === "reveal")[0];
     expect(top.callout!.value).toBe("16%");
   });
+
+  // A "%" is the case that HIDES the defect: concatenation and the shared formatter print the
+  // same bytes for it in English, which is how "157détenus / 100 000 hab." reached a live
+  // tooltip on another surface with every test green. A WORD unit is the one that tells them
+  // apart, so it is the one asserted here.
+  it("spaces a WORD unit — the case a '%' fixture cannot distinguish", () => {
+    const wordLayout = computeCartogram(
+      {
+        variant: "scaled",
+        values,
+        valueLabel: "détenus",
+        valueUnit: "détenus / 100 000 hab.",
+      },
+      features,
+    );
+    const top = deriveCartogramStory(wordLayout, meta).filter(
+      (b) => b.kind === "reveal",
+    )[0];
+    expect(top.callout!.value).toBe("16 détenus / 100 000 hab.");
+  });
 });
 
 // Mode-aware duration — the same threading CartogramStory.tsx and Root.tsx's

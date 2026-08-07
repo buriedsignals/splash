@@ -44,6 +44,7 @@ import { readCompDims } from "./lib/comp-registry.mjs";
 import { storyComps, defaultCameraMode } from "./lib/story-comps.mjs";
 import { ALL_CHANNELS, channelAspect, renderSize, assertRenderedSize, isFormatAllowed } from "../../splash/src/channel.ts";
 import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce.ts";
+import { backfillAdm1FeatureIds } from "../src/adm1-backfill.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "..");
@@ -168,6 +169,13 @@ const parsedConfig = JSON.parse(readFileSync(configPath, "utf8"));
 // `configPath` — exactly the footgun a shared/reusable fixture path invites. Writing
 // only to a location this script owns (outDir) avoids it entirely.
 let resolvedConfigPath = configPath;
+
+// The geography match the PROSE chain has no other place to run. A config that came through
+// the loop (orient → assemble) already carries `featureIdsByValue` and this is a no-op; a
+// config written straight from a spec — which is what lib/core/verbs/render.ts hands every
+// journalist run — reaches admin-1 geometry through here or not at all. Before the resolver
+// on purpose: it is the field the resolver refuses without.
+backfillAdm1FeatureIds(parsedConfig);
 
 const wroteGeometry = await resolveGeometryForProduce({
   config: parsedConfig,
