@@ -5,7 +5,7 @@
 import { applyMapArc, type Beat, type MapArcBeat } from "./map-story";
 import type { CartogramLayout } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
-import { localizeValueLabel } from "./core/locale";
+import { labelWithUnit, localizeValueLabel } from "./core/locale";
 
 export interface CartogramStoryMeta {
   title: string;
@@ -83,7 +83,7 @@ export function deriveCartogramStory(
           camera: frameCell(cellBbox, full, 0.5),
           highlight: [c.id],
           name: c.name,
-          value: `${fmt(c.value)}${layout.valueUnit}`,
+          value: labelWithUnit(fmt(c.value), layout.valueUnit, meta.lang),
         };
       }),
     );
@@ -101,9 +101,10 @@ export function deriveCartogramStory(
           : rank === 1
             ? "the 2nd highest"
             : `#${rank + 1}`;
-      // Display value with its unit (e.g. "16%") — mirrors ChoroplethMap's callout
-      // formatting (`${shownValue}${valueUnit}`).
-      const value = `${fmt(c.value)}${layout.valueUnit}`;
+      // Display value with its unit. Through `labelWithUnit`, like every other surface:
+      // bare concatenation reads "16%" correctly and "157détenus" wrong, and only the second
+      // kind of unit ever showed the defect.
+      const value = labelWithUnit(fmt(c.value), layout.valueUnit, meta.lang);
       const text = `${value} ${layout.valueLabel} — ${rankDesc} — ${c.name}`;
       beats.push({
         kind: "reveal",

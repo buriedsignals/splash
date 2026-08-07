@@ -220,6 +220,26 @@ function matchAdm1Index(
 }
 
 /**
+ * The ADM1 candidate ALONE, for a caller that already knows the geography is admin-1.
+ *
+ * `matchGeography` below returns the best join across BOTH candidates, and the shipped one wins
+ * a tie — correct when the question is "what geography is this?", wrong when the basemap is
+ * already pinned to `natural-earth-admin-1`. Measured: a table of Swiss cantons carrying a
+ * constant ISO-A3 country column (routine in OFS/Eurostat exports) makes the shipped admin-0
+ * candidate tie and win, so the admin-1 answer — which exists, 4/4 — never surfaces and the
+ * caller can only conclude "these regions resolve to nothing", which is false.
+ *
+ * Same never-throws contract as `matchGeography` (I1): an unreadable index yields `undefined`.
+ */
+export function matchAdm1Columns(
+  columns: string[],
+  rows: Record<string, string | number>[],
+  adm1Index: Adm1Index | undefined = loadAdm1Index(),
+): GeoMatch | undefined {
+  return matchAdm1Index(columns, rows, adm1Index);
+}
+
+/**
  * WHICH COLUMN IS THE GEOGRAPHY, AND AGAINST WHICH GEOGRAPHY. Tries every column against the
  * shipped basemaps' join keys AND the offline ADM1 index (D10.2), and keeps the best join across
  * both candidates. Returns undefined when nothing joins at all — data with no geography is not a

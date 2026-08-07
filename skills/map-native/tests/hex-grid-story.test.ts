@@ -90,7 +90,12 @@ describe("deriveHexGridStory — valueUnit", () => {
     const reveals = deriveHexGridStory(sumLayout, {
       title: "Where consumption is highest",
     }).filter((b) => b.kind === "reveal");
-    expect(reveals[0].callout?.value).toBe("18kWh");
+    // "18 kWh", not "18kWh". This assertion used to pin the bare concatenation, which is the
+    // same defect a real run shipped on a choropleth popup as "157détenus / 100 000 hab." while
+    // the legend beside it read "43–65,8 détenus / 100 000 hab.". Every value+unit surface now
+    // routes through `labelWithUnit`, which spaces a word unit and keeps "%"/"€" tight — so the
+    // byte change here is the fix arriving, not a drift.
+    expect(reveals[0].callout?.value).toBe("18 kWh");
 
     const meanLayout: HexGridLayout = {
       ...layout,
@@ -105,7 +110,7 @@ describe("deriveHexGridStory — valueUnit", () => {
     // prints bare, never a parasitic 52.0" — lib/core/locale.ts), the same convention
     // chart-native's ten value-label call sites already follow. Deliberate byte change,
     // not a drift: matches the brief's own reference implementation exactly.
-    expect(meanReveals[0].callout?.value).toBe("18kWh avg");
+    expect(meanReveals[0].callout?.value).toBe("18 kWh avg");
   });
   it("never applies valueUnit to a count aggregate (count is of points, not the value)", () => {
     const countLayout: HexGridLayout = { ...layout, valueUnit: "kWh" };

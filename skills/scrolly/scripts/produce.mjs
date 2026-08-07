@@ -8,6 +8,7 @@ import { writeFileSync } from "node:fs";
 import { scrollySourceManifest } from "../src/source-manifest.ts";
 import { scrollySpecErrors } from "../src/manifest.ts";
 import { resolveGeometryForProduce } from "../../../lib/geo/resolve-for-produce.ts";
+import { backfillAdm1FeatureIds } from "../../map-native/src/adm1-backfill.ts";
 import { renderSize } from "../../splash/src/channel.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -93,6 +94,12 @@ if (isMapTrackConfig && rawConfig.type === undefined) {
 // map-native's own produce.mjs threads as `mediaSize.width` for the identical purpose — reused,
 // not a second width source invented here.
 let resolvedConfigPath = configPath;
+// The same missing bridge map-native's produce.mjs closes, on the same resolver: a map-track
+// scrolly written straight from a spec (the prose chain writes it verbatim — lib/core/verbs/
+// render.ts) never went through the loop's orient step either, so an admin-1 join arrives with
+// no resolved region ids and the resolver refuses. Inert for the chart and image tracks: they
+// carry no basemap, so the backfill returns without touching the config.
+backfillAdm1FeatureIds(rawConfig);
 const wroteGeometry = await resolveGeometryForProduce({
   config: rawConfig,
   assetsGeoDir: join(here, "..", "..", "map-native", "assets", "geo"),
