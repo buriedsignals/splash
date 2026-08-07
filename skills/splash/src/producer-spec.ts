@@ -8,7 +8,8 @@ export type Producer =
   | "map-dw"
   | "map-native"
   | "scrolly"
-  | "image-native";
+  | "image-native"
+  | "cesium-flyover";
 // Canonical definition lives in lib/core/vocabulary.ts (the contract's vocabulary);
 // re-exported here so this module's existing importers are unchanged.
 import type { VisualFormat } from "../../../lib/core/vocabulary";

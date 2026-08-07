@@ -39,6 +39,7 @@ import {
   droppedSourceHintWarning,
   droppedSourceUrlReason,
 } from "./source-guard";
+import { flyoverConfigErrors } from "../../cesium-flyover/src/validate-config";
 import { guardrailParityViolations } from "./guardrail-parity";
 import { engineTypes, isRenderable } from "../../../lib/core/registry";
 // Leaf module, imports nothing (see its own header comment) — safe to read here without pulling
@@ -831,6 +832,12 @@ function validateByProducer(p: AcceptedProposal): ValidationOutcome {
     }
     case "image-native":
       return validateImageNative(p.spec, p.format);
+    case "cesium-flyover": // is small enough that every field it carries is one the engine reads, so an unknown // Strict, errors-only (skills/cesium-flyover/src/validate-config.ts): a flyover config
+    // one is refused rather than dropped in silence.
+    {
+      const errors = flyoverConfigErrors(p.spec);
+      return errors.length ? { ok: false, errors } : { ok: true, warnings: [] };
+    }
     default: {
       // produce-all.mjs builds `accepted` from an untyped JSON.parse, so a hand-authored
       // report can carry a producer outside the union. Handle it as a validation FAILURE,
