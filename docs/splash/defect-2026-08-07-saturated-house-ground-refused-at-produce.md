@@ -1,4 +1,4 @@
-# Defect — a saturated house ground is refused at produce over a backdrop that cannot occur (2026-08-07) — OPEN
+# Defect — a saturated house ground is refused at produce over a backdrop that cannot occur (2026-08-07) — CLOSED
 
 Found while proving the newsroom charter's GROUND axis on a render (branch
 `fix/charter-ground-proof`). Not fixed here: the change is to an a11y guard's model, which is a
@@ -53,6 +53,56 @@ The ground itself arrives, and it is proven on pixels for the grounds that clear
 arbitrary light pink, and samples the title and source pills off the delivered PNG. The delivery
 break that sat in front of all of them (`snap-theme.mjs` writing `theme.png` into the produce
 outDir) is closed on the same branch.
+
+## How it was closed (2026-08-07, branch `fix/house-ground-choice`)
+
+Measured before and after, with the newsroom hue `#d5121e` threaded exactly as the engine threads
+it (the muted furniture is tinted toward it, so an untinted measurement is not the render's):
+
+| ground | basemap it pins | pill the guard measured on | muted BEFORE | pill now | muted AFTER | verdict |
+|---|---|---|---|---|---|---|
+| `#0A5C36` | `dataviz-dark` | `#36795a` (over WHITE) | 3.26:1 REFUSED | `#16593a` | **5.22:1** | produced |
+| `#F2C6D6` | `dataviz-light` | `#c6a2af` (over BLACK) | 4.40:1 REFUSED | `#e9c5d2` | **6.40:1** | produced |
+| `#717171` | `dataviz-dark` | `#8b8b8b` (over WHITE) | 2.55:1 REFUSED | `#6b6b6b` | **4.38:1** | still refused |
+
+(The table above said "over black" for `#0A5C36`; the arithmetic says over WHITE — `rgba(10,92,54,.82)`
+over black is `#084b2c`. The mechanism is unchanged: the guard kept whichever pole left LESS headroom,
+and that is always the pole the ground's own basemap rules out.)
+
+Five things changed, in the order they matter:
+
+1. **The measurement.** `lib/core/ground.ts` composites the pill over the pinned basemap's own
+   harshest area colour — `#4D4D4D` on `dataviz-dark`, `#C1C2C2` on `dataviz-light`, both reduced
+   from the shipped MapTiler style JSONs (fetched 2026-08-07) over every background/fill/line
+   layer. A render sampled at the same time puts `#141414`/`#292929` and `#E0E0E1`/`#F7F7F7` under
+   the bands, well inside those bounds, so the guard stays conservative. `furnitureGround` now
+   REQUIRES the basemap rather than guessing it.
+2. **Compliance by construction.** The chart furniture's `muted` was a FIXED 30% blend toward the
+   ground, and on `#0A5C36` it landed at 4.47:1 — so chart-native refused the same colour for a
+   reason that was NOT a bad backdrop. It is now the largest blend the ground can carry, floored at
+   15% so the role survives and a genuinely illegible ground still fails (`#717171` tops out at
+   4.06:1, `#8A6D3B` at 4.01:1). Every ground that produced before is byte-identical — the walk
+   only runs where the fixed value was already refused.
+3. **The refusal became a question.** `lib/loop/ground.ts` puts it before anything is assembled:
+   what happens to the text, a colour of the same shade that works, Splash's own ground, and the
+   right to keep theirs. In the newsroom's language, with no ratio and no field name.
+4. **"Keep mine anyway" is recorded**, on `run.ground`, against the colour it was given for — a
+   newsroom that edits its profile afterwards is asked again. It reaches the producers as
+   `groundAccepted`, which turns the furniture refusal into the review CONCERN the house HUE has
+   always had (policy b), so the ground is kept and never silent.
+5. **The charter stopped proposing what it could not defend.** `groundTheme` withholds a measured
+   ground that fails and names a legible variant of the same shade in its notes.
+
+Proven on pixels (`lib/loop/house-ground-e2e.test.ts`, `SPLASH_MAP_E2E=1`): `#0A5C36` renders its
+title at `#f4f4f5` on the painted pill `#0c4f30` = **8.78:1** and its source line at `#e1c7c4` on
+`#0f5233` = **5.79:1**, both read off the delivered PNG; `#717171` is refused, and produces only
+after the decision is recorded.
+
+Left alone: Datawrapper's two engines are exempt from the gate — they render on their own
+plan-gated white and the ground never reaches them, which `lib/brain/eligibility.ts` already states
+at the offer (the dark-ground exclusion and the light-ground limit both still say the true thing).
+The VIDEO furniture path has no pill at all (a text-shadow instead, `MapFrame.tsx`), so this guard
+does not speak for it — unchanged, and still owned by the render snaps.
 
 ## Why it was left open
 

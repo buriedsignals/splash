@@ -21,6 +21,11 @@ export const VERB_ERROR_CODES = [
   "engine-declined", // the engine refuses THIS spec (chart-native exit 2)
   "engine-failed", // non-zero execution, or a broken delivery
   "not-implemented", // declared verb, no body yet
+  // A decision only the journalist can make is missing, and the refusal CARRIES the question.
+  // Distinct from "invalid-request" (a malformed payload — nobody is being asked anything) and
+  // from "engine-declined" (the engine can never build this): the request is well-formed and the
+  // step is reachable the moment the answer is recorded.
+  "needs-decision",
   "unknown-publisher", // no adapter registered under this publisher id
 ] as const;
 

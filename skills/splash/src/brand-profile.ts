@@ -32,6 +32,14 @@ export interface BrandProfile {
    * Applied to chart-native + map-native + map-scrolly (map-dw + dw-chart have their own theming
    * — follow-up). A per-element mapStyle / themeBg always overrides it. */
   theme?: string;
+  /** THE JOURNALIST ACCEPTED THIS GROUND AS IT IS — set only by lib/loop/ground.ts, from a
+   * decision recorded on the run manifest, and never read out of NEWSROOM-PROFILE.md (the
+   * parsers below do not know this key). It rides here because the house style is what the
+   * assembler already takes, and it means exactly one thing downstream: `mergeProfileDefaults`
+   * stamps `groundAccepted` on the spec, so the producers' furniture-contrast guard KEEPS the
+   * ground and raises a review concern instead of refusing — the same policy (b) the house HUE
+   * has always had. Absent ⇒ the guard refuses an illegible ground, which is the default. */
+  themeAccepted?: boolean;
   /** registered editor public keys for the editorial sign-off gate (S4d) */
   signers?: EditorSigner[];
   /** signer ids whose editorial sign-off the export path REQUIRES (subset of signers' ids) */
@@ -435,6 +443,33 @@ function colourKind(
  * gives the right format per language); a custom-template application is a producer-side
  * follow-up. Null profile → spec unchanged. Pure.
  */
+/**
+ * THE PRODUCERS A HOUSE GROUND ACTUALLY REACHES.
+ *
+ * `mergeProfileDefaults` threads the resolved ground onto map specs (map-native / the scrolly
+ * map track), chart specs (chart-native / the scrolly chart track) and image stories — and
+ * deliberately NOT onto Datawrapper's two engines, which render on their own plan-gated white
+ * (lib/brain/eligibility.ts states the same fact at the offer).
+ *
+ * Exported because the loop's ground gate (lib/loop/ground.ts, called from produce) must ask the
+ * question about a ground that will actually be painted: refusing a Datawrapper build over a
+ * house colour Datawrapper never renders would be a wall in front of a problem that does not
+ * exist there. skills/splash/tests/brand-profile-ground-reach.test.ts holds the two in step by
+ * MEASURING the merge rather than re-reading this list.
+ */
+export const GROUND_HONOURING_PRODUCERS = [
+  "chart-native",
+  "map-native",
+  "scrolly",
+  "image-native",
+] as const;
+
+export function producerHonoursGround(producer?: string): boolean {
+  return (GROUND_HONOURING_PRODUCERS as readonly string[]).includes(
+    producer ?? "",
+  );
+}
+
 export function mergeProfileDefaults<
   T extends {
     baseColor?: string;
@@ -446,6 +481,7 @@ export function mergeProfileDefaults<
     type?: string;
     mapStyle?: string;
     themeBg?: string;
+    groundAccepted?: boolean;
     source?: { name: string; url?: string };
     lang?: string;
   },
@@ -537,6 +573,12 @@ export function mergeProfileDefaults<
     }
     if (themeBg && out.themeBg === undefined) {
       out = { ...out, themeBg };
+    }
+    // The journalist's recorded "keep mine anyway" travels WITH the ground it is about, onto the
+    // only specs that carry a ground at all. Stamped only when a ground is actually applied, so a
+    // stale acceptance on a profile with no theme can never reach a producer.
+    if (themeBg && profile.themeAccepted === true) {
+      out = { ...out, groundAccepted: true } as T;
     }
   }
   // CHART theme: a non-light `theme` → chart-native (and a chart-scrolly track) derive their

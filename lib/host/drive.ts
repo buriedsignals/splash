@@ -21,6 +21,7 @@ import { applyBeats } from "../loop/beats";
 import { ARC_ROLES, type ArcRole } from "../core/claim-arc";
 import { type AuthoredBeat } from "../brain/verify-beats";
 import { chooseForm } from "../loop/choose";
+import { chooseGround } from "../loop/ground";
 import { advanceStep } from "../loop/driver";
 import { initRun, RunDeclarationSchema } from "../loop/init";
 import {
@@ -681,4 +682,22 @@ function decide(
     ),
   };
   return persist(runDir, run, report);
+}
+
+/**
+ * Record the journalist's answer about the HOUSE BACKGROUND, and persist it.
+ *
+ * Run-scoped, so it does not go through `decide` (which resolves one element): the ground is
+ * declared once for the whole newsroom and every element inherits it. The house style is read
+ * from the install's own decor here, exactly as `advance` reads it before producing, so the
+ * decision is recorded against the colour production will actually meet.
+ */
+export function chooseGroundIn(runDir: string, answer: string): HostResponse {
+  const loaded = loadRun(runDir);
+  if ("fail" in loaded) return loaded.fail;
+  const decided = chooseGround(loaded.run, tryLoadDecor().house, answer);
+  if (!decided.ok) return refusedDecision(decided);
+  return persist(runDir, decided.value, {
+    ground: decided.value.ground,
+  });
 }

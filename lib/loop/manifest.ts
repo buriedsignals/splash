@@ -546,6 +546,25 @@ export const RunManifestSchema = z.object({
       geoJoin: GeoJoinLedgerSchema.optional(),
     })
     .optional(),
+  /** THE JOURNALIST'S ANSWER ABOUT THE HOUSE BACKGROUND, when their declared one cannot carry
+   *  readable text (lib/loop/ground.ts puts the question and writes this).
+   *
+   *  Run-level, like `sources` and `cadrage`, because the ground is declared once for the whole
+   *  newsroom and every element inherits it — an answer per element would let two visuals of the
+   *  same story disagree about the same colour.
+   *
+   *  `declared` is the colour the answer was GIVEN FOR, and it is why this is not a bare boolean:
+   *  a newsroom that edits NEWSROOM-PROFILE.md afterwards gets asked again, so an acceptance can
+   *  never be inherited by a colour nobody was shown. Optional, so every manifest already on disk
+   *  stays readable — absent means the question was never owed. */
+  ground: z
+    .object({
+      declared: z.string(),
+      decision: z.enum(["keep", "replace"]),
+      applied: z.string(),
+      at: z.string(),
+    })
+    .optional(),
   elements: z.array(RunElementSchema),
   events: z.array(RunEventSchema),
 });
@@ -555,6 +574,8 @@ export type FormOption = z.infer<typeof FormOptionSchema>;
 export type RunEvent = z.infer<typeof RunEventSchema>;
 export type RunElement = z.infer<typeof RunElementSchema>;
 export type RunManifest = z.infer<typeof RunManifestSchema>;
+/** The recorded answer about the house background — see the `ground` field above. */
+export type GroundDecision = NonNullable<RunManifest["ground"]>;
 export type DeliveryRecord = NonNullable<
   RunElement["delivery"]
 >["delivered"][number];

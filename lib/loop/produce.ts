@@ -35,6 +35,7 @@ import {
 } from "./buildable";
 import { briefFor } from "./assemble/brief";
 import { assemblerFor } from "./assemble";
+import { groundGate } from "./ground";
 import type { Decor } from "../newsroom/decor";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
@@ -320,11 +321,18 @@ export async function produce(
   //
   // `decor?.house` and not the decor itself: assemblerFor is engine knowledge, and handing it a
   // whole install's decor would let a future assembler reach for the readiness or the state.
+  // ★ THE HOUSE GROUND, BEFORE ANYTHING IS ASSEMBLED. A background that cannot carry readable
+  // text used to surface as the producers' conformance dump — hex values, a ratio, in English —
+  // with no way forward. The gate puts the question instead (what happens to the text, two
+  // measured alternatives, and the right to keep theirs) and lets the run through the moment the
+  // answer is recorded. A legible charter passes through it untouched, byte for byte.
+  const gate = groundGate(builder, decor?.house, run.ground, run.lang);
+  if (!gate.ok) return fail("needs-decision", gate.message);
   const assembler = assemblerFor(
     builder,
     chosen.nativeType,
     format,
-    decor?.house,
+    gate.house,
   );
   if (!assembler)
     return fail(

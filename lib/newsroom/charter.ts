@@ -24,6 +24,10 @@
 // web is full of, and it must degrade to "I found less", never to a crash).
 
 import { relativeLuminance } from "../core/contrast";
+import {
+  groundLegibility,
+  nearestLegibleGround,
+} from "../core/ground";
 
 // ── Tuning knobs (each = one number) ──
 
@@ -1253,6 +1257,21 @@ export function proposeCharter(sources: SiteSources): CharterProposal {
       "the site names no brand colour this reading can trust — there is nothing to propose, and the house colour has to be asked for",
     );
 
+  // ★ A GROUND SPLASH WILL NOT PROPOSE. Reading a colour off a site is a measurement and stays
+  // one; turning it into the newsroom's `theme:` is a PROPOSAL, and Splash never proposes a
+  // ground text cannot be read on — the newsroom would only meet that at produce, on a colour
+  // this tool put in front of them. The reading is still reported (it is what the site declares),
+  // and the note names a colour of the same shade that does work, so staying close stays possible.
+  if (raw.ground && !groundLegibility(raw.ground.value).ok) {
+    const near = nearestLegibleGround(raw.ground.value);
+    notes.push(
+      `the ground this site declares (${raw.ground.value}) cannot carry readable text — on it, a visual's title and source line come out too close to the background to read, so it is NOT proposed as your background` +
+        (near
+          ? `; ${near} is the same shade, far enough from the text for it to read`
+          : ""),
+    );
+  }
+
   if (raw.ground && luminanceOf(raw.ground.value) < DARK_GROUND_LUMINANCE)
     notes.push(
       "the ground reading is the least reliable measurement here: a page stacks backgrounds, and the one declared on <body> can sit BEHIND the white column the reader actually looks at (Le Monde declares `body,html { background:#000 }` and reads as white). Confirm the dark ground by eye before accepting it",
@@ -1305,5 +1324,10 @@ export function groundTheme(proposal: CharterProposal): string | null {
   if (!g) return null;
   const { l } = saturationLightness(g.value);
   if (l > NEUTRAL_LIGHTNESS_MAX && !g.dark) return null;
+  // Compliant by construction: the one value this function hands to `write` is a colour a
+  // journalist's text will read on. A ground that fails leaves the newsroom on Splash's own,
+  // which is exactly what `null` has always meant here — and `proposeCharter` has already said
+  // out loud what was read and why it is not proposed.
+  if (!groundLegibility(g.value).ok) return null;
   return g.value;
 }

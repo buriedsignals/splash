@@ -93,6 +93,13 @@ the setup page uses, so a charter-written profile and a hand-filled one are the 
    - the **ground**, ONLY if a dark one was measured — and always with the caveat the extractor
      attaches to it (a page stacks backgrounds; the one on `<body>` may sit behind the white
      column the reader looks at). Ask them to confirm by eye.
+     **A ground text cannot be read on is never proposed.** The extractor still REPORTS what the
+     site declares (it is a measurement), but it withholds it as a proposal and its notes say so,
+     naming a colour of the same shade that does work. Relay that as written — « le fond de votre
+     site ne peut pas porter un texte lisible, donc je ne vous le propose pas ; #… est la même
+     teinte et fonctionne » — and never talk the journalist into the colour anyway. If they insist
+     on it, that decision belongs to the production flow (`choose-ground --answer keep`), where it
+     is recorded, not to this skill.
    - the **typefaces**, stated as **noted, not applied**: « J'ai relevé Publico Text — Splash ne
      sait pas encore appliquer une typo, je l'inscris comme information dans le profil. » Never
      imply a chart will use it.

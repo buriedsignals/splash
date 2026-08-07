@@ -281,3 +281,85 @@ export function signoffCopy(lang: string): SignoffCopy {
   const base = (lang || DEFAULT_UI_LANG).toLowerCase().split("-")[0]!;
   return SIGNOFF_TABLE[base] ?? EN_SIGNOFF;
 }
+
+// ── The house ground that cannot carry text ─────────────────────────────────────────────────
+//
+// A newsroom declares a house GROUND and every visual inherits it. Some colours cannot hold
+// readable text — a mid-grey is the clearest case: nothing, black or white, separates from it
+// enough to read. That is not a rule Splash chose, and it is not a reason to stop.
+//
+// So this is a NOTIFICATION AND A CHOICE. It says what happens to the text — never a ratio,
+// never a hex-vs-hex comparison, never a field name — offers two grounds that were MEASURED to
+// work (lib/core/ground.ts computes both, and re-measures them before offering), and leaves the
+// newsroom's own colour on the table as answer (c). It is their newsroom.
+export type GroundChoiceCopy = {
+  problem: (declared: string) => string;
+  optionNearest: (hex: string) => string;
+  optionSubject: (hex: string) => string;
+  optionKeep: (declared: string) => string;
+  question: string;
+};
+
+const EN_GROUND: GroundChoiceCopy = {
+  problem: (declared) =>
+    `Your house background ${declared} cannot hold readable text: on this colour the title and the source line come out too close to the background to read comfortably — on a small screen, or in print, some readers will not read them at all.`,
+  optionNearest: (hex) =>
+    `a) ${hex} — your colour, barely moved: the same shade, just far enough from the text for it to read.`,
+  optionSubject: (hex) =>
+    `b) ${hex} — Splash's own background, on which each visual's colour is chosen to suit the story it tells.`,
+  optionKeep: (declared) =>
+    `c) keep ${declared} — it is your newsroom. The visual is produced as you asked, and I note that the text will be hard to read.`,
+  question:
+    "Which do you want? (a / b / c — or give me another colour.) Nothing is produced until you answer.",
+};
+
+const FR_GROUND: GroundChoiceCopy = {
+  problem: (declared) =>
+    `Votre fond maison ${declared} ne peut pas porter un texte lisible : sur cette couleur, le titre et la ligne de source ressortent trop peu du fond pour se lire confortablement — sur un petit écran, ou à l'impression, une partie des lecteurs ne les lira pas du tout.`,
+  optionNearest: (hex) =>
+    `a) ${hex} — votre couleur, à peine déplacée : la même teinte, juste assez éloignée du texte pour qu'il se lise.`,
+  optionSubject: (hex) =>
+    `b) ${hex} — le fond de Splash, sur lequel la couleur de chaque visuel est choisie selon le sujet qu'il raconte.`,
+  optionKeep: (declared) =>
+    `c) garder ${declared} — c'est votre rédaction. Le visuel est produit tel que vous le demandez, et je note que le texte y sera difficile à lire.`,
+  question:
+    "Que préférez-vous ? (a / b / c — ou donnez-moi une autre couleur.) Rien n'est produit avant votre réponse.",
+};
+
+const DE_GROUND: GroundChoiceCopy = {
+  problem: (declared) =>
+    `Ihr Haus-Hintergrund ${declared} kann keinen lesbaren Text tragen: Auf dieser Farbe heben sich Titel und Quellenzeile zu wenig vom Hintergrund ab — auf einem kleinen Bildschirm oder im Druck werden manche Leserinnen und Leser sie gar nicht lesen.`,
+  optionNearest: (hex) =>
+    `a) ${hex} — Ihre Farbe, kaum verschoben: derselbe Ton, nur weit genug vom Text entfernt, damit er lesbar wird.`,
+  optionSubject: (hex) =>
+    `b) ${hex} — der Hintergrund von Splash, auf dem die Farbe jedes Visuals zum jeweiligen Thema gewählt wird.`,
+  optionKeep: (declared) =>
+    `c) ${declared} behalten — es ist Ihre Redaktion. Das Visual wird wie gewünscht erstellt, und ich halte fest, dass der Text schwer lesbar sein wird.`,
+  question:
+    "Was möchten Sie? (a / b / c — oder nennen Sie mir eine andere Farbe.) Es wird nichts erstellt, bevor Sie geantwortet haben.",
+};
+
+const IT_GROUND: GroundChoiceCopy = {
+  problem: (declared) =>
+    `Il vostro sfondo di redazione ${declared} non può reggere un testo leggibile: su questo colore il titolo e la riga della fonte si staccano troppo poco dallo sfondo — su uno schermo piccolo, o in stampa, una parte dei lettori non li leggerà affatto.`,
+  optionNearest: (hex) =>
+    `a) ${hex} — il vostro colore, appena spostato: la stessa tinta, quel tanto che basta perché il testo si legga.`,
+  optionSubject: (hex) =>
+    `b) ${hex} — lo sfondo di Splash, sul quale il colore di ogni visual è scelto in base al tema che racconta.`,
+  optionKeep: (declared) =>
+    `c) tenere ${declared} — è la vostra redazione. Il visual viene prodotto come lo chiedete, e annoto che il testo sarà difficile da leggere.`,
+  question:
+    "Cosa preferite? (a / b / c — oppure indicatemi un altro colore.) Nulla viene prodotto prima della vostra risposta.",
+};
+
+const GROUND_TABLE: Record<string, GroundChoiceCopy> = {
+  en: EN_GROUND,
+  fr: FR_GROUND,
+  de: DE_GROUND,
+  it: IT_GROUND,
+};
+
+export function groundChoiceCopy(lang: string): GroundChoiceCopy {
+  const base = (lang || DEFAULT_UI_LANG).toLowerCase().split("-")[0]!;
+  return GROUND_TABLE[base] ?? EN_GROUND;
+}

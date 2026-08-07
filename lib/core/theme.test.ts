@@ -49,7 +49,7 @@ describe("core/theme deriveFurniture golden table", () => {
         head: "#FFFFFF",
         headGlow: "#0072B2",
         ink: "#FFFFFF",
-        muted: "#d4d4d7",
+        muted: "#eaeaeb",
         axis: "#99999f",
         grid: "#85858d",
         bg: "#71717A",
@@ -59,7 +59,7 @@ describe("core/theme deriveFurniture golden table", () => {
         head: "#FFFFFF",
         headGlow: "#0072B2",
         ink: "#1A1A1A",
-        muted: "#124235",
+        muted: "#162e27",
         axis: "#07795a",
         grid: "#048c67",
         bg: "#009E73",
@@ -93,15 +93,19 @@ describe("core/theme resolveFrameColors golden table", () => {
         ink: "#f4f4f5",
         muted: "#caced0",
       },
+      // A mid-grey and a bright green: the only two rows the softening walk moves, and both are
+      // grounds the producers REFUSE — `muted` sits at the walk's floor here because no blend
+      // clears the text floor on them (4.02:1 and 4.22:1). Every ground that produces today is
+      // byte-identical, which is what makes the walk a repair and not a repaint.
       "#71717a": {
         pill: "rgba(113,113,122,0.82)",
         ink: "#ffffff",
-        muted: "#e0e0e2",
+        muted: "#eaeaeb",
       },
       "#009e73": {
         pill: "rgba(0,158,115,0.82)",
         ink: "#1a1a1a",
-        muted: "#14372e",
+        muted: "#162e27",
       },
     };
     for (const [bg, expected] of Object.entries(golden))

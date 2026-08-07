@@ -33,7 +33,8 @@ import {
   resolveFrameColors,
   resolveThemeBg,
 } from "../theme/map-tokens";
-import { contrastRatio } from "../../../../lib/core/contrast";
+import { contrastRatio, MIN_CONTRAST } from "../../../../lib/core/contrast";
+import { mapPillGround } from "../../../../lib/core/ground";
 import { resolvePalette } from "../theme/scale";
 import { contrastOk, houseRamp } from "../theme/house-ramp";
 import { HEX_GRID_SCALE_TYPE } from "../hex-grid-geo";
@@ -128,37 +129,26 @@ function paintsSingleHouseFill(
   return false;
 }
 
-/** The ground the furniture text actually stands on: the pill, composited over the WORST
- *  basemap it can overlay. `resolveThemeBg(bg) ?? "#ffffff"` was the ASSUMPTION — true only
- *  because MapFrame now gives the source band that pill (see MapFrame.tsx), and still wrong by
- *  the pill's alpha. Measuring the composite is what makes the guard's answer the render's. */
+/** The ground the furniture text actually stands on: the pill, composited over the basemap THIS
+ *  config pins.
+ *
+ *  It used to composite over both absolute poles and keep the worse — and for a saturated house
+ *  ground the worse pole is always the one the config rules out (a dark ground pins
+ *  `dataviz-dark`; the pill never sits on white there). That refused two real newsroom grounds
+ *  over a render that cannot happen, at 3.26:1 and 4.40:1, where the map they DO produce reads at
+ *  5.22:1 and 6.40:1. `darkBasemap` is therefore REQUIRED, not inferred: the caller has already
+ *  resolved `mapStyle` — including a per-element override the profile's luminance snap does not
+ *  see — and a guard that re-guesses it would be measuring a different map again.
+ *
+ *  The arithmetic and the backdrops themselves live in lib/core/ground.ts, with the measurement
+ *  they came from, because the charter and the loop must be able to ask the same question before
+ *  a produce ever runs. */
 export function furnitureGround(
   furnitureBg: string | undefined,
-  houseHue?: string,
+  houseHue: string | undefined,
+  darkBasemap: boolean,
 ): string {
-  const { pill } = resolveFrameColors(furnitureBg, houseHue);
-  // rgba(r,g,b,a) → composite over both extremes; keep the one with the LEAST headroom.
-  const m =
-    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/.exec(
-      pill,
-    );
-  if (!m) return resolveThemeBg(furnitureBg) ?? "#ffffff";
-  const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];
-  const a = m[4] === undefined ? 1 : Number(m[4]);
-  const composite = (under: number) =>
-    `#${[r, g, b]
-      .map((c) =>
-        Math.round(a * c + (1 - a) * under)
-          .toString(16)
-          .padStart(2, "0"),
-      )
-      .join("")}`;
-  const onBlack = composite(0);
-  const onWhite = composite(255);
-  const ink = resolveFrameColors(furnitureBg, houseHue).muted;
-  return contrastRatio(ink, onBlack) <= contrastRatio(ink, onWhite)
-    ? onBlack
-    : onWhite;
+  return mapPillGround(furnitureBg, houseHue, darkBasemap);
 }
 
 // Best-effort numeric-column extraction for the palette semantic check (diverging vs
@@ -229,9 +219,20 @@ export function runProduceMapConformance(
   const houseHue =
     typeof config.brandHue === "string" ? config.brandHue : undefined;
   const fc = furnitureColorsFor(config);
+  const pillGround = furnitureGround(furnitureBg, houseHue, dark);
+  // ★ THE JOURNALIST'S OWN GROUND, KEPT AS CHOSEN — the same policy (b) this file already applies
+  // to the house HUE a few lines down (`concerns`, never `violations`). `groundAccepted` is not a
+  // config knob a spec author sets: the loop writes it only when the run manifest carries a
+  // recorded `keep-mine` decision (lib/loop/ground.ts), which is itself only reachable after the
+  // journalist was shown what the colour does to their text and answered. So a shipped illegible
+  // ground traces to a person, and — because the concern is still raised — it is never silent.
+  const groundAccepted = config.groundAccepted === true;
+  const groundIllegible = [fc.ink, fc.muted].some(
+    (t) => contrastRatio(t, pillGround) < MIN_CONTRAST,
+  );
   const textColors = {
-    text: [fc.ink, fc.muted],
-    bg: furnitureGround(furnitureBg, houseHue),
+    text: groundAccepted && groundIllegible ? [] : [fc.ink, fc.muted],
+    bg: pillGround,
   };
 
   const title = typeof config.title === "string" ? config.title : "";
@@ -296,6 +297,10 @@ export function runProduceMapConformance(
   // human verifies legibility at render-review. brandHue is only ever set for a genuine house
   // colour (the merge sets it with brandExplicit), so its presence is the signal.
   const concerns: string[] = [];
+  if (groundAccepted && groundIllegible)
+    concerns.push(
+      `house ground ${resolveThemeBg(furnitureBg) ?? furnitureBg} cannot carry legible furniture text on the ${dark ? "dark" : "light"} basemap (the pill resolves to ${pillGround}) — kept as chosen by the journalist (policy b), verify legibility at render-review`,
+    );
   if (houseHue && paintsSingleHouseFill(type, config)) {
     // Defense-in-depth: `contrastOk` → `relativeLuminance` THROWS on a malformed hex.
     // In the normal orchestrator flow this never fires — validate-gate's `brandHueError`

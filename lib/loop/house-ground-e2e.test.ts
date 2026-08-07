@@ -37,12 +37,13 @@ import {
   over,
 } from "./fixtures/render-pixels";
 import { resolveFrameColors, resolveThemeBg } from "../core/theme";
-import { relativeLuminance } from "../core/contrast";
+import { contrastRatio, relativeLuminance } from "../core/contrast";
 import { mapNativeConfigErrors } from "../../skills/map-native/src/validate-config";
 import type { BrandProfile } from "../../skills/splash/src/brand-profile";
 import type { ProductionBrief } from "../core/production-brief";
 import type { Decor } from "../newsroom/decor";
-import type { RunManifest } from "./manifest";
+import { RunManifestSchema, type RunManifest } from "./manifest";
+import { chooseGround } from "./ground";
 
 // OPT-IN, like its sibling lib/loop/map-e2e.test.ts: a MapLibre static produce is a real browser
 // render over the network. The always-on half below is what stops this file rotting silently.
@@ -64,9 +65,19 @@ const CSV = "country,access\nCHE,100\nFRA,100\nTCD,11\nNER,19";
 //    furniture is the ONLY evidence: it shows the ground drives the frame even when it moves
 //    nothing else. Deliberately not grey and not white — a "did it get darker" check would pass
 //    on this one by accident.
+//  · "#0A5C36" — a SATURATED house green, and the case this file exists to close since
+//    2026-08-07: the produce guard REFUSED it, measuring its pill over WHITE — a backdrop its own
+//    `mapStyle: dataviz-dark` rules out — at 3.26:1. On the basemap it actually pins the same
+//    furniture reads at 5.22:1. A newsroom with a charter usually has a saturated colour, so this
+//    is the ordinary case, not the exotic one.
+//  · "#717171" — a mid-grey, which genuinely cannot carry text on ANY basemap. It is here to
+//    prove the repair did not become a loosening: it must still be refused, and then must produce
+//    once the journalist has SAID to keep it.
 const HOUSE_DARK: BrandProfile = { palette: ["#d5121e"], theme: "dark" };
 const HOUSE_NAVY: BrandProfile = { palette: ["#d5121e"], theme: "#0A2540" };
 const HOUSE_PINK: BrandProfile = { palette: ["#d5121e"], theme: "#F7D9E3" };
+const HOUSE_SATURATED: BrandProfile = { palette: ["#d5121e"], theme: "#0A5C36" };
+const HOUSE_ILLEGIBLE: BrandProfile = { palette: ["#d5121e"], theme: "#717171" };
 
 const REGION_BRIEF: ProductionBrief = {
   elementId: "e1",
@@ -119,9 +130,13 @@ test("a declared ground reaches the loop-assembled map config, and the engine ac
 // ── The pixel half ────────────────────────────────────────────────────────────────────────────
 
 
-async function renderUnder(
+async function produceUnder(
   house: BrandProfile | undefined,
-): Promise<{ png: Buffer; runDir: string }> {
+  ground?: RunManifest["ground"],
+): Promise<{
+  result: Awaited<ReturnType<typeof produce>>;
+  runDir: string;
+}> {
   const runDir = mkdtempSync(join(tmpdir(), "splash-ground-"));
   const src = join(runDir, "data.csv");
   writeFileSync(src, CSV);
@@ -173,18 +188,57 @@ async function renderUnder(
     ],
     events: [],
   };
-  const r = await produce(
-    run,
+  const result = await produce(
+    ground ? { ...run, ground } : run,
     run.elements[0]!,
     runDir,
     house ? ({ house } as unknown as Decor) : undefined,
   );
+  return { result, runDir };
+}
+
+async function renderUnder(
+  house: BrandProfile | undefined,
+  ground?: RunManifest["ground"],
+): Promise<{ png: Buffer; runDir: string }> {
+  const { result: r, runDir } = await produceUnder(house, ground);
   expect(r.ok ? "produced" : `${r.code}: ${r.message}`).toBe("produced");
   if (!r.ok) throw new Error(r.message);
   return {
     png: readFileSync(join(runDir, fileArtifact(r.value.artifact)!.path)),
     runDir,
   };
+}
+
+/** The pixel in a box furthest in LUMINANCE from a reference colour — a glyph's core, when the
+ *  box is a furniture band and the reference is the fill behind it. Antialiasing only ever pulls
+ *  a letter TOWARD the fill, so the extreme is the letter's own colour, and a band with no text
+ *  at all would return the fill itself (a ratio of 1:1, which fails loudly rather than passing). */
+function extremeAgainst(
+  px: ReturnType<typeof decodePng>,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  reference: readonly [number, number, number],
+): [number, number, number] {
+  const refL = relativeLuminance(hex(reference));
+  let best: [number, number, number] = [...reference] as [
+    number,
+    number,
+    number,
+  ];
+  let bestD = -1;
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++) {
+      const p = px.at(x, y);
+      const d = Math.abs(relativeLuminance(hex(p)) - refL);
+      if (d > bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+  return best;
 }
 
 // Sample windows in the 1200x675 article-web box the channel pins (asserted below, so a size
@@ -209,6 +263,7 @@ for (const [name, house] of [
   ["the dark preset", HOUSE_DARK],
   ["an arbitrary dark house ground", HOUSE_NAVY],
   ["an arbitrary light house ground", HOUSE_PINK],
+  ["a saturated house ground that used to be refused", HOUSE_SATURATED],
 ] as const) {
   proof(
     `${name} arrives on the rendered map's furniture`,
@@ -259,6 +314,26 @@ for (const [name, house] of [
               ...[0, 1, 2].map((i) => Math.abs(unbranded[i] - expected[i])),
             ),
           ).toBeGreaterThan(8);
+
+          // ★ AND THE TEXT ON IT READS. The pill arriving is half the claim; the reason a ground
+          // is refused at all is what happens to the LETTERS. So the glyph core is read off the
+          // same band — the pixel furthest in luminance from the pill it sits on, which on a
+          // 22px bold title and a 12px source line is the middle of a stroke — and measured
+          // against the pill the compositor actually put down. Nothing here is a hex typed
+          // twice: both sides come out of the image.
+          const glyph = extremeAgainst(
+            px,
+            pillBox[0],
+            pillBox[1],
+            pillBox[2],
+            pillBox[3],
+            painted,
+          );
+          const read = contrastRatio(hex(glyph), hex(painted));
+          console.log(
+            `[house-ground] ${house.theme} ${band} text: ${hex(glyph)} on ${hex(painted)} = ${read.toFixed(2)}:1`,
+          );
+          expect(read).toBeGreaterThanOrEqual(4.5);
         }
 
         // AND the BASEMAP is the one the declared ground picks. MapTiler ships two, so an
@@ -282,3 +357,69 @@ for (const [name, house] of [
     240_000,
   );
 }
+
+// ── The refusal, and the journalist's way through it ──────────────────────────────────────────
+//
+// Everything above proves a ground ARRIVES. These two prove the other half of the repair on the
+// same machinery: a ground that genuinely cannot carry text is still stopped, and the stop is a
+// question rather than a wall.
+
+test("a ground no text can read on is refused, and the refusal carries the question", async () => {
+  const { result, runDir } = await produceUnder(HOUSE_ILLEGIBLE);
+  try {
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe("needs-decision");
+    // The journalist reads about their text, not about a ratio.
+    expect(result.message).toContain("#717171");
+    expect(result.message).not.toContain("4.5");
+    expect(result.message).not.toContain("WCAG");
+    // …and it offers a way out on every side, including keeping theirs.
+    expect(result.message).toContain("a)");
+    expect(result.message).toContain("b)");
+    expect(result.message).toContain("c)");
+  } finally {
+    rmSync(runDir, { recursive: true, force: true });
+  }
+});
+
+proof(
+  "the same ground produces once the journalist has said to keep it",
+  async () => {
+    const kept = chooseGround(
+      RunManifestSchema.parse({
+        runId: "k",
+        schemaVersion: 7,
+        route: "embed",
+        channel: "article-web",
+        input: {},
+        elements: [],
+        events: [],
+      }),
+      HOUSE_ILLEGIBLE,
+      "keep",
+    );
+    expect(kept.ok).toBe(true);
+    if (!kept.ok) return;
+    const { png, runDir } = await renderUnder(
+      HOUSE_ILLEGIBLE,
+      kept.value.ground,
+    );
+    try {
+      const px = decodePng(png);
+      // Their colour, on the pixels — not a substitute Splash chose for them.
+      const declaredPill = parseRgba(resolveFrameColors("#717171").pill);
+      const backdrop = modal(px, BESIDE_TITLE[0], BESIDE_TITLE[1], BESIDE_TITLE[2], BESIDE_TITLE[3]);
+      const painted = modal(px, TITLE_PILL[0], TITLE_PILL[1], TITLE_PILL[2], TITLE_PILL[3]);
+      const expected = over(declaredPill, backdrop);
+      console.log(
+        `[house-ground] kept #717171: backdrop ${hex(backdrop)} · painted ${hex(painted)} · declared ${hex(expected)}`,
+      );
+      for (let i = 0; i < 3; i++)
+        expect(Math.abs(painted[i] - expected[i])).toBeLessThanOrEqual(2);
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  },
+  240_000,
+);

@@ -41,7 +41,7 @@ document on stdout and one of these three codes behind (`lib/host/cli.test.ts`).
 ## The twenty commands
 
 Read-only: `verbs`, `state`, `next`, `newsroom`, `suggest-intent`, `narrative-kinds`, `sweep-carriers`, `can-carry-walk`, `precheck`, `probe`. Acting:
-`init`, `advance`, `confirm-angle`, `phrase`, `choose-form`, `approve`, `request-delivery`, `verb`,
+`init`, `advance`, `confirm-angle`, `phrase`, `choose-form`, `choose-ground`, `approve`, `request-delivery`, `verb`,
 `present`.
 
 The whole journey, in the order a host walks it — every step is one of these commands, and none
@@ -790,6 +790,42 @@ A form the offer **marked** is still choosable: a mark warns, it does not forbid
 journalist read it before choosing (the tool offers, the journalist decides). The single
 exception is a form nothing in the loop can build — choosing it would strand the run on its own
 dead end, so it is refused **in the words the offer displayed**.
+
+### `choose-ground --run <dir> --answer keep|#rrggbb`
+
+The journalist's decision about the newsroom's own **background**, when the one
+`NEWSROOM-PROFILE.md` declares cannot carry readable text. `advance` refuses to produce with
+`needs-decision`, and the refusal **carries the question**: what happens to the text on that
+colour, a colour of the same shade that works, Splash's own background, and the right to keep
+theirs. Run-scoped — the background is declared once for the whole newsroom — so there is no
+`--element`.
+
+```
+$ bun lib/host/cli.ts choose-ground --run /tmp/host-readme-drive --answer keep
+```
+
+```json
+{
+  "ok": true,
+  "value": {
+    "ground": {
+      "declared": "#717171",
+      "decision": "keep",
+      "applied": "#717171",
+      "at": "2026-08-07T10:00:00.000Z"
+    },
+    "nextActions": [
+      "produce"
+    ]
+  }
+}
+```
+
+`keep` is always available — it is their newsroom, and the producers then build the visual as
+asked while raising a review concern rather than refusing. A `#rrggbb` replaces the background
+for this run; one that ALSO cannot carry text is refused with the same explanation, because
+"alternatives that work" has to mean it. The answer is recorded on the run against the colour it
+was given for, so a newsroom that edits its profile afterwards is asked again.
 
 ### `author-beats --run <dir> [--element <id>]`
 

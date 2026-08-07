@@ -89,7 +89,7 @@ describe("the CLI façade — JSON in, JSON out, stable exit codes", () => {
     // part of the surface a host reads, not an implementation detail.
     expect(body.message).toBe(
       'unknown command "explode" — expected verbs, state, next, init, advance, ' +
-        "suggest-intent, confirm-angle, phrase, choose-form, author-beats, approve, " +
+        "suggest-intent, confirm-angle, phrase, choose-form, choose-ground, author-beats, approve, " +
         "request-delivery, verb, newsroom, precheck, present or probe",
     );
     // The real assertion: the DOCUMENT the host reads carries no stack trace either. stderr
