@@ -30,7 +30,7 @@ Three layers, composed silently:
 |-------|-----------|-------|
 | ① Knowledge base | Layered dataviz knowledge (global × type × format), grounded and wired to conformance checks | `knowledge/references/` |
 | ② Suggester | Reads the article → vetoable proposals; routes each to the right element & format | `skills/suggest-article`, `skills/suggest-chart` |
-| ③ Producers | Turn a validated spec into static / interactive / video output | `skills/{dw-chart,chart-native,map-dw,map-native,scrolly}` |
+| ③ Producers | Turn a validated spec into static / interactive / video output | `skills/{dw-chart,chart-native,map-dw,map-native,scrolly,image-native}` |
 
 The whole flow is sequenced by the `splash` skill (`skills/splash/`).
 
@@ -56,12 +56,16 @@ aren't. Each step below states what it prevents — run them in order:
    errors ("Cannot find package 'zod'", `@noble/hashes`, `fflate`) that have nothing to do with
    whatever you changed.
 2. **`bun install` in each skill you'll touch or test**: `skills/chart-native`,
-   `skills/map-native`, `skills/dw-chart` — and additionally `skills/scrolly` and
-   `skills/image-native` if you're running the full `bun run check`. Each skill has its own
-   `node_modules`; the root install does not cascade into them.
+   `skills/map-native`, `skills/dw-chart` — and additionally `skills/scrolly`,
+   `skills/image-native`, `skills/map-dw` and `skills/cesium-flyover` if you're running the full
+   `bun run check`, which typechecks and tests all of them. Each skill has its own `node_modules`;
+   the root install does not cascade into them. Skipping one does not read as a missing install —
+   the suites fail on `Cannot find package 'd3-scale'` / `Cannot find module '@turf/turf'`, which
+   looks like broken code in a fresh worktree.
 3. **A root `.env`** (gitignored — copy `.env.example`) if you'll run `skills/image-native`'s
    suite: its test drives a real scrolly build and fails without one.
-4. **`bunx remotion browser ensure`** in `skills/chart-native` and `skills/map-native`. Both
+4. **`bunx remotion browser ensure`** in `skills/chart-native` and `skills/map-native` (and
+   `skills/cesium-flyover` if you render its flyover). These
    engines render video through Remotion, which needs its own downloaded Chrome Headless Shell
    (tens of MB, separate from anything `bun install` fetches). Skipping this doesn't fail fast —
    the first test that renders a video triggers the download **mid-suite**, and on a flaky

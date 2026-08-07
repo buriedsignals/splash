@@ -126,9 +126,35 @@ describe("matchGeography — ADM1 index candidate (D10.2)", () => {
     expect(match!.column).toBe("canton");
     expect(match!.geography.set).toBe("natural-earth-admin-1");
     expect(match!.geography.scope).toBe("CHE"); // Task 15: the country every row resolved to
-    expect(match!.geography.level).toBe("canton"); // echoes the ADM1 index's own level, not a guess
+    expect(match!.geography.level).toBe("admin-1"); // the level of the SET that matched, not the CSV header
     expect(match!.matched).toBe(2);
     expect(match!.unmatched).toEqual([]);
+  });
+
+  // The assertion above used to read `toBe("canton")` and was described as echoing "the ADM1
+  // index's own level". It did no such thing: the code assigned the matched CSV COLUMN NAME, and
+  // the column in that fixture is called "canton", so the test passed on a coincidence and would
+  // not have reddened had the value been anything else. This case removes the coincidence — the
+  // values are still Swiss cantons, but the column is named "zone" — so the level can no longer
+  // borrow a correct-looking answer from the header.
+  it("reports the level of the SET that matched, never the CSV column name", () => {
+    const columns = ["zone", "value"];
+    const rows = [
+      { zone: "Genève", value: "1" },
+      { zone: "Vaud", value: "2" },
+    ];
+    const match = matchGeography(
+      columns,
+      rows,
+      undefined,
+      undefined,
+      swissFixture,
+    );
+    expect(match).toBeDefined();
+    expect(match!.column).toBe("zone");
+    expect(match!.geography.set).toBe("natural-earth-admin-1");
+    expect(match!.geography.level).not.toBe("zone");
+    expect(match!.geography.level).toBe("admin-1");
   });
 
   it("still resolves scope to CHE when one row's name also collides with France (the real 'Jura' case, Task 15) — the other unambiguous cantons carry the vote", () => {

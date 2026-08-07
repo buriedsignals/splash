@@ -1,17 +1,23 @@
 ---
 name: map-native
-description: Use when you need a native (non-Datawrapper) map that ships ALL THREE formats from ONE React+MapTiler component — a static PNG, a self-contained interactive HTML (pan/zoom/hover/legend, responsive), and a Remotion mp4 motion build. The native map engine — 9 MapTiler 2D types covering the FT "MAP" group + Cesium 3D flyover as a separate engine. The premium path for stories that want a motion reveal or rich interactivity on a map. Keywords choropleth, proportional symbol, flow route, explainer beat, dot density, hex grid, spatial bins, cartogram, contour isoline, locator markers, 3D terrain flyover, MapTiler, Remotion, Cesium, geojson, choropleth, sequential scale, diverging scale, CVD-safe, basemap-fit, fitBounds, region shading, data join, ISO-A3, world, us-states, legend, no-data, static PNG, interactive HTML, video mp4, animation, reveal, progress, react, native map.
+description: Use when you need a native (non-Datawrapper) map that ships ALL THREE formats from ONE React+MapTiler component — a static PNG, a self-contained interactive HTML (pan/zoom/hover/legend, responsive), and a Remotion mp4 motion build. The native map engine — 7 built MapTiler 2D types covering most of the FT "MAP" group (contour / isoline was designed and never built) + Cesium 3D flyover as a separate engine. The premium path for stories that want a motion reveal or rich interactivity on a map. Keywords choropleth, proportional symbol, flow route, explainer beat, dot density, hex grid, spatial bins, cartogram, locator markers, 3D terrain flyover, MapTiler, Remotion, Cesium, geojson, choropleth, sequential scale, diverging scale, CVD-safe, basemap-fit, fitBounds, region shading, data join, ISO-A3, world, us-states, legend, no-data, static PNG, interactive HTML, video mp4, animation, reveal, progress, react, native map.
 ---
 
 # Map Native — the native map engine (one component per type → three formats)
 
-> **9 MapTiler 2D types** (one React+MapTiler component each, `<Type>Map.tsx`, driven by a single
-> `progress` → static + interactive + video), grouped by function:
+> **7 MapTiler 2D types BUILT** (one React+MapTiler component each, `<Type>Map.tsx`, driven by a single
+> `progress` → static + interactive + video) — the list is `MAP_TYPES` in `src/map-types.ts`, which is
+> the discriminator `mount.tsx` actually switches on. Grouped by function:
 > - **Area encoding** — choropleth (regions shaded by value)
 > - **Point / symbol** — proportional symbol, dot density, locator / markers
-> - **Movement / topology** — flow / route, explainer beat (region sequence)
+> - **Movement / topology** — flow / route
 > - **Spatial aggregation** — hex / grid (spatial bins)
-> - **Geometry transform** — cartogram (grid / scaled), contour / isoline
+> - **Geometry transform** — cartogram (grid / scaled)
+>
+> **Not a type, and not missing:** the *explainer beat* (region sequence) is a STORY mode —
+> `sweepCarrier`, choropleth today — not a component of its own. **Contour / isoline** was designed
+> and never built: it has no discriminator and no component (`src/map-types.ts` says so, and the
+> roadmap table below marks it ◻). Ask for it and this engine cannot serve you.
 >
 > **Cesium 3D terrain flyover** is a separate engine (`cesium-flyover`) — not part of `map-native`.
 >
@@ -168,7 +174,7 @@ This is the native premium path. `map-dw` (Datawrapper) stays the no-code fallba
 
 ## When to use
 
-- Any of the 9 FT-vocabulary map types where the story wants a **motion reveal** (video) or **rich
+- Any of the 7 built FT-vocabulary map types where the story wants a **motion reveal** (video) or **rich
   pan/zoom/hover** interactivity beyond what Datawrapper exposes.
 - You want one owned artifact per format (PNG / HTML / mp4) the newsroom keeps — no SaaS dependency.
 - **Not** for: standard static locator maps with no motion/interaction need (→ `map-dw`); 3D terrain
@@ -372,7 +378,7 @@ S/I/V = which formats fit (Static / Interactive / Video):
 | Locator / markers | MapTiler 2D | ✓ | ✓ | ✓ | map-dw locator (native port) — **all six formats built (Slice A: static + interactive; Slice B: video reveal + storytelling + scrolly + interactive scrolly)** |
 | **3D terrain flyover** | **Cesium (separate engine)** | — | — | ✓ | cesium-flyover |
 
-The first nine ride the one `map-native` engine. The 3D flyover is a separate engine (`cesium-flyover`).
+The seven BUILT types ride the one `map-native` engine (contour / isoline, marked ◻ above, is not among them). The 3D flyover is a separate engine (`cesium-flyover`).
 
 ## Boundary presets (shipped: `world`, `us-states`, and `natural-earth-admin-1`)
 
