@@ -585,9 +585,11 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       title: "Swiss cities",
       unit: " pts",
     });
-    // Reveal boxes are ±0.6°, not the old constant ±1.5°: these four cities span 2.4° of
-    // longitude, so `tourBoxDelta` frames a stop at half that half-spread (core/tour-box.ts).
-    // A stop is now NARROWER than the establishing box below — which is the whole point.
+    // Reveal boxes are ±0.6° of longitude by ±0.3° of latitude, not the old constant ±1.5°
+    // square: these four cities span 2.4° × 1.2°, and `tourStopBox` halves EACH axis of the
+    // establishing box below (core/tour-box.ts). A stop is now NARROWER than that box on both
+    // axes — which is the whole point — and it keeps the set's own shape, so it is one clean
+    // zoom level in whichever axis the frame ends up fitting to.
     expect(beats).toEqual([
       {
         kind: "title",
@@ -607,7 +609,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [5.5, 45.6, 6.699999999999999, 46.800000000000004],
+        camera: [5.5, 45.900000000000006, 6.699999999999999, 46.5],
         highlight: ["Geneva"],
         dim: true,
         callout: {
@@ -620,7 +622,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [6, 45.9, 7.199999999999999, 47.1],
+        camera: [6, 46.2, 7.199999999999999, 46.8],
         highlight: ["Lausanne"],
         dim: true,
         callout: {
@@ -633,7 +635,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [7.9, 46.8, 9.1, 48],
+        camera: [7.9, 47.1, 9.1, 47.699999999999996],
         highlight: ["Zurich"],
         dim: true,
         callout: {
@@ -646,7 +648,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [6.800000000000001, 46.3, 8, 47.5],
+        camera: [6.800000000000001, 46.6, 8, 47.199999999999996],
         highlight: ["Bern"],
         dim: true,
         callout: {
@@ -712,18 +714,18 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
     // default framing (allBounds, [6.1, 46.2, 8.5, 47.4]), which the salience walk below
     // uses instead.
     //
-    // The half-width is `tourBoxDelta` (core/tour-box.ts), not the constant ±1.5° these
-    // numbers used to assert: these three markers span 2.4° of longitude and 1.2° of
-    // latitude, so half-spread 1.2° × TOUR_SCALE = ±0.6°. The old ±1.5° framed every stop
-    // WIDER than the box holding all three, which is how a guided tour of four Alpine
-    // glaciers ended up as one motionless wide shot — see tour-box.ts's header.
+    // The box is `tourStopBox` (core/tour-box.ts), not the constant ±1.5° these numbers used
+    // to assert: these three markers span 2.4° of longitude and 1.2° of latitude, and each
+    // axis is halved on its own → ±0.6° by ±0.3°. The old ±1.5° framed every stop WIDER than
+    // the box holding all three, which is how a guided tour of four Alpine glaciers ended up
+    // as one motionless wide shot — see tour-box.ts's header.
     const allBounds = [6.1, 46.2, 8.5, 47.4];
     const box = (c: number[], expected: number[]) =>
       c.forEach((v, i) => expect(v).toBeCloseTo(expected[i]!, 9));
-    box(reveals[0].camera, [7.9, 46.8, 9.1, 48]); // Zurich ±0.6°
+    box(reveals[0].camera, [7.9, 47.1, 9.1, 47.7]); // Zurich ±0.6° × ±0.3°
     expect(reveals[0].camera).not.toEqual(allBounds);
-    box(reveals[1].camera, [5.5, 45.6, 6.7, 46.8]); // Geneva ±0.6°
-    box(reveals[2].camera, [6, 45.9, 7.2, 47.1]); // Lausanne ±0.6°
+    box(reveals[1].camera, [5.5, 45.9, 6.7, 46.5]); // Geneva ±0.6° × ±0.3°
+    box(reveals[2].camera, [6, 46.2, 7.2, 46.8]); // Lausanne ±0.6° × ±0.3°
   });
 
   it("an arcBeats naming a marker that does not exist is refused by name, listing the real marker names — not silently dropped", () => {

@@ -12,7 +12,7 @@ import {
 import type { LocatorMarker } from "./locator-geo";
 import type { Phase } from "./story-timeline";
 import { shortWayLongitudeExtent } from "./core/longitude";
-import { tourBoxDelta, tourStopBox, WIDE_TOUR_DELTA } from "./core/tour-box";
+import { establishBox, tourStopBox } from "./core/tour-box";
 
 export interface LocatorStoryMeta {
   title: string;
@@ -27,9 +27,9 @@ export interface LocatorStoryMeta {
 }
 
 // Minimum half-width (deg) of a CATEGORY's framing box — the floor `padBbox` inflates a
-// single-marker (or all-coincident) category up to. NOT the tour's stop box: an authored walk
-// sizes each stop from the markers' own spread (core/tour-box.ts's `tourBoxDelta`), because a
-// constant this wide framed every stop of a 90 km tour wider than the whole tour.
+// single-marker (or all-coincident) category up to. NOT the tour's stop box: a walk sizes each
+// stop from the establishing shot it is a fraction of (core/tour-box.ts's `tourStopBox`),
+// because a constant this wide framed every stop of a 90 km tour wider than the whole tour.
 const CITY_DELTA = 1.5;
 const DEFAULT_MAX_REVEALS = 5;
 
@@ -54,20 +54,12 @@ function padBbox(
   return [w - padW, s - padH, e + padW, n + padH];
 }
 
-// The establishing box: the markers' own bbox — EXCEPT when they have no spread at all (one
-// marker, or all coincident), where that bbox is a zero-area point and `cameraForBounds` solves
-// it to zoom 22, a blank tile with nothing on it. A set with no spread keeps the wide "where is
-// this place" framing instead (core/tour-box.ts's own rule and its own constant). Any set with
-// real spread is untouched, byte for byte.
+// The establishing box: `establishBox` (core/tour-box.ts) over the markers' own bbox — the
+// markers' bounds, except for a set with no spread at all, where a zero-area bbox would solve
+// to zoom 22, a blank tile. The rule and its constant live in core/tour-box.ts because
+// deriveSymbolStory reaches for the same one.
 function establishBoxOf(ms: LocatorMarker[]): [number, number, number, number] {
-  const [w, s, e, n] = bboxOf(ms);
-  if (e > w || n > s) return [w, s, e, n];
-  return [
-    w - WIDE_TOUR_DELTA,
-    s - WIDE_TOUR_DELTA,
-    e + WIDE_TOUR_DELTA,
-    n + WIDE_TOUR_DELTA,
-  ];
+  return establishBox(bboxOf(ms));
 }
 
 export function deriveLocatorStory(
@@ -84,6 +76,12 @@ export function deriveLocatorStory(
   // an establish-zoom-in-pull-back it has no data reason to perform.
   const dataBounds = bboxOf(markers);
   const allBounds = establishBoxOf(markers);
+  // The one stop-box rule, shared with deriveSymbolStory and used by BOTH reveal regimes
+  // below (the journalist's confirmed arc, and the derived few-annotated walk). No stop box
+  // ⇒ the set has no spread ⇒ there is nowhere to fly, so the story keeps its establishing
+  // frame rather than inventing a move.
+  const stopBoxFor = (m: { lon: number; lat: number }) =>
+    tourStopBox(dataBounds, m) ?? allBounds;
 
   const beats: Beat[] = [];
   beats.push({
@@ -108,23 +106,16 @@ export function deriveLocatorStory(
     // either salience regime below. mapArcErrors (run at the gate) has already validated
     // every arcBeat's region against the markers' own labels, so this lookup cannot miss
     // (applyMapArc throws defensively if one somehow did). The camera is a tight box on the
-    // NAMED marker's own coordinates — never `allBounds`, which is the map's default framing
-    // the few-annotated regime uses instead. The box's SIZE is `tourBoxDelta` (core/tour-box.ts):
-    // derived from how far apart these markers actually are, because a constant box is what
-    // flattened this camera on Rémy's own run — see that file's header.
+    // NAMED marker's own coordinates. The box's SIZE is `tourStopBox` (core/tour-box.ts): the
+    // establishing shot halved on both axes, because a constant box is what flattened this
+    // camera on Rémy's own run — see that file's header.
     const markerByLabel = new Map(markers.map((m) => [m.label, m]));
-    const delta = tourBoxDelta(markers);
     beats.push(
       ...applyMapArc(meta.arcBeats, (label) => {
         const m = markerByLabel.get(label);
         return m
           ? {
-              camera: [
-                m.lon - delta,
-                m.lat - delta,
-                m.lon + delta,
-                m.lat + delta,
-              ],
+              camera: stopBoxFor(m),
               highlight: [m.label],
               name: m.label,
               // A locator marker carries no numeric value (unlike a choropleth region or a
@@ -168,23 +159,26 @@ export function deriveLocatorStory(
       // "a fixed per-place ±CITY_DELTA box would zoom OUT and lose tightly-clustered places
       // (e.g. sites within one city)". That was true, and it was an argument about the CONSTANT,
       // not about moving the camera — the same argument core/tour-box.ts answered for the
-      // authored walk. A box that is a FRACTION OF THE ESTABLISHING SHOT cannot zoom out (it is
-      // half of it, by construction) and cannot lose the neighbours (at half the frame the
-      // reader keeps the places either side of the one being named).
+      // authored walk. A box that is a FRACTION OF THE ESTABLISHING SHOT cannot zoom out: it is
+      // half of it, by construction.
+      //
+      // It CAN lose a neighbour, and this comment used to claim otherwise ("at half the frame
+      // the reader keeps the places either side"). Measured on the rendered Seine walk: at one
+      // clean level in, two of the five stops hold a neighbouring site in frame and three do
+      // not — a place more than a quarter-frame away leaves. That is what a stop being a NEW
+      // view costs, and it is the right trade; the establishing and takeaway beats are where
+      // the set is read together.
       //
       // What the pinning cost: a locator scrolly of this shape could not be BUILT. Every step
       // framed the same box, so skills/scrolly's reduced-motion guard found no transition to
       // test and refused the whole run ("vacuous check: step 3's camera equals step 2's").
       // Measured on locator-few.json in the browser: seven steps, one camera,
       // {lng:2.3297, lat:48.85545, zoom:12.721}, from the title to the takeaway.
-      const stopBoxFor = (m: LocatorMarker) => tourStopBox(dataBounds, m);
       for (const m of markers.slice(0, cap)) {
         const copy = m.note?.trim() ? m.note : m.label;
         beats.push({
           kind: "reveal",
-          // No stop box ⇒ the set has no spread ⇒ there is nowhere to fly. The story is then
-          // legitimately still, and says so rather than inventing a move.
-          camera: stopBoxFor(m) ?? allBounds,
+          camera: stopBoxFor(m),
           highlight: [m.label],
           dim: true,
           callout: { region: m.label, name: m.label, value: "", text: copy },
