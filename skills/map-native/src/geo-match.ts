@@ -193,11 +193,19 @@ function matchAdm1Index(
         origin: "shipped",
         set: "natural-earth-admin-1",
         scope,
-        level: column, // no per-feature "level" name is threaded to this fixture-free path yet —
-        // and no task is currently scheduled to add the real per-country admin-level label the
-        // index carries — this is a placeholder until one is.
-        // FLAGGED (see task-8-report.md): this happens to equal "canton" only because the test
-        // fixture's own CSV column is named "canton" — a coincidence, not a real level lookup.
+        // The level of the SET that matched. This path matched against the admin-1 index, so
+        // "admin-1" is what is actually known and it is true for every country.
+        //
+        // It used to be `column` — the matched CSV HEADER — which was not a level at all. That
+        // read correctly ("canton") on exactly one input, the Swiss fixture whose column happens
+        // to be named after its own level; on any other sheet it asserted a made-up level from a
+        // journalist's spelling ("zone", "region", "col3") and carried it into the operator
+        // message at lib/geo/resolve-for-produce.ts. A coincidence is not a lookup.
+        //
+        // What is still MISSING is the per-country LABEL the index carries — "canton" for CHE,
+        // "département" for FRA, "state" for USA. That is the ADM1 chantier; until it lands,
+        // this says the true general thing rather than a plausible specific falsehood.
+        level: "admin-1",
         joinKey: winningFamily,
         joinKeyFamily: winningFamily,
       },

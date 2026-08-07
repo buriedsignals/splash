@@ -162,7 +162,7 @@ retried after the propagation delay, second run 200 OK").
 ## Record it (this is what makes export possible)
 ```bash
 bun skills/splash/scripts/review-gate.mjs exports/<slug>/report.json <id> \
-  --probes '[{"kind":"mechanical","check":"...","command":["bun","scripts/snap.mjs"]},
+  --probes '[{"kind":"mechanical","check":"...","command":["bun","skills/chart-native/scripts/snap-static.mjs","<artifact>"]},
              {"kind":"editorial","check":"...","outcome":"pass","note":"..."}]' \
   --reviewer desk-reader@1.0.0 [concern...]
 ```

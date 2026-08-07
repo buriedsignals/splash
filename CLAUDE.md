@@ -281,6 +281,15 @@ Sans lui, `skills/scrolly` sort 4 fail/3 errors et **aucun rendu n'est possible*
 fois : **`git stash` n'établit JAMAIS qu'un rouge est pré-existant** sur une branche multi-commits —
 comparer à la base de fusion ou monter un worktree de contrôle.
 
+> **Le compte de checks du gate ne s'écrit pas à la main.** Il vaut `TSC_DIRS.length +
+> TEST_DIRS.length` dans `scripts/check.mjs` — et `LIB_DIRS` y est calculé par `readdir`, donc
+> ajouter un skill ou un dossier sous `lib/` change le total sans que personne l'édite. Le gate
+> imprime lui-même sa dernière ligne (`N/N checks passed`) : **c'est la seule source**. Tous les
+> « gate 22/22 », « 23/23 », « 20/23 » qui suivent sont des **reçus datés** — vrais au commit et à
+> la branche qu'ils nomment, jamais une affirmation sur aujourd'hui. Le compte a déjà été « corrigé
+> une fois pour toutes » à 18, puis 20, puis 22, puis 23 ; il vaut 25 au 2026-08-06. Réécrire les
+> reçus est ce qui produit la dérive — lire `check.mjs` est ce qui y met fin.
+
 ## ★ État courant — 2026-08-06 — LA CHARTE LIT UN VRAI SITE DE RÉDACTION (**fusionnée** dans `main` @ `dcfff3c3`)
 
 `proposeCharter` lisait 0 feuille de style sur heidi.news avant ce chantier (filtre same-host,
@@ -348,11 +357,16 @@ autres n'offraient qu'un genre → une offre n'est pas une question → **le gen
 demandé et aucun storyboard proposé**. Cause : on avait confondu AFFICHER la phrase du beat et
 RÉORDONNER l'entrée des sujets ; seul le premier est le critère du garde.
 
-**Deux grains, tous les deux honnêtes et tous les deux DITS au journaliste** (registre
-`skills/chart-native/src/core/chart-walk.ts`, couvrant les 41) :
-- **ancré** (7 types : bar, diverging, lollipop, dumbbell, slope, radial-bar, pyramid) — le sujet
-  entre au moment de sa phrase, dans l'ordre du journaliste ;
-- **séquencé** (34) — les phrases se suivent dans l'ordre écrit, sur l'animation telle qu'elle est.
+**Trois grains, tous honnêtes et tous DITS au journaliste** (registre
+`skills/chart-native/src/core/chart-walk.ts` — `grain: "accent" | "entrance" | "sequenced"`,
+couvrant les 41 ; **c'est le registre qui fait foi, pas ce paragraphe** : compter les types à la
+main est exactement ce qui a fait dériver le compteur de gate) :
+- **ancré**, en deux nuances — les types bar/diverging/lollipop/dumbbell/slope/radial-bar/pyramid,
+  où le sujet entre au moment de sa phrase, dans l'ordre du journaliste. `entrance` = le sujet
+  ENTRE à sa phrase ; `accent` = il est déjà là et se fait ACCENTUER (le registre porte alors un
+  champ `accent: {prop, by}` qui dit quelle propriété bouge). La distinction était absente de ce
+  document alors qu'elle change ce que le journaliste voit ;
+- **séquencé** — les phrases se suivent dans l'ordre écrit, sur l'animation telle qu'elle est.
   Leurs beats n'ont **pas d'ancre** : une ancre y est refusée fort (jamais acceptée puis ignorée).
 
 Le calendrier d'entrée est **lu** du registre par les composants (plus de littéraux à faire
