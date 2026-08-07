@@ -299,9 +299,18 @@ switch (format) {
     // Theme guard — ONLY when the config asked for the dark basemap: assert the
     // static build actually rendered dark (furniture + basemap), not just that the
     // config said so. A coarse light/dark luminance CLASSIFIER, not a WCAG check.
+    //
+    // No OUTDIR — the SAME reason spelled out for snap-contrast just below, and the reason
+    // this guard was the last one still in the trap: it fires only when mapStyle is
+    // "dataviz-dark", and until the newsroom's charter reached this chain nothing ever asked
+    // the loop for a dark basemap. The first newsroom to declare `theme: dark` got its run
+    // REFUSED — snap-theme's debug screenshot (theme.png) landed beside static.png, render()
+    // collects the whole outDir as the delivery, and assertFileMedia counted two image files
+    // for a "static" form. Left to its own default the screenshot lands in this skill's
+    // persistent output-proof/theme/, where a human can still inspect it.
     if (parsedConfig.mapStyle === "dataviz-dark") {
       console.log(`[produce map] snapping theme (dark)…`);
-      snap("scripts/snap-theme.mjs", { OUTDIR: outDir, SERVE_DIR: staticDir });
+      snap("scripts/snap-theme.mjs", { SERVE_DIR: staticDir });
     }
 
     // Contrast guard (ALWAYS, not just dark) — render-time WCAG 1.4.3 check on every

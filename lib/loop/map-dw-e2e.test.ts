@@ -36,7 +36,9 @@ import type { ReviewRecord } from "../verify/types";
 import type { Decor } from "../newsroom/decor";
 import { freezeInput } from "./freeze";
 import { assembleMapDw } from "./assemble/map-dw";
-import { validateMapSpec } from "../../skills/map-dw/src/map-spec";
+import { validateMapSpec, DEFAULT_BLUE } from "../../skills/map-dw/src/map-spec";
+import { houseRamp } from "../core/house-ramp";
+import { decodePng, modalColor, toHex } from "./fixtures/render-pixels";
 import { normalizeChannel, renderSize } from "../../skills/splash/src/channel";
 import type { ProductionBrief } from "../core/production-brief";
 import {
@@ -56,6 +58,9 @@ const proof = RUN_IT ? test : test.skip;
 const ACCESS_CSV =
   "country,access\nCHE,100\nFRA,100\nDEU,100\nESP,100\nITA,100\n" +
   "TCD,11\nNER,19\nMLI,53\nBFA,19\nSSD,8\nCOD,21\nNGA,60";
+
+// The newsroom's house colour, as a NEWSROOM-PROFILE.md would declare it.
+const HOUSE_HUE = "#d5121e";
 
 const FIXTURE_BRIEF: ProductionBrief = {
   elementId: "e1",
@@ -411,6 +416,69 @@ proof(
       });
       expect(`${record.url} → ${res.status}`).toBe(`${record.url} → 200`);
       expect((await res.text()).toLowerCase()).toContain("<html");
+    } finally {
+      rmSync(runDir, { recursive: true, force: true });
+    }
+  },
+  300_000,
+);
+
+// ── THE NEWSROOM'S CHARTER, ON A HOSTED MAP ───────────────────────────────────────────────────
+//
+// Same split as the hosted chart's own charter proof (lib/loop/dw-chart-e2e.test.ts): a charter
+// declares a house HUE and a house GROUND, and Datawrapper can honour exactly the first.
+//
+//   · THE MARKS — `palette[0]` rides onto the spec as `brandHue`, and the choropleth's auto
+//     palette is CLEARED so `houseGradient` derives a CVD-safe ramp from that hue instead of the
+//     library blue (skills/map-dw/src/spec-to-map-metadata.ts). Measured here off the shading of
+//     a region at the top of the scale, which lands on the ramp's last stop exactly.
+//   · THE GROUND — `theme` does not reach this engine, and deliberately: a house background is
+//     plan-gated on this Datawrapper account (POST /v3/themes → 401 ADMIN_ROLE_REQUIRED;
+//     metadata.publish.background accepted and render-proven white). The journalist is told
+//     BEFORE choosing rather than at the render — lib/brain/eligibility.ts drops both Datawrapper
+//     engines outright for a dark ground and marks the row with the mismatch for a light one.
+proof(
+  "the charter's house colour shades the hosted map, and the ground stays Datawrapper's own",
+  async () => {
+    const runDir = mkdtempSync(join(tmpdir(), "splash-map-dw-charter-e2e-"));
+    try {
+      const run = runFor(runDir, "static");
+      // Light-but-not-white, like the chart proof: a dark ground never reaches produce, because
+      // the brain removes the engine from the offer before a journalist can pick it.
+      const house = { palette: [HOUSE_HUE], theme: "#F7D9E3" };
+      const result = await produce(run, run.elements[0]!, runDir, {
+        house,
+      } as unknown as Decor);
+      expect(result.ok ? "produced" : `${result.code}: ${result.message}`).toBe(
+        "produced",
+      );
+      if (!result.ok) return;
+
+      const px = decodePng(
+        readFileSync(join(runDir, fileArtifact(result.value.artifact)!.path)),
+      );
+      // France is at 100 — the TOP of the scale — so its polygon is the gradient's last stop,
+      // flat-filled. A gradient's own legend bar is interpolated and lands a shade off at its
+      // very edge pixel; a polygon does not, which is why the region is what is measured.
+      const top = toHex(modalColor(px, 580, 250, 600, 275));
+      // A region with no row at all: the no-data grey, which no charter touches.
+      const noData = toHex(modalColor(px, 900, 480, 1000, 520));
+      const ground = toHex(modalColor(px, 600, 600, 1150, 660));
+      const ramp = houseRamp(HOUSE_HUE);
+      console.log(
+        `[map-dw-charter-e2e] top-of-scale ${top} · house ramp ${ramp.join(" ")} · no-data ${noData} · ground ${ground}`,
+      );
+      // EXACT: the shading is the house ramp's own last stop, computed here by the same function
+      // the engine derives the gradient from — never a hex typed twice.
+      expect(top).toBe(ramp[ramp.length - 1]);
+      // …and it is NOT the library default the map would carry with no charter, which is the
+      // half that makes the line above a measurement rather than a coincidence.
+      expect(
+        DEFAULT_BLUE.map((s) => s.color.toLowerCase()),
+      ).not.toContain(top);
+      // The ground is Datawrapper's white, not the declared #F7D9E3 — the vendor limit, asserted
+      // where a plan change would surface it.
+      expect(ground).toBe("#ffffff");
     } finally {
       rmSync(runDir, { recursive: true, force: true });
     }
