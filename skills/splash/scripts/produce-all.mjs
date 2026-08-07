@@ -29,6 +29,11 @@ import {
   placeProvenanceRefusal,
   placeProvenanceWarnings,
 } from "../src/place-provenance.ts";
+import {
+  readSourceProvenance,
+  sourceProvenanceRefusal,
+  sourceProvenanceWarnings,
+} from "../src/source-provenance.ts";
 
 const acceptedPath = process.argv[2];
 const outDir = process.argv[3];
@@ -132,6 +137,29 @@ if (placeRefusals.length) {
 for (const p of accepted)
   for (const w of placeProvenanceWarnings(p, placeProvenance))
     console.error(`[place-provenance] warning: ${w}`);
+
+// ④ EVERY ATTRIBUTION THE ARTICLE GAVE SURVIVES THE JOURNEY, before any engine runs.
+//
+// The source guards (source-guard.ts, DEFECT B and DEFECT D) already refuse a named organisation
+// collapsed into "figures as reported in this article", and a journalist's URL upgraded to a
+// deeper path — but only once `sourceHint` is threaded, and the threading was prose. Dropping the
+// field disarmed both and cost nothing; the only net was a warning that named its own impotence.
+//
+// The run directory answers instead. The sanctioned writer
+// (skills/suggest-article/scripts/save-opportunities.mjs) is handed the ProposalSet at the exact
+// step the hint is read out of the article, so what the article named is a FACT this gate can
+// hold the delivery to, rather than a memory it can drop. Same closure as ③, one seam over.
+//
+// Terminal for the batch, like ①, ② and ③, and for ①'s reason: a refused run leaves no half-built
+// artifact for a later step to hand-plant around.
+const sourceProvenance = readSourceProvenance(dirname(acceptedPath));
+const sourceRefusal = sourceProvenanceRefusal(accepted, sourceProvenance);
+if (sourceRefusal) {
+  console.error(`[produce] ${refusalSentence(sourceRefusal)}`);
+  process.exit(1);
+}
+for (const w of sourceProvenanceWarnings(accepted, sourceProvenance))
+  console.error(`[source-provenance] warning: ${w}`);
 
 // Flow-decision gate: decisions.jsonl sits beside accepted.json, like candidates.json. A required
 // decision never recorded fails the run; an optional one warns. Staged: the first-cut trio ships

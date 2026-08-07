@@ -22,6 +22,13 @@ function usableQuote(v) {
   return typeof v === "string" && v.trim() !== "";
 }
 
+/** A hint that CITES something: an org name, a URL, or both. `{}` and `{ name: "  " }` are
+ *  half-captures — they look like an attribution and can back none. */
+function usableHint(h) {
+  if (h === null || typeof h !== "object") return false;
+  return usableQuote(h.name) || usableQuote(h.url);
+}
+
 function usableIndex(v) {
   return typeof v === "number" && Number.isInteger(v) && v > 0;
 }
@@ -54,6 +61,31 @@ export function opportunitiesWriteErrors(payload) {
       errors.push(`proposal ${i} has no \`claim\``);
     if (typeof p.intent !== "string" || p.intent.trim() === "")
       errors.push(`proposal ${i} has no \`intent\``);
+    // THE SOURCE THE ARTICLE NAMED — answered, never merely omitted.
+    //
+    // Step 3 of SKILL.md already reads the article for exactly this fact and puts it in the very
+    // payload handed here; until now this writer threw it away. Two source guards downstream
+    // (source-guard.ts, DEFECT B / DEFECT D) compare the shipped attribution against it, and both
+    // return null when it is missing — so silence disarmed them and cost nothing.
+    //
+    // Requiring an ANSWER rather than a hint is the move place-provenance.ts made with
+    // `coordinatesFromData`: an article that names nobody is completely normal and demanding a
+    // citation for it would be a false block, so the honest case gets a field of its own. What is
+    // refused is saying NOTHING — which converts an omission into a visible, checkable statement.
+    const hinted = p.sourceHint !== undefined && p.sourceHint !== null;
+    const declaredNone = p.noSourceNamed === true;
+    if (hinted && declaredNone)
+      errors.push(
+        `proposal ${i} carries both a \`sourceHint\` and \`noSourceNamed: true\` — the article either named a citable source for these figures or it did not; say which`,
+      );
+    else if (hinted && !usableHint(p.sourceHint))
+      errors.push(
+        `proposal ${i} has a \`sourceHint\` with neither a non-empty \`name\` nor a non-empty \`url\` — a half-capture reads as an attribution and can back none; give the name the article states, or declare \`noSourceNamed: true\``,
+      );
+    else if (!hinted && !declaredNone)
+      errors.push(
+        `proposal ${i} says nothing about whether the article named a source for these figures — record the article's own citation as \`sourceHint: { name, url? }\` (verbatim, never invented), or state \`noSourceNamed: true\`. Omitting it silently disarms the guards that stop a named organisation being discarded for the "reported in this article" fallback`,
+      );
     if (p.anchor !== undefined) {
       // An anchor is OPTIONAL (an opportunity bound to no passage is legitimate — splash/SKILL.md
       // §6). But an anchor that is PRESENT and carries nothing usable is a copying slip, and
@@ -102,6 +134,20 @@ if (import.meta.main) {
     ...(p.anchor !== undefined ? { anchor: p.anchor } : {}),
     claim: p.claim,
     intent: p.intent,
+    // Normalised at write time, so a later reader never has to tell "written badly" from "not
+    // written": a usable hint is kept verbatim, and its absence is the explicit declaration.
+    ...(usableHint(p.sourceHint)
+      ? {
+          sourceHint: {
+            ...(usableQuote(p.sourceHint.name)
+              ? { name: p.sourceHint.name.trim() }
+              : {}),
+            ...(usableQuote(p.sourceHint.url)
+              ? { url: p.sourceHint.url.trim() }
+              : {}),
+          },
+        }
+      : { noSourceNamed: true }),
   }));
   const written = join(dir, "opportunities.json");
   writeFileSync(written, JSON.stringify({ opportunities }, null, 2) + "\n");
@@ -111,6 +157,8 @@ if (import.meta.main) {
       written,
       opportunities: opportunities.length,
       anchored: opportunities.filter((o) => o.anchor !== undefined).length,
+      sourceHints: opportunities.filter((o) => o.sourceHint !== undefined)
+        .length,
     }),
   );
 }

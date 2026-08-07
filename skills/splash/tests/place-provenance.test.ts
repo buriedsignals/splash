@@ -210,6 +210,44 @@ describe("a record whose coordinate came from neither the resolution nor a corre
     expect(r?.message).toContain("origin");
     expect(r?.message).toContain("Cervin");
   });
+
+  // THE ONE-WORD DODGE. L2a asked `origin === "data"` and stopped there, so the whole check could
+  // be walked around by typing a different word: `journalist` also owes no showback (G3 requires
+  // one for `geocoder` alone), and it left the coordinate the machine chose sitting in the spec
+  // with nobody having seen it — the exact defect the Cervin run shipped. Same class as `data`,
+  // same mechanism, closed the same way.
+  it("refuses `origin: journalist` for a point the run's own receipt shows the machine chose", () => {
+    const r = placeProvenanceRefusal(
+      proposal({
+        resolvedPlaces: [{ label: "Cervin", origin: "journalist", ...GLACIER }],
+      }),
+      receipt(),
+    );
+    expect(r?.message).toContain("origin");
+    expect(r?.message).toContain("Cervin");
+  });
+
+  // …and the correction it must NOT block: a journalist who MOVED the point owns the new
+  // coordinate, and `correctedFrom` is what says so. Refusing this would push a real correction
+  // back onto the machine's answer, which is the opposite of the point.
+  it("accepts `origin: journalist` when the record declares what it corrected", () => {
+    expect(
+      placeProvenanceRefusal(
+        proposal({
+          spec: { type: "locator", markers: [{ ...SUMMIT, label: "Cervin" }] },
+          resolvedPlaces: [
+            {
+              label: "Cervin",
+              origin: "journalist",
+              ...SUMMIT,
+              correctedFrom: GLACIER,
+            },
+          ],
+        }),
+        receipt(),
+      ),
+    ).toBeNull();
+  });
 });
 
 // --- L3: THE MAP THAT ACCOUNTS FOR NOTHING (the "just don't write it" dodge). ----------------

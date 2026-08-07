@@ -110,9 +110,13 @@ normalise to English.
    url? }`, verbatim only. Never invent a name or URL that is not literally present in the article, and
    never use the CSV table's filename (`dataSource.table`) as this label — that names which supplied
    file backed the claim, not a citable publication a reader can verify. If the article states a name
-   but no URL (or no attribution at all), do not guess or fill in a URL — omit `sourceHint.url` (or the
-   whole field) and leave it to the downstream splash flow (CADRAGE Q4, Gate 2c) to ask the
-   journalist directly for the specific, traceable dataset/page URL.
+   but no URL, do not guess or fill in a URL — omit `sourceHint.url` and leave it to the downstream
+   splash flow (CADRAGE Q4, Gate 2c) to ask the journalist directly for the specific, traceable
+   dataset/page URL.
+   **If the article attributes these figures to nobody, say so: `noSourceNamed: true`.** One of the
+   two is REQUIRED on every proposal — the writer at step 6 refuses a proposal that answers neither,
+   because an omission and "the article credited no one" used to look identical on disk and the
+   guards that stop a named organisation being discarded went quiet for both.
 4. **PROPOSITION — choose the few.** Read the shared KB (at the splash repo root, NOT under this skill)
    `<repo-root>/knowledge/references/chart-selection.md` and `<repo-root>/knowledge/references/design-conformance.md`
    for *which claims warrant a visual* (a magnitude, a trend, a ranking, a
@@ -139,10 +143,18 @@ normalise to English.
 
    `<runDir>` is the run directory (`exports/<slug>`) — the one that will hold `candidates.json`
    and `accepted.json`. The writer VERIFIES before writing (a set with no proposals, a proposal
-   with no claim, a half-anchor are all refused) and creates nothing: point it at a run directory
-   that exists. `opportunities.json` is what lets the delivery prove an article was read and an
-   anchor was available — without it, a dropped anchor is indistinguishable from an article that
-   never had one.
+   with no claim, a half-anchor, **a proposal that says nothing about whether the article named a
+   source** are all refused) and creates nothing: point it at a run directory that exists.
+   `opportunities.json` is what lets the delivery prove an article was read and an anchor was
+   available — without it, a dropped anchor is indistinguishable from an article that never had one.
+
+   **It is also the receipt for the ATTRIBUTION.** `sourceHint` is captured here, at step 3, and is
+   then copied onto the accepted element by the orchestrator (splash §5b) — a hand-copy that used
+   to be checkable by nothing, so dropping it silently disarmed both source guards. What you write
+   here is now confronted with what the delivery carries
+   (`skills/splash/src/source-provenance.ts`, before any engine runs): an attribution recorded here
+   and missing there **stops the run**, and so does one on the element that appears nowhere here.
+   Record what the article actually said — not more, and not less.
 7. **Self-check (provenance).** For every proposal, confirm each `data` column appears in its
    `dataSource.table` and the subset parses as CSV with ≥1 numeric column. Drop any proposal that fails.
 8. **Narrative potential — ACROSS MODES (a story can be TOLD, not just charted).** The narrative
@@ -179,9 +191,12 @@ Output one `ProposalSet`:
       "intent": "How did cross-border worker numbers grow since 2015?",
       "data": "year,France,Switzerland\n2015,18,22\n2023,35,38",
       "dataSource": { "table": "cross-border.csv", "columns": ["year","France","Switzerland"] },
-      // "sourceHint" is OPTIONAL — set ONLY when the article itself names a citable dataset/URL for
-      // these figures, e.g. { "name": "Insee", "url": "https://www.insee.fr/fr/statistiques/xxxx" }.
-      // Omitted here because this article gives no separate attribution — splash asks the journalist.
+      // One of "sourceHint" / "noSourceNamed" is REQUIRED (step 3). Set "sourceHint" ONLY when the
+      // article itself names a citable dataset/URL for these figures, e.g.
+      // { "name": "Insee", "url": "https://www.insee.fr/fr/statistiques/xxxx" }.
+      // Here the article gives no separate attribution, so that is STATED rather than left blank —
+      // splash asks the journalist at CADRAGE Q4.
+      "noSourceNamed": true,
       "confidence": "high",
       "rationale": "A two-side growth claim over a continuous period is the article's spine."
     }
