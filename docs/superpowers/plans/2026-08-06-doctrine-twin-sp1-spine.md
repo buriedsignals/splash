@@ -330,13 +330,33 @@ Expected: PASS, 5 tests.
 ```ts
 // twin/skills/splash-twin/test/preflight.test.ts
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runPreflight } from "../scripts/preflight.mjs";
 
 const okFetch = async () => new Response("{}", { status: 200 });
 let root: string;
+
+// Source of truth for "what a real Splash root needs": the same file preflight.mjs reads.
+const ROOT_TEMPLATE_PACKAGE_JSON = join(
+  import.meta.dirname,
+  "..", "assets", "root-template", "package.json",
+);
+
+async function declaredDependencyNames(): Promise<string[]> {
+  const pkg = JSON.parse(await readFile(ROOT_TEMPLATE_PACKAGE_JSON, "utf8"));
+  return Object.keys(pkg.dependencies ?? {});
+}
+
+// A stub module that Bun.resolveSync can actually resolve — a present
+// node_modules with unresolvable packages inside it is exactly the bug this
+// suite pins, so "installed" here means "resolvable", not "directory exists".
+async function installResolvableDependency(name: string): Promise<void> {
+  const dir = join(root, "node_modules", name);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, "index.js"), "export default {};\n");
+}
 
 beforeEach(async () => { root = await mkdtemp(join(tmpdir(), "splash-root-")); });
 afterEach(async () => { await rm(root, { recursive: true, force: true }); });
@@ -372,7 +392,9 @@ describe("runPreflight", () => {
 
   it("should pass when the root is installed, the profile is valid and the key probes green", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
-    await mkdir(join(root, "node_modules"), { recursive: true });
+    for (const name of await declaredDependencyNames()) {
+      await installResolvableDependency(name);
+    }
     const verdict = await runPreflight({ root, env: { MAPTILER_KEY: "k" }, fetchFn: okFetch });
     expect(verdict.ok).toBe(true);
     expect(verdict.checks.every((c) => c.status === "pass")).toBe(true);
@@ -382,6 +404,23 @@ describe("runPreflight", () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const verdict = await runPreflight({ root, env: { MAPTILER_KEY: "k" }, fetchFn: okFetch });
     expect(verdict.checks.find((c) => c.id === "dependencies").status).toBe("missing");
+  });
+
+  it("should report dependencies as fail, naming the package, when node_modules exists but a declared dependency does not resolve", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const declared = await declaredDependencyNames();
+    // node_modules exists — the old bug's trigger — but one declared package
+    // was never actually installed into it (the @resvg/resvg-js shape from
+    // the proof run: present directory, absent resolution).
+    const [unresolved, ...rest] = declared;
+    for (const name of rest) {
+      await installResolvableDependency(name);
+    }
+    const verdict = await runPreflight({ root, env: { MAPTILER_KEY: "k" }, fetchFn: okFetch });
+    const check = verdict.checks.find((c) => c.id === "dependencies");
+    expect(check.status).toBe("fail");
+    expect(check.detail).toContain(unresolved);
+    expect(verdict.ok).toBe(false);
   });
 
   it("should report the maptiler key as missing, not failed, when MAPTILER_KEY is absent from env", async () => {
@@ -426,20 +465,54 @@ Expected: FAIL — module not found.
 // Phase 0. Nothing here is worked around: a gap is reported, never designed around.
 
 import { readFile, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseNewsroom, validateNewsroom } from "./newsroom.mjs";
 import { probeMapTiler } from "./keys.mjs";
+
+const ROOT_TEMPLATE_PACKAGE_JSON = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "assets", "root-template", "package.json",
+);
 
 async function exists(path) {
   try { await stat(path); return true; } catch { return false; }
 }
 
+async function declaredDependencyNames() {
+  const pkg = JSON.parse(await readFile(ROOT_TEMPLATE_PACKAGE_JSON, "utf8"));
+  return Object.keys(pkg.dependencies ?? {});
+}
+
+// A present node_modules is not a working install, the same discipline the
+// MapTiler check applies to a present key: resolve every dependency the root
+// template declares, from the root — not merely confirm a directory exists.
+async function checkDependencies(root) {
+  if (!(await exists(join(root, "node_modules")))) {
+    return { id: "dependencies", status: "missing", detail: "run bun install in the Splash root" };
+  }
+  const declared = await declaredDependencyNames();
+  const unresolved = declared.filter((name) => {
+    try {
+      Bun.resolveSync(name, root);
+      return false;
+    } catch {
+      return true;
+    }
+  });
+  return unresolved.length === 0
+    ? { id: "dependencies", status: "pass", detail: "root dependencies are installed" }
+    : {
+        id: "dependencies",
+        status: "fail",
+        detail: `cannot resolve ${unresolved.join(", ")} — run bun install in the Splash root`,
+      };
+}
+
 export async function runPreflight({ root, env, fetchFn }) {
   const checks = [];
 
-  checks.push(await exists(join(root, "node_modules"))
-    ? { id: "dependencies", status: "pass", detail: "root dependencies are installed" }
-    : { id: "dependencies", status: "missing", detail: "run bun install in the Splash root" });
+  checks.push(await checkDependencies(root));
 
   let newsroomText;
   try {
@@ -477,12 +550,26 @@ export async function runPreflight({ root, env, fetchFn }) {
 catch swallowed "file could not be read" and "file read but unparseable" into the same `"missing"`
 verdict, which is a false diagnosis for the second case.)
 
+(The `dependencies` check was rewritten after the end-to-end proof (`twin/PROOF.md`) caught it
+green on a root where the only shipped renderer's import — `@resvg/resvg-js` — did not resolve:
+the check tested `node_modules` exists, the same "present is not working" mistake the MapTiler
+check exists to avoid one level down. It now reads the root template's own declared dependency
+names and resolves each of them from the root with `Bun.resolveSync` — a present `node_modules`
+with an unresolvable package inside it now reports `"fail"`, naming the package, instead of
+`"pass"`. **Named limit, not silently closed:** `@resvg/resvg-js` itself is not declared in
+`assets/root-template/package.json` (react, react-dom and the three d3 packages are) — declaring
+it belongs to that file, not to the preflight script, so today's fix makes the mechanism honest for
+every dependency the template *does* declare without yet closing the exact case the proof hit.
+Confirmed live: a root with `node_modules` stubbed for all five declared packages but not
+`@resvg/resvg-js` still reports `dependencies: "pass"`. That gap is recorded, not designed around.)
+
 - [ ] **Step 12: Run the test and confirm it passes**
 
 Run: `cd twin && bun test skills/splash-twin/test/preflight.test.ts`
-Expected: PASS, 7 tests (4 original + 3 added post-review: maptiler-key absent → `"missing"`,
-newsroom-profile present-but-unparseable → `"fail"`, newsroom-profile present-but-incomplete →
-`"fail"`).
+Expected: PASS, 8 tests (7 prior + 1 added post-proof: `node_modules` present but a declared
+dependency does not resolve → `"fail"`, naming it. The pre-existing "should pass" test now
+installs real resolvable stubs for every declared dependency instead of an empty `node_modules`
+directory).
 
 - [ ] **Step 13: Add one real-network integration test**
 
