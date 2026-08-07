@@ -73,7 +73,10 @@ import {
   resolveRevealMode,
 } from "../../src/map-story";
 import { deriveSymbolStory } from "../../src/symbol-story";
-import { deriveLocatorStory } from "../../src/locator-story";
+import {
+  deriveLocatorStory,
+  locatorBeatsForMode,
+} from "../../src/locator-story";
 import { buildTimeline } from "../../src/story-timeline";
 import sampleConfig from "../../assets/sample-data/choropleth.json";
 import sampleSymbol from "../../assets/sample-data/symbol.json";
@@ -314,11 +317,13 @@ const LOCATOR_STORY_FRAMES = buildTimeline(
 const locatorDefaultProps = { config: sampleLocator };
 
 // Mode-aware composition duration — mirrors `symbolStoryMeta` above (single source of truth
-// with LocatorStory.tsx's own beats+beatsForMode setup, so the sequential mp4 doesn't end with
-// a frozen tail).
+// with LocatorStory.tsx's own beats+locatorBeatsForMode setup, so the sequential mp4 doesn't end
+// with a frozen tail). `locatorBeatsForMode`, NOT the generic `beatsForMode`: an authored locator
+// walk keeps its establishing overview in sequential mode (see locator-story.ts), and a duration
+// computed from the generic rule would be one beat short of what the component renders.
 const locatorStoryMeta = makeStoryMeta(
   (cfg: LocatorConfigShape & { insight?: string }) => {
-    const beats = beatsForMode(
+    const beats = locatorBeatsForMode(
       deriveLocatorStory(cfg.markers, {
         title: cfg.title ?? "",
         description: cfg.description,

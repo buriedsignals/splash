@@ -1,6 +1,6 @@
 // LocatorStory — beat-driven guided camera tour for the locator / markers map.
 // Ports SymbolStory, with locator deltas:
-//   1. beats from beatsForMode(deriveLocatorStory(config.markers, meta), mode) — per-place
+//   1. beats from locatorBeatsForMode(deriveLocatorStory(config.markers, meta), mode) — per-place
 //      (few) / per-category (many)
 //   2. uniform dot glyph, colour by category, mapStyle-adaptive (never value-scaled, never size
 //      legend) — but EACH marker's own entrance (radius grow + opacity fade + label rise) is its
@@ -32,6 +32,7 @@ import { continueWhenMapSettles } from "../core/frame-ready";
 import { locatorGeometry } from "../locator-geo";
 import {
   deriveLocatorStory,
+  locatorBeatsForMode,
   revealTriggersByLabel,
   markTriggerFrames,
 } from "../locator-story";
@@ -45,7 +46,7 @@ import {
   type CameraSolution,
   type Phase,
 } from "../story-timeline";
-import { resolveRevealMode, beatsForMode, type Beat } from "../map-story";
+import { resolveRevealMode, type Beat } from "../map-story";
 import {
   AREAL_TIMELINE_OPTS,
   AREAL_BORDER_S,
@@ -225,7 +226,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
       // first marker of that category — is what places the beat: the category's own foothold on
       // the sweep, not a per-marker re-sort that would split a category across the walk.
       const beats = orderRevealBeatsBySweep(
-        beatsForMode(deriveLocatorStory(config.markers, meta), mode),
+        locatorBeatsForMode(deriveLocatorStory(config.markers, meta), mode),
         stops,
       );
 

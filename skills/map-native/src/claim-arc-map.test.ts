@@ -702,12 +702,20 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
     }
     // Camera is a tight box on the NAMED marker's own coordinates — never the map's
     // default framing (allBounds, [6.1, 46.2, 8.5, 47.4]), which the salience walk below
-    // uses instead. Zurich sits at [8.5, 47.4]; ±1.5° (CITY_DELTA) around it.
+    // uses instead.
+    //
+    // The half-width is `tourBoxDelta` (core/tour-box.ts), not the constant ±1.5° these
+    // numbers used to assert: these three markers span 2.4° of longitude and 1.2° of
+    // latitude, so half-spread 1.2° × TOUR_SCALE = ±0.6°. The old ±1.5° framed every stop
+    // WIDER than the box holding all three, which is how a guided tour of four Alpine
+    // glaciers ended up as one motionless wide shot — see tour-box.ts's header.
     const allBounds = [6.1, 46.2, 8.5, 47.4];
-    expect(reveals[0].camera).toEqual([7, 45.9, 10, 48.9]);
+    const box = (c: number[], expected: number[]) =>
+      c.forEach((v, i) => expect(v).toBeCloseTo(expected[i]!, 9));
+    box(reveals[0].camera, [7.9, 46.8, 9.1, 48]); // Zurich ±0.6°
     expect(reveals[0].camera).not.toEqual(allBounds);
-    expect(reveals[1].camera).toEqual([4.6, 44.7, 7.6, 47.7]); // Geneva ±1.5°
-    expect(reveals[2].camera).toEqual([5.1, 45, 8.1, 48]); // Lausanne ±1.5°
+    box(reveals[1].camera, [5.5, 45.6, 6.7, 46.8]); // Geneva ±0.6°
+    box(reveals[2].camera, [6, 45.9, 7.2, 47.1]); // Lausanne ±0.6°
   });
 
   it("an arcBeats naming a marker that does not exist is refused by name, listing the real marker names — not silently dropped", () => {
