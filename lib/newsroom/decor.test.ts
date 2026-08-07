@@ -6,6 +6,7 @@ import {
   decorEnv,
   installRoot,
   loadDecor,
+  neutralDecor,
   readDecorState,
   tryLoadDecor,
 } from "./decor";
@@ -244,6 +245,29 @@ describe("an explicit directory is READ-ONLY", () => {
     expect(decor.profile.source).toBe("A Newsroom"); // derived…
     expect(decor.language.content).toBe("fr");
     expect(readdirSync(d)).toEqual(["NEWSROOM-PROFILE.md"]); // …never cached
+  });
+
+  // THE CHARTER REACHES PRODUCTION, or it reaches nothing. `decor.profile` is the DELIVERY view
+  // (what a package prints); it has never carried the palette, and production is what needs it —
+  // a loop run under this profile shipped a default-blue map while the flow said in words that
+  // the house style was applied (D3). The whole parsed profile rides on the decor so the one
+  // function that knows what a charter means per producer can be handed it.
+  it("carries the whole house profile, not only what a delivery prints", () => {
+    const d = dir();
+    writeFileSync(
+      join(d, "NEWSROOM-PROFILE.md"),
+      ["---", "palette:", '  - "#d5121e"', 'theme: "dark"', "---", ""].join(
+        "\n",
+      ),
+    );
+    const decor = loadDecor(d, NO_ENV);
+    expect(decor.house?.palette).toEqual(["#d5121e"]);
+    expect(decor.house?.theme).toBe("dark");
+  });
+
+  it("declares no house style when the install has no profile at all", () => {
+    expect(loadDecor(dir(), NO_ENV).house).toBeUndefined();
+    expect(neutralDecor().house).toBeUndefined();
   });
 
   it("reads the brand.json cache when that is all the install has", () => {

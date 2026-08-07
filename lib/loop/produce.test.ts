@@ -16,6 +16,7 @@ import { provenanceHash, type RunManifest, fileArtifact } from "./manifest";
 import { freezeInput } from "./freeze";
 import { draftBeats, applyBeats } from "./beats";
 import { narrativeBeatErrors } from "../../skills/chart-native/src/chart-story";
+import { neutralDecor } from "../newsroom/decor";
 import { rmSync } from "node:fs";
 
 test("produce renders a real static PNG through the chart-native seam", async () => {
@@ -145,6 +146,120 @@ test("produce lands the declared source class on the rendered config", async () 
   expect(config.source.url).toBe("https://www.bfs.admin.ch/asset/fr/12345");
   rmSync(runDir, { recursive: true, force: true });
 }, 60000);
+
+// THE CHARTER, ALL THE WAY TO THE RENDERED CONFIG — the wiring half of D3
+// (docs/splash/defect-2026-08-07-adm1-unreachable-from-prose-chain.md). The seam itself is
+// proved without a render in lib/loop/assemble/house-style.test.ts; what THIS asks is whether
+// produce() hands it the decor at all. Measured on the config the engine actually rendered
+// from, because the defect was invisible everywhere upstream of it: every gate passed, the
+// spec validated, and the map came out blue.
+//
+// Deliberately on a real render, and deliberately NOT on a map: the seam is engine-agnostic and
+// a MapLibre produce is 60-120s, which is the reason the map proof is opt-in
+// (lib/loop/map-e2e.test.ts). The map's own render evidence is in the commit message.
+test("produce applies the newsroom's house colour to what is rendered", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-house-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,premium\nGenève,583\nVaud,531\nAppenzell RI,352");
+  const run: RunManifest = {
+    runId: "t-house",
+    schemaVersion: 7,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "premium"],
+        numericColumns: ["premium"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Geneva pays the highest premium of the three",
+          altInsight:
+            "Geneva's monthly adult premium is 583 CHF, ahead of Vaud (531) and Appenzell RI (352).",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [{ id: "bar", nativeType: "bar", why: "one value per row" }],
+          excluded: [],
+          chosenId: "bar",
+        },
+      },
+    ],
+    events: [],
+  };
+  // The install's decor, with a house style on it — the shape lib/loop/driver.ts threads.
+  const decor = { ...neutralDecor(), house: { palette: ["#d5121e"] } };
+  const result = await produce(run, run.elements[0], runDir, decor);
+  if (!result.ok) throw new Error(result.message);
+  const config = JSON.parse(
+    readFileSync(join(runDir, "elements", "e1", "config.json"), "utf8"),
+  ) as { baseColor?: string; brandExplicit?: boolean };
+  expect(config.baseColor).toBe("#d5121e");
+  expect(config.brandExplicit).toBe(true);
+  rmSync(runDir, { recursive: true, force: true });
+}, 90000);
+
+// …and the other half of the same promise: an install that declared NO house style renders
+// exactly what it rendered before the charter reached this seam.
+test("produce with no house style leaves the colour untouched", async () => {
+  const runDir = mkdtempSync(join(tmpdir(), "loop-produce-nohouse-"));
+  const src = join(runDir, "src.csv");
+  writeFileSync(src, "canton,premium\nGenève,583\nVaud,531\nAppenzell RI,352");
+  const run: RunManifest = {
+    runId: "t-nohouse",
+    schemaVersion: 7,
+    route: "embed",
+    channel: "article-web",
+    input: { data: freezeInput(runDir, src, "data") },
+    sources: {
+      mode: "real",
+      data: { kind: "local", label: "Relevés cantonaux 2024" },
+    },
+    orient: {
+      profile: {
+        columns: ["canton", "premium"],
+        numericColumns: ["premium"],
+        rowCount: 3,
+      },
+      supportsPoint: true,
+    },
+    elements: [
+      {
+        id: "e1",
+        angle: {
+          confirmedTakeaway: "Geneva pays the highest premium of the three",
+          altInsight:
+            "Geneva's monthly adult premium is 583 CHF, ahead of Vaud (531) and Appenzell RI (352).",
+          unit: "Monthly adult premium (CHF)",
+        },
+        proposal: {
+          options: [{ id: "bar", nativeType: "bar", why: "one value per row" }],
+          excluded: [],
+          chosenId: "bar",
+        },
+      },
+    ],
+    events: [],
+  };
+  const result = await produce(run, run.elements[0], runDir, neutralDecor());
+  if (!result.ok) throw new Error(result.message);
+  const config = JSON.parse(
+    readFileSync(join(runDir, "elements", "e1", "config.json"), "utf8"),
+  ) as { baseColor?: string; brandExplicit?: boolean };
+  expect(config.brandExplicit).toBeUndefined();
+  expect(config.baseColor).not.toBe("#d5121e");
+  rmSync(runDir, { recursive: true, force: true });
+}, 90000);
 
 // The manifest's proposal now records the FORMAT the brain offered (format threading,
 // fix round 2/5) — before this, produce() hard-coded "static" regardless of what the

@@ -35,6 +35,7 @@ import {
 } from "./buildable";
 import { briefFor } from "./assemble/brief";
 import { assemblerFor } from "./assemble";
+import type { Decor } from "../newsroom/decor";
 // Populates the producer registry the render verb dispatches from — without it every
 // render answers `unknown-engine`. The loop's ONE point of knowledge about skills/ lives
 // in that file, on purpose; see its header.
@@ -110,6 +111,12 @@ export async function produce(
   run: RunManifest,
   el: RunElement,
   runDir: string,
+  // The install's decor, for the ONE thing production takes from it: the newsroom's house style
+  // (`decor.house`). OPTIONAL, and never defaulted to `tryLoadDecor()` here — produce() takes a
+  // manifest and never ambient state (invariant I2), so a caller that has a decor threads it
+  // (lib/loop/driver.ts does, exactly as it already does for `deliver`) and a caller that has
+  // none builds the unbranded artifact it always built.
+  decor?: Decor,
 ): Promise<VerbResult<RunElement>> {
   if (!el.angle || !el.proposal?.chosenId)
     return fail("invalid-request", "produce: need an angle and a chosen form");
@@ -304,7 +311,21 @@ export async function produce(
     // the one that cleared the policy, so the engine and the policy are reading the same row.
     verdict.value.kind,
   );
-  const assembler = assemblerFor(builder, chosen.nativeType, format);
+  // THE NEWSROOM'S CHARTER TRAVELS WITH THE DECOR, and it reaches the engines HERE — the same
+  // place, and through the same function, as the prose chain's own merge. Without this argument
+  // the loop composed a spec that carried no `palette` / `brandHue` / `themeBg` at all, and a
+  // newsroom whose NEWSROOM-PROFILE.md declares a house colour got a default-blue map while the
+  // flow told it in words that the charter was being applied (D3,
+  // docs/splash/defect-2026-08-07-adm1-unreachable-from-prose-chain.md).
+  //
+  // `decor?.house` and not the decor itself: assemblerFor is engine knowledge, and handing it a
+  // whole install's decor would let a future assembler reach for the readiness or the state.
+  const assembler = assemblerFor(
+    builder,
+    chosen.nativeType,
+    format,
+    decor?.house,
+  );
   if (!assembler)
     return fail(
       "not-implemented",

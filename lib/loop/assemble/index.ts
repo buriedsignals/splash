@@ -27,6 +27,16 @@ import {
 import { isRowDriven } from "../../../skills/dw-chart/src/export-aspect";
 import { engineTypes, getProducer } from "../../core/registry";
 import type { HeightPolicy } from "../../verify/types";
+// THE NEWSROOM'S CHARTER — the SAME function the prose chain applies (skills/splash/src/
+// produce-all.ts calls it on every accepted proposal's spec). Imported, never restated: the
+// policy it holds is not "paint it the house colour" but a per-producer ruling (a chart takes
+// a baseColor, a map takes a brandHue AND has its auto ramp CLEARED, a diverging scale keeps
+// its registry palette, a journalist's explicit colour always wins), and a second copy of that
+// would be a second answer to "what does the charter mean here".
+import {
+  mergeProfileDefaults,
+  type BrandProfile,
+} from "../../../skills/splash/src/brand-profile";
 
 export type AssemblerEntry = {
   assemble: Assembler;
@@ -256,10 +266,52 @@ function unsupportedFormatReason(
   );
 }
 
+/**
+ * THE ONE PLACE THE HOUSE STYLE LANDS ON WHAT THE LOOP BUILDS.
+ *
+ * It sits in the TABLE rather than inside each assembler for the reason the table exists at all:
+ * this is the one module of lib/loop that is allowed to know about engines, and the charter is a
+ * per-ENGINE ruling (`mergeProfileDefaults`'s `producer` option). Threaded into the seven
+ * map-native types, the map-track scrolly, the charts and both hosted engines by ONE wrap, so a
+ * new assembler inherits the charter by being in the table — it cannot forget to apply it.
+ *
+ * The wrap is applied on the way OUT of the assembler, on the composed spec/config, exactly like
+ * the prose chain applies it on the way IN to produceAll. Both chains therefore run the same
+ * function over the same field names (`baseColor`, `brandHue`, `brandPalette`, `palette`,
+ * `themeBg`, `mapStyle`), which is what makes "the newsroom's charter" mean one thing.
+ *
+ * A null profile returns the entry's own assembler UNWRAPPED — an install that declared no house
+ * style builds a byte-identical spec, with no clone and no extra object identity.
+ */
+function withHouseStyle(
+  assemble: Assembler,
+  engine: string,
+  house: BrandProfile | null | undefined,
+): Assembler {
+  if (!house) return assemble;
+  return (brief) => {
+    const r = assemble(brief);
+    // A refusal is left exactly as the assembler wrote it: there is nothing to paint, and
+    // rewrapping it would put this seam in the middle of a message a journalist reads.
+    if (!r.ok) return r;
+    return {
+      ...r,
+      value: mergeProfileDefaults(
+        r.value as Parameters<typeof mergeProfileDefaults>[0],
+        house,
+        { producer: engine },
+      ),
+    };
+  };
+}
+
 export function assemblerFor(
   engine: string,
   nativeType?: string,
   format?: VisualFormat,
+  /** The newsroom's declared house style (lib/newsroom/decor.ts's `Decor.house`). Absent or
+   *  null ⇒ today's unbranded path, byte for byte. */
+  house?: BrandProfile | null,
 ): Assembler | undefined {
   const entry = ASSEMBLERS[engine];
   if (!entry) return undefined;
@@ -273,7 +325,7 @@ export function assemblerFor(
   // (produce reads both off the chosen option; the offer's mark reads both off the candidate).
   if (nativeType && entry.supports && !entry.supports(nativeType, format))
     return undefined;
-  return entry.assemble;
+  return withHouseStyle(entry.assemble, engine, house);
 }
 
 /** The table's own sentence for a pairing it declines, or undefined when it has none. Read by
