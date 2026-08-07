@@ -103,7 +103,8 @@ bun skills/image-native/scripts/produce.mjs exports/<slug>/image-story.json expo
 bun skills/image-native/scripts/prep-images.mjs exports/<slug>/image-story.json /tmp/prep
 ```
 
-`produce.mjs` takes the same `<config> <outDir> <format>` shape as every other engine, so the splash
+`produce.mjs` takes the same `<config> <outDir> <format>` shape as map-native — chart-native prepends
+a `<type>`, and scrolly takes no format — so the splash
 dispatcher routes an accepted `image-native` proposal to it with no special case.
 
 ## Tuning knobs

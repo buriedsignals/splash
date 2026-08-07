@@ -142,7 +142,7 @@ local http server for the screenshot because module scripts get `crossorigin` an
 Design conformance (`knowledge/references/design-conformance.md`) is baked into the component: insight
 title (sentence case), Okabe-Ito `#0072B2` single colour, direct label (no legend), abbreviated numbers
 (`10.4k`), source cited (name + url, linked in the interactive build), `aria-label` = the insight. It is
-**enforced**, not just hand-baked: `src/conformance.ts` (`checkConformance`) is the native equivalent of
+**enforced**, not just hand-baked: `src/core/conformance.ts` (`checkConformance`) is the native equivalent of
 dw-chart's `validateChartSpec` — `tests/conformance.test.ts` runs it on the shipped config + tokens
 (Okabe-Ito membership, real WCAG contrast ≥ 4.5:1, insight-shaped title, source name+url, direct label).
 Every new native chart must pass it. Interactive a11y: data points are keyboard-focusable
@@ -203,7 +203,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 | Slower / faster reveal (interactive) | `durationMs` (2000) | `src/InteractiveLineChart.tsx` |
 | Blank hold before the build / hold on the complete chart at the end | `HOLD_IN` (0.02) / `HOLD_OUT` (0.1) | `remotion/src/LineReveal.tsx` |
 | Master timeline | LINEAR (each phase eases itself in `LineChart`) | `LineReveal.tsx` + `InteractiveLineChart.tsx` |
-| Line colour | `COLORS.line` (`#0072B2`) | `src/tokens.ts` |
+| Line colour | `COLORS.line` (`#0072B2`) | `src/core/tokens.ts` |
 | Motion-build timing (axes wipe / line / label) | `stagger(...)` gridlines, `baseW` (p/0.18), line `easeInOutCubic` over [0.30, 0.95], x-labels swept by `head.x`, `labelOpacity` (0.92→1) | `LineChart.tsx` + `chart-geometry.ts` (`stagger`, `ease*`) |
 | Chart size (video/static) | `width`/`height` (840×480) | `Root.tsx` + snapshot scripts |
 | When the interactive reveal plays | `ANIMATE_ON` (`"scroll"` \| `"load"` \| `"none"`) | `src/mount.tsx` |
@@ -219,7 +219,7 @@ Swap `assets/sample-data/series.json` for your own (insight `title`, `source`, `
 - `src/chart-geometry.ts` — the framework-free geometry core (scales, path, deterministic reveal). Unit-tested.
 - `src/LineChart.tsx` — THE one React component, frame-driven by `progress`. `responsive` prop switches between the fixed absolute layout (video/static) and a flow layout with width-aware ticks (interactive); geometry is identical.
 - `src/InteractiveLineChart.tsx` — browser-only wrapper: ResizeObserver re-layout + rAF intro reveal (`animateOn`, respects `prefers-reduced-motion`). The ONLY place a wall-clock lives; never imported by the video.
-- `src/tokens.ts` — Okabe-Ito palette + type scale.
+- `src/core/tokens.ts` — Okabe-Ito palette + type scale.
 - `src/mount.tsx` — browser entry for the static + interactive builds.
 - `remotion/src/{Root,LineReveal}.tsx` + `remotion/index.ts` — the Remotion composition (video).
 - `scripts/{build-all,snap-static,snap-interactive,render-video}.mjs` — the three renderers.

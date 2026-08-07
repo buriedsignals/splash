@@ -349,7 +349,7 @@ bunx remotion render remotion/src/index.ts ChoroplethStory \
 
 Or via `produce.mjs` with an arbitrary config (nothing touches the committed sample):
 ```bash
-bun scripts/produce.mjs assets/sample-data/choropleth.json output-proof/choropleth
+bun scripts/produce.mjs assets/sample-data/choropleth.json output-proof/choropleth static
 ```
 
 ## Map-type roadmap

@@ -1,4 +1,12 @@
 .env
+# …and every secret-bearing variant of it. Only `.env` itself was ignored, so the backups tooling
+# writes beside it (`.env.bak-maptiler-<ts>`, `.env.bak.<ts>` — both found on disk 2026-08-06
+# carrying live Datawrapper, MapTiler and Cloudflare credentials) sat untracked-but-visible: one
+# `git add -A` away from publishing real keys from a repository headed for a public MIT release.
+# Same accident class as the newsroom profile below, caught before it happened rather than after.
+# `.env.example` is the tracked template and is exempted.
+.env.*
+!.env.example
 .superpowers/
 exports/
 

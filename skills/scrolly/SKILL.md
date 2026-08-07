@@ -1,6 +1,6 @@
 ---
 name: scrolly
-description: Use to build a SCROLL-DRIVEN interactive (scrollytelling) where the reader scrolls and a sticky graphic advances through narrative steps. A thin ORCHESTRATOR engine — it owns the scroll scaffold, the chapters[] storyboard, and the step dispatcher; it imports the visual renderers from the other engines (map-native now; chart-native next). v1 drives the MAP visual, reusing map-native's mapStory. Keywords scrollytelling, scrolly, scroll, sticky graphic, waypoints, flyTo, chapters, steps, IntersectionObserver, scrollama, map scrolly, narrative, interactive, newsroom, prose, storyboard.
+description: Use to build a SCROLL-DRIVEN interactive (scrollytelling) where the reader scrolls and a sticky graphic advances through narrative steps. A thin ORCHESTRATOR engine — it owns the scroll scaffold, the chapters[] storyboard, and the step dispatcher; it imports the visual renderers from the other engines. Three tracks ship: the MAP track (reusing map-native's mapStory), the CHART track (chart-native's renderers, via `nativeType`), and the IMAGE track (via `visual`). Keywords scrollytelling, scrolly, scroll, sticky graphic, waypoints, flyTo, chapters, steps, IntersectionObserver, scrollama, map scrolly, chart scrolly, image scrolly, narrative, interactive, newsroom, prose, storyboard.
 ---
 
 # scrolly — the scrollytelling orchestrator
