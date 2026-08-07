@@ -13,7 +13,7 @@ import {
   uncoveredLanguageRefusal,
 } from "../core/language-coverage";
 import { getProducer, producerForFormat } from "../core/registry";
-import { bgIsDark } from "../core/theme";
+import { bgIsDark, resolveThemeBg } from "../core/theme";
 import type { CapabilityReadiness } from "../newsroom/readiness";
 // The ONE list of engines production can build through — the same module produce.ts guards
 // with, so a form this file offers unmarked is a form produce.ts accepts (C1).
@@ -482,6 +482,45 @@ function imageWalkMark(
   return { status: "missing", reason: IMAGE_SCROLLY_PHOTOGRAPHS_NEEDED };
 }
 
+// THE GROUND A DATAWRAPPER FORM CANNOT HONOUR — and why this is a limit and not an exclusion.
+//
+// `isDark` above removes both Datawrapper engines on the case that is physically impossible: a
+// dark house ground on an engine whose background is plan-gated light-only (measured, not
+// assumed — skills/splash/src/brand-profile.ts:33). That check answers "dark or not", which
+// leaves the whole band it does not speak for: a ground that IS light but is not WHITE — a
+// cream, a warm off-white, a pale grey. That is what a newsroom with a house colour usually
+// has, and it is the common case, not the exotic one.
+//
+// There, Datawrapper produces a correct chart on ITS white, which then sits as a white
+// rectangle on the newsroom's own ground. The form is producible, so removing the row would be
+// the wrong instrument twice over: this file's own contract says a declared limit must INFORM
+// the choice and never remove it, and a newsroom whose only reachable engine for a type is
+// Datawrapper would lose the type over a cosmetic seam.
+//
+// So it is said, at the offer, in the sentence the journalist would otherwise only meet at the
+// render — the same discipline `featureLimits` follows. The native engines carry no such line
+// because they derive every piece of furniture from that exact colour (lib/core/theme's
+// deriveFurniture), which is what makes this a real choice between two reachable forms rather
+// than a complaint.
+//
+// RUN-DEPENDENT, hence here and not in lib/core/feature-reach.ts: that table is keyed by
+// (engine, type, format) and knows nothing about which newsroom is asking.
+const DW_ENGINES = new Set(["dw-chart", "map-dw"]);
+
+function groundMismatchLimit(
+  engine: string,
+  themeBg?: string,
+): string | undefined {
+  if (!DW_ENGINES.has(engine)) return undefined;
+  // `resolveThemeBg` is the one resolver the renderers use: it returns null for undefined,
+  // "light" and #FFFFFF alike, so the untouched white path stays byte-identically silent.
+  const bg = resolveThemeBg(themeBg);
+  // A dark ground never reaches here through `eligible` (it is excluded upstream); guarded
+  // anyway so a direct caller cannot get the softer sentence for the harder case.
+  if (!bg || bgIsDark(bg)) return undefined;
+  return `Datawrapper renders on its own white, so this would arrive as a white panel on the newsroom's ${bg} ground — the native engines derive their furniture from that colour instead`;
+}
+
 function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   const requires = [c.engine];
   // Order matters: `worst` below keeps the FIRST mark of the highest severity, and several
@@ -506,7 +545,9 @@ function withMarks(c: Candidate, input: EligibilityInput): Candidate {
   const declared = featureLimits(c.engine, c.key, c.format).map(
     (l) => l.sentence,
   );
-  const withLimits = declared.length > 0 ? { ...c, limits: declared } : c;
+  const ground = groundMismatchLimit(c.engine, input.themeBg);
+  const all = ground ? [...declared, ground] : declared;
+  const withLimits = all.length > 0 ? { ...c, limits: all } : c;
   if (marks.length === 0) return { ...withLimits, requires };
   const worst = marks.reduce((a, b) =>
     SEVERITY[b.status] > SEVERITY[a.status] ? b : a,

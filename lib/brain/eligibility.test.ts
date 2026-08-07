@@ -231,6 +231,49 @@ test("an unparseable themeBg throws rather than silently reading as light", () =
   expect(() => eligible({ ...BASE, themeBg: "midnight" })).toThrow();
 });
 
+// THE GROUND BETWEEN THE TWO ANSWERS ABOVE. `isDark` closes the case Datawrapper physically
+// cannot serve; it says nothing about a ground that is LIGHT but not white — a cream, a pale
+// grey, a warm off-white, which is what most newsrooms with a house colour actually have. There
+// the form is producible, so removing the row would be wrong (a declared limit INFORMS, it never
+// removes), and it renders on Datawrapper's own white: the chart arrives as a white rectangle on
+// the newsroom's cream page. The native engines derive their furniture from the ground and do
+// not. That trade belongs in front of the journalist at the offer, not discovered at the render.
+const CREAM = "#F5F0E6";
+const groundLimits = (c: { limits?: string[] } | undefined) =>
+  (c?.limits ?? []).filter((l) => /white/i.test(l));
+
+test("a light-but-not-white house ground marks the Datawrapper forms with the ground they cannot honour", () => {
+  const { eligible: ok } = eligible({ ...BASE, themeBg: CREAM });
+  const dw = ok.find((c) => c.engine === "dw-chart");
+  expect(dw).toBeDefined(); // still offered — the form is producible…
+  const said = groundLimits(dw);
+  expect(said.length).toBe(1); // …and says what it will cost
+  expect(said[0]).toContain(CREAM); // naming the ground it will NOT be
+});
+
+test("the native engines carry no ground limit on that same ground", () => {
+  const { eligible: ok } = eligible({ ...BASE, themeBg: CREAM });
+  const native = ok.filter(
+    (c) => c.engine !== "dw-chart" && c.engine !== "map-dw",
+  );
+  expect(native.length).toBeGreaterThan(0);
+  expect(native.every((c) => groundLimits(c).length === 0)).toBe(true);
+});
+
+test("a white or unset ground adds no limit — the untouched path stays silent", () => {
+  for (const themeBg of ["#FFFFFF", "light", undefined]) {
+    const { eligible: ok } = eligible({ ...BASE, themeBg });
+    expect(ok.every((c) => groundLimits(c).length === 0)).toBe(true);
+  }
+});
+
+test("a dark ground is still EXCLUDED, not merely marked — the physical case is untouched", () => {
+  const { eligible: ok } = eligible({ ...BASE, themeBg: "#12233A" });
+  expect(
+    ok.every((c) => c.engine !== "dw-chart" && c.engine !== "map-dw"),
+  ).toBe(true);
+});
+
 // "Is this ground dark" had TWO answers: this file's own luminance < 0.5, and lib/core/theme's
 // bgIsDark (< 0.4), the resolver every renderer already routes through. On the band between
 // them a newsroom lost both Datawrapper engines on a false premise — and because a form offered
