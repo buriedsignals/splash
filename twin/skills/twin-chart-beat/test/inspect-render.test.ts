@@ -138,7 +138,10 @@ describe("inspectSvg", () => {
     expect(result.contrast[0].pass).toBe(false);
   });
 
-  it("should judge a big bold title against the measured large-text floor (3:1, not 4.5:1)", () => {
+  it("should hold a big bold title to the same 4.5:1 floor as everything else", () => {
+    // There is no large-text carve-out. A title at 3.03:1 is a title nobody can read, and the
+    // 3:1 allowance only ever bought leniency for mid-grey text — real titles are set in the
+    // maximum-contrast ink `deriveFurniture` derives and clear 4.5:1 without needing it.
     const result = inspectSvg(
       svg(text('font-size="26" font-weight="700" fill="#949494"', "Title")),
       {
@@ -146,7 +149,7 @@ describe("inspectSvg", () => {
       },
     );
     expect(result.contrast[0].ratio).toBeCloseTo(3.03, 1);
-    expect(result.contrast[0].pass).toBe(true); // measured ink height clears the large-text floor
+    expect(result.contrast[0].pass).toBe(false);
   });
 
   it("should hold ordinary small text to 4.5:1 at that same ratio", () => {
@@ -154,6 +157,26 @@ describe("inspectSvg", () => {
       ground: "#FFFFFF",
     });
     expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should not let a descender change the verdict on an axis label at a fixed size", () => {
+    // The bug this pins: a floor keyed off MEASURED ink height is inflated by descenders, so
+    // `"Growth by region"` (g, y) cleared a 17px threshold at font-size 18 and was waved through
+    // at 3.03:1 while the same label without descenders, same size, same fill, same ratio,
+    // failed. Same size and same fill must mean the same verdict, whatever letters are in it.
+    const withDescenders = inspectSvg(
+      svg(text('font-size="18" fill="#949494"', "Growth by region")),
+      { ground: "#FFFFFF" },
+    );
+    const without = inspectSvg(
+      svg(text('font-size="18" fill="#949494"', "Growth in Norwich")),
+      { ground: "#FFFFFF" },
+    );
+    expect(withDescenders.contrast[0].ratio).toBeCloseTo(3.03, 1);
+    expect(without.contrast[0].ratio).toBeCloseTo(3.03, 1);
+    expect(withDescenders.contrast[0].pass).toBe(false);
+    expect(without.contrast[0].pass).toBe(false);
+    expect(withDescenders.contrast[0].pass).toBe(without.contrast[0].pass);
   });
 
   it("should measure opacity correctly instead of reporting the underlying fill unmodified", () => {
@@ -314,6 +337,71 @@ describe("inspectSvg", () => {
     expect(result.contrast[0].fill).toBe("#767676");
     expect(result.contrast[0].ratio).toBeCloseTo(1.59, 1);
     expect(result.contrast[0].pass).toBe(false);
+  });
+
+  // --- The narrow crossing, and the other side of the same trade. A rank-based "discard the
+  // worst 1%" trim hid a real illegible crossing whenever the rest of the label was long enough
+  // to outvote it. The replacement credits a bad reading once a CONNECTED region vouches for it,
+  // which does not scale with the length of the rest of the label. Both directions are pinned:
+  // the crossing must FAIL, and a clean label of the same size and colour must still PASS at its
+  // true ratio rather than being dragged down by leftover anti-aliasing. ---
+
+  const LONG_LABEL =
+    "A long axis label that keeps on running right across the whole chart area here";
+  const wide = (body: string) =>
+    `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="1800" height="100">` +
+    `<rect x="0" y="0" width="1800" height="100" fill="#FFFFFF"/>${body}</svg>`;
+  const longLabel = `<text x="20" y="60" font-size="40" fill="#767676">${LONG_LABEL}</text>`;
+
+  it("should report a narrow illegible crossing that is a tiny fraction of a long label", () => {
+    // #767676 reads 4.54:1 on white but only 1.35:1 on #8C8C8C. The strip is 15px wide under a
+    // label ~1500px long: its ~1000 solid, genuinely-unreadable pixels are well under 1% of the
+    // label's ~93k core pixels, so a 1%-trim discarded them entirely and reported 4.54:1 pass.
+    const result = inspectSvg(
+      wide(
+        `<rect x="900" y="0" width="15" height="100" fill="#8C8C8C"/>` +
+          longLabel,
+      ),
+      { ground: "#FFFFFF" },
+    );
+    expect(result.contrast[0].fill).toBe("#767676");
+    expect(result.contrast[0].ratio).toBeCloseTo(1.35, 1);
+    expect(result.contrast[0].pass).toBe(false);
+  });
+
+  it("should still report a clean long label at its true ratio, not at its anti-aliasing residue", () => {
+    // The same label with nothing crossing it. Erosion does not perfectly clear every pixel on
+    // curved letterforms, so the raw minimum here is 2.61:1 — a false failure if the residue
+    // were believed. It is scattered specks, no connected region vouches for it, and the true
+    // 4.54:1 ink stands.
+    const result = inspectSvg(wide(longLabel), { ground: "#FFFFFF" });
+    expect(result.contrast[0].fill).toBe("#767676");
+    expect(result.contrast[0].ratio).toBeCloseTo(4.54, 1);
+    expect(result.contrast[0].pass).toBe(true);
+  });
+
+  it("should read pessimistically, not optimistically, on text too small to leave a credible region", () => {
+    // Below a certain size erosion leaves only a couple of pixels — fewer than one credible
+    // region — so there is no structure left to appeal to and neither reading is the true ink.
+    // The rule is that uncertainty must never buy leniency, so the fallback takes the WORST of
+    // what it saw, not the best: this fixture's tiny core spans a blended pixel and a true-ink
+    // one, and the blended one is what gets reported. Asserted as a comparison against the same
+    // fill measured at a size where it IS measurable, so it pins the direction rather than a
+    // brittle residue value.
+    const tiny = inspectSvg(
+      svg(
+        '<text x="10" y="50" font-size="10" fill="#616161">tiny note gy</text>',
+      ),
+      { ground: "#FFFFFF" },
+    );
+    const measurable = inspectSvg(
+      svg(
+        '<text x="10" y="70" font-size="40" fill="#616161">tiny note gy</text>',
+      ),
+      { ground: "#FFFFFF" },
+    );
+    expect(measurable.contrast[0].ratio).toBeCloseTo(6.19, 1); // the true ink
+    expect(tiny.contrast[0].ratio!).toBeLessThan(measurable.contrast[0].ratio!);
   });
 
   it("should not let a dominant tspan's ink contaminate its parent's OWN separate measurement", () => {

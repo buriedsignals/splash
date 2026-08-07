@@ -26,6 +26,13 @@
 // comments inside a style attribute and anything else the real renderer applies, because they ARE
 // what the real renderer applied. This deletes the entire defect class rather than patching the
 // next instance of it — no `NAMED_COLOURS` table, no style/cascade parser, no attribute list.
+//
+// The method retired that defect class; the two defects that outlived it were in this file's own
+// TUNABLES, where uncertainty had been allowed to buy leniency, and both are now gone rather
+// than retuned: the WCAG large-text carve-out (a threshold on measured ink height, which
+// descenders inflate) is DELETED — one 4.5:1 floor for every text node — and the "trim the worst
+// 1% of core pixels" rule is replaced by a connected-region test. See `CONTRAST_FLOOR` and
+// `MIN_CREDIBLE_REGION_PX` below for the measurements behind each.
 
 import { Resvg } from "@resvg/resvg-js";
 import { contrast } from "./render-still.mjs";
@@ -75,18 +82,97 @@ function erode(points, width) {
   return current;
 }
 
-// WCAG's large-text floor (3:1 instead of 4.5:1) is defined on the CSS `font-size` (the em box),
-// not on the glyph's rendered ink extent — and the two are not the same number. Measured against
-// this codebase's own font stack (see report), a genuinely-large 24px declaration measures ~18px
-// of ink height even for a shallow all-digit string, and every genuinely-normal size sampled
-// (15-20px, including bold) measured well under that. 17px (measured, logical px) sits with
-// margin below the large case and above every normal case actually measured — a threshold judged
-// by evidence, not a formula, and deliberately on the strict side: WCAG also lowers the floor for
-// BOLD text down to 18.66px, but nothing here measures boldness (only the glyph's height, not its
-// stroke weight) reliably enough to trust that carve-out, so it is dropped. A 20px bold heading
-// that WCAG would call large-enough is held to the stricter 4.5:1 by this tool — uncertainty
-// again resolved toward the harder floor, never the easier one.
-const LARGE_TEXT_MEASURED_PX = 17;
+// ONE floor, 4.5:1, for every text node. WCAG's large-text carve-out (3:1) is deliberately NOT
+// implemented, and an earlier attempt at it is deleted rather than retuned.
+//
+// The carve-out is defined on the CSS `font-size` — the em box. This tool has no em box: it
+// measures painted ink, and ink height depends on which GLYPHS the string happens to contain. A
+// previous version keyed the carve-out off the measured ink height (threshold 17px) and was
+// reproduced granting 3:1 to `"Growth by region"` in `#949494` on white at font-size 18 — an
+// ordinary axis label at a true 3.03:1 — purely because its `g`/`y` descenders pushed the
+// measured height past the threshold. The identical label without descenders, same size, same
+// fill, same 3.03:1, correctly failed. A verdict that flips on which letters a word contains is
+// not a measurement. Deriving the threshold from cap-height or x-height instead cannot rescue it:
+// separating cap-height from ink height needs to know which glyphs are present, which is exactly
+// the markup-reading this file exists to avoid.
+//
+// The leniency also buys almost nothing. The only text in a chart large enough to have earned
+// 3:1 is a title, and a title is set in the maximum-contrast ink `deriveFurniture` derives — it
+// clears 4.5:1 without difficulty (the seed's own title reads 21:1 on light, 17.89:1 on dark).
+// So the carve-out's whole practical effect was to wave through mid-grey labels. A genuinely
+// large title at genuinely low contrast is now reported as a failure, and that is a failure
+// worth seeing. Uncertainty resolves toward the stricter requirement, as everywhere else here.
+const CONTRAST_FLOOR = 4.5;
+
+// Anti-aliasing residue that survives erosion is SPARSE — isolated specks and short chains at
+// the thin interior of a curved stroke. A part of a label that genuinely sits on a harder
+// background is DENSE — a solid, connected region. So the worst reading is credited only once a
+// run of adjacent pixels vouches for it, which is a structural test, not a rank-based one.
+//
+// This replaces a "discard the worst 1% of core pixels" trim, which was reproduced reporting
+// 4.54:1 `pass: true` over a long `#767676` label crossing a 15px-wide `#8C8C8C` strip whose 1086
+// solid, genuinely-illegible 1.35:1 pixels were under 1% of the label's ~51k core pixels. A
+// percentage is the wrong instrument: what makes a bad reading credible is that it is CONNECTED,
+// and connectedness does not scale with how long the rest of the label is.
+//
+// 7 is one above the largest residue component measured over 156 renders — 14 sizes from 9px to
+// 48px, six strings (round letterforms, straight stems, wide caps, accents), regular and bold,
+// four fill/ground pairs on both a light and a dark ground. Distribution of the largest residue
+// component per render: 0 px ×40, 1 ×52, 2 ×21, 3 ×17, 4 ×10, 5 ×14, 6 ×2. Real crossings measure
+// far above that: a 1px gridline behind 20px text gives 42, a 2px gridline behind 12px text 7, a
+// 4px gridline behind 12px text 15, the 15px strip above 1086. The two populations only overlap
+// at the very bottom — a 1px gridline behind 12-16px text produces a real 3-6px region that is
+// genuinely indistinguishable from residue, and is missed. That band is stated in the report as
+// an open hole rather than closed by lowering the threshold into the residue.
+const MIN_CREDIBLE_REGION_PX = 7;
+
+/**
+ * The worst reading that a CONNECTED region of at least `MIN_CREDIBLE_REGION_PX` pixels vouches
+ * for. `rated` must be sorted worst-ratio-first; each entry carries its own x/y.
+ *
+ * Walks the pixels in that order into a union-find, so at every step the components are exactly
+ * the connected regions of "pixels at least this bad", and returns the first pixel whose own
+ * region reaches the size threshold. Scattered residue never gets there; a solid crossing does
+ * so almost immediately.
+ *
+ * If NO region ever reaches the threshold — the whole core is smaller than one credible region,
+ * which happens on text small enough that erosion leaves only a handful of pixels — there is no
+ * structure left to appeal to, so the single worst pixel is returned outright. That reads at or
+ * below the true ink (a partly-blended pixel always sits closer to the background than the ink
+ * does), never above it: the fallback can produce a false FAILURE on very small text, never a
+ * false pass. It is also exactly what the 1%-trim did in that regime, since 1% of a handful of
+ * pixels trims nothing — so this path is unchanged behaviour, not a new risk.
+ */
+function worstCredible(rated, width) {
+  const parent = new Map();
+  const size = new Map();
+  const find = (key) => {
+    let k = key;
+    while (parent.get(k) !== k) {
+      parent.set(k, parent.get(parent.get(k))); // path halving
+      k = parent.get(k);
+    }
+    return k;
+  };
+
+  for (const pixel of rated) {
+    const key = pixel.y * width + pixel.x;
+    parent.set(key, key);
+    size.set(key, 1);
+    for (const [dx, dy] of NEIGHBOURS_8) {
+      const neighbour = (pixel.y + dy) * width + (pixel.x + dx);
+      if (!parent.has(neighbour)) continue; // not yet added: it reads better than this pixel
+      const a = find(key);
+      const b = find(neighbour);
+      if (a === b) continue;
+      const [big, small] = size.get(a) >= size.get(b) ? [a, b] : [b, a];
+      parent.set(small, big);
+      size.set(big, size.get(big) + size.get(small));
+    }
+    if (size.get(find(key)) >= MIN_CREDIBLE_REGION_PX) return pixel;
+  }
+  return rated[0];
+}
 
 const TEXT_BEARING = new Set(["text", "tspan"]);
 
@@ -241,28 +327,15 @@ function measureNode(svg, nodes, index, ground) {
   // not the average, and not the anti-aliased rim, which always measures artificially close to
   // the background. Each pixel keeps its OWN local background, so a run crossing a gridline or
   // another mark is judged against whichever side is actually harder to read, not an average.
-  //
-  // The single lowest-ratio pixel, not a trimmed one, is NOT what is taken here — a real 40-
-  // character title measured this way landed on 5 pixels out of 40,907 "core" pixels (0.01%)
-  // that erosion had not perfectly cleared, all on the curved parts of round letterforms
-  // (a/e/o/s), and one still-slightly-blended pixel dragged the whole title's reading down from
-  // 21:1 to 5.02:1. Trimming the worst 1% before taking the minimum keeps this "worst, not
-  // average" — a gridline crossing a label affects a real, large share of its core pixels (over
-  // 40% in the case this trim was checked against), so it survives easily; a handful of leftover
-  // curve pixels, at a fraction 100x smaller, does not.
   const byRatio = core
-    .map((p) => ({ ratio: contrast(toHex(p.fg), toHex(p.bg)), fg: p.fg }))
+    .map((p) => ({ ratio: contrast(toHex(p.fg), toHex(p.bg)), fg: p.fg, x: p.x, y: p.y }))
     .sort((a, b) => a.ratio - b.ratio);
-  const worst = byRatio[Math.floor(byRatio.length * 0.01)];
-
-  const ys = changed.map((p) => p.y);
-  const measuredHeightPx = (Math.max(...ys) - Math.min(...ys) + 1) / ZOOM;
-  const threshold = measuredHeightPx >= LARGE_TEXT_MEASURED_PX ? 3 : 4.5;
+  const worst = worstCredible(byRatio, full.width);
 
   return {
     fill: toHex(worst.fg),
     ratio: Number(worst.ratio.toFixed(2)),
-    pass: worst.ratio >= threshold,
+    pass: worst.ratio >= CONTRAST_FLOOR,
     unresolved: false,
   };
 }
