@@ -21,6 +21,7 @@ import {
   capabilityReadiness,
   readinessBlockers,
   type CapabilityReadiness,
+  type ReadinessReasonCode,
   type ReadinessStatus,
 } from "../../lib/newsroom/readiness.ts";
 import { isSet, type BrowserProbeResult } from "../../lib/newsroom/probe.ts";
@@ -121,6 +122,12 @@ export type PreflightCapability = {
    * that is off is not a blocker whatever this string says.
    */
   reason: string;
+  /**
+   * The same fact as `reason`, machine-readable — what the page keys its OWN translated sentence
+   * on (copy.ts's `readinessReason`, E27). `reason` is English whatever language the page is
+   * being read in, so it is a fallback here, never the thing rendered.
+   */
+  reasonCode: ReadinessReasonCode;
   /**
    * The names of the fields this DELIVERY DESTINATION still needs — the page's way of saying
    * what is missing in its own vocabulary ("Needs: Cloudflare account ID"), instead of repeating
@@ -359,6 +366,7 @@ export function describeCapability(
     status: readiness.status,
     statusIfEnabled: ifEnabled.status,
     reason: readiness.reason || ifEnabled.reason,
+    reasonCode: readiness.reasonCode || ifEnabled.reasonCode,
     missingFields: cap.implemented ? missingFieldsOf(cap, state, env) : [],
     help: readiness.help,
   };

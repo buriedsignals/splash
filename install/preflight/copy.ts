@@ -4,11 +4,15 @@
 // choice. The page is the first thing that speaks, so it obeys the same rule as the emitted
 // export block (lib/newsroom/ui-copy.ts): one table, English default, unknown language falls
 // back to English rather than showing a half-translated form.
+import { NEWSROOM_CAPABILITIES } from "../../lib/newsroom/capabilities.ts";
 import {
   SIGNAL_LABEL,
   type ColourSignal,
   type TypeMeasurement,
 } from "../../lib/newsroom/charter.ts";
+// Type-only on purpose: readiness.ts reaches for node:path/node:url at module load, and this
+// module is bundled INTO the browser client.
+import type { ReadinessReasonCode } from "../../lib/newsroom/readiness.ts";
 
 export const MODEL_SCRIPT_ID = "preflight-model";
 
@@ -79,7 +83,13 @@ export type PageCopy = {
    *  SAME strings as charter.ts's `SIGNAL_LABEL` (one English source, not a second copy that can
    *  drift from it); `fr` is this table's own translation. */
   signalLabel: Record<ColourSignal, string>;
-  /** What a measured typeface role is called — keyed like `TypeMeasurement["role"]`. */
+  /**
+   * What a measured typeface role is called — keyed like `TypeMeasurement["role"]`. Each entry
+   * COMPLETES `receiptReadFont`, so it is written to fit that sentence and nothing else: the
+   * French table used to hold standalone noun phrases ("une police auto-hébergée") that produced
+   * "Lu comme police de une police auto-hébergée" — and "de le texte courant", "de les titres" —
+   * on the served page, while English produced "the font of a self-hosted webfont".
+   */
   typeRoleLabel: Record<TypeMeasurement["role"], string>;
   /** "${this} ${signalLabel}: `${token}`. ${receiptSource} ${source}" — a colour receipt. */
   receiptReadFrom: string;
@@ -100,6 +110,21 @@ export type PageCopy = {
   assistantTitle: string;
   assistantHint: string;
   loginOptionalHint: string;
+
+  // E27 — sections 4 and 5 used to render the REGISTRY's English straight onto a French page
+  // ("Publish an embeddable link (Cloudflare Pages)", "In-house, needs a MapTiler key"), because
+  // lib/newsroom/capabilities.ts and lib/newsroom/readiness.ts are English-only by design: they
+  // are also read by the CLI and the delivery paths. The registry keeps the machine-readable
+  // identity (the capability id, the reason code); the words the page says live HERE, keyed by
+  // that identity — never matched back from the English string at render time.
+  /** A capability's standalone NAME, keyed by registry id — the subject of the blocker sentence.
+   *  `en` is DERIVED from the registry, so the two cannot drift the way a hand-copy would. */
+  capabilityName: Record<string, string>;
+  /** A capability's own caption where it is offered or listed (the registry's `choice`), keyed by
+   *  registry id. A capability that declares none falls back to `capabilityName`. */
+  capabilityChoice: Record<string, string>;
+  /** Why a capability is not ready, keyed by readiness's `reasonCode`. Read as "${name} — ${this}". */
+  readinessReason: Record<Exclude<ReadinessReasonCode, "">, string>;
 
   capabilitiesTitle: string;
   capabilitiesHint: string;
@@ -174,8 +199,12 @@ const EN: PageCopy = {
   measureRenderHint:
     "Some sites build their colours in JavaScript, invisible to a plain read. Opening your site in a real browser can find them — this takes longer than the first try, up to about 30 seconds.",
   measureRendering: "Opening your site in a browser…",
+  // Not "check the address": the classification above already established that the BROWSER
+  // failed, not the site, and the observed case is a missing Chromium — an address the journalist
+  // cannot improve. It says what broke, that their first reading still stands, and the two things
+  // they can actually do. `failureReadout` appends the machine detail after it, in parentheses.
   measureRenderFailed:
-    "Could not open your site in a browser either — check the address and try again.",
+    "Could not start a browser on this machine — your address is fine, and the plain reading above still stands. Try again, or pass the technical detail on to whoever maintains this install.",
   measuredTypefaces: "Typefaces read on your site",
   measuredTypefacesHint:
     "Noted in your profile as text — no visual uses them yet. Remove any that are not your newsroom's, and only the rest is saved.",
@@ -186,12 +215,12 @@ const EN: PageCopy = {
 
   signalLabel: SIGNAL_LABEL,
   typeRoleLabel: {
-    body: "the body text",
-    headings: "the headings",
+    body: "the font of the body text",
+    headings: "the font of the headings",
     webfont: "a self-hosted webfont",
   },
   receiptReadFrom: "Read from",
-  receiptReadFont: "Read as the font of",
+  receiptReadFont: "Read as",
   receiptSource: "Source:",
 
   languageContent: "Language your visuals are published in",
@@ -200,6 +229,31 @@ const EN: PageCopy = {
   assistantHint: "The AI runtime that drives Splash on this machine.",
   loginOptionalHint:
     "Leave blank if you have a subscription — you will sign in on first launch.",
+
+  capabilityName: Object.fromEntries(
+    Object.values(NEWSROOM_CAPABILITIES).map((c) => [c.id, c.label]),
+  ),
+  capabilityChoice: Object.fromEntries(
+    Object.values(NEWSROOM_CAPABILITIES)
+      .filter((c) => c.choice)
+      .map((c) => [c.id, c.choice as string]),
+  ),
+  readinessReason: {
+    "not-implemented":
+      "is not available yet — it arrives with the publisher adapters",
+    "missing-credentials":
+      "still needs a key — fill it in above, then run the check again",
+    "missing-settings":
+      "is not fully configured — one of the details it needs is still blank above",
+    "incomplete-install":
+      "was not installed completely — run the Splash installer again to finish it",
+    "missing-video-browser":
+      "is missing the browser its video renderer needs, or it downloaded only halfway — run the Splash installer again to finish it",
+    rejected:
+      "the provider did not accept this credential — check it and run the check again",
+    unreachable:
+      "could not be reached when it was last checked — it may well still work",
+  },
 
   capabilitiesTitle: "Your accounts",
   capabilitiesHint: "The keys below are asked once, whatever you use.",
@@ -269,7 +323,7 @@ const FR: PageCopy = {
     "Certains sites construisent leurs couleurs en JavaScript, invisibles à une lecture simple. Ouvrir votre site dans un vrai navigateur peut les trouver — c'est plus long que le premier essai, jusqu'à environ 30 secondes.",
   measureRendering: "Ouverture de votre site dans un navigateur…",
   measureRenderFailed:
-    "Impossible d'ouvrir votre site dans un navigateur non plus — vérifiez l'adresse et réessayez.",
+    "Impossible de démarrer un navigateur sur cette machine — votre adresse est bonne, et la lecture simple ci-dessus reste valable. Réessayez, ou transmettez le détail technique à qui maintient cette installation.",
   measuredTypefaces: "Polices lues sur votre site",
   measuredTypefacesHint:
     "Notées dans votre profil sous forme de texte — aucun visuel ne les utilise encore. Retirez celles qui ne sont pas celles de votre rédaction : seules les autres sont enregistrées.",
@@ -298,12 +352,12 @@ const FR: PageCopy = {
     declared: "une couleur déclarée quelque part dans la feuille de style",
   },
   typeRoleLabel: {
-    body: "le texte courant",
-    headings: "les titres",
-    webfont: "une police auto-hébergée",
+    body: "police du texte courant",
+    headings: "police des titres",
+    webfont: "police auto-hébergée",
   },
   receiptReadFrom: "Lu depuis",
-  receiptReadFont: "Lu comme police de",
+  receiptReadFont: "Lu comme",
   receiptSource: "Source :",
 
   languageContent: "Langue de publication de vos visuels",
@@ -312,6 +366,45 @@ const FR: PageCopy = {
   assistantHint: "Le runtime IA qui pilote Splash sur cette machine.",
   loginOptionalHint:
     "Laissez vide si vous avez un abonnement — vous vous connecterez au premier lancement.",
+
+  // E27 — la traduction est indexée sur l'identifiant du registre, jamais sur la phrase anglaise.
+  capabilityName: {
+    "dw-chart": "Les graphiques Datawrapper",
+    "map-dw": "Les cartes Datawrapper",
+    "chart-native": "Le moteur de graphiques interne",
+    "map-native": "Le moteur de cartes interne",
+    scrolly: "Le moteur de scrolly",
+    "image-native": "Le moteur de récits photo",
+    "embed-cloudflare": "Publier un lien intégrable (Cloudflare Pages)",
+    "embed-hosted": "Transmettre le lien de l'embed déjà publié",
+    zip: "Télécharger un paquet portable (marche partout)",
+    "embed-cms": "Publier via le CMS de la rédaction (We.Publish)",
+    "embed-s3": "Publier sur le stockage objet de la rédaction",
+  },
+  capabilityChoice: {
+    "dw-chart": "Avec un compte Datawrapper",
+    "map-dw": "Avec un compte Datawrapper",
+    "chart-native": "En interne, sans compte (vidéo comprise)",
+    "map-native": "En interne, avec une clé MapTiler (vidéo comprise)",
+    scrolly: "Récits au défilement",
+    "image-native": "À partir des photographies de la rédaction",
+  },
+  readinessReason: {
+    "not-implemented":
+      "n'est pas encore disponible — arrive avec les adaptateurs de publication",
+    "missing-credentials":
+      "a encore besoin d'une clé — saisissez-la ci-dessus, puis relancez la vérification",
+    "missing-settings":
+      "n'est pas complètement configuré — l'une des informations nécessaires est encore vide ci-dessus",
+    "incomplete-install":
+      "n'a pas été installé complètement — relancez l'installeur Splash pour le terminer",
+    "missing-video-browser":
+      "n'a pas le navigateur dont son moteur vidéo a besoin, ou il ne s'est téléchargé qu'à moitié — relancez l'installeur Splash pour le terminer",
+    rejected:
+      "le fournisseur n'a pas accepté cet identifiant — vérifiez-le puis relancez la vérification",
+    unreachable:
+      "était injoignable lors de la dernière vérification — il marche peut-être très bien",
+  },
 
   capabilitiesTitle: "Vos comptes",
   capabilitiesHint:

@@ -21,12 +21,31 @@ import type { NewsroomState } from "./state";
 
 export type ReadinessStatus = "ready" | "missing" | "unverified" | "disabled";
 
+/**
+ * The machine-readable twin of `reason` (E27). `reason` stays ENGLISH — it is what the CLI, the
+ * delivery paths and the host command print — while a page that is being read in another language
+ * keys its OWN translated sentence on this code (install/preflight/copy.ts's `readinessReason`).
+ * That is what keeps the translation off string-matching an English sentence at render time.
+ * "" ⇒ nothing is wrong: ready, or disabled by the newsroom's own choice.
+ */
+export type ReadinessReasonCode =
+  | ""
+  | "not-implemented"
+  | "missing-credentials"
+  | "missing-settings"
+  | "incomplete-install"
+  | "missing-video-browser"
+  | "rejected"
+  | "unreachable";
+
 export type CapabilityReadiness = {
   id: string;
   label: string;
   status: ReadinessStatus;
   /** Empty when ready or disabled-by-choice; otherwise one actionable sentence. */
   reason: string;
+  /** The same fact, for a caller that must say it in another language. */
+  reasonCode: ReadinessReasonCode;
   /** Where the journalist gets what is missing. */
   help: string[];
 };
@@ -56,6 +75,7 @@ export function capabilityReadiness(
     return {
       ...base,
       status: "disabled",
+      reasonCode: "not-implemented",
       reason: `${cap.label} is not available yet — it arrives with the publisher adapters`,
     };
 
@@ -69,7 +89,7 @@ export function capabilityReadiness(
   // checks several destinations this way at once, which is why this stays a per-capability flag
   // rather than a single "the chosen one" field).
   if (cap.kind === "delivery" && state.capabilities[cap.id]?.enabled !== true)
-    return { ...base, status: "disabled", reason: "" };
+    return { ...base, status: "disabled", reasonCode: "", reason: "" };
 
   const missingGroups = cap.env.filter(
     (group) => !group.some((name) => isSet(opts.env[name])),
@@ -79,6 +99,7 @@ export function capabilityReadiness(
     return {
       ...base,
       status: "missing",
+      reasonCode: "missing-credentials",
       reason: `${cap.label} needs ${names} — the Splash setup page collects it for you, then retry`,
       help: missingGroups.flatMap((g) =>
         g.map((n) => cap.envHelp[n]).filter((h): h is string => Boolean(h)),
@@ -100,6 +121,7 @@ export function capabilityReadiness(
     return {
       ...base,
       status: "missing",
+      reasonCode: "missing-settings",
       reason:
         `${cap.label} is not fully configured — it still needs ` +
         `${missingSettings.map((f) => f.name).join(", ")}. ` +
@@ -121,6 +143,7 @@ export function capabilityReadiness(
       return {
         ...base,
         status: "missing",
+        reasonCode: "incomplete-install",
         reason:
           `${cap.label} was not installed completely (${missing.join(", ")} missing) — ` +
           `run the Splash installer again to finish it`,
@@ -135,6 +158,7 @@ export function capabilityReadiness(
         return {
           ...base,
           status: "missing",
+          reasonCode: "missing-video-browser",
           reason:
             `${cap.label}'s video renderer is missing its browser, or it downloaded ` +
             `only halfway — run the Splash installer again to finish it`,
@@ -147,6 +171,7 @@ export function capabilityReadiness(
     return {
       ...base,
       status: "missing",
+      reasonCode: "rejected",
       reason: `${cap.label}: the provider rejected this credential — re-check it in the Splash setup page`,
       help: Object.values(cap.envHelp),
     };
@@ -154,10 +179,11 @@ export function capabilityReadiness(
     return {
       ...base,
       status: "unverified",
+      reasonCode: "unreachable",
       reason: `${cap.label} could not be reached when it was last checked — it may still work`,
     };
 
-  return { ...base, status: "ready", reason: "" };
+  return { ...base, status: "ready", reasonCode: "", reason: "" };
 }
 
 export function decorReadiness(
