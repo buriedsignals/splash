@@ -580,6 +580,9 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       title: "Swiss cities",
       unit: " pts",
     });
+    // Reveal boxes are ±0.6°, not the old constant ±1.5°: these four cities span 2.4° of
+    // longitude, so `tourBoxDelta` frames a stop at half that half-spread (core/tour-box.ts).
+    // A stop is now NARROWER than the establishing box below — which is the whole point.
     expect(beats).toEqual([
       {
         kind: "title",
@@ -599,7 +602,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [4.6, 44.7, 7.6, 47.7],
+        camera: [5.5, 45.6, 6.699999999999999, 46.800000000000004],
         highlight: ["Geneva"],
         dim: true,
         callout: {
@@ -612,7 +615,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [5.1, 45, 8.1, 48],
+        camera: [6, 45.9, 7.199999999999999, 47.1],
         highlight: ["Lausanne"],
         dim: true,
         callout: {
@@ -625,7 +628,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [7, 45.9, 10, 48.9],
+        camera: [7.9, 46.8, 9.1, 48],
         highlight: ["Zurich"],
         dim: true,
         callout: {
@@ -638,7 +641,7 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
       },
       {
         kind: "reveal",
-        camera: [5.9, 45.4, 8.9, 48.4],
+        camera: [6.800000000000001, 46.3, 8, 47.5],
         highlight: ["Bern"],
         dim: true,
         callout: {
