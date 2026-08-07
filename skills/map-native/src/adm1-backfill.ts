@@ -20,10 +20,15 @@
 // resolve their join key themselves with a hardcoded `iso_a3` default (DotDensityMap.tsx:41,
 // cartogram-geo.ts:62) that an admin-1 subset — which keeps `name` only — can never satisfy.
 // Filling their ids would turn the resolver's LOUD refusal into a map with boundaries and no
-// data on it. The loop chain refuses that pairing outright (assemble/map-native.ts:249-256,
-// "a join would render silently wrong rather than merely fail"); until the prose chain has the
-// same refusal, the resolver's throw is the only thing standing between a journalist and a blank
-// map, and this module does not remove it.
+// data on it.
+//
+// That boundary is no longer defended by the resolver's throw alone. Both chains now refuse the
+// pairing by name, in one wording, BEFORE any producer runs — the loop at
+// assemble/map-native.ts's dot-density branch, the prose chain at skills/splash/src/
+// validate-gate.ts's `regionJoinError` — and both take their sentence from
+// region-join-support.ts, which also carries the measurements behind it. This module stays
+// choropleth-only for exactly the reason stated there; widening it means lifting those two
+// components onto `config.geography.joinKey` first, with a render proof.
 import { matchAdm1Columns } from "./geo-match";
 import {
   basemapKeyFor,

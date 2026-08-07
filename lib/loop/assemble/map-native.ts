@@ -15,6 +15,9 @@ import { BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps";
 // GeoMatch stopped carrying that raw key when it widened from `basemap: string`). See
 // lib/geo/ref.ts's own doc comment for why `geography.set` is not usable directly here.
 import { basemapKeyFor, resolveGeographyRef } from "../../geo/ref";
+// One wording for one fact, shared with the prose chain's own gate — see the dot-density
+// branch below for why only the sentence is shared and not the condition.
+import { isoA3PinnedJoinRefusal } from "../../../skills/map-native/src/region-join-support";
 
 const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 const POINT_TYPES = new Set(["symbol", "hex-grid", "locator", "route"]);
@@ -246,13 +249,18 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
     // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` directly —
     // "world"'s own set is "natural-earth-admin-0", not "world" (see lib/geo/ref.ts's doc
     // comment), so this guard reads the same identifier the config below writes.
+    //
+    // The SENTENCE now comes from skills/map-native/src/region-join-support.ts, so the prose
+    // chain — which refuses the same pairing at its own gate (skills/splash/src/validate-gate.ts)
+    // — says one thing about one fact rather than a second wording of its own. The CONDITION
+    // stays here: this branch refuses every non-world basemap in every format, which is broader
+    // than the mechanism strictly requires (a video resolves the key correctly), and narrowing
+    // it is a capability decision for this chain, not a side effect of sharing a string.
     const basemapKey = basemapKeyFor(geo.geography);
     if (basemapKey !== "world")
       return fail(
         "invalid-request",
-        `dot-density only renders against the world basemap today — its component joins ` +
-          `against world.geojson unconditionally, so a "${basemapKey}" join would render ` +
-          `silently wrong rather than merely fail`,
+        isoA3PinnedJoinRefusal("dot-density", basemapKey),
       );
     return ok({
       type: "dot-density",
