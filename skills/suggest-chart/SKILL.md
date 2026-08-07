@@ -298,6 +298,20 @@ set of eight — the guard only recognises the Okabe-Ito hues.
 
 Before emitting the spec, decide the **producer**. The producer set is `{dw-chart, chart-native, map-dw, map-native}`.
 
+> **`cesium-flyover` is NOT in that set, and is never chosen from a data profile.** A 3D terrain
+> flyover encodes no data at all — there is nothing in a table that can suggest one, so proposing
+> it from a profile would be inventing an intent the journalist never expressed. It is reachable
+> on **one** condition: the journalist ASKED for it in their own words — "a flyover of the gorge",
+> "a drone shot down the valley", "show me the terrain the road cuts through". Then, and only
+> then, emit `{ producer: "cesium-flyover", format: "video", spec: { type: "flyover", path |
+> routeGeoJSON, title?, source?, channel } }` and read `skills/cesium-flyover/SKILL.md` before
+> filling the knobs. Three things to say out loud when you do: it renders **video only** (no
+> still, no interactive — the producer refuses those by name); it needs an **unrestricted**
+> MapTiler key and the **network at render time** (the only engine here that cannot render
+> offline); and the frame carries a **"CESIUM ion" credit mark** the newsroom has to be
+> comfortable publishing. A place the reader should *explore*, or any value shaded by region,
+> stays `map-native`.
+
 ### dw-chart (static chart — default)
 
 The default for all chart paths. Emit the `ChartSpec` as above → hand to `dw-chart`.
