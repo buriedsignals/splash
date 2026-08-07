@@ -16,7 +16,8 @@
     "@types/node": "26.1.1",
     "bun-types": "1.3.14",
     "playwright": "1.61.1",
-    "@types/geojson": "^7946.0.16"
+    "@types/geojson": "^7946.0.16",
+    "mapshaper": "0.7.51"
   },
   "dependencies": {
     "@noble/hashes": "2.2.0",

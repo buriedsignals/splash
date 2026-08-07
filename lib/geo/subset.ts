@@ -105,6 +105,12 @@ export type SubsetInput = {
   scope?: string;
 };
 
+// `mapshaper` is a declared devDependency (root `package.json`) so that `bunx` finds it in
+// `node_modules` and never resolves it from the network. It used to be undeclared: every call
+// re-resolved the package into the shared install cache, so two subsets running at once — which
+// the suite does routinely — raced and died with `Failed to link <dep>: EEXIST`, and the whole
+// run failed offline. The failure surfaced as an unrelated test's `ENOENT: … config.json`,
+// because a `produce.mjs` whose geometry step threw simply never wrote its output.
 function mapshaper(args: string[]): void {
   const r = spawnSync("bunx", ["mapshaper", ...args], { encoding: "utf8" });
   if (r.status !== 0)
