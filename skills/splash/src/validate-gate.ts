@@ -41,6 +41,10 @@ import {
 } from "./source-guard";
 import { flyoverConfigErrors } from "../../cesium-flyover/src/validate-config";
 import { guardrailParityViolations } from "./guardrail-parity";
+import {
+  resolvedPlaceErrors,
+  resolvedPlaceWarnings,
+} from "../../../lib/geo/place-resolution";
 import { engineTypes, isRenderable } from "../../../lib/core/registry";
 // Leaf module, imports nothing (see its own header comment) — safe to read here without pulling
 // in Scrolly.tsx's component tree / module-scope MapTiler key guard.
@@ -781,6 +785,25 @@ export function validateAccepted(
     p.provenance,
   );
   if (droppedHint) extraWarnings.push(droppedHint);
+  // OBSERVABILITY (non-blocking), GUARD 6's counterpart: a map that plots named places and
+  // threads no resolvedPlaces disarms the record-based legs above. Say so at the render gate.
+  extraWarnings.push(...resolvedPlaceWarnings(p.spec, p.resolvedPlaces));
+  // GUARD 6 — PLACE RESOLUTION. A point map's lon/lat was the last value in the chain that
+  // nobody had to stand behind: the takeaway is confirmed verbatim (GUARD 3), the source is
+  // compared against what the article named and what the journalist answered (GUARDs 2b-2d), and
+  // a coordinate the machine geocoded by itself was shown to no one and recorded nowhere. On
+  // exports/glaciers-requiem-2026 that shipped "Cervin" at the Matterhorn GLACIER's centroid —
+  // 1063 m from the summit — under a beat reading « Au sommet du Cervin, à 4478 mètres », after
+  // the journalist had said the point was wrong BEFORE production ran. There was no field for
+  // their correction to land in, so it landed nowhere.
+  //
+  // Unlike the source guards, this one is NOT wholly dormant when nothing is threaded: a marker
+  // whose own prose claims a summit owes a resolution record, and that leg reads the SPEC alone.
+  // It fails the real failing spec today, with no threading — which is the point, because the
+  // omission IS the defect. The record-based legs (what it resolved to, whether it was shown,
+  // whether a correction was applied) need `resolvedPlaces` and go dormant without it; the
+  // observability warning below makes that dormancy visible, like droppedSourceHintWarning.
+  extraErrors.push(...resolvedPlaceErrors(p.spec, p.resolvedPlaces));
   // GUARD 4 — claim-grounding (Defect C): a numeric/temporal claim in the title/takeaway that
   // the data domain does not encode (and no annotation/reference line backs) fails hard.
   extraErrors.push(...claimGroundingErrors(p));
@@ -832,9 +855,8 @@ function validateByProducer(p: AcceptedProposal): ValidationOutcome {
     }
     case "image-native":
       return validateImageNative(p.spec, p.format);
-    case "cesium-flyover": // is small enough that every field it carries is one the engine reads, so an unknown // Strict, errors-only (skills/cesium-flyover/src/validate-config.ts): a flyover config
-    // one is refused rather than dropped in silence.
-    {
+    case "cesium-flyover": {
+      // one is refused rather than dropped in silence. // is small enough that every field it carries is one the engine reads, so an unknown // Strict, errors-only (skills/cesium-flyover/src/validate-config.ts): a flyover config
       const errors = flyoverConfigErrors(p.spec);
       return errors.length ? { ok: false, errors } : { ok: true, warnings: [] };
     }

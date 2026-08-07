@@ -1,6 +1,8 @@
 // The orchestration contract: what the agent hands the spine, and what it gets back.
 import type { Channel } from "./channel";
 import type { SourceAnswer } from "./source-guard";
+import type { ResolvedPlace } from "../../../lib/geo/place-resolution";
+export type { ResolvedPlace };
 
 export type Producer =
   | "dw-chart"
@@ -94,6 +96,20 @@ export interface AcceptedProposal {
   // valid hand-over on an article run, because nothing distinguishes "no passage" from "the
   // anchor was dropped at §5b". Meaningless without an article; harmless on a bare-topic run.
   freeStanding?: true;
+  // WHAT EACH PLOTTED PLACE RESOLVED TO, and whether the journalist saw it. A point map's lon/lat
+  // was the one value in the chain nobody had to stand behind: `confirmedTakeaway` records the
+  // claim, `sourceAnswer` records the citation, and a coordinate the machine geocoded by itself
+  // was recorded nowhere and shown to nobody. That is how the glaciers-requiem-2026 run shipped
+  // "Cervin" on the Matterhorn glacier's centroid — 1063 m off, under a beat naming the 4478 m
+  // summit — after the journalist had said so BEFORE production ran, with no field for the
+  // correction to land in. This is that field; the guards are in lib/geo/place-resolution.ts,
+  // wired in validate-gate.ts. Threaded at §5b like sourceHint/channel/confirmedTakeaway —
+  // prose-enforced for the same reason (no script sits between suggest-chart's in-context output
+  // and accepted.json). OPTIONAL: absent ⇒ the record-based guards go dormant and an
+  // observability warning says so — EXCEPT for a marker whose own prose claims a summit, which
+  // fails hard without one (that guard reads the spec alone, precisely so the defect that
+  // motivated this field cannot recur through simple omission).
+  resolvedPlaces?: ResolvedPlace[];
 }
 
 export type ProduceStatus =

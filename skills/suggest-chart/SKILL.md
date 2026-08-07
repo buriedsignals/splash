@@ -423,9 +423,10 @@ or symbols — and Gate 5 still routes to a map (the spatial pattern is the stor
 every marker/point. Those numbers MUST come from ONE of:
 1. the **supplied data** — the newsroom's table has explicit `lon`/`lat` (or `x`/`y` / `longitude`/
    `latitude`) columns; read them straight through; OR
-2. a **real deterministic geocoding step** — an actual geocoder run (e.g. a MapTiler geocoding API call
-   with the place names, from `/splash/.env`'s `MAPTILER_API_KEY`), whose returned coordinates you use.
-   A geocode is a real lookup, not a recollection.
+2. a **real deterministic geocoding step** — **`geocodePlace()` from `lib/geo/geocode.ts`**, which
+   calls MapTiler with the key from `/splash/.env`. Use THAT function, not a hand-rolled fetch: it
+   returns what it resolved TO (name, kind, elevation, OSM ref), and those fields are what the
+   showback below and the spine's guards both read. A geocode is a real lookup, not a recollection.
 
 You must **NEVER hand-type a coordinate from the model's own knowledge** ("Gare du Nord is at ~2.35,
 48.88") — that is fabricated data, indistinguishable at a glance from a real value but wrong in ways no
@@ -437,6 +438,36 @@ is available, do NOT emit a point map**: stop and ask the journalist for a coord
 to a non-spatial visual (e.g. a sorted bar of the places by value). The same rule governs every other
 required value the source does not state — a date, a dimension label, a number: source it, look it up
 deterministically, or decline; never synthesize it.
+
+**★ HARD RULE — a coordinate you resolved is a coordinate you must SHOW (and be able to be corrected on).**
+Provenance is not enough. A real geocoder run can be real and still be *wrong about what it pointed at*,
+because a geocoder returns FEATURES and a feature's coordinate is its **centroid**. Asking MapTiler for
+"Matterhorn" returns `Matterhorngletscher` — the glacier — whose centroid is **1063 m from the summit,
+on the Zmutt flank**. That shipped, on `exports/glaciers-requiem-2026`, under a beat reading
+« Au sommet du Cervin, à 4478 mètres ». The journalist had said the point was wrong **before** production
+ran; there was no field for their correction to live in, so it reached nothing.
+
+Therefore, for every place YOU resolved (not ones read from the newsroom's own lat/lon columns):
+
+- **Ask for the right KIND of thing.** When the subject is a **peak** — the prose says *summit*, *sommet*,
+  *Gipfel*, *cima*, or names an altitude — call `geocodePlace(name, { expect: "peak", elevationM })`.
+  MapTiler's default layer contains **no peaks at all** (measured: Cervin, Matterhorn, Mont Blanc,
+  Jungfrau, Eiger all return admin areas, landforms or streets); peaks live in its POI layer tagged
+  `natural=peak`, usually with `ele`. Passing the elevation the sentence states also disambiguates the
+  two real "Matterhorn" peaks (4478 m in the Alps, 3250 m in Nevada). If it returns `null`, it found no
+  summit — **say so and ask**, never plot the nearest thing.
+- **Show the journalist what it resolved to**, before producing: the place name, **what kind of feature
+  it is**, its elevation when it has one, and the coordinate. « Cervin → *Cervin, Zermatt* (sommet,
+  4478 m) » is correctable; « Cervin → 7.66, 45.99 » is not.
+- **Record it in `resolvedPlaces[]` on the accepted proposal** (§5b, alongside `confirmedTakeaway` and
+  `sourceHint`): `{ label, origin, lon, lat, resolvedName, categories, elevationM, shownToJournalist }`,
+  plus `correctedFrom` when the journalist moved the point. **A correction they give must be applied to
+  the marker itself** — the spine compares the two and fails when the record and the plotted coordinate
+  disagree, so a correction recorded and not applied cannot ship.
+
+These are **mechanically enforced** by `lib/geo/place-resolution.ts`, wired into the spine's
+`validate-gate.ts` (GUARD 6). One leg reads the spec ALONE: a marker whose own prose claims a summit and
+carries no `resolvedPlaces` record **fails hard**, threaded or not.
 
 **Config shapes (locator + symbol, exact JSON) are in `references/map-native-spec.md`** — note the
 `lon`/`lat` values shown there are ILLUSTRATIVE PLACEHOLDERS, never values to copy (see the
