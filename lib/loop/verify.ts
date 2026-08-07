@@ -57,7 +57,12 @@ function renderedSourceName(run: RunManifest): VerbResult<string> {
 // Furniture is declared as expected TEXT (lib/verify/types.ts): the only description that is
 // true of all six engines at once and asks none of them to annotate its DOM. The loop knows
 // all four strings because it commissioned them.
-function furnitureFor(
+//
+// EXPORTED so a proof can assert, without a browser, that the spec an engine is handed carries
+// the very strings capture will go looking for. A proof that restated the four strings itself
+// would drift from this function the day a fifth role is added, and drift is exactly how the
+// dw-chart chain proof came to pin a defect the repo had already fixed.
+export function furnitureFor(
   el: RunElement,
   sourceName: string,
 ): FurnitureExpectation[] {

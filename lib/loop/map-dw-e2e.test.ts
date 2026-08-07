@@ -30,13 +30,16 @@ import { produce } from "./produce";
 import { approve } from "./approve";
 import { deliver } from "./deliver";
 import { previewStep } from "./preview";
-import { captureStep, reviewStep } from "./verify";
+import { captureStep, furnitureFor, reviewStep } from "./verify";
 import { hostedBindingDigest } from "../verify/hosted";
 import type { ReviewRecord } from "../verify/types";
 import type { Decor } from "../newsroom/decor";
 import { freezeInput } from "./freeze";
 import { assembleMapDw } from "./assemble/map-dw";
-import { validateMapSpec, DEFAULT_BLUE } from "../../skills/map-dw/src/map-spec";
+import {
+  validateMapSpec,
+  DEFAULT_BLUE,
+} from "../../skills/map-dw/src/map-spec";
 import { houseRamp } from "../core/house-ramp";
 import { decodePng, modalColor, toHex } from "./fixtures/render-pixels";
 import { normalizeChannel, renderSize } from "../../skills/splash/src/channel";
@@ -47,6 +50,7 @@ import {
   isHostedArtifact,
   readManifest,
   writeManifest,
+  type RunElement,
   type RunManifest,
 } from "./manifest";
 
@@ -106,6 +110,56 @@ test("the fixture assembles into a spec the engine accepts, before any API call"
   const warnings = v.ok ? v.warnings : v.errors;
   expect(warnings.length).toBe(1);
   expect(warnings[0]).toContain("sub-national subset");
+});
+
+// ALWAYS ON — the twin of the guard in lib/loop/dw-chart-e2e.test.ts, added for the same reason
+// and after the same accident.
+//
+// The chain proof below pins the blocking findings a live map embed has, and `furniture-missing`
+// is deliberately NOT among them: every string the loop commissions does reach the reader. That
+// half of the pin is a claim about the SPEC, so it is settled here in 3ms rather than only by a
+// three-minute opt-in run — and the unit reaches a map by a completely different route than it
+// reaches a chart (`unit`, which Datawrapper suffixes to each legend value, instead of the
+// chart's printed subtitle), so it can be lost here without anything in the chart file noticing.
+//
+// What this guard does NOT cover, stated plainly: the two findings actually pinned below —
+// `furniture-below-fold` and `component-overflows-viewport` — are facts about the HEIGHT a live
+// Datawrapper map renders at against its container. No spec says how tall a rendered map will be,
+// so no cheap in-gate test can settle those; they need the browser, and they were re-measured
+// live on 2026-08-07 (still true, 5 pass / 0 fail).
+test("every string the chain proof expects on the live page is in the spec Datawrapper is handed", () => {
+  const r = assembleMapDw(FIXTURE_BRIEF);
+  if (!r.ok) throw new Error(r.message);
+  const spec = r.value as {
+    title: string;
+    altInsight: string;
+    unit?: string;
+    source: { name: string };
+  };
+
+  // WHAT CAPTURE WILL LOOK FOR — through the loop's own resolver, never a restatement of it.
+  const expected = furnitureFor(
+    { id: "e1", angle: FIXTURE_BRIEF.angle } as RunElement,
+    FIXTURE_BRIEF.attribution,
+  );
+  expect(expected.map((f) => f.role).sort()).toEqual([
+    "alt-text",
+    "source",
+    "title",
+    "unit",
+  ]);
+
+  // WHAT DATAWRAPPER IS HANDED that can reach a reader at all — `altInsight` among them because
+  // it becomes the embed's `aria-description`, which is where alt-text is measured.
+  const painted = [
+    spec.title,
+    spec.altInsight,
+    spec.unit ?? "",
+    spec.source.name,
+  ].join("\n");
+  expect(
+    expected.filter((f) => !painted.includes(f.text)).map((f) => f.role),
+  ).toEqual([]);
 });
 
 function runFor(runDir: string, format: "static" | "interactive"): RunManifest {
@@ -473,9 +527,7 @@ proof(
       expect(top).toBe(ramp[ramp.length - 1]);
       // …and it is NOT the library default the map would carry with no charter, which is the
       // half that makes the line above a measurement rather than a coincidence.
-      expect(
-        DEFAULT_BLUE.map((s) => s.color.toLowerCase()),
-      ).not.toContain(top);
+      expect(DEFAULT_BLUE.map((s) => s.color.toLowerCase())).not.toContain(top);
       // The ground is Datawrapper's white, not the declared #F7D9E3 — the vendor limit, asserted
       // where a plan change would surface it.
       expect(ground).toBe("#ffffff");

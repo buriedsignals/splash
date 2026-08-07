@@ -23,7 +23,7 @@ import { assembleDwChart } from "./assemble/dw-chart";
 import { decodePng, modalColor, toHex } from "./fixtures/render-pixels";
 import { heightPolicyFor } from "./assemble";
 import { isLoopBuildable } from "./buildable";
-import { captureStep, reviewStep } from "./verify";
+import { captureStep, furnitureFor, reviewStep } from "./verify";
 import { capture } from "../verify/capture";
 import { hostedBindingDigest } from "../verify/hosted";
 import type { ReviewRecord } from "../verify/types";
@@ -37,6 +37,7 @@ import {
   isHostedArtifact,
   readManifest,
   writeManifest,
+  type RunElement,
   type RunManifest,
 } from "./manifest";
 
@@ -80,6 +81,65 @@ test("the fixture assembles into a spec the engine accepts, before any API call"
   if (!r.ok) return;
   const v = validateChartSpec(r.value);
   expect(v.ok ? v.warnings : v.errors).toEqual([]);
+});
+
+// ALWAYS ON — the second half of "you find out without running them", and the guard this file
+// did not have.
+//
+// The chain proof below pins WHICH blocking findings a live embed has. That pin is a statement
+// about the outside world, so only the network half can settle it — but its PRECONDITION is
+// decidable here, in 3ms, with no token and no browser: capture goes looking for four strings
+// (furnitureFor, the loop's own function), and Datawrapper can only paint a string the spec
+// hands it. If a string the chain proof expects on the page is not in the spec at all, the pin
+// downstream is wrong and this goes red at `bun run check` instead of waiting for someone to
+// spend three minutes of network on an opt-in proof.
+//
+// This is not hypothetical. The chain proof spent eight days pinning `["furniture-missing"]`
+// because the unit reached the reader NOWHERE (.sdd/hosted-chain-report.md §4.1, measured
+// 2026-07-28). The next day c0e73c1a taught the assembler to state the unit in the printed
+// subtitle — the very fix that report called for — and nothing said the pin had gone stale,
+// because nothing cheap was watching. Had this test existed on the 28th it would have been RED
+// on the day the pin was written, which is the conversation that should have happened.
+test("every string the chain proof expects on the live page is in the spec Datawrapper is handed", () => {
+  const r = assembleDwChart(FIXTURE_BRIEF);
+  expect(r.ok).toBe(true);
+  if (!r.ok) return;
+  const spec = r.value as {
+    title: string;
+    intro?: string;
+    altInsight: string;
+    source: { name: string };
+  };
+
+  // WHAT CAPTURE WILL LOOK FOR — through the loop's own resolver, never a restatement of it.
+  // Only `angle` is read, so no run directory and no frozen input are needed.
+  const expected = furnitureFor(
+    { id: "e1", angle: FIXTURE_BRIEF.angle } as RunElement,
+    FIXTURE_BRIEF.attribution,
+  );
+  expect(expected.map((f) => f.role).sort()).toEqual([
+    "alt-text",
+    "source",
+    "title",
+    "unit",
+  ]);
+
+  // WHAT DATAWRAPPER IS HANDED that can reach a reader at all. `altInsight` is in the list
+  // because it becomes the embed's `aria-description`
+  // (skills/dw-chart/src/spec-to-metadata.ts:549) — the accessible tree is where capture is
+  // told to find it, and alt-text is exempt from the visibility rule for exactly that reason.
+  const painted = [
+    spec.title,
+    spec.intro ?? "",
+    spec.altInsight,
+    spec.source.name,
+  ].join("\n");
+
+  // The ROLES that would go missing, named — an empty array of roles reads far better on
+  // failure than a boolean, and it is the sentence the chain proof would have to change.
+  expect(
+    expected.filter((f) => !painted.includes(f.text)).map((f) => f.role),
+  ).toEqual([]);
 });
 
 /** The run this proof produces from — article-web, because that is the channel dw-chart sizes
@@ -338,24 +398,49 @@ proof(
       for (const f of blocking)
         console.log(`[dw-chain-e2e] blocking: ${f.id} — ${f.summary}`);
 
-      // WHICH blockers this embed really has, PINNED. Overriding `blocking.map(f => f.id)` would
-      // clear whatever came back — a chart that renders blank at HTTP 200, a title divergence, a
-      // `no-capture` regression — and this proof, the only end-to-end evidence the hosted chain
-      // has, would stay green through all of it. Interpolating the id into the reason makes the
-      // TEXT look specific while the SET stays unbounded, which is worse than saying nothing.
+      // WHICH blockers this embed really has, PINNED — and it now has NONE.
       //
-      // So the set is asserted first and the override below names its member as a LITERAL. Any
-      // other blocking finding fails here, loudly, before anything is approved.
+      // This assertion used to read `["furniture-missing"]`, and it was true when it was written
+      // (2026-07-28): a published Datawrapper chart painted the unit nowhere, because ChartSpec
+      // has no unit field and the loop had no other way to send one. The next day c0e73c1a gave
+      // the unit its one reader-reaching path — the printed subtitle, via
+      // introWithUnit (lib/loop/assemble/dw-chart.ts) — and the gap closed. Nobody found out for
+      // eight days, because this proof is opt-in and nothing cheap was watching; the always-on
+      // guard at the top of this file is the answer to that, and it goes red the moment the spec
+      // stops carrying a string this proof expects on the page.
       //
-      // `furniture-missing` is real and measured: a published Datawrapper chart paints the unit
-      // NOWHERE. Probed on this very chart — the only elements whose text contains "%" are two
-      // display:none <script> blobs (the serialized props). See .sdd/hosted-chain-report.md §4.
-      expect(blocking.map((f) => f.id).sort()).toEqual(["furniture-missing"]);
-      // ...and it is about the UNIT and nothing else. The finding GROUPS every furniture role
-      // (lib/verify/review.ts CHECK_TO_FINDING), so pinning the id alone would still swallow a
-      // missing title or a dropped source credit under the same name.
-      const missing = blocking[0]!;
-      expect(missing.evidence.filter((e) => !e.includes("/unit]"))).toEqual([]);
+      // RE-MEASURED LIVE 2026-08-07 before this line was touched, because an assertion relaxed on
+      // a guess is worse than a red test. On the freshly published chart 2A7Pq the deepest
+      // elements whose text contains "%" are THREE, not the two the old comment named: the two
+      // `display:none` `__DW_SVELTE_PROPS__` script blobs are still there and still invisible, and
+      // the new one is a visible 434x16 `<span>` reading "A ranking of four Swiss cities, Basel
+      // highest at 54 percent recycled (%)" — our own subtitle, painted. So the change is OURS,
+      // not Datawrapper's, and the detector is not blind: it is reporting a real fix.
+      //
+      // An EMPTY set is still a pin, and a stricter one than the old single-member set: any
+      // blocking finding at all fails here — a chart that renders blank at HTTP 200, a title
+      // divergence, a `no-capture` regression, or the unit going missing again. What must never
+      // be written here is `blocking.map(f => f.id)` fed to an override: that clears whatever came
+      // back, and this proof, the only end-to-end evidence the hosted chain has, would stay green
+      // through all of it.
+      expect(blocking.map((f) => f.id).sort()).toEqual([]);
+
+      // THE POSITIVE STATEMENT the empty set rests on. A proof that only says "no bad news" goes
+      // vacuously green the day capture measures nothing at all — an empty `checks` array, a root
+      // selector that stops matching, furniture the loop forgets to commission. So the four roles
+      // are named and every verdict on them is required to PASS, off the live DOM.
+      expect(furniture.length).toBeGreaterThan(0);
+      expect([...new Set(furniture.map((c) => c.role))].sort()).toEqual([
+        "alt-text",
+        "source",
+        "title",
+        "unit",
+      ]);
+      expect(
+        furniture
+          .filter((c) => c.outcome !== "pass")
+          .map((c) => `${c.breakpoint}/${c.role}: ${c.detail}`),
+      ).toEqual([]);
 
       const previewed = previewStep(run, reviewed.value, runDir, {
         env: { SPLASH_NO_VIEWER: "1" },
@@ -377,18 +462,17 @@ proof(
         runDir,
         {
           actorLabel: "e2e",
-          // ONE finding, named as a literal — the ceremony a journalist would perform, on the one
-          // blocker this embed is asserted to have. Nothing computed from `blocking`: a set
-          // derived from the review is a set that grows silently with it.
-          overrides: [
-            {
-              findingId: "furniture-missing",
-              reason:
-                "e2e proof: Datawrapper paints the unit nowhere on a published chart embed " +
-                "(measured — the only '%' on the page is inside display:none script blobs). " +
-                "Knowingly shipped past so the chain reaches a delivery; the gap is reported, not fixed.",
-            },
-          ],
+          // NO OVERRIDES, and the empty array is the assertion. This chart used to be approved by
+          // performing the #11 ceremony over `furniture-missing`; with the finding gone, that
+          // written "knowingly shipped past" would be a false statement in the sign-off record —
+          // the one document a newsroom keeps to say what it accepted and why.
+          //
+          // It also makes the gate prove something it could not prove before. `approve` IGNORES an
+          // override that names no open finding (lib/verify/approval.ts:114) rather than refusing
+          // it, so the old ceremony would have kept this step green whatever the review said. An
+          // empty list means the approval clears on its own merits: it holds only while the
+          // review is genuinely clean, which is what the assertion above pins.
+          overrides: [],
         },
         { signers: [], requiredSigners: [] },
       );
@@ -671,7 +755,9 @@ proof(
       // A LIGHT-but-not-white ground, on purpose: a dark one never reaches produce (the brain
       // drops the engine), so this is the case that actually travels this far.
       const house = { palette: [HOUSE_HUE], theme: "#F7D9E3" };
-      const result = await produce(run, el, runDir, { house } as unknown as Decor);
+      const result = await produce(run, el, runDir, {
+        house,
+      } as unknown as Decor);
       expect(result.ok ? "produced" : `${result.code}: ${result.message}`).toBe(
         "produced",
       );
