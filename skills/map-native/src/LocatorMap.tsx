@@ -389,7 +389,7 @@ export const LocatorMap: React.FC<Props> = ({
         if (!m) return;
         const el = containerRef.current;
         if (!el) return;
-        const { anchors, boxes } = locatorLabelPlacement(
+        const { anchors, boxes, offsets } = locatorLabelPlacement(
           geo.markers,
           geo.markers.map((mk) => m.project([mk.lon, mk.lat])),
           {
@@ -410,6 +410,12 @@ export const LocatorMap: React.FC<Props> = ({
           }
           if (props.anchor !== anchors[i]) {
             props.anchor = anchors[i];
+            changed = true;
+          }
+          // A label the placement had to step further out to keep clear of a neighbour says
+          // so here; the layer reads the gap per feature.
+          if (props.labelOffset !== offsets[i]) {
+            props.labelOffset = offsets[i];
             changed = true;
           }
         }

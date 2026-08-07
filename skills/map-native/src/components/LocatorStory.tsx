@@ -393,7 +393,7 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
     // returns both the side each label takes and the rectangle it occupies there, so the
     // declutter below collides the box the label really has.
     const el = ref.current;
-    const { anchors, boxes } = locatorLabelPlacement(
+    const { anchors, boxes, offsets } = locatorLabelPlacement(
       geo.markers.map((mk) => ({
         label: mk.label,
         priority:
@@ -415,6 +415,13 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
         .properties as unknown as LocatorFeatureProps;
       if (props.anchor !== anchors[i]) {
         props.anchor = anchors[i];
+        dataChanged = true;
+      }
+      // The placement may have widened this label's gap to find it room next to a close
+      // neighbour. Keeping the constant here would draw it straight back on top of the label
+      // it was just moved away from.
+      if (props.labelOffset !== offsets[i]) {
+        props.labelOffset = offsets[i];
         dataChanged = true;
       }
     }

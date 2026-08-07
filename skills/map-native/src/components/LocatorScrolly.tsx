@@ -97,6 +97,7 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
   // avoid a setData every frame) and the declutter's verdict (recomputed per STEP, reused on
   // the frames in between).
   const lastAnchors = useRef<LabelAnchor[]>([]);
+  const lastOffsets = useRef<number[]>([]);
   const lastShown = useRef<Set<string>>(new Set());
 
   // Init map once — same guard pattern as LocatorStory / SymbolScrolly.
@@ -289,7 +290,7 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
     // canvas. One call returns both the side each label takes and the rectangle it occupies
     // there, so the declutter below collides the box the label really has.
     const el = ref.current;
-    const { anchors, boxes } = locatorLabelPlacement(
+    const { anchors, boxes, offsets } = locatorLabelPlacement(
       geo.markers.map((mk) => ({
         label: mk.label,
         priority:
@@ -312,10 +313,16 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
     // but WHERE a shown label sits is the per-frame geometry above, so the source is also
     // re-pushed when any anchor moves.
     const stepChanged = refBeatIndex !== lastRefBeatIndex.current;
-    const anchorsChanged = anchors.some((a, i) => a !== lastAnchors.current[i]);
-    if (stepChanged || anchorsChanged) {
+    // The radial gap moves for the same reason the anchor does — a label that had to step
+    // further out to clear a neighbour — so it is part of "the placement changed", not a
+    // constant the rebuild below can supply itself.
+    const placementChanged =
+      anchors.some((a, i) => a !== lastAnchors.current[i]) ||
+      offsets.some((o, i) => o !== lastOffsets.current[i]);
+    if (stepChanged || placementChanged) {
       lastRefBeatIndex.current = refBeatIndex;
       lastAnchors.current = anchors;
+      lastOffsets.current = offsets;
       if (stepChanged) lastShown.current = new Set(placeLabels(boxes).shown);
       const shownSet = lastShown.current;
 
@@ -328,7 +335,7 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
           label: mk.label,
           color: mk.color,
           category: mk.category ?? "",
-          labelOffset: labelRadialOffset(DOT_RADIUS_PX, textSize),
+          labelOffset: offsets[i],
           __highlight: emphasise ? highlightSet.has(mk.label) : true,
           __showLabel: shownSet.has(`m${i}`),
           anchor: anchors[i],

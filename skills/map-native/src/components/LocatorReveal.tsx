@@ -196,7 +196,7 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
         // each label inside the frame, and the box it returns is the rectangle the priority
         // rule collide-tests (the old box assumed the text always sat above the dot).
         const el = containerRef.current;
-        const { anchors, boxes } = locatorLabelPlacement(
+        const { anchors, boxes, offsets } = locatorLabelPlacement(
           geo.markers,
           geo.markers.map((mk) => map.project([mk.lon, mk.lat])),
           {
@@ -213,6 +213,9 @@ export const LocatorReveal: React.FC<{ config: LocatorConfigShape }> = ({
           const props = features[i].properties as Record<string, unknown>;
           props.__showLabel = shownSet.has(`m${i}`);
           props.anchor = anchors[i];
+          // The gap the placement chose, not the constant — a label moved clear of a close
+          // neighbour has to keep the distance that made it clear.
+          props.labelOffset = offsets[i];
         }
         (map.getSource("locator") as maptilersdk.GeoJSONSource).setData({
           type: "FeatureCollection",
