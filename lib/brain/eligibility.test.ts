@@ -119,6 +119,7 @@ test("a missing capability MARKS the form — it never removes it", () => {
         label: "Charts built in-house",
         status: "missing",
         reason: "chart-native is not installed",
+        reasonCode: "incomplete-install",
         help: [],
       },
     ],
@@ -282,6 +283,7 @@ test("an image scrolly is marked for the photographs it needs, not for a branch 
         label: "Local images",
         status: "unverified",
         reason: "image-native could not be reached when it was last checked",
+        reasonCode: "unreachable",
         help: [],
       },
     ],
@@ -481,6 +483,7 @@ test("a mark can never carry an empty reason, even for a capability disabled wit
         label: "Charts built in-house",
         status: "disabled",
         reason: "", // the real shape readiness.ts returns for a switched-off capability
+        reasonCode: "",
         help: [],
       },
     ],
