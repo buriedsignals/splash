@@ -172,8 +172,23 @@ each `settle()` returns almost immediately.
   17.1 km of path for 13 km of travel, so the look-ahead never clamps.
 - **City mode is untested here** — it needs a billing-enabled Google key this repository does not
   have. The code path is carried unchanged from the reference implementation.
-- Not yet wired: no `produce.mjs`, no config validation, no conformance guard, no orchestrator
-  routing. This engine is reachable by rendering its composition directly.
+- **It is now reachable from the journalist's path** (2026-08-06). `scripts/produce.mjs` mirrors
+  map-native's producer contract exactly — `<config.json> <outDir> <format>`, `SPLASH_CHANNEL`
+  threaded, review still → mp4 → the shared `snap-video` guard fail-hard, `PRODUCE_RESULT` as the
+  last line — and `src/manifest.ts` registers the engine so the orchestrator dispatches it like
+  any other. Proven end to end with the one command a real run makes:
+  ```bash
+  SPLASH_CHANNEL=article-web bun skills/cesium-flyover/scripts/produce.mjs <config.json> <outDir> video
+  ```
+- **Video is the only format**, mechanically: `static`, `interactive` and `scrolly` are refused BY
+  NAME, each naming the engine that does the thing asked for. Config is validated STRICTLY before
+  anything renders (`src/validate-config.ts`) — a missing camera path is refused with both ways of
+  giving one, and an unknown field is refused rather than silently dropped, because there is no
+  `durationSeconds` knob to accept: the two compositions' durations are fixed.
+- **One narrative kind: `reveal`.** A flyover paints no beat text, so `narrativeKindsFor` offers it
+  nothing to choose between and the walk gate owes it no storyboard (`tests/wiring.test.ts`).
+- Not yet wired: no conformance guard (contrast/furniture) — the title and credit are drawn by the
+  component and checked by eye, not by a snap.
 
 ## Files
 

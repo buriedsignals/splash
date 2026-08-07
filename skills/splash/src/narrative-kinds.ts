@@ -150,6 +150,21 @@ export function narrativeKindsFor(
     ];
   }
 
+  // A FLYOVER IS A REVEAL AND ONLY A REVEAL — and it is offered as one rather than left to the
+  // empty answer below, because "renders no narrative video" would be false: it renders a video,
+  // it simply has one kind. The camera moves continuously through terrain and no sentence is ever
+  // painted (CesiumFlyover.tsx draws an optional title and credit, never a beat's words), so
+  // there is nothing to choose between and nothing to write. One offer is not a question — the
+  // walk gate reads this list's length and asks the journalist nothing.
+  if (producer === "cesium-flyover") {
+    return [
+      REVEAL_OFFER(
+        "the camera flies the route through real terrain and the ground itself is the story — no " +
+          "step, no sentence on screen, nothing to write: what the reader gets is scale and relief",
+      ),
+    ];
+  }
+
   // Every other producer renders no narrative video: a Datawrapper form is a hosted embed or a
   // PNG, and `scrolly`/`image-native` are formats of their own rather than video kinds. Empty is
   // the honest answer, and its absence from a proposal is the point.

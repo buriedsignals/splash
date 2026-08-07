@@ -9,5 +9,6 @@ import "../../chart-native/src/manifest";
 import "../../map-native/src/manifest";
 import "../../scrolly/src/manifest";
 import "../../image-native/src/manifest";
+import "../../cesium-flyover/src/manifest";
 import "../../dw-chart/src/manifest";
 import "../../map-dw/src/manifest";

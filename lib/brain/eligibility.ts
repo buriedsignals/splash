@@ -74,6 +74,10 @@ export type EligibilityInput = {
    *  none its only format cannot be offered without stranding the run; with some, it can. Absent
    *  or 0 ⇒ the image-walk mark fires, exactly as it always did. */
   declaredPhotographs?: number;
+  /** Whether the journalist ASKED for a 3D terrain flyover. A FACT of the run, like the two
+   *  above — read from what they said they want, never inferred from the data, because a
+   *  flyover encodes none. Absent/false ⇒ the form is excluded rather than proposed. */
+  requestedFlyover?: boolean;
   /** The deliverable's CONTENT language (lib/newsroom/language.ts's `content`, not `ui`) — the
    *  language its furniture (numbers, "Source:") would be rendered in. Absent ⇒ no constraint;
    *  a run that has not declared one yet is not a run in a fifth language (isCoveredLang treats
@@ -142,6 +146,21 @@ export function eligible(
   };
 
   for (const { sheet, engine, key } of pairs) {
+    // ★ A FLYOVER IS ASKED FOR, NEVER SUGGESTED. Every other form on this shelf is proposed
+    // because of what the numbers ARE; a 3D terrain flyover encodes no number at all, so there is
+    // nothing in a data profile that could suggest one — offering it from a profile would be
+    // inventing an editorial intent the journalist never expressed. So the request is a FACT of
+    // the run, in exactly the sense `declaredPhotographs` and `requestedFormat` are: counted from
+    // what was handed over, never read out of prose by a proposer. Absent ⇒ excluded, with the
+    // reason naming what would change it.
+    if (engine === "cesium-flyover" && !input.requestedFlyover) {
+      exclude(
+        sheet.id,
+        "a flyover shows terrain and encodes no data, so nothing in this data could suggest one — " +
+          'it is offered only when the journalist asks for one in their own words ("a flyover of the gorge")',
+      );
+      continue;
+    }
     // Channel-format legality is checked before the data limit: it depends only on the
     // sheet's declared formats and the channel, never on the facts, so a form whose EVERY
     // format is off-channel is off-channel regardless of whether the data would also have
