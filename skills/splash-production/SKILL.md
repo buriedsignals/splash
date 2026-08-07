@@ -44,14 +44,22 @@ invoked>", …] }`.
 **`sourceHint`, when the article named a source, MUST be carried onto the accepted proposal** — the
 spine's source guards (`validateAccepted` → `sourceNamePreservedReason` / `sourceUrlFidelityReason`)
 consume it to FAIL (B) a named org collapsed to the generic "reported in this article" fallback, and
-(D) a shipped URL that diverges from the journalist-provided one. This is prose-enforced the same way
-as `channel` and `confirmedTakeaway`: there is no script that transforms `suggest-article`'s in-context
-ProposalSet into `accepted.json` — YOU copy the hint across here, verbatim. Dropping `sourceHint`
-silently disarms those guards, exactly like dropping `channel` disarms the format gate. **Backstop:**
-when the shipped `source` is the generic fallback but no `sourceHint` was threaded (on a `table`-backed
-claim), `validateAccepted` emits a non-blocking render-gate WARNING (`ProposalResult.warnings`) so a
-dropped hint is no longer fully silent — treat that warning as "confirm the article really named no
-source; if it did, thread the hint and re-produce". It is advisory only; it never blocks the produce.
+(D) a shipped URL that diverges from the journalist-provided one. YOU copy the hint across here,
+verbatim — but this is **no longer prose-enforced**, and dropping it is no longer free. `suggest-article`
+persists what the article named (`opportunities.json`, its step 6), and `produce-all` confronts the two
+before any engine runs (`skills/splash/src/source-provenance.ts`):
+
+- an attribution the analysis recorded and this element does not carry **STOPS THE BATCH**, by name;
+- a `sourceHint` naming an organisation the analysis never recorded stops it too — so inventing one to
+  satisfy the first refusal is not a way past. If the JOURNALIST supplied the source (CADRAGE Q4), that
+  is `sourceAnswer`, a different field answering a different question;
+- so does a URL bolted onto a name the article gave bare.
+
+**Backstop, for the runs the receipt cannot see** (an analysis that was never persisted, or an
+unreadable one): when the shipped `source` is the generic fallback and no `sourceHint` was threaded on a
+`table`-backed claim, `validateAccepted` emits a non-blocking render-gate WARNING
+(`ProposalResult.warnings`) — treat it as "confirm the article really named no source; if it did, thread
+the hint and re-produce". Advisory only; it never blocks the produce.
 
 - **`resolvedPlaces`** (REQUIRED on a point map whose coordinates YOU resolved): one entry per
   plotted marker/point — `{ "label", "origin": "data|geocoder|journalist", "lon", "lat",

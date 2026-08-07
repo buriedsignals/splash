@@ -8,8 +8,12 @@
 //    between suggest-chart's in-context output and `accepted.json`. G1's spec-only leg plus the
 //    G5 warning are the compensation for that seam, not a substitute for closing it."
 //
-// That is true of `sourceHint`, and it was NOT true here — and the difference is the whole fix.
-// `sourceHint` is a value a model READS out of an article; nothing but the model is in that gap.
+// That was measured, at the time, to be true of `sourceHint` and NOT true here. Half of it held:
+// a `sourceHint` is a value a model READS out of an article, so nothing may DERIVE it. The other
+// half did not — the ProposalSet carrying it is handed to a script at the step that captures it,
+// and source-provenance.ts now closes that seam the same way this file closes this one. What
+// follows is the original argument, and the shape both closures share.
+//
 // A coordinate is the return value of a FUNCTION CALL that already happens in that gap:
 // suggest-chart/SKILL.md tells the host to call `geocodePlace()` from lib/geo/geocode.ts, "not a
 // hand-rolled fetch". Real code, running in the seam, writing nothing down. So the closure is not
@@ -175,13 +179,31 @@ export function placeProvenanceRefusal(
     // L2a — the origin the run's own receipt disproves. lib/geo/place-resolution.ts documents
     // this as a known trust boundary ("a host that writes 'data' over a coordinate it geocoded
     // defeats G3"); once the resolver leaves a receipt, that boundary is checkable here.
-    if (record.origin === "data")
+    //
+    // ASKED OF EVERY NON-GEOCODER ORIGIN, not just "data". This read `=== "data"` and was walked
+    // around by typing a different word: G3 (place-resolution.ts) demands a showback for
+    // `geocoder` ALONE, so `journalist` waives it just as effectively — and leaves the coordinate
+    // the MACHINE chose sitting in the spec with nobody having seen it, which is precisely what
+    // shipped "Cervin" 1063 m off its own summit. The exemption is a DECLARED correction, and only
+    // that: `correctedFrom` copying the resolution is what distinguishes a journalist who moved
+    // the point (theirs, and owed no showback) from a machine answer wearing their name.
+    const corrects =
+      record.correctedFrom && samePoint(record.correctedFrom, res);
+    if (record.origin !== "geocoder" && !corrects) {
+      const claimed =
+        record.origin === "data"
+          ? `"data" — read from the newsroom's own file`
+          : `"journalist" — given or corrected by hand`;
       return routed(
         "place-resolution-undeclared",
-        `"${res.label}" is recorded with origin "data" — read from the newsroom's own file — but ` +
-          `this run geocoded it (it resolved to ${res.resolvedName ?? `${res.lon}, ${res.lat}`}), ` +
-          `and a machine-resolved coordinate owes the journalist a showback that "data" waives`,
+        `"${res.label}" is recorded with origin ${claimed} — but this run geocoded it (it ` +
+          `resolved to ${res.resolvedName ?? `${res.lon}, ${res.lat}`}), and a machine-resolved ` +
+          `coordinate owes the journalist a showback that origin "${record.origin}" waives. ` +
+          `Record it as origin "geocoder" with shownToJournalist once they have seen what came ` +
+          `back — or, if they moved the point, say what it came FROM ` +
+          `(correctedFrom: { lon: ${res.lon}, lat: ${res.lat} })`,
       );
+    }
 
     // L2b — a record that copies nothing. Agreeing with the resolution is fine; MOVING the point
     // is fine and expected (it is what a correction IS) — but a move has to say it moved, or the

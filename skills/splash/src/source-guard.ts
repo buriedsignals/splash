@@ -51,15 +51,24 @@ export function placeholderSourceReason(url: string): string | null {
 // suggest-article/SKILL.md ("Bind data", step 3). Both fields are optional; the guards below
 // consume whichever is present.
 //
-// THREADING IS PROSE-ENFORCED BY NECESSITY. sourceHint is an inherently LLM-captured fact — what
-// the ARTICLE named — and nothing mechanical can derive it (deriving it would defeat the guards,
-// which need an INDEPENDENT capture to compare the shipped source against). suggest-article and
-// suggest-chart are pure LLM skills (no `src/` pipeline); their ProposalSet is an in-context
-// artifact, never a structured file a script transforms into `accepted.json`. The orchestrator LLM
-// assembles `accepted.json` and copies sourceHint across (splash/SKILL.md §5b) — exactly the way it
-// copies `channel` and `confirmedTakeaway`. There is no seam to mechanize; the guards fire when the
-// hint is threaded and stay dormant (both return null) when it is absent. `droppedSourceHintWarning`
-// (below) is the observability backstop that makes a DROPPED hint visible at the render gate.
+// THREADING IS NO LONGER PROSE-ENFORCED, and what follows used to say it had to be. The claim was:
+//
+//   "sourceHint is an inherently LLM-captured fact ... their ProposalSet is an in-context artifact,
+//    never a structured file a script transforms into `accepted.json`. There is no seam to
+//    mechanize; the guards fire when the hint is threaded and stay dormant when it is absent."
+//
+// The first half stands: nothing may DERIVE the hint, because these guards need an INDEPENDENT
+// capture to compare the shipped source against, and a value derived from the ship would agree
+// with it by construction. The second half was wrong. The ProposalSet is not only in-context —
+// suggest-article/SKILL.md step 6 hands it to a SCRIPT, at the very step that reads the citation
+// out of the article, and that script (`save-opportunities.mjs`) simply dropped the field. It now
+// keeps it, in `<runDir>/opportunities.json`, and `skills/splash/src/source-provenance.ts` makes
+// the accepted proposal ANSWER for it before any engine runs.
+//
+// So the guards below are no longer disarmable by silence: an attribution on disk that the element
+// did not carry across REFUSES (L1), and inventing one to satisfy that refusal refuses too (L2).
+// What they still own is unchanged — this file decides whether the SHIPPED source honours the
+// captured one; source-provenance.ts only guarantees the captured one arrives.
 export interface SourceHint {
   name?: string;
   url?: string;
@@ -201,10 +210,14 @@ export function droppedSourceUrlReason(
   );
 }
 
-// OBSERVABILITY (not a guard — a NON-BLOCKING render-gate warning). Because threading sourceHint is
-// prose-enforced (see the SourceHint note above), a DROPPED hint silently disarms DEFECT B: with no
-// captured org name to compare against, a named org collapsed to the generic fallback sails through
-// undetected. This makes that disarm VISIBLE — it returns a warning (surfaced at the render gate via
+// OBSERVABILITY (not a guard — a NON-BLOCKING render-gate warning). It was written because
+// threading sourceHint was prose-enforced, and a DROPPED hint silently disarmed DEFECT B. That gap
+// is now closed at its source (source-provenance.ts L1 refuses a run whose analysis recorded an
+// attribution the element did not carry), which does NOT make this dead: L1 can only speak about
+// what `opportunities.json` recorded, so this still backstops the runs the receipt cannot see —
+// an analysis that was never persisted, or one whose file is unreadable (readSourceProvenance
+// reports both as absent, deliberately, since neither can tell a dropped attribution from an
+// article that gave none). This makes the remaining disarm VISIBLE — it returns a warning (surfaced at the render gate via
 // ProposalResult.warnings, never a hard fail) when the shipped source IS the generic honest-fallback
 // yet NO org-name hint was threaded. Mutually exclusive with DEFECT B: when a name hint IS present it
 // returns null (guard B already fires hard on the same collapse), so a case is never double-reported.

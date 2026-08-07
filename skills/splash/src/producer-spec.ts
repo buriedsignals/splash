@@ -58,11 +58,13 @@ export interface AcceptedProposal {
   // guards (source-guard.ts, wired in validate-gate.ts) can mechanically catch (B) a named org
   // discarded for the generic "reported in this article" fallback, and (D) a journalist-provided
   // URL silently upgraded to a deeper, unconfirmed path. The orchestrator LLM copies it across at
-  // §5b — prose-enforced by necessity (no script transforms the in-context ProposalSet into
-  // accepted.json), exactly like `channel`/`confirmedTakeaway`. OPTIONAL: absent ⇒ the article
-  // named no source (or the orchestrator dropped it — flagged by the dropped-hint observability
-  // warning in validate-gate.ts), so the guards stay dormant and the honest name-only/prose
-  // fallback passes.
+  // §5b like `channel`/`confirmedTakeaway` — but NOT prose-enforced like them, and this note used
+  // to say it had to be ("no script transforms the in-context ProposalSet into accepted.json").
+  // There is one: suggest-article hands its ProposalSet to save-opportunities.mjs at the step that
+  // captures the hint, so what the article named is on disk (<runDir>/opportunities.json) and
+  // source-provenance.ts refuses a proposal that does not account for it, before any engine runs.
+  // OPTIONAL in shape only: absent is legitimate when the analysis recorded that the article named
+  // nobody, and refused when it recorded that it did.
   sourceHint?: { name?: string; url?: string };
   // D18 (Gate 2c dropped-URL comparison): what the JOURNALIST ANSWERED at CADRAGE Q4/Gate 2c —
   // a DIFFERENT question from sourceHint above, which is what the ARTICLE named. Until this

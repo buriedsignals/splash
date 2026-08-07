@@ -27,6 +27,7 @@ export const REFUSAL_CODES = [
   "placement-undeclared",
   "attestation-uncorroborated",
   "place-resolution-undeclared",
+  "source-hint-undeclared",
 ] as const;
 
 export type RefusalCode = (typeof REFUSAL_CODES)[number];
@@ -132,6 +133,18 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
       "has somewhere to land",
     command:
       'bun skills/suggest-chart/scripts/resolve-place.mjs <runDir> --place "<name>" [--expect peak] [--elevation <m>]',
+  },
+  // The step is CARRYING the citation, not finding one: the article already named it and this run
+  // already read it — the defect is the organisation going missing between the analysis and the
+  // deliverable, where it ships as "figures as reported in this article" and credits nobody. The
+  // command re-records the analysis (it is the writer that keeps the citation on disk); putting
+  // the hint onto the accepted entry stays an edit, and the refusal's message names the field.
+  "source-hint-undeclared": {
+    step:
+      "credit what the article credited — carry the source it named onto the element, or say " +
+      "plainly that the article named nobody for these figures",
+    command:
+      "bun skills/suggest-article/scripts/save-opportunities.mjs <runDir> --payload '<the ProposalSet JSON>'",
   },
 };
 

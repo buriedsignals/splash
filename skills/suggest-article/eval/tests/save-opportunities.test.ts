@@ -16,10 +16,15 @@ const GOOD = {
       },
       claim: "Cross-border workers grew from ~40k to ~73k since 2015",
       intent: "How did cross-border worker numbers grow since 2015?",
+      sourceHint: {
+        name: "Insee",
+        url: "https://www.insee.fr/fr/statistiques/1",
+      },
     },
     {
       claim: "The budget overran by 40%",
       intent: "How far did the budget overrun?",
+      noSourceNamed: true,
     },
   ],
 };
@@ -58,6 +63,56 @@ describe("opportunitiesWriteErrors", () => {
     ).toContain("claim");
   });
 
+  // THE SOURCE THE ARTICLE NAMED, kept by the step that already reads it.
+  //
+  // `sourceHint` was captured at step 3, handed to this writer inside the very payload it
+  // validates, and dropped on the floor — so "did the article name a source for this claim?" had
+  // no answer any script could give, and the two source guards it feeds could be disarmed by
+  // saying nothing. These tests are the receipt.
+  it("refuses a proposal that says nothing about whether the article named a source", () => {
+    expect(
+      opportunitiesWriteErrors({
+        proposals: [{ claim: "c", intent: "i" }],
+      }).join(" "),
+    ).toContain("sourceHint");
+  });
+
+  it("refuses a proposal that both names a source and declares none — the two cannot both be true", () => {
+    expect(
+      opportunitiesWriteErrors({
+        proposals: [
+          {
+            claim: "c",
+            intent: "i",
+            sourceHint: { name: "Insee" },
+            noSourceNamed: true,
+          },
+        ],
+      }).join(" "),
+    ).toContain("both");
+  });
+
+  it("refuses a sourceHint that carries neither a name nor a URL — a half-capture is not a citation", () => {
+    expect(
+      opportunitiesWriteErrors({
+        proposals: [{ claim: "c", intent: "i", sourceHint: {} }],
+      }).join(" "),
+    ).toContain("sourceHint");
+    expect(
+      opportunitiesWriteErrors({
+        proposals: [{ claim: "c", intent: "i", sourceHint: { name: "  " } }],
+      }).join(" "),
+    ).toContain("sourceHint");
+  });
+
+  it("accepts a name-only hint — the article named an org and gave no URL", () => {
+    expect(
+      opportunitiesWriteErrors({
+        proposals: [{ claim: "c", intent: "i", sourceHint: { name: "Insee" } }],
+      }),
+    ).toEqual([]);
+  });
+
   it("refuses an anchor that carries neither a quote nor a usable paragraph index", () => {
     expect(
       opportunitiesWriteErrors({
@@ -82,6 +137,7 @@ describe("save-opportunities CLI", () => {
       written,
       opportunities: 2,
       anchored: 1,
+      sourceHints: 1,
     });
     const saved = JSON.parse(readFileSync(written, "utf8"));
     expect(saved.opportunities).toHaveLength(2);
@@ -90,6 +146,24 @@ describe("save-opportunities CLI", () => {
       quote: "cross-border workers nearly doubled since 2015",
     });
     expect(saved.opportunities[1].anchor).toBeUndefined();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("persists what the article named, so a later gate can hold the delivery to it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "opps-src-"));
+    const out = save(dir, GOOD);
+    const saved = JSON.parse(
+      readFileSync(join(dir, "opportunities.json"), "utf8"),
+    );
+    expect(saved.opportunities[0].sourceHint).toEqual({
+      name: "Insee",
+      url: "https://www.insee.fr/fr/statistiques/1",
+    });
+    // The explicit "this article named nobody" is recorded as a STATEMENT, not as silence —
+    // that is what makes it something a reader can later be wrong about.
+    expect(saved.opportunities[1].noSourceNamed).toBe(true);
+    expect(saved.opportunities[1].sourceHint).toBeUndefined();
+    expect(JSON.parse(out).sourceHints).toBe(1);
     rmSync(dir, { recursive: true, force: true });
   });
 

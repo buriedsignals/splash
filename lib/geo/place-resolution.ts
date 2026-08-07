@@ -55,10 +55,35 @@ export interface ResolvedPlace {
    *   `geocoder`   — the machine looked it up. Owes a showback (G3).
    *   `journalist` — the journalist gave or corrected it. Owes nothing; it is already theirs.
    *
-   * Self-reported, exactly like `confirmedTakeaway` and `sourceHint` are self-reported — a host
-   * that writes "data" over a coordinate it geocoded defeats G3. That is a known trust boundary
-   * and it is not what this file is for: G1, G2 and G4 read the SPEC and the RESOLUTION, not the
-   * claim about who produced them, so the defect this file exists for is caught either way.
+   * SELF-REPORTED, AND CORROBORATED WHERE A RECEIPT EXISTS. The comparison this note used to draw
+   * — "self-reported, exactly like `confirmedTakeaway` and `sourceHint`" — no longer holds for
+   * `sourceHint` either (skills/splash/src/source-provenance.ts), so it is worth being exact about
+   * what is checked here and what is not. Three cases, measured:
+   *
+   *  · A NON-GEOCODER ORIGIN THE RUN'S OWN RECEIPT DISPROVES — refused. place-provenance.ts (L2a)
+   *    reads `<runDir>/places.json` and stops a run that writes `data` OR `journalist` over a
+   *    coordinate the sanctioned resolver returned. It asked only about `data` until 2026-08-07,
+   *    which made the whole check walk-around-able by typing the other word: G3 below demands a
+   *    showback for `geocoder` ALONE, so `journalist` waived it just as well. The declared
+   *    correction (`correctedFrom` copying the resolution) is the one exemption, because a
+   *    journalist who moved the point does own the new coordinate.
+   *
+   *  · `geocoder` CLAIMED WITH NO RECEIPT — a warning, never a verdict, and deliberately.
+   *    Corroborating it would ask the receipt to prove a NEGATIVE about a lookup that did not go
+   *    through it, which is the question attestation-corroboration.ts already settled for this
+   *    repo: "an individual absence is a WARNING, never a verdict; what IS a verdict is the TOTAL
+   *    absence". The total case is not left open — place-provenance.ts L3 refuses a point map that
+   *    can account for NONE of its coordinates.
+   *
+   *  · A COORDINATE PRODUCED WITHOUT CALLING THE SANCTIONED RESOLVER AT ALL, recorded with an
+   *    origin that owes nothing — THE REMAINING TRUST BOUNDARY, and a genuinely different problem
+   *    rather than an unfinished one. The mechanism that closed the other two is a receipt left by
+   *    a real call; it cannot witness a call that never happened. Closing it would need something
+   *    else entirely (re-geocoding at the gate, which puts the network on the production path and
+   *    answers the wrong question — see place-provenance.ts's rejected alternatives). It is
+   *    bounded, not unbounded: G1, G2 and G4 read the SPEC and the RESOLUTION rather than the
+   *    claim about who produced them, so the defect this file exists for is caught either way, and
+   *    a map that accounts for nothing at all is refused outright.
    */
   origin: "data" | "geocoder" | "journalist";
   lon: number;
