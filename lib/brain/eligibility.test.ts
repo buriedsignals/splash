@@ -803,3 +803,19 @@ describe("image-scrolly is reachable for a run that has photographs", () => {
     expect(scrolly!.readiness?.status).toBe("missing");
   });
 });
+
+// ── the flyover is asked for, never suggested ────────────────────────────────────────────────
+describe("cesium-flyover is never proposed from a data profile", () => {
+  it("should exclude the flyover, saying it has to be asked for", () => {
+    const { eligible: ok, excluded } = eligible({ ...BASE });
+    expect(ok.some((c) => c.id === "flyover")).toBe(false);
+    expect(excluded.find((e) => e.id === "flyover")?.reason ?? "").toContain(
+      "asks for one",
+    );
+  });
+
+  it("should offer it once the run declares the journalist asked", () => {
+    const { eligible: ok } = eligible({ ...BASE, requestedFlyover: true });
+    expect(ok.some((c) => c.id === "flyover")).toBe(true);
+  });
+});
