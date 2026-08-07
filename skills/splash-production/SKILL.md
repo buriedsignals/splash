@@ -66,9 +66,22 @@ source; if it did, thread the hint and re-produce". It is advisory only; it neve
   itself** and record the old one in `correctedFrom`. The spine (GUARD 6,
   `lib/geo/place-resolution.ts`) FAILS a record whose coordinate is not the one plotted, a
   geocoded place never shown, and — reading the spec ALONE, threaded or not — a marker whose prose
-  claims a summit with no record at all. Resolve peaks with
-  `geocodePlace(name, { expect: "peak" })` (`lib/geo/geocode.ts`); MapTiler's default layer has no
-  peaks in it.
+  claims a summit with no record at all. Resolve every place with
+  `bun skills/suggest-chart/scripts/resolve-place.mjs <runDir> --place "<name>" [--expect peak]
+  [--elevation <m>]` — MapTiler's default layer has no peaks in it, and the script writes what it
+  resolved to `<runDir>/places.json`.
+
+  **This one is no longer prose.** `produce-all` reads that receipt before any engine runs
+  (`skills/splash/src/place-provenance.ts`) and REFUSES, naming the place, when the run resolved a
+  coordinate the accepted entry carries no record of — so dropping `resolvedPlaces` is the thing
+  that fails rather than the thing that gets away with it. It also refuses a record that copies
+  neither the resolution nor a declared `correctedFrom` of it, and a point map that can account for
+  NONE of its coordinates (skipping the resolver does not avoid this).
+- **`coordinatesFromData: true`** — the OTHER valid answer about a point map's coordinates, and it
+  is a declaration rather than a blank: every lon/lat was read from the newsroom's own columns and
+  the machine resolved nothing. Use it instead of silence — a CSV of 200 located events owes one
+  sentence, not 200 records. It is checked: a run whose own `places.json` shows it geocoded one of
+  those places is refused for claiming this.
 - **`skillsInvoked`** (REQUIRED on new proposals): the skills you actually invoked for this
   element, first entry declaring the branch — `"splash:cadrage-guided"` or
   `"splash:cadrage-direct"` — then e.g. `"suggest-article"`, `"suggest-chart"`. Copied across

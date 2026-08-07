@@ -103,13 +103,29 @@ export interface AcceptedProposal {
   // "Cervin" on the Matterhorn glacier's centroid — 1063 m off, under a beat naming the 4478 m
   // summit — after the journalist had said so BEFORE production ran, with no field for the
   // correction to land in. This is that field; the guards are in lib/geo/place-resolution.ts,
-  // wired in validate-gate.ts. Threaded at §5b like sourceHint/channel/confirmedTakeaway —
-  // prose-enforced for the same reason (no script sits between suggest-chart's in-context output
-  // and accepted.json). OPTIONAL: absent ⇒ the record-based guards go dormant and an
-  // observability warning says so — EXCEPT for a marker whose own prose claims a summit, which
-  // fails hard without one (that guard reads the spec alone, precisely so the defect that
-  // motivated this field cannot recur through simple omission).
+  // wired in validate-gate.ts. Threaded at §5b like sourceHint/channel/confirmedTakeaway — but
+  // NOT prose-enforced like them, which is the one place this field differs from its neighbours:
+  // the lookup that produces a coordinate is real code running in that seam, so it leaves a
+  // receipt (skills/suggest-chart/scripts/resolve-place.mjs → <runDir>/places.json) and
+  // place-provenance.ts refuses a proposal that does not account for it, before any engine runs.
+  // Structurally OPTIONAL because a map whose coordinates came from the newsroom's own columns
+  // owes none — that case says so with `coordinatesFromData` below, and silence is refused.
   resolvedPlaces?: ResolvedPlace[];
+  /**
+   * "EVERY coordinate on this map was read from the newsroom's own lon/lat columns; the machine
+   * resolved none of them." The other valid answer about where a point map's coordinates came
+   * from — and, like `freeStanding` for placement, it is a DECLARATION rather than a blank.
+   *
+   * It exists because the alternative false-blocks a real run: a symbol map built from a CSV of
+   * 200 located events resolved nothing, and demanding 200 `resolvedPlaces` records for it would
+   * kill a legitimate journalist's run. One sentence answers for all of them.
+   *
+   * What it is NOT is a way out. Silence is refused (place-provenance.ts L3), so an element that
+   * would rather not say has to make this claim out loud — the same move that turned "omit
+   * skillsInvoked" into "falsely declare direct" — and the claim is checked: a run whose own
+   * resolution receipt shows it geocoded one of these places is refused for making it.
+   */
+  coordinatesFromData?: true;
 }
 
 export type ProduceStatus =

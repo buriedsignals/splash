@@ -26,6 +26,7 @@ export const REFUSAL_CODES = [
   "late-render-refusal",
   "placement-undeclared",
   "attestation-uncorroborated",
+  "place-resolution-undeclared",
 ] as const;
 
 export type RefusalCode = (typeof REFUSAL_CODES)[number];
@@ -118,6 +119,19 @@ export const REFUSAL_ROUTES: Record<RefusalCode, Route | null> = {
   // built from skills/splash/src/attestation-corroboration.ts's evidence table.
   "attestation-uncorroborated": {
     step: "actually invoke the skills this run says it invoked — or drop the claim, and say plainly that the step did not run",
+  },
+  // The step is the SHOWBACK, not the lookup: a coordinate resolved and never put in front of the
+  // journalist is the defect this route exists for (a marker 1063 m off its own summit, warned
+  // about before production, with no field for the warning to land in). The command performs the
+  // lookup AND records it, which is why it can be named here; carrying the result onto the
+  // accepted entry stays an edit, and the refusal's own message spells out which field.
+  "place-resolution-undeclared": {
+    step:
+      "look each place up for real, show the journalist what came back — the name, what kind of " +
+      "thing it is, its elevation — and record what they agreed to, so a correction they give " +
+      "has somewhere to land",
+    command:
+      'bun skills/suggest-chart/scripts/resolve-place.mjs <runDir> --place "<name>" [--expect peak] [--elevation <m>]',
   },
 };
 
