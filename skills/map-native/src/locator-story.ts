@@ -4,6 +4,7 @@
 // title → establish (all markers) → reveals → takeaway. Same Beat shape as choropleth/symbol.
 import {
   applyMapArc,
+  beatsForMode,
   type Beat,
   type MapArcBeat,
   type RevealMode,
@@ -11,6 +12,7 @@ import {
 import type { LocatorMarker } from "./locator-geo";
 import type { Phase } from "./story-timeline";
 import { shortWayLongitudeExtent } from "./core/longitude";
+import { tourBoxDelta } from "./core/tour-box";
 
 export interface LocatorStoryMeta {
   title: string;
@@ -24,7 +26,11 @@ export interface LocatorStoryMeta {
   arcBeats?: MapArcBeat[];
 }
 
-const CITY_DELTA = 1.5; // half-width (deg) of a tight place-framing box
+// Minimum half-width (deg) of a CATEGORY's framing box — the floor `padBbox` inflates a
+// single-marker (or all-coincident) category up to. NOT the tour's stop box: an authored walk
+// sizes each stop from the markers' own spread (core/tour-box.ts's `tourBoxDelta`), because a
+// constant this wide framed every stop of a 90 km tour wider than the whole tour.
+const CITY_DELTA = 1.5;
 const DEFAULT_MAX_REVEALS = 5;
 
 function bboxOf(ms: LocatorMarker[]): [number, number, number, number] {
@@ -79,19 +85,22 @@ export function deriveLocatorStory(
     // either salience regime below. mapArcErrors (run at the gate) has already validated
     // every arcBeat's region against the markers' own labels, so this lookup cannot miss
     // (applyMapArc throws defensively if one somehow did). The camera is a tight box on the
-    // NAMED marker's own coordinates (mirrors deriveSymbolStory's CITY_DELTA box) — never
-    // `allBounds`, which is the map's default framing the few-annotated regime uses instead.
+    // NAMED marker's own coordinates — never `allBounds`, which is the map's default framing
+    // the few-annotated regime uses instead. The box's SIZE is `tourBoxDelta` (core/tour-box.ts):
+    // derived from how far apart these markers actually are, because a constant box is what
+    // flattened this camera on Rémy's own run — see that file's header.
     const markerByLabel = new Map(markers.map((m) => [m.label, m]));
+    const delta = tourBoxDelta(markers);
     beats.push(
       ...applyMapArc(meta.arcBeats, (label) => {
         const m = markerByLabel.get(label);
         return m
           ? {
               camera: [
-                m.lon - CITY_DELTA,
-                m.lat - CITY_DELTA,
-                m.lon + CITY_DELTA,
-                m.lat + CITY_DELTA,
+                m.lon - delta,
+                m.lat - delta,
+                m.lon + delta,
+                m.lat + delta,
               ],
               highlight: [m.label],
               name: m.label,
@@ -130,7 +139,7 @@ export function deriveLocatorStory(
     } else {
       // Few-annotated regime: a beat per place (capped), caption = note ?? label.
       // Camera STAYS on the whole concerned zone (all places framed) for every reveal, so the
-      // markers stay visible and separated — a per-place ±CITY_DELTA box would zoom OUT and lose
+      // markers stay visible and separated — a fixed per-place ±CITY_DELTA box would zoom OUT and lose
       // tightly-clustered places (e.g. sites within one city). The reveal is the highlight + callout.
       for (const m of markers.slice(0, cap)) {
         const copy = m.note?.trim() ? m.note : m.label;
@@ -156,6 +165,39 @@ export function deriveLocatorStory(
   });
 
   return beats;
+}
+
+/**
+ * `beatsForMode` for a LOCATOR walk — with one added rule, and only for this type.
+ *
+ * ★ AN AUTHORED WALK KEEPS ITS ESTABLISHING OVERVIEW, EVEN IN SEQUENTIAL MODE.
+ *
+ * `beatsForMode` drops the establish beat in sequential mode because for an areal story the base
+ * fill is 0 there, so establishing means dwelling on an empty map. That reasoning does not
+ * survive contact with a locator tour, for two reasons this file can see and the generic one
+ * cannot:
+ *   · a locator has no "empty data" state — its establishing shot is the BASEMAP, i.e. the
+ *     territory itself, which is exactly what a tour has to show before it starts crossing it;
+ *   · since `tourBoxDelta`, an authored walk zooms IN on each stop. Before that, every stop was
+ *     framed wider than the whole set, so the reader got the overview for free at every beat and
+ *     losing the establish beat cost nothing. Now it costs the only wide shot before the close.
+ *
+ * Concretely, this is what a `sweepCarrier` did to Rémy's run: declaring one SELECTS sequential
+ * (resolveRevealMode), sequential dropped the establish beat, the title card is opaque over the
+ * beat that holds the overview — so the four glaciers first appeared together in the takeaway,
+ * the last shot of the video.
+ *
+ * A DERIVED locator walk is unchanged: its reveals sit on the establishing bounds already
+ * (the few-annotated regime frames `allBounds` at every beat), so there the dwell really is the
+ * dead air `beatsForMode` describes.
+ *
+ * MUST be used by both LocatorStory.tsx (the animation) and Root.tsx's `locatorStoryMeta` (the
+ * composition's durationInFrames) — the same single-source-of-truth rule `beatsForMode` carries,
+ * for the same reason: if they diverge the mp4 ends on a frozen tail.
+ */
+export function locatorBeatsForMode(beats: Beat[], mode: RevealMode): Beat[] {
+  if (mode === "sequential" && beats.some((b) => b.authored)) return beats;
+  return beatsForMode(beats, mode);
 }
 
 /**
