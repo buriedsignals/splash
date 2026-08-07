@@ -299,22 +299,43 @@ fixture-validity half ungated (unchanged).
 Capture on a hosted embed measures things nothing could see before, and two of them are real
 findings rather than plumbing:
 
-1. **The unit never reaches the reader on a Datawrapper chart embed.** The chain proof recorded
-   `capture:furniture-present role=unit → fail (in the DOM but not visible)`. Verified by a separate
-   probe of the published chart `XoCLR`: the ONLY elements on the page whose text contains `%` are
-   two `<script>` tags (the serialized `__DW_SVELTE_PROPS__` blob), both `display:none`, box 0×0.
-   The commissioned unit is in the chart's metadata and is painted nowhere. That is a true
-   verdict, not a measurement artifact.
+1. ~~**The unit never reaches the reader on a Datawrapper chart embed.**~~ **CLOSED 2026-07-29 —
+   this finding is no longer true. See the note below.** As measured here on 2026-07-28: the chain
+   proof recorded `capture:furniture-present role=unit → fail (in the DOM but not visible)`.
+   Verified by a separate probe of the published chart `XoCLR`: the ONLY elements on the page whose
+   text contains `%` are two `<script>` tags (the serialized `__DW_SVELTE_PROPS__` blob), both
+   `display:none`, box 0×0. The commissioned unit is in the chart's metadata and is painted
+   nowhere. That was a true verdict, not a measurement artifact.
+
+   > **Superseded.** §4 closed by saying fixing this "means changing what dw-chart commissions" —
+   > and the very next day, `c0e73c1a` did exactly that: `introWithUnit`
+   > (`lib/loop/assemble/dw-chart.ts`) states the unit once, in the printed subtitle, which is its
+   > one reader-reaching path on a spec that has no unit field. Re-probed live 2026-08-07 on a
+   > freshly published fixture chart (`2A7Pq`): the deepest elements whose text contains `%` are
+   > now **three**, not two — the same two `display:none` script blobs, plus a **visible 434×16
+   > `<span>`** reading *"A ranking of four Swiss cities, Basel highest at 54 percent recycled
+   > (%)"*. The chain proof now measures `role=unit → pass` at all three breakpoints, has **no**
+   > blocking findings, and reaches delivery with **no overrides**.
+   >
+   > The pin in the proof stayed stale for eight days because the proof is opt-in and nothing
+   > cheap was watching. Both Datawrapper proof files now carry an always-on guard asserting that
+   > every string capture will look for is in the spec the engine is handed — 3 ms, in
+   > `bun run check`, red the moment the two disagree again.
 
 2. **A Datawrapper map embed overflows the article-web container.** `furniture-below-fold` +
    `component-overflows-viewport` on the live choropleth: the map renders ~628 CSS px tall against
    the 560 the channel publishes at.
 
-Both are BLOCKING findings, and both proofs pass them with an explicit written override naming the
-finding — the #11 ceremony a journalist would perform, not a relaxation of the gate. Neither is
-"fixed" here; fixing them means changing what dw-chart/map-dw commission, or deciding a height
+Both were BLOCKING findings, and both proofs passed them with an explicit written override naming
+the finding — the #11 ceremony a journalist would perform, not a relaxation of the gate. Neither
+was "fixed" here; fixing them means changing what dw-chart/map-dw commission, or deciding a height
 policy for hosted embeds, and both are judgements this slice has no measurement to justify making
 (see §5).
+
+*(Since: (1) was fixed the next day and its override is gone — see the note above. (2) stands,
+re-measured live 2026-08-07: the map proof is 5 pass / 0 fail and still overrides both of its
+geometric findings. It is a different problem — a rendered height is not decidable from a spec, so
+no cheap in-gate guard can watch it the way one now watches the unit.)*
 
 ---
 
