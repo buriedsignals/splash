@@ -29,6 +29,7 @@ import {
   approveIn,
   authorBeatsIn,
   chooseFormIn,
+  chooseGroundIn,
   confirmAngleIn,
   initRunIn,
   phraseOfferIn,
@@ -344,6 +345,24 @@ async function main(): Promise<never> {
     emit(r, r.ok ? 0 : refusalExit(r.code));
   }
 
+  if (command === "choose-ground") {
+    // The answer to the question `produce` puts when the newsroom's declared background cannot
+    // carry readable text: `keep` (their colour, as declared, consequence accepted) or a
+    // #rrggbb — one of the two the offer proposed, or any other colour they name. Run-scoped,
+    // like the background itself, so there is no --element.
+    const parsed = parseFlags(rest, ["--run", "--answer"]);
+    if (!parsed.ok) usage(parsed.message);
+    const runDir = parsed.flags["--run"];
+    if (!runDir) usage("choose-ground needs --run <dir>");
+    const answer = parsed.flags["--answer"];
+    if (!answer)
+      usage(
+        'choose-ground needs --answer keep|#rrggbb — "keep" stays with the newsroom\'s own background',
+      );
+    const r = chooseGroundIn(runDir, answer);
+    emit(r, r.ok ? 0 : refusalExit(r.code));
+  }
+
   if (command === "approve") {
     // A DOCUMENT on stdin, like `phrase` — a list of overrides, each with its own reason, has
     // no shape in flags — and OPTIONAL, unlike every other document on this surface: approving
@@ -623,7 +642,7 @@ async function main(): Promise<never> {
 
   usage(
     `unknown command ${JSON.stringify(command ?? "")} — expected verbs, state, next, init, ` +
-      `advance, suggest-intent, confirm-angle, phrase, choose-form, author-beats, approve, ` +
+      `advance, suggest-intent, confirm-angle, phrase, choose-form, choose-ground, author-beats, approve, ` +
       `request-delivery, verb, newsroom, precheck, present or probe`,
   );
 }

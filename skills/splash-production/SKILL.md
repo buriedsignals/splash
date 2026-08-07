@@ -190,6 +190,14 @@ parent `exports/<slug>`) is the `<outDir>` you hand to the EXPORT scripts below.
   for that claim via suggest-chart, replace that proposal's `producer`/`spec` in `accepted.json`, re-run
   5c. Do not hand-translate. This native→dw direction is the ONE producer switch GUARD 1 sanctions; the
   reverse (dw→native) or any other switch is refused (see 5c).
+- **`needs-decision` (the newsroom's own BACKGROUND cannot carry readable text)** → the refusal IS the
+  question, already written in the journalist's language. **Relay it as it stands** — what happens to the
+  text on their colour, the two backgrounds that do work, and the right to keep theirs — and never
+  paraphrase it into a ratio or a hex comparison. Then record their answer with
+  `choose-ground --run <dir> --answer keep|#rrggbb` and re-run. **`keep` is a legitimate answer**: it is
+  their newsroom, the visual is produced as asked, and the concern is carried to render-review. Never
+  pick for them, and never edit `NEWSROOM-PROFILE.md` yourself to make the refusal go away — that would
+  silently change a file that belongs to the newsroom.
 - **`failed`** → surface the `error`; fix the spec or drop the proposal. Never ship a failed visual.
   **A non-zero `produce-all` exit (or any gate refusal) is a HARD STOP the journalist is ALWAYS told
   about — never worked around** by re-authoring code, hand-editing outputs, an ad-hoc script, or a silent

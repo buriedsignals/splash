@@ -341,6 +341,28 @@ describe("proposeCharter — the ground", () => {
     expect(groundTheme(p)).toBe("#12161c");
   });
 
+  // ★ SPLASH NEVER PROPOSES A COLOUR OF ITS OWN THAT DOES NOT WORK. The ground is a MEASUREMENT
+  // of the site and stays reported as one; what must not happen is Splash turning that reading
+  // into a proposed `theme:` when text cannot be read on it — the newsroom would meet the
+  // consequence at produce, on a colour the tool put in front of them.
+  it("should refuse to propose a measured ground that cannot carry readable text", () => {
+    const css = "body{background-color:#717171} :root{--brand:#e8b100}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(p.ground?.value).toBe("#717171");
+    expect(groundTheme(p)).toBeNull();
+    // …and it says so, naming a colour that does work, so the journalist can still stay close.
+    const note = p.notes.find((n) => n.includes("#717171"));
+    expect(note).toBeDefined();
+    expect(note).toContain("#606060");
+  });
+
+  it("should still propose a dark ground that carries text perfectly well", () => {
+    const css = "body{background-color:#12161c} :root{--brand:#e8b100}";
+    const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));
+    expect(groundTheme(p)).toBe("#12161c");
+    expect(p.notes.some((n) => n.includes("#12161c"))).toBe(false);
+  });
+
   it("should not report the ordinary white ground as a theme worth writing", () => {
     const css = "body{background:#ffffff} :root{--brand:#0a5c36}";
     const p = proposeCharter(bare({ sheets: [{ href: "s.css", css }] }));

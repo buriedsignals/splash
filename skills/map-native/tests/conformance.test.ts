@@ -511,8 +511,9 @@ describe("FRAME_COLORS_DARK — WCAG contrast ≥ 4.5:1", () => {
   });
 });
 
-// furnitureGround — the ground the map furniture text ACTUALLY stands on (the pill,
-// composited over the worst basemap it can overlay), not an assumed themeBg.
+// furnitureGround — the ground the map furniture text ACTUALLY stands on (the pill, composited
+// over the harshest colour the basemap THIS config pins can put under it), not an assumed themeBg
+// and — since 2026-08-07 — not the pole that basemap rules out either.
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
@@ -521,10 +522,12 @@ import {
 } from "../src/core/map-produce-conformance";
 
 describe("map furniture stands on a ground, not on a basemap tile", () => {
-  it("should keep the source text legible over the WORST basemap the pill can sit on", () => {
-    // The light pill is rgba(255,255,255,0.92): over a black tile it composites to ~#EBEBEB.
-    // muted #5f5f5f must still clear 4.5:1 THERE, not only against the assumed white.
-    const g = furnitureGround(undefined);
+  it("should keep the source text legible over the WORST tile the pill can sit on", () => {
+    // The light pill is rgba(255,255,255,0.92): over dataviz-light's darkest area colour
+    // (#C1C2C2) it composites to #fafafa. muted #5f5f5f must still clear 4.5:1 THERE, not only
+    // against the assumed white. The basemap is passed, never inferred — a light default ground
+    // pins the light basemap, and measuring it on the dark one describes a different map.
+    const g = furnitureGround(undefined, undefined, false);
     const { muted } = resolveFrameColors(undefined);
     expect(contrastRatio(muted, g)).toBeGreaterThanOrEqual(4.5);
   });
@@ -532,7 +535,9 @@ describe("map furniture stands on a ground, not on a basemap tile", () => {
   it("should not answer plain white for the light default", () => {
     // furnitureGround returned `resolveThemeBg(bg) ?? "#ffffff"` — the assumption, not the
     // composite. #5f5f5f on pure white is 6.38:1 and PASSES; on a real light tile it does not.
-    expect(furnitureGround(undefined).toLowerCase()).not.toBe("#ffffff");
+    expect(furnitureGround(undefined, undefined, false).toLowerCase()).not.toBe(
+      "#ffffff",
+    );
   });
 
   it("should give the responsive source band the same pill the title band has", () => {
