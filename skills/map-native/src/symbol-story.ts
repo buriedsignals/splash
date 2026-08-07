@@ -12,7 +12,7 @@ import {
 } from "./map-story";
 import { formatLocaleNumber, labelWithUnit, type Lang } from "./core/locale";
 import { shortWayLongitudeExtent } from "./core/longitude";
-import { tourBoxDelta } from "./core/tour-box";
+import { establishBox, tourStopBox } from "./core/tour-box";
 
 export interface SymbolStoryMeta {
   title: string;
@@ -52,36 +52,37 @@ export function deriveSymbolStory(
   // tiles for empty territory (the video-hang trigger) and clips edge labels. `east`
   // may exceed +180 (unwrapped) so cameraForBounds centres on the true Pacific midpoint.
   const { west, east } = shortWayLongitudeExtent(lons);
-  const bounds: [number, number, number, number] = [
+  // Two boxes, and the difference matters exactly once — the same pair deriveLocatorStory
+  // keeps, for the same reason. `dataBounds` is what the points themselves span: the thing a
+  // tour has to cross, and the thing a stop box is a fraction OF. `bounds` is what the camera
+  // FRAMES, identical except for a set with no spread at all (one point, or all coincident),
+  // where a zero-area box would solve to zoom 22 — a blank tile. Sizing a stop off the WIDENED
+  // box would manufacture a tour out of the padding.
+  const dataBounds: [number, number, number, number] = [
     west,
     Math.min(...lats),
     east,
     Math.max(...lats),
   ];
+  const bounds = establishBox(dataBounds);
 
-  // ★ A STOP'S BOX IS A FRACTION OF THE POINTS' OWN SPREAD, NEVER A CONSTANT.
+  // ★ A STOP'S BOX IS THE ESTABLISHING SHOT, HALVED — NEVER A CONSTANT.
   //
-  // Both reveal paths below (the journalist's confirmed arc, and the salience walk) used to frame
-  // a stop at a constant ±1.5°. That is the arithmetic core/tour-box.ts was written to replace:
-  // constant box, variable spread, so the TIGHTER the cluster the FLATTER the tour — every stop
-  // framed wider than the establishing shot above, the camera zooming OUT from its own opening
-  // while only the circles lit up in turn. See that file's header for the measurement.
+  // Both reveal paths below (the journalist's confirmed arc, and the salience walk) used to
+  // frame a stop at a constant ±1.5°. That is the arithmetic core/tour-box.ts was written to
+  // replace: constant box, variable spread, so the TIGHTER the cluster the FLATTER the tour —
+  // every stop framed wider than the establishing shot above, the camera zooming OUT from its
+  // own opening while only the circles lit up in turn. See that file's header for the three
+  // measurements, taken off rendered mp4s.
   //
-  // Sized from EVERY point, not from the capped subset a salience walk visits, because `bounds`
-  // above frames them all — so a stop is one zoom step IN from the establishing shot, which is
-  // the relation the reader reads. (Measured on the rendered mp4 of a four-glacier cluster:
-  // establish z=8.48, every stop z≈9.06, so +0.58 — the box halves the set's WIDER axis while
-  // the 16:9 frame is bound by the narrower one, which is why it is not a flat one level.
-  // Before this, the same stops solved to z≈6.28: the camera zoomed OUT 2.2 levels from its own
-  // opening at every beat.) A continental set still hits the cap and is framed byte-identically
-  // to before — proven by rendering one either side of this change to the same SHA-256.
-  const stopDelta = tourBoxDelta(points);
-  const stopBox = (p: SymbolPoint): [number, number, number, number] => [
-    p.lon - stopDelta,
-    p.lat - stopDelta,
-    p.lon + stopDelta,
-    p.lat + stopDelta,
-  ];
+  // Sized from EVERY point, not from the capped subset a salience walk visits, because
+  // `bounds` above frames them all — so a stop is one zoom level IN from the establishing
+  // shot, which is the relation the reader reads. A continental set hits the cap, so every
+  // one of its camera boxes stays bit-identical to the constant a symbol story has always
+  // used — see core/tour-box.ts for how that identity is checked (not by hashing the mp4,
+  // which is not byte-deterministic).
+  const stopBox = (p: SymbolPoint): [number, number, number, number] =>
+    tourStopBox(dataBounds, p) ?? bounds;
 
   const beats: Beat[] = [];
   beats.push({

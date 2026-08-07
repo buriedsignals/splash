@@ -5,7 +5,12 @@ import {
   markTriggerFrames,
 } from "../src/symbol-story";
 import type { SymbolPoint } from "../src/symbol-geo";
-import { tourBoxDelta, WIDE_TOUR_DELTA } from "../src/core/tour-box";
+import {
+  establishBox,
+  tourStopBox,
+  TOUR_SCALE,
+  WIDE_TOUR_DELTA,
+} from "../src/core/tour-box";
 
 const points: SymbolPoint[] = [
   { lon: -0.1, lat: 51.5, value: 296, label: "London" },
@@ -43,15 +48,16 @@ describe("deriveSymbolStory", () => {
     expect(london.callout!.text).toBe("London — 296$bn");
     expect(london.copy).toBe("London — 296$bn");
   });
-  it("frames each reveal on a bbox around the city, sized from the points' spread", () => {
-    // lon spread -0.1…4.9 = 5° → half 2.5° → ×TOUR_SCALE = 1.25° (wider than the 0.8875°
-    // the latitude spread would give, and under the 1.5° cap). NOT the old constant 1.5°.
+  it("frames each reveal on a bbox around the city — the establishing box halved on EACH axis", () => {
+    // lon spread -0.1…4.9 = 5° → ±1.25°; lat spread 48.85…52.4 = 3.55° → ±0.8875°. Both
+    // under the 1.5° cap, so neither binds. NOT the old constant ±1.5° square, and not a
+    // single scalar spent on both axes either.
     const london = beats.find((b) => b.callout?.name === "London")!;
     expect(london.camera).toEqual([
       -0.1 - 1.25,
-      51.5 - 1.25,
+      51.5 - 0.8875,
       -0.1 + 1.25,
-      51.5 + 1.25,
+      51.5 + 0.8875,
     ]);
   });
   it("frames title/establish/takeaway on the full points bbox", () => {
@@ -168,14 +174,15 @@ describe("deriveSymbolStory maxReveals", () => {
   });
 });
 
-// ★ THE STOP BOX IS A FRACTION OF THE POINTS' OWN SPREAD, ON BOTH PATHS.
+// ★ THE STOP BOX IS THE ESTABLISHING SHOT HALVED, ON BOTH PATHS.
 //
 // The same defect the locator tour carried (core/tour-box.ts's header): the reveal box was the
 // constant ±1.5°, so the TIGHTER the cluster the FLATTER the tour — every stop framed wider than
 // the establishing shot, the camera zooming OUT from its own opening while only the circles lit
 // up in turn. A symbol story reaches that box by two routes (the journalist's confirmed arc, and
-// the salience walk), and both carried the constant.
-describe("deriveSymbolStory — the reveal box is sized from the points' spread", () => {
+// the salience walk), and both carried the constant. Both now route through the ONE rule every
+// walk in this engine uses.
+describe("deriveSymbolStory — the reveal box is the establishing box, halved", () => {
   // Four Alpine sites inside 90 km — the reported cluster, as symbol points.
   const glaciers: SymbolPoint[] = [
     {
@@ -204,21 +211,30 @@ describe("deriveSymbolStory — the reveal box is sized from the points' spread"
     },
   ];
   const halfWidth = (c: [number, number, number, number]) => (c[2] - c[0]) / 2;
+  const halfHeight = (c: [number, number, number, number]) => (c[3] - c[1]) / 2;
   const revealsOf = (bs: ReturnType<typeof deriveSymbolStory>) =>
     bs.filter((b) => b.kind === "reveal");
+  const boundsOf = (ps: SymbolPoint[]) =>
+    [
+      Math.min(...ps.map((p) => p.lon)),
+      Math.min(...ps.map((p) => p.lat)),
+      Math.max(...ps.map((p) => p.lon)),
+      Math.max(...ps.map((p) => p.lat)),
+    ] as [number, number, number, number];
 
-  it("salience walk: a clustered set is framed at tourBoxDelta, NOT the constant wide box", () => {
+  it("salience walk: a clustered set is framed at tourStopBox, NOT the constant wide box", () => {
     const reveals = revealsOf(
       deriveSymbolStory(glaciers, { title: "Quatre glaciers" }),
     );
     expect(reveals.length).toBe(4);
     for (const b of reveals) {
-      expect(halfWidth(b.camera)).toBeCloseTo(tourBoxDelta(glaciers), 12);
+      const p = glaciers.find((g) => g.label === b.highlight[0])!;
+      expect(b.camera).toEqual(tourStopBox(boundsOf(glaciers), p) as never);
       expect(halfWidth(b.camera)).toBeLessThan(WIDE_TOUR_DELTA);
     }
   });
 
-  it("confirmed arc: the same clustered set gets the same derived box, not the constant", () => {
+  it("confirmed arc: the same clustered set gets the same box, not the constant", () => {
     const reveals = revealsOf(
       deriveSymbolStory(glaciers, {
         title: "Quatre glaciers",
@@ -231,8 +247,54 @@ describe("deriveSymbolStory — the reveal box is sized from the points' spread"
     );
     expect(reveals.length).toBe(3);
     for (const b of reveals) {
-      expect(halfWidth(b.camera)).toBeCloseTo(tourBoxDelta(glaciers), 12);
+      const p = glaciers.find((g) => g.label === b.highlight[0])!;
+      expect(b.camera).toEqual(tourStopBox(boundsOf(glaciers), p) as never);
       expect(halfWidth(b.camera)).toBeLessThan(WIDE_TOUR_DELTA);
+    }
+  });
+
+  it("halves BOTH axes, so a stop keeps the set's own shape instead of spending one scalar on both", () => {
+    // The scalar this replaced read max(lonSpread, latSpread)/4 = 0.2128° and spent it on
+    // both axes. Latitude binds a 16:9 frame for this set, so that box came out 0.58 of a
+    // level in from the establishing shot rather than a clean level — measured off the
+    // rendered mp4: establish z 8.478, stops z 9.06.
+    const bounds = boundsOf(glaciers);
+    for (const b of revealsOf(
+      deriveSymbolStory(glaciers, { title: "Quatre glaciers" }),
+    )) {
+      expect(halfWidth(b.camera)).toBeCloseTo(
+        ((bounds[2] - bounds[0]) / 2) * TOUR_SCALE,
+        12,
+      );
+      expect(halfHeight(b.camera)).toBeCloseTo(
+        ((bounds[3] - bounds[1]) / 2) * TOUR_SCALE,
+        12,
+      );
+      expect(halfHeight(b.camera)).toBeLessThan(halfWidth(b.camera));
+    }
+  });
+
+  it("a RIBBON of points is framed tighter than its establishing shot on BOTH axes — where the scalar zoomed OUT 2.19 levels at every stop", () => {
+    // The five Seine-side sites (0.0804° × 0.0103°). The scalar's 0.05° floor bound here and
+    // yielded a 0.1° square, WIDER than the whole set: measured off the rendered mp4 at
+    // 1280×720, establish z 13.258 and every stop z 11.07. The camera zoomed out at every
+    // beat, on the engine's own default salience walk.
+    const seine: SymbolPoint[] = [
+      { lon: 2.3699, lat: 48.8503, value: 21, label: "Austerlitz" },
+      { lon: 2.3499, lat: 48.853, value: 34, label: "Notre-Dame" },
+      { lon: 2.3376, lat: 48.8606, value: 28, label: "Louvre" },
+      { lon: 2.313, lat: 48.8606, value: 45, label: "Alexandre III" },
+      { lon: 2.2895, lat: 48.8584, value: 62, label: "Trocadéro" },
+    ];
+    const beats = deriveSymbolStory(seine, { title: "La Seine" });
+    const establishing = beats.find((b) => b.kind === "establish")!.camera;
+    for (const b of revealsOf(beats)) {
+      expect(b.camera[2] - b.camera[0]).toBeLessThan(
+        establishing[2] - establishing[0],
+      );
+      expect(b.camera[3] - b.camera[1]).toBeLessThan(
+        establishing[3] - establishing[1],
+      );
     }
   });
 
@@ -256,7 +318,7 @@ describe("deriveSymbolStory — the reveal box is sized from the points' spread"
     ).toBeGreaterThan(halfWidth(reveals[0]!.camera));
   });
 
-  it("a set already spread across a continent is framed EXACTLY as before — the cap binds, on both paths", () => {
+  it("a set already spread across a continent is framed EXACTLY as before — the cap binds on both axes, on both paths", () => {
     const continental: SymbolPoint[] = [
       { lon: -9.1, lat: 38.7, value: 30, label: "Lisbon" },
       { lon: 37.6, lat: 55.7, value: 90, label: "Moscow" },
@@ -295,16 +357,19 @@ describe("deriveSymbolStory — the reveal box is sized from the points' spread"
       { maxReveals: 2 },
     );
     for (const b of revealsOf(capped)) {
-      expect(halfWidth(b.camera)).toBeCloseTo(tourBoxDelta(glaciers), 12);
+      const p = glaciers.find((g) => g.label === b.highlight[0])!;
+      expect(b.camera).toEqual(tourStopBox(boundsOf(glaciers), p) as never);
     }
   });
 
-  it("one point has no tour to serve, so it keeps the wide 'where is this place' box", () => {
+  it("one point has no tour to serve, so every beat keeps the wide 'where is this place' box — never the zero-area bbox that solves to a blank tile", () => {
     const one: SymbolPoint[] = [
       { lon: 6.14, lat: 46.2, value: 5, label: "Genève" },
     ];
-    const reveal = revealsOf(deriveSymbolStory(one, { title: "T" }))[0]!;
-    expect(halfWidth(reveal.camera)).toBe(WIDE_TOUR_DELTA);
+    const beats = deriveSymbolStory(one, { title: "T" });
+    const wide = establishBox([6.14, 46.2, 6.14, 46.2]);
+    for (const b of beats) expect(b.camera).toEqual(wide as never);
+    expect(halfWidth(revealsOf(beats)[0]!.camera)).toBe(WIDE_TOUR_DELTA);
   });
 });
 
