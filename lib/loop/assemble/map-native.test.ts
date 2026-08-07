@@ -2,6 +2,7 @@ import { test, expect, describe, it } from "bun:test";
 import { assembleMapNative } from "./map-native";
 import { mapNativeConfigErrors } from "../../../skills/map-native/src/validate-config";
 import { resolveGeographyRef } from "../../geo/ref";
+import { ISO_A3_PINNED_JOIN_TYPES } from "../../../skills/map-native/src/region-join-support";
 import type { ProductionBrief } from "../../core/production-brief";
 
 const REGION_BRIEF: ProductionBrief = {
@@ -352,7 +353,7 @@ test("a dot-density config against the world basemap clears the engine's own val
 // against country ISO codes) rather than fail loud. Refused here — the assembler is the one
 // place that knows which basemap this geography actually matched — until the component itself
 // derives its join key from basemap/geography (Task 13, task-13-brief.md Steps 3-6).
-test("a dot-density against any basemap but world is refused, not silently rendered wrong", () => {
+test("a dot-density against any basemap but world is refused in the formats whose component pins the key, not silently rendered wrong", () => {
   const r = assembleMapNative({
     ...REGION_BRIEF,
     nativeType: "dot-density",
@@ -377,6 +378,52 @@ test("a dot-density against any basemap but world is refused, not silently rende
   expect(r.message).toContain("us-states");
   expect(r.message).toContain("world");
 });
+
+// THE SCOPE OF THE REFUSAL ABOVE — and, until 2026-08-07, the capability it deleted. That refusal
+// was format-BLIND while its cartogram sibling was scoped, and the asymmetry was never a decision:
+// the cartogram fix left it deliberately alone, saying a narrowing "would ADMIT a pairing that is
+// refused today, which is a capability decision owed its own rendered proof". This is that proof's
+// unit-level half. DotDensityStory (:199), DotDensityReveal (:134) and DotDensityScrolly (:140)
+// resolve the join key through resolveVideoGeometry (core/video-geometry.ts), which prefers
+// `config.geography.joinKey`; only DotDensityMap.tsx pins it (`const JOIN_KEY = "iso_a3"`, :41).
+//
+// THE RENDER that decides it is lib/loop/dot-density-video-e2e.test.ts — a us-states dot-density
+// video built through produce() with a real Remotion render, measured on the mp4 and on the
+// engine's own video-verify report. Without THIS test, widening the refusal back to every format
+// would leave the gate green (that proof is opt-in) while removing what the render measured.
+for (const format of ["video", "scrolly"] as const) {
+  test(`a non-world dot-density is ACCEPTED in ${format}, whose components resolve the join key`, () => {
+    const r = assembleMapNative({
+      ...REGION_BRIEF,
+      nativeType: "dot-density",
+      format,
+      dataCsv: "state,access\nCA,100\nTX,90",
+      geo: {
+        column: "state",
+        geography: {
+          origin: "shipped",
+          set: "us-states",
+          level: "state",
+          joinKey: "postal",
+          joinKeyFamily: "postal",
+        },
+        matched: 2,
+        total: 2,
+        unmatched: [],
+      },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // Beyond "not refused": the emitted config must name the geography the video path reads its
+    // join key OFF, or the acceptance is vacuous.
+    const cfg = r.value as Record<string, unknown>;
+    expect(cfg.type).toBe("dot-density");
+    expect(cfg.basemap).toBe("us-states");
+    expect((cfg.geography as { joinKey?: string } | undefined)?.joinKey).toBe(
+      "postal",
+    );
+  });
+}
 
 // THE SIBLING THE REFUSAL ABOVE FORGOT. `cartogram` sits in the same family and fails the same
 // way: CartogramMap.tsx (the static AND interactive component) calls `computeCartogram(config,
@@ -470,6 +517,51 @@ for (const format of ["video", "scrolly"] as const) {
     );
   });
 }
+
+// THE GUARD IS DRIVEN BY THE SHARED SET, not by two hand-written branches — which is what stops
+// the asymmetry this branch removed from growing back a third time. A type joins the set by
+// pinning its key (region-join-support.ts), and joining it must be enough to be refused here.
+//
+// The second half is the one that keeps the exclusion honest: `choropleth` is in the same region
+// family, reaches the same code, and is NOT in the set — because ChoroplethMap.tsx reads
+// `config.geography.joinKey` (:265-267). It must keep assembling against a non-world basemap in
+// the very formats the other two are refused in, or the guard has widened past its own fact.
+test("the pinned-join refusal follows the shared set, and stops at its edge", () => {
+  const nonWorld = {
+    column: "state",
+    geography: {
+      origin: "shipped" as const,
+      set: "us-states",
+      level: "state",
+      joinKey: "postal",
+      joinKeyFamily: "postal",
+    },
+    matched: 2,
+    total: 2,
+    unmatched: [],
+  };
+  const brief = {
+    ...REGION_BRIEF,
+    dataCsv: "state,access\nCA,100\nTX,90",
+    geo: nonWorld,
+  };
+  for (const format of ["static", "interactive"] as const) {
+    for (const nativeType of ISO_A3_PINNED_JOIN_TYPES) {
+      const r = assembleMapNative({ ...brief, nativeType, format });
+      expect(`${nativeType}/${format}: ${r.ok ? "accepted" : "refused"}`).toBe(
+        `${nativeType}/${format}: refused`,
+      );
+    }
+    const clear = assembleMapNative({
+      ...brief,
+      nativeType: "choropleth",
+      format,
+    });
+    expect(
+      `choropleth/${format}: ${clear.ok ? "accepted" : clear.message}`,
+    ).toBe(`choropleth/${format}: accepted`);
+  }
+});
 
 // The world basemap is the one case the pinned key is RIGHT for — it must keep assembling in
 // every format, or the guard has eaten the ordinary path.

@@ -11,6 +11,7 @@ import type { VisualFormat } from "../core/vocabulary";
 import "../loop/engines";
 import { isLoopBuildable } from "../loop/buildable";
 import { bgIsDark } from "../core/theme";
+import { isoA3PinnedJoinRefusal } from "../../skills/map-native/src/region-join-support";
 
 const TWO_POINTS = deriveFacts({
   columns: ["canton", "2019", "2024"],
@@ -863,5 +864,100 @@ describe("cesium-flyover is never proposed from a data profile", () => {
   it("should offer it once the run declares the journalist asked", () => {
     const { eligible: ok } = eligible({ ...BASE, requestedFlyover: true });
     expect(ok.some((c) => c.id === "flyover")).toBe(true);
+  });
+});
+
+// ── the join a form's component cannot make, refused BEFORE the journalist chooses ────────────
+//
+// Two map-native types pin their join key to "iso_a3" in their static and interactive components
+// (skills/map-native/src/region-join-support.ts carries both measurements). Produce already refused
+// them — on the loop chain at the assembler, on the prose chain at validate-gate — but the offer
+// went on proposing a us-states cartogram in those formats, so a journalist chose a form, waited
+// for a build, and only then met the refusal. These tests are the offer's half.
+describe("a pinned join key is refused at the offer, not at the render", () => {
+  const spatial = () =>
+    deriveFacts({
+      columns: ["state", "population"],
+      numericColumns: ["population"],
+      rowCount: 4,
+    });
+
+  it("should keep the pinned pairings off the menu for a non-world basemap", () => {
+    const { eligible: ok } = eligible({
+      facts: spatial(),
+      channel: "article-web",
+      basemapKey: "us-states",
+    });
+    const pinned = ok.filter(
+      (c) =>
+        (c.key === "cartogram" || c.key === "dot-density") &&
+        (c.format === "static" || c.format === "interactive"),
+    );
+    expect(pinned).toEqual([]);
+  });
+
+  // THE HALF THAT KEEPS THE EXCLUSION HONEST, and the one this family has already got wrong once:
+  // the loop's own dot-density branch refused every format and thereby deleted a working video
+  // (proven by render — docs/splash/proofs/2026-08-07-dot-density-video-join/). An offer that
+  // dropped the whole form would repeat that at the menu.
+  it("should still offer those same types in the formats whose components resolve the key", () => {
+    const { eligible: ok } = eligible({
+      facts: spatial(),
+      channel: "article-web",
+      basemapKey: "us-states",
+    });
+    for (const key of ["cartogram", "dot-density"]) {
+      const survives = ok.filter((c) => c.key === key);
+      expect(`${key}: ${survives.length > 0 ? "offered" : "gone"}`).toBe(
+        `${key}: offered`,
+      );
+      // and only through formats the components can actually join
+      expect(
+        survives.every((c) => c.format === "video" || c.format === "scrolly"),
+      ).toBe(true);
+    }
+  });
+
+  // The world basemap is the one the key is RIGHT for — the ordinary path must be untouched.
+  it("should offer every format against the world basemap", () => {
+    const { eligible: ok } = eligible({
+      facts: spatial(),
+      channel: "article-web",
+      basemapKey: "world",
+    });
+    const formats = ok
+      .filter((c) => c.key === "cartogram")
+      .map((c) => c.format)
+      .sort();
+    expect(formats).toEqual(["interactive", "scrolly", "static", "video"]);
+  });
+
+  // A run whose geography has not been matched has no pairing to refuse — the offer must not
+  // guess at one, and produce's guard stays the backstop. Byte-identical to before this landed.
+  it("should constrain nothing when no basemap has been matched", () => {
+    const { eligible: ok } = eligible({
+      facts: spatial(),
+      channel: "article-web",
+    });
+    expect(ok.some((c) => c.key === "cartogram" && c.format === "static")).toBe(
+      true,
+    );
+  });
+
+  // A sheet whose EVERY format is pinned would be excluded outright, and then the journalist reads
+  // a reason. It must be the produce guard's own sentence, not a second wording invented here.
+  it("should exclude with the produce guard's own sentence when nothing survives", () => {
+    const sheet: TypeSheet = {
+      ...fakeSheet("pinned-only", ["static", "interactive"]),
+      id: "pinned-only",
+      engines: { "map-native": ["cartogram"] },
+    };
+    const { eligible: ok, excluded } = eligible(
+      { facts: spatial(), channel: "article-web", basemapKey: "us-states" },
+      [{ sheet, engine: "map-native", key: "cartogram" }],
+    );
+    expect(ok).toEqual([]);
+    const reason = excluded.find((e) => e.id === "pinned-only")?.reason ?? "";
+    expect(reason).toBe(isoA3PinnedJoinRefusal("cartogram", "us-states"));
   });
 });

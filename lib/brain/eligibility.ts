@@ -34,6 +34,10 @@ import type { Facts } from "./facts";
 // The measured render limits of a (engine, type, format) pairing (task 19), fed by each engine's
 // own registration (map-native's is task 20). Read here, never restated — see Candidate.limits.
 import { featureLimits } from "../core/feature-reach";
+// A (type, basemap, format) triple two map-native components cannot join. Asked here so the menu
+// never carries a form that dies at produce — the same predicate, and therefore the same sentence,
+// the loop's assembler and the prose chain's gate refuse it with.
+import { isoA3PinnedJoinError } from "../../skills/map-native/src/region-join-support";
 
 export type Candidate = {
   id: string;
@@ -78,6 +82,20 @@ export type EligibilityInput = {
    *  above — read from what they said they want, never inferred from the data, because a
    *  flyover encodes none. Absent/false ⇒ the form is excluded rather than proposed. */
   requestedFlyover?: boolean;
+  /** WHICH BASEMAP this run's geography actually matched — the renderer's own registry key
+   *  (lib/geo/ref.ts's `basemapKeyFor`), measured by orient, never a preference.
+   *
+   *  A FACT of the run in exactly the sense `requestedFormat` and `declaredPhotographs` are, and
+   *  admitted here for the same reason they were: it is counted from what the run HAS, so it can
+   *  constrain legality without letting a mis-read intent do so. Two map-native types pin their
+   *  join key in their static and interactive components, so against any other basemap those two
+   *  pairings render a map with no data on it — a form that cannot be built must not be on the
+   *  menu (spec §4.2's own promise: the offer and the build agree).
+   *
+   *  Absent ⇒ no constraint, and that is the honest answer rather than a gap: a run whose
+   *  geography has not been matched yet has no pairing to refuse, and produce's own guard stays
+   *  the backstop for it. */
+  basemapKey?: string;
   /** The deliverable's CONTENT language (lib/newsroom/language.ts's `content`, not `ui`) — the
    *  language its furniture (numbers, "Source:") would be rendered in. Absent ⇒ no constraint;
    *  a run that has not declared one yet is not a run in a fifth language (isCoveredLang treats
@@ -219,6 +237,33 @@ export function eligible(
       );
       continue;
     }
+    // ── THE JOIN THIS FORM'S COMPONENT CANNOT MAKE ────────────────────────────────────────────
+    // Two map-native types pin their join key to "iso_a3" in their static and interactive
+    // components, so against a us-states or admin-1 geography those pairings draw boundaries and
+    // no data (skills/map-native/src/region-join-support.ts carries both measurements). Produce
+    // already refuses them — on the loop chain at the assembler, on the prose chain at
+    // validate-gate — but a refusal at produce arrives AFTER the journalist chose a form and
+    // waited for a build. Asked here, the menu simply never contains it.
+    //
+    // PER FORMAT, and that is the whole care in this block. The pinning reaches only the two
+    // formats those components render; the video and scrolly components resolve the key
+    // correctly, and a us-states dot-density video is a MEASURED working capability
+    // (lib/loop/dot-density-video-e2e.test.ts). Excluding the sheet would delete it — the exact
+    // failure mode this family has already produced once, on the loop's own dot-density branch.
+    // So the pairing is dropped from `formats` and the id survives through the ones that work.
+    //
+    // The reason is the predicate's own sentence, never restated here: what the offer says and
+    // what the produce guard would have said are one string from one module.
+    const joinable = formats.filter(
+      (f) => isoA3PinnedJoinError(key, input.basemapKey, f) === null,
+    );
+    if (joinable.length === 0) {
+      exclude(
+        sheet.id,
+        isoA3PinnedJoinError(key, input.basemapKey, formats[0]!)!,
+      );
+      continue;
+    }
     const limit = limitFailure(sheet, input.facts);
     if (limit) {
       exclude(sheet.id, limit);
@@ -255,7 +300,9 @@ export function eligible(
       continue;
     }
     const fill = fillRatio(sheet, input.facts);
-    for (const format of formats)
+    // `joinable`, not `formats` — the pairing filter above is only a filter if what it filtered
+    // is what gets offered.
+    for (const format of joinable)
       out.push(
         withMarks({ id: sheet.id, engine, key, format, sheet, fill }, input),
       );

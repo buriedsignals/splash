@@ -5,6 +5,7 @@ import { test, expect } from "bun:test";
 import "./engines";
 import { orderingIntents, propose } from "./propose";
 import type { RunManifest } from "./manifest";
+import { isoA3PinnedJoinRefusal } from "../../skills/map-native/src/region-join-support";
 
 function run(numericColumns: string[], rowCount = 8): RunManifest {
   return {
@@ -248,4 +249,75 @@ test("two deliverables of one run are offered at their own channels", () => {
   );
   expect(socialOffer.options.every((o) => o.format !== "scrolly")).toBe(true);
   expect(webOffer.options.length).toBeGreaterThan(0);
+});
+
+// ── the run's matched basemap reaches the brain ───────────────────────────────────────────────
+//
+// The brain refuses a (type, basemap, format) triple two map-native components cannot join
+// (lib/brain/eligibility.ts), and it can only do that if THIS DOOR hands it the basemap. Tested
+// here rather than only in the brain because the defect was never in the brain's rule — it was
+// that nobody told it, so a journalist was offered a us-states cartogram in static, chose it,
+// waited for a build, and met the refusal at produce.
+//
+// The element asks for `static` explicitly, and that is what makes this a probe rather than a
+// coincidence: the offer is capped at three rows, so with every format legal the pinned pairings
+// rank below hex-grid and choropleth anyway and a broken door would look identical. Narrowed to
+// the one format their components cannot join, the difference is visible in the menu itself.
+function runWithGeography(set: string, joinKey: string): RunManifest {
+  const m = run(["population"], 4);
+  m.orient!.geo = {
+    column: "state",
+    geography: {
+      origin: "shipped",
+      set,
+      level: set === "natural-earth-admin-0" ? "country" : "state",
+      joinKey,
+      joinKeyFamily: joinKey,
+    },
+    matched: 4,
+    total: 4,
+    unmatched: [],
+  };
+  m.elements[0]!.requestedFormat = "static";
+  m.elements[0]!.angle!.intent = "spatial";
+  return m;
+}
+
+function offeredTypes(m: RunManifest): string[] {
+  return propose(m, m.elements[0]!).options.map(
+    (o) => `${o.nativeType}/${o.format}`,
+  );
+}
+
+test("a non-world geography keeps the pinned pairings out of the offer entirely", () => {
+  const m = runWithGeography("us-states", "postal");
+  const { options, excluded } = propose(m, m.elements[0]!);
+  expect(
+    options.filter(
+      (o) => o.nativeType === "cartogram" || o.nativeType === "dot-density",
+    ),
+  ).toEqual([]);
+  // and the journalist is TOLD, in the produce guard's own sentence rather than a second one —
+  // the row is gone, not silently gone.
+  for (const id of ["cartogram", "dot-density"])
+    expect(
+      `${id}: ${excluded.find((e) => e.id === id)?.reason ?? "no reason"}`,
+    ).toBe(`${id}: ${isoA3PinnedJoinRefusal(id, "us-states")}`);
+});
+
+// Judged on the RENDERER's registry key: "world"'s own `set` is "natural-earth-admin-0"
+// (lib/geo/ref.ts), so a door that threaded `geography.set` raw would refuse the ordinary world
+// path too — and this assertion, not the one above, is what catches that.
+test("the world geography is threaded by its REGISTRY key, so the ordinary path is untouched", () => {
+  expect(
+    offeredTypes(runWithGeography("natural-earth-admin-0", "iso_a3")),
+  ).toContain("cartogram/static");
+});
+
+// A run that has not matched a geography yet has no pairing to refuse, and the door must not
+// invent one — produce's own guard stays the backstop for that gap.
+test("a run with no geography match threads nothing, and nothing is refused", () => {
+  const m = runWithGeography("us-states", "postal");
+  m.orient!.geo = undefined;
+  expect(offeredTypes(m)).toContain("cartogram/static");
 });
