@@ -284,6 +284,13 @@ const GeographyRefSchema = z.strictObject({
   level: z.string(),
   joinKey: z.string(),
   joinKeyFamily: z.string(),
+  // Hand-synced with lib/geo/ref.ts's own `fileExtension?` — the cost of a hand mirror, paid
+  // late: the field was added to the plain type on 2026-07-30 (9bfbcf46) and never here, and a
+  // z.strictObject REJECTS what it has not been told about. Since matchGeography returns
+  // resolveGeographyRef's ref verbatim, every shipped basemap carries it, so orient wrote a
+  // run.json that no later verb could read. Mirrored rather than stripped: this is a fact about
+  // which file on disk the geography lives in, and the plain type is the authority on it.
+  fileExtension: z.enum(["geojson", "topojson"]).optional(),
 });
 // GeoMatch.featureIdsByValue's own hand-mirror (production-brief.ts's doc comment on that
 // field) — REQUIRED here, not merely typed on the plain type, or a manifest write→read
