@@ -12,7 +12,7 @@ import {
 import type { LocatorMarker } from "./locator-geo";
 import type { Phase } from "./story-timeline";
 import { shortWayLongitudeExtent } from "./core/longitude";
-import { tourBoxDelta } from "./core/tour-box";
+import { tourBoxDelta, tourStopBox, WIDE_TOUR_DELTA } from "./core/tour-box";
 
 export interface LocatorStoryMeta {
   title: string;
@@ -54,13 +54,36 @@ function padBbox(
   return [w - padW, s - padH, e + padW, n + padH];
 }
 
+// The establishing box: the markers' own bbox — EXCEPT when they have no spread at all (one
+// marker, or all coincident), where that bbox is a zero-area point and `cameraForBounds` solves
+// it to zoom 22, a blank tile with nothing on it. A set with no spread keeps the wide "where is
+// this place" framing instead (core/tour-box.ts's own rule and its own constant). Any set with
+// real spread is untouched, byte for byte.
+function establishBoxOf(ms: LocatorMarker[]): [number, number, number, number] {
+  const [w, s, e, n] = bboxOf(ms);
+  if (e > w || n > s) return [w, s, e, n];
+  return [
+    w - WIDE_TOUR_DELTA,
+    s - WIDE_TOUR_DELTA,
+    e + WIDE_TOUR_DELTA,
+    n + WIDE_TOUR_DELTA,
+  ];
+}
+
 export function deriveLocatorStory(
   markers: LocatorMarker[],
   meta: LocatorStoryMeta,
   opts: { maxReveals?: number } = {},
 ): Beat[] {
   const cap = Math.max(1, opts.maxReveals ?? DEFAULT_MAX_REVEALS);
-  const allBounds = bboxOf(markers);
+  // Two boxes, and the difference matters exactly once. `dataBounds` is what the markers
+  // themselves span — the thing a tour has to cross, and the thing a stop box is a fraction OF.
+  // `allBounds` is what the camera FRAMES, which is the same box except for a set with no spread
+  // at all, where it is widened so the establishing shot is a place rather than a point. Sizing a
+  // stop off the WIDENED box would manufacture a tour out of the padding: a lone marker would get
+  // an establish-zoom-in-pull-back it has no data reason to perform.
+  const dataBounds = bboxOf(markers);
+  const allBounds = establishBoxOf(markers);
 
   const beats: Beat[] = [];
   beats.push({
@@ -137,15 +160,31 @@ export function deriveLocatorStory(
         });
       }
     } else {
-      // Few-annotated regime: a beat per place (capped), caption = note ?? label.
-      // Camera STAYS on the whole concerned zone (all places framed) for every reveal, so the
-      // markers stay visible and separated — a fixed per-place ±CITY_DELTA box would zoom OUT and lose
-      // tightly-clustered places (e.g. sites within one city). The reveal is the highlight + callout.
+      // Few-annotated regime: a beat per place (capped), caption = note ?? label — and the
+      // camera GOES THERE, framing that place in a scaled-down copy of the establishing shot
+      // (core/tour-box.ts's `tourStopBox`).
+      //
+      // ★ THIS REGIME USED TO PIN EVERY REVEAL TO `allBounds`, and the reason it gave was that
+      // "a fixed per-place ±CITY_DELTA box would zoom OUT and lose tightly-clustered places
+      // (e.g. sites within one city)". That was true, and it was an argument about the CONSTANT,
+      // not about moving the camera — the same argument core/tour-box.ts answered for the
+      // authored walk. A box that is a FRACTION OF THE ESTABLISHING SHOT cannot zoom out (it is
+      // half of it, by construction) and cannot lose the neighbours (at half the frame the
+      // reader keeps the places either side of the one being named).
+      //
+      // What the pinning cost: a locator scrolly of this shape could not be BUILT. Every step
+      // framed the same box, so skills/scrolly's reduced-motion guard found no transition to
+      // test and refused the whole run ("vacuous check: step 3's camera equals step 2's").
+      // Measured on locator-few.json in the browser: seven steps, one camera,
+      // {lng:2.3297, lat:48.85545, zoom:12.721}, from the title to the takeaway.
+      const stopBoxFor = (m: LocatorMarker) => tourStopBox(dataBounds, m);
       for (const m of markers.slice(0, cap)) {
         const copy = m.note?.trim() ? m.note : m.label;
         beats.push({
           kind: "reveal",
-          camera: allBounds,
+          // No stop box ⇒ the set has no spread ⇒ there is nowhere to fly. The story is then
+          // legitimately still, and says so rather than inventing a move.
+          camera: stopBoxFor(m) ?? allBounds,
           highlight: [m.label],
           dim: true,
           callout: { region: m.label, name: m.label, value: "", text: copy },
@@ -187,16 +226,30 @@ export function deriveLocatorStory(
  * beat that holds the overview — so the four glaciers first appeared together in the takeaway,
  * the last shot of the video.
  *
- * A DERIVED locator walk is unchanged: its reveals sit on the establishing bounds already
- * (the few-annotated regime frames `allBounds` at every beat), so there the dwell really is the
- * dead air `beatsForMode` describes.
+ * The rule is READ OFF THE BEATS, not off who authored them. It used to be `beats.some(b =>
+ * b.authored)`, on the reasoning that a DERIVED walk's "reveals sit on the establishing bounds
+ * already, so there the dwell really is the dead air `beatsForMode` describes". That reasoning
+ * was correct and it is now false in the only case it named: since the few-annotated regime
+ * frames each place in its own box, a derived walk zooms in exactly like an authored one, and
+ * dropping its establish beat would cost it the same only-wide-shot. The categorized regime
+ * (reveals on a category's own bbox) was never on the establishing bounds either — it lost its
+ * overview to this predicate too, silently. Asking the beats whether they actually leave the
+ * establishing shot covers all three, and keeps an authored walk byte-identical.
  *
  * MUST be used by both LocatorStory.tsx (the animation) and Root.tsx's `locatorStoryMeta` (the
  * composition's durationInFrames) — the same single-source-of-truth rule `beatsForMode` carries,
  * for the same reason: if they diverge the mp4 ends on a frozen tail.
  */
 export function locatorBeatsForMode(beats: Beat[], mode: RevealMode): Beat[] {
-  if (mode === "sequential" && beats.some((b) => b.authored)) return beats;
+  const establish = beats.find((b) => b.kind === "establish");
+  const toursAway =
+    !!establish &&
+    beats.some(
+      (b) =>
+        b.kind === "reveal" &&
+        b.camera.some((v, i) => v !== establish.camera[i]),
+    );
+  if (mode === "sequential" && toursAway) return beats;
   return beatsForMode(beats, mode);
 }
 

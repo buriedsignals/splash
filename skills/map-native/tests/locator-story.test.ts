@@ -64,14 +64,27 @@ describe("deriveLocatorStory", () => {
     expect(beats.filter((b) => b.kind === "reveal").length).toBe(1);
   });
 
-  it("few-regime: every reveal stays framed on the whole zone (all places bbox), not a tight per-place box", () => {
+  // This test used to assert the OPPOSITE — "every reveal stays framed on the whole zone (all
+  // places bbox), not a tight per-place box" — which is the defect, not the contract: with one
+  // camera for the whole story, skills/scrolly's reduced-motion guard finds no transition to
+  // test and a locator scrolly of this shape cannot be built at all. The framing it feared (a
+  // per-place box that zooms OUT and loses the neighbours) was a property of the CONSTANT
+  // ±1.5° box, not of moving the camera — see locator-story.ts's own comment and
+  // core/tour-box.ts.
+  it("few-regime: every reveal frames its OWN place, tighter than the establishing shot", () => {
     const beats = deriveLocatorStory(few, {
       title: "Where the ceremony unfolded",
     });
     const establish = beats.find((b) => b.kind === "establish")!;
-    for (const r of beats.filter((b) => b.kind === "reveal")) {
-      expect(r.camera).toEqual(establish.camera); // same zone as the establishing shot
-    }
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    reveals.forEach((r, i) => {
+      expect(r.camera).not.toEqual(establish.camera);
+      expect(r.camera[2] - r.camera[0]).toBeLessThan(
+        establish.camera[2] - establish.camera[0],
+      );
+      expect((r.camera[0] + r.camera[2]) / 2).toBeCloseTo(few[i].lon, 9);
+      expect((r.camera[1] + r.camera[3]) / 2).toBeCloseTo(few[i].lat, 9);
+    });
   });
 
   it("gives a single-marker category a non-degenerate camera (no over-zoom)", () => {

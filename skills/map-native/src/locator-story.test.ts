@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import { deriveLocatorStory, locatorBeatsForMode } from "./locator-story.ts";
 import type { LocatorMarker } from "./locator-geo.ts";
 import type { MapArcBeat } from "./map-story.ts";
+import { WIDE_TOUR_DELTA } from "./core/tour-box.ts";
 
 // Rémy's own run, 2026-08-06 — four glaciers inside 90 km, toured as a `story`.
 const glaciers: LocatorMarker[] = [
@@ -70,6 +71,88 @@ describe("deriveLocatorStory — a guided tour of tightly-clustered markers actu
   });
 });
 
+// The five Seine-side sites of locator-few.json — annotated places, no categories, so
+// deriveLocatorStory takes its FEW-ANNOTATED branch. A scrolly of exactly this shape could not
+// be produced at all: every reveal was pinned to `allBounds`, so the sticky map held one frame
+// for the whole story and skills/scrolly's reduced-motion guard refused the build ("vacuous
+// check: step 3's camera equals step 2's").
+const seineSites: LocatorMarker[] = [
+  {
+    lon: 2.3699,
+    lat: 48.8503,
+    label: "Pont d'Austerlitz",
+    note: "Start line where the 85-boat athletes' parade entered the Seine.",
+  },
+  { lon: 2.3499, lat: 48.853, label: "Notre-Dame de Paris" },
+  { lon: 2.3376, lat: 48.8606, label: "Louvre riverfront" },
+  { lon: 2.313, lat: 48.8606, label: "Pont Alexandre III" },
+  { lon: 2.2895, lat: 48.8584, label: "Eiffel Tower / Trocadéro" },
+];
+
+describe("deriveLocatorStory — a derived walk of a few annotated places tours them too", () => {
+  const beats = deriveLocatorStory(seineSites, {
+    title: "Where the Paris 2024 opening ceremony unfolded",
+  });
+  const establish = beats.find((b) => b.kind === "establish")!;
+  const reveals = beats.filter((b) => b.kind === "reveal");
+
+  it("gives every reveal its OWN frame — the whole story no longer holds one camera", () => {
+    const frames = new Set(reveals.map((r) => JSON.stringify(r.camera)));
+    expect(frames.size).toBe(reveals.length);
+    for (const r of reveals) {
+      expect(r.camera).not.toEqual(establish.camera);
+    }
+  });
+
+  it("frames each stop TIGHTER than the establishing shot on both axes, whatever SHAPE the set has", () => {
+    for (const r of reveals) {
+      expect(width(r.camera)).toBeLessThan(width(establish.camera));
+      expect(height(r.camera)).toBeLessThan(height(establish.camera));
+    }
+  });
+
+  it("centres each stop on its own marker", () => {
+    reveals.forEach((r, i) => {
+      expect(centre(r.camera)[0]).toBeCloseTo(seineSites[i]!.lon, 9);
+      expect(centre(r.camera)[1]).toBeCloseTo(seineSites[i]!.lat, 9);
+    });
+  });
+
+  it("keeps the establishing and closing beats on the whole set", () => {
+    const all: [number, number, number, number] = [
+      2.2895, 48.8503, 2.3699, 48.8606,
+    ];
+    expect(beats[0]!.camera).toEqual(all); // title
+    expect(establish.camera).toEqual(all);
+    expect(beats.at(-1)!.camera).toEqual(all); // takeaway
+  });
+
+  it("keeps the caption on each place's own note", () => {
+    expect(reveals[0]!.copy).toBe(seineSites[0]!.note);
+    expect(reveals[1]!.copy).toBe("Notre-Dame de Paris");
+  });
+});
+
+describe("deriveLocatorStory — a set with NO spread has no tour to serve", () => {
+  const one: LocatorMarker[] = [
+    { lon: 6.1432, lat: 46.2044, label: "Rue du Stand 26" },
+  ];
+  const beats = deriveLocatorStory(one, { title: "One address" });
+
+  it("frames every beat on the same box — nothing to fly to is not a defect, it is the story", () => {
+    const frames = new Set(beats.map((b) => JSON.stringify(b.camera)));
+    expect(frames.size).toBe(1);
+  });
+
+  it("does NOT hand the renderer a zero-area point — that box solved to zoom 22, a blank tile", () => {
+    const [w, s, e, n] = beats[0]!.camera;
+    expect(e - w).toBeCloseTo(WIDE_TOUR_DELTA * 2, 12);
+    expect(n - s).toBeCloseTo(WIDE_TOUR_DELTA * 2, 12);
+    expect((w + e) / 2).toBeCloseTo(6.1432, 9);
+    expect((s + n) / 2).toBeCloseTo(46.2044, 9);
+  });
+});
+
 describe("locatorBeatsForMode", () => {
   const authored = deriveLocatorStory(glaciers, {
     title: "T",
@@ -93,10 +176,28 @@ describe("locatorBeatsForMode", () => {
     ]);
   });
 
-  it("a DERIVED walk still drops it in sequential mode — its reveals sit on the establishing bounds already, so the dwell really is dead air", () => {
+  it("a DERIVED walk that tours keeps it too — it zooms in at every stop now, so the establish beat is its only wide shot before the close", () => {
     expect(
       locatorBeatsForMode(derived, "sequential").map((b) => b.kind),
-    ).toEqual(["title", "reveal", "reveal", "reveal", "reveal", "takeaway"]);
+    ).toEqual([
+      "title",
+      "establish",
+      "reveal",
+      "reveal",
+      "reveal",
+      "reveal",
+      "takeaway",
+    ]);
+  });
+
+  it("drops it only when the reveals REALLY sit on the establishing bounds — then the dwell is the dead air beatsForMode describes", () => {
+    const still = deriveLocatorStory(
+      [{ lon: 6.1432, lat: 46.2044, label: "Rue du Stand 26" }],
+      { title: "T" },
+    );
+    expect(locatorBeatsForMode(still, "sequential").map((b) => b.kind)).toEqual(
+      ["title", "reveal", "takeaway"],
+    );
   });
 
   it("context mode is untouched either way", () => {

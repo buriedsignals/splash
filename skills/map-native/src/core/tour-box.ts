@@ -64,3 +64,45 @@ export function tourBoxDelta(marks: { lon: number; lat: number }[]): number {
     Math.max(MIN_TOUR_DELTA, halfSpread * TOUR_SCALE),
   );
 }
+
+/**
+ * The box a tour beat frames around its own stop, as a SCALED-DOWN COPY OF THE ESTABLISHING
+ * BOX — same shape, `TOUR_SCALE` of the size, centred on the stop.
+ *
+ * ★ A SCALAR HALF-WIDTH ONLY WORKS FOR A ROUGHLY SQUARE SET.
+ *
+ * `tourBoxDelta` above answers "how far in do we go" with ONE number and spends it on both
+ * axes. That is right for a set whose spread is about the same in both directions — the four
+ * Alpine glaciers it was measured on (0.85° × 0.64°). It inverts for a RIBBON. Measured in the
+ * browser on this repo's own locator-few.json (the five Seine-side sites of the Paris 2024
+ * opening ceremony, 0.0804° × 0.0103°, ~8:1), `cameraForBounds` at 900×700 with padding 64:
+ *
+ *   · the establishing box holding all five sites  → zoom 12.72
+ *   · a square box at `tourBoxDelta` (0.05°, its floor binding) → zoom 11.37
+ *   · this box (0.0402° × 0.00515°, centred on the site) → zoom 13.72
+ *
+ * So the scalar would have framed every stop 1.35 zoom levels WIDER than the shot the reader
+ * had already seen — the exact flattening this file was written to end, one order of magnitude
+ * down. This box is one clean level in, by construction, for any set shape: halving both
+ * extents halves the frame, whichever axis `cameraForBounds` ends up fitting to.
+ *
+ * No absolute floor, and none is needed: the box is defined RELATIVE to a shot the reader has
+ * just been shown, and half of a frame you have already read cannot disorient you. The one
+ * degenerate input is a set with no spread at all — nothing to halve — where `null` says "no
+ * tour to serve" and the caller keeps its establishing box (this file's rule, above).
+ *
+ * `tourBoxDelta` is deliberately left as it is: the glacier walk it was measured and rendered
+ * on is a live deliverable, and moving its stops from 0.58 to a full 1.00 zoom level in is a
+ * change that needs its own render, not a side effect of this one. FOLLOW-UP: measure the
+ * authored/symbol walks against this box and, if it holds up, retire the scalar.
+ */
+export function tourStopBox(
+  allBounds: readonly [number, number, number, number],
+  mark: { lon: number; lat: number },
+): [number, number, number, number] | null {
+  const [w, s, e, n] = allBounds;
+  const dLon = ((e - w) / 2) * TOUR_SCALE;
+  const dLat = ((n - s) / 2) * TOUR_SCALE;
+  if (dLon <= 0 && dLat <= 0) return null;
+  return [mark.lon - dLon, mark.lat - dLat, mark.lon + dLon, mark.lat + dLat];
+}
