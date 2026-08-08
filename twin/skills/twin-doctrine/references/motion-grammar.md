@@ -1,0 +1,125 @@
+# The motion grammar
+
+Where `visual-system.md` says what a layer is allowed to look like, this file says what it is
+allowed to **do over time**. It governs the video genre only — a beat whose output is frames, not
+a single still. Everything in `editorial-standard.md`, `information-architecture.md` and
+`visual-system.md` still applies to every frame; a rule broken at frame 143 is broken.
+
+Motion adds exactly one thing to a chart: an **order**. A still hands the reader every layer at
+once and lets them choose a reading order. A video chooses the order for them. That is the whole
+power and the whole danger, and every rule below is a consequence of it.
+
+## Data arriving is the motion event
+
+The only thing that earns an animation is **evidence appearing**. The line drawing itself, a point
+landing, a reference level being laid down — those are the events. The ground does not move, the
+title does not slide, the axis does not fly in from the left, the frame does not zoom. If a layer
+moves and no new evidence arrived with it, that motion is `anti-patterns.md`'s "decoration that
+encodes nothing" with a time axis.
+
+Corollary: **do not animate every layer at once.** A build in which the axis fades, the line draws,
+the label rises and the annotation scales in the same window is not a build — it is one event
+wearing four costumes. At any moment, one thing should be arriving.
+
+## The order is chronological, or it is argumentative
+
+A reveal follows either the data's own order (a time series draws oldest to newest) or the
+argument's order (baseline, then evidence, then subject). It never follows an arbitrary order
+chosen for visual interest — bars bouncing in by index, categories popping in at random, a line
+drawing backwards because the end is prettier.
+
+**When the x axis is time, the reveal is linear.** Easing the draw of a time axis makes 1994 and
+1995 occupy different amounts of screen time, which is a lie about the pace of the data. Easing is
+for things that arrive (a dot, a label, an opacity), never for the traversal of a measured axis.
+
+Use `interpolate` with both extrapolations **clamped**, so nothing keeps moving outside its window.
+Use `spring` sparingly and **restrained** — high damping, no visible overshoot. A dot that bounces
+past its own coordinate is, for the frames it is wrong, showing a value that is not in the data.
+
+## Pause so the baseline can be read
+
+Whatever the argument is measured *against* — a reference level, a target, a prior year, the
+comparison the journalist named in the exchange — arrives **before** the evidence and is then left
+alone for long enough to be read. Half a second is the floor; a labelled reference needs more.
+
+A reveal that starts the instant the baseline finishes drawing produces a video in which the reader
+is still reading the rule when the line has already crossed it. They will not go back.
+
+## The subject arrives as a distinct event
+
+The mark the confirmed takeaway is actually about — `visual-system.md`'s one semantic accent — must
+land as **its own event**, separated in time from whatever preceded it. Not as the last few frames
+of a uniform cascade, not as the tail of the line reveal that is already running.
+
+The separation is what makes it the subject. If every mark arrives on the same schedule, the reader
+has been given a build, not an argument.
+
+## The conclusion appears only after its evidence is visible
+
+The sentence — the journalist's confirmed takeaway — is the last thing to arrive, and it arrives
+only once every mark it depends on is on screen. A title that states the conclusion over an empty
+frame asks the reader to accept it before the chart has said anything, and then spends seven
+seconds catching up to a claim they have already been handed.
+
+This is the one place the motion grammar **departs** from `information-architecture.md`'s reading
+order for stills. In a still, the title is furniture and it sits at the top of the stack because the
+reader controls their own order. In a video the reader does not: time is the stack. The takeaway is
+therefore the **conclusion event**, not furniture.
+
+Two consequences, both real costs, both accepted knowingly:
+
+- The space the title will occupy is **reserved from frame 0**. It appears in place; nothing below
+  it ever shifts. A layout that reflows when the title arrives breaks "the background stays still".
+- The first frame is a **poster frame without the sentence**. If the piece will be published
+  somewhere that shows frame 0 as a thumbnail, that is a genuine argument for pinning the title as
+  furniture instead — make that call editorially, and if the title is furniture, then the
+  conclusion event is something else that genuinely concludes, never a second copy of the sentence
+  (see "repeated years or values" in `anti-patterns.md`).
+
+## Hold the finished frame
+
+The last event is stillness. When the build is complete, **stop**, and hold the completed chart
+long enough to be read: half a second to a second at minimum, and if the conclusion event put a
+sentence on screen, long enough to read that sentence.
+
+The held frame is the one a reader actually reads, the one that gets screenshotted, and the one a
+still export is taken from. A video that ends on its own last transition has no such frame.
+
+## Furniture establishes, then stops
+
+Source line, axis, ticks, gridlines — the layers that support verification and give the marks a
+frame — come up first, together, and then never move again. They may fade in; they may not slide,
+scale, stagger or re-animate. Once established, furniture is scenery, and scenery that moves during
+the argument is competing with it.
+
+## The timing contract
+
+Every window in the drawing derives from **one typed object** that names its events editorially —
+`establish`, `reference`, `reveal`, `subject`, `conclusion`, `hold` — each with a `start` and a
+`duration` in frames. No frame literal appears in the drawing code.
+
+This is not a code-tidiness rule, it is the editorial affordance: a journalist who finds the pause
+too short retimes the piece by editing one object, in words they recognise, without reading a line
+of JSX. A build with `interpolate(frame, [72, 150], ...)` scattered through it can be re-rendered
+but it cannot be re-edited.
+
+The gaps between events are legal and load-bearing — the pause after `reference` *is* the gap
+before `reveal`. Name events, not gaps; a gap is what is left when nothing is arriving.
+
+The contract is checkable, and should be checked: events in editorial order, no event beginning
+before the evidence it depends on has finished, `hold` ending exactly at the composition's last
+frame. That check is a test, not a review comment.
+
+## Anti-patterns of this file
+
+- **Motion added for energy.** Any build whose justification is that the piece "felt static". A
+  chart is allowed to be static; that is a whole genre.
+- **Ornament that encodes nothing, moving.** Particles, sweeps, glows, a shimmer travelling along
+  the line, a gradient that animates. The parent anti-pattern with a clock attached.
+- **The accent before the thing it accents.** A highlight colour, an annotation, or a callout
+  appearing before the mark it refers to exists on screen — the reader is pointed at nothing.
+- **The uniform cascade.** Every element on the same stagger, so the build has no hierarchy and the
+  subject is whichever item happened to be indexed last.
+- **The bouncing value.** A spring with visible overshoot on a mark whose position encodes a
+  number: for a few frames the chart displays a value the data does not contain.
+- **Ending on the last transition.** No hold, so the only complete frame is the one nobody sees.

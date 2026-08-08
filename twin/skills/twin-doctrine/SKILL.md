@@ -21,11 +21,12 @@ halfway built. `reference-set.md` is the concrete half of the standard: real, ve
 each reduced to one transferable information-design lesson, never a styling description, so a
 model has a named target instead of an abstract rule to approximate.
 
-**A sixth document, `motion-grammar.md`, is named by the design spec (§6) and is deliberately not
-written here.** SP1 is static-only — no video, no reveal, no motion build — so a motion grammar has
-no work to govern yet. It is owed, not forgotten: it arrives with the video sub-project, written
-against real motion builds the way this set is written against real static ones, not drafted in
-the abstract ahead of the work it would govern.
+**A sixth document, `motion-grammar.md`, arrived with the video sub-project.** It was deliberately
+absent while SP1 was static-only — a motion grammar with no motion build to govern is drafted in
+the abstract — and it was written against `twin-chart-video`'s first real 8-second build, the way
+the rest of this set is written against real static ones. It governs the video genre only: what a
+layer is allowed to *do over time*, the order a reveal follows, and the timing contract every
+window in a build derives from.
 
 This skill produces no artifact of its own and closes no gate. It is read, not run — with one
 exception: `scripts/check-reference-set.mjs` exports `checkReferenceSet(markdown)`, a structural
@@ -90,7 +91,7 @@ skill's own output has to survive.
 | Failures | `references/anti-patterns.md` | Named recurring failures of the standard, structure and system, one entry each, with the rule each one violates |
 | Targets | `references/reference-set.md` | Verified, published, standalone newsroom graphics, each with a link, a locator, and one transferable lesson |
 | Check | `scripts/check-reference-set.mjs` | `checkReferenceSet(markdown)` — the list of reasons a reference table is not usable; empty means every row is |
-| Deferred | `references/motion-grammar.md` (does not exist yet) | Owed to the video sub-project, not to SP1 — see Overview |
+| Motion | `references/motion-grammar.md` | The video genre only — data arriving is the motion event, chronological or argumentative order, the pause on the baseline, the subject as a distinct event, the conclusion after its evidence, the final hold, and the editorial timing contract |
 
 ## How it works (the shape)
 
@@ -186,8 +187,11 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
   floor back toward six is a `test/reference-set.test.ts` change that should follow, not precede,
   two more rows earning their place the way these four did — verified against both their pixels
   and the text sitting next to them.
-- `references/motion-grammar.md` — **does not exist yet**; deferred to the video sub-project, see
-  Overview. Do not write it ahead of the motion work it would govern.
+- `references/motion-grammar.md` — the video genre's rules, written against `twin-chart-video`'s
+  first real build. Read by any beat whose output is frames. Its one departure from
+  `information-architecture.md` is deliberate and argued in place: in a video the takeaway is the
+  **conclusion event**, not furniture, because time is the stack and the reader does not choose
+  their own reading order.
 - `scripts/check-reference-set.mjs` — `checkReferenceSet(markdown)`, `countReferenceRows(markdown)`.
 - `test/reference-set.test.ts` — `bun:test` coverage, including the test that reads the shipped
   `reference-set.md` and asserts it, not a fixture, actually passes the check.
