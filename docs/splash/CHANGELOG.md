@@ -4,6 +4,67 @@
 > COURANT de `main` + la roadmap vivent dans `CLAUDE.md` ; ce fichier = le journal daté des sessions
 > (des chiffres anciens sont périmés — c'est un log, pas l'état courant).
 
+## Session 2026-08-07 — Journée de correction : 22 chantiers fusionnés, `main` @ `dab9996d`, gate 25/25
+
+Déclenchée par les tests manuels de Rémy et par trois notes de défaut écrites par des runs réels.
+Méthode constante : reproduire d'abord, corriger le côté qui a réellement tort, **vérifier chaque
+test par mutation**, prouver **au rendu**, puis fusionner. Vingt-deux fusions, ~40 commits.
+
+**Chaîne prose vs chaîne boucle.** L'admin-1 était injoignable sur la chaîne que le journaliste
+emprunte (pas d'`orient`, donc pas de `featureIdsByValue`) : `adm1-backfill.ts` fait tourner le
+même `matchGeography` en tête de produce, et repointe la jointure sur la colonne qui résout —
+`canton_code` (« CH-GE ») ne résout **rien** dans l'index, `canton` (« Genève ») résout 4/4. Le
+storyboard confirmé est remappé avec elle, sinon des beats validés au gate manqueraient au rendu.
+Choroplèthe seulement : `dot-density` et `cartogram` épinglent leur clé à `iso_a3`, les remplir
+aurait échangé un refus bruyant contre une carte vide. Ces deux-là sont désormais refusés **à
+l'offre**, par format (la vidéo dot-density marche — rendue, 819 images, 0 violation) et dans la
+phrase du moteur, sur les deux chaînes.
+
+**Caméra.** Boîte d'arrêt constante ±1,5°, écrite quand un tour ne reliait que des lieux
+lointains : plus la grappe est serrée, plus le tour s'aplatit. Mesuré sur les glaciers alpins
+(6,28 → 9,06 puis 9,47) et surtout sur un **ruban** (cinq sites le long de la Seine) où le plancher
+mordait et où la caméra **dézoomait de 2,19 niveaux à chaque étape**. Une seule fonction
+(`tourStopBox`, boîte d'établissement divisée par deux, plafond conservé et justifié au rendu :
+sans lui un arrêt « Paris » tient quatre villes sur six). `tourBoxDelta` supprimé.
+
+**Étiquettes.** Notre culler recevait **un seul rectangle candidat** par repère : une étiquette en
+collision n'avait nulle part où être proposée. Corrigé sur map-native puis sur le cinquième
+renderer (scrolly web), où la reproduction a échoué des deux côtés — étiquette coupée par le bord
+du cadre en 900×700, étiquette supprimée en 390×760.
+
+**Géographie.** Le Cervin était à 1063 m du sommet : la couche par défaut de MapTiler ne contient
+**aucun sommet** (mesuré sur cinq pics). `lib/geo/geocode.ts` interroge la couche POI ; quatre
+genres wirés après mesure, quatre refusés avec la leur (une rivière n'a pas de coordonnée). Chaque
+réponse vérifiée contre Overpass et Nominatim, **jamais contre MapTiler lui-même**.
+
+**Coutures.** Deux valeurs que la machine produisait sans que rien ne les enregistre :
+`resolvedPlaces` (le lookup laisse un reçu ; `place-provenance` refuse une livraison sans trace) et
+`sourceHint` — dont la prémisse « il n'y a pas de couture à mécaniser » était fausse :
+`save-opportunities.mjs` recevait déjà le hint et le **jetait**. Les gardes B/D dormantes ont été
+vues **tirer** sous mutation.
+
+**Charte.** Elle n'atteignait rien de ce que la boucle construit, alors que la phase INPUT
+l'annonce en mots. Fermée à `assemblerFor` (une couture pour tous les moteurs), politique
+**importée** de `mergeProfileDefaults` plutôt que redite. Prouver l'autre moitié — le fond — a
+révélé qu'une charte sombre **ne produisait pas du tout** : `snap-theme` écrivait sa capture de
+debug dans le dossier de livraison. Puis le fond saturé : la garde compositait sur un pôle absolu
+que le `mapStyle` du config exclut. Décision produit de Rémy : conforme ⇒ autorisé, nous ne
+proposons jamais hors normes, et la couleur du journaliste qui échoue ouvre un choix dont
+« garder la mienne » est honoré, enregistré, claveté sur la couleur déclarée.
+
+**Ce que la journée a appris sur la vérification.** Un `| tail` masque le code de sortie — un gate
+tué a été notifié « exit 0 » deux fois. Le **SHA-256 d'un mp4 ne prouve rien** (trois rendus du même
+code, trois hachages) : l'assertion « byte-identique » de la veille était un tirage au sort. Un
+**test peut encoder le défaut** (`18kWh`, boîtes constantes). Un **worktree neuf ment** (un
+`bun install` manquant = 24 rouges qui n'en sont pas). Le **gate est sériel** : les mêmes 25
+vérifications en parallèle prennent quelques minutes — mais jamais pendant des rendus. Et un
+**rendu est un artefact sur lequel on prend N mesures**, pas la preuve d'un correctif.
+
+**Corrigé de ma main :** des **marqueurs de conflit commités** dans `skills/splash-production/SKILL.md`
+(prose qu'un modèle lit à chaque production), et sept annonces « fusionné dans `main` » qui
+étaient fausses — l'arbre partagé n'était plus sur `main` mais sur une branche tierce ; `main`
+était un ancêtre strict, rien de perdu, avance rapide.
+
 ## Session 2026-08-06 — La charte lit un vrai site de rédaction : filtre same-host levé, `recurrent-role`, provenance, second essai rendu, `oklch()` (branche `feat/charter-reads-real-sites`, gate 23/23 @ `93e37a07`)
 
 Le point de départ : `proposeCharter` mesuré à froid contre heidi.news ne lisait **aucune**
