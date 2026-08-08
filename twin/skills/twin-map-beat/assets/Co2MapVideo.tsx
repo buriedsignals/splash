@@ -1,8 +1,7 @@
 /**
  * The video genre of "La Suisse sous la moyenne européenne" — 8 seconds, 30fps, 1080 × 1080.
  *
- * REPLACE ME per story, the way the still is replaced. Do not parameterise me into a general
- * choropleth video; write the next beat's own composition in this shape.
+ * REPLACE ME. Do not parameterise me. This file seeds the video genre.
  *
  * It is not a second map. The plate and the rings come from the same bake the still draws
  * (`scripts/bake-plate.mjs`), and the classes, the ramp and the scale come from the same `geo.ts`.

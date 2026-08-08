@@ -1,9 +1,7 @@
 /**
  * The static genre of "La Suisse sous la moyenne européenne" — 900 × 560, one frame, no order.
  *
- * REPLACE ME per story, the way `twin-chart-beat/assets/ChartSeed.tsx` is replaced. Do not
- * parameterise me into a general choropleth component; write the next map beat's own drawing in
- * this shape.
+ * REPLACE ME. Do not parameterise me. This file seeds the static genre.
  *
  * What it draws: a baked basemap plate as one `<image>`, the study set as one path each, and the
  * beat's own furniture. There is no map here — `scripts/bake-plate.mjs` already spent the camera,
