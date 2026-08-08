@@ -1,26 +1,30 @@
 # Head-to-head: the twin against the established engine
 
-Run 2026-08-08, across three passes. Pass one produced three static-chart cases and one video case,
+Run 2026-08-08, across four passes. Pass one produced three static-chart cases and one video case,
 same data, same confirmed takeaway, same journalist answers on both sides, and scored them directly
 — the section "Round 1, in detail" below is that scoring. Pass two took the same renders and put
 them in front of judges kept blind to which system made which image, three separate times (§1). Pass
 three built one more case, a ranking rather than a time series, specifically to find out whether the
 conclusion passes one and two supported would survive a chart type built differently — it did not
-survive whole (§3). The agents producing the established engine's ("main's") side were forbidden
-from reading this worktree, forbidden from hand-editing any output or working around the producer,
-and equally forbidden from sandbagging. Nothing here is a rehearsal; all sides are real production
-runs.
+survive whole (§3). Pass four built a fourth shape, a choropleth map, to find out whether the
+ranking case's answer was itself general or specific to discrete marks — it was specific (§8). The
+agents producing the established engine's ("main's") side were forbidden from reading this worktree,
+forbidden from hand-editing any output or working around the producer, and equally forbidden from
+sandbagging. Nothing here is a rehearsal; all sides are real production runs.
 
 **Cases.** Swiss territorial CO₂, 1950–2024 (takeaway: *"En 2024, la Suisse a émis moins de CO₂ sur
 son territoire qu'en 1967."*). Swiss life expectancy, 2000–2024 (the 2020 Covid dip, an interior
 subject — the story is not the endpoint). Swiss net migration, 1990–2024 (crosses zero; the subject
 is 1997–98, not the peaks). Video: the CO₂ case, 1080×1080, 240 frames, 30fps both sides. Ranking:
 CO₂ per capita, Western Europe, 2023, 16 countries (subject Switzerland, rank 2 of 16 — deliberately
-not an extreme).
+not an extreme). Map: European CO₂ per capita, 2023 (subject Switzerland — neither the maximum nor
+the minimum; comparison the European average, 6,55 t; discreet the highest emitter, Luxembourg,
+shaded but never named).
 
 Evidence: `proof/comparison/`. Filenames encode case and producer: `1-CO2`, `2-VIE`,
 `3-MIGRATION` × `main-chartnative` / `main-datawrapper` / `twin` / `twin-d3`, plus
-`video-main-final.png` / `video-twin-final.png`, plus `ranking-engine.png` / `ranking-twin.png`.
+`video-main-final.png` / `video-twin-final.png`, plus `ranking-engine.png` / `ranking-twin.png`,
+plus `map-engine.png` / `map-twin.png`.
 
 ---
 
@@ -156,19 +160,74 @@ From the agent that produced the twin's ranking case, on what the win in §3 was
 > comparison are adjacent, accenting the named subject rather than the extremum, and dropping the
 > non-subject labels once the first render showed them competing.
 
-## 8. What is still not compared
+## 8. The map, and the fourth shape it completes
 
-**Maps.** A run was started on the engine's side; as this document is being written, `/tmp/map-main/`
-holds only the frozen source data (`co2.csv`) and no render — the comparison has not happened yet,
-let alone been judged, blind or otherwise.
+The map case was still in flight when this document's first revision went out; it has since
+finished, and the section that was honestly left as "not yet compared" is now a real result — one
+that answers the question the ranking case in §3 left open rather than repeating it.
 
-**The journalist session.** Every editorial answer in every case above — the takeaway, the subject,
-the caveat, which moment to accent — was given by an agent playing a journalist, on both sides,
-identically scripted. The twin's one advantage that does not close in three mapper changes is the
-editorial exchange itself (`twin-storyboard`'s five questions, restitution, the reference loop), and
-that is the one thing nothing in this document tests, because nothing here used a real one. Whether a
-journalist who does not know this system finds that exchange useful or tedious is the only question
-that matters and the one thing none of pass one, two or three touches.
+**The case.** European CO₂ per capita, 2023. Title, identical both sides: *"La Suisse émet moins de
+CO₂ par habitant que la moyenne européenne — et moins que la plupart de ses voisins."* Subject
+Switzerland — not the maximum, not the minimum. Comparison the European average, which the reader
+has to be able to see rather than be told. Discreet: the highest emitter visible in the shading but
+never called out.
+
+**The routing rule**, quoted by the agent that produced the engine's side, from
+`skills/suggest-chart/SKILL.md`: *"Static → `map-dw` — the static-choropleth producer… used on
+article-web only when a concrete reason prefers static over the interactive default"*, with an
+explicit journalist "static" signal counting as such a reason. The engine's correct producer here is
+`map-dw`, and that is what ran: a real published Datawrapper choropleth on the
+`europe-sovereign-states` basemap, house teal ramp derived from `brandHue`, French locale, a real
+source URL.
+
+**What `map-engine.png` does well, confirmed by looking at it.** The ramp is genuinely the house
+teal rather than a library default. The highest emitter, Luxembourg at 10,3 t, is shaded but
+unlabelled — the "discreet" ask is satisfied. The join reads clean: the shapes read plausible for
+Europe, no stray unshaded landmass, no obviously wrong country; the producing agent's own report
+puts the join at 42 of 45 basemap regions carrying a value (Kosovo, Monaco, San Marino absent from
+the source, rendering no-fill) and its dataless-join guard passing at 93% — a figure this task could
+not itself recompute without the join table, so it is recorded as reported rather than reproduced.
+
+**What it could not express — visible directly in `map-engine.png`, the underlying field-level cause
+verified in the engine's own source by the producing agent, not by this task.** Switzerland carries
+no distinguishing mark: it is a pale wedge, indistinguishable in kind from any other country of
+similar value — no outline, no name, no different stroke. The legend is a continuous gradient
+labelled only at its two ends, 1,6 t and 10,3 t; neither Switzerland's 3,60 nor the European
+average's 6,55 can be placed on it, so the average survives only as a sentence in the subtitle
+("Moyenne européenne : 6,55 t"), read, not seen. The producing agent traced this to
+`ChoroplethMapSpec` carrying no highlight field, no per-region colour override, and no annotation
+layer compatible with a choropleth — the only colour input is the continuous scale — which this task
+did not re-verify against the engine's source (out of scope, as throughout this document) but whose
+effect is exactly what both images show side by side.
+
+**`map-twin.png`, for contrast, confirmed the same way**: Switzerland is outlined and named in the
+accent teal; the European average (6,5) and Switzerland (3,6) are both placed as ticked marks on the
+same discrete-bin legend, so the distribution reads between two named points instead of a
+subtitle-only number; the highest-shaded countries are visible in the same dark bins as the engine's
+render and are, the same way, never named.
+
+**The point this case draws is the one that unifies the whole document.** This result mirrors the
+*line* result, not the *ranking* result — and for a reason worth stating plainly, because it is the
+actual shape of the thesis this document has been circling since §3: **a chart type whose only
+visual channel is continuous — a line's path, a choropleth's colour ramp — cannot designate a single
+element on that channel alone. A bar chart can, because it is made of discrete objects with their
+own boundary to outline or their own fill to swap, and the engine's registry does exactly that well,
+confirmed live in §3.** That is the narrow, verified form of this branch's case, and it now rests on
+four shapes rather than one: line ✗, video ✗ (a line in motion), choropleth ✗, ranking ✓ (discrete
+bars). Two continuous types, two discrete-or-eventful ones, and the registry's own `highlight`
+mechanism tracks the split exactly.
+
+**What is still not compared: nothing.** Line, video, ranking and map have all now run on both
+sides, scored, and — for the two rounds where it mattered most — checked blind.
+
+**What remains untested is the journalist session, and only that.** Every editorial answer in every
+case above — the takeaway, the subject, the caveat, which moment to accent, which country is the
+comparison — was given by an agent playing a journalist, on both sides, identically scripted, on
+every one of the four shapes. The twin's one advantage that does not close with a mapper change or a
+registry field is the editorial exchange itself (`twin-storyboard`'s five questions, restitution, the
+reference loop), and that is the one thing no pass of this document tests, because none of them used
+a real journalist. Whether a journalist who does not know this system finds that exchange useful or
+tedious is the only question left that this document cannot answer.
 
 ---
 
@@ -390,7 +449,8 @@ hand-rolled reimplementation of what `.nice()` and `.ticks()` already do correct
 
 ### What none of it settles
 
-See §8 above — folded up there once the ranking and blind-judging passes gave it more to say.
+See §8 above — the map has since run, so this is no longer an open question about which shapes are
+untested, only about the journalist session, which §8 now states directly.
 
 ---
 
@@ -416,6 +476,18 @@ worktree's `/tmp`: `sips -g pixelWidth -g pixelHeight` on `/tmp/rank-main/rankin
 row directly below it is cut through the bar, and Allemagne, Norvège, Belgique and the source line
 never appear. `/tmp/rank-twin/ranking.png` was opened the same way and is complete at 1800×1120,
 sixteen rows, source line present.
+
+A fifth claim, added for §8, carries the same split: the routing quote and the `ChoroplethMapSpec`
+field-level diagnosis (no highlight, no per-region override, no compatible annotation layer) are
+attributed to the agent that produced the engine's map render and were not re-derived from the
+engine's own source, out of scope for the same reason as above. What was independently verified,
+directly against the two PNGs now in `proof/comparison/`: `map-engine.png` shows a continuous teal
+ramp legend labelled only at its two ends (1,6 t / 10,3 t), the European-average figure appearing
+only as subtitle prose, and no visual mark on Switzerland distinguishing it from any other
+similarly-shaded country; `map-twin.png` shows Switzerland outlined and named in accent teal and
+both Switzerland (3,6) and the European average (6,5) placed as ticked points on a discrete-bin
+legend. The 42/45-join and 93%-guard figures reported for the engine's side are recorded as given,
+not recomputed — this task had no join table to check them against.
 
 The blind-judging counts and quotations in §1, §2, §5 and §7 are reported here as supplied by the
 controller from sessions this task could not itself run or re-run — no transcript file for any of
