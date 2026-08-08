@@ -163,7 +163,9 @@ shape, importing its own story's composition and layouts.
   (`scripts/render-preview.mjs` for this skill's own preview). `chartGeometry`/`yTickValues`/
   `xTickValues` are pure and exported.
 - `assets/sample-data/rainfall.json` — eleven annual readings for the seed's sample town
-  (2015–2025, 912mm → 604mm), the seed's data.
+  (2015–2025, 912mm → 604mm), the seed's data. **Not** the same file as
+  `twin-chart-beat/assets/sample-data/rainfall.json` — this file has no null values, and its 2019
+  onwards differ from that file — the two are comparable only in shape, not in value.
 - `assets/preview.png` — the seed rendered on a light ground, at `SEED_LAYOUT` (the desktop rung).
   Regenerate with `bun scripts/render-preview.mjs` whenever the seed changes.
 - `output-proof/preview.png` — the artifact this skill's seed produces from this skill's own sample
