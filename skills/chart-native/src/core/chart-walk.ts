@@ -95,6 +95,30 @@ const SEQUENCED_LOCKED_PATH =
   "its columns could each take a sentence, but its line is one continuous left-to-right wipe " +
   "whose order the x axis fixes — reordering the columns alone would leave the line out of " +
   "step, so the sentences follow one another over the animation in the order written";
+// Gantt's rows ARE named — `items[].label`, drawn in the gutter beside every bar and read out
+// as the bar's accessible name (GanttChart.tsx) — so SEQUENCED_UNNAMED, where it sat while the
+// type was deferred, stated something plainly false about it, and `why` is said to the
+// journalist verbatim. What gantt cannot do is REORDER, which every anchored grain requires
+// (`reorders: true`, asserted for all of them): the rows are sorted by START DATE
+// (gantt-geometry: `parsed.sort((a, b) => a.startMs - b.startMs …)`) and top-down chronological
+// order is the form's whole reading. Permute the rows into a journalist's chosen order and the
+// bars no longer descend in time — the reader's "what came after what" is gone, which is more
+// than a walk is allowed to cost.
+const SEQUENCED_TIME_ORDERED =
+  "its rows are named, but their order is the timeline itself — they descend by start date, " +
+  "and reordering them to follow your sentences would destroy the 'what came after what' the " +
+  "chart exists to show; so the sentences follow one another over the animation in the order " +
+  "written";
+// Candlestick's subjects ARE addressable — each period carries its own date, drawn on the axis
+// and read out as the candle's accessible name — so SEQUENCED_UNNAMED said something false
+// about it too. What it cannot do is REORDER: a candlestick's x axis IS time, and the reading
+// of every pattern the form exists for (a run of falling periods, a reversal) is the ORDER.
+// Permuting the periods to follow a journalist's sentences would not re-tell the story in a
+// new order; it would tell a different story.
+const SEQUENCED_TIME_AXIS =
+  "each period is dated and could take a sentence, but the x axis IS time — reordering the " +
+  "periods to follow your sentences would change what the chart says, not just when it says " +
+  "it; so the sentences follow one another over the animation in the order written";
 const SEQUENCED_UNNAMED =
   "its subjects are not named by a field a beat can address (bins, cells, nodes), so the " +
   "sentences follow one another over the animation in the order written";
@@ -178,15 +202,15 @@ export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
 
   // --- SEQUENCED because the walk cannot be PERMUTED, not because no subject is named.
   combo: sequenced(SEQUENCED_LOCKED_PATH),
+  gantt: sequenced(SEQUENCED_TIME_ORDERED),
+  candlestick: sequenced(SEQUENCED_TIME_AXIS),
 
   // --- SEQUENCED, unnamed subjects: bins, cells, nodes, ranks — nothing a beat's anchor addresses.
   histogram: sequenced(SEQUENCED_UNNAMED),
   boxplot: sequenced(SEQUENCED_UNNAMED),
   beeswarm: sequenced(SEQUENCED_UNNAMED),
   bullet: sequenced(SEQUENCED_UNNAMED),
-  candlestick: sequenced(SEQUENCED_UNNAMED),
   chord: sequenced(SEQUENCED_UNNAMED),
-  gantt: sequenced(SEQUENCED_UNNAMED),
   treemap: sequenced(SEQUENCED_UNNAMED),
   waffle: sequenced(SEQUENCED_UNNAMED),
   waterfall: sequenced(SEQUENCED_UNNAMED),

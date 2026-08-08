@@ -4,6 +4,7 @@
 // STRUCTURAL floors (can this even be drawn as this type); design maxima (≤3 series,
 // ≤5 slices, baseline-0) are enforced later by the produce-time conformance guard.
 import { NATIVE_TYPES, type NativeShape } from "./native-types";
+import { parseIsoDate } from "../../../lib/core/date-locale";
 import type { ParsedCsv } from "./csv";
 
 export class ShapeMismatchError extends Error {
@@ -58,6 +59,49 @@ export function validateShape(id: string, parsed: ParsedCsv): void {
     return;
   }
 
+  // ── the STRUCTURAL types that are reachable ──────────────────────────────────────────
+  // "structural" is not one shape, it is the bucket for types whose CSV is not the
+  // category+numeric-series grid the four generic shapes describe. Until the TIME family was
+  // un-deferred the bucket was empty of reachable types and this function returned early for
+  // all of them (`case "structural"` below still says so for the ones still deferred) — which
+  // means a reachable structural type would have got ZERO shape validation and any CSV would
+  // have reached its mapper. Each one therefore states its own floor here, in the `fan` style
+  // above: the STRUCTURAL question only (can this even be drawn as this type), never the
+  // decisions — those stay in the mapper, where the refusal can name the row.
+  if (id === "gantt") {
+    // ≥ 2 columns whose every value is a big-endian ISO date: the interval itself.
+    const dated = parsed.columns.filter(
+      (c) =>
+        parsed.rows.length > 0 &&
+        parsed.rows.every((r) => parseIsoDate(String(r[c])) !== null),
+    );
+    if (parsed.columns.length < 3 || dated.length < 2)
+      throw new ShapeMismatchError(
+        id,
+        shape,
+        `got ${parsed.columns.length} columns of which ${dated.length} are dates — a gantt ` +
+          `needs a label column plus a START and an END date column (YYYY-MM-DD, YYYY-MM ` +
+          `or YYYY)`,
+      );
+    return;
+  }
+
+  if (id === "candlestick") {
+    // a date/period column plus four numbers per period — the acronym itself.
+    const nums = parsed.columns
+      .slice(1)
+      .filter((c) => parsed.numericColumns.includes(c));
+    if (parsed.columns.length < 5 || nums.length < 4)
+      throw new ShapeMismatchError(
+        id,
+        shape,
+        `got ${parsed.columns.length} columns of which ${nums.length} are numeric — a ` +
+          `candlestick needs a period column plus FOUR numeric columns (open, high, low, ` +
+          `close); one value per period is a line or a bar`,
+      );
+    return;
+  }
+
   switch (shape) {
     case "single":
       if (nCols < 2 || nNum < 1)
@@ -92,7 +136,9 @@ export function validateShape(id: string, parsed: ParsedCsv): void {
         );
       return;
     case "structural":
-      // structural types are deferred (never in MAPPERS) — validateShape is not called for them
+      // The structural types still DEFERRED: never in MAPPERS, so validateShape is never
+      // called for them. The reachable ones are handled by their own floor above, before
+      // this switch — a `return` here for a reachable type would be a silent hole.
       return;
   }
 }

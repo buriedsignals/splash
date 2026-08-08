@@ -7,10 +7,38 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   // line+column form under change-over-time, and the form only earns its second axis when a
   // quantity and a rate move TOGETHER over a shared time axis. A magnitude comparison at one
   // moment needs no second scale — that is a bar.
-  "change-over-time": ["line", "stacked-area", "slope", "fan", "combo"],
+  // `gantt` is change-over-time and not magnitude, which is the mistake the form invites: its
+  // bar length is DURATION on a real time axis, never a quantity. A reader trained on bar charts
+  // reads length as magnitude, which is why the type refuses to render without a captioned time
+  // axis — and why filing it under `magnitude` would route it at exactly the claims it lies about.
+  // `candlestick` is change-over-time: its x axis is time and its claim is how each period
+  // MOVED. It is the most finance-coded form the engine ships — reserve it for when the
+  // within-period range and the open→close direction are both the point; for "it went up",
+  // a line is clearer.
+  "change-over-time": [
+    "line",
+    "stacked-area",
+    "slope",
+    "fan",
+    "combo",
+    "gantt",
+    "candlestick",
+  ],
   correlation: ["scatter", "connected-scatter"],
   "part-to-whole": ["pie", "stacked", "waffle", "treemap"],
-  magnitude: ["bar", "grouped", "radial-bar", "dumbbell", "bullet", "heatmap"],
+  // `pictogram` was un-deferred on a sibling branch without being listed here, which left the
+  // completeness test RED on main — a type the gate accepts that no intent can route to. Its own
+  // KB sheet declares `intent: [magnitude, ranking]`, so it belongs in both, and it is a
+  // magnitude a reader VERIFIES by counting rather than one they trust a length for.
+  magnitude: [
+    "bar",
+    "grouped",
+    "radial-bar",
+    "dumbbell",
+    "bullet",
+    "heatmap",
+    "pictogram",
+  ],
   distribution: [
     "histogram",
     "beeswarm",
@@ -19,6 +47,6 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
     "violin",
     "pyramid",
   ],
-  ranking: ["lollipop", "bump"],
+  ranking: ["lollipop", "bump", "pictogram"],
   deviation: ["diverging", "waterfall", "diverging-stacked"],
 };

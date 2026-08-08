@@ -102,12 +102,14 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "wide",
     deferred: "family-B: rare in a small newsroom",
   },
-  {
-    id: "gantt",
-    family: "B",
-    shape: "structural",
-    deferred: "family-B: needs start/end intervals",
-  },
+  // Reachable since the question the deferral named — how a CSV declares a start/end INTERVAL
+  // — was answered structurally instead of by a header word: the two columns whose every value
+  // parses as a big-endian ISO date ARE the interval, in column order (spec-to-config's `gantt`
+  // mapper; `ganttStart`/`ganttEnd` name them when a CSV carries more). Deliberately no
+  // start/end word list: that is "début/fin", "Beginn/Ende", "inizio/fine" across the four
+  // languages splash ships. A row whose end precedes its start is refused AT THE GATE, by name.
+  // See knowledge/references/chart/types/gantt.md.
+  { id: "gantt", family: "B", shape: "structural" },
   {
     id: "calendar",
     family: "B",
@@ -120,12 +122,15 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "distribution",
     deferred: "family-B: specialist inequality curve",
   },
-  {
-    id: "candlestick",
-    family: "B",
-    shape: "structural",
-    deferred: "family-B: needs OHLC",
-  },
+  // Reachable since the question the deferral named — how a CSV declares four numbers per
+  // period — was answered by the acronym itself and then CHECKED: the four numeric columns
+  // after the date are read as open, high, low, close, and that reading is verified against
+  // the invariant every real period satisfies, so a mis-ordered CSV fails on its first row
+  // instead of inverting every candle in silence (`ohlc` names them for another order).
+  // Not-OHLC data is refused by name. The type also stopped relying on a market colour
+  // convention that is INVERTED between Western and East Asian markets — see
+  // knowledge/references/chart/types/candlestick.md and CandlestickChart's UP/DOWN comment.
+  { id: "candlestick", family: "B", shape: "structural" },
   {
     id: "chord",
     family: "B",
