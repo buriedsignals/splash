@@ -26,6 +26,15 @@ slot?* — regardless of which case it is.
 candidates from a closed `STORYBOARD.md`; it does not invent a beat that was never proposed and
 never confirmed.
 
+`scripts/ground-claim.mjs`'s `groundTakeaway` is the second half of the machine contract: the
+confirmed takeaway is a claim about the frozen data, and nothing upstream of this skill ever
+checks it against that data. A takeaway can be false about its own numbers — a real trial
+(`twin/TRIAL-THREE-BEATS.md`) produced one that claimed a year was the lowest since a given year
+while the fetched series showed the opposite — and nothing in the toolkit caught it until this.
+`checkStoryboard` surfaces a claim the data actively contradicts as a gate error; a claim it
+cannot check comes back `unverifiable`, which is not an error — it is information the journalist
+should see, never silently upgraded to "supported."
+
 ## When to use
 
 - At the FRAMING→STORYBOARD handoff, once `whereIs` (Task 3, `skills/splash-twin/scripts/where.mjs`)
@@ -53,7 +62,8 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/exchange.md` | The six movements of the editorial exchange, the five hand-of-the-journalist questions with their destinations, and the discipline list — what a conversation running this phase must actually do |
-| Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` returns the list of reasons Gate 2 has not closed (empty means it has) |
+| Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta, profile?)` returns the list of reasons Gate 2 has not closed (empty means it has) |
+| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — not a fact-checker, not a conformance engine, one narrow class of error |
 
 ## How it works (the shape)
 
@@ -73,8 +83,21 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    takeaway, any missing hand-of-the-journalist field, zero slots (nothing would be produced), a
    slot with nothing chosen, a slot whose `chosen` value has no `candidates` ever listed to verify
    it against (malformed — a real choice can only be confirmed from a list that was actually
-   shown), or a slot whose `chosen` value is not one of its own listed `candidates`. An empty array
-   is the only "yes" — Gate 2 closes into this file, or it has not closed.
+   shown), or a slot whose `chosen` value is not one of its own listed `candidates`. Given a second
+   argument — the story's data profile — it also runs `groundTakeaway` on the confirmed takeaway
+   and adds a gate error for every claim the data actively contradicts. An empty array is the only
+   "yes" — Gate 2 closes into this file, or it has not closed.
+5. **`groundTakeaway`** checks the takeaway text against `profile` for exactly one class of
+   failure: a number or a direction the frozen data itself contradicts. It is not a fact-checker
+   (it knows nothing outside `profile`) and not a conformance engine (it never looks at a rendered
+   chart). It recognises: a numeric token that falls outside every numeric column's range; a
+   two-year comparison ("X in 2024 was lower than in 1993") where both years are present in
+   `profile.rows`; a windowed superlative ("lower... than in any year since 1993", "the lowest
+   since 1993") checked against every row in the claimed range, not just its boundary year; and
+   "highest/lowest ever" checked against the whole profile. Everything else — including "first
+   time" claims, comparisons the profile cannot resolve to a single value column, and phrasing
+   shapes this function does not parse — comes back `unverifiable` with a reason, never silently
+   `supported`.
 
 ## Quick start
 
@@ -84,10 +107,16 @@ import { parseStoryboard, checkStoryboard } from "./scripts/storyboard.mjs";
 
 const text = await readFile("stories/annemasse-rain/STORYBOARD.md", "utf8");
 const { meta, prose } = parseStoryboard(text);
-const errors = checkStoryboard(meta);
+
+// profile is optional — twin-intake's source/profile.json shape, extended with row-level `rows`
+// where available (see ground-claim.mjs's header comment for the exact shape). Omit it and
+// checkStoryboard behaves exactly as it did before claim-grounding existed.
+const profile = JSON.parse(await readFile("stories/annemasse-rain/source/profile.json", "utf8"));
+const errors = checkStoryboard(meta, profile);
 
 if (errors.length > 0) {
-  // Gate 2 is not closed — surface `errors` to the exchange, do not proceed to production.
+  // Gate 2 is not closed — surface `errors` to the exchange, do not proceed to production. A
+  // takeaway the frozen data contradicts is one of these reasons now, not a silent pass-through.
 } else {
   // meta.slots[*].chosen names the candidate production reads.
 }
@@ -101,11 +130,17 @@ if (errors.length > 0) {
 | Minimum slots before the storyboard can produce anything | `1` (`slots.length === 0` is the refusal threshold) | `checkStoryboard` |
 | Fewest candidates a slot may list once something is `chosen` | `1` (`candidates.length === 0` refuses as malformed, not silently passed) | `checkStoryboard` |
 | Leading spaces that mark a line as a slot's own field, not a top-level one | `4` (`/^\s{4,}[A-Za-z]+:/`) | `parseStoryboard` |
+| How many numeric columns a comparison claim may resolve to before it is ambiguous | `1` (`findValueColumn`'s `candidates.length === 1` — more or fewer and the comparison comes back `unverifiable`, never guessed) | `scripts/ground-claim.mjs` |
+| How far around a "highest/lowest ... ever" phrase this looks for the year to anchor on | `80` characters each side | `scripts/ground-claim.mjs`'s `SUPERLATIVE_EVER_RE` handling |
 
 ## Files
 
 - `references/exchange.md` — the six movements, the five hand-of-the-journalist questions with
   their destinations, and the discipline list. Read by every conversation running this phase.
 - `scripts/storyboard.mjs` — `parseStoryboard`, `checkStoryboard`.
+- `scripts/ground-claim.mjs` — `groundTakeaway`, the claim-grounding guard `checkStoryboard` calls
+  when given a profile.
 - `test/storyboard.test.ts` — `bun:test` coverage, including a regression test locking the
   `null`/`~` sentinel resolution described in the gotcha above.
+- `test/ground-claim.test.ts` — `bun:test` coverage for `groundTakeaway`, including the real
+  Norway/Swiss cases from `twin/TRIAL-THREE-BEATS.md` that motivated it.

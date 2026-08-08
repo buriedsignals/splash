@@ -1,6 +1,10 @@
 // STORYBOARD.md is YAML front matter (a narrow, dependency-free subset) plus free prose. Only the
 // front matter is machine-checked; the prose beneath it is what the journalist actually reads.
 
+import { groundTakeaway } from "./ground-claim.mjs";
+
+export { groundTakeaway };
+
 const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
 
 // Bare (unquoted) YAML null sentinels. `twin/skills/splash-twin/scripts/where.mjs` refuses these
@@ -80,10 +84,24 @@ export function parseStoryboard(text) {
   return { meta, prose: match[2] };
 }
 
-export function checkStoryboard(meta) {
+// `profile` is optional (twin-intake's `source/profile.json` shape, extended with row-level
+// `rows` where available — see `ground-claim.mjs`'s header comment for the exact shape). When
+// given, a takeaway claim the frozen data actively contradicts is surfaced as a gate error —
+// Gate 2 cannot honestly close on a takeaway the data refutes (twin/TRIAL-THREE-BEATS.md, "no
+// claim-grounding"). An "unverifiable" claim is not an error: it is information the journalist
+// should see, not a reason to block the gate on a claim nobody could actually check.
+export function checkStoryboard(meta, profile) {
   const errors = [];
   if (!meta.takeaway) errors.push("takeaway is missing");
   for (const field of HAND) if (!meta[field]) errors.push(`${field} is missing`);
+
+  if (profile) {
+    for (const result of groundTakeaway(meta.takeaway, profile)) {
+      if (result.verdict === "contradicted") {
+        errors.push(`takeaway claim contradicted by the frozen data: "${result.claim}" — ${result.detail}`);
+      }
+    }
+  }
 
   const slots = meta.slots ?? [];
   if (slots.length === 0) errors.push("no slot: nothing would be produced");

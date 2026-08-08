@@ -128,4 +128,40 @@ describe("checkStoryboard", () => {
       "takeaway is missing",
     );
   });
+
+  it("should surface a takeaway claim the frozen data contradicts as a gate error", () => {
+    const meta = {
+      ...parseStoryboard(VALID).meta,
+      takeaway: "Rainfall was lower in 2024 than in any year since 1993",
+    };
+    const profile = {
+      columns: [
+        { name: "year", type: "number", min: 1993, max: 2024 },
+        { name: "rainfall", type: "number", min: 604, max: 912 },
+      ],
+      rows: [
+        { year: 1993, rainfall: 604 },
+        { year: 2024, rainfall: 912 },
+      ],
+    };
+    const errors = checkStoryboard(meta, profile);
+    expect(
+      errors.some((e) => e.includes("contradicted by the frozen data")),
+    ).toBe(true);
+  });
+
+  it("should not turn an unverifiable claim into a gate error", () => {
+    const meta = {
+      ...parseStoryboard(VALID).meta,
+      takeaway: "Rainfall was lower in 2024 than in any year since 1993",
+    };
+    const profile = {
+      columns: [
+        { name: "year", type: "number", min: 1993, max: 2024 },
+        { name: "rainfall", type: "number", min: 604, max: 912 },
+      ],
+      rows: [], // no row-level data — the comparison can only come back unverifiable
+    };
+    expect(checkStoryboard(meta, profile)).toEqual([]);
+  });
 });
