@@ -200,6 +200,18 @@ export function deriveHexGridStory(
         dim: true,
         callout: { region: String(i), name: desc, value, text },
         copy: text,
+        // ★ NO RANK TAGS, DELIBERATELY — the rank is already the bin's NAME. A grid cell is
+        // anonymous, so `densestBin` above IS its identity ("the densest hexagon", "#5
+        // hexagon"), and a beat that also declared `rank` would have the caption engine state
+        // the same fact twice: "the 2nd densest hexagon — 18 points, the second". One fact,
+        // stated once, by the layer that has the words for it in four languages.
+        //
+        // What this closes is the other half: the caption engine used to read rank off a beat's
+        // POSITION, so the walk's last bin was captioned "the lowest" — measured 2026-08-08 on
+        // the built page as "#5 hexagon — 15 points, the lowest", out of 62 hexagons, when the
+        // walk had only ever visited the five densest. Declaring nothing now means claiming
+        // nothing (chapters.ts), and the closing card still states the peak against the whole
+        // grid ("18 points in the densest hexagon, 62 hexagons in all").
       });
     });
   }

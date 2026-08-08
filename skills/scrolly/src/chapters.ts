@@ -69,12 +69,6 @@ export function mapStoryToChapters(
     lang: string | undefined;
   },
 ): ScrollyStory {
-  const revealIdx: number[] = [];
-  beats.forEach((b, i) => {
-    if (b.kind === "reveal") revealIdx.push(i);
-  });
-  const maxBeat = revealIdx[0];
-  const minBeat = revealIdx[revealIdx.length - 1];
   const desc = meta.description?.trim() ? meta.description : meta.title;
 
   const steps: ScrollyStep[] = [];
@@ -129,29 +123,47 @@ export function mapStoryToChapters(
         // that deriveMapStory computed from the data (seqIndex/seqTotal/seqYear*).
         descriptor = temporalDescriptor(b, meta.lang);
       } else if (b.pattern === "categorical") {
-        // A CATEGORICAL walk ranks nothing. The rank fallback below reads rank off a beat's
-        // POSITION among the reveals, which is honest only for a walk the deriver ordered
-        // max → min (deriveMapStory, and the hex-grid/cartogram/dot-density derivers, all
-        // do). The locator's categorized regime orders its beats by category NAME, so
-        // position there is the alphabet — and "Écoles — 3 sites, le plus élevé des 5" was a
-        // ranking claim over an alphabetical list, against a total that counted markers
-        // rather than categories. Beat.pattern exists for exactly this judgment (see its own
-        // comment: it tells the caption engine "whether ranking language is honest"); it had
-        // only ever been consulted for the temporal half.
+        // A CATEGORICAL walk ranks nothing, and says so out loud. The locator's categorized
+        // regime orders its beats by category NAME, so its position is the alphabet — and
+        // "Écoles — 3 sites, le plus élevé des 5" was a ranking claim over an alphabetical
+        // list, against a total that counted markers rather than categories. Beat.pattern
+        // exists for exactly this judgment (see its own comment: it tells the caption engine
+        // "whether ranking language is honest"); it had only ever been consulted for the
+        // temporal half.
+        //
+        // Since the branch below stopped deriving rank from position, an absent declaration
+        // already yields no descriptor — so this branch is now a REFUSAL rather than the only
+        // defence: a beat that declares "categorical" gets no rank language even if some
+        // future deriver also wrote rank tags onto it. Two contradictory declarations resolve
+        // to the quieter one.
         descriptor = "";
-      } else if (revealIdx.length > 1) {
-        // magnitude / ranking — a RANK-aware descriptor for EVERY reveal, not just the
-        // extremes (deriveMapStory tags each magnitude beat with rank + rankRole, F11):
-        // the leader reads "the highest of the N shown", the tail "the lowest", and the
-        // middle leaders their ordinal ("the second", "the third") — so the walk explains
-        // the distribution instead of jumping max→min. Falls back to the old max/min
-        // labelling if a beat lacks rank tags (older stories). Localized per meta.lang —
-        // the auto-generated words must never leak English into a French deliverable.
+      } else if (b.rank !== undefined) {
+        // ★ RANK IS DECLARED, NEVER DERIVED HERE. A magnitude walk's descriptor comes from the
+        // tags the DERIVER wrote (rank + rankRole): the leader reads "the highest of the N
+        // shown", the tail "the lowest", and the middle leaders their ordinal ("the second",
+        // "the third"), so the walk explains the distribution instead of jumping max→min.
+        // Localized per meta.lang — the auto-generated words must never leak English into a
+        // French deliverable.
+        //
+        // It used to fall back to POSITION when a beat carried no tags — `i === minBeat` ⇒
+        // "the lowest", `i === maxBeat` ⇒ "the highest of the N shown". That is honest only for
+        // choropleth, whose magnitudeRevealRows deliberately appends the TRUE tail; four other
+        // types walk a plain top-N whose last beat is merely the last one visited. Measured on
+        // built pages (2026-08-08): "Rome — 67$bn, the lowest" with Amsterdam's 52$bn drawn on
+        // the same map; "#5 hexagon — 15 points, the lowest" out of 62; "Denmark — 64, the
+        // lowest" out of 18; and dot-density, whose walk is ranked by DENSITY, captioning
+        // "Netherlands — 18M, the highest of the 14 shown" ahead of Germany's 84M.
+        //
+        // So position no longer stands in for rank anywhere. A walk that ranked nothing — or
+        // ranked something other than the number it prints — declares no tags and gets no rank
+        // language, which is the same rule the `categorical` branch above already states and
+        // the one `authored` states for an arc. `magnitudeRankTags` (map-story.ts) is the one
+        // place a deriver answers "what rank may I claim?".
         const copy = storyCopy(meta.lang);
-        if (b.rankRole === "tail" || i === minBeat) descriptor = copy.lowest;
-        else if (b.rank === 1 || i === maxBeat)
+        if (b.rankRole === "tail") descriptor = copy.lowest;
+        else if (b.rank === 1)
           descriptor = copy.highestOf(meta.regionsWithData);
-        else if (b.rank !== undefined) descriptor = copy.ordinalWord(b.rank);
+        else descriptor = copy.ordinalWord(b.rank);
       }
       prose = `${nameAndValue(b.callout.name, b.callout.value)}${descriptor ? ", " + descriptor : ""}`;
     } else {

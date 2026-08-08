@@ -21,6 +21,7 @@ import { deriveDotDensityStory } from "../../map-native/src/dot-density-story";
 import { formatLocaleNumber } from "../../../lib/core/locale";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
 import type { Beat, MapArcBeat } from "../../map-native/src/map-story";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -333,7 +334,7 @@ export const ScrollyDotDensityMap: React.FC<{
     const header = `
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:${legendState.hasCategories ? 8 : 0}px">
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${swatchColor};flex-shrink:0"></span>
-        <span style="font:600 11px/1.2 sans-serif;color:${ink}">1 dot = ${dotN}</span>
+        <span style="font:600 11px/1.2 sans-serif;color:${ink}">${storyCopy(config.lang).dotLegend(dotN)}</span>
       </div>`;
     const swatches = legendState.hasCategories
       ? legendState.legend
@@ -353,7 +354,9 @@ export const ScrollyDotDensityMap: React.FC<{
     <div
       style={{ position: "relative", width: "100%", height: "100%" }}
       role="img"
-      aria-label={config.title ? `Map: ${config.title}` : "Dot-density map"}
+      aria-label={
+        config.title ? storyCopy(config.lang).mapAria(config.title) : "Dot-density map"
+      }
     >
       <style>{`
         .maplibregl-ctrl-bottom-left,

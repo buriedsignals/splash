@@ -18,6 +18,7 @@ import { deriveCartogramStory } from "../../map-native/src/cartogram-story";
 import { applyCartogramBasemap } from "../../map-native/src/theme/cartogram-basemap";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
 import type { Beat, MapArcBeat } from "../../map-native/src/map-story";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -306,7 +307,7 @@ export const ScrollyCartogramMap: React.FC<{
       )
       .join("");
     const uniformNote = isGrid
-      ? `<div style="font:10px/1.3 sans-serif;color:${sub};margin-top:6px;font-style:italic">each cell = one region, equal size; colour = value</div>`
+      ? `<div style="font:10px/1.3 sans-serif;color:${sub};margin-top:6px;font-style:italic">${storyCopy(config.lang).gridCartogramNote}</div>`
       : "";
     el.innerHTML = header + swatches + uniformNote;
   }, [dark, legendBins, valueLabel, isGrid]);
@@ -315,7 +316,9 @@ export const ScrollyCartogramMap: React.FC<{
     <div
       style={{ position: "relative", width: "100%", height: "100%" }}
       role="img"
-      aria-label={config.title ? `Map: ${config.title}` : "Cartogram map"}
+      aria-label={
+        config.title ? storyCopy(config.lang).mapAria(config.title) : "Cartogram map"
+      }
     >
       <style>{`
         .maplibregl-ctrl-bottom-left,

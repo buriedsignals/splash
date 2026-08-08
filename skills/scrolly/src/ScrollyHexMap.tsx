@@ -14,6 +14,7 @@ import { computeHexGrid } from "../../map-native/src/hex-grid-geo";
 import { deriveHexGridStory } from "../../map-native/src/hex-grid-story";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
 import type { Beat, MapArcBeat } from "../../map-native/src/map-story";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -282,7 +283,7 @@ export const ScrollyHexMap: React.FC<{
       style={{ position: "relative", width: "100%", height: "100%" }}
       role="img"
       aria-label={
-        config.title ? `Map: ${config.title}` : "Hex-grid density map"
+        config.title ? storyCopy(config.lang).mapAria(config.title) : "Hex-grid density map"
       }
     >
       <style>{`

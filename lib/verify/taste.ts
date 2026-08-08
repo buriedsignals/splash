@@ -13,6 +13,7 @@
 // The type is the guard. TasteRiskSignal has no `outcome`, no `severity`, no `pass`: there
 // is no field a model could write a verdict into, so "risk" cannot quietly become "fine".
 import type { CaptureRecord, TasteRiskSignal } from "./types";
+import { storyCopy } from "../core/story-copy";
 
 // Marks per 100 css px of component width. A slope with 18 marks across 1152px sits at 1.6;
 // a chart at 8 is dense enough that whether it still READS is a judgement about the subject,
@@ -37,18 +38,27 @@ export const TAKEAWAY_OVERLAP_FLOOR = 0.3;
 export const TAKEAWAY_COVERAGE_FLOOR = 0.6;
 
 // The accessible-name prefix map-native's own components always prepend to a rendered title —
-// furniture the reader never confirmed anything about, not a journalist's claim. Construction
-// sites, all five identical (verified 2026-07-29, `grep -n "Interactive map:"
-// skills/map-native/src/*.tsx`): ChoroplethMap.tsx:486, CartogramMap.tsx:353, RouteMap.tsx:516,
-// HexGridMap.tsx:368, DotDensityMap.tsx:420 — each `config.title ? \`Interactive map:
-// ${config.title}\` : ...`. Not a named export anywhere: the value is hand-copied five times in
-// skills/map-native/src with no shared symbol to import, and lib/verify may not reach into
-// skills/ regardless (spec §4.1, lib/core/channel-policy.ts:3-4) — so this constant is the
-// closest thing to one, cited at its real construction sites rather than invented blind.
+// furniture the reader never confirmed anything about, not a journalist's claim.
+//
+// It is no longer hand-copied. Until 2026-08-08 every map component wrote the English literal
+// `Interactive map: ${config.title}` for itself, so this constant was a sixth copy that a drift
+// guard had to hold against the other five. The prefix now comes from `lib/core/story-copy`'s
+// `mapAria` row — the same table every other generated word comes from, and one lib/verify MAY
+// import (it is lib/, not skills/, so spec §4.1 is not in play) — which means the constant is
+// DERIVED rather than transcribed, and a French page's "Carte interactive : " is exempted on
+// exactly the same footing as the English one. That matters: with only the English spelling
+// known, a localized aria name would have read as four added content words and fired
+// title-overrun on every non-English map.
+//
 // Exempted from title-overrun ONLY (stripped before the ADDED-words check below): it must not
 // touch title-partial-coverage or title-takeaway-divergence, and a genuine overrun appearing
 // AFTER the prefix must still fire (bench: "carries the engine prefix AND still overruns").
-export const MAP_NATIVE_TITLE_PREFIX = "Interactive map: ";
+export const MAP_NATIVE_TITLE_PREFIXES: string[] = ["en", "fr", "de", "it"].map(
+  (l) => storyCopy(l).mapAria(""),
+);
+
+/** The English spelling, kept as a named export because callers and benches cite it. */
+export const MAP_NATIVE_TITLE_PREFIX = MAP_NATIVE_TITLE_PREFIXES[0]!;
 
 // Share of the publication container the component actually fills.
 export const WHITESPACE_FILL_FLOOR = 0.35;
@@ -341,15 +351,18 @@ export function detectTasteRisks(input: TasteInput): TasteRiskSignal[] {
       // A title may legitimately be SHORTER. It may not legitimately assert MORE than was
       // confirmed: "9 biennial years" → "decade after decade" is a claim nobody signed.
       //
-      // The engine's own accessible-name prefix (MAP_NATIVE_TITLE_PREFIX) is exempted here,
-      // and only here: it is stripped before tokenizing the "added" side, so it never counts
-      // as an addition — but a real addition AFTER the prefix still does, because the strip
-      // only ever removes a literal leading match, never a mid-string word.
-      const titleBeyondEnginePrefix = input.renderedTitle.startsWith(
-        MAP_NATIVE_TITLE_PREFIX,
-      )
-        ? input.renderedTitle.slice(MAP_NATIVE_TITLE_PREFIX.length)
-        : input.renderedTitle;
+      // The engine's own accessible-name prefix (MAP_NATIVE_TITLE_PREFIXES — one spelling per
+      // language) is exempted here, and only here: it is stripped before tokenizing the
+      // "added" side, so it never counts as an addition — but a real addition AFTER the prefix
+      // still does, because the strip only ever removes a literal leading match, never a
+      // mid-string word.
+      const renderedTitle = input.renderedTitle;
+      const enginePrefix = MAP_NATIVE_TITLE_PREFIXES.find((p) =>
+        renderedTitle.startsWith(p),
+      );
+      const titleBeyondEnginePrefix = enginePrefix
+        ? renderedTitle.slice(enginePrefix.length)
+        : renderedTitle;
       const added = [...contentWords(titleBeyondEnginePrefix)].filter(
         (w) => !takeaway.has(w),
       );

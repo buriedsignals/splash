@@ -27,6 +27,7 @@ import {
 } from "../../map-native/src/choropleth-paint";
 import { resolveMapStyle } from "../../map-native/src/route-geo";
 import { pointOnFeature } from "@turf/turf";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -451,7 +452,9 @@ export const ScrollyMap: React.FC<{
     <div
       style={{ position: "relative", width: "100%", height: "100%" }}
       role="img"
-      aria-label={config.title ? `Map: ${config.title}` : "Choropleth map"}
+      aria-label={
+        config.title ? storyCopy(config.lang).mapAria(config.title) : "Choropleth map"
+      }
     >
       <style>{`
         .maplibregl-ctrl-bottom-left,

@@ -9,6 +9,7 @@ import { makeResetControl, safeSetMaxBounds } from "./controls";
 import { resolveMapFrame } from "./core/map-format";
 import { MapFrame } from "./core/MapFrame";
 import { legendTheme } from "./theme/legend-theme";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -445,7 +446,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           "top-right",
         );
         map.addControl(
-          makeResetControl(dataBounds, { dark: isDark }),
+          makeResetControl(dataBounds, { dark: isDark, lang: config.lang }),
           "top-right",
         );
 
@@ -487,7 +488,7 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
           </div>`,
           )
           .join("");
-        const header = `<div style="font:600 11px/1.2 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Territories</div>`;
+        const header = `<div style="font:600 11px/1.2 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">${storyCopy(config.lang).territoriesLabel}</div>`;
         legendRef.current.innerHTML = header + swatches;
       }
 
@@ -527,8 +528,13 @@ export const RouteMap: React.FC<Props> = ({ config, interactive = false }) => {
     fitToDataRef.current?.();
   }, []);
 
+  // The graphic's accessible NAME. Localized through the locale table like every other
+  // generated word: this was English on a French page (measured 2026-08-08 on the built
+  // hex-grid scrolly, aria-label="Map: Ou les accidents..."). The un-titled branch keeps
+  // its English noun phrase — validate-config refuses a title under 12 characters, so it is
+  // unreachable through the validated path (see storyCopy's mapAria note).
   const ariaLabel = config.title
-    ? `Interactive map: ${config.title}`
+    ? storyCopy(config.lang).mapAria(config.title)
     : "Interactive route map";
 
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {

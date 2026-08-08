@@ -28,6 +28,7 @@ import {
   syncLocatorLabels,
   type LocatorLabelSyncState,
 } from "./locator-label-sync";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 // ---------------------------------------------------------------------------
 // Key guard — fail fast, never log the key.
@@ -435,7 +436,9 @@ export const ScrollyLocatorMap: React.FC<{
     <div
       style={{ position: "relative", width: "100%", height: "100%" }}
       role="img"
-      aria-label={config.title ? `Map: ${config.title}` : "Locator map"}
+      aria-label={
+        config.title ? storyCopy(config.lang).mapAria(config.title) : "Locator map"
+      }
     >
       <style>{`
         .maplibregl-ctrl-bottom-left,

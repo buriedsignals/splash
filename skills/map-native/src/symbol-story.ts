@@ -12,6 +12,7 @@ import {
   type RevealMode,
   closingCaption,
   deriveTakeawayCopy,
+  magnitudeRankTags,
 } from "./map-story";
 import { formatLocaleNumber, labelWithUnit, type Lang } from "./core/locale";
 import { shortWayLongitudeExtent } from "./core/longitude";
@@ -136,7 +137,7 @@ export function deriveSymbolStory(
       1,
       Math.min(opts.maxReveals ?? DEFAULT_MAX_REVEALS, sorted.length),
     );
-    for (const p of sorted.slice(0, cap)) {
+    sorted.slice(0, cap).forEach((p, index) => {
       const name = p.label ?? "";
       const value = fmt(p.value);
       // A symbol point's label is OPTIONAL (symbol-geo.ts, and the loop only sets it when the
@@ -152,8 +153,15 @@ export function deriveSymbolStory(
         dim: true,
         callout: { region: name, name, value, text },
         copy: text,
+        // ★ THE RANK THIS BEAT MAY CLAIM, declared here because this is the only layer that
+        // holds the full ordering. `sorted` is every point, value-descending, so `index` is the
+        // subject's true rank — and the walk is CAPPED, so a beat that is merely the last one
+        // visited never carries the tail role. Measured before this (2026-08-08, symbol page):
+        // "Rome — 67$bn, the lowest", with Amsterdam's 52$bn circle drawn on the same map,
+        // because the caption engine read rank off position. It now reads it off these tags.
+        ...magnitudeRankTags(index, sorted.length),
       });
-    }
+    });
   }
 
   // A symbol map is named subjects with one number each — the same shape a choropleth is, so it

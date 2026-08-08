@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   DENSITY_MARKS_PER_100PX,
   MAP_NATIVE_TITLE_PREFIX,
+  MAP_NATIVE_TITLE_PREFIXES,
   MIN_COLOUR_SEPARATION,
   TAKEAWAY_COVERAGE_FLOOR,
   TAKEAWAY_OVERLAP_FLOOR,
@@ -318,19 +319,40 @@ describe("title coverage and overrun — D16, the confirmed takeaway is only PAR
     expect(signals.map((s) => s.dimension)).not.toContain("title-overrun");
   });
 
-  it("MAP_NATIVE_TITLE_PREFIX still matches every production site it is a copy of", () => {
-    // The exemption above is only correct while the constant equals what the engine actually
-    // renders. The value is hand-copied in five map-native components with no shared symbol,
-    // and lib/verify may not import from skills/ (spec §4.1) — so the drift guard is a READ of
-    // the production sources, the same technique lib/host/drive.test.ts uses for
-    // DEFAULT_UI_LANG. Reword the prefix on the engine side and this reddens, instead of
-    // silently re-enabling the title-overrun false positive the exemption exists to prevent.
+  it("does not fire it on the FRENCH accessible-name prefix either", () => {
+    // The fixture above is a French takeaway under the ENGLISH prefix — which is what the
+    // engine really shipped until 2026-08-08, and precisely the leak closed that day
+    // (aria-label="Map: <French title>" on a built French page). Now that the prefix is
+    // localized, the exemption has to know all four spellings or the fix would have handed
+    // every French, German and Italian map a title-overrun signal: "carte"/"interactive" are
+    // content words the confirmed takeaway does not contain. The fixture element carrying the
+    // would-be failure is the French prefix itself.
+    const signals = detectTasteRisks({
+      captures: [],
+      confirmedTakeaway: "Les primes ont augmenté dans les six cantons",
+      renderedTitle:
+        "Carte interactive : Les primes ont augmenté dans les six cantons",
+    });
+    expect(signals.map((s) => s.dimension)).not.toContain("title-overrun");
+  });
+
+  it("MAP_NATIVE_TITLE_PREFIXES still matches every production site that renders one", () => {
+    // The exemption above is only correct while the constants equal what the engine actually
+    // renders. Until 2026-08-08 the prefix was an English literal hand-copied into five
+    // components, and this guard READ those sources to hold the sixth copy (here) against
+    // them. The components now call `storyCopy(config.lang).mapAria(config.title)` — the same
+    // table this file derives from — so the guard's job changed: it no longer checks that six
+    // transcriptions agree, it checks that every component still goes THROUGH the table. Write
+    // the prefix by hand again in any of them and this reddens, instead of silently
+    // re-enabling the title-overrun false positive the exemption exists to prevent.
     const components = [
       "ChoroplethMap.tsx",
       "CartogramMap.tsx",
       "RouteMap.tsx",
       "HexGridMap.tsx",
       "DotDensityMap.tsx",
+      "SymbolMap.tsx",
+      "LocatorMap.tsx",
     ];
     const srcDir = join(
       import.meta.dir,
@@ -340,16 +362,21 @@ describe("title coverage and overrun — D16, the confirmed takeaway is only PAR
       "map-native",
       "src",
     );
-    // The trailing space is part of the constant but not of the template literal, so compare
-    // against the interpolated form the components really write.
-    const literal = `\`${MAP_NATIVE_TITLE_PREFIX}\${config.title}\``;
     for (const file of components) {
       const src = readFileSync(join(srcDir, file), "utf8");
-      expect(src).toContain(literal);
+      expect(src).toContain("storyCopy(config.lang).mapAria(config.title)");
+      // …and NOT the literal it replaced, in any language.
+      for (const prefix of MAP_NATIVE_TITLE_PREFIXES)
+        expect(src).not.toContain(`\`${prefix}\${config.title}\``);
     }
-    // And the count is pinned too: a SIXTH interactive map component that prepends its own
+    // The count is pinned too: an EIGHTH interactive map component that prepends its own
     // accessible name must be added to this list rather than going unguarded.
-    expect(components).toHaveLength(5);
+    expect(components).toHaveLength(7);
+    // And every language the table covers is exempted, not just English — a French page's
+    // aria name would otherwise read as four added content words.
+    expect(MAP_NATIVE_TITLE_PREFIXES).toHaveLength(4);
+    expect(MAP_NATIVE_TITLE_PREFIXES[0]).toBe("Interactive map: ");
+    expect(MAP_NATIVE_TITLE_PREFIXES).toContain("Carte interactive : ");
   });
 
   it("still fires title-overrun when a real addition follows the engine prefix", () => {

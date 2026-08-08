@@ -77,12 +77,38 @@ describe("mapStoryToChapters", () => {
     // the title never appears as a step caption
     expect(story.steps.some((s) => s.prose === meta.title)).toBe(false);
   });
-  it("adds a rank descriptor: first reveal = highest (of N), last reveal = lowest", () => {
-    const story = mapStoryToChapters(beats, meta);
+  it("adds a rank descriptor from the beat's DECLARED rank — leader = highest (of N), tail = lowest", () => {
+    // The tags are what deriveMapStory's magnitudeRevealRows writes: rank 1 is the true
+    // maximum of the data, and rankRole "tail" means "this beat IS the minimum", not "this
+    // beat is last in the walk".
+    const declared: Beat[] = [
+      beats[0],
+      beats[1],
+      { ...beats[2], pattern: "magnitude", rank: 1, rankRole: "leader" },
+      { ...beats[3], pattern: "magnitude", rank: 8, rankRole: "tail" },
+      beats[4],
+    ];
+    const story = mapStoryToChapters(declared, meta);
     expect(story.steps[2].prose).toBe(
       "Norway — 99%, the highest of the 8 shown",
     );
     expect(story.steps[3].prose).toBe("Poland — 21%, the lowest");
+  });
+  it("says NOTHING about rank when the walk declared none — position is not rank", () => {
+    // ★ THE MEASURED DEFECT (2026-08-08, on built pages — see
+    // docs/splash/proofs/2026-08-08-map-closing-captions §4a/§4b). This engine read rank off a
+    // beat's POSITION among the reveals (`i === minBeat` ⇒ "the lowest"), which is honest only
+    // for choropleth, whose magnitudeRevealRows deliberately appends the true tail. Four types
+    // walk a plain top-N, and their last beat is NOT the minimum — measured verbatim on the
+    // symbol page:
+    //     "Rome — 67$bn, the lowest"      ← Amsterdam, 52$bn, drawn on the same map
+    // and on dot-density, whose walk is ranked by DENSITY while the caption prints the value:
+    //     "Netherlands — 18M, the highest of the 14 shown"   … then UK 67M, Germany 84M
+    // A superlative must be true of the DATA. Nothing here computes a rank, so nothing here
+    // may claim one: the descriptor comes from the deriver's declaration or not at all.
+    const story = mapStoryToChapters(beats, meta);
+    expect(story.steps[2].prose).toBe("Norway — 99%");
+    expect(story.steps[3].prose).toBe("Poland — 21%");
   });
   it("gives EVERY magnitude reveal a rank descriptor, incl. the middle leaders (F11)", () => {
     const mk = (
@@ -404,7 +430,14 @@ describe("mapStoryToChapters — French magnitude descriptors (lang: fr)", () =>
   };
 
   it("translates the highest/lowest descriptors, no English leak", () => {
-    const story = mapStoryToChapters(beats, meta);
+    const declared: Beat[] = [
+      beats[0],
+      beats[1],
+      { ...beats[2], pattern: "magnitude", rank: 1, rankRole: "leader" },
+      { ...beats[3], pattern: "magnitude", rank: 8, rankRole: "tail" },
+      beats[4],
+    ];
+    const story = mapStoryToChapters(declared, meta);
     expect(story.steps[2].prose).toBe("Norway — 99%, le plus élevé des 8");
     expect(story.steps[3].prose).toBe("Poland — 21%, le plus bas");
     expect(story.steps[2].prose.toLowerCase()).not.toContain("highest");

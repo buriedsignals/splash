@@ -6,6 +6,7 @@ import {
   applyMapArc,
   closingCaption,
   deriveTakeawayCopy,
+  magnitudeRankTags,
   type Beat,
   type MapArcBeat,
 } from "./map-story";
@@ -122,6 +123,14 @@ export function deriveCartogramStory(
         dim: true,
         callout: { region: c.id, name: c.name, value, text },
         copy: text,
+        // ★ THE RANK THIS BEAT MAY CLAIM. `ranked` is every cell, value-descending, so `rank`
+        // is the cell's true place in the data — and the walk is CAPPED at 5, so a beat that is
+        // merely the last one visited never carries the tail role. Measured before this
+        // (2026-08-08, cartogram page): "Denmark — 64, the lowest" on a map of 18 cells whose
+        // smallest is the Czech Rep. at 15, because the scrolly caption engine read rank off
+        // position. The video path already spoke the truth here (`rankDesc` above is computed
+        // from this same ordering) — the web path had no such source and invented one.
+        ...magnitudeRankTags(rank, ranked.length),
       });
     });
   }
