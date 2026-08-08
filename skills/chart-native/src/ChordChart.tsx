@@ -26,9 +26,9 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import type { Lang } from "./core/locale";
+import { flowWords, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
-import { truncate } from "./core/text";
+import { truncate, textWidth } from "./core/text";
 
 export interface ChordConfig {
   title: string;
@@ -58,7 +58,9 @@ export interface ChordChartProps {
   scale?: number;
 }
 
-const ENTITY_COLORS = [
+/** The entity palette, exported so the produce guard checks the hues the component actually
+ *  paints rather than a copy of them. */
+export const CHORD_ENTITY_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.orange,
   OKABE_ITO.green,
@@ -108,14 +110,27 @@ export function ChordChart({
   const sc = frame.scale;
 
   const data: ChordData = { labels: config.labels, matrix: config.matrix };
+  const arcW = 12 * sc;
+  // The label sits `arcW + 8` outside the ring and is drawn at `ts.axis`. Horizontally it needs
+  // its own WIDTH; vertically only a line. Measured here — the geometry stays pure — from the
+  // labels this chart actually carries, so a ring of short names gets a bigger circle than a
+  // ring of long ones instead of both getting the smaller of the two.
+  const labelPx = Math.max(
+    0,
+    ...config.labels.map((l) => textWidth(l, ts.axis)),
+  );
   const layout = computeChordLayout(
     data,
     { width, height, padding },
-    { arcWidth: 12 * sc },
+    {
+      arcWidth: arcW,
+      labelGutterX: arcW + 8 * sc + labelPx,
+      labelGutterY: arcW + 8 * sc + ts.axis,
+    },
   );
 
   const [hover, setHover] = useState<number | null>(null);
-  const colorOf = (i: number) => ENTITY_COLORS[i % ENTITY_COLORS.length];
+  const colorOf = (i: number) => CHORD_ENTITY_COLORS[i % CHORD_ENTITY_COLORS.length];
 
   const svg = (
     <ChordSvg
@@ -230,6 +245,7 @@ function ChordSvg({
           return (
             <path
               key={`g${g.index}`}
+              className="chord-arc"
               d={g.arcPath}
               fill={colorOf(g.index)}
               opacity={dim ? 0.4 : 1}
@@ -296,6 +312,7 @@ function Tooltip({
 }) {
   const g = layout.groups.find((x) => x.index === hover);
   if (!g) return null;
+  const words = flowWords(config.lang);
   const left = layout.cx + g.labelX;
   const top = layout.cy + g.labelY - 10;
   // top partners by flow (out + in)
@@ -333,9 +350,12 @@ function Tooltip({
         ■
       </span>
       <strong style={{ color: "#fff", fontSize: 13 }}>{g.label}</strong>{" "}
-      <span style={{ fontSize: 12 }}>{Math.round(g.value)} out</span>
+      <span style={{ fontSize: 12 }}>
+        {Math.round(g.value)} {words.outgoing}
+      </span>
       <div style={{ opacity: 0.75, fontSize: 11 }}>
-        most with {partners.map((pp) => `${pp.label} (${pp.flow})`).join(", ")}
+        {words.mostWith}{" "}
+        {partners.map((pp) => `${pp.label} (${pp.flow})`).join(", ")}
       </div>
     </div>
   );

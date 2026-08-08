@@ -26,6 +26,14 @@ export const FURNITURE_ONLY_TYPES: readonly string[] = [
   // against which scale, so the house hue must never repaint either mark — it tints the
   // furniture and the frame band and stops there.
   "combo",
+  // The FLOW family. All three encode with a fixed categorical palette the house hue must not
+  // repaint: sankey colours a ribbon by its ORIGIN (six hues, so a ribbon stays traceable
+  // across the stages), chord gives each entity on the ring its own hue, and arc gives each
+  // node group one — in every case a single house hue would collapse exactly the distinction
+  // the palette is carrying. The hue tints the furniture greys and the frame band and stops.
+  "sankey",
+  "chord",
+  "arc",
 ];
 
 const SET = new Set(FURNITURE_ONLY_TYPES);

@@ -411,3 +411,51 @@ describe("combo is sequenced because its line cannot be reordered, not for want 
     expect(w.why).not.toContain("advances by SERIES");
   });
 });
+
+// ---------------------------------------------------------------------------
+// ★ THE FLOW FAMILY's stated reason is true of its three components.
+//
+// All three sat on SEQUENCED_UNNAMED, whose own parenthesis named "nodes" as an example of a
+// subject nobody names. That held while they were deferred; the `source,target,value` contract
+// makes it false — every node now carries the name the journalist typed. `why` is read to the
+// journalist verbatim, so this pins the replacement sentence to the code that makes it true.
+// ---------------------------------------------------------------------------
+describe("sankey / chord / arc are sequenced because their subject is a PAIR", () => {
+  const read = (f: string) =>
+    readFileSync(join(import.meta.dir, "..", "src", f), "utf8");
+
+  it("their nodes ARE named, so the 'unnamed subjects' reason cannot be reused", () => {
+    for (const id of ["sankey", "chord", "arc"]) {
+      expect(CHART_WALKS[id].why).not.toContain("not named");
+      expect(CHART_WALKS[id].why).toContain("pair of nodes");
+    }
+    // …and the sentence they left behind no longer offers "nodes" as its example.
+    expect(CHART_WALKS.histogram.why).not.toContain("nodes");
+  });
+
+  it("sankey's entrance lands a whole STAGE at once, never one node", () => {
+    const src = read("SankeyChart.tsx");
+    expect(src).toMatch(/nodeAppear = \(col: number\)/);
+    expect(src).toMatch(/colIndex\.get\(col\)/);
+    // no per-node index anywhere in the entrance
+    expect(src).not.toMatch(/stagger\(\s*p,\s*(i|nd\.index)/);
+  });
+
+  it("chord staggers by the RIBBON — a pair — not by the entity", () => {
+    expect(read("ChordChart.tsx")).toMatch(/stagger\(p, r\.index, nR/);
+  });
+
+  it("arc's dots enter one by one but its ARCS all sweep on one master progress", () => {
+    const src = read("ArcChart.tsx");
+    expect(src).toMatch(/stagger\(\s*p,\s*i,\s*nodes\.length/); // the dots
+    expect(src).toMatch(/const reveal = easeInOutCubic\(p\)/); // the arcs, one clock
+    expect(src).toMatch(/arcPath\(l, baseY, reveal\)/);
+  });
+
+  it("so none of them has a per-subject entrance to ask for", () => {
+    for (const id of ["sankey", "chord", "arc"]) {
+      expect(CHART_WALKS[id].grain).toBe("sequenced");
+      expect(() => entranceOf(id)).toThrow(/sequenced, not anchored/);
+    }
+  });
+});

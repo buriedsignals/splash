@@ -1,0 +1,11 @@
+{
+  "nativeType": "chord",
+  "format": "static",
+  "channel": "article-web",
+  "title": "Les Pâquis perdent des habitants au profit de tous les autres quartiers",
+  "unit": "déménagements entre quartiers genevois, 2025 (centaines)",
+  "data": "source,cible,valeur\nPâquis,Eaux-Vives,32\nEaux-Vives,Pâquis,18\nPâquis,Servette,26\nServette,Pâquis,14\nEaux-Vives,Servette,21\nServette,Eaux-Vives,19\nPâquis,Plainpalais,17\nPlainpalais,Pâquis,11\nPlainpalais,Servette,13\nServette,Plainpalais,12",
+  "source": { "name": "Office cantonal de la statistique", "url": "https://www.ge.ch/statistique" },
+  "lang": "fr",
+  "altInsight": "Les Pâquis envoient 32 centaines d'habitants aux Eaux-Vives et n'en reçoivent que 18 : le quartier perd des habitants dans chacun de ses échanges."
+}

@@ -15,17 +15,30 @@ test("an EngineType may declare what it makes move, per narrative kind", () => {
   expect(hosted.gestures).toBeUndefined();
 });
 
+// The deferred witness is READ FROM THE REGISTRY, never named by hand. Both tests below
+// pinned "sankey", and both went red the day the flow family graduated — a failure about the
+// world rather than about `engineTypes`/`isRenderable`, which is the one failure a witness
+// must not have. Deriving it keeps them meaningful as types graduate, and the day the last one
+// does they say so out loud instead of passing on a stale name.
+const firstDeferred = () => engineTypes("chart-native").find((t) => t.deferred);
+
 test("chart-native declares its canonical catalogue, deferred types included", () => {
   const ids = engineTypes("chart-native").map((t) => t.id);
   expect(ids).toContain("slope");
-  expect(ids).toContain("sankey"); // declared…
-  expect(isRenderable("chart-native", "sankey")).toBe(false); // …but deferred
+  const deferred = firstDeferred();
+  expect(
+    deferred,
+    "every chart-native type is reachable — this test needs a new witness",
+  ).toBeTruthy();
+  expect(ids).toContain(deferred!.id); // declared…
+  expect(isRenderable("chart-native", deferred!.id)).toBe(false); // …but deferred
   expect(isRenderable("chart-native", "slope")).toBe(true);
 });
 
 test("a deferred type carries the reason it is deferred", () => {
-  const sankey = engineTypes("chart-native").find((t) => t.id === "sankey");
-  expect(sankey?.deferred).toBeTruthy();
+  const deferred = firstDeferred();
+  expect(deferred).toBeTruthy();
+  expect(deferred?.deferred).toBeTruthy();
 });
 
 test("every registered engine that renders types declares them", () => {

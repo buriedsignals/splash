@@ -192,3 +192,68 @@ export function arcPath(
   // upper half-ellipse, large-arc=0 sweep=1; the end point moves with progress.
   return `M ${link.x1} ${baseY} A ${link.rx} ${link.ry} 0 0 1 ${ex} ${ey}`;
 }
+
+// ── ARE THESE NODES STILL NAMEABLE? ───────────────────────────────────────────────────────
+// ONE measurement, shared by the mapper (so the refusal reaches the journalist at the GATE,
+// while they can still change the table) and by the produce guard (so a hand-built config that
+// never passed through the mapper meets the same rule). Two copies of a measured rule is how
+// the two ends come to disagree.
+
+/** How much of the longest node label must survive the arc's own truncation. Half: a name cut
+ *  to under half its width is an ellipsis with a hint, not a label — and every arc label sits
+ *  under its own node, so there is no legend to recover the name from.
+ *
+ *  It lives HERE, beside the measurement it qualifies, rather than in core/conformance: the
+ *  mapper applies the same rule at the gate, and importing the conformance belt into
+ *  spec-to-config dragged the whole L0 stack — and `zod` with it — into the import closure the
+ *  runnable source bundle traces, which broke every scrolly bundle. Caught by
+ *  bundle-source.test.ts, which is the only thing that walks that closure. */
+export const ARC_MIN_LABEL_RATIO = 0.5;
+
+/**
+ * ArcChart's BASE landscape frame — the one the measurement below is taken at.
+ *
+ * WHY THE BASE FRAME ANSWERS FOR EVERY WIDTH: the rule compares a GAP against a LABEL WIDTH,
+ * and `resolveFrameWithHeader` scales the padding and the type size by the same factor — widen
+ * the frame to 1200 and both sides grow together, so the RATIO is scale-invariant.
+ */
+export const ARC_GUARD_DIMS: ArcDims = {
+  width: 840,
+  height: 480,
+  padding: { top: 90, right: 22, bottom: 60, left: 22 },
+};
+
+export interface ArcLabelFit {
+  /** smallest gap between two adjacent nodes on the rendered baseline */
+  minGapPx: number;
+  longestLabel: string;
+  /** px the longest label needs at the base type size */
+  labelPx: number;
+}
+
+/**
+ * Measure the baseline the component will draw. `measure` is the caller's text-width function
+ * (core/text's `textWidth` at the base source type size) — passed in so this file stays
+ * framework- and token-free, exactly like the rest of the geometry.
+ */
+export function arcLabelFit(
+  data: ArcData,
+  measure: (label: string) => number,
+  dims: ArcDims = ARC_GUARD_DIMS,
+): ArcLabelFit {
+  const layout = computeArcLayout(data, dims, {
+    baselineInset: NODE_R_MAX + 12,
+  });
+  let minGapPx = layout.innerWidth;
+  for (let i = 1; i < layout.nodes.length; i++)
+    minGapPx = Math.min(minGapPx, layout.nodes[i].x - layout.nodes[i - 1].x);
+  const longest = data.nodes.reduce(
+    (a, b) => (measure(b.label) > measure(a.label) ? b : a),
+    data.nodes[0] ?? { id: "", label: "" },
+  );
+  return {
+    minGapPx,
+    longestLabel: longest.label,
+    labelPx: measure(longest.label),
+  };
+}

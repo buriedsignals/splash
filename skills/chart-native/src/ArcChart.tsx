@@ -62,7 +62,9 @@ export interface ArcChartProps {
   scale?: number;
 }
 
-const GROUP_COLORS = [
+/** The node-group palette, exported so the produce guard checks the hues the component
+ *  actually paints rather than a copy of them. */
+export const ARC_GROUP_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.orange,
   OKABE_ITO.green,
@@ -92,24 +94,37 @@ export function ArcChart({
     ? Math.max(1, Math.ceil(config.title.length / Math.floor(width / 11)))
     : Math.max(1, Math.ceil(config.title.length / charsPerLine));
 
-  // distinct groups in node order → one Okabe-Ito colour each
+  // distinct groups in node order → one Okabe-Ito colour each.
+  //
+  // A config MAY declare no groups at all — which is what the `source,target,value` flow
+  // contract produces, since a link list names links, never a node's bloc. Before the flow
+  // family reached this component, that case rendered a legend with ONE entry reading "—"
+  // (the placeholder key leaking onto the graphic as if it were a category a reader should
+  // know) and drew every arc in the "within-group" muted grey at 0.28 opacity — the whole
+  // picture faded to context with nothing in front of it, because the emphasis this type is
+  // built on is CROSS-group and there were no groups to cross. So `hasGroups` is measured
+  // once here and both consequences follow from it: no legend, and the arcs take the ink the
+  // cross-group case would have given them.
+  const hasGroups = config.nodes.some((n) => (n.group ?? "").trim() !== "");
   const groups: string[] = [];
-  for (const n of config.nodes) {
-    const g = n.group ?? "—";
-    if (!groups.includes(g)) groups.push(g);
-  }
+  if (hasGroups)
+    for (const n of config.nodes) {
+      const g = n.group ?? "—";
+      if (!groups.includes(g)) groups.push(g);
+    }
   const colorOf = (group?: string) =>
-    GROUP_COLORS[
-      Math.max(0, groups.indexOf(group ?? "—")) % GROUP_COLORS.length
+    ARC_GROUP_COLORS[
+      Math.max(0, groups.indexOf(group ?? "—")) % ARC_GROUP_COLORS.length
     ];
 
   const LEG_ROW = 20;
-  const legendRows = legendRowCount(
-    groups,
-    width - 40,
-    TYPE.axis * 0.6,
-    LEG_ROW,
-  );
+  // No groups ⇒ no legend ⇒ no band to reserve for one. `legendRowCount([])` answers 1 (its
+  // layout always opens a first row), and reserving that row left a strip of dead frame under
+  // the baseline on every group-less arc — which, since the flow contract declares no groups,
+  // is every arc a journalist can reach. The arcs get the height back.
+  const legendRows = groups.length
+    ? legendRowCount(groups, width - 40, TYPE.axis * 0.6, LEG_ROW)
+    : 0;
   const basePad = {
     top: responsive ? 16 : 50 + titleLines * 27,
     right: 22,
@@ -252,7 +267,11 @@ function ArcSvg({
     sc,
   ).items;
 
+  // With no declared groups (the flow contract's shape), every arc is the subject: there is
+  // no context band for it to sit behind, so `isCross` is true for all of them and the whole
+  // network renders in ink rather than in the muted grey that means "not the point".
   const isCross = (l: { source: string; target: string }) =>
+    groups.length === 0 ||
     groupOfNode.get(l.source) !== groupOfNode.get(l.target);
 
   return (
@@ -289,6 +308,7 @@ function ArcSvg({
               return (
                 <path
                   key={`a${i}`}
+                  className="arc-link"
                   d={arcPath(l, baseY, reveal)}
                   stroke={cross ? C.ink : C.muted}
                   strokeWidth={l.width * sc}
@@ -324,7 +344,9 @@ function ArcSvg({
                 role={interactive ? "img" : undefined}
                 aria-label={
                   interactive
-                    ? `${n.label} (${groupOfNode.get(n.id)}): ${n.degree} ${config.unit}`
+                    ? `${n.label}${
+                        groups.length ? ` (${groupOfNode.get(n.id)})` : ""
+                      }: ${n.degree} ${config.unit}`
                     : undefined
                 }
                 style={interactive ? { cursor: "pointer" } : undefined}
@@ -417,7 +439,8 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{n.label}</strong>
       <div style={{ fontSize: 11, opacity: 0.85, marginTop: 1 }}>
-        {group} · {n.degree} {config.unit}
+        {group ? `${group} · ` : ""}
+        {n.degree} {config.unit}
       </div>
     </div>
   );

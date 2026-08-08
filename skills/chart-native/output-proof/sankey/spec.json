@@ -1,0 +1,11 @@
+{
+  "nativeType": "sankey",
+  "format": "static",
+  "channel": "article-web",
+  "title": "L'éolien alimente désormais le réseau davantage que le gaz",
+  "unit": "part de l'électricité injectée puis distribuée, 2025 (%)",
+  "data": "source,target,value\nÉolien,Réseau,38\nGaz,Réseau,30\nSolaire,Réseau,16\nNucléaire,Réseau,10\nImportations,Réseau,6\nRéseau,Ménages,40\nRéseau,Industrie,28\nRéseau,Services,18\nRéseau,Transports,9\nRéseau,Pertes,5",
+  "source": { "name": "Office fédéral de l'énergie", "url": "https://www.bfe.admin.ch" },
+  "lang": "fr",
+  "altInsight": "L'éolien injecte 38 % de l'électricité du réseau contre 30 % pour le gaz ; les ménages en consomment 40 % et 5 % se perdent en route."
+}

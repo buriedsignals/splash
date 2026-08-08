@@ -47,10 +47,24 @@ export interface ChordLayout {
   ribbons: ChordRibbon[];
 }
 
+export interface ChordOptions {
+  arcWidth?: number;
+  /** Px the LABELS need to the left/right of the ring, and above/below it — measured by the
+   *  caller (which knows the type size) and passed in, so the geometry stays pure. They are
+   *  separate on purpose: an arc label sits BESIDE the ring, so horizontally it needs its full
+   *  width and vertically only its line height. One shared gutter has to take the larger of
+   *  the two, which spends the label's whole WIDTH out of the frame's HEIGHT — and a landscape
+   *  frame is short. That is exactly what a fixed 64 px gutter did: at the 1200×676 article
+   *  frame it ate 40 % of the radius and left the circle floating in a third of its own band.
+   */
+  labelGutterX?: number;
+  labelGutterY?: number;
+}
+
 export function computeChordLayout(
   data: ChordData,
   dims: ChordDims,
-  opts: { arcWidth?: number } = {},
+  opts: ChordOptions = {},
 ): ChordLayout {
   const N = data.labels.length;
   if (N < 2) throw new Error("computeChordLayout: need ≥ 2 entities");
@@ -67,12 +81,16 @@ export function computeChordLayout(
 
   const cx = padding.left + innerWidth / 2;
   const cy = padding.top + innerHeight / 2;
-  const labelGutter = 64;
+  const arcW = opts.arcWidth ?? 12;
+  // The ring grows until either the widest label or a label's own line height would leave the
+  // plot — measured on each axis separately (see ChordOptions). The defaults are the historic
+  // 64 px on both axes, so a caller that measures nothing gets the old picture.
+  const gutterX = opts.labelGutterX ?? 64;
+  const gutterY = opts.labelGutterY ?? 64;
   const radius = Math.max(
     10,
-    Math.min(innerWidth, innerHeight) / 2 - labelGutter,
+    Math.min(innerWidth / 2 - gutterX, innerHeight / 2 - gutterY),
   );
-  const arcW = opts.arcWidth ?? 12;
 
   const chords = d3chord().padAngle(0.04).sortSubgroups(descending)(
     data.matrix,

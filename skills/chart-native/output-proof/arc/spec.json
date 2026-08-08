@@ -1,0 +1,11 @@
+{
+  "nativeType": "arc",
+  "format": "static",
+  "channel": "article-web",
+  "title": "Le centre signe presque tous les textes qui franchissent le clivage",
+  "unit": "textes déposés conjointement, session 2025",
+  "data": "source,target,value\nLes Verts,POP,14\nPOP,PS,9\nPS,PLR,18\nPLR,Le Centre,8\nLe Centre,UDC,12\nLes Verts,PS,6\nPS,Le Centre,11\nPLR,UDC,4",
+  "source": { "name": "Mémorial du Grand Conseil", "url": "https://www.ge.ch/grandconseil" },
+  "lang": "fr",
+  "altInsight": "Le PS et le PLR ont co-signé 18 textes, plus que toute autre paire, et chaque lien qui franchit le clivage passe par le PS, le PLR ou Le Centre."
+}

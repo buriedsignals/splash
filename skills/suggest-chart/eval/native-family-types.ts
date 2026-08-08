@@ -10,7 +10,20 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   "change-over-time": ["line", "stacked-area", "slope", "fan", "combo"],
   correlation: ["scatter", "connected-scatter"],
   "part-to-whole": ["pie", "stacked", "waffle", "treemap"],
-  magnitude: ["bar", "grouped", "radial-bar", "dumbbell", "bullet", "heatmap"],
+  // `pictogram` was un-deferred on 2026-08-08 without an entry here, which left it mapped and
+  // guarded but UNPICKABLE by intent — score.ts filters candidates through this table, so the
+  // eval would have marked every pictogram proposal an off-family miss. Caught by this file's
+  // own completeness test the next time the table was edited; fixed here rather than left for
+  // its own branch, since it is one line and the alternative is shipping a red test.
+  magnitude: [
+    "bar",
+    "grouped",
+    "radial-bar",
+    "dumbbell",
+    "bullet",
+    "heatmap",
+    "pictogram",
+  ],
   distribution: [
     "histogram",
     "beeswarm",
@@ -21,4 +34,9 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   ],
   ranking: ["lollipop", "bump"],
   deviation: ["diverging", "waterfall", "diverging-stacked"],
+  // The FLOW family — the ninth FT intent, and the first native types to serve it. All three
+  // read one `source,target,value` link list and differ in what they claim about it: `sankey`
+  // for a quantity moving THROUGH STAGES, `chord` for exchange WITHIN one set, `arc` for
+  // relationships along one ordered axis. Their sheets say when each is wrong.
+  flow: ["sankey", "chord", "arc"],
 };

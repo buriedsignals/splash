@@ -175,3 +175,35 @@ over a shared time axis and the takeaway is their joint movement; if the CLAIM i
 `connected-scatter`, and if both series share a unit, index them to a common base and use two lines on
 ONE axis. Ships static + interactive (per-period hover/focus giving BOTH values) + video (columns grow,
 line wipes in). See `chart/types/combo.md` for the case against the form.
+
+**THE FLOW FAMILY — `sankey`, `chord`, `arc`** all read ONE shape: a **link-list CSV**, one row per
+link, exactly three columns matched BY NAME — `source,target,value` (also `source,cible,valeur` ·
+`quelle,ziel,wert` · `origine,destinazione,valore`). Any other header is refused naming what was
+expected, and a fourth column is refused too (a `year` beside a pair is the dimension that makes the
+same pair appear twice — aggregate it away or split the chart). Nothing is read positionally: swapping
+the two text columns reverses every flow and the picture still looks right, so the engine never guesses
+which is which. Everything else — the node list, the stages, the chord matrix, the baseline order, the
+colours — is DERIVED and stable: two runs of the same CSV give the same picture. Choose between them by
+the CLAIM, not by the data (all three can be drawn from any link list, and two of the three drawings
+would be wrong):
+`sankey` — a quantity moving THROUGH STAGES (budget, energy mix, funnel). Refuses a **cycle** by name
+(its columns are stages, so every link points forward) and refuses a stage that **does not conserve**
+the flow, naming the node and both totals — the one Sankey error a rendered picture cannot show, since
+the geometry draws such a node solid at max(in, out).
+`chord` — **exchange within ONE set**, where the same entities both send and receive (moves between
+districts, trade between regions). Refuses a staged pipeline by name — the exact mirror of the
+sankey's cycle refusal: if nothing in the table flows BOTH ways, every quantity moves strictly
+forward and that is a staged flow wearing a circle (⇒ use `sankey`). Also refuses more than 8
+entities. (A "does any entity both send and receive?" test does NOT separate the two forms — a
+hub passes it trivially; measured on the energy-mix table, which sailed straight through it.)
+`arc` — relationships along **ONE ordered axis**, where the order is itself editorial (a political
+spectrum, stops on a line) and reaching ACROSS it is the story. The baseline order is the order your
+rows first name each node — reorder the spreadsheet to reorder the axis. Direction is not drawn (A→B and
+B→A are one arc; if direction matters, use `chord`), a self-link is refused by name, and the baseline is
+capped twice — a hard 14 nodes, plus a MEASURED label-fit rule on the layout the component draws, which
+refuses fewer nodes when the names are long (ten "Sozialdemokratische Partei"s fail where fourteen
+abbreviations pass). Both refuse at the gate and are re-measured at produce.
+**None of the three is a network diagram** — this engine does not draw networks. If the story is the
+STRUCTURE of a graph (clusters, hubs, distance), no native type serves it; `arc` is the nearest form and
+it deliberately gives structure up, fixing the nodes on an axis you choose. See
+`chart/types/{sankey,chord,arc}.md`.

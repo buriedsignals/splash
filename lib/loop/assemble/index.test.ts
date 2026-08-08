@@ -13,7 +13,7 @@ import {
 // The registry has to be POPULATED for engineTypes to answer — the deferred check reads each
 // engine's own manifest, and an unregistered registry would make it a silent no-op.
 import "../../../skills/splash/src/register-producers";
-import { allProducers } from "../../core/registry";
+import { allProducers, engineTypes } from "../../core/registry";
 
 test("the buildable list is exactly the table's keys — no hand-written second copy", () => {
   expect([...LOOP_BUILDABLE_ENGINES].sort()).toEqual(
@@ -21,13 +21,24 @@ test("the buildable list is exactly the table's keys — no hand-written second 
   );
 });
 
+// The deferred witness is READ FROM THE REGISTRY, never named by hand. Both this test and
+// "deferral narrows a TYPE" pinned `sankey` — a hand-picked name that went red the day the flow
+// family graduated, i.e. for a fact about the world rather than about `isLoopBuildable`.
+// (The original point stands and is unchanged: the table used to CLAIM sankey while
+// chart-native's manifest declared it deferred, so it was offering a type the engine denies.)
+const deferredType = () => {
+  const t = engineTypes("chart-native").find((x) => x.deferred);
+  expect(
+    t,
+    "every chart-native type is reachable — these deferral tests need a new witness",
+  ).toBeTruthy();
+  return t!;
+};
+
 test("an engine with no per-type restriction builds any of its REACHABLE types", () => {
   expect(isLoopBuildable("chart-native", "line")).toBe(true);
   expect(isLoopBuildable("chart-native", "heatmap")).toBe(true);
-  // It said `sankey` until 2026-07-28, and that was the lie: chart-native's manifest declares
-  // sankey `deferred` (no mapper builds it), so the table was claiming a type the engine denies.
-  // The table reads the flag now — see the deferral tests at the foot of this file.
-  expect(isLoopBuildable("chart-native", "sankey")).toBe(false);
+  expect(isLoopBuildable("chart-native", deferredType().id)).toBe(false);
 });
 
 test("an unknown engine is not buildable, with or without a type", () => {
@@ -242,11 +253,13 @@ test("a type its own engine declares deferred is refused by the table, and says 
 // The engine-level question is UNCHANGED by the deferral check: "can the loop build through
 // chart-native at all" must still answer yes for an engine whose catalogue holds deferred types.
 test("deferral narrows a TYPE, never the engine", () => {
+  const t = deferredType();
   expect(isLoopBuildable("chart-native")).toBe(true);
   expect(isLoopBuildable("chart-native", "line", "static")).toBe(true);
-  expect(isLoopBuildable("chart-native", "sankey", "static")).toBe(false);
-  expect(unbuildableEngineReason("chart-native", "sankey", "static")).toContain(
-    "family-B: needs nodes+links",
+  expect(isLoopBuildable("chart-native", t.id, "static")).toBe(false);
+  // …and the refusal quotes the manifest's OWN reason, whichever type is carrying it.
+  expect(unbuildableEngineReason("chart-native", t.id, "static")).toContain(
+    t.deferred!,
   );
 });
 
