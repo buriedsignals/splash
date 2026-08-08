@@ -12,7 +12,21 @@
 
 - Work in `/Users/rmdms/Sites/Professional/splash-twin`, branch `experiment/doctrine-twin`. Never merge to `main`.
 - All code, comments, identifiers and commit messages in **English**. No mention of Claude or Anthropic anywhere.
-- Baseline before starting: `cd twin && bun test` = **382 tests, 379 pass, 3 skip, 0 fail**. No task may reduce pass count.
+- Baseline before starting: `cd twin && bun test` = **382 tests, 379 pass, 3 skip, 0 fail**.
+- **Test counts written in this plan are estimates, not gates.** The gates are: `0 fail`, no skip
+  that was not already skipping, and a pass count that has not decreased. A divergence from the
+  written number is reported, never chased. Measured 2026-08-08 against Tom's two reference skills
+  (`~/Downloads/cesium-flyover`, `~/Downloads/map-animation/map-explainer`): **neither has a test
+  directory or a single test file.** His gate is the rendered artifact committed beside the skill —
+  the mp4 and `assets/preview.png`. The twin keeps its suite and its mutation discipline, but the
+  suite's arithmetic is not the thing being defended; the artifact is.
+- **Skills duplicate; they never link.** Measured in the same two skills: no import leaves the
+  skill's own directory — every one is a package (`react`, `remotion`, `@turf/turf`, `node:`) or a
+  relative path into the *consuming project* (`../geo/…`, `../theme/tokens`, `./CountryLabel`). His
+  two geo-prep scripts (105 and 130 lines, same job) share **zero** function names. When a skill
+  needs a helper another skill has, it gets a physical copy, guarded by an identity or parity test.
+  `#shared/*` is for **story** files under `proof/` only — the twin's equivalent of Tom's
+  `../geo/…`: a path into the consuming root, never into another skill.
 - **No cross-skill imports at RUNTIME.** A test may import across skills solely to assert two implementations agree.
 - **No shared library.** Do not create `shared/beat-kit/` or any module that skills import from each other. Duplication is the design.
 - A seed is marked with this exact string: `REPLACE ME. Do not parameterise me.`
@@ -792,7 +806,20 @@ mkdir -p shared/twin-chart-video
 cp skills/twin-chart-video/assets/timing.ts shared/twin-chart-video/timing.ts
 ```
 
-Then repoint: every `from "../../twin-chart-beat/scripts/render-still.mjs"` becomes `from "./render-still.mjs"` (in `scripts/`) or `from "../scripts/render-still.mjs"` (in `assets/`). `twin-map-beat/assets/timing.ts`'s three imports of `../../twin-chart-video/assets/timing` become `#shared/twin-chart-video/timing.ts`. The story files under `proof/` switch from their Task 4/5 relative path to `#shared/twin-chart-video/timing.ts`.
+Then repoint, applying the constraint that skills duplicate and only stories use `#shared/*`:
+
+- **Inside a skill:** every `from "../../twin-chart-beat/scripts/render-still.mjs"` becomes
+  `from "./render-still.mjs"` (in `scripts/`) or `from "../scripts/render-still.mjs"` (in
+  `assets/`). A skill never writes `#shared/` — that specifier only resolves inside a Splash root,
+  and Tom's skills reach nothing outside themselves.
+- `twin-map-beat/assets/timing.ts` gets a **physical copy** of the timing contract at
+  `twin-map-beat/assets/timing-contract.ts`, and its three imports point there. Not `#shared/`.
+- **Story files under `proof/`** switch from their Task 4/5 relative path to
+  `#shared/twin-chart-video/timing.ts` — stories consume the root, which is exactly what Tom's
+  `../geo/…` and `../theme/tokens` do in a journalist's project.
+
+`twin/shared/twin-chart-video/timing.ts` is therefore created for the **stories**, not for the
+skills.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -857,14 +884,32 @@ describe("measureText — every copy agrees", () => {
 describe("wrap — every copy agrees", () => {
   for (const [text, width] of CASES) {
     it(`should wrap ${JSON.stringify(text)} at ${width} identically`, () => {
-      // The seed's own wrap is not exported; this asserts the two that are.
-      expect(videoWrap(text, width, FONT)).toEqual(videoWrap(text, width, FONT));
+      const reference = videoWrap(text, width, FONT);
+      // The static copy closes over its own measureText; the web copy takes one as a parameter.
+      // Both are handed the canonical measure so the comparison isolates the wrapping rule.
+      expect(staticWrap(text, width, FONT)).toEqual(reference);
+      expect(webWrap(text, width, FONT, canonicalMeasure)).toEqual(reference);
+      expect(seedWrap(text, width, FONT)).toEqual(reference);
     });
   }
 });
 ```
 
-Where a copy is not exported, export it. A helper that cannot be compared cannot be guarded, and an unexported copy is exactly where drift hides.
+with these added to the imports at the top of the file:
+
+```ts
+import { wrap as staticWrap } from "../../../proof/co2-suisse/EmissionsLine";
+import { wrap as webWrap } from "../../../proof/co2-suisse/EmissionsWeb";
+import { wrap as seedWrap } from "../../twin-chart-web/assets/ChartWebSeed";
+```
+
+**Every copy must be compared against a different copy — never against itself.** An assertion of the
+form `expect(f(x)).toEqual(f(x))` cannot fail and is not a test. Four copies exist after Task 3
+(static, web, video, seed); all four appear above.
+
+Where a copy is not exported, export it. A helper that cannot be compared cannot be guarded, and an
+unexported copy is exactly where drift hides. Adding `export` to the three unexported `wrap`
+functions is part of this task.
 
 - [ ] **Step 2: Run it to verify it passes**
 
@@ -877,6 +922,11 @@ In `twin/skills/twin-chart-video/assets/EmissionsVideo.tsx`, change `wrap`'s con
 
 Run: `cd twin && bun test skills/splash-twin/test/helper-parity.test.ts`
 Expected: **FAIL.** If it passes, the test is vacuous and must be rewritten before going further — a green suite that stays green when the code is broken is worth less than no test.
+
+Then repeat the mutation on a **second** copy — change `measureText`'s return in
+`twin/skills/twin-chart-web/assets/ChartWebSeed.tsx` to `* 1.01` — and confirm FAIL again. One
+mutation proves one comparison is live; it does not prove the others are. A test that catches the
+video copy's drift and sleeps through the seed's is three-quarters vacuous.
 
 - [ ] **Step 4: Revert the mutation and re-run**
 
