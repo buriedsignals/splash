@@ -28,7 +28,7 @@ export type BeatTiming = {
   fps: number;
   /** Composition length in frames. `hold` must end exactly here. */
   total: number;
-  /** Ground, source line, axis, ticks, gridlines. Comes up, then never moves again. */
+  /** Furniture: title, source line, axis, ticks, gridlines. Comes up, then never moves again. */
   establish: TimingEvent;
   /** The level the argument is measured against, laid down before the evidence. */
   reference: TimingEvent;
@@ -36,7 +36,8 @@ export type BeatTiming = {
   reveal: TimingEvent;
   /** The one mark the takeaway is about, landing as its own event. */
   subject: TimingEvent;
-  /** The journalist's sentence, handed over once the chart has proved it. */
+  /** The assertion that closes the argument — here the subject's value, stated once it has landed.
+   *  NOT the title: a title is furniture and establishes with the axis. */
   conclusion: TimingEvent;
   /** Stillness. The frame a reader actually reads. */
   hold: TimingEvent;
@@ -120,11 +121,10 @@ export function checkTiming(timing: BeatTiming): string[] {
 /**
  * This story's timing. 8 seconds at 30fps, 1080 × 1080.
  *
- * Read it as the edit: the frame settles (0.87s), the 1967 level is laid down (0.73s), it is left
- * alone for 0.6s so it can be read, the curve draws 1950 → 2024 at a constant pace (2.6s), the
- * 2024 point lands on its own (0.6s), the sentence arrives (0.8s), and the finished chart is held
- * for 1.6s — long enough to read a 70-character sentence, which is longer than the grammar's
- * half-second floor for a build that ends on marks alone.
+ * Read it as the edit: the furniture comes up — title, source, axis (0.87s) — the 1967 level is
+ * laid down (0.73s), it is left alone for 0.6s so it can be read, the curve draws 1950 → 2024 at a
+ * constant pace (2.6s), the 2024 point lands on its own (0.6s), its value is stated (0.8s), and the
+ * finished chart is held for 1.6s.
  */
 export const CO2_TIMING: BeatTiming = {
   fps: 30,

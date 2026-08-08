@@ -60,7 +60,7 @@ about what "muted" means on the same newsroom ground.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `twin-doctrine/references/motion-grammar.md` | What a layer may do over time; the order a reveal follows; why the takeaway is the conclusion event and not furniture |
+| Doctrine | `twin-doctrine/references/motion-grammar.md` | What a layer may do over time; the order a reveal follows; why the conclusion rule governs assertions while the title, source, axis and scale are furniture that establishes first |
 | Contract | `assets/timing.ts` | `BeatTiming`, `progressOf` (clamped), `checkTiming` (the structural rules as arithmetic), and `CO2_TIMING` — this story's edit |
 | Composition | `assets/EmissionsVideo.tsx` | One beat's drawing, frame by frame. Also exports `drawnSoFar`, the chronological partial path |
 | Registration | `assets/Root.tsx`, `assets/index.ts` | The Remotion composition (its `durationInFrames` IS `CO2_TIMING.total`) and the entry point |
@@ -83,8 +83,8 @@ Whoever ships the video genre for real makes that call and moves the two package
 2. **`checkTiming` the contract** — events in order, nothing starting before the evidence it depends
    on has finished, `hold` ending exactly on the last frame. A test, not a review comment.
 3. **Import the geometry**; do not redraw it. Layout is computed once per frame and is identical at
-   every frame — the build changes what is *visible*, never where anything *sits*. The space the
-   conclusion will occupy is reserved from frame 0 so nothing shifts when it arrives.
+   every frame — the build changes what is *visible*, never where anything *sits*. Anything that
+   arrives late has its space reserved from frame 0, so nothing shifts when it lands.
 4. **Derive each window from the contract** with `progressOf`, clamped. Linear where the axis is
    time; `Easing.out` for things that arrive; `spring` only critically damped, because a mark that
    overshoots is showing a value the data does not contain.

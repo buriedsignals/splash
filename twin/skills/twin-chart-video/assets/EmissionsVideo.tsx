@@ -165,10 +165,12 @@ export function EmissionsVideo({
   const establish = progressOf(frame, timing.establish);
   const referenceProgress = progressOf(frame, timing.reference);
   const reveal = progressOf(frame, timing.reveal);
-  const subjectProgress = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  // Furniture: one fade, together, then still forever.
+  // Furniture: title, source, axis, ticks, gridlines — one fade, together, then still forever.
+  // The title is furniture. It establishes what the reader is looking at, which is what furniture
+  // is for; it is not the conclusion (`motion-grammar.md`, "The conclusion appears only after its
+  // evidence is visible"), and a video whose first seconds carry no title has no poster frame.
   const furnitureOpacity = establish;
 
   // The baseline is laid down left to right, then labelled. It is left alone before the curve
@@ -217,15 +219,12 @@ export function EmissionsVideo({
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
   const subjectRadius = interpolate(subjectSpring, [0, 1], [0, 10]);
-  const subjectLabelOpacity = interpolate(subjectProgress, [0.35, 1], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
 
-  // The sentence, handed over once the chart has proved it. Its space was reserved from frame 0,
-  // so nothing below it moves when it arrives.
-  const titleOpacity = conclusion;
-  const titleRise = interpolate(conclusion, [0, 1], [12, 0], {
+  // The conclusion is the ASSERTION, not the title: the 2024 value, stated once the point carrying
+  // it has landed. The title is furniture and comes up with the axis, above — the first build of
+  // this file put the title here, obeyed "the conclusion appears only after its evidence" to the
+  // letter, and played nearly seven of its eight seconds under a deserted band of empty frame.
+  const conclusionOpacity = interpolate(conclusion, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
 
@@ -240,6 +239,18 @@ export function EmissionsVideo({
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
       <g opacity={furnitureOpacity}>
+        {titleLines.map((text, i) => (
+          <text
+            key={text}
+            x={PAD}
+            y={titleBaseline + i * TITLE.lead}
+            fill={ink}
+            fontSize={TITLE.fontSize}
+            fontWeight={TITLE.fontWeight}
+          >
+            {text}
+          </text>
+        ))}
         <text
           x={PAD}
           y={sourceBaseline}
@@ -354,25 +365,10 @@ export function EmissionsVideo({
         fill={accent}
         fontSize={LABEL.fontSize}
         fontWeight={LABEL.fontWeight}
-        opacity={subjectLabelOpacity}
+        opacity={conclusionOpacity}
       >
         {endLabel}
       </text>
-
-      <g opacity={titleOpacity} transform={`translate(0 ${titleRise})`}>
-        {titleLines.map((text, i) => (
-          <text
-            key={text}
-            x={PAD}
-            y={titleBaseline + i * TITLE.lead}
-            fill={ink}
-            fontSize={TITLE.fontSize}
-            fontWeight={TITLE.fontWeight}
-          >
-            {text}
-          </text>
-        ))}
-      </g>
     </svg>
   );
 }
