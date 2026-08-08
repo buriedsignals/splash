@@ -10,6 +10,9 @@
  * component. Adding a `variant` prop to this file is the failure this seed exists to prevent.
  */
 
+import { extent } from "d3-array";
+import { scaleLinear } from "d3-scale";
+import { line } from "d3-shape";
 import {
   deriveFurniture,
   measureText,
@@ -26,48 +29,47 @@ const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 13, fontWeight: 400 };
 const LABEL = { fontSize: 15, fontWeight: 600 };
 const UNIT = "mm"; // this story's unit. The next beat's is not mm — it rewrites this file.
-
-/** A round increment near `raw`, so every tick is a number a reader recognises. */
-function niceStep(raw: number): number {
-  const magnitude = 10 ** Math.floor(Math.log10(raw));
-  const f = raw / magnitude;
-  return (f <= 1 ? 1 : f <= 1.5 ? 1.5 : f <= 2 ? 2 : f <= 3 ? 3 : f <= 5 ? 5 : 10) * magnitude;
-}
+/** How many labelled ticks the beat asks for. d3 treats it as a hint and returns the round
+ *  values that actually fall inside the fitted range, so the answer is often 2 or 4, not 3. */
+const TICK_HINT = 3;
 
 /**
- * Sparse by construction: the floor, the middle, the top. Nothing between them is read.
+ * The fitted vertical scale, and the only place a reading becomes a y coordinate.
  *
  * The scale is fitted to the readings, not anchored at zero. Zero belongs under a mark whose
  * LENGTH carries the value — a bar, a column, an area. A line carries it by slope, so anchoring
  * it at zero when the values sit far above zero flattens the very change the beat is about:
  * rainfall running 604–912 mm on a 0–1000 scale draws a gentle sag under a title that says it
- * fell by a third. The honest answer for a line is a fitted scale whose ticks state the span,
- * which is why all three are labelled and the unit is on the top one.
+ * fell by a third.
  *
- * Two floors remain: a series of positive values never dips below zero, and a series that
- * crosses zero always shows the zero line (`zeroY`), because the sign change is the story.
+ * `.nice()` rounds the readings' OWN extent outward to the nearest round values and stops there.
+ * The arithmetic this replaced padded the extent by 15%, floored it to a step, and then spent a
+ * spare step to keep the tick count even — three compounding widenings that on a series running
+ * -3.4 to 84.1 produced an axis from -45 to 105, a third of the frame carrying no data at all.
+ *
+ * Two floors survive that swap, and both come out of d3 rather than being enforced on top of it:
+ * a series of positive values never dips below zero (rounding a non-negative floor outward to a
+ * multiple of a positive step cannot cross it), and a series that crosses zero always shows the
+ * zero line (`zeroY`), because the sign change is the story.
  */
-export function yTickValues(data: Reading[]): number[] {
+function yScale(data: Reading[]) {
   const values = data
     .map((d) => d.value)
     .filter((v): v is number => v !== null);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const pad = (max - min) * 0.15 || Math.abs(max) * 0.1 || 1;
-  let lowPad = min - pad;
-  let highPad = max + pad;
-  if (min >= 0) lowPad = Math.max(0, lowPad);
-  if (max <= 0) highPad = Math.min(0, highPad);
+  if (values.length === 0)
+    throw new Error("a line beat needs a reading to scale against, got none");
+  return scaleLinear()
+    .domain(extent(values) as [number, number])
+    .nice();
+}
 
-  const step = niceStep((highPad - lowPad) / 10);
-  let low = Math.floor(lowPad / step) * step;
-  let high = Math.ceil(highPad / step) * step;
-  // Three ticks means an even number of steps; spend the odd one where it costs nothing.
-  if (Math.round((high - low) / step) % 2 === 1) {
-    if (min < 0 || low - step >= 0) low -= step;
-    else high += step;
-  }
-  return [low, (low + high) / 2, high].map((v) => Number(v.toFixed(6)));
+/**
+ * Sparse by construction: d3 picks the round values inside the fitted range. Nothing between
+ * them is read, and none of them is invented — every tick is a multiple of a round step that the
+ * data's own extent reaches. The unit is stated once, on the top one.
+ */
+export function yTickValues(data: Reading[]): number[] {
+  return yScale(data).ticks(TICK_HINT);
 }
 
 /**
@@ -90,14 +92,12 @@ export function lineGeometry(
   };
   const years = data.map((d) => d.year);
   const [first, last] = [Math.min(...years), Math.max(...years)];
-  const ticks = yTickValues(data);
-  const [floor, , ceiling] = ticks;
-
-  const x = (year: number) =>
-    plot.left + ((year - first) / (last - first)) * (plot.right - plot.left);
-  const y = (value: number) =>
-    plot.bottom -
-    ((value - floor) / (ceiling - floor)) * (plot.bottom - plot.top);
+  // The x domain is the years themselves — first to last, never nicened. Rounding it outward
+  // would push the series away from the frame edges and invent time nobody measured.
+  const x = scaleLinear().domain([first, last]).range([plot.left, plot.right]);
+  const y = yScale(data).range([plot.bottom, plot.top]);
+  const [floor, ceiling] = y.domain();
+  const ticks = y.ticks(TICK_HINT);
 
   const points = data.map((d) => ({
     year: d.year,
@@ -105,16 +105,15 @@ export function lineGeometry(
     x: x(d.year),
     y: d.value === null ? null : y(d.value),
   }));
-  // A missing year ends the run. The line is not drawn across a hole in the data.
-  const segments: (typeof points)[] = [];
-  let run: typeof points = [];
-  for (const point of points) {
-    if (point.value === null) {
-      if (run.length > 0) segments.push(run);
-      run = [];
-    } else run.push(point);
-  }
-  if (run.length > 0) segments.push(run);
+
+  // A missing year ends the run: `defined()` closes the sub-path at the hole and opens a new one
+  // after it, so one `d` string carries every run and the line is never drawn across a gap.
+  const path =
+    line<(typeof points)[number]>()
+      .defined((p) => p.y !== null)
+      .x((p) => p.x)
+      .y((p) => p.y as number)
+      .digits(1)(points) ?? "";
 
   // One note per RUN of missing readings, placed at the midpoint of the readings it separates —
   // not on the missing slot, which on unevenly spaced data is nowhere near the middle of the hole.
@@ -132,15 +131,20 @@ export function lineGeometry(
     gaps.push({
       years: points.slice(start, i + 1).map((p) => p.year),
       x: neighbours.length > 0 ? middle((p) => p.x) : points[start].x,
-      y: neighbours.length > 0 ? middle((p) => p.y as number) : (plot.top + plot.bottom) / 2,
+      y:
+        neighbours.length > 0
+          ? middle((p) => p.y as number)
+          : (plot.top + plot.bottom) / 2,
     });
   }
 
   return {
     plot,
     points,
-    segments,
+    path,
     gaps,
+    domain: [floor, ceiling] as [number, number],
+    end: points.findLast((p) => p.value !== null),
     zeroY: floor < 0 && ceiling > 0 ? y(0) : null,
     ticksY: ticks.map((value) => ({ value, y: y(value) })),
     ticksX: [first, years[Math.floor(years.length / 2)], last].map((year) => ({
@@ -217,19 +221,11 @@ export function ChartSeed({
       Math.max(...tickLabels.map((label) => measureText(label, AXIS))),
   };
 
-  const { plot, segments, gaps, ticksY, ticksX, zeroY } = lineGeometry(data, {
+  const { plot, path, gaps, ticksY, ticksX, zeroY, end } = lineGeometry(data, {
     width,
     height,
     padding,
   });
-  const path = (run: { x: number; y: number | null }[]) =>
-    run
-      .map(
-        (p, i) =>
-          `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${(p.y as number).toFixed(1)}`,
-      )
-      .join(" ");
-  const end = segments[segments.length - 1].at(-1)!;
 
   return (
     <svg
@@ -322,21 +318,19 @@ export function ChartSeed({
         </text>
       ))}
 
-      {segments.map((run) => (
-        <path
-          key={run[0].year}
-          d={path(run)}
-          fill="none"
-          stroke={accent}
-          strokeWidth={2.5}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-      ))}
-      <circle cx={end.x} cy={end.y as number} r={4} fill={accent} />
+      {/* One path, every run: `defined()` already broke it at the holes. */}
+      <path
+        d={path}
+        fill="none"
+        stroke={accent}
+        strokeWidth={2.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <circle cx={end!.x} cy={end!.y as number} r={4} fill={accent} />
       <text
         x={plot.right + 10}
-        y={(end.y as number) + 5}
+        y={(end!.y as number) + 5}
         fill={accent}
         fontSize={LABEL.fontSize}
         fontWeight={LABEL.fontWeight}

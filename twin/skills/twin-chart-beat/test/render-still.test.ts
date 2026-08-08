@@ -9,7 +9,7 @@ import {
   measureText,
   renderStill,
 } from "../scripts/render-still.mjs";
-import { ChartSeed, lineGeometry } from "../assets/ChartSeed.tsx";
+import { ChartSeed, lineGeometry, yTickValues } from "../assets/ChartSeed.tsx";
 import rainfall from "../assets/sample-data/rainfall.json";
 
 let outDir: string;
@@ -82,7 +82,9 @@ describe("lineGeometry", () => {
       height: 560,
       padding: { top: 120, right: 160, bottom: 60, left: 70 },
     });
-    expect(geometry.segments.length).toBe(2);
+    // `line.defined()` opens a new sub-path at the hole, so one `d` carries two runs: the
+    // break in the stroke is the fact, and the note beside it names the missing year.
+    expect(geometry.path.match(/M/g)?.length).toBe(2);
     expect(geometry.gaps.map((gap) => gap.years)).toEqual([[2019]]);
   });
 
@@ -94,16 +96,59 @@ describe("lineGeometry", () => {
       .map((point) => point.y)
       .filter((y): y is number => y !== null);
     const traced = Math.max(...ys) - Math.min(...ys);
-    expect(traced / (geometry.plot.bottom - geometry.plot.top)).toBeGreaterThan(0.55);
+    expect(traced / (geometry.plot.bottom - geometry.plot.top)).toBeGreaterThan(
+      0.8,
+    );
+  });
+
+  it("should not leave a third of the frame empty when a series barely dips below zero", () => {
+    // The trial's migration beat: readings running -3.4 to 84.1. The hand-rolled step arithmetic
+    // padded, floored and then spent a spare step, landing on -45 to 105 — the line used 58% of
+    // the plot and the top gridline sat 25% above any reading anyone measured. This is the case
+    // the twin lost to the established engine, and it is arithmetic, not judgement.
+    const geometry = lineGeometry(
+      [
+        { year: 1990, value: 55.2 },
+        { year: 1997, value: -1.9 },
+        { year: 1998, value: -3.4 },
+        { year: 2008, value: 84.1 },
+        { year: 2024, value: 62.4 },
+      ],
+      PLOT,
+    );
+    const ys = geometry.points.map((point) => point.y as number);
+    const traced = Math.max(...ys) - Math.min(...ys);
+    expect(traced / (geometry.plot.bottom - geometry.plot.top)).toBeGreaterThan(
+      0.8,
+    );
+  });
+
+  it("should label the round values a reader recognises, not the ends of a padded span", () => {
+    // d3 rounds the readings' own extent outward and then labels multiples of a round step
+    // inside it. The hand-rolled version labelled the padded ends themselves: 500 / 750 / 1000
+    // under readings that never leave 604-912.
+    expect(yTickValues(rainfall)).toEqual([600, 700, 800, 900]);
   });
 
   it("should never take a series of positive values below zero", () => {
-    const geometry = lineGeometry([{ year: 2015, value: 5 }, { year: 2016, value: 100 }], PLOT);
-    expect(geometry.ticksY[0].value).toBeGreaterThanOrEqual(0);
+    const geometry = lineGeometry(
+      [
+        { year: 2015, value: 5 },
+        { year: 2016, value: 100 },
+      ],
+      PLOT,
+    );
+    expect(geometry.domain[0]).toBeGreaterThanOrEqual(0);
   });
 
   it("should draw the zero line when the series crosses it", () => {
-    const crossing = lineGeometry([{ year: 2015, value: -40 }, { year: 2016, value: 60 }], PLOT);
+    const crossing = lineGeometry(
+      [
+        { year: 2015, value: -40 },
+        { year: 2016, value: 60 },
+      ],
+      PLOT,
+    );
     expect(crossing.zeroY).not.toBeNull();
     expect(lineGeometry(rainfall, PLOT).zeroY).toBeNull();
   });
@@ -111,7 +156,11 @@ describe("lineGeometry", () => {
   it("should centre a gap note between the readings it separates, not on the missing slot", () => {
     // Unevenly spaced readings: the missing 2018 slot is nowhere near the middle of the hole.
     const geometry = lineGeometry(
-      [{ year: 2015, value: 900 }, { year: 2018, value: null }, { year: 2025, value: 600 }],
+      [
+        { year: 2015, value: 900 },
+        { year: 2018, value: null },
+        { year: 2025, value: 600 },
+      ],
       PLOT,
     );
     const [before, , after] = geometry.points;

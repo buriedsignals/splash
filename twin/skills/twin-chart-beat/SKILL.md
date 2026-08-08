@@ -59,6 +59,12 @@ measures 3.95:1. A mid-grey newsroom ground is exactly where the obvious rule is
 `scripts/render-still.mjs` is the twin's one script with dependencies — `react-dom/server` and
 `@resvg/resvg-js`, both from the root's own `package.json` — and its header says so.
 
+The seed itself imports three more from that same `package.json`: `d3-scale`, `d3-array` and
+`d3-shape`. They are primitives, not a chart library — a scale, a tick generator and a path
+generator, none of which knows a colour, a label or a chart type. Fitting a scale and choosing
+ticks by hand is how this skill shipped an axis running -45 to 105 on data spanning -3,4 to 84
+(`references/static-discipline.md`). A beat writes its own component, and it writes it on these.
+
 **A beat does not import this file from here.** `render-still.mjs` and `inspect-render.mjs` are the
 *mechanism* — nobody rewrites them per story — so `splash-twin`'s root template vendors a physical
 copy of both into every fresh Splash root, at `<root>/shared/twin-chart-beat/`, checked in so the
@@ -142,8 +148,8 @@ by an ordinary relative path — that import is for this skill's own tests
 | The frame the seed draws in | `900` × `560` | `FRAME`, `ChartSeed.tsx` |
 | The margin around everything | `40` (`PAD`) | `ChartSeed.tsx` |
 | Title size and line spacing | `26` / `34` | `TITLE`, `ChartSeed.tsx` |
-| How many y ticks are read | `3` (floor, middle, top) | `yTickValues`, `ChartSeed.tsx` |
-| Air kept above and below the readings when fitting the scale | `0.15` of the span | `yTickValues`, `ChartSeed.tsx` |
+| How many y ticks are asked for (d3 treats it as a hint and may answer 2 or 5) | `3` (`TICK_HINT`) | `yTickValues`, `ChartSeed.tsx` |
+| Decimal places kept in the traced path | `1` (`line.digits`) | `lineGeometry`, `ChartSeed.tsx` |
 | The air between the end label and the plot | `10` px, on top of a measured gutter of `12` | `ChartSeed.tsx` |
 | Readings below which the beat refuses to draw | `2` | `ChartSeed.tsx` |
 

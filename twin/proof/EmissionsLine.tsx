@@ -7,6 +7,9 @@
  * French number furniture. It has no gap handling, because this series has none.
  */
 
+import { extent } from "d3-array";
+import { scaleLinear } from "d3-scale";
+import { line } from "d3-shape";
 import {
   deriveFurniture,
   measureText,
@@ -32,39 +35,38 @@ export function fr(value: number, decimals = 1): string {
     .replace(/\B(?=(\d{3})+(?!\d))/, " ");
 }
 
-function niceStep(raw: number): number {
-  const magnitude = 10 ** Math.floor(Math.log10(raw));
-  const f = raw / magnitude;
-  return (
-    (f <= 1 ? 1 : f <= 1.5 ? 1.5 : f <= 2 ? 2 : f <= 3 ? 3 : f <= 5 ? 5 : 10) *
-    magnitude
-  );
+/**
+ * The fitted vertical scale. The reference joins the readings in the extent, because a level the
+ * beat is about must be inside the frame even in the year it is not approached.
+ *
+ * `.nice()` rounds that extent outward to round values and stops. What it replaced padded by 15%,
+ * stepped the padded ends, and then had to defend itself against its own widening — the comment
+ * about "flooring 4,9 to a multiple of 5 gives 0" was a patch on arithmetic that should never have
+ * reached zero. d3 rounds 10,25–46,20 to 10–50 and there is nothing left to defend against.
+ */
+function yScale(data: Reading[], reference: number) {
+  return scaleLinear()
+    .domain(extent([...data.map((d) => d.mt), reference]) as [number, number])
+    .nice();
 }
 
 /**
  * Three ticks — floor, THE REFERENCE LEVEL, top.
  *
- * The middle tick is not the arithmetic middle: it is the level the beat is about. Cycle 1 rendered
- * a round [0, 30, 60] scale and the render showed why that is wrong twice over — the floor snapped
- * all the way down to zero (a third of the frame empty under a line whose slope carries the story,
- * exactly the failure `static-discipline.md` describes), and the 30 gridline landed 20 px from the
- * 1967 reference at 32,5, so the one rule the reader must see had a decorative twin beside it.
+ * The middle tick is not the arithmetic middle and it is not one of d3's: it is the level the beat
+ * is about, placed on the axis on purpose. Cycle 1 rendered a round [0, 30, 60] scale and the
+ * render showed why that is wrong twice over — the floor snapped all the way down to zero (a third
+ * of the frame empty under a line whose slope carries the story, exactly the failure
+ * `static-discipline.md` describes), and the 30 gridline landed 20 px from the 1967 reference at
+ * 32,5, so the one rule the reader must see had a decorative twin beside it.
  *
  * Putting the reference ON the axis removes both: the fitted floor keeps the slope, and the middle
  * gridline IS the reference, so nothing competes with it and the number is stated once, on the axis.
+ * The floor and the top are d3's rounded domain ends, which is why they read as round numbers.
  */
 export function yTickValues(data: Reading[], reference: number): number[] {
-  const values = data.map((d) => d.mt);
-  const min = Math.min(...values, reference);
-  const max = Math.max(...values, reference);
-  const pad = (max - min) * 0.15 || Math.abs(max) * 0.1 || 1;
-  const step = niceStep((max + pad - Math.max(0, min - pad)) / 10);
-  // Round the padded floor rather than flooring it: flooring 4,9 to a multiple of 5 gives 0, and a
-  // fitted scale that lands on zero anyway is the zero-anchored line the doctrine forbids. Never
-  // above the lowest reading, and never below zero for a positive series.
-  const low = Math.max(0, Math.min(Math.round((min - pad) / step) * step, Math.floor(min / step) * step));
-  const high = Math.ceil((max + pad) / step) * step;
-  return [low, reference, high].map((v) => Number(v.toFixed(6)));
+  const [floor, ceiling] = yScale(data, reference).domain();
+  return [floor, reference, ceiling];
 }
 
 /** Data to coordinates. No colour, no font, no label. */
@@ -92,12 +94,10 @@ export function crossingGeometry(
   const first = Math.min(...years);
   const last = Math.max(...years);
   const ticks = yTickValues(data, reference);
-  const [floor, , ceiling] = ticks;
 
-  const x = (year: number) =>
-    plot.left + ((year - first) / (last - first)) * (plot.right - plot.left);
-  const y = (mt: number) =>
-    plot.bottom - ((mt - floor) / (ceiling - floor)) * (plot.bottom - plot.top);
+  // The x domain is the years themselves, never nicened — rounding it outward would invent time.
+  const x = scaleLinear().domain([first, last]).range([plot.left, plot.right]);
+  const y = yScale(data, reference).range([plot.bottom, plot.top]);
 
   const points = data.map((d) => ({ ...d, x: x(d.year), y: y(d.mt) }));
   const peak = points.reduce((a, b) => (b.mt > a.mt ? b : a));
@@ -189,9 +189,12 @@ export function EmissionsLine({
   };
 
   const g = crossingGeometry(data, { width, height, padding, reference });
-  const path = g.points
-    .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-    .join(" ");
+  // No `defined()` here: this series has no holes, and inventing gap handling it does not need
+  // would be the seed's shape copied rather than this beat's own.
+  const path = line<(typeof g.points)[number]>()
+    .x((p) => p.x)
+    .y((p) => p.y)
+    .digits(1)(g.points)!;
 
   // The reference label sits on its own line, above it, left-aligned in the plot — the NYT Upshot
   // lesson the journalist picked: the reference states its claim, it is not a bare rule.

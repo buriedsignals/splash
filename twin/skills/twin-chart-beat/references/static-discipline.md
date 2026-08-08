@@ -47,23 +47,41 @@ truncation the reader can see.
 For a line, the honest choice is a scale **fitted to the readings** — and the honesty lives in the
 labelling, not in the floor:
 
-- all three ticks carry their value, so the span is stated and cannot be misread;
+- every tick carries its value, so the span is stated and cannot be misread;
 - the unit is on the top tick;
 - a series of positive values never dips below zero (that would be inventing room);
 - a series that **crosses** zero always draws the zero line, because the sign change is the story.
 
-`yTickValues` implements exactly that: 15% padding around the readings, a round step, three ticks,
-clamped at zero for positive data. The check is not "does the axis start at zero" — it is
-**does the reader see the span, and does the slope tell the truth about the change**.
+`yTickValues` gets that from d3: `scaleLinear().domain(extent(readings)).nice()` rounds the
+readings' own extent outward to round values and stops there, and `.ticks(3)` labels the round
+values inside it. The check is not "does the axis start at zero" — it is **does the reader see
+the span, and does the slope tell the truth about the change**.
 
 This rule was written the wrong way round in the first draft of this file, and the render is what
 exposed it: 45% of the frame empty, and a decline of a third drawn as a shrug.
 
+**And then the arithmetic broke it a second time, quietly.** The hand-rolled version of the rule
+padded the extent by 15%, floored and ceiled the padded ends to a round step, and then spent one
+more step to keep the tick count even — three widenings, each defensible alone. On a series of net
+migration running -3,4 to 84,1 they compounded into an axis from -45 to 105: the readings used 58%
+of the plot, the bottom third held nothing, and the top gridline stood 25% above any number anyone
+had measured. In a head-to-head against an established chart engine, that is the case this twin
+lost, and it lost it on arithmetic, not on judgement. **Fitting a scale and generating ticks are
+solved problems; write neither by hand.** `d3-scale` and `d3-array` are data-to-coordinates
+primitives — a scale and a tick generator, knowing nothing about colour, labels or type — which is
+this doctrine's own definition of pure geometry. Taking them costs nothing it forbids. Taking a
+chart library, which hands over a chart type with props, would cost everything it exists to defend.
+
 ## Sparse ticks
 
-Three y ticks: the floor, the middle, the top. Three x ticks: first, middle, last. Nobody reads the
-values between them off the axis — that is what the direct label is for. The unit goes on the top
-tick only, so it is stated once.
+Ask for three y ticks and read what comes back: `.ticks(3)` is a hint, and d3 answers with the
+round values that actually fall inside the fitted range — often two, sometimes five. Three x ticks:
+first, middle, last. Nobody reads the values between them off the axis — that is what the direct
+label is for. The unit goes on the top tick only, so it is stated once.
+
+A tick count that comes back as two is not a defect to be corrected. It means the fitted range
+holds two round values, and adding a third would mean widening the range to make room for a number
+the data never reached — which is the defect above, wearing a tidier face.
 
 ## The source under the header, not in a footer
 
