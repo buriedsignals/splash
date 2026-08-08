@@ -7,6 +7,7 @@ import {
 } from "../src/route-story";
 import { computeRouteReveal } from "../src/route-geo";
 import world from "../assets/geo/world.geojson" assert { type: "json" };
+import { formatLocaleNumber } from "../../../lib/core/locale";
 
 const sampleRoute = {
   type: "route" as const,
@@ -124,5 +125,50 @@ describe("scrollyStepCount — symbol honors maxReveals", () => {
       world as any,
     );
     expect(stepsWithFew).toBeLessThan(stepsWithMany);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE ROUTE TAKEAWAY IS GENERATED TEXT, so it is furniture.
+//
+// With no editorial insight, routeStoryToChapters composed its closing caption itself:
+// `${n} territories, ${km} km` — English words, and a raw number with an English
+// thousands convention, on the last card of a French page. Same defect class as the
+// locator's "the highest of the 5 shown": a caption the engine WROTE, in a language
+// nobody chose.
+// ---------------------------------------------------------------------------
+describe("routeStoryToChapters — the derived takeaway is localized", () => {
+  const layout = computeRouteReveal(sampleRoute, world as any);
+  const walk = resolveRouteWalk(layout, undefined);
+  const takeawayFor = (lang: string | undefined) =>
+    routeStoryToChapters(layout, walk, {
+      title: sampleRoute.title,
+      description: sampleRoute.description,
+      source: sampleRoute.source,
+      lang,
+    }).steps.at(-1)!.prose;
+
+  it("reads in the deliverable's language, never English by default", () => {
+    const n = layout.territories.length;
+    const km = Math.round(layout.totalLengthKm);
+    expect(takeawayFor(undefined)).toBe(
+      `${n} territories, ${formatLocaleNumber(km, undefined)} km`,
+    );
+    expect(takeawayFor("fr")).toMatch(/territoires/);
+    expect(takeawayFor("de")).toMatch(/Gebiete/);
+    expect(takeawayFor("it")).toMatch(/territori/);
+    for (const lang of ["fr", "de", "it"])
+      expect(takeawayFor(lang)).not.toMatch(/territories/);
+  });
+
+  it("still prefers the journalist's own insight when there is one", () => {
+    const story = routeStoryToChapters(layout, walk, {
+      title: sampleRoute.title,
+      description: sampleRoute.description,
+      source: sampleRoute.source,
+      insight: "Le fleuve traverse quatre pays.",
+      lang: "fr",
+    });
+    expect(story.steps.at(-1)!.prose).toBe("Le fleuve traverse quatre pays.");
   });
 });

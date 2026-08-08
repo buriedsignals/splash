@@ -264,8 +264,19 @@ export function deriveMapStory(
   // Prefer the DATA's display name (layout.labels, in the deliverable language) over
   // the basemap feature name (ISO/English). A French map must narrate "Éthiopie", not
   // the basemap's "Ethiopia" — the name comes from the data, never the basemap.
-  const nameOf = (key: string) =>
-    layout.labels?.[key] ?? String(featByKey.get(key)?.properties?.name ?? key);
+  // A BLANK label falls through the chain, exactly as a missing one does — `??` alone stopped
+  // at "" and handed the caption an empty name, which the "<name> — <value>" templates below
+  // (and story-copy's `ranked`/`leads`/`longTail` rows) then rendered as " — 59%, 2nd": a
+  // caption opening on a bare separator, the mirror of the locator hole this branch closes.
+  // The fix belongs HERE and not in the composer, because unlike a locator's value or a symbol
+  // point's label there IS a next rung to fall to: the basemap's own name, then the key.
+  const nameOf = (key: string) => {
+    const fromData = layout.labels?.[key];
+    if (fromData && fromData.trim() !== "") return fromData;
+    const fromBasemap = featByKey.get(key)?.properties?.name;
+    const basemapName = fromBasemap === undefined ? "" : String(fromBasemap);
+    return basemapName.trim() !== "" ? basemapName : key;
+  };
   const cameraOf = (key: string) => {
     const f = featByKey.get(key);
     return f ? regionBounds(f) : layout.bounds;

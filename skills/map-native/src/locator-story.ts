@@ -13,11 +13,17 @@ import type { LocatorMarker } from "./locator-geo";
 import type { Phase } from "./story-timeline";
 import { shortWayLongitudeExtent } from "./core/longitude";
 import { tourBoxDelta, tourStopBox, WIDE_TOUR_DELTA } from "./core/tour-box";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export interface LocatorStoryMeta {
   title: string;
   description?: string;
   insight?: string;
+  /** Deliverable language — localizes the count word this deriver GENERATES ("3 sites").
+   *  Required, with `undefined` a legitimate value (an English run declares no language):
+   *  optional is how the leak got out elsewhere in this family — see mapStoryToChapters's
+   *  own `lang` comment. */
+  lang: string | undefined;
   // Journalist-confirmed claim-arc override (S2) — see map-story.ts mapArcErrors.
   // Anchors on marker labels (mirrors deriveSymbolStory's point labels — a marker has no
   // numeric value of its own, so the resolved anchor's `value` is always ""). When present
@@ -148,15 +154,29 @@ export function deriveLocatorStory(
       // Categorized regime: a beat per category (capped).
       for (const cat of categories.slice(0, cap)) {
         const inCat = markers.filter((m) => m.category === cat);
-        const count = inCat.length;
-        const text = `${cat} — ${count} ${count === 1 ? "site" : "sites"}`;
+        // The count word is FURNITURE — splash generates it, so it comes out of the locale
+        // table (lib/core/story-copy.ts), never out of a literal here. It was "site"/"sites"
+        // inline, which shipped English into every French, German and Italian locator.
+        //
+        // And it belongs INSIDE the callout's value, not beside it: scrolly's caption engine
+        // composes "<name> — <value>", so "3" as the value and "sites" only in `text` meant
+        // the delivered page read "Écoles — 3" and lost the word entirely.
+        const value = storyCopy(meta.lang).siteCount(inCat.length);
+        const text = `${cat} — ${value}`;
         beats.push({
           kind: "reveal",
           camera: padBbox(bboxOf(inCat)),
           highlight: inCat.map((m) => m.label),
           dim: true,
-          callout: { region: cat, name: cat, value: `${count}`, text },
+          callout: { region: cat, name: cat, value, text },
           copy: text,
+          // ★ A LOCATOR RANKS NOTHING. These beats are ordered by category NAME (the `.sort()`
+          // above), so their position is the alphabet — and a caption engine that reads rank
+          // off position captioned the first category "the highest of the N shown" against a
+          // total that counted MARKERS. `pattern` is the declared channel for exactly this
+          // judgment (map-story.ts's Beat: it tells the prose "whether ranking language is
+          // honest"); it had only ever been set on the choropleth path.
+          pattern: "categorical",
         });
       }
     } else {
@@ -189,6 +209,11 @@ export function deriveLocatorStory(
           dim: true,
           callout: { region: m.label, name: m.label, value: "", text: copy },
           copy,
+          // Same rule as the categorized regime above: a walk of PLACES ranks nothing. These
+          // beats follow the markers' input order, and a marker has no number to rank on at
+          // all — which is why the value is "". Declared rather than inferred, so a caption
+          // engine never has to guess from the empty value alone.
+          pattern: "categorical",
         });
       }
     }

@@ -190,6 +190,9 @@ export const LocatorStory: React.FC<{ config: LocatorConfigShape }> = ({
           ((config as Record<string, unknown>).insight as string) ??
           config.title ??
           "",
+        // deriveLocatorStory GENERATES the categorized regime's count word ("3 sites") —
+        // it needs the deliverable's language or the word ships in English.
+        lang: config.lang,
         // The confirmed walk reaches the deriver — see map-arc.ts.
         arcBeats: config.arcBeats,
       };

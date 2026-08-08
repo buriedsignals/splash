@@ -56,9 +56,17 @@ export function mapStoryToChapters(
     description?: string;
     source?: { name: string; url?: string };
     regionsWithData: number;
-    /** deliverable language — localizes the auto-generated reveal descriptors
-     * ("the highest of the N shown" / "the first" / …). Default English. */
-    lang?: string;
+    /** Deliverable language — localizes the auto-generated reveal descriptors ("the highest
+     *  of the N shown" / "the first" / …).
+     *
+     *  REQUIRED, and `undefined` is a legitimate value (an English run declares no language).
+     *  It is required because OPTIONAL is exactly how the English leak got out: six of this
+     *  function's callers — every map-native `*Scrolly.tsx` video composition — simply never
+     *  wrote the key, and a French locator page shipped "the highest of the 5 shown" with a
+     *  clean exit. `storyCopy` cannot tell "English on purpose" from "nobody said", so the
+     *  only place that distinction can be forced is here, at the call. A required key makes
+     *  the omission a type error instead of a silent English caption. */
+    lang: string | undefined;
   },
 ): ScrollyStory {
   const revealIdx: number[] = [];
@@ -95,8 +103,22 @@ export function mapStoryToChapters(
       prose = hasCopy
         ? b.copy
         : b.callout
-          ? `${b.callout.name} — ${b.callout.value}`
+          ? nameAndValue(b.callout.name, b.callout.value)
           : desc;
+    } else if (b.kind === "reveal" && b.callout && !b.callout.value.trim()) {
+      // ★ NO VALUE ⇒ NOTHING TO COMPOSE. A locator marker carries no number (locator-story.ts
+      // resolves every anchor to value:""), so the "<name> — <value>" template below rendered
+      // a name, an em dash and a hole — measured on a delivered French page:
+      //     "Pont d'Austerlitz — , the highest of the 5 shown"
+      //     "Notre-Dame de Paris —"
+      // The caption a journalist would sign is the one the DERIVER already wrote and put in
+      // `copy`: the marker's own note, or, failing that, the place's name. This branch ships
+      // it, and — because a rank descriptor is a claim about a QUANTITY — adds no descriptor
+      // to a beat that has none. Same rule the authored branch above already states for an
+      // arc ("never a rank descriptor, because nothing here computed a rank"); it was simply
+      // never applied to the derived walk, where the composer read rank off POSITION and so
+      // asserted "the highest" over a walk of five places that ranked nothing at all.
+      prose = hasCopy ? b.copy : b.callout.name;
     } else if (b.kind === "reveal" && b.callout) {
       let descriptor = "";
       if (b.pattern === "temporal") {
@@ -106,6 +128,17 @@ export function mapStoryToChapters(
         // the interval to the previous reveal or since the first — all values
         // that deriveMapStory computed from the data (seqIndex/seqTotal/seqYear*).
         descriptor = temporalDescriptor(b, meta.lang);
+      } else if (b.pattern === "categorical") {
+        // A CATEGORICAL walk ranks nothing. The rank fallback below reads rank off a beat's
+        // POSITION among the reveals, which is honest only for a walk the deriver ordered
+        // max → min (deriveMapStory, and the hex-grid/cartogram/dot-density derivers, all
+        // do). The locator's categorized regime orders its beats by category NAME, so
+        // position there is the alphabet — and "Écoles — 3 sites, le plus élevé des 5" was a
+        // ranking claim over an alphabetical list, against a total that counted markers
+        // rather than categories. Beat.pattern exists for exactly this judgment (see its own
+        // comment: it tells the caption engine "whether ranking language is honest"); it had
+        // only ever been consulted for the temporal half.
+        descriptor = "";
       } else if (revealIdx.length > 1) {
         // magnitude / ranking — a RANK-aware descriptor for EVERY reveal, not just the
         // extremes (deriveMapStory tags each magnitude beat with rank + rankRole, F11):
@@ -120,7 +153,7 @@ export function mapStoryToChapters(
           descriptor = copy.highestOf(meta.regionsWithData);
         else if (b.rank !== undefined) descriptor = copy.ordinalWord(b.rank);
       }
-      prose = `${b.callout.name} — ${b.callout.value}${descriptor ? ", " + descriptor : ""}`;
+      prose = `${nameAndValue(b.callout.name, b.callout.value)}${descriptor ? ", " + descriptor : ""}`;
     } else {
       prose = hasCopy ? b.copy : desc;
     }
@@ -142,6 +175,27 @@ export function mapStoryToChapters(
     visual: "map",
     steps,
   };
+}
+
+/**
+ * "<name> — <value>", or whichever half exists on its own.
+ *
+ * The separator belongs to the PAIR, not to either half. Written inline as
+ * "`${name} — ${value}`" it punched a hole at BOTH ends, and both were measured on delivered
+ * pages:
+ *   · no value — every locator anchor (a marker carries no number):
+ *       "Rue du Stand 26 — "   ·   "Pont d'Austerlitz — , the highest of the 5 shown"
+ *   · no name — a symbol map built from a CSV with no label column (SymbolPoint.label is
+ *     optional, and the loop only sets it when a label column exists):
+ *       "— 220 MW, le plus élevé des 4"
+ * One helper, so no caption path can disagree about the separator and no half that was never
+ * going to exist can leave a published caption hanging on it.
+ */
+export function nameAndValue(name: string, value: string): string {
+  const hasName = name.trim() !== "";
+  const hasValue = value.trim() !== "";
+  if (hasName && hasValue) return `${name} — ${value}`;
+  return hasName ? name : hasValue ? value : "";
 }
 
 // Compose the data-tied descriptor for a temporal reveal. Uses only facts

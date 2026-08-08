@@ -63,6 +63,25 @@ export type StoryCopy = {
   /** "1 200 points" — a count-aggregated hex cell's callout. Takes the already-localized
    *  value string. */
   pointCount: (value: string) => string;
+  /** "3 sites" — how many MARKERS a locator category holds (locator-story.ts's categorized
+   *  regime). Pluralized per language. It sits in the callout's VALUE, not beside it: the
+   *  scrolly caption engine composes "<name> — <value>", so a count word left outside the
+   *  value is a count word the delivered page drops. */
+  siteCount: (n: number) => string;
+  /** The route track's DERIVED closing caption, used when the journalist gave no insight:
+   *  "3 territories, 3,909 km". Takes the already-localized distance string, same convention
+   *  as `meanOf`/`pointCount`; the territory count is a small integer, never grouped. */
+  routeSpan: (territories: number, kmStr: string) => string;
+  /** cartogram's ranked-walk descriptor, standalone inside "18 % — <desc> — Genève":
+   *  "the highest" / "the 2nd highest" / "#3". `rank` is 1-based. */
+  rankOfHighest: (rank: number) => string;
+  /** hex-grid's ranked-walk descriptor, WITH its bin noun, because the two cannot be
+   *  concatenated across languages ("the densest hexagon" but "l'hexagone le plus dense").
+   *  `rank` is 1-based; `shape` is the grid's own bin shape. */
+  densestBin: (rank: number, shape: "hex" | "square") => string;
+  /** dot-density's dominant-category clause: "mostly solar". Takes the category verbatim —
+   *  it is DATA, never furniture, and is never translated. */
+  mostly: (category: string) => string;
 };
 
 function enOrdinal(n: number): string {
@@ -177,6 +196,19 @@ const EN: StoryCopy = {
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} later`,
   meanOf: (value) => `${value} avg`,
   pointCount: (value) => `${value} points`,
+  siteCount: (n) => `${n} site${n === 1 ? "" : "s"}`,
+  routeSpan: (t, km) => `${t} territor${t === 1 ? "y" : "ies"}, ${km} km`,
+  rankOfHighest: (rank) =>
+    rank === 1 ? "the highest" : rank === 2 ? "the 2nd highest" : `#${rank}`,
+  densestBin: (rank, shape) => {
+    const bin = shape === "hex" ? "hexagon" : "cell";
+    return rank === 1
+      ? `the densest ${bin}`
+      : rank === 2
+        ? `the 2nd densest ${bin}`
+        : `#${rank} ${bin}`;
+  },
+  mostly: (category) => `mostly ${category}`,
 };
 
 const FR: StoryCopy = {
@@ -211,6 +243,28 @@ const FR: StoryCopy = {
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} plus tard`,
   meanOf: (value) => `${value} en moyenne`,
   pointCount: (value) => `${value} points`,
+  // French uses the same word, with the same regular plural: "1 site" / "3 sites".
+  siteCount: (n) => `${n} site${n === 1 ? "" : "s"}`,
+  routeSpan: (t, km) => `${t} territoire${t === 1 ? "" : "s"}, ${km} km`,
+  rankOfHighest: (rank) =>
+    rank === 1
+      ? "le plus élevé"
+      : rank === 2
+        ? "le 2e plus élevé"
+        : `n° ${rank}`,
+  // The bin noun leads in French — "l'hexagone le plus dense", never "le plus dense
+  // hexagone" — which is why the shape and the rank share one row instead of being
+  // concatenated by the caller.
+  densestBin: (rank, shape) => {
+    const bin = shape === "hex" ? "hexagone" : "cellule";
+    const article = shape === "hex" ? "l'" : "la ";
+    return rank === 1
+      ? `${article}${bin} le plus dense`
+      : rank === 2
+        ? `${shape === "hex" ? "le" : "la"} 2e ${bin} ${shape === "hex" ? "le" : "la"} plus dense`
+        : `${bin} n° ${rank}`;
+  },
+  mostly: (category) => `majoritairement ${category}`,
 };
 
 const DE: StoryCopy = {
@@ -242,6 +296,25 @@ const DE: StoryCopy = {
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} später`,
   meanOf: (value) => `${value} im Mittel`,
   pointCount: (value) => `${value} Punkte`,
+  // "Standort" / "Standorte" — the standard German for a site/location in this sense.
+  siteCount: (n) => `${n} Standort${n === 1 ? "" : "e"}`,
+  routeSpan: (t, km) => `${t} Gebiet${t === 1 ? "" : "e"}, ${km} km`,
+  rankOfHighest: (rank) =>
+    rank === 1
+      ? "der höchste"
+      : rank === 2
+        ? "der 2. höchste"
+        : `Nr. ${rank}`,
+  densestBin: (rank, shape) => {
+    const bin = shape === "hex" ? "Sechseck" : "Zelle";
+    const art = shape === "hex" ? "das" : "die";
+    return rank === 1
+      ? `${art} dichteste ${bin}`
+      : rank === 2
+        ? `${art} 2. dichteste ${bin}`
+        : `${bin} Nr. ${rank}`;
+  },
+  mostly: (category) => `überwiegend ${category}`,
 };
 
 const IT: StoryCopy = {
@@ -269,6 +342,20 @@ const IT: StoryCopy = {
   laterBy: (ord, yearsStr) => `${ord}, ${yearsStr} dopo`,
   meanOf: (value) => `${value} in media`,
   pointCount: (value) => `${value} punti`,
+  siteCount: (n) => `${n} sit${n === 1 ? "o" : "i"}`,
+  routeSpan: (t, km) => `${t} territor${t === 1 ? "io" : "i"}, ${km} km`,
+  rankOfHighest: (rank) =>
+    rank === 1 ? "il più alto" : rank === 2 ? "il 2º più alto" : `n. ${rank}`,
+  densestBin: (rank, shape) => {
+    const bin = shape === "hex" ? "esagono" : "cella";
+    const art = shape === "hex" ? "l'" : "la ";
+    return rank === 1
+      ? `${art}${bin} più dens${shape === "hex" ? "o" : "a"}`
+      : rank === 2
+        ? `${shape === "hex" ? "il" : "la"} 2º ${bin} più dens${shape === "hex" ? "o" : "a"}`
+        : `${bin} n. ${rank}`;
+  },
+  mostly: (category) => `prevalentemente ${category}`,
 };
 
 export const STORY_COPY: Record<"en" | "fr" | "de" | "it", StoryCopy> = {

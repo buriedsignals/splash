@@ -187,6 +187,10 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
         title: config.title ?? "",
         insight: config.insight ?? config.title ?? "",
         unit: config.valueUnit ?? "",
+        // deriveSymbolStory LOCALIZES the callout numbers off this — dropping it printed an
+        // English decimal point inside a French video. Same omission the sibling
+        // compositions made with mapStoryToChapters' own `lang`, below.
+        lang: config.lang,
         // The confirmed walk reaches the deriver — see map-arc.ts.
         arcBeats: config.arcBeats,
       };
@@ -216,6 +220,11 @@ export const SymbolScrolly: React.FC<{ config: SymbolConfig }> = ({
         description: config.description,
         source: config.source,
         regionsWithData: config.points.length,
+        // The DELIVERABLE'S LANGUAGE reaches the caption engine. Every one of the six
+        // map-native scrolly compositions dropped it, and mapStoryToChapters GENERATES
+        // words — so a French scrolly video captioned itself "the highest of the 5 shown".
+        // `lang` is a REQUIRED key there now, for exactly this reason.
+        lang: config.lang,
       });
       const stepKinds = story.steps.map((_, i) =>
         i === 0 ? "title" : "reveal",

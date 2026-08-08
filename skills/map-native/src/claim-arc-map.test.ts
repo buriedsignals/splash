@@ -746,9 +746,16 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
     }
   });
 
+  // Recaptured 2026-08-07 (fix/locator-step-captions): every reveal now declares
+  // `pattern: "categorical"`. A locator walk ranks NOTHING — the few-annotated regime follows
+  // the markers' input order and a marker has no number at all — and the scrolly caption
+  // engine used to read rank off a beat's POSITION, which is how a French page shipped
+  // "Pont d'Austerlitz — , the highest of the 5 shown". The tag is the deriver stating what
+  // it knows, so the composer no longer has to guess.
   it("without arcBeats: byte-identical to the captured salience baseline", () => {
     const beats = deriveLocatorStory(locatorMarkers, {
       title: "Three Swiss places",
+      lang: undefined,
     });
     expect(beats).toEqual([
       {
@@ -779,6 +786,7 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
           text: "Geneva",
         },
         copy: "Geneva",
+        pattern: "categorical",
       },
       {
         kind: "reveal",
@@ -792,6 +800,7 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
           text: "Lausanne",
         },
         copy: "Lausanne",
+        pattern: "categorical",
       },
       {
         kind: "reveal",
@@ -805,6 +814,7 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
           text: "Zurich",
         },
         copy: "Zurich",
+        pattern: "categorical",
       },
       {
         kind: "takeaway",

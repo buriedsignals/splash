@@ -309,6 +309,36 @@ export function checkRouteConformance(input: {
   return { violations: v };
 }
 
+/**
+ * A caption composed from "<part> — <part>" against a part that turned out to be empty.
+ *
+ * Measured on a delivered French locator scrolly:
+ *     "Pont d'Austerlitz — , the highest of the 5 shown"
+ *     "Notre-Dame de Paris —"
+ * A locator marker carries no number, so the value slot rendered as nothing and left the
+ * separator holding a hole. The COMPOSER no longer builds that (chapters.ts's `nameAndValue`
+ * joins only the parts that exist); this is the net under it, so the next caption path to be
+ * written is checked rather than trusted.
+ *
+ * Three shapes, one per end of the template. The dash ENDS the caption (the value was
+ * missing); the dash is immediately followed by the punctuation that was meant to come after
+ * the missing value; or the dash OPENS the caption (the name was missing — measured as
+ * "— 220 MW, le plus élevé des 4" on a symbol map whose CSV had no label column). A dash used
+ * legitimately mid-sentence ("Norway — 99%") always has a word on both sides, so it never
+ * matches.
+ */
+export function emptySlotViolation(stepId: string, prose: string): string[] {
+  const dangling = /[—–]\s*$/.test(prose.trimEnd());
+  const holePunched = /[—–]\s*[,;:]/.test(prose);
+  const opensOnSeparator = /^\s*[—–]/.test(prose);
+  if (!dangling && !holePunched && !opensOnSeparator) return [];
+  return [
+    `step ${stepId} has an empty slot in its caption — a "<name> — <value>" template ` +
+      `rendered against a value that does not exist, leaving a dangling separator: ` +
+      `"${prose}"`,
+  ];
+}
+
 // Scrolly-video contract: validated on the DERIVED ScrollyStory (post mapStoryToChapters /
 // routeStoryToChapters), not the raw config — steps are always derived. territoryCount, when
 // given, range-checks drawTo refs (route).
@@ -333,6 +363,7 @@ export function checkScrollyConformance(input: {
 
   for (const s of story.steps) {
     if (!s.prose?.trim()) v.push(`step ${s.id} has empty prose`);
+    else v.push(...emptySlotViolation(s.id, s.prose));
     if (s.action !== "flyTo" && s.action !== "drawTo")
       v.push(`step ${s.id} has unknown action "${s.action}"`);
     if (typeof s.ref === "number") {

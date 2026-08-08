@@ -270,6 +270,9 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         ? { name: config.source.name, url: config.source.url ?? "" }
         : { name: "", url: "" },
       insight: (config as { insight?: string }).insight,
+      // The DERIVED takeaway ("3 territoires, 3 909 km") is composed text — this is what
+      // decides its language. Dropped, it read English on a French page.
+      lang: config.lang,
       notes,
     });
     const stepKinds = st.steps.map((_, i) => (i === 0 ? "title" : "reveal"));

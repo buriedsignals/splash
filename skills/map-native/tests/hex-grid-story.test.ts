@@ -75,8 +75,11 @@ describe("deriveHexGridStory", () => {
     const reveals = deriveHexGridStory(layout, {
       title: "Where the incidents cluster",
     }).filter((b) => b.kind === "reveal");
-    expect(reveals[0].callout?.name).toBe("the densest");
-    expect(reveals[1].callout?.name).toBe("the 2nd densest");
+    // "the densest hexagon" since the rank descriptor and its bin noun became ONE locale
+    // row (lib/core/story-copy.ts's `densestBin`): "the densest hexagon" but "l'hexagone le
+    // plus dense" — a caller cannot join them across languages.
+    expect(reveals[0].callout?.name).toBe("the densest hexagon");
+    expect(reveals[1].callout?.name).toBe("the 2nd densest hexagon");
   });
 });
 
@@ -124,5 +127,30 @@ describe("deriveHexGridStory — valueUnit", () => {
       title: "Where the incidents cluster",
     }).filter((b) => b.kind === "reveal");
     expect(reveals[0].callout?.value).toBe("18 points");
+  });
+});
+
+// The rank descriptor and its bin noun are text this deriver GENERATES — furniture. Inline
+// they were English literals ("the densest" + "hexagon"/"cell"), so a French hex-grid read
+// "the densest hexagon". They share one locale row because the two cannot be concatenated
+// across languages ("the densest hexagon", but "l'hexagone le plus dense").
+describe("deriveHexGridStory — the rank descriptor follows the deliverable's language", () => {
+  const revealsIn = (lang: string | undefined) =>
+    deriveHexGridStory(layout, {
+      title: "Where the incidents cluster",
+      lang,
+    }).filter((b) => b.kind === "reveal");
+
+  it("still reads in English when no language is declared", () => {
+    expect(revealsIn(undefined)[0].copy).toContain("the densest hexagon");
+  });
+
+  it("leaks no English into a French, German or Italian hex-grid", () => {
+    expect(revealsIn("fr")[0].copy).toContain("l'hexagone le plus dense");
+    expect(revealsIn("de")[0].copy).toContain("das dichteste Sechseck");
+    expect(revealsIn("it")[0].copy).toContain("l'esagono più denso");
+    for (const lang of ["fr", "de", "it"])
+      for (const b of revealsIn(lang))
+        expect(b.copy).not.toMatch(/densest|hexagon\b/);
   });
 });

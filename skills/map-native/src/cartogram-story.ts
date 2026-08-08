@@ -6,6 +6,7 @@ import { applyMapArc, type Beat, type MapArcBeat } from "./map-story";
 import type { CartogramLayout } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
 import { labelWithUnit, localizeValueLabel } from "./core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export interface CartogramStoryMeta {
   title: string;
@@ -46,6 +47,7 @@ export function deriveCartogramStory(
   const full = layout.bounds;
 
   const fmt = (v: number) => localizeValueLabel(v, meta.lang);
+  const copy = storyCopy(meta.lang);
 
   const beats: Beat[] = [];
 
@@ -95,12 +97,9 @@ export function deriveCartogramStory(
 
     ranked.slice(0, cap).forEach(({ c }, rank) => {
       const cellBbox = bbox(c.feature) as [number, number, number, number];
-      const rankDesc =
-        rank === 0
-          ? "the highest"
-          : rank === 1
-            ? "the 2nd highest"
-            : `#${rank + 1}`;
+      // Furniture, so it comes out of the locale table — inline it was three English
+      // literals that shipped verbatim into every French, German and Italian cartogram.
+      const rankDesc = copy.rankOfHighest(rank + 1);
       // Display value with its unit. Through `labelWithUnit`, like every other surface:
       // bare concatenation reads "16%" correctly and "157détenus" wrong, and only the second
       // kind of unit ever showed the defect.

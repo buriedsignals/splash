@@ -230,6 +230,11 @@ export const CartogramScrolly: React.FC<{ config: CartogramConfigShape }> = ({
           ? { name: config.source.name ?? "", url: config.source.url }
           : undefined,
         regionsWithData: layout.cells.length,
+        // The DELIVERABLE'S LANGUAGE reaches the caption engine. Every one of the six
+        // map-native scrolly compositions dropped it, and mapStoryToChapters GENERATES
+        // words — so a French scrolly video captioned itself "the highest of the 5 shown".
+        // `lang` is a REQUIRED key there now, for exactly this reason.
+        lang: config.lang,
       });
       const stepKinds = story.steps.map((_, i) =>
         i === 0 ? "title" : "reveal",

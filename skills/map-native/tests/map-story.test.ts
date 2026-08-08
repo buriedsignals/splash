@@ -534,3 +534,26 @@ describe("deriveMapStory", () => {
     expect(beats[2].highlight).toEqual(["NOR"]); // first by key among the tied maxima (was beats[1])
   });
 });
+
+// Every map caption is composed through ONE helper (scrolly/src/chapters.ts's `nameAndValue`)
+// since the locator defect — "Pont d'Austerlitz — , the highest of the 5 shown" and, at the
+// other end of the same template, "— 220 MW" from an unlabelled symbol point. choropleth's own
+// label path guards the empty string upstream (choropleth-geo.ts drops a blank labelField
+// cell), so this deriver cannot be reached with an empty name THROUGH that path — but it takes
+// a layout directly, and the guarantee has to live where the caption is built, not in one
+// caller's lookup.
+describe("deriveMapStory — a name that resolves to empty", () => {
+  it("never opens a caption on a dangling separator", () => {
+    const layout = computeChoropleth(data, features, "iso_a3");
+    const blanked = { ...layout, labels: { NOR: "", DEU: "", POL: "" } };
+    const beats = deriveMapStory(blanked, features, "iso_a3", {
+      title: "T",
+      insight: "i",
+      unit: "%",
+    });
+    for (const b of beats.filter((x) => x.kind === "reveal")) {
+      expect(b.copy).not.toMatch(/^\s*[—–]/);
+      expect(b.callout!.text).not.toMatch(/^\s*[—–]/);
+    }
+  });
+});

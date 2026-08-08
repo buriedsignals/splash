@@ -107,4 +107,60 @@ describe("the auto-generated story copy is quaternary, not binary", () => {
     expect(STORY_COPY.de.pointCount("1 200")).toBe("1 200 Punkte");
     expect(STORY_COPY.it.pointCount("1 200")).toBe("1 200 punti");
   });
+
+  // ---------------------------------------------------------------------------
+  // The rows the map derivers used to hard-code. Every one of these was an English
+  // literal INSIDE a deriver ("the highest", "the densest hexagon", "mostly X",
+  // "3 sites", "3 territories") and shipped verbatim into fr/de/it deliverables —
+  // the same class as the locator caption that read "the highest of the 5 shown"
+  // on a French page.
+  // ---------------------------------------------------------------------------
+  it("siteCount pluralizes per language (locator's categorized regime)", () => {
+    expect(STORY_COPY.en.siteCount(1)).toBe("1 site");
+    expect(STORY_COPY.en.siteCount(3)).toBe("3 sites");
+    expect(STORY_COPY.fr.siteCount(1)).toBe("1 site");
+    expect(STORY_COPY.fr.siteCount(3)).toBe("3 sites");
+    expect(STORY_COPY.de.siteCount(1)).toBe("1 Standort");
+    expect(STORY_COPY.de.siteCount(3)).toBe("3 Standorte");
+    expect(STORY_COPY.it.siteCount(1)).toBe("1 sito");
+    expect(STORY_COPY.it.siteCount(3)).toBe("3 siti");
+  });
+
+  it("routeSpan wraps the already-localized distance (route's derived takeaway)", () => {
+    expect(STORY_COPY.en.routeSpan(3, "3,909")).toBe("3 territories, 3,909 km");
+    expect(STORY_COPY.en.routeSpan(1, "12")).toBe("1 territory, 12 km");
+    expect(STORY_COPY.fr.routeSpan(3, "3 909")).toBe("3 territoires, 3 909 km");
+    expect(STORY_COPY.de.routeSpan(3, "3.909")).toBe("3 Gebiete, 3.909 km");
+    expect(STORY_COPY.it.routeSpan(3, "3.909")).toBe("3 territori, 3.909 km");
+  });
+
+  it("rankOfHighest reads as prose in each language (cartogram's ranked walk)", () => {
+    expect(STORY_COPY.en.rankOfHighest(1)).toBe("the highest");
+    expect(STORY_COPY.en.rankOfHighest(2)).toBe("the 2nd highest");
+    expect(STORY_COPY.en.rankOfHighest(3)).toBe("#3");
+    for (const lang of ["fr", "de", "it"] as const)
+      for (const rank of [1, 2, 3])
+        expect(storyCopy(lang).rankOfHighest(rank)).not.toBe(
+          STORY_COPY.en.rankOfHighest(rank),
+        );
+  });
+
+  it("densestBin names the bin shape in each language (hex-grid's ranked walk)", () => {
+    expect(STORY_COPY.en.densestBin(1, "hex")).toBe("the densest hexagon");
+    expect(STORY_COPY.en.densestBin(2, "square")).toBe("the 2nd densest cell");
+    expect(STORY_COPY.en.densestBin(3, "hex")).toBe("#3 hexagon");
+    for (const lang of ["fr", "de", "it"] as const)
+      for (const rank of [1, 2, 3])
+        expect(storyCopy(lang).densestBin(rank, "hex")).not.toBe(
+          STORY_COPY.en.densestBin(rank, "hex"),
+        );
+  });
+
+  it("mostly carries the dominant category (dot-density's categorized reveal)", () => {
+    expect(STORY_COPY.en.mostly("solar")).toBe("mostly solar");
+    for (const lang of ["fr", "de", "it"] as const)
+      expect(storyCopy(lang).mostly("solar")).not.toBe(
+        STORY_COPY.en.mostly("solar"),
+      );
+  });
 });

@@ -4,6 +4,7 @@
 // bbox) → reveal each city (value desc, callout name+value, camera = a small bbox
 // around the city) → takeaway (points bbox).
 import type { SymbolPoint } from "./symbol-geo";
+import { nameAndValue } from "../../scrolly/src/chapters";
 import {
   applyMapArc,
   type Beat,
@@ -129,7 +130,12 @@ export function deriveSymbolStory(
     for (const p of sorted.slice(0, cap)) {
       const name = p.label ?? "";
       const value = fmt(p.value);
-      const text = `${name} — ${value}`;
+      // A symbol point's label is OPTIONAL (symbol-geo.ts, and the loop only sets it when the
+      // CSV has a label column), so this composed "— 220 MW" — a caption opening on a dangling
+      // separator, measured on a delivered French page. `nameAndValue` joins only the halves
+      // that exist; it is the same helper the scrolly caption engine composes with, so the
+      // beat's own text and the page's caption cannot disagree about the separator.
+      const text = nameAndValue(name, value);
       beats.push({
         kind: "reveal",
         camera: stopBox(p),

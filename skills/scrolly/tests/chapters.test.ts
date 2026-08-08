@@ -515,3 +515,250 @@ describe("mapStoryToChapters — German and Italian magnitude descriptors (the m
     ]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A REVEAL WITH NO VALUE — the locator family.
+//
+// Measured on a delivered page (a French locator scrolly, produced through
+// skills/scrolly/scripts/produce.mjs and read out of the built HTML):
+//
+//   "Pont d'Austerlitz — , the highest of the 5 shown"
+//   "Notre-Dame de Paris —"
+//
+// Three things went wrong in one line. A locator marker carries no number, so the
+// value slot rendered empty and left the em dash dangling; a rank descriptor was
+// asserted about a walk that ranked nothing; and the marker's own note — the one
+// sentence a journalist actually wrote — was thrown away in favour of the hole.
+// ---------------------------------------------------------------------------
+describe("mapStoryToChapters — a reveal whose callout carries no value", () => {
+  const marker = (name: string, note: string): Beat => ({
+    kind: "reveal",
+    camera: [0, 0, 1, 1],
+    highlight: [name],
+    dim: true,
+    callout: { region: name, name, value: "", text: note },
+    copy: note,
+    pattern: "categorical",
+  });
+  const framed = (reveals: Beat[]): Beat[] => [
+    {
+      kind: "title",
+      camera: [0, 0, 1, 1],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy: "T",
+    },
+    {
+      kind: "establish",
+      camera: [0, 0, 1, 1],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy: "",
+    },
+    ...reveals,
+    {
+      kind: "takeaway",
+      camera: [0, 0, 1, 1],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy: "La Seine a servi de scène continue.",
+    },
+  ];
+  const meta = {
+    title: "Les cinq sites de la cérémonie d'ouverture",
+    description: "Cinq lieux au bord de la Seine, le 26 juillet 2024.",
+    source: { name: "Paris 2024", url: "https://example.org" },
+    regionsWithData: 5,
+    lang: "fr",
+  };
+  const revealProse = (story: ReturnType<typeof mapStoryToChapters>) =>
+    story.steps.filter((s) => s.id.endsWith("-reveal")).map((s) => s.prose);
+
+  it("ships the marker's own note, not a name with an empty value slot", () => {
+    const story = mapStoryToChapters(
+      framed([
+        marker(
+          "Pont d'Austerlitz",
+          "Ligne de départ où la parade des 85 bateaux est entrée sur la Seine.",
+        ),
+        marker(
+          "Notre-Dame de Paris",
+          "La flottille est passée devant la cathédrale.",
+        ),
+        marker("Tour Eiffel", "Site du final où la flamme a été allumée."),
+      ]),
+      meta,
+    );
+    expect(revealProse(story)).toEqual([
+      "Ligne de départ où la parade des 85 bateaux est entrée sur la Seine.",
+      "La flottille est passée devant la cathédrale.",
+      "Site du final où la flamme a été allumée.",
+    ]);
+  });
+
+  it("never leaves a dangling separator or an empty slot in any caption", () => {
+    const story = mapStoryToChapters(
+      framed([
+        marker("Pont d'Austerlitz", "Ligne de départ."),
+        marker("Notre-Dame de Paris", "La flottille est passée."),
+        marker("Tour Eiffel", "Site du final."),
+      ]),
+      meta,
+    );
+    for (const s of story.steps) {
+      expect(s.prose.trim()).not.toMatch(/[—–-]\s*$/);
+      expect(s.prose).not.toMatch(/—\s*,/);
+    }
+  });
+
+  it("asserts no rank over a walk that ranked nothing", () => {
+    const story = mapStoryToChapters(
+      framed([
+        marker("Pont d'Austerlitz", "Ligne de départ."),
+        marker("Notre-Dame de Paris", "La flottille est passée."),
+        marker("Tour Eiffel", "Site du final."),
+      ]),
+      meta,
+    );
+    for (const p of revealProse(story)) {
+      expect(p).not.toMatch(/plus élevé|plus bas|highest|lowest/);
+    }
+  });
+
+  it("falls back to the place's NAME when the deriver wrote no note", () => {
+    const nameless = marker("Pont Alexandre III", "");
+    const story = mapStoryToChapters(
+      framed([nameless, marker("Tour Eiffel", "Site du final.")]),
+      meta,
+    );
+    expect(revealProse(story)[0]).toBe("Pont Alexandre III");
+  });
+
+  it("an authored arc beat with no claim text reads as the place, not as a stub", () => {
+    // applyMapArc resolves a locator anchor to value:"" (a marker has no number), and an
+    // arc MAY be anchors only — roles and claim text are optional on a confirmed plan.
+    const authored: Beat = {
+      kind: "reveal",
+      camera: [0, 0, 1, 1],
+      highlight: ["Rue du Stand 26"],
+      dim: true,
+      callout: {
+        region: "Rue du Stand 26",
+        name: "Rue du Stand 26",
+        value: "",
+        text: "",
+      },
+      copy: "",
+      authored: true,
+    };
+    const story = mapStoryToChapters(framed([authored]), meta);
+    expect(revealProse(story)[0]).toBe("Rue du Stand 26");
+  });
+
+  it("a CATEGORICAL walk keeps its value but takes no rank descriptor", () => {
+    // The locator's categorized regime walks categories in alphabetical order — position
+    // is not rank there, so ranking language would be a lie about the data.
+    const category = (name: string, value: string): Beat => ({
+      kind: "reveal",
+      camera: [0, 0, 1, 1],
+      highlight: [name],
+      dim: true,
+      callout: { region: name, name, value, text: `${name} — ${value}` },
+      copy: `${name} — ${value}`,
+      pattern: "categorical",
+    });
+    const story = mapStoryToChapters(
+      framed([
+        category("Écoles", "3 sites"),
+        category("Hôpitaux", "1 site"),
+        category("Mairies", "2 sites"),
+      ]),
+      meta,
+    );
+    expect(revealProse(story)).toEqual([
+      "Écoles — 3 sites",
+      "Hôpitaux — 1 site",
+      "Mairies — 2 sites",
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE MIRROR: an empty NAME slot.
+//
+// Found while sweeping the sibling caption paths, and then measured on a render — a
+// symbol scrolly built from a CSV with no label column (SymbolPoint.label is optional,
+// and lib/loop/assemble/map-native.ts only sets it when a label column exists) delivered:
+//     "— 220 MW, le plus élevé des 4"
+//     "— 90 MW, le plus bas"
+// Same template, same hole, other end. One helper answers both.
+// ---------------------------------------------------------------------------
+describe("mapStoryToChapters — a reveal whose callout carries no name", () => {
+  const point = (value: string, rank: number, role: "leader" | "tail"): Beat => ({
+    kind: "reveal",
+    camera: [0, 0, 1, 1],
+    highlight: [""],
+    dim: true,
+    callout: { region: "", name: "", value, text: `— ${value}` },
+    copy: `— ${value}`,
+    pattern: "magnitude",
+    rank,
+    rankRole: role,
+  });
+  const story = mapStoryToChapters(
+    [
+      {
+        kind: "title",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "T",
+      },
+      {
+        kind: "establish",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "",
+      },
+      point("220 MW", 1, "leader"),
+      point("90 MW", 4, "tail"),
+      {
+        kind: "takeaway",
+        camera: [0, 0, 1, 1],
+        highlight: [],
+        dim: false,
+        callout: null,
+        copy: "Quatre sites.",
+      },
+    ],
+    {
+      title: "La puissance installée",
+      description: "Puissance installée par site, 2026.",
+      source: { name: "OFEN", url: "https://example.org" },
+      regionsWithData: 4,
+      lang: "fr",
+    },
+  );
+
+  it("drops the separator instead of opening the caption with it", () => {
+    const reveals = story.steps.filter((s) => s.id.endsWith("-reveal"));
+    expect(reveals.map((s) => s.prose)).toEqual([
+      "220 MW, le plus élevé des 4",
+      "90 MW, le plus bas",
+    ]);
+  });
+
+  it("keeps the rank descriptor — the walk IS ranked here, only the label is missing", () => {
+    expect(story.steps.some((s) => s.prose.includes("le plus élevé"))).toBe(true);
+  });
+
+  it("leaves no caption starting on a separator", () => {
+    for (const s of story.steps) expect(s.prose).not.toMatch(/^\s*[—–]/);
+  });
+});

@@ -267,6 +267,11 @@ export const ChoroplethScrolly: React.FC<{
         description: config.description,
         source: config.source,
         regionsWithData: layout.joined.filter((j) => j.value !== null).length,
+        // The DELIVERABLE'S LANGUAGE reaches the caption engine. Every one of the six
+        // map-native scrolly compositions dropped it, and mapStoryToChapters GENERATES
+        // words — so a French scrolly video captioned itself "the highest of the 5 shown".
+        // `lang` is a REQUIRED key there now, for exactly this reason.
+        lang: config.lang,
       });
       // Step camera solutions: each step flies to its ref beat's camera.
       const stepKinds = story.steps.map((_, i) =>

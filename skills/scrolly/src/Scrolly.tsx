@@ -223,6 +223,9 @@ export const Scrolly: React.FC<{
           description: config.description,
           source: config.source,
           insight: config.insight ?? config.title,
+          // The route track's DERIVED takeaway is composed text — it needs the deliverable's
+          // language, exactly like the map track's reveal descriptors below.
+          lang: config.lang,
           notes,
         },
       );
@@ -307,6 +310,9 @@ export const Scrolly: React.FC<{
             string | undefined) ??
           config.title ??
           "",
+        // deriveLocatorStory GENERATES its categorized regime's count word ("3 sites") —
+        // it needs the language, or the word ships in English.
+        lang: config.lang,
         // The journalist's CONFIRMED walk — see the symbol/choropleth branches above.
         arcBeats: config.arcBeats,
       });
