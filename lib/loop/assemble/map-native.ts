@@ -17,11 +17,7 @@ import { BASEMAP_NAMES } from "../../../skills/map-native/src/basemaps";
 import { basemapKeyFor, resolveGeographyRef } from "../../geo/ref";
 // One wording for one fact, shared with the prose chain's own gate — see the dot-density
 // branch below for why only the sentence is shared and not the condition.
-import {
-  ISO_A3_BASEMAP,
-  isoA3PinnedInFormat,
-  isoA3PinnedJoinRefusal,
-} from "../../../skills/map-native/src/region-join-support";
+import { isoA3PinnedJoinError } from "../../../skills/map-native/src/region-join-support";
 
 const REGION_TYPES = new Set(["choropleth", "cartogram", "dot-density"]);
 const POINT_TYPES = new Set(["symbol", "hex-grid", "locator", "route"]);
@@ -44,6 +40,45 @@ function coordColumns(
   const lat = find(LAT_NAMES);
   const lon = find(LON_NAMES);
   return lat && lon ? { lat, lon } : undefined;
+}
+
+/**
+ * THE COORDINATE COLUMNS A POINT MAP NEEDS, asked of the COLUMN NAMES alone — because that is all
+ * the OFFER has, and the offer is where this question now gets asked first.
+ *
+ * Split out of `assemblePointFamily` below (2026-08-07) rather than duplicated. Measured on the
+ * loop's own offer: a cantons-and-population table — a region table, no coordinates anywhere —
+ * was offered `hex-grid` in the FIRST row and `locator` in the third, both clean and unmarked,
+ * and all four point types then refused right here. The journalist's top-ranked form could not be
+ * built at all, and the reason for that was already on the manifest: `orient` records the column
+ * names, and a lat/lon pair either is among them or is not.
+ *
+ * Same family as the pinned join key (skills/map-native/src/region-join-support.ts) and the
+ * Datawrapper basemap catalogue (lib/loop/assemble/map-dw.ts's own predicate): a form the build
+ * cannot make must not be on the menu, and the offer must say what the refusal would have said.
+ *
+ * NOT a judgement about the VALUES. `coordinateRefusal` below still refuses a latitude of 200 or
+ * a coordinate that is not a number, and it must: those need the rows, which the offer does not
+ * have. This predicate answers only the question the column NAMES settle — whether there is a
+ * coordinate pair at all — which is the whole of what the four point types are refused for on a
+ * region table.
+ */
+export function pointFamilyCoordinateRefusal(
+  nativeType: string,
+  columns: string[],
+): string | null {
+  if (!POINT_TYPES.has(nativeType)) return null;
+  if (coordColumns(columns)) return null;
+  return noCoordinatesRefusal(columns);
+}
+
+/** The sentence, in one place, so the offer and the assembler say the same thing. */
+function noCoordinatesRefusal(columns: string[]): string {
+  return (
+    `this data carries no coordinates Splash can plot on a map — looked for a lat/lon ` +
+    `column pair (also accepts latitude/longitude, lat/lng, lat_dd/lon_dd, x/y) among: ` +
+    `${columns.join(", ")}`
+  );
 }
 
 /** The label column: the first column that is neither a coordinate nor numeric — the
@@ -195,6 +230,36 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   if (refusal) return fail("invalid-request", refusal);
   const geo = brief.geo!;
 
+  // ── THE PINNED JOIN KEY, ASKED ONCE FOR THE WHOLE FAMILY ──────────────────────────────────────
+  // Two branches below used to ask this question, in two shapes, and they disagreed: cartogram
+  // asked it scoped by format, dot-density asked it of every format. That asymmetry refused a
+  // capability that demonstrably works — a non-world dot-density VIDEO — and it could only ever
+  // be a per-branch oversight, since the fact is one fact about one set of components.
+  //
+  // So it is asked once, through the shared PREDICATE (isoA3PinnedJoinError,
+  // skills/map-native/src/region-join-support.ts) rather than by re-assembling its three parts
+  // here: a THIRD type that ever pins its key joins that set and is refused here without anyone
+  // remembering to add a branch, and the offer (lib/brain/eligibility.ts) and the prose chain's
+  // gate ask the identical question of the identical triple.
+  //
+  // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` — "world"'s own
+  // set is "natural-earth-admin-0" (lib/geo/ref.ts), so this reads the same identifier the configs
+  // below write.
+  //
+  // FIRST, before the value-field question the branches used to ask ahead of it: a pairing whose
+  // regions cannot be joined has nothing useful to say about which column it would have painted,
+  // and the journalist should read the one sentence they can act on. The same precedence
+  // validateAccepted already applies on the prose chain (skills/splash/src/validate-gate.ts).
+  //
+  // WHY THE VIDEO AND SCROLLY FORMATS ARE NOT REFUSED — measured, on both types, not reasoned:
+  // see region-join-support.ts's header, and this branch's own tests, for the two renders.
+  const pinnedJoin = isoA3PinnedJoinError(
+    brief.nativeType,
+    basemapKeyFor(geo.geography),
+    brief.format,
+  );
+  if (pinnedJoin) return fail("invalid-request", pinnedJoin);
+
   const { rows, numericColumns } = parseCsvRows(brief.dataCsv);
   const numeric = numericColumns.filter((c) => c !== geo.column);
   const resolved = valueFieldFor(numeric, brief.angle.confirmedTakeaway);
@@ -215,34 +280,11 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   const unit = brief.angle.unit;
 
   if (brief.nativeType === "cartogram") {
-    // THE SAME FACT AS THE dot-density BRANCH BELOW, on the type that branch forgot.
-    // CartogramMap.tsx — the component behind BOTH the static and the interactive format —
-    // calls `computeCartogram(config, world)` at :194 without threading a key, and
-    // cartogram-geo.ts:62 resolves it as `data.joinKey ?? "iso_a3"`. Nothing here ever set
-    // `config.joinKey`, so a us-states cartogram assembled, cleared validate-config, built,
-    // and produced an artifact: a bare basemap of EUROPE carrying the journalist's title,
-    // alt-insight and source credit over Poland and Turkey, with no data layer at all
-    // (measured end-to-end through lib/host/cli.ts, 2026-08-07 — see this branch's test).
-    //
-    // SCOPED BY FORMAT, unlike the dot-density branch below and deliberately so. Only
-    // CartogramMap.tsx pins the key; CartogramStory, CartogramReveal and CartogramScrolly all
-    // resolve it through resolveVideoGeometry (core/video-geometry.ts), which prefers
-    // `config.geography.joinKey`. A blanket refusal here would delete a working capability, so
-    // this asks the shared module WHICH formats the pinning actually reaches — the same
-    // question, through the same function, that the prose chain's regionJoinError asks
-    // (skills/splash/src/validate-gate.ts). The dot-density branch's own broader condition is
-    // left as it stands: narrowing it would ADMIT a pairing that is refused today, which is a
-    // capability decision owed its own rendered proof, not a side effect of fixing this one.
-    //
-    // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` — "world"'s
-    // own set is "natural-earth-admin-0" (lib/geo/ref.ts), so this reads the same identifier the
-    // config below writes.
-    const basemapKey = basemapKeyFor(geo.geography);
-    if (basemapKey !== ISO_A3_BASEMAP && isoA3PinnedInFormat(brief.format))
-      return fail(
-        "invalid-request",
-        isoA3PinnedJoinRefusal("cartogram", basemapKey),
-      );
+    // The join CartogramMap.tsx cannot make is refused above, for the whole family — this branch
+    // only composes the config. What it composes still matters to that refusal's scope: the
+    // `geography` threaded below is what CartogramStory/Reveal/Scrolly read their join key OFF
+    // (resolveVideoGeometry, core/video-geometry.ts), which is why the video and scrolly formats
+    // are not refused and this field is not optional decoration.
     const values = rows.map((row) => ({
       id: row[geo.column]!,
       value: Number(row[valueField]),
@@ -266,34 +308,22 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
   }
 
   if (brief.nativeType === "dot-density") {
-    // DotDensityMap.tsx hard-codes the join key "iso_a3" — it never reads config.basemap or
-    // config.boundaries at all (verified 2026-07-28, task-7). UPDATE (2026-07-30, Task 17,
-    // commit 5e4e9f71): the component no longer hard-imports world.geojson (it now decodes an
-    // injected config.geometry) — only the "iso_a3" join-key literal survives as this refusal's
-    // justification. The engine's own validator only checks that `basemap` NAMES a registered
-    // basemap, so a "us-states" dot-density would clear validate-config and then render against
-    // WORLD geometry, joining state postal codes against country ISO codes — wrong silently,
-    // not missing. Refused here, at the one place that knows which basemap this geography
-    // actually matched, rather than shipping a config that looks truthful and renders false.
-    // See task-7-report.md for the fix-the-component alternative this defers, and Task 13
-    // (task-13-brief.md Steps 3-6) for re-deriving the join key so this refusal can be lifted.
+    // The join DotDensityMap.tsx cannot make (`const JOIN_KEY = "iso_a3"`, DotDensityMap.tsx:41)
+    // is refused above, for the whole family and only in the formats that component renders.
     //
-    // Judged on the RENDERER'S basemap key (basemapKeyFor), not `geo.geography.set` directly —
-    // "world"'s own set is "natural-earth-admin-0", not "world" (see lib/geo/ref.ts's doc
-    // comment), so this guard reads the same identifier the config below writes.
+    // THAT SCOPE IS THIS BRANCH'S OWN CHANGE, and it is measured, not reasoned. Until 2026-08-07
+    // this branch refused every non-world basemap in EVERY format, which deleted a working
+    // capability: DotDensityStory (:199), DotDensityReveal (:134) and DotDensityScrolly (:140)
+    // all resolve the key through resolveVideoGeometry (core/video-geometry.ts), and a us-states
+    // dot-density VIDEO renders correctly — proven by a real render on this branch
+    // (lib/loop/dot-density-video-e2e.test.ts, and region-join-support.ts's header for the
+    // numbers). The static and interactive formats stay refused, on the same fact, in the same
+    // sentence.
     //
-    // The SENTENCE now comes from skills/map-native/src/region-join-support.ts, so the prose
-    // chain — which refuses the same pairing at its own gate (skills/splash/src/validate-gate.ts)
-    // — says one thing about one fact rather than a second wording of its own. The CONDITION
-    // stays here: this branch refuses every non-world basemap in every format, which is broader
-    // than the mechanism strictly requires (a video resolves the key correctly), and narrowing
-    // it is a capability decision for this chain, not a side effect of sharing a string.
+    // The basemap key is still read here, and deliberately: it is no longer a guard but a VALUE
+    // this config writes (`boundaries`, `basemap`), through the same `basemapKeyFor(geo.geography)`
+    // the guard above judged — so the config names the geography the refusal reasoned about.
     const basemapKey = basemapKeyFor(geo.geography);
-    if (basemapKey !== "world")
-      return fail(
-        "invalid-request",
-        isoA3PinnedJoinRefusal("dot-density", basemapKey),
-      );
     return ok({
       type: "dot-density",
       ...arcBeatsFrom(brief),
@@ -347,13 +377,10 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
 function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
   const { rows, columns, numericColumns } = parseCsvRows(brief.dataCsv);
   const coords = coordColumns(columns);
-  if (!coords)
-    return fail(
-      "invalid-request",
-      `this data carries no coordinates Splash can plot on a map — looked for a lat/lon ` +
-        `column pair (also accepts latitude/longitude, lat/lng, lat_dd/lon_dd, x/y) among: ` +
-        `${columns.join(", ")}`,
-    );
+  // The offer asks this same question of the same column names before the menu is written
+  // (lib/brain/eligibility.ts), through the same sentence — this stays as the backstop for a
+  // brief that never passed an offer.
+  if (!coords) return fail("invalid-request", noCoordinatesRefusal(columns));
 
   const labelColumn = labelColumnFor(columns, numericColumns, coords);
   const coordRefusal = coordinateRefusal(rows, coords, labelColumn);

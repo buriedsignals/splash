@@ -30,8 +30,7 @@ import { mapNarrativeFallbackWarning } from "../../map-native/src/map-arc";
 import {
   ISO_A3_PINNED_JOIN_TYPES,
   ISO_A3_BASEMAP,
-  isoA3PinnedInFormat,
-  isoA3PinnedJoinRefusal,
+  isoA3PinnedJoinError,
   adm1UnmatchedTypeRefusal,
 } from "../../map-native/src/region-join-support";
 import {
@@ -777,8 +776,12 @@ function regionJoinError(p: AcceptedProposal): string | null {
   if (!basemapKey || !BASEMAP_NAMES.includes(basemapKey)) return null;
   if (basemapKey === ISO_A3_BASEMAP) return null;
 
-  if (isoA3PinnedInFormat(p.format))
-    return isoA3PinnedJoinRefusal(type, basemapKey);
+  // FACT A, through the shared PREDICATE rather than re-assembled from its parts here. Assembling
+  // it by hand is exactly what let the loop's two branches disagree with each other about the same
+  // fact; one function cannot be half-remembered, and the offer (lib/brain/eligibility.ts) now asks
+  // this identical question of this identical triple before a journalist ever chooses.
+  const pinned = isoA3PinnedJoinError(type, basemapKey, p.format);
+  if (pinned) return pinned;
   if (basemapKey === "natural-earth-admin-1")
     return adm1UnmatchedTypeRefusal(type);
   return null;

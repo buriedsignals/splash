@@ -13,6 +13,7 @@ import { deriveFacts } from "../brain/facts";
 import { suggestIntents } from "../brain/rank-intent";
 import type { Intent } from "../brain/intents";
 import type { Excluded } from "../brain/eligibility";
+import { basemapKeyFor } from "../geo/ref";
 
 /**
  * WHAT ORDERS THIS OFFER, and where it came from.
@@ -74,6 +75,17 @@ export function propose(
     ...(decor?.house?.theme ? { themeBg: decor.house.theme } : {}),
     ...(element.requestedFormat
       ? { requestedFormat: element.requestedFormat }
+      : {}),
+    // WHICH BASEMAP orient actually matched, as the RENDERER's registry key — the same
+    // `basemapKeyFor(geo.geography)` the assembler and the prose chain's gate judge, never
+    // `geography.set` raw ("world"'s own set is "natural-earth-admin-0", lib/geo/ref.ts).
+    //
+    // Threaded for one reason: two map-native types cannot join a non-world basemap in their
+    // static and interactive components, and until this line the offer proposed those pairings
+    // anyway — the journalist chose one, waited for a build, and met the refusal at produce. A
+    // run with no geography match threads nothing, and the brain then constrains nothing.
+    ...(m.orient?.geo
+      ? { basemapKey: basemapKeyFor(m.orient.geo.geography) }
       : {}),
     // The run's OWN declared content language (lib/loop/manifest.ts's `lang`, resolved once at
     // init from the article's declared language and the house profile — task 5), never

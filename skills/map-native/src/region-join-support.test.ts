@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   ISO_A3_PINNED_JOIN_TYPES,
   isoA3PinnedJoinRefusal,
+  isoA3PinnedJoinError,
   isoA3PinnedInFormat,
   adm1UnmatchedTypeRefusal,
 } from "./region-join-support";
@@ -72,5 +73,49 @@ describe("adm1UnmatchedTypeRefusal", () => {
     // The whole point: the resolver's fallback throw says "re-run the geography match
     // (orient)", and the prose chain has no orient step. This refusal must never repeat it.
     expect(sentence).not.toContain("orient");
+  });
+});
+
+// THE PREDICATE ALL THREE CHAINS ASK — the offer (lib/brain/eligibility.ts), the loop's assembler
+// (lib/loop/assemble/map-native.ts) and the prose chain's gate (skills/splash/src/validate-gate.ts).
+//
+// It exists because each of them used to assemble the triple by hand, and that is what let two
+// branches of ONE file disagree about ONE fact: the loop's cartogram branch asked about the format
+// and its dot-density branch did not, which refused a us-states dot-density video that renders
+// correctly (docs/splash/proofs/2026-08-07-dot-density-video-join/). A predicate cannot be
+// half-remembered.
+describe("isoA3PinnedJoinError", () => {
+  it("should refuse the pinned types in the pinned formats, in the shared wording", () => {
+    for (const type of ISO_A3_PINNED_JOIN_TYPES)
+      for (const format of ["static", "interactive"] as const)
+        expect(isoA3PinnedJoinError(type, "us-states", format)).toBe(
+          isoA3PinnedJoinRefusal(type, "us-states"),
+        );
+  });
+
+  // THE THREE EDGES THAT KEEP IT FROM BEING BROADER THAN THE DEFECT. Each one, widened, deletes a
+  // capability that works: the first a whole type, the second the ordinary world path, the third
+  // every motion build of both types.
+  it("should clear a type outside the set, whose components read config.geography.joinKey", () => {
+    expect(isoA3PinnedJoinError("choropleth", "us-states", "static")).toBeNull();
+  });
+
+  it("should clear the world basemap, the one the pinned key is right for", () => {
+    expect(isoA3PinnedJoinError("cartogram", "world", "static")).toBeNull();
+  });
+
+  it("should clear video and scrolly, which resolve the key through resolveVideoGeometry", () => {
+    for (const type of ISO_A3_PINNED_JOIN_TYPES)
+      for (const format of ["video", "scrolly"] as const)
+        expect(`${type}/${format}: ${isoA3PinnedJoinError(type, "us-states", format)}`).toBe(
+          `${type}/${format}: null`,
+        );
+  });
+
+  // The OFFER asks this before a build exists, and a run whose geography has not been matched has
+  // no pairing to refuse. Answering anything but null here would have the menu refuse forms on a
+  // guess — the produce-time guard is the backstop for that gap, deliberately.
+  it("should clear an unknown basemap rather than guess at one", () => {
+    expect(isoA3PinnedJoinError("cartogram", undefined, "static")).toBeNull();
   });
 });

@@ -1,0 +1,40 @@
+{
+  "mp4": "/var/folders/j7/kr9pn3213jq5cjk1yr7cj12c0000gn/T/splash-dotdensity-video-e2e-7DtOJW/elements/e1/landscape.mp4",
+  "still": "/var/folders/j7/kr9pn3213jq5cjk1yr7cj12c0000gn/T/splash-dotdensity-video-e2e-7DtOJW/elements/e1/video-landscape-still.png",
+  "finalStill": null,
+  "stillFrame": 140,
+  "probe": {
+    "sizeBytes": 6912627,
+    "width": 1280,
+    "height": 720,
+    "durationSeconds": 27.3,
+    "nbFrames": 819,
+    "fps": 30
+  },
+  "expected": {
+    "frames": null,
+    "width": 1280,
+    "height": 720
+  },
+  "thresholds": {
+    "REVEAL_MIN_MEAN_DIFF": 0.5,
+    "PROGRESSION_MIN_MEAN_DIFF": 0.15,
+    "MIN_LUMA_VARIANCE": 10,
+    "STILL_MATCH_CHANNEL_TOLERANCE": 40,
+    "STILL_MATCH_MAX_DIFF_RATIO": 0.01,
+    "DURATION_TOLERANCE_FRAMES": 1,
+    "MIN_MP4_BYTES": 2048
+  },
+  "measurements": {
+    "mp4Bytes": 6912627,
+    "variance_early": 808.214820806852,
+    "variance_mid": 755.8011007351379,
+    "variance_late": 1021.8477021481522,
+    "variance_final": 1021.8573162513494,
+    "revealMeanDiff": 198.61389178240742,
+    "midVsEarlyMeanDiff": 200.17167281539352,
+    "midVsFinalMeanDiff": 17.11696650752315,
+    "stillDiffRatio": 0.008297526041666666
+  },
+  "violations": []
+}
