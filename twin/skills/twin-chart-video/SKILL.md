@@ -168,11 +168,26 @@ has a doc-comment explaining *why* its numbers differ, not just what they are. S
 - `assets/Root.tsx` — the Remotion root; registers the seed composition (`co2-suisse`), sized and
   timed from its own contract. `remotion still`/`remotion render` select a beat by composition id.
 - `assets/index.ts` — the one Remotion entry point (`registerRoot`).
+- `assets/sample-data/rainfall.json` — canonical sample data for the seed. Contains 11 rows of
+  `{ year, value }` pairs from 2015–2025. This is rainfall data (not CO₂ emissions); the seed's
+  narrative is its own, and is fixed in `EmissionsVideo.tsx`'s props. Tests assert this file exists
+  and has at least 8 rows.
+- `assets/preview.png` — a rendered PNG of the seed at its **last frame** (frame 239 of the
+  video's 240 total), showing the complete chart with reference rule, data curve, subject point, and
+  value label. Rendered by `scripts/render-preview.mjs` from the seed's current shape. The last
+  frame is used because a video seed's first frame is deliberately empty — a preview at frame 0
+  would show nothing and pass every existence test. A test runs `render-preview.mjs --check` at
+  every test suite to ensure the preview reflects the current seed.
 - `scripts/render-video.mjs` — the seed beat's render script: `readingsFromCsv`, still → mp4.
   Imports `deriveFurniture` from `twin-chart-beat/scripts/render-still.mjs`, in node, and passes
   the result in as props.
+- `scripts/render-preview.mjs` — renders `assets/preview.png` from `sample-data/rainfall.json` at
+  the seed's last frame. Supports `--check` to verify the preview is up-to-date (exits 1 if stale).
+  The preview is a visual proof of the seed's shape.
 - `test/timing.test.ts` — pins the seed beat's contract rules, asserted both green and red.
 - `test/canon.test.ts` — asserts `assets/` no longer carries the stories that have been moved out.
+  Also asserts the seed carries the canon's marker wording, sample data exists, and the preview is
+  current.
 - `twin-doctrine/references/motion-grammar.md` — the doctrine. Read it before writing an edit.
 - `proof/life-expectancy/` — `life-expectancy`'s own workspace: `Root.tsx` + `index.ts` (its own
   Remotion registration), `LifeExpectancyVideo.tsx` (with its own copies of helper functions),

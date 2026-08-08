@@ -1,8 +1,9 @@
 /**
  * The video beat of "CO₂ suisse, retour au niveau de 1967" — 8 seconds, 30fps, 1080 × 1080.
  *
- * REPLACE ME per story, the way `twin-chart-beat/assets/ChartSeed.tsx` is replaced. Do not
- * parameterise me into a general video chart; write the next beat's own composition in this shape.
+ * REPLACE ME. Do not parameterise me. Write the next beat's own composition in this shape,
+ * the way `twin-chart-beat/assets/ChartSeed.tsx` is replaced per story. Do not
+ * parameterise this file into a general video chart.
  *
  * What it is NOT is a second chart. The coordinates come from `proof/co2-suisse/crossing-geometry.ts`, the
  * same pure core the static beat draws — one geometry, two outputs. This file adds exactly one
