@@ -144,11 +144,25 @@ shape, importing its own story's composition and layouts.
 | The invisible hit target's radius per point (keyboard focus outline, not the touch target — see `web-discipline.md`) | `5` | `.pt` circle `r`, the story's own composition file |
 | How the `#tooltip` is positioned relative to the pointer/focused point | `14px` above, clamped `8px` from the viewport edge | `show()`, `interaction.mjs` |
 | The one CSS breakpoint deciding which pre-rendered SVG is visible | `max-width: 480px` | `buildCss`, `render-web.mjs` |
+| The seed's two frame widths | `900` (desktop, also `SEED_LAYOUT`) / `360` (narrow) | `DESKTOP_LAYOUT`/`NARROW_LAYOUT`, `ChartWebSeed.tsx` |
+| The level the seed's reference rule holds against | `2015` (`REFERENCE_YEAR`) | CONFIG block, `ChartWebSeed.tsx` |
+| The one year the seed's own peak marker names | `2018` (`PEAK_YEAR`) | CONFIG block, `ChartWebSeed.tsx` |
 
 ## Files
 
 - `references/web-discipline.md` — the rules this genre is written under, each attached to the
   reasoning or the defect that produced it.
+- `assets/ChartWebSeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
+  complete beat (rainfall over a sample town, fell by a third), not a stripped mechanics demo. Also
+  where `WebLayout` now lives — it describes this genre's own mechanics, not any one story's
+  numbers, so a story's own composition (e.g. `proof/co2-suisse/EmissionsWeb.tsx`) imports the type
+  from here rather than defining its own. `chartGeometry`/`yTickValues`/`xTickValues` are pure and
+  exported.
+- `assets/sample-data/rainfall.json` — eleven readings, the same series
+  `twin-chart-beat/assets/sample-data/rainfall.json` uses, so a reader comparing the two skills sees
+  the mechanics differ and the data does not.
+- `assets/preview.png` — the seed rendered on a light ground, at `SEED_LAYOUT` (the desktop rung).
+  Regenerate with `scripts/render-preview.mjs` whenever the seed changes.
 - `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML.
   `nearestIndex` is pure and unit-tested; `initChart`/`initAll` are DOM wiring, verified by driving
   a real browser, not by a test.
@@ -158,13 +172,22 @@ shape, importing its own story's composition and layouts.
   `readingsFromCsv`, `BEAT`, `render` and the CLI block are the CO₂ beat's own runner — the same "a
   story's script filed beside the skill" shape `twin-chart-video/scripts/render-video.mjs` already
   has.
+- `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data (never a
+  story's render) to `assets/preview.png`. `--check` re-renders and fails non-zero if the committed
+  PNG no longer matches a fresh render of the seed — the freshness contract `test/canon.test.ts`
+  asserts, and the same canonical shape Tasks 6 and 7 adapt to their own seed and renderer.
 - `test/render-web.test.ts` — `bun:test` coverage: CSV parsing, the component's SSR output (closed
   palette, point count, exact per-point French-formatted values, everything argument-bearing
   rendered unconditionally), the pure `nearestIndex` helper, and a direct cross-check against
   `crossingGeometry` so this genre never carries a second implementation of data-to-coordinates.
+- `test/canon.test.ts` — the canon's own shape, not a story's: no CO₂ story component under this
+  skill's `assets/`, the seed carries the exact `REPLACE ME` wording and none of the CO₂ story's own
+  copy, the sample data is real rows a seed can render standalone, and `preview.png` is a current
+  render (`render-preview.mjs --check`).
 - **The CO₂ beat's own files live outside this skill, in `proof/co2-suisse/`**: `EmissionsWeb.tsx`
-  (composition — exports the `WebLayout` type, its own two named layout constants, and a `LAYOUTS`
-  array bundling them for `render-web.mjs`'s CLI), `crossing-geometry.ts` (the pure core, shared with
-  the static and video beats), `EmissionsLine.tsx` (the static beat), `BRIEF.md`, `STORYBOARD.md`,
-  `co2-suisse-still.png`. This skill's own `assets/` carries no story — replace `proof/co2-suisse/`
-  with the next story's own workspace, never edit those files in place expecting them to generalise.
+  (composition — imports the `WebLayout` type from this skill's seed, exports its own two named
+  layout constants and a `LAYOUTS` array bundling them for `render-web.mjs`'s CLI),
+  `crossing-geometry.ts` (the pure core, shared with the static and video beats), `EmissionsLine.tsx`
+  (the static beat), `BRIEF.md`, `STORYBOARD.md`, `co2-suisse-still.png`. This skill's own `assets/`
+  carries no story of its own beyond the seed — replace `proof/co2-suisse/` with the next story's own
+  workspace, never edit those files in place expecting them to generalise.
