@@ -14,6 +14,10 @@
  * therefore cannot be bundled for a browser. The render script derives them in node and passes
  * them in as props, so the two genres still share one implementation of the colour rule rather
  * than each carrying their own copy of it.
+ *
+ * `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` are exported so the beats that followed
+ * this one (`LifeExpectancyVideo.tsx`, `MigrationVideo.tsx`) measure and wrap text and cut the
+ * chronological path the same way this file does, instead of each carrying its own copy.
  */
 
 import { line } from "d3-shape";
@@ -40,7 +44,7 @@ const AXIS = { fontSize: 22, fontWeight: 400 };
 const LABEL = { fontSize: 28, fontWeight: 600 };
 const NOTE = { fontSize: 22, fontWeight: 400 };
 const UNIT = "Mt";
-const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
 export type EmissionsVideoProps = {
   data: Reading[];
@@ -64,7 +68,7 @@ export type EmissionsVideoProps = {
  * only for a context with no DOM, and no frame is ever rendered in one.
  */
 let measuringContext: CanvasRenderingContext2D | null | undefined;
-function measureText(
+export function measureText(
   text: string,
   { fontSize, fontWeight = 400 }: { fontSize: number; fontWeight?: number },
 ): number {
@@ -79,7 +83,7 @@ function measureText(
   return measuringContext.measureText(text).width;
 }
 
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },
