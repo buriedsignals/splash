@@ -1,3 +1,25 @@
+/**
+ * WHAT THIS GUARD DOES NOT CATCH.
+ *
+ * This is a static text scan: it reads source files as characters, never evaluates them. It cannot
+ * see a specifier that does not exist as a literal until the program runs. Three genuine ways
+ * around it, each verified to actually import the real sibling file at runtime:
+ *
+ *   const suffix = "beat";
+ *   import(`../../twin-chart-${suffix}/scripts/render-still.mjs`)          // interpolation
+ *
+ *   import("\x2e\x2e/\x2e\x2e/twin-chart-beat/scripts/render-still.mjs")   // hex-escaped dots
+ *
+ *   const skillName = "twin-chart" + "-beat";
+ *   import("../../" + skillName + "/scripts/render-still.mjs")             // concatenation
+ *
+ * Closing these needs an AST with constant folding, or a runtime import hook — a different tool,
+ * out of proportion to what this guard defends. The limit is accepted, not fixed, because none of
+ * these three is a shape anyone writes by accident. This guard's job is to catch an implementer
+ * reintroducing the OBVIOUS import — the failure this project actually had, nine times over. It
+ * cannot stop someone determined to obfuscate one past it, and it should not be read as though it
+ * could.
+ */
 import { describe, it, expect } from "bun:test";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
@@ -68,6 +90,25 @@ function stringLiterals(src: string): string[] {
   return literals;
 }
 
+// The module extensions this project actually uses. Cross-referenced against the files globbed by
+// `sourceFiles` (.mjs/.ts/.tsx) plus the two other extensions a specifier can legally end in here
+// (.js from an npm dependency's own relative imports never appears under skills/, kept anyway for
+// completeness; .json for sample-data-style imports).
+const SPECIFIER_EXTENSIONS = [".mjs", ".ts", ".tsx", ".js", ".json"];
+
+/**
+ * A relative path-shaped string is not necessarily a module specifier — a human-facing string like
+ * `"../../twin-chart-beat/scripts/render-still.mjs was moved, update your fixture path"` (a real
+ * error message a test could throw) contains a real cross-skill path AS A SUBSTRING but is not one:
+ * it is a sentence, with spaces, that happens to start with a path. A specifier never has
+ * whitespace and always ends in one of this project's own module extensions — both true of every
+ * real import in this repository, neither true of prose that merely mentions a path.
+ */
+function looksLikeSpecifier(literal: string): boolean {
+  if (/\s/.test(literal)) return false;
+  return SPECIFIER_EXTENSIONS.some((ext) => literal.endsWith(ext));
+}
+
 describe("skills never import each other at runtime", () => {
   it("should find no cross-skill import outside test directories", async () => {
     const offenders: string[] = [];
@@ -91,6 +132,7 @@ describe("skills never import each other at runtime", () => {
             const src = await readFile(file, "utf8");
             for (const literal of stringLiterals(src)) {
               if (!literal.startsWith(".")) continue; // #shared/* and package specifiers are never a skill
+              if (!looksLikeSpecifier(literal)) continue; // prose that mentions a path is not an import
               const resolved = resolve(dirname(file), literal);
               const enterOtherSkill = otherSkillRoots.some(
                 ({ exact, withSep }) =>
