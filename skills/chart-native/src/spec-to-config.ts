@@ -5,6 +5,7 @@
 // the caller can fall back to dw-chart. Pure, framework-free, unit-tested.
 
 import { parseCsv, type ParsedCsv } from "./csv";
+import { chooseUnitPerIcon } from "./pictogram-geometry";
 import { validateShape } from "./shape-validation";
 import { humanizeColumn, seriesLabelFromColumn } from "./core/text";
 import type { ArcRole } from "../../../lib/core/claim-arc";
@@ -59,6 +60,15 @@ export interface NativeSpec {
    */
   xLabel?: string;
   yLabel?: string;
+  /**
+   * PICTOGRAM — what ONE icon stands for (e.g. 10000 → "one figure = 10,000 residents").
+   * Absent ⇒ the mapper DERIVES a round 1-2-5 value that keeps the longest row countable
+   * (chooseUnitPerIcon). Present ⇒ used verbatim: a journalist who says "one figure =
+   * 1,000 households" has made an editorial choice about how coarse the count reads, and
+   * the produce-time guard — not the mapper — is what refuses a unit no one could count.
+   * Ignored by every other type.
+   */
+  unitPerIcon?: number;
   highlight?: string; // bar: the category to accent
   /** several categories/points to accent (e.g. beeswarm's outlier communes). When
    *  present it takes precedence over the single `highlight`. */
@@ -587,6 +597,43 @@ export const MAPPERS: Record<
         // absent → the component's WAFFLE_CATEGORY_COLORS[0] default.
         ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         items,
+      },
+    };
+  },
+  pictogram(parsed, spec) {
+    const catCol = parsed.columns[0];
+    const valCol =
+      parsed.numericColumns[parsed.numericColumns.length - 1] ??
+      parsed.columns[parsed.columns.length - 1];
+    const values = parsed.rows.map((r) => Number(r[valCol]));
+    // WHAT ONE ICON IS WORTH — the one decision this type needs that the CSV never
+    // carries. A journalist's stated unit is an editorial choice about how coarse the
+    // count should read, so it wins outright; otherwise derive a round 1-2-5 value that
+    // keeps the longest row inside the countable band (chooseUnitPerIcon), because an
+    // underived unit is how a row becomes 380 unreadable figures.
+    const unitPerIcon = spec.unitPerIcon ?? chooseUnitPerIcon(values);
+    // WHAT ONE ICON COUNTS — printed next to the key ("= 10 000 residents"), so it must
+    // read as prose: de-snake the column, but never force-case an acronym ("FTE").
+    const humanized = humanizeColumn(valCol);
+    const iconNoun = /^[A-Z]{2,}/.test(humanized)
+      ? humanized
+      : humanized.charAt(0).toLowerCase() + humanized.slice(1);
+    return {
+      type: "pictogram",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        categoryField: catCol,
+        valueField: valCol,
+        unitPerIcon,
+        iconNoun,
+        // The icons DO take the house/subject hue. Colour is not the quantitative channel
+        // here (the count is), but neither is it in a bar — and a pictogram left on the
+        // engine blue under a green house profile is the same defect the map house-colour
+        // work closed. One hue for every icon, so equal marks stay equal.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        rows: parsed.rows,
       },
     };
   },

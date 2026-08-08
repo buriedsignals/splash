@@ -16,6 +16,10 @@ import { rampUniformityIssues } from "../../../../lib/core/house-ramp";
 import { nearestOkabeIto } from "../../../../lib/core/nearest-okabe-ito";
 import type { BrandConcern } from "../../../../lib/core/brand-concern";
 import type { SourceKind } from "../../../../lib/source/vocabulary";
+import {
+  MAX_ICONS_PER_ROW,
+  MIN_VISIBLE_ICON_FRACTION,
+} from "../pictogram-geometry";
 
 export type { BrandConcern };
 
@@ -1136,6 +1140,10 @@ export function checkPictogramConformance(
     iconColor: string;
     unitPerIcon: number;
     unitStated: boolean; // is "each icon = N" shown to the reader?
+    /** every row's ICON COUNT (value / unitPerIcon, fractional) with the row's own name —
+     *  required, not optional: an omitted list would make the countability rules below
+     *  assert nothing while still reporting a clean pass. */
+    rows: { label: string; count: number }[];
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -1152,6 +1160,22 @@ export function checkPictogramConformance(
     v.push("pictogram needs a positive unit-per-icon");
   if (!input.unitStated)
     v.push("the unit (each icon = N) must be stated for the count to be read");
+  // COUNTABILITY — the promise the type is chosen for. Both rules refuse a data shape,
+  // not a drawing: the honest repair is a different unit or a different chart (the KB
+  // sheet's notFor sends a wide range to a bar), never a smaller icon.
+  for (const r of input.rows) {
+    if (r.count > MAX_ICONS_PER_ROW)
+      v.push(
+        `"${r.label}" would need ${Math.ceil(r.count)} icons — past ${MAX_ICONS_PER_ROW} ` +
+          "nobody counts them, they read the row as a length, which is a bar drawn worse. " +
+          "Raise the unit per icon, or use a bar.",
+      );
+    if (r.count > 0 && r.count < MIN_VISIBLE_ICON_FRACTION)
+      v.push(
+        `"${r.label}" is a positive value that draws no icon (${r.count} of one) — the range ` +
+          "is too wide for one countable unit to serve every row. Use a bar.",
+      );
+  }
   return v;
 }
 

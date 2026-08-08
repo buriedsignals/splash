@@ -1,5 +1,9 @@
 # Defect — `pictogram` is built but unreachable from the spec chain (2026-08-07) — CLOSED
 
+> **The capability landed 2026-08-08** (branch `feat/pictogram-type`). See the struck section
+> "What was deliberately NOT done" below: the type is reachable, and the refusal this note records
+> no longer fires.
+
 Opened by a real `/using-splash` run (article: Heidi.news, JO Milan Cortina — run dir
 `exports/jo-milan-cortina/`), where the journalist named « pictogramme » on the DIRECT branch.
 
@@ -47,21 +51,39 @@ restore — the record is inline in each test):
   are `deferred` and refused by the gate with their reason, and that both copies of the list are
   machine-compared — so the next mapper's author is told where the second copy is.
 
-## What was deliberately NOT done
+## What was deliberately NOT done — and was done on 2026-08-08 (struck)
 
-**No `pictogram` mapper was added.** The note's option 1 was to write one; option 2 was to accept
-that the type is deliberately not offered and make the refusal say so. Option 2 is already the
-shipped behaviour — the gate names the type and its reason — so adding a mapper would be a
-product decision (is a pictogram worth offering a small newsroom over `waffle`?), not a defect
-repair, and it carries the countability problem the note itself identified
-(`computePictogramLayout` does not wrap: 380 icons on one row render ~2 px each). If that
-decision is ever taken, un-defer the entry in `native-types.ts` and add the mapper — the guards
-above then require the KB ref, the conformance entry and both prose lists to follow.
+~~**No `pictogram` mapper was added.**~~ The note framed that as a product decision rather than a
+defect repair, and it was: the decision was taken on 2026-08-08, in the direction the journalist
+had asked for. The type is now offerable end to end — un-deferred in `native-types.ts` (family A:
+a two-column count is the most article-realistic CSV there is), mapped in `MAPPERS`, guarded in
+`PRODUCE_GUARDED_TYPES`, sheeted at `knowledge/references/chart/types/pictogram.md`, named in both
+prose lists, and rendered in all three formats under
+`skills/chart-native/output-proof/pictogram/`. `skills/splash/src/pictogram-reachable.test.ts` is
+the pair of this note's own refusal test: the same proposal now passes the gate AND reaches a
+render config.
 
-`knowledge/references/chart-selection.md`'s per-type catalogue was left alone: it is a different
-surface (CSV shapes, not the offerable set), and the only mapped types missing from it are the
-four in `LEGACY_KB_FAMILY_BACKFILL` (`bar`, `line`, `scatter`, `pie`) — a tracked, shrinking
-exemption, not a new gap.
+Two of this note's premises did not survive contact:
+
+- **"a stylistic variant of waffle"** (the registry's deferral reason) is wrong. A waffle divides
+  ONE whole into shares that sum to it; a pictogram compares SEVERAL independent magnitudes that
+  sum to nothing. They share arithmetic, not a claim. The shared part — largest-remainder cell
+  allocation — is genuinely not reusable here, because a pictogram allocates nothing: its count is
+  `value / unitPerIcon` outright.
+- **"the countability problem … `computePictogramLayout` does not wrap: 380 icons on one row render
+  ~2 px each"** was real, and is closed by DECIDING the unit rather than by wrapping. Wrapping
+  would have made counting harder (rows × columns), and the isotype convention is a short single
+  row. `chooseUnitPerIcon` derives a round 1-2-5 unit that puts the longest row inside ~12 icons,
+  and the produce guard refuses a row past 20 BY NAME — 380 icons is now a loud failure with the
+  repair stated ("raise the unit per icon, or use a bar"), not a 2 px hedge.
+
+A third defect the note could not have seen, because only a render shows it: a remainder under a
+quarter of an icon drew NOTHING (the clip window was the icon's cell, and the glyph's ink starts
+25 % across it). Fixed and locked — see `output-proof/pictogram/NOTES-native.md`.
+
+`knowledge/references/chart-selection.md` now carries a `pictogram` entry too: it was left alone
+here as "a different surface", which was right while the type had no mapper and wrong the moment
+it had one.
 
 ## What the run did instead
 

@@ -9,6 +9,56 @@
 
 import { scaleBand } from "d3-scale";
 
+/**
+ * The countability CEILING the produce-time guard refuses past. Counting is exact up to
+ * roughly a dozen marks and becomes estimation well before twenty; past twenty icons a row
+ * is read as a LENGTH — which is a bar, drawn worse. 20 is deliberately looser than the
+ * chooser's target below so a journalist who states their own unit ("one figure = 1,000
+ * households") is not forced onto the ladder; only the uncountable is refused.
+ */
+export const MAX_ICONS_PER_ROW = 20;
+
+/**
+ * The band `chooseUnitPerIcon` aims the LONGEST row at. Twelve keeps the row inside one
+ * glance and matches the isotype convention of short rows (FT Visual Vocabulary's
+ * magnitude/isotype examples; data-to-viz's "keep the number of icons low").
+ */
+export const TARGET_MAX_ICONS = 12;
+
+/**
+ * A remainder smaller than this is dropped rather than drawn: below ~2 % of an icon the
+ * clip is a hairline that reads as an artefact, not as a quantity. Exported because the
+ * produce-time guard uses the SAME number to refuse a range so wide that a positive value
+ * would render as no icon at all (a chart drawing a real value as zero).
+ */
+export const MIN_VISIBLE_ICON_FRACTION = 0.02;
+
+/**
+ * Pick the unit ONE icon stands for, from the 1-2-5 ladder, so the longest row lands inside
+ * `TARGET_MAX_ICONS`. The smallest such unit wins — it is the one that keeps the most
+ * granularity (a coarser unit throws away the differences between rows), and the ladder's
+ * ≤2.5× steps mean the longest row still holds several icons.
+ *
+ * The unit is a ROUND number on purpose: it is printed to the reader ("= 10 000 residents"),
+ * and "= 8 437 residents" is a key nobody can hold in their head while counting.
+ */
+export function chooseUnitPerIcon(values: number[]): number {
+  const max = Math.max(0, ...values.filter((v) => Number.isFinite(v)));
+  // Also what BOUNDS the scan below: log10(0) is -Infinity, and a loop counter of
+  // -Infinity never increments, so a non-positive max must be refused here or the
+  // ladder spins forever. Do not relax this into a silent default.
+  if (!(max > 0))
+    throw new Error("chooseUnitPerIcon: needs at least one positive value");
+  // start well below the max's decade so the ascending scan cannot skip past the answer
+  const startDecade = Math.floor(Math.log10(max)) - 6;
+  for (let k = startDecade; k <= startDecade + 12; k++)
+    for (const mantissa of [1, 2, 5]) {
+      const unit = mantissa * Math.pow(10, k);
+      if (Math.ceil(max / unit - 1e-9) <= TARGET_MAX_ICONS) return unit;
+    }
+  throw new Error(`chooseUnitPerIcon: no ladder unit fits a maximum of ${max}`);
+}
+
 export interface PictogramData {
   categoryField: string;
   valueField: string;
@@ -91,7 +141,7 @@ export function computePictogramLayout(
       value: d.value,
       count,
       fullIcons,
-      frac: frac < 0.02 ? 0 : frac, // ignore a sliver
+      frac: frac < MIN_VISIBLE_ICON_FRACTION ? 0 : frac, // ignore a sliver
       y: (band(i) ?? 0) + bandH / 2,
     };
   });

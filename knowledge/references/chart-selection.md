@@ -78,6 +78,14 @@ type earns its keep when several rows share a category.
 one square per unit) — group any tail beyond 6 into "Other"; `unit` must name what one square represents
 (e.g. "each square = 1%"), it renders as the subtitle. Not for change over time (use `stacked-area`)
 or for more than ~6 slices (use `pie` or `bar`).
+`pictogram` expects **category + one value, 2-8 categories** — the same CSV a `bar` takes, drawn as a
+COUNT of equal icons so the reader verifies by counting instead of trusting a length. Route it when the
+unit is a countable THING (people, beds, medals) and the magnitudes are human-scale. `unitPerIcon` is
+OPTIONAL: omit it and the mapper derives a round 1-2-5 value keeping the longest row inside ~12 icons;
+state it only when the journalist chose how coarse the count should read. NOT for precise comparison
+(the last icon is a clipped fraction — use `bar`), NOT for a wide range of magnitudes (one unit cannot
+serve a 12-icon row and a row that rounds to none; the produce guard refuses it by name), and NOT for a
+share of one whole (that is `waffle` — a filling container, not several independent rows).
 `radial-bar` expects **category + one value**; use it ONLY when the category axis is CYCLICAL (hours
 of the day, months of the year, compass points) and the cycle itself is part of the story — keep rows
 in **CSV order** (do NOT sort by value; angle encodes the category's cyclical position, unlike every

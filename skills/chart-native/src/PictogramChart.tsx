@@ -68,7 +68,19 @@ export interface PictogramChartProps {
   scale?: number;
 }
 
-const ICON_COLOR = OKABE_ITO.blue;
+/** The engine default when no house/subject hue is given. ONE hue for every icon: the count
+ *  is the channel, so a second colour would encode something the reader would then look for. */
+export const PICTOGRAM_DEFAULT_ICON = OKABE_ITO.blue;
+
+/**
+ * The glyph's INK box inside its [x, x+size] cell, as fractions of `size`: the body rect
+ * spans 0.25 → 0.75 and the head sits inside that. A partial icon is clipped against THIS,
+ * never against the cell — the first render of the shipped sample drew nothing at all for a
+ * 0.2 remainder (Hillcrest, 22 000), because a 0.2-of-the-CELL window ends at 0.20 and the
+ * ink does not begin until 0.25. Every remainder below a quarter was invisible while the
+ * geometry said it was there.
+ */
+export const PICTOGRAM_INK = { x: 0.25, w: 0.5 } as const;
 
 // one isotype figure (head + body) inside a [x, x+size] × [y, y+size] box
 function Figure({
@@ -78,6 +90,7 @@ function Figure({
   color,
   opacity,
   clipId,
+  className,
 }: {
   x: number;
   y: number;
@@ -85,9 +98,14 @@ function Figure({
   color: string;
   opacity: number;
   clipId?: string;
+  className?: string;
 }) {
   return (
-    <g opacity={opacity} clipPath={clipId ? `url(#${clipId})` : undefined}>
+    <g
+      className={className}
+      opacity={opacity}
+      clipPath={clipId ? `url(#${clipId})` : undefined}
+    >
       <circle
         cx={x + size / 2}
         cy={y + size * 0.17}
@@ -227,6 +245,7 @@ function PictogramSvg({
 }) {
   const { innerWidth, innerHeight, rows, iconSize, cellW, maxCols } = layout;
   const C = themeColors(config.themeBg, config.baseColor);
+  const iconColor = config.baseColor ?? PICTOGRAM_DEFAULT_ICON;
   const chrome = easeOutCubic(p / 0.18);
   const reveal = easeInOutCubic(p);
   const labelW = padding.left - 12 * sc;
@@ -245,9 +264,9 @@ function PictogramSvg({
           r.frac > 0 ? (
             <clipPath key={`clip${r.index}`} id={`pico-partial-${r.index}`}>
               <rect
-                x={r.fullIcons * cellW}
+                x={r.fullIcons * cellW + iconSize * PICTOGRAM_INK.x}
                 y={r.y - iconSize / 2}
-                width={iconSize * r.frac}
+                width={iconSize * PICTOGRAM_INK.w * r.frac}
                 height={iconSize}
               />
             </clipPath>
@@ -267,10 +286,11 @@ function PictogramSvg({
             figs.push(
               <Figure
                 key={`f${r.index}-${c}`}
+                className="picto-icon"
                 x={c * cellW}
                 y={top}
                 size={iconSize}
-                color={ICON_COLOR}
+                color={iconColor}
                 opacity={op}
               />,
             );
@@ -282,10 +302,11 @@ function PictogramSvg({
               figs.push(
                 <Figure
                   key={`f${r.index}-partial`}
+                  className="picto-icon"
                   x={c * cellW}
                   y={top}
                   size={iconSize}
-                  color={ICON_COLOR}
+                  color={iconColor}
                   opacity={op}
                   clipId={`pico-partial-${r.index}`}
                 />,
@@ -347,7 +368,7 @@ function PictogramSvg({
             x={0}
             y={keyY - iconSize / 2}
             size={Math.min(iconSize, 18 * sc)}
-            color={ICON_COLOR}
+            color={iconColor}
             opacity={1}
           />
           <text
