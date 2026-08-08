@@ -271,9 +271,12 @@ describe("twin-chart-web — the canon's assets", () => {
     }
   });
 
-  it("should not name the CO2 story anywhere in the seed", async () => {
+  it("should not carry the CO2 story's own copy", async () => {
     const seed = await readFile(join(ASSETS, "ChartWebSeed.tsx"), "utf8");
-    for (const leak of ["Suisse", "CO", "1967", "1973", "Mt"]) {
+    // Whole words and distinctive phrases only. A bare "CO" substring would match the word
+    // CONFIG, which this seed is REQUIRED to contain — a leak test that fails on its own
+    // mandate is a broken test, not a strict one.
+    for (const leak of ["Suisse", "CO₂", "Niveau de 1967", "pic de 1973", "Global Carbon Budget"]) {
       expect(seed).not.toContain(leak);
     }
   });
@@ -315,7 +318,26 @@ Expected: FAIL — `ENOENT` on `ChartWebSeed.tsx`.
 4. nothing argument-bearing gated behind interaction.
 
 Its first doc-comment line is verbatim: `REPLACE ME. Do not parameterise me.`
-It draws a plain falling line with a direct end label. It has **no** reference rule and **no** peak marker — those are editorial devices belonging to a story, and a seed that shipped them would teach the CO₂ argument.
+
+**A seed is a real beat, not a mechanics demo.** Amended 2026-08-08 after measuring Tom's own
+skills: `map-explainer/assets/RiverReveal.tsx` carries its story's country labels, stops and
+anchors, and `assets/sample-data/yarlung-flow.json` is the real Yarlung data. His seed *is* his
+story, marked replaceable. An earlier draft of this step told the implementer to ship a seed with
+**no** reference rule and **no** peak marker — more abstract than anything Tom ships, and it would
+have taught a journalist less, not more.
+
+So: the seed draws the rainfall beat **completely**, with whatever editorial devices that beat
+genuinely needs, and hoists every story-specific value into a labelled seam in the same idiom the
+skill's script now uses:
+
+```js
+// ===== CONFIG — edit for your story =====
+...
+// =========================================
+```
+
+What it must not do is teach the **CO₂** argument — that story lives in `proof/co2-suisse/` and the
+seed exists so a journalist does not start from it.
 
 - [ ] **Step 5: Write the preview generator**
 
