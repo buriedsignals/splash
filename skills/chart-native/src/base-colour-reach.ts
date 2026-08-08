@@ -34,6 +34,14 @@ export const FURNITURE_ONLY_TYPES: readonly string[] = [
   "sankey",
   "chord",
   "arc",
+  // gantt: bars carry the Okabe-Ito WORKSTREAM palette, one hue per group. A house hue over
+  // them would collapse the very grouping the colour exists to encode — with one group the
+  // question is moot, with two it destroys the chart. Furniture and the frame band only.
+  "gantt",
+  // candlestick: the two marks carry the fixed DIRECTION pair (up hue / down hue), and that
+  // pair plus its legend is the only thing telling a reader which way a period moved. A house
+  // hue over the candles would erase the distinction the type exists to draw.
+  "candlestick",
 ];
 
 const SET = new Set(FURNITURE_ONLY_TYPES);

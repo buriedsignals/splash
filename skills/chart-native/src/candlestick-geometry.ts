@@ -5,6 +5,13 @@
 // geometry is fixed and frame N is a pure function of the frame.
 
 import { scaleBand, scaleLinear } from "d3-scale";
+import {
+  formatAtGrain,
+  parseIsoDate,
+  spanGrain,
+  formatTick,
+} from "../../../lib/core/date-locale";
+import { localizeValueLabel, type Lang } from "./core/locale";
 
 export interface Candle {
   date: string;
@@ -16,6 +23,12 @@ export interface Candle {
 
 export interface CandlestickData {
   periods: Candle[];
+}
+
+export interface CandlestickOpts {
+  /** deliverable language — decides the date labels' month NAMES and the price ticks'
+   *  separators. */
+  lang?: Lang;
 }
 
 export interface CandlestickDims {
@@ -51,6 +64,7 @@ export interface CandlestickLayout {
 export function computeCandlestickLayout(
   data: CandlestickData,
   dims: CandlestickDims,
+  opts?: CandlestickOpts,
 ): CandlestickLayout {
   if (data.periods.length < 2)
     throw new Error("computeCandlestickLayout: need ≥ 2 periods");
@@ -97,13 +111,46 @@ export function computeCandlestickLayout(
     };
   });
 
-  const priceTicks = y.ticks(5).map((t) => ({ pos: y(t), label: String(t) }));
-  // a readable subset of date labels
-  const step = Math.ceil(data.periods.length / 8);
-  const dateTicks = data.periods
-    .map((c, i) => ({ i, c }))
-    .filter(({ i }) => i % step === 0 || i === data.periods.length - 1)
-    .map(({ i, c }) => ({ pos: (band(i) ?? 0) + bw / 2, label: c.date }));
+  // A PRICE tick prints the figure, not an approximation of it: `formatNumber`'s
+  // abbreviation (5230 → "5,2k") collapses exactly the resolution a candlestick exists to
+  // show — a series whose whole story is a 4 % swing would render as five identical "5k"s.
+  const priceTicks = y
+    .ticks(5)
+    .map((t) => ({ pos: y(t), label: localizeValueLabel(t, opts?.lang) }));
+  // Dates are LABELS chosen from the periods' own strings, written with the month as a NAME
+  // in the deliverable's language — a numeric "03/04" is two different days across the four
+  // languages splash ships. A period whose date is not a big-endian date (a bare "Q1", a
+  // week number) is passed through verbatim: the mapper is what refuses those, and a
+  // geometry that threw here would break the sample data the type has always carried.
+  const parsedDates = data.periods.map((c) => parseIsoDate(c.date));
+  const known = parsedDates.filter((d): d is NonNullable<typeof d> => d !== null);
+  const grain =
+    known.length === data.periods.length && known.length > 1
+      ? spanGrain(known[0].ms, known[known.length - 1].ms)
+      : null;
+  const labelOf = (i: number): string => {
+    const d = parsedDates[i];
+    if (!d) return data.periods[i].date;
+    return grain ? formatTick(d.ms, grain, opts?.lang) : formatAtGrain(d, opts?.lang);
+  };
+  // A readable subset of date labels: every `step`-th period, plus the LAST one — the series'
+  // end is the one period a reader always wants dated.
+  //
+  // Found by rendering: keeping both unconditionally puts the last label right beside the
+  // previous stepped one whenever the count is not a multiple of the step (12 monthly periods,
+  // step 2 → ticks at …, 10, 11), and `snap-contrast` failed on it, reading 1:1 because
+  // "Nov. 2024" was sampling "Dez. 2024" as its own background. The last tick wins and any
+  // stepped tick inside one step of it is dropped, so the survivors stay at least a step apart.
+  const n = data.periods.length;
+  const step = Math.ceil(n / 8);
+  const last = n - 1;
+  const tickIdx = data.periods
+    .map((_, i) => i)
+    .filter((i) => i === last || (i % step === 0 && i <= last - step));
+  const dateTicks = tickIdx.map((i) => ({
+    pos: (band(i) ?? 0) + bw / 2,
+    label: labelOf(i),
+  }));
 
   return {
     innerWidth,

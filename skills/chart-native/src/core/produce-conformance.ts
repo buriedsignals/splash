@@ -10,6 +10,8 @@
 // treats that as "no guard yet", not as a pass.
 import {
   checkConformance,
+  checkGanttConformance,
+  checkCandlestickConformance,
   checkBarConformance,
   checkScatterConformance,
   checkHistogramConformance,
@@ -121,6 +123,15 @@ import { arcLabelFit } from "../arc-geometry";
 import { TYPE } from "./tokens";
 import { textWidth } from "./text";
 import type { ComboConfig } from "../ComboChart";
+import {
+  computeGanttLayout,
+  type GanttData,
+} from "../gantt-geometry";
+import { GANTT_GROUP_COLORS, type GanttConfig } from "../GanttChart";
+import {
+  CANDLE_DIRECTION_COLORS,
+  type CandlestickConfig,
+} from "../CandlestickChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -295,6 +306,19 @@ const COMBO_DIMS = {
 const COMBO_COLUMN_COLOR = OKABE_ITO.blue;
 const COMBO_LINE_COLOR = OKABE_ITO.orange;
 
+// The gantt's guard reads facts that are all SCALE-INVARIANT — whether any span runs
+// backwards, whether every row carries a label, whether the axis is captioned, and which
+// group hues are in play. None of them depends on the pixel size, so these dims measure
+// exactly what the real render measures at any size. (The layout is computed rather than read
+// off the config because the interval arithmetic — an end date closing the period it names —
+// lives in the geometry, and a guard that re-derived it would be a second implementation free
+// to drift from the one that draws.)
+const GANTT_DIMS = {
+  width: 840,
+  height: 480,
+  padding: { top: 60, right: 20, bottom: 72, left: 150 },
+};
+
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
 // MAPPERS ⊆ this set (no reachable type is unguarded).
@@ -322,6 +346,8 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "heatmap",
   "pictogram",
   "combo",
+  "gantt",
+  "candlestick",
   // The FLOW family. Each one's guard re-measures the refusal its mapper makes, on the config
   // that actually renders — so a hand-built config that never passed through spec-to-config
   // meets the same rule (a sankey that loses quantity, a chord that is really a pipeline, an
@@ -1115,6 +1141,38 @@ function computeRawConformance(
       };
     }
 
+    case "gantt": {
+      // Run against the SAME layout the component draws from: the interval arithmetic (an end
+      // date closes the period it names) lives in gantt-geometry, so a guard that re-derived
+      // it here would be a second implementation free to drift from the one that draws.
+      const cfg = config as unknown as GanttConfig;
+      const data: GanttData = { items: cfg.items };
+      const layout = computeGanttLayout(data, GANTT_DIMS, { lang: cfg.lang });
+      const cats = cfg.categories ?? [];
+      return {
+        checked: true,
+        violations: checkGanttConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            spans: layout.bars.map((b) => ({
+              startMs: b.startMs,
+              endMs: b.endMs,
+              label: b.label,
+            })),
+            timeLabel: cfg.unit,
+            groupColors: cats.length
+              ? cats.map(
+                  (_, i) =>
+                    GANTT_GROUP_COLORS[i % GANTT_GROUP_COLORS.length],
+                )
+              : [GANTT_GROUP_COLORS[0]],
+          },
+          furnitureText,
+        ),
+      };
+    }
+
     case "chord": {
       // ChordChart colours entity i with CHORD_ENTITY_COLORS[i % len], so the prefix IS the
       // set of hues on the ring. The square-matrix, non-negativity and "one set exchanging
@@ -1174,6 +1232,27 @@ function computeRawConformance(
             labelFit: fit,
           },
           { text: [f.ink, f.muted], bg: f.bg },
+        ),
+      };
+    }
+
+    case "candlestick": {
+      // No layout needed: every fact this guard reads (the OHLC invariant, the price-axis
+      // label, the two direction hues) is a property of the CONFIG and the component's own
+      // colour constants, not of the pixel layout — so there is nothing here a fixed set of
+      // dims could measure more truthfully than the config itself.
+      const cfg = config as unknown as CandlestickConfig;
+      return {
+        checked: true,
+        violations: checkCandlestickConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            priceLabel: cfg.priceLabel,
+            ohlc: cfg.periods,
+            directionColors: [...CANDLE_DIRECTION_COLORS],
+          },
+          furnitureText,
         ),
       };
     }

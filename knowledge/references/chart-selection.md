@@ -176,6 +176,40 @@ over a shared time axis and the takeaway is their joint movement; if the CLAIM i
 ONE axis. Ships static + interactive (per-period hover/focus giving BOTH values) + video (columns grow,
 line wipes in). See `chart/types/combo.md` for the case against the form.
 
+`gantt` (timeline / time spans) expects a **`label,start,end[,group]` CSV** — one row per span. The two
+date columns are found **structurally**: the columns whose EVERY value parses as a **big-endian** date
+(`2024-06-30`, `2024-06`, `2024`), taken in column order, earlier = start. There is deliberately **no
+`start`/`end` header word list** — that is *début/fin*, *Beginn/Ende*, *inizio/fine* across the four
+languages splash finishes deliverables in — so `ganttStart` / `ganttEnd` name them when a CSV carries
+more than two date columns, and `ganttCategory` names the workstream column. Two shapes are refused at
+the gate: **a row whose end precedes its start**, *named* (a bar of negative length draws as nothing, so
+the phase silently vanishes), and **a numeric day/month date** like `03/04/2024` (the 3rd of April to a
+French, German or Italian reader, the 4th of March to an American one). An **end date closes the period
+it names** — "2023-01 → 2023-06" runs to 1 July, and a one-month phase is a month wide, not zero. Bar
+length here is DURATION, never magnitude, which is why `unit` (the time-axis caption) is required and why
+the type is filed under change-over-time rather than magnitude; if the claim is "how much", that is a
+`bar`, and if the spans are instants with no duration, that is a dot/event timeline. The house hue tints
+the **furniture only** — one hue over the bars would collapse the workstreams the Okabe-Ito group palette
+encodes. Ships static + interactive (per-span hover/focus giving the dates and an approximate duration) +
+video (each bar grows from its start, staggered by row). See `chart/types/gantt.md`.
+
+`candlestick` (OHLC) expects a **`date,open,high,low,close` CSV** — one row per period. The four numeric
+columns after the date are read **in the acronym's own order** (that is what "OHLC" names) and that
+reading is then **checked** against the invariant every real period satisfies (high ≥ max(open, close),
+low ≤ min(open, close)), so a CSV in another order fails on its first row, *named*, instead of inverting
+every candle in silence; `ohlc` names the columns for another order. **Data that is not OHLC is refused
+by name** — one value per period is a `line` or a `bar`, and the mapper says so rather than faking a body
+from a single number. `priceLabel` is **required**: the price axis does not start at zero (position/range
+encoding), so an unlabelled one gives the reader no scale. ★ **The colours deliberately break the market
+convention**: green-up/red-down is Western, while China, Taiwan, Japan and South Korea read RED as
+rising — so a red/green candlestick says the opposite thing to two different readers. Splash uses the
+Okabe-Ito blue (up) / orange (down) pair, which carries no market meaning in either convention and is
+CVD-safe, and **always draws a legend** naming both directions and glossing what "up" means. Reserve the
+form for when the within-period RANGE and the open→close DIRECTION are both the point; for "it went up",
+a `line` is clearer to a non-finance audience. Ships static + interactive (per-period hover/focus giving
+all four values) + video (wick draws, body grows from the open, left → right). See
+`chart/types/candlestick.md` for the colour grounding.
+
 **THE FLOW FAMILY — `sankey`, `chord`, `arc`** all read ONE shape: a **link-list CSV**, one row per
 link, exactly three columns matched BY NAME — `source,target,value` (also `source,cible,valeur` ·
 `quelle,ziel,wert` · `origine,destinazione,valore`). Any other header is refused naming what was

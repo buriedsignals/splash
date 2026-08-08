@@ -1323,7 +1323,15 @@ export function checkCandlestickConformance(
     title: string;
     source: ConformanceSource;
     priceLabel?: string;
-    ohlc: { open: number; high: number; low: number; close: number }[];
+    /** `date` is carried so a refusal can NAME the period. The geometry already names it
+     *  (candlestick-geometry.ts) and this belt used to say only "a period is bad". */
+    ohlc: {
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      date?: string;
+    }[];
     directionColors: string[]; // [up, down]
   },
   textColors: { text: string[]; bg: string },
@@ -1338,14 +1346,14 @@ export function checkCandlestickConformance(
     },
   });
   if (!input.priceLabel?.trim()) v.push("missing price-axis label");
-  for (const c of input.ohlc)
-    if (
-      c.high < Math.max(c.open, c.close) ||
-      c.low > Math.min(c.open, c.close)
-    ) {
-      v.push("a period has invalid OHLC (high < body or low > body)");
-      break;
-    }
+  const bad = input.ohlc.filter(
+    (c) => c.high < Math.max(c.open, c.close) || c.low > Math.min(c.open, c.close),
+  );
+  if (bad.length)
+    v.push(
+      `invalid OHLC (high < body or low > body) — ` +
+        `${bad.map((c) => `"${c.date ?? "(undated period)"}"`).join(", ")}`,
+    );
   const distinct = new Set(input.directionColors.map((c) => c.toUpperCase()));
   if (distinct.size !== 2)
     v.push(
@@ -1541,7 +1549,10 @@ export function checkGanttConformance(
   input: {
     title: string;
     source: ConformanceSource;
-    spans: { startMs: number; endMs: number }[];
+    /** `label` is carried so a refusal can NAME the row. The geometry already names it
+     *  (gantt-geometry.ts) and this belt used to say only "some span is bad", which sends a
+     *  journalist reading a wall of dates line by line to find out which. */
+    spans: { startMs: number; endMs: number; label?: string }[];
     timeLabel?: string;
     groupColors: string[];
   },
@@ -1557,8 +1568,19 @@ export function checkGanttConformance(
     },
   });
   if (!input.spans.length) v.push("gantt needs at least one item");
-  if (input.spans.some((s) => s.endMs < s.startMs))
-    v.push("every gantt span must have end ≥ start");
+  const backwards = input.spans.filter((s) => s.endMs < s.startMs);
+  if (backwards.length)
+    v.push(
+      `every gantt span must have end ≥ start — ` +
+        `${backwards.map((s) => `"${s.label ?? "(unnamed row)"}"`).join(", ")} ` +
+        `${backwards.length > 1 ? "do" : "does"} not`,
+    );
+  const unnamed = input.spans.filter((s) => !s.label?.trim()).length;
+  if (unnamed)
+    v.push(
+      `${unnamed} gantt row${unnamed > 1 ? "s have" : " has"} no label — a bar in a ` +
+        `gutter with no name says nothing (chart/types/gantt.md: label every row)`,
+    );
   if (!input.timeLabel?.trim())
     v.push("missing time-axis caption (length is duration, not magnitude)");
   const distinct = new Set(input.groupColors.map((c) => c.toUpperCase()));

@@ -6,7 +6,7 @@ import {
   honoursBaseColor,
 } from "../src/base-colour-reach";
 
-test("the fifteen furniture-only types are named, not guessed", () => {
+test("the seventeen furniture-only types are named, not guessed", () => {
   expect([...FURNITURE_ONLY_TYPES].sort()).toEqual(
     [
       "bullet",
@@ -24,6 +24,8 @@ test("the fifteen furniture-only types are named, not guessed", () => {
       "sankey",
       "chord",
       "arc",
+      "gantt",
+      "candlestick",
     ].sort(),
   );
 });

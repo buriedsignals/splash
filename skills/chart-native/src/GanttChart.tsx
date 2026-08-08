@@ -28,9 +28,11 @@ import {
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
 import type { Lang } from "./core/locale";
+import { formatAtGrain, parseIsoDate } from "../../../lib/core/date-locale";
+import { timeChartCopy } from "../../../lib/core/time-chart-copy";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { layoutLegend, legendRowCount } from "./core/legend";
-import { truncate } from "./core/text";
+import { truncate, leftLabelGutterPx } from "./core/text";
 
 export interface GanttConfig {
   title: string;
@@ -60,7 +62,9 @@ export interface GanttChartProps {
   scale?: number;
 }
 
-const GROUP_COLORS = [
+/** The workstream palette, EXPORTED so the produce-time guard checks the hues the component
+ *  actually paints rather than a copy of them. */
+export const GANTT_GROUP_COLORS = [
   OKABE_ITO.blue,
   OKABE_ITO.orange,
   OKABE_ITO.green,
@@ -68,6 +72,17 @@ const GROUP_COLORS = [
   OKABE_ITO.vermillion,
   OKABE_ITO.skyblue,
 ];
+
+/** A span's own date, written at the grain the journalist supplied and in the deliverable's
+ *  language — the ONE expression behind the aria-label and the tooltip, so the sighted and
+ *  the screen-reader reading of a bar can never diverge. An unparseable date cannot reach
+ *  here (computeGanttLayout refuses it, naming the row) but the fallback keeps the render
+ *  total rather than throwing inside a label. */
+function spanDate(raw: string | undefined, lang?: Lang): string {
+  if (!raw) return "";
+  const d = parseIsoDate(raw);
+  return d ? formatAtGrain(d, lang) : raw;
+}
 
 export function GanttChart({
   config,
@@ -94,11 +109,24 @@ export function GanttChart({
   const legendRows = cats.length
     ? legendRowCount(cats, width - 150 - 20, TYPE.source * 0.6, LEG_ROW)
     : 0;
+  // The row-label gutter is MEASURED to the widest label, not fixed. Found by rendering: a
+  // fixed 150 truncated five of the eight French row names on the first real produce
+  // ("Étude de faisabi…", "Aménagement et r…") — and a gantt's row label IS the subject of
+  // its bar, so cutting it is cutting the data, not shortening a caption. `snap-label-fit`
+  // could not catch it: a truncated label fits by construction. Same helper, floor and cap as
+  // slope / dumbbell / diverging-bar, so the whole family shares one rule.
+  const rowLabels = config.items.map((i) => i.label);
+  const PAD_LEFT = leftLabelGutterPx(rowLabels, TYPE.axis, {
+    gapPx: 16,
+    floorPx: 150,
+    width,
+    scale: s,
+  });
   const basePad = {
     top: responsive ? 14 : 50 + titleLines * 27,
     right: 20,
     bottom: 32 + (cats.length ? legendRows * LEG_ROW + 20 : 0), // ticks + legend + clearance
-    left: 150, // row labels in the gutter
+    left: PAD_LEFT, // row labels in the gutter — measured, see above
   };
   const frame = resolveFrameWithHeader(config.title, config.unit, width, height, basePad, scale, 0.62, responsive);
   const padding = frame.pad;
@@ -109,11 +137,15 @@ export function GanttChart({
   (config.categories ?? []).forEach((c, i) => colorIndex.set(c, i));
   const colorOf = (cat?: string) =>
     cat != null && colorIndex.has(cat)
-      ? GROUP_COLORS[colorIndex.get(cat)! % GROUP_COLORS.length]
+      ? GANTT_GROUP_COLORS[colorIndex.get(cat)! % GANTT_GROUP_COLORS.length]
       : OKABE_ITO.blue;
 
   const data: GanttData = { items: config.items };
-  const layout = computeGanttLayout(data, { width, height, padding });
+  const layout = computeGanttLayout(
+    data,
+    { width, height, padding },
+    { lang: config.lang },
+  );
 
   const [hover, setHover] = useState<number | null>(null);
 
@@ -280,9 +312,21 @@ function GanttSvg({
                 fill={color}
                 tabIndex={interactive ? 0 : undefined}
                 role={interactive ? "img" : undefined}
+                className="gantt-bar"
                 aria-label={
                   interactive
-                    ? `${b.label}: ${config.items.find((it) => it.label === b.label)?.start} to ${config.items.find((it) => it.label === b.label)?.end}`
+                    ? timeChartCopy(config.lang).spanAria(
+                        b.label,
+                        spanDate(
+                          config.items.find((it) => it.label === b.label)
+                            ?.start,
+                          config.lang,
+                        ),
+                        spanDate(
+                          config.items.find((it) => it.label === b.label)?.end,
+                          config.lang,
+                        ),
+                      )
                     : undefined
                 }
                 style={
@@ -367,10 +411,10 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{b.label}</strong>
       <div style={{ fontSize: 12, marginTop: 1 }}>
-        {item?.start} → {item?.end}
+        {spanDate(item?.start, config.lang)} → {spanDate(item?.end, config.lang)}
       </div>
       <div style={{ opacity: 0.7, fontSize: 11 }}>
-        ≈ {months} month{months > 1 ? "s" : ""}
+        {timeChartCopy(config.lang).aboutMonths(months)}
       </div>
     </div>
   );
