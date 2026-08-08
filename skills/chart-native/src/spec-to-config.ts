@@ -73,6 +73,21 @@ export interface NativeSpec {
   /** several categories/points to accent (e.g. beeswarm's outlier communes). When
    *  present it takes precedence over the single `highlight`. */
   highlights?: string[];
+  /**
+   * COMBO — which of the two numeric columns is drawn as the LINE (against the independent
+   * right-hand axis); the other becomes the COLUMNS (length from a zero baseline). This is the
+   * per-series encoding choice combo was deferred for, and it is not guessed from magnitudes or
+   * header words: an explicit name always wins, a single `%`-marked header is the one accepted
+   * derivation, and anything else is refused at the gate with both candidates named.
+   */
+  comboLine?: string;
+  /** COMBO — what the COLUMN series measures ("units", "GWh", "CHF"). Required (unless the
+   *  header itself declares `%`): checkComboConformance refuses two series sharing a unit, and
+   *  cannot apply that rule to units it was not told. */
+  comboColumnUnit?: string;
+  /** COMBO — what the LINE series measures ("%", "index 2015=100", "CHF/m²"). Required unless
+   *  the header itself declares `%`. */
+  comboLineUnit?: string;
   /** newsroom house theme BACKGROUND (F2 `theme`): the RESOLVED background hex the chart
    *  furniture derives from — "#18181B" for the dark preset, or any newsroom #rrggbb ground.
    *  Undefined = the light default (byte-identical legacy path). Threaded onto every config by
@@ -169,6 +184,18 @@ export function resolveBarSort(spec: NativeSpec): "asc" | "desc" | "none" {
   if (spec.sort) return spec.sort;
   if (Array.isArray(spec.beats) && spec.beats.length > 0) return "none";
   return "desc";
+}
+
+/**
+ * A combo axis title: the series' own name, plus its unit ONLY when the name does not already
+ * carry it. A header called `units` with the unit "units" produced "Units (units)" on the first
+ * rendered proof — the stutter is what a reader sees, so it is removed where the information is
+ * already there rather than tolerated. Punctuation-only join: nothing to translate.
+ */
+export function comboAxisLabel(column: string, unit: string): string {
+  const name = seriesLabelFromColumn(column);
+  const u = unit.trim();
+  return name.toLowerCase().includes(u.toLowerCase()) ? name : `${name} (${u})`;
 }
 
 // One mapper per reachable native type: (parsed CSV, spec) → the concrete
@@ -310,6 +337,116 @@ export const MAPPERS: Record<
         // absent → the component's OKABE_ITO.blue default.
         ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows, // pass through IN ORDER — do NOT sort (the path follows row order)
+      },
+    };
+  },
+  // LINE + COLUMN COMBO (dual axis). The mapper's real work is the DECISION combo was deferred
+  // for — which series is the line, which the columns — plus collecting the two units without
+  // which checkComboConformance cannot apply the rule that matters most (two series in one unit
+  // must not be given two scales). Everything else is derivation.
+  //
+  // WHY NO CLEVERER DERIVATION. A rate drawn as column length claims a magnitude it does not
+  // have; a count on a zero-suppressed axis loses the zero that gives it meaning. Both are
+  // silent inversions — the chart looks fine and says the opposite of the truth. Heuristics
+  // that would invert silently and were REFUSED here: order of magnitude (a headcount and a
+  // price are both "big"), integer-ness (rounded rates are integers, money is not), and header
+  // words (`taux`/`rate`/`quota`/`Anteil` — four shipped languages, an open vocabulary, and a
+  // French "part" is an English noun). The `%` SYMBOL is the one marker that survives all four
+  // languages and cannot mean a count.
+  combo(parsed, spec) {
+    const catCol = parsed.columns[0];
+    const series = parsed.columns
+      .slice(1)
+      .filter((c) => parsed.numericColumns.includes(c));
+    // validateShape (shape "wide") already refused fewer than two; this refuses more, because
+    // a combo renders EXACTLY one column series and one line series and would otherwise drop
+    // the rest silently — the same data-loss the `line` mapper fails loud on.
+    if (series.length !== 2)
+      throw new Error(
+        `spec-to-config: combo needs exactly two numeric series after the category column, ` +
+          `got ${series.length} (${series.join(", ")}) — drop the extras, or use a grouped ` +
+          `bar / multi-line chart`,
+      );
+
+    const marked = series.filter((c) => c.includes("%"));
+    let lineField: string;
+    if (spec.comboLine) {
+      if (!series.includes(spec.comboLine))
+        throw new Error(
+          `spec-to-config: comboLine "${spec.comboLine}" is not one of the combo's numeric ` +
+            `series (${series.join(", ")})`,
+        );
+      lineField = spec.comboLine;
+    } else if (marked.length === 1) {
+      lineField = marked[0];
+    } else {
+      // The refusal that ASKS. Reached at the validation gate (nativeSpecErrors), so the
+      // journalist is told before anything renders — never by a chart that silently picked.
+      throw new Error(
+        `spec-to-config: combo cannot tell which series is the line and which the columns ` +
+          `(${series.join(", ")}). The columns encode length from a zero baseline, the line a ` +
+          `rate or index on its own axis — getting it the wrong way round inverts the chart. ` +
+          `Set comboLine to the column that should be drawn as the LINE.`,
+      );
+    }
+    const columnField = series.find((c) => c !== lineField)!;
+
+    // A `%` in the header IS a declared unit; anything else must be stated, because the
+    // same-unit refusal is unenforceable against units nobody supplied.
+    const unitOf = (
+      col: string,
+      declared: string | undefined,
+      field: string,
+    ) => {
+      const u = declared?.trim() || (col.includes("%") ? "%" : "");
+      if (!u)
+        throw new Error(
+          `spec-to-config: combo needs ${field} — what "${col}" measures. A dual axis is only ` +
+            `honest when the two series measure DIFFERENT things, and that cannot be checked ` +
+            `without both units.`,
+        );
+      return u;
+    };
+    const columnUnit = unitOf(
+      columnField,
+      spec.comboColumnUnit,
+      "comboColumnUnit",
+    );
+    const lineUnit = unitOf(lineField, spec.comboLineUnit, "comboLineUnit");
+    // Refused HERE as well as in checkComboConformance: the gate is where a journalist can
+    // still change the answer, the produce guard is the belt that catches a config built any
+    // other way. Same rule, stated in the same words, in both places.
+    if (columnUnit.toLowerCase() === lineUnit.toLowerCase())
+      throw new Error(
+        `spec-to-config: both combo series are measured in the same unit ("${columnUnit}") — ` +
+          `two scales for one measurement invites a height comparison that is not true; plot ` +
+          `them on ONE axis (grouped columns, or two lines).`,
+      );
+
+    return {
+      type: "combo",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        // FURNITURE only. The two series carry the fixed axis-coded Okabe-Ito pair the
+        // dual-axis reading depends on (column hue == left axis, line hue == right axis), so
+        // the house hue tints the greys and the frame band and never the marks.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        categoryField: catCol,
+        columnField,
+        lineField,
+        columnUnit,
+        lineUnit,
+        // Derived from the data's own headers + the declared units. The join is punctuation,
+        // so nothing here needs translating for a fr/de/it deliverable — and the unit is only
+        // appended when the series name does not already carry it, because the first real
+        // render read "Units (units)".
+        leftAxisLabel: comboAxisLabel(columnField, columnUnit),
+        rightAxisLabel: comboAxisLabel(lineField, lineUnit),
+        columnSeriesLabel: seriesLabelFromColumn(columnField),
+        lineSeriesLabel: seriesLabelFromColumn(lineField),
+        rows: parsed.rows,
       },
     };
   },

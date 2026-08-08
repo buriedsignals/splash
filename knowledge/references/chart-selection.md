@@ -160,3 +160,18 @@ optional in-cell value labels come built in. For a value
 over ONE dimension prefer `bar` (length reads more precisely than colour); for too-fine grids, aggregate
 the bins first. `unit` names the value the colour encodes (e.g. "median wait (minutes)"). Ships static +
 interactive (per-cell hover/focus) + video (a diagonal fade-in reveal).
+
+`combo` (line + column, dual axis) expects a **wide CSV with EXACTLY two numeric series** after the
+category/time column, e.g. `month,units,margin` — one AMOUNT drawn as columns against a zero-based left
+axis, one RATE drawn as a line against an independent right axis (FT Visual Vocabulary's "Line + Column":
+"the relationship over time between an amount (columns) and a rate (line)"). More than two numeric series
+is refused, not silently trimmed. **`comboLine` names which column is the LINE, and is effectively
+required**: the only derivation accepted without it is a single `%`-marked header, and anything else is
+refused at the gate with both candidates named — because drawing a rate as column length, or a count on a
+zero-suppressed axis, inverts the chart while it still looks right. **`comboColumnUnit` and
+`comboLineUnit` are required** (a `%` header supplies its own): the two units must DIFFER — two series in
+one unit given two scales is the dual-axis abuse, and is refused. Route it only when the two series move
+over a shared time axis and the takeaway is their joint movement; if the CLAIM is the correlation, prefer
+`connected-scatter`, and if both series share a unit, index them to a common base and use two lines on
+ONE axis. Ships static + interactive (per-period hover/focus giving BOTH values) + video (columns grow,
+line wipes in). See `chart/types/combo.md` for the case against the form.

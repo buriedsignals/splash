@@ -10,7 +10,7 @@ const distInteractive =
   chart === "line" ? "dist/interactive" : `dist/${chart}/interactive`;
 // the focusable data-mark element differs per chart type
 const markSel =
-  chart === "bar" || chart === "stacked" || chart === "grouped" || chart === "heatmap" || chart === "histogram" || chart === "diverging" || chart === "waterfall" || chart === "pyramid" || chart === "marimekko"
+  chart === "bar" || chart === "stacked" || chart === "grouped" || chart === "heatmap" || chart === "histogram" || chart === "diverging" || chart === "waterfall" || chart === "pyramid" || chart === "marimekko" || chart === "combo"
     ? 'rect[role="img"][tabindex="0"]'
     : chart === "pie" || chart === "stacked-area"
       ? 'path[role="img"][tabindex="0"]'

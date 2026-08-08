@@ -21,6 +21,11 @@ export const FURNITURE_ONLY_TYPES: readonly string[] = [
   "diverging-stacked",
   "pyramid",
   "waterfall",
+  // combo: the two series carry the fixed AXIS-CODED Okabe-Ito pair (column hue == left axis,
+  // line hue == right axis). That pairing is the only cue telling a reader which series reads
+  // against which scale, so the house hue must never repaint either mark — it tints the
+  // furniture and the frame band and stops there.
+  "combo",
 ];
 
 const SET = new Set(FURNITURE_ONLY_TYPES);

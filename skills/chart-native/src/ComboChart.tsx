@@ -42,6 +42,11 @@ export interface ComboConfig {
   lineField: string;
   leftAxisLabel: string;
   rightAxisLabel: string;
+  /** what the COLUMN series measures ("units", "GWh"). Read by checkComboConformance, which
+   *  refuses two series sharing a unit — the dual-axis abuse. Emitted by spec-to-config. */
+  columnUnit: string;
+  /** what the LINE series measures ("%", "index 2015=100"). */
+  lineUnit: string;
   columnSeriesLabel: string;
   lineSeriesLabel: string;
   rows: Record<string, string | number>[];
@@ -244,7 +249,15 @@ function ComboSvg({
         </clipPath>
       </defs>
       <g transform={`translate(${padding.left},${padding.top})`}>
-        {/* left-axis gridlines + tick labels (blue-tinted to match the columns) */}
+        {/* Axis furniture is INK/MUTED, never the series hue — and that is forced, not chosen.
+            A dual axis wants each axis coloured to its own series, but MEASURED against a white
+            ground exactly ONE Okabe-Ito hue clears WCAG 4.5:1 for text (blue, 5.19:1); orange is
+            2.25:1, green 3.42, vermillion 3.87. A two-series chart therefore cannot colour-code
+            both axis labels accessibly at any size. The binding is carried by NAME instead: each
+            axis title states its series verbatim as the legend states it (checkComboConformance
+            requires the match), and the hue lives on the marks and the legend swatches — the
+            engine's standing "label carries the value, mark carries the hue" decoupling. */}
+        {/* left-axis gridlines + tick labels */}
         <g opacity={chrome}>
           {leftTicks.map((t, i) => (
             <g key={`lt${i}`}>
@@ -262,7 +275,7 @@ function ComboSvg({
                 dy="0.32em"
                 textAnchor="end"
                 fontSize={ts.source}
-                fill={COLUMN_COLOR}
+                fill={C.muted}
               >
                 {t.label}
               </text>
@@ -277,7 +290,7 @@ function ComboSvg({
               dy="0.32em"
               textAnchor="start"
               fontSize={ts.source}
-              fill={LINE_COLOR}
+              fill={C.muted}
             >
               {t.label}
             </text>
@@ -294,6 +307,7 @@ function ComboSvg({
             return (
               <rect
                 key={`c${c.index}`}
+                className="combo-column"
                 x={c.x}
                 y={innerHeight - h}
                 width={c.w}
@@ -324,6 +338,7 @@ function ComboSvg({
         {/* line (right axis) — wipes in left→right, dots ride the wipe */}
         <g clipPath={`url(#${clipId})`}>
           <path
+            className="combo-line"
             d={lineGen(linePoints) ?? ""}
             fill="none"
             stroke={LINE_COLOR}
@@ -338,7 +353,9 @@ function ComboSvg({
               cy={pt.cy}
               r={3.2 * sc}
               fill={LINE_COLOR}
-              stroke="#FFFFFF"
+              // the halo separates the dot from whatever it crosses — it is the GROUND,
+              // never a white literal (which painted a white ring on a dark house theme).
+              stroke={C.bg}
               strokeWidth={1 * sc}
             />
           ))}
@@ -371,7 +388,7 @@ function ComboSvg({
             textAnchor="middle"
             fontSize={ts.source}
             fontWeight={700}
-            fill={COLUMN_COLOR}
+            fill={C.ink}
           >
             {truncate(config.leftAxisLabel, innerHeight, ts.source)}
           </text>
@@ -382,7 +399,7 @@ function ComboSvg({
             textAnchor="middle"
             fontSize={ts.source}
             fontWeight={700}
-            fill={LINE_COLOR}
+            fill={C.ink}
           >
             {truncate(config.rightAxisLabel, innerHeight, ts.source)}
           </text>
@@ -483,8 +500,16 @@ function Tooltip({
     >
       <strong style={{ fontSize: 13 }}>{c.category}</strong>
       <div style={{ fontSize: 11, opacity: 0.9, marginTop: 1 }}>
-        <span style={{ color: "#8AB6D6" }}>■</span> {fmt(c.value)}{" "}
-        {config.columnSeriesLabel} · <span style={{ color: "#F0B860" }}>●</span>{" "}
+        {/* the swatches are the hues the marks are ACTUALLY painted in — two hardcoded
+            tints used to sit here, so a palette change would have made the tooltip lie.
+            aria-hidden: the series is already named in the text beside it. */}
+        <span aria-hidden="true" style={{ color: COLUMN_COLOR }}>
+          ■
+        </span>{" "}
+        {fmt(c.value)} {config.columnSeriesLabel} ·{" "}
+        <span aria-hidden="true" style={{ color: LINE_COLOR }}>
+          ●
+        </span>{" "}
         {fmt(pt.value)} {config.lineSeriesLabel}
       </div>
     </div>
