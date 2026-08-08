@@ -21,6 +21,7 @@
  * could.
  */
 import { describe, it, expect } from "bun:test";
+import { existsSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 
@@ -90,23 +91,36 @@ function stringLiterals(src: string): string[] {
   return literals;
 }
 
-// The module extensions this project actually uses. Cross-referenced against the files globbed by
-// `sourceFiles` (.mjs/.ts/.tsx) plus the two other extensions a specifier can legally end in here
-// (.js from an npm dependency's own relative imports never appears under skills/, kept anyway for
-// completeness; .json for sample-data-style imports).
-const SPECIFIER_EXTENSIONS = [".mjs", ".ts", ".tsx", ".js", ".json"];
+// The module extensions Node/Bun try when a specifier omits one — the same list a real resolver
+// walks, not a list this guard invented. `twin-map-beat/assets/timing.ts` used to import
+// `../../twin-chart-video/assets/timing`, no extension, three sites — TypeScript's own everyday
+// convention, and the exact shape three of this task's nine original violations took. A guard that
+// required a recognized extension would have missed the most likely accidental reintroduction while
+// catching only the less likely ones, which inverts the point of having it.
+const MODULE_EXTENSIONS = [".mjs", ".ts", ".tsx", ".js", ".json"];
 
 /**
- * A relative path-shaped string is not necessarily a module specifier — a human-facing string like
+ * Whether `candidatePath` (already resolved to an absolute path) is something a real module
+ * resolver would actually load — the discriminator between a genuine specifier and a human-facing
+ * string that merely starts with a path, e.g.
  * `"../../twin-chart-beat/scripts/render-still.mjs was moved, update your fixture path"` (a real
- * error message a test could throw) contains a real cross-skill path AS A SUBSTRING but is not one:
- * it is a sentence, with spaces, that happens to start with a path. A specifier never has
- * whitespace and always ends in one of this project's own module extensions — both true of every
- * real import in this repository, neither true of prose that merely mentions a path.
+ * error message a test could throw). A specifier RESOLVES, with or without its extension, exactly
+ * the way `import`/`require` would resolve it: the exact path, or the exact path plus one of
+ * `MODULE_EXTENSIONS`, or — if it names a directory — an `index.*` inside it. The error message
+ * resolves to nothing at all, because "fixture path" is not a file on disk.
  */
-function looksLikeSpecifier(literal: string): boolean {
-  if (/\s/.test(literal)) return false;
-  return SPECIFIER_EXTENSIONS.some((ext) => literal.endsWith(ext));
+function resolvesOnDisk(candidatePath: string): boolean {
+  if (existsSync(candidatePath)) {
+    const stats = statSync(candidatePath);
+    if (stats.isFile()) return true;
+    if (stats.isDirectory()) {
+      return MODULE_EXTENSIONS.some((ext) =>
+        existsSync(join(candidatePath, `index${ext}`)),
+      );
+    }
+    return false;
+  }
+  return MODULE_EXTENSIONS.some((ext) => existsSync(candidatePath + ext));
 }
 
 describe("skills never import each other at runtime", () => {
@@ -132,8 +146,9 @@ describe("skills never import each other at runtime", () => {
             const src = await readFile(file, "utf8");
             for (const literal of stringLiterals(src)) {
               if (!literal.startsWith(".")) continue; // #shared/* and package specifiers are never a skill
-              if (!looksLikeSpecifier(literal)) continue; // prose that mentions a path is not an import
+              if (/\s/.test(literal)) continue; // cheap: prose reads as a sentence, a specifier never does
               const resolved = resolve(dirname(file), literal);
+              if (!resolvesOnDisk(resolved)) continue; // not a real module specifier — resolves to nothing
               const enterOtherSkill = otherSkillRoots.some(
                 ({ exact, withSep }) =>
                   resolved === exact || resolved.startsWith(withSep),
