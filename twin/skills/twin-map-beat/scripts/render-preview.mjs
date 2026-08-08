@@ -31,7 +31,15 @@ import {
 const HERE = import.meta.dirname;
 const TWIN_ROOT = resolve(HERE, "../..");
 const PLATE_DIR = `/tmp/map-twin/plate-900`;
-const TARGET = join(HERE, "..", "assets", "preview.png");
+
+// If --out <dir> is passed, write to that directory; otherwise write to assets/preview.png
+const outDirArg = process.argv.indexOf("--out");
+let outDir = outDirArg !== -1 ? process.argv[outDirArg + 1] : join(HERE, "..", "assets");
+// Make outDir absolute
+if (!outDir.startsWith("/")) {
+  outDir = resolve(process.cwd(), outDir);
+}
+const TARGET = join(outDir, "preview.png");
 
 // Ensure the plate is baked. If not, run bake-plate.mjs.
 async function ensurePlate() {
@@ -137,6 +145,7 @@ if (process.argv.includes("--check")) {
   }
   console.log("preview.png matches a fresh render of the seed.");
 } else {
+  await mkdir(outDir, { recursive: true });
   await writeFile(TARGET, png);
   console.log(`wrote ${TARGET} (${png.length} bytes) — now open it and look at it.`);
 }

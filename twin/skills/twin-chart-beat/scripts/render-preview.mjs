@@ -2,8 +2,8 @@
 // artifact proves the story, not the mechanism this skill teaches.
 //
 // Furniture (`ink`/`muted`/`grid`) and `measure` are derived HERE, in node, exactly the division
-// `scripts/render-web.mjs`'s `renderWeb` already uses for a real beat: the seed component itself
-// never imports the rasteriser (see `ChartWebSeed.tsx`'s own doc-comment) — this script is the one
+// `scripts/render-still.mjs` already uses for a real beat: the seed component itself
+// never imports the rasteriser (see `ChartSeed.tsx`'s own doc-comment) — this script is the one
 // place per render that calls `deriveFurniture`/owns `measureText`, then threads the results in as
 // props, once.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -15,7 +15,7 @@ import {
   deriveFurniture,
   measureText,
 } from "./render-still.mjs";
-import { ChartWebSeed, SEED_LAYOUT } from "../assets/ChartWebSeed.tsx";
+import { ChartSeed } from "../assets/ChartSeed.tsx";
 
 const HERE = import.meta.dirname;
 
@@ -36,7 +36,7 @@ const ground = "#FFFFFF";
 const furniture = deriveFurniture(ground);
 
 const svg = renderToStaticMarkup(
-  createElement(ChartWebSeed, {
+  createElement(ChartSeed, {
     data,
     title: "Rainfall over the sample town fell by a third",
     source: "Sample data — not a real measurement",
@@ -46,11 +46,10 @@ const svg = renderToStaticMarkup(
     subject: "the sample town",
     ...furniture,
     measure: measureText,
-    layout: SEED_LAYOUT,
   }),
 );
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: SEED_LAYOUT.width } })
+const png = new Resvg(svg, { fitTo: { mode: "width", value: 900 } })
   .render()
   .asPng();
 
