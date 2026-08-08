@@ -29,22 +29,32 @@
  *
  * `WebLayout` lives here, not beside a story, because it describes this GENRE's own mechanics (two
  * pre-rendered frame widths, their own tick hints, their own derived height) rather than any one
- * story's numbers — a beat's own composition (e.g. `proof/co2-suisse/EmissionsWeb.tsx`) imports the
- * type from here and supplies its own `WebLayout` instances, the same "a story importing a skill is
- * fine, a skill importing a story is not" rule the rest of this twin already keeps.
+ * story's numbers. A story's own composition does NOT import it from here, though: unlike
+ * `render-still.mjs`/`interaction.mjs`, which a real installed root vendors to `#shared/*`,
+ * `WebLayout` is a compile-time-only type with no vendoring path a story could reach — there is
+ * nothing to import it FROM outside this dev repository. So a story declares its own matching copy
+ * inline (`proof/co2-suisse/EmissionsWeb.tsx` does exactly this), the same "duplicate, do not link"
+ * ruling this project already applies elsewhere (Tom's own two geo-prep scripts share zero
+ * functions; a type definition is the cheapest thing there is to duplicate).
+ *
+ * This component itself never imports the rasteriser (`deriveFurniture`/`measureText`), the same
+ * invariant `proof/co2-suisse/EmissionsWeb.tsx` keeps: `ink`/`muted`/`grid`/`measure` below are
+ * props, derived once in node by whatever runner calls this component
+ * (`scripts/render-preview.mjs` for this skill's own preview, a real beat's own runner the same
+ * shape `scripts/render-web.mjs`'s `renderWeb` already uses) — never derived inside the component,
+ * and never a second implementation of the colour or measurement rule per beat.
  */
 
 import { extent, tickStep } from "d3-array";
 import { scaleLinear } from "d3-scale";
 import { line } from "d3-shape";
-import {
-  deriveFurniture,
-  measureText,
-  FONT_FAMILY,
-} from "../../twin-chart-beat/scripts/render-still.mjs";
 
 type Reading = { year: number; value: number };
 type Padding = { top: number; right: number; bottom: number; left: number };
+type Measure = (
+  text: string,
+  font: { fontSize: number; fontWeight?: number },
+) => number;
 
 export type WebLayout = {
   name: "desktop" | "narrow";
@@ -88,12 +98,16 @@ const CAVEAT =
 const REFERENCE_YEAR = 2015;
 const REFERENCE_LABEL = "2015 level";
 /** One year worth naming even though the reference rule and the end label already carry the
- *  argument — a judgement a script cannot make from the numbers alone: 2018 is the one year
- *  rainfall rose before the decline resumed, and a reader who only saw the two endpoints would miss
- *  that the fall was not a straight line. Muted, not shouted — the same restraint the static genre's
- *  own peak marker keeps (`web-discipline.md`, "What hover reveals"). */
-const PEAK_YEAR = 2018;
-const PEAK_LABEL = "briefly recovers, then falls again";
+ *  argument — a judgement a script cannot make from the numbers alone. The series rises in three
+ *  years (2018 +36mm, 2020 +64mm, 2022 +26mm); 2020 is picked because it is the LARGEST of the
+ *  three, the single biggest year-over-year rebound in the whole series (742mm → 806mm) — not
+ *  merely *a* rebound among several. Muted, not shouted — the same restraint the static genre's own
+ *  peak marker keeps (`web-discipline.md`, "What hover reveals"). */
+const PEAK_YEAR = 2020;
+// Short on purpose: at desktop width, a longer label centred over 2020 (two years from the 2018
+// local peak) reached far enough left to overlap the line's own incoming stroke — see this genre's
+// own gotcha about looking at the rendered pixels, not just the markup.
+const PEAK_LABEL = "the year's biggest rebound";
 // =========================================
 
 /**
@@ -174,12 +188,13 @@ function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },
+  measure: Measure,
 ): string[] {
   const lines: string[] = [];
   let line = "";
   for (const word of text.split(/\s+/)) {
     const trial = line ? `${line} ${word}` : word;
-    if (line && measureText(trial, font) > maxWidth) {
+    if (line && measure(trial, font) > maxWidth) {
       lines.push(line);
       line = word;
     } else line = trial;
@@ -195,6 +210,10 @@ export function ChartWebSeed({
   ground,
   accent,
   subject,
+  ink,
+  muted,
+  grid,
+  measure,
   layout,
 }: {
   data: Reading[];
@@ -204,6 +223,12 @@ export function ChartWebSeed({
   ground: string;
   accent: string;
   subject: string;
+  /** Derived from `ground` by `deriveFurniture` in whatever node runner calls this component — see
+   *  this file's own doc-comment. Never derived in here. */
+  ink: string;
+  muted: string;
+  grid: string;
+  measure: Measure;
   layout: WebLayout;
 }) {
   if (data.length < 2)
@@ -211,23 +236,18 @@ export function ChartWebSeed({
       `a web beat needs at least two readings, got ${data.length}`,
     );
 
-  // Furniture and measurement are derived here, inside the component, not threaded in as props —
-  // unlike a real beat's own composition (which receives them from `renderWeb`, once, so every beat
-  // in one HTML file shares a single measurement pass), this seed is deliberately self-contained: it
-  // has no runner of its own, only `scripts/render-preview.mjs`, which calls it directly.
-  const { ink, muted, grid } = deriveFurniture(ground);
   const { width, pad } = layout;
 
   // The header is laid out first — title, then the caveat, then the source — because the plot
   // starts where the header stops.
-  const titleLines = wrap(title, width - pad * 2, layout.title);
+  const titleLines = wrap(title, width - pad * 2, layout.title, measure);
   const titleBaseline = pad + layout.title.fontSize;
-  const caveatLines = wrap(CAVEAT, width - pad * 2, layout.subtitle);
+  const caveatLines = wrap(CAVEAT, width - pad * 2, layout.subtitle, measure);
   const caveatBaseline =
     titleBaseline +
     (titleLines.length - 1) * layout.title.lead +
     Math.round(layout.title.lead * 0.9);
-  const sourceLines = wrap(source, width - pad * 2, layout.source);
+  const sourceLines = wrap(source, width - pad * 2, layout.source, measure);
   const sourceBaseline =
     caveatBaseline +
     (caveatLines.length - 1) * layout.subtitle.lead +
@@ -235,12 +255,6 @@ export function ChartWebSeed({
 
   const last = data[data.length - 1];
   const endLabel = `${subject} · ${last.value} ${UNIT}`;
-
-  const tickValues = yTickValues(data, layout.yTickHint);
-  const topValue = Math.max(...tickValues);
-  const tickLabels = tickValues.map((v) =>
-    v === topValue ? `${v} ${UNIT}` : `${v}`,
-  );
 
   // The frame's total height is derived, not guessed: header block (already fixed above) + a floor
   // for the plot's own usable height + the bottom margin — the exact rule that keeps a wrapped
@@ -252,15 +266,36 @@ export function ChartWebSeed({
   const plotBottom = plotTop + layout.plotMinHeight;
   const height = plotBottom + layout.bottomPad;
 
+  const referenceValue =
+    data.find((d) => d.year === REFERENCE_YEAR)?.value ?? data[0].value;
+
+  // A provisional scale, built at the same domain/range the final one will use (the header block
+  // above already fixed `plotTop`/`plotBottom`), so the reference's own y position is known BEFORE
+  // the tick set is finalised — the only way to drop a regular gridline that would otherwise sit a
+  // few pixels from the dashed reference rule and read as visual noise, the same rule
+  // `proof/co2-suisse/EmissionsWeb.tsx` applies to its own reference line.
+  const gridScale = yScale(data).range([plotBottom, plotTop]);
+  const referenceYProvisional = gridScale(referenceValue);
+  const regularTicks = gridScale
+    .ticks(layout.yTickHint)
+    .filter(
+      (v) =>
+        Math.abs(gridScale(v) - referenceYProvisional) >=
+        layout.minGridlineGapPx,
+    );
+  const tickValues = [...regularTicks, referenceValue].sort((a, b) => a - b);
+  const topValue = Math.max(...tickValues);
+  const tickLabels = tickValues.map((v) =>
+    v === topValue ? `${v} ${UNIT}` : `${v}`,
+  );
+
   // Both gutters are measured from the widest string that will actually be drawn in them.
   const padding: Padding = {
     top: plotTop,
-    right: pad + 12 + measureText(endLabel, layout.label),
+    right: pad + 12 + measure(endLabel, layout.label),
     bottom: layout.bottomPad,
     left:
-      pad +
-      10 +
-      Math.max(...tickLabels.map((l) => measureText(l, layout.axis))),
+      pad + 10 + Math.max(...tickLabels.map((l) => measure(l, layout.axis))),
   };
 
   const { plot, points, path, y } = chartGeometry(data, {
@@ -269,8 +304,6 @@ export function ChartWebSeed({
     padding,
   });
 
-  const referenceValue =
-    data.find((d) => d.year === REFERENCE_YEAR)?.value ?? data[0].value;
   const referenceY = y(referenceValue);
   const peakPoint = points.find((p) => p.year === PEAK_YEAR);
   const end = points[points.length - 1];
@@ -283,7 +316,7 @@ export function ChartWebSeed({
       viewBox={`0 0 ${width} ${height}`}
       className="chart"
       data-layout={layout.name}
-      fontFamily={FONT_FAMILY}
+      fontFamily="Helvetica, Arial, sans-serif"
     >
       {/* No root role="img" — this genre's one deliberate departure from the static genre's
           accessibility pattern (`web-discipline.md`): that role would flatten every child into one
@@ -328,14 +361,20 @@ export function ChartWebSeed({
 
       {tickValues.map((value, i) => (
         <g key={value}>
-          <line
-            x1={plot.left}
-            x2={plot.right}
-            y1={y(value)}
-            y2={y(value)}
-            stroke={grid}
-            strokeWidth={1}
-          />
+          {/* The reference's own row gets no regular gridline — the dashed reference rule below
+              already marks this height, and a second, plain line here (or one sitting a few
+              pixels off it, before the `minGridlineGapPx` filter above dropped it) would read as
+              clutter next to the rule it duplicates. The row still gets its own axis label. */}
+          {value === referenceValue ? null : (
+            <line
+              x1={plot.left}
+              x2={plot.right}
+              y1={y(value)}
+              y2={y(value)}
+              stroke={grid}
+              strokeWidth={1}
+            />
+          )}
           <text
             x={plot.left - 10}
             y={y(value) + 4}

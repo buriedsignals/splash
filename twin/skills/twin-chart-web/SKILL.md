@@ -146,7 +146,7 @@ shape, importing its own story's composition and layouts.
 | The one CSS breakpoint deciding which pre-rendered SVG is visible | `max-width: 480px` | `buildCss`, `render-web.mjs` |
 | The seed's two frame widths | `900` (desktop, also `SEED_LAYOUT`) / `360` (narrow) | `DESKTOP_LAYOUT`/`NARROW_LAYOUT`, `ChartWebSeed.tsx` |
 | The level the seed's reference rule holds against | `2015` (`REFERENCE_YEAR`) | CONFIG block, `ChartWebSeed.tsx` |
-| The one year the seed's own peak marker names | `2018` (`PEAK_YEAR`) | CONFIG block, `ChartWebSeed.tsx` |
+| The one year the seed's own peak marker names | `2020` (`PEAK_YEAR`) — the series' single largest year-over-year rise | CONFIG block, `ChartWebSeed.tsx` |
 
 ## Files
 
@@ -154,13 +154,19 @@ shape, importing its own story's composition and layouts.
   reasoning or the defect that produced it.
 - `assets/ChartWebSeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat (rainfall over a sample town, fell by a third), not a stripped mechanics demo. Also
-  where `WebLayout` now lives — it describes this genre's own mechanics, not any one story's
-  numbers, so a story's own composition (e.g. `proof/co2-suisse/EmissionsWeb.tsx`) imports the type
-  from here rather than defining its own. `chartGeometry`/`yTickValues`/`xTickValues` are pure and
-  exported.
-- `assets/sample-data/rainfall.json` — eleven readings, the same series
-  `twin-chart-beat/assets/sample-data/rainfall.json` uses, so a reader comparing the two skills sees
-  the mechanics differ and the data does not.
+  where `WebLayout` is defined, describing this genre's own mechanics rather than any one story's
+  numbers — a story's own composition (e.g. `proof/co2-suisse/EmissionsWeb.tsx`) does NOT import
+  this type; it declares its own matching copy inline, the "duplicate, do not link" ruling this
+  project applies to anything with no `#shared/*` vendoring path (see the seed's own doc-comment).
+  Like `proof/co2-suisse/EmissionsWeb.tsx`, the component never imports the rasteriser —
+  `ink`/`muted`/`grid`/`measure` are props, derived in node by whoever calls it
+  (`scripts/render-preview.mjs` for this skill's own preview). `chartGeometry`/`yTickValues`/
+  `xTickValues` are pure and exported.
+- `assets/sample-data/rainfall.json` — eleven annual readings for the seed's sample town
+  (2015–2025, 912mm → 604mm). **Not** the same series as
+  `twin-chart-beat/assets/sample-data/rainfall.json` — that file's own eleven rows differ from 2019
+  on (and carry a null, this genre's data does not) — the two are comparable in shape only, not
+  value for value.
 - `assets/preview.png` — the seed rendered on a light ground, at `SEED_LAYOUT` (the desktop rung).
   Regenerate with `scripts/render-preview.mjs` whenever the seed changes.
 - `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML.
@@ -173,9 +179,12 @@ shape, importing its own story's composition and layouts.
   story's script filed beside the skill" shape `twin-chart-video/scripts/render-video.mjs` already
   has.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data (never a
-  story's render) to `assets/preview.png`. `--check` re-renders and fails non-zero if the committed
-  PNG no longer matches a fresh render of the seed — the freshness contract `test/canon.test.ts`
-  asserts, and the same canonical shape Tasks 6 and 7 adapt to their own seed and renderer.
+  story's render) to `assets/preview.png`. Derives `ink`/`muted`/`grid` with `deriveFurniture` and
+  supplies `measureText` as `measure` — the same division `render-web.mjs`'s `renderWeb` uses for a
+  real beat, so the seed component itself never imports the rasteriser. `--check` re-renders and
+  fails non-zero if the committed PNG no longer matches a fresh render of the seed — the freshness
+  contract `test/canon.test.ts` asserts, and the same canonical shape Tasks 6 and 7 adapt to their
+  own seed and renderer.
 - `test/render-web.test.ts` — `bun:test` coverage: CSV parsing, the component's SSR output (closed
   palette, point count, exact per-point French-formatted values, everything argument-bearing
   rendered unconditionally), the pure `nearestIndex` helper, and a direct cross-check against
@@ -185,8 +194,9 @@ shape, importing its own story's composition and layouts.
   copy, the sample data is real rows a seed can render standalone, and `preview.png` is a current
   render (`render-preview.mjs --check`).
 - **The CO₂ beat's own files live outside this skill, in `proof/co2-suisse/`**: `EmissionsWeb.tsx`
-  (composition — imports the `WebLayout` type from this skill's seed, exports its own two named
-  layout constants and a `LAYOUTS` array bundling them for `render-web.mjs`'s CLI),
+  (composition — declares its own `WebLayout` type inline, not imported from this skill's seed,
+  and exports its own two named layout constants and a `LAYOUTS` array bundling them for
+  `render-web.mjs`'s CLI),
   `crossing-geometry.ts` (the pure core, shared with the static and video beats), `EmissionsLine.tsx`
   (the static beat), `BRIEF.md`, `STORYBOARD.md`, `co2-suisse-still.png`. This skill's own `assets/`
   carries no story of its own beyond the seed — replace `proof/co2-suisse/` with the next story's own

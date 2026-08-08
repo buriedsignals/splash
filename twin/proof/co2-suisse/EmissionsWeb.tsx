@@ -36,16 +36,48 @@ import {
   yTickValues,
   type Reading,
 } from "./crossing-geometry";
-// `WebLayout` describes the WEB GENRE's own mechanics (two pre-rendered frame widths, their own
-// tick hints, their own derived height), not this story's numbers — it now lives in the skill's own
-// seed, `twin-chart-web/assets/ChartWebSeed.tsx`, and this story imports it: a story importing a
-// skill is fine, a skill importing a story is not (Task 3, `twin-canon-restoration`). Re-exported so
-// nothing importing `WebLayout` from this file (e.g. `test/render-web.test.ts`) has to change.
-import type { WebLayout } from "../../skills/twin-chart-web/assets/ChartWebSeed.tsx";
-
-export type { WebLayout };
 
 const UNIT = "Mt";
+
+// `WebLayout` describes the web genre's own mechanics and is also defined, verbatim in shape, in
+// the skill's own seed (`twin-chart-web/assets/ChartWebSeed.tsx`) — this file DECLARES ITS OWN copy
+// rather than importing that one. A relative import reaching from a story, across the skill
+// boundary, into a specific skill's `assets/` path hard-codes this dev repository's own layout
+// (a story sitting exactly two directories below the same root as `skills/`), which a real Splash
+// root does not guarantee, and unlike `render-still.mjs`/`interaction.mjs` there is no `#shared/*`
+// vendoring path for a compile-time-only type to travel by. Duplicate, do not link — the same
+// ruling this project already applies to Tom's own two geo-prep scripts, which share zero
+// functions between them.
+export type WebLayout = {
+  name: "desktop" | "narrow";
+  /** The frame's own intrinsic width — the SVG's `viewBox`, not necessarily its rendered CSS
+   *  size. `render-web.mjs`'s HTML wrapper scales it fluidly down to this breakpoint's floor. */
+  width: number;
+  pad: number;
+  title: { fontSize: number; fontWeight: number; lead: number };
+  subtitle: { fontSize: number; fontWeight: number; lead: number };
+  /** Wrapped the same way the title and the limits subtitle are — the source line is a full
+   *  sentence, not a short label, and the narrow layout's first render clipped it clean off the
+   *  right edge of the frame (`web-discipline.md`'s own "Verification" section: this was caught by
+   *  driving a real browser at 360px, not by reading the markup). */
+  source: { fontSize: number; fontWeight: number; lead: number };
+  axis: { fontSize: number };
+  label: { fontSize: number; fontWeight: number };
+  note: { fontSize: number };
+  /** How many y gridlines this layout asks for (d3 treats it as a hint, same as the static genre). */
+  yTickHint: number;
+  /** How many x ticks `tickStep` derives a round interval from, at this layout's own width. */
+  xTickHint: number;
+  /** A regular gridline within one label's line height of the reference is dropped, same rule as
+   *  the static genre, at a gap tuned to this layout's own type size. */
+  minGridlineGapPx: number;
+  /** The plot's own floor for usable height, independent of how many lines the header wraps to.
+   *  The frame's total height is DERIVED from this plus the header block's real height — never a
+   *  fixed constant guessed to be tall enough, because a fixed guess is exactly the kind of number
+   *  that clips a title once a layout is narrow enough to wrap it to three lines instead of one. */
+  plotMinHeight: number;
+  bottomPad: number;
+};
 
 export const DESKTOP_LAYOUT: WebLayout = {
   name: "desktop",

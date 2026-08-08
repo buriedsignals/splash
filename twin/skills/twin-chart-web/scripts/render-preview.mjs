@@ -1,10 +1,20 @@
 // Renders THIS skill's seed from THIS skill's sample data. Never a story's render: a story's
 // artifact proves the story, not the mechanism this skill teaches.
+//
+// Furniture (`ink`/`muted`/`grid`) and `measure` are derived HERE, in node, exactly the division
+// `scripts/render-web.mjs`'s `renderWeb` already uses for a real beat: the seed component itself
+// never imports the rasteriser (see `ChartWebSeed.tsx`'s own doc-comment) — this script is the one
+// place per render that calls `deriveFurniture`/owns `measureText`, then threads the results in as
+// props, once.
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+import {
+  deriveFurniture,
+  measureText,
+} from "../../twin-chart-beat/scripts/render-still.mjs";
 import { ChartWebSeed, SEED_LAYOUT } from "../assets/ChartWebSeed.tsx";
 
 const HERE = import.meta.dirname;
@@ -14,15 +24,20 @@ const data = JSON.parse(
   await readFile(join(HERE, "..", "assets", "sample-data", "rainfall.json"), "utf8"),
 );
 
+const ground = "#FFFFFF";
+const furniture = deriveFurniture(ground);
+
 const svg = renderToStaticMarkup(
   createElement(ChartWebSeed, {
     data,
     title: "Rainfall over the sample town fell by a third",
     source: "Sample data — not a real measurement",
     alt: "A line falling from 912 to 604 across eleven readings.",
-    ground: "#FFFFFF",
+    ground,
     accent: "#0B7A75",
     subject: "the sample town",
+    ...furniture,
+    measure: measureText,
     layout: SEED_LAYOUT,
   }),
 );
