@@ -9,6 +9,7 @@
 // the content IS, only that the two copies AGREE.
 import { describe, it, expect } from "bun:test";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 const CANONICAL_DIR = join(
@@ -35,4 +36,34 @@ describe("root-template/shared/twin-chart-beat — vendored copy stays byte-iden
       expect(vendored).toBe(canonical);
     });
   }
+});
+
+const LIVE_SHARED = join(
+  import.meta.dirname,
+  "..",
+  "..",
+  "..",
+  "shared",
+  "twin-chart-beat",
+);
+
+describe("twin/shared — the repository's own live shared/, so proof stories import the way a real beat does", () => {
+  for (const name of ["render-still.mjs", "inspect-render.mjs"]) {
+    it(`should carry ${name}, byte-identical to the canonical script`, async () => {
+      expect(existsSync(join(LIVE_SHARED, name))).toBe(true);
+      const canonical = await readFile(join(CANONICAL_DIR, name), "utf8");
+      const live = await readFile(join(LIVE_SHARED, name), "utf8");
+      expect(live).toBe(canonical);
+    });
+  }
+
+  it("should be reachable through the #shared specifier declared in package.json", async () => {
+    const pkg = JSON.parse(
+      await readFile(
+        join(import.meta.dirname, "..", "..", "..", "package.json"),
+        "utf8",
+      ),
+    );
+    expect(pkg.imports?.["#shared/*"]).toBe("./shared/*");
+  });
 });

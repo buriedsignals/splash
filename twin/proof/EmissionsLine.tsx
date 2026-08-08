@@ -27,7 +27,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "/Users/rmdms/Sites/Professional/splash-twin/twin/skills/twin-chart-beat/scripts/render-still.mjs";
+} from "#shared/twin-chart-beat/render-still.mjs";
 
 const FRAME = { width: 900, height: 560 };
 const PAD = 40;

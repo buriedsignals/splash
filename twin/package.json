@@ -2,6 +2,9 @@
   "name": "splash-doctrine-twin",
   "private": true,
   "type": "module",
+  "imports": {
+    "#shared/*": "./shared/*"
+  },
   "scripts": {
     "test": "bun test"
   },
