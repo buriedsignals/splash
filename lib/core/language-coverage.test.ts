@@ -5,6 +5,7 @@ import {
   uncoveredLanguageRefusal,
 } from "./language-coverage";
 import { STORY_COPY } from "./story-copy";
+import { SYMBOL_UNIT_WORDS } from "./locale";
 
 describe("the languages splash can actually finish a deliverable in", () => {
   it("covers exactly the four the furniture tables are written for", () => {
@@ -21,6 +22,25 @@ describe("the languages splash can actually finish a deliverable in", () => {
     // (locale.ts) and SOURCE_QUESTION_TABLE (newsroom/ui-copy.ts) are module-private, so this
     // guard pins the reachable one rather than none.
     expect([...COVERED_LANGS].sort()).toEqual(Object.keys(STORY_COPY).sort());
+  });
+
+  // The second reachable furniture table, held to the same rule as STORY_COPY. It reads the
+  // journalist's own sentence rather than writing one, but the failure mode is the same
+  // shape: a row that exists only in English makes the check answer "the unit is already
+  // stated" for an English subtitle and "no" for the identical French one, so a French chart
+  // ships "…54 pour cent recyclés (%)" while its English twin reads clean. That is not
+  // hypothetical — it is the pair of live charts (saWby / fi1UI) this table was written from.
+  it("names no language the symbol-unit word table has no row for", () => {
+    expect(Object.keys(SYMBOL_UNIT_WORDS).length).toBeGreaterThan(0);
+    for (const [symbol, rows] of Object.entries(SYMBOL_UNIT_WORDS)) {
+      expect([symbol, Object.keys(rows).sort()]).toEqual([
+        symbol,
+        [...COVERED_LANGS].sort(),
+      ]);
+      // A row that merely REPEATS the English forms is the leak wearing the table's clothes.
+      for (const lang of COVERED_LANGS.filter((l) => l !== "en"))
+        expect([symbol, lang, rows[lang]]).not.toEqual([symbol, lang, rows.en]);
+    }
   });
 
   it("accepts a regional tag of a covered language", () => {

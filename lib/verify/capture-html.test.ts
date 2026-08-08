@@ -631,6 +631,70 @@ describe("capture — the real deliverable at the real publication container", (
     expect(r.code).toBe("engine-failed");
   }, 120_000);
 
+  // A ROLE WITH TWO TRUE SPELLINGS, measured in a real browser. The page below states its
+  // unit only in the journalist's own words ("54 percent recycled") — which is what a
+  // dw-chart subtitle now looks like, since the assembler stopped appending a redundant "(%)"
+  // to a sentence that already says it (measured live on chart saWby, 2026-08-08). Hunting
+  // for the literal "%" alone would file `furniture-missing` on a chart whose unit reaches
+  // the reader perfectly well.
+  const SPELLED_OUT_UNIT_DOC = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Chart</title></head>
+<body style="margin:0;padding:24px"><div id="root"><div style="height:200px">
+  <div style="font:600 18px system-ui">Basel recycles more of its waste than any other Swiss city</div>
+  <div style="font:12px system-ui">A ranking of four Swiss cities, Basel highest at 54 percent recycled</div>
+</div></div></body></html>`;
+
+  it("accepts the spelled-out unit as the same proof as the symbol", async () => {
+    const artifactPath = writeDoc("spelled.html", SPELLED_OUT_UNIT_DOC);
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-spelled"),
+      id: "e1",
+      furniture: [{ role: "unit", text: "%", alternates: ["percent"] }],
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    const primaryChecks = r.value.checks.filter(
+      (c) => c.breakpoint === "primary",
+    );
+    const present = pick(
+      primaryChecks,
+      "capture:furniture-present",
+      "unit",
+    )[0]!;
+    expect(present.outcome).toBe("pass");
+    // The record names WHICH spelling answered, so the evidence is not "a unit, somewhere".
+    expect(present.detail).toBe('the unit is present, as "percent"');
+    expect(
+      pick(primaryChecks, "capture:furniture-in-frame", "unit")[0]!.outcome,
+    ).toBe("pass");
+  }, 120_000);
+
+  it("still reports a unit that is stated in NEITHER spelling as missing", async () => {
+    const artifactPath = writeDoc(
+      "nounit.html",
+      SPELLED_OUT_UNIT_DOC.replace("at 54 percent recycled", "highest"),
+    );
+    const r = await capture({
+      artifactPath,
+      format: "interactive",
+      channel: "article-web",
+      outDir: join(dir, "out-nounit"),
+      id: "e1",
+      furniture: [{ role: "unit", text: "%", alternates: ["percent"] }],
+      settleMs: 0,
+    });
+    if (!r.ok) throw new Error(r.message);
+    expect(
+      pick(
+        r.value.checks.filter((c) => c.breakpoint === "primary"),
+        "capture:furniture-present",
+        "unit",
+      )[0]!.outcome,
+    ).toBe("fail");
+  }, 120_000);
+
   it("round-trips its result through JSON with no key lost (I6)", async () => {
     const artifactPath = writeDoc("json.html", componentHtml());
     const r = await capture({

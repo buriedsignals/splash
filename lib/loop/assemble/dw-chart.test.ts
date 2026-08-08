@@ -320,3 +320,59 @@ test("the composed subtitle is identical with and without a French run language"
     (withoutLang.value as { intro?: string }).intro,
   );
 });
+
+// ── the spelled-out unit ─────────────────────────────────────────────────────────────────
+//
+// THE MEASURED DEFECT, both halves of it, taken off real published charts on 2026-08-08:
+// chart saWby carried "A ranking of four Swiss cities, Basel highest at 54 percent recycled
+// (%)" and chart fi1UI carried "Un classement de quatre villes suisses, Bâle en tête à 54
+// pour cent recyclés (%)". The token rule was satisfied in both cases and the prose was
+// redundant in both, which is what makes this a rule defect rather than a fixture defect —
+// and the French half is why the word forms are a four-language table (lib/core/locale.ts's
+// SYMBOL_UNIT_WORDS) rather than an English list.
+test("a subtitle that spells the unit out is not handed the symbol as well", () => {
+  expect(
+    introWithUnit(
+      "A ranking of four Swiss cities, Basel highest at 54 percent recycled",
+      "%",
+    ),
+  ).toBe("A ranking of four Swiss cities, Basel highest at 54 percent recycled");
+});
+
+test("the spelled-out unit is read in all four languages splash finishes deliverables in", () => {
+  for (const base of [
+    "Un classement de quatre villes suisses, Bâle en tête à 54 pour cent recyclés",
+    "Basel recycelt mit 54 Prozent mehr als jede andere Schweizer Stadt",
+    "Basilea ricicla il 54 per cento dei suoi rifiuti",
+    "Recycling in Basel reaches 54 per cent",
+  ])
+    expect(introWithUnit(base, "%")).toBe(base);
+});
+
+// The append is not being weakened, only stopped where it repeats. A subtitle that states
+// the unit NOWHERE still gets it — this is the control the live probe published as chart
+// XH5n8, and the case that would silently lose the unit if the rule went too far.
+test("a subtitle that states the unit nowhere still gets it", () => {
+  expect(introWithUnit("A ranking of four Swiss cities, Basel highest", "%")).toBe(
+    "A ranking of four Swiss cities, Basel highest (%)",
+  );
+});
+
+// "percentage points" is a DIFFERENT unit from "%", and a subtitle that says it has not
+// said "%". The word boundary is what keeps the word forms from over-reaching.
+test("'percentage points' does not count as the percent sign already stated", () => {
+  expect(introWithUnit("Recycling rose by 4 percentage points", "%")).toBe(
+    "Recycling rose by 4 percentage points (%)",
+  );
+});
+
+// The word forms belong to the SYMBOL units and to nothing else. Measured on this repo's own
+// corpus: four French angles write "francs" against unit "CHF" (lib/loop/angle.test.ts:15,
+// :231, :270; lib/host/state.test.ts:311). "CHF" says WHICH franc and "francs" does not, so
+// the parenthetical adds information rather than repeating it — a genuinely different case
+// from "%"/"percent", and deliberately left appending.
+test("a currency code is still appended next to its spelled-out word", () => {
+  expect(introWithUnit("Genève affiche 583 francs, Fribourg 468.", "CHF")).toBe(
+    "Genève affiche 583 francs, Fribourg 468. (CHF)",
+  );
+});

@@ -12,6 +12,7 @@
 import { join } from "node:path";
 import { fail, ok, runVerb, type VerbResult } from "../core/verbs";
 import { toVerbResult, validateSourcePolicy } from "../source";
+import { unitStatedIn } from "../core/locale";
 import { destinationIdFor } from "../verify/viewport";
 import { DEFAULT_REVIEW_RUBRIC } from "../verify/review";
 import { heightPolicyFor } from "./assemble";
@@ -67,12 +68,27 @@ export function furnitureFor(
   sourceName: string,
 ): FurnitureExpectation[] {
   const angle = el.angle!;
-  return [
+  // THE UNIT HAS TWO TRUE SPELLINGS on a page, and which one is printed is not this
+  // function's decision — it is the composer's. dw-chart's `introWithUnit` appends "(%)" to
+  // the subtitle ONLY when the journalist's own sentence does not already state the unit, and
+  // "…at 54 percent recycled" states it (lib/core/locale.ts's `unitStatedIn`, the one place
+  // that fact lives). Naming only the symbol here would send capture hunting for a "%" that
+  // chart correctly never prints, and file a blocking `furniture-missing` on a good chart —
+  // the exact finding this repo spent eight days pinning for the opposite reason.
+  const statedInWords = unitStatedIn(angle.altInsight, angle.unit);
+  const unitAlternates: readonly string[] =
+    statedInWords && statedInWords !== angle.unit.trim() ? [statedInWords] : [];
+  const rows: FurnitureExpectation[] = [
     { role: "title", text: angle.confirmedTakeaway },
-    { role: "unit", text: angle.unit },
+    {
+      role: "unit",
+      text: angle.unit,
+      ...(unitAlternates.length ? { alternates: unitAlternates } : {}),
+    },
     { role: "source", text: sourceName },
     { role: "alt-text", text: angle.altInsight },
-  ].filter((f): f is FurnitureExpectation => f.text.trim().length > 0);
+  ];
+  return rows.filter((f) => f.text.trim().length > 0);
 }
 
 /**

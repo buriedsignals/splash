@@ -389,7 +389,7 @@ function measureInPage(args: {
   rootSelectors: string[];
   titleSources: { selector: string; read: string }[];
   maxTitleChars: number;
-  furniture: { role: string; text: string }[];
+  furniture: { role: string; text: string; alternates?: string[] }[];
 }): Measured {
   const round = (n: number) => Math.round(n * 100) / 100;
   const boxOf = (el: Element): Box => {
@@ -485,17 +485,39 @@ function measureInPage(args: {
   }
 
   const furniture = args.furniture.map((f) => {
-    const needle = f.text.trim();
     // The DEEPEST element carrying the text: an ancestor also "contains" it, and measuring
     // the ancestor would answer a question about the wrapper instead of about the label.
-    const candidates = Array.from(root.querySelectorAll("*")).filter((el) =>
-      (el.textContent ?? "").trim().includes(needle),
-    );
-    const deepest = candidates.filter(
-      (el) => !candidates.some((other) => other !== el && el.contains(other)),
-    );
-    const el = deepest[0] ?? null;
-    if (!el)
+    const hit = (needle: string) => {
+      const candidates = Array.from(root.querySelectorAll("*")).filter((el) =>
+        (el.textContent ?? "").trim().includes(needle),
+      );
+      const deepest = candidates.filter(
+        (el) => !candidates.some((other) => other !== el && el.contains(other)),
+      );
+      const el = deepest[0] ?? null;
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      const box = boxOf(el);
+      const visible =
+        cs.display !== "none" &&
+        cs.visibility !== "hidden" &&
+        Number(cs.opacity) > 0 &&
+        box.width > 0 &&
+        box.height > 0;
+      return { text: needle, visible, box };
+    };
+
+    // Every spelling of the same fact, and the FIRST VISIBLE one wins — not the first
+    // present one. A role whose declared text sits in a screen-reader-only node while an
+    // alternate is painted in the frame must measure the painted one, or the visibility and
+    // in-frame verdicts below would describe a node no reader can see. A merely-present
+    // match is still kept as the fallback so "in the DOM but not visible" stays sayable.
+    const needles = [f.text, ...(f.alternates ?? [])]
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    const hits = needles.map(hit).filter((h) => h !== null);
+    const chosen = hits.find((h) => h!.visible) ?? hits[0] ?? null;
+    if (!chosen)
       return {
         role: f.role as FurnitureRole,
         text: f.text,
@@ -503,20 +525,14 @@ function measureInPage(args: {
         visible: false,
         box: null,
       };
-    const cs = getComputedStyle(el);
-    const box = boxOf(el);
-    const visible =
-      cs.display !== "none" &&
-      cs.visibility !== "hidden" &&
-      Number(cs.opacity) > 0 &&
-      box.width > 0 &&
-      box.height > 0;
     return {
       role: f.role as FurnitureRole,
-      text: f.text,
+      // The string that was actually MATCHED, so a failure detail names what was measured
+      // rather than what was hoped for.
+      text: chosen.text,
       found: true,
-      visible,
-      box,
+      visible: chosen.visible,
+      box: chosen.box,
     };
   });
 
@@ -557,7 +573,11 @@ function furnitureChecks(target: CaptureTarget, m: Measured): CaptureCheck[] {
         ? `no element carries the ${f.role} text "${f.text}"`
         : !f.visible && !exempt
           ? `the ${f.role} is in the DOM but not visible`
-          : `the ${f.role} is present`,
+          : // NAMED, not just affirmed: a role can be satisfied by more than one true
+            // spelling (a unit reaches a reader as "%" or as "percent"), and a record that
+            // only said "present" would leave the reader of an evidence file unable to tell
+            // which one the page actually carries.
+            `the ${f.role} is present, as "${f.text}"`,
     });
     // No frame verdict for something absent, or for text that is not meant to be seen:
     // two failures for one defect make the real cause harder to read.
@@ -623,9 +643,12 @@ async function captureHtml(
   const dir = captureDir(p.outDir, p.id);
   const url = source.url;
   const settleMs = p.settleMs ?? DEFAULT_SETTLE_MS;
+  // Rebuilt as PLAIN data, not forwarded: `measureInPage` is serialized across the browser
+  // boundary, and a readonly array crosses it fine but must be materialized here.
   const furniture = (p.furniture ?? []).map((f) => ({
     role: f.role as string,
     text: f.text,
+    ...(f.alternates?.length ? { alternates: [...f.alternates] } : {}),
   }));
 
   // The SAME field captureStatic has read since the row-driven family came back into the offer.

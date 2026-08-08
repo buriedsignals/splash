@@ -302,3 +302,98 @@ describe("core/locale — golden output on map-native's historically-tested rang
     expect([...core.groupSep("fr")][0]?.codePointAt(0)).toBe(0x202f);
   });
 });
+
+// ── "does this sentence already state the unit?" ─────────────────────────────────────────
+//
+// The MEASURED defect (live Datawrapper chart saWby, 2026-08-08): a subtitle reading
+// "…Basel highest at 54 percent recycled" was published as "…54 percent recycled (%)",
+// because the only test for "already stated" was for the SYMBOL as its own token, and
+// "percent" is not the token "%". The French run reproduced it byte for byte on chart
+// fi1UI ("…54 pour cent recyclés (%)"), which is why the word forms are a TABLE and not
+// an English list.
+describe("unitStatedIn — the one reader-facing test of whether a unit is already said", () => {
+  it("finds the unit as its own token, and answers with the bytes on the page", () => {
+    expect(core.unitStatedIn("Recycling reaches 54%", "%")).toBe("%");
+    expect(core.unitStatedIn("Le recyclage atteint 54 %", "%")).toBe("%");
+    expect(core.unitStatedIn("Surface exprimée en m", "m")).toBe("m");
+  });
+
+  it("does not mistake a letter buried in an ordinary word for the unit", () => {
+    expect(core.unitStatedIn("Loyer moyen des logements", "m")).toBeUndefined();
+    expect(core.unitStatedIn("Tonnage des déchets", "t")).toBeUndefined();
+  });
+
+  it("reads the SPELLED-OUT percent in each of the four covered languages", () => {
+    expect(
+      core.unitStatedIn(
+        "A ranking of four Swiss cities, Basel highest at 54 percent recycled",
+        "%",
+      ),
+    ).toBe("percent");
+    expect(core.unitStatedIn("Recycling reaches 54 per cent", "%")).toBe(
+      "per cent",
+    );
+    expect(
+      core.unitStatedIn("Bâle en tête à 54 pour cent recyclés", "%"),
+    ).toBe("pour cent");
+    expect(core.unitStatedIn("Basel recycelt 54 Prozent", "%")).toBe("Prozent");
+    expect(core.unitStatedIn("Basilea ricicla il 54 per cento", "%")).toBe(
+      "per cento",
+    );
+  });
+
+  it("reads the spelled-out per-mille the same way, in all four", () => {
+    for (const [text, want] of [
+      ["A rate of 4 per mille", "per mille"],
+      ["Un taux de 4 pour mille", "pour mille"],
+      ["Eine Rate von 4 Promille", "Promille"],
+      ["Un tasso del 4 per mille", "per mille"],
+    ] as const)
+      expect(core.unitStatedIn(text, "‰")).toBe(want);
+  });
+
+  // The boundary is what keeps the word forms from over-reaching. "percentage points" is a
+  // DIFFERENT unit from "%", and a subtitle that says it has not stated "%".
+  it("stops at a word boundary — 'percentage' is not 'percent', 'per cento' is not 'per cent'", () => {
+    expect(
+      core.unitStatedIn("Recycling rose by 4 percentage points", "%"),
+    ).toBeUndefined();
+    expect(
+      core.unitStatedIn("Le pourcentage de tri a progressé", "%"),
+    ).toBeUndefined();
+  });
+
+  // The word forms belong to the SYMBOL units and to nothing else. "CHF" is not "francs":
+  // the ISO code says WHICH franc, which the word does not, so a subtitle saying "583
+  // francs" has not stated "CHF". Measured on the repo's own corpus: four French angles
+  // write "francs" against unit "CHF" (lib/loop/angle.test.ts:231, :270, lib/host/
+  // state.test.ts:311, lib/loop/angle.test.ts:15).
+  it("says nothing about a currency code a word form would only half-state", () => {
+    expect(
+      core.unitStatedIn("Genève affiche 583 francs, Fribourg 468.", "CHF"),
+    ).toBeUndefined();
+  });
+
+  it("answers undefined for a blank or absent unit rather than matching everything", () => {
+    expect(core.unitStatedIn("anything at all", "")).toBeUndefined();
+    expect(core.unitStatedIn("anything at all", "   ")).toBeUndefined();
+    expect(core.unitStatedIn("anything at all", undefined)).toBeUndefined();
+  });
+
+  // The unit comes from a brief — untrusted — and can carry regex metacharacters.
+  it("escapes a unit carrying regex metacharacters instead of compiling it", () => {
+    expect(core.unitStatedIn("Vitesse en m/s^2", "m/s^2")).toBe("m/s^2");
+    expect(core.unitStatedIn("Vitesse en metres", "m/s^2")).toBeUndefined();
+  });
+
+  it("has a spelled-out row for every language splash can finish a deliverable in", () => {
+    for (const [symbol, rows] of Object.entries(core.SYMBOL_UNIT_WORDS)) {
+      expect([symbol, Object.keys(rows).sort()]).toEqual([
+        symbol,
+        ["de", "en", "fr", "it"],
+      ]);
+      for (const forms of Object.values(rows))
+        expect(forms.length).toBeGreaterThan(0);
+    }
+  });
+});

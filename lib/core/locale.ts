@@ -175,6 +175,137 @@ export const SHORT_UNIT_MAX_CHARS = 3;
 const SYMBOL_UNIT = /^[%‰]/;
 
 /**
+ * The SPELLED-OUT forms of the typographic symbol units, one row per covered language.
+ *
+ * A symbol unit is the only kind whose written-out form says exactly, and only, what the
+ * symbol says: "54 percent" and "54%" are the same statement to a reader. That is what
+ * earns these units a word table and what keeps the table from growing without bound.
+ *
+ * MEASURED, over the 77 distinct (unit, subtitle) pairs this repo writes down: widening the
+ * rule to these word forms changes exactly ONE composed subtitle, and the change removes an
+ * append — nothing gains one. Five other pairs put a spelled-out form next to a unit this
+ * table does NOT know, and both groups were checked rather than waved past:
+ *   - four are "583 francs" against the unit "CHF" (lib/loop/angle.test.ts:15, :231, :270;
+ *     lib/host/state.test.ts:311). An ISO currency code is NOT in the symbol class: it says
+ *     WHICH franc, which "francs" does not, so "(CHF)" adds information rather than
+ *     repeating it. Deliberately still appended, and locked by a test.
+ *   - one is "million square kilometres" against "million km²" (lib/loop/assemble/
+ *     chart-native.test.ts:11, scrolly.test.ts:13, brief.test.ts:15). That IS the same
+ *     redundancy in kind — and it cannot occur, because it never reaches a composer that
+ *     concatenates. `introWithUnit` (lib/loop/assemble/dw-chart.ts) is the ONLY place in the
+ *     repo that appends a unit onto a sentence, and it exists only because ChartSpec has no
+ *     unit field; every other assembler hands the unit to its engine as its OWN field
+ *     (chart-native `unit` → `subtitle={config.unit}`, map-dw `unit` → legend suffix,
+ *     map-native `unit`/`valueUnit`), where there is no prose to be redundant with. The
+ *     sea-ice fixture is a chart-native/scrolly element and has no dw-chart route.
+ *
+ * Four languages because splash finishes deliverables in four (COVERED_LANGS,
+ * language-coverage.ts) and the leak is not hypothetical: the defect this table closes
+ * was reproduced live in BOTH English and French, on real published charts.
+ * language-coverage.test.ts holds this table to the same row-per-language rule as
+ * STORY_COPY, so a fifth language cannot be declared covered while this stays quaternary.
+ *
+ * Order within a row matters only in that a longer form must not be shadowed by a shorter
+ * prefix of it; `unitStatedIn`'s word boundary is what actually settles that ("per cent"
+ * cannot match inside "per cento"), so the rows read in the order a speaker would list
+ * them.
+ */
+export const SYMBOL_UNIT_WORDS: Record<
+  string,
+  Record<string, readonly string[]>
+> = {
+  "%": {
+    en: ["percent", "per cent"],
+    fr: ["pour cent"],
+    de: ["Prozent"],
+    it: ["per cento"],
+  },
+  "‰": {
+    en: ["per mille", "permille"],
+    fr: ["pour mille"],
+    de: ["Promille"],
+    it: ["per mille"],
+  },
+};
+
+/** Whether a string's own edge character is alphanumeric at all — the question of whether
+ *  a boundary assertion is needed there in the first place. A symbol edge ("€/m²"'s "€",
+ *  "%") can never run on into an adjacent word, so it needs no assertion. */
+const EDGE_ALNUM = /[\p{L}\p{N}]/u;
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** `needle` as its own TOKEN: bounded by non-letters, case-insensitively.
+ *
+ *  The boundary excludes LETTERS only (`\p{L}`), not digits, on both edges — a deliberate,
+ *  explicit choice, not an accident of the character class: a number glued directly onto
+ *  the unit ("12km", "500g", "3h30") is the ordinary, no-space value+unit convention, and
+ *  IS the unit already stated, on either side. Only an adjacent LETTER means the run
+ *  continues into an unrelated word ("moyen", "logements", "percentage", "pourcentage"),
+ *  so only letters block a match. The needle is untrusted (a unit comes from a brief) and
+ *  is escaped before it is ever interpolated into a pattern.
+ *
+ *  A naked substring test is wrong for any unit that is a single ordinary letter ("m", "t",
+ *  "h", "g"): almost every sentence carries that letter buried in some unrelated word, and a
+ *  check without the boundary silently swallowed the unit every time, never appending it.
+ *
+ *  Matching stays case-insensitive, which the German row needs ("Prozent" is capitalized as a
+ *  noun and lowercase mid-compound) and which a single-letter unit pays a small price for:
+ *  "M." at the start of an abbreviated name ("selon M. Dupont") can in principle be read as
+ *  the unit "m" already stated. Accepted — the false positive needs a standalone capital
+ *  letter immediately followed by a non-letter, no report of it firing exists, and narrowing
+ *  it would mean matching case-sensitively only for length-1 units, a second special case for
+ *  a residual with no observed instance. */
+function tokenPattern(needle: string): RegExp {
+  // Unicode-aware edge chars — needle[0]/needle[len-1] index UTF-16 code units and would
+  // slice an astral character in half; nothing under test is astral, but the spread is free.
+  const chars = [...needle];
+  const first = chars[0]!;
+  const last = chars[chars.length - 1]!;
+  const left = EDGE_ALNUM.test(first) ? String.raw`(?<!\p{L})` : "";
+  const right = EDGE_ALNUM.test(last) ? String.raw`(?!\p{L})` : "";
+  return new RegExp(`${left}${escapeRegExp(needle)}${right}`, "iu");
+}
+
+/**
+ * The text in `text` that ALREADY STATES `unit` to a reader — the symbol as its own token,
+ * or, for a symbol unit, its spelled-out form in any of the four covered languages —
+ * or `undefined` when the sentence does not state the unit at all.
+ *
+ * It answers with the MATCHED BYTES, not with a boolean, because two callers need
+ * different halves of the same fact and must never disagree about it:
+ *   - the dw-chart assembler (lib/loop/assemble/dw-chart.ts) appends "(unit)" to the
+ *     printed subtitle only when this is undefined;
+ *   - the furniture expectation (lib/loop/verify.ts) tells capture WHICH string to go
+ *     looking for on the published page, and when the append did not happen the evidence
+ *     the reader actually sees is the word form, not the symbol.
+ * A boolean would have left the second caller guessing, and a capture that goes looking
+ * for "%" on a page that correctly says "percent" files a blocking finding on a good chart.
+ *
+ * No `lang` parameter, on purpose, and it is not an omission: the question is what the
+ * JOURNALIST'S OWN SENTENCE says, and that sentence's language is whatever they wrote it
+ * in — often before any `lang` is pinned on the run at all. Every covered language's forms
+ * are therefore tried. There is no false positive to trade against: "Prozent" appearing in
+ * an English subtitle still means the reader has been told.
+ */
+export function unitStatedIn(
+  text: string,
+  unit: string | undefined,
+): string | undefined {
+  const u = unit?.trim();
+  if (!u) return undefined;
+  const rows = SYMBOL_UNIT_WORDS[u];
+  const needles = [u, ...(rows ? Object.values(rows).flat() : [])];
+  for (const needle of needles) {
+    const m = tokenPattern(needle).exec(text);
+    if (m) return m[0];
+  }
+  return undefined;
+}
+
+/**
  * The locale-aware suffix (separator + unit) a direct value label appends for a
  * SHORT unit, or "" when the unit is long/blank (the label stays a bare number).
  *   fr/de → narrow no-break space (U+202F) before every unit, "%" included
