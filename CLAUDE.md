@@ -290,6 +290,72 @@ comparer à la base de fusion ou monter un worktree de contrôle.
 > une fois pour toutes » à 18, puis 20, puis 22, puis 23 ; il vaut 25 au 2026-08-06. Réécrire les
 > reçus est ce qui produit la dérive — lire `check.mjs` est ce qui y met fin.
 
+## ★ État courant — 2026-08-07 — JOURNÉE DE CORRECTION : 22 chantiers, `main` @ `8f10c899`, gate 25/25
+
+Déclenchée par des **tests manuels de Rémy** et par trois notes de défaut écrites par des runs
+réels (Heidi.news prisons genevoises, JO Milan Cortina, glaciers). Tout est fusionné dans `main`,
+chaque correctif prouvé **au rendu** et chaque garde **vérifiée par mutation** (casser le code,
+regarder le bon test rougir, restaurer). Détail complet : CHANGELOG.
+
+**Les défauts qu'un journaliste rencontrait :**
+- **Un choroplèthe admin-1 était injoignable sur la chaîne prose** (cantons, départements,
+  comtés) : pas d'étape `orient`, donc `featureIdsByValue` jamais écrit — offrable, validable,
+  inconstructible. Fermé par `skills/map-native/src/adm1-backfill.ts` ; la jointure se repointe sur
+  la colonne qui résout (`canton_code`="CH-GE" ne résout rien, `canton`="Genève" résout 4/4) et le
+  storyboard confirmé voyage avec elle. Le producteur scrolly avait le même trou.
+- **`dot-density` et `cartogram` sur un fond non-`world`** rendaient une carte **vide** (clé
+  épinglée à `iso_a3`). Refusés maintenant **à l'offre**, dans la phrase du moteur, sur les deux
+  chaînes — et **par format** : la vidéo, qui marche, est préservée (rendu à l'appui).
+- **La visite guidée ne voyageait pas.** Boîte d'arrêt constante ±1,5° : plus la grappe est
+  serrée, plus le tour s'aplatit. Sur un **ruban** la caméra dézoomait de 2,19 niveaux à chaque
+  étape. Une seule fonction désormais (`tourStopBox`, boîte d'établissement divisée par deux) —
+  +1,00 niveau sur les trois formes.
+- **Le Mont Miné perdait son étiquette** sur le plan final (4 points, 3 noms) : notre culler ne
+  recevait qu'**un seul rectangle candidat** par repère. Réparé sur les cinq renderers Locator.
+- **Le point du Cervin était sur le glacier**, à 1063 m du sommet — la couche par défaut de
+  MapTiler ne contient **aucun sommet**. `lib/geo/geocode.ts` interroge la couche POI ; le Cervin
+  résout à 19 m, `ele 4478`. Quatre genres mesurés (`peak`/`lake`/`glacier`/`settlement`), quatre
+  refusés avec leur mesure. Ambiguïté inter-pays refusée (`--country`).
+- **Les légendes d'étape locator sortaient cassées** (« Pont d'Austerlitz — , the highest of the 5
+  shown ») et **en anglais dans un livrable français**. `lang` est désormais **requis** : l'omettre
+  est une erreur de type — ce qui a débusqué six appelants et cinq chaînes codées en dur.
+- **La charte n'atteignait rien de ce que la boucle construit** (carte bleue sous profil rouge),
+  alors que la phase INPUT l'annonce en mots. Fermée à `assemblerFor`, politique **importée** de
+  `mergeProfileDefaults`. Prouver l'autre moitié — le **fond** — a révélé qu'une charte sombre ne
+  produisait **pas du tout** (`snap-theme` écrivait dans le dossier de livraison).
+- **Un fond maison saturé était refusé** sur un arrière-plan qui ne peut pas se produire (3,26:1
+  mesuré contre un pôle absolu ; 6,14:1 sur le fond réellement épinglé). Décision produit de
+  Rémy implémentée : conforme ⇒ autorisé ; **nous ne proposons jamais hors normes** ; la couleur du
+  journaliste qui échoue vraiment ouvre un **choix** (variante proche / la nôtre / garder la
+  sienne), et « garder la sienne » est **honoré et enregistré**, clavetée sur la couleur déclarée.
+
+**Les coutures fermées (une valeur que la machine produit et que rien n'enregistrait) :**
+`resolvedPlaces` (le lookup laisse un reçu, `place-provenance` refuse) et **`sourceHint`**
+(`save-opportunities.mjs` gardait `claim`/`intent`/`anchor` et **jetait** le hint qu'il recevait —
+les gardes B/D dormantes ont été vues **tirer**). Dans les deux cas, ne pas écrire le reçu est ce
+qui échoue, pas ce qui sauve.
+
+**Ce que la journée a appris sur la vérification elle-même :**
+- Un **`| tail`** en bout de pipe masque le code de sortie : un gate tué a été notifié « exit 0 »
+  **deux fois**. Lire la sortie, pas le statut.
+- **SHA-256 d'un mp4 ne prouve rien** : même config, même code, trois rendus → trois hachages.
+  L'assertion « byte-identique » d'hier était un tirage au sort ; remplacée par des boîtes de
+  caméra identiques au bit près + un diff d'images sous le plancher de bruit.
+- Un **test peut encoder le défaut** (`18kWh`, boîtes ±1,5° constantes) : le corriger fait partie
+  du correctif.
+- Un **worktree neuf** ment : `bun install` manquant dans `skills/chart-native` = 24 rouges qui ne
+  sont pas des régressions ; le navigateur Remotion absent en fait d'autres.
+- Le **gate est sériel** : les mêmes 25 vérifications lancées en parallèle prennent quelques
+  minutes au lieu de ~50. Mais **jamais pendant des rendus** — la contention dégrade ce qu'on mesure.
+- **Un rendu est un artefact sur lequel on prend N mesures**, pas la preuve d'un correctif : une
+  vidéo par *forme de jeu de données*, pas une par branche.
+
+**Résidus ouverts (mesurés, pas oubliés)** : une **vidéo de scrolly route ne se rend pas**
+(`No target found for targetId`, pré-existant, la vidéo locator passe par la même composition) ·
+un scrolly route sans `insight` **se referme sur son propre titre** (décision éditoriale) · le
+sous-titre DW lit « 54 percent recycled (%) » · le harnais de mesure de zoom vit dans un
+scratchpad et a été reconstruit par **deux sessions**.
+
 ## ★ État courant — 2026-08-06 — LA CHARTE LIT UN VRAI SITE DE RÉDACTION (**fusionnée** dans `main` @ `dcfff3c3`)
 
 `proposeCharter` lisait 0 feuille de style sur heidi.news avant ce chantier (filtre same-host,
