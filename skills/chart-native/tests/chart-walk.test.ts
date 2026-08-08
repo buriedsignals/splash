@@ -411,3 +411,68 @@ describe("combo is sequenced because its line cannot be reordered, not for want 
     expect(w.why).not.toContain("advances by SERIES");
   });
 });
+
+describe("gantt is sequenced because its rows are time-ordered, not for want of a name", () => {
+  const src = readFileSync(
+    join(import.meta.dir, "..", "src", "GanttChart.tsx"),
+    "utf8",
+  );
+  const geo = readFileSync(
+    join(import.meta.dir, "..", "src", "gantt-geometry.ts"),
+    "utf8",
+  );
+
+  it("its rows really are NAMED — the old reason said they were not", () => {
+    // The label is drawn in the gutter and read out as the bar's accessible name. If gantt
+    // ever loses its row labels, this goes red and the `why` can go back to SEQUENCED_UNNAMED.
+    expect(src).toContain("b.label");
+    expect(src).toMatch(/spanAria\(/);
+  });
+
+  it("…and their ORDER is the timeline, which a beat is not allowed to permute", () => {
+    // Rows sorted by start date, top → bottom. This sort is the reason the grain is
+    // sequenced; if it were ever removed, gantt could be reconsidered as anchored.
+    expect(geo).toMatch(/sort\(\(a, b\) => a\.startMs - b\.startMs/);
+    // and the reveal is indexed by that sorted ROW position, not by the original data row —
+    // so "the journalist's order" has nowhere to enter.
+    expect(src).toMatch(/rowP\(b\.order\)/);
+  });
+
+  it("so it declares the sequenced grain, and says THAT rather than 'not named'", () => {
+    const w = CHART_WALKS.gantt;
+    expect(w.grain).toBe("sequenced");
+    expect(w.reorders).toBeUndefined();
+    expect(w.why).toMatch(/start date|timeline|what came after what/);
+    // The reason it used to give, which the component contradicts.
+    expect(w.why).not.toContain("not named");
+  });
+});
+
+describe("candlestick is sequenced because its x axis IS time, not for want of a name", () => {
+  const src = readFileSync(
+    join(import.meta.dir, "..", "src", "CandlestickChart.tsx"),
+    "utf8",
+  );
+
+  it("its periods really are addressable — the old reason said they were not", () => {
+    // Each period carries its own date, drawn on the axis and read out as the candle's
+    // accessible name. If candlestick ever loses dated periods this goes red and the `why`
+    // can go back to SEQUENCED_UNNAMED.
+    expect(src).toMatch(/candleAria\(/);
+    expect(src).toMatch(/periodDate\(/);
+  });
+
+  it("…and its entrance is indexed by the period's position in TIME", () => {
+    // stagger(p, i, n, …) over candles held in date order — there is no journalist order to
+    // enter, because permuting the periods would change what the chart says.
+    expect(src).toMatch(/stagger\(p, i, n,/);
+  });
+
+  it("so it declares the sequenced grain, and says THAT rather than 'not named'", () => {
+    const w = CHART_WALKS.candlestick;
+    expect(w.grain).toBe("sequenced");
+    expect(w.reorders).toBeUndefined();
+    expect(w.why).toMatch(/x axis IS time|change what the chart says/);
+    expect(w.why).not.toContain("not named");
+  });
+});

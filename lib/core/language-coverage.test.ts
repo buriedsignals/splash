@@ -6,6 +6,7 @@ import {
 } from "./language-coverage";
 import { STORY_COPY } from "./story-copy";
 import { SYMBOL_UNIT_WORDS } from "./locale";
+import { DATE_COPY } from "./date-locale";
 
 describe("the languages splash can actually finish a deliverable in", () => {
   it("covers exactly the four the furniture tables are written for", () => {
@@ -40,6 +41,24 @@ describe("the languages splash can actually finish a deliverable in", () => {
       // A row that merely REPEATS the English forms is the leak wearing the table's clothes.
       for (const lang of COVERED_LANGS.filter((l) => l !== "en"))
         expect([symbol, lang, rows[lang]]).not.toEqual([symbol, lang, rows.en]);
+    }
+  });
+
+  // The third reachable furniture table, held to the same rule. A date is furniture the same
+  // way "Source:" is: the TIME family (gantt, calendar, candlestick) puts month and weekday
+  // NAMES on every axis, and a row that exists only in English ships an Italian calendar
+  // whose weekdays read "Mon Wed Fri Sun" — the leak this rule exists to make impossible.
+  it("names no language the date table has no row for", () => {
+    expect(Object.keys(DATE_COPY).sort()).toEqual([...COVERED_LANGS].sort());
+    for (const lang of COVERED_LANGS.filter((l) => l !== "en")) {
+      expect([lang, DATE_COPY[lang].monthsShort]).not.toEqual([
+        lang,
+        DATE_COPY.en.monthsShort,
+      ]);
+      expect([lang, DATE_COPY[lang].weekdaysShortMonday]).not.toEqual([
+        lang,
+        DATE_COPY.en.weekdaysShortMonday,
+      ]);
     }
   });
 

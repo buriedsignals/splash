@@ -8,6 +8,7 @@ const groupColors = [OKABE_ITO.blue, OKABE_ITO.orange, OKABE_ITO.green];
 const spans = sample.items.map((i) => ({
   startMs: Date.parse(`${i.start}-01`),
   endMs: Date.parse(`${i.end}-01`),
+  label: i.label,
 }));
 
 describe("the shipped gantt is conformant (global ++ gantt)", () => {
@@ -30,13 +31,43 @@ describe("the shipped gantt is conformant (global ++ gantt)", () => {
       {
         title: sample.title,
         source: sample.source,
-        spans: [{ startMs: 100, endMs: 50 }],
+        spans: [{ startMs: 100, endMs: 50, label: "Land acquisition" }],
         timeLabel: sample.unit,
         groupColors,
       },
       text,
     );
     expect(v.some((m) => m.includes("end ≥ start"))).toBe(true);
+  });
+
+  it("NAMES the row that runs backwards, not just the fact that one does", () => {
+    // MUTATION: dropping `s.label` from the message → this fails while the test above
+    // still passes, which is exactly why both exist.
+    const v = checkGanttConformance(
+      {
+        title: sample.title,
+        source: sample.source,
+        spans: [{ startMs: 100, endMs: 50, label: "Land acquisition" }],
+        timeLabel: sample.unit,
+        groupColors,
+      },
+      text,
+    );
+    expect(v.join(" ")).toContain("Land acquisition");
+  });
+
+  it("flags a row left without a label", () => {
+    const v = checkGanttConformance(
+      {
+        title: sample.title,
+        source: sample.source,
+        spans: [{ startMs: 50, endMs: 100, label: "  " }],
+        timeLabel: sample.unit,
+        groupColors,
+      },
+      text,
+    );
+    expect(v.some((m) => m.includes("no label"))).toBe(true);
   });
 
   it("flags a missing time-axis caption", () => {

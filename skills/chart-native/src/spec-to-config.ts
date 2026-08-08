@@ -7,6 +7,11 @@
 import { parseCsv, type ParsedCsv } from "./csv";
 import { chooseUnitPerIcon } from "./pictogram-geometry";
 import { validateShape } from "./shape-validation";
+import {
+  endOfGrain,
+  parseIsoDate,
+  requireIsoDate,
+} from "../../../lib/core/date-locale";
 import { humanizeColumn, seriesLabelFromColumn } from "./core/text";
 import type { ArcRole } from "../../../lib/core/claim-arc";
 import type { SourceKind } from "../../../lib/source/vocabulary";
@@ -88,6 +93,31 @@ export interface NativeSpec {
   /** COMBO — what the LINE series measures ("%", "index 2015=100", "CHF/m²"). Required unless
    *  the header itself declares `%`. */
   comboLineUnit?: string;
+  /**
+   * GANTT — the column holding each row's START date, and the column holding its END. Both
+   * optional: the mapper finds them STRUCTURALLY (the two columns whose every value parses as
+   * a big-endian ISO date, in column order) rather than by header word, because "start/end"
+   * is "début/fin", "Beginn/Ende", "inizio/fine" across the four languages splash ships and a
+   * word list would be an open vocabulary. Name them when the CSV carries more than two date
+   * columns, or when the second date column is not the end.
+   */
+  ganttStart?: string;
+  ganttEnd?: string;
+  /** GANTT — the column that groups rows into colour-coded workstreams. Optional; with no
+   *  grouping every bar takes the single default hue. */
+  ganttCategory?: string;
+  /**
+   * CANDLESTICK — the four columns holding each period's open, high, low and close. Optional:
+   * the mapper reads the four numeric columns after the date column IN THE ACRONYM'S OWN
+   * ORDER (O, H, L, C), which is what "OHLC" names, and then CHECKS that reading against the
+   * invariant every row must satisfy (high ≥ max(open, close), low ≤ min(open, close)) — a
+   * mis-ordered CSV fails that check on its first row rather than inverting the chart in
+   * silence. Name them when the columns are in some other order.
+   */
+  ohlc?: { open: string; high: string; low: string; close: string };
+  /** CANDLESTICK — what the price axis measures ("index level", "CHF", "€/MWh"). Required:
+   *  checkCandlestickConformance refuses a candlestick with an unlabelled price axis. */
+  priceLabel?: string;
   /** newsroom house theme BACKGROUND (F2 `theme`): the RESOLVED background hex the chart
    *  furniture derives from — "#18181B" for the dark preset, or any newsroom #rrggbb ground.
    *  Undefined = the light default (byte-identical legacy path). Threaded onto every config by
@@ -447,6 +477,209 @@ export const MAPPERS: Record<
         columnSeriesLabel: seriesLabelFromColumn(columnField),
         lineSeriesLabel: seriesLabelFromColumn(lineField),
         rows: parsed.rows,
+      },
+    };
+  },
+  // GANTT / TIMELINE — the type's deferral said "needs start/end intervals", and the decision
+  // it was waiting on is HOW a CSV declares an interval without a word list.
+  //
+  // STRUCTURALLY, NOT BY HEADER WORD. The two date columns are the two columns whose EVERY
+  // value parses as a big-endian ISO date (lib/core/date-locale), taken in column order:
+  // earlier column = start, later = end. Deliberately no `start`/`end` header heuristic —
+  // that is "début/fin", "Beginn/Ende", "inizio/fine" across the four shipped languages, an
+  // open vocabulary, and the same class of silent-inversion guess combo was held back for.
+  // `ganttStart`/`ganttEnd` name them explicitly and always win.
+  //
+  // AND THE ORDER IS CHECKED, NOT ASSUMED: if a row's end precedes its start the mapper
+  // refuses AT THE GATE, naming the row — a backwards interval drawn is a bar of negative
+  // length, which renders as nothing at all and reads as "this phase did not happen".
+  gantt(parsed, spec) {
+    const labelCol =
+      spec.ganttCategory === parsed.columns[0]
+        ? parsed.columns.find((c) => c !== spec.ganttCategory)!
+        : parsed.columns[0];
+    const dateCols = parsed.columns.filter(
+      (c) =>
+        c !== labelCol &&
+        parsed.rows.length > 0 &&
+        parsed.rows.every((r) => parseIsoDate(String(r[c])) !== null),
+    );
+
+    const named = (field: "ganttStart" | "ganttEnd") => {
+      const v = spec[field];
+      if (v === undefined) return undefined;
+      if (!parsed.columns.includes(v))
+        throw new Error(
+          `spec-to-config: ${field} "${v}" is not a column of the CSV ` +
+            `(${parsed.columns.join(", ")})`,
+        );
+      return v;
+    };
+    let startCol = named("ganttStart");
+    let endCol = named("ganttEnd");
+    if (!startCol || !endCol) {
+      if (dateCols.length !== 2)
+        // The refusal that ASKS. Reached at the validation gate (nativeSpecErrors), so the
+        // journalist is told before anything renders.
+        throw new Error(
+          `spec-to-config: gantt needs exactly two date columns — a start and an end — and ` +
+            `found ${dateCols.length}` +
+            (dateCols.length ? ` (${dateCols.join(", ")})` : "") +
+            `. Dates must be big-endian (YYYY-MM-DD, YYYY-MM or YYYY); name the two ` +
+            `columns with ganttStart / ganttEnd if the CSV carries others.`,
+        );
+      startCol = startCol ?? dateCols[0];
+      endCol = endCol ?? dateCols[1];
+    }
+    if (startCol === endCol)
+      throw new Error(
+        `spec-to-config: gantt's start and end are the same column ("${startCol}") — an ` +
+          `interval needs two`,
+      );
+
+    if (spec.ganttCategory && !parsed.columns.includes(spec.ganttCategory))
+      throw new Error(
+        `spec-to-config: ganttCategory "${spec.ganttCategory}" is not a column of the CSV ` +
+          `(${parsed.columns.join(", ")})`,
+      );
+    const catCol =
+      spec.ganttCategory ??
+      parsed.columns.find(
+        (c) => c !== labelCol && c !== startCol && c !== endCol,
+      );
+
+    const items = parsed.rows.map((r) => {
+      const label = String(r[labelCol]);
+      const start = String(r[startCol!]);
+      const end = String(r[endCol!]);
+      // Both refusals name the ROW. `requireIsoDate` does it for an unreadable date; this
+      // does it for a readable one in the wrong order — the case the type was asked to
+      // refuse by name.
+      const s0 = requireIsoDate(start, `the start of "${label}"`);
+      const e0 = requireIsoDate(end, `the end of "${label}"`);
+      if (endOfGrain(e0) < s0.ms)
+        throw new Error(
+          `spec-to-config: gantt row "${label}" ends before it starts ` +
+            `(${start} → ${end}) — an interval drawn backwards is a bar of negative ` +
+            `length, which renders as nothing and reads as "this never happened". Fix the ` +
+            `two dates, or swap ganttStart / ganttEnd if the columns are the other way round.`,
+        );
+      return {
+        label,
+        start,
+        end,
+        ...(catCol ? { category: String(r[catCol]) } : {}),
+      };
+    });
+
+    // The colour-coded workstreams, in first-appearance order — the order the legend reads
+    // and the order GANTT_GROUP_COLORS is indexed by, so legend and bars cannot drift.
+    const categories = catCol
+      ? [...new Set(items.map((i) => i.category!))]
+      : undefined;
+
+    return {
+      type: "gantt",
+      config: {
+        title: spec.title,
+        // The time-axis CAPTION. A gantt's bar length is DURATION, and readers trained on bar
+        // charts read length as magnitude — checkGanttConformance refuses a gantt without
+        // this caption for exactly that reason (gantt.md's data-to-viz caveat).
+        unit: spec.unit,
+        source: src(spec.source),
+        // FURNITURE only. Bars carry the fixed Okabe-Ito group palette — one house hue would
+        // collapse the workstreams it exists to separate.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        ...(categories ? { categories } : {}),
+        items,
+      },
+    };
+  },
+  // CANDLESTICK / OHLC — the type's deferral said "needs OHLC", and the decision it was
+  // waiting on is how a CSV declares four numbers per period without a header word list.
+  //
+  // THE ACRONYM IS THE ORDER, AND THE ORDER IS CHECKED. "OHLC" names its own column order, so
+  // the four numeric columns after the date are read as open, high, low, close — and that
+  // reading is then VERIFIED against the invariant every real period satisfies (high is the
+  // period's maximum, low its minimum). A CSV in some other order fails that check on its
+  // first row, naming the row, instead of inverting every candle in silence. `spec.ohlc` names
+  // the four columns when they are in another order.
+  //
+  // WHY NOT DERIVE OPEN vs CLOSE STRUCTURALLY: high and low CAN be told apart from the data
+  // (one is the row maximum, the other the minimum), but open and close cannot — they are two
+  // interior values, and swapping them flips every candle's DIRECTION while the chart still
+  // looks entirely well-formed. That is the silent inversion this engine refuses to guess at.
+  candlestick(parsed, spec) {
+    const dateCol = parsed.columns[0];
+    const nums = parsed.columns
+      .slice(1)
+      .filter((c) => parsed.numericColumns.includes(c));
+
+    let roles: { open: string; high: string; low: string; close: string };
+    if (spec.ohlc) {
+      for (const [role, col] of Object.entries(spec.ohlc))
+        if (!parsed.columns.includes(col))
+          throw new Error(
+            `spec-to-config: candlestick's ${role} column "${col}" is not in the CSV ` +
+              `(${parsed.columns.join(", ")})`,
+          );
+      roles = spec.ohlc;
+    } else {
+      if (nums.length !== 4)
+        // The refusal that NAMES what is missing. Reached at the validation gate
+        // (nativeSpecErrors), so the journalist is told before anything renders.
+        throw new Error(
+          `spec-to-config: this data is not OHLC — a candlestick needs FOUR numeric columns ` +
+            `per period (open, high, low, close) after the date column, and found ` +
+            `${nums.length}` +
+            (nums.length ? ` (${nums.join(", ")})` : "") +
+            `. One value per period is a line or a bar chart, not a candlestick; if the four ` +
+            `columns are in another order, name them with the \`ohlc\` field.`,
+        );
+      roles = { open: nums[0], high: nums[1], low: nums[2], close: nums[3] };
+    }
+
+    const periods = parsed.rows.map((r) => {
+      const date = String(r[dateCol]);
+      const p = {
+        date,
+        open: Number(r[roles.open]),
+        high: Number(r[roles.high]),
+        low: Number(r[roles.low]),
+        close: Number(r[roles.close]),
+      };
+      // The reading, CHECKED — and the check is what makes reading by acronym order safe.
+      if (
+        p.high < Math.max(p.open, p.close) ||
+        p.low > Math.min(p.open, p.close)
+      )
+        throw new Error(
+          `spec-to-config: candlestick period "${date}" is not valid OHLC — its high ` +
+            `(${p.high}) is below, or its low (${p.low}) above, the open/close body ` +
+            `(${p.open} → ${p.close}). Either the data is wrong, or the four columns are not ` +
+            `in open-high-low-close order — name them with the \`ohlc\` field.`,
+        );
+      return p;
+    });
+
+    if (!spec.priceLabel?.trim())
+      throw new Error(
+        `spec-to-config: candlestick needs priceLabel — what the price axis measures ` +
+          `("index level", "CHF", "€/MWh"). The axis does not start at zero (a candlestick ` +
+          `encodes by POSITION), so an unlabelled one gives the reader no scale at all.`,
+      );
+
+    return {
+      type: "candlestick",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        priceLabel: spec.priceLabel,
+        // FURNITURE only. The candles are coloured by DIRECTION, and the two direction hues
+        // are the whole legend — a house hue over them would erase the up/down distinction.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        periods,
       },
     };
   },

@@ -65,3 +65,35 @@ describe("growCandleBody — grows from the open", () => {
     expect(g1.bottom).toBeCloseTo(c.bodyBottom, 5);
   });
 });
+
+describe("the date axis keeps its labels a step apart", () => {
+  // Found by RENDERING, not by review: with 12 monthly periods and a step of 2, keeping both
+  // "every 2nd" and "the last" put ticks at index 10 and 11 — adjacent — and snap-contrast
+  // failed at 1:1 because one label was sampling the other as its background.
+  // MUTATION: restoring the old `i % step === 0 || i === n - 1` filter → this fails.
+  const twelve = {
+    periods: Array.from({ length: 12 }, (_, i) => ({
+      date: `2024-${String(i + 1).padStart(2, "0")}`,
+      open: 5000,
+      high: 5100,
+      low: 4900,
+      close: 5050,
+    })),
+  };
+
+  it("never places the forced last label beside a stepped one", () => {
+    const l = computeCandlestickLayout(twelve, dims);
+    const gaps = l.dateTicks
+      .slice(1)
+      .map((t, i) => t.pos - l.dateTicks[i].pos);
+    const bandWidth = dims.width - dims.padding.left - dims.padding.right;
+    // a step of 2 over 12 periods ⇒ every surviving pair is ≥ ~2 bands apart
+    for (const g of gaps) expect(g).toBeGreaterThan((bandWidth / 12) * 1.5);
+  });
+
+  it("still dates the last period, and writes the month by NAME", () => {
+    const l = computeCandlestickLayout(twelve, dims, { lang: "de" });
+    expect(l.dateTicks[l.dateTicks.length - 1].label).toContain("Dez");
+    for (const t of l.dateTicks) expect(t.label).not.toMatch(/^\d+\/\d+/);
+  });
+});
