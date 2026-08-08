@@ -31,7 +31,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, measureText } from "../../twin-chart-beat/scripts/render-still.mjs";
+import { deriveFurniture, measureText } from "./render-still.mjs";
 import { EmissionsWeb, LAYOUTS } from "../../../proof/co2-suisse/EmissionsWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

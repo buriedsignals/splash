@@ -38,13 +38,11 @@ import {
   useVideoConfig,
   Easing,
 } from "remotion";
-// Relative path into the skill, not `#shared/*` — `twin-chart-video/assets/timing.ts` is not yet
-// vendored to the shared substrate. Task 8 converts this to `#shared/twin-chart-video/timing.ts`;
-// until then this is the one sanctioned interim route (task-4-brief.md's Interfaces section).
+// A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
 import {
   progressOf,
   type BeatTiming,
-} from "../../skills/twin-chart-video/assets/timing";
+} from "#shared/twin-chart-video/timing.ts";
 import { LIFE_EXPECTANCY_TIMING } from "./timing-contract";
 
 const FRAME = { width: 1080, height: 1080 };

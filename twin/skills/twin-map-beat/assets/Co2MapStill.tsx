@@ -16,7 +16,7 @@ import { Fragment } from "react";
 import {
   FONT_FAMILY,
   measureText,
-} from "../../twin-chart-beat/scripts/render-still.mjs";
+} from "../scripts/render-still.mjs";
 import {
   binIndex,
   fr,

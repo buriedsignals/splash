@@ -1,13 +1,11 @@
 import { describe, expect, it } from "bun:test";
-// Relative path into the skill, not `#shared/*` — see `timing-contract.ts`'s doc-comment and
-// task-4-brief.md's Interfaces section: Task 8 converts this to `#shared/twin-chart-video/timing.ts`.
 import {
   EVENT_ORDER,
   checkTiming,
   endOf,
   progressOf,
   type BeatTiming,
-} from "../../skills/twin-chart-video/assets/timing";
+} from "#shared/twin-chart-video/timing.ts";
 import { LIFE_EXPECTANCY_TIMING } from "./timing-contract";
 
 /**

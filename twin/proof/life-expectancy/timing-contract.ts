@@ -17,11 +17,8 @@
  * — the 2020 value, then the three-year span back to 2019's level — not one.
  */
 
-// Reaches into the skill by relative path — not `#shared/*` — because `twin-chart-video/assets/
-// timing.ts` is not yet vendored to the shared substrate. Task 8 converts this to
-// `#shared/twin-chart-video/timing.ts`; until then this is the one sanctioned interim route
-// (see task-4-brief.md's Interfaces section — do not invent a third route).
-import type { BeatTiming } from "../../skills/twin-chart-video/assets/timing";
+// A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
+import type { BeatTiming } from "#shared/twin-chart-video/timing.ts";
 
 export const LIFE_EXPECTANCY_TIMING: BeatTiming = {
   fps: 30,

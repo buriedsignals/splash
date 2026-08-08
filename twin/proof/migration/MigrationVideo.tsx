@@ -34,7 +34,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "../../skills/twin-chart-video/assets/timing";
+} from "#shared/twin-chart-video/timing.ts";
 import { MIGRATION_TIMING } from "./timing-contract";
 
 // Video-canvas helpers duplicated from EmissionsVideo.tsx — not shared because they are

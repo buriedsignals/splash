@@ -25,7 +25,7 @@ import { createElement } from "react";
 import {
   deriveFurniture,
   renderStill,
-} from "../../twin-chart-beat/scripts/render-still.mjs";
+} from "./render-still.mjs";
 import { Co2MapStill } from "../assets/Co2MapStill.tsx";
 import {
   CO2_ALIAS,

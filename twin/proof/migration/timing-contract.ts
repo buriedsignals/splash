@@ -15,8 +15,8 @@
  * `../life-expectancy/timing-contract.ts` for why that rhythm travels between stories unchanged.
  */
 
-// Temporary relative path into the skill — Task 8 vendors this as #shared/twin-chart-video/timing
-import type { BeatTiming } from "../../skills/twin-chart-video/assets/timing";
+// A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
+import type { BeatTiming } from "#shared/twin-chart-video/timing.ts";
 
 export const MIGRATION_TIMING: BeatTiming = {
   fps: 30,

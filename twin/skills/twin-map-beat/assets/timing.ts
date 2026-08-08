@@ -1,24 +1,21 @@
 /**
  * This map beat's timing contract — the one object a journalist edits to retime it.
  *
- * The vocabulary is NOT redefined here. `BeatTiming`, `progressOf` and `checkTiming` live in
- * `twin-chart-video/assets/timing.ts` and are imported: the six editorial events and the structural
- * rules are the motion grammar's, not the chart genre's, and a second copy of `checkTiming` would
- * be two engines quietly disagreeing about what "the conclusion cannot precede its evidence" means.
+ * The vocabulary is not redefined here either: `BeatTiming`, `progressOf` and `checkTiming` are
+ * `./timing-contract.ts`, a physical copy of the motion grammar's vocabulary from
+ * `twin-chart-video/assets/timing.ts`. A copy, not an import, because a skill never reaches across
+ * another skill's boundary at runtime — the copy is guarded byte-identical to its source by
+ * `splash-twin/test/root-template-shared.test.ts`, so it cannot drift silently. The six editorial
+ * events and the structural rules are the motion grammar's, not the chart genre's, and a second
+ * copy of `checkTiming` would be two engines quietly disagreeing about what "the conclusion cannot
+ * precede its evidence" means — which is exactly what the guard test prevents.
  * What is local to a beat is its EDIT, which is the object below.
  */
 
-import type { BeatTiming } from "../../twin-chart-video/assets/timing";
+import type { BeatTiming } from "./timing-contract";
 
-export {
-  checkTiming,
-  endOf,
-  progressOf,
-} from "../../twin-chart-video/assets/timing";
-export type {
-  BeatTiming,
-  TimingEvent,
-} from "../../twin-chart-video/assets/timing";
+export { checkTiming, endOf, progressOf } from "./timing-contract";
+export type { BeatTiming, TimingEvent } from "./timing-contract";
 
 /**
  * The edit, in words: the frame comes up — title, source, basemap, the empty scale (0.87s) — the

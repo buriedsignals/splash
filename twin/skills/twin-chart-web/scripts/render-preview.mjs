@@ -14,7 +14,7 @@ import { Resvg } from "@resvg/resvg-js";
 import {
   deriveFurniture,
   measureText,
-} from "../../twin-chart-beat/scripts/render-still.mjs";
+} from "./render-still.mjs";
 import { ChartWebSeed, SEED_LAYOUT } from "../assets/ChartWebSeed.tsx";
 
 const HERE = import.meta.dirname;
