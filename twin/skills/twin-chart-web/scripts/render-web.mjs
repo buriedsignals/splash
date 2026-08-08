@@ -15,11 +15,14 @@
 //
 // `renderWeb` below is the genre's own machinery and knows nothing of any one story: it takes the
 // component and the layouts to call it with as arguments, never reaches for one story's own
-// constants by name. The `EmissionsWeb`/`LAYOUTS` import below, and everything under it (`BEAT`,
-// `readingsFromCsv`, `render`, the CLI block), is the CO₂ beat's own runner — the same "a story's
-// script happens to be filed beside the skill" shape `render-video.mjs` already has. A second beat
-// would bring its own component, its own `LAYOUTS` array and its own runner; `renderWeb` itself
-// would not change.
+// constants by name. The `EmissionsWeb`/`LAYOUTS` import below, and everything under it (the CONFIG
+// block, `readingsFromCsv`, `render`, the CLI block), is the CO₂ beat's own runner — the same "a
+// story's script happens to be filed beside the skill" shape `render-video.mjs` already has, and the
+// same shape Tom's own reference skills use (`map-explainer/scripts/prep-geo.mjs`'s
+// `COUNTRIES`/`RIVER`/`ANCHOR_BBOX`, `cesium-flyover/scripts/prep-cesium-path.mjs`'s `START`): a
+// skill's script hosting its own worked story's values is canon-faithful, as long as the seam is
+// labelled. A second beat would bring its own component, its own `LAYOUTS` array and its own CONFIG
+// block; `renderWeb` itself would not change.
 //
 // Usage:  bun skills/twin-chart-web/scripts/render-web.mjs [outDir] [--data <csv>]
 
@@ -32,6 +35,38 @@ import { deriveFurniture, measureText } from "../../twin-chart-beat/scripts/rend
 import { EmissionsWeb, LAYOUTS } from "../../../proof/co2-suisse/EmissionsWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+// ===== CONFIG — edit for your story =====
+// Everything between here and the closing marker is the CO₂ beat's own words and defaults: what a
+// journalist writing the NEXT web beat replaces wholesale. Everything else in this file — `renderWeb`
+// and its `{ component, layouts, props, outDir, name }` signature, `readingsFromCsv` (a CSV column
+// reader, not a story value), `inlineable`, `escapeHtml`, `buildCss` — is this genre's own mechanics
+// and is left alone.
+/** The CO₂ beat's own constants — the same words `twin-chart-video/scripts/render-video.mjs` uses
+ *  for the same beat, so the three genres never disagree about what the chart says. Duplicated
+ *  rather than imported: importing `render-video.mjs` would also run its own top-level Remotion
+ *  render as a side effect, which this script must not trigger. */
+const BEAT = {
+  entity: "Switzerland",
+  firstYear: 1950,
+  reference: 32.5,
+  ground: "#FFFFFF",
+  accent: "#0B7A75",
+  title: "En 2024, la Suisse a émis moins de CO₂ sur son territoire qu'en 1967.",
+  source:
+    "Source : Global Carbon Budget 2025, via Our World in Data · données 2024",
+  referenceLabel: "Niveau de 1967",
+  peakLabel: "pic de 1973",
+  limits:
+    "Émissions territoriales seulement, hors biens importés et aviation internationale.",
+  alt: "Courbe des émissions territoriales suisses de CO₂, 1950 à 2024 : une montée jusqu'à un pic en 1973, puis une baisse qui repasse sous le niveau de 1967 en 2024.",
+};
+/** Where this beat's own CSV lives by default, and what its own output is named — a different
+ *  story's data will not sit at this path, and a different beat is not named `co2.html`. */
+const DEFAULT_DATA_PATH = "/tmp/web-twin/data.csv";
+const DEFAULT_OUT_DIR = "/tmp/web-twin";
+const OUTPUT_NAME = "co2.html";
+// =========================================
 
 /**
  * SSRs one React element per entry in `layouts`, wraps every resulting SVG in one self-contained
@@ -93,26 +128,6 @@ ${inlineScript}
   await writeFile(outPath, html);
   return { outPath, layouts: layouts.length };
 }
-
-/** The CO₂ beat's own constants — the same words `twin-chart-video/scripts/render-video.mjs` uses
- *  for the same beat, so the three genres never disagree about what the chart says. Duplicated
- *  rather than imported: importing `render-video.mjs` would also run its own top-level Remotion
- *  render as a side effect, which this script must not trigger. */
-const BEAT = {
-  entity: "Switzerland",
-  firstYear: 1950,
-  reference: 32.5,
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
-  title: "En 2024, la Suisse a émis moins de CO₂ sur son territoire qu'en 1967.",
-  source:
-    "Source : Global Carbon Budget 2025, via Our World in Data · données 2024",
-  referenceLabel: "Niveau de 1967",
-  peakLabel: "pic de 1973",
-  limits:
-    "Émissions territoriales seulement, hors biens importés et aviation internationale.",
-  alt: "Courbe des émissions territoriales suisses de CO₂, 1950 à 2024 : une montée jusqu'à un pic en 1973, puis une baisse qui repasse sous le niveau de 1967 en 2024.",
-};
 
 /**
  * The frozen OWID series, tonnes to megatonnes, one country picked out of the multi-country CSV
@@ -213,7 +228,7 @@ svg.chart[data-layout="narrow"] { display: none; }
 
 /** The CO₂ beat's own runner: reads its CSV, builds its props, hands its own component and its own
  *  two layouts (`EmissionsWeb`, `LAYOUTS`, imported above) to the skill's generic `renderWeb`. */
-async function render({ dataPath, outDir, name = "co2.html" }) {
+async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const csv = await readFile(dataPath, "utf8");
   const data = readingsFromCsv(csv, {
     entity: BEAT.entity,
@@ -250,8 +265,8 @@ if (import.meta.main) {
     return at >= 0 ? argv[at + 1] : fallback;
   };
   const positional = argv.find((a) => !a.startsWith("--"));
-  const dataPath = resolve(flag("--data", "/tmp/web-twin/data.csv"));
-  const outDir = resolve(positional ?? flag("--out", "/tmp/web-twin"));
+  const dataPath = resolve(flag("--data", DEFAULT_DATA_PATH));
+  const outDir = resolve(positional ?? flag("--out", DEFAULT_OUT_DIR));
 
   const { outPath, readings } = await render({ dataPath, outDir });
   console.log(`web beat → ${outPath}  [${readings} readings]`);
