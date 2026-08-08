@@ -1,23 +1,185 @@
 # Head-to-head: the twin against the established engine
 
-Run 2026-08-08. Three static-chart cases and one video case, same data, same confirmed takeaway,
-same journalist answers on both sides. The agents producing the established engine's ("main's")
-side were forbidden from reading this worktree, forbidden from hand-editing any output or working
-around the producer, and equally forbidden from sandbagging. Nothing here is a rehearsal; both
-sides are real production runs.
+Run 2026-08-08, across three passes. Pass one produced three static-chart cases and one video case,
+same data, same confirmed takeaway, same journalist answers on both sides, and scored them directly
+— the section "Round 1, in detail" below is that scoring. Pass two took the same renders and put
+them in front of judges kept blind to which system made which image, three separate times (§1). Pass
+three built one more case, a ranking rather than a time series, specifically to find out whether the
+conclusion passes one and two supported would survive a chart type built differently — it did not
+survive whole (§3). The agents producing the established engine's ("main's") side were forbidden
+from reading this worktree, forbidden from hand-editing any output or working around the producer,
+and equally forbidden from sandbagging. Nothing here is a rehearsal; all sides are real production
+runs.
 
 **Cases.** Swiss territorial CO₂, 1950–2024 (takeaway: *"En 2024, la Suisse a émis moins de CO₂ sur
 son territoire qu'en 1967."*). Swiss life expectancy, 2000–2024 (the 2020 Covid dip, an interior
 subject — the story is not the endpoint). Swiss net migration, 1990–2024 (crosses zero; the subject
-is 1997–98, not the peaks). Video: the CO₂ case, 1080×1080, 240 frames, 30fps both sides.
+is 1997–98, not the peaks). Video: the CO₂ case, 1080×1080, 240 frames, 30fps both sides. Ranking:
+CO₂ per capita, Western Europe, 2023, 16 countries (subject Switzerland, rank 2 of 16 — deliberately
+not an extreme).
 
 Evidence: `proof/comparison/`. Filenames encode case and producer: `1-CO2`, `2-VIE`,
 `3-MIGRATION` × `main-chartnative` / `main-datawrapper` / `twin` / `twin-d3`, plus
-`video-main-final.png` and `video-twin-final.png`.
+`video-main-final.png` / `video-twin-final.png`, plus `ranking-engine.png` / `ranking-twin.png`.
 
 ---
 
-## The methodological correction, first, because it changes what the rest of this document means
+## 1. The blind judging, and that it was run three times
+
+Every verdict in this document up to pass two was the controller's own reading of work the
+controller commissioned — an opinion with pictures, not evidence. So the pairs were anonymised,
+shuffled per case, and handed to independent judges told nothing about which system made which
+render, not even that a "twin" and an "engine" were the two options.
+
+- **Static charts, three cases, two judges, different models, no contact with each other: the
+  twin's render was picked in all three cases, by both judges.** Neither judge realised the picks
+  were consistent by system — both explicitly reported "no consistent A/B winner" in their own
+  write-ups, because the A/B label was reshuffled independently for every case and neither was
+  told to look for a pattern across cases at all.
+- **A methodological failure in the judging itself, and it has to be recorded as prominently as
+  any finding in this document.** The first static round used a crop meant to trim 7% of frame
+  height from the bottom, to strip a footer both sides carried. The crop was centred instead — it
+  came off the top as well as the bottom. On the engine's renders, whose titles sit near the top
+  edge, that clipped the title; on the twin's, which carries more header padding, it did not. **The
+  controller introduced a defect that penalised one side only — its own opponent — and, in the
+  first telling of this to the human partner on this project, described it the other way round.**
+  One judge called the clipping publication-blocking on the case it hit. The set was rebuilt with a
+  bottom-only crop and both judges re-ran blind, from scratch: **the same three picks came back.**
+  The result stands, but it stands because the run was redone and re-checked, not because the first
+  run was defensible. Anyone reading this document should weight that sentence over the "3/3" above
+  it.
+- **Video, three cases, one judge, same blind protocol: the twin's render was picked in all
+  three**, again with labels reshuffled per case.
+
+## 2. The two grammars
+
+The video judge, without being told what it was looking at, described the two systems more
+precisely than this project had up to that point:
+
+> Grammar 1: establish the comparison as a labelled rule *before any data arrives*; draw the series
+> so the viewer watches it cross that rule; land emphasis last, on the journalist's subject, with
+> its value. The chart is built as an argument, and the reference is baked into the y-scale — 32,5 /
+> 83,8 / 0 are ticks, not decorations.
+>
+> Grammar 2: title, gridlines, draw the series end to end at constant speed, label the last point. A
+> competent animated chart, no argument. Its single emphatic gesture is structurally bound to the
+> endpoint, which is why it succeeds by coincidence when the subject *is* the endpoint and fails
+> when the subject is interior.
+
+## 3. The correction that matters most, because it changes what the rest of this document is evidence for
+
+Every case up to this point was a time series, so every chart was a line — and the line is **the
+one type in the engine's registry with no highlight mechanism** (demonstrated below, "The native
+engine's ceiling"), while seven sibling types have one. The whole comparison, static and video both,
+had been run entirely on the registry's single weakest chart type, without that being named as a
+condition of the result.
+
+A ranking case was built to remove that condition: CO₂ per capita, Western Europe, 2023, subject
+Switzerland at rank 2 of 16 — interior, not the top or bottom of the list, chosen so an accent
+mechanism would actually have to do work rather than land on an edge by construction. It was run on
+both sides. **The engine's `highlight` worked**: Switzerland is the one accented bar in
+`ranking-engine.png`, the comparison to Sweden (rank 1) is legible on the row directly above it, and
+the territorial-emissions caveat is carried in the subtitle. Nothing about that render is what the
+line-chart argument above would have predicted.
+
+So the claim this document was heading toward — *a parameterised registry cannot mark an interior
+subject* — is **false in general and true for the line type specifically**. That has to be said
+plainly and given real space, because it is the single finding in this whole document that most
+constrains what the twin's case actually is. It is not "bespoke beats registry." It is narrower and
+more useful: **the gap is real exactly where the registry has a hole, and the hole happens to sit in
+the chart type journalism reaches for most often** — which is why three cases built without knowing
+this could all land on the same wrong-sized conclusion.
+
+## 4. What the ranking case exposed in the engine, separately
+
+The engine's ranking render is not clean. `ranking-engine.png` is **1200×800 and truncated**: the
+frame ends mid-row on Pays-Bas (rank 13 of 16), so Allemagne, Norvège and Belgique never render, and
+neither does the source line — confirmed by opening the delivered PNG directly (`sips` reports
+1200×800; the last complete row is Irlande, the row below it is cut through the bar). The twin's
+`ranking-twin.png`, same data, renders complete at 1800×1120 with all sixteen rows, the source line,
+and the rank-number prefixes.
+
+The diagnosis, as reported by the agent that produced the engine's side and not independently
+re-derived here (its own source lives outside this worktree, off-limits to this task): `d3-bars` is
+a row-driven chart type carrying a deliberate "never crop the data" rule, and the render-size guard
+that is supposed to catch a mismatch **asserts only the width leg of the delivered canvas**, because
+height on that type is "content-driven by design" and was judged not worth checking. **The guard is
+blind in exactly the dimension that varies.** That is the same failure shape this project has
+independently catalogued several times now — a verification instrument passing in the reassuring
+direction — but this instance sits in the engine, not in the twin, so it is recorded here as a bug
+to report against main, not as a lesson for this branch.
+
+## 5. The twin's own debts, named by judges who did not know whose side they were on
+
+Both static judges and the video judge, independently, raised the same two points against the
+twin's renders — before the debts below were fixed, and one still open:
+
+- **Starved axes.** Three ticks, sometimes two. One judge: "you cannot locate 1997 or 1998, and you
+  cannot put a number on the 2008 or 2022 peaks." This was a doctrine error, not a bug — the sparse-
+  tick rule is right for a chart that moves and wrong for a static chart a reader gets to scrutinise
+  at leisure. Fixed for the static genre: `static-discipline.md` now states the actual test — *a
+  reader must be able to locate, on the axis, any point the chart itself annotates or names* — and
+  splits it from the motion genre, which keeps its sparse rule on purpose. **The video judge says the
+  sparse rule is still wrong for motion too**, which is not yet fixed.
+- **A missing limits subtitle** on the CO₂ case, where the engine's Datawrapper render carried the
+  territorial-emissions caveat on all three static passes and the twin's did not on the first. Fixed:
+  the subtitle zone now carries the caveat as its own line, ahead of the source credit.
+- **A third debt, from the video judge, not yet addressed.** The twin bakes the comparison value
+  into the y-domain — which is exactly what makes the crossing verifiable rather than asserted — but
+  that guarantee **costs vertical resolution**: the engine derives its domain from the data alone
+  and gets a deeper-looking dip and cleaner gridlines for it. This is a real trade-off between two
+  things the twin's own doctrine both claims to want, and it had never been posed as a trade-off
+  before a judge who did not know the doctrine named it as one.
+
+## 6. Cost, measured for the first time
+
+On the two video cases, where both sides did structurally identical work (same data, same beats,
+same 240-frame render): the engine spent **152k tokens for two videos**; the twin spent **212k** —
+about **1.4× at the margin**, far less than earlier passes of this document implied by never
+measuring it at all. The twin's video path also required roughly **314k tokens of one-time
+construction** — the timing contract, the reference-as-middle-tick fix, the title/furniture doctrine
+correction — that the engine's video path already had before this comparison started. The shape is a
+substantial up-front cost plus a modest marginal premium per story, which amortises the more stories
+are made after the one-time cost, against a marginal premium that does not.
+
+**Limits on this number, stated plainly:** it covers one batch (the two video cases), it counts
+subagent tokens only, and the static path could not be isolated from the rest of each session's
+token use, so no static-side figure is given here rather than a guessed one.
+
+## 7. The bespoke-versus-registry answer for a ranking, quoted
+
+From the agent that produced the twin's ranking case, on what the win in §3 was actually made of:
+
+> the win here wasn't "bespoke geometry beats a library's geometry" the way it was on the line
+> cases — it was "writing the component forces the three editorial decisions that make this a
+> ranking about Switzerland rather than a ranking of Western Europe": sorting so the subject and its
+> comparison are adjacent, accenting the named subject rather than the extremum, and dropping the
+> non-subject labels once the first render showed them competing.
+
+## 8. What is still not compared
+
+**Maps.** A run was started on the engine's side; as this document is being written, `/tmp/map-main/`
+holds only the frozen source data (`co2.csv`) and no render — the comparison has not happened yet,
+let alone been judged, blind or otherwise.
+
+**The journalist session.** Every editorial answer in every case above — the takeaway, the subject,
+the caveat, which moment to accent — was given by an agent playing a journalist, on both sides,
+identically scripted. The twin's one advantage that does not close in three mapper changes is the
+editorial exchange itself (`twin-storyboard`'s five questions, restitution, the reference loop), and
+that is the one thing nothing in this document tests, because nothing here used a real one. Whether a
+journalist who does not know this system finds that exchange useful or tedious is the only question
+that matters and the one thing none of pass one, two or three touches.
+
+---
+
+## Round 1, in detail
+
+Everything from here to "What none of it settles" is the original self-scored pass. It is kept
+because the blind judging in §1 confirms its static and video picks case-for-case, and because the
+native-engine-ceiling finding below is exactly what §3–§4 above narrow: read it as the finding that
+the ranking case was built to test, not as the document's headline.
+
+### The methodological correction, first, because it changes what the rest of this section means
 
 The first pass produced main's side with its D3/React native chart engine (`main-chartnative`).
 That was the wrong producer: for a plain static line chart, the flow's own routing sends static
@@ -33,18 +195,16 @@ The rule, verbatim, from `skills/suggest-chart/SKILL.md`:
 > animated reveal…"
 
 **Both passes are kept in `proof/comparison/`.** The corrected comparison — twin against
-`main-datawrapper` — is what the rest of this document scores. `main-chartnative` is kept only
-because it is the clearest evidence for a separate point: the native engine's ceiling as a
-parameterised registry (below), not as a competitor on this task.
+`main-datawrapper` — is what this section scores. `main-chartnative` is kept only because it is the
+clearest evidence for a separate point: the native engine's ceiling as a parameterised registry
+(below), on the line type only, not as a competitor on this task.
 
----
-
-## Static results, per case
+### Static results, per case
 
 Scored against the journalist's four asks: accent on the named subject · the comparison level
 visible · the editorial caveat · the peak discreet without restating its number.
 
-### CO₂ — the twin wins
+#### CO₂ — the twin wins
 
 `1-CO2--main-datawrapper.png` states the comparison as **text**: a callout reading "2024 : sous
 1967" floating over the line, and a second callout naming the 1967 level as "32,5 Mt". The claim is
@@ -56,7 +216,7 @@ told about it. The 1973 peak is a small grey dot labelled "pic de 1973", its val
 (it is already in the article text, by the journalist's own Q4 answer). Assertion versus geometry,
 and geometry is the stronger form of the same claim.
 
-### Life expectancy — close
+#### Life expectancy — close
 
 `2-VIE--main-datawrapper.png` annotates the dip ("2020: the Covid dip") and the recovery ("2023:
 back to 2019") with two short callouts and no reference line — less ink, and it works: both moments
@@ -68,7 +228,7 @@ recovery in prose — the reader can see 2023 sit just under the line and 2024 c
 being told "back to 2019". More ink than main's version, spent on showing rather than stating the
 same fact. Neither reading is wrong; this is the case where the two philosophies come out closest.
 
-### Migration — main won it first, the twin closed after the d3 switch
+#### Migration — main won it first, the twin closed after the d3 switch
 
 `3-MIGRATION--main-datawrapper.png` draws a **bold native zero baseline** across the full width of
 the frame — Datawrapper's own line-chart engine draws it automatically when the series straddles
@@ -88,9 +248,10 @@ unchanged; only the frame around them tightened. Main's native zero baseline is 
 main did nothing to earn (see the structural gap, below) — but the twin's own defect that had
 handed the case away outright is closed.
 
----
+### The native engine's ceiling, since it is the clearest evidence for §3 above
 
-## The native engine's ceiling, since it is the clearest evidence for the whole premise
+**Read this as evidence about one hole in a registry, not about registries as such** — §3–§4 above
+are what happens when the same registry is asked for a type that isn't this one.
 
 `grep -c "highlight\|referenceLine\|annotate" skills/chart-native/src/LineChart.tsx` returns **0**.
 Not a thin API — nothing. And this is not a uniform limitation spread evenly across the engine: it
@@ -98,7 +259,8 @@ is a hole in the middle of it. **Seven sibling components in the same directory*
 `highlight` mechanism — `BarChart.tsx`, `ScatterChart.tsx`, `SlopeChart.tsx`, `LollipopChart.tsx`,
 `BeeswarmChart.tsx`, `BumpChart.tsx`, `ParallelChart.tsx` — every one of them lets its caller
 designate a point. The line chart, the single most common chart in data journalism, is the one
-member of an otherwise-equipped family with no way to say "this one."
+member of an otherwise-equipped family with no way to say "this one." (`BarChart.tsx`'s `highlight`
+is the exact mechanism §3–§4's ranking case exercised on the engine's side, successfully.)
 
 Its only emphasis mechanism is a dot and a label on the **last** point in the series — visible
 directly in the renders: `1-CO2--main-chartnative.png` labels 2024 (which happens to be the subject
@@ -111,9 +273,7 @@ what its author happened to anticipate (`highlight the endpoint`) and nothing it
 and on the chart type journalism reaches for most often, what got anticipated was too narrow by one
 whole capability every neighbouring type already has.
 
----
-
-## The one structural gap, and that it is small
+### The one structural gap, and that it is small
 
 Datawrapper's own line-chart engine carries a `range-annotations` key — a horizontal reference line
 with a label, verified live against the API — which is exactly the mechanism the twin used by hand
@@ -121,16 +281,15 @@ to draw the 1967 and 2019 dashed rules. Main's mapper does not use it:
 `grep -rn "range-annotation" skills/dw-chart/src` returns zero results. The capability exists on
 Datawrapper's own server and the mapper never reaches it — only text annotations (callouts) are
 wired up. That gap is why `main-datawrapper` states the CO₂ comparison as prose instead of drawing
-it, and it is the twin's single structural advantage on static charts.
+it, and it is the twin's single structural advantage on static line charts.
 
 **State this plainly: closing it is roughly three changes, not a rebuild — one mapper key, one
-payload field, one test. This makes the twin's structural advantage on static charts a mapper gap,
-not an architectural one, and it is the finding in this whole document that most goes against the
-twin.**
+payload field, one test. This makes the twin's structural advantage on static line charts a mapper
+gap, not an architectural one, and it is the finding in this whole document that most goes against
+the twin — narrower even than stated here, since §3 shows the gap does not exist at all on a type
+the engine's registry already equips.**
 
----
-
-## The video result
+### The video result
 
 The twin's advantage here is not cosmetic — it is in what order the pixels arrive.
 
@@ -154,9 +313,7 @@ The twin also ships an **editable timing contract**: six events named editoriall
 piece (`timing.ts`'s own header: "Someone who has never read a line of JSX can look at
 `reveal.duration` and make the line draw slower."). The engine has no equivalent surface.
 
----
-
-## The doctrine defect the video build exposed
+### The doctrine defect the video build exposed
 
 The first build of the video put the title at frame 168 of 240 — seven of the eight seconds played
 under an empty band with no title, because the agent had applied the rule "the conclusion appears
@@ -173,9 +330,7 @@ frame again — while the 2024 value stays the conclusion event, arriving at fra
 carrying it has landed. The final hold frame is byte-identical to before the fix; only the early
 seconds changed.
 
----
-
-## The copy-paste cost, measured
+### The copy-paste cost, measured
 
 One conceptual fix — putting the scale and the line path on `d3-scale` / `d3-shape` primitives
 instead of a hand-rolled tick generator — required touching **four component files**, because a
@@ -200,9 +355,7 @@ arithmetic's own defect. Fixing the geometry once did not fix the beats once; it
 "fix a shared function" to "re-check every copy that leaned on the old, wrong shape of that
 function".
 
----
-
-## The primitives-versus-libraries line
+### The primitives-versus-libraries line
 
 `d3-scale`, `d3-array` and `d3-shape` are data → coordinates and nothing else — they carry no
 opinion about colour, labels, or chart type. That is exactly this project's own definition of pure
@@ -216,9 +369,7 @@ Both of this project's scale defects — the proof beat's zero-anchoring bug, an
 hand-rolled reimplementation of what `.nice()` and `.ticks()` already do correctly. The fix was not
 "write better bespoke arithmetic"; it was stop writing bespoke arithmetic for a solved problem.
 
----
-
-## Fairness reservations, unsoftened
+### Fairness reservations, unsoftened
 
 - **Colour.** `video-main-final.png` rendered in Okabe-Ito blue, the engine's own default, because
   the house colour was never passed into its config (`/tmp/video-main/co2-config.json` carries no
@@ -229,30 +380,23 @@ hand-rolled reimplementation of what `.nice()` and `.ticks()` already do correct
 - **Canvas.** The static renders differ in size: main's channel presets do not offer 900×560, so its
   charts render at 1200×676 (confirmed: `sips` on the PNGs in `proof/comparison/`); the twin's
   render at 900×560 (rasterised 2×, 1800×1120 on disk). Different aspect, different absolute scale
-  of every mark and label — a second protocol gap, not a design difference either side chose.
+  of every mark and label — a second protocol gap, not a design difference either side chose. The
+  ranking pair repeats the same gap at the same ratio: 1200×800 against 1800×1120.
 - **Vendor footer.** The Datawrapper renders carry a "Créé avec Datawrapper" / "Created with
   Datawrapper" footer line, against a standing zero-vendor-attribution rule. Likely a run setting
   left at its default rather than a capability gap — Datawrapper embeds can suppress it — but it
   counts as delivered, and it counts against main as shipped, for a newsroom reading the PNG as
   handed over.
 
----
+### What none of it settles
 
-## What none of it settles
-
-**Maps** — untested on either side, and the most expensive comparison left to run.
-
-**The journalist session.** Every editorial answer in every case above — the takeaway, the subject,
-the caveat, which moment to accent — was given by an agent playing a journalist, on both sides,
-identically scripted. The twin's one advantage that does not close in three changes is the
-editorial exchange itself (`twin-storyboard`'s five questions, restitution, the reference loop) —
-and that is the one thing nothing in this document tests, because nothing here used a real one.
+See §8 above — folded up there once the ranking and blind-judging passes gave it more to say.
 
 ---
 
 ## Note on verification, and who did it
 
-Three claims in this document could not be checked from inside this worktree, because main's engine
+Three claims from Round 1 could not be checked from inside this worktree, because main's engine
 source lives outside `twin/`, `docs/` and `/tmp`, which this task was not permitted to open. The
 controller verified all three directly, in the sibling worktree, and supplied the exact commands
 and output recorded above:
@@ -261,6 +405,27 @@ and output recorded above:
 2. **The Datawrapper mapper gap** — `grep -rn "range-annotation" skills/dw-chart/src`, zero results.
 3. **The `LineChart` ceiling** — `grep -c "highlight\|referenceLine\|annotate" skills/chart-native/src/LineChart.tsx`,
    returning 0, against seven sibling components in the same directory that declare `highlight`.
+
+A fourth Round-1-era claim carries the same status, added for §4: the diagnosis of the ranking
+render's truncation (`d3-bars`' "never crop" path plus a render-size guard that checks only canvas
+width) is attributed to the agent that produced main's ranking render and was not independently
+re-derived by the writer of this document, for the same reason as the three above — the guard's own
+source is out of scope for this task. What was independently verified for §4, directly in this
+worktree's `/tmp`: `sips -g pixelWidth -g pixelHeight` on `/tmp/rank-main/ranking.png` returns
+1200×800; opening the PNG shows the last fully-rendered row is Irlande (rank 12 of 16), the Pays-Bas
+row directly below it is cut through the bar, and Allemagne, Norvège, Belgique and the source line
+never appear. `/tmp/rank-twin/ranking.png` was opened the same way and is complete at 1800×1120,
+sixteen rows, source line present.
+
+The blind-judging counts and quotations in §1, §2, §5 and §7 are reported here as supplied by the
+controller from sessions this task could not itself run or re-run — no transcript file for any of
+the three judging passes exists inside `twin/`, `docs/` or `/tmp` as of this writing, so their exact
+wording could not be independently re-verified from inside this task's own scope, only cross-checked
+against what they say was fixed: the `static-discipline.md` axis-density rewrite and the
+limits-subtitle addition both exist in this worktree's history (`98701382`) with commit language that
+matches the debts §5 attributes to the judges, which is corroborating rather than independent
+confirmation. The cost figures in §6 are reported the same way, with the stated limits (one batch,
+subagent tokens only, static path not isolable) carried forward as given rather than re-measured.
 
 Everything else in this document — every pixel claim, every axis range, every file size and canvas
 dimension, the timing contract's frame numbers, the git commits for the doctrine fix — was verified
