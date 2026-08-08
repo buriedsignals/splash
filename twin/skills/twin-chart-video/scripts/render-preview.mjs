@@ -32,15 +32,19 @@ const ground = "#FFFFFF";
 const furniture = deriveFurniture(ground);
 
 // Build the props for the preview
+// The reference is the first reading (2015, 912mm) because the title's claim ("fell by a third")
+// is measured against that level. Each beat's reference is its own editorial choice, derived
+// from the numbers but not automatically — a different beat's honest reference might be a
+// multi-year average, not the series' first reading.
+const firstReading = data[0];
 const props = {
   data,
   title: "Rainfall over the sample town fell by a third",
   source: "Sample data — not a real measurement",
   ground,
   accent: "#0B7A75",
-  reference: 700,
-  referenceLabel: "Reference level",
-  peakLabel: "Peak year",
+  reference: firstReading.mt,
+  referenceLabel: `${firstReading.year} level`,
   ...furniture,
 };
 
@@ -75,6 +79,7 @@ if (process.argv.includes("--check")) {
   const committed = await readFile(TARGET);
   const freshlyRendered = await readFile(TEMP_PNG);
   await rm(TEMP_PNG);
+  await rm(propsPath);
   if (!committed.equals(freshlyRendered)) {
     console.error("preview.png is stale — the seed changed and the preview did not. Re-run without --check.");
     process.exit(1);
@@ -82,4 +87,5 @@ if (process.argv.includes("--check")) {
   console.log("preview.png matches a fresh render of the seed.");
 } else {
   console.log(`wrote ${TARGET} at frame ${LAST_FRAME} (${elapsed}s) — now open it and look at it.`);
+  await rm(propsPath);
 }

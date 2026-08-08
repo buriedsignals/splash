@@ -28,7 +28,6 @@ const CO2_PLACEHOLDER: EmissionsVideoProps = {
   grid: "#D1D1D1",
   reference: 32.5,
   referenceLabel: "Placeholder",
-  peakLabel: "Placeholder",
 };
 
 export function RemotionRoot() {

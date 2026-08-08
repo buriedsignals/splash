@@ -44,8 +44,14 @@ const SOURCE = { fontSize: 22, fontWeight: 400 };
 const AXIS = { fontSize: 22, fontWeight: 400 };
 const LABEL = { fontSize: 28, fontWeight: 600 };
 const NOTE = { fontSize: 22, fontWeight: 400 };
-const UNIT = "Mt";
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+
+// ===== CONFIG — edit for your story =====
+// Everything between here and the closing marker is this beat's own words and its own editorial
+// calls — the next beat replaces every value below.
+/** Unit of measurement for this series. Specific to each story. */
+const UNIT = "mm";
+// =========================================
 
 export type EmissionsVideoProps = {
   data: Reading[];
@@ -58,7 +64,6 @@ export type EmissionsVideoProps = {
   grid: string;
   reference: number;
   referenceLabel: string;
-  peakLabel: string;
   timing?: BeatTiming;
 };
 
@@ -139,7 +144,6 @@ export function EmissionsVideo({
   grid,
   reference,
   referenceLabel,
-  peakLabel,
   timing = CO2_TIMING,
 }: EmissionsVideoProps) {
   const frame = useCurrentFrame();
@@ -204,16 +208,6 @@ export function EmissionsVideo({
           .y((p) => p.y)
           .digits(1)(drawn)!
       : null;
-
-  // The peak is context and it arrives when the line reaches it — data arriving is the motion
-  // event, so a marker for 1973 that appeared in 1962 would be pointing at nothing.
-  const peakFraction = g.points.indexOf(g.peak) / (g.points.length - 1);
-  const peakOpacity = interpolate(
-    reveal,
-    [peakFraction, peakFraction + 0.06],
-    [0, 1],
-    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
-  );
 
   // The subject lands on its own. Damping 200 against stiffness 120 is critically damped: the dot
   // settles onto its coordinate and never passes it, because for the frames it overshot it would
@@ -343,22 +337,6 @@ export function EmissionsVideo({
           strokeLinejoin="round"
           strokeLinecap="round"
         />
-      ) : null}
-
-      {/* The peak is context, not the subject: muted, marked, and silent about its own value. */}
-      {peakOpacity > 0 ? (
-        <g opacity={peakOpacity}>
-          <circle cx={g.peak.x} cy={g.peak.y} r={5} fill={muted} />
-          <text
-            x={g.peak.x}
-            y={g.peak.y - 18}
-            fill={muted}
-            fontSize={NOTE.fontSize}
-            textAnchor="middle"
-          >
-            {peakLabel}
-          </text>
-        </g>
       ) : null}
 
       {subjectRadius > 0 ? (

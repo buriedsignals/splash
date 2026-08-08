@@ -85,6 +85,7 @@ if (data.length < 2) throw new Error(`need at least two readings, got ${data.len
 
 const props = { ...BEAT, data, ...deriveFurniture(BEAT.ground) };
 delete props.firstYear;
+delete props.peakLabel;
 const propsPath = join(outDir, "props.json");
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 
