@@ -18,6 +18,7 @@
 // alike, is "every beat is backed by real bins"). Mirrors every other anchor in this plan: a
 // beat names something the data has, or it is refused, by name, with the real way out.
 import type { Beat, MapArcBeat } from "./map-story";
+import { closingInsight } from "./map-story";
 import type { HexGridLayout } from "./hex-grid-geo";
 import { bbox, booleanPointInPolygon, point as turfPoint } from "@turf/turf";
 import { labelWithUnit, localizeValueLabel } from "./core/locale";
@@ -201,7 +202,11 @@ export function deriveHexGridStory(
     highlight: [],
     dim: false,
     callout: null,
-    copy: meta.insight && meta.insight !== meta.title ? meta.insight : "",
+    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
+    // identical to the module title is the title, not a close. Written out inline here (and
+    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
+    // route track, which shipped its own headline as its last card.
+    copy: closingInsight(meta.insight, meta.title),
   });
 
   return beats;

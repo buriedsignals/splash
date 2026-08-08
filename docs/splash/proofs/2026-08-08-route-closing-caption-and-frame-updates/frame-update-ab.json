@@ -1,0 +1,55 @@
+{
+  "case": "dateline-crossing route, 17 territories, 2469 frames, MapScrolly 1280x720",
+  "before": {
+    "wallSeconds": 303.2,
+    "userCpuSeconds": 169.96
+  },
+  "after": {
+    "wallSeconds": 281.7,
+    "userCpuSeconds": 108.87
+  },
+  "userCpuReductionPct": 35.9,
+  "frameIdentity": [
+    {
+      "frame": 0,
+      "sha256Before": "ad366800ec4cf86807ce8aa4318f84ee8fe561f1df876ab50d687ad979031284",
+      "sha256After": "ad366800ec4cf86807ce8aa4318f84ee8fe561f1df876ab50d687ad979031284"
+    },
+    {
+      "frame": 74,
+      "sha256Before": "f15007cb06d3ca66a9430ecb3feb7815d0045265923e8685406d47ff322464a8",
+      "sha256After": "f15007cb06d3ca66a9430ecb3feb7815d0045265923e8685406d47ff322464a8"
+    },
+    {
+      "frame": 120,
+      "sha256Before": "8b03519187dad0eaa695f3c3aadfb50cd58713e44008052d90171ea6616ad148",
+      "sha256After": "8b03519187dad0eaa695f3c3aadfb50cd58713e44008052d90171ea6616ad148"
+    },
+    {
+      "frame": 300,
+      "sha256Before": "47da1c4befdd9bbb5c760ae16007d64f796c333813f65240fe3315afce2fbab3",
+      "sha256After": "47da1c4befdd9bbb5c760ae16007d64f796c333813f65240fe3315afce2fbab3"
+    },
+    {
+      "frame": 900,
+      "sha256Before": "8bdf5e21cc43c481fa8c2cf46c48e4fd862895465f48d9354ae7a96bc4c08a38",
+      "sha256After": "8bdf5e21cc43c481fa8c2cf46c48e4fd862895465f48d9354ae7a96bc4c08a38"
+    },
+    {
+      "frame": 1500,
+      "sha256Before": "e6d89743d93009c6035718e22f941792b0731a9f573a82ea7e48d34c48482b5c",
+      "sha256After": "e6d89743d93009c6035718e22f941792b0731a9f573a82ea7e48d34c48482b5c"
+    },
+    {
+      "frame": 2100,
+      "sha256Before": "56192c984a2ddec1133f141d1499344bb4df8b6bffcc126d13d692d22a13b0a9",
+      "sha256After": "56192c984a2ddec1133f141d1499344bb4df8b6bffcc126d13d692d22a13b0a9"
+    },
+    {
+      "frame": 2468,
+      "sha256Before": "a449c8ff22badf77149aafe9f0a199a6d02f088233f80c93180f5c920100b30b",
+      "sha256After": "a449c8ff22badf77149aafe9f0a199a6d02f088233f80c93180f5c920100b30b"
+    }
+  ],
+  "allFramesIdentical": true
+}

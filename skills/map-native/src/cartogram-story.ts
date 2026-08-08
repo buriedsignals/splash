@@ -2,7 +2,12 @@
 // HIGHEST regions by value (descending, capped) → takeaway. Each reveal highlights one region by
 // its id so components can dim non-highlighted cells. The camera stays framed on the data zone:
 // a reveal expands the cell bbox to >= 50% of the full extent (same frameCell rule as hex-grid).
-import { applyMapArc, type Beat, type MapArcBeat } from "./map-story";
+import {
+  applyMapArc,
+  closingInsight,
+  type Beat,
+  type MapArcBeat,
+} from "./map-story";
 import type { CartogramLayout } from "./cartogram-geo";
 import { bbox } from "@turf/turf";
 import { labelWithUnit, localizeValueLabel } from "./core/locale";
@@ -122,7 +127,11 @@ export function deriveCartogramStory(
     highlight: [],
     dim: false,
     callout: null,
-    copy: meta.insight && meta.insight !== meta.title ? meta.insight : "",
+    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
+    // identical to the module title is the title, not a close. Written out inline here (and
+    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
+    // route track, which shipped its own headline as its last card.
+    copy: closingInsight(meta.insight, meta.title),
   });
 
   return beats;

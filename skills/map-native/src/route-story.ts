@@ -4,7 +4,7 @@ import { listValidRegions, type MapArcBeat } from "./map-arc";
 import { computeChoropleth } from "./choropleth-geo";
 import { computeDotDensity } from "./dot-density-geo";
 import { deriveLocatorStory } from "./locator-story";
-import { deriveMapStory } from "./map-story";
+import { closingInsight, deriveMapStory } from "./map-story";
 import { deriveSymbolStory } from "./symbol-story";
 import { deriveDotDensityStory } from "./dot-density-story";
 import { computeHexGrid } from "./hex-grid-geo";
@@ -199,16 +199,34 @@ export function routeStoryToChapters(
     align: "center",
   }));
 
-  // The journalist's own closing line wins. Failing that this composes one — and a caption
-  // splash WRITES is furniture: it comes out of the locale table, and its distance goes
-  // through the locale number format. Inline, it was `${n} territories, ${km} km`: English
-  // words and an ungrouped number on the last card of a French, German or Italian page.
-  const takeawayProse = meta.insight?.trim()
-    ? meta.insight
-    : storyCopy(meta.lang).routeSpan(
-        n,
-        formatLocaleNumber(Math.round(layout.totalLengthKm), meta.lang),
-      );
+  // The journalist's own closing line wins — but only when it IS one. A line identical to the
+  // module title is the title (already printed in the persistent header), and a last card that
+  // repeats it verbatim ends the piece on its own chute; that is the whole map family's rule, so
+  // it is the family's own helper that decides (map-story.ts's `closingInsight`), not a second
+  // opinion written here. Measured before this: Scrolly.tsx handed `config.insight ?? config.title`
+  // down, so a route config with no insight — every loop-assembled one, no assembler writes the
+  // field — closed on its own headline.
+  //
+  // Failing an editorial line this composes one, and a caption splash WRITES is furniture: it
+  // comes out of the locale table, and its distance goes through the locale number format.
+  // Inline, it was `${n} territories, ${km} km`: English words and an ungrouped number on the
+  // last card of a French, German or Italian page.
+  //
+  // WHY NOT "EMIT NOTHING", which is what the chart track does with an empty takeaway
+  // (chart-chapters.ts drops the card outright): a route's closing step is not only a caption,
+  // it is a map STATE. Its sentinel ref (`n`) is what tells the renderer to frame the whole
+  // trajectory, fully drawn — RouteScrolly.tsx and ScrollyRouteMap.tsx both read it. Drop the
+  // step and the reader's scroll ends inside the last territory with the route never finished.
+  // And unlike a chart takeaway, a route HAS something honest left to say that its reveals did
+  // not: how far it went, and through how much — the same thing deriveTakeawayCopy exists to say
+  // for every other map type. So route agrees with the map family (a data-tied closer, and an
+  // insight that must be distinct) rather than with the chart family's drop.
+  const takeawayProse =
+    closingInsight(meta.insight, meta.title) ||
+    storyCopy(meta.lang).routeSpan(
+      n,
+      formatLocaleNumber(Math.round(layout.totalLengthKm), meta.lang),
+    );
   const takeaway: ScrollyStep = {
     id: `step-${n + 2}-takeaway`,
     visual: "map",

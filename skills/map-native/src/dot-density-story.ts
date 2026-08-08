@@ -6,6 +6,7 @@ import {
   type Beat,
   type MapArcBeat,
   type RevealMode,
+  closingInsight,
 } from "./map-story";
 import type { DotDensityLayout } from "./dot-density-geo";
 import type { StagedEntrance } from "./core/staged-reveal";
@@ -152,7 +153,11 @@ export function deriveDotDensityStory(
     highlight: [],
     dim: false,
     callout: null,
-    copy: meta.insight && meta.insight !== meta.title ? meta.insight : "",
+    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
+    // identical to the module title is the title, not a close. Written out inline here (and
+    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
+    // route track, which shipped its own headline as its last card.
+    copy: closingInsight(meta.insight, meta.title),
   });
 
   return beats;

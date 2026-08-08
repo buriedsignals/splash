@@ -10,6 +10,7 @@ import {
   type Beat,
   type MapArcBeat,
   type RevealMode,
+  closingInsight,
 } from "./map-story";
 import { formatLocaleNumber, labelWithUnit, type Lang } from "./core/locale";
 import { shortWayLongitudeExtent } from "./core/longitude";
@@ -154,7 +155,11 @@ export function deriveSymbolStory(
     highlight: [],
     dim: false,
     callout: null,
-    copy: meta.insight && meta.insight !== meta.title ? meta.insight : "",
+    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
+    // identical to the module title is the title, not a close. Written out inline here (and
+    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
+    // route track, which shipped its own headline as its last card.
+    copy: closingInsight(meta.insight, meta.title),
   });
 
   return beats;

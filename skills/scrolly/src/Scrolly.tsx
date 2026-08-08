@@ -212,8 +212,9 @@ export const Scrolly: React.FC<{
       const world = decodeWorldGeometry(config.geometry, "route");
       const layout = computeRouteReveal(config as never, world);
       const notes: Record<string, string> = {};
-      for (const t of (config as unknown as { territories?: { key: string; note?: string }[] })
-        .territories ?? [])
+      for (const t of (
+        config as unknown as { territories?: { key: string; note?: string }[] }
+      ).territories ?? [])
         if (t.note?.trim()) notes[t.key] = t.note;
       return routeStoryToChapters(
         layout,
@@ -222,7 +223,16 @@ export const Scrolly: React.FC<{
           title: config.title ?? "",
           description: config.description,
           source: config.source,
-          insight: config.insight ?? config.title,
+          // The journalist's line, or NOTHING — never the title standing in for one. `insight`
+          // is the route track's CLOSING CAPTION (routeStoryToChapters puts it on the last
+          // card), not a headline slot: filled with `?? config.title` it made every route
+          // config that carries no insight — which is every loop-assembled one, no assembler
+          // writes the field — close on the same string its persistent header already shows.
+          // Measured on the built page: header "The Yarlung Tsangpo's long road to the sea",
+          // last prose card the same, verbatim. Absent, the engine composes the route's own
+          // span instead. (The engine now refuses a title-echo whatever a caller passes —
+          // map-story.ts's `closingInsight` — so this is the honest input, not the only net.)
+          insight: config.insight,
           // The route track's DERIVED takeaway is composed text — it needs the deliverable's
           // language, exactly like the map track's reveal descriptors below.
           lang: config.lang,
