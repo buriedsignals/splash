@@ -26,7 +26,14 @@
 // A scalar can only be right for a set that is about as tall as it is wide, and it fails a
 // RIBBON in the direction that matters. Both failures are measured off rendered mp4s at
 // 1280×720, by the pixel distance between marks of known coordinates (never by a whole-frame
-// pixel metric, which measures ink and not camera):
+// pixel metric, which measures ink and not camera).
+//
+// ★ THAT MEASUREMENT IS NOW A COMMITTED TOOL, not a number to re-derive by hand:
+//   `bun skills/map-native/scripts/measure-camera.mjs <mp4> <config.json> locator|symbol`
+//   prints the zoom of every beat, and lib/core/camera-measure.ts holds the arithmetic, its
+//   stated limits, and unit tests. The four rows below are pinned as GROUND TRUTH in
+//   lib/core/camera-measure.fixture.json — the real hue masks of these very renders — so a
+//   change that breaks the instrument reddens the gate instead of quietly re-deriving:
 //
 //   set shape                         establish   stop (scalar)   stop (this box)
 //   four Alpine glaciers, 0.85×0.64°  z 8.478     z 9.06  (+0.58)  z 9.47  (+0.99)
