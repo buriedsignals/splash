@@ -82,6 +82,20 @@ export type StoryCopy = {
   /** dot-density's dominant-category clause: "mostly solar". Takes the category verbatim —
    *  it is DATA, never furniture, and is never translated. */
   mostly: (category: string) => string;
+  /** hex-grid's DERIVED closing caption: "18 points in the densest hexagon, 62 hexagons in
+   *  all". `valueStr` is already localized (same convention as `meanOf`/`pointCount` — it is
+   *  usually one of them). The bin noun rides in this row rather than being concatenated by the
+   *  caller, for the same reason `densestBin` carries it: "the densest hexagon" but "l'hexagone
+   *  le plus dense", and the plural is a second irregularity on top ("Zelle"/"Zellen"). */
+  binPeak: (valueStr: string, bins: number, shape: "hex" | "square") => string;
+  /** dot-density's DERIVED closing caption: "one dot = 50k people, 480M in all". Both strings
+   *  arrive already localized (the dot's worth carries the unit, the total does not — the unit
+   *  is stated once). */
+  dotWorth: (oneDotStr: string, totalStr: string) => string;
+  /** locator's DERIVED closing caption: "5 sites, 6 km end to end". Takes the ALREADY-composed
+   *  site count (this table's own `siteCount`, so the noun is declared once) and the localized
+   *  distance — the same convention `routeSpan` uses for its kilometres. */
+  placesSpan: (sitesStr: string, kmStr: string) => string;
 };
 
 function enOrdinal(n: number): string {
@@ -209,6 +223,13 @@ const EN: StoryCopy = {
         : `#${rank} ${bin}`;
   },
   mostly: (category) => `mostly ${category}`,
+  binPeak: (valueStr, bins, shape) => {
+    const bin = shape === "hex" ? "hexagon" : "cell";
+    return `${valueStr} in the densest ${bin}, ${bins} ${bin}${bins === 1 ? "" : "s"} in all`;
+  },
+  dotWorth: (oneDotStr, totalStr) =>
+    `one dot = ${oneDotStr}, ${totalStr} in all`,
+  placesSpan: (sitesStr, kmStr) => `${sitesStr}, ${kmStr} km end to end`,
 };
 
 const FR: StoryCopy = {
@@ -265,6 +286,21 @@ const FR: StoryCopy = {
         : `${bin} n° ${rank}`;
   },
   mostly: (category) => `majoritairement ${category}`,
+  // "dans l'hexagone le plus dense" / "dans la cellule la plus dense" — the article elides
+  // before the vowel-initial "hexagone" and does not before "cellule", which is exactly why
+  // the noun cannot be handed in by the caller.
+  binPeak: (valueStr, bins, shape) => {
+    const bin = shape === "hex" ? "hexagone" : "cellule";
+    const inThe =
+      shape === "hex"
+        ? "dans l'hexagone le plus dense"
+        : "dans la cellule la plus dense";
+    return `${valueStr} ${inThe}, ${bins} ${bin}${bins === 1 ? "" : "s"} au total`;
+  },
+  dotWorth: (oneDotStr, totalStr) =>
+    `un point = ${oneDotStr}, ${totalStr} au total`,
+  placesSpan: (sitesStr, kmStr) =>
+    `${sitesStr}, ${kmStr} km d'un bout à l'autre`,
 };
 
 const DE: StoryCopy = {
@@ -300,11 +336,7 @@ const DE: StoryCopy = {
   siteCount: (n) => `${n} Standort${n === 1 ? "" : "e"}`,
   routeSpan: (t, km) => `${t} Gebiet${t === 1 ? "" : "e"}, ${km} km`,
   rankOfHighest: (rank) =>
-    rank === 1
-      ? "der höchste"
-      : rank === 2
-        ? "der 2. höchste"
-        : `Nr. ${rank}`,
+    rank === 1 ? "der höchste" : rank === 2 ? "der 2. höchste" : `Nr. ${rank}`,
   densestBin: (rank, shape) => {
     const bin = shape === "hex" ? "Sechseck" : "Zelle";
     const art = shape === "hex" ? "das" : "die";
@@ -315,6 +347,18 @@ const DE: StoryCopy = {
         : `${bin} Nr. ${rank}`;
   },
   mostly: (category) => `überwiegend ${category}`,
+  // Dative after "in": "im dichtesten Sechseck" (neuter) / "in der dichtesten Zelle"
+  // (feminine) — two different forms, so the phrase is a row, not a concatenation.
+  binPeak: (valueStr, bins, shape) => {
+    const inThe =
+      shape === "hex" ? "im dichtesten Sechseck" : "in der dichtesten Zelle";
+    const plural = shape === "hex" ? "Sechsecke" : "Zellen";
+    const singular = shape === "hex" ? "Sechseck" : "Zelle";
+    return `${valueStr} ${inThe}, ${bins} ${bins === 1 ? singular : plural} insgesamt`;
+  },
+  dotWorth: (oneDotStr, totalStr) =>
+    `ein Punkt = ${oneDotStr}, ${totalStr} insgesamt`,
+  placesSpan: (sitesStr, kmStr) => `${sitesStr}, ${kmStr} km von Ende zu Ende`,
 };
 
 const IT: StoryCopy = {
@@ -356,6 +400,19 @@ const IT: StoryCopy = {
         : `${bin} n. ${rank}`;
   },
   mostly: (category) => `prevalentemente ${category}`,
+  // "nell'esagono più denso" (elided, masculine) / "nella cella più densa" (feminine) — the
+  // article, the elision and the adjective's ending all change with the noun.
+  binPeak: (valueStr, bins, shape) => {
+    const inThe =
+      shape === "hex" ? "nell'esagono più denso" : "nella cella più densa";
+    const plural = shape === "hex" ? "esagoni" : "celle";
+    const singular = shape === "hex" ? "esagono" : "cella";
+    return `${valueStr} ${inThe}, ${bins} ${bins === 1 ? singular : plural} in totale`;
+  },
+  dotWorth: (oneDotStr, totalStr) =>
+    `un punto = ${oneDotStr}, ${totalStr} in totale`,
+  placesSpan: (sitesStr, kmStr) =>
+    `${sitesStr}, ${kmStr} km da un capo all'altro`,
 };
 
 export const STORY_COPY: Record<"en" | "fr" | "de" | "it", StoryCopy> = {

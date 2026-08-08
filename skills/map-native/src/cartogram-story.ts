@@ -4,7 +4,8 @@
 // a reveal expands the cell bbox to >= 50% of the full extent (same frameCell rule as hex-grid).
 import {
   applyMapArc,
-  closingInsight,
+  closingCaption,
+  deriveTakeawayCopy,
   type Beat,
   type MapArcBeat,
 } from "./map-story";
@@ -52,7 +53,16 @@ export function deriveCartogramStory(
   const full = layout.bounds;
 
   const fmt = (v: number) => localizeValueLabel(v, meta.lang);
+  const valueOf = (v: number) =>
+    labelWithUnit(fmt(v), layout.valueUnit, meta.lang);
   const copy = storyCopy(meta.lang);
+
+  // Value-descending, ONE sort, two readers: the ranked walk below slices its reveals off the
+  // front, and the closer reads both ends. Same comparator (and same index tie-break) the walk
+  // always used, so the reveal order is byte-identical.
+  const ranked = layout.cells
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => b.c.value - a.c.value || a.i - b.i);
 
   const beats: Beat[] = [];
 
@@ -90,16 +100,11 @@ export function deriveCartogramStory(
           camera: frameCell(cellBbox, full, 0.5),
           highlight: [c.id],
           name: c.name,
-          value: labelWithUnit(fmt(c.value), layout.valueUnit, meta.lang),
+          value: valueOf(c.value),
         };
       }),
     );
   } else {
-    // Rank cells by value descending; tie-break by index for determinism.
-    const ranked = layout.cells
-      .map((c, i) => ({ c, i }))
-      .sort((a, b) => b.c.value - a.c.value || a.i - b.i);
-
     ranked.slice(0, cap).forEach(({ c }, rank) => {
       const cellBbox = bbox(c.feature) as [number, number, number, number];
       // Furniture, so it comes out of the locale table — inline it was three English
@@ -108,7 +113,7 @@ export function deriveCartogramStory(
       // Display value with its unit. Through `labelWithUnit`, like every other surface:
       // bare concatenation reads "16%" correctly and "157détenus" wrong, and only the second
       // kind of unit ever showed the defect.
-      const value = labelWithUnit(fmt(c.value), layout.valueUnit, meta.lang);
+      const value = valueOf(c.value);
       const text = `${value} ${layout.valueLabel} — ${rankDesc} — ${c.name}`;
       beats.push({
         kind: "reveal",
@@ -121,17 +126,37 @@ export function deriveCartogramStory(
     });
   }
 
+  // A cartogram is named cells with one number each — the same shape a choropleth is, so it
+  // closes on the same sentence (`deriveTakeawayCopy`): the cell that dominates, the one that
+  // trails, and the gap between them. Read off ALL the cells, not the capped walk: every tile is
+  // drawn, so the smallest is on screen whether or not the walk reached it.
+  //
+  // Measured before this: with no `insight` the copy was "", and the page closed on the figure's
+  // DESCRIPTION — its own opening card, verbatim.
+  const leader = ranked[0]?.c;
+  const trail = ranked[ranked.length - 1]?.c;
   beats.push({
     kind: "takeaway",
     camera: full,
     highlight: [],
     dim: false,
     callout: null,
-    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
-    // identical to the module title is the title, not a close. Written out inline here (and
-    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
-    // route track, which shipped its own headline as its last card.
-    copy: closingInsight(meta.insight, meta.title),
+    copy: closingCaption(
+      meta.insight,
+      meta.title,
+      leader && trail
+        ? deriveTakeawayCopy({
+            pattern: "magnitude",
+            maxName: leader.name,
+            maxValue: leader.value,
+            maxLabel: valueOf(leader.value),
+            minName: trail.name,
+            minValue: trail.value,
+            minLabel: valueOf(trail.value),
+            lang: meta.lang,
+          })
+        : "",
+    ),
   });
 
   return beats;

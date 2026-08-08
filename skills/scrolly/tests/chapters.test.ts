@@ -270,6 +270,58 @@ const temporalBeats: Beat[] = [
   },
 ];
 
+describe("mapStoryToChapters — the closing card", () => {
+  // Measured 2026-08-08 on built pages (docs/splash/proofs/2026-08-08-map-closing-captions):
+  // five map types closed their scrolly on their own DESCRIPTION, verbatim — the same string
+  // the opening card already carries. It reached them through the generic `hasCopy ? copy :
+  // desc` fallback below, because their derivers left the takeaway beat's `copy` empty.
+  // The fix is in the derivers (each now composes a data-tied closer); what this pins is the
+  // composer's half of the contract — a takeaway that HAS copy ships it verbatim, and the
+  // description fallback is what a caption-less beat still gets.
+  const withTakeaway = (copy: string): Beat[] => [
+    {
+      kind: "title",
+      camera: [-9, 36, 31, 71],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy: "Where funding lands",
+    },
+    {
+      kind: "takeaway",
+      camera: [-9, 36, 31, 71],
+      highlight: [],
+      dim: false,
+      callout: null,
+      copy,
+    },
+  ];
+
+  it("ships a derived closer verbatim as the last card", () => {
+    const story = mapStoryToChapters(withTakeaway("5 sites, 6 km end to end"), {
+      title: "Where funding lands",
+      description: "Venture funding raised by startups in each city, 2024",
+      regionsWithData: 6,
+      lang: undefined,
+    });
+    expect(story.steps[story.steps.length - 1].prose).toBe(
+      "5 sites, 6 km end to end",
+    );
+  });
+
+  it("falls back to the description only when the beat carries no caption at all", () => {
+    const story = mapStoryToChapters(withTakeaway(""), {
+      title: "Where funding lands",
+      description: "Venture funding raised by startups in each city, 2024",
+      regionsWithData: 6,
+      lang: undefined,
+    });
+    expect(story.steps[story.steps.length - 1].prose).toBe(
+      "Venture funding raised by startups in each city, 2024",
+    );
+  });
+});
+
 describe("mapStoryToChapters — temporal pattern", () => {
   const meta = {
     title: "Marriage equality spread over time",
@@ -697,7 +749,11 @@ describe("mapStoryToChapters — a reveal whose callout carries no value", () =>
 // Same template, same hole, other end. One helper answers both.
 // ---------------------------------------------------------------------------
 describe("mapStoryToChapters — a reveal whose callout carries no name", () => {
-  const point = (value: string, rank: number, role: "leader" | "tail"): Beat => ({
+  const point = (
+    value: string,
+    rank: number,
+    role: "leader" | "tail",
+  ): Beat => ({
     kind: "reveal",
     camera: [0, 0, 1, 1],
     highlight: [""],
@@ -755,7 +811,9 @@ describe("mapStoryToChapters — a reveal whose callout carries no name", () => 
   });
 
   it("keeps the rank descriptor — the walk IS ranked here, only the label is missing", () => {
-    expect(story.steps.some((s) => s.prose.includes("le plus élevé"))).toBe(true);
+    expect(story.steps.some((s) => s.prose.includes("le plus élevé"))).toBe(
+      true,
+    );
   });
 
   it("leaves no caption starting on a separator", () => {

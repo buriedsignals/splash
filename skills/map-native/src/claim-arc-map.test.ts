@@ -665,7 +665,11 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
         highlight: [],
         dim: false,
         callout: null,
-        copy: "",
+        // The takeaway's caption used to be "" here — the salience baseline captured the
+        // defect, not a choice: with no `insight` the beat carried nothing, so the page closed
+        // on its own description and the video on no card at all. It now carries the type's own
+        // derived closer (map-story.ts's closers; tests/map-closers.test.ts).
+        copy: "Geneva: 40 pts, Bern: 10 pts — a 4-fold gap",
       },
     ]);
   });
@@ -824,7 +828,11 @@ describe("deriveLocatorStory — applyMapArc wiring", () => {
         highlight: [],
         dim: false,
         callout: null,
-        copy: "",
+        // The takeaway's caption used to be "" here — the salience baseline captured the
+        // defect, not a choice: with no `insight` the beat carried nothing, so the page closed
+        // on its own description and the video on no card at all. It now carries the type's own
+        // derived closer (map-story.ts's closers; tests/map-closers.test.ts).
+        copy: "3 sites, 226 km end to end",
       },
     ]);
   });

@@ -6,7 +6,8 @@ import {
   type Beat,
   type MapArcBeat,
   type RevealMode,
-  closingInsight,
+  closingCaption,
+  deriveDotTakeawayCopy,
 } from "./map-story";
 import type { DotDensityLayout } from "./dot-density-geo";
 import type { StagedEntrance } from "./core/staged-reveal";
@@ -147,17 +148,32 @@ export function deriveDotDensityStory(
     }
   }
 
+  // A dot map's own fact — the one no reveal states, and the one the reader needs to read any
+  // of them — is the exchange rate: what a single dot stands for, and what the whole scatter
+  // therefore adds up to (`deriveDotTakeawayCopy`). Both halves come from the DRAWN dots
+  // (`dotValue`, `totalDots`), which is what a reveal caption already multiplies per region; the
+  // unit rides on the dot's worth only, so the sentence states it once.
+  //
+  // Measured before this: with no `insight` the copy was "", and the page closed on the figure's
+  // DESCRIPTION — its own opening card, verbatim.
+  const drawnTotal = layout.totalDots * layout.dotValue;
   beats.push({
     kind: "takeaway",
     camera: allBounds,
     highlight: [],
     dim: false,
     callout: null,
-    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
-    // identical to the module title is the title, not a close. Written out inline here (and
-    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
-    // route track, which shipped its own headline as its last card.
-    copy: closingInsight(meta.insight, meta.title),
+    copy: closingCaption(
+      meta.insight,
+      meta.title,
+      drawnTotal > 0
+        ? deriveDotTakeawayCopy({
+            dotValueLabel: `${formatCompact(layout.dotValue, meta.lang)}${unit ? " " + unit : ""}`,
+            totalLabel: formatCompact(drawnTotal, meta.lang),
+            lang: meta.lang,
+          })
+        : "",
+    ),
   });
 
   return beats;
