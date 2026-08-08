@@ -640,6 +640,88 @@ export function temporalRevealRows(
   return [first, ...middles, last];
 }
 
+// ── WHAT RANK MAY THIS BEAT CLAIM? ──────────────────────────────────────────────────────────
+// ONE answer for the whole map family, because the alternative was measured: the scrolly caption
+// engine read rank off a beat's POSITION among the reveals (`i === minBeat` ⇒ "the lowest"), and
+// four of the six types walk a plain top-N whose last beat is not the minimum. On built pages,
+// 2026-08-08: "Rome — 67$bn, the lowest" with Amsterdam's 52$bn drawn on the same map; "#5
+// hexagon — 15 points, the lowest" out of 62; "Denmark — 64, the lowest" out of 18.
+//
+// So rank is DECLARED by the deriver — which is the only layer that holds the full ordering —
+// and merely SPOKEN by the caption engine. `index` is the subject's 0-based place in the
+// value-descending ordering of ALL subjects (not its place in the capped walk), `total` is how
+// many subjects there are. `rankRole: "tail"` therefore means "this subject IS the minimum",
+// never "this beat is last in the walk"; a walk that stops at rank 5 of 6 declares no tail, and
+// the caption engine says "the 5th" instead of a superlative it cannot support.
+//
+// A LONE SUBJECT DECLARES NOTHING (`{}`): one value is not a distribution, so "the highest of
+// the 1 shown" is a sentence about a ranking that does not exist. Spread into a Beat literal,
+// so an empty declaration simply leaves the tags off.
+//
+// A deriver whose walk ranks something OTHER than the number its caption prints must not call
+// this at all — dot-density orders by dots-per-area while its caption states the region's total,
+// so it declares nothing and gets no rank language (see dot-density-story.ts's own note).
+export function magnitudeRankTags(
+  index: number,
+  total: number,
+):
+  | { pattern: NarrativePattern; rank: number; rankRole: "leader" | "tail" }
+  | Record<string, never> {
+  if (total <= 1) return {};
+  return {
+    pattern: "magnitude",
+    rank: index + 1,
+    rankRole: index === total - 1 ? "tail" : "leader",
+  };
+}
+
+/**
+ * THE MECHANICAL CHECK on the rule above: every rank a beat DECLARES must be true of the whole
+ * data, not of the walk. Pure, so the whole family is covered without a render or a network —
+ * the same discipline `auditMapStoryReveals` and the closers' tests already use.
+ *
+ * `subjects` is every subject the map DRAWS, with its raw value, keyed by the name the beat's
+ * callout carries. A beat with no rank tags is not checked: it claims nothing.
+ */
+export function rankClaimViolations(
+  beats: Beat[],
+  subjects: { name: string; value: number }[],
+): string[] {
+  const ordered = [...subjects].sort(
+    (a, b) => b.value - a.value || a.name.localeCompare(b.name),
+  );
+  const violations: string[] = [];
+  for (const b of beats) {
+    if (b.kind !== "reveal" || b.rank === undefined) continue;
+    const name = b.callout?.name ?? "";
+    const trueRank = ordered.findIndex((s) => s.name === name) + 1;
+    if (trueRank === 0) {
+      violations.push(
+        `reveal "${name}" declares rank ${b.rank} but is not among the ${ordered.length} ` +
+          `subjects the map draws — a rank over a set the reader cannot see is not a rank`,
+      );
+      continue;
+    }
+    if (trueRank !== b.rank)
+      violations.push(
+        `reveal "${name}" declares rank ${b.rank} but holds rank ${trueRank} of ` +
+          `${ordered.length} in the data`,
+      );
+    const isMinimum = trueRank === ordered.length;
+    if (b.rankRole === "tail" && !isMinimum)
+      violations.push(
+        `reveal "${name}" declares rankRole "tail" — "the lowest" — but rank ${trueRank} of ` +
+          `${ordered.length} is not the minimum the map draws`,
+      );
+    if (b.rankRole === "leader" && isMinimum && ordered.length > 1)
+      violations.push(
+        `reveal "${name}" declares rankRole "leader" but holds the minimum of ` +
+          `${ordered.length}`,
+      );
+  }
+  return violations;
+}
+
 // Magnitude reveal selection. A distribution is a RANKING story — "who leads, by how
 // much, and how long the tail is" — which two beats (max & min) cannot carry. Reveal
 // the TOP leaders (up to 3) plus the tail (the minimum) as contrast, each tagged with

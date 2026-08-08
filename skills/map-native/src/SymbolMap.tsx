@@ -37,6 +37,7 @@ import {
   type MapFilter,
 } from "./core/map-filter";
 import type { MapArcBeat } from "./map-arc";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -416,7 +417,7 @@ export const SymbolMap: React.FC<Props> = ({
       if (interactive) {
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
         map.addControl(
-          makeResetControl(clampBounds(geo.bounds), { dark }),
+          makeResetControl(clampBounds(geo.bounds), { dark, lang: config.lang }),
           "top-right",
         );
         const popup = new maptilersdk.Popup({ closeButton: false });
@@ -600,7 +601,10 @@ export const SymbolMap: React.FC<Props> = ({
       <div
         ref={containerRef}
         role="region"
-        aria-label={config.title ?? "map"}
+        // See HexGridMap: the accessible name comes from the locale table.
+        aria-label={
+          config.title ? storyCopy(config.lang).mapAria(config.title) : "map"
+        }
         style={{ width: "100%", height: "100%" }}
       />
 

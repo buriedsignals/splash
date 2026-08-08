@@ -22,6 +22,7 @@ import { fmtBin } from "./core/legend-format";
 import { formatLocaleNumber, localizeNumberString } from "./core/locale";
 import { legendTheme } from "./theme/legend-theme";
 import type { HexGridConfigShape } from "./validate-config";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -253,7 +254,7 @@ export const HexGridMap: React.FC<Props> = ({
           new maptilersdk.NavigationControl({ showCompass: false }),
           "top-right",
         );
-        map.addControl(makeResetControl(dataBounds, { dark }), "top-right");
+        map.addControl(makeResetControl(dataBounds, { dark, lang: config.lang }), "top-right");
 
         const popup = new maptilersdk.Popup({
           closeButton: false,
@@ -269,17 +270,26 @@ export const HexGridMap: React.FC<Props> = ({
           const count = Number(p.__count ?? 0);
           const value = Number(p.__value ?? 0);
           // count → "42 points"; sum/mean → the aggregate value line + point count.
+          //
+          // Every WORD here comes out of the locale table, like every number already did. The
+          // numbers went through `formatLocaleNumber` and the nouns beside them did not, which
+          // is the half-localized line this codebase has paid for before ("157détenus"): a
+          // French reader hovering a cell got "42 points" — right by accident — and a German or
+          // Italian one got "mean 12.5" and "sum 42" verbatim. `pointCount` and `aggregateValue`
+          // are the same rows hex-grid-story.ts already composes its captions from, so the
+          // tooltip and the caption cannot disagree about what a cell holds.
           let html: string;
           const lang = config.lang;
+          const copy = storyCopy(lang);
+          const points = copy.pointCount(formatLocaleNumber(count, lang));
           if (aggregate === "count") {
-            html = `<strong>${formatLocaleNumber(count, lang)} points</strong>`;
+            html = `<strong>${points}</strong>`;
           } else {
-            const label = aggregate === "mean" ? "mean" : "sum";
             const shown =
               aggregate === "mean"
                 ? localizeNumberString(value.toFixed(1), lang)
                 : formatLocaleNumber(value, lang);
-            html = `<strong>${label} ${shown}</strong><br/>${formatLocaleNumber(count, lang)} points`;
+            html = `<strong>${copy.aggregateValue(aggregate, shown)}</strong><br/>${points}`;
           }
           popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
         });
@@ -364,8 +374,13 @@ export const HexGridMap: React.FC<Props> = ({
     fitToDataRef.current?.();
   }, []);
 
+  // The graphic's accessible NAME. Localized through the locale table like every other
+  // generated word: this was English on a French page (measured 2026-08-08 on the built
+  // hex-grid scrolly, aria-label="Map: Ou les accidents..."). The un-titled branch keeps
+  // its English noun phrase — validate-config refuses a title under 12 characters, so it is
+  // unreachable through the validated path (see storyCopy's mapAria note).
   const ariaLabel = config.title
-    ? `Interactive map: ${config.title}`
+    ? storyCopy(config.lang).mapAria(config.title)
     : "Interactive hex-grid map";
 
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {

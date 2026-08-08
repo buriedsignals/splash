@@ -23,6 +23,7 @@ import {
   filterStateToExpression,
   type FilterState,
 } from "./core/map-filter";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -435,7 +436,7 @@ export const LocatorMap: React.FC<Props> = ({
       if (interactive) {
         map.addControl(new maptilersdk.NavigationControl({}), "top-right");
         map.addControl(
-          makeResetControl(clampBounds(geo.bounds), { dark }),
+          makeResetControl(clampBounds(geo.bounds), { dark, lang: config.lang }),
           "top-right",
         );
 
@@ -645,7 +646,10 @@ export const LocatorMap: React.FC<Props> = ({
       <div
         ref={containerRef}
         role="region"
-        aria-label={config.title ?? "map"}
+        // See HexGridMap: the accessible name comes from the locale table.
+        aria-label={
+          config.title ? storyCopy(config.lang).mapAria(config.title) : "map"
+        }
         style={{ width: "100%", height: "100%" }}
       />
 

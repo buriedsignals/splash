@@ -144,6 +144,21 @@ export function deriveDotDensityStory(
         dim: true,
         callout: { region: x.r.key, name: x.name, value: valText, text },
         copy: text,
+        // ★ NO RANK TAGS, DELIBERATELY — this walk ranks DENSITY (dots per unit area), and the
+        // caption beside it prints the region's TOTAL. The two orderings disagree, so any rank
+        // language over the printed number is false. Measured 2026-08-08 on the built page,
+        // where the caption engine read rank off position:
+        //     Netherlands — 18M, the highest of the 14 shown
+        //     Belgium — 12M
+        //     United Kingdom — 67M
+        //     Germany — 84M
+        //     Italy — 59M, the lowest          ← Belgium, 12M, four cards above it
+        // The ORDER is right (a dot map's story is where the dots crowd, and the tour flies to
+        // the darkest clusters); the descriptor was a claim about a different quantity. The
+        // honest answer is to declare nothing, which is why `magnitudeRankTags` is not called
+        // here — see its own note: a deriver whose walk ranks something other than the number
+        // its caption prints must not call it. What one dot is worth, and what the whole
+        // scatter adds up to, is stated where it is true: the closing card.
       });
     }
   }

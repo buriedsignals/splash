@@ -13,6 +13,7 @@ import {
 } from "@turf/turf";
 import { BLUES, resolvePalette } from "./theme/scale";
 import { houseRamp } from "./theme/house-ramp";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export interface HexGridData {
   points: { lon: number; lat: number; value?: number }[];
@@ -26,6 +27,10 @@ export interface HexGridData {
   // CartogramData's `valueUnit`. Not applied to "count" (a count of points has no value
   // unit of its own — "points" already names it).
   valueUnit?: string;
+  /** Deliverable language — localizes `aggregateLabel`, the legend's own title. Optional, and
+   *  read straight off the config every caller already hands this function whole, so no call
+   *  site had to change: `computeHexGrid(config)` picks it up wherever `config.lang` is set. */
+  lang?: string;
 }
 export interface HexCell {
   feature: GeoJSON.Feature;
@@ -198,12 +203,11 @@ export function computeHexGrid(data: HexGridData): HexGridLayout {
     return { ...c, color: bins[bi].color, binIdx: bi };
   });
 
-  const aggregateLabel =
-    aggregate === "count"
-      ? `points per ${binShape === "hex" ? "hexagon" : "cell"}`
-      : aggregate === "sum"
-        ? "sum of values"
-        : "mean value";
+  // The legend's title, from the locale table — NOT from literals here. Measured on a built
+  // French page (2026-08-08): every caption on it was French and the legend read "POINTS PER
+  // HEXAGON", because this label is composed in the GEO layer, which the caption-side i18n work
+  // never reaches. `lang` rides on the same config object every caller already passes.
+  const aggregateLabel = storyCopy(data.lang).binAggregate(aggregate, binShape);
 
   return {
     cells,

@@ -96,6 +96,54 @@ export type StoryCopy = {
    *  site count (this table's own `siteCount`, so the noun is declared once) and the localized
    *  distance — the same convention `routeSpan` uses for its kilometres. */
   placesSpan: (sitesStr: string, kmStr: string) => string;
+  // ── LEGEND / POPUP FURNITURE ────────────────────────────────────────────────────────────
+  // The rows below are the map's own chrome rather than a caption. They live here for the
+  // same reason everything above does, and because the alternative was measured: a French
+  // hex-grid page whose every caption was French carried "POINTS PER HEXAGON" in its legend
+  // (2026-08-08, docs/splash/proofs/2026-08-08-map-closing-captions §4c). That string was
+  // composed from English literals in hex-grid-geo.ts — the GEO layer, which no caption-side
+  // i18n work would ever have reached — and the sweep that followed found four siblings, each
+  // a literal a renderer had minted for itself.
+  /** A hex/square grid legend's title: what its cells are counting. The bin noun rides in the
+   *  row, like `densestBin`'s, because "per hexagon"/"par hexagone" is not a concatenation
+   *  that survives four languages. `sum`/`mean` name the aggregate itself, with no bin noun —
+   *  a sum of values is a sum of values whatever the cell's shape. */
+  binAggregate: (
+    aggregate: "count" | "sum" | "mean",
+    shape: "hex" | "square",
+  ) => string;
+  /** A hovered grid cell's aggregate line: "sum 42" / "moyenne 12,5". The value arrives
+   *  ALREADY localized (same convention as `meanOf`) — only the word was leaking. */
+  aggregateValue: (aggregate: "sum" | "mean", valueStr: string) => string;
+  /** The dot-density legend's exchange rate: "1 dot = 100k". The number arrives already
+   *  localized; `dotWorth` is its takeaway-card sibling, which this row deliberately does not
+   *  reuse — the legend states the rate alone, the closer states the rate AND the total. */
+  dotLegend: (dotValueStr: string) => string;
+  /** The word a cartogram's legend falls back to when the config named no `valueLabel`. The
+   *  journalist's own label is DATA and passes through untouched; this is the machine's. */
+  valueLabelFallback: string;
+  /** The italic note under a GRID cartogram's legend, explaining why every cell is the same
+   *  size. A whole English sentence before this row existed. */
+  gridCartogramNote: string;
+  /** The route map's legend title — the one hard-coded English legend HEADING in the engine
+   *  (every other map derives its heading from the data). Same noun `routeSpan` already
+   *  pluralizes, so the two agree across the four languages. */
+  territoriesLabel: string;
+  /** The accessible name of the map REGION — "Interactive map: <title>". Not visible text: it
+   *  is what a screen reader announces on entering the graphic, and it was English on a French
+   *  page (measured 2026-08-08 on the built hex-grid page as "Map: Où les accidents…"). Takes
+   *  the journalist's title verbatim — that half is DATA and already in their language.
+   *
+   *  There is no un-titled variant here on purpose. Every map component carries an English
+   *  noun-phrase fallback for a config with no title ("Hex-grid density map", "Locator map",
+   *  …), and every map type's validator refuses a title under 12 characters
+   *  (validate-config.ts) — so those fallbacks are unreachable through the validated path and
+   *  translating them would mean authoring cartographic vocabulary in three languages for
+   *  strings nothing can produce. */
+  mapAria: (title: string) => string;
+  /** The reset-view control's accessible name — the one piece of map CHROME with a name of its
+   *  own, on every interactive map. */
+  resetMapView: string;
 };
 
 function enOrdinal(n: number): string {
@@ -230,6 +278,20 @@ const EN: StoryCopy = {
   dotWorth: (oneDotStr, totalStr) =>
     `one dot = ${oneDotStr}, ${totalStr} in all`,
   placesSpan: (sitesStr, kmStr) => `${sitesStr}, ${kmStr} km end to end`,
+  binAggregate: (aggregate, shape) =>
+    aggregate === "count"
+      ? `points per ${shape === "hex" ? "hexagon" : "cell"}`
+      : aggregate === "sum"
+        ? "sum of values"
+        : "mean value",
+  aggregateValue: (aggregate, valueStr) =>
+    `${aggregate === "mean" ? "mean" : "sum"} ${valueStr}`,
+  dotLegend: (dotValueStr) => `1 dot = ${dotValueStr}`,
+  valueLabelFallback: "value",
+  gridCartogramNote: "each cell = one region, equal size; colour = value",
+  territoriesLabel: "Territories",
+  mapAria: (title) => `Interactive map: ${title}`,
+  resetMapView: "Reset map view",
 };
 
 const FR: StoryCopy = {
@@ -301,6 +363,21 @@ const FR: StoryCopy = {
     `un point = ${oneDotStr}, ${totalStr} au total`,
   placesSpan: (sitesStr, kmStr) =>
     `${sitesStr}, ${kmStr} km d'un bout à l'autre`,
+  binAggregate: (aggregate, shape) =>
+    aggregate === "count"
+      ? `points par ${shape === "hex" ? "hexagone" : "cellule"}`
+      : aggregate === "sum"
+        ? "somme des valeurs"
+        : "valeur moyenne",
+  aggregateValue: (aggregate, valueStr) =>
+    `${aggregate === "mean" ? "moyenne" : "somme"} ${valueStr}`,
+  dotLegend: (dotValueStr) => `1 point = ${dotValueStr}`,
+  valueLabelFallback: "valeur",
+  gridCartogramNote:
+    "chaque case = une région, même taille ; la couleur = la valeur",
+  territoriesLabel: "Territoires",
+  mapAria: (title) => `Carte interactive : ${title}`,
+  resetMapView: "Réinitialiser la vue",
 };
 
 const DE: StoryCopy = {
@@ -359,6 +436,20 @@ const DE: StoryCopy = {
   dotWorth: (oneDotStr, totalStr) =>
     `ein Punkt = ${oneDotStr}, ${totalStr} insgesamt`,
   placesSpan: (sitesStr, kmStr) => `${sitesStr}, ${kmStr} km von Ende zu Ende`,
+  binAggregate: (aggregate, shape) =>
+    aggregate === "count"
+      ? `Punkte pro ${shape === "hex" ? "Sechseck" : "Zelle"}`
+      : aggregate === "sum"
+        ? "Summe der Werte"
+        : "Mittelwert",
+  aggregateValue: (aggregate, valueStr) =>
+    `${aggregate === "mean" ? "Mittelwert" : "Summe"} ${valueStr}`,
+  dotLegend: (dotValueStr) => `1 Punkt = ${dotValueStr}`,
+  valueLabelFallback: "Wert",
+  gridCartogramNote: "jede Zelle = eine Region, gleiche Größe; Farbe = Wert",
+  territoriesLabel: "Gebiete",
+  mapAria: (title) => `Interaktive Karte: ${title}`,
+  resetMapView: "Ansicht zurücksetzen",
 };
 
 const IT: StoryCopy = {
@@ -413,6 +504,21 @@ const IT: StoryCopy = {
     `un punto = ${oneDotStr}, ${totalStr} in totale`,
   placesSpan: (sitesStr, kmStr) =>
     `${sitesStr}, ${kmStr} km da un capo all'altro`,
+  binAggregate: (aggregate, shape) =>
+    aggregate === "count"
+      ? `punti per ${shape === "hex" ? "esagono" : "cella"}`
+      : aggregate === "sum"
+        ? "somma dei valori"
+        : "valore medio",
+  aggregateValue: (aggregate, valueStr) =>
+    `${aggregate === "mean" ? "media" : "somma"} ${valueStr}`,
+  dotLegend: (dotValueStr) => `1 punto = ${dotValueStr}`,
+  valueLabelFallback: "valore",
+  gridCartogramNote:
+    "ogni cella = una regione, stessa dimensione; il colore = il valore",
+  territoriesLabel: "Territori",
+  mapAria: (title) => `Mappa interattiva: ${title}`,
+  resetMapView: "Reimposta la vista",
 };
 
 export const STORY_COPY: Record<"en" | "fr" | "de" | "it", StoryCopy> = {

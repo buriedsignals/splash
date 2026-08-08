@@ -25,6 +25,7 @@ import { fmtBin } from "./core/legend-format";
 import { formatLocaleNumber } from "./core/locale";
 import { legendTheme } from "./theme/legend-theme";
 import type { CartogramConfigShape } from "./validate-config";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -260,7 +261,7 @@ export const CartogramMap: React.FC<Props> = ({
           new maptilersdk.NavigationControl({ showCompass: false }),
           "top-right",
         );
-        map.addControl(makeResetControl(dataBounds, { dark }), "top-right");
+        map.addControl(makeResetControl(dataBounds, { dark, lang: config.lang }), "top-right");
 
         const popup = new maptilersdk.Popup({
           closeButton: false,
@@ -295,7 +296,7 @@ export const CartogramMap: React.FC<Props> = ({
       if (legendRef.current) {
         const uniformNote =
           layout.variant === "grid"
-            ? `<div style="font:10px/1.3 sans-serif;color:${theme.sub};margin-top:6px;font-style:italic">each cell = one region, equal size; colour = value</div>`
+            ? `<div style="font:10px/1.3 sans-serif;color:${theme.sub};margin-top:6px;font-style:italic">${storyCopy(config.lang).gridCartogramNote}</div>`
             : "";
         const header = `
           <div style="font:600 11px/1.2 sans-serif;color:${theme.ink};margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
@@ -365,8 +366,13 @@ export const CartogramMap: React.FC<Props> = ({
     fitToDataRef.current?.();
   }, []);
 
+  // The graphic's accessible NAME. Localized through the locale table like every other
+  // generated word: this was English on a French page (measured 2026-08-08 on the built
+  // hex-grid scrolly, aria-label="Map: Ou les accidents..."). The un-titled branch keeps
+  // its English noun phrase — validate-config refuses a title under 12 characters, so it is
+  // unreachable through the validated path (see storyCopy's mapAria note).
   const ariaLabel = config.title
-    ? `Interactive map: ${config.title}`
+    ? storyCopy(config.lang).mapAria(config.title)
     : "Interactive cartogram map";
 
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {

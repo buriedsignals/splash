@@ -1,4 +1,5 @@
 import * as maptilersdk from "@maptiler/sdk";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 // Set a free-pan maxBounds envelope, but ONLY when it is a real sub-global box. On a
 // wide/short viewport the map view can WRAP, so getBounds() returns UNWRAPPED longitudes
@@ -18,7 +19,7 @@ export function safeSetMaxBounds(
 /** Minimal IControl that resets the map to the initial data bounds. */
 export function makeResetControl(
   dataBounds: [number, number, number, number],
-  options: { dark?: boolean } = {},
+  options: { dark?: boolean; lang?: string } = {},
 ): maptilersdk.IControl {
   let _map: maptilersdk.Map | null = null;
   let _btn: HTMLButtonElement | null = null;
@@ -31,7 +32,10 @@ export function makeResetControl(
 
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.setAttribute("aria-label", "Reset map view");
+      // The one piece of map CHROME with a name of its own. English here shipped into every
+      // non-English interactive map — a screen reader announced "Reset map view" on a French
+      // page whose every other word came from the locale table.
+      btn.setAttribute("aria-label", storyCopy(options.lang).resetMapView);
       btn.textContent = "⌂";
       const bg = options.dark ? "rgba(28,28,31,0.92)" : "#fff";
       const color = options.dark ? "#f4f4f5" : "#333";

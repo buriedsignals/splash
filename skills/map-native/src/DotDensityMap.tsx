@@ -24,6 +24,7 @@ import {
 } from "./core/map-filter";
 import { legendTheme } from "./theme/legend-theme";
 import type { DotDensityConfigShape } from "./validate-config";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -311,7 +312,7 @@ export const DotDensityMap: React.FC<Props> = ({
           new maptilersdk.NavigationControl({ showCompass: false }),
           "top-right",
         );
-        map.addControl(makeResetControl(dataBounds, { dark }), "top-right");
+        map.addControl(makeResetControl(dataBounds, { dark, lang: config.lang }), "top-right");
 
         const popup = new maptilersdk.Popup({
           closeButton: false,
@@ -362,7 +363,7 @@ export const DotDensityMap: React.FC<Props> = ({
         const header = `
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:${layout.hasCategories ? 8 : 0}px">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${univariateAccent(dark, config.brandHue)};flex-shrink:0"></span>
-            <span style="font:600 11px/1.2 sans-serif;color:${theme.ink}">1 dot = ${dotN}</span>
+            <span style="font:600 11px/1.2 sans-serif;color:${theme.ink}">${storyCopy(config.lang).dotLegend(dotN)}</span>
           </div>`;
         const swatches = layout.hasCategories
           ? layout.legend
@@ -431,8 +432,13 @@ export const DotDensityMap: React.FC<Props> = ({
     fitToDataRef.current?.();
   }, []);
 
+  // The graphic's accessible NAME. Localized through the locale table like every other
+  // generated word: this was English on a French page (measured 2026-08-08 on the built
+  // hex-grid scrolly, aria-label="Map: Ou les accidents..."). The un-titled branch keeps
+  // its English noun phrase — validate-config refuses a title under 12 characters, so it is
+  // unreachable through the validated path (see storyCopy's mapAria note).
   const ariaLabel = config.title
-    ? `Interactive map: ${config.title}`
+    ? storyCopy(config.lang).mapAria(config.title)
     : "Interactive dot-density map";
 
   const frame = resolveMapFrame(containerSize.w, containerSize.h, {

@@ -619,6 +619,9 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
           text: "Geneva — 40 pts",
         },
         copy: "Geneva — 40 pts",
+        pattern: "magnitude",
+        rank: 1,
+        rankRole: "leader",
       },
       {
         kind: "reveal",
@@ -632,6 +635,9 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
           text: "Lausanne — 30 pts",
         },
         copy: "Lausanne — 30 pts",
+        pattern: "magnitude",
+        rank: 2,
+        rankRole: "leader",
       },
       {
         kind: "reveal",
@@ -645,6 +651,9 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
           text: "Zurich — 20 pts",
         },
         copy: "Zurich — 20 pts",
+        pattern: "magnitude",
+        rank: 3,
+        rankRole: "leader",
       },
       {
         kind: "reveal",
@@ -658,6 +667,9 @@ describe("deriveSymbolStory — applyMapArc wiring", () => {
           text: "Bern — 10 pts",
         },
         copy: "Bern — 10 pts",
+        pattern: "magnitude",
+        rank: 4,
+        rankRole: "tail",
       },
       {
         kind: "takeaway",
@@ -1001,6 +1013,9 @@ describe("deriveCartogramStory — applyMapArc wiring", () => {
           text: "16 pop — the highest — B",
         },
         copy: "16 pop — the highest — B",
+        pattern: "magnitude",
+        rank: 1,
+        rankRole: "leader",
       },
       {
         kind: "reveal",
@@ -1014,6 +1029,9 @@ describe("deriveCartogramStory — applyMapArc wiring", () => {
           text: "9 pop — the 2nd highest — D",
         },
         copy: "9 pop — the 2nd highest — D",
+        pattern: "magnitude",
+        rank: 2,
+        rankRole: "leader",
       },
       {
         kind: "reveal",
@@ -1027,6 +1045,9 @@ describe("deriveCartogramStory — applyMapArc wiring", () => {
           text: "4 pop — #3 — A",
         },
         copy: "4 pop — #3 — A",
+        pattern: "magnitude",
+        rank: 3,
+        rankRole: "leader",
       },
       {
         kind: "reveal",
@@ -1040,6 +1061,9 @@ describe("deriveCartogramStory — applyMapArc wiring", () => {
           text: "1 pop — #4 — C",
         },
         copy: "1 pop — #4 — C",
+        pattern: "magnitude",
+        rank: 4,
+        rankRole: "tail",
       },
       {
         kind: "takeaway",

@@ -45,6 +45,7 @@ import {
 } from "../../../scrolly/src/chapters";
 import { scrollyFrames } from "../route-story";
 import { stepSlide } from "./ChoroplethScrolly";
+import { storyCopy } from "../../../../lib/core/story-copy";
 
 maptilersdk.config.apiKey = process.env.REMOTION_MAPTILER_KEY as string;
 
@@ -342,7 +343,7 @@ export const DotDensityScrolly: React.FC<{ config: DotDensityConfigShape }> = ({
     const header = `
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:${legendState.hasCategories ? 8 : 0}px">
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${config.brandHue ?? (dark ? "#e8e8ec" : UNIVARIATE_ACCENT.light)};flex-shrink:0"></span>
-        <span style="font:600 11px/1.2 sans-serif;color:${ink}">1 dot = ${dotN}</span>
+        <span style="font:600 11px/1.2 sans-serif;color:${ink}">${storyCopy(config.lang).dotLegend(dotN)}</span>
       </div>`;
     const swatches = legendState.hasCategories
       ? legendState.legend

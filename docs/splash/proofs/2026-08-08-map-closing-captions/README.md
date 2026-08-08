@@ -111,6 +111,12 @@ the numbers through `formatLocaleNumber`:
 
 ## 4 — three neighbouring defects, measured here, genuinely not this one
 
+> **Closed 2026-08-08** — `docs/splash/proofs/2026-08-08-map-rank-claims-and-legend-leak`.
+> (a) and (b) turned out to be one rule, applied in one place: rank is DECLARED by the deriver,
+> never read off a beat's position. (b) was worse than measured here — `Italy — 59M, the lowest`
+> was false at the other end too, with Belgium's 12M four cards above it. (c) had four siblings
+> in the same layer, plus the accessible names.
+
 All three were read off the **same renders** as the table in §1, so they are measurements, not
 suspicions. None is the closing card: each lives in a different mechanism.
 

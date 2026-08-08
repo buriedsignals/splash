@@ -5,6 +5,7 @@
 // randomness; the grid assignment sorts explicitly and breaks ties by index.
 import { bbox, area, centroid, transformScale, polygon } from "@turf/turf";
 import { computeChoropleth, mainlandFeature } from "./choropleth-geo";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export interface CartogramCell {
   feature: GeoJSON.Feature;
@@ -43,6 +44,10 @@ export interface CartogramData {
   // basemap's ISO/English feature name.
   labelField?: string;
   brandHue?: string; // newsroom house hue → derived house ramp (via computeChoropleth)
+  /** Deliverable language — localizes the `valueLabel` FALLBACK only (the legend title used
+   *  when the config named none). A `valueLabel` the journalist wrote is DATA and passes
+   *  through untouched. Read off the config every caller already hands this function whole. */
+  lang?: string;
 }
 
 // Pick the bin index whose [min,max] contains v (last bin inclusive of max).
@@ -217,7 +222,11 @@ export function computeCartogram(
     bins: cho.bins,
     variant,
     bounds,
-    valueLabel: data.valueLabel ?? "value",
+    // The FALLBACK is furniture and comes from the locale table; a label the journalist wrote
+    // is data and is left exactly as written. Inline, this minted the English noun "value" as
+    // the legend title (and the hover popup's unit) on every page that named none — the same
+    // geo-layer leak hex-grid's `aggregateLabel` had, one file over.
+    valueLabel: data.valueLabel ?? storyCopy(data.lang).valueLabelFallback,
     valueUnit: data.valueUnit ?? "",
     scaleType,
   };

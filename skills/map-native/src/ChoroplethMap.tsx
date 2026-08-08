@@ -33,6 +33,7 @@ import { resolveMapStyle } from "./route-geo";
 import { legendTheme } from "./theme/legend-theme";
 import { fmtBinRange } from "./core/legend-format";
 import { regionPopupHtml } from "../../../lib/core/region-popup";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 if (!import.meta.env.VITE_MAPTILER_KEY)
   throw new Error("VITE_MAPTILER_KEY missing");
@@ -349,7 +350,7 @@ export const ChoroplethMap: React.FC<Props> = ({
           "top-right",
         );
 
-        map.addControl(makeResetControl(dataBounds, { dark }), "top-right");
+        map.addControl(makeResetControl(dataBounds, { dark, lang: config.lang }), "top-right");
       }
 
       // Expose map instance and data bounds for audit + snap-proof
@@ -514,8 +515,13 @@ export const ChoroplethMap: React.FC<Props> = ({
     fitToDataRef.current?.();
   }, []);
 
+  // The graphic's accessible NAME. Localized through the locale table like every other
+  // generated word: this was English on a French page (measured 2026-08-08 on the built
+  // hex-grid scrolly, aria-label="Map: Ou les accidents..."). The un-titled branch keeps
+  // its English noun phrase — validate-config refuses a title under 12 characters, so it is
+  // unreachable through the validated path (see storyCopy's mapAria note).
   const ariaLabel = config.title
-    ? `Interactive map: ${config.title}`
+    ? storyCopy(config.lang).mapAria(config.title)
     : "Interactive choropleth map";
 
   // Legend height: each bin row is 18 px, plus 18 px for the header row.
