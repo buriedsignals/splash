@@ -38,6 +38,25 @@ function fr(value: number, decimals = 2): string {
   return value.toFixed(decimals).replace(".", ",");
 }
 
+/** Wrap on the measured width of the real string, never on a character count — this beat's own
+ *  copy of the same wrapping rule every other beat duplicates. */
+export function wrap(
+  text: string,
+  maxWidth: number,
+  font: { fontSize: number; fontWeight: number },
+): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(/\s+/)) {
+    const trial = line ? `${line} ${word}` : word;
+    if (line && measureText(trial, font) > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else line = trial;
+  }
+  return line ? [...lines, line] : lines;
+}
+
 /**
  * Data to coordinates. No colour, no font, no label — the boundary this doctrine keeps on every
  * beat, ranking or line alike.
@@ -129,23 +148,6 @@ export function RankBars({
 
   const { ink, muted, grid } = deriveFurniture(ground);
   const { width, height } = FRAME;
-
-  function wrap(
-    text: string,
-    maxWidth: number,
-    font: { fontSize: number; fontWeight: number },
-  ): string[] {
-    const lines: string[] = [];
-    let line = "";
-    for (const word of text.split(/\s+/)) {
-      const trial = line ? `${line} ${word}` : word;
-      if (line && measureText(trial, font) > maxWidth) {
-        lines.push(line);
-        line = word;
-      } else line = trial;
-    }
-    return line ? [...lines, line] : lines;
-  }
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;

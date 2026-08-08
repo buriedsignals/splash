@@ -13,10 +13,7 @@
  */
 
 import { Fragment } from "react";
-import {
-  FONT_FAMILY,
-  measureText,
-} from "../scripts/render-still.mjs";
+import { FONT_FAMILY, measureText } from "../scripts/render-still.mjs";
 import {
   binIndex,
   fr,
@@ -75,7 +72,7 @@ export type Co2MapStillProps = {
   comparisonValue: number;
 };
 
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },

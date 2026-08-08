@@ -184,7 +184,7 @@ export function chartGeometry(
 /** Wrap on the measured width of the real string, never on a character count — the exact bug
  *  `web-discipline.md` names in its own header note: a sentence-length source line clipped clean
  *  off the narrow layout's right edge the first time this genre's first beat was actually driven. */
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },

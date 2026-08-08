@@ -123,7 +123,7 @@ type Measure = (
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },

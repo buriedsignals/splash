@@ -50,7 +50,7 @@ const X_TICK_HINT = 6;
  *  band with a routine tick that was never the line the reader needed there. */
 const MIN_GRIDLINE_GAP_PX = 20;
 
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },

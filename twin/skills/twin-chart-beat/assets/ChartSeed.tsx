@@ -189,7 +189,7 @@ export function lineGeometry(
 }
 
 /** Wrap on the measured width of the real string, never on a character count. */
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },

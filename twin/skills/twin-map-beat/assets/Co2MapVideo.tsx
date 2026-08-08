@@ -105,7 +105,7 @@ export function arrivalProgress(
 }
 
 let measuringContext: CanvasRenderingContext2D | null | undefined;
-function measureText(
+export function measureText(
   text: string,
   { fontSize, fontWeight = 400 }: { fontSize: number; fontWeight?: number },
 ): number {
@@ -120,7 +120,7 @@ function measureText(
   return measuringContext.measureText(text).width;
 }
 
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },
