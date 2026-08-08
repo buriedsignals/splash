@@ -113,7 +113,22 @@ export type FurnitureRole = (typeof FURNITURE_ROLES)[number];
 // that is true for all six engines at once and asks no engine to annotate its DOM. The
 // caller knows which title, unit and source it commissioned; capture proves they are there,
 // visible, and inside the captured rectangle.
-export type FurnitureExpectation = { role: FurnitureRole; text: string };
+//
+// `alternates` are OTHER strings that state the same fact, any one of which is the same
+// proof. It exists because one role really has more than one true spelling on the page: a
+// unit is stated either as its symbol or in the journalist's own words ("54 percent
+// recycled" says "%"), and the dw-chart assembler now leaves the journalist's wording alone
+// instead of appending a redundant "(%)" — measured live on chart saWby, 2026-08-08. Without
+// this, capture would hunt for a "%" the page correctly never prints and file a blocking
+// finding on a good chart. It is not a relaxation of the rule: the rule is "the unit reaches
+// the reader", and the literal symbol was only ever a proxy for it. Every candidate is still
+// held to the same found-AND-visible bar (lib/verify/capture.ts prefers a visible match over
+// a merely present one, so an alternate buried in a screen-reader-only node proves nothing).
+export type FurnitureExpectation = {
+  role: FurnitureRole;
+  text: string;
+  alternates?: readonly string[];
+};
 
 export type Box = { x: number; y: number; width: number; height: number };
 

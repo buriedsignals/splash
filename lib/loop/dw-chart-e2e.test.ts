@@ -137,8 +137,19 @@ test("every string the chain proof expects on the live page is in the spec Dataw
 
   // The ROLES that would go missing, named — an empty array of roles reads far better on
   // failure than a boolean, and it is the sentence the chain proof would have to change.
+  //
+  // ANY of a role's spellings settles it, because the page only ever carries one of them.
+  // The unit is the role with two: the symbol when the assembler appended it, the
+  // journalist's own words when it (correctly) did not. This clause is what made the
+  // redundancy fix a two-sided change rather than a one-line edit — it went red the moment
+  // `introWithUnit` stopped appending "(%)" to a subtitle already reading "54 percent
+  // recycled", which is exactly the conversation it exists to force.
   expect(
-    expected.filter((f) => !painted.includes(f.text)).map((f) => f.role),
+    expected
+      .filter((f) =>
+        [f.text, ...(f.alternates ?? [])].every((t) => !painted.includes(t)),
+      )
+      .map((f) => f.role),
   ).toEqual([]);
 });
 

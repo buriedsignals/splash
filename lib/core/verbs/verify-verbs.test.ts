@@ -87,6 +87,24 @@ describe("shape gates", () => {
     expect(isCapturePayload(capturePayload)).toBe(true);
     expect(isCapturePayload({ ...capturePayload, format: 7 })).toBe(false);
     expect(isCapturePayload(null)).toBe(false);
+    // `alternates` — the other true spellings of a role's text (a unit says "%" or "percent").
+    // Absent is the ordinary case; present must be a list of STRINGS, because the browser side
+    // hands each one to `String.includes` and a number there would match nothing while looking
+    // like a declared expectation.
+    expect(
+      isCapturePayload({
+        ...capturePayload,
+        furniture: [{ role: "unit", text: "%", alternates: ["percent"] }],
+      }),
+    ).toBe(true);
+    for (const bad of ["percent", [1], [null], {}])
+      expect(
+        isCapturePayload({
+          ...capturePayload,
+          furniture: [{ role: "unit", text: "%", alternates: bad }],
+        }),
+        `alternates ${JSON.stringify(bad)} must be refused`,
+      ).toBe(false);
     // heightPolicy is checked by MEMBERSHIP, not `typeof string`. A near-miss spelling must be
     // REFUSED, never silently read as the default "pinned": a guard that a typo relaxes is worse
     // than no guard, and this one decides whether a height is checked at all.

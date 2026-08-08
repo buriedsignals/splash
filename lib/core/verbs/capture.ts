@@ -48,6 +48,17 @@ export function isCapturePayload(p: unknown): p is CapturePayload {
         !(FURNITURE_ROLES as readonly string[]).includes(f.role)
       )
         return false;
+    // `alternates` — the OTHER true spellings of the same fact (a unit reaches a reader as "%"
+    // or as "percent"). Optional, but not unchecked: the browser side hands each entry to
+    // String.includes, where a non-string matches nothing while still reading, in the record,
+    // like a declared expectation. That is the shape of silent pass this gate exists to refuse.
+    for (const f of r.furniture as FurnitureExpectation[])
+      if (
+        f.alternates !== undefined &&
+        (!Array.isArray(f.alternates) ||
+          f.alternates.some((a) => typeof a !== "string"))
+      )
+        return false;
   }
   if (r.settleMs !== undefined && typeof r.settleMs !== "number") return false;
   // Membership, not `typeof string`: a payload declaring "contentDriven" or "row-driven" would
@@ -69,7 +80,7 @@ export function isCapturePayload(p: unknown): p is CapturePayload {
 export const CAPTURE_PAYLOAD_MESSAGE =
   "capture: payload must carry EITHER artifactPath (a file this run owns) OR artifactUrl " +
   "(a published embed it does not), plus format, channel, outDir and id " +
-  `(optional: destination, furniture[{role,text}] with role in ${FURNITURE_ROLES.join("|")}, settleMs, ` +
+  `(optional: destination, furniture[{role,text,alternates?}] with role in ${FURNITURE_ROLES.join("|")}, settleMs, ` +
   `heightPolicy in ${HEIGHT_POLICIES.join("|")})`;
 
 export async function capture(
