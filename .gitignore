@@ -36,3 +36,10 @@ newsroom.json
 NEWSROOM-PROFILE.md
 brand.json
 
+
+# The contrast guard writes its debug capture into this skill so a human can open it after a
+# produce (skills/map-native/scripts/produce.mjs, the "No OUTDIR here" comment). It is a
+# BYPRODUCT, not a proof — docs/splash/square-portrait-channels-2026-07-30.md cites it as "not
+# committed" — and tracking it made every test run dirty the tree: seven commits carry it, four
+# of them by accident, swept in by a `git add -A` that had nothing to do with maps.
+skills/map-native/output-proof/contrast/
