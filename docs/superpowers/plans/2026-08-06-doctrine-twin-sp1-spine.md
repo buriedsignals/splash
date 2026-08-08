@@ -2280,6 +2280,39 @@ AMENDED 2026-08-06 (review of the first render, correctness governs):
    story. The rule is corrected where it is written — `twin-chart-beat/references/static-discipline.md`,
    `references/seed-anatomy.md`, and `twin-doctrine/references/anti-patterns.md`, which stated it
    unqualified and would have propagated it to every production skill.
+
+   AMENDED AGAIN 2026-08-08 — **the rule was right and the arithmetic implementing it was not.**
+   "Pads by 15%, snaps to a round step, returns three ticks" widens the extent three times over
+   (the third is a spare step spent to keep the tick count even). Each widening is defensible
+   alone; together, on net-migration readings running -3,4 to 84,1, they produced an axis from
+   -45 to 105 — 58% of the plot used, the bottom third empty, the top gridline a quarter above
+   any measured value. That is the case the twin LOST in the head-to-head against the established
+   engine, and it lost it on arithmetic, not on judgement.
+
+   The seed now reads `scaleLinear().domain(extent(readings)).nice()` for the domain and
+   `.ticks(3)` for the labels, and traces with `d3-shape`'s `line()` — keeping `.defined()`, which
+   is what breaks the stroke at a missing reading. `d3-array`, `d3-scale` and `d3-shape` have been
+   in the root template's `package.json` since it was written; the seed simply never imported
+   them. Every editorial rule above is unchanged and still enforced by test — fitted rather than
+   zero-anchored, a positive series never below zero (rounding a non-negative floor outward to a
+   multiple of a positive step cannot cross zero), the zero line on a genuine crossing, the gap
+   notes. Two consequences to state plainly: `.ticks(3)` is a HINT, so a beat may get two ticks or
+   five, and `lineGeometry` no longer returns `segments` (it returns `path`, `end` and `domain`;
+   `defined()` splits the runs inside one path string). Names and signatures of `yTickValues` and
+   `lineGeometry` are unchanged.
+
+   **The boundary this does NOT cross.** `d3-scale`/`d3-array`/`d3-shape` are data-to-coordinate
+   primitives — a scale, a tick generator, a path generator — which know nothing about colour,
+   labels or chart type, and that is this plan's own definition of pure geometry. Observable Plot,
+   Recharts and Chart.js hand over a chart TYPE WITH PROPS: a registry under another name, with
+   the same ceiling this branch exists to escape. They stay out, and `d3-shape`'s convenience must
+   not be allowed to grow a generic "render a chart" helper on this side of the line either.
+
+   **The cost this measured.** One conceptual fix, FOUR component files: the seed and each of the
+   three beats written from it, because a beat copies the seed's shape rather than importing it.
+   The migration beat needed a fifth edit of a different kind — its callout placement assumed the
+   loose old axis and collided with the year ticks once the scale was fitted. Copy-paste
+   propagation is the cost this branch set out to measure, and this is a reading of it.
 2. **Gap notes are placed by the geometry, not by the missing slot.** `lineGeometry` returns
    `gaps: [{years, x, y}]`, one entry per RUN of missing readings, centred on the midpoint of the
    readings it separates (on unevenly spaced data the missing slot is nowhere near the middle of
