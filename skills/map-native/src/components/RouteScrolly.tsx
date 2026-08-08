@@ -18,6 +18,11 @@ import {
 import * as maptilersdk from "@maptiler/sdk";
 import "@maptiler/sdk/dist/maptiler-sdk.css";
 import { continueWhenMapSettles } from "../core/frame-ready";
+import {
+  makeRouteSourceCache,
+  trailPayloadFor,
+  type RouteSourceCache,
+} from "../route-frame-updates";
 import * as turf from "@turf/turf";
 import { resolveVideoGeometry } from "../core/video-geometry";
 import type {
@@ -185,6 +190,11 @@ interface RouteScrollyModel {
   // camera, already-drawn route) from a geographic-order step (cumulative progress) without
   // re-deriving config.arcBeats itself.
   walk: RouteWalkStep[];
+  // What has already been shipped to each of THIS map's GeoJSON sources, so a frame updates only
+  // what changed (route-frame-updates.ts). Lives in the model, not in a component ref, because
+  // its whole meaning is "the state this map instance is already in" — created with the map, it
+  // cannot outlive it or describe another one.
+  sources: RouteSourceCache;
 }
 
 // ---------------------------------------------------------------------------
@@ -509,7 +519,14 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       });
 
       continueWhenMapSettles(m, () => {
-        setModel({ map: m, story, phases, stepSolutions, walk });
+        setModel({
+          map: m,
+          story,
+          phases,
+          stepSolutions,
+          walk,
+          sources: makeRouteSourceCache(),
+        });
         continueRender(handle);
       });
     });
@@ -521,7 +538,7 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
 
   useEffect(() => {
     if (!model) return;
-    const { map, phases: ph, stepSolutions, walk: modelWalk } = model;
+    const { map, phases: ph, stepSolutions, walk: modelWalk, sources } = model;
     const h = delayRender(`route-scrolly-frame-${frame}`);
 
     // Camera on the STEP timeline.
@@ -575,20 +592,27 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
       reveal = lerp(entryStop, exitStop, easeInOutCubic(moveProgress));
       drawing = moveProgress > 0.002 && moveProgress < 0.999;
     }
+    // The drawn line and its leading head are two slices of the SAME line taken at the SAME
+    // extent, so they change on exactly the same frames — and on most frames they do not change
+    // at all (a step holds for 90 of its 126 frames, and the title, overview and takeaway hold
+    // throughout). Re-shipping an unchanged slice makes MapLibre re-serialize and re-tile it for
+    // nothing; on a real trajectory that slice carries thousands of points. See
+    // route-frame-updates.ts for why this guard exists here and already existed in the two
+    // sibling compositions.
     const riverDrawnKm = lineKm * reveal;
-    (map.getSource("river") as any)?.setData(
-      turf.lineSliceAlong(line, 0, Math.max(0.001, riverDrawnKm)),
-    );
-
-    // Electric leading head — visible while the route is actively drawing.
-    const riverHeadKm = lineKm * 0.03;
-    (map.getSource("river-head") as any)?.setData(
-      turf.lineSliceAlong(
-        line,
-        Math.max(0, riverDrawnKm - riverHeadKm),
-        Math.max(0.001, riverDrawnKm),
-      ),
-    );
+    if (sources.riverChanged(riverDrawnKm)) {
+      (map.getSource("river") as any)?.setData(
+        turf.lineSliceAlong(line, 0, Math.max(0.001, riverDrawnKm)),
+      );
+      const riverHeadKm = lineKm * 0.03;
+      (map.getSource("river-head") as any)?.setData(
+        turf.lineSliceAlong(
+          line,
+          Math.max(0, riverDrawnKm - riverHeadKm),
+          Math.max(0.001, riverDrawnKm),
+        ),
+      );
+    }
     // Head glows only while the route is actively drawing across a content step.
     const riverHeadFade = drawing && reveal > 0.002 ? 1 : 0;
     map.setPaintProperty(
@@ -609,40 +633,39 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
     // To land the border/fill on the SAME frame window as its panel slide-in (#3), a NAMED
     // territory's reveal ramps across its reveal step's MOVE phase, then holds. On the takeaway
     // step (last), every territory is held at its final filled state.
+    //
+    // The OUTLINE is shipped at most twice per territory per render, not once per frame. It has
+    // only two states — absent on the title scene, whole from the overview onward (the fill
+    // blooms afterwards, the border never redraws partially) — so every frame but the two that
+    // change it was handing MapLibre a byte-identical ring set to re-parse and re-tile. That was
+    // this composition's own defect, not the family's: ChoroplethScrolly.tsx and
+    // LocatorScrolly.tsx each keep a "last shipped" ref and say so in their source. See
+    // route-frame-updates.ts.
+    const trailPayload = trailPayloadFor(active);
     for (let kk = 0; kk < territories.length; kk++) {
       const terr = territories[kk];
-      const d = DRAW[terr.key];
       const walkIdx = modelWalk.findIndex((w) => w.territory.key === terr.key);
       const revealStep = walkIdx === -1 ? undefined : walkIdx + 2;
 
+      if (sources.trailChanged(terr.key, trailPayload)) {
+        const d = DRAW[terr.key];
+        (map.getSource(`trail-${terr.key}`) as any)?.setData(
+          trailPayload === "none" ? EMPTY_FEATURE : sliceBorder(d, 0, d.total),
+        );
+      }
+
       if (active === 0) {
         // Title scene: nothing tinted yet.
-        (map.getSource(`trail-${terr.key}`) as any)?.setData(EMPTY_FEATURE);
         map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", 0);
         continue;
       }
 
-      if (active === 1) {
-        // Overview establishing shot: every crossed territory is faintly tinted + fully
-        // outlined (route stays undrawn). This is the "see all the territories" beat.
-        (map.getSource(`trail-${terr.key}`) as any)?.setData(
-          sliceBorder(d, 0, d.total),
-        );
-        map.setPaintProperty(
-          `fill-${terr.key}`,
-          "fill-opacity",
-          OVERVIEW_FILL_OPACITY,
-        );
-        continue;
-      }
-
-      if (revealStep === undefined || active < revealStep) {
-        // Not yet reached this territory's reveal step (or a confirmed arc never names it —
-        // same treatment, see the header comment above): hold the faint overview tint + outline
-        // (so a NAMED territory's ramp to full starts from the tint, never a pop from 0).
-        (map.getSource(`trail-${terr.key}`) as any)?.setData(
-          sliceBorder(d, 0, d.total),
-        );
+      if (active === 1 || revealStep === undefined || active < revealStep) {
+        // Overview establishing shot — every crossed territory faintly tinted, fully outlined,
+        // route undrawn ("see all the territories") — and the same held tint for a territory
+        // whose reveal step has not come yet, or which a confirmed arc never names (it stays
+        // visible, never dropped; the arc governs emphasis, not existence). A NAMED territory's
+        // ramp to full therefore always starts from the tint, never a pop from 0.
         map.setPaintProperty(
           `fill-${terr.key}`,
           "fill-opacity",
@@ -653,9 +676,6 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
 
       if (active > revealStep) {
         // Already fully revealed on an earlier step (incl. the takeaway) — hold at final state.
-        (map.getSource(`trail-${terr.key}`) as any)?.setData(
-          sliceBorder(d, 0, d.total),
-        );
         map.setPaintProperty(`fill-${terr.key}`, "fill-opacity", FILL_OPACITY);
         continue;
       }
@@ -667,9 +687,6 @@ export const RouteScrolly: React.FC<{ config: RouteConfig }> = ({ config }) => {
         phase.moveFrames > 0
           ? (frame - phase.startFrame) / phase.moveFrames
           : 1,
-      );
-      (map.getSource(`trail-${terr.key}`) as any)?.setData(
-        sliceBorder(d, 0, d.total),
       );
       const fp = easeInOutCubic(clamp01(moveT / FILL_MOVE_FRAC));
       map.setPaintProperty(

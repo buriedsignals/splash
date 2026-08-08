@@ -404,10 +404,8 @@ export function deriveMapStory(
   // intro/description. Prefer an explicit editorial insight when the author gave a
   // genuinely distinct one; otherwise derive a data-tied closer from the extremes
   // (the gap / the span) so the outro always says something the intro did not.
-  const distinctInsight =
-    meta.insight && meta.insight !== meta.title ? meta.insight : "";
   const takeawayCopy =
-    distinctInsight ||
+    closingInsight(meta.insight, meta.title) ||
     deriveTakeawayCopy({
       pattern,
       maxName: nameOf(maxRow.key),
@@ -428,6 +426,28 @@ export function deriveMapStory(
   });
 
   return beats;
+}
+
+// THE EDITORIAL RULE FOR A CLOSING LINE, in one place because the whole map family owes the
+// reader the same thing: a caption that closes must SAY something, and a line identical to the
+// module's own title says nothing — the title is already printed in the persistent header, so
+// repeating it verbatim on the last card ends the piece on its own chute. So a journalist's
+// `insight` is honoured as the close ONLY when it is genuinely a different sentence; otherwise
+// the caller falls through to the data-tied closer it can honestly compute.
+//
+// Trim-aware on purpose: a trailing newline off a CSV cell or a pasted headline is not an
+// editorial difference, and treating it as one is how a title sneaks back onto the last card.
+//
+// Extracted from deriveMapStory (where it had always been inline, and correct) because the ROUTE
+// track — the one map type that composes its own steps rather than going through
+// mapStoryToChapters — never had it, and shipped the title as its closing caption on a real
+// page. One rule, one implementation, every map type.
+export function closingInsight(
+  insight: string | undefined,
+  title: string,
+): string {
+  const line = insight?.trim() ?? "";
+  return line && line !== title.trim() ? line : "";
 }
 
 // A distinct, data-tied concluding line for the takeaway beat — NEVER a repeat of the

@@ -172,3 +172,66 @@ describe("routeStoryToChapters — the derived takeaway is localized", () => {
     expect(story.steps.at(-1)!.prose).toBe("Le fleuve traverse quatre pays.");
   });
 });
+
+// ---------------------------------------------------------------------------
+// A CLOSING CAPTION THAT REPEATS THE TITLE IS NOT A CLOSING CAPTION.
+//
+// Measured on a delivered page (the shipped route sample, produced through
+// skills/scrolly/scripts/produce.mjs with its `insight` removed — which is what every loop-
+// assembled route config looks like, since no assembler writes `insight` for a map): the
+// persistent module header read "The Yarlung Tsangpo's long road to the sea", and so did the
+// last prose card, verbatim. Scrolly.tsx passed `insight: config.insight ?? config.title`, so
+// the engine's own "no insight → derive a closer" branch could never be reached from the web
+// track.
+//
+// The rule is the map family's own (deriveMapStory has always refused an insight equal to the
+// title — map-story.ts's `closingInsight`), applied to the one map type that composes its steps
+// itself. Route legitimately keeps a closing STEP where the chart track drops an empty one: the
+// step is also a map STATE — its sentinel ref frames the completed route — so dropping it would
+// end the scroll with the trajectory never finished.
+// ---------------------------------------------------------------------------
+describe("routeStoryToChapters — the closing caption never repeats the title", () => {
+  const layout = computeRouteReveal(sampleRoute, world as any);
+  const walk = resolveRouteWalk(layout, undefined);
+  const closeWith = (insight: string | undefined, lang?: string) =>
+    routeStoryToChapters(layout, walk, {
+      title: sampleRoute.title,
+      description: sampleRoute.description,
+      source: sampleRoute.source,
+      insight,
+      lang,
+    }).steps.at(-1)!.prose;
+
+  const derived = `${layout.territories.length} territories, ${formatLocaleNumber(
+    Math.round(layout.totalLengthKm),
+    undefined,
+  )} km`;
+
+  it("falls through to the derived route span when the offered insight IS the title", () => {
+    expect(closeWith(sampleRoute.title)).toBe(derived);
+    expect(closeWith(sampleRoute.title)).not.toBe(sampleRoute.title);
+  });
+
+  it("treats a whitespace-padded title as the title, not as an editorial line", () => {
+    expect(closeWith(`  ${sampleRoute.title}\n`)).toBe(derived);
+  });
+
+  it("still ships a genuinely different closing line, in the deliverable's language", () => {
+    expect(closeWith("Un fleuve, trois pays, 2 755 km.", "fr")).toBe(
+      "Un fleuve, trois pays, 2 755 km.",
+    );
+  });
+
+  it("keeps the closing STEP even with no insight — it frames the completed route", () => {
+    const story = routeStoryToChapters(layout, walk, {
+      title: sampleRoute.title,
+      description: sampleRoute.description,
+      source: sampleRoute.source,
+      insight: sampleRoute.title,
+      lang: undefined,
+    });
+    const last = story.steps.at(-1)!;
+    expect(last.ref).toBe(layout.territories.length);
+    expect(last.prose.trim().length).toBeGreaterThan(0);
+  });
+});
