@@ -38,6 +38,9 @@ import {
   checkBumpConformance,
   checkHeatmapConformance,
   checkComboConformance,
+  checkSankeyConformance,
+  checkChordConformance,
+  checkArcConformance,
   reconcileBrandViolations,
   requireAltInsight,
   checkLabelDataIntegrity,
@@ -113,6 +116,12 @@ import {
   type PictogramConfig,
 } from "../PictogramChart";
 import { computePictogramLayout } from "../pictogram-geometry";
+import { SANKEY_RAMP, type SankeyConfig } from "../SankeyChart";
+import { CHORD_ENTITY_COLORS, type ChordConfig } from "../ChordChart";
+import { ARC_GROUP_COLORS, type ArcConfig } from "../ArcChart";
+import { arcLabelFit } from "../arc-geometry";
+import { TYPE } from "./tokens";
+import { textWidth } from "./text";
 import type { ComboConfig } from "../ComboChart";
 import {
   computeGanttLayout,
@@ -339,6 +348,13 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "combo",
   "gantt",
   "candlestick",
+  // The FLOW family. Each one's guard re-measures the refusal its mapper makes, on the config
+  // that actually renders — so a hand-built config that never passed through spec-to-config
+  // meets the same rule (a sankey that loses quantity, a chord that is really a pipeline, an
+  // arc whose nodes are too crowded to name).
+  "sankey",
+  "chord",
+  "arc",
 ];
 
 /**
@@ -1099,6 +1115,32 @@ function computeRawConformance(
       };
     }
 
+    case "sankey": {
+      // The columns, the link values and the node labels are read off the config THE RENDER
+      // USES, so the guard cannot pass on a shape the picture does not have. `rampColors` is
+      // the prefix of SankeyChart's own exported ramp the config's `rampNodes` actually
+      // consumes (the component maps category → RAMP[index]), never a hand-copied list — and
+      // `links` is what makes flow conservation measurable here as well as at the gate.
+      const cfg = config as unknown as SankeyConfig;
+      const f = deriveFurniture(cfg.themeBg);
+      const columnCount = new Set(cfg.nodes.map((n) => n.column)).size;
+      return {
+        checked: true,
+        violations: checkSankeyConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            columnCount,
+            linkValues: cfg.links.map((l) => l.value),
+            nodeLabels: cfg.nodes.map((n) => n.label),
+            rampColors: SANKEY_RAMP.slice(0, (cfg.rampNodes ?? []).length),
+            links: cfg.links,
+          },
+          { text: [f.ink, f.muted], bg: f.bg },
+        ),
+      };
+    }
+
     case "gantt": {
       // Run against the SAME layout the component draws from: the interval arithmetic (an end
       // date closes the period it names) lives in gantt-geometry, so a guard that re-derived
@@ -1127,6 +1169,69 @@ function computeRawConformance(
               : [GANTT_GROUP_COLORS[0]],
           },
           furnitureText,
+        ),
+      };
+    }
+
+    case "chord": {
+      // ChordChart colours entity i with CHORD_ENTITY_COLORS[i % len], so the prefix IS the
+      // set of hues on the ring. The square-matrix, non-negativity and "one set exchanging
+      // with itself" rules all read the matrix the component hands to d3-chord.
+      const cfg = config as unknown as ChordConfig;
+      const f = deriveFurniture(cfg.themeBg);
+      return {
+        checked: true,
+        violations: checkChordConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            matrix: cfg.matrix,
+            labels: cfg.labels,
+            entityColors: CHORD_ENTITY_COLORS.slice(0, cfg.labels.length),
+          },
+          { text: [f.ink, f.muted], bg: f.bg },
+        ),
+      };
+    }
+
+    case "arc": {
+      // MEASURED ON THE LAYOUT, not counted from the data. ArcChart truncates each node label
+      // to the gap between adjacent nodes, so "too crowded to name" is a property of the
+      // frame's width and the labels' own lengths together — a node-count cap would be right
+      // at one width and wrong at every other. Measured at ArcChart's BASE frame, which is
+      // scale-invariant for this particular rule (see ARC_DIMS). What the rule does NOT cover
+      // is a label escaping its box; snap-label-fit asserts that on the real render at 360 and
+      // 1100, and cannot see truncation — a trimmed label fits perfectly.
+      const cfg = config as unknown as ArcConfig;
+      const f = deriveFurniture(cfg.themeBg);
+      // ONE measurement, shared with the mapper (arc-geometry's `arcLabelFit`), so the gate's
+      // refusal and this one cannot come apart.
+      const fit = arcLabelFit({ nodes: cfg.nodes, links: cfg.links }, (l) =>
+        textWidth(l, TYPE.source),
+      );
+      const declaredGroups = [
+        ...new Set(cfg.nodes.map((n) => n.group).filter((g): g is string => !!g)),
+      ];
+      return {
+        checked: true,
+        violations: checkArcConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            // No declared group ⇒ ArcChart paints every node ARC_GROUP_COLORS[0]; the guard
+            // checks the hue on the picture, not a placeholder default.
+            groupColors: ARC_GROUP_COLORS.slice(
+              0,
+              Math.max(1, declaredGroups.length),
+            ),
+            // Structural facts of the component, not config fields that could be false:
+            // ArcChart draws each link with strokeWidth = layout width (weight-scaled), and
+            // computeArcLayout THROWS on a link naming a node it does not have.
+            encodesWeightByWidth: true,
+            danglingLinks: 0,
+            labelFit: fit,
+          },
+          { text: [f.ink, f.muted], bg: f.bg },
         ),
       };
     }

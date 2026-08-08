@@ -4,6 +4,7 @@ import {
   UnsupportedNativeType,
   type NativeSpec,
 } from "../src/spec-to-config";
+import { NATIVE_TYPES } from "../src/native-types";
 
 const base = {
   title: "Brazil runs on renewables while most big economies still lag",
@@ -306,9 +307,18 @@ describe("specToNativeConfig — baseColor threading", () => {
 
 describe("specToNativeConfig — unsupported", () => {
   it("throws UnsupportedNativeType for a type the mapper doesn't cover", () => {
+    // The witness is READ FROM THE REGISTRY, never named by hand: this test pinned "sankey"
+    // and went red the day the flow family graduated — a failure about the world rather than
+    // about `specToNativeConfig`. Derived, it keeps meaning something as types graduate, and
+    // the day the last one does it says so out loud.
+    const deferred = NATIVE_TYPES.find((t) => t.deferred);
+    expect(
+      deferred,
+      "every native type is mapped — this test needs a different unsupported witness",
+    ).toBeDefined();
     const spec: NativeSpec = {
       ...base,
-      nativeType: "sankey",
+      nativeType: deferred!.id,
       data: "a,b\n1,2",
     };
     expect(() => specToNativeConfig(spec)).toThrow(UnsupportedNativeType);

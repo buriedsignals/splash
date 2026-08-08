@@ -49,4 +49,9 @@ export const NATIVE_FAMILY_TYPES: Record<string, string[]> = {
   ],
   ranking: ["lollipop", "bump", "pictogram"],
   deviation: ["diverging", "waterfall", "diverging-stacked"],
+  // The FLOW family — the ninth FT intent, and the first native types to serve it. All three
+  // read one `source,target,value` link list and differ in what they claim about it: `sankey`
+  // for a quantity moving THROUGH STAGES, `chord` for exchange WITHIN one set, `arc` for
+  // relationships along one ordered axis. Their sheets say when each is wrong.
+  flow: ["sankey", "chord", "arc"],
 };

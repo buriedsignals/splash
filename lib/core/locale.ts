@@ -38,6 +38,24 @@ export interface LocaleSpec {
   group: string;
   /** the full "Source" furniture label, incl. colon + any locale spacing */
   source: string;
+  /**
+   * The FLOW family's three connective words (sankey, chord, arc). They live here rather
+   * than in the components because the components had them as English literals — `"X to Y"`
+   * in a sankey link's accessible name, `"39 out"` and `"most with …"` in a chord's tooltip —
+   * and a French chart read them out in English to anyone using a screen reader or hovering a
+   * ribbon. The render-time i18n gate could not see them: it checks the FURNITURE outside the
+   * `<svg>` (title, subtitle, the Source footer), and these sit in an aria attribute and in
+   * the tooltip's own DOM. Found by rendering the family in French and reading what the a11y
+   * snap printed back.
+   */
+  flow: {
+    /** joins the two ends of a link in an accessible name: "Solaire → Réseau" */
+    to: string;
+    /** qualifies an entity's outgoing total in a chord tooltip: "39 sortants" */
+    outgoing: string;
+    /** introduces an entity's biggest partners: "surtout avec Pâquis (50)" */
+    mostWith: string;
+  };
 }
 
 // Grounded conventions:
@@ -49,10 +67,30 @@ export interface LocaleSpec {
 // OWN row (see localeFor's full-tag-first lookup) — so a Swiss-German apostrophe
 // thousands ("1'900") can be added later as a "de-CH" row without touching callers.
 const LOCALES: Record<string, LocaleSpec> = {
-  fr: { decimal: ",", group: FR_GROUP, source: "Source :" },
-  de: { decimal: ",", group: ".", source: "Quelle:" },
-  it: { decimal: ",", group: ".", source: "Fonte:" },
-  en: { decimal: ".", group: ",", source: "Source:" },
+  fr: {
+    decimal: ",",
+    group: FR_GROUP,
+    source: "Source :",
+    flow: { to: "vers", outgoing: "sortants", mostWith: "surtout avec" },
+  },
+  de: {
+    decimal: ",",
+    group: ".",
+    source: "Quelle:",
+    flow: { to: "nach", outgoing: "abgehend", mostWith: "vor allem mit" },
+  },
+  it: {
+    decimal: ",",
+    group: ".",
+    source: "Fonte:",
+    flow: { to: "verso", outgoing: "in uscita", mostWith: "soprattutto con" },
+  },
+  en: {
+    decimal: ".",
+    group: ",",
+    source: "Source:",
+    flow: { to: "to", outgoing: "out", mostWith: "most with" },
+  },
 };
 
 const EN = LOCALES.en;
@@ -136,6 +174,11 @@ export function localizeDecimal(s: string, lang?: Lang): string {
 
 /** The localized "Source" furniture label: "Source :" (fr), "Quelle:" (de),
  *  "Fonte:" (it), "Source:" (en / unknown). */
+/** The FLOW family's connective words for a language (see `LocaleSpec.flow`). */
+export function flowWords(lang?: Lang): LocaleSpec["flow"] {
+  return localeFor(lang).flow;
+}
+
 export function sourceLabel(lang?: Lang): string {
   return localeFor(lang).source;
 }

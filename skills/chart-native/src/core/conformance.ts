@@ -20,6 +20,8 @@ import {
   MAX_ICONS_PER_ROW,
   MIN_VISIBLE_ICON_FRACTION,
 } from "../pictogram-geometry";
+import { SANKEY_CONSERVATION_TOLERANCE } from "../flow-links";
+import { ARC_MIN_LABEL_RATIO } from "../arc-geometry";
 
 export type { BrandConcern };
 
@@ -1027,6 +1029,12 @@ export function checkArcConformance(
     groupColors: string[]; // one colour per node group
     encodesWeightByWidth: boolean;
     danglingLinks: number; // links referencing a missing node
+    /** The smallest gap between two adjacent nodes ON THE RENDERED BASELINE, and the width the
+     *  longest node label needs. The arc's own readability rule is a LAYOUT fact, so it is
+     *  measured from the layout the component draws rather than counted from the data: a node
+     *  cap alone would be right at one frame width and wrong at every other. Optional only for
+     *  the hand-built configs in the older guard tests; the produce guard always passes it. */
+    labelFit?: { minGapPx: number; longestLabel: string; labelPx: number };
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -1049,8 +1057,22 @@ export function checkArcConformance(
     v.push("arc link weight must be encoded by stroke width");
   if (input.danglingLinks > 0)
     v.push(`${input.danglingLinks} link(s) reference a missing node`);
+  // THE LABELS MUST STILL BE NAMES. `ArcChart` truncates a node label to the gap between it
+  // and its neighbour, so a baseline packed past its width does not overflow — it silently
+  // turns every name into an ellipsis, and a network whose nodes are unnamed says nothing at
+  // all. ARC_MIN_LABEL_RATIO is the share of the longest label that must survive.
+  if (input.labelFit) {
+    const budget = input.labelFit.minGapPx * 0.94; // the component's own truncation budget
+    if (budget < input.labelFit.labelPx * ARC_MIN_LABEL_RATIO)
+      v.push(
+        `arc nodes are too crowded to name — "${input.labelFit.longestLabel}" needs ` +
+          `${Math.round(input.labelFit.labelPx)}px and the baseline leaves ` +
+          `${Math.round(budget)}px; aggregate the small nodes or split the story`,
+      );
+  }
   return v;
 }
+
 
 /**
  * L2 — RADIAL BAR / column: global rules + the radial musts. Radial LENGTH
@@ -1642,7 +1664,37 @@ export function checkChordConformance(
   for (const c of input.entityColors)
     if (!isOkabeIto(c))
       v.push(`entity colour ${c} is not in the Okabe-Ito set`);
+  // THE RING IS ONE SET EXCHANGING WITH ITSELF — the mirror of the sankey's cycle refusal.
+  // A matrix with no cycle in it describes quantity moving strictly forward from one group
+  // of things into another: a Sankey. Drawn as a chord it puts origins and destinations side
+  // by side on one ring as if they were peers, inventing a symmetry the data never had.
+  // Measured on the matrix, which is what renders.
+  if (input.matrix.length === n && n > 0 && !matrixHasCycle(input.matrix))
+    v.push(
+      "nothing in this chord matrix flows both ways — that is a flow through stages, not an " +
+        "exchange within one set; use a sankey",
+    );
   return v;
+}
+
+/** Is there a directed cycle among the matrix's positive entries? Used by the chord check to
+ *  tell an exchange from a pipeline — the same fact `flowCycle` reads off a link list, read
+ *  here off the matrix the component hands to d3-chord. */
+function matrixHasCycle(m: number[][]): boolean {
+  const n = m.length;
+  const state = new Array<0 | 1 | 2>(n).fill(0);
+  const walk = (i: number): boolean => {
+    state[i] = 1;
+    for (let j = 0; j < n; j++) {
+      if (!((m[i]?.[j] ?? 0) > 0)) continue;
+      if (state[j] === 1) return true;
+      if (state[j] === 0 && walk(j)) return true;
+    }
+    state[i] = 2;
+    return false;
+  };
+  for (let i = 0; i < n; i++) if (state[i] === 0 && walk(i)) return true;
+  return false;
 }
 
 /**
@@ -1660,6 +1712,10 @@ export function checkSankeyConformance(
     linkValues: number[];
     nodeLabels: string[];
     rampColors: string[]; // the coloured (non-neutral) ribbon/source colours
+    /** The links the config actually carries, so FLOW CONSERVATION can be measured on the
+     *  artifact that renders and not only on the CSV the mapper read. Optional only for the
+     *  hand-built configs in the older guard tests; the produce guard always passes it. */
+    links?: { source: string; target: string; value: number }[];
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -1686,6 +1742,30 @@ export function checkSankeyConformance(
   for (const c of input.rampColors)
     if (!isOkabeIto(c))
       v.push(`ribbon colour ${c} is not in the Okabe-Ito set`);
+  // FLOW CONSERVATION — sheet rule 2, and the one sankey rule a render cannot show. A node
+  // with both an in and an out side is a STAGE the quantity passes through; the geometry
+  // draws it at max(in, out), so a stage that loses a fifth of its quantity renders as a
+  // solid bar with thinner ribbons on one side and the loss is simply invisible. Measured
+  // here on the links the config carries, so a hand-built config bypassing the mapper meets
+  // the same rule.
+  if (input.links) {
+    const inSum = new Map<string, number>();
+    const outSum = new Map<string, number>();
+    for (const l of input.links) {
+      outSum.set(l.source, (outSum.get(l.source) ?? 0) + l.value);
+      inSum.set(l.target, (inSum.get(l.target) ?? 0) + l.value);
+    }
+    for (const [node, i] of inSum) {
+      const o = outSum.get(node);
+      if (!o) continue; // a sink conserves nothing
+      if (Math.abs(i - o) > SANKEY_CONSERVATION_TOLERANCE * Math.max(i, o))
+        v.push(
+          `sankey stage "${node}" does not conserve the flow — ${i} in, ${o} out ` +
+            `(the node still renders solid, at the larger of the two); show the difference ` +
+            `as its own node`,
+        );
+    }
+  }
   return v;
 }
 

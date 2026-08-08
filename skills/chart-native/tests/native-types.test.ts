@@ -24,6 +24,7 @@ describe("NATIVE_TYPES canonical list", () => {
         "paired",
         "distribution",
         "structural",
+        "flow",
       ]).toContain(e.shape);
       if (e.deferred !== undefined)
         expect(e.deferred.trim().length).toBeGreaterThan(0);

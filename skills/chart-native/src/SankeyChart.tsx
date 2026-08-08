@@ -27,7 +27,7 @@ import {
   tooltipBorder,
 } from "./core/tokens";
 import { ChartFrame } from "./core/ChartFrame";
-import { localizeValueLabel, type Lang } from "./core/locale";
+import { localizeValueLabel, flowWords, type Lang } from "./core/locale";
 import { resolveFrame, resolveFrameWithHeader } from "./core/format";
 import { truncate, textWidth } from "./core/text";
 
@@ -60,7 +60,9 @@ export interface SankeyChartProps {
   scale?: number;
 }
 
-const RAMP = [
+/** The ribbon/node ramp, exported so the produce guard checks the hues the component
+ *  actually paints rather than a copy of them. */
+export const SANKEY_RAMP = [
   OKABE_ITO.blue,
   OKABE_ITO.orange,
   OKABE_ITO.green,
@@ -95,11 +97,11 @@ export function SankeyChart({
   (config.rampNodes ?? []).forEach((c, i) => catColor.set(c, i));
   const nodeColor = (cat?: string) =>
     cat != null && catColor.has(cat)
-      ? RAMP[catColor.get(cat)! % RAMP.length]
+      ? SANKEY_RAMP[catColor.get(cat)! % SANKEY_RAMP.length]
       : NEUTRAL_NODE;
   const linkColor = (cat?: string) =>
     cat != null && catColor.has(cat)
-      ? RAMP[catColor.get(cat)! % RAMP.length]
+      ? SANKEY_RAMP[catColor.get(cat)! % SANKEY_RAMP.length]
       : NEUTRAL_LINK;
 
   const columns = [...new Set(config.nodes.map((n) => n.column))].sort(
@@ -244,6 +246,7 @@ function SankeySvg({
   // integer stays bare ("52", not "52.0"), a decimal keeps one place, then both
   // take config.lang's separators — the ONE expression lives in core/locale.
   const fmt = (v: number) => localizeValueLabel(v, config.lang);
+  const words = flowWords(config.lang);
   const { nodes, links } = layout;
   const C = themeColors(config.themeBg, config.baseColor);
   const nCol = columns.length;
@@ -283,6 +286,7 @@ function SankeySvg({
           return (
             <path
               key={`lk${i}`}
+              className="sankey-link"
               d={sankeyLinkPath(lk)}
               fill="none"
               stroke={col}
@@ -292,7 +296,7 @@ function SankeySvg({
               role={interactive ? "img" : undefined}
               aria-label={
                 interactive
-                  ? `${nodeById.get(lk.source)!.label} to ${nodeById.get(lk.target)!.label}: ${fmt(lk.value)} ${config.unit}`
+                  ? `${nodeById.get(lk.source)!.label} ${words.to} ${nodeById.get(lk.target)!.label}: ${fmt(lk.value)} ${config.unit}`
                   : undefined
               }
               style={

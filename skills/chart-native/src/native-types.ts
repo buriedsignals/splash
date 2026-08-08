@@ -8,7 +8,17 @@
 // absence means the type must satisfy the full contract (see tests/completeness.test.ts).
 
 export type NativeShape =
-  "single" | "wide" | "paired" | "distribution" | "structural";
+  | "single"
+  | "wide"
+  | "paired"
+  | "distribution"
+  | "structural"
+  // `flow` — a LINK LIST: one row per link, `source,target,value` (four languages;
+  // src/flow-links.ts holds the contract and every refusal). The shape the whole flow
+  // family reads: sankey, chord and arc are three marks over one table. It is its own
+  // shape rather than `structural` because it is the one structural table a newsroom
+  // actually exports, and `structural` means "no CSV reaches this" (shape-validation.ts).
+  | "flow";
 
 export interface NativeTypeEntry {
   id: string;
@@ -90,12 +100,15 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "wide",
     deferred: "family-B: rare in a small newsroom",
   },
-  {
-    id: "sankey",
-    family: "B",
-    shape: "structural",
-    deferred: "family-B: needs nodes+links",
-  },
+  // --- THE FLOW FAMILY: three marks over ONE table (shape `flow`, a source,target,value
+  // link list). They were deferred together, for one reason — "needs nodes+links", a data
+  // shape the rest of the engine does not have — and they are reachable together, because
+  // that reason was one decision, not three: the link list IS the newsroom-realistic form
+  // (a register export, a customs table, a budget line per movement), and the nodes, the
+  // stage layering, the chord matrix and the baseline order are all DERIVED from it in
+  // flow-links.ts. What each one refuses is its own (see the KB sheets): a sankey cannot
+  // draw a cycle, a chord is not a staged pipeline, an arc is a network on a line.
+  { id: "sankey", family: "B", shape: "flow" },
   {
     id: "streamgraph",
     family: "B",
@@ -131,12 +144,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   // convention that is INVERTED between Western and East Asian markets — see
   // knowledge/references/chart/types/candlestick.md and CandlestickChart's UP/DOWN comment.
   { id: "candlestick", family: "B", shape: "structural" },
-  {
-    id: "chord",
-    family: "B",
-    shape: "structural",
-    deferred: "family-B: needs a flow matrix",
-  },
+  { id: "chord", family: "B", shape: "flow" },
   {
     id: "sunburst",
     family: "B",
@@ -149,12 +157,7 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "wide",
     deferred: "family-B: rare in a small newsroom",
   },
-  {
-    id: "arc",
-    family: "B",
-    shape: "structural",
-    deferred: "family-B: needs a hierarchy/edges",
-  },
+  { id: "arc", family: "B", shape: "flow" },
   // Reachable since the per-series encoding choice it was deferred for was MADE rather than
   // guessed: spec-to-config's `combo` mapper resolves the line from an explicit `comboLine`,
   // falls back to the one language-free marker that cannot mean a count (a `%` header), and

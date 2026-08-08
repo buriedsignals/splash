@@ -72,3 +72,53 @@ describe("computeChordLayout", () => {
     ).toThrow(/≥ 0/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// THE RING MUST FILL ITS BAND. The first real render of a chord through the flow chain showed
+// the circle floating in about a third of its own plot band, at the 1200×676 article frame:
+// the radius was `min(innerWidth, innerHeight) / 2 - 64`, one fixed gutter applied to BOTH
+// axes. An arc label sits BESIDE the ring, so horizontally it needs its whole width and
+// vertically only a line — taking the larger of the two spends the label's WIDTH out of the
+// frame's HEIGHT, and a landscape frame is short.
+//
+// MUTATION-VERIFIED: restoring the single `labelGutter = 64` on both axes reddened both cases,
+// and so did swapping gutterX and gutterY — the two failure modes this rule exists for.
+// ---------------------------------------------------------------------------
+describe("chord radius — measured per axis, so a landscape frame is not wasted", () => {
+  const dims = {
+    width: 1200,
+    height: 676,
+    padding: { top: 250, right: 20, bottom: 60, left: 20 },
+  };
+  const data = {
+    labels: ["A", "B", "C"],
+    matrix: [
+      [0, 3, 1],
+      [2, 0, 1],
+      [1, 1, 0],
+    ],
+  };
+
+  it("lets the HEIGHT bound the ring when the labels are short", () => {
+    // inner: 1160 × 366. Vertical budget 12+8+13 = 33 ⇒ 183 - 33 = 150.
+    // Horizontal budget 12+8+~10 = 30 ⇒ 580 - 30 = 550, far larger — so height wins.
+    const { radius } = computeChordLayout(data, dims, {
+      arcWidth: 12,
+      labelGutterX: 30,
+      labelGutterY: 33,
+    });
+    expect(radius).toBe(150);
+    // …and that is far more than the one-gutter answer the fixed 64 gave (183 - 64 = 119).
+    expect(radius).toBeGreaterThan(119);
+  });
+
+  it("lets the WIDTH bound it when the labels are long enough to leave the frame", () => {
+    const narrow = { ...dims, width: 320 };
+    const { radius } = computeChordLayout(data, narrow, {
+      arcWidth: 12,
+      labelGutterX: 120,
+      labelGutterY: 33,
+    });
+    expect(radius).toBe(160 - 20 - 120); // inner 280 / 2 − 120
+  });
+});

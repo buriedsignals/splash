@@ -7,6 +7,7 @@ import { validateAccepted } from "./validate-gate";
 import type { AcceptedProposal } from "./producer-spec";
 import { validateChartSpec } from "../../dw-chart/src/chart-spec";
 import { nativeSpecErrors } from "../../chart-native/src/spec-to-config";
+import { NATIVE_TYPES } from "../../chart-native/src/native-types";
 import { validateMapSpec } from "../../map-dw/src/map-spec";
 // NOTE: no side-effect "./register-producers" import here on purpose — validate-gate.ts now
 // imports it itself (self-sufficient guard, see its top-of-file comment), so this test exercises
@@ -732,10 +733,25 @@ describe("the journalist spine refuses a deferred type by name", () => {
   // "Absent/empty ⇒ the engine owns no type of its own") — a scrolly proposal's real type
   // lives on its HOST engine's spec, dispatched by producer, not read through `producer:
   // "scrolly"`.
+  // ★ THE WITNESS IS READ FROM THE REGISTRY, never named by hand. These three tests pinned
+  // "sankey", and all three went red the day the flow family graduated — a failure about the
+  // world rather than about the guard, which is the one failure a witness must not have.
+  // Derived, they keep meaning something as types graduate, and the day the last chart-native
+  // type does they say so out loud instead of passing on a stale name.
+  const deferredNative = () => {
+    const t = NATIVE_TYPES.find((x) => x.deferred);
+    expect(
+      t,
+      "every chart-native type is reachable — these deferral tests need a new witness",
+    ).toBeDefined();
+    return t!;
+  };
+
   it("should refuse a chart-native proposal for a declared, deferred nativeType (family-B)", () => {
+    const t = deferredNative();
     const out = validateAccepted({
       ...accept("chart-native", {
-        nativeType: "sankey",
+        nativeType: t.id,
         title: "x",
         source: { name: "s" },
         unit: "u",
@@ -745,8 +761,9 @@ describe("the journalist spine refuses a deferred type by name", () => {
     });
     expect(out.ok).toBe(false);
     if (!out.ok) {
-      expect(out.errors.join(" ")).toContain("sankey");
-      expect(out.errors.join(" ")).toContain("family-B");
+      expect(out.errors.join(" ")).toContain(t.id);
+      // the refusal quotes the manifest's OWN reason, whichever type is carrying it
+      expect(out.errors.join(" ")).toContain(t.deferred!);
     }
   });
 
@@ -755,7 +772,7 @@ describe("the journalist spine refuses a deferred type by name", () => {
     // point) — a maintainer calling the engine directly still gets the FALLBACK_TO_DW pass,
     // not a validation error.
     const errors = nativeSpecErrors({
-      nativeType: "sankey",
+      nativeType: deferredNative().id,
       title: "x",
       source: { name: "s" },
       unit: "u",
@@ -895,9 +912,14 @@ describe("an unknown nativeType is not a silent pass (Task 8)", () => {
   // is explicitly out of scope per this task's brief and per the "scrolly is NOT a fourth
   // engine to cover" note above).
   it("ADJUDICATION: closes the scrolly gap — a scrolly with a deferred chart nativeType now WARNS instead of passing in total silence", () => {
+    const deferred = NATIVE_TYPES.find((x) => x.deferred);
+    expect(
+      deferred,
+      "every chart-native type is reachable — this scrolly gap test needs a new witness",
+    ).toBeDefined();
     const out = validateAccepted(
       accept("scrolly", {
-        nativeType: "sankey",
+        nativeType: deferred!.id,
         title: "x",
         source: { name: "s" },
         unit: "u",
@@ -908,7 +930,7 @@ describe("an unknown nativeType is not a silent pass (Task 8)", () => {
     // is closed from "total silence" to "warned", not upgraded to an error.
     expect(out.ok).toBe(true);
     if (out.ok) {
-      expect(out.warnings.join(" ")).toContain("sankey");
+      expect(out.warnings.join(" ")).toContain(deferred!.id);
       // Scrolly does NOT have an automatic Datawrapper fallback, so the warning must NOT claim one
       expect(out.warnings.join(" ")).not.toContain(
         "routed to Datawrapper instead",

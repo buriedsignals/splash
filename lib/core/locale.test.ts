@@ -29,10 +29,30 @@ describe("core/locale — golden number + furniture output", () => {
   });
 
   it("decimalSep / groupSep / sourceLabel match for every lang", () => {
-    const LOCALE_FR = { decimal: ",", group: NBSP, source: "Source :" };
-    const LOCALE_DE = { decimal: ",", group: ".", source: "Quelle:" };
-    const LOCALE_IT = { decimal: ",", group: ".", source: "Fonte:" };
-    const LOCALE_EN = { decimal: ".", group: ",", source: "Source:" };
+    const LOCALE_FR = {
+      decimal: ",",
+      group: NBSP,
+      source: "Source :",
+      flow: { to: "vers", outgoing: "sortants", mostWith: "surtout avec" },
+    };
+    const LOCALE_DE = {
+      decimal: ",",
+      group: ".",
+      source: "Quelle:",
+      flow: { to: "nach", outgoing: "abgehend", mostWith: "vor allem mit" },
+    };
+    const LOCALE_IT = {
+      decimal: ",",
+      group: ".",
+      source: "Fonte:",
+      flow: { to: "verso", outgoing: "in uscita", mostWith: "soprattutto con" },
+    };
+    const LOCALE_EN = {
+      decimal: ".",
+      group: ",",
+      source: "Source:",
+      flow: { to: "to", outgoing: "out", mostWith: "most with" },
+    };
     // undefined/en/pt fall back to English; fr-CH/de-CH resolve to the fr/de base row.
     const golden = [
       LOCALE_EN,
@@ -125,10 +145,33 @@ describe("core/locale — golden number + furniture output", () => {
   });
 
   it("localeFor + LocaleSpec match", () => {
-    const LOCALE_FR = { decimal: ",", group: NBSP, source: "Source :" };
-    const LOCALE_DE = { decimal: ",", group: ".", source: "Quelle:" };
-    const LOCALE_IT = { decimal: ",", group: ".", source: "Fonte:" };
-    const LOCALE_EN = { decimal: ".", group: ",", source: "Source:" };
+    // The `flow` row (the flow family's connective words) is part of the spec, so it is
+    // pinned here too — an unlocalized word reaching a reader is the defect this table was
+    // extended to close (a French sankey whose links read "Solaire to Réseau").
+    const LOCALE_FR = {
+      decimal: ",",
+      group: NBSP,
+      source: "Source :",
+      flow: { to: "vers", outgoing: "sortants", mostWith: "surtout avec" },
+    };
+    const LOCALE_DE = {
+      decimal: ",",
+      group: ".",
+      source: "Quelle:",
+      flow: { to: "nach", outgoing: "abgehend", mostWith: "vor allem mit" },
+    };
+    const LOCALE_IT = {
+      decimal: ",",
+      group: ".",
+      source: "Fonte:",
+      flow: { to: "verso", outgoing: "in uscita", mostWith: "soprattutto con" },
+    };
+    const LOCALE_EN = {
+      decimal: ".",
+      group: ",",
+      source: "Source:",
+      flow: { to: "to", outgoing: "out", mostWith: "most with" },
+    };
     const golden = [
       LOCALE_EN,
       LOCALE_FR,
@@ -140,6 +183,8 @@ describe("core/locale — golden number + furniture output", () => {
       LOCALE_EN,
     ];
     LANGS.forEach((l, i) => expect(core.localeFor(l)).toEqual(golden[i]));
+    // …and the accessor the components call answers the same row.
+    LANGS.forEach((l, i) => expect(core.flowWords(l)).toEqual(golden[i].flow));
   });
 
   it("unitSuffix matches", () => {

@@ -135,6 +135,20 @@ export function validateShape(id: string, parsed: ParsedCsv): void {
           `got 0 numeric columns (need ≥1 column of raw values)`,
         );
       return;
+    case "flow":
+      // The link list's floor: three columns and at least one link. WHICH three, and what
+      // makes a row a link, is `readFlowLinks` (flow-links.ts) — one place, because the
+      // roles are matched BY NAME and a second, looser copy of that rule here would be a
+      // positional back door into exactly the mis-render the naming exists to prevent. This
+      // is only the structural floor that makes the shape recognisable at all.
+      if (nCols !== 3 || parsed.rows.length < 1)
+        throw new ShapeMismatchError(
+          id,
+          shape,
+          `got ${nCols} columns / ${parsed.rows.length} rows — a flow reads a link list: ` +
+            `one row per link, exactly three columns (source, target, value)`,
+        );
+      return;
     case "structural":
       // The structural types still DEFERRED: never in MAPPERS, so validateShape is never
       // called for them. The reachable ones are handled by their own floor above, before

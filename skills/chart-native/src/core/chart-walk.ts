@@ -120,8 +120,28 @@ const SEQUENCED_TIME_AXIS =
   "periods to follow your sentences would change what the chart says, not just when it says " +
   "it; so the sentences follow one another over the animation in the order written";
 const SEQUENCED_UNNAMED =
-  "its subjects are not named by a field a beat can address (bins, cells, nodes), so the " +
+  "its subjects are not named by a field a beat can address (bins, cells, ranks), so the " +
   "sentences follow one another over the animation in the order written";
+// ★ THE FLOW FAMILY — and a correction. SEQUENCED_UNNAMED used to carry sankey, chord and arc,
+// and its own parenthesis named "nodes" as an example of a subject nobody names. That was true
+// of a deferred type nobody could reach; it is FALSE of these three now that they read a
+// `source,target,value` link list, where every node carries the name the journalist typed into
+// their own spreadsheet. And `why` is said to the journalist verbatim, so a false reason is a
+// false sentence in front of a person.
+//
+// The true reason is the same for all three, and it is a property of the FORM rather than of
+// this engine's components: the subject of a flow diagram is a LINK — a PAIR of nodes — while
+// a beat anchors on one named row. "Gas" has no moment of its own; "Gas → the grid" does, and
+// there is no field a beat's `category` can name it with. Measured per type on top of that:
+// SankeyChart's entrance is keyed by the COLUMN (`nodeAppear(col)`, `colIndex * 0.12`), so a
+// whole stage lands at once; ChordChart staggers by the RIBBON's index (`stagger(p, r.index,
+// …)`), which is a pair, not an entity; ArcChart's node dots do stagger per node, but the ARCS
+// — the relationships that are the point — all sweep open on one master `reveal`. A test reads
+// the three components so this cannot drift away from them.
+const SEQUENCED_PAIRWISE =
+  "its subject is a LINK — a pair of nodes — and a beat can only anchor on a single named " +
+  "row, so no one name owns a moment of its own; the sentences follow one another over the " +
+  "animation in the order written";
 // Pictogram's rows ARE named (categoryField), so SEQUENCED_UNNAMED — where it sat while the
 // type was deferred — stated something false about it, and `why` is said to the journalist
 // verbatim. The true reason is the one below: the reveal advances by ICON COLUMN across every
@@ -210,14 +230,11 @@ export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
   boxplot: sequenced(SEQUENCED_UNNAMED),
   beeswarm: sequenced(SEQUENCED_UNNAMED),
   bullet: sequenced(SEQUENCED_UNNAMED),
-  chord: sequenced(SEQUENCED_UNNAMED),
   treemap: sequenced(SEQUENCED_UNNAMED),
   waffle: sequenced(SEQUENCED_UNNAMED),
   waterfall: sequenced(SEQUENCED_UNNAMED),
-  arc: sequenced(SEQUENCED_UNNAMED),
   heatmap: sequenced(SEQUENCED_UNNAMED),
   calendar: sequenced(SEQUENCED_UNNAMED),
-  sankey: sequenced(SEQUENCED_UNNAMED),
   sunburst: sequenced(SEQUENCED_UNNAMED),
   parallel: sequenced(SEQUENCED_UNNAMED),
   lorenz: sequenced(SEQUENCED_UNNAMED),
@@ -237,6 +254,11 @@ export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
 
   // --- SEQUENCED, named subjects that still fill together (see SEQUENCED_BY_COLUMN).
   pictogram: sequenced(SEQUENCED_BY_COLUMN),
+
+  // --- SEQUENCED, named nodes whose SUBJECT is the pair between them (see SEQUENCED_PAIRWISE).
+  sankey: sequenced(SEQUENCED_PAIRWISE),
+  chord: sequenced(SEQUENCED_PAIRWISE),
+  arc: sequenced(SEQUENCED_PAIRWISE),
 };
 
 /** The grain this type's video carries. Unknown type ⇒ undefined, and every caller treats that as

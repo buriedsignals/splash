@@ -6,13 +6,29 @@
 
 import { parseCsv, type ParsedCsv } from "./csv";
 import { chooseUnitPerIcon } from "./pictogram-geometry";
+import {
+  readFlowLinks,
+  flowNodes,
+  flowCycle,
+  flowSelfLink,
+  flowColumns,
+  flowMatrix,
+  flowTotals,
+  FlowShapeError,
+  SANKEY_CONSERVATION_TOLERANCE,
+  SANKEY_MAX_RAMP_NODES,
+  CHORD_MAX_ENTITIES,
+  ARC_MAX_NODES,
+} from "./flow-links";
+import { arcLabelFit, ARC_MIN_LABEL_RATIO } from "./arc-geometry";
+import { TYPE } from "./core/tokens";
 import { validateShape } from "./shape-validation";
 import {
   endOfGrain,
   parseIsoDate,
   requireIsoDate,
 } from "../../../lib/core/date-locale";
-import { humanizeColumn, seriesLabelFromColumn } from "./core/text";
+import { humanizeColumn, seriesLabelFromColumn, textWidth } from "./core/text";
 import type { ArcRole } from "../../../lib/core/claim-arc";
 import type { SourceKind } from "../../../lib/source/vocabulary";
 
@@ -1004,6 +1020,206 @@ export const MAPPERS: Record<
         // work closed. One hue for every icon, so equal marks stay equal.
         ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
         rows: parsed.rows,
+      },
+    };
+  },
+  // ---------------------------------------------------------------------------------
+  // THE FLOW FAMILY — three marks over ONE table. Each mapper below reads the same link
+  // list (`readFlowLinks`) and differs only in what it DERIVES from it and what it
+  // REFUSES. The refusals are the point: all three forms can be drawn from any link list,
+  // and two of the three drawings would be wrong.
+  // ---------------------------------------------------------------------------------
+  sankey(parsed, spec) {
+    const links = readFlowLinks(parsed, "sankey");
+    // A SANKEY CANNOT DRAW A CYCLE. Its columns are stages and a link points rightwards; a
+    // loop has no stage order, so a layout would have to either fold a ribbon back across
+    // the picture or silently cut the link that closes the loop. Both draw something the
+    // data does not say, so the pair is named and refused instead. (A self-link is the
+    // one-node case of the same fact and prints the same way.)
+    const cycle = flowCycle(links);
+    if (cycle)
+      throw new FlowShapeError(
+        `sankey: the flow loops back on itself (${cycle.join(" → ")}) — a Sankey's columns are ` +
+          `STAGES, so every link must point forward and a cycle has no stage order. Break the ` +
+          `loop (split the looping node into its two roles, e.g. "Storage in" / "Storage out"), ` +
+          `or use a chord, which is built for flows that go both ways.`,
+      );
+
+    const nodes = flowNodes(links);
+    const columns = flowColumns(links);
+    const totals = flowTotals(links);
+    const flowIn = (n: string) => totals.in.get(n) ?? 0;
+    const flowOut = (n: string) => totals.out.get(n) ?? 0;
+
+    // FLOW CONSERVATION, refused at the gate. A node with both an in and an out side is a
+    // STAGE the quantity passes through, and what enters it must leave it. The geometry
+    // draws such a node at max(in, out) — so a stage that loses a fifth of its quantity
+    // renders as a perfectly solid bar with thinner ribbons on one side, and the loss is
+    // invisible. The sheet's repair is to make the loss its OWN node ("Losses"), which is
+    // also the honest one: it puts the missing quantity on the picture.
+    for (const n of nodes) {
+      const i = flowIn(n);
+      const o = flowOut(n);
+      if (i === 0 || o === 0) continue; // a source or a sink conserves nothing
+      // Relative tolerance: real flow tables are rounded (percentages, thousands), and an
+      // exact-equality rule would refuse honest data over a rounding crumb.
+      if (Math.abs(i - o) > SANKEY_CONSERVATION_TOLERANCE * Math.max(i, o))
+        throw new FlowShapeError(
+          `sankey: "${n}" does not conserve the flow — ${i} enters and ${o} leaves. A stage ` +
+            `cannot create or lose quantity silently (the node would still render solid, at ` +
+            `the larger of the two). Add the difference as its own node ("Losses", "Other"), ` +
+            `or correct the table.`,
+        );
+    }
+
+    // ORDER, DERIVED AND STABLE: by stage, then by the quantity through the node
+    // (largest at the top, the reading order of every ranked chart), then by the order the
+    // journalist's own rows named them. No randomness, no hash order.
+    const weight = (n: string) => Math.max(flowIn(n), flowOut(n));
+    const ordered = [...nodes].sort(
+      (a, b) =>
+        columns.get(a)! - columns.get(b)! ||
+        weight(b) - weight(a) ||
+        nodes.indexOf(a) - nodes.indexOf(b),
+    );
+
+    // COLOUR, DERIVED: the convention this type's sheet states is "colour links by their
+    // SOURCE" — so the first stage's nodes take the Okabe-Ito ramp and every later node is
+    // neutral, which is what makes a ribbon traceable across the picture. Past the ramp's
+    // honest capacity the whole diagram goes neutral rather than repeating a hue: two
+    // different origins in one colour is worse than none in colour.
+    const origins = ordered.filter((n) => columns.get(n) === 0);
+    const rampNodes = origins.length <= SANKEY_MAX_RAMP_NODES ? origins : [];
+    const ramped = new Set(rampNodes);
+
+    return {
+      type: "sankey",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        rampNodes,
+        nodes: ordered.map((n) => ({
+          id: n,
+          label: n,
+          column: columns.get(n)!,
+          ...(ramped.has(n) ? { category: n } : {}),
+        })),
+        links: links.map((l) => ({ ...l })),
+      },
+    };
+  },
+  chord(parsed, spec) {
+    const links = readFlowLinks(parsed, "chord");
+    const nodes = flowNodes(links);
+    const totals = flowTotals(links);
+    const total = (n: string) =>
+      (totals.in.get(n) ?? 0) + (totals.out.get(n) ?? 0);
+
+    // A CHORD IS AN EXCHANGE, NOT A PIPELINE — and this is the exact mirror of the sankey's
+    // own refusal. A sankey refuses a cycle because its columns are stages; a chord REQUIRES
+    // one, because a ring of things that never send anything back to each other is not an
+    // exchange at all: every quantity moves strictly forward, which is a staged flow wearing
+    // a circle. (The first draft of this rule asked whether any entity both sends AND
+    // receives, and a hub passes that trivially — the energy-mix table, five sources into one
+    // grid into five uses, sailed straight through it. Acyclicity is the fact that actually
+    // separates the two forms.)
+    if (!flowCycle(links))
+      throw new FlowShapeError(
+        `chord: nothing in this table flows BOTH WAYS — every link moves strictly forward ` +
+          `(${links.map((l) => `${l.source}→${l.target}`).join(", ")}), which is a flow ` +
+          `THROUGH STAGES, and a chord's ring is one set exchanging with itself. Use ` +
+          `\`sankey\` for this table.`,
+      );
+
+    // ORDER, DERIVED AND STABLE: largest total first (the sheet's "order entities
+    // deliberately — size or group — and keep the order fixed"), ties broken by the order
+    // the journalist's rows named them.
+    const labels = [...nodes].sort(
+      (a, b) => total(b) - total(a) || nodes.indexOf(a) - nodes.indexOf(b),
+    );
+    if (labels.length > CHORD_MAX_ENTITIES)
+      throw new FlowShapeError(
+        `chord: ${labels.length} entities (${labels.join(", ")}) — past ${CHORD_MAX_ENTITIES} ` +
+          `the ribbons knot and no reader can follow one across the circle, and the palette has ` +
+          `no ${CHORD_MAX_ENTITIES + 1}th hue that stays distinguishable. Aggregate the small ` +
+          `entities into an "Other", or use \`sankey\` if the flow really is directional.`,
+      );
+
+    return {
+      type: "chord",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        labels,
+        matrix: flowMatrix(links, labels),
+      },
+    };
+  },
+  arc(parsed, spec) {
+    const links = readFlowLinks(parsed, "arc");
+    // AN ARC HAS NO SELF-LINK TO DRAW. The mark is a half-ellipse between two points on the
+    // baseline; when the two points are one point the ellipse has zero width and draws
+    // nothing at all — a relationship silently absent from the picture. Named and refused.
+    const self = flowSelfLink(links);
+    if (self)
+      throw new FlowShapeError(
+        `arc: "${self.source}" links to itself — an arc is drawn between two positions on the ` +
+          `baseline, so a self-link has no width and would simply vanish. Remove the row, or ` +
+          `use a chord, whose ring can hold a self-flow.`,
+      );
+
+    // ORDER ALONG THE BASELINE IS THE EDITORIAL CHOICE, and it is taken from the ONE place
+    // the journalist can state it without a new field: the order of their own rows. First
+    // appearance, left to right (`flowNodes`). Deriving it from degree instead would make
+    // the axis a ranking — a second encoding nobody asked for, and one that scatters
+    // neighbours the story may want adjacent.
+    const nodes = flowNodes(links);
+    if (nodes.length > ARC_MAX_NODES)
+      throw new FlowShapeError(
+        `arc: ${nodes.length} nodes on one baseline — past ${ARC_MAX_NODES} the labels have no ` +
+          `room and the arcs overlap into a single band. Aggregate the small nodes, or split ` +
+          `the story.`,
+      );
+    // …and the count is only the ceiling. Whether these PARTICULAR names still fit is a LAYOUT
+    // fact — "Sozialdemokratische Partei" runs out of room at ten nodes where "PS" is fine at
+    // fourteen — so it is MEASURED on the baseline the component will draw, with the same
+    // function the produce guard uses. Measured here as well as there because a produce-time
+    // refusal reaches the journalist after they have been through the whole flow, and this one
+    // reaches them at the gate, where they can still change the table.
+    const fit = arcLabelFit(
+      {
+        nodes: nodes.map((n) => ({ id: n, label: n })),
+        links: links.map((l) => ({ ...l })),
+      },
+      (l) => textWidth(l, TYPE.source),
+    );
+    if (fit.minGapPx * 0.94 < fit.labelPx * ARC_MIN_LABEL_RATIO)
+      throw new FlowShapeError(
+        `arc: ${nodes.length} nodes with names this long cannot be labelled on one baseline — ` +
+          `"${fit.longestLabel}" needs ${Math.round(fit.labelPx)}px and the baseline leaves ` +
+          `${Math.round(fit.minGapPx * 0.94)}px, so every name would render as an ellipsis. ` +
+          `Shorten the names, aggregate the small nodes, or split the story.`,
+      );
+
+    return {
+      type: "arc",
+      config: {
+        title: spec.title,
+        source: src(spec.source),
+        unit: spec.unit,
+        // FURNITURE only. The house hue tints the greys and the frame band; this type
+        // encodes with a fixed categorical/role palette, which the hue must never touch.
+        ...(spec.baseColor ? { baseColor: spec.baseColor } : {}),
+        nodes: nodes.map((n) => ({ id: n, label: n })),
+        links: links.map((l) => ({ ...l })),
       },
     };
   },

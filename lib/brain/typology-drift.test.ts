@@ -96,8 +96,17 @@ test("renderableSheets pairs a sheet with each engine that can render it today",
   expect(
     pairs.some((p) => p.sheet.id === "slope" && p.engine === "chart-native"),
   ).toBe(true);
-  // a deferred type never pairs
-  expect(pairs.some((p) => p.sheet.id === "sankey")).toBe(false);
+  // A DEFERRED TYPE NEVER PAIRS. The control is READ FROM THE REGISTRY rather than named by
+  // hand: this line pinned "sankey", which stopped being deferred when the flow family landed —
+  // so the control went red for a fact about the world rather than about `renderableSheets`,
+  // the one failure a non-vacuity check must not have. Deriving it keeps it meaningful as types
+  // graduate, and says so out loud the day the last one does.
+  const stillDeferred = engineTypes("chart-native").find((t) => t.deferred);
+  expect(
+    stillDeferred,
+    "every chart-native type is now reachable — this control has nothing left to prove",
+  ).toBeDefined();
+  expect(pairs.some((p) => p.sheet.id === stillDeferred!.id)).toBe(false);
 });
 
 // A minimal, otherwise-valid TypeSheet fixture — only `id` and `engines` vary per test below.
@@ -177,10 +186,40 @@ test("renderableSheets prefers the FIRST key when several are renderable", () =>
 });
 
 test("renderableSheets falls through to the second key when the first is deferred", () => {
-  // "sankey" is a real, deferred chart-native id; "slope" is real and renderable.
+  // "marimekko" is a real, deferred chart-native id; "slope" is real and renderable.
   const sheet = fixtureSheet("fixture-first-deferred", {
-    "chart-native": ["sankey", "slope"],
+    "chart-native": ["marimekko", "slope"],
   });
   const pairs = renderableSheets([sheet]);
   expect(pairs).toEqual([{ sheet, engine: "chart-native", key: "slope" }]);
+});
+
+// ---------------------------------------------------------------------------
+// A `limits` CAP MUST BE IN THE UNIT `limits` MEASURES. Every key in the block compares a
+// number from lib/brain/facts.ts, and `maxCategories` compares `facts.rows` — the CSV's ROW
+// count. On the flow family's `source,target,value` link list a row is a LINK, not an entity:
+// `chord.md` carried `maxCategories: 8` from the days it declared no engine, and the moment
+// the sheet became renderable that line stopped meaning "at most 8 districts on the ring" and
+// started meaning "at most 8 movements between them" — which refuses the type's own proof
+// spec (four districts, ten movements). MEASURED, not assumed, before the caps were dropped.
+//
+// The real ceilings are enforced where the right quantity can be counted: the mapper refuses
+// past CHORD_MAX_ENTITIES / ARC_MAX_NODES distinct NODES by name, and the produce guards
+// re-measure on the artifact (an arc's on the RENDERED layout, since "too crowded to label" is
+// a layout fact). A cap in the wrong unit is worse than no cap: it reads correct and excludes
+// the wrong charts.
+//
+// MUTATION-VERIFIED: putting `maxCategories: 8` back on chord.md reddened this test alone,
+// naming chord; the same for `maxCategories: 14` on arc.md.
+test("DRIFT 5: a flow-shape sheet declares no row-counted cap (a link is not an entity)", () => {
+  const flowSheets = loadTypology().filter((s) => s.shape === "flow");
+  expect(flowSheets.length).toBeGreaterThan(0);
+  for (const s of flowSheets)
+    expect(
+      { id: s.id, limits: s.limits },
+      `${s.id}.md declares a limits cap on a link-list shape. Every limits key counts CSV ` +
+        `ROWS or numeric COLUMNS (lib/brain/facts.ts), and a flow CSV's rows are LINKS — so ` +
+        `the cap will exclude on a quantity it does not name. Cap the nodes in the mapper ` +
+        `(flow-links.ts) and in the type's produce guard instead.`,
+    ).toEqual({ id: s.id, limits: {} });
 });
