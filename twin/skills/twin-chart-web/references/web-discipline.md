@@ -1,8 +1,8 @@
 # Web discipline
 
 The rules the interactive chart genre is written under. There was no doctrine for this genre before
-this file — it was written while building the first web beat (`assets/EmissionsWeb.tsx`, the CO₂
-story), the same way `static-discipline.md` was written against the first static beat and
+this file — it was written while building the first web beat (`proof/co2-suisse/EmissionsWeb.tsx`,
+the CO₂ story), the same way `static-discipline.md` was written against the first static beat and
 `motion-grammar.md` against the first video build. Every rule below is either a decision this genre
 needed and the others did not, or an explicit inheritance from `twin-doctrine` stated so it is not
 silently assumed.
@@ -75,13 +75,16 @@ frame.
 
 ## Responsive behaviour
 
-**Two rungs, not a continuous reflow.** `assets/EmissionsWeb.tsx` exports one component and two
-`WebLayout` instances — `DESKTOP_LAYOUT` (900px) and `NARROW_LAYOUT` (360px) — and
-`scripts/render-web.mjs` SSRs both, once, at build time, exactly the way the static genre SSRs its
-one frame. The HTML wrapper picks between the two pre-rendered SVGs with a single CSS media query
+**Two rungs, not a continuous reflow.** A story's own composition (the CO₂ beat's
+`proof/co2-suisse/EmissionsWeb.tsx`) exports one component and two `WebLayout` instances — one at
+900px, one at 360px — and hands them, as an array, to `scripts/render-web.mjs`'s generic `renderWeb`,
+which SSRs one element per entry, once, at build time, exactly the way the static genre SSRs its one
+frame. The HTML wrapper picks between the pre-rendered SVGs with a single CSS media query
 (`max-width: 480px`); there is no client-side layout engine recomputing gutters or tick counts as the
 window resizes; nothing about the chosen frame changes after the page loads except which of the two
-`display: none`/`display: block` the media query is currently applying.
+`display: none`/`display: block` the media query is currently applying. `render-web.mjs` itself never
+imports a story's layout constants by name — see the skill's own `SKILL.md`, "Why `render-web.mjs`
+does not import a story's layouts."
 
 This mirrors the discipline the other two genres already keep, not a shortcut invented for this one:
 `twin-chart-beat`'s own convention is "write the beat's own component, do not parameterise one

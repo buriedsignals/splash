@@ -16,7 +16,8 @@
 // the static and video genres use, and baked into the SVG at build time. This script only reads
 // those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
 // re-formats a number, so there is exactly one implementation of "what year is this" for all three
-// genres to disagree about, and it lives in `proof/crossing-geometry.ts`.
+// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
 
 /** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
  *  boundary `crossingGeometry`'s own geometry/drawing split draws. */

@@ -15,8 +15,8 @@ geometry — never a general "video chart" parameterised by data, per the replac
 
 1. **`co2-suisse`** (`EmissionsVideo.tsx`, `timing.ts`'s `CO2_TIMING`) — a series climbs to a peak and
    later falls back through a level the reader is shown first. Its geometry
-   (`proof/crossing-geometry.ts`) is shared with the still beat that draws the same coordinates on
-   disk — one geometry, two outputs.
+   (`proof/co2-suisse/crossing-geometry.ts`) is shared with the still beat that draws the same
+   coordinates on disk — one geometry, two outputs.
 2. **`life-expectancy`** (`LifeExpectancyVideo.tsx`, `life-expectancy-timing.ts`) — the subject (2020)
    sits *inside* the series, not at its tail, so `reveal` draws the whole series before `subject` ever
    starts; `subject` lands as an emphasis event on a mark already on screen, not as data still
@@ -58,7 +58,8 @@ against the first of these builds.
   anti-pattern.
 - **Not** to re-draw a chart that already exists as a still. Import its geometry. If the geometry is
   entangled with the still's rasteriser, split the pure core out first (that is what
-  `proof/crossing-geometry.ts` is — the extraction, done once, that let both genres share one core).
+  `proof/co2-suisse/crossing-geometry.ts` is — the extraction, done once, that let both genres share
+  one core).
 - **Not** for a map (a different engine) and **not** for a Datawrapper chart (a different producer).
 
 ## The one gotcha that will waste your day (read first)
@@ -66,9 +67,9 @@ against the first of these builds.
 **The geometry you want to reuse probably cannot be bundled for a browser.** The still path's
 `render-still.mjs` loads `@resvg/resvg-js` — a native module — at module scope, so anything that
 imports it, however indirectly, kills the Remotion bundle. The first version of
-`proof/EmissionsLine.tsx` held both the pure geometry *and* that import in one file; the fix was not
-to copy the geometry into the video (two cores that drift), it was to lift the pure half into its
-own module both genres import.
+`proof/co2-suisse/EmissionsLine.tsx` held both the pure geometry *and* that import in one file; the
+fix was not to copy the geometry into the video (two cores that drift), it was to lift the pure half
+into its own module both genres import.
 
 The same trap, one level up, for colour: `deriveFurniture` lives beside the rasteriser and cannot be
 called in the browser either. **Do not reimplement it in the composition.** `scripts/render-video.mjs`
@@ -84,7 +85,7 @@ about what "muted" means on the same newsroom ground.
 | Contract | `assets/timing.ts` + `life-expectancy-timing.ts` + `migration-timing.ts` | `BeatTiming`, `progressOf` (clamped), `checkTiming` (the structural rules as arithmetic) in `timing.ts`; each beat's own named instance beside it |
 | Composition | `assets/EmissionsVideo.tsx`, `LifeExpectancyVideo.tsx`, `MigrationVideo.tsx` | One beat's drawing per file, frame by frame. `EmissionsVideo.tsx` also exports `drawnSoFar`, the chronological partial path, reused by the other two |
 | Registration | `assets/Root.tsx`, `assets/index.ts` | All three `<Composition>`s (each `durationInFrames` IS that beat's own `_TIMING.total`) and the one entry point |
-| Geometry | `proof/crossing-geometry.ts` (beat 1, shared with the static beat); `lifeExpectancyGeometry`/`migrationGeometry` inside beats 2/3's own composition files | Pure cores. Beats 2 and 3 have no still counterpart yet, so their geometry has no forced reason to live outside the composition the way beat 1's does |
+| Geometry | `proof/co2-suisse/crossing-geometry.ts` (beat 1, shared with the static beat); `lifeExpectancyGeometry`/`migrationGeometry` inside beats 2/3's own composition files | Pure cores. Beats 2 and 3 have no still counterpart yet, so their geometry has no forced reason to live outside the composition the way beat 1's does |
 | Render | `scripts/render-video.mjs`, `render-life-expectancy.mjs`, `render-migration.mjs` | One script per beat, same shape: reads its frozen CSV, derives the furniture in node, renders the final-frame still, then the mp4 |
 | Test | `test/timing.test.ts`, `life-expectancy-timing.test.ts`, `migration-timing.test.ts` | Pins each beat's contract — each rule asserted green on the shipped timing and RED on a timing mutated to break exactly that rule |
 

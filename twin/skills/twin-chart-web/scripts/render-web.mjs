@@ -2,8 +2,8 @@
 //
 // The render ladder's third rung. Rung one (`twin-chart-beat/scripts/render-still.mjs`) turns a
 // React element into a PNG; rung two (`twin-chart-video/scripts/render-video.mjs`) turns a
-// Remotion composition into an mp4; this turns TWO React elements — the same component,
-// desktop and narrow layout — into one self-contained HTML file: both SVGs SSR'd server-side,
+// Remotion composition into an mp4; this turns N React elements — the same component, one call
+// per caller-supplied layout — into one self-contained HTML file: every SVG SSR'd server-side,
 // one inlined interaction script, no external request.
 //
 // It runs in node, which is why it is the piece that derives the furniture colours and measures
@@ -13,7 +13,15 @@
 // text-measurement rule across all three genres, exactly the pattern `render-video.mjs` already
 // set.
 //
-// Usage:  bun skills/twin-chart-web/scripts/render-web.mjs [--data <csv>] [--out <path>]
+// `renderWeb` below is the genre's own machinery and knows nothing of any one story: it takes the
+// component and the layouts to call it with as arguments, never reaches for one story's own
+// constants by name. The `EmissionsWeb`/`LAYOUTS` import below, and everything under it (`BEAT`,
+// `readingsFromCsv`, `render`, the CLI block), is the CO₂ beat's own runner — the same "a story's
+// script happens to be filed beside the skill" shape `render-video.mjs` already has. A second beat
+// would bring its own component, its own `LAYOUTS` array and its own runner; `renderWeb` itself
+// would not change.
+//
+// Usage:  bun skills/twin-chart-web/scripts/render-web.mjs [outDir] [--data <csv>]
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -21,15 +29,72 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, measureText } from "../../twin-chart-beat/scripts/render-still.mjs";
-import {
-  EmissionsWeb,
-  DESKTOP_LAYOUT,
-  NARROW_LAYOUT,
-} from "../assets/EmissionsWeb.tsx";
+import { EmissionsWeb, LAYOUTS } from "../../../proof/co2-suisse/EmissionsWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-/** The story's own constants — the same words `twin-chart-video/scripts/render-video.mjs` uses
+/**
+ * SSRs one React element per entry in `layouts`, wraps every resulting SVG in one self-contained
+ * HTML file (title, css, inlined interaction script) and writes it to disk. Generic across every
+ * web beat: it does not know a story's own frame widths, tick counts or numbers — only how many
+ * layouts to render and how to stitch their SVGs together. Each entry of `layouts` is passed to
+ * `component` verbatim as its `layout` prop; this function never reads a field off it directly, so
+ * it is not coupled to any one story's layout shape.
+ *
+ * `props` carries everything the component needs BESIDES `layout` and the derived furniture/measure
+ * (`title`/`source`/`ground`/`accent`/... — the story's own numbers). `deriveFurniture(props.ground)`
+ * and `measureText` are supplied here, once, exactly as `render-video.mjs` supplies them to its own
+ * composition — so every web beat shares one implementation of the colour rule and the
+ * text-measurement rule, never a copy per story.
+ */
+async function renderWeb({ component, layouts, props, outDir, name }) {
+  const furniture = deriveFurniture(props.ground);
+  const svgs = layouts.map((layout) =>
+    renderToStaticMarkup(
+      createElement(component, {
+        ...props,
+        ...furniture,
+        measure: measureText,
+        layout,
+      }),
+    ),
+  );
+
+  const interactionSource = await readFile(
+    join(HERE, "../assets/interaction.mjs"),
+    "utf8",
+  );
+  const inlineScript = inlineable(interactionSource);
+
+  const html = `<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(props.title)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+${buildCss({ ground: props.ground, accent: props.accent, ...furniture })}
+</style>
+</head>
+<body>
+<figure class="chart-figure">
+${svgs.join("\n")}
+</figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+${inlineScript}
+</script>
+</body>
+</html>
+`;
+
+  await mkdir(outDir, { recursive: true });
+  const outPath = join(outDir, name);
+  await writeFile(outPath, html);
+  return { outPath, layouts: layouts.length };
+}
+
+/** The CO₂ beat's own constants — the same words `twin-chart-video/scripts/render-video.mjs` uses
  *  for the same beat, so the three genres never disagree about what the chart says. Duplicated
  *  rather than imported: importing `render-video.mjs` would also run its own top-level Remotion
  *  render as a side effect, which this script must not trigger. */
@@ -146,7 +211,9 @@ svg.chart[data-layout="narrow"] { display: none; }
 `.trim();
 }
 
-async function render({ dataPath, outPath }) {
+/** The CO₂ beat's own runner: reads its CSV, builds its props, hands its own component and its own
+ *  two layouts (`EmissionsWeb`, `LAYOUTS`, imported above) to the skill's generic `renderWeb`. */
+async function render({ dataPath, outDir, name = "co2.html" }) {
   const csv = await readFile(dataPath, "utf8");
   const data = readingsFromCsv(csv, {
     entity: BEAT.entity,
@@ -155,60 +222,24 @@ async function render({ dataPath, outPath }) {
   if (data.length < 2)
     throw new Error(`need at least two readings, got ${data.length}`);
 
-  const furniture = deriveFurniture(BEAT.ground);
-  const sharedProps = {
-    data,
-    title: BEAT.title,
-    source: BEAT.source,
-    alt: BEAT.alt,
-    limits: BEAT.limits,
-    ground: BEAT.ground,
-    accent: BEAT.accent,
-    reference: BEAT.reference,
-    referenceLabel: BEAT.referenceLabel,
-    peakLabel: BEAT.peakLabel,
-    measure: measureText,
-    ...furniture,
-  };
-
-  const desktopSvg = renderToStaticMarkup(
-    createElement(EmissionsWeb, { ...sharedProps, layout: DESKTOP_LAYOUT }),
-  );
-  const narrowSvg = renderToStaticMarkup(
-    createElement(EmissionsWeb, { ...sharedProps, layout: NARROW_LAYOUT }),
-  );
-
-  const interactionSource = await readFile(
-    join(HERE, "../assets/interaction.mjs"),
-    "utf8",
-  );
-  const inlineScript = inlineable(interactionSource);
-
-  const html = `<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<title>${escapeHtml(BEAT.title)}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-${buildCss({ ground: BEAT.ground, accent: BEAT.accent, ...furniture })}
-</style>
-</head>
-<body>
-<figure class="chart-figure">
-${desktopSvg}
-${narrowSvg}
-</figure>
-<div id="tooltip" role="status" aria-live="polite" hidden></div>
-<script>
-${inlineScript}
-</script>
-</body>
-</html>
-`;
-
-  await mkdir(dirname(outPath), { recursive: true });
-  await writeFile(outPath, html);
+  const { outPath } = await renderWeb({
+    component: EmissionsWeb,
+    layouts: LAYOUTS,
+    props: {
+      data,
+      title: BEAT.title,
+      source: BEAT.source,
+      alt: BEAT.alt,
+      limits: BEAT.limits,
+      ground: BEAT.ground,
+      accent: BEAT.accent,
+      reference: BEAT.reference,
+      referenceLabel: BEAT.referenceLabel,
+      peakLabel: BEAT.peakLabel,
+    },
+    outDir,
+    name,
+  });
   return { outPath, readings: data.length };
 }
 
@@ -218,11 +249,12 @@ if (import.meta.main) {
     const at = argv.indexOf(name);
     return at >= 0 ? argv[at + 1] : fallback;
   };
+  const positional = argv.find((a) => !a.startsWith("--"));
   const dataPath = resolve(flag("--data", "/tmp/web-twin/data.csv"));
-  const outPath = resolve(flag("--out", "/tmp/web-twin/co2.html"));
+  const outDir = resolve(positional ?? flag("--out", "/tmp/web-twin"));
 
-  const { readings } = await render({ dataPath, outPath });
+  const { outPath, readings } = await render({ dataPath, outDir });
   console.log(`web beat → ${outPath}  [${readings} readings]`);
 }
 
-export { render, BEAT };
+export { render, renderWeb, BEAT };

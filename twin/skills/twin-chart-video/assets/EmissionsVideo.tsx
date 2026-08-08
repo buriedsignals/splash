@@ -4,7 +4,7 @@
  * REPLACE ME per story, the way `twin-chart-beat/assets/ChartSeed.tsx` is replaced. Do not
  * parameterise me into a general video chart; write the next beat's own composition in this shape.
  *
- * What it is NOT is a second chart. The coordinates come from `proof/crossing-geometry.ts`, the
+ * What it is NOT is a second chart. The coordinates come from `proof/co2-suisse/crossing-geometry.ts`, the
  * same pure core the static beat draws — one geometry, two outputs. This file adds exactly one
  * thing the still cannot have: an order in time. Every window in that order derives from
  * `timing.ts`; there is no frame literal below.
@@ -33,7 +33,7 @@ import {
   fr,
   yTickValues,
   type Reading,
-} from "../../../proof/crossing-geometry";
+} from "../../../proof/co2-suisse/crossing-geometry";
 import { CO2_TIMING, progressOf, type BeatTiming } from "./timing";
 
 const FRAME = { width: 1080, height: 1080 };

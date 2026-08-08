@@ -7,12 +7,20 @@ import {
 } from "../../twin-chart-beat/scripts/render-still.mjs";
 import {
   EmissionsWeb,
-  DESKTOP_LAYOUT,
-  NARROW_LAYOUT,
+  LAYOUTS,
   type WebLayout,
-} from "../assets/EmissionsWeb.tsx";
+} from "../../../proof/co2-suisse/EmissionsWeb.tsx";
 import { readingsFromCsv, BEAT } from "../scripts/render-web.mjs";
-import { crossingGeometry, fr } from "../../../proof/crossing-geometry";
+import {
+  crossingGeometry,
+  fr,
+} from "../../../proof/co2-suisse/crossing-geometry";
+
+// The story's own array export, not its two layout constants imported by name — `render-web.mjs`
+// stopped naming them too (Task 2's fix: a skill importing a story's frame geometry by name is the
+// dependency that ran backwards). `[desktop, narrow]` here is this test file's own local
+// destructuring, in the order `EmissionsWeb.tsx` lists them.
+const [desktop, narrow] = LAYOUTS;
 
 // `measureText` loads a native rasteriser (`@resvg/resvg-js`) that scans every system font on its
 // first call in a process — a one-time cost, observed here anywhere from ~100ms to several seconds
@@ -91,7 +99,7 @@ function renderLayout(layout: WebLayout, overrides: Partial<typeof BASE> = {}) {
 
 describe("EmissionsWeb", () => {
   it("should carry the title, the source, the limits and the alt text", () => {
-    const svg = renderLayout(DESKTOP_LAYOUT);
+    const svg = renderLayout(desktop);
     expect(svg).toContain("En 2024, la Suisse a");
     expect(svg).toContain("Global Carbon Budget 2025");
     expect(svg).toContain("Émissions territoriales seulement");
@@ -102,13 +110,13 @@ describe("EmissionsWeb", () => {
     // web-discipline.md, "One deliberate departure": role=img on the ROOT would silence every
     // focusable point below it. The points themselves are individually role="img" on purpose —
     // it is only the root svg element this rule is about.
-    const svg = renderLayout(DESKTOP_LAYOUT);
+    const svg = renderLayout(desktop);
     const rootTag = svg.slice(0, svg.indexOf(">") + 1);
     expect(rootTag).not.toContain("role=");
   });
 
   it("should render one focusable, labelled point per reading, none of it hidden without JS", () => {
-    const svg = renderLayout(DESKTOP_LAYOUT);
+    const svg = renderLayout(desktop);
     const points = svg.match(/class="pt"/g) ?? [];
     expect(points.length).toBe(BASE.data.length);
     expect(svg).toContain('tabindex="0"');
@@ -118,7 +126,7 @@ describe("EmissionsWeb", () => {
 
   it("should give each point the exact formatted value the source data carries", () => {
     // Cross-checked against the same three years the live browser drive also checks.
-    const svg = renderLayout(DESKTOP_LAYOUT);
+    const svg = renderLayout(desktop);
     expect(svg).toContain('data-detail="1950 · 10,3 Mt"');
     expect(svg).toContain('data-detail="1973 · 46,2 Mt"');
     expect(svg).toContain('data-detail="2024 · 32,1 Mt"');
@@ -128,7 +136,7 @@ describe("EmissionsWeb", () => {
     const ground = "#101820";
     const accent = "#E6A700";
     const furniture = deriveFurniture(ground);
-    const svg = renderLayout(DESKTOP_LAYOUT, { ground, accent });
+    const svg = renderLayout(desktop, { ground, accent });
     const allowed = new Set(
       [ground, accent, furniture.ink, furniture.muted, furniture.grid].map(
         (c) => c.toLowerCase(),
@@ -144,7 +152,7 @@ describe("EmissionsWeb", () => {
   it("should never colour a non-subject point with the accent, even in the markup that hover would toggle", () => {
     // The .pt circles' own fill attribute — the state hover/focus start from — is transparent,
     // never the accent; only CSS (never inlined per-point) can move it to muted on interaction.
-    const svg = renderLayout(DESKTOP_LAYOUT);
+    const svg = renderLayout(desktop);
     const ptFills = [...svg.matchAll(/class="pt"[^>]*fill="([^"]+)"/g)].map(
       (m) => m[1],
     );
@@ -154,7 +162,7 @@ describe("EmissionsWeb", () => {
   it("should keep the reference rule, its label and the subject's end label unconditional", () => {
     // web-discipline.md, "What must not become interactive" — none of this is behind a class name
     // the interaction script could toggle off.
-    const svg = renderLayout(DESKTOP_LAYOUT);
+    const svg = renderLayout(desktop);
     expect(svg).toContain("Niveau de 1967");
     expect(svg).toContain("pic de 1973");
     expect(svg).toContain("2024 · 32,1 Mt");
@@ -163,11 +171,11 @@ describe("EmissionsWeb", () => {
 
   it("should refuse a series with nothing to trace rather than draw a meaningless line", () => {
     expect(() =>
-      renderLayout(DESKTOP_LAYOUT, { data: [{ year: 2015, mt: 1 }] } as any),
+      renderLayout(desktop, { data: [{ year: 2015, mt: 1 }] } as any),
     ).toThrow("needs at least two readings");
   });
 
-  for (const layout of [DESKTOP_LAYOUT, NARROW_LAYOUT]) {
+  for (const layout of [desktop, narrow]) {
     it(`should keep both gutters inside the frame at the ${layout.name} layout`, () => {
       // Nothing clipped, at either layout — the invariant the narrow-width drive also confirms
       // visually. A gutter wider than the frame itself would mean the plot rectangle is inverted.
@@ -196,9 +204,9 @@ describe("EmissionsWeb", () => {
   }
 
   it("should widen the right gutter to fit a longer end label rather than clip it", () => {
-    const narrowSvg = renderLayout(DESKTOP_LAYOUT);
+    const narrowSvg = renderLayout(desktop);
     const wideData = [...BASE.data.slice(0, -1), { year: 2024, mt: 32.07 }];
-    const svg = renderLayout(DESKTOP_LAYOUT, {
+    const svg = renderLayout(desktop, {
       data: wideData,
       referenceLabel:
         "Niveau de 1967 — un niveau que la Suisse n'avait plus vu depuis longtemps",
@@ -227,7 +235,7 @@ describe("crossingGeometry reuse (one geometry, three outputs)", () => {
     // pins that there is only one.
     const padding = { top: 200, right: 120, bottom: 64, left: 60 };
     const g = crossingGeometry(BASE.data, {
-      width: DESKTOP_LAYOUT.width,
+      width: desktop.width,
       height: 560,
       padding,
       reference: BASE.reference,

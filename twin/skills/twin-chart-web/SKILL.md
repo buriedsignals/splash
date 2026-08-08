@@ -12,13 +12,17 @@ thing a static frame and a video build cannot have, a reader who can ask the cha
 get an exact answer back, without anything the static frame already states being gated behind that
 ask.
 
-One beat is built here, `co2-suisse` (`EmissionsWeb.tsx`), never a general "interactive chart"
-parameterised by data — the same replace-me discipline `twin-chart-beat`'s seed and
-`twin-chart-video`'s three compositions are written under. Its geometry
-(`proof/crossing-geometry.ts`) is the same pure core the static beat (`proof/EmissionsLine.tsx`)
-and the video beat (`twin-chart-video/assets/EmissionsVideo.tsx`) already share — one geometry,
-three outputs. What this genre adds on top: every one of the series' 75 readings gets an exact,
-on-demand value via hover, tap or keyboard focus, none of it printed by default.
+One beat has been proven through this skill, `co2-suisse` — its composition
+(`proof/co2-suisse/EmissionsWeb.tsx`) lives with the rest of that story's own files, not inside
+this skill's `assets/`, so this skill never hosts a particular story's numbers, only the genre's own
+mechanics (`scripts/render-web.mjs`'s generic `renderWeb`, `assets/interaction.mjs`). A worked
+example lives beside the skill the same replace-me way `twin-chart-beat`'s seed and
+`twin-chart-video`'s compositions do — see "Quick start" for how to drive it. The CO₂ beat's
+geometry (`proof/co2-suisse/crossing-geometry.ts`) is the same pure core the static beat
+(`proof/co2-suisse/EmissionsLine.tsx`) and the video beat
+(`twin-chart-video/assets/EmissionsVideo.tsx`) already share — one geometry, three outputs. What
+this genre adds on top: every one of the series' 75 readings gets an exact, on-demand value via
+hover, tap or keyboard focus, none of it printed by default.
 
 There was no doctrine for this genre before this skill. `references/web-discipline.md` was written
 against this beat's first real build, the way `static-discipline.md` was written against the first
@@ -34,8 +38,10 @@ web beat.
   interaction is detail the static frame had to omit, never the same numbers repeated for effect.
   See `web-discipline.md`, "What hover reveals."
 - **Not** to re-draw a chart that already exists as a still or a video build. Import its geometry —
-  `EmissionsWeb.tsx` imports `proof/crossing-geometry.ts` exactly as `EmissionsLine.tsx` and
-  `EmissionsVideo.tsx` do.
+  a story's web composition imports its own `crossing-geometry.ts`-shaped module exactly as its
+  static and video siblings do (`proof/co2-suisse/EmissionsWeb.tsx` imports
+  `proof/co2-suisse/crossing-geometry.ts`, the same file `EmissionsLine.tsx` and `EmissionsVideo.tsx`
+  import).
 - **Not** for a map (a different engine) and **not** for a Datawrapper chart (a different producer).
 
 ## The one gotcha that will waste your day (read first)
@@ -57,23 +63,33 @@ test suite says "clipped," only a screenshot does.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/web-discipline.md` | What hover reveals that static could not, keyboard/touch parity, what survives with JS off, two pre-rendered layouts instead of a live reflow, what must never become interactive, the one box this genre allows |
-| Geometry | `proof/crossing-geometry.ts` | Shared with the static and video beats — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here |
-| Composition | `assets/EmissionsWeb.tsx` | One `WebLayout`-parameterised component, called twice (`DESKTOP_LAYOUT`, `NARROW_LAYOUT`) — not a live-reflow engine |
+| Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with the static and video beats — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here |
+| Composition | the story's own `EmissionsWeb.tsx`-shaped file, filed beside its story, not under this skill's `assets/` | A `WebLayout`-parameterised component, called once per layout the story supplies — not a live-reflow engine |
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
-| Render | `scripts/render-web.mjs` | SSRs both layouts, derives furniture/measures gutters in node (`twin-chart-beat/scripts/render-still.mjs`), inlines the interaction script, writes one self-contained HTML file |
+| Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, layouts, props, outDir, name })` — SSRs one element per layout, derives furniture/measures gutters in node (`twin-chart-beat/scripts/render-still.mjs`), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own layout constants; the caller hands them in |
 | Test | `test/render-web.test.ts` | CSV parsing, the component's SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
 `deriveFurniture`/`measureText` live beside a native rasteriser in
-`twin-chart-beat/scripts/render-still.mjs` that no browser bundle can load, so `render-web.mjs` (node)
-derives the furniture and measures every gutter once, and passes the results into `EmissionsWeb.tsx`
-as props (`measure`, `ink`/`muted`/`grid`). The composition itself never imports the rasteriser.
+`twin-chart-beat/scripts/render-still.mjs` that no browser bundle can load, so `renderWeb` (node)
+derives the furniture and measures every gutter once, and passes the results into whichever
+component it was given as props (`measure`, `ink`/`muted`/`grid`). The composition itself never
+imports the rasteriser.
 
 **Why two layouts, not a live reflow.** `web-discipline.md`'s "Responsive behaviour" section argues
 this in full — in short, a client-side engine recomputing `tickStep` and re-measuring gutters on
 every resize is the same "one universal component" anti-pattern `twin-chart-beat`'s own "write the
 beat's own component" rule already rejects, wearing a resize listener. Two hand-authored,
 independently-tuned `WebLayout`s, each SSR'd once, is both less code and less risk.
+
+**Why `render-web.mjs` does not import a story's layouts.** Its first build called `renderWeb`
+`render`, and that function reached directly into `EmissionsWeb.tsx` for its two named layout
+constants — the skill's own renderer importing a story's frame geometry, which is the dependency
+running backwards: a second beat would have had to name its own layouts identically just to keep
+the skill's code working. `renderWeb` now takes `component` and `layouts` as arguments; a story
+hands it its own array (`EmissionsWeb.tsx` exports `LAYOUTS`, not two individually-imported
+constants) and its own props. The genre's machinery does not know, and does not need to know, what
+any one story calls its layouts or how many pixels wide they are.
 
 ## How it works (the shape)
 
@@ -98,10 +114,10 @@ independently-tuned `WebLayout`s, each SSR'd once, is both less code and less ri
 ## Quick start
 
 ```sh
-bun skills/twin-chart-web/scripts/render-web.mjs --data /tmp/web-twin/data.csv --out /tmp/web-twin/co2.html
+bun skills/twin-chart-web/scripts/render-web.mjs /tmp/canon-web
 
 # then drive it — a static screenshot cannot verify an interactive claim
-python3 -m http.server 8934 --bind 127.0.0.1 --directory /tmp/web-twin &
+python3 -m http.server 8934 --bind 127.0.0.1 --directory /tmp/canon-web &
 # open http://127.0.0.1:8934/co2.html in a real (or automated) browser and:
 #  1. confirm the title, the 1967 reference rule and the 2024 accent point are on screen before
 #     touching anything;
@@ -110,17 +126,22 @@ python3 -m http.server 8934 --bind 127.0.0.1 --directory /tmp/web-twin &
 #  4. resize to ~360px wide, confirm nothing is clipped and the axis is still locatable.
 ```
 
+This runs the CO₂ beat's own runner (`render`, at the bottom of `scripts/render-web.mjs`), which
+reads a CSV (`--data`, default `/tmp/web-twin/data.csv`) and hands its component and its own
+`LAYOUTS` array to the genre's generic `renderWeb`. A second beat writes its own runner the same
+shape, importing its own story's composition and layouts.
+
 ## Tuning knobs
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| The two frame widths this genre ships | `900` (desktop) / `360` (narrow) | `DESKTOP_LAYOUT.width` / `NARROW_LAYOUT.width`, `EmissionsWeb.tsx` |
+| The two frame widths this genre ships | `900` (desktop) / `360` (narrow), CO₂ beat's own numbers | each `WebLayout`'s `width`, the story's own composition file |
 | The breakpoint the CSS media query swaps layouts at | `480px` | `buildCss`, `render-web.mjs` |
 | How many y gridlines each layout asks for | `5` (desktop) / `4` (narrow) | `yTickHint`, each `WebLayout` |
 | How many x ticks `tickStep` derives a round interval from | `6` (desktop) / `3` (narrow) | `xTickHint`, each `WebLayout` |
 | A regular gridline this close to the reference is dropped | `20px` (desktop) / `16px` (narrow) | `minGridlineGapPx`, each `WebLayout` |
 | The plot's own floor for usable height, independent of header wrap | `340px` (desktop) / `220px` (narrow) | `plotMinHeight`, each `WebLayout` — the frame's total height derives from this, never a fixed guess |
-| The invisible hit target's radius per point (keyboard focus outline, not the touch target — see `web-discipline.md`) | `5` | `.pt` circle `r`, `EmissionsWeb.tsx` |
+| The invisible hit target's radius per point (keyboard focus outline, not the touch target — see `web-discipline.md`) | `5` | `.pt` circle `r`, the story's own composition file |
 | How the `#tooltip` is positioned relative to the pointer/focused point | `14px` above, clamped `8px` from the viewport edge | `show()`, `interaction.mjs` |
 | The one CSS breakpoint deciding which pre-rendered SVG is visible | `max-width: 480px` | `buildCss`, `render-web.mjs` |
 
@@ -128,14 +149,22 @@ python3 -m http.server 8934 --bind 127.0.0.1 --directory /tmp/web-twin &
 
 - `references/web-discipline.md` — the rules this genre is written under, each attached to the
   reasoning or the defect that produced it.
-- `assets/EmissionsWeb.tsx` — the CO₂ beat's composition. **Replace per story**; do not parameterise
-  it into a general interactive chart. Exports `WebLayout`, `DESKTOP_LAYOUT`, `NARROW_LAYOUT`.
 - `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML.
   `nearestIndex` is pure and unit-tested; `initChart`/`initAll` are DOM wiring, verified by driving
   a real browser, not by a test.
-- `scripts/render-web.mjs` — `readingsFromCsv`, `BEAT`, `render`: SSRs both layouts, derives the
-  furniture, inlines the interaction script, writes one self-contained HTML file.
+- `scripts/render-web.mjs` — the genre's own machinery: `renderWeb({ component, layouts, props,
+  outDir, name })` SSRs one element per layout, derives the furniture, inlines the interaction
+  script, writes one self-contained HTML file. It knows no story's numbers. Beneath it,
+  `readingsFromCsv`, `BEAT`, `render` and the CLI block are the CO₂ beat's own runner — the same "a
+  story's script filed beside the skill" shape `twin-chart-video/scripts/render-video.mjs` already
+  has.
 - `test/render-web.test.ts` — `bun:test` coverage: CSV parsing, the component's SSR output (closed
   palette, point count, exact per-point French-formatted values, everything argument-bearing
   rendered unconditionally), the pure `nearestIndex` helper, and a direct cross-check against
   `crossingGeometry` so this genre never carries a second implementation of data-to-coordinates.
+- **The CO₂ beat's own files live outside this skill, in `proof/co2-suisse/`**: `EmissionsWeb.tsx`
+  (composition — exports the `WebLayout` type, its own two named layout constants, and a `LAYOUTS`
+  array bundling them for `render-web.mjs`'s CLI), `crossing-geometry.ts` (the pure core, shared with
+  the static and video beats), `EmissionsLine.tsx` (the static beat), `BRIEF.md`, `STORYBOARD.md`,
+  `co2-suisse-still.png`. This skill's own `assets/` carries no story — replace `proof/co2-suisse/`
+  with the next story's own workspace, never edit those files in place expecting them to generalise.

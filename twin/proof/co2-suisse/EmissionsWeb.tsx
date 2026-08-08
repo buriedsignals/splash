@@ -2,24 +2,29 @@
  * The web beat of "CO₂ suisse, retour au niveau de 1967" — the interactive genre.
  *
  * Not a second chart: the coordinates and the number formatting come from
- * `proof/crossing-geometry.ts`, the same pure core the static beat (`proof/EmissionsLine.tsx`) and
- * the video beat (`twin-chart-video/assets/EmissionsVideo.tsx`) already share. What this file adds
- * is the one thing neither of those genres has — a reader who can ask the chart a question and get
- * an answer back, without anything the static frame already states being gated behind that ask.
- * Read `references/web-discipline.md` for the rules this file is written under before changing it.
+ * `./crossing-geometry.ts`, the same pure core the static beat (`EmissionsLine.tsx`, this same
+ * directory) and the video beat (`twin-chart-video/assets/EmissionsVideo.tsx`) already share. What
+ * this file adds is the one thing neither of those genres has — a reader who can ask the chart a
+ * question and get an answer back, without anything the static frame already states being gated
+ * behind that ask. Read `twin-chart-web/references/web-discipline.md` for the rules this file is
+ * written under before changing it.
  *
  * Two layouts, not a continuous reflow (`web-discipline.md`, "Responsive behaviour"): each is its
- * own call to this component, SSR'd once at build time by `scripts/render-web.mjs` — exactly the
- * way the static beat SSRs its one frame. The HTML wrapper switches between the two pre-rendered
- * SVGs with a CSS media query; there is no client-side layout math, because both frames were
- * already computed server-side, from the same geometry, the same way the static beat's frame is.
+ * own call to this component, SSR'd once at build time by the `twin-chart-web` skill's
+ * `scripts/render-web.mjs` — exactly the way the static beat SSRs its one frame. The HTML wrapper
+ * switches between the two pre-rendered SVGs with a CSS media query; there is no client-side layout
+ * math, because both frames were already computed server-side, from the same geometry, the same
+ * way the static beat's frame is.
  *
  * `deriveFurniture` and `measureText` are not called here. They live in
  * `twin-chart-beat/scripts/render-still.mjs`, beside a native rasteriser
  * (`EmissionsVideo.tsx`'s own doc-comment explains why that module cannot be imported from a file
- * meant to run anywhere but node) — `scripts/render-web.mjs` derives the furniture and measures
- * every gutter in node, exactly like the still and video render scripts do, and passes the results
- * in as props. `measure` below is that function, threaded in rather than imported.
+ * meant to run anywhere but node) — `render-web.mjs` derives the furniture and measures every
+ * gutter in node, exactly like the still and video render scripts do, and passes the results in as
+ * props. `measure` below is that function, threaded in rather than imported. This file supplies
+ * its own two `WebLayout` instances (`DESKTOP_LAYOUT`, `NARROW_LAYOUT`) and hands them to
+ * `render-web.mjs`'s generic `renderWeb` — the skill's renderer does not import a story's layouts,
+ * it only knows how to SSR whatever layouts it is given.
  */
 
 import { line } from "d3-shape";
@@ -30,7 +35,7 @@ import {
   fr,
   yTickValues,
   type Reading,
-} from "../../../proof/crossing-geometry";
+} from "./crossing-geometry";
 
 const UNIT = "Mt";
 
@@ -98,6 +103,11 @@ export const NARROW_LAYOUT: WebLayout = {
   plotMinHeight: 220,
   bottomPad: 44,
 };
+
+/** The two rungs, in render order — what this beat hands to the skill's generic `renderWeb`, which
+ *  never imports `DESKTOP_LAYOUT`/`NARROW_LAYOUT` by name (that would be the skill reaching back
+ *  into a story's own numbers). A second beat supplies its own array of the same shape. */
+export const LAYOUTS: WebLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];
 
 type Measure = (
   text: string,

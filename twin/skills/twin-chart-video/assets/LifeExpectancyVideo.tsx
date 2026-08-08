@@ -54,7 +54,7 @@ export function en(value: number, decimals = 1): string {
 
 /**
  * Data to coordinates. Pure — no colour, no font, no React — the same discipline
- * `proof/crossing-geometry.ts` set for beat 1, kept as its own module here because this beat's
+ * `proof/co2-suisse/crossing-geometry.ts` set for beat 1, kept as its own module here because this beat's
  * shape (an interior subject plus a named recovery point) is not that module's shape.
  *
  * The reference (the 2019 level) joins the readings in the fitted extent for the same reason beat
