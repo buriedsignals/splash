@@ -94,6 +94,10 @@ const ground = "#FFFFFF";
 const furniture = deriveFurniture(ground);
 const ramp = sequentialRamp(ground, furniture.ink, CO2_BREAKS.length + 1);
 
+// Compute the mean of all sample values for the comparison mark
+const allValues = Array.from(values.values());
+const meanValue = allValues.length > 0 ? allValues.reduce((a, b) => a + b, 0) / allValues.length : 0;
+
 // Render the preview
 const svg = renderToStaticMarkup(
   createElement(Co2MapStill, {
@@ -117,7 +121,7 @@ const svg = renderToStaticMarkup(
     subjectLabel: "Subject",
     subjectValue: values.get("CHE") ?? 0,
     comparisonLabel: "Comparison",
-    comparisonValue: 5,
+    comparisonValue: meanValue,
   }),
 );
 

@@ -65,6 +65,9 @@ and record which fired.
 | Contract | `assets/timing.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`, `progressOf`) is **imported** from `twin-chart-video`, never re-implemented |
 | Registration | `assets/Root.tsx`, `assets/index.ts` | The Remotion composition; `durationInFrames` IS `MAP_TIMING.total` |
 | Render | `scripts/render-map.mjs` | The ladder: still → final frame → mp4. Runs the join and the claim check, derives the furniture in node |
+| Preview | `scripts/render-preview.mjs` | The seed rendered from sample data. Generates `assets/preview.png` and validates it with `--check` |
+| Sample | `assets/sample-data/regions.json` | 43 European regions with numeric values, chosen to demonstrate the full colour ramp span |
+| Preview | `assets/preview.png` | The static seed rendered on a light ground, so a reader of this skill sees what it produces |
 
 **The accent in a choropleth.** The ramp is a gradient encoding a quantity — the one legitimate
 gradient in this system — and it colours every region, so it cannot also carry the semantic accent.
@@ -145,17 +148,25 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 
 - `scripts/bake-plate.mjs` — the camera, the gate, the plate, the projection, the culling.
 - `scripts/render-map.mjs` — the render ladder, the join, the claim check, the beat's own words.
+- `scripts/render-preview.mjs` — renders the static seed from sample data, writes `assets/preview.png`,
+  supports `--check` mode for verification. Automakes the plate if missing.
 - `assets/geo.ts` — the pure core. Imported by both genres and by the tests.
 - `assets/Co2MapStill.tsx` — the static beat. **Replace per story.** Lays its column out from both
   ends and throws if the two halves meet, because an overlap is what a reader sees first.
 - `assets/Co2MapVideo.tsx` — the video beat. **Replace per story.** Exports `arrivalProgress`.
 - `assets/timing.ts` — `MAP_TIMING`, and a re-export of the shared vocabulary.
 - `assets/Root.tsx`, `assets/index.ts` — the Remotion composition and entry point.
+- `assets/sample-data/regions.json` — 43 European regions with numeric values demonstrating the
+  full colour ramp span, used by `render-preview.mjs` to generate the seed preview.
+- `assets/preview.png` — the static seed rendered on a light ground, so a reader of this skill sees
+  what it produces without running anything. Regenerate it whenever the seed or sample data changes.
 - `test/geo.test.ts` — the join in both failing directions, the alias, the classes, the ramp on a
   light and a dark ground, the scale, ring culling including an antimeridian wrap, the reveal order,
   and the claim check.
 - `test/timing.test.ts` — every structural rule of the motion grammar, green on the shipped timing
   and red on a timing mutated to break exactly that rule.
+- `test/canon.test.ts` — validation that both genre seeds carry the canon's marker wording and
+  explicit genre labels, and that sample data exists with sufficient variation.
 
 ## What this beat found
 
