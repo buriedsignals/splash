@@ -106,6 +106,32 @@ export function mapDwTypeRefusal(nativeType: string): string {
   );
 }
 
+/**
+ * WHICH GEOGRAPHIES DATAWRAPPER CAN PLACE, asked by basemap key alone — because that is all the
+ * OFFER has, and the offer is where this question now gets asked first.
+ *
+ * Split out of `geoRefusal` below (2026-08-07) rather than duplicated: a run matched to the
+ * shipped admin-1 index — Swiss cantons, French départements — was offered `map-dw choropleth`
+ * CLEAN and then refused right here, after the journalist had chosen it and waited for a build,
+ * with map-native's own row sitting on the same menu able to draw it. Same defect as the pinned
+ * join key two files over (skills/map-native/src/region-join-support.ts), same fix: ask before the
+ * menu is written, in the sentence the refusal would have used.
+ *
+ * `undefined` answers null, and for the same reason the join predicate does: a run whose geography
+ * has not been matched yet has no pairing to refuse, and `geoRefusal`'s own no-geography branch
+ * below stays the backstop for it.
+ */
+export function mapDwUnplaceableGeographyRefusal(
+  basemapKey: string | undefined,
+): string | null {
+  if (!basemapKey || DW_BASEMAPS[basemapKey]) return null;
+  return (
+    `no Datawrapper basemap carries the "${basemapKey}" geography in a code space Splash ` +
+    `has verified — map-dw can place ${placeableGeographies()}. map-native ships the ` +
+    `"${basemapKey}" basemap itself`
+  );
+}
+
 /** The join, decided BEFORE any API call. Absent geography, an untranslatable one, and a join
  *  that would be mostly holes are three different refusals because they have three different
  *  fixes. The threshold is the engine's own MIN_JOIN_MATCH_RATE — one floor, read twice. */
@@ -117,12 +143,10 @@ function geoRefusal(geo: GeoMatch | undefined): string | undefined {
       `${placeableGeographies()}; no column matched either`
     );
   const basemapKey = basemapKeyFor(geo.geography);
-  if (!DW_BASEMAPS[basemapKey])
-    return (
-      `no Datawrapper basemap carries the "${basemapKey}" geography in a code space Splash ` +
-      `has verified — map-dw can place ${placeableGeographies()}. map-native ships the ` +
-      `"${basemapKey}" basemap itself`
-    );
+  // The offer's own question, asked here too so the two surfaces cannot say different things —
+  // the sentence lives in one function, not two.
+  const unplaceable = mapDwUnplaceableGeographyRefusal(basemapKey);
+  if (unplaceable) return unplaceable;
   if (geo.matched < geo.total * MIN_JOIN_MATCH_RATE)
     return (
       `only ${geo.matched} of ${geo.total} rows match the ${basemapKey} basemap — ` +

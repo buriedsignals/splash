@@ -42,6 +42,45 @@ function coordColumns(
   return lat && lon ? { lat, lon } : undefined;
 }
 
+/**
+ * THE COORDINATE COLUMNS A POINT MAP NEEDS, asked of the COLUMN NAMES alone — because that is all
+ * the OFFER has, and the offer is where this question now gets asked first.
+ *
+ * Split out of `assemblePointFamily` below (2026-08-07) rather than duplicated. Measured on the
+ * loop's own offer: a cantons-and-population table — a region table, no coordinates anywhere —
+ * was offered `hex-grid` in the FIRST row and `locator` in the third, both clean and unmarked,
+ * and all four point types then refused right here. The journalist's top-ranked form could not be
+ * built at all, and the reason for that was already on the manifest: `orient` records the column
+ * names, and a lat/lon pair either is among them or is not.
+ *
+ * Same family as the pinned join key (skills/map-native/src/region-join-support.ts) and the
+ * Datawrapper basemap catalogue (lib/loop/assemble/map-dw.ts's own predicate): a form the build
+ * cannot make must not be on the menu, and the offer must say what the refusal would have said.
+ *
+ * NOT a judgement about the VALUES. `coordinateRefusal` below still refuses a latitude of 200 or
+ * a coordinate that is not a number, and it must: those need the rows, which the offer does not
+ * have. This predicate answers only the question the column NAMES settle — whether there is a
+ * coordinate pair at all — which is the whole of what the four point types are refused for on a
+ * region table.
+ */
+export function pointFamilyCoordinateRefusal(
+  nativeType: string,
+  columns: string[],
+): string | null {
+  if (!POINT_TYPES.has(nativeType)) return null;
+  if (coordColumns(columns)) return null;
+  return noCoordinatesRefusal(columns);
+}
+
+/** The sentence, in one place, so the offer and the assembler say the same thing. */
+function noCoordinatesRefusal(columns: string[]): string {
+  return (
+    `this data carries no coordinates Splash can plot on a map — looked for a lat/lon ` +
+    `column pair (also accepts latitude/longitude, lat/lng, lat_dd/lon_dd, x/y) among: ` +
+    `${columns.join(", ")}`
+  );
+}
+
 /** The label column: the first column that is neither a coordinate nor numeric — the
  *  journalist's own name for the row (a place, an event), carried through so a point on the
  *  map can be named without inventing one. */
@@ -338,13 +377,10 @@ export function assembleMapNative(brief: ProductionBrief): VerbResult<unknown> {
 function assemblePointFamily(brief: ProductionBrief): VerbResult<unknown> {
   const { rows, columns, numericColumns } = parseCsvRows(brief.dataCsv);
   const coords = coordColumns(columns);
-  if (!coords)
-    return fail(
-      "invalid-request",
-      `this data carries no coordinates Splash can plot on a map — looked for a lat/lon ` +
-        `column pair (also accepts latitude/longitude, lat/lng, lat_dd/lon_dd, x/y) among: ` +
-        `${columns.join(", ")}`,
-    );
+  // The offer asks this same question of the same column names before the menu is written
+  // (lib/brain/eligibility.ts), through the same sentence — this stays as the backstop for a
+  // brief that never passed an offer.
+  if (!coords) return fail("invalid-request", noCoordinatesRefusal(columns));
 
   const labelColumn = labelColumnFor(columns, numericColumns, coords);
   const coordRefusal = coordinateRefusal(rows, coords, labelColumn);

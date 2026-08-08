@@ -38,6 +38,11 @@ import { featureLimits } from "../core/feature-reach";
 // never carries a form that dies at produce — the same predicate, and therefore the same sentence,
 // the loop's assembler and the prose chain's gate refuse it with.
 import { isoA3PinnedJoinError } from "../../skills/map-native/src/region-join-support";
+// The geographies Datawrapper's basemap catalogue actually carries — map-dw's own question, in
+// map-dw's own words, asked here so the menu never carries a join the assembler would refuse.
+import { mapDwUnplaceableGeographyRefusal } from "../loop/assemble/map-dw";
+// The coordinate columns a point map needs, in map-native's own words — same discipline.
+import { pointFamilyCoordinateRefusal } from "../loop/assemble/map-native";
 
 export type Candidate = {
   id: string;
@@ -262,6 +267,40 @@ export function eligible(
         sheet.id,
         isoA3PinnedJoinError(key, input.basemapKey, formats[0]!)!,
       );
+      continue;
+    }
+    // ── THE GEOGRAPHY DATAWRAPPER CANNOT PLACE ────────────────────────────────────────────────
+    // The same defect as the block above, found by sweeping the other produce-time refusals for
+    // its shape: map-dw joins a region column against a Datawrapper basemap and has two of them
+    // (lib/loop/assemble/map-dw.ts's DW_BASEMAPS). A run matched to the shipped admin-1 index —
+    // cantons, départements — was offered `map-dw choropleth` clean and refused at the assembler.
+    // It stings more than the join case, because map-native SHIPS that basemap: the journalist
+    // was made to choose and wait for a form whose sibling row on the same menu would have worked.
+    //
+    // NOT per format, unlike the join above, because the fact is not per format: Datawrapper's
+    // basemap catalogue is the same whether the deliverable is a PNG or an embed. The engine's
+    // pairing goes; the id survives through map-native, which is exactly the `finalExcluded` rule
+    // at the bottom of this loop.
+    if (engine === "map-dw") {
+      const unplaceable = mapDwUnplaceableGeographyRefusal(input.basemapKey);
+      if (unplaceable) {
+        exclude(sheet.id, unplaceable);
+        continue;
+      }
+    }
+    // ── A POINT MAP WITH NOTHING TO PLOT ──────────────────────────────────────────────────────
+    // The third of the same family, and the loudest: a cantons-and-population table was offered
+    // hex-grid in the FIRST row and locator in the third, both clean, and all four map-native
+    // point types then refused at the assembler for having no lat/lon columns. The top-ranked
+    // form on the menu could not be built at all.
+    //
+    // This one needs no new field — `facts.columns` is what orient already recorded, and a
+    // coordinate pair either is among those names or is not. Which is also its limit: the
+    // assembler still refuses a latitude of 200, because that needs the ROWS, and the offer has
+    // none. Asked of the names here, of the values there — one question each, neither guessed.
+    const noCoords = pointFamilyCoordinateRefusal(key, input.facts.columns);
+    if (noCoords) {
+      exclude(sheet.id, noCoords);
       continue;
     }
     const limit = limitFailure(sheet, input.facts);

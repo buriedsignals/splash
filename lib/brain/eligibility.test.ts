@@ -12,6 +12,8 @@ import "../loop/engines";
 import { isLoopBuildable } from "../loop/buildable";
 import { bgIsDark } from "../core/theme";
 import { isoA3PinnedJoinRefusal } from "../../skills/map-native/src/region-join-support";
+import { pointFamilyCoordinateRefusal } from "../loop/assemble/map-native";
+import { mapDwUnplaceableGeographyRefusal } from "../loop/assemble/map-dw";
 
 const TWO_POINTS = deriveFacts({
   columns: ["canton", "2019", "2024"],
@@ -959,5 +961,150 @@ describe("a pinned join key is refused at the offer, not at the render", () => {
     expect(ok).toEqual([]);
     const reason = excluded.find((e) => e.id === "pinned-only")?.reason ?? "";
     expect(reason).toBe(isoA3PinnedJoinRefusal("cartogram", "us-states"));
+  });
+});
+
+// ── the geography Datawrapper cannot place, refused at the offer for the same reason ──────────
+//
+// Found by sweeping the OTHER produce-time refusals for the same shape as the pinned-join one
+// above (2026-08-07). map-dw joins a region column against a Datawrapper basemap, and it has two:
+// world and us-states (lib/loop/assemble/map-dw.ts's DW_BASEMAPS). A run matched to the shipped
+// admin-1 index — Swiss cantons, French départements — was offered `map-dw choropleth` CLEAN, and
+// refused at the assembler with "no Datawrapper basemap carries the natural-earth-admin-1
+// geography in a code space Splash has verified". Measured, not read off the source.
+//
+// The same defect, one engine over, and it stings more: map-native ships that basemap itself, so
+// the journalist was made to choose and wait for a form whose sibling row would have worked.
+describe("a geography Datawrapper cannot place is refused at the offer", () => {
+  const cantons = () =>
+    deriveFacts({
+      columns: ["canton", "population"],
+      numericColumns: ["population"],
+      rowCount: 6,
+    });
+
+  it("should drop every map-dw pairing for an admin-1 geography, in map-dw's own sentence", () => {
+    const { eligible: ok, excluded } = eligible({
+      facts: cantons(),
+      channel: "article-web",
+      basemapKey: "natural-earth-admin-1",
+    });
+    expect(ok.filter((c) => c.engine === "map-dw")).toEqual([]);
+    // The id itself survives through map-native, which SHIPS that basemap — so the reason is
+    // read off a sheet map-dw is the only engine for, where the exclusion actually surfaces.
+    const reason = excluded.find((e) => e.id === "choropleth")?.reason;
+    expect(reason ?? "(map-native carried the id)").toBe(
+      "(map-native carried the id)",
+    );
+  });
+
+  // The sentence a journalist reads must be the assembler's own, not a second wording. Read off a
+  // synthetic map-dw-only sheet for the reason `fakeSheet`'s own header gives: every real map-dw
+  // sheet in this KB also names map-native, so the id survives and the exclusion never surfaces.
+  it("should exclude with the assembler's own sentence", () => {
+    const sheet: TypeSheet = {
+      ...fakeSheet("map-dw-only-map", ["static", "interactive"]),
+      engines: { "map-dw": ["choropleth"] },
+    };
+    const { excluded } = eligible(
+      {
+        facts: cantons(),
+        channel: "article-web",
+        basemapKey: "natural-earth-admin-1",
+      },
+      [{ sheet, engine: "map-dw", key: "choropleth" }],
+    );
+    expect(excluded.find((e) => e.id === "map-dw-only-map")?.reason).toBe(
+      mapDwUnplaceableGeographyRefusal("natural-earth-admin-1")!,
+    );
+  });
+
+  it("should keep offering map-dw for the two geographies it can place", () => {
+    for (const basemapKey of ["world", "us-states"]) {
+      const { eligible: ok } = eligible({
+        facts: cantons(),
+        channel: "article-web",
+        basemapKey,
+      });
+      expect(
+        `${basemapKey}: ${ok.some((c) => c.engine === "map-dw") ? "offered" : "gone"}`,
+      ).toBe(`${basemapKey}: offered`);
+    }
+  });
+
+  // A run with no geography matched yet has nothing to refuse — same discipline as the join
+  // above, and the same backstop.
+  it("should constrain nothing when no basemap has been matched", () => {
+    const { eligible: ok } = eligible({
+      facts: cantons(),
+      channel: "article-web",
+    });
+    expect(ok.some((c) => c.engine === "map-dw")).toBe(true);
+  });
+});
+
+// ── a point map offered on a table with no coordinates ────────────────────────────────────────
+//
+// The third instance of the same family, and the loudest (measured 2026-08-07 on the loop's own
+// offer): a cantons-and-population table — a region table, no lat/lon anywhere — was offered
+// `hex-grid` in the FIRST row and `locator` in the third, both clean and unmarked, and all four
+// map-native point types then refused at the assembler with "this data carries no coordinates
+// Splash can plot on a map". The journalist's TOP-RANKED form could not be built at all.
+//
+// Unlike the two above this needs no new fact: `facts.columns` is what orient already recorded,
+// and a lat/lon pair either is among those names or is not.
+describe("a point map is not offered to a table that has no coordinates", () => {
+  const POINT_IDS = ["hex-grid", "locator", "route", "proportional-symbol"];
+  const regionTable = () =>
+    deriveFacts({
+      columns: ["canton", "population"],
+      numericColumns: ["population"],
+      rowCount: 6,
+    });
+  const pointTable = () =>
+    deriveFacts({
+      columns: ["place", "lat", "lon", "population"],
+      numericColumns: ["lat", "lon", "population"],
+      rowCount: 6,
+    });
+
+  it("should drop every map-native point pairing, in the assembler's own sentence", () => {
+    const { eligible: ok, excluded } = eligible({
+      facts: regionTable(),
+      channel: "article-web",
+    });
+    expect(
+      ok.filter((c) => c.engine === "map-native" && POINT_IDS.includes(c.id)),
+    ).toEqual([]);
+    const reason = excluded.find((e) => e.id === "locator")?.reason ?? "";
+    expect(reason).toBe(
+      pointFamilyCoordinateRefusal("locator", ["canton", "population"])!,
+    );
+  });
+
+  // THE EDGE, and the half that keeps this from eating the capability: a table that DOES carry a
+  // coordinate pair must still be offered every one of them.
+  it("should offer them all to a table that carries a lat/lon pair", () => {
+    const { eligible: ok } = eligible({
+      facts: pointTable(),
+      channel: "article-web",
+    });
+    for (const id of POINT_IDS)
+      expect(`${id}: ${ok.some((c) => c.id === id) ? "offered" : "gone"}`).toBe(
+        `${id}: offered`,
+      );
+  });
+
+  // And it must not touch the REGION family, which joins on a name column and needs no
+  // coordinates at all — the region table above is exactly what a choropleth is for.
+  it("should leave the region family alone", () => {
+    const { eligible: ok } = eligible({
+      facts: regionTable(),
+      channel: "article-web",
+    });
+    for (const id of ["choropleth", "cartogram", "dot-density"])
+      expect(`${id}: ${ok.some((c) => c.id === id) ? "offered" : "gone"}`).toBe(
+        `${id}: offered`,
+      );
   });
 });
