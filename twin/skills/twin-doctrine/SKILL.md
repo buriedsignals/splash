@@ -32,7 +32,7 @@ This skill produces no artifact of its own and closes no gate. It is read, not r
 exception: `scripts/check-reference-set.mjs` exports `checkReferenceSet(markdown)`, a structural
 check that a reference table actually carries a link, a locator and a lesson per row, so "the
 reference set has at least as many real entries as it claims" is a fact a test asserts — against
-what the file currently ships, four, not against an unmet aspiration — rather than a fact hoped to
+what the file currently ships, seven, not against an unmet aspiration — rather than a fact hoped to
 still be true after the next edit.
 
 ## When to use
@@ -118,8 +118,8 @@ skill's own output has to survive.
    fewer than five words. An empty array means every row in the table is structurally usable — it
    does not by itself assert a minimum row count; `countReferenceRows(markdown)` does that,
    sharing the same row-detection the check itself uses, and a shipped file is required to carry
-   at least four by `test/reference-set.test.ts` reading the file directly — the floor tracks what
-   is actually shipped and honestly verified today, not the six-row target still owed (see Files
+   at least seven by `test/reference-set.test.ts` reading the file directly — the floor tracks what
+   is actually shipped and honestly verified today, past the original six-row target (see Files
    section).
 4. **Reading the doctrine is universal, not phase-specific.** Unlike the other skills in this
    twin, there is no gate this skill closes and no file it writes into a story's workspace — it is
@@ -153,7 +153,7 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
 | Want | Knob | Where |
 | --- | --- | --- |
 | Minimum words before a lesson counts as substantive, not thin | `5` | `checkReferenceSet` (`lesson.split(/\s+/).filter(Boolean).length < 5`) |
-| Minimum verified rows the shipped reference set must carry — tracks what the file actually ships today; `6` was the target, not yet re-earned (see Files section below) | `4` | `test/reference-set.test.ts`, via `countReferenceRows` |
+| Minimum verified rows the shipped reference set must carry — tracks what the file actually ships today; `6` was the original target, passed this round (see Files section below) | `7` | `test/reference-set.test.ts`, via `countReferenceRows` |
 | Minimum characters a non-timecode locator must carry, so a blank or stray-character cell cannot pass | `2` | `checkReferenceSet` (`MIN_LOCATOR_CHARS`) |
 | Maximum leading digits a timecode's first segment (minutes, or hours) may carry | `3` | `checkReferenceSet` (`TIMECODE_RE`, `\d{1,3}`) |
 | Minimum unescaped pipes for a trimmed line to count as a candidate table row | `2` | `checkReferenceSet` (`isTableRow`) |
@@ -165,28 +165,33 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
 - `references/information-architecture.md` — reading order, the stack, proximity, alignment, density.
 - `references/visual-system.md` — the concrete colour, label and furniture rules.
 - `references/anti-patterns.md` — named recurring failures, one entry per anti-pattern.
-- `references/reference-set.md` — **four** rows. Six was the target; the floor in
-  `test/reference-set.test.ts` now tracks that reality (`4`, not `6`) so the suite stays green
-  against what is actually true rather than standing permanently red against an unmet aspiration —
-  the aspiration itself is not dropped, it is carried in prose here and in the file's own preamble,
-  and in a comment beside the test's assertion, instead of in a failing assertion. Two outlets,
-  three counting NYT's two desks separately (The
-  Upshot, Visual Investigations) as distinct rows — The New York Times (×2), The Washington Post,
-  Vox. One row (The Upshot) is a static image; one (The Washington Post) is motion; two (NYT
-  Visual Investigations, Vox) are video with a real extracted frame at the cited timecode. **The
-  static bar (at least half genuinely static) is not met** — this is stated here and in the file's
-  own preamble rather than papered over with a row that would pass the mechanical check but not a
-  real look. Two rows dropped this round: a FiveThirtyEight design mockup (its own `<figcaption>`
-  read "placeholder data and annotations" — a process illustration, not published evidence) and a
-  Reuters social-preview card whose lesson asserted a mechanic (two lines crossing repeatedly
-  across labelled years) the actual cropped card cannot show. **Owed**: two more rows, ideally
-  genuinely static `<img>`s embedded in an article body (not a `<meta>` promo asset) with a real,
-  non-placeholder caption — `SP1`'s own audit found this general class of artifact ("daily-chart
-  formats, print-origin graphics, explainer stills") should exist in quantity; none has yet been
-  found, downloaded, and verified against both its pixels and its surrounding text. Raising the
-  floor back toward six is a `test/reference-set.test.ts` change that should follow, not precede,
-  two more rows earning their place the way these four did — verified against both their pixels
-  and the text sitting next to them.
+- `references/reference-set.md` — **seven** rows, past the original six-row target. The floor in
+  `test/reference-set.test.ts` tracks that reality (`7`) so the suite stays green against what is
+  actually true rather than standing permanently red against an unmet aspiration or, just as bad,
+  green against a stale one. Five outlets, seven rows counting NYT's two desks (The Upshot, Visual
+  Investigations) and ABC News Australia's two separate pieces each as distinct rows — The New York
+  Times (×2), The Washington Post, Vox, ABC News Australia (×2), The Pudding. Four kinds of
+  verification are mixed in (the file's own preamble says which row is which): a social-preview
+  image (rows 1–2), an extracted video frame at a real timecode (rows 3–4), a live-rendered in-page
+  chart read on the article's real, live URL (rows 5–6, new this round), and a genuinely published,
+  in-article static `<img>` (row 7, new this round — the artifact three earlier rounds went looking
+  for and did not find). **The static bar (at least half genuinely static) is still not fully met**:
+  two rows are unambiguously static (row 1, row 7); two more (rows 5–6) are static charts but
+  implemented as rendered SVG rather than a raster file, so this file declines to count them either
+  way — stated here and in the file's own preamble rather than papered over. The three new rows each
+  target one of the three argument structures that broke the original four-row set on real stories —
+  a long time series read against a historical level (row 5, AFL scoring against its own 1982 peak),
+  a profile of one entity across dimensions that disagree with each other (row 6, Everest's raw
+  death toll against its fatality rate), and a ranking whose subject sits mid-table rather than at
+  an extreme (row 7, NBA draft picks re-ranked by career value) — found by sampling
+  `infoviz.design`'s catalogue and verified against the real, live pixels and the text beside them,
+  never the gallery's own stored thumbnail (see that investigation's own notes: `infoviz.design` is
+  a random-sample function, not a searchable index, and cannot be queried by argument structure).
+  Two rows were dropped in an earlier round and are named here as the standing caution this round's
+  additions were held against: a FiveThirtyEight design mockup (its own `<figcaption>` read
+  "placeholder data and annotations" — a process illustration, not published evidence) and a Reuters
+  social-preview card whose lesson asserted a mechanic (two lines crossing repeatedly across
+  labelled years) the actual cropped card cannot show.
 - `references/motion-grammar.md` — the video genre's rules, written against `twin-chart-video`'s
   first real build. Read by any beat whose output is frames. Its one departure from
   `information-architecture.md` is deliberate and argued in place: in a video the takeaway is the

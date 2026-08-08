@@ -91,20 +91,23 @@ some video without a link | 0:48 | Warm paper field, source under the title, sta
     expect(checkReferenceSet(bad)[0]).toContain("no link");
   });
 
-  it("should require at least four references in the shipped file", async () => {
+  it("should require at least seven references in the shipped file", async () => {
     // The floor tracks what the file actually ships, not an aspiration — a
     // failing assertion has no signal value once it is permanently red, and a
     // permanently-red test trains everyone to ignore the next real regression.
-    // Six was the target (see reference-set.md's own preamble and SKILL.md's
-    // Files section for what's owed and why the file currently ships fewer);
-    // the floor here tracks the honestly-verified reality, four, so it goes
+    // Six was the original target; the set that shipped at four survived
+    // three rounds of getting verification wrong, and a fourth round (see
+    // reference-set.md's own preamble) added three more rows — each newly
+    // verified against its own live pixels and the text beside them — to
+    // cover argument structures the four-row set had no answer for. The
+    // floor here tracks that honestly-verified reality, seven, so it goes
     // red the moment a row is silently dropped from what is true today —
     // not because it fell short of an aspiration nobody re-affirmed.
     const shipped = await readFile(
       new URL("../references/reference-set.md", import.meta.url),
       "utf8",
     );
-    expect(countReferenceRows(shipped)).toBeGreaterThanOrEqual(4);
+    expect(countReferenceRows(shipped)).toBeGreaterThanOrEqual(7);
     expect(checkReferenceSet(shipped)).toEqual([]);
   });
 });

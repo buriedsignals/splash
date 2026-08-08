@@ -7,14 +7,30 @@ information-design lesson** — never a styling description. This is what the re
 lift out of it and apply to your own data." Copying the rule, not the surface, is the whole
 point — see `anti-patterns.md`'s closing entry.
 
-**Four rows, not six.** This file has twice shipped more rows than could be honestly defended, and
-been cut back both times on review. Six was the target; `test/reference-set.test.ts`'s floor now
-tracks what this file actually ships — four — so the suite stays a live signal instead of standing
-permanently red against an aspiration nobody had re-affirmed. The six-row target is not abandoned;
-it is carried here in prose, and in `SKILL.md`, as what is still owed — see the note at the end of
-this preamble. Four true rows that survived being looked at, read around, and checked against
-`editorial-standard.md` and `anti-patterns.md` are worth more than six where two are stretched,
-because the entire purpose of this file is that a model can trust it.
+**Seven rows now, past the original six.** This file has twice shipped more rows than could be
+honestly defended, and been cut back both times on review, landing at four — verified, but with
+three argument structures still uncovered. `test/reference-set.test.ts`'s floor tracked that
+reality, four, so the suite stayed a live signal instead of standing permanently red against an
+aspiration nobody had re-affirmed.
+
+**A fourth round added three more rows, one per structure that real stories showed this file had
+no answer for.** Three real stories broke against the four-row set in sequence — a long series read
+against a historical level, a profile of several dimensions for one entity where the story is an
+internal contradiction, and a ranking whose subject sat mid-table rather than at an extreme — and on
+the third, a real journalist was shown two analogies and rejected both. Four rows cannot cover the
+space. Each new row targets one of those three structures, found by sampling `infoviz.design`'s
+underlying catalogue — a Supabase-backed random-sample function, not a searchable index; it cannot be
+queried by argument structure, only browsed by chance, so most draws were the wrong shape and several
+strong-looking leads were rejected before verification even started, because the gallery's own stored
+thumbnail turned out, on inspection, to be a decorative promo illustration or a plain hero photograph
+with no chart in it at all — never the graphic itself. Every row that made it into the table below was
+instead verified against the real, live article: the actual chart's pixels, read together with the
+paragraph sitting next to it, the same bar this file has held itself to since round three.
+
+The floor now tracks seven. Growing this file only counts if every added row survives what shrunk it
+twice before: seven true rows that survived being looked at, read around, and checked against
+`editorial-standard.md` and `anti-patterns.md` are still worth more than a bigger number where any one
+row is stretched, because the entire purpose of this file is that a model can trust it.
 
 **What "verified" means here, precisely, after three rounds of getting it wrong in three different
 ways:** round 1 verified metadata (`og:title`, `datePublished`) and never looked at a pixel; round
@@ -28,7 +44,7 @@ against cannot actually show (no year labels, one crossing, no legend). Both are
 **The rule going forward**: look at the actual pixels, AND read whatever text sits next to them —
 a `<figcaption>`, a byline, a credit line, the surrounding paragraph — before writing a lesson.
 
-**Two different kinds of "looked at" are mixed in the table below, and each row says which:**
+**Four different kinds of "looked at" are mixed in the table below, and each row says which:**
 
 - **Extracted video frame** (rows 3–4): the actual published artifact, at the actual cited
   timecode, pulled with `yt-dlp` + `ffmpeg` and read directly. This is the strongest form of
@@ -40,12 +56,30 @@ a `<figcaption>`, a byline, a credit line, the surrounding paragraph — before 
   newsroom-produced content — NYT's and the Post's own CDNs serve it, it is what the piece looks
   like when shared — but it is a simplified, cropped derivative of the interactive page, not the
   page itself. The lesson for each row describes only what is visible in that specific derivative.
+- **Live-rendered, in-page chart** (rows 5–6): the chart the article draws for every reader — an
+  SVG element built by the page's own script, not a raster image file and not a promotional
+  derivative — read by loading the real, live article URL in a real browser session and reading the
+  rendered result at the specific on-page heading named in the Moment cell, together with the
+  paragraph immediately beside it. Nothing here was inferred from scraped text describing an
+  interactive chart; the chart was seen exactly as a reader sees it. Not tested: whether the chart
+  animates or reveals on scroll before settling into the state that was read — the state read is the
+  one at rest, after any such motion had already resolved, so the lesson describes that resting
+  state only, not a claim about how it arrives there.
+- **Published, in-article static image** (row 7): a genuine `<img>` in the article's own body
+  markup (`<div class="chart__img-inline"><img src="assets/t3.jpg"></div>`), not a `<meta>` promo
+  asset, sitting directly beneath its own caption paragraph — confirmed by reading the page's raw
+  HTML, not only the rendered view, so there is no separate caption nearby that could have been
+  missed the way round three missed one.
 
-**Owed, on the record**: the static bar (at least half the set genuinely static) is not met by
-this file — 1 of 4 rows (row 1, a still image) is unambiguously static; row 2 is motion; rows 3–4
-are video. A genuinely published, in-article static `<img>` — not a promo card, not a design
-mockup — with a real, non-placeholder caption has not yet been found and verified. See
-`SKILL.md`'s Files section for the same statement in the skill's own voice.
+**Owed, on the record, partly closed this round**: row 7 is exactly the artifact three earlier
+rounds went looking for and did not find — a genuinely published, in-article static `<img>` (not a
+promo card, not a design mockup) with a real, non-placeholder caption immediately beside it. That
+still leaves the static bar (at least half the set genuinely static) short: of seven rows, two are
+unambiguously static (row 1's still image, row 7's `<img>`), two more (rows 5–6) are static charts
+read live but implemented as rendered SVG rather than a raster file, row 2 is motion, and rows 3–4
+are video. Whether a live-rendered SVG chart, read at rest, counts toward "genuinely static" for
+this bar is a judgment call this file declines to make for itself. See `SKILL.md`'s Files section
+for the same statement in the skill's own voice.
 
 | Reference | Moment | Transferable lesson |
 | --- | ---: | --- |
@@ -53,3 +87,6 @@ mockup — with a real, non-placeholder caption has not yet been found and verif
 | Harry Stevens — The Washington Post — ["These simulations show how to flatten the coronavirus growth curve"](https://web.archive.org/web/2020/https://www.washingtonpost.com/graphics/2020/world/corona-simulator/) (14 March 2020) | the piece's own social-preview image (`promo2-coronavirus-simulator-0313.jpg`, a `<meta>` asset — no separate in-article caption exists for it), showing the four labelled result panels — Free-for-all, Attempted quarantine, Moderate distancing, Extensive distancing — on one shared scale | Each of the four simulations is its own random, reader-triggered run — the piece says so directly, in its own body text: "The four simulations you just watched … were random. That means the results of each one were unique to your reading of this article." Yet all four still converge on the same qualitative shape, a visibly lower and longer infection curve as distancing increases. Demonstrating a pattern through many honestly-random instances, instead of asserting it from one staged run, is what makes the evidence convincing rather than cherry-picked. |
 | The New York Times Visual Investigations — [How the Police Killed Breonna Taylor](https://www.youtube.com/watch?v=lDaNU7yDnsc) (2020) | 4:20 | The video renders the scene as one fixed, grey 3D model — the same breezeway, officers rendered as ghosted grey figures — and layers each account into that unchanging space rather than cutting to a different depiction per witness; the camera moves around the model over the course of the sequence, but the model itself never changes. Contradictory testimony accumulates inside a shared frame instead of asking the viewer to hold each version separately in their head. |
 | Vox — [The conflict in Kashmir, explained](https://www.youtube.com/watch?v=cyayif_nla8) (2019) | 3:55 | The map cuts to a dotted line tracing the outline of the disputed, hatched-orange territory against the green backdrop around it — appearing a few seconds after (not immediately after: one intervening archival photograph plays first) the archival UN Security Council footage — timed to land while the narration is still naming the 1949 ceasefire that fixed that boundary. Geography arrives paired with the specific historical moment that produced it, instead of being shown whole up front and explained afterward. |
+| Australian Broadcasting Corporation — [How Buddy Franklin scaled footy’s Everest](https://www.abc.net.au/news/2022-03-26/is-lance-franklin-the-greatest-of-all-time-afl-vfl/100919332) (26 March 2022) | the chart titled "Average goals in a game per team in the AFL/VFL since 1965", read live on the article's own page — a chart the page draws itself, not a stored image, verified by loading the real URL and reading the rendered chart and the paragraph beside it directly | Every year's actual value is plotted as a faint dot, with a bold five-year moving-average line drawn over the top — the noisy year-to-year swings stay visible while the multi-decade shape reads clearly from the smoothed line alone. Rather than trust that shape to speak for itself, the paragraph beside the chart names the line's own historical peak as a number (16.2 goals a game, 1982) and the exact comparison year for today's low (the lowest since 1968) — pairing the visual trend with a specific historical anchor instead of leaving "in decline" to the reader's eye. |
+| ABC News (Australia) — [Conquering Mount Everest: High hopes and broken dreams](https://www.abc.net.au/news/2019-06-02/unpacking-the-tragedy-on-mount-everest/11162770) (2 June 2019) | the chart titled "A century of death on Everest", read live the same way, immediately above the paragraph beginning "Yet despite all the publicity around the annual Everest death toll, it is not the most dangerous peak for mountaineers." | The chart profiles Everest on the dimension a reader expects to matter most — raw annual deaths — and lets the real recent spikes register first, each one individually annotated to a named event (1996, 2014, 2015, 2019), unqualified. Only after that reading is set does the text pivot to the dimension that actually contradicts it — the fatality rate, which accounts for how many more people climb today and is near a record low, stated with the exact comparison figures (1.15 per cent on Everest against 3.9 and 2.99 per cent on neighbouring peaks) rather than only asserted in words. A profile whose two dimensions of the same entity disagree earns that disagreement by giving each one its own honest reading, in sequence, with numbers — not by softening the first dimension or skipping the second. |
+| The Pudding — [Twenty years of the NBA redrafted](https://pudding.cool/2017/03/redraft/) (March 2017) | the third inline chart image (`assets/t3.jpg`), a static `<img>` published directly in the article's own body markup, immediately under the caption "When we compute the average redraft rank for each pick, notice that most picks end up close to their expected rank." | The chart anchors every draft pick to its own expected rank with a diagonal reference line (actual pick equals redraft pick), then draws each pick's movement as a vertical stem off that personal baseline rather than off the top or bottom of the list. Colour is reserved for the picks whose stem is long relative to their neighbours, and those highlighted picks cluster in the middle of the draft — roughly pick twenty through the high forties — not at either extreme, because a first pick or a last pick has almost no room to move and hugs the diagonal instead. To make a mid-table entry in a ranking register as noteworthy, compare it to where an entry at that rank was expected to land, not to the top or the bottom of the list, and reserve emphasis for deviation from that local, rank-specific expectation. |
