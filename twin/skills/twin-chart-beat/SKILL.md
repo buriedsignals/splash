@@ -59,6 +59,19 @@ measures 3.95:1. A mid-grey newsroom ground is exactly where the obvious rule is
 `scripts/render-still.mjs` is the twin's one script with dependencies — `react-dom/server` and
 `@resvg/resvg-js`, both from the root's own `package.json` — and its header says so.
 
+**A beat does not import this file from here.** `render-still.mjs` and `inspect-render.mjs` are the
+*mechanism* — nobody rewrites them per story — so `splash-twin`'s root template vendors a physical
+copy of both into every fresh Splash root, at `<root>/shared/twin-chart-beat/`, checked in so the
+plain `cp -r root-template/` install already carries them (`docs`: `splash-twin/SKILL.md`
+Architecture). A beat component, however deep under `stories/<slug>/beats/<n>-<name>/`, imports the
+installed copy by the root's own `#shared/*` subpath import, never a path into this or any other
+repository — see Quick start below. `splash-twin`'s preflight fails loud, naming the missing file,
+if a root's packages resolve but its vendored `shared/` copy does not exist (the exact gap three
+independent trial agents hit — `TRIAL-THREE-BEATS.md` §4, `PROOF.md` §1). The **seed**
+(`assets/ChartSeed.tsx`) is not part of this vendoring: it stays here, read as documentation, never
+copied into a root and never imported by a beat — see "How it works" step 1 and
+`references/seed-anatomy.md`.
+
 **Rasteriser: `@resvg/resvg-js`**, decided by running both candidates on the same SVG and looking
 at the two PNGs. Both rendered text correctly with this machine's fonts; a headless browser needs a
 Chrome that puppeteer could not find on a clean install, and only worked when pointed at the
@@ -83,14 +96,18 @@ and exposes `getBBox()`, which is what makes a **measured** gutter possible at a
 
 ## Quick start
 
+This is what a real beat, written into an installed Splash root, actually imports —
+`stories/annemasse-rain/beats/1-rainfall/RainfallLine.tsx`:
+
 ```js
 import { createElement } from "react";
-import { renderStill } from "./scripts/render-still.mjs";
-import { ChartSeed } from "./assets/ChartSeed.tsx"; // in a real beat: this story's own component
-import rainfall from "./assets/sample-data/rainfall.json";
+import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import rainfall from "./data.json";
 
+// RainfallAnnemasse is THIS beat's own component, written from the seed's shape — not imported
+// from it. See "How it works" step 1: read `assets/ChartSeed.tsx`, then write this file fresh.
 const { svgPath, pngPath } = await renderStill({
-  element: createElement(ChartSeed, {
+  element: createElement(RainfallAnnemasse, {
     data: rainfall,
     title: "Rainfall over Annemasse fell by a third",   // the journalist's words
     source: "MeteoSwiss, as of 31 May 2026",            // their credit, their effective date
@@ -101,11 +118,18 @@ const { svgPath, pngPath } = await renderStill({
   }),
   width: 900,
   height: 560,
-  outDir: "stories/annemasse-rain/beats/1-rainfall/renders",
+  outDir: "renders",
   name: "still",
 });
 // Now open pngPath and look at it.
 ```
+
+`#shared/twin-chart-beat/render-still.mjs` resolves through the root's own `package.json`
+(`"imports": {"#shared/*": "./shared/*"}`) to `<root>/shared/twin-chart-beat/render-still.mjs` —
+the same specifier no matter how deep the beat sits, and never a path that reaches outside the
+root. Inside *this* repository, `assets/ChartSeed.tsx` still imports `../scripts/render-still.mjs`
+by an ordinary relative path — that import is for this skill's own tests
+(`test/render-still.test.ts`) and is never what a beat in a Splash root writes.
 
 ## Tuning knobs
 
@@ -127,11 +151,21 @@ const { svgPath, pngPath } = await renderStill({
 
 - `references/static-discipline.md` — the rules, each one attached to the defect that produced it.
 - `references/seed-anatomy.md` — what the seed teaches, and what adding a prop to it would cost.
-- `assets/ChartSeed.tsx` — the seed. `lineGeometry` and `yTickValues` are pure and exported.
+- `assets/ChartSeed.tsx` — the seed. `lineGeometry` and `yTickValues` are pure and exported. Read
+  here, in this repository, to learn the shape — **not vendored into a Splash root and never
+  imported by a beat**; a beat writes its own component from scratch, in this shape.
 - `assets/sample-data/rainfall.json` — eleven readings, one missing.
 - `assets/preview.png` — the seed rendered on a light ground, so a reader of this skill sees what
   it produces without running anything. Regenerate it whenever the seed changes.
-- `scripts/render-still.mjs` — `deriveFurniture`, `contrast`, `measureText`, `renderStill`.
+- `scripts/render-still.mjs` — `deriveFurniture`, `contrast`, `measureText`, `renderStill`. The
+  canonical copy. **Vendored** (physical copy, not a symlink or a workspace dependency) by
+  `splash-twin`'s root template at `assets/root-template/shared/twin-chart-beat/render-still.mjs`
+  — that vendored copy, not this one, is what an installed beat actually imports, via
+  `#shared/twin-chart-beat/render-still.mjs`. `splash-twin/test/root-template-shared.test.ts`
+  guards the two copies from drifting apart.
+- `scripts/inspect-render.mjs` — `inspectSvg`: contrast against the real ground, alt-text
+  presence, root `<title>` leakage. Vendored the same way, alongside `render-still.mjs`, at
+  `assets/root-template/shared/twin-chart-beat/inspect-render.mjs`.
 - `test/render-still.test.ts` — `bun:test` coverage: the ink pole on a mid grey, the muted contrast
   floor on six grounds, the gap that breaks the line, the fitted scale and its zero floors, the
   gap note centred between the readings it separates, the closed palette, the

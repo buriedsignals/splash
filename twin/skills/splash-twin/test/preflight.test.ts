@@ -1,7 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  writeFile,
+  rm,
+  readFile,
+  readdir,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { runPreflight } from "../scripts/preflight.mjs";
 
 const okFetch = async () => new Response("{}", { status: 200 });
@@ -15,10 +22,40 @@ const ROOT_TEMPLATE_PACKAGE_JSON = join(
   "root-template",
   "package.json",
 );
+const ROOT_TEMPLATE_SHARED_DIR = join(
+  import.meta.dirname,
+  "..",
+  "assets",
+  "root-template",
+  "shared",
+);
 
 async function declaredDependencyNames(): Promise<string[]> {
   const pkg = JSON.parse(await readFile(ROOT_TEMPLATE_PACKAGE_JSON, "utf8"));
   return Object.keys(pkg.dependencies ?? {});
+}
+
+// Every vendored craft file the root template ships under shared/, relative to that directory —
+// the same manifest preflight.mjs itself derives from the template, not a hand-kept list that
+// could drift from it.
+async function declaredSharedFiles(): Promise<string[]> {
+  let entries;
+  try {
+    entries = await readdir(ROOT_TEMPLATE_SHARED_DIR, {
+      recursive: true,
+      withFileTypes: true,
+    });
+  } catch {
+    return [];
+  }
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) =>
+      relative(
+        ROOT_TEMPLATE_SHARED_DIR,
+        join((entry as any).parentPath ?? (entry as any).path, entry.name),
+      ),
+    );
 }
 
 // A stub module that Bun.resolveSync can actually resolve — a present
@@ -28,6 +65,16 @@ async function installResolvableDependency(name: string): Promise<void> {
   const dir = join(root, "node_modules", name);
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, "index.js"), "export default {};\n");
+}
+
+// Stubs every vendored shared file the template declares, so a test that only cares about
+// dependency RESOLUTION does not fail on a check it isn't exercising.
+async function installAllSharedFiles(): Promise<void> {
+  for (const relPath of await declaredSharedFiles()) {
+    const dest = join(root, "shared", relPath);
+    await mkdir(join(dest, ".."), { recursive: true });
+    await writeFile(dest, "// stub\n");
+  }
 }
 
 beforeEach(async () => {
@@ -79,6 +126,7 @@ describe("runPreflight", () => {
     for (const name of await declaredDependencyNames()) {
       await installResolvableDependency(name);
     }
+    await installAllSharedFiles();
     const verdict = await runPreflight({
       root,
       env: { MAPTILER_KEY: "k" },
@@ -86,6 +134,51 @@ describe("runPreflight", () => {
     });
     expect(verdict.ok).toBe(true);
     expect(verdict.checks.every((c) => c.status === "pass")).toBe(true);
+  });
+
+  it("should report dependencies as fail, naming the missing vendored craft file, when packages resolve but shared/ is absent — the toolkit-not-portable gap (TRIAL-THREE-BEATS.md §4, PROOF.md §1)", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    for (const name of await declaredDependencyNames()) {
+      await installResolvableDependency(name);
+    }
+    // shared/ is deliberately never created here — the exact shape of a root whose
+    // node_modules is fine but whose vendored craft code never arrived.
+    const verdict = await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "k" },
+      fetchFn: okFetch,
+    });
+    const check = verdict.checks.find((c) => c.id === "dependencies");
+    expect(check.status).toBe("fail");
+    expect(check.detail).toContain("shared/twin-chart-beat/render-still.mjs");
+    expect(verdict.ok).toBe(false);
+  });
+
+  it("should report dependencies as fail, naming only the shared file actually missing, when the rest of shared/ is present", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    for (const name of await declaredDependencyNames()) {
+      await installResolvableDependency(name);
+    }
+    const declaredShared = await declaredSharedFiles();
+    expect(declaredShared).toContain(
+      join("twin-chart-beat", "inspect-render.mjs"),
+    );
+    for (const relPath of declaredShared) {
+      if (relPath === join("twin-chart-beat", "inspect-render.mjs")) continue;
+      const dest = join(root, "shared", relPath);
+      await mkdir(join(dest, ".."), { recursive: true });
+      await writeFile(dest, "// stub\n");
+    }
+    const verdict = await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "k" },
+      fetchFn: okFetch,
+    });
+    const check = verdict.checks.find((c) => c.id === "dependencies");
+    expect(check.status).toBe("fail");
+    expect(check.detail).toContain("shared/twin-chart-beat/inspect-render.mjs");
+    expect(check.detail).not.toContain("render-still.mjs");
+    expect(verdict.ok).toBe(false);
   });
 
   it("should report dependencies as fail, naming the package, when node_modules exists but a declared dependency does not resolve", async () => {

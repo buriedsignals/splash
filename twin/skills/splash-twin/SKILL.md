@@ -90,7 +90,7 @@ different tests, and neither claims more than it proves:
 | Layer | File | Role |
 | --- | --- | --- |
 | Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, every slot resolved) before ever reporting `production` |
-| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` — dependencies installed, `NEWSROOM.md` present and valid, `MAPTILER_KEY` **probed** with a real call, not just present |
+| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` — dependencies installed, `NEWSROOM.md` present and valid, `MAPTILER_KEY` **probed** with a real call, not just present. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
 | Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed |
 | Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces) |
 | Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into |
@@ -192,11 +192,25 @@ if (missing.length > 0) {
 - `scripts/keys.mjs` — `probeMapTiler`, `probeDatawrapper`.
 - `scripts/newsroom.mjs` — `parseNewsroom`, `validateNewsroom`.
 - `scripts/new-story.mjs` — `slugify`, `createStory`.
-- `assets/root-template/` — `package.json`, `tsconfig.json`, `NEWSROOM.example.md` copied into a
-  fresh Splash root.
+- `assets/root-template/` — `package.json` (declares the root's npm dependencies **and** its
+  `"imports": {"#shared/*": "./shared/*"}` subpath map), `tsconfig.json`, `NEWSROOM.example.md` —
+  copied into a fresh Splash root. This is the whole install: there is no separate installer
+  script, so what lands under this directory is exactly what a newsroom ends up with.
+- `assets/root-template/shared/twin-chart-beat/{render-still.mjs,inspect-render.mjs}` — the
+  vendored **mechanism** of `twin-chart-beat` (never its seed — that stays in the skill, read as
+  documentation, not copied). Physical copies, checked in, so the plain `cp -r root-template/`
+  install carries them along with no extra step; a beat imports the copy that lands at
+  `<root>/shared/twin-chart-beat/render-still.mjs` as `#shared/twin-chart-beat/render-still.mjs`,
+  resolved by the root's own `package.json`, the same specifier regardless of how deep the beat
+  sits under `stories/<slug>/beats/<n>-<name>/`. This closes the gap named in `TRIAL-THREE-BEATS.md`
+  §4 and `PROOF.md` §1: a beat no longer imports craft code by an absolute path into this
+  repository, so a fresh root works on a machine that has never seen it.
 - `test/{where,preflight,keys,newsroom,new-story}.test.ts` — `bun:test` coverage for each script
   above. `where.test.ts` also carries this skill's one deliberate exception to "no cross-skill
   imports": a `checkStoryboard`/`parseStoryboard` import from `twin-storyboard`, used only to
   assert the two gates agree on nine shared fixtures — never in runtime code.
+- `test/root-template-shared.test.ts` — a second, narrower cross-skill read for the same reason:
+  asserts the vendored copies above stay byte-identical to `twin-chart-beat/scripts/*`, so an edit
+  to the canonical mechanism can't silently leave the vendored copy stale.
 - `test/phases.test.ts` — drives `whereIs` through a real story directory across all six phases and
   asserts this document names every phase it actually returned, never a phase it did not.
