@@ -8,12 +8,39 @@ a `range-annotations` key in `defaultMetadata`, under `visualize`, separate from
 schema endpoint for a fresh default chart returns only an empty array (`[]`) for that key — it does
 not describe the shape of a populated entry.
 
-## 2. Where the entry shape below actually comes from
+## 2. CONFIRMED by a live round-trip (2026-08-08)
 
-No working `DATAWRAPPER_TOKEN` was available while building this skill, so the shape below was
-**not** confirmed by this skill's own live round-trip
-(`scripts/verify-range-annotation.mjs` — written, ready, and the one script this repository has
-that would close this gap the moment a token exists). It was instead pinned by primary source:
+`scripts/verify-range-annotation.mjs` has now run for real, with a working `DATAWRAPPER_TOKEN`:
+chart `jUDCp`, a two-point line from (2000, 1) to (2010, 9), PATCHed with the candidate shape below.
+`GET`ting the chart back returned the exact same object (Datawrapper changed nothing — no field
+dropped, none rewritten), and the exported PNG shows a solid horizontal rule drawn precisely at
+`y=5`, spanning `x0=2000` to `x1=2010`, in the sent colour. This is the shape now shipped by
+`map-spec.mjs`'s `buildRangeAnnotation`, **confirmed by render, not only by source**:
+
+```json
+{
+  "id": "probe-1",
+  "type": "y",
+  "display": "line",
+  "color": "#0B7A75",
+  "opacity": 100,
+  "strokeWidth": 2,
+  "strokeType": "solid",
+  "position": { "x0": 2000, "x1": 2010, "y0": 5, "y1": 5 }
+}
+```
+
+The same day, the real proof case (`scripts/prove-co2.mjs`) rendered clean: a rule at 32.5 labelled
+"Niveau de 1967 (32,5 Mt)", with the plotted curve visibly crossing it around 1967 and returning to
+it by 2024 — `/tmp/dw-beat/co2.png`, chart `6Nn1Z`, published at
+`https://datawrapper.dwcdn.net/6Nn1Z/1/`.
+
+## 2b. Where the shape was pinned from before that (for the record)
+
+Before a token was available, the shape above was pinned by primary source alone, cross-checked
+against independent re-implementations — kept here because it is *why* the candidate above was
+trusted enough to test, and because the same method is how any future undocumented field on this
+API should be approached before a live round-trip is possible:
 
 - **`chartTypes.ts`**, Datawrapper's own public TypeScript source
   (`datawrapper/datawrapper`, `libs/shared/src/chartTypes.ts`), which exports the exact
@@ -64,38 +91,42 @@ exactly the defect `robertritz`'s notes describe hitting on a real published cha
 `buildRangeAnnotation` always emits **two** objects from one editorial entry: the rule
 (`range-annotations`) and a paired `text-annotations` entry positioned at the rule's far edge.
 
-## 3. What is genuinely still unverified
+## 3. What is still genuinely unverified, or confirmed NOT to work
 
-- **Whether Datawrapper's renderer actually draws the rule from this exact JSON**, in this
-  environment, has not been checked. The type says the shape is accepted; it does not say the
-  export pipeline honours every field the way a reader would expect (`robertritz`'s notes record at
-  least one type-vs-render mismatch elsewhere in the same schema — `opacity` is typed as `number`
-  but the renderer only reads it as an integer 0-100, not the 0-1 the TypeScript type would suggest
-  to someone reading it cold; this skill follows the empirically-corrected 0-100 reading, not the
-  bare type).
 - **`x0`/`x1` span choice.** For a horizontal rule (`type: "y"`), the two ends of the line need an
   x-span. Some third-party notes claim the string sentinels `"-Infinity"`/`"Infinity"` make a rule
   or band extend to the plot edges; this was not independently confirmed here, so `map-spec.mjs`
   does not rely on it — it instead computes `x0`/`x1` from the actual min/max of the chart's own x
-  column, which is correct by construction regardless of whether the sentinel trick works.
-- **The proof case's PNG** (`scripts/prove-co2.mjs`, `/tmp/dw-beat/co2.png`) could not be rendered
-  in this environment for the same reason: no token. If the file at that path does not exist, or
-  exists but nobody looked at it and confirmed a rule drawn at 32.5 with its label, treat the
-  capability as **unconfirmed by render**, whatever the code claims to send.
+  column, which is correct by construction and is exactly what rendered correctly on the live probe
+  above.
+- **`opacity` is 0-100, not the TypeScript type's bare `number`** — confirmed both by third-party
+  notes and by this skill's own live chart, which sends `100` for a drawn line and gets a fully
+  opaque rule back.
+- **Vendor attribution ("Créé avec Datawrapper") is NOT removable from this account via the API.**
+  `metadata.publish["force-attribution"]` is a real field (confirmed in `chartTypes.ts` and set on
+  every chart this skill creates), but setting it `false` and re-rendering left the credit line
+  unchanged — checked live, twice, on chart `KDo4J`. Datawrapper's own pricing page confirms
+  attribution removal requires a paid Pro/Business/Enterprise plan; this account (`GET /v3/me` —
+  `teams: []`, `primaryTeam: null`) is on the free tier. This is a plan limitation, not a missing
+  API call: `force-attribution: false` is still sent, correctly, in case this skill is ever run
+  from a paid account, but no static export from this skill carries a bare newsroom source line
+  today.
+- **The y-axis fit (`custom-range-y`) is confirmed to work and to not anchor at zero** — live on
+  `KDo4J`: `["7", "49"]` visibly removed the zero baseline and the `0` tick. `map-spec.mjs` computes
+  this from the data's own min/max (plus any y-axis range annotation's value), padded 8%, for every
+  chart type except the bar/column family (`isBarEncoded`) — a bar's mark encodes by length from a
+  baseline, so it keeps zero in view on purpose.
 
-## 4. Closing this gap
-
-Run, with a real `DATAWRAPPER_TOKEN` in the environment:
+## 4. Re-running the live round-trip
 
 ```sh
 bun run skills/twin-dw-beat/scripts/verify-range-annotation.mjs /tmp/dw-beat/probe.png
+bun run skills/twin-dw-beat/scripts/prove-co2.mjs
 ```
 
-It creates a small two-point line chart, PATCHes the candidate shape above, GETs the chart back
-(so any field Datawrapper silently dropped or rewrote is visible in `roundTrippedRangeAnnotations`),
-exports the PNG, and prints where it wrote it. Open the PNG. If the rule is not visibly drawn at
-`y=5` between 2000 and 2010, this document and `map-spec.mjs`'s `buildRangeAnnotation` are wrong and
-need correcting from what actually rendered — not from another reading of `chartTypes.ts`.
+Both require `DATAWRAPPER_TOKEN` in the environment. Open the PNGs each one writes. If either the
+rule or the fitted y-axis no longer renders as described above, this document and `map-spec.mjs` are
+wrong and need correcting from what actually rendered — not from another reading of `chartTypes.ts`.
 
 ## Sources
 

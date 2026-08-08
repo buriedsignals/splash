@@ -45,6 +45,7 @@ export function buildCo2Spec(data) {
     color: "#0B7A75",
     chartType: "d3-lines",
     format: "static",
+    seriesLabel: "Émissions de CO₂ (Mt)",
     data,
     rangeAnnotations: [{ value: 32.5, label: "Niveau de 1967 (32,5 Mt)" }],
   };

@@ -4,7 +4,7 @@
 // noticing until they look at the render (and by then it's shipped).
 
 const REQUIRED = ["takeaway", "limits", "credit", "effectiveDate", "language", "color", "chartType", "data", "format"];
-const OPTIONAL = ["textAnnotations", "rangeAnnotations"];
+const OPTIONAL = ["textAnnotations", "rangeAnnotations", "seriesLabel"];
 const ALLOWED = new Set([...REQUIRED, ...OPTIONAL]);
 
 const TEXT_ANNOTATION_FIELDS = new Set([
@@ -87,6 +87,10 @@ export function validateChartSpec(spec) {
 
   if (spec.chartType !== undefined && (typeof spec.chartType !== "string" || spec.chartType.length === 0)) {
     errors.push("chartType must be a non-empty string — the raw Datawrapper type id, e.g. \"d3-lines\"");
+  }
+
+  if (spec.seriesLabel !== undefined && (typeof spec.seriesLabel !== "string" || spec.seriesLabel.length === 0)) {
+    errors.push("seriesLabel must be a non-empty string when given");
   }
 
   if (spec.data !== undefined) {

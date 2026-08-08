@@ -5,7 +5,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { validateChartSpec } from "./validate-spec.mjs";
-import { buildChartPayload } from "./map-spec.mjs";
+import { buildChartPayload, resolveSeriesLabel, renameValueColumn } from "./map-spec.mjs";
 import { toCsv } from "./csv.mjs";
 import { createChart, setChartData, patchMetadata, publishChart, exportChartPng } from "./dw-client.mjs";
 
@@ -19,7 +19,11 @@ export async function produce(spec, { outDir, name = "chart", token, fetchFn = f
 
   const payload = buildChartPayload(spec);
   const chart = await createChart({ title: payload.title, type: payload.type, language: payload.language }, token, fetchFn);
-  await setChartData(chart.id, toCsv(spec.data), token, fetchFn);
+  // The CSV column name IS the direct-label Datawrapper prints on the line — rename it to the same
+  // resolved series label buildChartPayload used for custom-colors, so a raw field name never
+  // reaches the render on either side.
+  const csvRows = renameValueColumn(spec.data, resolveSeriesLabel(spec));
+  await setChartData(chart.id, toCsv(csvRows), token, fetchFn);
   await patchMetadata(chart.id, payload.metadata, token, fetchFn);
   const published = await publishChart(chart.id, token, fetchFn);
   const publicUrl = published.publicUrl ?? published.data?.publicUrl;

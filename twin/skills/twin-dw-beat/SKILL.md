@@ -57,12 +57,31 @@ returns **two** objects from one editorial entry — the rule (`range-annotation
 writing a range annotation without a matching text annotation, stop: the rule you are about to send
 will draw silently and mean nothing to a reader.
 
-The second trap, one layer down: **the entry shape in this skill was pinned from Datawrapper's own
-public source, not from this skill's own live render** — no working `DATAWRAPPER_TOKEN` was
-available while it was built. `scripts/verify-range-annotation.mjs` is the live round-trip that
-would close this (create a chart, PATCH the candidate, GET it back, export the PNG, look at it) and
-it has simply never run against a real key. Read `references/range-annotation-shape.md` §3 before
-trusting this shape on a real story, and run that script the moment a token exists.
+The second trap, one layer down, and now closed: **Datawrapper reads a line's direct label straight
+off the CSV column header.** Send a column called `co2Mt` and `co2Mt` is exactly what prints at the
+end of the line, in front of a reader — a raw field name leaking into a published newsroom graphic.
+`buildChartPayload` never uses the bare column name; it always goes through `resolveSeriesLabel`
+(an explicit `spec.seriesLabel`, or a humanised fallback), and `produce.mjs` renames the CSV's own
+value column (`renameValueColumn`) to match before upload, so the chart's colour key and its
+direct label can never disagree about what the raw column was called. `validateChartSpec` accepts
+`seriesLabel` as one more optional field, nothing more.
+
+Third: **Datawrapper anchors a line chart's y-axis at zero by default — the exact rule this project
+corrects on the native path** (`twin-chart-beat/references/static-discipline.md`: "zero is a rule
+about bars, not about lines"). Anchoring at zero flattens the very change a line exists to show.
+`buildChartPayload` sets `visualize["custom-range-y"]` to the data's own fitted min/max (padded,
+widened to keep any y-axis range annotation's value inside the plot) for every chart type except
+the bar/column family (`isBarEncoded` — a bar's mark *does* need zero in view, because it encodes by
+length, not position). Confirmed live: `["7", "49"]` on a 10-46 data series visibly removed both the
+zero baseline and its bold axis line.
+
+The one thing still true and unresolved: **on a free/personal Datawrapper token, "Créé avec
+Datawrapper" cannot be removed from an exported PNG.** `metadata.publish["force-attribution"]` is a
+real API field (`chartTypes.ts`) and this skill sets it `false` on every chart — but re-rendering
+with it set left the credit line unchanged. Datawrapper's own pricing page confirms attribution
+removal is a paid Pro/Business/Enterprise feature. This is a plan limitation this skill's code
+cannot route around; see `references/range-annotation-shape.md` §3 for the exact live test that
+established it.
 
 ## Architecture
 
@@ -73,7 +92,7 @@ trusting this shape on a real story, and run that script the moment a token exis
 | Data | `scripts/csv.mjs` | `toCsv(rows)` — the one shape `PUT /v3/charts/{id}/data` accepts |
 | API client | `scripts/dw-client.mjs` | `createChart`, `setChartData`, `patchMetadata`, `publishChart`, `exportChartPng`, `getChart` — five thin, real HTTP calls, `fetchFn` injectable for tests, never mocked in the one place that actually runs against the network |
 | Orchestrator | `scripts/produce.mjs` | `produce(spec, {outDir, token, fetchFn})` — validate → map → create → set data → patch metadata → publish → (static: export + write PNG) |
-| Live pin | `scripts/verify-range-annotation.mjs` | The round-trip that would confirm the candidate shape by rendering it — written, never yet run for real (the one gap this skill's report names) |
+| Live pin | `scripts/verify-range-annotation.mjs` | The round-trip that confirms the candidate range-annotation shape by rendering it — run for real, live-confirmed (`references/range-annotation-shape.md` §2) |
 | Proof | `scripts/prove-co2.mjs` | The real case: Swiss territorial CO₂, 1950-2024, a range annotation at the 1967 level |
 
 ## How it works (the shape)
@@ -83,10 +102,12 @@ trusting this shape on a real story, and run that script the moment a token exis
    is a worse failure than one that stops the run.
 2. **Map, deterministically.** `buildChartPayload` reads `spec.takeaway` → `title`, `spec.limits` →
    `describe.intro`, `spec.credit`+`spec.effectiveDate` → `describe["source-name"]`, `spec.color` →
-   `visualize["custom-colors"]` keyed by the data's own value column, `spec.chartType` → `type`
-   unchanged. `spec.rangeAnnotations` and `spec.textAnnotations` become
-   `visualize["range-annotations"]` / `visualize["text-annotations"]`, always run through the same
-   two functions no matter what `chartType` is.
+   `visualize["custom-colors"]` keyed by the **resolved series label** (`resolveSeriesLabel` — never
+   the raw data column), `spec.chartType` → `type` unchanged. `spec.rangeAnnotations` and
+   `spec.textAnnotations` become `visualize["range-annotations"]` / `visualize["text-annotations"]`,
+   always run through the same two functions no matter what `chartType` is. Every chart also gets
+   `metadata.publish["force-attribution"]: false`, and — unless `isBarEncoded(spec.chartType)` — a
+   `visualize["custom-range-y"]` fitted to the data instead of the zero-anchored default.
 3. **One real chart, five calls, in order:** `POST /v3/charts` (create) → `PUT .../data` (the CSV) →
    `PATCH /v3/charts/{id}` (the mapped metadata) → `POST .../publish` (always — `format:
    "interactive"` needs the URL this returns, and `format: "static"`'s export needs a published
@@ -112,6 +133,7 @@ const spec = {
   color: "#0B7A75",
   chartType: "d3-lines",
   format: "static",
+  seriesLabel: "Émissions de CO₂ (Mt)", // never the raw "co2Mt" column name
   data: swissCo2Since1950, // [{ year, co2Mt }, ...]
   rangeAnnotations: [{ value: 32.5, label: "Niveau de 1967 (32,5 Mt)" }],
 };
@@ -140,24 +162,29 @@ const result = await produce(spec, {
 | Default text-annotation font size | `14` px | `buildTextAnnotation` |
 | Static export width / zoom | `900` px / `2`× | `exportChartPng` default, `dw-client.mjs` |
 | Which data column a rule/colour reads as "the value series" | the data's 2nd column (`columns()`) | `map-spec.mjs` |
+| How much the fitted y-range pads beyond the data's own min/max | `0.08` (8%) | `Y_RANGE_PAD`, `map-spec.mjs` |
+| Which chart types keep a zero-anchored axis instead of a fitted one | `/bars\|column/i` on `chartType` | `isBarEncoded`, `map-spec.mjs` |
+| Whether a chart requests removal of forced Datawrapper attribution | always `false` (plan-gated on a free token — §gotcha) | `buildChartPayload`, `map-spec.mjs` |
 
 ## Files
 
 - `scripts/validate-spec.mjs` — `validateChartSpec`.
-- `scripts/map-spec.mjs` — `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation`. Reads
-  Datawrapper's own field names from `references/range-annotation-shape.md`'s sources, never
+- `scripts/map-spec.mjs` — `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation`,
+  `resolveSeriesLabel`, `humanizeColumnName`, `renameValueColumn`, `isBarEncoded`, `computeYRange`.
+  Reads Datawrapper's own field names from `references/range-annotation-shape.md`'s sources, never
   invents one.
 - `scripts/csv.mjs` — `toCsv`.
 - `scripts/dw-client.mjs` — the five real HTTP calls.
 - `scripts/produce.mjs` — `produce`, the orchestrator; also runnable as
   `bun run scripts/produce.mjs <spec.json> <outDir> [static|interactive]`.
-- `scripts/verify-range-annotation.mjs` — the live shape-pinning round-trip; not yet run for real
-  (`references/range-annotation-shape.md` §3).
+- `scripts/verify-range-annotation.mjs` — the live shape-pinning round-trip; run for real, confirmed
+  (`references/range-annotation-shape.md` §2).
 - `scripts/prove-co2.mjs` — the real Swiss CO₂ proof case, fetching Our World in Data directly.
-- `references/range-annotation-shape.md` — exactly which files (Datawrapper's own public
-  `chartTypes.ts` and `JsonCRDT.benchmark.ts`, cross-checked against two independent third-party
-  re-implementations) pinned the `range-annotations` and `text-annotations` shapes, and what is
-  still genuinely unverified.
+- `references/range-annotation-shape.md` — the `range-annotations` shape, now confirmed by a live
+  round-trip (chart `jUDCp`) after first being pinned from Datawrapper's own public `chartTypes.ts`
+  and `JsonCRDT.benchmark.ts`, cross-checked against two independent third-party re-implementations;
+  also records the live-tested findings on vendor attribution (plan-gated, not fixable from code)
+  and the fitted y-axis (confirmed working).
 - `test/{validate-spec,map-spec,csv,dw-client,produce,verify-range-annotation,prove-co2}.test.ts` —
   `bun:test` coverage. Every real-network assertion follows `splash-twin/test/keys.test.ts`'s own
   `it.skipIf(!token)` convention: skipped, never faked, when `DATAWRAPPER_TOKEN` is absent from the

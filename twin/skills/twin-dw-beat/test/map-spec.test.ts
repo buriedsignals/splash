@@ -3,6 +3,11 @@ import {
   buildChartPayload,
   buildTextAnnotation,
   buildRangeAnnotation,
+  resolveSeriesLabel,
+  humanizeColumnName,
+  renameValueColumn,
+  isBarEncoded,
+  computeYRange,
 } from "../scripts/map-spec.mjs";
 
 const DATA = [
@@ -183,11 +188,49 @@ describe("buildChartPayload", () => {
     );
   });
 
-  it("should colour the value column with the house colour via custom-colors", () => {
+  it("should colour the value column with the house colour via custom-colors, keyed by a humanised label, never the raw column name", () => {
     const payload = buildChartPayload(baseSpec());
-    expect(payload.metadata.visualize["custom-colors"]).toEqual({
-      co2Mt: "#0B7A75",
-    });
+    const keys = Object.keys(payload.metadata.visualize["custom-colors"]);
+    expect(keys).toEqual(["Co2 Mt"]);
+    expect(keys).not.toContain("co2Mt");
+    expect(payload.metadata.visualize["custom-colors"]["Co2 Mt"]).toBe(
+      "#0B7A75",
+    );
+  });
+
+  it("should use an explicit seriesLabel over the humanised fallback", () => {
+    const payload = buildChartPayload(baseSpec({ seriesLabel: "CO₂ (Mt)" }));
+    expect(Object.keys(payload.metadata.visualize["custom-colors"])).toEqual([
+      "CO₂ (Mt)",
+    ]);
+  });
+
+  it("should always disable forced Datawrapper attribution", () => {
+    const payload = buildChartPayload(baseSpec());
+    expect(payload.metadata.publish).toEqual({ "force-attribution": false });
+  });
+
+  it("should fit the y-axis to the data for a line chart, not anchor it at zero", () => {
+    const payload = buildChartPayload(baseSpec());
+    const range = payload.metadata.visualize["custom-range-y"].map(Number);
+    expect(range[0]).toBeGreaterThan(0);
+    expect(range[0]).toBeLessThan(10.25);
+    expect(range[1]).toBeGreaterThan(32.53);
+  });
+
+  it("should widen the fitted y-axis to keep a range annotation's value inside the plot", () => {
+    const payload = buildChartPayload(
+      baseSpec({
+        rangeAnnotations: [{ value: 100, label: "far above the data" }],
+      }),
+    );
+    const range = payload.metadata.visualize["custom-range-y"].map(Number);
+    expect(range[1]).toBeGreaterThan(100);
+  });
+
+  it("should NOT fit the y-axis for a bar/column chart — zero must stay in view", () => {
+    const payload = buildChartPayload(baseSpec({ chartType: "d3-bars" }));
+    expect(payload.metadata.visualize["custom-range-y"]).toBeUndefined();
   });
 
   it("should emit an empty range-annotations and text-annotations array when none are given", () => {
@@ -220,5 +263,86 @@ describe("buildChartPayload", () => {
     );
     expect(texts).toContain("A note");
     expect(texts).toContain("1967 level");
+  });
+});
+
+describe("humanizeColumnName", () => {
+  it("should split a camelCase column into title-cased words", () => {
+    expect(humanizeColumnName("co2Mt")).toBe("Co2 Mt");
+  });
+
+  it("should split snake_case and kebab-case columns into words", () => {
+    expect(humanizeColumnName("annual_co2")).toBe("Annual Co2");
+    expect(humanizeColumnName("annual-co2")).toBe("Annual Co2");
+  });
+
+  it("should title-case a plain lowercase column", () => {
+    expect(humanizeColumnName("value")).toBe("Value");
+  });
+});
+
+describe("resolveSeriesLabel", () => {
+  it("should never return the raw column name — a caller-supplied seriesLabel wins", () => {
+    const label = resolveSeriesLabel(
+      baseSpec({ seriesLabel: "CO₂ emissions (Mt)" }),
+    );
+    expect(label).toBe("CO₂ emissions (Mt)");
+  });
+
+  it("should fall back to a humanised label, never the bare identifier, when none is given", () => {
+    const label = resolveSeriesLabel(baseSpec());
+    expect(label).not.toBe("co2Mt");
+    expect(label).toBe("Co2 Mt");
+  });
+});
+
+describe("renameValueColumn", () => {
+  it("should rename the value column to the resolved series label, leaving the x column alone", () => {
+    const renamed = renameValueColumn(DATA, "Co2 Mt");
+    expect(Object.keys(renamed[0])).toEqual(["year", "Co2 Mt"]);
+    expect(renamed[0]["Co2 Mt"]).toBe(10.25);
+  });
+
+  it("should be a no-op when the series label already matches the column name", () => {
+    const renamed = renameValueColumn(DATA, "co2Mt");
+    expect(renamed).toBe(DATA);
+  });
+});
+
+describe("isBarEncoded", () => {
+  it("should recognise Datawrapper's bar and column type ids", () => {
+    expect(isBarEncoded("d3-bars")).toBe(true);
+    expect(isBarEncoded("column-chart")).toBe(true);
+    expect(isBarEncoded("grouped-column-chart")).toBe(true);
+    expect(isBarEncoded("stacked-column-chart")).toBe(true);
+  });
+
+  it("should not flag line/area/scatter types as bar-encoded", () => {
+    expect(isBarEncoded("d3-lines")).toBe(false);
+    expect(isBarEncoded("d3-area")).toBe(false);
+    expect(isBarEncoded("d3-scatter-plot")).toBe(false);
+  });
+});
+
+describe("computeYRange", () => {
+  it("should pad beyond the data's own min and max, on both sides", () => {
+    const [min, max] = computeYRange(baseSpec());
+    expect(min).toBeLessThan(10.25);
+    expect(max).toBeGreaterThan(32.53);
+  });
+
+  it("should widen the range to include a y-axis range annotation's value", () => {
+    const [min, max] = computeYRange(
+      baseSpec({ rangeAnnotations: [{ value: -50, label: "x" }] }),
+    );
+    expect(min).toBeLessThan(-50);
+  });
+
+  it("should ignore an x-axis range annotation's value — it does not live on the y domain", () => {
+    const withXRange = computeYRange(
+      baseSpec({ rangeAnnotations: [{ value: 9999, label: "x", axis: "x" }] }),
+    );
+    const withoutIt = computeYRange(baseSpec());
+    expect(withXRange).toEqual(withoutIt);
   });
 });

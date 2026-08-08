@@ -136,11 +136,70 @@ describe("produce", () => {
     });
   });
 
-  it("should send the CSV-serialised data on the data call", async () => {
+  it("should send the CSV-serialised data on the data call, with the value column renamed to its resolved series label", async () => {
     const { fetchFn, calls } = fakeDatawrapper();
     await produce(baseSpec(), { outDir: "/tmp", token: "secret", fetchFn });
     const dataCall = calls.find((c) => c.url.endsWith("/data"));
-    expect(dataCall.body).toBe("year,co2Mt\n1950,10.25\n2024,32.07");
+    expect(dataCall.body).toBe("year,Co2 Mt\n1950,10.25\n2024,32.07");
+  });
+
+  it("should never let the raw column name reach the CSV header or the custom-colors key sent to Datawrapper", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await produce(baseSpec(), { outDir: "/tmp", token: "secret", fetchFn });
+    const dataCall = calls.find((c) => c.url.endsWith("/data"));
+    const patchCall = calls.find((c) => c.method === "PATCH");
+    expect(dataCall.body).not.toContain("co2Mt");
+    expect(patchCall.body).not.toContain("co2Mt");
+  });
+
+  it("should send an explicit seriesLabel through to both the CSV header and custom-colors", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await produce(baseSpec({ seriesLabel: "CO₂ (Mt)" }), {
+      outDir: "/tmp",
+      token: "secret",
+      fetchFn,
+    });
+    const dataCall = calls.find((c) => c.url.endsWith("/data"));
+    const patchCall = calls.find((c) => c.method === "PATCH");
+    expect(dataCall.body.startsWith("year,CO₂ (Mt)")).toBe(true);
+    expect(
+      JSON.parse(patchCall.body).metadata.visualize["custom-colors"],
+    ).toEqual({
+      "CO₂ (Mt)": "#0B7A75",
+    });
+  });
+
+  it("should disable forced attribution on every chart it creates", async () => {
+    const { fetchFn, calls } = fakeDatawrapper();
+    await produce(baseSpec(), { outDir: "/tmp", token: "secret", fetchFn });
+    const patchCall = calls.find((c) => c.method === "PATCH");
+    expect(JSON.parse(patchCall.body).metadata.publish).toEqual({
+      "force-attribution": false,
+    });
+  });
+
+  it("should fit the y-range for a line chart but not for a bar chart", async () => {
+    const { fetchFn: lineFetch, calls: lineCalls } = fakeDatawrapper();
+    await produce(baseSpec(), {
+      outDir: "/tmp",
+      token: "secret",
+      fetchFn: lineFetch,
+    });
+    const linePatch = JSON.parse(
+      lineCalls.find((c) => c.method === "PATCH").body,
+    );
+    expect(linePatch.metadata.visualize["custom-range-y"]).toBeDefined();
+
+    const { fetchFn: barFetch, calls: barCalls } = fakeDatawrapper();
+    await produce(baseSpec({ chartType: "d3-bars" }), {
+      outDir: "/tmp",
+      token: "secret",
+      fetchFn: barFetch,
+    });
+    const barPatch = JSON.parse(
+      barCalls.find((c) => c.method === "PATCH").body,
+    );
+    expect(barPatch.metadata.visualize["custom-range-y"]).toBeUndefined();
   });
 });
 
