@@ -83,6 +83,18 @@ const SEQUENCED_CONTINUOUS =
 const SEQUENCED_BY_SERIES =
   "its entrance advances by SERIES rather than by subject, so no sentence can be pinned to a " +
   "named row; the sentences follow one another over the animation in the order written";
+// combo is NOT "by series", and saying so was measured wrong. Its columns DO have a per-subject
+// entrance indexed by the category's own row (ComboChart.tsx: `stagger(p, c.index, n, …)`) —
+// exactly the shape that makes a type anchorable. What it cannot do is REORDER, and every
+// anchored grain requires that (`reorders: true`, asserted for all of them): the second series is
+// a PATH, revealed by one left-to-right clip wipe over points held in x order. Permute the
+// columns into the journalist's order and the line still wipes in x order — two clocks, and a
+// sentence sitting over a column the line has already passed. That is the defect core/walk.ts's
+// own header opens with, so the honest place for combo is `sequenced`, for THIS reason.
+const SEQUENCED_LOCKED_PATH =
+  "its columns could each take a sentence, but its line is one continuous left-to-right wipe " +
+  "whose order the x axis fixes — reordering the columns alone would leave the line out of " +
+  "step, so the sentences follow one another over the animation in the order written";
 const SEQUENCED_UNNAMED =
   "its subjects are not named by a field a beat can address (bins, cells, nodes), so the " +
   "sentences follow one another over the animation in the order written";
@@ -149,11 +161,13 @@ export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
   // grow together per series and no single category can own a moment.
   stacked: sequenced(SEQUENCED_BY_SERIES),
   grouped: sequenced(SEQUENCED_BY_SERIES),
-  combo: sequenced(SEQUENCED_BY_SERIES),
   "diverging-stacked": sequenced(SEQUENCED_BY_SERIES),
   marimekko: sequenced(SEQUENCED_BY_SERIES),
   radar: sequenced(SEQUENCED_BY_SERIES),
   streamgraph: sequenced(SEQUENCED_BY_SERIES),
+
+  // --- SEQUENCED because the walk cannot be PERMUTED, not because no subject is named.
+  combo: sequenced(SEQUENCED_LOCKED_PATH),
 
   // --- SEQUENCED, unnamed subjects: bins, cells, nodes, ranks — nothing a beat's anchor addresses.
   histogram: sequenced(SEQUENCED_UNNAMED),

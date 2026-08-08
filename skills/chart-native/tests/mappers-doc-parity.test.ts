@@ -16,8 +16,8 @@
 // History that proves the hand-copy is fragile rather than merely theoretical: every type
 // productionized since 2026-07 edited these two sentences by hand in the same commit as the
 // mapper (`heatmap`, 1b9f2cc1; `dot-strip`, a1cee661; `violin`, 613885ed …). Nothing failed if
-// the author forgot. They are in agreement today — 27/27, measured — and this test is what keeps
-// that true rather than lucky.
+// the author forgot. They are in agreement today — measured, both ways — and this test is what keeps
+// that true rather than lucky. (28/28 since `combo` was un-deferred.)
 //
 // MUTATION-VERIFIED, one break at a time (`git diff --stat` confirmed each edit landed before
 // results were read; `git checkout --` restored between them):

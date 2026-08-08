@@ -342,7 +342,7 @@ comment marks `baseColor` optional-with-a-default:**
 
 The mapped native families are **bar/column, line, scatter, pie, grouped, stacked,
 stacked-area, histogram, lollipop, connected-scatter, beeswarm, dot-strip, waffle, radial-bar, diverging,
-waterfall, dumbbell, slope, bullet, treemap, boxplot, violin, diverging-stacked, pyramid, fan, bump, heatmap** (`spec-to-config.ts`);
+waterfall, dumbbell, slope, bullet, treemap, boxplot, violin, diverging-stacked, pyramid, fan, bump, heatmap, combo** (`spec-to-config.ts`);
 for any type NOT in this list the native producer exits with `FALLBACK_TO_DW` and you route to `dw-chart` instead.
 The engine SHIPS more types than this (41 in `native-types.ts`); the rest are declared `deferred` and
 the splash gate refuses a proposal naming one, by name and with its reason (`validate-gate.ts`) — so
@@ -351,7 +351,7 @@ to `MAPPERS` in BOTH directions by `skills/chart-native/tests/mappers-doc-parity
 mapper lands, edit both here or the gate goes red.
 Produce with `bun skills/chart-native/scripts/produce-from-spec.mjs <nativeSpec.json> <outDir> [all|static]`
 → static PNG + interactive HTML + 3 mp4s. `nativeType` uses the chart-native keys (`bar`, `line`,
-`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `violin`, `diverging-stacked`, `pyramid`, `fan`, `bump`, `heatmap`); `highlight` is
+`scatter`, `pie`, `grouped`, `stacked`, `stacked-area`, `histogram`, `lollipop`, `connected-scatter`, `beeswarm`, `dot-strip`, `waffle`, `radial-bar`, `diverging`, `waterfall`, `dumbbell`, `slope`, `bullet`, `treemap`, `boxplot`, `violin`, `diverging-stacked`, `pyramid`, `fan`, `bump`, `heatmap`, `combo`); `highlight` is
 the category to accent; `directLabel` is the line's series label.
 **`highlight` MUST match the confirmed CADRAGE framing — omit it when the framing is a NEUTRAL overview.**
 Only accent a category when the confirmed insight singles that category out ("education dominates", "one

@@ -6,7 +6,7 @@ import {
   honoursBaseColor,
 } from "../src/base-colour-reach";
 
-test("the eleven furniture-only types are named, not guessed", () => {
+test("the twelve furniture-only types are named, not guessed", () => {
   expect([...FURNITURE_ONLY_TYPES].sort()).toEqual(
     [
       "bullet",
@@ -20,6 +20,7 @@ test("the eleven furniture-only types are named, not guessed", () => {
       "stacked",
       "stacked-area",
       "waterfall",
+      "combo",
     ].sort(),
   );
 });
@@ -31,10 +32,13 @@ test("a type that paints its marks with the house hue honours it", () => {
   expect(honoursBaseColor(undefined)).toBe(true);
 });
 
-test("DRIFT: the list and the eleven in-code comments cannot diverge", () => {
+test("DRIFT: the list and the in-code comments cannot diverge", () => {
   // The fact was written eleven times, in prose, and never once interrogable
-  // (spec-to-config.ts:937-939 and its ten twins). If a twelfth type becomes furniture-only,
+  // (spec-to-config.ts:937-939 and its ten twins). If a further type becomes furniture-only,
   // this fails until the list says so.
+  // PROVEN NON-VACUOUS: `combo` shipped its mapper carrying the twelfth "FURNITURE only"
+  // comment while the list still held eleven, and this test — alone in the suite — is what
+  // said so.
   const src = readFileSync(
     join(import.meta.dir, "..", "src", "spec-to-config.ts"),
     "utf8",

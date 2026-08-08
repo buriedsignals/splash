@@ -328,3 +328,47 @@ describe("the scrolly staging is wired into the compositions that claim it", () 
     });
   }
 });
+
+// ---------------------------------------------------------------------------
+// ★ combo's grain is SEQUENCED for a reason that had to be re-measured.
+//
+// The registry said combo's entrance "advances by SERIES rather than by subject" — the reason
+// stacked/grouped carry. Read against ComboChart that is simply false: its columns stagger on
+// the CATEGORY's own index, which is the shape that makes a type anchorable.
+//
+// It stays sequenced anyway, and the real reason is the one worth guarding: an anchored grain
+// must REORDER (`reorders: true`, asserted for every anchored type above), and combo cannot.
+// Its second series is a PATH revealed by a single clip wipe over points held in x order — one
+// scalar, no per-point index. Permute the columns into the journalist's order and the line
+// still wipes in x order: two clocks, a sentence over a column the line has already passed.
+//
+// This reads the component so the registry's stated reason cannot drift away from the code.
+// ---------------------------------------------------------------------------
+describe("combo is sequenced because its line cannot be reordered, not for want of a subject", () => {
+  const src = readFileSync(
+    join(import.meta.dir, "..", "src", "ComboChart.tsx"),
+    "utf8",
+  );
+
+  it("its columns really do have a per-subject entrance (the old reason was wrong)", () => {
+    // stagger(p, c.index, n, …) — the subject's OWN row index, not a series index.
+    expect(src).toMatch(/stagger\(\s*p,\s*c\.index,/);
+  });
+
+  it("…and its line is one shared wipe with no per-point index to permute", () => {
+    // A single clipPath rect whose width is driven by one scalar. If the line ever gains a
+    // per-point reveal, combo can be reconsidered for an anchored grain — and this goes red.
+    expect(src).toContain("clipPath");
+    expect(src).toMatch(/width=\{innerWidth \* wipe/);
+    expect(src).not.toMatch(/stagger\(\s*p,\s*pt\.index,/);
+  });
+
+  it("so it declares the sequenced grain, and says THAT rather than 'by series'", () => {
+    const w = CHART_WALKS.combo;
+    expect(w.grain).toBe("sequenced");
+    expect(w.reorders).toBeUndefined();
+    expect(w.why).toMatch(/wipe|order the x axis fixes|out of step/);
+    // The reason it used to give, and which the component contradicts.
+    expect(w.why).not.toContain("advances by SERIES");
+  });
+});

@@ -34,6 +34,7 @@ import {
   checkFanConformance,
   checkBumpConformance,
   checkHeatmapConformance,
+  checkComboConformance,
   reconcileBrandViolations,
   requireAltInsight,
   checkLabelDataIntegrity,
@@ -76,6 +77,7 @@ import { computeStackedAreaLayout } from "../stacked-area-geometry";
 import { computeRadialBarLayout } from "../radial-bar-geometry";
 import { computeWaterfallLayout } from "../waterfall-geometry";
 import { computeHeatmapLayout } from "../heatmap-geometry";
+import { computeComboLayout } from "../combo-geometry";
 import type { ChartConfig } from "../LineChart";
 import type { BarConfig } from "../BarChart";
 import type { ScatterConfig } from "../ScatterChart";
@@ -103,6 +105,7 @@ import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
 import type { FanConfig } from "../FanChart";
 import type { BumpConfig } from "../BumpChart";
 import type { HeatmapConfig } from "../HeatmapChart";
+import type { ComboConfig } from "../ComboChart";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -254,6 +257,21 @@ const HEATMAP_DIMS = {
   padding: { top: 90, right: 16, bottom: 76, left: 52 },
 };
 
+// Same reasoning for the combo, with one addition that matters: the three dual-axis facts the
+// guard reads (lineClearsColumns / rightAxisIncludesZero / lineRelativeRange) are all
+// SCALE-INVARIANT. The band split is a fraction of the inner height and the two domains come
+// from the data alone, so these dims measure exactly what the real render measures at any size.
+const COMBO_DIMS = {
+  width: 840,
+  height: 480,
+  padding: { top: 60, right: 56, bottom: 70, left: 56 },
+};
+// The axis-coded pair ComboChart paints (COLUMN_COLOR / LINE_COLOR, module constants there).
+// The house hue never reaches these marks — the dual-axis reading depends on column-hue ==
+// left-axis and line-hue == right-axis — so unlike bar/line there is no baseColor branch here.
+const COMBO_COLUMN_COLOR = OKABE_ITO.blue;
+const COMBO_LINE_COLOR = OKABE_ITO.orange;
+
 // Every type with a produce-time guard wired (flat-triple resolver types + the
 // bespoke-signature types resolved inline below). The completeness test asserts
 // MAPPERS ⊆ this set (no reachable type is unguarded).
@@ -279,6 +297,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "fan",
   "bump",
   "heatmap",
+  "combo",
 ];
 
 /**
@@ -955,6 +974,48 @@ function computeRawConformance(
             valueDomain: layout.valueDomain,
           },
           { text: [f.ink, f.muted], bg: f.bg },
+        ),
+      };
+    }
+
+    case "combo": {
+      // The dual-axis guard, run against the SAME layout the component draws from — the three
+      // honesty facts (does the line clear the columns, does the right axis show its zero, how
+      // much does the line actually move relative to its own level) are MEASUREMENTS of that
+      // layout, not claims copied off the config. A regression in combo-geometry's band
+      // constants therefore fails the produce here rather than shipping a chart whose crossing
+      // point is an artifact of the axes.
+      const cfg = config as unknown as ComboConfig;
+      const layout = computeComboLayout(
+        {
+          categoryField: cfg.categoryField,
+          columnField: cfg.columnField,
+          lineField: cfg.lineField,
+          rows: cfg.rows,
+        },
+        COMBO_DIMS,
+      );
+      return {
+        checked: true,
+        violations: checkComboConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            columnColor: COMBO_COLUMN_COLOR,
+            lineColor: COMBO_LINE_COLOR,
+            columnAxisIncludesZero: layout.leftDomain[0] === 0,
+            leftAxisLabel: cfg.leftAxisLabel,
+            rightAxisLabel: cfg.rightAxisLabel,
+            columnUnit: cfg.columnUnit,
+            lineUnit: cfg.lineUnit,
+            columnSeriesLabel: cfg.columnSeriesLabel,
+            lineSeriesLabel: cfg.lineSeriesLabel,
+            lineClearsColumns: layout.lineClearsColumns,
+            rightAxisIncludesZero: layout.rightAxisIncludesZero,
+            rightTickCount: layout.rightTicks.length,
+            lineRelativeRange: layout.lineRelativeRange,
+          },
+          furnitureText,
         ),
       };
     }

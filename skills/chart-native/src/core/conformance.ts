@@ -1084,11 +1084,51 @@ export function checkRadialBarConformance(
 }
 
 /**
- * L2 — LINE + COLUMN COMBO (dual axis): global rules + the dual-axis musts. A
- * second axis can mislead, so the honesty rules are non-negotiable: the COLUMN
- * (left) axis must include 0 (length encoding), BOTH axes must be labelled (so the
- * reader knows which series reads against which), and the two series carry two
- * distinct Okabe-Ito colours — each matching its own axis.
+ * The floor on a line series' variation RELATIVE to its own level, below which a
+ * zero-suppressed second axis is drawing a mountain out of noise. A series moving by less than
+ * this fraction of its own magnitude has no trend a truncated axis may stretch to full height.
+ *
+ * TUNING KNOB (one number). 0.01 = one percent of the series' own level. Chosen against real
+ * newsroom series rather than taste: a margin sliding 31.4 → 19.7 varies by 37% of itself, an
+ * unemployment rate 4.2 → 3.8 by 9.5%, a consumer-price index 100 → 102 by 2% — all far above
+ * the floor and all legitimately drawn on a truncated axis. What sits below 1% is a series
+ * that is flat at its own scale, and a zero-suppressed axis turns that flatness into a story.
+ * Raising this number refuses more charts; lowering it lets flatter ones through.
+ */
+export const COMBO_MIN_LINE_VARIATION = 0.01;
+
+/** Units compared as a reader would hear them, not as bytes: case and surrounding space are
+ *  not a difference between two measurements. */
+const sameUnit = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * L2 — LINE + COLUMN COMBO (dual axis): global rules + the dual-axis musts.
+ *
+ * THE READABILITY RULES (a reader must know what they are looking at): the COLUMN (left) axis
+ * must include 0 (length encoding), BOTH axes must be labelled (so the reader knows which
+ * series reads against which), and the two series carry two distinct Okabe-Ito colours — each
+ * matching its own axis.
+ *
+ * THE HONESTY RULES (a second axis is the part of the chart vocabulary that misleads readers
+ * most often — two scales on one frame can manufacture a correlation that is not in the data):
+ *
+ *   1. THE TWO SERIES MUST NOT SHARE A UNIT. Two measurements in the same unit given two
+ *      different scales invite a height comparison that is not true. One axis renders both
+ *      honestly — grouped columns, or two lines. This is the abuse the whole form is warned
+ *      about, and it is exactly checkable, so it is refused rather than advised.
+ *   2. THE LINE MUST NOT CROSS THE COLUMN TOPS. Given rule 1 the two series are in different
+ *      units, so their rendered heights are not comparable and the crossing point is a
+ *      property of the author's choice of domains — movable anywhere, readable as an overtake
+ *      that never happened. combo-geometry.ts's bands remove it by construction; this refuses
+ *      any layout where they did not.
+ *   3. A SUPPRESSED ZERO MUST BE LEGIBLE. A rate axis that does not start at zero is
+ *      legitimate and often necessary — but only if the reader can see where it does start.
+ *      Fewer than two labelled ticks and the truncation is invisible.
+ *   4. NO MOUNTAIN OUT OF NOISE. A series varying by less than COMBO_MIN_LINE_VARIATION of its
+ *      own level has no trend; a zero-suppressed axis stretches that flatness to full frame
+ *      height and reads as one. Only checked when the zero IS suppressed — with the zero on
+ *      screen the reader sees a flat line for what it is.
  */
 export function checkComboConformance(
   input: {
@@ -1099,6 +1139,18 @@ export function checkComboConformance(
     columnAxisIncludesZero: boolean;
     leftAxisLabel?: string;
     rightAxisLabel?: string;
+    /** what the COLUMN series measures ("units", "GWh", "CHF") */
+    columnUnit?: string;
+    /** what the LINE series measures ("%", "index 2015=100", "CHF/m²") */
+    lineUnit?: string;
+    /** the legend's name for the column series — each axis title must state its own */
+    columnSeriesLabel?: string;
+    lineSeriesLabel?: string;
+    /** combo-geometry's measurement: no line point reaches the tallest column top */
+    lineClearsColumns: boolean;
+    rightAxisIncludesZero: boolean;
+    rightTickCount: number;
+    lineRelativeRange: number;
   },
   textColors: { text: string[]; bg: string },
 ): string[] {
@@ -1119,6 +1171,64 @@ export function checkComboConformance(
     v.push(`line colour ${input.lineColor} is not in the Okabe-Ito set`);
   if (input.columnColor.toUpperCase() === input.lineColor.toUpperCase())
     v.push("the two series must use distinct colours (one per axis)");
+
+  const columnUnit = input.columnUnit ?? "";
+  const lineUnit = input.lineUnit ?? "";
+  if (!columnUnit.trim() || !lineUnit.trim()) {
+    v.push(
+      "both series must state their unit — a dual axis is only honest when the two " +
+        "measurements differ, and that cannot be checked without the units",
+    );
+  } else if (sameUnit(columnUnit, lineUnit)) {
+    v.push(
+      `both series are measured in the same unit ("${columnUnit.trim()}") — two scales for ` +
+        "one measurement invites a height comparison that is not true; plot them on ONE axis " +
+        "(grouped columns, or two lines)",
+    );
+  }
+
+  // THE AXIS↔SERIES BINDING, carried by NAME because colour cannot carry it. A dual axis
+  // normally colour-codes each axis to its series, but measured against a white ground exactly
+  // ONE Okabe-Ito hue clears WCAG 4.5:1 for text (blue, 5.19:1; orange 2.25, green 3.42,
+  // vermillion 3.87) — so a TWO-series chart cannot colour-code both axis labels accessibly at
+  // any size. ComboChart therefore paints its axis furniture in ink/muted, and the binding is
+  // that each axis title states its series exactly as the legend does. That substitution is only
+  // real if the two strings actually agree, which is what this checks.
+  const titleNamesSeries = (
+    axisLabel: string | undefined,
+    seriesLabel: string | undefined,
+    side: string,
+  ) => {
+    if (!seriesLabel?.trim()) return;
+    if (!axisLabel?.includes(seriesLabel.trim()))
+      v.push(
+        `the ${side} axis title ("${axisLabel ?? ""}") does not name its series ` +
+          `("${seriesLabel.trim()}") — with the axis furniture in ink (no Okabe-Ito hue but ` +
+          `blue clears 4.5:1 as text), the NAME is the only thing binding the axis to its series`,
+      );
+  };
+  titleNamesSeries(input.leftAxisLabel, input.columnSeriesLabel, "left");
+  titleNamesSeries(input.rightAxisLabel, input.lineSeriesLabel, "right");
+
+  if (!input.lineClearsColumns)
+    v.push(
+      "the line crosses the column tops — with two independent scales the crossing point is " +
+        "an artifact of the axis domains, not an event in the data",
+    );
+
+  if (!input.rightAxisIncludesZero) {
+    if (input.rightTickCount < 2)
+      v.push(
+        "the right axis hides its zero and shows fewer than 2 labelled ticks — the reader " +
+          "cannot see where the scale starts",
+      );
+    if (input.lineRelativeRange < COMBO_MIN_LINE_VARIATION)
+      v.push(
+        `the line varies by ${(input.lineRelativeRange * 100).toFixed(2)}% of its own level ` +
+          `(floor ${COMBO_MIN_LINE_VARIATION * 100}%) and its axis hides the zero — that draws ` +
+          "a trend out of a flat series; show the zero, or state the number instead",
+      );
+  }
   return v;
 }
 

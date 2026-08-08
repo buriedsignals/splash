@@ -8,6 +8,8 @@
   "rightAxisLabel": "Gross margin, %",
   "columnSeriesLabel": "Units sold",
   "lineSeriesLabel": "Gross margin",
+  "columnUnit": "units",
+  "lineUnit": "%",
   "source": {
     "name": "Northwind retail management accounts",
     "url": "https://example.org/northwind-accounts"

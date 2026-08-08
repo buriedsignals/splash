@@ -140,12 +140,12 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     shape: "structural",
     deferred: "family-B: needs a hierarchy/edges",
   },
-  {
-    id: "combo",
-    family: "B",
-    shape: "wide",
-    deferred: "family-B: per-series encoding choice",
-  },
+  // Reachable since the per-series encoding choice it was deferred for was MADE rather than
+  // guessed: spec-to-config's `combo` mapper resolves the line from an explicit `comboLine`,
+  // falls back to the one language-free marker that cannot mean a count (a `%` header), and
+  // otherwise refuses at the gate naming both candidates. See knowledge/references/chart/
+  // types/combo.md for when a dual axis is honest and when two charts are the better answer.
+  { id: "combo", family: "B", shape: "wide" },
   {
     id: "pictogram",
     family: "B",
