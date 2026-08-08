@@ -1737,6 +1737,40 @@ git add twin/skills/twin-storyboard
 git commit -m "feat(twin-storyboard): slots carry candidates, so one visual and a sequence are one object"
 ```
 
+**Amended after `twin/TRIAL-THREE-BEATS.md`.** A controlled trial of three independent beats
+found the first outright regression against the engine this branch twins: a takeaway confirmed
+false against its own frozen data (a beat's takeaway claimed 2024 was below every year since
+1993, while the fetched series gives 2024 = 37.18 Mt against 1993 = 35.95 Mt) went all the way to
+a rendered title with nothing in the toolkit ever confronting the claim with the data. The engine
+this branch twins has a claim-grounding guard for exactly this class; starting from zero lost it.
+
+Closed with a new script, `scripts/ground-claim.mjs`, exporting `groundTakeaway(takeaway: string,
+profile: object): Array<{claim, verdict: "supported"|"contradicted"|"unverifiable", detail}>`.
+Deliberately scoped narrow — not a fact-checker, not a conformance engine — to the class of error
+a journalist and a machine both miss: a number or a direction in the takeaway the frozen data
+contradicts. Checks, at minimum: a numeric token outside every numeric column's range; a two-year
+direction comparison ("X in 2024 was lower than in 1993") where both years are present in
+`profile.rows`; a windowed superlative ("less... than in any year since 1993", "the lowest since
+1993") checked against every row in the claimed window, not just the boundary year; "highest/
+lowest ever" checked against the whole profile; both English and French comparison phrasing (this
+codebase renders in the journalist's language). Everything else — "first time" claims, a
+comparison whose value column is ambiguous (more or fewer than one non-year numeric column), and
+phrasing shapes the regexes do not parse — returns `unverifiable` with a named reason, never
+`supported` for a claim that was not actually checked.
+
+`checkStoryboard(meta, profile)` gained an optional second parameter: given a profile, a
+`contradicted` claim becomes a Gate 2 error (the gate cannot honestly close on a takeaway the data
+refutes); an `unverifiable` claim is not an error, only information the journalist should see.
+Omitting `profile` keeps `checkStoryboard`'s prior behaviour byte-for-byte unchanged.
+
+Verified against the trial's own two cases: the Norway takeaway (real numbers above) comes back
+`contradicted`; the twin's own French proof takeaway — net CO₂ lower in 2024 than in 1967, true at
+32.07 against 32.53 — comes back `supported`, not falsely flagged. 11 new tests in
+`test/ground-claim.test.ts` plus 2 new wiring tests in `test/storyboard.test.ts`, every one
+mutation-verified (its targeted line broken, confirmed red, reverted, confirmed green). Full
+`twin/` suite stayed green throughout. Committed separately as `feat(twin-storyboard): ground the
+confirmed takeaway against the frozen data`.
+
 ---
 
 ## Task 6: The doctrine skeleton and its reference-set check
@@ -2118,6 +2152,20 @@ Expected: **11 pass, 0 fail.**
 git add twin/skills/twin-doctrine/SKILL.md twin/skills/twin-doctrine/references/reference-set.md twin/skills/twin-doctrine/test/reference-set.test.ts
 git commit -m "fix(twin-doctrine): floor tracks what the set actually ships — four, not a standing-red six"
 ```
+
+**Amended after `twin/TRIAL-THREE-BEATS.md`.** A controlled trial of three independent agents
+found `information-architecture.md` self-contradicting `twin-chart-beat/references/static-
+discipline.md` on where the source line sits: this file said "fixed at the bottom," the
+chart-scoped file and the seed's actual code both put it "directly beneath the title." Two of
+three agents hit this independently and had to guess which document governed. Resolved in
+`information-architecture.md` only (the chart-scoped file and the seed were already consistent
+with each other and are the other sub-project's territory): added a "When a genre-scoped file
+disagrees with this stack" section stating the general rule — this file states the default
+stack; a genre-scoped discipline file for a single engine and format may override one zone's
+position, and where the two disagree, the genre-scoped file wins because it is closer to the
+actual render. Item 5 (source line) now points forward to that section instead of stating its
+default as unconditional. Committed separately as
+`docs(twin-doctrine): resolve the source-line placement contradiction`.
 
 ---
 
