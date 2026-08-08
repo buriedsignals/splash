@@ -8,8 +8,10 @@ import {
   type Beat,
   type MapArcBeat,
   type RevealMode,
-  closingInsight,
+  closingCaption,
+  derivePlacesTakeawayCopy,
 } from "./map-story";
+import { distance as greatCircleKm } from "@turf/turf";
 import type { LocatorMarker } from "./locator-geo";
 import type { Phase } from "./story-timeline";
 import { shortWayLongitudeExtent } from "./core/longitude";
@@ -67,6 +69,31 @@ function padBbox(
 // deriveSymbolStory reaches for the same one.
 function establishBoxOf(ms: LocatorMarker[]): [number, number, number, number] {
   return establishBox(bboxOf(ms));
+}
+
+/**
+ * The great-circle distance between the two FURTHEST-APART markers, in km — what "end to end"
+ * means on the closing card.
+ *
+ * Deliberately the widest real PAIR, not the bounding box's diagonal, which is the cheaper
+ * O(n) answer and is always ≥ this one: a box's corners are usually empty, so its diagonal
+ * would state a distance no two plotted places are actually apart. Overstating by a kilometre
+ * to save a loop is the kind of small invention this engine does not make.
+ *
+ * O(n²) on the marker count, which is what a locator's own shape bounds: these are hand-placed
+ * places (the shipped samples carry 5 and 40), and even a thousand markers is a million cheap
+ * haversines — well under the geometry work `locatorGeometry` already does on the same input.
+ */
+function widestPairKm(ms: LocatorMarker[]): number {
+  let widest = 0;
+  for (let i = 0; i < ms.length; i++)
+    for (let j = i + 1; j < ms.length; j++) {
+      const km = greatCircleKm([ms[i].lon, ms[i].lat], [ms[j].lon, ms[j].lat], {
+        units: "kilometers",
+      });
+      if (km > widest) widest = km;
+    }
+  return widest;
 }
 
 export function deriveLocatorStory(
@@ -214,17 +241,29 @@ export function deriveLocatorStory(
     }
   }
 
+  // A locator marker carries no number at all — so the close states the only two things this
+  // map type ever asserted: how many places it plotted, and how far apart the furthest two of
+  // them are (`derivePlacesTakeawayCopy`). The count is EVERY marker, not the capped walk: all
+  // of them are drawn, and a count of the ones the camera visited would describe the tour
+  // rather than the map.
+  //
+  // Measured before this: with no `insight` the copy was "", and the page closed on the figure's
+  // DESCRIPTION — its own opening card, verbatim.
   beats.push({
     kind: "takeaway",
     camera: allBounds,
     highlight: [],
     dim: false,
     callout: null,
-    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
-    // identical to the module title is the title, not a close. Written out inline here (and
-    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
-    // route track, which shipped its own headline as its last card.
-    copy: closingInsight(meta.insight, meta.title),
+    copy: closingCaption(
+      meta.insight,
+      meta.title,
+      derivePlacesTakeawayCopy({
+        placeCount: markers.length,
+        spanKm: widestPairKm(markers),
+        lang: meta.lang,
+      }),
+    ),
   });
 
   return beats;

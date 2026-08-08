@@ -18,7 +18,7 @@
 // alike, is "every beat is backed by real bins"). Mirrors every other anchor in this plan: a
 // beat names something the data has, or it is refused, by name, with the real way out.
 import type { Beat, MapArcBeat } from "./map-story";
-import { closingInsight } from "./map-story";
+import { closingCaption, deriveBinTakeawayCopy } from "./map-story";
 import type { HexGridLayout } from "./hex-grid-geo";
 import { bbox, booleanPointInPolygon, point as turfPoint } from "@turf/turf";
 import { labelWithUnit, localizeValueLabel } from "./core/locale";
@@ -143,10 +143,23 @@ export function deriveHexGridStory(
   const copy = storyCopy(meta.lang);
   const fmt = (v: number) =>
     layout.aggregate === "mean"
-      ? copy.meanOf(labelWithUnit(localizeValueLabel(v, meta.lang), unit, meta.lang))
+      ? copy.meanOf(
+          labelWithUnit(localizeValueLabel(v, meta.lang), unit, meta.lang),
+        )
       : layout.aggregate === "sum"
-        ? labelWithUnit(localizeValueLabel(Math.round(v), meta.lang), unit, meta.lang)
+        ? labelWithUnit(
+            localizeValueLabel(Math.round(v), meta.lang),
+            unit,
+            meta.lang,
+          )
         : copy.pointCount(localizeValueLabel(Math.round(v), meta.lang));
+
+  // Value-descending, ONE sort, two readers: the ranked walk below slices its reveals off the
+  // front, and the closer reads the peak. Same comparator (and same index tie-break) the walk
+  // always used, so the reveal order is byte-identical.
+  const ranked = layout.cells
+    .map((c, i) => ({ c, i }))
+    .sort((a, b) => b.c.value - a.c.value || a.i - b.i);
 
   const beats: Beat[] = [];
   beats.push({
@@ -172,11 +185,6 @@ export function deriveHexGridStory(
     // file's header comment and resolveHexGridArc's own doc.
     beats.push(...resolveHexGridArc(layout, meta.arcBeats, fmt));
   } else {
-    // Rank cells by aggregate value, descending; ties broken by index for determinism.
-    const ranked = layout.cells
-      .map((c, i) => ({ c, i }))
-      .sort((a, b) => b.c.value - a.c.value || a.i - b.i);
-
     ranked.slice(0, cap).forEach(({ c, i }, rank) => {
       const cellBbox = bbox(c.feature) as [number, number, number, number];
       // Furniture — the rank AND its bin noun come out of the locale table together, because
@@ -196,17 +204,33 @@ export function deriveHexGridStory(
     });
   }
 
+  // A grid's bins have no names and — across `count`/`sum`/`mean` — no total that is true for
+  // all three, so the honest close is the PEAK against the population it leads
+  // (`deriveBinTakeawayCopy`). The peak's value goes through this deriver's own `fmt`, so the
+  // close speaks the aggregate's own words ("18 points", "12 kWh avg") rather than a second
+  // formatting of the same number.
+  //
+  // Measured before this: with no `insight` the copy was "", and the page closed on the figure's
+  // DESCRIPTION — its own opening card, verbatim.
+  const peak = ranked[0]?.c;
   beats.push({
     kind: "takeaway",
     camera: full,
     highlight: [],
     dim: false,
     callout: null,
-    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
-    // identical to the module title is the title, not a close. Written out inline here (and
-    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
-    // route track, which shipped its own headline as its last card.
-    copy: closingInsight(meta.insight, meta.title),
+    copy: closingCaption(
+      meta.insight,
+      meta.title,
+      peak
+        ? deriveBinTakeawayCopy({
+            peakLabel: fmt(peak.value),
+            binCount: layout.cells.length,
+            binShape: layout.binShape,
+            lang: meta.lang,
+          })
+        : "",
+    ),
   });
 
   return beats;

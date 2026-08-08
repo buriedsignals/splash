@@ -108,6 +108,10 @@ video path: a design task with editorial consequences, not a call-site fix, and 
 branch's scope. Recorded here with its render so it is a known measurement rather than a
 suspicion.
 
+**CLOSED**, same day, on `fix/map-story-closers` — all five reproduced on renders first, then
+given a closer derived from their own data (four closers for six types, keyed to the shape of the
+data), on both paths: `docs/splash/proofs/2026-08-08-map-closing-captions`.
+
 ## Regenerate
 
     # the page

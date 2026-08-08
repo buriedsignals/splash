@@ -10,7 +10,8 @@ import {
   type Beat,
   type MapArcBeat,
   type RevealMode,
-  closingInsight,
+  closingCaption,
+  deriveTakeawayCopy,
 } from "./map-story";
 import { formatLocaleNumber, labelWithUnit, type Lang } from "./core/locale";
 import { shortWayLongitudeExtent } from "./core/longitude";
@@ -86,6 +87,12 @@ export function deriveSymbolStory(
   const stopBox = (p: SymbolPoint): [number, number, number, number] =>
     tourStopBox(dataBounds, p) ?? bounds;
 
+  // Value-descending, ONE sort, two readers: the salience walk below slices its reveals off the
+  // front, and the closer reads both ends. Same comparator the walk always used (no tie-break
+  // added — Array.prototype.sort is stable, so equal values keep their input order and the
+  // existing reveal order is byte-identical).
+  const byValue = [...points].sort((a, b) => b.value - a.value);
+
   const beats: Beat[] = [];
   beats.push({
     kind: "title",
@@ -124,7 +131,7 @@ export function deriveSymbolStory(
       }),
     );
   } else {
-    const sorted = [...points].sort((a, b) => b.value - a.value);
+    const sorted = byValue;
     const cap = Math.max(
       1,
       Math.min(opts.maxReveals ?? DEFAULT_MAX_REVEALS, sorted.length),
@@ -149,17 +156,39 @@ export function deriveSymbolStory(
     }
   }
 
+  // A symbol map is named subjects with one number each — the same shape a choropleth is, so it
+  // closes on the same sentence (`deriveTakeawayCopy`), not on a sixth variant. The pair is read
+  // off ALL the points, not off the capped reveal walk: the map DRAWS every circle, so the
+  // smallest one is on screen whether or not the walk stopped at it, and a close that named the
+  // fifth-largest "the tail" would be a claim about a subset the reader cannot see the edge of.
+  //
+  // Measured before this: with no `insight` the beat's copy was "", and the scrolly's generic
+  // fallback closed the page on the figure's DESCRIPTION — the opening card, verbatim — while
+  // the video closed on no caption at all.
+  const top = byValue[0];
+  const bottom = byValue[byValue.length - 1];
   beats.push({
     kind: "takeaway",
     camera: bounds,
     highlight: [],
     dim: false,
     callout: null,
-    // One rule, one implementation — see map-story.ts's `closingInsight`: a closing line
-    // identical to the module title is the title, not a close. Written out inline here (and
-    // in four sibling derivers) it was correct five times over and MISSING on the sixth, the
-    // route track, which shipped its own headline as its last card.
-    copy: closingInsight(meta.insight, meta.title),
+    copy: closingCaption(
+      meta.insight,
+      meta.title,
+      top && bottom
+        ? deriveTakeawayCopy({
+            pattern: "magnitude",
+            maxName: top.label ?? "",
+            maxValue: top.value,
+            maxLabel: fmt(top.value),
+            minName: bottom.label ?? "",
+            minValue: bottom.value,
+            minLabel: fmt(bottom.value),
+            lang: meta.lang,
+          })
+        : "",
+    ),
   });
 
   return beats;

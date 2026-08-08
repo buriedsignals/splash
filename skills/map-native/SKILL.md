@@ -244,6 +244,19 @@ the interactive scrolly play through the same beats. This is the difference betw
   (`CountryLabel` = NAME + large value, e.g. `NORWAY` / `99%`), NOT a lower-third subtitle. The value uses
   a SHORT `valueUnit` (e.g. `%`), never the long legend label. The lower-third caption is reserved for the
   takeaway insight (when distinct from the title).
+- **Every type closes on its own data.** The takeaway caption is `closingCaption(insight, title,
+  derived)` (`src/map-story.ts`): the journalist's `insight` when it is genuinely a different sentence
+  from the title the header already shows, and otherwise a closer derived from that type's own facts —
+  leader/tail/gap for choropleth · symbol · cartogram (`deriveTakeawayCopy`), the peak against the bin
+  count for hex-grid (`deriveBinTakeawayCopy`), the dot's worth and the drawn total for dot-density
+  (`deriveDotTakeawayCopy`), the place count and the widest span for locator
+  (`derivePlacesTakeawayCopy`), the territory count and length for route (`routeSpan`, in
+  `route-story.ts`). Four closers for six types, keyed to the SHAPE OF THE DATA, not the type. All
+  localized through `lib/core/story-copy`. A type with nothing honest to say returns `""` on purpose —
+  one symbol point, one hex bin, one plotted place — and the caption-less takeaway then does what it
+  always did (the scrolly shows the description, the video shows no card). It never invents a number:
+  no total over values that may not add up, no rank over a walk that ranked nothing. Measured before
+  and after, on pages and on video frames: `docs/splash/proofs/2026-08-08-map-closing-captions`.
 - **The EXPLAINER story — `sweepCarrier`** (choropleth today). Buried Signals' map-explainer beat is
   "a river draws on, and as it reaches each country that country animates in — border draws, fill
   blooms, label rises, and it stays lit". `src/sweep-carrier.ts` generalises the river to five

@@ -450,6 +450,45 @@ export function closingInsight(
   return line && line !== title.trim() ? line : "";
 }
 
+// THE MAP FAMILY'S CLOSING CAPTION, in one call: the journalist's line when it IS one, and
+// otherwise the closer the type computed from its own data. Every map deriver goes through this
+// — `closingInsight(...) || derived` written out per file is the shape this defect already had
+// once (see closingInsight's own note), and the second half is where it would drift next.
+//
+// `derived` is a STRING, not a thunk, and deliberately so: every derived closer in this file is
+// pure string composition over facts the deriver already holds, so there is nothing to defer,
+// and a thunk would let a call site hide work behind a branch that is meant to be free.
+//
+// AN EMPTY RESULT IS A REAL ANSWER. When a type has nothing honest left to say — one symbol
+// point, one hex bin, one plotted place — its closer returns "" and this returns "" with it.
+// The consumers then do what they already do with a caption-less takeaway: the scrolly falls
+// back to the figure's description (chapters.ts), the video shows no card at all. That is the
+// deliberate silence; what it must never be is the title again, which is the whole reason
+// `closingInsight` sits in front.
+export function closingCaption(
+  insight: string | undefined,
+  title: string,
+  derived: string,
+): string {
+  return closingInsight(insight, title) || derived;
+}
+
+// ── THE DERIVED CLOSERS ─────────────────────────────────────────────────────────────────────
+// One per SHAPE OF DATA, not one per map type — the five types that had none each fall into a
+// shape that already had, or now has, exactly one honest sentence:
+//
+//   named subjects, one number each   → deriveTakeawayCopy  (choropleth · symbol · cartogram)
+//   anonymous bins over a grid        → deriveBinTakeawayCopy      (hex-grid)
+//   one dot stands for N of something → deriveDotTakeawayCopy      (dot-density)
+//   plotted places, no numbers at all → derivePlacesTakeawayCopy   (locator)
+//
+// (route composes its own, `routeSpan`, in route-story.ts — its facts are a trajectory's, and
+// its step list is not a beat list.)
+//
+// Each states facts the data holds and NOTHING MORE. Where a fact would not survive the reader
+// checking it — a total over values that do not add up, a rank over a walk that ranked nothing —
+// it is not stated. Measured before these existed: all five closed on their own description.
+
 // A distinct, data-tied concluding line for the takeaway beat — NEVER a repeat of the
 // intro description. States the spread between the extremes: for a MAGNITUDE story the
 // leader-vs-tail gap (with a 1-to-N ratio when meaningful), for a TEMPORAL story the
@@ -471,20 +510,99 @@ export function deriveTakeawayCopy(input: {
   if (maxName === minName && maxLabel === minLabel) return "";
   const copy = storyCopy(input.lang);
   const sep = copy.captionSep;
+  // The separator belongs to the PAIR, exactly as chapters.ts's `nameAndValue` says for a
+  // reveal caption. A choropleth region always has a name (deriveMapStory's `nameOf` falls
+  // through to the basemap's, then to the key), so this changes nothing there — but a SYMBOL
+  // point's label is optional, and this closer now serves symbol too: written as a bare
+  // template it would open the last card on ": 220 MW", the same dangling separator that was
+  // measured on a delivered French page for the reveals.
+  const named = (name: string, label: string) =>
+    name.trim() !== "" ? `${name}${sep}${label}` : label;
 
   if (input.pattern === "temporal") {
     // Temporal: value = a year; min = earliest, max = latest. Close on the span.
     const span = Math.abs(Math.round(input.maxValue - input.minValue));
     const spanClause = span > 0 ? copy.yearSpan(span) : "";
     // minLabel is the earliest year, maxLabel the most recent.
-    return `${minName}${sep}${minLabel}, ${maxName}${sep}${maxLabel}${spanClause}`;
+    return `${named(minName, minLabel)}, ${named(maxName, maxLabel)}${spanClause}`;
   }
 
   // Magnitude: leader vs tail. Add a "1 to N" ratio when it is meaningful.
   const ratio =
     input.minValue > 0 ? Math.round(input.maxValue / input.minValue) : 0;
   const gapClause = ratio >= 2 ? copy.foldGap(ratio) : "";
-  return `${maxName}${sep}${maxLabel}, ${minName}${sep}${minLabel}${gapClause}`;
+  return `${named(maxName, maxLabel)}, ${named(minName, minLabel)}${gapClause}`;
+}
+
+/**
+ * hex-grid's closer. A binned grid's cells are ANONYMOUS — there is no name to close on, and
+ * no total either: `sum`/`count` would add up, but `mean` would not, and one sentence that is
+ * true for two aggregates out of three is a sentence this project does not write. What every
+ * hex grid does hold, whatever it aggregates, is the PEAK and HOW MANY BINS carry the
+ * distribution — so the close states the densest bin's own value (already formatted by the
+ * deriver, in the aggregate's own words: "18 points", "12 kWh avg") against the population it
+ * leads.
+ *
+ * Under two bins it says nothing, on purpose: "the densest of 1" is not a peak, it is the only
+ * one, and the reveal already showed it.
+ */
+export function deriveBinTakeawayCopy(input: {
+  peakLabel: string;
+  binCount: number;
+  binShape: "hex" | "square";
+  lang?: string;
+}): string {
+  if (input.binCount < 2 || !input.peakLabel.trim()) return "";
+  return storyCopy(input.lang).binPeak(
+    input.peakLabel,
+    input.binCount,
+    input.binShape,
+  );
+}
+
+/**
+ * dot-density's closer. The one thing a dot map asks its reader to hold — and the one thing no
+ * reveal states — is the exchange rate: what a single dot stands for, and how much the whole
+ * scatter therefore adds up to.
+ *
+ * Both halves come from the DRAWN dots (`dotValue`, `totalDots`), never from the raw rows.
+ * Those differ slightly: a region's dot count is rounded, so the drawn total is not the data's
+ * sum to the last unit. The drawn one is the honest number here because it is the one the
+ * reader can count — and it is already what every reveal caption states per region
+ * (`totalCount * dotValue`), so the close and the walk agree.
+ */
+export function deriveDotTakeawayCopy(input: {
+  dotValueLabel: string;
+  totalLabel: string;
+  lang?: string;
+}): string {
+  if (!input.dotValueLabel.trim() || !input.totalLabel.trim()) return "";
+  return storyCopy(input.lang).dotWorth(input.dotValueLabel, input.totalLabel);
+}
+
+/**
+ * locator's closer. A locator marker carries NO number (chapters.ts's own no-value branch says
+ * so), so there is no leader, no gap and no total to close on — every quantitative sentence the
+ * other types write would be invented here. What a locator does know is how many places it
+ * plotted, and how far apart the two furthest of them are: geography, which is the only thing
+ * this map type ever asserted.
+ *
+ * The span is DROPPED below one kilometre rather than rounded to "0 km" — a walk of sites
+ * inside one city block spans a real distance the closer cannot state at this precision, and
+ * "0 km end to end" would state the opposite of the truth. Under two places it says nothing at
+ * all: one marker has no span, and "1 site" is a count the reader already made.
+ */
+export function derivePlacesTakeawayCopy(input: {
+  placeCount: number;
+  spanKm: number;
+  lang?: string;
+}): string {
+  if (input.placeCount < 2) return "";
+  const copy = storyCopy(input.lang);
+  const sites = copy.siteCount(input.placeCount);
+  const km = Math.round(input.spanKm);
+  if (!Number.isFinite(km) || km < 1) return sites;
+  return copy.placesSpan(sites, formatLocaleNumber(km, input.lang));
 }
 
 // Temporal reveal selection. Order every region earliest→latest (ties broken by
