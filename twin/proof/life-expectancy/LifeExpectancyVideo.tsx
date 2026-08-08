@@ -5,9 +5,15 @@
  * Second beat written in this shape (`EmissionsVideo.tsx` is the first): its own pure geometry
  * below (no `crossingGeometry` import — that module's `peak`/`crossing` are beat 1's specific
  * shape, a value climbing to a maximum and later falling back through a level; this beat's shape
- * is different, see below), its own timing contract (`life-expectancy-timing.ts`), reusing
- * `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` from `EmissionsVideo.tsx` rather than
- * copying them.
+ * is different, see below), its own timing contract (`timing-contract.ts`).
+ *
+ * `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` are this story's own copies of
+ * `EmissionsVideo.tsx`'s functions of the same name, not an import from it — this story lives
+ * outside `twin-chart-video`'s skill boundary now (`proof/life-expectancy/`), and the settled rule
+ * for a story that needs something a skill has is to duplicate it, not reach back across the
+ * boundary. The bodies are identical on purpose: both are the video genre's browser-Canvas text
+ * measurer, not the static genre's resvg one (`#shared/twin-chart-beat/render-still.mjs`) — the
+ * two are not interchangeable, so vendoring the wrong one would silently mismeasure.
  *
  * THE MOTION PROBLEM: the confirmed subject is 2020, the dip — but 2020 sits four years before the
  * series ends, not at its tail, and the takeaway's second half ("it took three years to win it
@@ -32,12 +38,91 @@ import {
   useVideoConfig,
   Easing,
 } from "remotion";
-import { drawnSoFar, FONT_FAMILY, measureText, wrap } from "./EmissionsVideo";
-import { progressOf, type BeatTiming } from "./timing";
-import { LIFE_EXPECTANCY_TIMING } from "./life-expectancy-timing";
+// Relative path into the skill, not `#shared/*` — `twin-chart-video/assets/timing.ts` is not yet
+// vendored to the shared substrate. Task 8 converts this to `#shared/twin-chart-video/timing.ts`;
+// until then this is the one sanctioned interim route (task-4-brief.md's Interfaces section).
+import {
+  progressOf,
+  type BeatTiming,
+} from "../../skills/twin-chart-video/assets/timing";
+import { LIFE_EXPECTANCY_TIMING } from "./timing-contract";
 
 const FRAME = { width: 1080, height: 1080 };
 const PAD = 72;
+export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+
+/**
+ * The rendered width of a string in the font it will really be drawn in. Chromium's own text
+ * measurement, which is the same engine that will draw it — the browser equivalent of the still
+ * path's `measureText`. A fixed gutter constant is the defect this removes; the fallback below is
+ * only for a context with no DOM, and no frame is ever rendered in one.
+ *
+ * This story's own copy of `EmissionsVideo.tsx`'s function of the same name — see the file
+ * doc-comment for why it is duplicated, not imported.
+ */
+let measuringContext: CanvasRenderingContext2D | null | undefined;
+export function measureText(
+  text: string,
+  { fontSize, fontWeight = 400 }: { fontSize: number; fontWeight?: number },
+): number {
+  if (!text) return 0;
+  if (measuringContext === undefined)
+    measuringContext =
+      typeof document === "undefined"
+        ? null
+        : document.createElement("canvas").getContext("2d");
+  if (!measuringContext) return text.length * fontSize * 0.5;
+  measuringContext.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
+  return measuringContext.measureText(text).width;
+}
+
+export function wrap(
+  text: string,
+  maxWidth: number,
+  font: { fontSize: number; fontWeight: number },
+): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const word of text.split(/\s+/)) {
+    const trial = current ? `${current} ${word}` : word;
+    if (current && measureText(trial, font) > maxWidth) {
+      lines.push(current);
+      current = word;
+    } else current = trial;
+  }
+  return current ? [...lines, current] : lines;
+}
+
+/**
+ * The curve as far as it has been drawn, with the last segment cut mid-way so the head moves
+ * smoothly instead of jumping from reading to reading.
+ *
+ * Chronological: index 0 is the first reading and the head advances forward in time. Linear,
+ * because the x axis IS time — easing this would make some years occupy more screen time than
+ * others, which is a lie about the pace of the data (`motion-grammar.md`).
+ *
+ * This story's own copy of `EmissionsVideo.tsx`'s function of the same name — see the file
+ * doc-comment for why it is duplicated, not imported.
+ */
+export function drawnSoFar<T extends { x: number; y: number }>(
+  points: T[],
+  progress: number,
+): { x: number; y: number }[] {
+  if (points.length === 0 || progress <= 0) return [];
+  const last = points.length - 1;
+  const travelled = progress * last;
+  const index = Math.min(last, Math.floor(travelled));
+  if (index >= last) return points.map(({ x, y }) => ({ x, y }));
+  const head = points.slice(0, index + 1).map(({ x, y }) => ({ x, y }));
+  const fraction = travelled - index;
+  const a = points[index];
+  const b = points[index + 1];
+  return [
+    ...head,
+    { x: a.x + (b.x - a.x) * fraction, y: a.y + (b.y - a.y) * fraction },
+  ];
+}
+
 const TITLE = { fontSize: 40, fontWeight: 700, lead: 52 };
 const SOURCE = { fontSize: 22, fontWeight: 400 };
 const AXIS = { fontSize: 22, fontWeight: 400 };

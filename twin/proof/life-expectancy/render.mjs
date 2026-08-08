@@ -1,22 +1,22 @@
-// twin/skills/twin-chart-video/scripts/render-life-expectancy.mjs
+// twin/proof/life-expectancy/render.mjs
 //
-// Second beat through the render ladder's second rung — same shape as `render-video.mjs`
-// (`readingsFromCsv`, then still-first, then mp4), its own story constants and its own CSV
-// column names, because the story is not the CO₂ beat's and should not pretend to share its
-// nouns. See `render-video.mjs` for the doc-comment on why this runs in node (`deriveFurniture`)
-// and why the still is rendered before the mp4.
+// This story's own render script — the render ladder's second rung, same shape as
+// `twin-chart-video/scripts/render-video.mjs` (`readingsFromCsv`, then still-first, then mp4),
+// its own story constants and its own CSV column names, because the story is not the CO₂ beat's
+// and should not pretend to share its nouns. See `render-video.mjs` for the doc-comment on why
+// this runs in node (`deriveFurniture`) and why the still is rendered before the mp4.
 //
-// Usage:  bun skills/twin-chart-video/scripts/render-life-expectancy.mjs [--still-only] [--data <csv>] [--out <dir>]
+// Usage:  bun proof/life-expectancy/render.mjs [--still-only] [--data <csv>] [--out <dir>]
 
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../twin-chart-beat/scripts/render-still.mjs";
+import { deriveFurniture } from "#shared/twin-chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = resolve(HERE, "../../..");
-const ENTRY = join(HERE, "../assets/index.ts");
+const PACKAGE_ROOT = resolve(HERE, "../..");
+const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "life-expectancy";
 
 /** The story's own constants — the journalist's words, from the CADRAGE exchange. */

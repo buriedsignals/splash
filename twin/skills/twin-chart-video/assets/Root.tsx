@@ -15,11 +15,6 @@
 import { Composition } from "remotion";
 import { EmissionsVideo, type EmissionsVideoProps } from "./EmissionsVideo";
 import { CO2_TIMING } from "./timing";
-import {
-  LifeExpectancyVideo,
-  type LifeExpectancyVideoProps,
-} from "./LifeExpectancyVideo";
-import { LIFE_EXPECTANCY_TIMING } from "./life-expectancy-timing";
 import { MigrationVideo, type MigrationVideoProps } from "./MigrationVideo";
 import { MIGRATION_TIMING } from "./migration-timing";
 
@@ -38,26 +33,6 @@ const CO2_PLACEHOLDER: EmissionsVideoProps = {
   reference: 32.5,
   referenceLabel: "Placeholder",
   peakLabel: "Placeholder",
-};
-
-const LIFE_EXPECTANCY_PLACEHOLDER: LifeExpectancyVideoProps = {
-  data: [
-    { year: 2000, value: 79.8 },
-    { year: 2020, value: 82.9 },
-    { year: 2023, value: 84.0 },
-    { year: 2024, value: 84.2 },
-  ],
-  title: "Placeholder — render through scripts/render-life-expectancy.mjs",
-  source: "Placeholder",
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
-  ink: "#000000",
-  muted: "#616161",
-  grid: "#D1D1D1",
-  reference: 83.8,
-  referenceLabel: "Placeholder",
-  subjectYear: 2020,
-  recoveryYear: 2023,
 };
 
 const MIGRATION_PLACEHOLDER: MigrationVideoProps = {
@@ -90,15 +65,6 @@ export function RemotionRoot() {
         width={1080}
         height={1080}
         defaultProps={CO2_PLACEHOLDER}
-      />
-      <Composition
-        id="life-expectancy"
-        component={LifeExpectancyVideo}
-        durationInFrames={LIFE_EXPECTANCY_TIMING.total}
-        fps={LIFE_EXPECTANCY_TIMING.fps}
-        width={1080}
-        height={1080}
-        defaultProps={LIFE_EXPECTANCY_PLACEHOLDER}
       />
       <Composition
         id="migration"
