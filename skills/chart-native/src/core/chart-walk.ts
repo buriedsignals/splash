@@ -86,6 +86,17 @@ const SEQUENCED_BY_SERIES =
 const SEQUENCED_UNNAMED =
   "its subjects are not named by a field a beat can address (bins, cells, nodes), so the " +
   "sentences follow one another over the animation in the order written";
+// Pictogram's rows ARE named (categoryField), so SEQUENCED_UNNAMED — where it sat while the
+// type was deferred — stated something false about it, and `why` is said to the journalist
+// verbatim. The true reason is the one below: the reveal advances by ICON COLUMN across every
+// row at once (PictogramChart: `op = clamp01((reveal * maxCols - c) / 0.7)`, indexed by the
+// column `c`, never by the row), so all rows grow together and no single row owns a moment to
+// sit a sentence on. Making it anchored would mean re-cutting the entrance per row, which
+// would destroy the type's own gesture — the icons ACCUMULATING is the count being made.
+const SEQUENCED_BY_COLUMN =
+  "its rows are named, but they fill together — the icons advance column by column across " +
+  "every row at once, so no one row has a moment of its own to sit a sentence on; the " +
+  "sentences follow one another over the animation in the order written";
 
 const anchored = (
   component: string,
@@ -98,8 +109,7 @@ const anchored = (
   anchorField,
   entrance,
   reorders: true,
-  why:
-    "each subject enters at the moment of its own sentence, in the order you choose",
+  why: "each subject enters at the moment of its own sentence, in the order you choose",
   ...extra,
 });
 
@@ -174,7 +184,6 @@ export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
   parallel: sequenced(SEQUENCED_UNNAMED),
   lorenz: sequenced(SEQUENCED_UNNAMED),
   violin: sequenced(SEQUENCED_UNNAMED),
-  pictogram: sequenced(SEQUENCED_UNNAMED),
   "dot-strip": sequenced(SEQUENCED_UNNAMED),
   bump: sequenced(SEQUENCED_UNNAMED),
 
@@ -187,6 +196,9 @@ export const CHART_WALKS: Readonly<Record<string, ChartWalk>> = {
   // Scatter DOES stagger by x-rank, but its points are a cloud its own engine refuses to let a
   // journalist author a walk over (chart-story.ts) — sequenced is the honest answer, not anchored.
   scatter: sequenced(SEQUENCED_CONTINUOUS),
+
+  // --- SEQUENCED, named subjects that still fill together (see SEQUENCED_BY_COLUMN).
+  pictogram: sequenced(SEQUENCED_BY_COLUMN),
 };
 
 /** The grain this type's video carries. Unknown type ⇒ undefined, and every caller treats that as

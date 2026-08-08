@@ -67,6 +67,16 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
   // (a grid needs ≥2 columns) — QA Wave 7 er-wait proved a small newsroom does
   // supply day×hour matrices, so it is article-realistic (family A), not deferred.
   { id: "heatmap", family: "A", shape: "wide" },
+  // pictogram / isotype — the same category,value CSV a bar takes, drawn as a COUNT of
+  // equal icons so the reader verifies by counting instead of by trusting a length. It
+  // sat in family B as "a stylistic variant of waffle" until a real newsroom asked for it
+  // by name and met a refusal (docs/splash/defect-2026-08-07-…md). It is not a waffle
+  // variant: a waffle divides ONE whole into shares, a pictogram compares SEVERAL
+  // independent magnitudes — and it is family A, because a two-column count is the most
+  // article-realistic CSV there is. What it needs beyond the CSV — what one icon is worth
+  // — the mapper derives (chooseUnitPerIcon), and the produce guard refuses a count no
+  // reader could count.
+  { id: "pictogram", family: "A", shape: "single" },
   // --- Family B, deferred by design (structural/specialist data an article rarely yields) ---
   {
     id: "marimekko",
@@ -145,12 +155,6 @@ export const NATIVE_TYPES: readonly NativeTypeEntry[] = [
     family: "B",
     shape: "wide",
     deferred: "family-B: per-series encoding choice",
-  },
-  {
-    id: "pictogram",
-    family: "B",
-    shape: "single",
-    deferred: "family-B: stylistic variant of waffle",
   },
 ];
 

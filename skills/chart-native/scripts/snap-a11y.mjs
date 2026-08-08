@@ -16,7 +16,7 @@ const markSel =
       ? 'path[role="img"][tabindex="0"]'
       : chart === "slope" || chart === "dumbbell" || chart === "bullet"
         ? 'g[role="img"][tabindex="0"]'
-        : chart === "lollipop" ? 'g[role="img"][tabindex="0"]' : 'circle[role="img"][tabindex="0"]';
+        : chart === "lollipop" || chart === "pictogram" ? 'g[role="img"][tabindex="0"]' : 'circle[role="img"][tabindex="0"]';
 const out = process.argv[2] ?? "/tmp/native-a11y.png";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 560 }, deviceScaleFactor: 2 });

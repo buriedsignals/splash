@@ -20,6 +20,7 @@ import {
   checkStackedAreaConformance,
   checkDotStripConformance,
   checkWaffleConformance,
+  checkPictogramConformance,
   checkRadialBarConformance,
   checkDivergingBarConformance,
   checkWaterfallConformance,
@@ -103,6 +104,11 @@ import type { PopulationPyramidConfig } from "../PopulationPyramidChart";
 import type { FanConfig } from "../FanChart";
 import type { BumpConfig } from "../BumpChart";
 import type { HeatmapConfig } from "../HeatmapChart";
+import {
+  PICTOGRAM_DEFAULT_ICON,
+  type PictogramConfig,
+} from "../PictogramChart";
+import { computePictogramLayout } from "../pictogram-geometry";
 
 export interface ConformanceRunResult {
   /** false = this type has no produce-time guard wired yet (not a pass) */
@@ -248,6 +254,14 @@ const WATERFALL_DIMS = {
 // computeHeatmapLayout derives valueDomain (min/max of the cell values) from the data alone,
 // never from these dims, and the rampStops from the config's baseColor/themeBg — any valid dims
 // (padding fits inside width/height) yield the same domain/ramp the real render checks.
+// The row COUNTS this guard checks are value/unitPerIcon — arithmetic the dims cannot
+// touch (they only set icon size and band positions), so any dims whose padding fits
+// inside width/height give the counts the real render draws.
+const PICTOGRAM_DIMS = {
+  width: 840,
+  height: 480,
+  padding: { top: 90, right: 52, bottom: 50, left: 120 },
+};
 const HEATMAP_DIMS = {
   width: 840,
   height: 480,
@@ -279,6 +293,7 @@ export const PRODUCE_GUARDED_TYPES: readonly string[] = [
   "fan",
   "bump",
   "heatmap",
+  "pictogram",
 ];
 
 /**
@@ -953,6 +968,44 @@ function computeRawConformance(
             source: cfg.source,
             rampStops: heatmapRamp(cfg.baseColor, cfg.themeBg),
             valueDomain: layout.valueDomain,
+          },
+          { text: [f.ink, f.muted], bg: f.bg },
+        ),
+      };
+    }
+
+    case "pictogram": {
+      // The countability rules read the SAME row counts the component draws, computed by
+      // the same geometry — not a re-derivation the guard could get right while the render
+      // gets wrong. The icons carry one Okabe-Ito hue (count, never colour, encodes the
+      // value), and the unit key is unconditional in PictogramChart, so `unitStated` is a
+      // structural fact of the component rather than a config field that could be false.
+      const cfg = config as unknown as PictogramConfig;
+      const layout = computePictogramLayout(
+        {
+          categoryField: cfg.categoryField,
+          valueField: cfg.valueField,
+          unitPerIcon: cfg.unitPerIcon,
+          rows: cfg.rows,
+        },
+        PICTOGRAM_DIMS,
+      );
+      const f = deriveFurniture(cfg.themeBg);
+      return {
+        checked: true,
+        violations: checkPictogramConformance(
+          {
+            title: cfg.title,
+            source: cfg.source,
+            // the hue the component ACTUALLY paints, so the CVD/contrast check sees the
+            // house colour a newsroom set rather than the engine default it overrode
+            iconColor: cfg.baseColor ?? PICTOGRAM_DEFAULT_ICON,
+            unitPerIcon: cfg.unitPerIcon,
+            unitStated: true,
+            rows: layout.rows.map((r) => ({
+              label: r.category,
+              count: r.count,
+            })),
           },
           { text: [f.ink, f.muted], bg: f.bg },
         ),

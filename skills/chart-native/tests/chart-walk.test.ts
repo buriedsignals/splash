@@ -1,7 +1,12 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { CHART_WALKS, chartWalk, entranceStep } from "../src/core/chart-walk";
+import {
+  CHART_WALKS,
+  chartWalk,
+  entranceStep,
+  entranceOf,
+} from "../src/core/chart-walk";
 import { NATIVE_TYPES } from "../src/native-types";
 
 // ---------------------------------------------------------------------------
@@ -327,4 +332,39 @@ describe("the scrolly staging is wired into the compositions that claim it", () 
       expect(src).toContain("step ? step.chartProgress : progress");
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// A SEQUENCED entry's `why` is shown to the journalist VERBATIM (narrative-kinds.ts reads
+// `chartWalk(nativeType).why`), so it is not a comment — it is a claim about the component,
+// and it can be wrong. `pictogram` carried SEQUENCED_UNNAMED — "its subjects are not named
+// by a field a beat can address (bins, cells, nodes)" — for as long as it was deferred, and
+// that is simply false: its rows are named by `categoryField`, exactly as `bar`'s are by
+// `catField`. Nobody noticed because a deferred type's reason is never said to anyone.
+//
+// The true reason is that its reveal advances by icon COLUMN across every row at once, so no
+// single row has a moment of its own. This pins the sentence to the source that makes it true.
+// ---------------------------------------------------------------------------
+describe("pictogram's stated reason is true of the component", () => {
+  const src = readFileSync(
+    join(import.meta.dir, "..", "src", "PictogramChart.tsx"),
+    "utf8",
+  );
+
+  it("its rows ARE named — so the old 'unnamed subjects' reason cannot be reused", () => {
+    expect(src).toContain("categoryField");
+    expect(CHART_WALKS.pictogram.why).not.toContain("not named");
+  });
+
+  it("every entrance window is indexed by the COLUMN, never by the row", () => {
+    const windows = [
+      ...src.matchAll(/clamp01\(\(reveal \* maxCols - ([^)]*)\)/g),
+    ].map((m) => m[1].trim());
+    expect(windows.length).toBeGreaterThan(0);
+    for (const w of windows) expect({ window: w, byRow: /index/.test(w) }).toEqual({ window: w, byRow: false });
+  });
+
+  it("and it has no per-subject entrance to ask for", () => {
+    expect(() => entranceOf("pictogram")).toThrow(/sequenced, not anchored/);
+  });
 });
