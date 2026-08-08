@@ -24,9 +24,13 @@ That was the wrong producer: for a plain static line chart, the flow's own routi
 chart work to the Datawrapper producer by default and reserves the native engine for motion or
 rich interactivity. A static three-case comparison against the native engine was not a fair fight —
 it compares the twin to a producer main's own flow would not have chosen, and it happened to be
-favourable to the twin, which is the direction that most needed catching. (This routing rule is
-stated in main's own orchestration code, in the repo this comparison is forbidden from opening; it
-is recorded here as given, not independently re-grepped for this document — flagged below.)
+favourable to the twin, which is the direction that most needed catching.
+
+The rule, verbatim, from `skills/suggest-chart/SKILL.md`:
+
+> Line 317: "The default for all chart paths. Emit the `ChartSpec` as above → hand to `dw-chart`."
+> Line 321: "Choose `chart-native` ONLY when the intent explicitly wants **motion** (a video /
+> animated reveal…"
 
 **Both passes are kept in `proof/comparison/`.** The corrected comparison — twin against
 `main-datawrapper` — is what the rest of this document scores. `main-chartnative` is kept only
@@ -88,18 +92,24 @@ handed the case away outright is closed.
 
 ## The native engine's ceiling, since it is the clearest evidence for the whole premise
 
-`main-chartnative`'s `LineChart` has no `highlightIndex`, no reference line, no annotation array
-and no caveat field. Sibling chart types in the same registry (bar, for instance) carry `highlight`;
-the line component does not. Its only emphasis mechanism is a dot and a label on the **last** point
-in the series — visible directly in the renders: `1-CO2--main-chartnative.png` labels 2024 (which
-happens to be the subject there), but `2-VIE--main-chartnative.png` labels 2024 the same way even
-though the story is about **2020** — the single moment of typographic emphasis in the whole chart
-lands on the wrong year, and nothing distinguishes the Covid dip from any other point on the line.
-That is the ceiling of a parameterised type: it does exactly what its author anticipated
-(`highlight the endpoint`) and nothing its author did not. (The absence of `highlightIndex` /
-reference line / annotation / caveat props on `LineChart` is stated as verified by grep in the
-source material for this comparison; this document did not re-run that grep, for the same
-path-restriction reason noted above — flagged below.)
+`grep -c "highlight\|referenceLine\|annotate" skills/chart-native/src/LineChart.tsx` returns **0**.
+Not a thin API — nothing. And this is not a uniform limitation spread evenly across the engine: it
+is a hole in the middle of it. **Seven sibling components in the same directory** declare a
+`highlight` mechanism — `BarChart.tsx`, `ScatterChart.tsx`, `SlopeChart.tsx`, `LollipopChart.tsx`,
+`BeeswarmChart.tsx`, `BumpChart.tsx`, `ParallelChart.tsx` — every one of them lets its caller
+designate a point. The line chart, the single most common chart in data journalism, is the one
+member of an otherwise-equipped family with no way to say "this one."
+
+Its only emphasis mechanism is a dot and a label on the **last** point in the series — visible
+directly in the renders: `1-CO2--main-chartnative.png` labels 2024 (which happens to be the subject
+there), but `2-VIE--main-chartnative.png` labels 2024 the same way even though the story is about
+**2020** — the single moment of typographic emphasis in the whole chart lands on the wrong year,
+and nothing distinguishes the Covid dip from any other point on the line. That is not a coincidence
+of this one case; it is what the grep predicts for every line-chart story whose subject is not its
+endpoint. The ceiling of a parameterised type is not "less capable" in the abstract — it is exactly
+what its author happened to anticipate (`highlight the endpoint`) and nothing its author did not,
+and on the chart type journalism reaches for most often, what got anticipated was too narrow by one
+whole capability every neighbouring type already has.
 
 ---
 
@@ -107,16 +117,16 @@ path-restriction reason noted above — flagged below.)
 
 Datawrapper's own line-chart engine carries a `range-annotations` key — a horizontal reference line
 with a label, verified live against the API — which is exactly the mechanism the twin used by hand
-to draw the 1967 and 2019 dashed rules. Main's mapper does not use it: a search for
-`range-annotation` in its mapper source returns nothing; only text annotations (callouts) are
+to draw the 1967 and 2019 dashed rules. Main's mapper does not use it:
+`grep -rn "range-annotation" skills/dw-chart/src` returns zero results. The capability exists on
+Datawrapper's own server and the mapper never reaches it — only text annotations (callouts) are
 wired up. That gap is why `main-datawrapper` states the CO₂ comparison as prose instead of drawing
 it, and it is the twin's single structural advantage on static charts.
 
 **State this plainly: closing it is roughly three changes, not a rebuild — one mapper key, one
 payload field, one test. This makes the twin's structural advantage on static charts a mapper gap,
 not an architectural one, and it is the finding in this whole document that most goes against the
-twin.** (The `range-annotations` API check and the mapper grep are, again, source-side verification
-this document did not re-run — flagged below.)
+twin.**
 
 ---
 
@@ -240,14 +250,19 @@ and that is the one thing nothing in this document tests, because nothing here u
 
 ---
 
-## Note on verification limits
+## Note on verification, and who did it
 
-Two claims above (the native engine's missing `highlightIndex` / reference-line / annotation /
-caveat props on `LineChart`, confirmed by grep; and the `range-annotations` gap in main's
-Datawrapper mapper, confirmed by grep plus a live API check) come from the source material handed
-into this comparison, not from a grep this document re-ran — main's engine source lives outside
-`twin/`, `docs/` and `/tmp`, which this task was explicitly not permitted to open. The routing rule
-that static chart work defaults to Datawrapper is reported on the same basis. Everything else in
-this document — every pixel claim, every axis range, every file size and canvas dimension, the
-timing contract's frame numbers, the git commits for the doctrine fix — was verified directly
-against the evidence in `proof/comparison/` or the committed source in this worktree.
+Three claims in this document could not be checked from inside this worktree, because main's engine
+source lives outside `twin/`, `docs/` and `/tmp`, which this task was not permitted to open. The
+controller verified all three directly, in the sibling worktree, and supplied the exact commands
+and output recorded above:
+
+1. **The routing rule** — `skills/suggest-chart/SKILL.md:317` and `:321`, quoted verbatim above.
+2. **The Datawrapper mapper gap** — `grep -rn "range-annotation" skills/dw-chart/src`, zero results.
+3. **The `LineChart` ceiling** — `grep -c "highlight\|referenceLine\|annotate" skills/chart-native/src/LineChart.tsx`,
+   returning 0, against seven sibling components in the same directory that declare `highlight`.
+
+Everything else in this document — every pixel claim, every axis range, every file size and canvas
+dimension, the timing contract's frame numbers, the git commits for the doctrine fix — was verified
+directly by the writer of this document, against the evidence in `proof/comparison/` or the
+committed source in this worktree.
