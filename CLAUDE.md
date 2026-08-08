@@ -290,7 +290,7 @@ comparer à la base de fusion ou monter un worktree de contrôle.
 > une fois pour toutes » à 18, puis 20, puis 22, puis 23 ; il vaut 25 au 2026-08-06. Réécrire les
 > reçus est ce qui produit la dérive — lire `check.mjs` est ce qui y met fin.
 
-## ★ État courant — 2026-08-07 — JOURNÉE DE CORRECTION : 22 chantiers, `main` @ `8f10c899`, gate 25/25
+## ★ État courant — 2026-08-07/08 — JOURNÉE DE CORRECTION : 28 chantiers, `main` @ `c15bcb97` (poussé sur `rd-dev`), gate 25/25
 
 Déclenchée par des **tests manuels de Rémy** et par trois notes de défaut écrites par des runs
 réels (Heidi.news prisons genevoises, JO Milan Cortina, glaciers). Tout est fusionné dans `main`,
@@ -355,6 +355,23 @@ qui échoue, pas ce qui sauve.
 un scrolly route sans `insight` **se referme sur son propre titre** (décision éditoriale) · le
 sous-titre DW lit « 54 percent recycled (%) » · le harnais de mesure de zoom vit dans un
 scratchpad et a été reconstruit par **deux sessions**.
+
+**Six chantiers de plus, le 08 :** la vidéo de scrolly route (aucune mort de tab reproduite en 9
+rendus — mais `RouteScrolly` était la seule composition sans garde de mise à jour par image :
+46 911 mises à jour de source pour ~1 200 porteuses, **−36 % CPU**, images identiques au SHA) · le
+**harnais de mesure de caméra** versé au dépôt avec 73 tests et ses limites énoncées · le sous-titre
+DW redondant (**1 cas sur 77** mesurés change, et il *retire* un ajout ; règle scopée aux unités
+SYMBOLES, reproduite d'abord **en français**) · les **cinq cartes qui se refermaient sur leur
+description** (et dont la vidéo ne rendait **aucune** carte de clôture) · puis les trois défauts que
+ce chantier a découverts en mesurant : **une légende affirmait un faux superlatif** (« Rome — 67$bn,
+the lowest » avec Amsterdam à 52$bn sur la même carte ; dot-density faux **aux deux bouts**) —
+désormais *le rang est déclaré par le dériveur, jamais lu sur la position d'une étape* — et une
+fuite d'anglais dans la couche géo (`POINTS PER HEXAGON`), fermée avec cinq sœurs et un garde de
+dérive qui relit les sources des renderers.
+
+**Résidu de forme, assumé :** les étapes intermédiaires symbole et cartogram portent maintenant des
+ordinaux qu'elles n'avaient pas (« Paris — 181$bn, the second ») — ce que le choroplèthe a toujours
+fait, cohérent et vrai, mais c'est un changement de copie visible.
 
 ## ★ État courant — 2026-08-06 — LA CHARTE LIT UN VRAI SITE DE RÉDACTION (**fusionnée** dans `main` @ `dcfff3c3`)
 
