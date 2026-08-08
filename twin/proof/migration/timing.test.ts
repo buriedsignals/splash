@@ -5,8 +5,8 @@ import {
   endOf,
   progressOf,
   type BeatTiming,
-} from "../assets/timing";
-import { MIGRATION_TIMING } from "../assets/migration-timing";
+} from "../../skills/twin-chart-video/assets/timing";
+import { MIGRATION_TIMING } from "./timing-contract";
 
 /**
  * Pins beat 3's own timing contract, the same discipline `test/timing.test.ts` applies to

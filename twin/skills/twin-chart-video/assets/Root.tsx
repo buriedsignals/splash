@@ -1,22 +1,18 @@
 /**
- * The Remotion root: the compositions this skill ships, one per beat.
+ * The Remotion root: the skill's seed composition only.
  *
- * Each `<Composition>`'s duration and fps come from that beat's own timing contract —
- * `durationInFrames` is `<STORY>_TIMING.total`, not a number typed here, so a journalist who
- * lengthens a hold gets a longer video rather than a video that ends mid-hold. `remotion still` and
- * `remotion render` both take a composition id as their second argument, which is how one root
- * registers several beats without any of them sharing a drawing.
+ * The Composition element's duration and fps come from its own timing contract — `durationInFrames`
+ * is `CO2_TIMING.total`, not a number typed here, so a journalist who lengthens a hold gets a
+ * longer video rather than a video that ends mid-hold.
  *
- * `defaultProps` on each is a placeholder so the composition can be listed without a props file.
- * Every real render is driven by that beat's own `scripts/render-*.mjs`, which reads its frozen CSV
- * and derives the furniture colours in node and passes them in — see those scripts.
+ * `defaultProps` is a placeholder so the composition can be listed without a props file. Every
+ * real render is driven by `scripts/render-video.mjs`, which reads the frozen CSV and derives the
+ * furniture colours in node.
  */
 
 import { Composition } from "remotion";
 import { EmissionsVideo, type EmissionsVideoProps } from "./EmissionsVideo";
 import { CO2_TIMING } from "./timing";
-import { MigrationVideo, type MigrationVideoProps } from "./MigrationVideo";
-import { MIGRATION_TIMING } from "./migration-timing";
 
 const CO2_PLACEHOLDER: EmissionsVideoProps = {
   data: [
@@ -35,46 +31,16 @@ const CO2_PLACEHOLDER: EmissionsVideoProps = {
   peakLabel: "Placeholder",
 };
 
-const MIGRATION_PLACEHOLDER: MigrationVideoProps = {
-  data: [
-    { year: 1996, value: 4.7 },
-    { year: 1997, value: -1.9 },
-    { year: 1998, value: -3.4 },
-    { year: 1999, value: 11.2 },
-  ],
-  title: "Placeholder — render through scripts/render-migration.mjs",
-  source: "Placeholder",
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
-  ink: "#000000",
-  muted: "#616161",
-  grid: "#D1D1D1",
-  reference: 0,
-  referenceLabel: "Placeholder",
-  subjectYears: [1997, 1998],
-};
-
 export function RemotionRoot() {
   return (
-    <>
-      <Composition
-        id="co2-suisse"
-        component={EmissionsVideo}
-        durationInFrames={CO2_TIMING.total}
-        fps={CO2_TIMING.fps}
-        width={1080}
-        height={1080}
-        defaultProps={CO2_PLACEHOLDER}
-      />
-      <Composition
-        id="migration"
-        component={MigrationVideo}
-        durationInFrames={MIGRATION_TIMING.total}
-        fps={MIGRATION_TIMING.fps}
-        width={1080}
-        height={1080}
-        defaultProps={MIGRATION_PLACEHOLDER}
-      />
-    </>
+    <Composition
+      id="co2-suisse"
+      component={EmissionsVideo}
+      durationInFrames={CO2_TIMING.total}
+      fps={CO2_TIMING.fps}
+      width={1080}
+      height={1080}
+      defaultProps={CO2_PLACEHOLDER}
+    />
   );
 }

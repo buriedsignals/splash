@@ -12,10 +12,11 @@
  * sized to read at 46px would be wider than the two years are apart on the time axis.
  *
  * `establish` and `reference` reuse beat 1's exact numbers and its 18-frame reading pause — see
- * `life-expectancy-timing.ts` for why that rhythm travels between stories unchanged.
+ * `../life-expectancy/timing-contract.ts` for why that rhythm travels between stories unchanged.
  */
 
-import type { BeatTiming } from "./timing";
+// Temporary relative path into the skill — Task 8 vendors this as #shared/twin-chart-video/timing
+import type { BeatTiming } from "../../skills/twin-chart-video/assets/timing";
 
 export const MIGRATION_TIMING: BeatTiming = {
   fps: 30,

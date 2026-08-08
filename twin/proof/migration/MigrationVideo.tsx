@@ -31,9 +31,69 @@ import {
   useVideoConfig,
   Easing,
 } from "remotion";
-import { drawnSoFar, FONT_FAMILY, measureText, wrap } from "./EmissionsVideo";
-import { progressOf, type BeatTiming } from "./timing";
-import { MIGRATION_TIMING } from "./migration-timing";
+import {
+  progressOf,
+  type BeatTiming,
+} from "../../skills/twin-chart-video/assets/timing";
+import { MIGRATION_TIMING } from "./timing-contract";
+
+// Video-canvas helpers duplicated from EmissionsVideo.tsx — not shared because they are
+// browser-Canvas-based (document.createElement("canvas")), not the static-render resvg substrate.
+// These functions are identical to EmissionsVideo's versions; both are always kept in sync.
+
+const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+
+let measuringContext: CanvasRenderingContext2D | null | undefined;
+function measureText(
+  text: string,
+  { fontSize, fontWeight = 400 }: { fontSize: number; fontWeight?: number },
+): number {
+  if (!text) return 0;
+  if (measuringContext === undefined)
+    measuringContext =
+      typeof document === "undefined"
+        ? null
+        : document.createElement("canvas").getContext("2d");
+  if (!measuringContext) return text.length * fontSize * 0.5;
+  measuringContext.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
+  return measuringContext.measureText(text).width;
+}
+
+function wrap(
+  text: string,
+  maxWidth: number,
+  font: { fontSize: number; fontWeight: number },
+): string[] {
+  const lines: string[] = [];
+  let current = "";
+  for (const word of text.split(/\s+/)) {
+    const trial = current ? `${current} ${word}` : word;
+    if (current && measureText(trial, font) > maxWidth) {
+      lines.push(current);
+      current = word;
+    } else current = trial;
+  }
+  return current ? [...lines, current] : lines;
+}
+
+function drawnSoFar<T extends { x: number; y: number }>(
+  points: T[],
+  progress: number,
+): { x: number; y: number }[] {
+  if (points.length === 0 || progress <= 0) return [];
+  const last = points.length - 1;
+  const travelled = progress * last;
+  const index = Math.min(last, Math.floor(travelled));
+  if (index >= last) return points.map(({ x, y }) => ({ x, y }));
+  const head = points.slice(0, index + 1).map(({ x, y }) => ({ x, y }));
+  const fraction = travelled - index;
+  const a = points[index];
+  const b = points[index + 1];
+  return [
+    ...head,
+    { x: a.x + (b.x - a.x) * fraction, y: a.y + (b.y - a.y) * fraction },
+  ];
+}
 
 const FRAME = { width: 1080, height: 1080 };
 const PAD = 72;

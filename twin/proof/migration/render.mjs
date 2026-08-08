@@ -1,21 +1,21 @@
-// twin/skills/twin-chart-video/scripts/render-migration.mjs
+// twin/proof/migration/render.mjs
 //
 // Third beat through the render ladder's second rung — same shape as `render-video.mjs` and
-// `render-life-expectancy.mjs` (`readingsFromCsv`, then still-first, then mp4), its own story
+// `../life-expectancy/render.mjs` (`readingsFromCsv`, then still-first, then mp4), its own story
 // constants. See `render-video.mjs` for the doc-comment on why this runs in node
 // (`deriveFurniture`) and why the still is rendered before the mp4.
 //
-// Usage:  bun skills/twin-chart-video/scripts/render-migration.mjs [--still-only] [--data <csv>] [--out <dir>]
+// Usage:  bun proof/migration/render.mjs [--still-only] [--data <csv>] [--out <dir>]
 
 import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "../../twin-chart-beat/scripts/render-still.mjs";
+import { deriveFurniture } from "#shared/twin-chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const PACKAGE_ROOT = resolve(HERE, "../../..");
-const ENTRY = join(HERE, "../assets/index.ts");
+const PACKAGE_ROOT = resolve(HERE, "../..");
+const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "migration";
 
 /** The story's own constants — the journalist's words, from the CADRAGE exchange. */
