@@ -216,6 +216,9 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
           ((config as Record<string, unknown>).insight as string) ??
           config.title ??
           "",
+        // deriveLocatorStory GENERATES the categorized regime's count word ("3 sites") —
+        // it needs the deliverable's language or the word ships in English.
+        lang: config.lang,
         // The confirmed walk reaches the deriver — see map-arc.ts.
         arcBeats: config.arcBeats,
       };
@@ -243,6 +246,11 @@ export const LocatorScrolly: React.FC<{ config: LocatorConfigShape }> = ({
           ? { name: config.source.name ?? "", url: config.source.url }
           : undefined,
         regionsWithData: config.markers.length,
+        // The DELIVERABLE'S LANGUAGE reaches the caption engine. Every one of the six
+        // map-native scrolly compositions dropped it, and mapStoryToChapters GENERATES
+        // words — so a French scrolly video captioned itself "the highest of the 5 shown".
+        // `lang` is a REQUIRED key there now, for exactly this reason.
+        lang: config.lang,
       });
       const stepKinds = story.steps.map((_, i) =>
         i === 0 ? "title" : "reveal",

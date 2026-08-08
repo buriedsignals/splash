@@ -135,7 +135,6 @@ export function deriveHexGridStory(
 ): Beat[] {
   const cap = Math.max(1, opts.maxReveals ?? DEFAULT_MAX_REVEALS);
   const full = layout.bounds;
-  const shapeWord = layout.binShape === "hex" ? "hexagon" : "cell";
   // The unit only applies to sum/mean — those aggregate the points' VALUE column, which the
   // unit describes (e.g. "kWh"). "count" aggregates the points THEMSELVES, already named by
   // the "points" word below; appending a value unit there would misdescribe the number.
@@ -179,14 +178,12 @@ export function deriveHexGridStory(
 
     ranked.slice(0, cap).forEach(({ c, i }, rank) => {
       const cellBbox = bbox(c.feature) as [number, number, number, number];
-      const desc =
-        rank === 0
-          ? "the densest"
-          : rank === 1
-            ? "the 2nd densest"
-            : `#${rank + 1}`;
+      // Furniture — the rank AND its bin noun come out of the locale table together, because
+      // the two cannot be concatenated across languages ("the densest hexagon", but
+      // "l'hexagone le plus dense"). Inline, this was English in every deliverable.
+      const desc = copy.densestBin(rank + 1, layout.binShape);
       const value = fmt(c.value);
-      const text = `${value} — ${desc} ${shapeWord}`;
+      const text = `${value} — ${desc}`;
       beats.push({
         kind: "reveal",
         camera: frameCell(cellBbox, full),

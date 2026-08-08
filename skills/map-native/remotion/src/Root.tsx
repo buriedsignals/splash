@@ -308,6 +308,7 @@ const symbolStoryMeta = makeStoryMeta((cfg: SymbolConfig) => {
 const sampleLocatorBeats = deriveLocatorStory(sampleLocator.markers, {
   title: sampleLocator.title ?? "",
   insight: (sampleLocator as any).insight ?? sampleLocator.title ?? "",
+  lang: (sampleLocator as any).lang,
 });
 const LOCATOR_STORY_FRAMES = buildTimeline(
   sampleLocatorBeats.map((b) => b.kind),
@@ -328,6 +329,7 @@ const locatorStoryMeta = makeStoryMeta(
         title: cfg.title ?? "",
         description: cfg.description,
         insight: cfg.insight ?? cfg.title ?? "",
+        lang: cfg.lang,
         // Same mirror as symbolStoryMeta above — size the walk that will actually render.
         arcBeats: cfg.arcBeats,
       }),

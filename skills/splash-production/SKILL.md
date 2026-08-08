@@ -74,18 +74,18 @@ the hint and re-produce". Advisory only; it never blocks the produce.
   itself** and record the old one in `correctedFrom`. The spine (GUARD 6,
   `lib/geo/place-resolution.ts`) FAILS a record whose coordinate is not the one plotted, a
   geocoded place never shown, and — reading the spec ALONE, threaded or not — a marker whose prose
-<<<<<<< HEAD
-  claims a summit with no record at all. Resolve peaks with
-  `geocodePlace(name, { expect: "peak" })` (`lib/geo/geocode.ts`); MapTiler's default layer has no
-  peaks in it. `"lake"`, `"glacier"` and `"settlement"` are wired too, and refuse rather than
-  approximate — including when two real places share the name, which `country: "ch"` resolves.
-  `river`, `massif`, `landmark` and `admin-area` are refused outright, each with the measurement
-  that closed it in `UNRESOLVABLE_PLACE_KINDS`.
-=======
   claims a summit with no record at all. Resolve every place with
-  `bun skills/suggest-chart/scripts/resolve-place.mjs <runDir> --place "<name>" [--expect peak]
-  [--elevation <m>]` — MapTiler's default layer has no peaks in it, and the script writes what it
-  resolved to `<runDir>/places.json`.
+  `bun skills/suggest-chart/scripts/resolve-place.mjs <runDir> --place "<name>" [--expect <kind>]
+  [--elevation <m>] [--country <cc>]` — the script writes what it resolved to `<runDir>/places.json`
+  and prints the line to relay.
+
+  MapTiler's default layer has **no peaks in it**, so `--expect peak` is what reaches a summit
+  rather than the glacier beneath it. `lake`, `glacier` and `settlement` are wired too, each
+  measured, each **refusing rather than approximating** — including when two real places share a
+  name (Algeria's *Lac Noir* outranks Fribourg's, a Djibouti village outranks the Valais Randa),
+  which `--country ch` resolves. `river`, `massif`, `landmark` and `admin-area` are refused
+  outright, each with the measurement that closed it in `UNRESOLVABLE_PLACE_KINDS`
+  (`lib/geo/geocode.ts`) — quote it to the journalist.
 
   **This one is no longer prose.** `produce-all` reads that receipt before any engine runs
   (`skills/splash/src/place-provenance.ts`) and REFUSES, naming the place, when the run resolved a
@@ -98,7 +98,6 @@ the hint and re-produce". Advisory only; it never blocks the produce.
   the machine resolved nothing. Use it instead of silence — a CSV of 200 located events owes one
   sentence, not 200 records. It is checked: a run whose own `places.json` shows it geocoded one of
   those places is refused for claiming this.
->>>>>>> fix/resolved-places-threading
 - **`skillsInvoked`** (REQUIRED on new proposals): the skills you actually invoked for this
   element, first entry declaring the branch — `"splash:cadrage-guided"` or
   `"splash:cadrage-direct"` — then e.g. `"suggest-article"`, `"suggest-chart"`. Copied across

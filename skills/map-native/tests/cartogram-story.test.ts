@@ -203,3 +203,30 @@ describe("cartogram beats threaded through beatsForMode + buildTimeline(AREAL_TI
     expect(sequentialFrames).toBeLessThan(contextFrames);
   });
 });
+
+// The ranked-walk descriptor is text this deriver GENERATES, so it is furniture: it used to
+// be three English literals ("the highest" / "the 2nd highest" / "#3") composed inline, which
+// shipped English into every French, German and Italian cartogram. Same class as the locator
+// caption that read "the highest of the 5 shown" on a French page.
+describe("deriveCartogramStory — the rank descriptor follows the deliverable's language", () => {
+  const revealsIn = (lang: string | undefined) =>
+    deriveCartogramStory(layout, { ...meta, lang }).filter(
+      (b) => b.kind === "reveal",
+    );
+
+  it("still reads in English when no language is declared", () => {
+    const r = revealsIn(undefined);
+    expect(r[0].copy).toContain("the highest");
+    expect(r[1].copy).toContain("the 2nd highest");
+  });
+
+  it("leaks no English into a French, German or Italian cartogram", () => {
+    for (const lang of ["fr", "de", "it"]) {
+      for (const b of revealsIn(lang))
+        expect(b.copy).not.toMatch(/the highest|the 2nd highest/);
+    }
+    expect(revealsIn("fr")[0].copy).toContain("le plus élevé");
+    expect(revealsIn("de")[0].copy).toContain("der höchste");
+    expect(revealsIn("it")[0].copy).toContain("il più alto");
+  });
+});

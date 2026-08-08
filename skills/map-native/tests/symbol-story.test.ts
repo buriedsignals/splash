@@ -413,3 +413,43 @@ describe("markTriggerFrames", () => {
     expect(m.get("")).toBe(10);
   });
 });
+
+// A SymbolPoint's `label` is optional (symbol-geo.ts), and the loop only sets it when the CSV
+// actually has a label column (lib/loop/assemble/map-native.ts) — so this caption composed
+// `${p.label ?? ""} — ${value}` against nothing. Measured on a delivered French page:
+//     "— 220 MW, le plus élevé des 4"
+// The mirror of the locator defect ("Pont d'Austerlitz — , the highest of the 5 shown"): the
+// same template, the same hole, the other end.
+describe("deriveSymbolStory — an unlabelled point", () => {
+  const unlabelled: SymbolPoint[] = [
+    { lon: 6.14, lat: 46.21, value: 220 },
+    { lon: 8.54, lat: 47.37, value: 90 },
+  ];
+
+  it("never opens a caption on a dangling separator", () => {
+    const beats = deriveSymbolStory(unlabelled, {
+      title: "Installed capacity",
+      unit: " MW",
+    });
+    for (const b of beats.filter((x) => x.kind === "reveal")) {
+      expect(b.copy).not.toMatch(/^\s*[—–]/);
+      expect(b.callout!.text).not.toMatch(/^\s*[—–]/);
+    }
+  });
+
+  it("keeps the value as the whole caption when there is no name to pair it with", () => {
+    const reveals = deriveSymbolStory(unlabelled, {
+      title: "Installed capacity",
+      unit: " MW",
+    }).filter((b) => b.kind === "reveal");
+    expect(reveals.map((b) => b.copy)).toEqual(["220 MW", "90 MW"]);
+  });
+
+  it("still pairs name and value when the point IS labelled", () => {
+    const reveals = deriveSymbolStory(points, {
+      title: "Europe's tech-funding map",
+      unit: "$bn",
+    }).filter((b) => b.kind === "reveal");
+    expect(reveals[0].copy).toBe("London — 296$bn");
+  });
+});

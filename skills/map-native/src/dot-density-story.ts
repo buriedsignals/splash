@@ -12,6 +12,7 @@ import type { StagedEntrance } from "./core/staged-reveal";
 import { regionBounds } from "./choropleth-geo";
 import { area } from "@turf/turf";
 import { localizeDecimal, localizeNumberString } from "./core/locale";
+import { storyCopy } from "../../../lib/core/story-copy";
 
 export interface DotDensityStoryMeta {
   title: string;
@@ -27,6 +28,13 @@ export interface DotDensityStoryMeta {
 }
 
 const DEFAULT_MAX_REVEALS = 5;
+
+/** A region's display name: the basemap's own `name`, falling through to the join key when it
+ *  is missing OR blank. The blank rung is the point — see the call sites. */
+function regionName(r: { feature: GeoJSON.Feature; key: string }): string {
+  const raw = r.feature.properties?.name;
+  return raw !== undefined && String(raw).trim() !== "" ? String(raw) : r.key;
+}
 
 function formatCompact(v: number, lang?: string): string {
   const abs = Math.abs(v);
@@ -81,7 +89,10 @@ export function deriveDotDensityStory(
         const r = regionByKey.get(key);
         if (!r) return null;
         const totalCount = r.groups.reduce((s, g) => s + g.count, 0);
-        const name = String(r.feature.properties?.name ?? r.key);
+        // A BLANK basemap name falls through to the key, exactly as a missing one does: `??`
+        // alone stopped at "" and the caption rendered "— 40k people", opening on a bare
+        // separator (the mirror of the locator hole — see symbol-story.ts's own note).
+        const name = regionName(r);
         // Same value formatting the density-ranked walk below uses (formatCompact + unit) —
         // the callout's VALUE, never the callout's TEXT (that is the journalist's own claim).
         const value = `${formatCompact(totalCount * layout.dotValue, meta.lang)}${unit ? " " + unit : ""}`;
@@ -99,7 +110,10 @@ export function deriveDotDensityStory(
       .map((r) => {
         const totalCount = r.groups.reduce((s, g) => s + g.count, 0);
         const a = Math.max(1e-9, area(r.feature));
-        const name = String(r.feature.properties?.name ?? r.key);
+        // A BLANK basemap name falls through to the key, exactly as a missing one does: `??`
+        // alone stopped at "" and the caption rendered "— 40k people", opening on a bare
+        // separator (the mirror of the locator hole — see symbol-story.ts's own note).
+        const name = regionName(r);
         let dominant: string | null = null;
         if (layout.hasCategories && r.groups.length) {
           const top = r.groups.reduce((best, g) =>
@@ -115,9 +129,11 @@ export function deriveDotDensityStory(
 
     for (const x of ranked.slice(0, cap)) {
       const valText = `${formatCompact(x.totalCount * layout.dotValue, meta.lang)}${unit ? " " + unit : ""}`;
+      // "mostly" is furniture (the CATEGORY it introduces is data, and stays verbatim) —
+      // inline it shipped an English adverb into every non-English dot-density caption.
       const text =
         layout.hasCategories && x.dominant
-          ? `${x.name} — ${valText}, mostly ${x.dominant}`
+          ? `${x.name} — ${valText}, ${storyCopy(meta.lang).mostly(x.dominant)}`
           : `${x.name} — ${valText}`;
       beats.push({
         kind: "reveal",

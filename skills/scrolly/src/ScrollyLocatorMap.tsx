@@ -145,6 +145,9 @@ export const ScrollyLocatorMap: React.FC<{
       ((config as unknown as Record<string, unknown>).insight as string) ??
       config.title ??
       "",
+    // Same language the captions are composed in (Scrolly.tsx's own call) — this component
+    // derives the SAME beats, so a divergence here is a divergence in the walk itself.
+    lang: config.lang,
     // The confirmed claim-arc drives the camera flight, exactly as it drives the captions in
     // Scrolly.tsx. Both had to forward it: one without the other puts the right words over
     // the wrong region.

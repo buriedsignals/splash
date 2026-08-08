@@ -205,3 +205,72 @@ describe("locatorBeatsForMode", () => {
     expect(locatorBeatsForMode(derived, "context")).toEqual(derived);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A LOCATOR RANKS NOTHING, AND ITS COUNT WORD IS FURNITURE.
+//
+// The categorized regime walks categories in ALPHABETICAL order and captions each with a
+// count. Both facts have to reach the caption engine: position is not rank here (so
+// scrolly's rank fallback, which reads rank off position, must be switched off), and
+// "sites" is a word splash generates — it has to come out of the locale table like every
+// other generated word, or a French page says "Écoles — 3 sites, the highest of the 5
+// shown" and an Italian one says "sites" too.
+// ---------------------------------------------------------------------------
+describe("deriveLocatorStory — the categorized regime declares itself categorical", () => {
+  const sites: LocatorMarker[] = [
+    { lon: 6.1, lat: 46.2, label: "École A", category: "Écoles" },
+    { lon: 6.2, lat: 46.3, label: "École B", category: "Écoles" },
+    { lon: 6.3, lat: 46.1, label: "Hôpital", category: "Hôpitaux" },
+  ];
+
+  it("tags every reveal categorical, so no ranking language is asserted over the alphabet", () => {
+    const beats = deriveLocatorStory(sites, { title: "T", lang: "fr" });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.length).toBe(2);
+    expect(reveals.every((b) => b.pattern === "categorical")).toBe(true);
+  });
+
+  it("localizes the count word, and carries it INSIDE the callout value", () => {
+    const fr = deriveLocatorStory(sites, { title: "T", lang: "fr" });
+    const frReveals = fr.filter((b) => b.kind === "reveal");
+    // Category order is `[...new Set(...)].sort()` — UTF-16 code units, so "Hôpitaux" (H)
+    // precedes "Écoles" (É). Which is itself why a rank read off POSITION here would be a
+    // claim about the alphabet, not about the data.
+    expect(frReveals.map((b) => b.copy)).toEqual([
+      "Hôpitaux — 1 site",
+      "Écoles — 2 sites",
+    ]);
+    // The count belongs to the VALUE, not to the free text: scrolly composes its caption
+    // from name + value, so a count word left outside them is a count word the page loses.
+    expect(frReveals.map((b) => b.callout!.value)).toEqual([
+      "1 site",
+      "2 sites",
+    ]);
+
+    const de = deriveLocatorStory(sites, { title: "T", lang: "de" });
+    expect(
+      de.filter((b) => b.kind === "reveal").map((b) => b.callout!.value),
+    ).toEqual(["1 Standort", "2 Standorte"]);
+
+    const it_ = deriveLocatorStory(sites, { title: "T", lang: "it" });
+    expect(
+      it_.filter((b) => b.kind === "reveal").map((b) => b.callout!.value),
+    ).toEqual(["1 sito", "2 siti"]);
+
+    const en = deriveLocatorStory(sites, { title: "T", lang: undefined });
+    expect(
+      en.filter((b) => b.kind === "reveal").map((b) => b.callout!.value),
+    ).toEqual(["1 site", "2 sites"]);
+  });
+
+  it("tags the few-annotated regime categorical too — a walk of places ranks nothing either", () => {
+    const places: LocatorMarker[] = [
+      { lon: 2.36, lat: 48.85, label: "Pont d'Austerlitz", note: "Départ." },
+      { lon: 2.28, lat: 48.85, label: "Tour Eiffel", note: "Final." },
+    ];
+    const beats = deriveLocatorStory(places, { title: "T", lang: "fr" });
+    const reveals = beats.filter((b) => b.kind === "reveal");
+    expect(reveals.every((b) => b.pattern === "categorical")).toBe(true);
+    expect(reveals.every((b) => b.callout!.value === "")).toBe(true);
+  });
+});

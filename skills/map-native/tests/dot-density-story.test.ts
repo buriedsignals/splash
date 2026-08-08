@@ -70,3 +70,64 @@ describe("deriveDotDensityStory", () => {
     expect(capped.filter((b) => b.kind === "reveal").length).toBe(1);
   });
 });
+
+// "mostly" is an adverb this deriver GENERATES — furniture, and it was an English literal
+// inside the caption. The CATEGORY it introduces is data and stays verbatim.
+describe("deriveDotDensityStory — the dominant-category clause is localized", () => {
+  const categorized = {
+    ...layout,
+    hasCategories: true,
+    legend: [{ category: "solaire", color: "#2171b5" }],
+    regions: layout.regions.map((r) => ({
+      ...r,
+      groups: r.groups.map((g) => ({ ...g, color: "#2171b5" })),
+    })),
+  };
+  const firstReveal = (lang: string | undefined) =>
+    deriveDotDensityStory(categorized as typeof layout, {
+      title: "Where the people are",
+      unit: "people",
+      lang,
+    }).filter((b) => b.kind === "reveal")[0];
+
+  it("still reads 'mostly' when no language is declared", () => {
+    expect(firstReveal(undefined).copy).toContain("mostly solaire");
+  });
+
+  it("leaks no English adverb into a French, German or Italian caption", () => {
+    expect(firstReveal("fr").copy).toContain("majoritairement solaire");
+    expect(firstReveal("de").copy).toContain("überwiegend solaire");
+    expect(firstReveal("it").copy).toContain("prevalentemente solaire");
+    for (const lang of ["fr", "de", "it"])
+      expect(firstReveal(lang).copy).not.toMatch(/mostly/);
+  });
+});
+
+// `x.name` was `properties.name ?? key` — a `??`, which does not catch an empty string the way
+// choropleth's own label path does, so the caption rendered "— 40k people". Fixed at the LOOKUP,
+// not at the composer: unlike a locator's value or a symbol point's label, there IS a next rung
+// to fall to (the join key), so a blank name is a resolution that stopped early, not a half of
+// the caption that was never going to exist. (The locator defect's mirror — see
+// symbol-story.test.ts for the case that genuinely has no fallback.)
+describe("deriveDotDensityStory — a region whose name resolves to empty", () => {
+  it("never opens a caption on a dangling separator", () => {
+    const blank = {
+      ...layout,
+      regions: layout.regions.map((r) => ({
+        ...r,
+        feature: {
+          ...r.feature,
+          properties: { ...(r.feature.properties ?? {}), name: "" },
+        },
+      })),
+    };
+    const beats = deriveDotDensityStory(blank as typeof layout, {
+      title: "Where the people are",
+      unit: "people",
+    });
+    for (const b of beats.filter((x) => x.kind === "reveal")) {
+      expect(b.copy).not.toMatch(/^\s*[—–]/);
+      expect(b.callout!.text).not.toMatch(/^\s*[—–]/);
+    }
+  });
+});

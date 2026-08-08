@@ -13,6 +13,8 @@ import { computeCartogram } from "./cartogram-geo";
 import { deriveCartogramStory } from "./cartogram-story";
 import { buildTimeline } from "./story-timeline";
 import { mapStoryToChapters } from "../../scrolly/src/chapters";
+import { storyCopy } from "../../../lib/core/story-copy";
+import { formatLocaleNumber } from "../../../lib/core/locale";
 import type { ScrollyStory, ScrollyStep } from "../../scrolly/src/chapters";
 
 // The arc-camera for one crossed territory: its OWN geographic footprint (a bbox over the
@@ -155,6 +157,11 @@ export function routeStoryToChapters(
     source?: { name: string; url: string };
     insight?: string;
     notes?: Record<string, string>;
+    /** Deliverable language — localizes the DERIVED takeaway this function composes when the
+     *  journalist gave no insight. Required, `undefined` meaning "no language declared":
+     *  optional is how the leak got out on the locator track (see mapStoryToChapters's own
+     *  `lang` comment), and this function had the same hole. */
+    lang: string | undefined;
   },
 ): ScrollyStory {
   const n = walk.length;
@@ -192,9 +199,16 @@ export function routeStoryToChapters(
     align: "center",
   }));
 
+  // The journalist's own closing line wins. Failing that this composes one — and a caption
+  // splash WRITES is furniture: it comes out of the locale table, and its distance goes
+  // through the locale number format. Inline, it was `${n} territories, ${km} km`: English
+  // words and an ungrouped number on the last card of a French, German or Italian page.
   const takeawayProse = meta.insight?.trim()
     ? meta.insight
-    : `${n} territories, ${Math.round(layout.totalLengthKm)} km`;
+    : storyCopy(meta.lang).routeSpan(
+        n,
+        formatLocaleNumber(Math.round(layout.totalLengthKm), meta.lang),
+      );
   const takeaway: ScrollyStep = {
     id: `step-${n + 2}-takeaway`,
     visual: "map",
@@ -255,6 +269,7 @@ export function scrollyStepCount(
       title: config.title ?? "",
       description: config.description,
       insight: config.insight ?? config.title ?? "",
+      lang: config.lang,
       // The SIZER must derive the same walk the renderer does — same mirror as the symbol/
       // choropleth branches below (a confirmed arc changes the beat COUNT, so a sizer blind
       // to it sizes the composition for a different story than the one that renders).
@@ -264,6 +279,11 @@ export function scrollyStepCount(
       title: config.title ?? "",
       description: config.description,
       source: config.source,
+      // The sizer derives the SAME story the renderer does — including its language. Step
+      // COUNT does not turn on `lang`, but a sizer that quietly differs from the renderer on
+      // any input is the shape this file's own header warns about; and `lang` is required at
+      // the composer precisely so no call site can leave the question unanswered.
+      lang: config.lang,
       regionsWithData: config.markers.length,
     }).steps.length;
   }
@@ -284,6 +304,11 @@ export function scrollyStepCount(
       title: config.title ?? "",
       description: config.description,
       source: config.source,
+      // The sizer derives the SAME story the renderer does — including its language. Step
+      // COUNT does not turn on `lang`, but a sizer that quietly differs from the renderer on
+      // any input is the shape this file's own header warns about; and `lang` is required at
+      // the composer precisely so no call site can leave the question unanswered.
+      lang: config.lang,
       regionsWithData: layout.regions.length,
     }).steps.length;
   }
@@ -303,6 +328,11 @@ export function scrollyStepCount(
       title: config.title ?? "",
       description: config.description,
       source: config.source,
+      // The sizer derives the SAME story the renderer does — including its language. Step
+      // COUNT does not turn on `lang`, but a sizer that quietly differs from the renderer on
+      // any input is the shape this file's own header warns about; and `lang` is required at
+      // the composer precisely so no call site can leave the question unanswered.
+      lang: config.lang,
       regionsWithData: layout.cells.length,
     }).steps.length;
   }
@@ -321,6 +351,11 @@ export function scrollyStepCount(
       title: config.title ?? "",
       description: config.description,
       source: config.source,
+      // The sizer derives the SAME story the renderer does — including its language. Step
+      // COUNT does not turn on `lang`, but a sizer that quietly differs from the renderer on
+      // any input is the shape this file's own header warns about; and `lang` is required at
+      // the composer precisely so no call site can leave the question unanswered.
+      lang: config.lang,
       regionsWithData: layout.cells.length,
     }).steps.length;
   }
@@ -344,6 +379,11 @@ export function scrollyStepCount(
       title: config.title ?? "",
       description: config.description,
       source: config.source,
+      // The sizer derives the SAME story the renderer does — including its language. Step
+      // COUNT does not turn on `lang`, but a sizer that quietly differs from the renderer on
+      // any input is the shape this file's own header warns about; and `lang` is required at
+      // the composer precisely so no call site can leave the question unanswered.
+      lang: config.lang,
       regionsWithData: config.points.length,
     }).steps.length;
   }
@@ -363,6 +403,8 @@ export function scrollyStepCount(
     title: config.title ?? "",
     description: config.description,
     source: config.source,
+    // Same mirror as every branch above — the sizer answers the language question too.
+    lang: config.lang,
     regionsWithData: layout.joined.filter((j) => j.value !== null).length,
   }).steps.length;
 }
