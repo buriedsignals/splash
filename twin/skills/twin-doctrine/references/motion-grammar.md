@@ -56,25 +56,28 @@ has been given a build, not an argument.
 
 ## The conclusion appears only after its evidence is visible
 
-The sentence — the journalist's confirmed takeaway — is the last thing to arrive, and it arrives
-only once every mark it depends on is on screen. A title that states the conclusion over an empty
-frame asks the reader to accept it before the chart has said anything, and then spends seven
-seconds catching up to a claim they have already been handed.
+**This rule governs assertions, not the title.** An assertion is an on-canvas element that *claims a
+finding*: a callout, an annotation stating what happened, the value that closes the argument, a
+highlight that says "here". None of them may appear before the marks that support them are on
+screen. A callout reading "back under the 1967 level" over a chart that has not yet drawn 1967 asks
+the reader to accept a claim from an empty frame; the accent pointing at a mark that does not exist
+yet is the same failure with no words on it.
 
-This is the one place the motion grammar **departs** from `information-architecture.md`'s reading
-order for stills. In a still, the title is furniture and it sits at the top of the stack because the
-reader controls their own order. In a video the reader does not: time is the stack. The takeaway is
-therefore the **conclusion event**, not furniture.
+**A title is furniture, and so are the source line, the axis and the scale.** The title establishes
+what the reader is looking at — that is the definition of furniture, and the furniture rule below
+applies to it unchanged: up from the start, together with the axis, then still. This is not a
+departure from `information-architecture.md`; the reading order for stills holds here too.
 
-Two consequences, both real costs, both accepted knowingly:
+This distinction was learned the hard way and is written down so nobody re-learns it. The first
+build of `twin-chart-video` read "the conclusion appears only after its evidence" as applying to the
+takeaway, put the title in the conclusion event, and produced eight seconds of which nearly seven
+played under a deserted band of empty frame — no poster frame, no thumbnail, and a reader given
+nothing to orient by while the chart built. The rule was obeyed faithfully and the video was worse
+for it, because the rule was never about the title.
 
-- The space the title will occupy is **reserved from frame 0**. It appears in place; nothing below
-  it ever shifts. A layout that reflows when the title arrives breaks "the background stays still".
-- The first frame is a **poster frame without the sentence**. If the piece will be published
-  somewhere that shows frame 0 as a thumbnail, that is a genuine argument for pinning the title as
-  furniture instead — make that call editorially, and if the title is furniture, then the
-  conclusion event is something else that genuinely concludes, never a second copy of the sentence
-  (see "repeated years or values" in `anti-patterns.md`).
+When the title is furniture, the **conclusion event still has work**: it is whatever genuinely
+concludes the argument — most often the subject's value, stated once the subject has landed. It is
+never a second copy of the title's sentence (see "repeated years or values" in `anti-patterns.md`).
 
 ## Hold the finished frame
 
