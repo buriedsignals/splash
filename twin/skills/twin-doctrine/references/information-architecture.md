@@ -35,13 +35,34 @@ one order:
    never detached into their own zone unless `visual-system.md`'s legend-as-fallback condition is
    met.
 5. **Source line.** Small, but never so small it fails the "support verification" job — see
-   `anti-patterns.md`'s "tiny footer sources" entry. Fixed at the bottom, in the same position
-   across every graphic a newsroom ships, so a reader who has learned where to look once never has
-   to search for it again.
+   `anti-patterns.md`'s "tiny footer sources" entry. This file's *default* position is fixed at
+   the bottom, in the same position across every graphic a newsroom ships, so a reader who has
+   learned where to look once never has to search for it again — but see "When a genre-scoped
+   file disagrees with this stack" below: a specific engine and format is allowed to place it
+   elsewhere, and where one does, that placement wins over this default.
 
 This is not an aesthetic preference for a particular stacking order — it is the same order a
 reader's eye actually travels in a script that reads top-to-bottom, and a graphic that fights that
 order is spending part of its reader's attention on navigation instead of on the evidence.
+
+## When a genre-scoped file disagrees with this stack
+
+This file states the *general* stack: the default zones and their default order, for a reader who
+has not yet learned any engine's specific habits. A **genre-scoped discipline file** — one written
+for a single engine and a single format, such as `twin-chart-beat/references/static-discipline.md`
+for the static chart genre — is allowed to override a zone's default position when its own render
+actually places it differently, because it sits closer to the real pixels than this file does.
+
+**Where the two disagree, the genre-scoped file wins.** The source line is the live example: this
+file's default (item 5 above) fixes it at the bottom; `static-discipline.md` places it directly
+beneath the title for a static chart beat, matching what the seed component actually draws. For a
+static chart beat, follow `static-discipline.md` — directly beneath the title, not the bottom. A
+beat author who stops at this file's default without checking their engine's genre-scoped file has
+not yet read the authoritative answer for their own format.
+
+If a genre-scoped file is silent on a zone — true for most zones, most of the time — this file's
+default stands unchallenged. The override is narrow: it reaches only the zone the genre-scoped
+file actually speaks to, not licence to reorder the rest of the stack.
 
 ## Proximity encodes relatedness
 
