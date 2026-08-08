@@ -83,12 +83,18 @@ export function isoA3PinnedInFormat(format: VisualFormat): boolean {
 }
 
 /**
- * FACT A's refusal. Deliberately the sentence lib/loop/assemble/map-native.ts already refuses a
- * non-world dot-density with, so the two chains say ONE thing about one fact — the loop keeps
- * its own (broader, format-blind) condition, only the wording is shared. The middle clause is
- * the one correction: the loop's copy said the component "joins against world.geojson
- * unconditionally", which stopped being true when Task 17 moved it onto an injected geometry —
- * the loop's own comment flags that; only the "iso_a3" literal survives, and that is what is
+ * FACT A's refusal — the sentence itself. Every site that refuses this triple says exactly this,
+ * and none of them phrases it: the loop's assembler, the prose chain's gate, and (since
+ * 2026-08-07) the OFFER, which drops the pairing before a journalist can choose it.
+ *
+ * Reach it through `isoA3PinnedJoinError` below rather than calling it directly — sharing only the
+ * WORDING is what this module used to do, and it was not enough: the loop's two branches shared
+ * this string while asking different questions, one scoped by format and one not, and the
+ * unscoped one deleted a video that renders. The predicate shares the QUESTION too.
+ *
+ * The middle clause is the one correction to the sentence the loop originally wrote: its copy said
+ * the component "joins against world.geojson unconditionally", which stopped being true when Task
+ * 17 moved it onto an injected geometry. Only the "iso_a3" literal survives, and that is what is
  * named here.
  */
 export function isoA3PinnedJoinRefusal(
