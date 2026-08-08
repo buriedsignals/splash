@@ -366,6 +366,11 @@ export function keepRing(ring: Ring, frame: Frame, margin = 40): boolean {
  * arithmetic, because a superlative is exactly the kind of claim that is true when it is written
  * and false when the data is refreshed.
  *
+ * `quorum` names which claim the title is actually making about its neighbours: `"all"` (the
+ * default — a superlative, and every neighbour below the subject is its own named violation) or
+ * `"most"` — a strict majority, checked as one verdict rather than neighbour by neighbour, because
+ * "most" is not falsified by a single exception the way "all" is.
+ *
  * It throws rather than passing when a code it was asked about is absent: a claim that cannot be
  * evaluated has not been checked, and silently returning "no violations" is the worse answer.
  */
@@ -374,11 +379,13 @@ export function claimViolations({
   subject,
   comparison,
   neighbours,
+  quorum = "all",
 }: {
   values: Map<string, number>;
   subject: string;
   comparison: string;
   neighbours: readonly string[];
+  quorum?: "all" | "most";
 }): string[] {
   const need = [subject, comparison, ...neighbours];
   const absent = need.filter((code) => !values.has(code));
@@ -393,11 +400,18 @@ export function claimViolations({
     violations.push(
       `${subject} (${value}) is not below ${comparison} (${values.get(comparison)})`,
     );
-  for (const neighbour of neighbours)
-    if (values.get(neighbour)! <= value)
+
+  const notAbove = neighbours.filter((n) => values.get(n)! <= value);
+  if (quorum === "all") {
+    for (const neighbour of notAbove)
       violations.push(
         `${neighbour} (${values.get(neighbour)}) is not above ${subject} (${value}) — the title says all of its neighbours`,
       );
+  } else if (neighbours.length > 0 && notAbove.length * 2 >= neighbours.length)
+    violations.push(
+      `only ${neighbours.length - notAbove.length} of ${neighbours.length} neighbours are above ${subject} (${value}), not a strict majority — the title says most of its neighbours. ` +
+        `Not above: ${notAbove.map((n) => `${n} (${values.get(n)})`).join(", ")}`,
+    );
   return violations;
 }
 

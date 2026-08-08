@@ -55,8 +55,16 @@ const BEAT = {
   comparisonLabel: "Moyenne européenne",
   /** The countries the title's second clause is about. Checked, not assumed. */
   neighbours: ["FRA", "DEU", "ITA", "AUT", "LIE"],
+  /**
+   * The title's second clause claims a majority, not a superlative — checked as "most" below, not
+   * "all". Verified against the source before writing it: 2023, t CO2/capita — CHE 3,60, FRA 4,07,
+   * DEU 7,02, ITA 5,25, AUT 6,23, LIE 3,31. Switzerland is below 4 of its 5 neighbours; only
+   * Liechtenstein is lower. 4 of 5 is a strict majority, so "la plupart" is true; the fixture's
+   * original "tous" was not (Liechtenstein), which is exactly the defect the claim check exists to
+   * catch — see the `quorum: "most"` call below.
+   */
   title:
-    "La Suisse émet moins de CO₂ par habitant que la moyenne européenne — et moins que tous ses voisins.",
+    "La Suisse émet moins de CO₂ par habitant que la moyenne européenne — et moins que la plupart de ses voisins.",
   source: "Source : Global Carbon Budget 2025, via Our World in Data · données 2023",
   basemapCredit: "fond de carte © MapTiler, © OpenStreetMap",
   legendCaption: "Tonnes de CO₂ par habitant",
@@ -99,6 +107,7 @@ const violations = claimViolations({
   subject: BEAT.subject,
   comparison: BEAT.comparison,
   neighbours: BEAT.neighbours,
+  quorum: "most",
 });
 if (violations.length === 0) console.log("claim: supported by the source.");
 else

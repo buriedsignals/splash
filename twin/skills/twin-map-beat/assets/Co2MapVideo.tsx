@@ -14,6 +14,7 @@
  * passes ink/muted/grid in as props. One implementation of the colour rule, two genres.
  */
 
+import { Fragment } from "react";
 import {
   AbsoluteFill,
   Easing,
@@ -276,6 +277,22 @@ export function Co2MapVideo({
               strokeWidth={2.4}
             />
           </pattern>
+          {/* A country that has not yet reached its own window in the reveal must not read as a
+              value — an opacity fade from nothing let the near-white basemap show through, which
+              reads LIGHTER than the lightest filled class: for several seconds the map stated the
+              opposite of the data. This is a SEPARATE mark from "no-data" (dots, not a diagonal
+              hatch) because it means a different thing: "not drawn yet", not "the source is silent
+              about this shape" — reusing the no-data hatch here would say the wrong thing on every
+              frame before a country's turn arrives. */}
+          <pattern
+            id="pending"
+            width={10}
+            height={10}
+            patternUnits="userSpaceOnUse"
+          >
+            <rect width={10} height={10} fill={ground} />
+            <circle cx={5} cy={5} r={1.3} fill={muted} />
+          </pattern>
           <clipPath id="plate-clip">
             <rect x={PAD} y={MAP_Y} width={MAP} height={MAP} />
           </clipPath>
@@ -291,22 +308,55 @@ export function Co2MapVideo({
                 order.length,
                 reveal,
               );
-              if (arrived <= 0) return null;
+              const d = pathFromRings(shape.rings);
+              const stroke = {
+                stroke: ground,
+                strokeWidth: 0.8 / scale,
+                strokeLinejoin: "round" as const,
+              };
+
+              if (v === null || v === undefined) {
+                // No-data: unchanged. It arrives first in the order (rule 10) and its own hatch
+                // already reads as "outside the scale", so a pre-arrival fade to nothing never
+                // masquerades as a value the way a value-bearing shape's did.
+                if (arrived <= 0) return null;
+                return (
+                  <path
+                    key={shape.key}
+                    d={d}
+                    fill="url(#no-data)"
+                    fillRule="evenodd"
+                    {...stroke}
+                    opacity={arrived}
+                  />
+                );
+              }
+
+              // A value-bearing shape is opaque from its first frame: it holds the "pending" dots
+              // — visibly not a shade the ramp could have produced — until its own window opens,
+              // then crossfades to its true colour. Never translucent against the basemap, so it
+              // never reads lighter than the lightest filled class.
+              const trueFill = ramp[binIndex(v, breaks)];
               return (
-                <path
-                  key={shape.key}
-                  d={pathFromRings(shape.rings)}
-                  fill={
-                    v === null || v === undefined
-                      ? "url(#no-data)"
-                      : ramp[binIndex(v, breaks)]
-                  }
-                  fillRule="evenodd"
-                  stroke={ground}
-                  strokeWidth={0.8 / scale}
-                  strokeLinejoin="round"
-                  opacity={arrived}
-                />
+                <Fragment key={shape.key}>
+                  {arrived < 1 && (
+                    <path
+                      d={d}
+                      fill="url(#pending)"
+                      fillRule="evenodd"
+                      {...stroke}
+                    />
+                  )}
+                  {arrived > 0 && (
+                    <path
+                      d={d}
+                      fill={trueFill}
+                      fillRule="evenodd"
+                      {...stroke}
+                      opacity={arrived}
+                    />
+                  )}
+                </Fragment>
               );
             })}
 

@@ -122,7 +122,7 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| What the camera holds | `bounds` `[[-9, 36], [31, 67]]` | `BEAT`, `bake-plate.mjs` |
+| What the camera holds | `bounds` `[[-26, 36], [33, 67]]` — wide enough west to hold Iceland whole, not just its eastern edge | `BEAT`, `bake-plate.mjs` |
 | Which basemap | `style` `"dataviz-light"` — quiet by construction, and a choropleth wants a ground that encodes nothing | `BEAT`, `bake-plate.mjs` |
 | How long the capture waits before it gives up on `idle` | `--settle` `15000` ms | `bake-plate.mjs` |
 | Where the subject's label hangs | `anchors.label` `[6.05, 46.62]` — a coordinate, so it follows the camera | `BEAT`, `bake-plate.mjs` |
@@ -157,11 +157,34 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 - `test/timing.test.ts` — every structural rule of the motion grammar, green on the shipped timing
   and red on a timing mutated to break exactly that rule.
 
-## What this beat found, and did not fix
+## What this beat found
 
-The claim check earns its place immediately. The confirmed takeaway says Switzerland emits less
-than **all** its neighbours; **Liechtenstein, at 3,31 t, is below Switzerland's 3,60 t**, so the
-title's second clause is not supported by this source. The title is the journalist's confirmed
-wording and is rendered as given — a producer does not silently rewrite an editorial sentence — so
-`render-map.mjs` prints the violation, naming the country, on every render. Fixing it is the
-journalist's call: retitle, or scope "voisins" to the four large neighbours and say so.
+The claim check earned its place immediately, on this fixture's first title: "…et moins que **tous**
+ses voisins." **Liechtenstein, at 3,31 t, is below Switzerland's 3,60 t**, so that superlative was
+not supported by the source. The title is the journalist's confirmed wording and is rendered as
+given — a producer does not silently rewrite an editorial sentence — so `render-map.mjs` printed the
+violation, naming the country, on every render. Because this particular title was a developer
+fixture rather than a journalist's confirmed wording, there was no editorial intent to protect, so
+it was corrected rather than left for a journalist's call: retitled to "…et moins que **la plupart**
+de ses voisins" — checked against all five neighbours (FRA 4,07, DEU 7,02, ITA 5,25, AUT 6,23, LIE
+3,31 t) before shipping, since 4 of 5 above the subject is a true strict majority. `claimViolations`
+now takes a `quorum: "all" | "most"` option so the check can tell the two kinds of claim apart:
+"all" still fails on a single exception, "most" fails only when the exception stops being a
+minority. This beat calls it with `quorum: "most"`, matching what the title now says.
+
+A second defect was found the same way this one was: by looking at a mid-reveal frame, not by
+reading the code. A country that had not yet reached its own window in `Co2MapVideo.tsx`'s reveal
+faded in from full transparency, so for several frames it showed the near-white basemap through a
+half-opaque fill — reading LIGHTER than a country already filled in the lightest class, i.e. stating
+the opposite of the data. Reusing the `no-data` hatch for this would have said the wrong thing (it
+already means "the source is silent about this shape forever", not "hasn't been drawn yet"), so a
+second, visually distinct texture (`pending`, dots rather than a diagonal hatch) holds every
+value-bearing shape opaque from its first frame until its own window opens, then crossfades to its
+true ramp colour. Never translucent against the basemap, so it never reads as a value it is not.
+
+Iceland (`ISL`, in `CO2_STUDY`) was also sliced by the frame's top-left corner: the original camera
+(`bounds [[-9, 36], [31, 67]]`) put most of it west of the frame. Widening west to `-26` shows it
+whole; nudging east from `31` to `33` keeps that widening from re-centring the box far enough west
+to newly clip Belarus. Cost: Switzerland reads about 11% smaller than it did at the old bounds — a
+real trade, checked against the baked `geometry.json` (every shape's projected bounding box) rather
+than eyeballed, and still clearly the only outlined, labelled, accent-coloured region on the map.

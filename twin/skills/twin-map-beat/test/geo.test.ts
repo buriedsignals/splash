@@ -344,6 +344,48 @@ describe("claimViolations", () => {
       }),
     ).toThrow(/ITA/);
   });
+
+  it("should say nothing under a 'most' claim when a strict majority of neighbours are above the subject, even if one is not", () => {
+    // The real CO2 case this claim is drawn against: Switzerland below France, Germany, Italy and
+    // Austria, but not below Liechtenstein — 4 of 5, a majority, not all.
+    const violations = claimViolations({
+      values: new Map([...supported, ["LIE", 3.31]]),
+      subject: "CHE",
+      comparison: "OWID_EUR",
+      neighbours: ["FRA", "DEU", "LIE"],
+      quorum: "most",
+    });
+    expect(violations).toEqual([]);
+  });
+
+  it("should report a 'most' claim as unsupported when the subject is not below a strict majority of its neighbours", () => {
+    const violations = claimViolations({
+      values: new Map([
+        ["CHE", 5],
+        ["FRA", 4], // below the subject
+        ["DEU", 4.5], // below the subject
+        ["OWID_EUR", 6.5],
+      ]),
+      subject: "CHE",
+      comparison: "OWID_EUR",
+      neighbours: ["FRA", "DEU"],
+      quorum: "most",
+    });
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("FRA");
+    expect(violations[0]).toContain("DEU");
+  });
+
+  it("should still name every individual neighbour below the subject when quorum is 'all' (the default, unchanged)", () => {
+    const violations = claimViolations({
+      values: new Map([...supported, ["LIE", 3.31]]),
+      subject: "CHE",
+      comparison: "OWID_EUR",
+      neighbours: ["FRA", "DEU", "LIE"],
+    });
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain("LIE");
+  });
 });
 
 describe("fr", () => {

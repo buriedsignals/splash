@@ -26,12 +26,20 @@ import { CO2_STUDY, keepRing, simplifyRing } from "../assets/geo.ts";
 
 /** The beat's camera and its anchors — the journalist's frame, not a default. */
 const BEAT = {
-  // Europe as this story means it: Gibraltar to the Arctic circle, Ireland to the Black Sea. The
+  // Europe as this story means it: Iceland to the Arctic circle, Gibraltar to the Black Sea. The
   // box is near-square on purpose (rule 12) — a landscape frame that holds this much latitude also
   // holds the mid-Atlantic and a third of North Africa.
+  //
+  // West is -26, not the -9 the study set's southern edge would suggest, because Iceland is IN the
+  // study set (`CO2_STUDY` carries "ISL") and `fitBounds` on a near-square viewport centres the box
+  // and lets the tighter axis — here the north-south range — decide the zoom; a -9 west edge left
+  // Iceland's western two-thirds outside the frame, sliced at the corner rather than shown. Widening
+  // west to include it costs some zoom (Switzerland reads ~11% smaller than it did at -9) and nudging
+  // east to 33 keeps that widening from re-centring the box far enough west to newly clip Belarus —
+  // both measured against the baked `geometry.json`, not guessed.
   bounds: [
-    [-9, 36],
-    [31, 67],
+    [-26, 36],
+    [33, 67],
   ],
   style: "dataviz-light",
   anchors: {
