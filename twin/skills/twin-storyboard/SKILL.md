@@ -10,8 +10,10 @@ description: Use to run the STORYBOARD phase of the doctrine twin — the editor
 Runs the STORYBOARD phase: the six-movement editorial exchange (`references/exchange.md`) that
 turns an article's claims into an ordered list of **slots**, each carrying **one to n candidate
 treatments**, one of them **chosen**. This skill **proposes — it does not interrogate.** It gives
-back what it read, asks one question at a time, always with a recommendation attached, and never
-fills a field the journalist should have filled themselves. `scripts/storyboard.mjs` is the
+back what it read, asks one question at a time, always with a recommendation attached — on the five
+hand-of-the-journalist questions as much as on the slots, so an "I don't know" is met with a
+proposal to accept, adjust or reject, never silently logged as a blank — and never fills a field the
+journalist should have filled themselves. `scripts/storyboard.mjs` is the
 machine half of the contract: `parseStoryboard` reads the `STORYBOARD.md` a conversation produced,
 and `checkStoryboard` says whether Gate 2 has actually closed — a proposal the journalist never
 answered does not close it, no matter how the conversation reads.

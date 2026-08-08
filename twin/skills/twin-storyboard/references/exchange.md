@@ -35,6 +35,40 @@ each question exists because a specific downstream decision cannot be made witho
 
 Asked one at a time. Every answer has a destination; none is disguised parameter collection.
 
+### When the answer is "I don't know" or "none"
+
+The first journalist session (`twin/JOURNALIST-TEST-RESULT.md`) found the defect these five
+questions had been shipped with: when the answer was absence — "I don't know", "not yet decided" —
+the exchange recorded the absence and moved on. That is harvesting, not accompaniment. These
+questions exist to help the journalist think, not to extract a field from them; when they do not
+have an answer, the system's job is to **propose one, with its reasoning, and let the journalist
+accept it, adjust it, or reject it** — never to re-ask the same question, and never to silently
+manufacture an answer they never gave.
+
+Per question, on absence:
+
+- **Subject** — propose the actor the confirmed takeaway already names, and say so: the takeaway is
+  a sentence about someone or something, and that noun phrase is the candidate subject.
+- **Comparison** — propose the reference point implied by the takeaway's own shape (a stated "than",
+  a named period, an implied baseline) before falling back to "the average" or "last year" as a
+  generic default.
+- **Limits** — **"none" is a legitimate answer.** If the journalist sees no limit, that is the
+  information, and it is recorded as given, verbatim — never replaced by an invented caveat. The
+  system may still separately offer a limit it can see in the data itself (a short window, a
+  correlation dressed as a cause, a source that only measures a proxy for the claim) for the
+  journalist to accept or reject — offering is not manufacturing, and the two must not be conflated.
+- **Placement** — the worked example, because this is the one the first session actually hit: with
+  no placement decided, propose one from the article's own structure — *"this follows the paragraph
+  that first states the divergence, which argues for mid-article placement, `article-web` channel,
+  full-width size, not a lead visual"* — and say what that placement implies downstream, so the
+  proposal is a reason, not a guess.
+- **Credit** — propose the newsroom's standing convention (`NEWSROOM.md`) and today's date as the
+  effective date; the journalist confirms or corrects rather than dictating both from nothing.
+
+None of this is a re-ask. The question was asked once; what follows an "I don't know" is a proposal
+the journalist disposes of in one move, exactly as movement ⑤ already does for slots and candidates
+— the same discipline, now applied to all five questions, not only the last movement.
+
 ## ④ The reference loop, shown — the new part
 
 Find two or three real newsroom treatments of **the same argument structure** and show them: *"the
@@ -66,7 +100,10 @@ nowhere.
 ## Discipline of the exchange — our failures, as rules
 
 - **One question at a time.** Never a questionnaire.
-- **Always carry a recommendation.** Never make someone choose in a vacuum.
+- **Always carry a recommendation — everywhere in the exchange, not only in the proposal.** Never
+  make someone choose in a vacuum. The system accompanies the journalist's thinking rather than
+  extracting fields from them; the decision is always theirs; when they hand the choice back, it
+  proposes the most suitable option and explains why, with the trade-offs.
 - **Never ask twice.** Repetition is a bug, not caution.
 - **Silence is not consent.** A proposal waits for an answer.
 - **The journalist's language governs** the entire exchange, errors and recaps included.
