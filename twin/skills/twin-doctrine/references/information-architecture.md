@@ -26,8 +26,16 @@ one order:
    sources 2015–2023." A reader who reads only the title should already have the confirmed
    takeaway, not a promise that one is coming.
 2. **Subtitle (optional).** Carries the one piece of framing the title had no room for — a unit, a
-   scope, a comparison basis. It exists only when the title cannot carry it alone; an empty
-   subtitle zone is not held open out of habit.
+   scope, a comparison basis, **or the limit the framing exchange already extracted** (
+   `twin-storyboard`'s "what does this data NOT let you conclude" question — see
+   `anti-patterns.md`'s "a title that claims more than the source supports"). That answer is
+   captured whether or not a graphic ends up using it; when the confirmed takeaway makes a claim
+   the raw data cannot support without its caveat stated, the subtitle is where that caveat is read
+   before the reader forms the claim on their own, not an aside for after. A subtitle spent on the
+   source credit instead, with the limit dropped, has answered a question the reader was not
+   asking and left unanswered the one the title's own claim requires — the source has its own zone
+   (item 5) and does not need the subtitle's as well. It exists only when the title cannot carry
+   its framing or its limit alone; an empty subtitle zone is not held open out of habit.
 3. **Plot area.** The marks themselves, laid out per `visual-system.md`'s colour and label rules.
    This zone gets the largest share of the frame, because it is the only zone doing job (1) from
    `editorial-standard.md` — encoding data — and every other zone exists to support it.

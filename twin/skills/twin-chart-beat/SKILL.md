@@ -148,7 +148,8 @@ by an ordinary relative path — that import is for this skill's own tests
 | The frame the seed draws in | `900` × `560` | `FRAME`, `ChartSeed.tsx` |
 | The margin around everything | `40` (`PAD`) | `ChartSeed.tsx` |
 | Title size and line spacing | `26` / `34` | `TITLE`, `ChartSeed.tsx` |
-| How many y ticks are asked for (d3 treats it as a hint and may answer 2 or 5) | `3` (`TICK_HINT`) | `yTickValues`, `ChartSeed.tsx` |
+| How many y gridlines a static frame asks for (d3 treats it as a hint) | `5` (`Y_TICK_HINT`) | `yTickValues`, `ChartSeed.tsx` |
+| How many x ticks `tickStep` derives a round interval from (decade on a 75-year span, 5-year on a 35-year one) | `6` (`X_TICK_HINT`) | `xTickValues`, `ChartSeed.tsx` |
 | Decimal places kept in the traced path | `1` (`line.digits`) | `lineGeometry`, `ChartSeed.tsx` |
 | The air between the end label and the plot | `10` px, on top of a measured gutter of `12` | `ChartSeed.tsx` |
 | Readings below which the beat refuses to draw | `2` | `ChartSeed.tsx` |

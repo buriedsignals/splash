@@ -5,8 +5,17 @@
  * CROSSING — a long series read back against one historical level — so it carries a reference line
  * that holds the sentence, a muted peak marker that is deliberately silent about its own value, and
  * French number furniture. It has no gap handling, because this series has none.
+ *
+ * Axis density and the limits subtitle are this file's own — not `crossing-geometry.ts`'s, and not
+ * `EmissionsVideo.tsx`'s. `crossingGeometry`/`yTickValues` stay exactly as they were (still
+ * imported for the fitted domain and the point/peak/end coordinates the video beat also reads),
+ * because the motion genre keeps its own sparse three-tick axis on purpose
+ * (`static-discipline.md`, "Axis density") — this file layers a denser, static-only tick set and a
+ * collision filter on top locally, rather than changing what the shared geometry hands back.
  */
 
+import { scaleLinear } from "d3-scale";
+import { tickStep } from "d3-array";
 import { line } from "d3-shape";
 import {
   crossingGeometry,
@@ -23,11 +32,23 @@ import {
 const FRAME = { width: 900, height: 560 };
 const PAD = 40;
 const TITLE = { fontSize: 26, fontWeight: 700, lead: 34 };
+const SUBTITLE = { fontSize: 14, fontWeight: 400, lead: 20 };
 const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 13, fontWeight: 400 };
 const LABEL = { fontSize: 15, fontWeight: 600 };
 const NOTE = { fontSize: 13, fontWeight: 400 };
 const UNIT = "Mt";
+
+/** How many y gridlines this static beat asks for — conventional density, not the sparse
+ *  floor/reference/ceiling the motion genre keeps (`static-discipline.md`, "Axis density"). */
+const Y_TICK_HINT = 5;
+/** How many x ticks `tickStep` derives a round interval from. On this beat's 1950-2024 span that
+ *  answers a decade; the number is never hand-picked per story. */
+const X_TICK_HINT = 6;
+/** A regular gridline within one label's own line height of the hand-placed reference is dropped
+ *  — line and label both — so the reference's dashed rule and its caption never share a vertical
+ *  band with a routine tick that was never the line the reader needed there. */
+const MIN_GRIDLINE_GAP_PX = 20;
 
 function wrap(
   text: string,
@@ -56,6 +77,7 @@ export function EmissionsLine({
   reference,
   referenceLabel,
   peakLabel,
+  limits,
 }: {
   data: Reading[];
   title: string;
@@ -66,6 +88,10 @@ export function EmissionsLine({
   reference: number;
   referenceLabel: string;
   peakLabel: string;
+  /** The one caveat this data needs stated before its claim is read — harvested in the framing
+   *  exchange's "what does this data NOT let you conclude" question and carried as the subtitle
+   *  `information-architecture.md` names for it, not dropped in favour of the source credit. */
+  limits: string;
 }) {
   if (data.length < 2)
     throw new Error(
@@ -77,19 +103,49 @@ export function EmissionsLine({
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
+  // The limits subtitle sits directly under the title, above the source line — title, subtitle,
+  // source, the same order `information-architecture.md` states, anchored at the top of the frame
+  // per this genre's own override of where the source line sits (`static-discipline.md`).
+  const limitsLines = wrap(limits, width - PAD * 2, SUBTITLE);
+  const limitsBaseline =
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + 30;
   const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
+    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 22;
 
   // Both gutters measured from the widest string that will really be drawn in them.
   const last = data[data.length - 1];
   const endLabel = `${last.year} · ${fr(last.mt)} ${UNIT}`;
-  // The middle tick is the reference, so it keeps its decimal: rounding 32,5 to 33 would put a
-  // number on the axis that is not the level the beat is about. The unit is stated once, on top.
-  const tickLabels = yTickValues(data, reference).map((v, i, all) =>
-    i === all.length - 1 ? `${fr(v, 0)} ${UNIT}` : fr(v, i === 1 ? 1 : 0),
+
+  // The fitted domain, read from the shared geometry's own scale — only its bounds. The tick SET
+  // drawn from that domain is this static beat's own choice (see the file header): denser than the
+  // motion genre's, and with any regular tick that would crowd the reference dropped before it can
+  // compete with the reference's own dashed rule and its own label.
+  const [floor, , ceiling] = yTickValues(data, reference);
+  // Y-axis-only provisional plot rectangle: top/bottom depend on the header block's height, which
+  // is already fixed at this point, and NOT on the left gutter the tick labels below are about to
+  // measure — so they can be computed before `crossingGeometry` needs the finished padding.
+  const plotTop = sourceBaseline + 34;
+  const plotBottom = height - (PAD + 24);
+  const gridScale = scaleLinear()
+    .domain([floor, ceiling])
+    .range([plotBottom, plotTop]);
+  const referenceYProvisional = gridScale(reference);
+  const regularTicks = gridScale
+    .ticks(Y_TICK_HINT)
+    .filter(
+      (v) =>
+        Math.abs(gridScale(v) - referenceYProvisional) >= MIN_GRIDLINE_GAP_PX,
+    );
+  const yTicks = [...regularTicks, reference].sort((a, b) => a - b);
+  const topValue = Math.max(...yTicks);
+  // Every tick but the reference keeps zero decimals; the reference keeps one, because rounding
+  // 32,5 to 33 would put a number on the axis that is not the level the beat is about. The unit is
+  // stated once, on whichever tick actually ends up highest.
+  const tickLabels = yTicks.map((v) =>
+    v === topValue ? `${fr(v, 0)} ${UNIT}` : fr(v, v === reference ? 1 : 0),
   );
   const padding = {
-    top: sourceBaseline + 34,
+    top: plotTop,
     right: PAD + 12 + measureText(endLabel, LABEL),
     bottom: PAD + 24,
     left: PAD + 10 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
@@ -103,8 +159,36 @@ export function EmissionsLine({
     .y((p) => p.y)
     .digits(1)(g.points)!;
 
+  // Regular, round-interval x ticks derived from this series' own span — decade ticks on a 75-year
+  // run, never a hand-picked count. Each tick year is an actual reading in this annual series, so
+  // its pixel position is read off the geometry's own points rather than re-deriving the x scale.
+  const years = data.map((d) => d.year);
+  const firstYear = Math.min(...years);
+  const lastYear = Math.max(...years);
+  const xStep = tickStep(firstYear, lastYear, X_TICK_HINT);
+  const xTicks: number[] = [];
+  for (
+    let year = Math.ceil(firstYear / xStep) * xStep;
+    year <= lastYear;
+    year += xStep
+  ) {
+    xTicks.push(year);
+  }
+  const ticksX = xTicks
+    .map((year) => ({
+      year,
+      point: g.points.find((p) => p.year === year),
+    }))
+    .filter(
+      (tick): tick is { year: number; point: (typeof g.points)[number] } =>
+        tick.point !== undefined,
+    )
+    .map(({ year, point }) => ({ year, x: point.x }));
+
   // The reference label sits on its own line, above it, left-aligned in the plot — the NYT Upshot
-  // lesson the journalist picked: the reference states its claim, it is not a bare rule.
+  // lesson the journalist picked: the reference states its claim, it is not a bare rule. With the
+  // regular gridlines that would have crowded it already filtered out above, this caption now
+  // shares its vertical band with nothing but the dashed rule it names.
   const referenceBaseline = g.referenceY - 8;
 
   return (
@@ -131,26 +215,38 @@ export function EmissionsLine({
           {line}
         </text>
       ))}
+      {limitsLines.map((line, i) => (
+        <text
+          key={line}
+          x={PAD}
+          y={limitsBaseline + i * SUBTITLE.lead}
+          fill={muted}
+          fontSize={SUBTITLE.fontSize}
+        >
+          {line}
+        </text>
+      ))}
       <text x={PAD} y={sourceBaseline} fill={muted} fontSize={SOURCE.fontSize}>
         {source}
       </text>
 
-      {g.ticksY.map((tick, i) => (
-        <g key={tick.value}>
-          {/* The middle tick IS the reference; its rule is drawn below, dashed. One line, not two. */}
-          {i === 1 ? null : (
+      {yTicks.map((value, i) => (
+        <g key={value}>
+          {/* The reference's own dashed rule is drawn below; a regular tick this close to it was
+              already dropped above, so nothing here competes with that rule or its caption. */}
+          {value === reference ? null : (
             <line
               x1={g.plot.left}
               x2={g.plot.right}
-              y1={tick.y}
-              y2={tick.y}
+              y1={gridScale(value)}
+              y2={gridScale(value)}
               stroke={grid}
               strokeWidth={1}
             />
           )}
           <text
             x={g.plot.left - 10}
-            y={tick.y + 4}
+            y={gridScale(value) + 4}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="end"
@@ -159,7 +255,7 @@ export function EmissionsLine({
           </text>
         </g>
       ))}
-      {g.ticksX.map((tick) => (
+      {ticksX.map((tick) => (
         <text
           key={tick.year}
           x={tick.x}

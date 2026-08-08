@@ -72,22 +72,84 @@ primitives — a scale and a tick generator, knowing nothing about colour, label
 this doctrine's own definition of pure geometry. Taking them costs nothing it forbids. Taking a
 chart library, which hands over a chart type with props, would cost everything it exists to defend.
 
-## Sparse ticks
+## Axis density — conventional for a static frame, sparse only for motion
 
-Ask for three y ticks and read what comes back: `.ticks(3)` is a hint, and d3 answers with the
-round values that actually fall inside the fitted range — often two, sometimes five. Three x ticks:
-first, middle, last. Nobody reads the values between them off the axis — that is what the direct
-label is for. The unit goes on the top tick only, so it is stated once.
+This rule was written the wrong way round in an earlier draft of this file: "ask for three y
+ticks, three x ticks — first, middle, last — because nobody reads the values between them off the
+axis, that's what the direct label is for." A render is what exposed why that is wrong for THIS
+genre. Two independent judges, shown a static chart beat next to an established engine's version
+of the same data, picked this twin's render in every case on the strength of its comparison
+geometry — and named the same weakness against it every time: a three-tick x-axis whose middle
+tick is the series' array midpoint, an arbitrary year the story never mentions, so that apart from
+the one or two points the chart directly annotates, nothing on the frame can be read off an axis
+at all. One judge could not locate 1997 or 1998 on a chart about them; another could not locate
+1967 or 1973 because the midpoint tick landed on 1987, a year nobody's argument needed.
 
-A tick count that comes back as two is not a defect to be corrected. It means the fitted range
-holds two round values, and adding a third would mean widening the range to make room for a number
-the data never reached — which is the defect above, wearing a tidier face.
+**The rule has one test, and it is not a tick count: a reader must be able to locate, on the axis,
+any point the chart itself annotates or names.** A midpoint tick chosen by array index — `years[Math.floor(years.length / 2)]` — is worse than no midpoint tick at all, because it looks like a
+deliberate landmark and is actually an accident of how many rows the dataset happens to have.
+
+**This split is genre-scoped, not a correction that reaches every render this twin produces.**
+Sparse ticks are still the right call for a chart that MOVES: `twin-chart-video` follows a line as
+it draws, and a viewer watching motion reads position and change, not a printed axis — a dense
+grid competing with the reveal is noise, and that genre keeps its own three-tick rule
+unchanged (`motion-grammar.md`). A static frame is the opposite case: it is the only rung of the
+render ladder a reader gets to scrutinise at their own pace, stationary, for as long as they like
+— exactly the reader `information-architecture.md`'s "one graphic, one idea, one density" is
+written for, and exactly the reader three sparse ticks fail.
+
+**The density itself is derived from the series' own span, never hand-picked per story.** Ask
+`d3-array`'s `tickStep(first, last, hint)` for the "nice" 1/2/5×10ⁿ interval closest to
+`span / hint`, at a fixed hint (this twin uses `6`) — the same primitive `.nice()` and `.ticks()`
+already use internally, so the interval is chosen exactly the way this doctrine already trusts d3
+to choose one, not a second hand-rolled rule beside it. On a 75-year series (1950–2024) that
+answers `10`: decade ticks. On a 35-year series it answers `5`: five-year ticks. On an 11-year
+series it answers `2`. Nothing about "decade" or "five-year" is written down as a knob for a
+particular story — the number is what `tickStep` returns for that story's own first and last year,
+at the one hint this file fixes.
+
+**A regular grid this dense makes the annotated years locatable without forcing a tick onto every
+one of them.** 1973 does not need to be a labelled tick to be locatable once decade ticks run
+1950, 1960, 1970, 1980 …: the peak visibly sits about three-tenths of the way past 1970, and that
+is enough for a reader to place it. Forcing every annotated year onto the tick set would fight the
+"nice round numbers" property that makes the grid readable at all; a dense, regular, honestly
+labelled grid is what conventional charts (and the established engine the judges preferred on this
+one axis) actually ship, and it is what this rule now asks for.
+
+**The y-axis gets the same treatment for the same reason: "enough gridlines to read a value,"**
+not the two or three this file asked for before. Ask `.ticks(hint)` of the fitted, `.nice()`d
+domain for a genuinely readable grid (this twin uses `5`) instead of the bare floor/reference/
+ceiling a hand-placed annotation used to stand in for. The unit still goes on the topmost tick
+actually drawn, once, exactly as before — it does not have to be the domain's own ceiling if the
+ceiling itself is not one of the round values `.ticks()` returns.
+
+**A regular gridline that would land inside a hand-placed annotation's own line height is dropped
+— its line AND its label — not just thinned to a fainter stroke.** A reference level a journalist
+chose is already drawn as its own dashed rule with its own caption, precisely because it is a level
+somebody chose, not a measurement — a routine round-number
+gridline a few pixels away is not corroborating it, it is competing with it for the same few
+vertical pixels, and a caption that names the reference reads as naming whichever line it happens
+to sit closest to. The fix is not a bigger offset — an offset just moves the same ambiguity a few
+pixels — it is removing the competing line: filter the regular ticks to drop any whose pixel
+distance from the reference is under one label's own line height (roughly 20px at this file's
+type sizes) before that list becomes gridlines or gutter width. The reference's own value is still
+on the axis, in its own dedicated label; it has simply stopped sharing the vertical band with a
+line that was never the one the reader needed there.
 
 ## The source under the header, not in a footer
 
-The source line sits directly beneath the title, at reading size, in muted ink. Not 9px, not in the
-bottom-right corner, not cropped when somebody screenshots the top of the chart. It carries the
-effective date the journalist gave, because "as of" is part of the claim.
+The source line sits directly beneath the title — and beneath the limits subtitle, when the beat
+carries one (`information-architecture.md`'s "Subtitle" zone) — at reading size, in muted ink. Not
+9px, not in the bottom-right corner, not cropped when somebody screenshots the top of the chart. It
+carries the effective date the journalist gave, because "as of" is part of the claim.
+
+A beat whose header block has both a limits subtitle and a source line stacks them title, then
+subtitle, then source — the same top-to-bottom order `information-architecture.md` states for the
+general case, only anchored at the top of the frame instead of the bottom, per this file's own
+override of that zone. The two lines are not interchangeable: a subtitle answers "what can't this
+data support," a source answers "where did it come from and as of when" — a beat that spends its
+one subtitle slot on the source, the way an earlier draft of this file's own reference case did,
+answers neither question and drops the caveat the framing exchange already extracted.
 
 ## Direct end labels, not a legend
 

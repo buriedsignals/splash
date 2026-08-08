@@ -10,7 +10,7 @@
  * component. Adding a `variant` prop to this file is the failure this seed exists to prevent.
  */
 
-import { extent } from "d3-array";
+import { extent, tickStep } from "d3-array";
 import { scaleLinear } from "d3-scale";
 import { line } from "d3-shape";
 import {
@@ -29,9 +29,18 @@ const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 13, fontWeight: 400 };
 const LABEL = { fontSize: 15, fontWeight: 600 };
 const UNIT = "mm"; // this story's unit. The next beat's is not mm — it rewrites this file.
-/** How many labelled ticks the beat asks for. d3 treats it as a hint and returns the round
- *  values that actually fall inside the fitted range, so the answer is often 2 or 4, not 3. */
-const TICK_HINT = 3;
+/** How many labelled y gridlines a STATIC frame asks for. d3 treats it as a hint and returns the
+ *  round values that actually fall inside the fitted range, so the answer is rarely exactly this
+ *  number. This is the static genre's own density — conventional, so a reader who scrutinises can
+ *  put a number on any point — not the sparse 2-3 tick axis the motion genre asks for
+ *  (`static-discipline.md`, "Axis density"). */
+const Y_TICK_HINT = 5;
+/** How many x ticks the beat asks `tickStep` for. `tickStep(first, last, hint)` answers with the
+ *  nearest 1/2/5×10ⁿ interval to span/hint — the same primitive `.nice()`/`.ticks()` already use
+ *  internally — so THIS constant is the only knob, and the resulting interval (a decade on a
+ *  75-year series, five years on a 35-year one) is derived per story, never hand-picked
+ *  (`static-discipline.md`, "Axis density"). */
+const X_TICK_HINT = 6;
 
 /**
  * The fitted vertical scale, and the only place a reading becomes a y coordinate.
@@ -64,12 +73,37 @@ function yScale(data: Reading[]) {
 }
 
 /**
- * Sparse by construction: d3 picks the round values inside the fitted range. Nothing between
- * them is read, and none of them is invented — every tick is a multiple of a round step that the
- * data's own extent reaches. The unit is stated once, on the top one.
+ * Conventional density for a static frame: d3 picks the round values inside the fitted range, at
+ * a hint high enough that a reader who scrutinises the frame can put a number on more than the
+ * two or three points a sparser axis would have named. Nothing between the gridlines is invented
+ * — every tick is a multiple of a round step that the data's own extent reaches — but there are
+ * enough of them to read a value off the axis directly. The unit is stated once, on the top one.
  */
 export function yTickValues(data: Reading[]): number[] {
-  return yScale(data).ticks(TICK_HINT);
+  return yScale(data).ticks(Y_TICK_HINT);
+}
+
+/**
+ * Regular, round-interval x ticks derived from the series' own span — never a fixed count of
+ * arbitrary points, and never `first, middle, last`. `tickStep` answers with the "nice" step
+ * closest to span / hint, so a 75-year series gets decade ticks and a 35-year series gets
+ * five-year ticks without either number being written down as a knob for this particular story.
+ *
+ * This density is what makes a point the beat annotates but does not tick — a peak, a crossing —
+ * locatable by eye against a regular grid, even though it is not itself one of the round values
+ * (`static-discipline.md`, "Axis density"). It is not shared with the motion genre, which keeps
+ * its own sparse first/middle/last rule on purpose.
+ */
+export function xTickValues(years: number[]): number[] {
+  const first = Math.min(...years);
+  const last = Math.max(...years);
+  if (first === last) return [first];
+  const step = tickStep(first, last, X_TICK_HINT);
+  const values: number[] = [];
+  for (let year = Math.ceil(first / step) * step; year <= last; year += step) {
+    values.push(year);
+  }
+  return values;
 }
 
 /**
@@ -97,7 +131,7 @@ export function lineGeometry(
   const x = scaleLinear().domain([first, last]).range([plot.left, plot.right]);
   const y = yScale(data).range([plot.bottom, plot.top]);
   const [floor, ceiling] = y.domain();
-  const ticks = y.ticks(TICK_HINT);
+  const ticks = y.ticks(Y_TICK_HINT);
 
   const points = data.map((d) => ({
     year: d.year,
@@ -147,7 +181,7 @@ export function lineGeometry(
     end: points.findLast((p) => p.value !== null),
     zeroY: floor < 0 && ceiling > 0 ? y(0) : null,
     ticksY: ticks.map((value) => ({ value, y: y(value) })),
-    ticksX: [first, years[Math.floor(years.length / 2)], last].map((year) => ({
+    ticksX: xTickValues(years).map((year) => ({
       year,
       x: x(year),
     })),

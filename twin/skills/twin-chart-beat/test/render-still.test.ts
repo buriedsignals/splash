@@ -126,8 +126,22 @@ describe("lineGeometry", () => {
   it("should label the round values a reader recognises, not the ends of a padded span", () => {
     // d3 rounds the readings' own extent outward and then labels multiples of a round step
     // inside it. The hand-rolled version labelled the padded ends themselves: 500 / 750 / 1000
-    // under readings that never leave 604-912.
-    expect(yTickValues(rainfall)).toEqual([600, 700, 800, 900]);
+    // under readings that never leave 604-912. Static density asks for enough gridlines that a
+    // reader can put a number on more than the frame's two ends (`static-discipline.md`, "Axis
+    // density"), so the round step here is 50, not 100.
+    expect(yTickValues(rainfall)).toEqual([
+      600, 650, 700, 750, 800, 850, 900, 950,
+    ]);
+  });
+
+  it("should space x ticks at a regular round interval derived from the series' own span, not first/middle/last", () => {
+    // The rainfall sample spans 2015-2025 (11 years); `tickStep` answers a 2-year interval for
+    // that span at this file's hint, so 2019 — the year with no reading — sits one year off a
+    // tick rather than being the sole thing between two endpoints eleven years apart.
+    const geometry = lineGeometry(rainfall, PLOT);
+    expect(geometry.ticksX.map((tick) => tick.year)).toEqual([
+      2016, 2018, 2020, 2022, 2024,
+    ]);
   });
 
   it("should never take a series of positive values below zero", () => {
