@@ -10,50 +10,36 @@ description: Use to produce a chart beat in the VIDEO genre — a short motion b
 The video genre of a chart beat. It does not hold a chart: it holds **the edit**.
 
 A video beat adds exactly one thing to a chart that a still cannot have — an **order in time**. This
-skill carries its **seed** (`co2-suisse`) plus one story not yet migrated out (`migration` — see the
-canon note below); a second story that used to live here, `life-expectancy`, now lives in its own
-workspace, `proof/life-expectancy/`, with its own `Root.tsx`/`index.ts`/`render.mjs`. Each beat is its
-own composition, its own timing contract instance, and its own pure geometry — never a general "video
+skill carries its **seed** (`co2-suisse`); the stories that used to live here, `life-expectancy` and
+`migration`, now each live in their own workspaces with their own registrations — `proof/life-expectancy/`
+and `proof/migration/`, respectively, each with its own `Root.tsx`/`index.ts`/`render.mjs`. Each beat is
+its own composition, its own timing contract instance, and its own pure geometry — never a general "video
 chart" parameterised by data, per the replace-me discipline below:
 
 1. **`co2-suisse`** (`EmissionsVideo.tsx`, `timing.ts`'s `CO2_TIMING`) — the seed. A series climbs to a
    peak and later falls back through a level the reader is shown first. Its geometry
    (`proof/co2-suisse/crossing-geometry.ts`) is shared with the still beat that draws the same
    coordinates on disk — one geometry, two outputs.
-2. **`migration`** (`MigrationVideo.tsx`, `migration-timing.ts`) — the subject (1997, 1998) is real but
-   tiny against swings forty times its size, so the fix is not a rescaled axis (that is exactly the
-   anti-pattern `anti-patterns.md` names) but a precisely-interpolated shaded band, both years landing
-   together, and a leader-line callout. **Still resident here** — a later task moves it to
-   `proof/migration/`, mirroring what already happened to `life-expectancy`.
 
-**`life-expectancy` (moved out, `proof/life-expectancy/`)** — the subject (2020) sits *inside* the
-series, not at its tail, so `reveal` draws the whole series before `subject` ever starts; `subject`
-lands as an emphasis event on a mark already on screen, not as data still arriving. See
-`proof/life-expectancy/LifeExpectancyVideo.tsx`'s doc-comment for the reasoning in full. It carries its
+**Moved out:** `life-expectancy` and `migration` now live outside this skill. See `proof/life-expectancy/`
+and `proof/migration/` for their own compositions, timing contracts, and render scripts. Each carries its
 own copies of `FONT_FAMILY`/`measureText`/`wrap`/`drawnSoFar` (the settled rule: a story that needs
-something a skill has duplicates it, it does not reach back across the skill boundary) and, until a
-later task vendors `assets/timing.ts` to the shared substrate, reaches it by a relative path — see that
-file's own doc-comment.
+something a skill has duplicates it, it does not reach back across the skill boundary) and reaches the
+shared timing type by a temporary relative path — see those files' own doc-comments.
 
-`EmissionsVideo.tsx` and `MigrationVideo.tsx`, both still inside this skill, continue to share
-`FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` via a same-skill relative import — that is not a
-skill-boundary crossing, so it is unchanged.
-
-The things that actually live here, per beat still resident:
+The things that actually live here:
 
 - **a timing contract** — six events named editorially (`establish`, `reference`, `reveal`,
   `subject`, `conclusion`, `hold`), each with a `start` and a `duration` in frames. Every
   interpolation window in the composition derives from it and **no frame literal appears in the
   drawing**, so a journalist retimes the piece by editing one object. `assets/timing.ts` carries the
-  shared type and the arithmetic (`progressOf`, `checkTiming`) plus `CO2_TIMING`; `migration`'s own
-  instance lives beside it (`migration-timing.ts`).
-- **one worked composition** per beat, marked replace-me the way `twin-chart-beat`'s seed is. Read
-  `EmissionsVideo.tsx` to learn the shape; `MigrationVideo.tsx` is a worked example of adapting
-  that shape to a different argument, not a second engine.
-- **`scripts/render-<beat>.mjs`** — the render ladder's second rung, one script per beat still
-  resident: the final-frame still first, then the mp4. `render-video.mjs` is the CO₂ beat's (kept
-  unrenamed — it predates the others); `render-migration.mjs` follows its exact shape.
-  `life-expectancy`'s render script is now `proof/life-expectancy/render.mjs`.
+  shared type and the arithmetic (`progressOf`, `checkTiming`) plus `CO2_TIMING`.
+- **one worked composition**, marked replace-me the way `twin-chart-beat`'s seed is. Read
+  `EmissionsVideo.tsx` to learn the shape. This is the seed; other compositions have been moved to
+  their own proof workspaces.
+- **`scripts/render-video.mjs`** — the render ladder's second rung for the seed: the final-frame
+  still first, then the mp4. `render-video.mjs` is the CO₂ beat's (kept unrenamed — it predates the
+  others). Other beats' render scripts now live in their respective proof workspaces.
 
 The doctrine it is written under is `twin-doctrine/references/motion-grammar.md`, which was written
 against the first of these builds.
@@ -92,12 +78,12 @@ about what "muted" means on the same newsroom ground.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `twin-doctrine/references/motion-grammar.md` | What a layer may do over time; the order a reveal follows; why the conclusion rule governs assertions while the title, source, axis and scale are furniture that establishes first |
-| Contract | `assets/timing.ts` + `migration-timing.ts` | `BeatTiming`, `progressOf` (clamped), `checkTiming` (the structural rules as arithmetic) in `timing.ts`; `migration`'s own named instance beside it. `life-expectancy`'s instance is now `proof/life-expectancy/timing-contract.ts` |
-| Composition | `assets/EmissionsVideo.tsx`, `MigrationVideo.tsx` | One beat's drawing per file, frame by frame. `EmissionsVideo.tsx` also exports `drawnSoFar`, the chronological partial path, reused by `MigrationVideo.tsx`. `life-expectancy`'s composition is now `proof/life-expectancy/LifeExpectancyVideo.tsx`, with its own copies of those four functions |
-| Registration | `assets/Root.tsx`, `assets/index.ts` | The two `<Composition>`s still resident (each `durationInFrames` IS that beat's own `_TIMING.total`) and the one entry point. `life-expectancy` registers in its own `proof/life-expectancy/Root.tsx` + `index.ts` |
-| Geometry | `proof/co2-suisse/crossing-geometry.ts` (beat 1, shared with the static beat); `migrationGeometry` inside `MigrationVideo.tsx`; `lifeExpectancyGeometry` inside `proof/life-expectancy/LifeExpectancyVideo.tsx` | Pure cores. `migration` and `life-expectancy` have no still counterpart yet, so their geometry has no forced reason to live outside the composition the way beat 1's does |
-| Render | `scripts/render-video.mjs`, `render-migration.mjs` | One script per beat still resident, same shape: reads its frozen CSV, derives the furniture in node, renders the final-frame still, then the mp4. `life-expectancy`'s is `proof/life-expectancy/render.mjs` |
-| Test | `test/timing.test.ts`, `migration-timing.test.ts`, `canon.test.ts` | Pins each resident beat's contract — each rule asserted green on the shipped timing and RED on a timing mutated to break exactly that rule. `canon.test.ts` asserts this skill's `assets/` no longer carries the migrated stories. `life-expectancy`'s contract test is now `proof/life-expectancy/timing.test.ts` |
+| Contract | `assets/timing.ts` | `BeatTiming`, `progressOf` (clamped), `checkTiming` (the structural rules as arithmetic), and `CO2_TIMING` (the seed's instance). `life-expectancy`'s and `migration`'s instances are now in their own proof workspaces: `proof/life-expectancy/timing-contract.ts` and `proof/migration/timing-contract.ts` |
+| Composition | `assets/EmissionsVideo.tsx` | The seed beat's drawing, frame by frame, with its own pure geometry and exports `drawnSoFar` (the chronological partial path). Other compositions have been moved to `proof/life-expectancy/LifeExpectancyVideo.tsx` and `proof/migration/MigrationVideo.tsx` |
+| Registration | `assets/Root.tsx`, `assets/index.ts` | The seed composition (`co2-suisse`, `durationInFrames` IS `CO2_TIMING.total`) and the one entry point. Other stories register in their own proof workspaces: `proof/life-expectancy/Root.tsx` + `index.ts` and `proof/migration/Root.tsx` + `index.ts` |
+| Geometry | `proof/co2-suisse/crossing-geometry.ts` | Pure core, shared with the static beat. Other stories' geometries (`migrationGeometry`, `lifeExpectancyGeometry`) live inside their moved compositions in proof workspaces |
+| Render | `scripts/render-video.mjs` | The seed beat's render ladder second rung: reads frozen CSV, derives furniture in node, renders final-frame still, then mp4. Other scripts now live in proof workspaces: `proof/life-expectancy/render.mjs` and `proof/migration/render.mjs` |
+| Test | `test/timing.test.ts`, `canon.test.ts` | `timing.test.ts` pins the seed beat's contract. `canon.test.ts` asserts this skill's `assets/` no longer carries the migrated stories. Other contract tests are now in proof workspaces: `proof/life-expectancy/timing.test.ts` and `proof/migration/timing.test.ts` |
 
 **Where Remotion lives.** `remotion` and `@remotion/cli` are `devDependencies` of `twin/package.json`
 — this repository's own dependencies, alongside `puppeteer` and the d3 packages. They are **not** in
@@ -128,41 +114,31 @@ Whoever ships the video genre for real makes that call and moves the two package
 ## Quick start
 
 ```sh
-# the last frame, on its own, first — one beat per render script
+# the last frame, on its own, first — this skill's seed
 bun skills/twin-chart-video/scripts/render-video.mjs --still-only
-bun skills/twin-chart-video/scripts/render-migration.mjs --still-only
-bun proof/life-expectancy/render.mjs --still-only
 
 # the mp4 (still + render), concurrency 1
 bun skills/twin-chart-video/scripts/render-video.mjs --out /tmp/video-twin
-bun skills/twin-chart-video/scripts/render-migration.mjs --out /tmp/video-twin
-bun proof/life-expectancy/render.mjs --out /tmp/video-twin
 
-# frames to verify by, per beat
+# frames to verify by
 cd /tmp/video-twin
 for n in 45 110 165 239; do
   ffmpeg -loglevel error -i co2.mp4 -vf "select=eq(n\,$n)" -vsync 0 -frames:v 1 -y co2-frame-$n.png
 done
-for n in 111 168 239; do
-  ffmpeg -loglevel error -i life-expectancy.mp4 -vf "select=eq(n\,$n)" -vsync 0 -frames:v 1 -y life-frame-$n.png
-done
-for n in 111 172 239; do
-  ffmpeg -loglevel error -i migration.mp4 -vf "select=eq(n\,$n)" -vsync 0 -frames:v 1 -y mig-frame-$n.png
-done
 ```
 
-Then open them. The frame numbers are not arbitrary: they land inside `reference`, inside `reveal`,
-at (or just before) `subject`'s end, and the last frame of `hold` — read off each beat's own timing
-contract, since the beats do not share frame numbers exactly (`life-expectancy`'s `conclusion` and
-`migration`'s `subject` both run longer than `CO2_TIMING`'s, for reasons written into each
-composition's doc-comment).
+Then open them. The frame numbers land inside `reference`, inside `reveal`, at (or just before)
+`subject`'s end, and the last frame of `hold` — read off the timing contract.
+
+Other stories (`life-expectancy`, `migration`) are in their own proof workspaces — see their own
+`render.mjs` scripts for the same shape of command.
 
 ## Tuning knobs
 
-The table below is `CO2_TIMING`'s. `migration`'s knobs are the same six-event shape at different
-values — read them straight off `migration-timing.ts`, whose doc-comment explains *why* its numbers
-differ from beat 1's, not just what they are. `life-expectancy`'s knobs live in
-`proof/life-expectancy/timing-contract.ts`, same shape.
+The table below is `CO2_TIMING`'s. Other beats (`life-expectancy`, `migration`) have their own timing
+contracts in their own proof workspaces with the same six-event shape but different values — each
+has a doc-comment explaining *why* its numbers differ, not just what they are. See
+`proof/life-expectancy/timing-contract.ts` and `proof/migration/timing-contract.ts`.
 
 | Want | Knob | Where |
 | --- | --- | --- |
@@ -174,44 +150,33 @@ differ from beat 1's, not just what they are. `life-expectancy`'s knobs live in
 | How separate the subject's arrival feels | `subject.start` `150` (never below `reveal` end) | `CO2_TIMING` |
 | How long the finished chart is held | `hold.duration` `48` | `CO2_TIMING` |
 | The floor the hold may not go under | `fps / 2` | `checkTiming`, `timing.ts` |
-| How hard the subject dot lands | `damping` `200` against `stiffness` `120` — critically damped, no overshoot | `EmissionsVideo.tsx`, `MigrationVideo.tsx`, `proof/life-expectancy/LifeExpectancyVideo.tsx` |
-| When the reference label follows its rule | `0.55` of the way through `reference` | all three compositions |
-| How soon after the line passes 1973 the peak marker appears | `0.06` of the reveal | `EmissionsVideo.tsx` (same device marks 2023's recovery in `proof/life-expectancy/LifeExpectancyVideo.tsx`) |
-| The frame the composition draws in | `1080` × `1080` | `FRAME`, each composition / `Root.tsx` |
-| The margin around everything | `72` (`PAD`) | each composition |
-| Title size and line spacing | `46` / `58` (beat 1); `40` / `52` (`migration`, `life-expectancy` — longer titles) | `TITLE`, each composition |
-| Which year the series starts at | `1950` | `BEAT.firstYear`, `render-video.mjs` (`migration`/`life-expectancy` start where their own CSV does) |
-| How wide the shaded sub-zero band's opacity peaks | `0.28` | `MigrationVideo.tsx`'s `bandOpacity` |
-| How far the callout sits from the two landed points | `midX + 90` | `MigrationVideo.tsx`'s `calloutX` |
+| How hard the subject dot lands | `damping` `200` against `stiffness` `120` — critically damped, no overshoot | `EmissionsVideo.tsx` |
+| When the reference label follows its rule | `0.55` of the way through `reference` | `EmissionsVideo.tsx` |
+| How soon after the line passes 1973 the peak marker appears | `0.06` of the reveal | `EmissionsVideo.tsx` |
+| The frame the composition draws in | `1080` × `1080` | `FRAME` constant |
+| The margin around everything | `72` (`PAD`) | `EmissionsVideo.tsx` |
+| Title size and line spacing | `46` / `58` | `TITLE`, `EmissionsVideo.tsx` |
+| Which year the series starts at | `1950` | `BEAT.firstYear`, `render-video.mjs` |
 
 ## Files
 
-- `assets/timing.ts` — the shared timing contract type, `progressOf`, `checkTiming`, and beat 1's
-  own instance, `CO2_TIMING`.
-- `assets/migration-timing.ts` — beat 3's own instance, with a doc-comment on why its numbers depart
-  from beat 1's. (`life-expectancy`'s instance is `proof/life-expectancy/timing-contract.ts`, moved
-  out of this skill — see the canon note in Overview.)
-- `assets/EmissionsVideo.tsx` — beat 1's composition, the seed. **Replace per story**; do not
+- `assets/timing.ts` — the shared timing contract type, `progressOf`, `checkTiming`, and `CO2_TIMING`
+  (the seed beat's instance).
+- `assets/EmissionsVideo.tsx` — the seed beat's composition. **Replace per story**; do not
   parameterise it into a general video chart. Exports `FONT_FAMILY`, `measureText`, `wrap` and
-  `drawnSoFar` so beats still resident in this skill reuse them instead of copying them; the
-  chronological reveal is testable without a browser.
-- `assets/MigrationVideo.tsx` — beat 3. Its own pure geometry (`migrationGeometry`), including the
-  exact linear-interpolated zero-crossings either side of the two-point subject: the tiny-dip
-  legibility problem and why the axis is never rescaled to solve it are in its doc-comment.
-- `assets/Root.tsx` — the Remotion root; registers the compositions still resident here, each sized
-  and timed from its own contract. `remotion still`/`remotion render` select a beat by composition id
-  (`co2-suisse` / `migration`).
-- `assets/index.ts` — the one Remotion entry point (`registerRoot`), shared by the compositions still
-  resident here.
-- `scripts/render-video.mjs`, `scripts/render-migration.mjs` — one render script per beat still
-  resident, same shape: `readingsFromCsv`, then still → mp4. Each imports `deriveFurniture` from
-  `twin-chart-beat/scripts/render-still.mjs`, in node, and passes the result in as props.
-- `test/timing.test.ts`, `test/migration-timing.test.ts` — each resident beat's contract rules,
-  asserted both green and red.
-- `test/canon.test.ts` — asserts `assets/` no longer carries a story once it has been moved out (the
-  same shape of test each such move adds a case to).
+  `drawnSoFar` for reuse; the chronological reveal is testable without a browser.
+- `assets/Root.tsx` — the Remotion root; registers the seed composition (`co2-suisse`), sized and
+  timed from its own contract. `remotion still`/`remotion render` select a beat by composition id.
+- `assets/index.ts` — the one Remotion entry point (`registerRoot`).
+- `scripts/render-video.mjs` — the seed beat's render script: `readingsFromCsv`, still → mp4.
+  Imports `deriveFurniture` from `twin-chart-beat/scripts/render-still.mjs`, in node, and passes
+  the result in as props.
+- `test/timing.test.ts` — pins the seed beat's contract rules, asserted both green and red.
+- `test/canon.test.ts` — asserts `assets/` no longer carries the stories that have been moved out.
 - `twin-doctrine/references/motion-grammar.md` — the doctrine. Read it before writing an edit.
-- `proof/life-expectancy/` — `life-expectancy`'s own workspace, out of this skill: `Root.tsx` +
-  `index.ts` (its own Remotion registration, one `<Composition id="life-expectancy">`),
-  `LifeExpectancyVideo.tsx` (its own copies of `FONT_FAMILY`/`measureText`/`wrap`/`drawnSoFar`, per
-  the duplicate-don't-link rule), `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
+- `proof/life-expectancy/` — `life-expectancy`'s own workspace: `Root.tsx` + `index.ts` (its own
+  Remotion registration), `LifeExpectancyVideo.tsx` (with its own copies of helper functions),
+  `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
+- `proof/migration/` — `migration`'s own workspace: `Root.tsx` + `index.ts` (its own Remotion
+  registration), `MigrationVideo.tsx` (with its own copies of helper functions), `timing-contract.ts`,
+  `render.mjs`, `timing.test.ts`.
