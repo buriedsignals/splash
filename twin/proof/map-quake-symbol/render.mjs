@@ -89,7 +89,7 @@ const BEAT = {
     `${window.label}`,
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
   legendCaption: "Magnitude (radius scaled to √magnitude, not to energy released)",
-  // grounded-by-hand: 32 — a constant of the moment-magnitude scale (10^1.5 = 31.6 times the
+  // grounded-by-hand: caveat:32 — a constant of the moment-magnitude scale (10^1.5 = 31.6 times the
   // energy per whole step), not a reading from quakes-symbol.csv. No computation over this beat's
   // own rows could ever produce it; it holds whatever earthquakes the file happens to contain.
   caveat:

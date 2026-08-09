@@ -76,7 +76,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const title = `${top.name} ran its grid on ${formatNumber(top.renewables, 0)}% renewables; ${highestFossil.name} leaned on fossil fuel`;
   const subtitle = `${top.name} generated ${formatNumber(top.renewables, 0)}% of its electricity from renewables in 2024, the highest share of six countries compared here; ${highestFossil.name} leaned hardest on fossil fuel, at ${formatNumber(highestFossil.fossil, 0)}%.`;
-  // grounded-by-hand: 100 — "100%-stacked" names the chart's construction (each column normalised
+  // grounded-by-hand: alt:100 — "100%-stacked" names the chart's construction (each column normalised
   // to its own total), not a reading from data.csv. Every share in the sentence is interpolated.
   const alt = `100%-stacked bar chart of six countries' 2024 electricity generation by source: renewables, nuclear, fossil. ${top.name} is ${formatNumber(top.renewables, 0)}% renewable, the highest of the group; ${highestFossil.name} draws ${formatNumber(highestFossil.fossil, 0)}% from fossil fuel, the highest fossil share. Every segment's exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus, including segments too thin to carry a printed label.`;
 

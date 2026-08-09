@@ -193,74 +193,25 @@ describe("deriveFurniture — resvg family agrees (every vendored render-still.m
   }
 });
 
-// fr — the French number formatter, duplicated further than anything else in the tree. It was
-// added here after an audit found `twin-chart-video/SKILL.md` already CLAIMING this file kept the
-// geometry copies in step: it did not, and `fr` is the one that had already drifted. Three copies
-// carried the grouping regex WITHOUT its `g` flag, so `fr(1234567, 1)` returned "1 234567,0" while
-// the correct copies returned "1 234 567,0" — measured by executing all twelve, not by reading
-// them. It never reached a delivered artifact (checked: every mis-grouped match in every rendered
-// SVG and HTML is an SVG coordinate, not a formatted number), which is exactly why no one saw it.
+// fr — the French number formatter WAS guarded here, by importing nine copies and executing them
+// on the same numbers. That family found a real defect (three copies hand-rolled the grouping regex,
+// three of those without its `g` flag, and three more were `value.toFixed()` — a function named
+// `fr` returning an English number, which reached delivered artifacts). It has been REMOVED, and
+// the reason is worth keeping.
 //
-// Every copy is called with an EXPLICIT `decimals`, because the defaults genuinely differ across
-// copies (`geo-locator.ts` defaults to 0, the rest to 1) and that difference is legitimate — a
-// locator labels whole metres, a chart labels tenths. What must agree is the RULE, not the default.
-import { fr as crossingFr } from "../../../proof/co2-suisse/crossing-geometry";
-import { fr as rankingFr } from "../../../proof/web-co2-ranking/bar-geometry";
-import { fr as locatorFr } from "../../../proof/mapgen-locator-web/geo-locator";
-import { fr as windSolarFr } from "../../../proof/webx-wind-vs-solar/grouped-bar-geometry";
-import { fr as lifeExpFr } from "../../../proof/webx-life-expectancy/life-geometry";
-import { fr as electricityFr } from "../../../proof/webx-electricity-mix/stacked-bar-geometry";
-import { fr as emissionsVideoFr } from "../../twin-chart-video/assets/EmissionsVideo";
-import { fr as mapBeatFr } from "../../twin-map-beat/assets/geo";
-import { fr as mapWebFr } from "../../twin-map-web/assets/geo-symbol";
-
-describe("fr — every copy of the French number formatter agrees", () => {
-  const COPIES: Array<[string, (v: number, d?: number) => string]> = [
-    ["co2-suisse/crossing-geometry", crossingFr],
-    ["web-co2-ranking/bar-geometry", rankingFr],
-    ["mapgen-locator-web/geo-locator", locatorFr],
-    ["webx-wind-vs-solar/grouped-bar-geometry", windSolarFr],
-    ["webx-life-expectancy/life-geometry", lifeExpFr],
-    ["webx-electricity-mix/stacked-bar-geometry", electricityFr],
-    ["twin-chart-video/EmissionsVideo", emissionsVideoFr],
-    ["twin-map-beat/geo", mapBeatFr],
-    ["twin-map-web/geo-symbol", mapWebFr],
-  ];
-
-  // 1234567 is the case that actually caught the drift — it needs TWO group separators, and a
-  // regex missing its `g` flag inserts only the first. Everything below a million agreed, which is
-  // why every copy looked correct for as long as no beat plotted a seven-digit number.
-  const CASES: Array<[number, number]> = [
-    [1234567, 1],
-    [1234567890, 0],
-    [45678.9, 1],
-    [139118, 0],
-    [806, 1],
-    [0, 2],
-    [-1234567, 1],
-  ];
-
-  for (const [value, decimals] of CASES) {
-    it(`should format ${value} at ${decimals} decimals identically in every copy`, () => {
-      const reference = crossingFr(value, decimals);
-      for (const [name, fn] of COPIES) {
-        expect([name, fn(value, decimals)]).toEqual([name, reference]);
-      }
-    });
-  }
-
-  // Written with an explicit   rather than a pasted character, because the separator is the
-  // finding. Three separate implementations of `fr` shipped: one hand-rolled regex emitting a
-  // PLAIN space (U+0020, which lets a browser break a line in the middle of a number), one
-  // emitting U+202F, and one — in three files — that was `value.toFixed(decimals)` and produced
-  // "1234567.0": a function named `fr` returning an English number, and it reached delivered
-  // artifacts (`webx-wind-vs-solar` shows 0.2, 10.3, 14.9 with English decimal points). All nine
-  // now delegate to `Intl.NumberFormat("fr-FR")`, which is the point: a rule the platform owns
-  // cannot drift back into a hand-rolled regex.
-  it("should use the narrow no-break space French typography requires, not a breakable one", () => {
-    expect(crossingFr(1234567, 1)).toBe("1 234 567,0");
-  });
-});
+// The import list itself became the defect. Once the beats were repaired, five of them turned out
+// to declare `lang="en"`, so their formatters correctly stopped being French — `web-co2-ranking`
+// now exports `en` on `en-GB`. A hand-written import list cannot follow that: it turned the suite
+// red for a correct change, and two agents responded by keeping a DEAD `fr` export alive purely so
+// this file would keep importing it. **A guard that forces dead code to exist has inverted its own
+// purpose.**
+//
+// The replacement is `number-format-honest.test.ts`, which WALKS the tree and asserts the two rules
+// that survived both rounds — no hand-rolled thousands grouping, and a name may not lie about its
+// locale — so a formatter added, deleted or renamed needs nobody to remember anything. It states
+// its own limits, including the one this family covered and it does not: executing two copies side
+// by side to prove they agree. That coverage is genuinely lost, and is named here rather than
+// quietly dropped.
 
 describe("contrast — every copy agrees, renderers and the palette proposal alike", () => {
   // Two poles, a real house accent, a mid-grey, and one pair that lands near the 3:1 non-text

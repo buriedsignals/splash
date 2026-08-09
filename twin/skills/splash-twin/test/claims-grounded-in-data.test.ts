@@ -129,9 +129,20 @@
  *   4. WAIVED. A `// grounded-by-hand: <value> — <reason>` comment anywhere in the same script,
  *      naming the exact value and giving a non-empty reason. For the genuine non-datum: the
  *      Richter scale's "roughly 32× the energy release" is a constant of the scale, not a reading
- *      from `quakes-symbol.csv`, and no amount of deriving will ever produce it. No beat in this
- *      tree carries a waiver today — none was added while writing this guard, deliberately, so
- *      that its first run reports what is actually there.
+ *      from `quakes-symbol.csv`, and no amount of deriving will ever produce it.
+ *
+ *      **Four waivers exist as of 2026-08-09**, each re-verified as a non-datum before being
+ *      granted: that Richter constant in `map-quake-symbol`, and three `100`s describing a
+ *      100%-stacked chart's own normalisation (`static-electricity-mix-source` ×2,
+ *      `webx-electricity-mix`). This paragraph previously said no beat carried one — written while
+ *      that was true and left standing after it stopped being. That is precisely the class this
+ *      file exists to mechanize, arriving in the file's own prose; the count is stated here so the
+ *      next reader can check it, and it is asserted below so it cannot rot again unnoticed.
+ *
+ *      A waiver is keyed by **value AND the prop it appears in**, not by value alone. Keyed by
+ *      value, waiving `100` in a beat's `limits` string would silence every future `100` anywhere
+ *      in that same script — including a real one in its `alt`. The narrower key costs a waiver
+ *      author nothing and closes the widest part of this escape hatch.
  *
  * WHAT IT PROVABLY DOES NOT CATCH. Read this before trusting a green run.
  *   - EVERY NON-NUMERIC FALSE CLAIM. Of the 17 false claims in the 2026-08-09 audit, this guard
@@ -512,15 +523,25 @@ function assertedValues(src: string): Set<number> {
   return out;
 }
 
-/** `// grounded-by-hand: <value> — <reason>` */
-function waivedValues(src: string): Map<number, string> {
-  const out = new Map<number, string>();
+/**
+ * `// grounded-by-hand: <prop>:<value> — <reason>`
+ *
+ * Keyed by PROP AND VALUE, never by value alone. An earlier version keyed on the value, which
+ * meant waiving `100` for a beat's `limits` string silenced every future `100` anywhere in that
+ * same script — including a real one in its `alt`, which is exactly the claim a reader depends on.
+ * The prop costs the waiver's author four characters and closes the widest part of this hatch.
+ *
+ * A waiver with no prop is REJECTED rather than treated as a wildcard: a silently-broad waiver is
+ * worse than a missing one, because it disarms the guard in the place nobody is looking.
+ */
+function waivedValues(src: string): Map<string, string> {
+  const out = new Map<string, string>();
   for (const m of src.matchAll(
-    /grounded-by-hand:\s*(-?[\d.,]+)\s*[—-]\s*(.+)/g,
+    /grounded-by-hand:\s*([A-Za-z]+):\s*(-?[\d.,]+)\s*[—-]\s*(.+)/g,
   )) {
-    const value = Number(m[1].replace(/,(?=\d{3}\b)/g, ""));
-    const reason = m[2].trim();
-    if (Number.isFinite(value) && reason) out.set(value, reason);
+    const value = Number(m[2].replace(/,(?=\d{3}\b)/g, ""));
+    const reason = m[3].trim();
+    if (Number.isFinite(value) && reason) out.set(`${m[1]}:${value}`, reason);
   }
   return out;
 }
@@ -562,7 +583,7 @@ function scanBeat(beat: string): BeatScan[] {
         checked++;
         if (files.length && grounded(t.value, values)) continue;
         if (asserted.has(t.value)) continue;
-        if (waived.has(t.value)) continue;
+        if (waived.has(`${s.prop}:${t.value}`)) continue;
         const from = Math.max(0, t.index - 55);
         findings.push({
           beat,

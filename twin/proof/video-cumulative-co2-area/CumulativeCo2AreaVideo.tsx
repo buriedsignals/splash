@@ -126,7 +126,17 @@ export type Reading = { year: number; mt: number };
  *  total is ≈ 3,158 Mt), unlike `life-expectancy`'s and `migration`'s series, which never leave
  *  two digits. */
 export function en(value: number, decimals = 0): string {
-  return value.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  // Delegated to `Intl` rather than hand-rolled. This copy's output was CORRECT — fuzzed against
+  // the old regex over 20,000 random values plus every edge case in the series, zero differences —
+  // but the mechanism is the one that produced three separate defects elsewhere in this tree: a
+  // sibling regex missing its `g` flag grouped only the first thousand ("1 234567,0"), another
+  // emitted a breakable U+0020 where French typography needs U+202F, and three more skipped
+  // grouping entirely under a name that claimed a locale. A rule the platform owns cannot drift
+  // back into any of those. Guarded by `number-format-honest.test.ts`, which found this copy.
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }
 
 /**
