@@ -332,6 +332,100 @@ three sweeps, the last settled only by running `git log` instead of reading. The
 six ways; the sentences describing it are guarded by nobody, and a reader follows the sentences
 first.
 
+## 12. The night of 2026-08-08 — the journey becomes real
+
+The canon restoration (§11) made the skills sound. This pass made the **journey** work: an article
+in, a delivered visual out. Suite went 460 → 662 tests.
+
+### What was found by walking it, not by reading it
+
+A clean-room run — an operator allowed to read only documentation, never implementation — took a
+real article and real Swiss electricity data through the whole journey. It reached a delivered
+chart and produced **eleven findings**. The four that mattered:
+
+1. **Delivery knew only the `static` genre.** `twin-chart-web` and `twin-chart-video` were complete,
+   tested, documented skills whose output could not be delivered at all — `offerForms` threw. The
+   journalist had asked for "the web". Nothing warned; the wall was hit at the last phase.
+2. **The newsroom's identity was collected and never used.** Preflight validated `NEWSROOM.md`;
+   nothing threaded its colours into a render. The Quick start showed them as literals with a
+   `// from NEWSROOM.md` comment — an instruction to copy by eye.
+3. **`measureText` under-measured by 3.3× and said nothing.** It takes an options object; passing a
+   bare number returns exactly what passing nothing returns, because resvg falls back to a default
+   size. The function whose whole purpose is that gutters are measured rather than guessed.
+4. **Preflight was unconditional**, probing MapTiler for a chart-only story and reporting a failed
+   environment for a key that story would never use.
+
+### What now holds
+
+- **The genre contract.** A genre must be produceable *and* deliverable, checked at the moment of
+  choice. Delivery learned `web` and `video`. A drift test fails if a producer appears without a
+  delivery path, or the reverse.
+- **Preflight establishes what is possible, not a verdict.** It returns `{ready, blockers, checks,
+  capabilities}`; a missing key **narrows capabilities**, never blocks the session. The stop became
+  mechanical (`assertPreflightReady`) instead of prose. Key names from the sibling engine are
+  accepted as aliases. The storyboard consumes `capabilityGap` and refuses a medium the environment
+  cannot honour — "map beats are unavailable: no MapTiler key", never "environment failed".
+- **`NEWSROOM.md` has three outcomes, not two:** valid, missing, or **declined**. A declined theme
+  is a recorded choice, checked before validation — not a silent default. The anti-fallback rule
+  exists so a visual never ships in a colour nobody chose; an explicit refusal is not that.
+- **`twin-newsroom-charter`** derives a charter by measuring the newsroom's own site, showing every
+  value beside the markup it was read from. Tested against four real newsrooms: two yielded a brand
+  colour, and **nzz.ch yielded nothing and said so** — correctly rejecting a carousel library's
+  default blue rather than presenting it as measured. That refusal is the skill's whole point.
+- **A hosted embed, deployed for real.** Cloudflare Pages direct upload, four API calls matched
+  against Wrangler's own source, no CLI and no new dependency. Proven by deploying and fetching
+  back byte-identical.
+- **A CMS insertion form, marked UNPROVEN in three places** — `SKILL.md`'s Overview, its How it
+  works, and the first line of the file it emits. `assertNotPartialReplace` guards We.Publish's
+  total-replace `updateArticle`: mutation-proven to refuse a dropped paragraph, an altered body, an
+  empty previous body. When someone reaches a real CMS, the guard is already there.
+- **`twin-scrolly`**, the assembly vehicle. Proven by driving a browser: stepping, no-JS survival,
+  reduced motion, 375px.
+- **22 per-type prose sheets** (16 chart, 6 map), each carrying what the type is for, when *not* to
+  use it, the one thing that goes wrong, and its accessibility trap. Both READMEs name the 28 types
+  **not** covered, so the set cannot be mistaken for complete.
+- **Cross-cutting craft lessons harvested into the doctrine** — label-vs-mark contrast, fixed
+  gutters where a measurement belongs, genre-scoped axis and end-label rules, and a rewritten geo
+  rule 7 (it recommended no-data hatching, contradicting the engine's own shipped flat colour and
+  its own best-practice doc calling hatch illegible).
+
+### The correction that mattered most
+
+The three video beats credited real institutions for numbers nothing committed could reproduce;
+each render read a CSV from `/tmp`. Freezing the real data into each story folder exposed two
+falsehoods:
+
+- **migration** claimed 1997 and 1998 were negative. The real FSO series: 1996 and 1997 negative,
+  **1998 positive at +1,177**. The chart carried callouts on a year that contradicted its own claim.
+  Corrected to 1996/1997, title narrowed to "Twice since 1991".
+- **life-expectancy** credited the Federal Statistical Office, which publishes only sex-split
+  series. Averaging them by hand would have been an invented number under a real name. Re-credited
+  to UN World Population Prospects via Our World in Data.
+
+**And fabricated data hides layout bugs.** The synthetic series were smooth; the real ones are
+jagged, and re-rendering surfaced a label collision the fake curve had been concealing.
+
+### The lesson this night adds
+
+**Prose is the unguarded surface.** Every mechanical guard built here scans code — `.mjs`, `.ts`,
+`.tsx`. Markdown is scanned by nothing. Seven false statements about the code survived in
+documentation across three separate sweeps, and the last was settled only by running `git log`
+rather than reading. The code is guarded six ways; the sentences describing it are guarded by
+nobody — and a reader follows the sentences first. **A test asserting that every exported signature
+named in a `SKILL.md` still exists in that shape is the next thing worth building.**
+
+### Still open
+
+- The map track for the scrolly; images as a medium; the assembly phase in `whereIs`.
+- CMS insertion is unproven — no real endpoint exists to reach.
+- The `--check` preview guards do not travel: they byte-compare PNGs rendered with this machine's
+  fonts, and the map one needs `MAPTILER_KEY` plus a warm plate cache and hard-fails rather than
+  skipping. On a fresh clone they go red for reasons that are not defects.
+- Alias/symlink indirection still defeats the cross-skill import guard, and `shared/` already holds
+  skill-named directories of byte-identical copies — so "let's symlink these" is the most natural
+  tidy-up there is and it blinds the guard silently.
+- No typecheck gate.
+
 ## Evidence
 
 `twin/COMPARISON.md` (the full comparison dossier) · `twin/PROOF.md` (the journey end to end) ·
