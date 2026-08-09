@@ -46,13 +46,28 @@ async function main() {
   console.log(`lowest GDP: ${byGdp[0].country} $${byGdp[0].gdpPerCapita.toFixed(0)}`);
   console.log(`highest GDP: ${byGdp[byGdp.length - 1].country} $${byGdp[byGdp.length - 1].gdpPerCapita.toFixed(0)}`);
 
+  // The alt text's "$30,000 to $140,000" band and its life-expectancy range were hand-typed — a
+  // render audit caught the range wrong ("roughly 76 to 85 years" when the band's own low end,
+  // Seychelles at 71.2, sits well below 76). Both the band bounds and the range now come from the
+  // same points array the chart plots, not retyped numbers.
+  const HIGH_INCOME_LO = 30000;
+  const HIGH_INCOME_HI = 140000;
+  const highIncome = points.filter(
+    (p) => p.gdpPerCapita >= HIGH_INCOME_LO && p.gdpPerCapita <= HIGH_INCOME_HI,
+  );
+  const highIncomeLifeMin = Math.min(...highIncome.map((p) => p.lifeExpectancy));
+  const highIncomeLifeMax = Math.max(...highIncome.map((p) => p.lifeExpectancy));
+  console.log(
+    `$${HIGH_INCOME_LO}-$${HIGH_INCOME_HI}: ${highIncome.length} countries, life expectancy ${highIncomeLifeMin.toFixed(1)}-${highIncomeLifeMax.toFixed(1)}`,
+  );
+
   const { pngPath } = await renderStill({
     element: createElement(IncomeLifeExpectancyScatter, {
       points,
       title: "Beyond roughly $30,000 a person, extra income buys far less extra life expectancy",
       limits: "165 countries with both measures in 2021. Correlation, not causation — health systems, conflict and disease all move independently of income too.",
       source: "Source: World Bank via Gapminder, UN WPP (2024), via Our World in Data · 2021 data, extracted 8 August 2026",
-      alt: "Scatter plot of GDP per capita (log scale) against life expectancy at birth for 165 countries in 2021. Life expectancy rises steeply as income rises from a few hundred to about ten thousand dollars, then the slope flattens: from about $30,000 to $140,000 a person, life expectancy still varies, but across a narrower band, roughly 76 to 85 years.",
+      alt: `Scatter plot of GDP per capita (log scale) against life expectancy at birth for 165 countries in 2021. Life expectancy rises steeply as income rises from a few hundred to about ten thousand dollars, then the slope flattens: from about $${(HIGH_INCOME_LO / 1000).toFixed(0)},000 to $${(HIGH_INCOME_HI / 1000).toFixed(0)},000 a person, life expectancy still varies, but across a narrower band, roughly ${highIncomeLifeMin.toFixed(0)} to ${highIncomeLifeMax.toFixed(0)} years.`,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       highlighted: [],

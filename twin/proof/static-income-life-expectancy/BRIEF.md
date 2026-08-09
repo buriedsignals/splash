@@ -6,7 +6,9 @@
 
 Across 165 countries in 2021, life expectancy rises steeply with income up to roughly $10,000-
 30,000 per person, then the slope flattens: from $30,000 to $140,000 a person, life expectancy
-still varies, but across a much narrower band (roughly 76 to 85 years).
+still varies, but across a much narrower band (roughly 71 to 85 years — corrected 2026-08-09, a
+render audit caught the brief and the render both saying "76 to 85": the band's own low end,
+Seychelles at 71.2 years, sits well below 76).
 
 ## Subject and accent
 
