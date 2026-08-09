@@ -1,9 +1,18 @@
 // Renders THIS skill's seed from THIS skill's sample data. Never a story's render: a story's
 // artifact proves the story, not the mechanism this skill teaches.
 //
+// Uses `ChartWebPreviewSvg`, NOT `ChartWebSeed` — see that component's own doc-comment in
+// `assets/ChartWebSeed.tsx`. `ChartWebSeed` now draws geometry-only SVG plus HTML/CSS furniture,
+// which is exactly what makes the shipped beat genuinely fluid; a static PNG documentation
+// thumbnail still needs one flat, fully-baked SVG for `@resvg/resvg-js` (SVG-only, no HTML layout
+// engine) to rasterise, so this script reaches for the sibling SVG-only renderer instead. The two
+// share the same data, the same geometry function and the same editorial words — they draw the
+// same chart — only the TEXT-RENDERING TECHNIQUE differs, and only because a PNG has no browser to
+// lay HTML text out in.
+//
 // Furniture (`ink`/`muted`/`grid`) and `measure` are derived HERE, in node, exactly the division
-// `scripts/render-web.mjs`'s `renderWeb` already uses for a real beat: the seed component itself
-// never imports the rasteriser (see `ChartWebSeed.tsx`'s own doc-comment) — this script is the one
+// `scripts/render-web.mjs`'s `renderWeb` already uses for a real beat: neither seed component
+// imports the rasteriser (see `ChartWebSeed.tsx`'s own doc-comment) — this script is the one
 // place per render that calls `deriveFurniture`/owns `measureText`, then threads the results in as
 // props, once.
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -15,7 +24,7 @@ import {
   deriveFurniture,
   measureText,
 } from "./render-still.mjs";
-import { ChartWebSeed, SEED_LAYOUT } from "../assets/ChartWebSeed.tsx";
+import { ChartWebPreviewSvg } from "../assets/ChartWebSeed.tsx";
 
 const HERE = import.meta.dirname;
 
@@ -36,7 +45,7 @@ const ground = "#FFFFFF";
 const furniture = deriveFurniture(ground);
 
 const svg = renderToStaticMarkup(
-  createElement(ChartWebSeed, {
+  createElement(ChartWebPreviewSvg, {
     data,
     title: "Rainfall over the sample town fell by a third",
     source: "Sample data — not a real measurement",
@@ -46,11 +55,13 @@ const svg = renderToStaticMarkup(
     subject: "the sample town",
     ...furniture,
     measure: measureText,
-    layout: SEED_LAYOUT,
   }),
 );
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: SEED_LAYOUT.width } })
+const widthMatch = svg.match(/\bwidth="(\d+(?:\.\d+)?)"/);
+const previewWidth = widthMatch ? Number(widthMatch[1]) : 900;
+
+const png = new Resvg(svg, { fitTo: { mode: "width", value: previewWidth } })
   .render()
   .asPng();
 
