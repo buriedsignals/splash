@@ -18,6 +18,7 @@ import { scaleLinear, scaleBand } from "d3-scale";
 import {
   deriveFurniture,
   measureText,
+  measureTextBand,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
 
@@ -30,6 +31,10 @@ const SUBTITLE = { fontSize: 14, fontWeight: 400, lead: 20 };
 const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 12, fontWeight: 400 };
 const BAND_LABEL = { fontSize: 11, fontWeight: 400 };
+/** The air the zero spine leaves on each side of a band label's own measured glyph extent, in
+ *  frame units. Small on purpose: the spine has to stay legible AS a continuous zero across a
+ *  21-band gutter, so the gap is the label plus a hair, never a generous window. */
+const SPINE_LABEL_CLEARANCE = 2;
 const LEGEND = { fontSize: 13, fontWeight: 600 };
 const NOTE = { fontSize: 12, fontWeight: 700 };
 /** Two hues a colour-vision-deficient reader can tell apart, checked as a pair — the type's own
@@ -184,6 +189,29 @@ export function SwissAgePyramid({
 
   const peak = bars.find((b) => b.ageBand === peakBand);
 
+  // The gaps the zero spine leaves for the band labels, and the segments that remain. Each gap is
+  // the label's own measured ink extent above and below its baseline, plus SPINE_LABEL_CLEARANCE
+  // of air on each side. Sorted and walked once, so a future band order or a taller label changes
+  // the drawing without changing this code.
+  const spineGaps = bars
+    .map((b) => {
+      const baseline = b.centerLabelY + 4;
+      const { ascent, descent } = measureTextBand(b.ageBand, BAND_LABEL);
+      return {
+        top: baseline - ascent - SPINE_LABEL_CLEARANCE,
+        bottom: baseline + descent + SPINE_LABEL_CLEARANCE,
+      };
+    })
+    .sort((a, b) => a.top - b.top);
+  const spineSegments: { y1: number; y2: number }[] = [];
+  let spineCursor = plot.top;
+  for (const gap of spineGaps) {
+    if (gap.top > spineCursor) spineSegments.push({ y1: spineCursor, y2: gap.top });
+    spineCursor = Math.max(spineCursor, gap.bottom);
+  }
+  if (plot.bottom > spineCursor)
+    spineSegments.push({ y1: spineCursor, y2: plot.bottom });
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -308,14 +336,26 @@ export function SwissAgePyramid({
           </text>
         </g>
       ))}
-      <line
-        x1={centerX}
-        x2={centerX}
-        y1={plot.top}
-        y2={plot.bottom}
-        stroke={muted}
-        strokeWidth={1}
-      />
+      {/* The zero spine, drawn in SEGMENTS that yield where a band label sits.
+          One continuous line from `plot.top` to `plot.bottom` struck through all 21 of them: the
+          committed PNG read "95|99", "85|89" and "100|+". The rule is not decoration — its own
+          caption says the two sides share this zero — and the labels ARE the vertical axis, so
+          neither can move out of the other's way. The fix is the one already proved next door in
+          `../vidy-pyramid-niger-population/PyramidVideo.tsx`: the SPINE yields, by each label's own
+          MEASURED glyph extent (`measureTextBand`, resvg's own ink box) plus a breathing gap —
+          never by a ratio-of-fontSize constant, because "0-4" and "100+" carry no descenders and a
+          gap sized for a hypothetical "g" is a gap nobody asked for. */}
+      {spineSegments.map((seg) => (
+        <line
+          key={`spine-${seg.y1}`}
+          x1={centerX}
+          x2={centerX}
+          y1={seg.y1}
+          y2={seg.y2}
+          stroke={muted}
+          strokeWidth={1}
+        />
+      ))}
 
       {bars.map((b) => (
         <g key={b.ageBand}>

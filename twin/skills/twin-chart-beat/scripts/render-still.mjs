@@ -190,6 +190,49 @@ export function measureText(text, options) {
 }
 
 /**
+ * The rendered VERTICAL extent of a string in the font it will really be drawn in: how far its
+ * glyphs rise above the baseline and fall below it, measured by resvg's own ink box — the same
+ * instrument, and the same probe, `measureText` uses for the horizontal answer.
+ *
+ * A centre-gutter label needs this axis because what has to be kept clear of it is vertical: the
+ * age pyramid's zero spine ran straight through all 21 of its band labels, so "85-89" read
+ * "85+89" (`proof/static-swiss-age-pyramid`, and the same defect repaired next door in
+ * `proof/vidy-pyramid-niger-population/PyramidVideo.tsx`). A ratio-of-fontSize constant would be a
+ * magic number standing where a measurement belongs: "0-4" and "100+" carry no descenders at all,
+ * and a clearance sized for a hypothetical "g" is a gap nobody asked for.
+ *
+ * Same options object, same reasons, and the same throw on a bare number — see `measureText`.
+ */
+export function measureTextBand(text, options) {
+  if (!text) return { ascent: 0, descent: 0 };
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
+    throw new Error(
+      `measureTextBand's second argument must be an options object shaped { fontSize, fontWeight?, fontFamily? }, got ${JSON.stringify(options)} (${typeof options})`,
+    );
+  }
+  const { fontSize, fontWeight = 400, fontFamily = FONT_FAMILY } = options;
+  if (typeof fontSize !== "number" || !Number.isFinite(fontSize)) {
+    throw new Error(
+      `measureTextBand's options.fontSize must be a finite number, got ${JSON.stringify(fontSize)} — a missing fontSize silently defaults to resvg's own size and under-measures`,
+    );
+  }
+  const key = `band|${fontFamily}|${fontWeight}|${fontSize}|${text}`;
+  if (measured.has(key)) return measured.get(key);
+  const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const baseline = 300;
+  const probe =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="8000" height="600">` +
+    `<text x="0" y="${baseline}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}">${escaped}</text>` +
+    `</svg>`;
+  const box = new Resvg(probe, { font: { loadSystemFonts: true } }).getBBox();
+  const band = box
+    ? { ascent: baseline - box.y, descent: box.y + box.height - baseline }
+    : { ascent: fontSize * 0.72, descent: fontSize * 0.08 };
+  measured.set(key, band);
+  return band;
+}
+
+/**
  * Render one React element to an SVG on disk and a PNG beside it. The PNG is the artifact the
  * checklist is applied to — the SVG is kept because a defect is easier to read in the markup.
  */
