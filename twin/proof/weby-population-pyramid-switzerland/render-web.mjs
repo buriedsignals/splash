@@ -140,6 +140,18 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   );
   const totalPop = withTotal.reduce((s, b) => s + b.total, 0);
   console.log(`sum of bands: ${totalPop.toLocaleString()}`);
+  const youngestSharePct = Math.round((youngest.total / peak.total) * 100);
+
+  // "Well under half" and "the mid-60s" were both hand-typed in this beat too (same mistake as its
+  // static twin, `static-swiss-age-pyramid/render.mjs`) — a render audit caught the first as false
+  // (0-4 is ~65% of the peak band's width, not under half) and the second as imprecise (the real
+  // female>male crossover is the 60-64 band). Both now come from `withTotal`, not retyped.
+  let crossover = withTotal[withTotal.length - 1];
+  for (let i = withTotal.length - 1; i >= 0; i--) {
+    if (withTotal[i].female <= withTotal[i].male) break;
+    crossover = withTotal[i];
+  }
+  console.log(`female > male from ${crossover.ageBand} upward`);
 
   const { outPath } = await renderWeb({
     component: SwissAgePyramidWeb,
@@ -151,7 +163,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
         "Age bands run in their natural sequence, oldest at top — sorting by population size would destroy the shape this chart exists to show. Hover, tap or focus any band for its exact figures.",
       source:
         "Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026",
-      alt: `Population pyramid of Switzerland by age and sex, 2023. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, well under half the peak band's width. Women outnumber men in every band from the mid-60s upward. Every band's exact figures for both sexes are reachable by hover, tap or keyboard focus.`,
+      alt: `Population pyramid of Switzerland by age and sex, 2023. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward. Every band's exact figures for both sexes are reachable by hover, tap or keyboard focus.`,
       ground: "#FFFFFF",
       accent: NOMINAL_ACCENT,
       peakBand: peak.ageBand,
