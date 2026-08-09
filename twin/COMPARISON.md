@@ -32,8 +32,9 @@ migration, 1990–2024 (crosses zero; the subject is 1997–98, not the peaks) �
 FSO table runs **1991**–2024 and its negative years are **1996–97***. Video: the CO₂ case, 1080×1080, 240 frames, 30fps both sides. Ranking:
 CO₂ per capita, Western Europe, 2023, 16 countries (subject Switzerland, rank 2 of 16 — deliberately
 not an extreme). Map: European CO₂ per capita, 2023 (subject Switzerland — neither the maximum nor
-the minimum; comparison the European average, 6,55 t; discreet the highest emitter, Luxembourg,
-shaded but never named).
+the minimum; comparison the European average, 6,55 t — **which average is now named and re-fetched
+in §8**: Our World in Data's own `Europe` aggregate, 6,545994 t for 2023, not a mean of the shaded
+countries; discreet the highest emitter, Luxembourg, shaded but never named).
 
 Evidence: `proof/comparison/`. Filenames encode case and producer: `1-CO2`, `2-VIE`,
 `3-MIGRATION` × `main-chartnative` / `main-datawrapper` / `twin` / `twin-d3`, plus
@@ -180,6 +181,17 @@ From the agent that produced the twin's ranking case, on what the win in §3 was
 > comparison are adjacent, accenting the named subject rather than the extremum, and dropping the
 > non-subject labels once the first render showed them competing.
 
+*(Correction, 2026-08-09. The quotation stays verbatim — it is what the producing agent reported —
+but its third decision is not what shipped. `ranking-twin.png` was opened: **all sixteen country
+names and all sixteen values are printed**, the fifteen non-subject rows in grey at normal weight,
+"2. Suisse" in the accent teal and bold. The labels were **demoted, not dropped**, which is what §3
+says two sections earlier ("all sixteen rows"). The render is deliberately not being changed to
+match the sentence: a ranking's row labels are what make a bar identifiable, and dropping fourteen
+of sixteen country names would leave a reader unable to say which bar is which — demotion is the
+correct treatment, and it is the treatment the blind judges picked. What was wrong here is the
+description, and the version of the claim that survives is "**demoting** the non-subject labels
+once the first render showed them competing".)*
+
 ## 8. The map, and the fourth shape it completes
 
 The map case was still in flight when this document's first revision went out; it has since
@@ -225,6 +237,20 @@ accent teal; the European average (6,5) and Switzerland (3,6) are both placed as
 same discrete-bin legend, so the distribution reads between two named points instead of a
 subtitle-only number; the highest-shaded countries are visible in the same dark bins as the engine's
 render and are, the same way, never named.
+
+**Which average 6,55 t is** — this document quoted the figure three times without saying, and two
+audits flagged it as unreproducible. It is **Our World in Data's own continental aggregate**, from
+the same grapher both renders credit: entity `Europe` (`OWID_EUR`) in `co-emissions-per-capita`,
+**2023 = 6,545994 t**, which rounds to the 6,55 the engine prints in its subtitle and the 6,5 the
+twin ticks on its legend. Re-fetched 2026-08-09 rather than reasoned about:
+`curl --get --data-urlencode csvType=filtered --data-urlencode 'country=~OWID_EUR'
+https://ourworldindata.org/grapher/co-emissions-per-capita.csv`. So it is population-weighted over
+the whole continent, Russia included — **not a mean of the countries either map shades**, which is
+why it could not be reproduced from inside this repository: the frozen 41-country European file
+(`proof/mapgen-choropleth-web/co2-per-capita-2023.csv`, a set that is close to but not identical
+with the comparison renders' own join) means **5,3848** unweighted, medians **5,0768**, and comes to
+**5,2385** weighted by the frozen population file. None of those is 6,55, and none of them was ever
+what the renders meant.
 
 **The point this case draws is the one that unifies the whole document.** This result mirrors the
 *line* result, not the *ranking* result — and for a reason worth stating plainly, because it is the
@@ -373,8 +399,8 @@ member of an otherwise-equipped family with no way to say "this one." (`BarChart
 is the exact mechanism §3–§4's ranking case exercised on the engine's side, successfully.)
 
 Its only emphasis mechanism is a dot and a label on the **last** point in the series — visible
-directly in the renders: `1-CO2--main-chartnative.png` labels its final year, 2024 (which happens to
-be the subject there), but `2-VIE--main-chartnative.png` labels its final year the same way even
+directly in the renders: `1-CO2--main-chartnative.png` marks its final point (which happens to be
+the subject there), and `2-VIE--main-chartnative.png` marks its final point the same way even
 though the story is about **2020** — the single moment of typographic emphasis in the whole chart
 lands on the wrong year,
 and nothing distinguishes the Covid dip from any other point on the line. That is not a coincidence
@@ -383,6 +409,14 @@ endpoint. The ceiling of a parameterised type is not "less capable" in the abstr
 what its author happened to anticipate (`highlight the endpoint`) and nothing its author did not,
 and on the chart type journalism reaches for most often, what got anticipated was too narrow by one
 whole capability every neighbouring type already has.
+
+*(Correction, 2026-08-09: the passage above read "labels its final year, 2024". Both PNGs were
+opened and read. **Neither prints a year anywhere near the line.** The end label carries the series
+name over its value — "Émissions territoriales / 32,1" on the CO₂ render, "Life expectancy / 84.2"
+on the life-expectancy one — and years appear only on the x-axis, whose last tick on the CO₂ render
+is **2020**. The mechanism is pinned to the last *point*, not to a year it prints, and that is the
+whole of what this section rests on: the emphasis lands on the endpoint whether or not the endpoint
+is the story. The argument survives the correction; the sentence describing it did not.)*
 
 ### The one structural gap, and that it is small
 

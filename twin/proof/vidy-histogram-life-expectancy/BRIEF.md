@@ -22,19 +22,30 @@ axis zero-based, bars edge-to-edge.
   rather than relying on an implicit default.
 - `data.csv`: **21,565 rows**, columns `Entity,Code,Year,Life expectancy`, years **1543–2023**
   (Human Mortality Database / Zijdeman/Riley estimates before 1950, UN WPP from 1950 on), one row
-  per entity-year. Verified by counting rows and listing the distinct `Year` values present —
-  2023 is the latest year, with **259** entity rows.
-- Of those 259, **22 are aggregates** OWID ships beside real countries in this same grapher —
+  per entity-year. Recounted 2026-08-09 with an RFC 4180 parser — 2023 is the latest year, with
+  **261** entity rows.
+- Of those 261, **24 are aggregates** OWID ships beside real countries in this same grapher —
   continents (`Africa`, `Asia`, `Europe`, `Oceania`, `Americas` — the last with no `Code` at all),
   income-group buckets (`OWID_HIC`/`OWID_LIC`/`OWID_LMC`/`OWID_UMC` and several more without a
-  code, e.g. `Middle-income countries`), and `World` (`OWID_WRL`). Verified by listing every 2023
-  `Entity,Code` pair by hand and reading it: every synthetic aggregate uses an `OWID_...` code
-  **except Kosovo** (`OWID_KOS`, a real country with a disputed-but-real ISO situation, kept in),
-  and a second family of aggregates ships with **no code at all**. `render.mjs`'s
-  `readingsFromCsv` excludes both families by an explicit `Code` check (an enumerated
-  `AGGREGATE_CODES` set for the `OWID_...` family, plus an empty-code check for the rest), never a
-  name-string guess. That leaves **237 countries and territories** — verified by `render.mjs`
-  throwing if the count is not exactly 237 (a real tripwire, not a comment).
+  code, e.g. `Middle-income countries`), and `World` (`OWID_WRL`). Recomputed: **15** of them carry
+  no code at all and **9** carry an enumerated `OWID_...` code — every synthetic aggregate uses an
+  `OWID_...` code **except Kosovo** (`OWID_KOS`, a real country with a disputed-but-real ISO
+  situation, kept in), which is why a raw "`OWID_` prefix or empty code" classifier says 25 and the
+  real figure is 24. `render.mjs`'s `readingsFromCsv` excludes both families by an explicit `Code`
+  check (an enumerated `AGGREGATE_CODES` set for the `OWID_...` family, plus an empty-code check for
+  the rest), never a name-string guess. That leaves **237 countries and territories** — verified by
+  `render.mjs` throwing if the count is not exactly 237 (a real tripwire, not a comment).
+
+  *(Correction, 2026-08-09: this paragraph read **259** 2023 rows and **22** aggregates. Both were
+  two too low, and the cause is worth recording because it is the class this corpus keeps meeting.
+  Two of the aggregate rows are `"Less developed regions, excluding China"` and `"Less developed
+  regions, excluding least developed countries"` — quoted `Entity` fields containing a comma. A
+  `split(",")` shifts their columns, so their `Year` cell reads `""` and they vanish from any count
+  taken that way. `render.mjs`'s own `readingsFromCsv` splits on commas exactly like that and so
+  also sees 259 — but both mangled rows are code-less aggregates it excludes anyway, so **the drawn
+  237 is unaffected**, and every figure below was recomputed on the RFC 4180 parse and still holds.
+  A parser that is right about the answer for the wrong reason is still a parser to fix; that fix
+  belongs to `render.mjs` and is named, not made, here.)*
 
 ## Exact values — verified 2026-08-09
 

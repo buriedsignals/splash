@@ -1,10 +1,21 @@
 # Beat — Germany's electricity generation fell as coal and nuclear losses outpaced renewable growth, 2010–2023
 
 **Proves:** between 2010 and 2023, Germany's total electricity generation *fell* by 117.49 TWh
-overall — not because renewables failed to grow (wind, solar and bioenergy together added 171.69
-TWh), but because coal and nuclear together lost 271.45 TWh, more than twice as much as
-renewables gained. The popular "renewables replaced fossil fuels" framing undersells what actually
-happened: generation shrank, net, even as the clean sources grew.
+overall — not because renewables failed to grow (wind, solar and bioenergy together added 171.24
+TWh; 171.40 as drawn, with the 0.16 TWh `Other renewables` column merged into Bioenergy; 171.69
+counting hydropower's +0.29), but because coal and nuclear together lost 271.45 TWh — **1.58× the
+whole renewable gain**, 1.59× the wind-solar-bioenergy trio alone. The popular "renewables replaced
+fossil fuels" framing undersells what actually happened: generation shrank, net, even as the clean
+sources grew.
+
+*(Correction, 2026-08-09: this paragraph read "**more than twice as much as renewables gained**"
+and attached **171.69** to "wind, solar and bioenergy". Recomputed from this beat's own `data.csv`
+rather than retyped: coal −138.11 + nuclear −133.34 = −271.45; wind +101.99 + solar +51.91 +
+bioenergy +17.34 = **171.24**, +0.16 for `Other renewables` = 171.40 as the bridge draws it, +0.29
+for hydropower = **171.69**, which is all renewables and not the trio. 271.45 ÷ 171.69 = **1.5810**;
+÷ 171.24 = **1.5852**. On no denominator does it reach 2, so "more than twice" was wrong on the
+beat's own stated proof. Nothing rendered changes — the video's title says "outpaced", which the
+1.58× supports, and its three drawn totals reproduce exactly.)*
 
 **Medium / genre:** chart / video. **Type:** waterfall (bridge) — one opening total bar (2010), one
 closing total bar (2023), and eight signed steps in between, each a source's generation delta
@@ -70,9 +81,10 @@ step by step from the raw 2010 total:
 computed independently above by summing 2023's nine raw columns). The two numbers match because
 they're required to — `render.mjs`'s `readingsFromCsv` throws if the walked running total and the
 independently-summed closing total disagree by more than 1e-6, so this is checked by the render
-itself, not just by hand here. Renewables' combined gain (Bioenergy+Solar+Wind+Hydropower =
-+171.69) and the fossil/nuclear combined loss (Nuclear+Gas+Oil+Coal = −289.18) also net to exactly
-−117.49, confirming the headline claim.
+itself, not just by hand here. Renewables' combined gain (Bioenergy *as merged, 17.50* + Solar +
+Wind + Hydropower = **+171.69**; the raw `Bioenergy` column alone puts it at 171.53, and the trio
+without hydropower at 171.24) and the fossil/nuclear combined loss (Nuclear+Gas+Oil+Coal =
+**−289.18**) net to exactly −117.49, confirming the headline claim.
 
 ## The motion problem
 
