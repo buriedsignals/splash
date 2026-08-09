@@ -39,9 +39,22 @@ async function main() {
   console.log(`peak band: ${peak.ageBand} (${peak.total.toLocaleString()})`);
   const youngest = withTotal[0];
   console.log(`youngest band (0-4): ${youngest.total.toLocaleString()} — ${youngest.total < peak.total ? "smaller" : "larger"} than the peak`);
+  const youngestSharePct = Math.round((youngest.total / peak.total) * 100);
 
   const totalPop = withTotal.reduce((s, b) => s + b.total, 0);
   console.log(`sum of bands: ${totalPop.toLocaleString()}`);
+
+  // "Well under half" and "the mid-60s" were both hand-typed — a render audit caught the first as
+  // false (0-4 is ~65% of the peak band's width, not under half) and the second as imprecise (the
+  // real female>male crossover is the 60-64 band, not the mid-60s). Both are now found by scanning
+  // `withTotal` for the youngest band from which every older band has female > male, and by the
+  // share percentage computed above, instead of retyped.
+  let crossover = withTotal[withTotal.length - 1];
+  for (let i = withTotal.length - 1; i >= 0; i--) {
+    if (withTotal[i].female <= withTotal[i].male) break;
+    crossover = withTotal[i];
+  }
+  console.log(`female > male from ${crossover.ageBand} upward`);
 
   const { pngPath } = await renderStill({
     element: createElement(SwissAgePyramid, {
@@ -49,7 +62,7 @@ async function main() {
       title: `Switzerland's population bulges at ages ${peak.ageBand}, not among the youngest`,
       limits: "Age bands run in their natural sequence, oldest at top — sorting by population size would destroy the shape this chart exists to show.",
       source: "Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026",
-      alt: `Population pyramid of Switzerland by age and sex, 2023. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, well under half the peak band's width. Women outnumber men in every band from the mid-60s upward.`,
+      alt: `Population pyramid of Switzerland by age and sex, 2023. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward.`,
       ground: "#FFFFFF",
       peakBand: peak.ageBand,
       peakLabel: `${peak.ageBand}: the widest band (${peak.total.toLocaleString()})`,
