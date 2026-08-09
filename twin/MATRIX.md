@@ -11,9 +11,9 @@ it is a by-product of that beat's reveal, not a chart framed to be read at rest.
 This is a coverage map, never a quality one. Whether these artifacts are CORRECT is what the
 `AUDIT-*.md` files are for.
 
-## Charts — 17 types, 53 beats
+## Charts — 18 types, 55 beats
 
-17 of 17 are proven in all three of static, web and video.
+17 of 18 are proven in all three of static, web and video.
 
 | type | static | web | video | scrolly |
 |---|---|---|---|---|
@@ -26,8 +26,9 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 | **grouped bar** | static-wind-vs-solar | webx-wind-vs-solar | vidx-grouped-bar-co2-per-capita | — |
 | **heatmap** | static-heatmap-coal-share-europe | more-heatmap-co2-per-capita-decades | vidy-heatmap-renewables-europe | — |
 | **histogram** | static-carbon-footprint-spread | webx-carbon-footprint | vidy-histogram-life-expectancy | — |
-| **line** | more-line-swiss-life-expectancy | webx-life-expectancy | life-expectancy<br>migration<br>vidx-line-life-expectancy | — |
+| **line** | more-line-swiss-life-expectancy | webx-life-expectancy | life-expectancy<br>migration<br>vidx-line-life-expectancy | scrolly-chart-eu-carbon |
 | **lollipop** | more-lollipop-co2-per-capita | weby-lollipop-co2-per-capita | vidy-lollipop-renewables-share-europe | — |
+| **photograph sequence** | — | — | — | scrolly-image-grinnell-glacier |
 | **population pyramid** | static-swiss-age-pyramid | weby-population-pyramid-switzerland | vidy-pyramid-niger-population | — |
 | **scatter** | static-income-life-expectancy | web-income-life-expectancy | vidx-scatter-income-life-expectancy | — |
 | **slope** | static-renewables-shift | web-co2-decline-slope | vidx-slope-child-mortality | — |
@@ -35,14 +36,14 @@ This is a coverage map, never a quality one. Whether these artifacts are CORRECT
 | **stacked bar** | static-electricity-mix-source | webx-electricity-mix | vidx-stacked-bar-swiss-electricity | — |
 | **waterfall** | static-germany-electricity-bridge | webx-germany-bridge | vidy-waterfall-germany-electricity-mix | — |
 
-## Maps — 6 types, 16 beats
+## Maps — 6 types, 17 beats
 
 5 of 6 are proven in all three of static, web and video.
 
 | type | static | web | video | scrolly |
 |---|---|---|---|---|
 | **choropleth** | mapgen-choropleth-video | mapgen-choropleth-web | mapgen-choropleth-video | — |
-| **dot density** | mapmore-dot-population<br>mapvid-dot-population | mapgen-dot-web | mapvid-dot-population | — |
+| **dot density** | mapmore-dot-population<br>mapvid-dot-population | mapgen-dot-web | mapvid-dot-population | mapscrolly-quakes-three-ways |
 | **flow / route map** | mapmore-flow-danube | — | mapgen-flowmap-video | mapmore-scrolly-danube |
 | **hex grid** | map-quake-density<br>mapvid-hexgrid-quakes | mapgen-hexgrid-web | mapvid-hexgrid-quakes | — |
 | **locator** | map-geneva-locator<br>mapvid-locator-geneva | mapgen-locator-web | mapvid-locator-geneva | — |
