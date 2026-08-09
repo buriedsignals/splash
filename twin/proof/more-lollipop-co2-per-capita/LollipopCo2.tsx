@@ -165,8 +165,10 @@ export function LollipopCo2({
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin."
+  const sourceBaseline = height - PAD;
 
   // Both gutters are measured from the widest string that will actually be drawn in them — a
   // fixed constant here is exactly the failure class `references/types/lollipop.md` names for
@@ -181,9 +183,11 @@ export function LollipopCo2({
   );
 
   const padding = {
-    top: sourceBaseline + 30,
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 30,
     right: PAD + 14 + widestValueLabel,
-    bottom: PAD + 30,
+    // Grown by the source block's own height plus clear air: the source now sits on the
+    // frame's bottom margin, so the axis band beneath the plot has to end above its ink.
+    bottom: PAD + 30 + SOURCE.fontSize + 10,
     left: PAD + 10 + widestCategory,
   };
 

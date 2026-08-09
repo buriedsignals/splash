@@ -158,8 +158,10 @@ export function LifeExpectancyLine({
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin."
+  const sourceBaseline = height - PAD;
 
   // Both gutters are measured from the widest string that will actually be drawn in them, never
   // a constant (`static-discipline.md`, "Gutters are measured, never fixed").
@@ -171,9 +173,11 @@ export function LifeExpectancyLine({
     i === all.length - 1 ? `${v} ${UNIT}` : `${v}`,
   );
   const padding = {
-    top: sourceBaseline + 34,
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 34,
     right: PAD + 12 + measureText(endLabel, END_LABEL),
-    bottom: PAD + 24,
+    // Grown by the source block's own height plus clear air: the source now sits on the
+    // frame's bottom margin, so the axis band beneath the plot has to end above its ink.
+    bottom: PAD + 24 + SOURCE.fontSize + 10,
     left:
       PAD +
       10 +

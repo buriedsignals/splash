@@ -183,8 +183,10 @@ export function DecadeBoxplot({
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // "The source on the frame's bottom margin."
+  const sourceBaseline = height - PAD;
 
   // Both gutters are measured from the widest string that will actually be drawn in them, never
   // a fixed constant (`static-discipline.md`, "Gutters are measured, never fixed").
@@ -206,10 +208,19 @@ export function DecadeBoxplot({
   const categoryLines = summaries.map((s) => [s.label, `n=${s.n}`]);
 
   const padding = {
-    top: sourceBaseline + 30,
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 30,
     right: PAD + 40, // room for an outlier label sitting to the right of its dot
+    // Grown by the source block's own height plus clear air: the source now sits on the
+    // frame's bottom margin, so the axis band beneath the plot has to end above its ink.
     bottom:
-      PAD + AXIS.fontSize + 6 + CATEGORY_LABEL.fontSize + 4 + N_LABEL.fontSize,
+      PAD +
+      AXIS.fontSize +
+      6 +
+      CATEGORY_LABEL.fontSize +
+      4 +
+      N_LABEL.fontSize +
+      SOURCE.fontSize +
+      10,
     left: leftGutter,
   };
 
