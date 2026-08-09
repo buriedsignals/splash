@@ -124,6 +124,64 @@ export function cumulativeKm(route: LonLat[]): number[] {
   return out;
 }
 
+/** Index of the route sample nearest a given point — e.g. "how many territories does the route
+ *  touch before it passes a named city", answered from the route itself rather than guessed. */
+export function nearestRouteIndex(route: LonLat[], point: LonLat): number {
+  let best = Infinity;
+  let bestIdx = -1;
+  for (let i = 0; i < route.length; i++) {
+    const d = haversineKm(route[i]!, point);
+    if (d < best) {
+      best = d;
+      bestIdx = i;
+    }
+  }
+  return bestIdx;
+}
+
+/** Every route sample's own territory (or null if it falls inside none) — the same point-in-polygon
+ *  walk `territoriesCrossed` does, but keeping every sample's label instead of collapsing to first
+ *  entries, so a caller can find where the route drifts back and forth across a shared border. */
+export function classifyRoute(
+  route: LonLat[],
+  territories: Territory[],
+): (string | null)[] {
+  return route.map((point) => {
+    for (const t of territories)
+      if (pointInGeometry(point, t.geometry)) return t.key;
+    return null;
+  });
+}
+
+/** Length in km of the route's own zigzag zone between two neighbouring territories — from the
+ *  LESS FREQUENT of the two labels' first appearance through its last, i.e. the span where the
+ *  route keeps drifting across the shared border rather than having cleanly settled into the more
+ *  frequent territory. (Bounding by either label's own first-to-last, rather than "either label"
+ *  jointly, matters: one of the pair usually also has a long, purely domestic run of its own on
+ *  one side of the zigzag zone — using "first-of-either to last-of-either" would swallow that whole
+ *  run into the span too.) Used to measure "how long the river forms a shared border" from the
+ *  route's own labels, not a hand-picked pair of endpoints. */
+export function borderZoneKm(
+  route: LonLat[],
+  labels: (string | null)[],
+  a: string,
+  b: string,
+): number {
+  const countOf = (key: string) => labels.filter((l) => l === key).length;
+  const rarer = countOf(a) <= countOf(b) ? a : b;
+  const cum = cumulativeKm(route);
+  let first = -1;
+  let last = -1;
+  for (let i = 0; i < labels.length; i++) {
+    if (labels[i] === rarer) {
+      if (first < 0) first = i;
+      last = i;
+    }
+  }
+  if (first < 0) throw new Error(`route never carries label ${rarer}`);
+  return cum[last]! - cum[first]!;
+}
+
 // ── Point on feature (not a plain centroid — a centroid can land outside a concave shape) ────────
 
 /**
