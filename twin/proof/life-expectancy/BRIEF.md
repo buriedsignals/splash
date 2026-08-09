@@ -1,4 +1,4 @@
-# Beat — Switzerland lost 0.72 years of life expectancy in 2020 and took until 2023 to get it back
+# Beat — Switzerland lost 8.6 months of life expectancy in 2020 and took until 2023 to get it back
 
 **Type:** line (single series, dipping below and returning to a reference). **Medium/genre:** chart
 / video. **Channel:** `life-expectancy.mp4`, 1080 × 1080, 30 fps, **240 frames = 8.0 s**, plus
@@ -71,16 +71,28 @@ stillness). Contract-checked; `hold` ends exactly on frame 240.
 - Do not name an institution that does not publish the figure shown. That was this beat's own
   original defect.
 
-## Defect found while deriving this brief (not fixed here)
+## Defects found while deriving this brief — BOTH CORRECTED 2026-08-09
 
-1. **"Nearly a year" overstates a 0.72-year fall by about 39%.** The computed drop is 83.7804 →
-   83.0626 = **0.7178 years**, roughly eight and a half months. "Nearly three-quarters of a year" is
-   what the data says; "nearly a year" rounds 0.72 to 1 in the reader's ear, and it is the headline.
-2. **The reference level is hand-typed, not derived.** `BEAT.reference` is the literal `83.8`, while
-   the 2019 reading in `data.csv` is **83.7804** — the rule sits 0.02 years above the year it is
-   labelled for. It changes no conclusion (2023 clears both), but it is a typed value standing in
-   for a value that is in the file, which is the one habit every false claim in this repository has
-   come from. `reference` should read 2019 out of the series.
+1. **"Nearly a year" overstated a 0.7178-year fall by about 39%.** It was the headline, and it
+   rounded 0.72 up to 1 in a reader's ear. The title now states the fall the data actually carries,
+   in months: **8.6** — computed as (83.7804 − 83.0626) × 12 by `claimsFrom()` in `render.mjs`,
+   printed on every run.
+
+2. **The reference level was hand-typed.** `BEAT.reference` was the literal `83.8` against a 2019
+   reading of **83.7804**, so the dashed rule sat 0.02 years above the year it is labelled for. It
+   is now read out of the series, along with everything around it: the subject year is the year with
+   the largest single-year fall in the window (**2020**), the reference is the reading of the year
+   before it (**83.7804**, labelled "2019 level" from the same year), the recovery year is the first
+   year afterwards at or above that level (**2023**), and the bracket's "three years" is that span
+   spelled from a small word table. `claimsFrom` throws rather than guess if the series never
+   recovers, or if the span is longer than the table.
+
+The y-axis tick still prints **83.8** — that is the rounded DISPLAY of the true value, on the tick
+the rule sits on, which is why the rule is labelled "2019 level" rather than repeating a number the
+axis already gives.
+
+Re-rendered and looked at: `life-expectancy-still.png` and `life-expectancy.mp4` (240 frames,
+frames extracted with ffmpeg and read — the title in the encoded video says 8.6 months).
 
 ## Source line
 

@@ -38,20 +38,56 @@ const COMPOSITION = "life-expectancy";
 const BEAT = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
-  title:
-    "Covid cost Switzerland nearly a year of life expectancy — and it took three years to win it back.",
   source: "Source: UN World Population Prospects (2024), via Our World in Data · data 2023",
-  reference: 83.8,
-  // Not "the 2019 level (83.8 years)" — the y axis already states 83.8 on the tick this rule sits
-  // on, and the text beside this beat already gives 83.8, so printing it again here would be
-  // `anti-patterns.md`'s "repeated years or values" twice over.
-  referenceLabel: "2019 level",
-  subjectYear: 2020,
-  recoveryYear: 2023,
   // The committed CSV is OWID's full series back to 1876 (its raw, unedited fetch) — this beat's
   // own window, same convention `co2-suisse/render-web.mjs` uses for its `firstYear`.
   firstYear: 2000,
 };
+
+/** Small integers as words, for a headline that reads like a sentence and still gets its number
+ *  from the data. Throws rather than fall back to a digit, so a longer recovery would be caught. */
+const WORD = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+
+/**
+ * Everything the headline and the reference rule assert, computed from the series itself.
+ *
+ * This used to be four typed constants, and two of them were wrong in the same way. The reference
+ * was the literal `83.8` against a 2019 reading of 83.7804 — a rule sitting 0.02 years above the
+ * year it is labelled for. And the title said Covid cost "nearly a year" against a fall of 0.7178
+ * years, which rounds 0.72 up to 1 in a reader's ear: an overstatement of about 39%, in the
+ * headline. Both are now read out of `data.csv`.
+ */
+export function claimsFrom(data) {
+  let subjectIndex = -1;
+  let worstFall = 0;
+  for (let i = 1; i < data.length; i++) {
+    const fall = data[i - 1].value - data[i].value;
+    if (fall > worstFall) {
+      worstFall = fall;
+      subjectIndex = i;
+    }
+  }
+  if (subjectIndex < 0) throw new Error("no year in this window falls below the one before it");
+  const subject = data[subjectIndex];
+  const priorYear = data[subjectIndex - 1];
+  const recovery = data.find((d) => d.year > subject.year && d.value >= priorYear.value);
+  if (!recovery)
+    throw new Error(
+      `the series never returns to its ${priorYear.year} level of ${priorYear.value} — the title's ` +
+        "recovery claim has nothing to stand on",
+    );
+  const span = recovery.year - subject.year;
+  if (!WORD[span]) throw new Error(`no word for a ${span}-year recovery; extend WORD`);
+  return {
+    reference: priorYear.value,
+    referenceLabel: `${priorYear.year} level`,
+    subjectYear: subject.year,
+    recoveryYear: recovery.year,
+    fallYears: priorYear.value - subject.value,
+    fallMonths: (priorYear.value - subject.value) * 12,
+    recoverySpanWords: WORD[span],
+  };
+}
 
 /** OWID's grapher CSV: `Entity,Code,Year,Life expectancy`, one country once filtered. */
 export function readingsFromCsv(csv, firstYear = -Infinity) {
@@ -98,7 +134,17 @@ await mkdir(outDir, { recursive: true });
 const data = readingsFromCsv(await readFile(dataPath, "utf8"), BEAT.firstYear);
 if (data.length < 2) throw new Error(`need at least two readings, got ${data.length}`);
 
-const props = { ...BEAT, data, ...deriveFurniture(BEAT.ground) };
+const claims = claimsFrom(data);
+console.log(
+  `derived: ${claims.subjectYear} falls ${claims.fallYears.toFixed(4)} years ` +
+    `(${claims.fallMonths.toFixed(1)} months) from the ${claims.referenceLabel} of ` +
+    `${claims.reference}, back above it in ${claims.recoveryYear} — ${claims.recoverySpanWords} years.`,
+);
+const title =
+  `Covid cost Switzerland ${claims.fallMonths.toFixed(1)} months of life expectancy — and it took ` +
+  `${claims.recoverySpanWords} years to win it back.`;
+
+const props = { ...BEAT, ...claims, title, data, ...deriveFurniture(BEAT.ground) };
 const propsPath = join(outDir, "life-expectancy-props.json");
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 
