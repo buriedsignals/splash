@@ -1,0 +1,23 @@
+{
+  "title": "The corner lot went from bare dirt to a public garden in one season",
+  "photos": [
+    {
+      "file": "lot-1-before.png",
+      "alt": "A bare dirt lot behind a chain-link fence, under an open sky.",
+      "caption": "The lot sat empty behind its fence for six years after the hardware store on the corner closed.",
+      "credit": "Sample illustration, generated for this skill — not a real photograph"
+    },
+    {
+      "file": "lot-2-during.png",
+      "alt": "A tall red construction crane rises above site fencing and a stack of pallets, photographed from ground level looking up.",
+      "caption": "Site fencing went up in March; the crane worked through most of April.",
+      "credit": "Sample illustration, generated for this skill — not a real photograph"
+    },
+    {
+      "file": "lot-3-after.png",
+      "alt": "A green lawn with three planted beds, a wooden bench and a gravel path leading toward the camera.",
+      "caption": "By July, three planted beds and a bench had replaced the bare dirt.",
+      "credit": "Sample illustration, generated for this skill — not a real photograph"
+    }
+  ]
+}
