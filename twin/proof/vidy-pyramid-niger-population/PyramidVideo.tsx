@@ -381,9 +381,7 @@ export function PyramidVideo({
   // decoration (its caption says the two sides share this zero), and the labels are the vertical
   // axis, so neither can move out of the other's way: the fix is that the spine YIELDS where a label
   // is drawn. Each band's clearance is its own glyphs' measured vertical extent (`measureTextBand`,
-  // taking the taller of the plain and the accent weight) plus a breathing gap, and it fades in with
-  // the label's own opacity via the mask below — so a band whose label has not arrived yet still
-  // shows an unbroken rule, and the gap opens exactly as the label lands on it.
+  // taking the taller of the plain and the accent weight) plus a breathing gap.
   const spineMaskId = "pyramid-spine-clearance";
   const labelClearances = g.rows.map((r) => {
     const plain = measureTextBand(r.ageBand, BAND_LABEL);
@@ -396,6 +394,23 @@ export function PyramidVideo({
       height: ascent + descent + SPINE_LABEL_CLEARANCE * 2,
     };
   });
+  // The clearance is BINARY — the rect is absent, or fully opaque. It switches on the frame the
+  // band begins to arrive and never crossfades.
+  //
+  // Carrying the label's own opacity here (`opacity={rowReveal[i]}`) was the first repair's own
+  // defect, and it is the reason a mask must never depend on the thing it protects: at α ≈ 0.5 the
+  // label was half-drawn and the rule half-erased, so the dash crossed the very label the clearance
+  // exists for. Measured on the mp4 with ffmpeg, reading only the clearance band's glyph-free
+  // padding rows: **18 of 21 bands, 4–6 frames each, 76 band-frames in all** — at frame 120
+  // "70-74" read "70⌐74". It survived because it is invisible in the held final frame, which is
+  // the frame a still, and therefore every review, looks at.
+  //
+  // The trade this makes, stated: a band's gap now opens on the same frame its faintest glyphs
+  // appear, so for one frame the rule gives way to a label barely on screen. That is the right way
+  // round — a dashed rule that yields a frame early is not a misreading, and a rule drawn through
+  // an age band is. It is NOT the alternative the first repair rejected (pre-cutting 21 gaps into a
+  // rule drawn before any band arrives): a band that has not started still masks nothing.
+  const spineClearanceOn = rowReveal.map((progress) => (progress > 0 ? 1 : 0));
 
   return (
     <svg
@@ -476,9 +491,9 @@ export function PyramidVideo({
       {referenceProgress > 0 ? (
         <g>
           <defs>
-            {/* White keeps the rule; a black rect erases it. Each rect carries its band label's own
-                opacity, so the erasure crossfades in with the label rather than pre-cutting 21 gaps
-                into a rule that is drawn before any band arrives. `maskUnits="userSpaceOnUse"` is
+            {/* White keeps the rule; a black rect erases it. Each rect is on or off with its band's
+                arrival (`spineClearanceOn` above) and never at a part opacity, so the rule is never
+                half-erased across a half-drawn label. `maskUnits="userSpaceOnUse"` is
                 load-bearing: the default objectBoundingBox region collapses on a zero-width vertical
                 line and would mask the rule out entirely. */}
             <mask
@@ -498,7 +513,7 @@ export function PyramidVideo({
                   width={gutter * 2}
                   height={clearance.height}
                   fill="#000000"
-                  opacity={rowReveal[i]}
+                  opacity={spineClearanceOn[i]}
                 />
               ))}
             </mask>
