@@ -1,16 +1,32 @@
 /**
  * WHAT THIS GUARD CATCHES, AND WHAT IT PROVABLY DOES NOT.
  *
- * The rule it defends: a skill never imports another skill at runtime. A skill's `test/` directory
- * may, solely to assert two implementations agree, so `test/` is excluded. Nine such runtime
- * violations existed in shipped code and were removed; this guard exists so they cannot come back.
+ * The rule it defends: a skill directory is copy-pasteable on its own, so NO import may leave it.
+ * Not "may not re-enter another skill" — may not leave at all: another skill, a story workspace
+ * under `proof/`, the vendored `shared/` tree, anywhere. That is the premise the whole twin rests
+ * on (copy the directory into a journalist's root and it builds), and an earlier, narrower form of
+ * this guard — which only flagged a specifier re-entering ANOTHER skill — was blind to the two
+ * shipped files that imported a story workspace instead (`twin-chart-video/assets/EmissionsVideo.tsx`
+ * reaching for `proof/co2-suisse/crossing-geometry`, `twin-chart-web/scripts/render-web.mjs` for
+ * `proof/co2-suisse/EmissionsWeb.tsx`). A skill's `test/` directory may still import out, solely to
+ * assert two implementations agree, so `test/` is excluded.
  *
  * WHAT IT CATCHES. Every source file (`.mjs`/`.mts`/`.cjs`/`.cts`/`.ts`/`.tsx`/`.js`/`.jsx`)
  * anywhere under a skill except its `test/` directory is read as text, comments stripped, and EVERY string literal
  * examined — single-quoted, double-quoted, backticked, and regardless of what syntax carries it
  * (`from`, `import(`, `require(`, a bare side-effect `import "…"`, or nothing at all). A literal is
- * an offender when, after normalisation, it resolves on disk into — or exactly at — another skill's
- * directory. Normalisation is what a module resolver does, not what a reader assumes:
+ * an offender when, after normalisation, it resolves on disk OUTSIDE the skill it was written in.
+ * Two grades of offence, because they need different discrimination:
+ *
+ *   - it lands in — or exactly at — ANOTHER skill's directory: an offence whatever it resolves to.
+ *   - it lands anywhere else outside this skill: an offence when the target is a MODULE (a file with
+ *     a module extension, or a directory with an `index.*` in it, or an extensionless specifier that
+ *     resolves to one). A path to a non-module — `/tmp/map-twin/co2.csv`, `../../../.env`, an output
+ *     directory — is a runtime file path a script reads or writes, not an import, and several
+ *     legitimately exist; flagging those would make this guard depend on what happens to be sitting
+ *     in `/tmp` on the machine running it.
+ *
+ * Normalisation is what a module resolver does, not what a reader assumes:
  *
  *   - relative (`./`, `../`, any depth) AND absolute (`/Users/…/skills/twin-chart-beat/…`) paths
  *     are both resolved. Absolute is not exotic here: two story files in this very repository had
@@ -161,6 +177,22 @@ function stringLiterals(src: string): string[] {
 // catching only the less likely ones, which inverts the point of having it.
 const MODULE_EXTENSIONS = [".mjs", ".ts", ".tsx", ".js", ".json"];
 
+// What counts as a MODULE when a specifier already carries its own extension — the discriminator
+// between an import that leaves the skill and a runtime file path that leaves it (a CSV read, an
+// output directory, `../../../.env`). Wider than MODULE_EXTENSIONS on purpose: that list is what a
+// resolver APPENDS to an extensionless specifier, this one is what it will happily LOAD.
+const MODULE_FILE_EXTENSIONS = [
+  ".mjs",
+  ".mts",
+  ".cjs",
+  ".cts",
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".json",
+];
+
 /**
  * A string literal's compiled VALUE: `stringLiterals` collects the raw source between the quotes, so
  * `"\x2e\x2e/twin-chart-beat"` arrives here spelled with backslashes and reaches the filesystem as
@@ -249,18 +281,39 @@ function resolvesOnDisk(candidatePath: string): boolean {
   return MODULE_EXTENSIONS.some((ext) => existsSync(candidatePath + ext));
 }
 
-describe("skills never import each other at runtime", () => {
-  it("should find no cross-skill import outside test directories", async () => {
+/**
+ * Whether the thing `candidatePath` resolves to is a MODULE — something `import`/`require` loads —
+ * rather than a data file or a directory a script writes into. Used only for the "leaves the skill
+ * but does not enter another skill" grade of offence; a specifier landing inside another skill is an
+ * offence whatever it points at.
+ */
+function resolvesToModule(candidatePath: string): boolean {
+  if (existsSync(candidatePath)) {
+    const stats = statSync(candidatePath);
+    if (stats.isFile())
+      return MODULE_FILE_EXTENSIONS.some((ext) =>
+        candidatePath.toLowerCase().endsWith(ext),
+      );
+    if (stats.isDirectory())
+      return MODULE_EXTENSIONS.some((ext) =>
+        existsSync(join(candidatePath, `index${ext}`)),
+      );
+    return false;
+  }
+  return MODULE_EXTENSIONS.some((ext) => existsSync(candidatePath + ext));
+}
+
+describe("no import ever leaves the skill it was written in", () => {
+  it("should find no import out of a skill outside test directories", async () => {
     const offenders: string[] = [];
     const skillNames = await readdir(SKILLS);
     for (const skill of skillNames) {
-      // Every OTHER skill's own directory — the specific thing a literal must land inside (or
-      // exactly at) to be "re-entering another skill". Landing at the `skills/` root itself, or
-      // anywhere that is not a named skill's directory (a runtime `resolve(HERE, "../..")` cwd
-      // computation lands exactly here, and is not an import), is not an offence — only a
-      // sibling skill's own boundary is. Compared CASE-FOLDED: this filesystem is case-insensitive,
-      // so `../../Twin-Chart-Beat/…` loads the real sibling and must not slip past a case-sensitive
-      // string compare.
+      // Every OTHER skill's own directory — landing inside (or exactly at) one of these is the
+      // hardest grade of offence, flagged whatever the target is. Everything else outside this
+      // skill is flagged too, but only when it resolves to a module (see `resolvesToModule`), so a
+      // runtime `resolve(HERE, "../..")` cwd computation or a `/tmp` output path stays green.
+      // Compared CASE-FOLDED: this filesystem is case-insensitive, so `../../Twin-Chart-Beat/…`
+      // loads the real sibling and must not slip past a case-sensitive string compare.
       const otherSkillRoots = skillNames
         .filter((s) => s !== skill)
         .map((s) => ({
@@ -269,6 +322,10 @@ describe("skills never import each other at runtime", () => {
         }));
       const skillRoot = join(SKILLS, skill);
       if (!statSync(skillRoot).isDirectory()) continue; // a stray file next to the skills
+      const ownRoot = {
+        exact: skillRoot.toLowerCase(),
+        withSep: (skillRoot + sep).toLowerCase(),
+      };
       for await (const file of sourceFiles(skillRoot)) {
         const src = await readFile(file, "utf8");
         for (const literal of stringLiterals(src)) {
@@ -279,11 +336,14 @@ describe("skills never import each other at runtime", () => {
             const resolved = resolve(dirname(file), candidate);
             if (!resolvesOnDisk(resolved)) continue; // not a real module specifier — resolves to nothing
             const folded = resolved.toLowerCase();
+            const staysInOwnSkill =
+              folded === ownRoot.exact || folded.startsWith(ownRoot.withSep);
+            if (staysInOwnSkill) continue; // the only green shape: a skill importing itself
             const entersOtherSkill = otherSkillRoots.some(
               ({ exact, withSep }) =>
                 folded === exact || folded.startsWith(withSep),
             );
-            if (entersOtherSkill) {
+            if (entersOtherSkill || resolvesToModule(resolved)) {
               offenders.push(`${file} → ${literal}`);
               break; // one offence per literal, whichever form of it resolved
             }

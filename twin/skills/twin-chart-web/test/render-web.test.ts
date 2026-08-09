@@ -10,7 +10,11 @@ import {
   LAYOUTS,
   type WebLayout,
 } from "../../../proof/co2-suisse/EmissionsWeb.tsx";
-import { readingsFromCsv, BEAT } from "../scripts/render-web.mjs";
+// The CO₂ story's own runner, in the story's own workspace — it left this skill when the skill
+// stopped importing the story's component (a skill that imports out of itself does not build once
+// copied on its own into a journalist's root). A `test/` directory may still reach for it; that is
+// the one exemption `splash-twin/test/no-cross-skill-imports.test.ts` grants.
+import { readingsFromCsv } from "../../../proof/co2-suisse/render-web.mjs";
 import {
   crossingGeometry,
   fr,

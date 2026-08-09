@@ -5,22 +5,30 @@
  * the way `twin-chart-beat/assets/ChartSeed.tsx` is replaced per story. Do not
  * parameterise this file into a general video chart.
  *
- * What it is NOT is a second chart. The coordinates come from `proof/co2-suisse/crossing-geometry.ts`, the
- * same pure core the static beat draws — one geometry, two outputs. This file adds exactly one
- * thing the still cannot have: an order in time. Every window in that order derives from
- * `timing.ts`; there is no frame literal below.
+ * What it is NOT is a second chart. The coordinates are computed in this same file — `fr`,
+ * `yTickValues` and `crossingGeometry` below — and not imported from anywhere. That is deliberate
+ * and it is the premise of the whole canon: this skill directory has to build after being copied,
+ * on its own, into a journalist's root, so nothing under it may import out of it. This file used to
+ * reach into `proof/co2-suisse/crossing-geometry.ts`, a story workspace that no copy of this skill
+ * would carry with it. Skills duplicate; they never link. A story's own static beat keeps its own
+ * copy of the same arithmetic, and `splash-twin/test/helper-parity.test.ts` is what keeps the copies
+ * honest. What this file adds that a still cannot have is an order in time: every window in that
+ * order derives from `timing.ts`, and there is no frame literal below.
  *
- * The furniture colours (ink, muted, grid) are NOT derived here. `deriveFurniture` lives in
- * `twin-chart-beat/scripts/render-still.mjs`, which loads a native rasteriser at module scope and
+ * The furniture colours (ink, muted, grid) are NOT derived here. `deriveFurniture` lives in this
+ * skill's own `scripts/render-still.mjs`, which loads a native rasteriser at module scope and
  * therefore cannot be bundled for a browser. The render script derives them in node and passes
- * them in as props, so the two genres still share one implementation of the colour rule rather
- * than each carrying their own copy of it.
+ * them in as props, so one render never carries two implementations of the colour rule.
  *
- * `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` are exported so the beats that followed
- * this one (`LifeExpectancyVideo.tsx`, `MigrationVideo.tsx`) measure and wrap text and cut the
- * chronological path the same way this file does, instead of each carrying its own copy.
+ * `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` are exported so this skill's own tests, and
+ * `splash-twin/test/helper-parity.test.ts`, can exercise this copy against every other copy in the
+ * tree without a browser. They are NOT a library for another beat to import: the two beats that
+ * began beside this one (`LifeExpectancyVideo.tsx`, `MigrationVideo.tsx`) left for `proof/` and each
+ * carries its own copy, which is what the duplicate-do-not-link rule requires of them.
  */
 
+import { extent } from "d3-array";
+import { scaleLinear } from "d3-scale";
 import { line } from "d3-shape";
 import {
   interpolate,
@@ -29,12 +37,6 @@ import {
   useVideoConfig,
   Easing,
 } from "remotion";
-import {
-  crossingGeometry,
-  fr,
-  yTickValues,
-  type Reading,
-} from "../../../proof/co2-suisse/crossing-geometry";
 import { CO2_TIMING, progressOf, type BeatTiming } from "./timing";
 
 const FRAME = { width: 1080, height: 1080 };
@@ -52,6 +54,93 @@ export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 /** Unit of measurement for this series. Specific to each story. */
 const UNIT = "mm";
 // =========================================
+
+export type Reading = { year: number; mt: number };
+
+/** French: comma decimal, thin space for thousands. The furniture speaks the journalist's language. */
+export function fr(value: number, decimals = 1): string {
+  return value
+    .toFixed(decimals)
+    .replace(".", ",")
+    .replace(/\B(?=(\d{3})+(?!\d))/, " ");
+}
+
+/**
+ * The fitted vertical scale. The reference joins the readings in the extent, because a level the
+ * beat is about must be inside the frame even in the year it is not approached.
+ *
+ * `.nice()` rounds that extent outward to round values and stops — no padding, no stepping, nothing
+ * to defend against afterwards.
+ */
+function yScale(data: Reading[], reference: number) {
+  return scaleLinear()
+    .domain(extent([...data.map((d) => d.mt), reference]) as [number, number])
+    .nice();
+}
+
+/**
+ * Three ticks — floor, THE REFERENCE LEVEL, top.
+ *
+ * The middle tick is not the arithmetic middle and it is not one of d3's: it is the level the beat
+ * is about, placed on the axis on purpose. A round scale gets this wrong twice over — the floor
+ * snaps to zero (a third of the frame empty under a line whose slope carries the story, the failure
+ * `static-discipline.md` describes), and a regular gridline lands a few pixels from the reference,
+ * so the one rule the reader must see acquires a decorative twin. Putting the reference ON the axis
+ * removes both: the fitted floor keeps the slope, the middle gridline IS the reference, and the
+ * number is stated once. Floor and top are d3's rounded domain ends, which is why they read round.
+ */
+export function yTickValues(data: Reading[], reference: number): number[] {
+  const [floor, ceiling] = yScale(data, reference).domain();
+  return [floor, reference, ceiling];
+}
+
+/**
+ * Data to coordinates. No colour, no font, no label — and no import that a browser bundle could not
+ * load, which is what lets the composition above call it frame by frame.
+ */
+export function crossingGeometry(
+  data: Reading[],
+  {
+    width,
+    height,
+    padding,
+    reference,
+  }: {
+    width: number;
+    height: number;
+    padding: { top: number; right: number; bottom: number; left: number };
+    reference: number;
+  },
+) {
+  const plot = {
+    left: padding.left,
+    top: padding.top,
+    right: width - padding.right,
+    bottom: height - padding.bottom,
+  };
+  const years = data.map((d) => d.year);
+  const first = Math.min(...years);
+  const last = Math.max(...years);
+  const ticks = yTickValues(data, reference);
+
+  // The x domain is the years themselves, never nicened — rounding it outward would invent time.
+  const x = scaleLinear().domain([first, last]).range([plot.left, plot.right]);
+  const y = yScale(data, reference).range([plot.bottom, plot.top]);
+
+  const points = data.map((d) => ({ ...d, x: x(d.year), y: y(d.mt) }));
+
+  return {
+    plot,
+    points,
+    end: points[points.length - 1],
+    referenceY: y(reference),
+    ticksY: ticks.map((value) => ({ value, y: y(value) })),
+    ticksX: [first, years[Math.floor(years.length / 2)], last].map((year) => ({
+      year,
+      x: x(year),
+    })),
+  };
+}
 
 export type EmissionsVideoProps = {
   data: Reading[];
