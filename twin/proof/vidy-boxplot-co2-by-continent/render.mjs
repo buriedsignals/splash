@@ -1,0 +1,274 @@
+// twin/proof/vidy-boxplot-co2-by-continent/render.mjs
+//
+// This story's own render script — the render ladder's second rung, same shape as
+// `twin-chart-video/scripts/render-video.mjs` and the other proof workspaces'
+// (`readingsFromCsv`, then still-first, then mp4), its own story constants.
+//
+// `deriveFurniture` is imported from THIS SKILL's own copy
+// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
+// alias, and not `twin-chart-beat`'s original. Same direction
+// `video-population-growth-dumbbell/render.mjs` takes, for the same reason: a skill never imports
+// another skill, but a story workspace importing INTO a skill's own scripts is fine (the skill's
+// scripts are not themselves crossing any boundary).
+//
+// Usage:  bun proof/vidy-boxplot-co2-by-continent/render.mjs [--still-only] [--data <csv>] [--out <dir>]
+
+import { quantile } from "d3-array";
+import { spawnSync } from "node:child_process";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const PACKAGE_ROOT = resolve(HERE, "../..");
+const ENTRY = join(HERE, "index.ts");
+const COMPOSITION = "vidy-boxplot-co2-by-continent";
+
+/** The story's own constants — the journalist's words, from `BRIEF.md`. */
+const BEAT = {
+  ground: "#FFFFFF",
+  accent: "#0B7A75",
+  title:
+    "CO₂ emissions per capita vary widely within every continent — and in the Americas, the US and Canada each emit over 4× the region's median",
+  source:
+    "Source: Global Carbon Budget, via Our World in Data · 2023 data · whiskers = 1.5× IQR (Tukey)",
+  axisUnit: "t CO₂ per person per year",
+  referenceLabel: "Median across all 53 countries",
+  subjectContinent: "Americas",
+  year: 2023,
+};
+
+/**
+ * Which of our four continent groups each ISO-3 code belongs to — the same 53-country list
+ * `BRIEF.md` names, chosen by hand (countries Rémy... this session's agent actually knows), not
+ * "every country on the continent." Oceania was left out (`BRIEF.md`): too sparse for an honest box.
+ */
+const CONTINENT_OF = {
+  // Europe (15)
+  CHE: "Europe",
+  DEU: "Europe",
+  FRA: "Europe",
+  ITA: "Europe",
+  ESP: "Europe",
+  GBR: "Europe",
+  POL: "Europe",
+  SWE: "Europe",
+  NOR: "Europe",
+  AUT: "Europe",
+  NLD: "Europe",
+  BEL: "Europe",
+  PRT: "Europe",
+  GRC: "Europe",
+  CZE: "Europe",
+  // Asia (14)
+  CHN: "Asia",
+  JPN: "Asia",
+  IND: "Asia",
+  IDN: "Asia",
+  SAU: "Asia",
+  KOR: "Asia",
+  THA: "Asia",
+  VNM: "Asia",
+  PAK: "Asia",
+  BGD: "Asia",
+  IRN: "Asia",
+  ISR: "Asia",
+  MYS: "Asia",
+  PHL: "Asia",
+  // Africa (12)
+  ZAF: "Africa",
+  NGA: "Africa",
+  EGY: "Africa",
+  KEN: "Africa",
+  ETH: "Africa",
+  GHA: "Africa",
+  MAR: "Africa",
+  DZA: "Africa",
+  TUN: "Africa",
+  CIV: "Africa",
+  SEN: "Africa",
+  TZA: "Africa",
+  // Americas (12)
+  USA: "Americas",
+  CAN: "Americas",
+  BRA: "Americas",
+  MEX: "Americas",
+  ARG: "Americas",
+  COL: "Americas",
+  CHL: "Americas",
+  PER: "Americas",
+  VEN: "Americas",
+  CUB: "Americas",
+  ECU: "Americas",
+  BOL: "Americas",
+};
+
+/**
+ * Parses OWID's `co-emissions-per-capita` grapher CSV (`Entity,Code,Year,CO₂ emissions per
+ * capita`), groups the one target year's readings by continent, and reduces each group to a real
+ * five-number summary computed from its own real per-country values — plus Tukey 1.5×IQR outliers,
+ * plotted individually rather than absorbed into a stretched whisker (`boxplot.md`). Groups come
+ * back sorted by median ascending, so the chart's own arrival order IS the finding's context, not a
+ * separate editorial step (the same discipline `video-population-growth-dumbbell/render.mjs`
+ * applies via its gap-size sort).
+ */
+export function readingsFromCsv(csv, { year = BEAT.year } = {}) {
+  const [header, ...rows] = csv.trim().split(/\r?\n/);
+  const columns = header.split(",");
+  const entityAt = columns.indexOf("Entity");
+  const codeAt = columns.indexOf("Code");
+  const yearAt = columns.indexOf("Year");
+  const valueAt = columns.length - 1; // the value column's header carries a non-ASCII subscript
+  if (entityAt < 0 || codeAt < 0 || yearAt < 0)
+    throw new Error(`csv has no Entity / Code / Year column, got: ${header}`);
+
+  const byContinent = new Map();
+  for (const line of rows) {
+    const cells = line.split(",");
+    if (Number(cells[yearAt]) !== year) continue;
+    const code = cells[codeAt];
+    const continent = CONTINENT_OF[code];
+    if (!continent) continue;
+    const value = Number(cells[valueAt]);
+    if (!Number.isFinite(value)) continue;
+    if (!byContinent.has(continent)) byContinent.set(continent, []);
+    byContinent.get(continent).push({ country: cells[entityAt], value });
+  }
+
+  const groups = [...byContinent.entries()].map(([continent, readings]) => {
+    const sorted = [...readings].sort((a, b) => a.value - b.value);
+    const values = sorted.map((r) => r.value);
+    const q1 = quantile(values, 0.25);
+    const median = quantile(values, 0.5);
+    const q3 = quantile(values, 0.75);
+    const iqr = q3 - q1;
+    const fenceLo = q1 - 1.5 * iqr;
+    const fenceHi = q3 + 1.5 * iqr;
+    const inFence = sorted.filter((r) => r.value >= fenceLo && r.value <= fenceHi);
+    const outliers = sorted.filter((r) => r.value < fenceLo || r.value > fenceHi);
+    return {
+      continent,
+      n: sorted.length,
+      min: sorted[0].value,
+      q1,
+      median,
+      q3,
+      max: sorted[sorted.length - 1].value,
+      whiskerLo: inFence[0].value,
+      whiskerHi: inFence[inFence.length - 1].value,
+      outliers,
+    };
+  });
+
+  groups.sort((a, b) => a.median - b.median);
+  return groups;
+}
+
+/** The 53-country median for the same year — the reference every box is read against. Computed
+ *  from ALL readings across every group, not the mean of the four group medians (`BRIEF.md`). */
+export function overallMedian(csv, { year = BEAT.year } = {}) {
+  const [header, ...rows] = csv.trim().split(/\r?\n/);
+  const columns = header.split(",");
+  const codeAt = columns.indexOf("Code");
+  const yearAt = columns.indexOf("Year");
+  const valueAt = columns.length - 1;
+  const values = [];
+  for (const line of rows) {
+    const cells = line.split(",");
+    if (Number(cells[yearAt]) !== year) continue;
+    if (!CONTINENT_OF[cells[codeAt]]) continue;
+    const value = Number(cells[valueAt]);
+    if (Number.isFinite(value)) values.push(value);
+  }
+  values.sort((a, b) => a - b);
+  return quantile(values, 0.5);
+}
+
+function remotion(args) {
+  const binary = join(PACKAGE_ROOT, "node_modules/.bin/remotion");
+  const started = Date.now();
+  const result = spawnSync(binary, args, { cwd: PACKAGE_ROOT, stdio: "inherit" });
+  if (result.status !== 0)
+    throw new Error(`remotion ${args[0]} exited with ${result.status}`);
+  return Math.round((Date.now() - started) / 1000);
+}
+
+const argv = process.argv.slice(2);
+const flag = (name, fallback) => {
+  const at = argv.indexOf(name);
+  return at >= 0 ? argv[at + 1] : fallback;
+};
+
+// The story's own frozen series, committed beside it — OWID's raw `co-emissions-per-capita`
+// grapher export, `&csvType=filtered&country=~<53 ISO-3 codes>`, verified 53-country
+// (`BRIEF.md`). Never re-fetched.
+const dataPath = flag("--data", join(HERE, "data.csv"));
+const outDir = flag("--out", "/tmp/vidy-boxplot-co2-by-continent");
+const stillOnly = argv.includes("--still-only");
+
+await mkdir(outDir, { recursive: true });
+
+const csv = await readFile(dataPath, "utf8");
+const data = readingsFromCsv(csv);
+const referenceValue = overallMedian(csv);
+
+if (data.length !== 4)
+  throw new Error(`expected four continents, got ${data.length}`);
+const expectedOrder = ["Africa", "Americas", "Asia", "Europe"];
+const actualOrder = data.map((g) => g.continent);
+if (JSON.stringify(actualOrder) !== JSON.stringify(expectedOrder))
+  throw new Error(
+    `expected groups sorted by median ascending as ${expectedOrder.join(", ")}, got ${actualOrder.join(", ")}`,
+  );
+if (!data[data.length - 1] || !data.some((g) => g.continent === BEAT.subjectContinent))
+  throw new Error(`no group for subject continent ${BEAT.subjectContinent}`);
+const americas = data.find((g) => g.continent === BEAT.subjectContinent);
+if (americas.outliers.length !== 2)
+  throw new Error(
+    `expected exactly two Americas outliers (Canada, United States), got ${americas.outliers.length}: ${JSON.stringify(americas.outliers)}`,
+  );
+
+const props = {
+  data,
+  title: BEAT.title,
+  source: BEAT.source,
+  axisUnit: BEAT.axisUnit,
+  referenceValue,
+  referenceLabel: BEAT.referenceLabel,
+  subjectContinent: BEAT.subjectContinent,
+  ...deriveFurniture(BEAT.ground),
+  ground: BEAT.ground,
+  accent: BEAT.accent,
+};
+const propsPath = join(outDir, "boxplot-props.json");
+await writeFile(propsPath, JSON.stringify(props, null, 2));
+
+// Rung 2a: the last frame, on its own. If the end state is not a complete, readable chart, the
+// video is wrong and nothing below is worth waiting for.
+const stillPath = join(outDir, "boxplot-final-frame.png");
+const stillSeconds = remotion([
+  "still",
+  ENTRY,
+  COMPOSITION,
+  stillPath,
+  "--frame=-1",
+  `--props=${propsPath}`,
+  "--timeout=120000",
+]);
+console.log(`still (--frame=-1) → ${stillPath}  [${stillSeconds}s]`);
+
+if (stillOnly) process.exit(0);
+
+// Rung 2b: the mp4. Concurrency 1 keeps the render deterministic and the machine usable.
+const videoPath = join(outDir, "boxplot.mp4");
+const videoSeconds = remotion([
+  "render",
+  ENTRY,
+  COMPOSITION,
+  videoPath,
+  `--props=${propsPath}`,
+  "--concurrency=1",
+  "--timeout=120000",
+]);
+console.log(`video → ${videoPath}  [${videoSeconds}s]`);
