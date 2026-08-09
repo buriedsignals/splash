@@ -101,6 +101,54 @@ No-data must appear **in the legend**, named in the beat's language — and, the
 own converse, only when a shape on the canvas actually carries it. An unused no-data legend entry is
 decoration, not information, and comes out.
 
+### 7a. The thing you paint ON the plate is measured against the plate, in ΔE76
+
+Rule 7 is about the three colours the *basemap* carries. Everything a beat then paints over that
+basemap is subject to the same rule, and "read as a different kind of thing at a glance" turns out to
+need a number, because the failures are invisible to the author and obvious to nobody until someone
+measures. Two shipped beats failed it in opposite directions and both looked fine in review.
+
+**The bar, and it carries no free parameter.** The plate already separates its land from its water,
+and that separation is what a reader uses to find a coast: for `dataviz-light` with rule 7's water
+override, `#F7F7F7` against `#aac9e0` is **ΔE76 23.77**. So:
+
+> A fill laid over the land must end up **at least as far from the water tint as the bare land
+> already was** — or the beat has spent its own paint making the map harder to read than the plate it
+> was handed. If it does sit nearer, the coastline must be carried by a **stroke measuring 3:1 or
+> better against BOTH the fill and the water** (WCAG 2.2 SC 1.4.11), because then the edge is drawn
+> rather than inferred. One or the other. Never neither.
+
+**What it caught, measured on the delivered PNGs.** A flow-map beat filled nine crossed territories
+from Tol's Muted set at `fill-opacity` 0.42. The wash pulls every hue toward the pale plate, and a
+light cool hue washed far enough lands *on* the water tint: Austria's fill sat **11.06 ΔE76 from the
+Adriatic** — under half the bar — and came within 7.6 px of actually-rendered water at the Bodensee.
+Pale cyan cannot be rescued by opacity (11.06 at 0.42, 6.9 at 0.70) because it **is** a water tint;
+pale teal needs 0.70 before it clears. Both slots were replaced by dark hues chosen by running the
+measurement over a candidate pool, and the set was checked under Viénot–Brettel–Mollon dichromat
+simulation rather than by eye. A dot-density beat failed the mirror image: an opaque `#F0F0F0` study
+fill sat **2.44 ΔE76 (1.064:1)** from the plate's own unpainted land, so "counted in this map's total"
+and "not in this map at all" were the same colour — and, being opaque, it swallowed nine inland lakes
+whole and cut Lake Peipus into a land half and a water half in one frame.
+
+**Three consequences worth stating on their own.**
+
+1. **A fill over a basemap is a TINT, not a lid.** Paint that covers water is a claim that there is no
+   water there. If the study area must be shaded, shade it at an opacity the basemap's own water
+   survives; a lake under a tint reads as a darker lake, which is true, where a lake under an opaque
+   fill reads as land, which is not.
+2. **The legend swatch must be the colour the map actually shows**, not the hue before compositing.
+   A key drawn at full strength beside regions drawn at 45% names a colour that is nowhere on the map.
+3. **A numeral on a swatch takes the pole that measures higher against that swatch**, the same rule
+   `deriveFurniture` applies to a ground — never the beat's ground colour by default. Nine numbered
+   badges drawn in the beat's white ground put white on Tol's sand at **1.62:1**, on its cyan at
+   **1.76:1**, on its teal at **2.82:1** and on its olive at **3.02:1**: five of the nine numbers a
+   reader was asked to read *in order* sat under the 4.5:1 floor, and two were barely there. Deriving
+   the pole per swatch takes the worst of the nine from **1.62:1 to 5.26:1** and costs nothing.
+
+**And the converse of rule 7's legend clause.** No-data must be named in the legend; so must a
+**study-area shading**. Otherwise a reader is left to infer whether an unshaded country holds no
+people or was simply never counted — and the two are not the same sentence.
+
 ## 8. In a choropleth the ramp is the quantity; the accent is spent on the subject's outline
 
 The ramp is a gradient that encodes a value, which is the one legitimate gradient in this system

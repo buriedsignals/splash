@@ -41,9 +41,31 @@ resolution.
 ## Subject and accent
 
 One accent, `#E69F00` (Okabe-Ito orange), reserved for the ROUTE and nothing else. The nine
-territories take a separate categorical cycle (Tol's qualitative set — indigo, cyan, teal, green,
-olive, sand …) that deliberately excludes the accent, so the line can never be confused with a
-country. Numbered badges carry the order; colour does not have to.
+territories take a separate categorical cycle (Tol's Muted set — indigo, green, olive, sand, rose,
+wine, purple — with its two LIGHT COOL members replaced) that deliberately excludes the accent, so
+the line can never be confused with a country. Numbered badges carry the order; colour does not have
+to.
+
+**Why two slots are not Tol's, measured rather than judged.** The fills are laid over the plate at
+`fill-opacity` 0.45, and the wash pulls every hue toward the pale basemap — so a light cool hue lands
+on the water tint. Tol's cyan `#88CCEE` composited to **11.06 ΔE76 from the Adriatic**, under half the
+23.77 ΔE76 the bare basemap already puts between its own land and its own water: the paint made
+Austria's coastline harder to read than no paint at all, and Austria came within 7.6 px of rendered
+water at the Bodensee. Cyan cannot be rescued by opacity (11.06 at 0.42, 6.9 at 0.70) because it *is*
+a water tint; Tol's pale teal needs 0.70 before it clears. Both were replaced by dark hues chosen by
+running the measurement over a candidate pool — `#8B0000` and ColorBrewer PRGn's `#40004B` — which
+improves every axis at once: nearest fill-to-water **11.06 → 24.47**, tightest pair **9.40 → 10.10**,
+tightest pair under simulated deuteranopia/protanopia **5.10 → 8.39**, route accent still 58.0 ΔE76
+from the nearest fill. The rule and the numbers live in `geo-flow.ts`
+(`assertTerritoryFillsReadAsLand`, which fails the render rather than a test) and in
+`geo-discipline.md` rule 7a.
+
+**Known, unfixed, and stated because a reader can see it:** the crossed territories' fills are laid
+over inland water as well as land, so the Bodensee, Balaton and Neusiedl render as darker patches of
+their country's own colour rather than as lakes — measured at 13.7 ΔE76 from the fill they sit in
+against 28.8 from open water. Closing it needs lake geometry baked beside the beat (rule 3), not a
+colour change; the sibling dot-density beat closed the same defect by tinting instead of covering,
+which this beat cannot do without putting the fills back under the water tint.
 
 ## Hierarchy of the proof
 

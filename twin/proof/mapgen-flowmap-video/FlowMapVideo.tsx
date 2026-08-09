@@ -29,7 +29,12 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
-import { travelledPath } from "./geo-flow";
+import {
+  TERRITORY_FILL_OPACITY,
+  compositeOverLand,
+  numeralInk,
+  travelledPath,
+} from "./geo-flow";
 import {
   FLOW_TIMING,
   progressOf,
@@ -329,7 +334,7 @@ export function FlowMapVideo({
                   <path
                     d={ringPath(c.rings)}
                     fill={c.colour}
-                    fillOpacity={0.42 * opacity}
+                    fillOpacity={TERRITORY_FILL_OPACITY * opacity}
                     stroke={c.colour}
                     strokeWidth={1.4 / scale}
                     opacity={opacity}
@@ -346,7 +351,7 @@ export function FlowMapVideo({
                     <text
                       x={c.anchor[0]}
                       y={c.anchor[1] + 4 / scale}
-                      fill={ground}
+                      fill={numeralInk(c.colour)}
                       fontSize={12 / scale}
                       fontWeight={700}
                       textAnchor="middle"
@@ -492,13 +497,15 @@ export function FlowMapVideo({
                         cx={x + 8}
                         cy={y - 4}
                         r={8}
-                        fill={chip.crossing.colour}
+                        fill={compositeOverLand(chip.crossing.colour)}
+                        stroke={chip.crossing.colour}
+                        strokeWidth={1.6}
                         opacity={dimOpacity}
                       />
                       <text
                         x={x + 8}
                         y={y - 1}
-                        fill={ground}
+                        fill={numeralInk(compositeOverLand(chip.crossing.colour))}
                         fontSize={9}
                         fontWeight={700}
                         textAnchor="middle"

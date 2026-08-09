@@ -11,9 +11,14 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
 import { FlowMapStill } from "./FlowMapStill.tsx";
-import { territoryColour } from "./geo-flow.ts";
+import { assertTerritoryFillsReadAsLand, territoryColour } from "./geo-flow.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+// The palette is legal only once it is composited: a hue, its fill-opacity and the basemap's water
+// tint live in three different places and can only disagree on the plate. Checked here, at render,
+// so a fill that reads as sea stops the run instead of shipping (geo-discipline.md rule 7).
+assertTerritoryFillsReadAsLand();
 
 const BEAT = {
   ground: "#FFFFFF",

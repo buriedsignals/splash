@@ -330,18 +330,45 @@ function distToSegment(p: LonLat, a: LonLat, b: LonLat): number {
 
 // ── Colour: a cycling, CVD-safe qualitative palette for the crossed territories ──────────────────
 
-/** Tol Muted, a 9-colour CVD-safe qualitative set (Paul Tol's "Muted" scheme) — reused here as a
- *  fact about safe categorical colour, not re-derived. The earlier 8-entry Okabe-Ito-plus-grey
- *  cycle wrapped on this beat's own 9 territories (Germany and Ukraine landed on the same slot,
- *  rendering in the identical blue — the same defect found and fixed in the sibling static/video
- *  flow-map beats, `mapmore-flow-danube` and `mapgen-flowmap-video`). Nine distinct entries removes
- *  the wrap outright; it also drops the plain grey/black pair the old cycle fell back to, which
- *  this doctrine reserves for "no data" on a choropleth. Orange is held back for the route's own
- *  accent (see `MapFrame.tsx`), so none of these nine overlaps it. */
+/** The blue tint `bake.mjs` forces onto the basemap's water layers, because `dataviz-light` paints
+ *  water GREY and grey water is indistinguishable from a no-data grey (`geo-discipline.md` rule 7).
+ *  It lives here, beside the cycle, because it is the colour every territory fill is measured
+ *  AGAINST — see `assertTerritoryFillsReadAsLand`. */
+export const WATER_TINT = "#AAC9E0";
+
+/** The basemap's own land, under every territory fill. `dataviz-light` at this camera paints
+ *  89% of the plate this exact value, so it is what a fill actually composites over. */
+export const LAND_TINT = "#F7F7F7";
+
+/** How much of a territory's hue is laid over the plate. It is a colour decision, not a taste one:
+ *  the wash pulls every hue toward the pale plate, and a hue washed far enough lands ON the water
+ *  tint. 0.42 — what this beat shipped — put Austria's fill 11.0 ΔE from the sea while the bare
+ *  land sits 23.8 away, i.e. the paint made its own coastline HALF as readable as no paint at all.
+ *  0.45 is the smallest step that lifts every member of the cycle back over that bar. */
+export const TERRITORY_FILL_OPACITY = 0.45;
+
+/** Tol Muted, a CVD-safe qualitative set (Paul Tol's "Muted" scheme), with the two members a map
+ *  with water cannot use. The earlier 8-entry Okabe-Ito-plus-grey cycle wrapped on this beat's own
+ *  9 territories (Germany and Ukraine landed on the same slot, rendering in the identical blue),
+ *  which is why the set has nine entries; it also drops the plain grey/black pair the old cycle
+ *  fell back to, which this doctrine reserves for "no data" on a choropleth. Orange is held back
+ *  for the route's own accent (see `FlowMapStill.tsx`), so none of these nine overlaps it.
+ *
+ *  TWO SLOTS ARE NOT TOL'S, AND THE REASON IS MEASURED, NOT AESTHETIC. Tol's pale cyan `#88CCEE`
+ *  and pale teal `#44AA99` are LIGHT COOL hues: washed over a pale plate they land in the water
+ *  tint's own neighbourhood. Cyan is the worst case and cannot be rescued by any opacity — at 0.42
+ *  its fill sits 11.0 ΔE76 from the sea, at 0.70 it sits 6.9, because it IS a water tint; teal
+ *  needs 0.70 before it clears. They are replaced by two DARK hues (`#8B0000`, and `#40004B` from
+ *  ColorBrewer PRGn's dark end) chosen by running the measurement below over a candidate pool.
+ *  Against the shipped set, at the shipped opacities, the substitution improves every axis:
+ *  nearest fill-to-water 11.0 → 24.4, tightest pair 9.4 → 10.1, tightest pair under a simulated
+ *  deuteranopia/protanopia 5.1 → 8.4, tightest under tritanopia 5.0 → 5.6; the route accent stays
+ *  58.0 ΔE from the nearest fill. Distinguishability was checked under Viénot–Brettel–Mollon
+ *  dichromat simulation, not by eye — the doctrine asks for that explicitly. */
 export const QUALITATIVE_CYCLE = [
   "#332288", // indigo
-  "#88CCEE", // cyan
-  "#44AA99", // teal
+  "#8B0000", // dark red  — Tol's pale cyan #88CCEE held this slot and read as sea
+  "#40004B", // dark purple — Tol's pale teal #44AA99 held this slot
   "#117733", // green
   "#999933", // olive
   "#DDCC77", // sand
@@ -352,6 +379,123 @@ export const QUALITATIVE_CYCLE = [
 
 export function territoryColour(index: number): string {
   return QUALITATIVE_CYCLE[index % QUALITATIVE_CYCLE.length]!;
+}
+
+// ── The rule those two substitutions exist to satisfy ────────────────────────────────────────────
+
+function srgbChannels(hex: string): [number, number, number] {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+}
+
+/** CIE L*a*b* (D65) from sRGB, the space the audit measured this defect in. */
+export function labOf(colour: string | [number, number, number]): [number, number, number] {
+  const [r, g, b] = (typeof colour === "string" ? srgbChannels(colour) : colour).map((v) => {
+    const c = v / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  const x = (r * 0.4124564 + g * 0.3575761 + b * 0.1804375) / 0.95047;
+  const y = r * 0.2126729 + g * 0.7151522 + b * 0.072175;
+  const z = (r * 0.0193339 + g * 0.119192 + b * 0.9503041) / 1.08883;
+  const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : (841 / 108) * t + 4 / 29);
+  const [fx, fy, fz] = [f(x), f(y), f(z)];
+  return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+}
+
+/** ΔE76 — the plain Euclidean distance in L*a*b*. Deliberately the same metric the render audit
+ *  used, so a number here can be compared with a number there without a conversion argument. */
+export function deltaE76(
+  a: string | [number, number, number],
+  b: string | [number, number, number],
+): number {
+  const [l1, a1, b1] = labOf(a);
+  const [l2, a2, b2] = labOf(b);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
+}
+
+/** What a hue actually looks like once laid over the plate at `opacity` — SVG's `fill-opacity`
+ *  composites in sRGB, so this is plain linear interpolation of the 0..255 channels. */
+export function compositeOverLand(
+  hue: string,
+  opacity: number = TERRITORY_FILL_OPACITY,
+  land: string = LAND_TINT,
+): string {
+  const h = srgbChannels(hue);
+  const l = srgbChannels(land);
+  return (
+    "#" +
+    h
+      .map((v, i) => Math.round(v * opacity + l[i]! * (1 - opacity)).toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase()
+  );
+}
+
+/**
+ * A territory fill may not make its own coastline harder to read than no paint at all.
+ *
+ * The bar is not a taste threshold and carries no free parameter: the basemap already separates its
+ * land from its water by ΔE76 `deltaE76(LAND_TINT, WATER_TINT)` = 23.8, and that separation is what
+ * a reader uses to find a coast. A fill laid over the land that ends up NEARER the water than the
+ * bare land was has spent the beat's own paint making the map worse than the plate it was given.
+ *
+ * This is `geo-discipline.md` rule 7 ("each must read as a different KIND of thing at a glance")
+ * turned into a number, and it runs at render time rather than in a test because the thing it
+ * guards — a hue, an opacity and a basemap tint that live in three different files — can only
+ * disagree once they are composited.
+ */
+export function territoryFillReport(
+  cycle: string[] = QUALITATIVE_CYCLE,
+  opacity: number = TERRITORY_FILL_OPACITY,
+): { hue: string; fill: string; toWater: number }[] {
+  return cycle.map((hue) => {
+    const fill = compositeOverLand(hue, opacity);
+    return { hue, fill, toWater: deltaE76(fill, WATER_TINT) };
+  });
+}
+
+export function assertTerritoryFillsReadAsLand(
+  cycle: string[] = QUALITATIVE_CYCLE,
+  opacity: number = TERRITORY_FILL_OPACITY,
+): void {
+  const floor = deltaE76(LAND_TINT, WATER_TINT);
+  const offenders = territoryFillReport(cycle, opacity).filter((r) => r.toWater < floor);
+  if (offenders.length > 0)
+    throw new Error(
+      `territory fill colour reads as water: ` +
+        offenders
+          .map((o) => `${o.hue} at fill-opacity ${opacity} composites to ${o.fill}, ${o.toWater.toFixed(2)} ΔE76 from the water tint ${WATER_TINT}`)
+          .join("; ") +
+        ` — the bare basemap land is ${floor.toFixed(2)} ΔE76 away, so these fills make their own coastline harder to read than no paint at all. Darken the hue or raise TERRITORY_FILL_OPACITY.`,
+    );
+}
+
+/** WCAG 2.x relative luminance, and the ratio built from it. Duplicated here rather than imported
+ *  from `render-still.mjs` on purpose: this module is bundled INTO the video by webpack, and
+ *  `render-still.mjs` pulls in the native rasteriser, which webpack cannot parse ("Module parse
+ *  failed: Unexpected character" on a `.node` binary). A module a bundler has to walk keeps its
+ *  arithmetic pure. */
+function relativeLuminance(hex: string): number {
+  const [r, g, b] = srgbChannels(hex).map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function wcagContrast(a: string, b: string): number {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/**
+ * Black or white for a numeral drawn on a swatch — whichever MEASURES higher against it, the same
+ * pole rule `deriveFurniture` applies to a ground. The shipped beat drew every badge numeral in the
+ * ground colour, on a disc drawn at the hue's FULL strength: white on Tol's sand `#DDCC77` measures
+ * 1.62:1, on its pale cyan 1.76:1, on its teal 2.82:1 and on its olive 3.02:1 — five of the nine
+ * numbers a reader is asked to read in order sat under the 4.5:1 floor, and two were barely there.
+ */
+export function numeralInk(swatch: string): string {
+  return wcagContrast("#000000", swatch) >= wcagContrast("#FFFFFF", swatch) ? "#000000" : "#FFFFFF";
 }
 
 // ── Anchoring a label near where the route ACTUALLY passes through a territory ───────────────────

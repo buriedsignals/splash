@@ -49,6 +49,27 @@ so a second hue would invent a second variable. The five subject countries are p
 labels on their own clusters, not by a different colour: the claim is about which clusters are
 biggest, and recolouring them would beg its own question.
 
+**The study area is a TINT, at 0.16, and both halves of that are load-bearing.** It shipped as an
+opaque `#F0F0F0`, which failed twice over. Against the plate's own unpainted land it measured **2.44
+ΔE76 and 1.064:1** — so "counted in this map's 596,770,599" and "not in this map at all" (Russia,
+Turkey, north Africa) were the same colour, and a country with too few people to show a dot was
+indistinguishable from one that was never in the total. And being opaque it swallowed the basemap's
+inland water: Vänern, Vättern, Mälaren, Saimaa, Päijänne, Balaton, the IJsselmeer, Lough Neagh and
+Lake Geneva all rendered as study land, and Lake Peipus was drawn half land (Estonian side) and half
+water (Russian side) in one frame. At 0.16 the same two now read **14.11 ΔE76 and 1.454:1** apart,
+and a lake under the tint renders `#8FA9BC` — 11.75 ΔE76 from open water against 20.37 from the land
+it sits in, so it reads as water. Peipus is water on both sides, with the border still drawn across
+it, which is what the border does.
+
+**What it costs, and the floor it is held to.** Darkening the study area costs dot contrast
+(**4.55:1 → 3.33:1**) and moves the study land toward the sea (**22.00 → 16.18 ΔE76**, nearer than
+the bare plate's own 23.77). The first is held above WCAG 2.2 SC 1.4.11's 3:1 for a non-text
+graphical object; the second is legal only because this beat draws its coast as a line, and that
+line — `#616161` at 0.6px — measures 3.98:1 against the fill and 3.58:1 against the water. Both are
+checked at render by `assertStudyAreaReadsApart` in `geo-dot.ts`, which fails the run rather than a
+test. The shading is now named in the legend for the same reason `geo-discipline.md` rule 7 makes a
+beat name its no-data colour: an unshaded country must not be left to read as an empty one.
+
 ## Hierarchy of the proof
 
 1. The mass of dots itself — the pattern before any label.

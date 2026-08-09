@@ -13,6 +13,11 @@
 
 import { Fragment } from "react";
 import { FONT_FAMILY, measureText } from "./render-still.mjs";
+import {
+  TERRITORY_FILL_OPACITY,
+  compositeOverLand,
+  numeralInk,
+} from "./geo-flow.ts";
 
 const FRAME = { width: 1080, height: 900 };
 const PAD = 40;
@@ -216,7 +221,7 @@ export function FlowMapStill({
             key={c.key}
             d={ringPath(c.rings)}
             fill={c.colour}
-            fillOpacity={0.42}
+            fillOpacity={TERRITORY_FILL_OPACITY}
             stroke={c.colour}
             strokeWidth={1.4}
           />
@@ -259,7 +264,7 @@ export function FlowMapStill({
             <text
               x={c.anchor[0]}
               y={c.anchor[1] + 4}
-              fill={ground}
+              fill={numeralInk(c.colour)}
               fontSize={12}
               fontWeight={700}
               textAnchor="middle"
@@ -292,12 +297,14 @@ export function FlowMapStill({
                     cx={x + 8}
                     cy={y - 4}
                     r={8}
-                    fill={chip.crossing.colour}
+                    fill={compositeOverLand(chip.crossing.colour)}
+                    stroke={chip.crossing.colour}
+                    strokeWidth={1.6}
                   />
                   <text
                     x={x + 8}
                     y={y - 1}
-                    fill={ground}
+                    fill={numeralInk(compositeOverLand(chip.crossing.colour))}
                     fontSize={9}
                     fontWeight={700}
                     textAnchor="middle"

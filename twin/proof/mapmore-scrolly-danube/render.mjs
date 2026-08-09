@@ -19,6 +19,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture } from "./render-still.mjs";
 import {
+  assertTerritoryFillsReadAsLand,
   parseRouteCsv,
   territoriesCrossed,
   territoryColour,
@@ -30,6 +31,11 @@ import { MapFrame } from "./MapFrame.tsx";
 import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+// The palette is legal only once it is composited: a hue, its fill-opacity and the basemap's water
+// tint live in three different places and can only disagree on the plate. Checked here, at render,
+// so a fill that reads as sea stops the run instead of shipping (geo-discipline.md rule 7).
+assertTerritoryFillsReadAsLand();
 
 // Vienna's own coordinates — used only to find the nearest route sample, so the "how many
 // countries before Vienna" claim below is answered from the route, not guessed.

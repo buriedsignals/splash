@@ -10,6 +10,8 @@
  * "move within the plate" (this step never moves the plate itself, only what is drawn on top of it).
  */
 
+import { TERRITORY_FILL_OPACITY, numeralInk } from "./geo-flow.ts";
+
 export type ScrollyCrossing = {
   key: string;
   colour: string;
@@ -84,7 +86,7 @@ export function MapFrame({
           key={c.key}
           d={ringPath(c.rings)}
           fill={c.colour}
-          fillOpacity={0.42}
+          fillOpacity={TERRITORY_FILL_OPACITY}
           stroke={c.colour}
           strokeWidth={1.4}
         />
@@ -121,7 +123,7 @@ export function MapFrame({
           <text
             x={c.anchor[0]}
             y={c.anchor[1] + 4}
-            fill={ground}
+            fill={numeralInk(c.colour)}
             fontSize={12}
             fontWeight={700}
             textAnchor="middle"

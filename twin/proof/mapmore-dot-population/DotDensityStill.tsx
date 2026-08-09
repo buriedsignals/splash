@@ -37,7 +37,10 @@ export type DotDensityStillProps = {
   accent: string;
   ink: string;
   muted: string;
-  landFill: string;
+  landTint: string;
+  landTintOpacity: number;
+  studySwatch: string;
+  studyCount: number;
 };
 
 export function wrap(
@@ -87,7 +90,10 @@ export function DotDensityStill({
   accent,
   ink,
   muted,
-  landFill,
+  landTint,
+  landTintOpacity,
+  studySwatch,
+  studyCount,
 }: DotDensityStillProps) {
   const titleLines = wrap(title, FRAME.width - PAD * 2, TITLE);
   const sourceLines = wrap(
@@ -108,17 +114,20 @@ export function DotDensityStill({
   };
 
   const dotKeyY = MAP.y + MAP.height + 34;
+  const studyKeyText = `Shaded: the ${studyCount} countries counted in that total. Unshaded land is outside this map — see the note below.`;
   const dotKeyText = `● 1 dot = ${dotValue.toLocaleString("en-US")} people  —  ${totalDots.toLocaleString("en-US")} dots drawn for ${totalPopulation.toLocaleString("en-US")} people`;
   const dotKeyLines = wrap(dotKeyText, FRAME.width - PAD * 2, DOT_KEY);
 
   const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
 
-  if (
-    dotKeyY + (dotKeyLines.length - 1) * 20 + 16 >
-    caveatTop - NOTE.fontSize - 10
-  )
+  const studyKeyY = dotKeyY + (dotKeyLines.length - 1) * 20 + 26;
+  if (studyKeyY + 6 > caveatTop - NOTE.fontSize - 10)
     throw new Error(
       "the column does not fit: the dot-value key collides with the caveat.",
+    );
+  if (measureText(studyKeyText, NOTE) > FRAME.width - PAD * 2 - 22)
+    throw new Error(
+      `the study-area key does not fit on its line: "${studyKeyText}" measures ${measureText(studyKeyText, NOTE).toFixed(1)}px in a ${FRAME.width - PAD * 2 - 22}px row.`,
     );
 
   return (
@@ -176,14 +185,19 @@ export function DotDensityStill({
       >
         <image href={plate} x={0} y={0} width={MAP.width} height={MAP.height} />
 
-        {/* Every study country: a light neutral fill and outline, so a reader sees the region even
+        {/* Every study country: a light neutral TINT and an outline, so a reader sees the region even
             where its own dot count is too small to read as texture (dot-density.md: distribution
-            WITHIN a region, which needs the region's own edge to be visible in the first place). */}
+            WITHIN a region, which needs the region's own edge to be visible in the first place).
+            A tint, not an opaque fill, for two reasons measured in `geo-dot.ts`: it has to be far
+            enough from the plate's unpainted land that "counted here" and "not in this map" are
+            different colours, and it has to let the basemap's own water through, or every inland
+            lake inside a study country is painted over as land. */}
         {shapes.map((s) => (
           <path
             key={s.key}
             d={ringPath(s.parts.flat())}
-            fill={landFill}
+            fill={landTint}
+            fillOpacity={landTintOpacity}
             stroke={muted}
             strokeWidth={0.6}
           />
@@ -242,6 +256,28 @@ export function DotDensityStill({
           {line}
         </text>
       ))}
+
+      {/* ── What the shading itself means. `geo-discipline.md` rule 7 asks a no-data colour to be
+           NAMED in the legend rather than left to be inferred; the mirror of that rule is that a
+           study-area shading has to be named too, or a reader is left to guess whether an unshaded
+           country holds no people or was simply never counted. ── */}
+      <rect
+        x={PAD}
+        y={studyKeyY - 10}
+        width={14}
+        height={12}
+        fill={studySwatch}
+        stroke={muted}
+        strokeWidth={0.6}
+      />
+      <text
+        x={PAD + 22}
+        y={studyKeyY}
+        fill={muted}
+        fontSize={NOTE.fontSize}
+      >
+        {studyKeyText}
+      </text>
 
       {caveatLines.map((line, i) => (
         <text

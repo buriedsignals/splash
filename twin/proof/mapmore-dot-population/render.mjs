@@ -11,26 +11,19 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
 
-/** A light neutral land fill, `ratio` of the way from ground toward ink — small local helper, this
- *  file's own copy of the mix formula every other beat's rasteriser already applies internally. */
-function mixHex(ground, ink, ratio) {
-  const ch = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-  const g = ch(ground);
-  const target = ch(ink);
-  return (
-    "#" +
-    g
-      .map((v, i) => Math.round(v + (target[i] - v) * ratio).toString(16).padStart(2, "0"))
-      .join("")
-  );
-}
 import { DotDensityStill } from "./DotDensityStill.tsx";
 import {
-  parsePopulationCsv,
-  joinPopulation,
+  LAND_TINT,
+  WATER_TINT,
+  STUDY_AREA_TINT_OPACITY,
+  assertStudyAreaReadsApart,
   chooseDotValue,
-  scatterInParts,
+  compositeOver,
   fillTightness,
+  wcagContrast,
+  joinPopulation,
+  parsePopulationCsv,
+  scatterInParts,
 } from "./geo-dot.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -133,7 +126,18 @@ if (wantStill) {
   });
 
   const furniture = deriveFurniture(BEAT.ground);
-  const landFill = mixHex(BEAT.ground, furniture.ink, 0.06);
+  // The study area is a TINT over the plate, not a lid on it — see STUDY_AREA_TINT_OPACITY. Checked
+  // here, on the composited colours, because the tint, its opacity and the basemap's own land only
+  // ever meet on the plate: a fill that reads like the land outside the study, or that stops the
+  // dots reading, stops the run instead of shipping.
+  const study = assertStudyAreaReadsApart(furniture.ink, STUDY_AREA_TINT_OPACITY, BEAT.accent, furniture.muted);
+  console.log(
+    `study area: ${furniture.ink} at ${STUDY_AREA_TINT_OPACITY} over the basemap land ${LAND_TINT} → ` +
+      `${study.studyLand}, ${study.separation.toFixed(2)} ΔE76 from the land outside the study; ` +
+      `dots ${study.dotContrast.toFixed(2)}:1 on it; a lake under it renders ${study.studyWater}; ` +
+      `coastline ${study.coastSeparation.toFixed(2)} ΔE76 by tone, carried by a ${furniture.muted} outline at ` +
+      `${Math.min(...[study.studyLand, WATER_TINT].map((c) => wcagContrast(furniture.muted, c))).toFixed(2)}:1.`,
+  );
 
   // ── The alt says what the picture shows, and both quantities are measured ────────────────────
   // The five named countries hold the five BIGGEST clouds of dots — that is the title's claim, and
@@ -188,7 +192,10 @@ if (wantStill) {
       alt,
       ground: BEAT.ground,
       accent: BEAT.accent,
-      landFill,
+      landTint: furniture.ink,
+      landTintOpacity: STUDY_AREA_TINT_OPACITY,
+      studySwatch: compositeOver(furniture.ink, LAND_TINT, STUDY_AREA_TINT_OPACITY),
+      studyCount: geometry.shapes.length,
       ...furniture,
     }),
     width: 920,
