@@ -125,6 +125,57 @@ function cameraFacts(zoom, corners) {
   };
 }
 
+/** The least frame height, at this width, that holds this latitude range without cropping — the
+ * Mercator world's own aspect over that range. The message a shortfall throws is only useful if the
+ * number in it ACTUALLY fixes the frame, and a constant tuned against one beat's [-60°, 78°]
+ * (`width * 0.5685`) is wrong at every other range. Measured: this derivation and that constant
+ * differ by one pixel at 836px, so replacing it moved no plate. @parity */
+function minFrameHeightPx(width, south, north) {
+  return Math.ceil((width * (mercY(north) - mercY(south))) / (2 * Math.PI));
+}
+
+/** A longitude into this camera's own frame, `[west, west + 360)`. `map.project` does NOT wrap to
+ * the camera, so a Pacific-centred beat must normalise every longitude before projecting it or every
+ * western-Pacific point projects to a negative x and is culled. Two of nineteen bakes carried this
+ * as a closure over `BEAT`, which is why seventeen could not have it. @parity */
+function normaliseLon(lon, west) {
+  return west + ((((lon - west) % 360) + 360) % 360);
+}
+
+/** THE WORLD MUST FILL THE FRAME'S WIDTH. Under it, MapLibre draws a repeat continent inside the
+ * picture carrying none of this beat's marks, and a reader can reasonably read the bare copy as a
+ * place with no data — measured once at 836 × 300, where 37% of the picture was un-binned repeat.
+ * `renderWorldCopies: false` is not the fix: it clamps the camera instead, which silently dropped
+ * 1,057 of 14,175 events. @parity */
+function assertWorldFillsFrame(camera, width) {
+  if (camera.worldWidthPx >= width - 1) return;
+  throw new Error(
+    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ` +
+      `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
+  );
+}
+
+/** …AND THE FRAME MUST REACH THE BOUNDS THAT WERE ASKED FOR, or the study area is silently cropped
+ * instead. The two travel together, always: either one alone can be satisfied by a plate that lies.
+ * @parity */
+function assertCameraReachesBounds(frameCorners, bounds, width) {
+  const [[askedWest, askedSouth], [askedEast, askedNorth]] = bounds;
+  const shortfall = [];
+  if (frameCorners.south > askedSouth + 0.01)
+    shortfall.push(`south edge is ${frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
+  if (frameCorners.north < askedNorth - 0.01)
+    shortfall.push(`north edge is ${frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
+  if (frameCorners.west > askedWest + 0.01)
+    shortfall.push(`west edge is ${frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
+  if (frameCorners.east < askedEast - 0.01)
+    shortfall.push(`east edge is ${frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
+  if (shortfall.length === 0) return;
+  throw new Error(
+    `this plate crops the study area — ${shortfall.join("; ")}. A ${width}px-wide frame needs at least ` +
+      `${minFrameHeightPx(width, askedSouth, askedNorth)}px of height to hold ${askedSouth}°–${askedNorth}° without cropping.`,
+  );
+}
+
 const names = ["MAPTILER_KEY", ...MAPTILER_KEY_ALIASES];
 const fromProcess = names.map((name) => process.env[name]).find(Boolean);
 const fromFile = existsSync(keyPath)
@@ -223,6 +274,10 @@ const gate = await page.evaluate(
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
+// @parity-exempt assertCameraReachesBounds: this bake fixes its camera by centre and zoom, not
+// by bounds, so there is no asked-for extent for the frame to fall short of. The world-fill
+// invariant still applies and is asserted.
+assertWorldFillsFrame(camera, width);
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "potomac-plate.jpg");

@@ -142,6 +142,49 @@ function cameraFacts(zoom, corners) {
   };
 }
 
+/** The least frame height, at this width, that holds this latitude range without cropping — the
+ * Mercator world's own aspect over that range. The message a shortfall throws is only useful if the
+ * number in it ACTUALLY fixes the frame, and a constant tuned against one beat's [-60°, 78°]
+ * (`width * 0.5685`) is wrong at every other range. Measured: this derivation and that constant
+ * differ by one pixel at 836px, so replacing it moved no plate. @parity */
+function minFrameHeightPx(width, south, north) {
+  return Math.ceil((width * (mercY(north) - mercY(south))) / (2 * Math.PI));
+}
+
+/** THE WORLD MUST FILL THE FRAME'S WIDTH. Under it, MapLibre draws a repeat continent inside the
+ * picture carrying none of this beat's marks, and a reader can reasonably read the bare copy as a
+ * place with no data — measured once at 836 × 300, where 37% of the picture was un-binned repeat.
+ * `renderWorldCopies: false` is not the fix: it clamps the camera instead, which silently dropped
+ * 1,057 of 14,175 events. @parity */
+function assertWorldFillsFrame(camera, width) {
+  if (camera.worldWidthPx >= width - 1) return;
+  throw new Error(
+    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ` +
+      `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
+  );
+}
+
+/** …AND THE FRAME MUST REACH THE BOUNDS THAT WERE ASKED FOR, or the study area is silently cropped
+ * instead. The two travel together, always: either one alone can be satisfied by a plate that lies.
+ * @parity */
+function assertCameraReachesBounds(frameCorners, bounds, width) {
+  const [[askedWest, askedSouth], [askedEast, askedNorth]] = bounds;
+  const shortfall = [];
+  if (frameCorners.south > askedSouth + 0.01)
+    shortfall.push(`south edge is ${frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
+  if (frameCorners.north < askedNorth - 0.01)
+    shortfall.push(`north edge is ${frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
+  if (frameCorners.west > askedWest + 0.01)
+    shortfall.push(`west edge is ${frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
+  if (frameCorners.east < askedEast - 0.01)
+    shortfall.push(`east edge is ${frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
+  if (shortfall.length === 0) return;
+  throw new Error(
+    `this plate crops the study area — ${shortfall.join("; ")}. A ${width}px-wide frame needs at least ` +
+      `${minFrameHeightPx(width, askedSouth, askedNorth)}px of height to hold ${askedSouth}°–${askedNorth}° without cropping.`,
+  );
+}
+
 const env = parseEnvFile(await readFile(keyPath, "utf8"));
 const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => env[alias]).find(Boolean);
 if (!key) throw new Error(`no MAPTILER_KEY (or alias: ${MAPTILER_KEY_ALIASES.join(", ")}) in ${keyPath}`);
@@ -255,6 +298,8 @@ const gate = await page.evaluate(
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
+assertWorldFillsFrame(camera, size);
+assertCameraReachesBounds(frameCorners, BEAT.bounds, size);
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");

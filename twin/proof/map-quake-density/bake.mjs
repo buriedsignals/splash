@@ -86,7 +86,10 @@ function resolveChrome() {
       );
   candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
   const found = candidates.find((path) => existsSync(path));
-  if (!found) throw new Error(`no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}`);
+  if (!found)
+    throw new Error(
+      `no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}\nSet CHROME_PATH, or run: bunx puppeteer browsers install chrome`,
+    );
   return found;
 }
 
@@ -126,6 +129,57 @@ function cameraFacts(zoom, corners) {
   };
 }
 
+/** The least frame height, at this width, that holds this latitude range without cropping — the
+ * Mercator world's own aspect over that range. The message a shortfall throws is only useful if the
+ * number in it ACTUALLY fixes the frame, and a constant tuned against one beat's [-60°, 78°]
+ * (`width * 0.5685`) is wrong at every other range. Measured: this derivation and that constant
+ * differ by one pixel at 836px, so replacing it moved no plate. @parity */
+function minFrameHeightPx(width, south, north) {
+  return Math.ceil((width * (mercY(north) - mercY(south))) / (2 * Math.PI));
+}
+
+/** A longitude into this camera's own frame, `[west, west + 360)`. `map.project` does NOT wrap to
+ * the camera, so a Pacific-centred beat must normalise every longitude before projecting it or every
+ * western-Pacific point projects to a negative x and is culled. Two of nineteen bakes carried this
+ * as a closure over `BEAT`, which is why seventeen could not have it. @parity */
+function normaliseLon(lon, west) {
+  return west + ((((lon - west) % 360) + 360) % 360);
+}
+
+/** THE WORLD MUST FILL THE FRAME'S WIDTH. Under it, MapLibre draws a repeat continent inside the
+ * picture carrying none of this beat's marks, and a reader can reasonably read the bare copy as a
+ * place with no data — measured once at 836 × 300, where 37% of the picture was un-binned repeat.
+ * `renderWorldCopies: false` is not the fix: it clamps the camera instead, which silently dropped
+ * 1,057 of 14,175 events. @parity */
+function assertWorldFillsFrame(camera, width) {
+  if (camera.worldWidthPx >= width - 1) return;
+  throw new Error(
+    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ` +
+      `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
+  );
+}
+
+/** …AND THE FRAME MUST REACH THE BOUNDS THAT WERE ASKED FOR, or the study area is silently cropped
+ * instead. The two travel together, always: either one alone can be satisfied by a plate that lies.
+ * @parity */
+function assertCameraReachesBounds(frameCorners, bounds, width) {
+  const [[askedWest, askedSouth], [askedEast, askedNorth]] = bounds;
+  const shortfall = [];
+  if (frameCorners.south > askedSouth + 0.01)
+    shortfall.push(`south edge is ${frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
+  if (frameCorners.north < askedNorth - 0.01)
+    shortfall.push(`north edge is ${frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
+  if (frameCorners.west > askedWest + 0.01)
+    shortfall.push(`west edge is ${frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
+  if (frameCorners.east < askedEast - 0.01)
+    shortfall.push(`east edge is ${frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
+  if (shortfall.length === 0) return;
+  throw new Error(
+    `this plate crops the study area — ${shortfall.join("; ")}. A ${width}px-wide frame needs at least ` +
+      `${minFrameHeightPx(width, askedSouth, askedNorth)}px of height to hold ${askedSouth}°–${askedNorth}° without cropping.`,
+  );
+}
+
 const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
 const env = parseEnvFile(await readFile(keyPath, "utf8"));
 const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((a) => env[a]).find(Boolean);
@@ -133,9 +187,7 @@ if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
 
 const points = quakePointsFromCsv(await readFile(csvPath, "utf8"));
 
-/** Into the camera's own longitude frame, [west, west + 360) — see BEAT's note on the seam. */
 const west = BEAT.bounds[0][0];
-const normaliseLon = (lon) => west + (((lon - west) % 360) + 360) % 360;
 
 const browser = await puppeteer.launch({
   headless: true,
@@ -203,31 +255,9 @@ const gate = await page.evaluate(
 
 const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
 const camera = cameraFacts(gate.zoom, frameCorners);
+assertWorldFillsFrame(camera, width);
+assertCameraReachesBounds(frameCorners, BEAT.bounds, width);
 
-// The two assertions this beat's own defect earned: the world must FILL the frame's width (or a
-// repeat continent shows, carrying no hexagons and reading as "no earthquakes here"), AND the
-// frame must actually reach the bounds that were asked for (or the study area is silently cropped
-// instead). Either one alone can be satisfied by a plate that lies.
-if (camera.worldWidthPx < width - 1)
-  throw new Error(
-    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ` +
-      `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
-  );
-const [[askedWest, askedSouth], [askedEast, askedNorth]] = BEAT.bounds;
-const shortfall = [];
-if (frameCorners.south > askedSouth + 0.01)
-  shortfall.push(`south edge is ${frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
-if (frameCorners.north < askedNorth - 0.01)
-  shortfall.push(`north edge is ${frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
-if (frameCorners.west > askedWest + 0.01)
-  shortfall.push(`west edge is ${frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
-if (frameCorners.east < askedEast - 0.01)
-  shortfall.push(`east edge is ${frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
-if (shortfall.length > 0)
-  throw new Error(
-    `this plate crops the study area — ${shortfall.join("; ")}. A ${width}px-wide frame needs at least ` +
-      `${Math.ceil(width * 0.5685)}px of height to hold ${askedSouth}°–${askedNorth}° without cropping.`,
-  );
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
@@ -244,7 +274,7 @@ const projected = await page.evaluate((coords) => {
     out[i + 1] = p.y;
   }
   return Array.from(out);
-}, points.flatMap((p) => [normaliseLon(p.lon), p.lat]));
+}, points.flatMap((p) => [normaliseLon(p.lon, west), p.lat]));
 
 await browser.close();
 
