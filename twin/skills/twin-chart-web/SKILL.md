@@ -22,6 +22,13 @@ files predate this skill's second build (see "How it works" below) and have not 
 they still ship two pre-rendered widths rather than the fluid frame this skill now teaches; a
 journalist writing a NEW web beat follows this seed, not that story.
 
+Its THIRD build closed three things the owner named after looking at the rendered output: the beat
+now **fits the window it opens in** (it filled its container's width and then grew off the bottom of
+the screen — 102px of x-axis, end label and source line below the fold at 1600 × 800), the filter's
+controls got **a considered treatment** instead of three default radio dots reading as a
+placeholder, and hover and the filter are now **verified by driving a real browser**
+(`scripts/verify-web.mjs`) rather than asserted in prose.
+
 There was no doctrine for this genre before this skill. `references/web-discipline.md` was written
 against this beat's first real build, the way `static-discipline.md` was written against the first
 static beat and `motion-grammar.md` against the first video build — read it before writing a second
@@ -79,6 +86,14 @@ Its SECOND build was corrected the same way: a screenshot at 900px, not a comput
 is what showed the first build's frame stopping short of its container with empty space either
 side — see `web-discipline.md`, "Verification."
 
+**So run `scripts/verify-web.mjs`, and know exactly what it can and cannot tell you.** It dispatches
+real pointer events at real coordinates and real clicks, which is the only way to catch the class of
+defect that has actually bitten this genre: an HTML overlay with no `pointer-events: none` swallowed
+every hover while keyboard focus kept working, because `.focus()` does not hit-test — so a test
+using `.focus()`, `.click()` or a synthesised `MouseEvent` would have passed against a chart nobody
+could hover. What it cannot do is look at the picture. Run it, then open the `--shots` frames and
+look at them; each catches what the other is blind to.
+
 ## Architecture
 
 | Layer | File | Role |
@@ -89,6 +104,7 @@ side — see `web-discipline.md`, "Verification."
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
 | Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
 | Preview | `scripts/render-preview.mjs` | Rasterises `ChartWebPreviewSvg` (SVG-only, baked text) to `assets/preview.png` — NOT what a real beat ships; see that component's own doc-comment in `assets/ChartWebSeed.tsx` |
+| Verify | `scripts/verify-web.mjs` | The genre's evidence, not its documentation: drives Chrome over a rendered beat and reports 153 measurements — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over every reading at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, run once with scripting on and once with JavaScript disabled), `checkControlAffordance` (Tab reach, the focus ring measured in pixels, the checked pill's contrast). Exit 0 only when every check passed |
 | Test | `test/render-web.test.ts` | CSV parsing, the CO₂ story component's own SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
@@ -115,6 +131,34 @@ per resize, the browser's own layout engine does it for free, continuously, the 
 reference/peak/end labels — is plain HTML positioned by `%` over the same box the `<svg>` occupies,
 styled from CSS with a FIXED pixel `font-size` that never tracks the `viewBox`. `web-discipline.md`'s
 "Responsive behaviour" section argues this split in full.
+
+**The window fit — the half the fluid redesign was missing.** Once width filled its container and
+height followed from `aspect-ratio`, a wider viewport bought a TALLER chart, and past a certain
+width the beat grew off the bottom of the screen: measured on the seed, 902px of figure in an 800px
+window at 1600px wide, 1051px in a 950px window at 1920px, 1762px at 3440 × 900. The 102px missing
+at 1600 × 800 were the x-axis row, the subject's own end label and the source line — a reader on a
+16" laptop met a chart whose credit and whose final value were below the fold. A beat is one thing a
+reader looks at, not a document they scroll through, so `.chart-figure` is now a flex column with
+`max-height: 100dvh` (a `100vh` declaration first, as the fallback), header/filter/source pinned at
+`flex: 0 0 auto`, and the plot alone shrinkable (`flex: 0 1 auto`) down to `PLOT_FLOOR_PX`. Words
+are never squeezed to make a chart fit; the chart is. `max-height`, never `height`, so a figure that
+already fits is untouched and reserves no empty space — verified: the plot's height is unchanged at
+2560 × 1440, 1920 × 1080, 1728 × 1000 and 1024 × 768, while every overflowing case above now measures
+0px. The cost is named in `web-discipline.md`, "The beat fits the visible window": a clamped plot is
+flatter than its canonical ratio, which is the right side of the trade against an end label nobody
+sees. **What this does not claim** is that the beat USES the window — at 375 × 812 the seed still
+draws a 153px plot in an 812px window, because height follows width. Fitting and filling are two
+rules and only the first is settled.
+
+**The filter's own control.** The first shipped filter was three default radio dots with a bare word
+beside each, which reads as an unfinished form under a finished chart. It is now a segmented control
+— three options in one rounded track, the chosen one inverted to ink-on-ground — layered ON TOP of
+working native radios rather than replacing them: same `<fieldset>`/`<legend>`/three
+`<input type="radio">`, the input made transparent over its own pill (never `display: none`), the
+focus ring moved to the pill, and the whole treatment inside `@supports selector(:has(*))` so an
+engine without `:has()` falls back to the plain radios it already had. `web-discipline.md`, "The
+filter obeys the same rule interaction does", carries the reasoning and the measured contrast on
+three different grounds.
 
 **Why `render-web.mjs` does not import a story's own numbers.** Its first build called `renderWeb`
 `render`, and that function reached directly into `EmissionsWeb.tsx` for its two named layout
@@ -144,13 +188,15 @@ its canonical geometry is.
 5. **If the beat earns a filter** (see "When to use" above), express it as native `<input
    type="radio">`/`<label>` controls plus a pure-CSS `:has()` dimming rule on `data-period`-tagged
    segments/points — never a script-only mechanism, and never one that removes an SSR'd reading.
-6. **Render the HTML**, then **drive a real browser at several widths** — a wide one (does the frame
-   genuinely fill it, is the type still the same visual size), the desktop-ish width the frame was
-   authored at, and a narrow one (~375px: does nothing clip, is the axis still locatable) — then
-   hover three different years and check each against the source data, then keyboard-only including
-   the filter's own radios, then reload with JavaScript disabled and confirm the default view is
-   complete. Screenshot each width. A claim not driven is not evidence — the same rule
-   `twin-doctrine`'s verification section states for every genre in this twin.
+6. **Render the HTML, then run `scripts/verify-web.mjs --file <your beat>.html`** — it drives Chrome
+   over your own beat and measures the fit at seven viewport sizes, dispatches real pointer events
+   over every reading, clicks every filter option with scripting on and with JavaScript disabled,
+   and checks the control's keyboard reach, focus ring and contrast. A claim not driven is not
+   evidence — the same rule `twin-doctrine`'s verification section states for every genre.
+7. **Then look at the screenshots yourself** (`--shots --out <dir>`). The script reads text,
+   geometry, opacity and colour; it cannot see a label colliding with a line, a clipped mark, or a
+   plot that is technically fine and visually squat. Every defect this genre has shipped that a
+   script could not have caught was caught by an eye on a frame.
 
 ## Quick start
 
@@ -158,19 +204,25 @@ its canonical geometry is.
 # the skill's own seed, from the skill's own sample data — nothing else on disk is needed
 bun skills/twin-chart-web/scripts/render-web.mjs /tmp/canon-web
 
-# then drive it — a static screenshot at ONE width cannot verify a fluid claim
-python3 -m http.server 8934 --bind 127.0.0.1 --directory /tmp/canon-web &
-# open http://127.0.0.1:8934/rainfall.html in a real (or automated) browser and:
-#  1. at a wide viewport (~1600px), confirm the frame fills it edge to edge and the title/axis
-#     type is still a normal, legible size — not visibly larger than at any other width;
-#  2. confirm the title, the 2015 reference rule and the final accent point are on screen before
-#     touching anything, at any width;
-#  3. hover three different years, check the tooltip against the source data;
-#  4. Tab to a point, confirm the same detail appears from keyboard focus alone; Tab to the
-#     filter's own radios and confirm "2015–2019"/"2020–2025" dims the other period;
-#  5. resize to ~375px wide, confirm nothing is clipped and the axis is still locatable;
-#  6. disable JavaScript and reload: title, caveat, source, reference rule, peak label, end label
-#     and the filter's default "All years" state are all still there.
+# then DRIVE it — a static screenshot at ONE width cannot verify a fluid, interactive claim.
+# With no --file it renders the seed itself first, so this one line is the whole check:
+bun skills/twin-chart-web/scripts/verify-web.mjs --shots --out /tmp/canon-web-verify
+#   FIT     — 7 viewports, 3440x900 down to 375x812: document height vs window height, and the
+#             x-axis and source line both on screen
+#   HOVER   — page.mouse.move over every reading, on its own mark AND anywhere in its column,
+#             plus one probe on the peak LABEL (an .overlay child — the exact pixel where this
+#             genre once shipped a dead hover); each must answer with that reading's own detail
+#   FILTER  — page.mouse.click on every option, with scripting on and again with JavaScript
+#             DISABLED: the default dims nothing, each option dims only the other period, and
+#             the title/caveat/source/reference/peak/end label are fully drawn in every state
+#   CONTROL — Tab reaches the group, ArrowRight moves it, the focus ring changes real pixels,
+#             the checked pill's own text clears 4.5:1, the target is at least 24x24
+# exit 0 only when every check passed.
+
+# then OPEN THE SCREENSHOTS AND LOOK. The script cannot see a collision, a clipped mark, or a
+# chart that is technically fine and visually squat. Both steps, every time — neither replaces
+# the other.
+open /tmp/canon-web-verify   # fit-*.png, hover-*.png, filter-late-*.png, nojs-filter.png, control-focus-*.png
 
 # a real story's own runner, filed beside the story, not inside the skill:
 bun proof/co2-suisse/render-web.mjs /tmp/web-twin --data /tmp/web-twin/data.csv   # → co2.html
@@ -196,6 +248,10 @@ skill into a journalist's root — the whole premise — did not build.
 | The fixed pixel type sizes for title/subtitle/source/axis/label/note/filter — never tracks the viewBox | `24`/`14`/`13`/`12`/`14`/`12`/`13` | `FRAME.title`/`subtitle`/`source`/`axis`/`label`/`note`/`filter`, `ChartWebSeed.tsx` |
 | The reading-measure cap on the header block and the source line — the chart frame itself is never capped | `640px` | `.chart-header, .chart-source`, `render-web.mjs` |
 | The frame's own fixed inner margin — content never touches the frame's edge, at any width | `24` | `FRAME_PAD_PX`, `render-web.mjs` |
+| How much of the window a beat may fill before the plot starts giving height back | `100dvh` (with a `100vh` fallback first) | `.chart-figure`'s `max-height`, `render-web.mjs` |
+| Where the plot stops shrinking — below it, a short window gets a scrollbar rather than a strip | `120` | `PLOT_FLOOR_PX`, `render-web.mjs` |
+| The segmented filter pill's own padding and corner (the whole treatment sits behind `@supports selector(:has(*))`) | `5px 12px` / `999px` | `.chart-filter label`, `render-web.mjs` |
+| The viewport sizes the verification drives, and the two it dispatches pointers at | 7 sizes / 2 sizes | `VIEWPORTS`, `POINTER_VIEWPORTS`, `verify-web.mjs` |
 | The invisible hit target's radius per point (keyboard focus outline, not the touch target — see `web-discipline.md`) | `5` | `.pt` circle `r`, the story's own composition file |
 | How the `#tooltip` is positioned relative to the pointer/focused point | `14px` above, clamped `8px` from the viewport edge | `show()`, `interaction.mjs` |
 | The level the seed's reference rule holds against | `2015` | `REFERENCE_YEAR`, `ChartWebSeed.tsx` |
@@ -237,6 +293,18 @@ skill into a journalist's root — the whole premise — did not build.
   CLI block are the runner for THIS SKILL'S OWN SEED, behind a labelled `CONFIG — edit for your
   story` seam. Nothing in this file imports out of this skill, which is what makes the directory
   copy-pasteable; a story's runner lives beside the story (`proof/co2-suisse/render-web.mjs`).
+- `scripts/verify-web.mjs` — the genre's own evidence. Drives Chrome (`resolveChrome`, the same
+  candidate-list shape every other script in this repository that drives a browser carries —
+  duplicated, because nothing in a skill imports out of it) over a rendered beat and reports every
+  measurement with its number: `checkFit` across `VIEWPORTS`, `checkHover` and `checkFilter` across
+  `POINTER_VIEWPORTS`, `checkControlAffordance`. It dispatches ONLY `page.mouse.move` and
+  `page.mouse.click` at real client coordinates — never `.focus()`, `.click()` or a synthesised
+  `MouseEvent` — because this genre once shipped a hover that was completely dead while keyboard
+  focus still worked, and every one of those three would have passed in that world. `--file` to
+  verify an existing beat, `--shots --out <dir>` to write the frames a human then looks at. Its
+  own checks were each proven against a deliberately broken copy of the rendered HTML in `/tmp`;
+  the focus-ring check FAILED that exercise the first time (it accepted the user agent's outline on
+  an `opacity: 0` input, which paints nothing) and was rewritten to compare rendered frames instead.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data (never a
   story's render) to `assets/preview.png` or `--out <dir>` to write the proof to that directory
   instead, via `ChartWebPreviewSvg`. Derives `ink`/`muted`/`grid` with `deriveFurniture` and
@@ -253,10 +321,15 @@ skill into a journalist's root — the whole premise — did not build.
   copy, the sample data is real rows a seed can render standalone, and `preview.png` is a current
   render (`render-preview.mjs --check`).
 - `test/seed-fluid-frame.test.ts` — the redesign's own shape: the `<svg>` this seed draws carries no
-  `<text>` element at all, the frame's CSS never caps its own width, the filter's default state
-  shows every reading at full opacity, `periodOf`/`periodRangeLabel`/`segments` classify the series
-  correctly, and `wrap` still agrees with the reference implementation this file's own doc-comment
-  names.
+  `<text>` element at all, the frame's CSS never caps its own width, the figure clamps to the
+  viewport height with the plot as the only shrinkable item and an explicit pixel floor, the filter's
+  three options sit in one `.options` track inside a real `<fieldset>`/`<legend>` with the segmented
+  treatment behind an `@supports selector(:has(*))` guard and no radio taken out of the focus order,
+  the filter's default state shows every reading at full opacity,
+  `periodOf`/`periodRangeLabel`/`segments` classify the series correctly, and `wrap` still agrees
+  with the reference implementation this file's own doc-comment names. **None of it is the proof** —
+  it is the structure, so the mechanism cannot be silently deleted; `scripts/verify-web.mjs` is what
+  measures whether any of it actually works in a browser.
 - **The CO₂ beat's own files live outside this skill, in `proof/co2-suisse/`**: `render-web.mjs`
   (the story's own runner — its `BEAT` constants, its OWID CSV reader, its CLI; it imports the
   genre's `renderWeb` from this skill, never the other way round), `EmissionsWeb.tsx`

@@ -392,24 +392,32 @@ export function ChartWebSeed({
           (a plain sibling combinator could not reach past the `<label>` wrapping each one). */}
       <fieldset className="chart-filter">
         <legend>Show</legend>
-        <label>
-          <input
-            id="period-all"
-            type="radio"
-            name="period"
-            value="all"
-            defaultChecked
-          />
-          All years
-        </label>
-        <label>
-          <input id="period-early" type="radio" name="period" value="early" />
-          {periodRangeLabel("early", years, FILTER_SPLIT_YEAR)}
-        </label>
-        <label>
-          <input id="period-late" type="radio" name="period" value="late" />
-          {periodRangeLabel("late", years, FILTER_SPLIT_YEAR)}
-        </label>
+        {/* One wrapper around the three options — the element the shared stylesheet draws the
+            segmented control's own outer track on (`.chart-filter .options`), so the three pills
+            read as one control rather than three loose chips, and so the `<legend>` is not inside
+            that track. It is a grouping box and nothing else: the control is still three plain
+            `<input type="radio" name="period">` in a `<fieldset>` with a `<legend>`, which is what
+            makes it a radio group to a screen reader and to the keyboard. */}
+        <div className="options">
+          <label>
+            <input
+              id="period-all"
+              type="radio"
+              name="period"
+              value="all"
+              defaultChecked
+            />
+            All years
+          </label>
+          <label>
+            <input id="period-early" type="radio" name="period" value="early" />
+            {periodRangeLabel("early", years, FILTER_SPLIT_YEAR)}
+          </label>
+          <label>
+            <input id="period-late" type="radio" name="period" value="late" />
+            {periodRangeLabel("late", years, FILTER_SPLIT_YEAR)}
+          </label>
+        </div>
       </fieldset>
 
       <div

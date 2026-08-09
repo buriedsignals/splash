@@ -184,6 +184,72 @@ describe("nothing caps the chart frame's own width", () => {
   });
 });
 
+// Everything in this block is the STRUCTURE of the window-fit rule, and none of it is the proof.
+// `scripts/verify-web.mjs` is the proof: it drives Chrome at seven viewport sizes and measures
+// `document.scrollHeight` against `window.innerHeight`, which is the only number a reader ever
+// experiences. What a string assertion here CAN do is stop the mechanism being deleted or quietly
+// rewritten into something that no longer clamps — measured before the fix, the seed came to 902px
+// tall in an 800px window at 1600px wide, 1051px in a 950px window at 1920px, and 1762px at
+// 3440x900; after it, 0px of overflow at every one of them, with the plot's height UNCHANGED
+// wherever the window already had room.
+describe("the beat fits the visible window", () => {
+  const css = () =>
+    buildCss({
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+  const rule = (selector: string) => {
+    const at = css().indexOf(selector);
+    return css().slice(at, css().indexOf("}", at));
+  };
+
+  it("should clamp the figure to the viewport height, with a vh fallback under the dvh", () => {
+    const figure = rule(".chart-figure {");
+    expect(figure).toContain("max-height: 100dvh");
+    // The fallback must come FIRST: both declarations are valid syntax to a parser that knows
+    // dvh, and the last one wins there; an engine that does not know dvh drops that line and
+    // keeps the vh above it. Reversed, the fallback would win everywhere.
+    expect(figure.indexOf("max-height: 100vh")).toBeLessThan(
+      figure.indexOf("max-height: 100dvh"),
+    );
+  });
+
+  it("should make the figure a flex column so the clamp has something to distribute", () => {
+    const figure = rule(".chart-figure {");
+    expect(figure).toContain("display: flex");
+    expect(figure).toContain("flex-direction: column");
+    // Still no cap on the width — the fit rule must not have reintroduced the defect the fluid
+    // redesign removed.
+    expect(figure).not.toContain("max-width");
+    expect(figure).toContain("width: 100%");
+  });
+
+  it("should let ONLY the plot absorb the shortfall — words are never squeezed", () => {
+    const stylesheet = css();
+    expect(stylesheet).toContain(
+      ".chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }",
+    );
+    const plot = rule(".chart-plot {");
+    expect(plot).toContain("flex: 0 1 auto");
+  });
+
+  it("should give the plot an explicit pixel floor rather than letting it shrink to a strip", () => {
+    const plot = rule(".chart-plot {");
+    const floor = plot.match(/min-height:\s*(\d+)px/);
+    expect(floor).not.toBeNull();
+    const px = Number(floor![1]);
+    // Above zero, because `min-height: 0` would also satisfy flexbox's own min-height:auto
+    // override while allowing a 3px "chart"; and below the 153px the seed measures at the
+    // narrowest width this genre verifies (375px), so the floor can never fire on a window this
+    // genre actually ships to and change a rendering that was already correct.
+    expect(px).toBeGreaterThan(0);
+    expect(px).toBeLessThan(153);
+  });
+});
+
 describe("the filter — default view complete, dimming only, native controls", () => {
   it("should default to the 'All years' radio checked, with the other two present but unchecked", () => {
     const markup = renderSeed();
@@ -221,6 +287,78 @@ describe("the filter — default view complete, dimming only, native controls", 
     // The segment landing on 2020 arrives in "late" — tagged by the arriving point, not the leaving one.
     const boundary = segs.find((s) => s.b.year === 2020);
     expect(boundary?.period).toBe("late");
+  });
+
+  // The considered treatment the owner asked for — plain radios read as a placeholder. What a
+  // string assertion can prove is that the treatment did not achieve its look by breaking the
+  // control: `scripts/verify-web.mjs` is what proves a real click selects, Tab reaches, and the
+  // focus ring changes actual pixels (that last check was itself first written wrong — it accepted
+  // the user agent's outline on an `opacity: 0` input, which paints nothing, and passed against a
+  // copy with the ring deleted).
+  it("should wrap the three options in one .options track without leaving the fieldset", () => {
+    const markup = renderSeed();
+    expect(markup).toContain('<fieldset class="chart-filter">');
+    expect(markup).toContain("<legend>Show</legend>");
+    expect(markup).toContain('<div class="options">');
+    // Three native radios in one named group — the thing that makes this a radio group to a
+    // keyboard and to a screen reader, before any styling is applied to it.
+    expect((markup.match(/type="radio"/g) ?? []).length).toBe(3);
+    expect((markup.match(/name="period"/g) ?? []).length).toBe(3);
+  });
+
+  it("should put the segmented treatment behind a :has() support guard, leaving native radios as the base", () => {
+    const css = buildCss({
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+    const at = css.indexOf("@supports selector(:has(*))");
+    expect(at).toBeGreaterThan(-1);
+    // The checked state is expressed through :has(); an engine without it must fall back to the
+    // radios rather than to three identical unlit pills over a hidden input.
+    expect(css).toContain(".chart-filter label:has(input:checked)");
+    // Still no width/height breakpoint anywhere — @supports is a capability query, not a rung.
+    expect(css).not.toContain("@media");
+  });
+
+  it("should never take a radio out of the focus order to make the pills look tidy", () => {
+    const css = buildCss({
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+    const at = css.indexOf(".chart-filter label input {");
+    const inputRule = css.slice(at, css.indexOf("}", at));
+    expect(inputRule).toContain("opacity: 0");
+    expect(inputRule).not.toContain("display: none");
+    expect(inputRule).not.toContain("visibility: hidden");
+    // A keyboard user must still see where they are: the ring goes on the pill, since the input
+    // it would otherwise land on is transparent.
+    expect(css).toContain(".chart-filter label:has(input:focus-visible)");
+    expect(css).toMatch(
+      /\.chart-filter label:has\(input:focus-visible\) \{ outline: \d+px solid/,
+    );
+  });
+
+  it("should paint the checked pill from the derived furniture, never a literal colour", () => {
+    const css = buildCss({
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+    const at = css.indexOf(".chart-filter label:has(input:checked)");
+    const checkedRule = css.slice(at, css.indexOf("}", at));
+    expect(checkedRule).toContain("background: var(--ink)");
+    expect(checkedRule).toContain("color: var(--ground)");
+    // The accent stays reserved for the subject — a control that borrowed it would make the one
+    // colour that means something in this frame also mean "you clicked here".
+    expect(checkedRule).not.toContain("var(--accent)");
   });
 
   it("should never gate the reference rule, the peak label or the end label behind data-period", () => {

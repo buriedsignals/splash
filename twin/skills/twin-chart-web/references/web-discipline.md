@@ -187,6 +187,63 @@ inset from the frame edge by `POINT_INSET` plus, now, `FRAME_PAD_PX` — the lab
 measures FARTHER from the frame edge than the point's own mark does, at every width checked, so it
 never needed its own padding rule, only the frame's.
 
+## The beat fits the visible window
+
+**A beat is one thing a reader looks at, not a document they scroll through. No web beat may be
+taller than the window it opens in.** This is the rule the fluid redesign above was missing, and it
+was missing precisely BECAUSE that redesign succeeded: once width filled its container and height
+followed from `aspect-ratio`, a wider viewport bought a taller chart, and past a certain width the
+chart grew off the bottom of the screen. Measured on the seed, before the fix:
+
+| viewport | figure height | overflow |
+| --- | --- | --- |
+| 3440 × 900 (ultrawide) | 1762px | **862px** |
+| 1920 × 950 (desktop) | 1051px | **101px** |
+| 1600 × 800 (laptop, wide window) | 902px | **102px** |
+| 1440 × 780 | 827px | **47px** |
+| 1280 × 720 | 752px | **32px** |
+
+The 102px missing at 1600 × 800 were not decoration: they were the x-axis row, the subject's own end
+label and the source line. A reader on a 16" laptop met a chart whose credit and whose final value
+were below the fold.
+
+**What it is NOT fixed with.** Not by capping the frame's width — that is precisely the defect the
+fluid redesign overturned, and re-introducing it to buy back height would trade one owner correction
+for the other. Not by shortening the canonical geometry either: the shape is the same at every
+window that has room for it, and a beat should not render differently on a tall screen than the
+author drew it.
+
+**The mechanism.** `.chart-figure` is a flex column with `max-height: 100dvh` (a `100vh`
+declaration first, for engines that do not know `dvh`; the later declaration simply wins where it
+parses). `max-height`, never `height`: a figure that already fits is untouched and reserves no empty
+space — which matters, because this file is embedded inside an article at least as often as it is
+opened on its own. Header, filter and source line are `flex: 0 0 auto`; the plot is `flex: 0 1 auto`
+with an explicit `min-height` floor. So when the column's preferred height exceeds the window, the
+PLOT absorbs the entire shortfall and no word is ever squeezed. The `<svg>`'s own
+`preserveAspectRatio="none"` follows the box down with no letterboxing and no clipping — the same
+stretch that already absorbs the fixed-gutter drift named above.
+
+**The cost, named rather than hidden.** A clamped plot is FLATTER than its canonical
+`aspect-ratio`, so a slope is read at a shallower angle than the author drew it. That is a real
+editorial cost and it is the right side of the trade: a shallower slope is still the same series,
+whereas an end label below the fold is a value the reader never saw. It only ever happens in a
+window too short for the canonical shape — measured after the fix, the plot's height is byte-for-byte
+unchanged at 2560 × 1440 (1175px), 1920 × 1080 (875px), 1728 × 1000 (786px) and 1024 × 768 (456px),
+and every one of the overflowing cases above now measures 0px of overflow.
+
+**The floor, and what happens under it.** `PLOT_FLOOR_PX` (`render-web.mjs`, `120`) is where the
+shrinking stops. It is set below the 153px the seed measures at 375px wide, so it cannot fire at any
+width this genre actually verifies at and cannot change a rendering that was already correct; only a
+window under roughly 300px tall reaches it, and such a window gets a scrollbar instead of a 20px
+strip pretending to be a line chart. It doubles as the override of flexbox's own `min-height: auto`,
+which would otherwise refuse to shrink the plot below its content size and re-open the overflow this
+rule closes.
+
+**What this rule does NOT claim.** It does not say the beat USES the window it is given. At 375 ×
+812 the seed still renders a 153px plot in an 812px window, because height follows width through
+`aspect-ratio` and a narrow viewport therefore buys a short chart. Fitting and filling are two
+different rules; only the first is settled here.
+
 ## The filter obeys the same rule interaction does
 
 **Nothing argument-bearing may sit behind a filter — the same rule "What must not become
@@ -212,6 +269,60 @@ nesting, `:has()` can, and is supported in every evergreen browser this genre ta
 touch parity fall out of using real `<input>` elements rather than inventing a custom widget: Tab
 reaches the group, arrow keys move within it, and a screen reader announces it as the radio group it
 is, all without a line of this genre's own script.
+
+**The control must look like a decision the newsroom made.** The first shipped filter was three
+default radio dots with a bare word beside each, and the owner's read of it was that it looked like
+a placeholder — an unfinished form sitting under a finished chart. It is: a native radio carries the
+browser's own visual language, not the beat's, and a reader who has just been shown a considered
+chart reads it as work that stopped early. So this genre draws a **segmented control** — the three
+options inside one rounded track, the chosen one inverted — and the whole treatment is layered
+**on top of** working native radios rather than replacing them:
+
+- The markup does not change. `<fieldset>` / `<legend>` / three `<input type="radio" name="period">`
+  inside `<label>`s, with one `<div class="options">` grouping them so the track can be drawn around
+  the three without enclosing the legend. It is still a radio group to a keyboard and to a screen
+  reader before a single rule is applied to it.
+- The input is made **transparent and stretched over its own pill** (`position: absolute; inset: 0;
+  opacity: 0`) — never `display: none`, never `visibility: hidden`, either of which would take it out
+  of the focus order and out of the accessibility tree. That is the line between styling a control
+  and destroying one.
+- Because the transparent input can no longer show its own focus ring, the ring goes on the pill
+  (`label:has(input:focus-visible)`). This is the single most easily-broken part of the treatment,
+  which is why the verification measures it in PIXELS rather than in computed style — see
+  "Verification" below.
+- The checked pill inverts to **ink on ground**, not to the accent. One semantic accent is reserved
+  for the subject (`visual-system.md`); a control that borrowed it would make the only colour that
+  means anything in the frame also mean "you clicked here". ink/ground is the maximum-contrast pair
+  `deriveFurniture` already computed for whatever ground the newsroom brought, so the inversion is
+  legible by construction — measured 21.00:1 on white, 16.43:1 on a dark navy ground, 18.08:1 on a
+  warm off-white.
+- Font weight does not change between states. A bolder checked label is wider, and the pills beside
+  it would shift sideways every time the reader changed their mind.
+- The pill is the target, and it is measured: 89 × 26 CSS px at both verification widths, clearing
+  WCAG 2.2 SC 2.5.8's 24 × 24 minimum. The treatment must not end up a SMALLER target than the plain
+  radio it replaced.
+- `<legend>` is floated. That is not a layout instruction — float is ignored outright inside a flex
+  container — it is the HTML rendering spec's own opt-out: only the first `<legend>` child that is
+  neither floated nor absolutely positioned becomes the "rendered legend" the browser lifts into the
+  fieldset's border. Floated, it stays an ordinary child and can sit on the same line as the options,
+  which is worth ~20px of the vertical budget the window-fit rule above is spending.
+
+**Guarded on `:has()`, and that guard is the whole reason this is safe.** The entire segmented block
+sits inside `@supports selector(:has(*))`. The checked state has to be expressed through `:has()`
+(the thing that is `:checked` is the input; the thing that must change is its parent label), so an
+engine without `:has()` could not draw a checked pill at all — and would otherwise be left with
+three identical unlit pills over an invisible input, which is worse than no treatment. There, the
+whole block is dropped and the reader gets the plain native radios, which state their own
+checked-ness with no help. That is not a second design to maintain: it is the design this genre
+already had, and it is the same engine in which the dimming rule above could not have worked either.
+An `@supports` capability query is not a `@media` breakpoint — the "no rungs" rule above is
+untouched.
+
+**What the treatment does NOT cover, stated rather than hidden.** Forced-colors / high-contrast
+mode: the pill's background is overridden by the OS and the checked state loses its only signal.
+Nothing else in this genre honours forced colours either — the chart is SVG with explicit fills,
+which that mode does not touch — so handling it here alone would be a half-measure that made the
+control look covered while the chart beside it was not. It is a real gap, named here, not closed.
 
 ## What must not become interactive
 
@@ -267,8 +378,48 @@ only because this genre, uniquely among the three, has children that need their 
 
 ## Verification
 
-Applied by driving a real browser at SEVERAL WIDTHS, not by reading the markup, not by trusting a
-unit test, and not by reading a computed-style value in isolation. `twin-doctrine` states the "drive
+**There is a script, and it is the evidence: `scripts/verify-web.mjs`.** This section used to state
+the rule and then leave the doing to whoever remembered — which is how a genre ends up with
+"hover works" as a sentence somebody wrote after looking once. It now drives Chrome and reports 153
+measurements: the window fit at seven viewport sizes, real pointer events over every reading at two,
+real clicks on every filter option with scripting on AND with JavaScript disabled, and the control's
+own keyboard reach, focus ring and contrast. `bun skills/twin-chart-web/scripts/verify-web.mjs
+--file <beat.html> --shots --out <dir>` — exit 0 only when every check passed.
+
+**It may only dispatch REAL input, and that constraint is the point.** This genre has already
+shipped, once, a build where hover was completely dead: `.overlay` had no `pointer-events: none`, so
+it swallowed every mouse and touch event over the whole plot before `.hit-area` beneath it saw one.
+Nothing caught it. The markup was correct, every attribute a unit test could assert was present, and
+**keyboard focus still worked — because `element.focus()` does not hit-test**. A verification allowed
+to call `.focus()`, `.click()` or `dispatchEvent(new MouseEvent(...))` would have passed in that
+world, cheerfully. So the script uses only `page.mouse.move` and `page.mouse.click` at real client
+coordinates, hit-tested by the compositor exactly as a reader's own pointer is. One probe is placed
+deliberately on the CENTRE OF THE PEAK LABEL — an `.overlay` child, the precise pixel the old defect
+lived at — and requires the tooltip to answer with that year's reading.
+
+**A check that cannot go red is not a check, and one of these could not.** Every check in that
+script was run against a deliberately broken COPY of the rendered beat (`/tmp`, never the tree) to
+confirm it fails there: `pointer-events: none` deleted → 52 failures, naming `div.overlay` as the
+topmost element at the plot centre; the `max-height` clamp deleted → 13, reporting 863px of overflow
+at 3440 × 900; the dimming rules neutralised → 6; the radio set to `display: none` → 4. **The
+focus-ring check survived its mutant.** It read computed style and accepted an outline on EITHER the
+pill or the input — and the input, being `opacity: 0`, still reported the user agent's own
+`outline: auto 1px`, which paints nothing at all. It was rewritten to screenshot the control
+unfocused and focused and require the two frames to DIFFER; against the mutant it now reports "5048B
+vs 5048B — IDENTICAL, so nothing is drawn for focus". **A computed style is a claim about a box;
+only a rendered frame is a claim about what a reader can see.** That lesson generalises past this
+one check and is the same one the "trust the pixels over any intermediate number" rule below states.
+
+**What the script does not reach, so a human still looks.** It reads text, geometry, opacity and
+colour; it does not look at the picture. A label colliding with a line, a clipped mark, a squat plot
+on a phone — none of that is visible from inside it, and `--shots` exists so those frames get looked
+at by an eye. It drives one engine (Chrome); `:has()`, `dvh` and `@supports selector()` are all
+Baseline but none is verified here on Safari or Firefox. Touch is exercised as a pointer, not as a
+finger.
+
+The rule the script implements, unchanged: verify by driving a real browser at SEVERAL WIDTHS, not
+by reading the markup, not by trusting a unit test, and not by reading a computed-style value in
+isolation. `twin-doctrine` states the "drive
 a real browser" rule as universal and it binds harder here than anywhere else in this twin: a static
 render can be checked with a PNG; an interactive, fluid one cannot, because the thing being verified
 — does hovering point X show point X's own value, does Tab actually reach it, does the frame
