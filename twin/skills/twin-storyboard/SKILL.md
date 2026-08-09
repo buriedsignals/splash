@@ -64,8 +64,9 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/exchange.md` | The six movements of the editorial exchange, the five hand-of-the-journalist questions with their destinations, and the discipline list — what a conversation running this phase must actually do |
-| Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta, profile?)` returns the list of reasons Gate 2 has not closed (empty means it has) |
+| Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta, profile?, capabilities?)` returns the list of reasons Gate 2 has not closed (empty means it has) |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — not a fact-checker, not a conformance engine, one narrow class of error |
+| Capability gate | `scripts/capability-gap.mjs` | `capabilityGap(capabilities, medium)` says whether a chosen slot's medium is one the environment can actually honour — a **carried copy** of `splash-twin`'s own function (see Files below), not an import |
 
 ## How it works (the shape)
 
@@ -87,8 +88,17 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    it against (malformed — a real choice can only be confirmed from a list that was actually
    shown), or a slot whose `chosen` value is not one of its own listed `candidates`. Given a second
    argument — the story's data profile — it also runs `groundTakeaway` on the confirmed takeaway
-   and adds a gate error for every claim the data actively contradicts. An empty array is the only
-   "yes" — Gate 2 closes into this file, or it has not closed.
+   and adds a gate error for every claim the data actively contradicts. Given a **third** argument —
+   `capabilities`, the same `{map, datawrapper, hostedEmbed}` report `runPreflight` returns
+   (`skills/splash-twin/scripts/preflight.mjs`), handed in by whoever already ran preflight this
+   session — it also refuses a chosen slot whose `medium` names a capability the environment cannot
+   honour, appended in the same `slot <id>: …` shape as every other refusal here, in the exact
+   journalist-facing wording `capabilityGap` emits, e.g. `slot 1: map beats are unavailable: no
+   MapTiler key` — never a generic "environment failed". **Both are optional, and only checked
+   together**: a slot that never named a `medium`, or a caller that never passed `capabilities`,
+   is untouched — every existing `STORYBOARD.md` and every existing two-argument call keeps working
+   exactly as it did before this capability gate existed. An empty array is the only "yes" — Gate 2
+   closes into this file, or it has not closed.
 5. **`groundTakeaway`** checks the takeaway text against `profile` for exactly one class of
    failure: a number or a direction the frozen data itself contradicts. It is not a fact-checker
    (it knows nothing outside `profile`) and not a conformance engine (it never looks at a rendered
@@ -114,11 +124,18 @@ const { meta, prose } = parseStoryboard(text);
 // where available (see ground-claim.mjs's header comment for the exact shape). Omit it and
 // checkStoryboard behaves exactly as it did before claim-grounding existed.
 const profile = JSON.parse(await readFile("stories/annemasse-rain/source/profile.json", "utf8"));
-const errors = checkStoryboard(meta, profile);
+
+// capabilities is optional too — the {map, datawrapper, hostedEmbed} report runPreflight already
+// produced this session (skills/splash-twin/scripts/preflight.mjs). Omit it, or omit `medium` on
+// every slot, and checkStoryboard behaves exactly as it did before this capability gate existed.
+const { capabilities } = await runPreflight({ root, env: process.env, fetchFn: fetch });
+const errors = checkStoryboard(meta, profile, capabilities);
 
 if (errors.length > 0) {
   // Gate 2 is not closed — surface `errors` to the exchange, do not proceed to production. A
-  // takeaway the frozen data contradicts is one of these reasons now, not a silent pass-through.
+  // takeaway the frozen data contradicts is one of these reasons now, not a silent pass-through —
+  // and so is a chosen slot whose medium the environment cannot honour, e.g.
+  // "slot 1: map beats are unavailable: no MapTiler key".
 } else {
   // meta.slots[*].chosen names the candidate production reads.
 }
@@ -142,7 +159,19 @@ if (errors.length > 0) {
 - `scripts/storyboard.mjs` — `parseStoryboard`, `checkStoryboard`.
 - `scripts/ground-claim.mjs` — `groundTakeaway`, the claim-grounding guard `checkStoryboard` calls
   when given a profile.
+- `scripts/capability-gap.mjs` — `capabilityGap(capabilities, medium)`, the guard `checkStoryboard`
+  calls when given `capabilities`. This is a **carried copy** of `splash-twin`'s own
+  `capabilityGap` (`skills/splash-twin/scripts/preflight.mjs`), not an import — a skill directory
+  has to stay copy-pasteable on its own, the same rule `genre-catalog.mjs` follows for
+  `twin-deliver`'s `FORMS_BY_GENRE`. **Do not delete it as duplication**: `test/capability-gap-parity.test.ts`
+  is the guard against the two copies drifting apart, and it is the reason this file is allowed to exist
+  twice.
 - `test/storyboard.test.ts` — `bun:test` coverage, including a regression test locking the
-  `null`/`~` sentinel resolution described in the gotcha above.
+  `null`/`~` sentinel resolution described in the gotcha above, and the medium/capability gate.
 - `test/ground-claim.test.ts` — `bun:test` coverage for `groundTakeaway`, including the real
   Norway/Swiss cases from `twin/TRIAL-THREE-BEATS.md` that motivated it.
+- `test/capability-gap-parity.test.ts` — asserts this skill's `capabilityGap` copy agrees with
+  `splash-twin`'s original across the full `{map, datawrapper, hostedEmbed} × {open, closed,
+  absent}` matrix (the one place a cross-skill import is legitimate: a `test/` directory asserting
+  two deliberate duplicates still agree — see `skills/splash-twin/test/helper-parity.test.ts`, the
+  pattern this follows).
