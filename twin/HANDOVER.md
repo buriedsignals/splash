@@ -585,6 +585,22 @@ written here in his priority order so a fresh session picks them up without re-d
    against the house ground and an unreadable chart is worse than no proposal. Subject-fit means a
    grounded convention (green for renewables, grey for coal), not a colour that "feels right" —
    when no convention applies, the house theme wins.
+
+   **Started 2026-08-09 (`d3012f71`).** `twin/skills/twin-palette/scripts/palette.mjs` exists and
+   holds the whole mechanism: `proposePalette` (house option + subject option, each with its
+   provenance, its reasoning and its measured contrast), `matchConvention` over a deliberately
+   short table of conventions, `adjustToContrast` (a remedy shown beside a failing option, never
+   swapped in), and `readPalette`, which throws naming every directory it searched rather than
+   defaulting. The accent floor is WCAG 2.2 SC 1.4.11 non-text, 3:1 — not 4.5:1, because the
+   accent carries no text; the words already clear 4.5:1 through `deriveFurniture`. Subject-fit
+   is grounded on Lin, Fortuna, Kulkarni, Stone & Heer, *Selecting Semantically-Resonant Colors
+   for Data Visualization*, Computer Graphics Forum 32(3), Proc. EuroVis 2013 — expert-chosen
+   resonant colours measurably speed up chart reading. **What remains:** `format-proposal.mjs`
+   (the question the journalist answers, mirroring `twin-newsroom-charter`'s), the two
+   `references/` files, `assets/PALETTE.example.md`, `SKILL.md`, tests, a `contrast` family added
+   to `helper-parity.test.ts`, and the threading itself — a duplicated `readPalette` in each craft
+   skill plus a Quick start that calls it instead of showing hex literals. Then one real beat
+   re-rendered under a real house profile, as proof.
 2. **A web beat must fit the visible window** — no scrolling inside the visual. Today width fills
    and height grows with it, so a wide viewport produces a beat taller than the screen.
 3. **Verify hovers really work**, in both web genres, by dispatching real pointer events at real
