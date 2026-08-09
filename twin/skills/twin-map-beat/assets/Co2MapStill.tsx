@@ -138,10 +138,19 @@ export function Co2MapStill({
   // pushed the caveat's second line off the canvas — the kind of clipped layer this twin's chart
   // genre found four of in the engine it replaces, every one by eye and none by a test.
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 30;
-  const sourceBottom = sourceTop + (sourceLines.length - 1) * SOURCE.lead;
+  const titleBottom = titleTop + (titleLines.length - 1) * TITLE.lead;
 
-  const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
+  // THE SOURCE IS NOW THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, in the same place on every graphic this project ships. It used to hang directly under
+  // the title. Nothing here is a translation of a `<text>`: this column is laid out from both ends,
+  // so the source joining the bottom half pushes the WHOLE bottom stack (caveat, no-data swatch,
+  // legend bar, caption) up by exactly the source block's own height. The plate is a fixed square
+  // and does not move; what shrinks is the legend's available room.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
   const noDataY = caveatTop - NOTE.fontSize - 24;
   const barBottom = (anyNoData ? noDataY : caveatTop) - 34;
   const barTop = barBottom - LEGEND.barHeight;
@@ -152,10 +161,16 @@ export function Co2MapStill({
 
   // Loud, not silent: if the two halves meet, something overlaps, and an overlap in a static frame
   // is the defect a reader sees first.
-  if (captionY - 14 < sourceBottom)
+  //
+  // RE-POINTED when the source moved to the bottom. This used to compare the legend against
+  // `sourceBottom` — with the source down at the frame's floor that comparison is either always
+  // true or always false, which is a guard that cannot go red, and this branch forbids those. The
+  // two halves that can now actually meet are the TITLE block and the top of the bottom stack, so
+  // that is what it measures, and the message names those two rather than the source.
+  if (captionY - 14 < titleBottom)
     throw new Error(
-      `the column does not fit: the source ends at ${sourceBottom} and the legend starts at ${captionY}. ` +
-        `Shorten the title or the source, or lower LEGEND.barHeight (${LEGEND.barHeight}).`,
+      `the column does not fit: the title ends at ${titleBottom} and the legend starts at ${captionY}. ` +
+        `Shorten the title, the source or the caveat, or lower LEGEND.barHeight (${LEGEND.barHeight}).`,
     );
 
   // ── The subject, in the plate's coordinate space, scaled once into the drawn one.

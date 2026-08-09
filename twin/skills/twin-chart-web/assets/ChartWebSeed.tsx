@@ -642,6 +642,8 @@ export const FRAME: WebFrame = {
 type PreviewPad = { top: number; right: number; bottom: number; left: number };
 
 const PREVIEW_WIDTH = 900;
+/** The leading between two wrapped lines of the source block. */
+const SOURCE_LEAD = 19;
 
 export function ChartWebPreviewSvg({
   data,
@@ -687,13 +689,28 @@ export function ChartWebPreviewSvg({
   const caveatLines = wrap(CAVEAT, width - pad * 2, subtitleFont, measure);
   const caveatBaseline = titleBaseline + (titleLines.length - 1) * 34 + 30;
   const sourceLines = wrap(source, width - pad * 2, sourceFont, measure);
-  const sourceBaseline = caveatBaseline + (caveatLines.length - 1) * 20 + 22;
 
   const last = data[data.length - 1];
   const endLabel = `${subject} · ${last.value} ${UNIT}`;
-  const plotTop = sourceBaseline + (sourceLines.length - 1) * 19 + 34;
+  // The plot starts below the CAVEAT, the last header line — never below the source, which now
+  // sits at the frame's own bottom margin the way the shipped HTML has always drawn it (the
+  // `<p class="chart-source">` is the figure's last child). This preview drew the source in the
+  // header while the genre it documents shipped it at the bottom, and had contradicted its own
+  // genre since it was written.
+  const plotTop = caveatBaseline + (caveatLines.length - 1) * 20 + 34;
   const plotBottom = plotTop + 340;
-  const height = plotBottom + 64;
+  // The frame is sized from its own contents here (this is a thumbnail, not an export size), so
+  // the footer reserve is the x-axis label band plus the whole source block plus clear air.
+  const X_TICK_DROP = 24;
+  const height =
+    plotBottom +
+    X_TICK_DROP +
+    10 +
+    sourceLines.length * SOURCE_LEAD +
+    pad -
+    SOURCE_LEAD +
+    sourceFont.fontSize;
+  const sourceBaseline = height - pad - (sourceLines.length - 1) * SOURCE_LEAD;
 
   const referenceValue =
     data.find((d) => d.year === REFERENCE_YEAR)?.value ?? data[0].value;
@@ -774,7 +791,7 @@ export function ChartWebPreviewSvg({
         <text
           key={line}
           x={pad}
-          y={sourceBaseline + i * 19}
+          y={sourceBaseline + i * SOURCE_LEAD}
           fill={muted}
           fontSize={sourceFont.fontSize}
         >
@@ -817,7 +834,7 @@ export function ChartWebPreviewSvg({
           <text
             key={year}
             x={p.x}
-            y={plotBottom + 24}
+            y={plotBottom + X_TICK_DROP}
             fill={muted}
             fontSize={axisFont.fontSize}
             textAnchor="middle"

@@ -27,6 +27,14 @@ const PAD = 40;
 const TITLE = { fontSize: 26, fontWeight: 700, lead: 34 };
 const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 13, fontWeight: 400 };
+/** How far below the plot's own floor an x-axis tick label's BASELINE sits. Named, because two
+ *  places have to agree about it: the `<text y>` that draws the label, and `padding.bottom`, which
+ *  has to reserve room for that label AND for the source line under it. When the source moved to
+ *  the frame's bottom margin the first arithmetic tried kept this as a literal in one place only —
+ *  and the rendered PNG showed "2016" and "2018" struck through by the source string. */
+const X_TICK_DROP = 24;
+/** The clear air between the bottom of the x-axis label band and the top of the source line. */
+const X_AXIS_TO_SOURCE_GAP = 8;
 const LABEL = { fontSize: 15, fontWeight: 600 };
 const UNIT = "mm"; // this story's unit. The next beat's is not mm — it rewrites this file.
 /** How many labelled y gridlines a STATIC frame asks for. d3 treats it as a hint and returns the
@@ -229,8 +237,12 @@ export function ChartSeed({
   // The header is laid out first, because the plot starts where the header stops.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title. It is anchored to
+  // `height - PAD` — the same inset the title hangs off at the top, on the same x — so the credit
+  // is in a constant place on every graphic this project ships, whatever the header did above it.
+  // See references/static-discipline.md, "The source on the frame's bottom margin," for the
+  // reversal and the cost it accepts.
+  const sourceBaseline = height - PAD;
 
   // Both gutters are measured from the widest string that will actually be drawn in them.
   const present = data.filter(
@@ -246,9 +258,24 @@ export function ChartSeed({
     i === all.length - 1 ? `${v} ${UNIT}` : `${v}`,
   );
   const padding = {
-    top: sourceBaseline + 34,
+    // The plot starts below the LAST HEADER LINE, never below the source — that dependency is what
+    // moving the source would otherwise have dragged the whole plot down the frame with it. The
+    // header gives back the 26px it used to reserve to separate title from source.
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 34,
     right: PAD + 12 + measureText(endLabel, LABEL),
-    bottom: PAD + 24,
+    // And the floor is DERIVED from where the source now sits, not guessed: the x-axis label band
+    // has to end above the source's own ink. Measured, not assumed — the first attempt reserved
+    // `PAD + SOURCE.fontSize + 14` (68px, on the argument that a 14px line 40px above the floor
+    // mostly fits a reserve that was already there) and the rendered preview showed the source
+    // struck straight through "2016" and "2018". 86px is what the frame actually needs.
+    // Nothing HORIZONTAL moves in any of this — no measured gutter is re-measured, which is what
+    // keeps the change out of the label-collision class this project keeps finding by eye.
+    bottom:
+      height -
+      sourceBaseline +
+      SOURCE.fontSize +
+      X_TICK_DROP +
+      X_AXIS_TO_SOURCE_GAP,
     left:
       PAD +
       10 +
@@ -314,7 +341,7 @@ export function ChartSeed({
         <text
           key={tick.year}
           x={tick.x}
-          y={plot.bottom + 24}
+          y={plot.bottom + X_TICK_DROP}
           fill={muted}
           fontSize={AXIS.fontSize}
           textAnchor="middle"

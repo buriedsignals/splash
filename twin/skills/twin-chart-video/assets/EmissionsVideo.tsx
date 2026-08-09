@@ -44,6 +44,12 @@ const PAD = 72;
 const TITLE = { fontSize: 46, fontWeight: 700, lead: 58 };
 const SOURCE = { fontSize: 22, fontWeight: 400 };
 const AXIS = { fontSize: 22, fontWeight: 400 };
+/** How far below the plot's own floor an x-axis tick label's BASELINE sits. Named, because two
+ *  places have to agree about it: the `<text y>` that draws the label, and `padding.bottom`, which
+ *  reserves room for that label AND for the source line now sitting under it. */
+const X_TICK_DROP = 38;
+/** The clear air between the bottom of the x-axis label band and the top of the source line. */
+const X_AXIS_TO_SOURCE_GAP = 10;
 const LABEL = { fontSize: 28, fontWeight: 600 };
 const NOTE = { fontSize: 22, fontWeight: 400 };
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -242,8 +248,12 @@ export function EmissionsVideo({
   // ── Layout. Identical at every frame: the build changes what is visible, never where it sits.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
-  const sourceBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 46;
+  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
+  // same inset the title hangs off at the top, on the same x. It stays inside the furniture
+  // opacity group, so no timing contract moves: it fades in with the title at `establish` and is
+  // still there at the last frame. See twin-chart-beat/references/static-discipline.md, "The
+  // source on the frame's bottom margin."
+  const sourceBaseline = height - PAD;
 
   const endReading = data[data.length - 1];
   const endLabel = `${endReading.year} · ${fr(endReading.mt)} ${UNIT}`;
@@ -251,9 +261,18 @@ export function EmissionsVideo({
     i === all.length - 1 ? `${fr(v, 0)} ${UNIT}` : fr(v, i === 1 ? 1 : 0),
   );
   const padding = {
-    top: sourceBaseline + 60,
+    // The plot starts below the LAST TITLE LINE, never below the source — the old dependency is
+    // what would otherwise have dragged the plot to the frame's floor with it.
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 60,
     right: PAD + 16 + measureText(endLabel, LABEL),
-    bottom: PAD + 44,
+    // Derived from where the source now sits: the x-axis label band has to end above the source's
+    // own ink, with clear air between them.
+    bottom:
+      height -
+      sourceBaseline +
+      SOURCE.fontSize +
+      X_TICK_DROP +
+      X_AXIS_TO_SOURCE_GAP,
     left: PAD + 14 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 
@@ -377,7 +396,7 @@ export function EmissionsVideo({
           <text
             key={tick.year}
             x={tick.x}
-            y={g.plot.bottom + 38}
+            y={g.plot.bottom + X_TICK_DROP}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="middle"

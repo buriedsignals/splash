@@ -37,7 +37,12 @@ import { MAP_TIMING, progressOf, type BeatTiming } from "./timing";
 const FRAME = { width: 1080, height: 1080 };
 const PAD = 72;
 const MAP = 620;
-const MAP_Y = 300;
+// Where the plate's own top edge sits. It used to be 300, when the header above it carried the
+// title AND the source. The source moved to the frame's bottom margin (B1.1), which freed a row up
+// here and needed one down there — so the plate rises by exactly that much rather than the bottom
+// stack being squeezed into a band that could not hold it. The guard below measures the result
+// instead of trusting this number.
+const MAP_Y = 250;
 const COLUMN = { x: MAP + PAD + 40, right: FRAME.width - PAD };
 
 const TITLE = { fontSize: 40, fontWeight: 700, lead: 50 };
@@ -174,7 +179,6 @@ export function Co2MapVideo({
   );
   const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
   const titleTop = PAD + TITLE.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 40;
 
   const value = new Map(rows.map((row) => [row.key, row.value]));
   const order = revealOrder(rows);
@@ -186,8 +190,24 @@ export function Co2MapVideo({
   const atValue = (v: number) =>
     barBottom - scalePosition(v, breaks) * LEGEND.barHeight;
 
-  const noDataY = MAP_Y + MAP + 52;
-  const caveatTop = noDataY + 38;
+  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
+  // visual, the same place on every graphic this project ships, and it carries the basemap credit
+  // with it, unsplit. It used to hang directly under the title. The bottom stack (no-data swatch,
+  // caveat, source) is laid out UPWARD from `FRAME.height - PAD`; the plate is a fixed square at
+  // `MAP_Y` and does not move.
+  const sourceBottom = FRAME.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
+  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
+  const noDataY = caveatTop - NOTE.fontSize - 22;
+
+  // Loud, not silent: the plate's own floor and the bottom stack must not meet. The plate is
+  // fixed, so this is the one collision a longer source or caveat can actually cause.
+  if (noDataY - 17 < MAP_Y + MAP + 16)
+    throw new Error(
+      `the bottom stack does not fit: the plate ends at ${MAP_Y + MAP} and the stack starts at ${noDataY}. ` +
+        `Shorten the source or the caveat, or raise MAP_Y (${MAP_Y}).`,
+    );
 
   const subjectShape = geometry.shapes.find((shape) => shape.key === subject);
   if (!subjectShape) throw new Error(`no shape for the subject ${subject}`);
