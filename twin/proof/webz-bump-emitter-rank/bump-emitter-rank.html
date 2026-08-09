@@ -1,0 +1,639 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>India has risen from eighth to third among the world's biggest CO₂ emitters</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: #0B7A75;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { max-width: 640px; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
+   for the test a beat applies before shipping one at all. Native radios: reachable and operable
+   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
+   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
+   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
+   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
+   every hover/focus answer honest regardless of which radio is checked. */
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
+   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
+   rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: three default blue dots with a bare word beside
+   each, indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with three identical unlit pills and a hidden
+   input, the entire block is dropped there and the reader gets the plain native radios above,
+   which state their own checked-ness without any help. That is the same engine in which this
+   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
+   the fallback is not a second design to maintain -- it is the design this genre already had.
+   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
+   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
+   announces it as a radio group, and the CSS-only dimming still fires with the inline script
+   absent. The input is made transparent and stretched over its own pill -- never display:none or
+   visibility:hidden, either of which would take it out of the focus order and out of the
+   accessibility tree.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrows it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
+   peak marker, the end point or any of the HTML furniture above, none of which carries a
+   data-period attribute at all and so can never match these selectors. :has() on the
+   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
+   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
+   supported in every evergreen browser this genre targets. */
+.chart-figure:has(#period-early:checked) .seg[data-period="late"],
+.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
+.chart-figure:has(#period-late:checked) .seg[data-period="early"],
+.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+
+.bump-figure .axis-title {
+  flex: 0 0 auto;
+  margin: 10px 0 6px;
+  font-size: var(--axis-size);
+  color: var(--muted);
+}
+.chart-plot.bump-plot {
+  grid-template-columns: var(--y-gutter) 1fr var(--r-gutter);
+  min-height: var(--min-plot-h);
+}
+.term-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.crossing-ring {
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  border: 2px solid;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+/* Two lines, the country over the year — see BumpWeb.tsx's own caption comment for the measurement
+   that forced it, and .flip for the side a caption takes when the right one has no room. */
+.crossing-label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  font-size: var(--note-size);
+  font-weight: 500;
+  white-space: nowrap;
+  transform: translateY(-50%) translateX(14px);
+}
+.crossing-label.flip {
+  align-items: flex-end;
+  transform: translateY(-50%) translateX(-14px) translateX(-100%);
+}
+.name-label {
+  position: absolute;
+  font-size: var(--label-size);
+  white-space: nowrap;
+  transform: translateY(-50%) translateX(10px);
+}
+svg.chart .line { transition: opacity 120ms ease; }
+.name-label { transition: opacity 120ms ease; }
+.bump-figure.is-tracing svg.chart .line { opacity: 0.2; }
+.bump-figure.is-tracing svg.chart .line.is-active,
+.bump-figure.is-tracing svg.chart .line.subject { opacity: 1; }
+.bump-figure.is-tracing .name-label { opacity: 0.4; }
+.bump-figure.is-tracing .name-label.is-active,
+.bump-figure.is-tracing .name-label.subject { opacity: 1; }
+.node { cursor: pointer; }
+svg.chart circle.node.node-active { fill: var(--muted); }
+.node:focus { outline: none; }
+/* The ring hugs the mark — outline-offset is 0, not the 2px the rest of this genre uses. An outline
+   is a FIXED number of CSS pixels around a mark whose own size is in STRETCHED user units, so every
+   pixel of offset has to be bought back as viewBox inset at the width where the horizontal scale is
+   smallest (MARK_INSET_X, BumpWeb.tsx, carries the arithmetic). An SVG clips to its viewBox and
+   overflow:visible is not the way out: it was tried, and it cost the window fit — 767px of vertical
+   overflow at 3440 x 900, because a visible overflow on the stretched svg re-enters the document's
+   own height and defeats the flex clamp the fit rule depends on. Measured, then reverted. */
+.node:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; }
+</style>
+</head>
+<body>
+<figure class="chart-figure bump-figure" style="--ground:#FFFFFF;--accent:#0B7A75;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:13px;--label-weight:600;--note-size:12px"><div class="chart-header"><h2 class="chart-title">India has risen from eighth to third among the world&#x27;s biggest CO₂ emitters</h2><p class="chart-caveat">World rank by annual CO₂ emissions, 1990–2024. Only the 6 countries that held a top-10 place in every year are drawn; other countries hold the ranks left empty. Rank is position, not size. India had already passed the United Kingdom in 1991 and Ukraine in 1992, which have since left the top 10. Point at a line — or Tab into the chart — to follow one country through the crossings.</p></div><p class="axis-title">World rank</p><div class="chart-plot bump-plot" style="--y-gutter:23px;--r-gutter:99px;--x-axis-h:26px;--min-plot-h:365px;aspect-ratio:882 / 366"><div class="y-axis"><span class="axis-label y" style="top:2.9%;color:#616161">1</span><span class="axis-label y" style="top:13.4%;color:#616161">2</span><span class="axis-label y" style="top:23.9%;color:#616161">3</span><span class="axis-label y" style="top:34.3%;color:#616161">4</span><span class="axis-label y" style="top:44.8%;color:#616161">5</span><span class="axis-label y" style="top:55.2%;color:#616161">6</span><span class="axis-label y" style="top:65.7%;color:#616161">7</span><span class="axis-label y" style="top:76.1%;color:#616161">8</span><span class="axis-label y" style="top:86.6%;color:#616161">9</span><span class="axis-label y" style="top:97.1%;color:#616161">10</span></div><svg xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 760 340" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>An interactive bump chart of world rank by annual CO₂ emissions, 1990 to 2024, for the 6 countries inside the top 10 in every one of those years. The top row is the world&#x27;s largest emitter. India&#x27;s line, the only one in the accent colour, starts at rank 8 in 1990 and climbs to rank 3 by 2024; its crossings are ringed and captioned Germany in 1999, Japan in 2006 and Russia in 2009. The other lines are China, the United States, Russia, Japan and Germany, each named at its final rank. Every country&#x27;s rank in every year is reachable on its own: pointing at the chart, or tabbing to a reading, names the country, the year and its rank that year.</desc><rect x="0" y="0" width="760" height="340" fill="#FFFFFF"></rect><line x1="0" x2="760" y1="10" y2="10" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="45.55555555555556" y2="45.55555555555556" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="81.11111111111111" y2="81.11111111111111" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="116.66666666666666" y2="116.66666666666666" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="152.22222222222223" y2="152.22222222222223" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="187.77777777777777" y2="187.77777777777777" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="223.33333333333331" y2="223.33333333333331" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="258.8888888888889" y2="258.8888888888889" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="294.44444444444446" y2="294.44444444444446" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="760" y1="330" y2="330" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><path class="line" data-country="China" d="M 18.00 81.11 L 39.29 45.56 L 60.59 45.56 L 81.88 45.56 L 103.18 45.56 L 124.47 45.56 L 145.76 45.56 L 167.06 45.56 L 188.35 45.56 L 209.65 45.56 L 230.94 45.56 L 252.24 45.56 L 273.53 45.56 L 294.82 45.56 L 316.12 45.56 L 337.41 45.56 L 358.71 10.00 L 380.00 10.00 L 401.29 10.00 L 422.59 10.00 L 443.88 10.00 L 465.18 10.00 L 486.47 10.00 L 507.76 10.00 L 529.06 10.00 L 550.35 10.00 L 571.65 10.00 L 592.94 10.00 L 614.24 10.00 L 635.53 10.00 L 656.82 10.00 L 678.12 10.00 L 699.41 10.00 L 720.71 10.00 L 742.00 10.00" fill="none" stroke="#616161" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><path class="line" data-country="United States" d="M 18.00 10.00 L 39.29 10.00 L 60.59 10.00 L 81.88 10.00 L 103.18 10.00 L 124.47 10.00 L 145.76 10.00 L 167.06 10.00 L 188.35 10.00 L 209.65 10.00 L 230.94 10.00 L 252.24 10.00 L 273.53 10.00 L 294.82 10.00 L 316.12 10.00 L 337.41 10.00 L 358.71 45.56 L 380.00 45.56 L 401.29 45.56 L 422.59 45.56 L 443.88 45.56 L 465.18 45.56 L 486.47 45.56 L 507.76 45.56 L 529.06 45.56 L 550.35 45.56 L 571.65 45.56 L 592.94 45.56 L 614.24 45.56 L 635.53 45.56 L 656.82 45.56 L 678.12 45.56 L 699.41 45.56 L 720.71 45.56 L 742.00 45.56" fill="none" stroke="#616161" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><path class="line" data-country="Russia" d="M 18.00 45.56 L 39.29 81.11 L 60.59 81.11 L 81.88 81.11 L 103.18 81.11 L 124.47 81.11 L 145.76 81.11 L 167.06 81.11 L 188.35 81.11 L 209.65 81.11 L 230.94 81.11 L 252.24 81.11 L 273.53 81.11 L 294.82 81.11 L 316.12 81.11 L 337.41 81.11 L 358.71 81.11 L 380.00 81.11 L 401.29 81.11 L 422.59 116.67 L 443.88 116.67 L 465.18 116.67 L 486.47 116.67 L 507.76 116.67 L 529.06 116.67 L 550.35 116.67 L 571.65 116.67 L 592.94 116.67 L 614.24 116.67 L 635.53 116.67 L 656.82 116.67 L 678.12 116.67 L 699.41 116.67 L 720.71 116.67 L 742.00 116.67" fill="none" stroke="#616161" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><path class="line" data-country="Japan" d="M 18.00 116.67 L 39.29 116.67 L 60.59 116.67 L 81.88 116.67 L 103.18 116.67 L 124.47 116.67 L 145.76 116.67 L 167.06 116.67 L 188.35 116.67 L 209.65 116.67 L 230.94 116.67 L 252.24 116.67 L 273.53 116.67 L 294.82 116.67 L 316.12 116.67 L 337.41 116.67 L 358.71 152.22 L 380.00 152.22 L 401.29 152.22 L 422.59 152.22 L 443.88 152.22 L 465.18 152.22 L 486.47 152.22 L 507.76 152.22 L 529.06 152.22 L 550.35 152.22 L 571.65 152.22 L 592.94 152.22 L 614.24 152.22 L 635.53 152.22 L 656.82 152.22 L 678.12 152.22 L 699.41 152.22 L 720.71 152.22 L 742.00 152.22" fill="none" stroke="#616161" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><path class="line" data-country="Germany" d="M 18.00 152.22 L 39.29 152.22 L 60.59 152.22 L 81.88 152.22 L 103.18 152.22 L 124.47 152.22 L 145.76 152.22 L 167.06 152.22 L 188.35 152.22 L 209.65 187.78 L 230.94 187.78 L 252.24 187.78 L 273.53 187.78 L 294.82 187.78 L 316.12 187.78 L 337.41 187.78 L 358.71 187.78 L 380.00 187.78 L 401.29 187.78 L 422.59 187.78 L 443.88 187.78 L 465.18 187.78 L 486.47 187.78 L 507.76 187.78 L 529.06 187.78 L 550.35 187.78 L 571.65 187.78 L 592.94 187.78 L 614.24 187.78 L 635.53 223.33 L 656.82 258.89 L 678.12 258.89 L 699.41 258.89 L 720.71 294.44 L 742.00 330.00" fill="none" stroke="#616161" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><path class="line subject" data-country="India" d="M 18.00 258.89 L 39.29 223.33 L 60.59 187.78 L 81.88 187.78 L 103.18 187.78 L 124.47 187.78 L 145.76 187.78 L 167.06 187.78 L 188.35 187.78 L 209.65 152.22 L 230.94 152.22 L 252.24 152.22 L 273.53 152.22 L 294.82 152.22 L 316.12 152.22 L 337.41 152.22 L 358.71 116.67 L 380.00 116.67 L 401.29 116.67 L 422.59 81.11 L 443.88 81.11 L 465.18 81.11 L 486.47 81.11 L 507.76 81.11 L 529.06 81.11 L 550.35 81.11 L 571.65 81.11 L 592.94 81.11 L 614.24 81.11 L 635.53 81.11 L 656.82 81.11 L 678.12 81.11 L 699.41 81.11 L 720.71 81.11 L 742.00 81.11" fill="none" stroke="#0B7A75" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path><circle class="node" cx="18" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1990: world rank 3" data-country="China" data-year="1990" data-index="0" data-detail="China · 1990 · world rank 3"></circle><circle class="node" cx="39.294117647058826" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1991: world rank 2" data-country="China" data-year="1991" data-index="1" data-detail="China · 1991 · world rank 2"></circle><circle class="node" cx="60.588235294117645" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1992: world rank 2" data-country="China" data-year="1992" data-index="2" data-detail="China · 1992 · world rank 2"></circle><circle class="node" cx="81.88235294117648" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1993: world rank 2" data-country="China" data-year="1993" data-index="3" data-detail="China · 1993 · world rank 2"></circle><circle class="node" cx="103.17647058823529" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1994: world rank 2" data-country="China" data-year="1994" data-index="4" data-detail="China · 1994 · world rank 2"></circle><circle class="node" cx="124.47058823529412" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1995: world rank 2" data-country="China" data-year="1995" data-index="5" data-detail="China · 1995 · world rank 2"></circle><circle class="node" cx="145.76470588235296" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1996: world rank 2" data-country="China" data-year="1996" data-index="6" data-detail="China · 1996 · world rank 2"></circle><circle class="node" cx="167.05882352941177" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1997: world rank 2" data-country="China" data-year="1997" data-index="7" data-detail="China · 1997 · world rank 2"></circle><circle class="node" cx="188.35294117647058" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1998: world rank 2" data-country="China" data-year="1998" data-index="8" data-detail="China · 1998 · world rank 2"></circle><circle class="node" cx="209.64705882352942" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 1999: world rank 2" data-country="China" data-year="1999" data-index="9" data-detail="China · 1999 · world rank 2"></circle><circle class="node" cx="230.94117647058823" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2000: world rank 2" data-country="China" data-year="2000" data-index="10" data-detail="China · 2000 · world rank 2"></circle><circle class="node" cx="252.23529411764707" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2001: world rank 2" data-country="China" data-year="2001" data-index="11" data-detail="China · 2001 · world rank 2"></circle><circle class="node" cx="273.5294117647059" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2002: world rank 2" data-country="China" data-year="2002" data-index="12" data-detail="China · 2002 · world rank 2"></circle><circle class="node" cx="294.8235294117647" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2003: world rank 2" data-country="China" data-year="2003" data-index="13" data-detail="China · 2003 · world rank 2"></circle><circle class="node" cx="316.11764705882354" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2004: world rank 2" data-country="China" data-year="2004" data-index="14" data-detail="China · 2004 · world rank 2"></circle><circle class="node" cx="337.4117647058823" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2005: world rank 2" data-country="China" data-year="2005" data-index="15" data-detail="China · 2005 · world rank 2"></circle><circle class="node" cx="358.70588235294116" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2006: world rank 1" data-country="China" data-year="2006" data-index="16" data-detail="China · 2006 · world rank 1"></circle><circle class="node" cx="380" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2007: world rank 1" data-country="China" data-year="2007" data-index="17" data-detail="China · 2007 · world rank 1"></circle><circle class="node" cx="401.29411764705884" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2008: world rank 1" data-country="China" data-year="2008" data-index="18" data-detail="China · 2008 · world rank 1"></circle><circle class="node" cx="422.5882352941177" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2009: world rank 1" data-country="China" data-year="2009" data-index="19" data-detail="China · 2009 · world rank 1"></circle><circle class="node" cx="443.88235294117646" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2010: world rank 1" data-country="China" data-year="2010" data-index="20" data-detail="China · 2010 · world rank 1"></circle><circle class="node" cx="465.1764705882353" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2011: world rank 1" data-country="China" data-year="2011" data-index="21" data-detail="China · 2011 · world rank 1"></circle><circle class="node" cx="486.47058823529414" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2012: world rank 1" data-country="China" data-year="2012" data-index="22" data-detail="China · 2012 · world rank 1"></circle><circle class="node" cx="507.764705882353" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2013: world rank 1" data-country="China" data-year="2013" data-index="23" data-detail="China · 2013 · world rank 1"></circle><circle class="node" cx="529.0588235294118" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2014: world rank 1" data-country="China" data-year="2014" data-index="24" data-detail="China · 2014 · world rank 1"></circle><circle class="node" cx="550.3529411764706" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2015: world rank 1" data-country="China" data-year="2015" data-index="25" data-detail="China · 2015 · world rank 1"></circle><circle class="node" cx="571.6470588235294" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2016: world rank 1" data-country="China" data-year="2016" data-index="26" data-detail="China · 2016 · world rank 1"></circle><circle class="node" cx="592.9411764705882" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2017: world rank 1" data-country="China" data-year="2017" data-index="27" data-detail="China · 2017 · world rank 1"></circle><circle class="node" cx="614.2352941176471" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2018: world rank 1" data-country="China" data-year="2018" data-index="28" data-detail="China · 2018 · world rank 1"></circle><circle class="node" cx="635.5294117647059" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2019: world rank 1" data-country="China" data-year="2019" data-index="29" data-detail="China · 2019 · world rank 1"></circle><circle class="node" cx="656.8235294117646" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2020: world rank 1" data-country="China" data-year="2020" data-index="30" data-detail="China · 2020 · world rank 1"></circle><circle class="node" cx="678.1176470588235" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2021: world rank 1" data-country="China" data-year="2021" data-index="31" data-detail="China · 2021 · world rank 1"></circle><circle class="node" cx="699.4117647058823" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2022: world rank 1" data-country="China" data-year="2022" data-index="32" data-detail="China · 2022 · world rank 1"></circle><circle class="node" cx="720.7058823529412" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2023: world rank 1" data-country="China" data-year="2023" data-index="33" data-detail="China · 2023 · world rank 1"></circle><circle class="node" cx="742" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="China, 2024: world rank 1" data-country="China" data-year="2024" data-index="34" data-detail="China · 2024 · world rank 1"></circle><circle class="node" cx="18" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1990: world rank 1" data-country="United States" data-year="1990" data-index="0" data-detail="United States · 1990 · world rank 1"></circle><circle class="node" cx="39.294117647058826" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1991: world rank 1" data-country="United States" data-year="1991" data-index="1" data-detail="United States · 1991 · world rank 1"></circle><circle class="node" cx="60.588235294117645" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1992: world rank 1" data-country="United States" data-year="1992" data-index="2" data-detail="United States · 1992 · world rank 1"></circle><circle class="node" cx="81.88235294117648" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1993: world rank 1" data-country="United States" data-year="1993" data-index="3" data-detail="United States · 1993 · world rank 1"></circle><circle class="node" cx="103.17647058823529" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1994: world rank 1" data-country="United States" data-year="1994" data-index="4" data-detail="United States · 1994 · world rank 1"></circle><circle class="node" cx="124.47058823529412" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1995: world rank 1" data-country="United States" data-year="1995" data-index="5" data-detail="United States · 1995 · world rank 1"></circle><circle class="node" cx="145.76470588235296" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1996: world rank 1" data-country="United States" data-year="1996" data-index="6" data-detail="United States · 1996 · world rank 1"></circle><circle class="node" cx="167.05882352941177" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1997: world rank 1" data-country="United States" data-year="1997" data-index="7" data-detail="United States · 1997 · world rank 1"></circle><circle class="node" cx="188.35294117647058" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1998: world rank 1" data-country="United States" data-year="1998" data-index="8" data-detail="United States · 1998 · world rank 1"></circle><circle class="node" cx="209.64705882352942" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 1999: world rank 1" data-country="United States" data-year="1999" data-index="9" data-detail="United States · 1999 · world rank 1"></circle><circle class="node" cx="230.94117647058823" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2000: world rank 1" data-country="United States" data-year="2000" data-index="10" data-detail="United States · 2000 · world rank 1"></circle><circle class="node" cx="252.23529411764707" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2001: world rank 1" data-country="United States" data-year="2001" data-index="11" data-detail="United States · 2001 · world rank 1"></circle><circle class="node" cx="273.5294117647059" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2002: world rank 1" data-country="United States" data-year="2002" data-index="12" data-detail="United States · 2002 · world rank 1"></circle><circle class="node" cx="294.8235294117647" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2003: world rank 1" data-country="United States" data-year="2003" data-index="13" data-detail="United States · 2003 · world rank 1"></circle><circle class="node" cx="316.11764705882354" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2004: world rank 1" data-country="United States" data-year="2004" data-index="14" data-detail="United States · 2004 · world rank 1"></circle><circle class="node" cx="337.4117647058823" cy="10" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2005: world rank 1" data-country="United States" data-year="2005" data-index="15" data-detail="United States · 2005 · world rank 1"></circle><circle class="node" cx="358.70588235294116" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2006: world rank 2" data-country="United States" data-year="2006" data-index="16" data-detail="United States · 2006 · world rank 2"></circle><circle class="node" cx="380" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2007: world rank 2" data-country="United States" data-year="2007" data-index="17" data-detail="United States · 2007 · world rank 2"></circle><circle class="node" cx="401.29411764705884" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2008: world rank 2" data-country="United States" data-year="2008" data-index="18" data-detail="United States · 2008 · world rank 2"></circle><circle class="node" cx="422.5882352941177" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2009: world rank 2" data-country="United States" data-year="2009" data-index="19" data-detail="United States · 2009 · world rank 2"></circle><circle class="node" cx="443.88235294117646" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2010: world rank 2" data-country="United States" data-year="2010" data-index="20" data-detail="United States · 2010 · world rank 2"></circle><circle class="node" cx="465.1764705882353" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2011: world rank 2" data-country="United States" data-year="2011" data-index="21" data-detail="United States · 2011 · world rank 2"></circle><circle class="node" cx="486.47058823529414" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2012: world rank 2" data-country="United States" data-year="2012" data-index="22" data-detail="United States · 2012 · world rank 2"></circle><circle class="node" cx="507.764705882353" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2013: world rank 2" data-country="United States" data-year="2013" data-index="23" data-detail="United States · 2013 · world rank 2"></circle><circle class="node" cx="529.0588235294118" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2014: world rank 2" data-country="United States" data-year="2014" data-index="24" data-detail="United States · 2014 · world rank 2"></circle><circle class="node" cx="550.3529411764706" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2015: world rank 2" data-country="United States" data-year="2015" data-index="25" data-detail="United States · 2015 · world rank 2"></circle><circle class="node" cx="571.6470588235294" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2016: world rank 2" data-country="United States" data-year="2016" data-index="26" data-detail="United States · 2016 · world rank 2"></circle><circle class="node" cx="592.9411764705882" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2017: world rank 2" data-country="United States" data-year="2017" data-index="27" data-detail="United States · 2017 · world rank 2"></circle><circle class="node" cx="614.2352941176471" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2018: world rank 2" data-country="United States" data-year="2018" data-index="28" data-detail="United States · 2018 · world rank 2"></circle><circle class="node" cx="635.5294117647059" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2019: world rank 2" data-country="United States" data-year="2019" data-index="29" data-detail="United States · 2019 · world rank 2"></circle><circle class="node" cx="656.8235294117646" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2020: world rank 2" data-country="United States" data-year="2020" data-index="30" data-detail="United States · 2020 · world rank 2"></circle><circle class="node" cx="678.1176470588235" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2021: world rank 2" data-country="United States" data-year="2021" data-index="31" data-detail="United States · 2021 · world rank 2"></circle><circle class="node" cx="699.4117647058823" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2022: world rank 2" data-country="United States" data-year="2022" data-index="32" data-detail="United States · 2022 · world rank 2"></circle><circle class="node" cx="720.7058823529412" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2023: world rank 2" data-country="United States" data-year="2023" data-index="33" data-detail="United States · 2023 · world rank 2"></circle><circle class="node" cx="742" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="United States, 2024: world rank 2" data-country="United States" data-year="2024" data-index="34" data-detail="United States · 2024 · world rank 2"></circle><circle class="node" cx="18" cy="258.8888888888889" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1990: world rank 8" data-country="India" data-year="1990" data-index="0" data-detail="India · 1990 · world rank 8"></circle><circle class="node" cx="39.294117647058826" cy="223.33333333333331" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1991: world rank 7" data-country="India" data-year="1991" data-index="1" data-detail="India · 1991 · world rank 7"></circle><circle class="node" cx="60.588235294117645" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1992: world rank 6" data-country="India" data-year="1992" data-index="2" data-detail="India · 1992 · world rank 6"></circle><circle class="node" cx="81.88235294117648" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1993: world rank 6" data-country="India" data-year="1993" data-index="3" data-detail="India · 1993 · world rank 6"></circle><circle class="node" cx="103.17647058823529" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1994: world rank 6" data-country="India" data-year="1994" data-index="4" data-detail="India · 1994 · world rank 6"></circle><circle class="node" cx="124.47058823529412" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1995: world rank 6" data-country="India" data-year="1995" data-index="5" data-detail="India · 1995 · world rank 6"></circle><circle class="node" cx="145.76470588235296" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1996: world rank 6" data-country="India" data-year="1996" data-index="6" data-detail="India · 1996 · world rank 6"></circle><circle class="node" cx="167.05882352941177" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1997: world rank 6" data-country="India" data-year="1997" data-index="7" data-detail="India · 1997 · world rank 6"></circle><circle class="node" cx="188.35294117647058" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1998: world rank 6" data-country="India" data-year="1998" data-index="8" data-detail="India · 1998 · world rank 6"></circle><circle class="node" cx="209.64705882352942" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 1999: world rank 5" data-country="India" data-year="1999" data-index="9" data-detail="India · 1999 · world rank 5"></circle><circle class="node" cx="230.94117647058823" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2000: world rank 5" data-country="India" data-year="2000" data-index="10" data-detail="India · 2000 · world rank 5"></circle><circle class="node" cx="252.23529411764707" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2001: world rank 5" data-country="India" data-year="2001" data-index="11" data-detail="India · 2001 · world rank 5"></circle><circle class="node" cx="273.5294117647059" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2002: world rank 5" data-country="India" data-year="2002" data-index="12" data-detail="India · 2002 · world rank 5"></circle><circle class="node" cx="294.8235294117647" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2003: world rank 5" data-country="India" data-year="2003" data-index="13" data-detail="India · 2003 · world rank 5"></circle><circle class="node" cx="316.11764705882354" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2004: world rank 5" data-country="India" data-year="2004" data-index="14" data-detail="India · 2004 · world rank 5"></circle><circle class="node" cx="337.4117647058823" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2005: world rank 5" data-country="India" data-year="2005" data-index="15" data-detail="India · 2005 · world rank 5"></circle><circle class="node" cx="358.70588235294116" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2006: world rank 4" data-country="India" data-year="2006" data-index="16" data-detail="India · 2006 · world rank 4"></circle><circle class="node" cx="380" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2007: world rank 4" data-country="India" data-year="2007" data-index="17" data-detail="India · 2007 · world rank 4"></circle><circle class="node" cx="401.29411764705884" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2008: world rank 4" data-country="India" data-year="2008" data-index="18" data-detail="India · 2008 · world rank 4"></circle><circle class="node" cx="422.5882352941177" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2009: world rank 3" data-country="India" data-year="2009" data-index="19" data-detail="India · 2009 · world rank 3"></circle><circle class="node" cx="443.88235294117646" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2010: world rank 3" data-country="India" data-year="2010" data-index="20" data-detail="India · 2010 · world rank 3"></circle><circle class="node" cx="465.1764705882353" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2011: world rank 3" data-country="India" data-year="2011" data-index="21" data-detail="India · 2011 · world rank 3"></circle><circle class="node" cx="486.47058823529414" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2012: world rank 3" data-country="India" data-year="2012" data-index="22" data-detail="India · 2012 · world rank 3"></circle><circle class="node" cx="507.764705882353" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2013: world rank 3" data-country="India" data-year="2013" data-index="23" data-detail="India · 2013 · world rank 3"></circle><circle class="node" cx="529.0588235294118" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2014: world rank 3" data-country="India" data-year="2014" data-index="24" data-detail="India · 2014 · world rank 3"></circle><circle class="node" cx="550.3529411764706" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2015: world rank 3" data-country="India" data-year="2015" data-index="25" data-detail="India · 2015 · world rank 3"></circle><circle class="node" cx="571.6470588235294" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2016: world rank 3" data-country="India" data-year="2016" data-index="26" data-detail="India · 2016 · world rank 3"></circle><circle class="node" cx="592.9411764705882" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2017: world rank 3" data-country="India" data-year="2017" data-index="27" data-detail="India · 2017 · world rank 3"></circle><circle class="node" cx="614.2352941176471" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2018: world rank 3" data-country="India" data-year="2018" data-index="28" data-detail="India · 2018 · world rank 3"></circle><circle class="node" cx="635.5294117647059" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2019: world rank 3" data-country="India" data-year="2019" data-index="29" data-detail="India · 2019 · world rank 3"></circle><circle class="node" cx="656.8235294117646" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2020: world rank 3" data-country="India" data-year="2020" data-index="30" data-detail="India · 2020 · world rank 3"></circle><circle class="node" cx="678.1176470588235" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2021: world rank 3" data-country="India" data-year="2021" data-index="31" data-detail="India · 2021 · world rank 3"></circle><circle class="node" cx="699.4117647058823" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2022: world rank 3" data-country="India" data-year="2022" data-index="32" data-detail="India · 2022 · world rank 3"></circle><circle class="node" cx="720.7058823529412" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2023: world rank 3" data-country="India" data-year="2023" data-index="33" data-detail="India · 2023 · world rank 3"></circle><circle class="node" cx="742" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="India, 2024: world rank 3" data-country="India" data-year="2024" data-index="34" data-detail="India · 2024 · world rank 3"></circle><circle class="node" cx="18" cy="45.55555555555556" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1990: world rank 2" data-country="Russia" data-year="1990" data-index="0" data-detail="Russia · 1990 · world rank 2"></circle><circle class="node" cx="39.294117647058826" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1991: world rank 3" data-country="Russia" data-year="1991" data-index="1" data-detail="Russia · 1991 · world rank 3"></circle><circle class="node" cx="60.588235294117645" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1992: world rank 3" data-country="Russia" data-year="1992" data-index="2" data-detail="Russia · 1992 · world rank 3"></circle><circle class="node" cx="81.88235294117648" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1993: world rank 3" data-country="Russia" data-year="1993" data-index="3" data-detail="Russia · 1993 · world rank 3"></circle><circle class="node" cx="103.17647058823529" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1994: world rank 3" data-country="Russia" data-year="1994" data-index="4" data-detail="Russia · 1994 · world rank 3"></circle><circle class="node" cx="124.47058823529412" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1995: world rank 3" data-country="Russia" data-year="1995" data-index="5" data-detail="Russia · 1995 · world rank 3"></circle><circle class="node" cx="145.76470588235296" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1996: world rank 3" data-country="Russia" data-year="1996" data-index="6" data-detail="Russia · 1996 · world rank 3"></circle><circle class="node" cx="167.05882352941177" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1997: world rank 3" data-country="Russia" data-year="1997" data-index="7" data-detail="Russia · 1997 · world rank 3"></circle><circle class="node" cx="188.35294117647058" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1998: world rank 3" data-country="Russia" data-year="1998" data-index="8" data-detail="Russia · 1998 · world rank 3"></circle><circle class="node" cx="209.64705882352942" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 1999: world rank 3" data-country="Russia" data-year="1999" data-index="9" data-detail="Russia · 1999 · world rank 3"></circle><circle class="node" cx="230.94117647058823" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2000: world rank 3" data-country="Russia" data-year="2000" data-index="10" data-detail="Russia · 2000 · world rank 3"></circle><circle class="node" cx="252.23529411764707" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2001: world rank 3" data-country="Russia" data-year="2001" data-index="11" data-detail="Russia · 2001 · world rank 3"></circle><circle class="node" cx="273.5294117647059" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2002: world rank 3" data-country="Russia" data-year="2002" data-index="12" data-detail="Russia · 2002 · world rank 3"></circle><circle class="node" cx="294.8235294117647" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2003: world rank 3" data-country="Russia" data-year="2003" data-index="13" data-detail="Russia · 2003 · world rank 3"></circle><circle class="node" cx="316.11764705882354" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2004: world rank 3" data-country="Russia" data-year="2004" data-index="14" data-detail="Russia · 2004 · world rank 3"></circle><circle class="node" cx="337.4117647058823" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2005: world rank 3" data-country="Russia" data-year="2005" data-index="15" data-detail="Russia · 2005 · world rank 3"></circle><circle class="node" cx="358.70588235294116" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2006: world rank 3" data-country="Russia" data-year="2006" data-index="16" data-detail="Russia · 2006 · world rank 3"></circle><circle class="node" cx="380" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2007: world rank 3" data-country="Russia" data-year="2007" data-index="17" data-detail="Russia · 2007 · world rank 3"></circle><circle class="node" cx="401.29411764705884" cy="81.11111111111111" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2008: world rank 3" data-country="Russia" data-year="2008" data-index="18" data-detail="Russia · 2008 · world rank 3"></circle><circle class="node" cx="422.5882352941177" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2009: world rank 4" data-country="Russia" data-year="2009" data-index="19" data-detail="Russia · 2009 · world rank 4"></circle><circle class="node" cx="443.88235294117646" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2010: world rank 4" data-country="Russia" data-year="2010" data-index="20" data-detail="Russia · 2010 · world rank 4"></circle><circle class="node" cx="465.1764705882353" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2011: world rank 4" data-country="Russia" data-year="2011" data-index="21" data-detail="Russia · 2011 · world rank 4"></circle><circle class="node" cx="486.47058823529414" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2012: world rank 4" data-country="Russia" data-year="2012" data-index="22" data-detail="Russia · 2012 · world rank 4"></circle><circle class="node" cx="507.764705882353" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2013: world rank 4" data-country="Russia" data-year="2013" data-index="23" data-detail="Russia · 2013 · world rank 4"></circle><circle class="node" cx="529.0588235294118" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2014: world rank 4" data-country="Russia" data-year="2014" data-index="24" data-detail="Russia · 2014 · world rank 4"></circle><circle class="node" cx="550.3529411764706" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2015: world rank 4" data-country="Russia" data-year="2015" data-index="25" data-detail="Russia · 2015 · world rank 4"></circle><circle class="node" cx="571.6470588235294" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2016: world rank 4" data-country="Russia" data-year="2016" data-index="26" data-detail="Russia · 2016 · world rank 4"></circle><circle class="node" cx="592.9411764705882" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2017: world rank 4" data-country="Russia" data-year="2017" data-index="27" data-detail="Russia · 2017 · world rank 4"></circle><circle class="node" cx="614.2352941176471" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2018: world rank 4" data-country="Russia" data-year="2018" data-index="28" data-detail="Russia · 2018 · world rank 4"></circle><circle class="node" cx="635.5294117647059" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2019: world rank 4" data-country="Russia" data-year="2019" data-index="29" data-detail="Russia · 2019 · world rank 4"></circle><circle class="node" cx="656.8235294117646" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2020: world rank 4" data-country="Russia" data-year="2020" data-index="30" data-detail="Russia · 2020 · world rank 4"></circle><circle class="node" cx="678.1176470588235" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2021: world rank 4" data-country="Russia" data-year="2021" data-index="31" data-detail="Russia · 2021 · world rank 4"></circle><circle class="node" cx="699.4117647058823" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2022: world rank 4" data-country="Russia" data-year="2022" data-index="32" data-detail="Russia · 2022 · world rank 4"></circle><circle class="node" cx="720.7058823529412" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2023: world rank 4" data-country="Russia" data-year="2023" data-index="33" data-detail="Russia · 2023 · world rank 4"></circle><circle class="node" cx="742" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Russia, 2024: world rank 4" data-country="Russia" data-year="2024" data-index="34" data-detail="Russia · 2024 · world rank 4"></circle><circle class="node" cx="18" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1990: world rank 4" data-country="Japan" data-year="1990" data-index="0" data-detail="Japan · 1990 · world rank 4"></circle><circle class="node" cx="39.294117647058826" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1991: world rank 4" data-country="Japan" data-year="1991" data-index="1" data-detail="Japan · 1991 · world rank 4"></circle><circle class="node" cx="60.588235294117645" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1992: world rank 4" data-country="Japan" data-year="1992" data-index="2" data-detail="Japan · 1992 · world rank 4"></circle><circle class="node" cx="81.88235294117648" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1993: world rank 4" data-country="Japan" data-year="1993" data-index="3" data-detail="Japan · 1993 · world rank 4"></circle><circle class="node" cx="103.17647058823529" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1994: world rank 4" data-country="Japan" data-year="1994" data-index="4" data-detail="Japan · 1994 · world rank 4"></circle><circle class="node" cx="124.47058823529412" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1995: world rank 4" data-country="Japan" data-year="1995" data-index="5" data-detail="Japan · 1995 · world rank 4"></circle><circle class="node" cx="145.76470588235296" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1996: world rank 4" data-country="Japan" data-year="1996" data-index="6" data-detail="Japan · 1996 · world rank 4"></circle><circle class="node" cx="167.05882352941177" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1997: world rank 4" data-country="Japan" data-year="1997" data-index="7" data-detail="Japan · 1997 · world rank 4"></circle><circle class="node" cx="188.35294117647058" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1998: world rank 4" data-country="Japan" data-year="1998" data-index="8" data-detail="Japan · 1998 · world rank 4"></circle><circle class="node" cx="209.64705882352942" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 1999: world rank 4" data-country="Japan" data-year="1999" data-index="9" data-detail="Japan · 1999 · world rank 4"></circle><circle class="node" cx="230.94117647058823" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2000: world rank 4" data-country="Japan" data-year="2000" data-index="10" data-detail="Japan · 2000 · world rank 4"></circle><circle class="node" cx="252.23529411764707" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2001: world rank 4" data-country="Japan" data-year="2001" data-index="11" data-detail="Japan · 2001 · world rank 4"></circle><circle class="node" cx="273.5294117647059" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2002: world rank 4" data-country="Japan" data-year="2002" data-index="12" data-detail="Japan · 2002 · world rank 4"></circle><circle class="node" cx="294.8235294117647" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2003: world rank 4" data-country="Japan" data-year="2003" data-index="13" data-detail="Japan · 2003 · world rank 4"></circle><circle class="node" cx="316.11764705882354" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2004: world rank 4" data-country="Japan" data-year="2004" data-index="14" data-detail="Japan · 2004 · world rank 4"></circle><circle class="node" cx="337.4117647058823" cy="116.66666666666666" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2005: world rank 4" data-country="Japan" data-year="2005" data-index="15" data-detail="Japan · 2005 · world rank 4"></circle><circle class="node" cx="358.70588235294116" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2006: world rank 5" data-country="Japan" data-year="2006" data-index="16" data-detail="Japan · 2006 · world rank 5"></circle><circle class="node" cx="380" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2007: world rank 5" data-country="Japan" data-year="2007" data-index="17" data-detail="Japan · 2007 · world rank 5"></circle><circle class="node" cx="401.29411764705884" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2008: world rank 5" data-country="Japan" data-year="2008" data-index="18" data-detail="Japan · 2008 · world rank 5"></circle><circle class="node" cx="422.5882352941177" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2009: world rank 5" data-country="Japan" data-year="2009" data-index="19" data-detail="Japan · 2009 · world rank 5"></circle><circle class="node" cx="443.88235294117646" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2010: world rank 5" data-country="Japan" data-year="2010" data-index="20" data-detail="Japan · 2010 · world rank 5"></circle><circle class="node" cx="465.1764705882353" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2011: world rank 5" data-country="Japan" data-year="2011" data-index="21" data-detail="Japan · 2011 · world rank 5"></circle><circle class="node" cx="486.47058823529414" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2012: world rank 5" data-country="Japan" data-year="2012" data-index="22" data-detail="Japan · 2012 · world rank 5"></circle><circle class="node" cx="507.764705882353" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2013: world rank 5" data-country="Japan" data-year="2013" data-index="23" data-detail="Japan · 2013 · world rank 5"></circle><circle class="node" cx="529.0588235294118" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2014: world rank 5" data-country="Japan" data-year="2014" data-index="24" data-detail="Japan · 2014 · world rank 5"></circle><circle class="node" cx="550.3529411764706" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2015: world rank 5" data-country="Japan" data-year="2015" data-index="25" data-detail="Japan · 2015 · world rank 5"></circle><circle class="node" cx="571.6470588235294" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2016: world rank 5" data-country="Japan" data-year="2016" data-index="26" data-detail="Japan · 2016 · world rank 5"></circle><circle class="node" cx="592.9411764705882" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2017: world rank 5" data-country="Japan" data-year="2017" data-index="27" data-detail="Japan · 2017 · world rank 5"></circle><circle class="node" cx="614.2352941176471" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2018: world rank 5" data-country="Japan" data-year="2018" data-index="28" data-detail="Japan · 2018 · world rank 5"></circle><circle class="node" cx="635.5294117647059" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2019: world rank 5" data-country="Japan" data-year="2019" data-index="29" data-detail="Japan · 2019 · world rank 5"></circle><circle class="node" cx="656.8235294117646" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2020: world rank 5" data-country="Japan" data-year="2020" data-index="30" data-detail="Japan · 2020 · world rank 5"></circle><circle class="node" cx="678.1176470588235" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2021: world rank 5" data-country="Japan" data-year="2021" data-index="31" data-detail="Japan · 2021 · world rank 5"></circle><circle class="node" cx="699.4117647058823" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2022: world rank 5" data-country="Japan" data-year="2022" data-index="32" data-detail="Japan · 2022 · world rank 5"></circle><circle class="node" cx="720.7058823529412" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2023: world rank 5" data-country="Japan" data-year="2023" data-index="33" data-detail="Japan · 2023 · world rank 5"></circle><circle class="node" cx="742" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Japan, 2024: world rank 5" data-country="Japan" data-year="2024" data-index="34" data-detail="Japan · 2024 · world rank 5"></circle><circle class="node" cx="18" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1990: world rank 5" data-country="Germany" data-year="1990" data-index="0" data-detail="Germany · 1990 · world rank 5"></circle><circle class="node" cx="39.294117647058826" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1991: world rank 5" data-country="Germany" data-year="1991" data-index="1" data-detail="Germany · 1991 · world rank 5"></circle><circle class="node" cx="60.588235294117645" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1992: world rank 5" data-country="Germany" data-year="1992" data-index="2" data-detail="Germany · 1992 · world rank 5"></circle><circle class="node" cx="81.88235294117648" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1993: world rank 5" data-country="Germany" data-year="1993" data-index="3" data-detail="Germany · 1993 · world rank 5"></circle><circle class="node" cx="103.17647058823529" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1994: world rank 5" data-country="Germany" data-year="1994" data-index="4" data-detail="Germany · 1994 · world rank 5"></circle><circle class="node" cx="124.47058823529412" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1995: world rank 5" data-country="Germany" data-year="1995" data-index="5" data-detail="Germany · 1995 · world rank 5"></circle><circle class="node" cx="145.76470588235296" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1996: world rank 5" data-country="Germany" data-year="1996" data-index="6" data-detail="Germany · 1996 · world rank 5"></circle><circle class="node" cx="167.05882352941177" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1997: world rank 5" data-country="Germany" data-year="1997" data-index="7" data-detail="Germany · 1997 · world rank 5"></circle><circle class="node" cx="188.35294117647058" cy="152.22222222222223" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1998: world rank 5" data-country="Germany" data-year="1998" data-index="8" data-detail="Germany · 1998 · world rank 5"></circle><circle class="node" cx="209.64705882352942" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 1999: world rank 6" data-country="Germany" data-year="1999" data-index="9" data-detail="Germany · 1999 · world rank 6"></circle><circle class="node" cx="230.94117647058823" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2000: world rank 6" data-country="Germany" data-year="2000" data-index="10" data-detail="Germany · 2000 · world rank 6"></circle><circle class="node" cx="252.23529411764707" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2001: world rank 6" data-country="Germany" data-year="2001" data-index="11" data-detail="Germany · 2001 · world rank 6"></circle><circle class="node" cx="273.5294117647059" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2002: world rank 6" data-country="Germany" data-year="2002" data-index="12" data-detail="Germany · 2002 · world rank 6"></circle><circle class="node" cx="294.8235294117647" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2003: world rank 6" data-country="Germany" data-year="2003" data-index="13" data-detail="Germany · 2003 · world rank 6"></circle><circle class="node" cx="316.11764705882354" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2004: world rank 6" data-country="Germany" data-year="2004" data-index="14" data-detail="Germany · 2004 · world rank 6"></circle><circle class="node" cx="337.4117647058823" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2005: world rank 6" data-country="Germany" data-year="2005" data-index="15" data-detail="Germany · 2005 · world rank 6"></circle><circle class="node" cx="358.70588235294116" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2006: world rank 6" data-country="Germany" data-year="2006" data-index="16" data-detail="Germany · 2006 · world rank 6"></circle><circle class="node" cx="380" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2007: world rank 6" data-country="Germany" data-year="2007" data-index="17" data-detail="Germany · 2007 · world rank 6"></circle><circle class="node" cx="401.29411764705884" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2008: world rank 6" data-country="Germany" data-year="2008" data-index="18" data-detail="Germany · 2008 · world rank 6"></circle><circle class="node" cx="422.5882352941177" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2009: world rank 6" data-country="Germany" data-year="2009" data-index="19" data-detail="Germany · 2009 · world rank 6"></circle><circle class="node" cx="443.88235294117646" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2010: world rank 6" data-country="Germany" data-year="2010" data-index="20" data-detail="Germany · 2010 · world rank 6"></circle><circle class="node" cx="465.1764705882353" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2011: world rank 6" data-country="Germany" data-year="2011" data-index="21" data-detail="Germany · 2011 · world rank 6"></circle><circle class="node" cx="486.47058823529414" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2012: world rank 6" data-country="Germany" data-year="2012" data-index="22" data-detail="Germany · 2012 · world rank 6"></circle><circle class="node" cx="507.764705882353" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2013: world rank 6" data-country="Germany" data-year="2013" data-index="23" data-detail="Germany · 2013 · world rank 6"></circle><circle class="node" cx="529.0588235294118" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2014: world rank 6" data-country="Germany" data-year="2014" data-index="24" data-detail="Germany · 2014 · world rank 6"></circle><circle class="node" cx="550.3529411764706" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2015: world rank 6" data-country="Germany" data-year="2015" data-index="25" data-detail="Germany · 2015 · world rank 6"></circle><circle class="node" cx="571.6470588235294" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2016: world rank 6" data-country="Germany" data-year="2016" data-index="26" data-detail="Germany · 2016 · world rank 6"></circle><circle class="node" cx="592.9411764705882" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2017: world rank 6" data-country="Germany" data-year="2017" data-index="27" data-detail="Germany · 2017 · world rank 6"></circle><circle class="node" cx="614.2352941176471" cy="187.77777777777777" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2018: world rank 6" data-country="Germany" data-year="2018" data-index="28" data-detail="Germany · 2018 · world rank 6"></circle><circle class="node" cx="635.5294117647059" cy="223.33333333333331" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2019: world rank 7" data-country="Germany" data-year="2019" data-index="29" data-detail="Germany · 2019 · world rank 7"></circle><circle class="node" cx="656.8235294117646" cy="258.8888888888889" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2020: world rank 8" data-country="Germany" data-year="2020" data-index="30" data-detail="Germany · 2020 · world rank 8"></circle><circle class="node" cx="678.1176470588235" cy="258.8888888888889" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2021: world rank 8" data-country="Germany" data-year="2021" data-index="31" data-detail="Germany · 2021 · world rank 8"></circle><circle class="node" cx="699.4117647058823" cy="258.8888888888889" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2022: world rank 8" data-country="Germany" data-year="2022" data-index="32" data-detail="Germany · 2022 · world rank 8"></circle><circle class="node" cx="720.7058823529412" cy="294.44444444444446" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2023: world rank 9" data-country="Germany" data-year="2023" data-index="33" data-detail="Germany · 2023 · world rank 9"></circle><circle class="node" cx="742" cy="330" r="5" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="Germany, 2024: world rank 10" data-country="Germany" data-year="2024" data-index="34" data-detail="Germany · 2024 · world rank 10"></circle><rect class="hit-area" x="0" y="0" width="760" height="340" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="term-dot" style="left:2.4%;top:23.9%;background:#616161"></span><span class="term-dot" style="left:97.6%;top:2.9%;background:#616161"></span><span class="term-dot" style="left:2.4%;top:2.9%;background:#616161"></span><span class="term-dot" style="left:97.6%;top:13.4%;background:#616161"></span><span class="term-dot subject" style="left:2.4%;top:76.1%;background:#0B7A75"></span><span class="term-dot subject" style="left:97.6%;top:23.9%;background:#0B7A75"></span><span class="term-dot" style="left:2.4%;top:13.4%;background:#616161"></span><span class="term-dot" style="left:97.6%;top:34.3%;background:#616161"></span><span class="term-dot" style="left:2.4%;top:34.3%;background:#616161"></span><span class="term-dot" style="left:97.6%;top:44.8%;background:#616161"></span><span class="term-dot" style="left:2.4%;top:44.8%;background:#616161"></span><span class="term-dot" style="left:97.6%;top:97.1%;background:#616161"></span><span class="crossing-ring" style="left:27.6%;top:44.8%;border-color:#0B7A75"></span><span class="crossing-ring" style="left:47.2%;top:34.3%;border-color:#0B7A75"></span><span class="crossing-ring" style="left:55.6%;top:23.9%;border-color:#0B7A75"></span><span class="crossing-label" style="left:27.6%;top:50%;color:#616161"><span class="who">passed Germany</span><span class="when">1999</span></span><span class="crossing-label" style="left:47.2%;top:39.5%;color:#616161"><span class="who">passed Japan</span><span class="when">2006</span></span><span class="crossing-label flip" style="left:52.8%;top:29.1%;color:#616161"><span class="who">passed Russia</span><span class="when">2009</span></span><span class="name-label" data-country="China" style="left:100%;top:2.9%;color:#000000;font-weight:600">China</span><span class="name-label" data-country="United States" style="left:100%;top:13.4%;color:#000000;font-weight:600">United States</span><span class="name-label subject" data-country="India" style="left:100%;top:23.9%;color:#000000;font-weight:700">India</span><span class="name-label" data-country="Russia" style="left:100%;top:34.3%;color:#000000;font-weight:600">Russia</span><span class="name-label" data-country="Japan" style="left:100%;top:44.8%;color:#000000;font-weight:600">Japan</span><span class="name-label" data-country="Germany" style="left:100%;top:97.1%;color:#000000;font-weight:600">Germany</span></div><div class="x-axis"><span class="axis-label x" style="left:2.4%;color:#616161">1990</span><span class="axis-label x" style="left:16.4%;color:#616161">1995</span><span class="axis-label x" style="left:30.4%;color:#616161">2000</span><span class="axis-label x" style="left:44.4%;color:#616161">2005</span><span class="axis-label x" style="left:58.4%;color:#616161">2010</span><span class="axis-label x" style="left:72.4%;color:#616161">2015</span><span class="axis-label x" style="left:97.6%;color:#616161">2024</span></div></div><p class="chart-source">Source: Global Carbon Budget (2025) – with major processing by Our World in Data · fossil fuels and industry only; land-use change is not included</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/twin-chart-web/assets/interaction.mjs
+//
+// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `twin-doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video genres use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    show(points[nearestIndex(cxs, local.x)], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+<script>
+// twin/proof/webz-bump-emitter-rank/bump-interaction.mjs
+//
+// This beat's OWN interaction script. The skill's `assets/interaction.mjs` resolves a pointer to the
+// nearest of many points along ONE continuous axis — right for a single line, wrong here: this frame
+// carries six lines over the same 35 columns, so "nearest by x" would answer with whichever country
+// happened to be listed first and never with the line the reader is pointing at. `render-web.mjs`
+// still calls the skill's generic `renderWeb` (the one way in) and lets it inline `interaction.mjs`
+// as usual — that script finds no `.pt` circles in this beat's markup and is a harmless no-op
+// (`initChart`'s own `if (points.length === 0) return;` guard) — and then appends THIS script as a
+// second inline `<script>`, reusing the same shared `#tooltip` the skill's HTML wrapper builds.
+//
+// WHAT IT ADDS, and why it is this type's own interaction rather than a generic one
+// (`references/types/bump.md`: "past a handful of competing entities, the tangle of crossing lines
+// stops being readable as individual trajectories"):
+//
+//   1. NEAREST READING IN BOTH AXES, not by x alone. The reading unit of a bump chart is
+//      country × year, and two countries share every x on the frame.
+//   2. TRACING. The answering reading's whole COUNTRY comes forward and the others recede, so a
+//      reader can follow one line through the crossings — which is the only thing this type exists
+//      to make possible. The subject's own accent line is never receded: it is the argument, and
+//      the CSS that does this (appended by `render-web.mjs`) exempts `.line.subject` explicitly.
+//   3. ARROW KEYS ALONG A LINE. Left/Right walk a country's own years, Up/Down step to the
+//      neighbouring RANK in the same year, Home/End jump to that country's first and last year.
+//      Every node is already `tabIndex=0` with its own `aria-label` at build time, so this is speed,
+//      not access: with the script absent, plain Tab still reaches all 210 readings.
+//
+// Written as a plain script (no ES module `export`, unlike the skill's own `interaction.mjs`): its
+// one non-trivial computation, `nearest`, is a two-line squared-distance loop over cached rects, and
+// `web-discipline.md`'s "Verification" section is explicit that DOM wiring is proven by driving a
+// real browser, not by a unit test.
+
+function initBump() {
+  var tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  var figure = document.querySelector(".bump-figure");
+  if (!figure) return;
+  var nodes = Array.prototype.slice.call(figure.querySelectorAll(".node"));
+  if (nodes.length === 0) return;
+  var lines = Array.prototype.slice.call(figure.querySelectorAll(".line"));
+  var names = Array.prototype.slice.call(figure.querySelectorAll(".name-label"));
+  var plot = figure.querySelector(".chart-plot");
+
+  // Cached centres. 210 `getBoundingClientRect` calls per pointer move is real work for no reason:
+  // nothing moves between resizes, so the cache is rebuilt on resize and on scroll instead.
+  var centres = null;
+  function centreOf(i) {
+    if (!centres) {
+      centres = nodes.map(function (n) {
+        var r = n.getBoundingClientRect();
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      });
+    }
+    return centres[i];
+  }
+  function invalidate() {
+    centres = null;
+  }
+  window.addEventListener("resize", invalidate);
+  window.addEventListener("scroll", invalidate, true);
+
+  /** The reading nearest a client point, in BOTH axes — see this file's own header, item 1. */
+  function nearest(clientX, clientY) {
+    var best = -1;
+    var bestD = Infinity;
+    for (var i = 0; i < nodes.length; i++) {
+      var c = centreOf(i);
+      var dx = c.x - clientX;
+      var dy = c.y - clientY;
+      var d = dx * dx + dy * dy;
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best < 0 ? null : nodes[best];
+  }
+
+  function clear() {
+    figure.classList.remove("is-tracing");
+    lines.forEach(function (l) {
+      l.classList.remove("is-active");
+    });
+    names.forEach(function (n) {
+      n.classList.remove("is-active");
+    });
+    nodes.forEach(function (n) {
+      n.classList.remove("node-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(node, clientX, clientY) {
+    var country = node.getAttribute("data-country");
+    figure.classList.add("is-tracing");
+    lines.forEach(function (l) {
+      l.classList.toggle("is-active", l.getAttribute("data-country") === country);
+    });
+    names.forEach(function (n) {
+      n.classList.toggle("is-active", n.getAttribute("data-country") === country);
+    });
+    nodes.forEach(function (n) {
+      n.classList.toggle("node-active", n === node);
+    });
+
+    tooltip.textContent = node.getAttribute("data-detail");
+    tooltip.hidden = false;
+    var tw = tooltip.offsetWidth || 180;
+    var th = tooltip.offsetHeight || 28;
+    var x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    // Above the pointer by default, flipped below when that would put the box back over the
+    // chart's own header. The floor is read from the plot's own rect, never hardcoded, so it stays
+    // correct whatever the header's height turns out to be at this width.
+    var top = plot ? plot.getBoundingClientRect().top : 8;
+    var above = clientY - th - 14;
+    tooltip.style.left = x + "px";
+    tooltip.style.top = (above >= top ? above : clientY + 14) + "px";
+  }
+
+  // Pointer events fire for mouse, pen and touch alike — one code path, so a phone reader taps
+  // anywhere in the plot and gets the reading nearest that point rather than being asked to land a
+  // tap on a 5px circle.
+  function fromPointer(evt) {
+    var node = nearest(evt.clientX, evt.clientY);
+    if (node) show(node, evt.clientX, evt.clientY);
+  }
+  if (plot) {
+    plot.addEventListener("pointermove", fromPointer);
+    plot.addEventListener("pointerdown", fromPointer);
+    plot.addEventListener("pointerleave", clear);
+  }
+
+  nodes.forEach(function (node) {
+    node.addEventListener("focus", function () {
+      var r = node.getBoundingClientRect();
+      show(node, r.left + r.width / 2, r.top + r.height / 2);
+    });
+    node.addEventListener("blur", clear);
+    node.addEventListener("keydown", function (evt) {
+      var country = node.getAttribute("data-country");
+      var index = Number(node.getAttribute("data-index"));
+      var sameCountry = nodes.filter(function (n) {
+        return n.getAttribute("data-country") === country;
+      });
+      var sameYear = nodes
+        .filter(function (n) {
+          return Number(n.getAttribute("data-index")) === index;
+        })
+        .sort(function (a, b) {
+          return Number(a.getAttribute("cy")) - Number(b.getAttribute("cy"));
+        });
+      var target = null;
+      if (evt.key === "ArrowRight") target = sameCountry[Math.min(index + 1, sameCountry.length - 1)];
+      else if (evt.key === "ArrowLeft") target = sameCountry[Math.max(index - 1, 0)];
+      else if (evt.key === "Home") target = sameCountry[0];
+      else if (evt.key === "End") target = sameCountry[sameCountry.length - 1];
+      else if (evt.key === "ArrowUp" || evt.key === "ArrowDown") {
+        var at = sameYear.indexOf(node);
+        var step = evt.key === "ArrowUp" ? -1 : 1;
+        target = sameYear[Math.min(Math.max(at + step, 0), sameYear.length - 1)];
+      }
+      if (target && target !== node) {
+        evt.preventDefault();
+        target.focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    var target = evt.target;
+    if (target && typeof target.closest === "function" && target.closest(".chart-plot")) return;
+    clear();
+  });
+}
+
+if (typeof document !== "undefined") initBump();
+
+</script>
+</body>
+</html>
