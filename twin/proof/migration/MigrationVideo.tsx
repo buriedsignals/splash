@@ -1,5 +1,5 @@
 /**
- * The video beat of "Twice since 1990, more people left Switzerland than arrived." — 8 seconds,
+ * The video beat of "Twice since 1991, more people left Switzerland than arrived." — 8 seconds,
  * 30fps, 1080 × 1080.
  *
  * Third beat written in this shape. Its own pure geometry below (no `crossingGeometry` import —
@@ -7,16 +7,16 @@
  * (`migration-timing.ts`), reusing `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` from
  * `EmissionsVideo.tsx`.
  *
- * THE MOTION PROBLEM: the subject — 1997 and 1998, at −1.9 and −3.4 — is real but tiny against a
- * series that swings up to +84.1. `anti-patterns.md` is explicit that a line's honest scale is
+ * THE MOTION PROBLEM: the subject — 1996 and 1997, at −5.8 and −6.8 thousand — is real but tiny
+ * against a series that swings up to +139.1. `anti-patterns.md` is explicit that a line's honest scale is
  * "fitted to the readings with every tick labelled," never rescaled to flatter a moment the axis
  * would otherwise make small — so the fix here is not a bigger axis for those two years, which
  * would be the exact anti-pattern ("the axis contradicts its own claim") applied to make a point
  * legible. The two years stay exactly where the fitted, zero-crossing scale puts them — a few
  * pixels under the rule — and legibility comes from three things layered on top, never from
  * moving the mark: (1) the exact area between the line and zero, shaded, computed by linearly
- * interpolating the true zero-crossings on either side of 1997–1998 rather than guessed; (2) both
- * years landing together, as one subject with two points, once the whole 1990–2024 line is
+ * interpolating the true zero-crossings on either side of 1996–1997 rather than guessed; (2) both
+ * years landing together, as one subject with two points, once the whole 1991–2024 line is
  * already on screen; (3) a callout with a leader line, because a same-size in-place label would be
  * wider than the two years are apart on the time axis.
  */
@@ -319,7 +319,7 @@ export function MigrationVideo({
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
 
-  // The whole line, 1990 → 2024, chronological, constant pace — the dip is drawn in its own place,
+  // The whole line, 1991 → 2024, chronological, constant pace — the dip is drawn in its own place,
   // like every other year, with no pause and no detour: nothing marks it yet.
   const drawn = drawnSoFar(g.points, reveal);
   const path =
