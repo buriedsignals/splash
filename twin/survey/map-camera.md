@@ -627,3 +627,39 @@ mechanism is the one this axis needs everywhere:
    every step lands there as one more copy under the same walk. I believe that is right, but it means
    a `bake-parity` walk must cover `proof/` as well as `skills/` — which
    `render-still-parity.test.ts` already does, so the precedent exists.
+
+---
+
+## 8. The two missing rungs, measured (added 2026-08-10, W5/W6 execution)
+
+§1.3 established that between the Danube corridor (23.7° of longitude) and Geneva (0.135°) the tree
+holds nothing — **a factor of 175 with no beat in it**, covering exactly the two extents a local
+newsroom asks for most. This section closes that hole with measurements rather than with a claim.
+
+**What this is, and what it is not.** These are CAMERA measurements, taken by running the bakes' own
+camera code (`fitBounds` at `padding: 0`, then `frameCornersOf` / `cameraFacts` / both invariants) at
+those two extents, at the three export sizes. They are **not beats**: no `BRIEF.md`, no claim, no
+frozen data. A beat at each rung is still owed. What they establish is that the machinery holds
+there, so a beat built on it is not building on an untested camera.
+
+| Rung | Export size | zoom | °/px | m/px | world fills width | reaches bounds | admitted lon | admitted lat |
+|---|---|---|---|---|---|---|---|---|
+| Switzerland (4.53° lon) | landscape 1920×1080 | 8.028 | 2.69e-3 | 205.15 | yes | yes | ×1.14 | ×1.00 |
+| Switzerland | portrait 1080×1350 | 7.389 | 4.19e-3 | 319.69 | yes | yes | ×1.00 | **×1.95** |
+| Switzerland | square 1080×1080 | 7.389 | 4.19e-3 | 319.62 | yes | yes | ×1.00 | ×1.56 |
+| Lake Geneva (0.82° lon) | landscape 1920×1080 | 10.590 | 4.56e-4 | 35.05 | yes | yes | ×1.07 | ×1.00 |
+| Lake Geneva | portrait 1080×1350 | 9.855 | 7.59e-4 | 58.33 | yes | yes | ×1.00 | **×2.08** |
+| Lake Geneva | square 1080×1080 | 9.855 | 7.59e-4 | 58.33 | yes | yes | ×1.00 | ×1.66 |
+
+**Both rungs pass both camera invariants at all three sizes, and no gate had to be loosened to let
+them through.** The 175× hole is now spanned: zoom 0.707 (planet) · 0.877 · 2.07 · 2.56 · 3.08 ·
+3.35 · 3.47 · 4.74 · **7.39–8.03 (one country)** · **9.86–10.59 (one region)** · 11.07 · 11.40 (a
+city). Nothing between the rungs is untested any more.
+
+**And the finding the rungs were for.** In PORTRAIT, both rungs admit roughly **twice** the latitude
+their study set asked for — ×1.95 and ×2.08 — because `fitBounds` preserves the frame's aspect by
+widening whichever axis does not bind. That is exactly the silent absorption R2's rule-12 clause says
+must be *stated in the beat and asserted at the bake* rather than absorbed. It is not visible at
+landscape (×1.00 in latitude, ×1.07–1.14 in longitude), which is why a tree that had only ever
+produced landscape-ish frames never met it. `admittedLonRatio` / `admittedLatRatio` are the two
+numbers `geometry.json` should record, and this table is the measurement that says why.
