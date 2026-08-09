@@ -570,6 +570,49 @@ live `IntersectionObserver` reasserting the wrong step mid-measurement. Another 
 audit twice and was right both times: an alt text the audit called false was correct, and a video
 the audit called clean was defective. **The audit is a report like any other.**
 
+### The work queued when the session ran out of agents (2026-08-09, owner's list)
+
+Nine items, given by the owner after looking at the rendered output. **None is started.** They are
+written here in his priority order so a fresh session picks them up without re-deriving them.
+
+1. **Colours must follow the newsroom theme or fit the subject — ground included — and be PROPOSED
+   to the journalist, who accepts or chooses otherwise.** This is the biggest gap: `NEWSROOM.md`
+   carries `brandColor`, `ground` and `typefaces`, preflight validates them, and **nothing threads
+   them into a render**. `twin-chart-beat`'s Quick start still shows them as literals with a
+   `// from NEWSROOM.md` comment — an instruction to copy by eye. Three parts: make the values
+   reach the render; make the palette a proposal carrying its reasoning, with the journalist's
+   answer recorded; keep the contrast guard firing, because a house brand colour can easily fail
+   against the house ground and an unreadable chart is worse than no proposal. Subject-fit means a
+   grounded convention (green for renewables, grey for coal), not a colour that "feels right" —
+   when no convention applies, the house theme wins.
+2. **A web beat must fit the visible window** — no scrolling inside the visual. Today width fills
+   and height grows with it, so a wide viewport produces a beat taller than the screen.
+3. **Verify hovers really work**, in both web genres, by dispatching real pointer events at real
+   coordinates. One defect of exactly this kind was already found: an HTML overlay without
+   `pointer-events: none` swallowed every hover while keyboard focus still worked, because
+   `.focus()` bypasses hit testing — which is why no test caught it.
+4. **Verify filters the same way**, with real clicks, confirming the picture changes and the
+   default state shows the full claim.
+5. **The filter controls look unstyled** — plain radios read as a placeholder. They need a
+   considered treatment, still keyboard reachable, still working with JavaScript disabled.
+6. **The accessible region table becomes opt-in, not default** (owner's call). When turning it off,
+   `map-web-discipline.md` must state plainly what those readers lose: a map is spatial, a screen
+   reader has no spatial access, and the table was the answer.
+7. **The scroll vehicle must carry different media** — chart, map and image tracks, not one kind of
+   frame. Its seed currently assembles a photograph and a drawn diagram; a real map track and a
+   real chart track are the point of the vehicle.
+8. **Complete the type × genre matrix.** Measured from the briefs: chart static 12 types, chart web
+   15, chart video 12. Missing statics include heatmap, small multiples and bar-and-column; missing
+   videos include line, lollipop and bar-and-column. Maps have six types spread across the genres.
+9. **Re-verify every render, old and new.** The last audit covered 46 artifacts and found 11
+   defective; the tree now holds 88.
+
+**And one gap found while measuring the matrix: 13 beats have no `BRIEF.md`** — every map beat,
+plus `life-expectancy` and `migration`. The brief is the beat's editorial contract: what it proves,
+its reveal order, its single accent, its anti-patterns. Those thirteen have data, a component and an
+artifact, but nothing recording what they were meant to demonstrate — and it is why the map half of
+the matrix cannot be measured as reliably as the chart half.
+
 ### Still open
 
 - The map track for the scrolly; images as a medium; the assembly phase in `whereIs`.
