@@ -19,9 +19,12 @@
 // Usage:  bun proof/co2-suisse/render-web.mjs [outDir] [--data <csv>]
 
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { EmissionsWeb, LAYOUTS } from "./EmissionsWeb.tsx";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** The story's own constants — the journalist's words, from `BRIEF.md` and `STORYBOARD.md`. The same
  *  words the video runner uses for the same beat, so the genres never disagree about what the chart
@@ -42,7 +45,12 @@ export const BEAT = {
   alt: "Courbe des émissions territoriales suisses de CO₂, 1950 à 2024 : une montée jusqu'à un pic en 1973, puis une baisse qui repasse sous le niveau de 1967 en 2024.",
 };
 
-const DEFAULT_DATA_PATH = "/tmp/web-twin/data.csv";
+// The story's own frozen series, committed beside it — fetched from the OWID grapher endpoint
+// with `&csvType=filtered&country=~CHE` (see `twin-intake/references/ourworldindata-csv-filter-trap.md`
+// for why that parameter is not optional), verified to contain only Switzerland before being
+// trusted. No longer `/tmp` — a story folder that only a previous run's scratch directory can
+// reproduce is not the self-contained folder this project promises.
+const DEFAULT_DATA_PATH = join(HERE, "data.csv");
 const DEFAULT_OUT_DIR = "/tmp/web-twin";
 const OUTPUT_NAME = "co2.html";
 
