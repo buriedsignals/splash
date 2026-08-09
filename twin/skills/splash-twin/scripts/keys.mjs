@@ -12,6 +12,8 @@
 const KEY_ALIASES = {
   MAPTILER_KEY: ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"],
   DATAWRAPPER_TOKEN: ["DATAWRAPPER_API_TOKEN"],
+  CLOUDFLARE_API_TOKEN: [],
+  CLOUDFLARE_ACCOUNT_ID: [],
 };
 
 // Reads `canonical` from `env`, falling back to each of its aliases above in order. Never the
@@ -48,4 +50,11 @@ export async function probeMapTiler(key, fetchFn) {
 export async function probeDatawrapper(token, fetchFn) {
   if (!token) return { ok: false, status: null, detail: "DATAWRAPPER_TOKEN is not set" };
   return probe(DATAWRAPPER_PROBE, { headers: { Authorization: `Bearer ${token}` } }, fetchFn, "Datawrapper");
+}
+
+export async function probeCloudflare(accountId, apiToken, fetchFn) {
+  if (!accountId) return { ok: false, status: null, detail: "CLOUDFLARE_ACCOUNT_ID is not set" };
+  if (!apiToken) return { ok: false, status: null, detail: "CLOUDFLARE_API_TOKEN is not set" };
+  const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}`;
+  return probe(url, { headers: { Authorization: `Bearer ${apiToken}` } }, fetchFn, "Cloudflare");
 }

@@ -2,6 +2,7 @@ import { describe, it, expect } from "bun:test";
 import {
   probeMapTiler,
   probeDatawrapper,
+  probeCloudflare,
   resolveEnvKey,
 } from "../scripts/keys.mjs";
 
@@ -131,6 +132,83 @@ describe("probeDatawrapper", () => {
     expect(capturedInit?.headers?.Authorization).toBe(
       "Bearer secret-token-456",
     );
+  });
+});
+
+describe("probeCloudflare", () => {
+  it("should report ok when the account endpoint answers 200", async () => {
+    const fetchFn = async () => new Response("{}", { status: 200 });
+    const result = await probeCloudflare("account-id", "api-token", fetchFn);
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe(200);
+  });
+
+  it("should report not ok when the account ID is absent", async () => {
+    let called = false;
+    const fetchFn = async () => {
+      called = true;
+      return new Response("", { status: 200 });
+    };
+    const result = await probeCloudflare("", "api-token", fetchFn);
+    expect(result.ok).toBe(false);
+    expect(result.detail).toContain("CLOUDFLARE_ACCOUNT_ID");
+    expect(called).toBe(false);
+  });
+
+  it("should report not ok when the API token is absent", async () => {
+    let called = false;
+    const fetchFn = async () => {
+      called = true;
+      return new Response("", { status: 200 });
+    };
+    const result = await probeCloudflare("account-id", "", fetchFn);
+    expect(result.ok).toBe(false);
+    expect(result.detail).toContain("CLOUDFLARE_API_TOKEN");
+    expect(called).toBe(false);
+  });
+
+  it("should report not ok when credentials are rejected", async () => {
+    const fetchFn = async () => new Response("Unauthorized", { status: 403 });
+    const result = await probeCloudflare(
+      "stale-account",
+      "stale-token",
+      fetchFn,
+    );
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(403);
+    expect(result.detail).toContain("403");
+  });
+
+  it("should send the bearer token in the Authorization header", async () => {
+    let capturedInit;
+    const fetchFn = async (url, init) => {
+      capturedInit = init;
+      return new Response("{}", { status: 200 });
+    };
+    await probeCloudflare("account-123", "secret-token-xyz", fetchFn);
+    expect(capturedInit?.headers?.Authorization).toBe(
+      "Bearer secret-token-xyz",
+    );
+  });
+
+  it("should include the account ID in the request URL", async () => {
+    let capturedUrl = "";
+    const fetchFn = async (url) => {
+      capturedUrl = String(url);
+      return new Response("{}", { status: 200 });
+    };
+    await probeCloudflare("account-123", "token", fetchFn);
+    expect(capturedUrl).toContain("account-123");
+  });
+
+  it("should report not ok when the network throws", async () => {
+    const fetchFn = async () => {
+      throw new Error("ECONNREFUSED");
+    };
+    const result = await probeCloudflare("account-id", "api-token", fetchFn);
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(null);
+    expect(result.detail).toContain("ECONNREFUSED");
   });
 });
 

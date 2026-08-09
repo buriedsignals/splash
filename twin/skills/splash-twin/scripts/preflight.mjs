@@ -4,7 +4,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseNewsroom, validateNewsroom, isDeclinedProfile } from "./newsroom.mjs";
-import { probeMapTiler, probeDatawrapper, resolveEnvKey } from "./keys.mjs";
+import { probeMapTiler, probeDatawrapper, probeCloudflare, resolveEnvKey } from "./keys.mjs";
 
 const ROOT_TEMPLATE_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "root-template");
 const ROOT_TEMPLATE_PACKAGE_JSON = join(ROOT_TEMPLATE_DIR, "package.json");
@@ -161,17 +161,20 @@ export async function runPreflight({ root, env, fetchFn }) {
       probeFn: probeDatawrapper,
       fetchFn,
     }),
-    // No Cloudflare Pages producer exists anywhere in this toolchain yet (twin-deliver's own
-    // FORMS_BY_GENRE says so explicitly, in a comment: "Deliberately absent"). Reporting this
-    // "available" on the strength of a present key would be a claim nothing here can back, so it
-    // is hardcoded closed rather than probed — "never — optional" in the capability table means
-    // this row never even reads the environment.
-    hostedEmbed: {
-      id: "hosted-embed",
-      opens: "the hosted embed delivery form",
-      available: false,
-      reason: "no producer in this toolchain delivers a hosted embed yet",
-    },
+    // Cloudflare Pages producer exists in twin-deliver (deploy-embed.mjs). Probe both credentials
+    // independently so the feedback tells which one, if any, is missing. Both must resolve to
+    // report the capability available.
+    hostedEmbed: await (async () => {
+      const accountId = resolveEnvKey(env, "CLOUDFLARE_ACCOUNT_ID");
+      const apiToken = resolveEnvKey(env, "CLOUDFLARE_API_TOKEN");
+      const result = await probeCloudflare(accountId, apiToken, fetchFn);
+      return {
+        id: "hosted-embed",
+        opens: "the hosted embed delivery form",
+        available: result.ok,
+        reason: result.detail,
+      };
+    })(),
   };
 
   // Hard stops — the only two questions that block the session outright. Dependencies are a
