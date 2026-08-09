@@ -30,6 +30,11 @@ export function profileTable(rows) {
       distinct: new Set(values.filter((v) => v !== "")).size,
       min: numbers.length ? Math.min(...numbers) : null,
       max: numbers.length ? Math.max(...numbers) : null,
+      // The column total, beside its range. A takeaway citing a part-to-whole total ("34 million
+      // tonnes" against rows of 14, 11 and 9) cites a number that is by construction OUTSIDE the
+      // range of the column it sums, so without this the only check that can see it reads it as a
+      // number the data refutes — which is exactly what it did (twin-storyboard's ground-claim.mjs).
+      sum: numbers.length ? numbers.reduce((a, b) => a + b, 0) : null,
     };
   });
   return { rowCount: body.length, columns };

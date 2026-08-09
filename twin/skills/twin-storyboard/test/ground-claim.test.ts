@@ -47,14 +47,14 @@ describe("groundTakeaway — the Norway/Swiss cases from the trial", () => {
 
 describe("groundTakeaway — numeric tokens against column ranges", () => {
   const PROFILE = {
-    columns: [{ name: "value", type: "number", min: 0, max: 100 }],
+    columns: [{ name: "value", type: "number", min: 0, max: 100, sum: 100 }],
     rows: [],
   };
 
-  it("should flag a numeric token outside every column's range as contradicted", () => {
+  it("should mark a numeric token it cannot place as unverifiable, never contradicted", () => {
     const claims = groundTakeaway("the total reached 500 units", PROFILE);
     const claim = claims.find((c) => c.claim === "500");
-    expect(claim.verdict).toBe("contradicted");
+    expect(claim.verdict).toBe("unverifiable");
   });
 
   it("should mark a numeric token inside a column's range as supported", () => {
@@ -62,6 +62,84 @@ describe("groundTakeaway — numeric tokens against column ranges", () => {
     const claim = claims.find((c) => c.claim === "42");
     expect(claim.verdict).toBe("supported");
     expect(claim.detail).toContain("value");
+  });
+});
+
+// The Milan Cortina run (twin/FEEDBACK-2026-08-10.md, A13), verbatim. Its three-row CSV was
+//   acteur,emissions_tco2e,glace_fondue_mt,manteau_neigeux_km2,basis
+//   Jeux (émissions officielles),930000,14,2.3,publié
+//   Eni,700000,11,1.7,publié
+//   Stellantis + ITA Airways,600000,9,1.5,dérivé par soustraction
+// so `glace_fondue_mt` sums to exactly the 34 the journalist's takeaway cites — and the number is
+// outside that column's [9, 14] range precisely BECAUSE it is their total.
+const OLYMPICS_PROFILE = {
+  columns: [
+    {
+      name: "acteur",
+      type: "text",
+      missing: 0,
+      distinct: 3,
+      min: null,
+      max: null,
+      sum: null,
+    },
+    {
+      name: "emissions_tco2e",
+      type: "number",
+      min: 600000,
+      max: 930000,
+      sum: 2230000,
+    },
+    { name: "glace_fondue_mt", type: "number", min: 9, max: 14, sum: 34 },
+    {
+      name: "manteau_neigeux_km2",
+      type: "number",
+      min: 1.5,
+      max: 2.3,
+      sum: 5.5,
+    },
+  ],
+};
+
+const OLYMPICS_TAKEAWAY =
+  "Sur les 34 millions de tonnes de glace que feront fondre les JO de Milan Cortina, moins de la " +
+  "moitié est imputable aux Jeux eux-mêmes : le reste vient de leurs trois sponsors.";
+
+describe("groundTakeaway — part-to-whole totals (the takeaway this check wrongly refused)", () => {
+  it("should support a total that equals a column's sum, naming the column", () => {
+    const claims = groundTakeaway(
+      "le total atteint 34 millions de tonnes",
+      OLYMPICS_PROFILE,
+    );
+    const claim = claims.find((c) => c.claim === "34");
+    expect(claim.verdict).toBe("supported");
+    expect(claim.detail).toContain("glace_fondue_mt");
+  });
+
+  it("should mark a year matching no range and no sum as unverifiable, never contradicted", () => {
+    const claims = groundTakeaway(
+      "les JO de 2026 feront fondre la glace",
+      OLYMPICS_PROFILE,
+    );
+    const claim = claims.find((c) => c.claim === "2026");
+    expect(claim.verdict).toBe("unverifiable");
+  });
+
+  it("should return no contradicted verdict at all for the run's own verbatim takeaway", () => {
+    const claims = groundTakeaway(OLYMPICS_TAKEAWAY, OLYMPICS_PROFILE);
+    expect(claims.some((c) => c.verdict === "contradicted")).toBe(false);
+    expect(claims.find((c) => c.claim === "34").verdict).toBe("supported");
+  });
+
+  it("should not stretch the aggregate match to a value well off the sum", () => {
+    // 44 is 29% above glace_fondue_mt's total of 34, and in no column's range. Widening
+    // AGGREGATE_TOLERANCE far enough to swallow it is what this case exists to redden.
+    const claims = groundTakeaway(
+      "le total atteint 44 millions de tonnes",
+      OLYMPICS_PROFILE,
+    );
+    const claim = claims.find((c) => c.claim === "44");
+    expect(claim.verdict).toBe("unverifiable");
   });
 });
 

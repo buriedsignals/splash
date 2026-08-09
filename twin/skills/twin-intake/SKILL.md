@@ -24,13 +24,13 @@ Turns the article and CSV a journalist brought into a **frozen, immutable record
 | Layer | File | Role |
 | --- | --- | --- |
 | Reader | `scripts/csv.mjs` | `parseCsv(text)` — a real RFC 4180 reader: quoted fields, embedded commas/newlines, doubled quotes, CRLF **and** lone-CR line endings |
-| Profiler | `scripts/profile.mjs` | `profileTable(rows)` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns |
+| Profiler | `scripts/profile.mjs` | `profileTable(rows)` — types each column (`number`/`date`/`text`), counts missing/distinct, ranges numeric columns and totals them (`min`, `max`, `sum`) |
 | Orchestrator | `scripts/freeze.mjs` | `freezeSource({storyDir, articlePath, dataPath})` — reads both source files once, profiles the data, writes the three frozen artifacts, refuses a second call |
 
 ## How it works (the shape)
 
 1. **Parse** the CSV with a real state machine (quoted/unquoted, not a `.split(",")`) — `parseCsv` in `csv.mjs`.
-2. **Profile** the parsed rows: each column gets a strict-numeric-literal type check, a missing count (blank cells counted, never dropped), a distinct count, and a min/max for numeric columns only — `profileTable` in `profile.mjs`.
+2. **Profile** the parsed rows: each column gets a strict-numeric-literal type check, a missing count (blank cells counted, never dropped), a distinct count, and — for numeric columns only — a `min`, a `max` and a `sum`, in `profileTable` in `profile.mjs`. The `sum` is there for one named downstream reader: `twin-storyboard`'s grounding check, which cannot otherwise place a part-to-whole total, because a total is by construction outside the range of the column it sums.
 3. **Freeze**: `freezeSource` checks `source/article.md` doesn't already exist (refuses with `"already frozen"` if it does), then reads the article and CSV, runs the profiler, and writes all three files into `source/`. A read failure (missing file, permission denied, no `source/` directory to write into) surfaces its real error — it is never mislabelled as "already frozen" and never swallowed.
 
 ## Quick start

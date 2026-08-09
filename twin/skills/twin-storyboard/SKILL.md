@@ -65,7 +65,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | --- | --- | --- |
 | Doctrine | `references/exchange.md` | The six movements of the editorial exchange, the five hand-of-the-journalist questions with their destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta, profile?, capabilities?)` returns the list of reasons Gate 2 has not closed (empty means it has) |
-| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — not a fact-checker, not a conformance engine, one narrow class of error |
+| Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Capability gate | `scripts/capability-gap.mjs` | `capabilityGap(capabilities, medium)` says whether a chosen slot's medium is one the environment can actually honour — a **carried copy** of `splash-twin`'s own function (see Files below), not an import |
 
 ## How it works (the shape)
@@ -102,14 +102,22 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 5. **`groundTakeaway`** checks the takeaway text against `profile` for exactly one class of
    failure: a number or a direction the frozen data itself contradicts. It is not a fact-checker
    (it knows nothing outside `profile`) and not a conformance engine (it never looks at a rendered
-   chart). It recognises: a numeric token that falls outside every numeric column's range; a
-   two-year comparison ("X in 2024 was lower than in 1993") where both years are present in
-   `profile.rows`; a windowed superlative ("lower... than in any year since 1993", "the lowest
+   chart). It recognises: a numeric token that falls inside some numeric column's range; a numeric
+   token that equals a numeric column's `sum` within `AGGREGATE_TOLERANCE` — **a part-to-whole
+   total**, which is by construction ≥ the max of the column it sums and so can never be found in
+   a range; a two-year comparison ("X in 2024 was lower than in 1993") where both years are present
+   in `profile.rows`; a windowed superlative ("lower... than in any year since 1993", "the lowest
    since 1993") checked against every row in the claimed range, not just its boundary year; and
-   "highest/lowest ever" checked against the whole profile. Everything else — including "first
-   time" claims, comparisons the profile cannot resolve to a single value column, and phrasing
-   shapes this function does not parse — comes back `unverifiable` with a reason, never silently
-   `supported`.
+   "highest/lowest ever" checked against the whole profile.
+
+   **A number it can place in neither a range nor a total is `unverifiable`, never `contradicted`.**
+   Reading "I could not place this number" as "the data refutes this number" refused every
+   part-to-whole takeaway ever written, and did refuse a real one
+   (`twin/FEEDBACK-2026-08-10.md`, A13). Only a value that contradicts a fact this function DID
+   establish — the year comparisons and the superlatives, which read real rows — stays
+   `contradicted`. Everything else, including "first time" claims, comparisons the profile cannot
+   resolve to a single value column, and phrasing shapes this function does not parse, comes back
+   `unverifiable` with a reason, never silently `supported`.
 
 ## Quick start
 
@@ -151,6 +159,7 @@ if (errors.length > 0) {
 | Leading spaces that mark a line as a slot's own field, not a top-level one | `4` (`/^\s{4,}[A-Za-z]+:/`) | `parseStoryboard` |
 | How many numeric columns a comparison claim may resolve to before it is ambiguous | `1` (`findValueColumn`'s `candidates.length === 1` — more or fewer and the comparison comes back `unverifiable`, never guessed) | `scripts/ground-claim.mjs` |
 | How far around a "highest/lowest ... ever" phrase this looks for the year to anchor on | `80` characters each side | `scripts/ground-claim.mjs`'s `SUPERLATIVE_EVER_RE` handling |
+| How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative, with an absolute floor of 0.5) | `scripts/ground-claim.mjs` |
 
 ## Files
 

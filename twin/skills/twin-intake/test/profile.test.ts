@@ -23,6 +23,26 @@ describe("profileTable", () => {
     expect(rainfall.max).toBe(912);
   });
 
+  // The column total is what makes a part-to-whole takeaway checkable downstream: a total is by
+  // construction outside the range of the column it sums, so a profile carrying only [min, max]
+  // gives the grounding check no way to place one. Measured on the real Milan Cortina rows, whose
+  // takeaway cited 14 + 11 + 9 = 34 and was refused for exactly that reason.
+  it("should give a numeric column its total beside its range", () => {
+    const melted = profileTable([
+      ["acteur", "glace_fondue_mt"],
+      ["Jeux", "14"],
+      ["Eni", "11"],
+      ["Stellantis + ITA Airways", "9"],
+    ]).columns.find((c) => c.name === "glace_fondue_mt");
+    expect(melted.sum).toBe(34);
+  });
+
+  it("should give a text column no total", () => {
+    expect(
+      profileTable(ROWS).columns.find((c) => c.name === "commune").sum,
+    ).toBe(null);
+  });
+
   it("should count missing values instead of silently dropping them", () => {
     expect(
       profileTable(ROWS).columns.find((c) => c.name === "rainfall").missing,

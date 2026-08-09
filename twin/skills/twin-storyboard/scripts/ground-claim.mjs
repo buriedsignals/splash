@@ -15,7 +15,10 @@
 //
 // profile shape expected here:
 //   {
-//     columns: [{ name, type, min, max }, ...],   // as twin-intake's profileTable produces
+//     columns: [{ name, type, min, max, sum }, ...],  // as twin-intake's profileTable produces
+//                                                  // (`sum` is the total of a numeric column, and
+//                                                  // is what makes a part-to-whole takeaway
+//                                                  // checkable at all — see shape 1b below)
 //     rows: [{ [columnName]: value, ... }, ...],  // optional row-level data. Without it, any
 //                                                  // claim that needs a specific year's value
 //                                                  // comes back "unverifiable", never "supported"
@@ -24,14 +27,34 @@
 //
 // Claim shapes checked (see the module's test file and the SKILL.md for the full list this does
 // NOT cover):
-//   1. A numeric token in the takeaway that falls outside the range of every numeric column.
+//   1a. A numeric token in the takeaway that falls INSIDE the range of some numeric column.
+//   1b. A numeric token that equals a numeric column's `sum` within AGGREGATE_TOLERANCE — a
+//       part-to-whole total, "34 = 14 + 11 + 9". A number this function can place in NEITHER way is
+//       "unverifiable", never "contradicted": a total is by construction >= the max of the column
+//       it sums, so reading "I could not place this number" as "the data refutes this number"
+//       refused every part-to-whole takeaway ever written. That is a measured defect, not a
+//       hypothetical (twin/FEEDBACK-2026-08-10.md, A13), and the else branch below is where it lived.
 //   2. "X in <year A> (is/was) less/more than (in) <year B>" — both years present in the data.
 //   3. "X in <year A> ... less/more than ... since <year B>" and "the lowest/highest since <year>"
 //      — checked against every row in the claimed window, not just the boundary year.
 //   4. "highest/lowest ever" — checked against every row in the profile.
 //   5. "first time" claims — always unverifiable; there is no mechanical check for this shape.
+//
+// Only a value that contradicts a fact this function DID establish comes back "contradicted": the
+// year comparisons and the superlatives, which read real rows. Everything the function merely
+// failed to place is information for the journalist, not a refusal.
 
 const NUMBER_RE = /-?\d+(?:\.\d+)?/g;
+
+// The relative slack a rounded total is allowed against the exact sum of its column, so a takeaway
+// writing "34" against a column summing to 33.8 still resolves. Absolute floor of 0.5 so a small
+// column (sum 9) is not held to a tolerance of 0.09.
+const AGGREGATE_TOLERANCE = 0.01;
+
+function matchesAggregate(value, sum) {
+  if (sum === null || sum === undefined || !Number.isFinite(sum)) return false;
+  return Math.abs(value - sum) <= Math.max(0.5, Math.abs(sum) * AGGREGATE_TOLERANCE);
+}
 
 const LESS_RE = /^(less|fewer|lower|below|smaller|moins)$/i;
 const MORE_RE = /^(more|higher|greater|above|larger|plus)$/i;
@@ -282,13 +305,31 @@ function checkNumericRanges(text, columns, consumedSpans) {
         verdict: "supported",
         detail: `within the range of column "${inRange[0].name}" [${inRange[0].min}, ${inRange[0].max}]`,
       });
-    } else {
+      continue;
+    }
+
+    // A total is not a member of the column it sums — it is >= that column's max, by construction.
+    // Checking it against `sum` is the only way a part-to-whole takeaway ("34 million tonnes, of
+    // which less than half…") can be confirmed rather than merely tolerated.
+    const summed = numericColumns.find((c) => matchesAggregate(value, c.sum));
+    if (summed) {
       claims.push({
         claim: m[0],
-        verdict: "contradicted",
-        detail: `outside the range of every numeric column (${numericColumns.map((c) => `"${c.name}" [${c.min}, ${c.max}]`).join(", ")})`,
+        verdict: "supported",
+        detail: `equals the sum of column "${summed.name}" (${summed.sum})`,
       });
+      continue;
     }
+
+    // Neither a member of a range nor a column total. That is this function failing to place the
+    // number, which is not the same fact as the data refuting it — see the header.
+    claims.push({
+      claim: m[0],
+      verdict: "unverifiable",
+      detail: `could not be placed in any numeric column's range or total (${numericColumns
+        .map((c) => `"${c.name}" [${c.min}, ${c.max}]${c.sum === null || c.sum === undefined ? "" : `, sum ${c.sum}`}`)
+        .join(", ")}) — this check has no way to confirm or refute it`,
+    });
   }
   return claims;
 }
