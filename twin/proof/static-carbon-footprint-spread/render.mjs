@@ -71,7 +71,12 @@ async function main() {
       title: "Six in ten countries emit under 4 tonnes of CO2 per person a year",
       limits: "Per-country distribution for 2023 — each of the 213 countries counts equally here, not weighted by population. A few oil and gas producers sit far out on the right.",
       source: "Source: Global Carbon Budget (2025), via Our World in Data · 2023 data, extracted 8 August 2026",
-      alt: `Histogram of CO2 emissions per capita across 213 countries in 2023, in 4-tonne bins from 0 to 40. The distribution is heavily right-skewed: ${bins[0].count} countries sit in the 0-4 tonne bin, more than any other bin; the rest thin out into a long tail, topped by ${topBinCountries.join(" and ")} alone in the ${topBin.lo}-${topBin.hi} tonne bin. A dashed median line sits at ${med.toFixed(1)} tonnes.`,
+      // The last bin is OPEN in the code above (`v >= lo`, no upper test), so it must be described
+      // as open. It read "the 36-40 tonne bin", which placed its single member — at
+      // 40.127865 t, ABOVE 40 — in a range that excludes it. The value is interpolated from the
+      // data rather than written out, because a hand-typed correction is the same defect with a
+      // better number.
+      alt: `Histogram of CO2 emissions per capita across ${values.length} countries in 2023, in ${BIN_WIDTH}-tonne bins from 0 to ${topBin.lo} and above. The distribution is heavily right-skewed: ${bins[0].count} countries sit in the 0-${BIN_WIDTH} tonne bin, more than any other bin; the rest thin out into a long tail, topped by ${topBinCountries.join(" and ")} alone above ${topBin.lo} tonnes, at ${Math.max(...values).toFixed(1)} tonnes. A dashed median line sits at ${med.toFixed(1)} tonnes.`,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       median: med,

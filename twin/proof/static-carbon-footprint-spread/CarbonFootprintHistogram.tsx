@@ -236,7 +236,14 @@ export function CarbonFootprintHistogram({
       {bars.map((b) => (
         <text
           key={`label-${b.lo}`}
-          x={b.x + b.width / 2}
+          // The label names the bin's LOWER EDGE (`b.lo`), so it is drawn at that edge — not at
+          // `b.x + b.width / 2`, which is where it used to sit. A histogram's ticks are boundaries
+          // between bins, never marks on top of them, and the half-bin offset made the axis lie:
+          // the median rule, drawn correctly at x=184.4, read against the printed labels as ≈1.1 t
+          // while its own label said "Median: 3.1 t". The final tick was already at the true right
+          // edge, which is why the last gap rendered half-width and the two labels collided at
+          // 375px — the visible symptom of an axis that was wrong everywhere else too.
+          x={b.x}
           y={plot.bottom + 20}
           fill={muted}
           fontSize={AXIS.fontSize}

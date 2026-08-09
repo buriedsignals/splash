@@ -263,7 +263,11 @@ export function HistogramWeb({
       {bars.map((b) => (
         <text
           key={`label-${b.lo}`}
-          x={b.x + b.width / 2}
+          // The label names the bin's LOWER EDGE (`b.lo`), so it is drawn at that edge. Found
+          // independently in this copy and in `static-carbon-footprint-spread`'s — the same line,
+          // the same defect, in two files with no shared code. A histogram's ticks are boundaries
+          // between bins, never marks on top of them.
+          x={b.x}
           y={plot.bottom + 20}
           fill={muted}
           fontSize={layout.axis.fontSize}
