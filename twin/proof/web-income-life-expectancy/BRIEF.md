@@ -62,3 +62,12 @@ in the cloud — do not pick it as a named outlier.
 ## Source line
 
 `Source: UN World Population Prospects (2024) & World Bank, via Our World in Data · 2022 data`
+
+## Addendum — web beat build note, 2026-08-08
+
+Row-count correction, found while building the web beat: `data.csv` actually holds **165 data rows**
+(166 lines including the header), not the 164 this brief's "Data" section states — a one-off in the
+original count, not a data problem. After excluding Central African Republic per the data-quality
+flag above, the web beat draws **164 points** (161 unlabelled + the 3 named). The three verified
+values in the table above are unaffected.
+
