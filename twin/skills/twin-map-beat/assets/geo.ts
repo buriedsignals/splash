@@ -7,9 +7,10 @@
  * other's runtime behind it. `twin-chart-video`'s gotcha, one engine over: a module that reaches a
  * native rasteriser at import time cannot be bundled for a browser.
  *
- * It also means this file does NOT derive furniture colours. `deriveFurniture` in
- * `twin-chart-beat/scripts/render-still.mjs` owns the ink/muted/grid rule and its contrast
- * escalation; the render scripts call it in node and pass the result in. What lives here is the
+ * It also means this file does NOT derive furniture colours. `deriveFurniture` owns the ink/muted/grid
+ * rule and its contrast escalation, in this skill's own `scripts/render-still.mjs` (a copy of the
+ * `twin-chart-beat` original — a skill never imports another skill); the render scripts call it in
+ * node and pass the result in. What lives here is the
  * ramp — a quantity encoding, which is a different thing — built on a plain hex mix.
  */
 

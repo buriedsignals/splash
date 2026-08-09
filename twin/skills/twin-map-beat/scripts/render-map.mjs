@@ -5,8 +5,12 @@
 // wrong video, and finding out costs seconds at rung 2 instead of minutes at rung 3.
 //
 // It runs in node, which is why it is the piece that derives the furniture colours: `deriveFurniture`
-// lives in `twin-chart-beat/scripts/render-still.mjs` beside a native rasteriser no browser bundle
-// can load. One implementation of the colour rule, both genres.
+// lives in this skill's OWN `./render-still.mjs` beside a native rasteriser no browser bundle can
+// load. That file is a copy of `twin-chart-beat`'s, not an import of it — a skill directory has to
+// build after being copied on its own into a journalist's root, so nothing under a skill may import
+// out of it (`splash-twin/test/no-cross-skill-imports.test.ts` fails loud on any specifier that
+// does). One implementation of the colour rule per render; the copies are kept in step by
+// `splash-twin/test/helper-parity.test.ts`.
 //
 // It also runs the two checks that a render cannot make for itself:
 //   · the JOIN, which fails loud naming any shape that found no value (`geo-discipline.md` rule 5);

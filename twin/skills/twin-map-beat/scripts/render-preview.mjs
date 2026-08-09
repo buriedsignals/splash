@@ -1,10 +1,11 @@
 // Renders THIS skill's seed from THIS skill's sample data. Never a story's render: a story's
 // artifact proves the story, not the mechanism this skill teaches.
 //
-// The seed component never imports the rasteriser (`deriveFurniture`), which lives in
-// `twin-chart-beat/scripts/render-still.mjs` beside a native rasteriser no browser bundle
-// can load. This script is the one place per render that calls `deriveFurniture`, then
-// threads the results in as props, once.
+// The seed component never imports the rasteriser (`deriveFurniture`), which lives in this skill's
+// OWN `./render-still.mjs` — a copy of `twin-chart-beat`'s, not an import of it, because nothing
+// under a skill may import out of the skill — beside a native rasteriser no browser bundle can load.
+// This script is the one place per render that calls `deriveFurniture`, then threads the results in
+// as props, once.
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";

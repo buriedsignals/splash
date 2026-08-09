@@ -66,12 +66,13 @@ test suite says "clipped," only a screenshot does.
 | Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with the static and video beats — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here |
 | Composition | the story's own `EmissionsWeb.tsx`-shaped file, filed beside its story, not under this skill's `assets/` | A `WebLayout`-parameterised component, called once per layout the story supplies — not a live-reflow engine |
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
-| Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, layouts, props, outDir, name })` — SSRs one element per layout, derives furniture/measures gutters in node (`twin-chart-beat/scripts/render-still.mjs`), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own layout constants; the caller hands them in |
+| Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, layouts, props, outDir, name })` — SSRs one element per layout, derives furniture/measures gutters in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own layout constants, and never a story's component; the caller hands both in |
 | Test | `test/render-web.test.ts` | CSV parsing, the component's SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
-`deriveFurniture`/`measureText` live beside a native rasteriser in
-`twin-chart-beat/scripts/render-still.mjs` that no browser bundle can load, so `renderWeb` (node)
+`deriveFurniture`/`measureText` live beside a native rasteriser in this skill's own
+`scripts/render-still.mjs` (a copy of `twin-chart-beat`'s, because a skill never imports another
+skill) that no browser bundle can load, so `renderWeb` (node)
 derives the furniture and measures every gutter once, and passes the results into whichever
 component it was given as props (`measure`, `ink`/`muted`/`grid`). The composition itself never
 imports the rasteriser.
@@ -114,22 +115,29 @@ any one story calls its layouts or how many pixels wide they are.
 ## Quick start
 
 ```sh
+# the skill's own seed, from the skill's own sample data — nothing else on disk is needed
 bun skills/twin-chart-web/scripts/render-web.mjs /tmp/canon-web
 
 # then drive it — a static screenshot cannot verify an interactive claim
 python3 -m http.server 8934 --bind 127.0.0.1 --directory /tmp/canon-web &
-# open http://127.0.0.1:8934/co2.html in a real (or automated) browser and:
-#  1. confirm the title, the 1967 reference rule and the 2024 accent point are on screen before
+# open http://127.0.0.1:8934/rainfall.html in a real (or automated) browser and:
+#  1. confirm the title, the 2015 reference rule and the final accent point are on screen before
 #     touching anything;
-#  2. hover three different years, check the tooltip against the source CSV;
+#  2. hover three different years, check the tooltip against the source data;
 #  3. Tab to a point, confirm the same detail appears from keyboard focus alone;
 #  4. resize to ~360px wide, confirm nothing is clipped and the axis is still locatable.
+
+# a real story's own runner, filed beside the story, not inside the skill:
+bun proof/co2-suisse/render-web.mjs /tmp/web-twin --data /tmp/web-twin/data.csv   # → co2.html
 ```
 
-This runs the CO₂ beat's own runner (`render`, at the bottom of `scripts/render-web.mjs`), which
-reads a CSV (`--data`, default `/tmp/web-twin/data.csv`) and hands its component and its own
-`LAYOUTS` array to the genre's generic `renderWeb`. A second beat writes its own runner the same
-shape, importing its own story's composition and layouts.
+The first command runs the SEED's runner (`render`, at the bottom of `scripts/render-web.mjs`), which
+reads `assets/sample-data/rainfall.json` and hands the seed component and its `LAYOUTS` array to the
+genre's generic `renderWeb`. A real beat writes its own runner in that same shape **beside its own
+story** — `proof/co2-suisse/render-web.mjs` is exactly that, importing its own composition, its own
+layouts and its own CSV reader. It is not filed under this skill, and that is not a filing preference:
+until it was fixed, `render-web.mjs` imported `proof/co2-suisse/EmissionsWeb.tsx`, so copying this
+skill into a journalist's root — the whole premise — did not build.
 
 ## Tuning knobs
 
@@ -175,10 +183,11 @@ shape, importing its own story's composition and layouts.
   a real browser, not by a test.
 - `scripts/render-web.mjs` — the genre's own machinery: `renderWeb({ component, layouts, props,
   outDir, name })` SSRs one element per layout, derives the furniture, inlines the interaction
-  script, writes one self-contained HTML file. It knows no story's numbers. Beneath it,
-  `readingsFromCsv`, `BEAT`, `render` and the CLI block are the CO₂ beat's own runner — the same "a
-  story's script filed beside the skill" shape `twin-chart-video/scripts/render-video.mjs` already
-  has.
+  script, writes one self-contained HTML file. It knows no story's numbers. Beneath it, `SEED`,
+  `render` and the CLI block are the runner for THIS SKILL'S OWN SEED, behind a labelled `CONFIG —
+  edit for your story` seam. Nothing in this file imports out of this skill, which is what makes the
+  directory copy-pasteable; a story's runner lives beside the story
+  (`proof/co2-suisse/render-web.mjs`).
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data (never a
   story's render) to `assets/preview.png` or `--out <dir>` to write the proof to that directory instead.
   Derives `ink`/`muted`/`grid` with `deriveFurniture` and supplies `measureText` as `measure` — the
@@ -193,7 +202,9 @@ shape, importing its own story's composition and layouts.
   skill's `assets/`, the seed carries the exact `REPLACE ME` wording and none of the CO₂ story's own
   copy, the sample data is real rows a seed can render standalone, and `preview.png` is a current
   render (`render-preview.mjs --check`).
-- **The CO₂ beat's own files live outside this skill, in `proof/co2-suisse/`**: `EmissionsWeb.tsx`
+- **The CO₂ beat's own files live outside this skill, in `proof/co2-suisse/`**: `render-web.mjs`
+  (the story's own runner — its `BEAT` constants, its OWID CSV reader, its CLI; it imports the
+  genre's `renderWeb` from this skill, never the other way round), `EmissionsWeb.tsx`
   (composition — declares its own `WebLayout` type inline, not imported from this skill's seed,
   and exports its own two named layout constants and a `LAYOUTS` array bundling them for
   `render-web.mjs`'s CLI),

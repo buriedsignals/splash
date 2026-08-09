@@ -7,11 +7,12 @@
 // one inlined interaction script, no external request.
 //
 // It runs in node, which is why it is the piece that derives the furniture colours and measures
-// every gutter: `deriveFurniture`/`measureText` live beside a native rasteriser
-// (`twin-chart-beat/scripts/render-still.mjs`) that no browser bundle can load. Deriving here and
-// passing ink/muted/grid/measure in as props keeps ONE implementation of the colour rule and the
-// text-measurement rule across all three genres, exactly the pattern `render-video.mjs` already
-// set.
+// every gutter: `deriveFurniture`/`measureText` live beside a native rasteriser in this skill's OWN
+// `./render-still.mjs` — a copy of `twin-chart-beat`'s, because a skill never imports another skill —
+// which no browser bundle can load. Deriving here and passing ink/muted/grid/measure in as props
+// keeps ONE implementation of the colour rule and the text-measurement rule per render, exactly the
+// pattern `render-video.mjs` already set; the copies are kept in step by
+// `splash-twin/test/helper-parity.test.ts`.
 //
 // `renderWeb` below is the genre's own machinery and knows nothing of any one story: it takes the
 // component and the layouts to call it with as arguments, never reaches for one story's own
