@@ -1,5 +1,18 @@
 # Head-to-head: the twin against the established engine
 
+> **Correction, 2026-08-09 — two of the four cases rest on invented data.** The life-expectancy
+> (`2-VIE`) and migration (`3-MIGRATION`) cases were rendered, **on both sides**, from series that
+> exist nowhere in this repository, credited to the **Federal Statistical Office**. The migration
+> negatives are on the wrong years at the wrong values (real: 1996 = −5.807k, 1997 = −6.834k;
+> **1998 is positive**), and the life-expectancy charts end at **2024, a year the real series does
+> not contain**, under a credit naming an institution that publishes only sex-split life expectancy.
+> **The comparative findings below survive** — they are about layout (axis fitting, assertion versus
+> geometry, where the one emphasised label lands), which reads the same whatever series is
+> underneath, and both sides were given the same wrong numbers, so the head-to-head is still like
+> for like. **What does not survive is any number quoted off those six images**; each is corrected
+> in place below. The CO₂ case was re-checked against frozen data and is sound. Full recomputation:
+> [`proof/comparison/SUPERSEDED.md`](proof/comparison/SUPERSEDED.md).
+
 Run 2026-08-08, across four passes. Pass one produced three static-chart cases and one video case,
 same data, same confirmed takeaway, same journalist answers on both sides, and scored them directly
 — the section "Round 1, in detail" below is that scoring. Pass two took the same renders and put
@@ -14,8 +27,9 @@ sandbagging. Nothing here is a rehearsal; all sides are real production runs.
 
 **Cases.** Swiss territorial CO₂, 1950–2024 (takeaway: *"En 2024, la Suisse a émis moins de CO₂ sur
 son territoire qu'en 1967."*). Swiss life expectancy, 2000–2024 (the 2020 Covid dip, an interior
-subject — the story is not the endpoint). Swiss net migration, 1990–2024 (crosses zero; the subject
-is 1997–98, not the peaks). Video: the CO₂ case, 1080×1080, 240 frames, 30fps both sides. Ranking:
+subject — the story is not the endpoint) — *as briefed; the real series ends **2023***. Swiss net
+migration, 1990–2024 (crosses zero; the subject is 1997–98, not the peaks) — *as briefed; the real
+FSO table runs **1991**–2024 and its negative years are **1996–97***. Video: the CO₂ case, 1080×1080, 240 frames, 30fps both sides. Ranking:
 CO₂ per capita, Western Europe, 2023, 16 countries (subject Switzerland, rank 2 of 16 — deliberately
 not an extreme). Map: European CO₂ per capita, 2023 (subject Switzerland — neither the maximum nor
 the minimum; comparison the European average, 6,55 t; discreet the highest emitter, Luxembourg,
@@ -24,7 +38,13 @@ shaded but never named).
 Evidence: `proof/comparison/`. Filenames encode case and producer: `1-CO2`, `2-VIE`,
 `3-MIGRATION` × `main-chartnative` / `main-datawrapper` / `twin` / `twin-d3`, plus
 `video-main-final.png` / `video-twin-final.png`, plus `ranking-engine.png` / `ranking-twin.png`,
-plus `map-engine.png` / `map-twin.png`.
+plus `map-engine.png` / `map-twin.png`. **The eight `2-VIE--*` and `3-MIGRATION--*` files are
+superseded captures carrying false figures — read
+[`proof/comparison/SUPERSEDED.md`](proof/comparison/SUPERSEDED.md) before citing any of them.**
+
+Two of the case descriptions above also need correcting against the frozen data: the migration
+series runs **1991**–2024, not 1990–2024, and its subject is **1996–97**, not 1997–98; the life
+expectancy series ends **2023**, not 2024.
 
 ---
 
@@ -277,22 +297,42 @@ and geometry is the stronger form of the same claim.
 
 #### Life expectancy — close
 
+> **Both renders in this case are superseded.** Their series is invented and their FSO credit is
+> wrong on a figure that institution does not publish; the corrected render is
+> `proof/life-expectancy/life-expectancy-still.png` (2020 · **83.1**, ending **2023**, credited *UN
+> World Population Prospects (2024), via Our World in Data*). The comparison of *approach* below
+> holds — both sides drew the same wrong series — but every value named is a value off a superseded
+> image, kept only to describe what each producer chose to emphasise.
+
 `2-VIE--main-datawrapper.png` annotates the dip ("2020: the Covid dip") and the recovery ("2023:
 back to 2019") with two short callouts and no reference line — less ink, and it works: both moments
 are legible at a glance.
 
-`2-VIE--twin.png` draws a dashed "2019 level" rule and labels 2020 (82.9) and 2023 (84.0)
-against it, plus the 84.2-year endpoint. It shows the 2019 level rather than asserting the
-recovery in prose — the reader can see 2023 sit just under the line and 2024 clear it, instead of
+`2-VIE--twin.png` draws a dashed "2019 level" rule and labels the dip and the recovery against it,
+plus an endpoint label. It shows the 2019 level rather than asserting the recovery in prose — the
+reader can see the recovery year sit just under the line and the last point clear it, instead of
 being told "back to 2019". More ink than main's version, spent on showing rather than stating the
 same fact. Neither reading is wrong; this is the case where the two philosophies come out closest.
 
+*(The figures this passage originally quoted — 82.9, 84.0 and an 84.2-year endpoint at 2024 — are
+withdrawn. Recomputed from `proof/life-expectancy/data.csv`: 2020 = **83.0626**, 2023 = **83.9536**,
+and **there is no 2024 row**. The endpoint the twin's design argument leaned on does not exist.)*
+
 #### Migration — main won it first, the twin closed after the d3 switch
+
+> **All four renders in this case are superseded.** The series is invented: the real FSO table
+> (`proof/migration/data.csv`, 1991–2024) puts its two negative years at **1996 (−5.807k)** and
+> **1997 (−6.834k)**, has **1998 at +1.177k — positive**, and peaks at **139.118k**, not ≈84k. The
+> corrected render is `proof/migration/migration-still.png` (*"Twice since 1991"*, `1996 · −5.8k`,
+> `1997 · −6.8k`). The axis-fitting comparison below still holds — both sides were handed the same
+> wrong series, and the defect under discussion is how each producer framed it — but the extents and
+> year labels named are those of a superseded image, not of Switzerland.
 
 `3-MIGRATION--main-datawrapper.png` draws a **bold native zero baseline** across the full width of
 the frame — Datawrapper's own line-chart engine draws it automatically when the series straddles
 zero; nothing in the mapper had to ask for it — and the frame is full: −45 to 84 rendered edge to
-edge. `1997−98: below zero` sits directly under the dip.
+edge. `1997−98: below zero` sits directly under the dip *(on the real data those are the wrong two
+years)*.
 
 `3-MIGRATION--twin.png` (the pre-switch build) ran an axis from **−45 to 105** against data
 spanning −3.4 to 84 — a third of the frame is visibly empty above the highest point, and the dip
@@ -301,9 +341,9 @@ Main won this case outright on the first comparison.
 
 **After the d3 switch, `3-MIGRATION--twin-d3.png` flips it to close.** The axis is now fitted to
 −10/90 (d3's `.nice()` on the data extent), and the readings go from 58% to 88% of the plot — the
-empty band above the data is gone, the 1990s decline and the 1997–98 crossing below zero both read
-as real drops, not a flat wiggle. The accented dip and its two labelled values (−1.9, −3.4) are
-unchanged; only the frame around them tightened. Main's native zero baseline is still an advantage
+empty band above the data is gone, and both the 1990s decline and the crossing below zero read as
+real drops rather than a flat wiggle. The accented dip and its two labelled values are unchanged;
+only the frame around them tightened. Main's native zero baseline is still an advantage
 main did nothing to earn (see the structural gap, below) — but the twin's own defect that had
 handed the case away outright is closed.
 
@@ -322,9 +362,10 @@ member of an otherwise-equipped family with no way to say "this one." (`BarChart
 is the exact mechanism §3–§4's ranking case exercised on the engine's side, successfully.)
 
 Its only emphasis mechanism is a dot and a label on the **last** point in the series — visible
-directly in the renders: `1-CO2--main-chartnative.png` labels 2024 (which happens to be the subject
-there), but `2-VIE--main-chartnative.png` labels 2024 the same way even though the story is about
-**2020** — the single moment of typographic emphasis in the whole chart lands on the wrong year,
+directly in the renders: `1-CO2--main-chartnative.png` labels its final year, 2024 (which happens to
+be the subject there), but `2-VIE--main-chartnative.png` labels its final year the same way even
+though the story is about **2020** — the single moment of typographic emphasis in the whole chart
+lands on the wrong year,
 and nothing distinguishes the Covid dip from any other point on the line. That is not a coincidence
 of this one case; it is what the grep predicts for every line-chart story whose subject is not its
 endpoint. The ceiling of a parameterised type is not "less capable" in the abstract — it is exactly
