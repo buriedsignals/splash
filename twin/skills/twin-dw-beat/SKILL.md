@@ -91,7 +91,7 @@ established it.
 | Mapping | `scripts/map-spec.mjs` | `buildChartPayload`, `buildTextAnnotation`, `buildRangeAnnotation` — editorial `ChartSpec` in, Datawrapper `metadata.describe`/`metadata.visualize` out. The one file that knows Datawrapper's own field names |
 | Data | `scripts/csv.mjs` | `toCsv(rows)` — the one shape `PUT /v3/charts/{id}/data` accepts |
 | API client | `scripts/dw-client.mjs` | `createChart`, `setChartData`, `patchMetadata`, `publishChart`, `exportChartPng`, `getChart` — five thin, real HTTP calls, `fetchFn` injectable for tests, never mocked in the one place that actually runs against the network |
-| Orchestrator | `scripts/produce.mjs` | `produce(spec, {outDir, token, fetchFn})` — validate → map → create → set data → patch metadata → publish → (static: export + write PNG) |
+| Orchestrator | `scripts/produce.mjs` | `produce(spec, {outDir, size, token, fetchFn})` — validate → map → create → set data → patch metadata → publish → (static: export at the chosen size + check the returned PNG's own IHDR against it + write) |
 | Live pin | `scripts/verify-range-annotation.mjs` | The round-trip that confirms the candidate range-annotation shape by rendering it — run for real, live-confirmed (`references/range-annotation-shape.md` §2) |
 | Proof | `scripts/prove-co2.mjs` | The real case: Swiss territorial CO₂, 1950-2024, a range annotation at the 1967 level |
 
@@ -160,7 +160,8 @@ const result = await produce(spec, {
 | Opacity for a drawn line vs a shaded band | `100` / `20` | `buildRangeAnnotation` |
 | How far a range annotation's label sits above its line | `6` px (`dy: -6`, y-axis rules only) | `buildRangeAnnotation` |
 | Default text-annotation font size | `14` px | `buildTextAnnotation` |
-| Static export width / zoom | `900` px / `2`× | `exportChartPng` default, `dw-client.mjs` |
+| The three export sizes a static may be produced at | `SIZES` (landscape 1920×1080, square 1080×1080, portrait 1080×1920), at `zoom: 1` — the row IS the delivered pixel size | `sizes.mjs` |
+| Static export width / zoom, when `exportChartPng` is called directly | `900` px / `2`× | `exportChartPng` default, `dw-client.mjs` |
 | Which data column a rule/colour reads as "the value series" | the data's 2nd column (`columns()`) | `map-spec.mjs` |
 | How much the fitted y-range pads beyond the data's own min/max | `0.08` (8%) | `Y_RANGE_PAD`, `map-spec.mjs` |
 | Which chart types keep a zero-anchored axis instead of a fitted one | `/bars\|column/i` on `chartType` | `isBarEncoded`, `map-spec.mjs` |
@@ -175,6 +176,11 @@ const result = await produce(spec, {
   invents one.
 - `scripts/csv.mjs` — `toCsv`.
 - `scripts/dw-client.mjs` — the five real HTTP calls.
+- `scripts/sizes.mjs` — `SIZES` and `sizeFor`. The three export sizes ruling R2 names, carried (not
+  imported), kept in step with every other craft skill's copy by
+  `splash-twin/test/size-table-parity.test.ts`. This copy carries **no `typeScale`**, and that
+  absence is the point: Datawrapper lays out its type server-side, so there is no local number for a
+  scale to multiply — the parity guard is written present-and-valid-or-absent for exactly this.
 - `scripts/produce.mjs` — `produce`, the orchestrator; also runnable as
   `bun run scripts/produce.mjs <spec.json> <outDir> [static|interactive]`.
 - `scripts/verify-range-annotation.mjs` — the live shape-pinning round-trip; run for real, confirmed

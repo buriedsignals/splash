@@ -54,16 +54,24 @@
  * ── THE MUTATIONS THAT REDDEN IT ───────────────────────────────────────────────────────────────
  * Run in a copy of the tree outside it (invariant 4 of `twin/PLAN-2026-08-10.md`), 2026-08-10:
  *
- *   portrait.height 1920 -> 1922 in ONE copy      RED  — names the file, the row and the field
- *   add a fourth row `feed:` to ONE copy          RED  — the row-set assertion
- *   delete `landscape` from ONE copy              RED  — the row-set assertion
- *   landscape.width 1920 -> 1921 in any copy      RED  — the even-dimension assertion
- *   rename the canonical sizes.mjs                RED  — the premise assertion, not silently green
- *   delete the shared/ mirror                     RED  — the mirror assertion
- *   square.typeScale changed in ONE copy          GREEN — DELIBERATELY. See above.
+ *   portrait.height 1920 -> 1922 in ONE copy         RED  — names the file, the row and the field
+ *   add a fourth row `feed:` to ONE copy             RED  — the row-set assertion
+ *   delete `landscape` from ONE copy                 RED  — the row-set assertion
+ *   landscape.width 1920 -> 1921 in any copy         RED  — the even-dimension assertion
+ *   rename the canonical sizes.mjs                   RED  — the premise, not silently green
+ *   a shared/ mirror whose skill copy is gone        RED  — the orphan direction
+ *   a beat imports a mirror that does not exist      RED  — the needed direction
+ *   twin-dw-beat's copy grows `typeScale: "large"`   RED  — the shape check, value uncompared
+ *   square.typeScale CHANGED in ONE copy            GREEN — DELIBERATELY. See above.
+ *   delete a mirror NO beat imports                 GREEN — see the mirror assertion's own comment
+ *
+ * The last row is honest rather than comfortable: today no beat imports a `#shared` copy of the table yet
+ * (the static beats reach the table in Task 3), so `twin-chart-beat`'s mirror exists ahead of its
+ * consumers and deleting it fires nothing. It reddens the moment the first beat imports it, which
+ * is the only moment its absence would actually break anything.
  */
 import { describe, it, expect } from "bun:test";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
@@ -86,6 +94,17 @@ function findAll(dir: string, basename: string, out: string[] = []): string[] {
     const p = join(dir, e.name);
     if (e.isDirectory()) findAll(p, basename, out);
     else if (e.name === basename) out.push(p);
+  }
+  return out;
+}
+
+/** Every source file under a directory, for reading import specifiers out of `proof/`. */
+function findAllSource(dir: string, out: string[] = []): string[] {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name === "node_modules" || e.name === ".git") continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) findAllSource(p, out);
+    else if (/\.(mjs|ts|tsx|js|jsx)$/.test(e.name)) out.push(p);
   }
   return out;
 }
@@ -119,20 +138,54 @@ describe("the export-size table — every copy in the tree, discovered rather th
     expect(Object.keys(canonical!.SIZES).sort()).toEqual([...ROWS].sort());
   });
 
-  it("should find, for every craft skill carrying the table, its shared/ mirror too", () => {
+  it("should mirror into shared/ exactly where a beat reaches for it, and nowhere else", () => {
     // Deliberately NOT "at least N copies, where N is the number of craft skills using the table" —
     // the only mechanical way to count "craft skills using the table" is to count the copies, which
-    // would make the assertion check itself. This checks the pairing instead, which is the real
-    // invariant: `proof/` beats reach craft helpers through the `#shared/*` alias, so a skill copy
-    // without its mirror means every render script in every beat reaches across a skill boundary.
+    // would make the assertion check itself.
+    //
+    // And deliberately not "every skill copy has a mirror" either, which is what this assertion
+    // said first. That version was over-strict and was caught by its own stated reason: a mirror
+    // exists because `proof/` beats reach craft helpers through the `#shared/*` alias
+    // (`package.json:5-7`), and `twin-dw-beat` has no beat under `proof/` at all — its producer
+    // talks to an API. Forcing a mirror there would have created a file nobody imports in order to
+    // satisfy a rule whose reason did not apply. So the pairing is asserted in the two directions
+    // that are actually true.
     const skillCopies = paths.filter(
       (p) => p.includes(join("skills", "")) && p.includes("scripts"),
     );
     expect(skillCopies.length).toBeGreaterThan(0);
-    for (const p of skillCopies) {
-      const skill = relative(join(TWIN, "skills"), p).split("/")[0];
-      const mirror = join(TWIN, "shared", skill, "sizes.mjs");
-      expect([skill, existsSync(mirror)]).toEqual([skill, true]);
+
+    // (a) No ORPHAN mirror: a `shared/<skill>/sizes.mjs` whose skill copy has gone is a stale table
+    // that beats would keep importing after the real one moved.
+    const skillsWithCopy = new Set(
+      skillCopies.map((p) => relative(join(TWIN, "skills"), p).split("/")[0]),
+    );
+    for (const p of paths.filter((p) => p.includes(join("shared", "")))) {
+      const skill = relative(join(TWIN, "shared"), p).split("/")[0];
+      expect([skill, "has a skill copy", skillsWithCopy.has(skill)]).toEqual([
+        skill,
+        "has a skill copy",
+        true,
+      ]);
+    }
+
+    // (b) A mirror EXISTS wherever a beat actually imports one. Read off `proof/`'s own import
+    // specifiers rather than assumed, so adding the import without the mirror reddens here instead
+    // of at the first render.
+    const beatFiles = findAllSource(join(TWIN, "proof"));
+    const wanted = new Set<string>();
+    for (const f of beatFiles) {
+      for (const m of readFileSync(f, "utf8").matchAll(
+        /#shared\/([a-z0-9-]+)\/sizes\.mjs/g,
+      ))
+        wanted.add(m[1]);
+    }
+    for (const skill of wanted) {
+      expect([
+        skill,
+        "mirrored",
+        existsSync(join(TWIN, "shared", skill, "sizes.mjs")),
+      ]).toEqual([skill, "mirrored", true]);
     }
   });
 
