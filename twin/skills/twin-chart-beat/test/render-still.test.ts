@@ -69,6 +69,74 @@ describe("deriveFurniture", () => {
   });
 });
 
+describe("measureText — malformed calls throw rather than under-measure", () => {
+  // The regression this whole fix exists for, measured directly: a bare number used to be
+  // silently accepted and produce the SAME width as calling with no options at all, because
+  // `{ fontSize } = 40` destructures to `fontSize: undefined` and resvg defaults the size away.
+  it("should throw, not silently under-measure, when the second argument is a bare number", () => {
+    expect(() => measureText("Solar 7.2 %", 40)).toThrow(/options object/);
+  });
+
+  it("should throw when called with no second argument at all", () => {
+    expect(() => measureText("Solar 7.2 %")).toThrow(/options object/);
+  });
+
+  it("should throw when the second argument is an array, not an options object", () => {
+    expect(() => measureText("Solar 7.2 %", [40])).toThrow(/options object/);
+  });
+
+  it("should throw when the second argument is null", () => {
+    expect(() => measureText("Solar 7.2 %", null)).toThrow(/options object/);
+  });
+
+  it("should throw when fontSize is missing from an otherwise well-formed options object", () => {
+    expect(() => measureText("Solar 7.2 %", { fontWeight: 600 })).toThrow(
+      /fontSize/,
+    );
+  });
+
+  it("should throw when fontSize is not a finite number", () => {
+    expect(() => measureText("Solar 7.2 %", { fontSize: "40" })).toThrow(
+      /fontSize/,
+    );
+    expect(() => measureText("Solar 7.2 %", { fontSize: NaN })).toThrow(
+      /fontSize/,
+    );
+    expect(() => measureText("Solar 7.2 %", { fontSize: Infinity })).toThrow(
+      /fontSize/,
+    );
+  });
+
+  it("should name what was actually passed in the error message", () => {
+    expect(() => measureText("Solar 7.2 %", 40)).toThrow("40");
+  });
+
+  it("should still return 0 for empty text without requiring an options object", () => {
+    // Preserved on purpose: a caller measuring a possibly-absent label with no font decided yet
+    // (`measureText(maybeEmptyLabel)`) must not be forced to supply a fontSize it will never use.
+    expect(measureText("")).toBe(0);
+    expect(measureText(null)).toBe(0);
+    expect(measureText(undefined)).toBe(0);
+  });
+
+  // The cheap correctness assertion the parity guard alone cannot provide: parity proves ten
+  // copies agree with each other, never that any of them is RIGHT. A known string measured at
+  // two sizes must scale — this is what the 3.3x under-measure defect actually broke, and a
+  // parity test comparing wrong-against-wrong would never have caught it.
+  it("should scale a known string's measured width with fontSize, roughly proportionally", () => {
+    const small = measureText("Solar 7.2 %", { fontSize: 20 });
+    const large = measureText("Solar 7.2 %", { fontSize: 40 });
+    expect(small).toBeGreaterThan(0);
+    // Doubling fontSize roughly doubles the rendered width — real glyph metrics are not exactly
+    // linear (kerning, hinting), so this allows a wide but meaningful band rather than asserting
+    // an exact factor of 2. The defect this guards against returned the SAME 61.58 for both
+    // sizes — a ratio of 1, nowhere near this band.
+    const ratio = large / small;
+    expect(ratio).toBeGreaterThan(1.7);
+    expect(ratio).toBeLessThan(2.3);
+  });
+});
+
 const PLOT = {
   width: 900,
   height: 560,

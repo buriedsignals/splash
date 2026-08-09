@@ -158,6 +158,7 @@ by an ordinary relative path — that import is for this skill's own tests
 
 - `references/static-discipline.md` — the rules, each one attached to the defect that produced it.
 - `references/seed-anatomy.md` — what the seed teaches, and what adding a prop to it would cost.
+- `references/svg-xmlns-requirement.md` — the SVG namespace declaration required by the rasteriser; without it, rendering fails with a misleading error about document structure.
 - `assets/ChartSeed.tsx` — the seed. `lineGeometry` and `yTickValues` are pure and exported. Read
   here, in this repository, to learn the shape — **not vendored into a Splash root and never
   imported by a beat**; a beat writes its own component from scratch, in this shape.

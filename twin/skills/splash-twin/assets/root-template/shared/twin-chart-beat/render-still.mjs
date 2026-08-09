@@ -87,9 +87,30 @@ const measured = new Map();
  * The rendered width of a string, in the font it will actually be drawn in — resvg lays the
  * text out and reports the ink box. This is what a measured gutter is measured with; a fixed
  * constant here is the defect this function exists to remove.
+ *
+ * The second argument is an OPTIONS OBJECT, `{ fontSize, fontWeight?, fontFamily? }` — never a
+ * bare number. A caller that passes a number, or omits `fontSize` from the object, does not error
+ * at the call site: destructuring a missing key just yields `undefined`, which resvg's own SVG
+ * parser then defaults away silently, laying the text out at whatever size resvg picks rather
+ * than the one the caller meant. Measured, not assumed: `measureText("Solar 7.2 %", 40)` and
+ * `measureText("Solar 7.2 %", { fontSize: 40 })` used to return 61.58 and 205.27 respectively —
+ * a 3.3x gap with no error anywhere between them. This function's entire purpose is that a gutter
+ * is MEASURED, not guessed; a wrong measurement clips, silently, in the rendered PNG, so a
+ * malformed call throws here rather than returning a plausible small number.
  */
-export function measureText(text, { fontSize, fontWeight = 400, fontFamily = FONT_FAMILY } = {}) {
+export function measureText(text, options) {
   if (!text) return 0;
+  if (options === null || typeof options !== "object" || Array.isArray(options)) {
+    throw new Error(
+      `measureText's second argument must be an options object shaped { fontSize, fontWeight?, fontFamily? }, got ${JSON.stringify(options)} (${typeof options})`,
+    );
+  }
+  const { fontSize, fontWeight = 400, fontFamily = FONT_FAMILY } = options;
+  if (typeof fontSize !== "number" || !Number.isFinite(fontSize)) {
+    throw new Error(
+      `measureText's options.fontSize must be a finite number, got ${JSON.stringify(fontSize)} — a missing fontSize silently defaults to resvg's own size and under-measures`,
+    );
+  }
   const key = `${fontFamily}|${fontWeight}|${fontSize}|${text}`;
   if (measured.has(key)) return measured.get(key);
   const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

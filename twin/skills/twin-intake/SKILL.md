@@ -11,7 +11,7 @@ Turns the article and CSV a journalist brought into a **frozen, immutable record
 
 ## When to use
 
-- At the start of a story, right after a workspace exists (Task 2's `stories/<slug>/` shape), before any framing or design work.
+- At the start of a story, right after the story workspace exists (a `stories/<slug>/` directory with the `source/` subdirectory for intake to write into), before any framing or design work.
 - When you need a reliable `{type, min, max, missing, distinct}` per column to reason about later — never call a downstream phase against a CSV that hasn't been through here first.
 - **Not** for re-profiling after the journalist edits their data — that requires a fresh story (frozen means frozen).
 
@@ -56,6 +56,7 @@ const { article, data, profile } = await freezeSource({
 
 ## Files
 
+- `references/ourworldindata-csv-filter-trap.md` — how Our World in Data's CSV endpoint silently ignores country filters without `&csvType=filtered`, and the rule: always count rows to verify a dataset arrived as expected.
 - `scripts/csv.mjs` — `parseCsv`, the RFC 4180 reader.
 - `scripts/profile.mjs` — `profileTable`, the column profiler.
 - `scripts/freeze.mjs` — `freezeSource`, the orchestrator (depends on the two above).
