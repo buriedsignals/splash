@@ -414,6 +414,51 @@ rather than reading. The code is guarded six ways; the sentences describing it a
 nobody — and a reader follows the sentences first. **A test asserting that every exported signature
 named in a `SKILL.md` still exists in that shape is the next thing worth building.**
 
+### The production sweep, and what only producing could find
+
+Eleven beats were produced from real data, each in its own `proof/<slug>/` with its source frozen
+beside it: **eight static chart types** (grouped bar, stacked bar, scatter, area, slope, histogram,
+waterfall, population pyramid) and **three map types** (proportional symbol with a video build,
+locator, hex grid). Plus `twin-image-beat`, a new medium, and `twin-scrolly` revised.
+
+**The type sheets earned themselves.** They are not decoration in the repository — they show up in
+the output. The pyramid's subtitle explains that sorting by size would destroy the shape the chart
+exists to show. The hex grid's legend says "count, not energy or magnitude" and its footnote warns
+that a cell packed with small quakes outranks one with fewer large ones. Both are the sheets' "the
+one thing that goes wrong" arriving in the artifact.
+
+**Defects only a wider sweep could expose:**
+
+- **MapTiler's `dataviz-light` paints water grey**, breaking the doctrine's water/land/no-data
+  colour discipline. Invisible on the existing choropleth because polygons covered everything;
+  glaring the moment a symbol or hex map left water showing. Fixed at every bake.
+- **A baked plate at 900×560 drawn into an 836×330 box with no scale correction** — every hex cell
+  would have sat offset from the coastline beneath it. A silent geographic lie.
+- Two datasets were **replaced after looking at the render**: a waterfall whose steps were 1% of
+  its base and invisible at scale, and a scatter carrying a data artefact (one country reading 18.8
+  years against its own neighbouring years of 40.3 and 57.4).
+- Caught by looking, not by tests: an off-by-one tick-label list, a fixed-width legend colliding, an
+  annotation off-frame, a clipped source line, a locator label running off the edge, and **a stale
+  hard-coded number in alt text that contradicted the chart beside it**.
+
+**The scrolly was corrected twice, on the owner's instruction.** Prose now travels **over** the
+sticky graphic rather than beside it (contrast measured at 21:1 where they overlap), and the
+scaffold is media-agnostic: its seed assembles a photograph and a drawn diagram, not four states of
+one chart. `SKILL.md` now says the thing that matters — **if every step shows the same chart, do not
+reach for this; animate the beat instead.** A vehicle earns its existence only by carrying different
+media.
+
+### A parallelism lesson worth keeping
+
+Up to six agents wrote into this one tree at once. Two failure modes appeared, neither obvious:
+
+- **A whole-tree `git add` swept another agent's uncommitted work into an unrelated commit.** The
+  content survived under a wrong message. Disjoint *file sets* are not enough — every agent must
+  commit only its own explicit paths.
+- **One agent's mutation test turns the shared tree red for everyone.** Three agents reported
+  failures that were not theirs; all three correctly said so, but one "fixing" what it thought was
+  broken would have cost real work. Mutate in a copy, or declare the window.
+
 ### Still open
 
 - The map track for the scrolly; images as a medium; the assembly phase in `whereIs`.
