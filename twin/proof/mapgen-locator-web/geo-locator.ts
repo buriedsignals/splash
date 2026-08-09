@@ -20,6 +20,7 @@ export type OrgRow = {
   priority: number;
 };
 
+/** @parity */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -69,6 +70,7 @@ const CATEGORY_RANK: Record<string, number> = {
   "Other international body": 2,
 };
 
+/** @parity */
 export function orgsFromCsv(csv: string): OrgRow[] {
   const rows = parseCsv(csv.trim() + "\n");
   const header = rows[0]!;
@@ -126,7 +128,8 @@ export const CATEGORY_COLOUR: Record<string, string> = {
  * label, not that it stays inside the frame. A marker near the right edge (the World Economic
  * Forum's, in this beat's own study set) keeps a right-hand label by default and it runs off-canvas
  * unless this is checked against the frame, not the data.
- */
+ 
+ *  @parity */
 export function labelSide(
   px: number,
   frameWidth: number,
@@ -142,7 +145,8 @@ export type LabelBox = { x: number; y: number; width: number; height: number };
  * already-placed one is dropped. Same input always produces the same shown/hidden set —
  * `references/types/locator.md`'s "the correct instability a static frame can't tolerate" —
  * because the map engine's own label culling is NOT used here.
- */
+ 
+ *  @parity */
 export function declutterLabels<T extends { key: string; priority: number }>(
   points: T[],
   boxOf: (point: T) => LabelBox,
@@ -166,18 +170,9 @@ export function declutterLabels<T extends { key: string; priority: number }>(
 }
 
 /** Every point, priority order — the same order the accessible table and the keyboard's Home/End
- *  both use, so "the first row" means the same thing whichever the reader picks. */
+ *  both use, so "the first row" means the same thing whichever the reader picks. 
+ *  @parity-exempt: each beat reads its own data in its own order — value on a choropleth, population on a dot map, ascending priority on a locator. Four sorts, four beats, not four drifts. */
 export function readingOrder<T extends { priority: number }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => a.priority - b.priority);
 }
 
-/** The newsroom's readers write a decimal comma — duplicated rather than imported for the reason
- *  stated at the top of this file (a beat's pure core is its own). Unused by a locator's marks
- *  themselves (no value to format), kept only in case a caption needs a count formatted the same
- *  way the rest of this project's numbers are. */
-export function fr(value: number, decimals = 0): string {
-  return new Intl.NumberFormat("fr-FR", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value);
-}

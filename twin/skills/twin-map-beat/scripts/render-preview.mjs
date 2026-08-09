@@ -17,6 +17,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
 import {
   deriveFurniture,
+  readPalette,
   renderStill,
 } from "./render-still.mjs";
 import { Co2MapStill } from "../assets/Co2MapStill.tsx";
@@ -98,10 +99,11 @@ console.log(
     `${joined.noData.length} declared no-data (${joined.noData.join(", ")})`,
 );
 
-// Derive furniture and ramp
-const ground = "#FFFFFF";
+// Derive furniture and ramp. The colours are READ, not typed —
+// see `PALETTE.md` at this skill's own root.
+const { ground, accent } = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
 const furniture = deriveFurniture(ground);
-const ramp = sequentialRamp(ground, furniture.ink, CO2_BREAKS.length + 1);
+const ramp = sequentialRamp(ground, furniture.ink, CO2_BREAKS.length + 1, 0.1, 0.78);
 
 // Compute the mean of all sample values for the comparison mark
 const allValues = Array.from(values.values());
@@ -123,7 +125,7 @@ const svg = renderToStaticMarkup(
     noDataLabel: "no data",
     alt: "A map of Europe shaded by sample CO₂ values.",
     ground,
-    accent: "#0B7A75",
+    accent,
     ink: furniture.ink,
     muted: furniture.muted,
     subject: "CHE",

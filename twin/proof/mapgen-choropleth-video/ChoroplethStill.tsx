@@ -14,7 +14,7 @@
 import { Fragment } from "react";
 import { FONT_FAMILY, measureText } from "./render-still.mjs";
 import {
-  binIndex,
+  binIndexLowerInclusive,
   en,
   pathFromParts,
   scalePosition,
@@ -119,7 +119,7 @@ export function ChoroplethStill({
     const v = value.get(key);
     return v === null || v === undefined
       ? "url(#no-data)"
-      : ramp[binIndex(v, breaks)]!;
+      : ramp[binIndexLowerInclusive(v, breaks)]!;
   };
 
   // ── The column, measured top to bottom. Nothing below is a constant offset.

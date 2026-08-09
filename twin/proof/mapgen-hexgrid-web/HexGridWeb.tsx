@@ -56,7 +56,7 @@
  */
 
 import { Fragment } from "react";
-import { binIndex, hexCorners, type HexCell } from "./geo-hex.ts";
+import { binIndexUpperInclusive, hexCorners, type HexCell } from "./geo-hex.ts";
 
 type Measure = (
   text: string,
@@ -141,7 +141,7 @@ export function cellDetail(
   total: number,
   breaks: number[],
 ): string {
-  return `Rank ${rank} of ${total} — ${cell.count} earthquakes — ${densityClassLabel(binIndex(cell.count, breaks), breaks)}`;
+  return `Rank ${rank} of ${total} — ${cell.count} earthquakes — ${densityClassLabel(binIndexUpperInclusive(cell.count, breaks), breaks)}`;
 }
 
 export function HexGridWeb({
@@ -303,7 +303,7 @@ export function HexGridWeb({
         {ranked.map((cell, i) => {
           const rank = i + 1;
           const isSubject = cell.key === subjectKey;
-          const classIndex = binIndex(cell.count, breaks);
+          const classIndex = binIndexUpperInclusive(cell.count, breaks);
           const fill = ramp[classIndex]!;
           const corners = hexCorners(
             cell.cx * scale,
@@ -443,7 +443,7 @@ export function DensityTable({
       <tbody>
         {ranked.map((cell, i) => {
           const rank = i + 1;
-          const classIndex = binIndex(cell.count, breaks);
+          const classIndex = binIndexUpperInclusive(cell.count, breaks);
           return (
             <tr
               key={cell.key}

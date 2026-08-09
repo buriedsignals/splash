@@ -18,6 +18,7 @@ export type QuakePoint = {
   place: string;
 };
 
+/** @parity */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -99,6 +100,7 @@ function keptRows(
     );
 }
 
+/** @parity-exempt: delegates to `keptRows` in the beat that also needs the kept rows for its own claim check; the other two read the CSV once. */
 export function quakePointsFromCsv(csv: string): QuakePoint[] {
   return keptRows(csv).map(({ lon, lat, mag, place }) => ({
     lon,
@@ -110,7 +112,8 @@ export function quakePointsFromCsv(csv: string): QuakePoint[] {
 
 export type Axial = { q: number; r: number };
 
-/** Pointy-top axial coordinate of the pixel (x, y), before rounding — Red Blob Games' formula. */
+/** Pointy-top axial coordinate of the pixel (x, y), before rounding — Red Blob Games' formula. 
+ *  @parity */
 function pixelToAxialFractional(
   x: number,
   y: number,
@@ -122,7 +125,8 @@ function pixelToAxialFractional(
   };
 }
 
-/** Cube-coordinate rounding: rounds q, r, s independently, then fixes whichever drifted most. */
+/** Cube-coordinate rounding: rounds q, r, s independently, then fixes whichever drifted most. 
+ *  @parity */
 function axialRound(qf: number, rf: number): Axial {
   const sf = -qf - rf;
   let q = Math.round(qf);
@@ -136,19 +140,22 @@ function axialRound(qf: number, rf: number): Axial {
   return { q, r };
 }
 
+/** @parity */
 export function pixelToAxial(x: number, y: number, size: number): Axial {
   const { q, r } = pixelToAxialFractional(x, y, size);
   return axialRound(q, r);
 }
 
-/** The centre pixel of an axial cell, pointy-top orientation. */
+/** The centre pixel of an axial cell, pointy-top orientation. 
+ *  @parity */
 export function axialToPixel(a: Axial, size: number): [number, number] {
   const x = size * (Math.sqrt(3) * a.q + (Math.sqrt(3) / 2) * a.r);
   const y = size * ((3 / 2) * a.r);
   return [x, y];
 }
 
-/** The six corners of a pointy-top hexagon centred at (cx, cy). */
+/** The six corners of a pointy-top hexagon centred at (cx, cy). 
+ *  @parity */
 export function hexCorners(
   cx: number,
   cy: number,
@@ -175,7 +182,8 @@ export type HexCell = {
 /**
  * Bin projected points into hex cells at the given size, keyed by axial coordinate. Points outside
  * the frame (already culled by the caller) never reach here.
- */
+ 
+ *  @parity */
 export function binHex(
   points: { px: number; py: number }[],
   size: number,
@@ -202,7 +210,8 @@ export function binHex(
  * never assumed from the formula alone, because the formula's estimate and the real bin count can
  * differ once points cluster unevenly (exactly this dataset: quakes cluster on plate boundaries,
  * not uniformly across the frame).
- */
+ 
+ *  @parity */
 export function chooseHexSize(
   points: { px: number; py: number }[],
   frame: { width: number; height: number },
@@ -221,11 +230,10 @@ export function chooseHexSize(
   return { size, cells: binHex(points, size) };
 }
 
-/**
- * Five class breaks from the nonempty cells' own counts, at fixed percentiles — printed as numbers
- * next to each colour class in the legend, per the type's accessibility trap ("the printed number —
- * not the colour alone — is what lets a reader tell two adjacent classes apart").
- */
+/** Which class a COUNT falls in, where a class INCLUDES its own upper break: class i is
+ *  `breaks[i-1]+1 … breaks[i]`. That is what this beat's own legend prints
+ *  (`classRangeLabel`), and the two must not drift apart. The choropleth family bins the other
+ *  way and says so in its own name. @parity */
 export function countBreaks(counts: number[]): number[] {
   const sorted = [...counts].sort((a, b) => a - b);
   const at = (p: number) =>
@@ -240,20 +248,22 @@ export function countBreaks(counts: number[]): number[] {
   return breaks;
 }
 
-export function binIndex(value: number, breaks: number[]): number {
+export function binIndexUpperInclusive(value: number, breaks: number[]): number {
   let index = 0;
   while (index < breaks.length && value > breaks[index]!) index++;
   return index;
 }
 
-const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
+const HEX = /^#[0-9a-fA-F]{6}$/;
 
+/** @parity */
 function channels(hex: string): number[] {
-  if (!HEX_COLOUR.test(hex))
+  if (!HEX.test(hex))
     throw new Error(`expected #rrggbb, got ${JSON.stringify(hex)}`);
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
 
+/** @parity */
 function mixHex(from: string, to: string, ratio: number): string {
   const target = channels(to);
   return (
@@ -268,17 +278,26 @@ function mixHex(from: string, to: string, ratio: number): string {
   );
 }
 
-/** Same construction as the choropleth's ramp: `steps` shades from ground toward ink, never the
- *  poles themselves — neutral on any ground the newsroom picks. */
+/** A sequential ramp of `steps` colours from the newsroom's own ground toward its ink — the one
+ *  legitimate gradient on a map (geo-discipline rule 8), derived rather than picked so it works on
+ *  any ground.
+ *
+ *  `from` and `to` are the ramp's own ends as a fraction of ground→ink, and they are ARGUMENTS
+ *  rather than constants because two beat families measurably need different ends and this function
+ *  used to carry one family's numbers under a docstring claiming they were the other's. Measured
+ *  against white ground and #1A1A1A ink: at 0.10 the low end sits 5.24 ΔE76 from bare land and
+ *  16.85 from the #b9b9b9 no-data grey; at 0.14 it sits 8.41 from land and 13.68 from no-data. A
+ *  choropleth has a no-data colour to stay clear of; a hex field has none but must keep its
+ *  lowest-count cell readable as a cell. Each beat states its own ends beside its own ground. @parity */
 export function sequentialRamp(
   ground: string,
   ink: string,
   steps: number,
+  from: number,
+  to: number,
 ): string[] {
-  const FROM = 0.14;
-  const TO = 0.82;
   return Array.from({ length: steps }, (_, i) =>
-    mixHex(ground, ink, FROM + ((TO - FROM) * i) / (steps - 1)),
+    mixHex(ground, ink, from + ((to - from) * i) / (steps - 1)),
   );
 }
 
@@ -314,7 +333,8 @@ const BEARING =
  * "86 km ENE of Kinablangan, Philippines" (the region is what follows the last comma) and bare
  * strings like "Fiji region" or "south of the Fiji Islands" (the whole string, minus the bearing
  * phrase and the trailing word "region").
- */
+ 
+ *  @parity */
 export function regionOf(place: string): string {
   const tail = place.includes(",")
     ? place.slice(place.lastIndexOf(",") + 1)
@@ -338,7 +358,8 @@ export function regionOf(place: string): string {
  * sibling that put "the Tonga-Kermadec trench" ~700 km east of where its own events average, and on
  * the static sibling it left "around Indonesia and the Philippines" standing after a re-bake moved
  * the densest cell to the Fiji–Tonga zone entirely.
- */
+ 
+ *  @parity */
 export function dominantRegions(
   places: string[],
   max = 2,

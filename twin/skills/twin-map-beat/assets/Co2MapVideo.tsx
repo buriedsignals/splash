@@ -24,7 +24,7 @@ import {
   useVideoConfig,
 } from "remotion";
 import {
-  binIndex,
+  binIndexLowerInclusive,
   fr,
   pathFromRings,
   revealOrder,
@@ -335,7 +335,7 @@ export function Co2MapVideo({
               // — visibly not a shade the ramp could have produced — until its own window opens,
               // then crossfades to its true colour. Never translucent against the basemap, so it
               // never reads lighter than the lightest filled class.
-              const trueFill = ramp[binIndex(v, breaks)];
+              const trueFill = ramp[binIndexLowerInclusive(v, breaks)];
               return (
                 <Fragment key={shape.key}>
                   {arrived < 1 && (

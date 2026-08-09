@@ -15,7 +15,7 @@
 import { Fragment } from "react";
 import { FONT_FAMILY, measureText } from "../scripts/render-still.mjs";
 import {
-  binIndex,
+  binIndexLowerInclusive,
   fr,
   pathFromRings,
   scalePosition,
@@ -120,7 +120,7 @@ export function Co2MapStill({
     const v = value.get(key);
     return v === null || v === undefined
       ? "url(#no-data)"
-      : ramp[binIndex(v, breaks)]!;
+      : ramp[binIndexLowerInclusive(v, breaks)]!;
   };
 
   // ── The column, measured top to bottom. Nothing below is a constant offset.

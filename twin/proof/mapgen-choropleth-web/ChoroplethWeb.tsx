@@ -53,7 +53,7 @@
 
 import { Fragment } from "react";
 import {
-  binIndex,
+  binIndexLowerInclusive,
   bboxCenter,
   boundingBoxOf,
   en,
@@ -190,7 +190,7 @@ export function ChoroplethWeb({
   const { width, pad, mapSize } = layout;
   const stacked = layout.name === "narrow";
   const scale = mapSize / geometry.frame.width;
-  const ramp = sequentialRamp(ground, ink, breaks.length + 1);
+  const ramp = sequentialRamp(ground, ink, breaks.length + 1, 0.1, 0.78);
   const valueByKey = new Map(rows.map((r) => [r.key, r.value]));
   const named = geometry.shapes.map((shape) => ({
     ...shape,
@@ -199,7 +199,7 @@ export function ChoroplethWeb({
   const anyNoData = named.some((r) => r.value === null);
 
   const fillOf = (value: number | null): string =>
-    value === null ? NO_DATA_FILL : ramp[binIndex(value, breaks)]!;
+    value === null ? NO_DATA_FILL : ramp[binIndexLowerInclusive(value, breaks)]!;
 
   const mapX = pad;
   const mapY = pad;

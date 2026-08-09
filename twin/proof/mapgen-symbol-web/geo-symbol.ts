@@ -16,7 +16,6 @@
  * delivered artifacts.
  */
 
-import { scaleSqrt } from "d3-scale";
 
 export type QuakeRow = {
   key: string;
@@ -30,7 +29,8 @@ export type QuakeRow = {
 /** A row once the bake has projected it into the plate's own pixel space. */
 export type ProjectedQuake = QuakeRow & { px: number; py: number; arc: string };
 
-/** Minimal RFC4180-ish CSV parse: handles quoted fields with embedded commas, no embedded newlines. */
+/** Minimal RFC4180-ish CSV parse: handles quoted fields with embedded commas, no embedded newlines. 
+ *  @parity */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -67,6 +67,7 @@ export function parseCsv(text: string): string[][] {
   return rows;
 }
 
+/** @parity */
 export function quakesFromCsv(csv: string): QuakeRow[] {
   const rows = parseCsv(csv.trim() + "\n");
   const header = rows[0]!;
@@ -99,7 +100,8 @@ export function quakesFromCsv(csv: string): QuakeRow[] {
  * because this file's static sibling once CREDITED a window ("2005–2024") seven years wider than the
  * frozen data, whose last event is 2017-01-22. Anything the furniture says about the period comes
  * through here.
- */
+ 
+ *  @parity */
 export function yearWindow(rows: { time: string }[]): {
   first: number;
   last: number;
@@ -126,14 +128,16 @@ export function yearWindow(rows: { time: string }[]): {
  * Magnitude is itself logarithmic, which this scale does NOT correct for: it draws circles
  * proportional to the reported magnitude number, USGS's own convention, and this beat's caveat says
  * so in words rather than leaving a reader to assume the circles are proportional to energy.
- */
-export function radiusScale(maxMag: number, maxRadiusPx: number) {
-  const scale = scaleSqrt().domain([0, maxMag]).range([0, maxRadiusPx]);
-  return (mag: number) => scale(mag);
+ 
+ *  @parity */
+export function radiusScale(maxValue: number, maxRadiusPx: number) {
+  return (value: number) =>
+    maxRadiusPx * Math.sqrt(Math.max(0, value) / maxValue);
 }
 
-/** Three round reference sizes for the legend, half-magnitude steps down from the rounded max. */
-export function niceReferenceValues(maxMag: number, count = 3): number[] {
+/** Three round reference sizes for the legend, half-magnitude steps down from the rounded max. 
+ *  @parity */
+export function halfMagnitudeReferenceValues(maxMag: number, count = 3): number[] {
   const top = Math.round(maxMag * 2) / 2;
   const values: number[] = [];
   for (let i = 0; i < count; i++) {
@@ -143,7 +147,8 @@ export function niceReferenceValues(maxMag: number, count = 3): number[] {
   return values;
 }
 
-/** Largest first, so later (smaller) circles paint on top and stay visible rather than buried. */
+/** Largest first, so later (smaller) circles paint on top and stay visible rather than buried. 
+ *  @parity-exempt: sorts the field this beat's own points carry (`.mag` on a quake catalogue, `.value` on the general seed); the invariant is small-on-top, not the field name. */
 export function drawOrder<T extends { mag: number }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => b.mag - a.mag);
 }
@@ -151,7 +156,8 @@ export function drawOrder<T extends { mag: number }>(rows: T[]): T[] {
 /**
  * Every event, largest first — the order the accessible table and the keyboard's Home/End both use,
  * so "the first row" means the same thing whichever channel a reader picks.
- */
+ 
+ *  @parity-exempt: each beat reads its own data in its own order — value on a choropleth, population on a dot map, ascending priority on a locator. Four sorts, four beats, not four drifts. */
 export function readingOrder<T extends { mag: number }>(rows: T[]): T[] {
   return drawOrder(rows);
 }
@@ -179,7 +185,8 @@ export type LabelPlacement = { side: "left" | "right"; dy: number };
  * a symbol near the frame edge needs its label flipped inward, and the map's own coordinate cannot
  * tell you that; only the projected pixel can. `margin` is passed as a fraction of the real frame by
  * the component, never left on a default tuned for one bake size.
- */
+ 
+ *  @parity-exempt: the flip margin and the vertical nudge are pixel constants tuned per frame size, and deriving them is W5 task T7's own work — until then this records that they are known to disagree. */
 export function labelPlacement(
   px: number,
   py: number,
@@ -192,7 +199,8 @@ export function labelPlacement(
 }
 
 /** Whether a projected point actually lands inside the frame — nothing to cull (a point has no
- *  shape to thin), only to notice and report if the camera missed it. */
+ *  shape to thin), only to notice and report if the camera missed it. 
+ *  @parity */
 export function keepPoint(
   point: { px: number; py: number },
   frame: { width: number; height: number },
@@ -248,7 +256,8 @@ export function arcOf(point: {
  * The distinct filter groups a study set carries, in a stable order — computed in ONE place, shared
  * by the component (which draws the `<fieldset>`) and the render script (which generates the
  * matching `:has()` CSS rule per group), so the two can never drift out of sync.
- */
+ 
+ *  @parity-exempt: groups by the field this beat's own points carry (`.arc` on a subduction catalogue, `.group` on the general seed). */
 export function groupsOf(points: { arc: string }[]): string[] {
   return Array.from(new Set(points.map((p) => p.arc))).sort();
 }
@@ -258,7 +267,8 @@ export function groupsOf(points: { arc: string }[]): string[] {
  * carries the SLUG, and the slug is what the generated selector quotes: the raw name, HTML-escaped
  * into a CSS string, once turned `&` into five literal characters that matched no element, and one
  * filter emptied an entire map with nothing red anywhere.
- */
+ 
+ *  @parity */
 export function slugOf(text: string): string {
   return text
     .toLowerCase()
@@ -270,7 +280,8 @@ export function slugOf(text: string): string {
  * How many times more energy the subject released than a comparison event, from the moment
  * magnitude scale's own definition (each whole step is 10^1.5× the energy). Used so the beat's
  * log-scale caveat carries a computed number instead of a remembered one.
- */
+ 
+ *  @parity */
 export function energyRatio(subjectMag: number, comparisonMag: number): number {
   return 10 ** (1.5 * (subjectMag - comparisonMag));
 }
@@ -278,7 +289,8 @@ export function energyRatio(subjectMag: number, comparisonMag: number): number {
 /**
  * Check the confirmed superlative against the source: the subject must exceed every other event in
  * the study set, or this returns the events it does not exceed and the render throws naming them.
- */
+ 
+ *  @parity */
 export function symbolClaimViolations({
   rows,
   subjectKey,
@@ -300,7 +312,8 @@ export function symbolClaimViolations({
 }
 
 /** The beat's own language is English (`lang="en"` on the page this feeds), so its numbers are
- *  English — the same `en` on `en-GB` `proof/web-co2-ranking/bar-geometry.ts` settled on. */
+ *  English — the same `en` on `en-GB` `proof/web-co2-ranking/bar-geometry.ts` settled on. 
+ *  @parity */
 export function en(value: number, decimals = 1): string {
   return new Intl.NumberFormat("en-GB", {
     minimumFractionDigits: decimals,

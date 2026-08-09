@@ -15,6 +15,7 @@
 export type LonLat = [number, number];
 export type Ring = LonLat[];
 
+/** @parity */
 export function parseRouteCsv(csv: string): LonLat[] {
   const [header, ...rows] = csv.trim().split(/\r?\n/);
   const columns = (header ?? "").split(",");
@@ -32,7 +33,8 @@ export function parseRouteCsv(csv: string): LonLat[] {
 
 // ── Point in polygon ───────────────────────────────────────────────────────────────────────────
 
-/** Ray-casting point-in-ring test, plain [lon, lat] pairs. */
+/** Ray-casting point-in-ring test, plain [lon, lat] pairs. 
+ *  @parity */
 export function pointInRing(point: LonLat, ring: Ring): boolean {
   const [x, y] = point;
   let inside = false;
@@ -50,7 +52,8 @@ type Geometry =
   | { type: "Polygon"; coordinates: Ring[] }
   | { type: "MultiPolygon"; coordinates: Ring[][] };
 
-/** Inside the outer ring of some polygon part, and not inside any of that part's holes. */
+/** Inside the outer ring of some polygon part, and not inside any of that part's holes. 
+ *  @parity */
 export function pointInGeometry(point: LonLat, geometry: Geometry): boolean {
   const polygons =
     geometry.type === "MultiPolygon"
@@ -77,7 +80,8 @@ export type Crossing = { key: string; name: string; firstIndex: number };
  * already left (this beat's own river runs along several borders and drifts back and forth across
  * them at the resolution the source ships) does not change that territory's position in the order:
  * only the FIRST entry counts, exactly as the sheet specifies.
- */
+ 
+ *  @parity */
 export function territoriesCrossed(
   route: LonLat[],
   territories: Territory[],
@@ -104,6 +108,7 @@ export function territoriesCrossed(
 
 const EARTH_KM = 6371;
 
+/** @parity */
 function haversineKm(a: LonLat, b: LonLat): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(b[1] - a[1]);
@@ -116,7 +121,8 @@ function haversineKm(a: LonLat, b: LonLat): number {
   return 2 * EARTH_KM * Math.asin(Math.sqrt(h));
 }
 
-/** Cumulative km from the route's own origin to each sample — used only to report leg lengths. */
+/** Cumulative km from the route's own origin to each sample — used only to report leg lengths. 
+ *  @parity */
 export function cumulativeKm(route: LonLat[]): number[] {
   const out = [0];
   for (let i = 1; i < route.length; i++)
@@ -141,7 +147,8 @@ export type BBox = { minX: number; minY: number; maxX: number; maxY: number };
  * that is actually IN the camera — a route that only clips a territory's corner (this beat's own
  * Germany and Ukraine, both mostly outside the Danube corridor's frame) must not anchor its label
  * off-frame, which the whole-country visual centre would do.
- */
+ 
+ *  @parity */
 export function clipToBBox(ring: Ring, box: BBox): Ring {
   const edges: Array<
     [(p: LonLat) => boolean, (a: LonLat, b: LonLat) => LonLat]
@@ -172,10 +179,12 @@ export function clipToBBox(ring: Ring, box: BBox): Ring {
   return output;
 }
 
+/** @parity */
 function intersectX(a: LonLat, b: LonLat, x: number): LonLat {
   const t = (x - a[0]) / (b[0] - a[0]);
   return [x, a[1] + t * (b[1] - a[1])];
 }
+/** @parity */
 function intersectY(a: LonLat, b: LonLat, y: number): LonLat {
   const t = (y - a[1]) / (b[1] - a[1]);
   return [a[0] + t * (b[0] - a[0]), y];
@@ -185,7 +194,8 @@ function intersectY(a: LonLat, b: LonLat, y: number): LonLat {
  * `bbox`, if given, clips every ring to that box first (see `clipToBBox`) — the anchor then lands
  * inside whatever part of the territory the camera actually shows, not the whole country's own
  * visual centre, which can sit far off-frame for a territory the route only clips the corner of.
- */
+ 
+ *  @parity */
 export function pointOnFeature(geometry: Geometry, bbox?: BBox): LonLat {
   const polygons =
     geometry.type === "MultiPolygon"
@@ -256,6 +266,7 @@ export function pointOnFeature(geometry: Geometry, bbox?: BBox): LonLat {
   return bestPoint;
 }
 
+/** @parity */
 function distToSegment(p: LonLat, a: LonLat, b: LonLat): number {
   const [px, py] = p;
   const [ax, ay] = a;
@@ -319,12 +330,14 @@ export const QUALITATIVE_CYCLE = [
   "#AA4499", // purple
 ];
 
+/** @parity */
 export function territoryColour(index: number): string {
   return QUALITATIVE_CYCLE[index % QUALITATIVE_CYCLE.length]!;
 }
 
 // ── The rule those two substitutions exist to satisfy ────────────────────────────────────────────
 
+/** @parity */
 function srgbChannels(hex: string): [number, number, number] {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
 }
@@ -344,7 +357,8 @@ export function labOf(colour: string | [number, number, number]): [number, numbe
 }
 
 /** ΔE76 — the plain Euclidean distance in L*a*b*. Deliberately the same metric the render audit
- *  used, so a number here can be compared with a number there without a conversion argument. */
+ *  used, so a number here can be compared with a number there without a conversion argument. 
+ *  @parity */
 export function deltaE76(
   a: string | [number, number, number],
   b: string | [number, number, number],
@@ -355,7 +369,8 @@ export function deltaE76(
 }
 
 /** What a hue actually looks like once laid over the plate at `opacity` — SVG's `fill-opacity`
- *  composites in sRGB, so this is plain linear interpolation of the 0..255 channels. */
+ *  composites in sRGB, so this is plain linear interpolation of the 0..255 channels. 
+ *  @parity */
 export function compositeOverLand(
   hue: string,
   opacity: number = TERRITORY_FILL_OPACITY,
@@ -384,7 +399,8 @@ export function compositeOverLand(
  * turned into a number, and it runs at render time rather than in a test because the thing it
  * guards — a hue, an opacity and a basemap tint that live in three different files — can only
  * disagree once they are composited.
- */
+ 
+ *  @parity */
 export function territoryFillReport(
   cycle: string[] = QUALITATIVE_CYCLE,
   opacity: number = TERRITORY_FILL_OPACITY,
@@ -395,6 +411,7 @@ export function territoryFillReport(
   });
 }
 
+/** @parity */
 export function assertTerritoryFillsReadAsLand(
   cycle: string[] = QUALITATIVE_CYCLE,
   opacity: number = TERRITORY_FILL_OPACITY,
@@ -415,7 +432,8 @@ export function assertTerritoryFillsReadAsLand(
  *  from `render-still.mjs` on purpose: this module is bundled INTO the video by webpack, and
  *  `render-still.mjs` pulls in the native rasteriser, which webpack cannot parse ("Module parse
  *  failed: Unexpected character" on a `.node` binary). A module a bundler has to walk keeps its
- *  arithmetic pure. */
+ *  arithmetic pure. 
+ *  @parity */
 function relativeLuminance(hex: string): number {
   const [r, g, b] = srgbChannels(hex).map((v) => {
     const c = v / 255;
@@ -424,6 +442,7 @@ function relativeLuminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
+/** @parity */
 function wcagContrast(a: string, b: string): number {
   const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
@@ -435,7 +454,8 @@ function wcagContrast(a: string, b: string): number {
  * ground colour, on a disc drawn at the hue's FULL strength: white on Tol's sand `#DDCC77` measures
  * 1.62:1, on its pale cyan 1.76:1, on its teal 2.82:1 and on its olive 3.02:1 — five of the nine
  * numbers a reader is asked to read in order sat under the 4.5:1 floor, and two were barely there.
- */
+ 
+ *  @parity */
 export function numeralInk(swatch: string): string {
   return wcagContrast("#000000", swatch) >= wcagContrast("#FFFFFF", swatch) ? "#000000" : "#FFFFFF";
 }
@@ -448,7 +468,8 @@ export function numeralInk(swatch: string): string {
  * Ukraine) still has its full national extent as a shape, but a label anchored at the NATIONAL
  * visual centre would float far from the part of the country the route is actually in — so
  * `pointOnFeature` is asked to anchor within this box instead of the country's own bbox.
- */
+ 
+ *  @parity */
 export function routeBBoxWithin(
   route: LonLat[],
   geometry: Geometry,
@@ -492,7 +513,8 @@ export function simplifyRing(ring: PixelRing, minGap: number): PixelRing {
 
 /** Whether a projected ring is worth drawing: on-frame (within `margin`), and not several times
  *  wider than the frame — a ring that wide is an antimeridian wrap, not a big shape. Not reachable
- *  by this beat's own camera (nowhere near ±180°), kept anyway per `geo-discipline.md` rule 11. */
+ *  by this beat's own camera (nowhere near ±180°), kept anyway per `geo-discipline.md` rule 11. 
+ *  @parity */
 export function keepRing(ring: PixelRing, frame: Frame, margin = 40): boolean {
   if (ring.length < 3) return false;
   let minX = Infinity,

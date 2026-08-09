@@ -342,7 +342,7 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   );
 
   const furniture = deriveFurniture(BEAT.ground);
-  const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1);
+  const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1, 0.14, 0.82);
 
   // ── What this plate actually holds, and what it therefore leaves out ────────────────────────────
   // "The map holds 60°S–78°N" was typed. The corners MapLibre settled on are −64.478 / 79.847, so

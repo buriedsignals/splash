@@ -28,6 +28,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import {
   deriveFurniture,
+  readPalette,
   renderStill,
 } from "./render-still.mjs";
 import { Co2MapStill } from "../assets/Co2MapStill.tsx";
@@ -48,11 +49,15 @@ const PACKAGE_ROOT = resolve(HERE, "../../..");
 const ENTRY = join(HERE, "../assets/index.ts");
 const COMPOSITION = "co2-europe";
 
+// The colours are the one thing in `BEAT` that is not the journalist's words: they are READ back
+// from this skill's own `PALETTE.md`, exactly as a beat reads its story's answer.
+const PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
+
 /** The story's own constants: the journalist's words, their source, their caveat, their subject. */
 const BEAT = {
   year: 2023,
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   subject: "CHE",
   subjectLabel: "Suisse",
   comparison: "OWID_EUR",
@@ -123,7 +128,7 @@ else
   );
 
 const furniture = deriveFurniture(BEAT.ground);
-const ramp = sequentialRamp(BEAT.ground, furniture.ink, CO2_BREAKS.length + 1);
+const ramp = sequentialRamp(BEAT.ground, furniture.ink, CO2_BREAKS.length + 1, 0.1, 0.78);
 
 async function plateOf(dir) {
   const geometry = JSON.parse(await readFile(join(dir, "geometry.json"), "utf8"));

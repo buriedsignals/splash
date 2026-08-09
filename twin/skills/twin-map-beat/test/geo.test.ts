@@ -3,7 +3,7 @@ import {
   CO2_ALIAS,
   CO2_BREAKS,
   CO2_EXPECTED_NO_DATA,
-  binIndex,
+  binIndexLowerInclusive,
   claimViolations,
   fr,
   joinValues,
@@ -100,16 +100,16 @@ describe("joinValues", () => {
   });
 });
 
-describe("binIndex", () => {
+describe("binIndexLowerInclusive", () => {
   it("should put a value in the class its own breaks name", () => {
-    expect(binIndex(0, CO2_BREAKS)).toBe(0);
-    expect(binIndex(3.6, CO2_BREAKS)).toBe(1);
-    expect(binIndex(6.5, CO2_BREAKS)).toBe(3);
-    expect(binIndex(13.04, CO2_BREAKS)).toBe(CO2_BREAKS.length);
+    expect(binIndexLowerInclusive(0, CO2_BREAKS)).toBe(0);
+    expect(binIndexLowerInclusive(3.6, CO2_BREAKS)).toBe(1);
+    expect(binIndexLowerInclusive(6.5, CO2_BREAKS)).toBe(3);
+    expect(binIndexLowerInclusive(13.04, CO2_BREAKS)).toBe(CO2_BREAKS.length);
   });
 
   it("should put a value exactly on a break into the class above it", () => {
-    expect(binIndex(4, CO2_BREAKS)).toBe(2);
+    expect(binIndexLowerInclusive(4, CO2_BREAKS)).toBe(2);
   });
 });
 
@@ -137,27 +137,44 @@ describe("scalePosition", () => {
 });
 
 describe("sequentialRamp", () => {
+  // The ramp's two ends are ARGUMENTS, not constants inside the function: measured 2026-08-10, the
+  // choropleth family ran 0.10–0.78 and the hex family 0.14–0.82 under one shared docstring
+  // claiming they were the same construction. These are the choropleth family's own, which is what
+  // this seed ships.
+  const FROM = 0.1;
+  const TO = 0.78;
+
   it("should darken on a light ground and lighten on a dark one", () => {
-    const light = sequentialRamp("#FFFFFF", "#000000", 6).map(luminanceOf);
-    const dark = sequentialRamp("#101820", "#FFFFFF", 6).map(luminanceOf);
+    const light = sequentialRamp("#FFFFFF", "#000000", 6, FROM, TO).map(luminanceOf);
+    const dark = sequentialRamp("#101820", "#FFFFFF", 6, FROM, TO).map(luminanceOf);
     expect(light).toEqual([...light].sort((a, b) => b - a));
     expect(dark).toEqual([...dark].sort((a, b) => a - b));
   });
 
   it("should never render as the bare ground nor as the ink itself", () => {
-    const ramp = sequentialRamp("#FFFFFF", "#000000", 6);
+    const ramp = sequentialRamp("#FFFFFF", "#000000", 6, FROM, TO);
     expect(ramp[0]).not.toBe("#ffffff");
     expect(ramp[ramp.length - 1]).not.toBe("#000000");
   });
 
+  it("should let a beat state ends its own subject needs, and honour them", () => {
+    // The hex family's ends. A ramp whose low end is the bare ground is a class a reader cannot
+    // see, which is the reason the ends exist at all — and the reason they are stated per beat.
+    const hex = sequentialRamp("#FFFFFF", "#1A1A1A", 5, 0.14, 0.82);
+    const choropleth = sequentialRamp("#FFFFFF", "#1A1A1A", 5, 0.1, 0.78);
+    expect(hex[0]).not.toBe(choropleth[0]);
+    expect(hex[0]).toBe("#dfdfdf");
+    expect(choropleth[0]).toBe("#e8e8e8");
+  });
+
   it("should separate every step from its neighbour, so two classes never read as one", () => {
-    const ramp = sequentialRamp("#FFFFFF", "#000000", 6).map(luminanceOf);
+    const ramp = sequentialRamp("#FFFFFF", "#000000", 6, FROM, TO).map(luminanceOf);
     for (let i = 1; i < ramp.length; i++)
       expect(Math.abs(ramp[i]! - ramp[i - 1]!)).toBeGreaterThan(0.02);
   });
 
   it("should refuse a ground that is not a hex colour", () => {
-    expect(() => sequentialRamp("white", "#000000", 6)).toThrow(/#rrggbb/);
+    expect(() => sequentialRamp("white", "#000000", 6, FROM, TO)).toThrow(/#rrggbb/);
   });
 });
 

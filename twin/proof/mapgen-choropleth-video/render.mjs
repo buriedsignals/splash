@@ -155,7 +155,7 @@ function altFor(geometry) {
 }
 
 const furniture = deriveFurniture(BEAT.ground);
-const ramp = sequentialRamp(BEAT.ground, furniture.ink, CHOROPLETH_BREAKS.length + 1);
+const ramp = sequentialRamp(BEAT.ground, furniture.ink, CHOROPLETH_BREAKS.length + 1, 0.1, 0.78);
 
 /** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. The
  *  size is read off the folder name, so `plate-496` and `plate-620` each rebuild themselves. */

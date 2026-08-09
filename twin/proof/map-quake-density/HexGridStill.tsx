@@ -7,7 +7,7 @@
 
 import { Fragment } from "react";
 import { FONT_FAMILY, measureText } from "./render-still.mjs";
-import { binIndex, hexCorners, type HexCell } from "./geo-hex";
+import { binIndexUpperInclusive, hexCorners, type HexCell } from "./geo-hex";
 
 const FRAME_WIDTH = 900;
 const PAD = 32;
@@ -214,7 +214,7 @@ export function HexGridStill({
         <image href={plate} x={0} y={0} width={MAP.width} height={MAP.height} />
         {cells.map((cell) => {
           const isSubject = cell.key === subjectKey;
-          const fill = ramp[binIndex(cell.count, breaks)]!;
+          const fill = ramp[binIndexUpperInclusive(cell.count, breaks)]!;
           const corners = hexCorners(cell.cx, cell.cy, hexSize * 0.97);
           const d = `M${corners.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L")}Z`;
           return (

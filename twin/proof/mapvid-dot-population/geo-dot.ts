@@ -12,6 +12,7 @@ export type Ring = Pt[];
 
 export type PopulationRow = { code: string; name: string; population: number };
 
+/** @parity */
 export function parsePopulationCsv(csv: string): PopulationRow[] {
   const [header, ...rows] = csv.trim().split(/\r?\n/);
   const columns = (header ?? "").split(",");
@@ -41,7 +42,8 @@ export function parsePopulationCsv(csv: string): PopulationRow[] {
  * disagree — this beat's own single entry is Kosovo, `KOS` in Natural Earth, `XKX` at the World
  * Bank, the same class of mismatch `twin-map-beat/assets/geo.ts`'s own `CO2_ALIAS` documents for
  * Kosovo against OWID (`OWID_KOS` there, a third spelling again — three sources, three codes).
- */
+ 
+ *  @parity */
 export function joinPopulation(
   shapeKeys: readonly string[],
   rows: PopulationRow[],
@@ -68,6 +70,7 @@ export function joinPopulation(
 // ── The dot value: derived from the total, not guessed (dot-density.md: "the dot value has to be
 //    derived from the total so the rendered dot count lands somewhere legible") ───────────────────
 
+/** @parity */
 export function chooseDotValue(
   totalPopulation: number,
   {
@@ -83,6 +86,7 @@ export function chooseDotValue(
 
 // ── Point in polygon (pixel space or lon/lat — dimension-agnostic ray casting) ────────────────────
 
+/** @parity */
 export function pointInRing(point: Pt, ring: Ring): boolean {
   const [x, y] = point;
   let inside = false;
@@ -97,7 +101,8 @@ export function pointInRing(point: Pt, ring: Ring): boolean {
 }
 
 /** `rings[0]` is the outer boundary, `rings[1..]` are holes to cut back out — the same convention
- *  every other beat in this twin uses for a baked polygon's ring list. */
+ *  every other beat in this twin uses for a baked polygon's ring list. 
+ *  @parity */
 export function pointInRings(point: Pt, rings: Ring[]): boolean {
   const [outer, ...holes] = rings;
   if (!outer || !pointInRing(point, outer)) return false;
@@ -108,7 +113,8 @@ export function pointInRings(point: Pt, rings: Ring[]): boolean {
 //    per region... never re-randomised on each render") ──────────────────────────────────────────
 
 /** FNV-1a, so a region's own key deterministically seeds its own scatter without depending on scan
- *  order or any global counter. */
+ *  order or any global counter. 
+ *  @parity */
 function hashSeed(key: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < key.length; i++) {
@@ -118,7 +124,8 @@ function hashSeed(key: string): number {
   return h >>> 0;
 }
 
-/** mulberry32 — a small, deterministic PRNG: same seed, same sequence, every run. */
+/** mulberry32 — a small, deterministic PRNG: same seed, same sequence, every run. 
+ *  @parity */
 function mulberry32(seed: number): () => number {
   let a = seed;
   return () => {
@@ -136,7 +143,8 @@ function mulberry32(seed: number): () => number {
  * `maxAttemptsPerDot` bounds a pathological shape (a sliver whose bbox is mostly empty) from
  * spinning forever; a part that cannot place all its dots within budget places fewer, rather than
  * hanging.
- */
+ 
+ *  @parity */
 export function scatterInRings(
   rings: Ring[],
   count: number,
@@ -167,6 +175,7 @@ export function scatterInRings(
   return points;
 }
 
+/** @parity */
 function bboxArea(rings: Ring[]): number {
   const outer = rings[0];
   if (!outer || outer.length < 3) return 0;
@@ -189,7 +198,8 @@ function bboxArea(rings: Ring[]): number {
  * Dots are allocated across parts proportional to each part's own bbox area (a coarse but
  * deterministic and cheap stand-in for true polygon area — good enough for a dot COUNT split, not
  * a precision measurement), by largest remainder so the parts' counts sum to exactly `count`.
- */
+ 
+ *  @parity */
 export function scatterInParts(
   parts: Ring[][],
   count: number,
@@ -217,7 +227,8 @@ export function scatterInParts(
 
 // ── What a reader actually SEES: fill tightness, which is not the same quantity as the title's ──
 
-/** Signed shoelace area of one ring, in whatever units the ring's coordinates are in. */
+/** Signed shoelace area of one ring, in whatever units the ring's coordinates are in. 
+ *  @parity */
 function ringArea(ring: Ring): number {
   let a = 0;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
@@ -226,7 +237,8 @@ function ringArea(ring: Ring): number {
   return a / 2;
 }
 
-/** True drawn area of a MultiPolygon in plate pixels: every part's outer ring, its holes removed. */
+/** True drawn area of a MultiPolygon in plate pixels: every part's outer ring, its holes removed. 
+ *  @parity */
 export function drawnAreaPx(parts: Ring[][]): number {
   let area = 0;
   for (const part of parts) {
@@ -253,7 +265,8 @@ export function drawnAreaPx(parts: Ring[][]): number {
  * Measured in PLATE PIXELS rather than km², because pixels are what a reader's eye compares.
  * Mercator inflates area with latitude, so this ranking is not identical to a people-per-km² one —
  * it is the ranking of the thing actually drawn.
- */
+ 
+ *  @parity */
 export function fillTightness<T extends { key: string; parts: Ring[][] }>(
   shapes: T[],
   dotsByKey: Map<string, number>,

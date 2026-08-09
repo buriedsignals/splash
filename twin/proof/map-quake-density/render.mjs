@@ -127,7 +127,7 @@ if (wantStill) {
     `${subjectWhere}.`;
 
   const furniture = deriveFurniture(BEAT.ground);
-  const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1);
+  const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1, 0.14, 0.82);
 
   const { pngPath } = await renderStill({
     element: createElement(HexGridStill, {

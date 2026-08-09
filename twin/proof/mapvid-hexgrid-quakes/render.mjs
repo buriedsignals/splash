@@ -28,7 +28,7 @@ import {
   readPalette,
 } from "../../skills/twin-map-beat/scripts/render-still.mjs";
 import {
-  binIndex,
+  binIndexUpperInclusive,
   cellMembers,
   chooseHexSize,
   countBreaks,
@@ -245,7 +245,7 @@ const alt =
 
 const palette = readPalette(import.meta.dirname, { stopAt: HERE });
 const furniture = deriveFurniture(palette.ground);
-const ramp = sequentialRamp(palette.ground, furniture.ink, breaks.length + 1);
+const ramp = sequentialRamp(palette.ground, furniture.ink, breaks.length + 1, 0.14, 0.82);
 console.log(
   `palette: ground ${palette.ground}, accent ${palette.accent} (chosen by ${palette.origin}, ${palette.source})`,
 );
@@ -253,7 +253,7 @@ console.log(
 // A sanity check on the scale itself: every class must be reachable, or the legend prints a shade
 // no cell ever wears.
 for (let index = 0; index < ramp.length; index++)
-  if (!cells.some((cell) => binIndex(cell.count, breaks) === index))
+  if (!cells.some((cell) => binIndexUpperInclusive(cell.count, breaks) === index))
     throw new Error(`class ${index} of the legend holds no cell — the breaks and the data disagree`);
 
 const props = {

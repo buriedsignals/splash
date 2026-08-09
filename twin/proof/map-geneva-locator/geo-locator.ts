@@ -14,6 +14,7 @@ export type OrgRow = {
   priority: number;
 };
 
+/** @parity */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -63,6 +64,7 @@ const CATEGORY_RANK: Record<string, number> = {
   "Other international body": 2,
 };
 
+/** @parity */
 export function orgsFromCsv(csv: string): OrgRow[] {
   const rows = parseCsv(csv.trim() + "\n");
   const header = rows[0]!;
@@ -111,7 +113,8 @@ export const CATEGORY_ORDER = [
  * label, not that it stays inside the frame. A marker near the right edge (the World Economic
  * Forum's, in this beat's own study set) keeps a right-hand label by default and it runs off-canvas
  * unless this is checked against the frame, not the data.
- */
+ 
+ *  @parity */
 export function labelSide(
   px: number,
   frameWidth: number,
@@ -133,7 +136,8 @@ export type MarkerPoint = { key: string; cx: number; cy: number };
  * beside a visibly orange marker). Deterministic and order-stable: run a fixed number of passes
  * rather than iterate to a convergence tolerance, and break an exact tie (dist === 0) with the
  * pair's own index order rather than anything random, so the same input always draws the same frame.
- */
+ 
+ *  @parity */
 export function separateOverlappingMarkers<T extends MarkerPoint>(
   points: T[],
   minSeparation: number,
@@ -168,7 +172,8 @@ export type LabelBox = { x: number; y: number; width: number; height: number };
  * already-placed one is dropped. Same input always produces the same shown/hidden set —
  * `references/types/locator.md`'s "the correct instability a static frame can't tolerate" —
  * because the map engine's own label culling is NOT used here.
- */
+ 
+ *  @parity */
 export function declutterLabels<T extends { key: string; priority: number }>(
   points: T[],
   boxOf: (point: T) => LabelBox,

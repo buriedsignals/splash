@@ -4,7 +4,6 @@
  * importable by both the still and the video (`twin-map-beat/references/types/proportional-symbol.md`).
  */
 
-import { scaleSqrt } from "d3-scale";
 
 export type QuakeRow = {
   key: string;
@@ -15,7 +14,8 @@ export type QuakeRow = {
   place: string;
 };
 
-/** Minimal RFC4180-ish CSV parse: handles quoted fields with embedded commas, no embedded newlines. */
+/** Minimal RFC4180-ish CSV parse: handles quoted fields with embedded commas, no embedded newlines. 
+ *  @parity */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -52,6 +52,7 @@ export function parseCsv(text: string): string[][] {
   return rows;
 }
 
+/** @parity */
 export function quakesFromCsv(csv: string): QuakeRow[] {
   const rows = parseCsv(csv.trim() + "\n");
   const header = rows[0]!;
@@ -85,7 +86,8 @@ export function quakesFromCsv(csv: string): QuakeRow[] {
  * than the frozen file, whose last event is 2017-01-22 — a credit no reader could have checked and
  * no test could have caught, since nothing compared the sentence to the data. Anything the
  * furniture says about the period must come through here.
- */
+ 
+ *  @parity */
 export function yearWindow(rows: { time: string }[]): {
   first: number;
   last: number;
@@ -113,10 +115,11 @@ export function yearWindow(rows: { time: string }[]): {
  * NOT correct for — it draws circles proportional to the reported magnitude number, the same
  * convention USGS's own event maps use, and the beat's caveat says so in words so a reader is not
  * left to assume the circles are proportional to energy.
- */
-export function radiusScale(maxMag: number, maxRadiusPx: number) {
-  const scale = scaleSqrt().domain([0, maxMag]).range([0, maxRadiusPx]);
-  return (mag: number) => scale(mag);
+ 
+ *  @parity */
+export function radiusScale(maxValue: number, maxRadiusPx: number) {
+  return (value: number) =>
+    maxRadiusPx * Math.sqrt(Math.max(0, value) / maxValue);
 }
 
 /** Three round reference sizes for the legend, half-magnitude steps down from the rounded max.
@@ -124,8 +127,9 @@ export function radiusScale(maxMag: number, maxRadiusPx: number) {
  *  NOT what this beat's legend uses any more — see `spanReferenceValues` below. Kept because this
  *  file is one of several trimmed copies of the same module and a helper deleted from one copy is
  *  the silent divergence this project duplicates deliberately to avoid; a beat whose values genuinely
- *  are round-numbered still wants it. */
-export function niceReferenceValues(maxMag: number, count = 3): number[] {
+ *  are round-numbered still wants it. 
+ *  @parity */
+export function halfMagnitudeReferenceValues(maxMag: number, count = 3): number[] {
   const top = Math.round(maxMag * 2) / 2;
   const values: number[] = [];
   for (let i = 0; i < count; i++) {
@@ -139,7 +143,7 @@ export function niceReferenceValues(maxMag: number, count = 3): number[] {
  * Reference sizes that BRACKET the values drawn: the smallest mark, the largest, and the value
  * halfway between, at the data's own one-decimal precision.
  *
- * `niceReferenceValues` rounded the top to the nearest half-magnitude, which for this file's
+ * `halfMagnitudeReferenceValues` rounded the top to the nearest half-magnitude, which for this file's
  * maximum of 9.1 gives 9.0 — so the legend's biggest key was SMALLER than the biggest circle on the
  * map, and its three keys (M8.0 / M8.5 / M9.0) sat outside the range at the bottom too: nothing in
  * the file is under 7.8, so the legend's own smallest key named an event size the map does not
@@ -166,12 +170,13 @@ export function spanReferenceValues(mags: number[], count = 3): number[] {
   const values: number[] = [];
   for (let i = 0; i < count; i++)
     values.push(round(max - ((max - min) * i) / (count - 1)));
-  // Largest first, matching `niceReferenceValues`' own order, so the callers' `[...legend].reverse()`
+  // Largest first, matching `halfMagnitudeReferenceValues`' own order, so the callers' `[...legend].reverse()`
   // still puts the smallest circle first in the drawn row.
   return [...new Set(values)];
 }
 
-/** Largest first, so later (smaller) circles are drawn on top and stay hoverable/visible. */
+/** Largest first, so later (smaller) circles are drawn on top and stay hoverable/visible. 
+ *  @parity-exempt: sorts the field this beat's own points carry (`.mag` on a quake catalogue, `.value` on the general seed); the invariant is small-on-top, not the field name. */
 export function drawOrder<T extends { mag: number }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => b.mag - a.mag);
 }
@@ -183,7 +188,8 @@ export type LabelPlacement = { side: "left" | "right"; dy: number };
  * `references/types/proportional-symbol.md`'s "the one thing that goes wrong": MapLibre's own
  * collision avoidance resolves label-vs-label overlap only, and has no idea where the canvas edge
  * is, so a symbol near the frame edge keeps its default side and overflows.
- */
+ 
+ *  @parity-exempt: the flip margin and the vertical nudge are pixel constants tuned per frame size, and deriving them is W5 task T7's own work — until then this records that they are known to disagree. */
 export function labelPlacement(
   px: number,
   py: number,
@@ -222,7 +228,8 @@ export type LabelBox = { x: number; y: number; width: number; height: number };
  * Islands, Sumatra, Solomon Islands/PNG) sit close enough that every point's own "M7.8"/"M7.9"-style
  * label collided into an illegible stack, caught by looking at the rendered PNG. Same input always
  * produces the same shown/hidden set, for the same reason the locator beat's own copy states it.
- */
+ 
+ *  @parity */
 export function declutterLabels<T extends { key: string; priority: number }>(
   points: T[],
   boxOf: (point: T) => LabelBox,
@@ -249,7 +256,8 @@ export function declutterLabels<T extends { key: string; priority: number }>(
  * How many times more energy the subject released than a comparison event, from the moment
  * magnitude scale's own definition (each whole step is 10^1.5× the energy). Used to turn the
  * beat's log-scale caveat into one checkable number instead of leaving it as a warning only.
- */
+ 
+ *  @parity */
 export function energyRatio(subjectMag: number, comparisonMag: number): number {
   return 10 ** (1.5 * (subjectMag - comparisonMag));
 }
@@ -257,7 +265,8 @@ export function energyRatio(subjectMag: number, comparisonMag: number): number {
 /**
  * Check the confirmed superlative against the source: the subject must exceed every other point in
  * the study set, or the claim check throws naming which one it does not exceed.
- */
+ 
+ *  @parity */
 export function symbolClaimViolations({
   rows,
   subjectKey,

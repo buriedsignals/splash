@@ -99,7 +99,8 @@ export const CO2_BREAKS = [2, 4, 6, 8, 10];
 
 /** This beat's own frozen csv: `Code,Entity,Year,value`, already filtered to 2023 and the 41
  *  declared codes (see `co2-per-capita-2023.csv` in this folder — produced once, by a script, from
- *  the real OWID source this project already carries, never hand-typed). */
+ *  the real OWID source this project already carries, never hand-typed). 
+ *  @parity-exempt: takes a `year` where the beat animates one and does not where it does not; the frozen CSVs differ in shape, not the join. */
 export function valuesFromCsv(csv: string): Map<string, number> {
   const [header, ...rows] = csv.trim().split(/\r?\n/);
   const columns = (header ?? "").split(",");
@@ -128,7 +129,8 @@ export function valuesFromCsv(csv: string): Map<string, number> {
  * and looks like a legitimate value — nothing throws, nothing warns. So an undeclared miss is an
  * error naming the country, and a declared no-data that turns out to HAVE a value is an error too
  * (the declaration has gone stale — the same defect arriving from the other side).
- */
+ 
+ *  @parity */
 export function joinValues(
   keys: readonly string[],
   values: Map<string, number>,
@@ -190,8 +192,11 @@ export function joinShapes<T extends { key: string }>(
   return keys.map((k) => byKey.get(k)!);
 }
 
-/** The class a value falls in. A value exactly on a break belongs to the class above it. */
-export function binIndex(value: number, breaks: number[]): number {
+/** Which class a VALUE falls in, where a class INCLUDES its own lower break: class i+1 starts AT
+ *  `breaks[i]`. That is what this beat's own legend prints — the tick row `[0, ...breaks]` labels
+ *  each break as the foot of the class above it. The hex family bins the other way and says so in
+ *  its own name. @parity */
+export function binIndexLowerInclusive(value: number, breaks: number[]): number {
   let index = 0;
   while (index < breaks.length && value >= breaks[index]!) index++;
   return index;
@@ -205,7 +210,7 @@ export function binIndex(value: number, breaks: number[]): number {
  */
 export function scalePosition(value: number, breaks: number[]): number {
   const classes = breaks.length + 1;
-  const index = binIndex(value, breaks);
+  const index = binIndexLowerInclusive(value, breaks);
   const lower = index === 0 ? 0 : breaks[index - 1]!;
   const upper =
     index === breaks.length
@@ -217,12 +222,14 @@ export function scalePosition(value: number, breaks: number[]): number {
 
 // ── Colour: the ramp is a quantity, not a palette ──────────────────────────────────────────────
 
+/** @parity */
 function channels(hex: string): number[] {
   if (!HEX.test(hex))
     throw new Error(`expected #rrggbb, got ${JSON.stringify(hex)}`);
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
 
+/** @parity */
 export function mixHex(from: string, to: string, ratio: number): string {
   const target = channels(to);
   return (
@@ -237,21 +244,26 @@ export function mixHex(from: string, to: string, ratio: number): string {
   );
 }
 
-/**
- * The choropleth ramp: `steps` shades from the newsroom's own ground toward its own ink.
+/** A sequential ramp of `steps` colours from the newsroom's own ground toward its ink — the one
+ *  legitimate gradient on a map (geo-discipline rule 8), derived rather than picked so it works on
+ *  any ground.
  *
- * `geo-discipline.md` rule 8: the accent is deliberately absent from this ramp — it is spent on
- * the subject's outline instead, and on nothing else on the map.
- */
+ *  `from` and `to` are the ramp's own ends as a fraction of ground→ink, and they are ARGUMENTS
+ *  rather than constants because two beat families measurably need different ends and this function
+ *  used to carry one family's numbers under a docstring claiming they were the other's. Measured
+ *  against white ground and #1A1A1A ink: at 0.10 the low end sits 5.24 ΔE76 from bare land and
+ *  16.85 from the #b9b9b9 no-data grey; at 0.14 it sits 8.41 from land and 13.68 from no-data. A
+ *  choropleth has a no-data colour to stay clear of; a hex field has none but must keep its
+ *  lowest-count cell readable as a cell. Each beat states its own ends beside its own ground. @parity */
 export function sequentialRamp(
   ground: string,
   ink: string,
   steps: number,
+  from: number,
+  to: number,
 ): string[] {
-  const FROM = 0.1;
-  const TO = 0.78;
   return Array.from({ length: steps }, (_, i) =>
-    mixHex(ground, ink, FROM + ((TO - FROM) * i) / (steps - 1)),
+    mixHex(ground, ink, from + ((to - from) * i) / (steps - 1)),
   );
 }
 
@@ -268,7 +280,8 @@ export const WATER_FILL = "#AAC9E0";
 
 // ── Geometry: baked pixel rings become one path ────────────────────────────────────────────────
 
-/** Every ring closed, holes as further subpaths for `fill-rule="evenodd"` to cut out. */
+/** Every ring closed, holes as further subpaths for `fill-rule="evenodd"` to cut out. 
+ *  @parity */
 export function pathFromRings(rings: Ring[]): string {
   return rings
     .filter((ring) => ring.length >= 3)
@@ -279,6 +292,7 @@ export function pathFromRings(rings: Ring[]): string {
     .join("");
 }
 
+/** @parity */
 function round(n: number): number {
   return Math.round(n * 10) / 10;
 }
@@ -319,7 +333,8 @@ export function simplifyRing(ring: Ring, minGap: number): Ring {
  * true point-in-polygon test, which this beat does not need — hit-testing here is the browser's own
  * native `<path>` hit-test, not a hand-rolled ray cast) would misread an island for a hole if it
  * flattened first.
- */
+ 
+ *  @parity */
 export function keepRing(ring: Ring, frame: Frame, margin = 40): boolean {
   if (ring.length < 3) return false;
   let minX = Infinity,
@@ -346,7 +361,8 @@ export function keepRing(ring: Ring, frame: Frame, margin = 40): boolean {
 /** Highest value first — the one order this beat's map (DOM order, so Tab/Home/End reach it in
  *  this order too), the accessible table, and the keyboard all share
  *  (`references/map-web-discipline.md`, "The accessibility question": "nobody gets a DIFFERENT map
- *  depending on how they read it, only a different medium for the same one"). */
+ *  depending on how they read it, only a different medium for the same one"). 
+ *  @parity-exempt: each beat reads its own data in its own order — value on a choropleth, population on a dot map, ascending priority on a locator. Four sorts, four beats, not four drifts. */
 export function readingOrder<T extends { value: number }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => b.value - a.value);
 }
@@ -380,9 +396,10 @@ export function bboxCenter(box: BBox): [number, number] {
 /** English number formatting — one decimal place by default, this beat's own single formatter
  *  (called by the map, the legend and the accessible table alike, never re-derived a second time —
  *  the same "one formatting, in one place" rule `references/map-web-discipline.md` states for
- *  `pointDetail` in the symbol-map seed). */
+ *  `pointDetail` in the symbol-map seed). 
+ *  @parity */
 export function en(value: number, decimals = 1): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-GB", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
