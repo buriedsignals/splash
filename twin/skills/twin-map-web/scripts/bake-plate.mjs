@@ -25,7 +25,12 @@
 // `twin-map-beat`'s or `proof/map-quake-symbol`'s.
 //
 // Usage:
-//   bun skills/twin-map-web/scripts/bake-plate.mjs --size 496 --out /tmp/map-twin-web/plate-496
+//   bun skills/twin-map-web/scripts/bake-plate.mjs --size 1000 --out /tmp/map-twin-web/plate-1000
+//
+// SIZE: baked generously (1000 logical px, ~2000 physical px at the capture's own 2x device pixel
+// ratio) so the plate stays at or near native resolution when displayed full-width up to the widest
+// tested viewport (1600px) — see references/map-web-discipline.md, "Full width, genuinely", for the
+// exact numbers this trades off against file size and bake time.
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -61,7 +66,7 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-const size = Number(flag("--size", "496"));
+const size = Number(flag("--size", "1000"));
 const outDir = flag("--out", `/tmp/map-twin-web/plate-${size}`);
 const dataPath = flag("--data", join(HERE, "../assets/sample-data/regions.json"));
 const settleMs = Number(flag("--settle", "15000"));

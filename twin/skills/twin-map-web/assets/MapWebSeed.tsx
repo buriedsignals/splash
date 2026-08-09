@@ -11,73 +11,48 @@
  * every reader has spatial access to it, the SAME thirteen values again as an ordered, linear,
  * always-rendered table (`RegionTable` below), so nothing this beat claims lives ONLY in a hover.
  * `references/map-web-discipline.md`'s own "The accessibility question" answers this in full —
- * read it before writing a second beat, the way `references/geo-discipline.md` is read before a
- * second static or video one.
+ * read it before writing a second beat.
  *
- * Four things this genre needs that a static frame does not, all four demonstrated here, mirroring
- * `twin-chart-web/assets/ChartWebSeed.tsx`'s own list:
+ * THE SPLIT THAT MAKES THIS GENUINELY RESPONSIVE (`references/map-web-discipline.md`, "Full width,
+ * genuinely"): the SVG below carries ONLY geometry — the baked plate `<image>` and the decorative,
+ * value-sized `<circle>`s — nothing that reads as text. Every piece of furniture (title, source,
+ * legend, point-name labels, the subject note, the caveat) and every interactive control (the
+ * per-point hit target, the filter, the zoom toggle) is plain HTML, absolutely positioned over the
+ * SVG by PERCENTAGE (so it tracks the geometry as the container resizes) but sized in CSS pixels
+ * (so a font, once set, never grows or shrinks with the container — the defect this whole rewrite
+ * exists to remove). The SVG's own `viewBox` is the bake's native frame; `width:100%` plus a CSS
+ * `aspect-ratio` on its wrapper is the entire responsive mechanism — one render, no breakpoint, no
+ * second layout to keep in sync with the first.
  *
- *   1. ONE component (`MapWebSeed`) called twice, once per `WebLayout` — both SSR'd at build time
- *      by `scripts/render-web.mjs`. No client-side layout math: a CSS media query alone swaps the
- *      two pre-rendered SVGs.
- *   2. `tabIndex={0}` and a per-point `aria-label`, written on every circle at build time — not
- *      assembled by the inline script — so the no-JS frame is still keyboard-reachable, point by
- *      point, with the script absent entirely. Each circle also carries a nested `<title>`, which
- *      gives a native browser tooltip on hover even with the script absent.
- *   3. Nothing argument-bearing gated behind interaction. The title, the caveat, the source, the
- *      subject's own label, and the size legend are all drawn unconditionally — hover and focus
- *      only ever add the per-point EXACT figure the legend's three reference sizes can only
- *      approximate.
- *   4. A visible, always-rendered alternative to the spatial reading (`RegionTable`) — not a
- *      screen-reader-only trick, a real table any reader can use, because "hover the right pixel"
- *      is not a reading strategy every reader has available to them.
- *
- * `WebLayout` lives here for the same reason `ChartWebSeed.tsx`'s own copy does: it describes this
- * GENRE's mechanics (two frame widths, their own paddings) rather than any one story's numbers, and
- * there is no vendoring path a story could import it from outside this dev repository, so the next
- * real beat declares its own matching copy inline rather than importing this one.
- *
- * This component never imports the rasteriser — `ink`/`muted`/`measure` are props, derived once in
- * node by whatever runner calls it (`scripts/render-web.mjs`'s `renderMapWeb` for a real beat,
- * `scripts/render-preview.mjs` for this skill's own preview).
+ * Two capabilities layered on top of that split, both governed by the same rule this genre has
+ * always followed for interaction (`references/map-web-discipline.md`, "What must not become
+ * interactive"): nothing the title claims may live ONLY behind them.
+ *   - A FILTER (`.mw-filter`, radios) narrows which points are drawn, labelled and listed in the
+ *     table — never which points exist. The "All regions" radio is checked by default, so the
+ *     unfiltered view already shows the whole claim; a reader narrows past it, never into it.
+ *   - An optional bounded ZOOM (`zoomable` prop, off for this seed's own data — see `SKILL.md`'s
+ *     "When to use" for the test). Off, the frame shows exactly the full claim. On, a checkbox lets
+ *     a reader scale the plate up by a fixed, capped factor (`ZOOM_SCALE`) inside a viewport that
+ *     becomes natively scrollable — no unbounded zoom into raster blur, and no JavaScript: `:has()`
+ *     drives both the filter and the zoom toggle directly off `:checked` state, so every one of
+ *     these controls, and the map/legend/table they narrow, is exactly as complete with the page's
+ *     own inline `<script>` never running as with it running. What the script (`interaction.mjs`)
+ *     still adds on top is the exact hover/focus VALUE — the legend's own three rounded reference
+ *     sizes can only approximate it, and the `title` attribute's native no-JS tooltip only shows it
+ *     one point at a time, slowly.
  */
 
-import { Fragment } from "react";
 import {
   drawOrder,
   labelPlacement,
   niceReferenceValues,
   radiusScale,
   readingOrder,
+  groupsOf,
+  slugOf,
   fr,
   type ProjectedPoint,
 } from "./geo-symbol";
-
-type Measure = (
-  text: string,
-  font: { fontSize: number; fontWeight?: number },
-) => number;
-
-export type WebLayout = {
-  name: "desktop" | "narrow";
-  width: number;
-  pad: number;
-  /** The square plate's own side length — smaller than `width` on the narrow layout, where the
-   *  map sits ABOVE the text column instead of beside it (there is no room for both side by side
-   *  at 360px, the same reasoning `twin-map-beat/assets/Co2MapStill.tsx`'s own header gives for
-   *  choosing a square plate over a stretched one). */
-  mapSize: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
-  caption: { fontSize: number; fontWeight: number };
-  note: { fontSize: number; lead: number };
-  pointLabel: { fontSize: number; fontWeight: number };
-  legendLabel: { fontSize: number };
-  maxRadiusPx: number;
-  /** The frame's own bottom margin — the last piece `frameHeight` is derived from, never a fixed
-   *  guess (the same rule `twin-chart-web/assets/ChartWebSeed.tsx`'s own `bottomPad` follows). */
-  bottomPad: number;
-};
 
 // ===== CONFIG — edit for your story =====
 const UNIT = "M";
@@ -87,27 +62,31 @@ const SUBJECT_KEY = "paris";
 const SUBJECT_NOTE = "the largest metro area in this sample";
 // =========================================
 
-export function wrap(
-  text: string,
-  maxWidth: number,
-  font: { fontSize: number; fontWeight: number },
-  measure: Measure,
-): string[] {
-  const lines: string[] = [];
-  let current = "";
-  for (const word of text.split(/\s+/)) {
-    const trial = current ? `${current} ${word}` : word;
-    if (current && measure(trial, font) > maxWidth) {
-      lines.push(current);
-      current = word;
-    } else current = trial;
-  }
-  return current ? [...lines, current] : lines;
-}
+// ===== Genre mechanics — not one story's numbers =====
+/** The on-map mark's largest radius, as a FRACTION of the bake's own frame width — not a fixed
+ *  pixel count. Because the SVG's `viewBox` equals the frame and the whole SVG then scales with
+ *  the container via CSS, a fraction of the frame is what stays a fraction of the container at
+ *  every width; a fixed pixel count would not (it would be one specific fraction at the one width
+ *  it was tuned for, and a different fraction everywhere else). */
+const MARK_MAX_RADIUS_FRACTION = 0.062;
+/** The legend's own reference-circle radius, in real CSS pixels, deliberately NOT derived from the
+ *  frame — a legend is a fixed schematic scale, not a second copy of the map's own sizing, so it
+ *  reads the same regardless of how big or small the map itself is drawn at. */
+const LEGEND_MAX_RADIUS_PX = 22;
+/** The per-point hit target's own diameter, in real CSS pixels — an HTML `<button>` overlay, NOT
+ *  an SVG shape sized in frame units. A frame-unit hit target would shrink to a few physical pixels
+ *  at 375px wide and balloon at 1600px; a fixed CSS size is a legitimate touch target at every
+ *  width this genre ships (`references/map-web-discipline.md`, "Full width, genuinely"). */
+const HIT_TARGET_PX = 28;
+/** The one bounded zoom step this genre ships when a beat opts in — a reader cannot zoom further
+ *  than this, so the plate never degrades into unreadable blur (`references/map-web-discipline.md`,
+ *  "Pan and zoom"). */
+export const ZOOM_SCALE = 1.4;
+// =======================================================
 
-/** One point's own detail string, the single implementation the SSR'd `aria-label`/`data-detail`
- *  attributes AND the accessible table both draw from — never a second formatting of the same
- *  number. */
+/** One point's own detail string, the single implementation the hit-target's `aria-label`/
+ *  `data-detail`/`title` AND the accessible table both draw from — never a second formatting of
+ *  the same number. */
 export function pointDetail(point: { name: string; value: number }): string {
   return `${point.name} : ${fr(point.value)} ${UNIT_WORD}`;
 }
@@ -125,8 +104,7 @@ export function MapWebSeed({
   accent,
   ink,
   muted,
-  measure,
-  layout,
+  zoomable = false,
 }: {
   geometry: {
     frame: { width: number; height: number };
@@ -144,274 +122,248 @@ export function MapWebSeed({
   /** Derived from `ground` by `deriveFurniture` in whatever node runner calls this component. */
   ink: string;
   muted: string;
-  measure: Measure;
-  layout: WebLayout;
+  /** Off by default — see `SKILL.md`'s "When to use" for the test this seed's own data fails
+   *  (spread across a continent, legible and reachable at every width without it). Exercised with
+   *  `true` by a dedicated fixture in `test/render-web.test.ts` so the mechanism itself is proven
+   *  even though the shipped seed does not turn it on. */
+  zoomable?: boolean;
 }) {
-  if (geometry.points.length < 2)
+  const { frame, points } = geometry;
+  if (points.length < 2)
     throw new Error(
-      `a symbol map needs at least two points, got ${geometry.points.length}`,
+      `a symbol map needs at least two points, got ${points.length}`,
     );
 
-  const { width, pad, mapSize } = layout;
-  const stacked = layout.name === "narrow";
-  const scale = mapSize / geometry.frame.width;
-  const maxValue = Math.max(...geometry.points.map((p) => p.value));
-  const radiusOf = radiusScale(maxValue, layout.maxRadiusPx);
-  const drawn = drawOrder(geometry.points); // largest first, so smaller circles paint on top
-
-  // ── The map's own box: top-left of the frame on both layouts. Desktop puts the text column
-  //    beside it; narrow stacks the column below it (no room for both side by side at 360px).
-  const mapX = pad;
-  const mapY = pad;
-  const columnX = stacked ? pad : pad + mapSize + pad;
-  const columnWidth = stacked ? width - pad * 2 : width - columnX - pad;
-  const columnTop = stacked ? mapY + mapSize + 28 : mapY;
-
-  const CAVEAT_TEXT = caveat || CAVEAT;
-  const titleLines = wrap(title, columnWidth, layout.title, measure);
-  const sourceLines = wrap(
-    `${source} · ${basemapCredit}`,
-    columnWidth,
-    layout.source,
-    measure,
-  );
-  const caveatLines = wrap(CAVEAT_TEXT, columnWidth, layout.note, measure);
-
-  const titleTop = columnTop + layout.title.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * layout.title.lead + 26;
-  const sourceBottom =
-    sourceTop + (sourceLines.length - 1) * layout.source.lead;
-
-  const legend = niceReferenceValues(maxValue);
-  const legendMaxR = Math.max(...legend.map((v) => radiusOf(v)));
-  const legendTop = sourceBottom + 34;
-  const legendBaseline = legendTop + legendMaxR * 2 + 22;
-  // The subject note sits on its own line below the legend, and the caveat starts a full line
-  // height below THAT — not a fixed small offset, which is what let the two collide the first
-  // time this beat was actually rendered and looked at (`references/map-web-discipline.md`'s own
-  // gotcha: a static render can be checked with a PNG, and this is exactly the defect only a
-  // rendered pixel shows).
-  const subjectY = legendBaseline + layout.legendLabel.fontSize + 12;
-  const caveatTop = subjectY + layout.note.lead + 6;
-
-  // Loud, not silent — the same "column does not fit" invariant every static seed in this twin
-  // asserts rather than lets clip (`geo-discipline.md`'s own defect log, and
-  // `twin-map-beat/assets/Co2MapStill.tsx`'s identical check).
-  const frameHeight = stacked
-    ? caveatTop + (caveatLines.length - 1) * layout.note.lead + layout.bottomPad
-    : Math.max(
-        mapY + mapSize + layout.bottomPad,
-        caveatTop +
-          (caveatLines.length - 1) * layout.note.lead +
-          layout.bottomPad,
-      );
-  if (!stacked && legendTop < sourceBottom)
-    throw new Error(
-      `the column does not fit: source ends at ${sourceBottom}, legend starts at ${legendTop}. Shorten the title or the source.`,
-    );
-
-  const subject = geometry.points.find((p) => p.key === SUBJECT_KEY);
+  const subject = points.find((p) => p.key === SUBJECT_KEY);
   if (!subject) throw new Error(`no point for the subject ${SUBJECT_KEY}`);
 
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={frameHeight}
-      viewBox={`0 0 ${width} ${frameHeight}`}
-      className="map"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
-    >
-      {/* No root role="img" — the same one deliberate departure the chart genre's own doctrine
-          names (`web-discipline.md`): that role would flatten every child into one opaque image,
-          silencing the per-point circles below. `<desc>` still carries the alt text. */}
-      <desc>{alt}</desc>
-      <defs>
-        <clipPath id="plate-clip">
-          <rect x={0} y={0} width={mapSize} height={mapSize} />
-        </clipPath>
-      </defs>
-      <rect x={0} y={0} width={width} height={frameHeight} fill={ground} />
+  const maxValue = Math.max(...points.map((p) => p.value));
+  const maxRadius = frame.width * MARK_MAX_RADIUS_FRACTION;
+  const radiusOf = radiusScale(maxValue, maxRadius);
+  const legendRadiusOf = radiusScale(maxValue, LEGEND_MAX_RADIUS_PX);
+  const drawn = drawOrder(points); // largest first, so smaller circles paint on top
+  const groups = groupsOf(points);
+  const legend = niceReferenceValues(maxValue);
 
-      {/* ── The map ─────────────────────────────────────────────────────────────────────── */}
-      <g transform={`translate(${mapX},${mapY})`} clipPath="url(#plate-clip)">
-        <image href={plate} x={0} y={0} width={mapSize} height={mapSize} />
-        {drawn.map((point) => {
-          const isSubject = point.key === SUBJECT_KEY;
-          const r = radiusOf(point.value) * scale;
-          const cx = point.px * scale;
-          const cy = point.py * scale;
-          const { side, dy } = labelPlacement(
-            point.px,
-            point.py,
-            geometry.frame,
-          );
-          const dx = side === "right" ? r + 6 : -(r + 6);
-          const anchor = side === "right" ? "start" : "end";
-          const fill = isSubject ? accent : muted;
-          const hitR = Math.max(r, 14);
-          const detail = pointDetail(point);
-          return (
-            <Fragment key={point.key}>
-              {/* Decorative: sized by value, never itself the interaction target — a circle this
-                  small is not a fair touch target (`references/map-web-discipline.md`,
-                  "Touch and hover share one target"). */}
-              <circle
-                cx={cx}
-                cy={cy}
-                r={r}
-                fill={fill}
-                fillOpacity={isSubject ? 0.55 : 0.38}
-                stroke={fill}
-                strokeWidth={1.4}
+  const CAVEAT_TEXT = caveat || CAVEAT;
+
+  return (
+    <div className="map-web">
+      {groups.length > 1 && (
+        <fieldset className="mw-filter">
+          <legend>Filter by region</legend>
+          <label>
+            <input
+              type="radio"
+              name="mw-filter"
+              id="mw-filter-all"
+              defaultChecked
+            />
+            {" All regions"}
+          </label>
+          {groups.map((g) => (
+            <label key={g}>
+              <input
+                type="radio"
+                name="mw-filter"
+                id={`mw-filter-${slugOf(g)}`}
               />
-              <text
-                x={cx + dx}
-                y={cy + dy}
-                textAnchor={anchor}
-                fontSize={layout.pointLabel.fontSize}
-                fontWeight={isSubject ? 700 : layout.pointLabel.fontWeight}
-                stroke={ground}
-                strokeWidth={3}
-                strokeLinejoin="round"
-                fill="none"
+              {` ${g}`}
+            </label>
+          ))}
+        </fieldset>
+      )}
+
+      <p className="mw-title">{title}</p>
+      <p className="mw-source">{`${source} · ${basemapCredit}`}</p>
+
+      {zoomable && (
+        <label className="mw-zoom-toggle-label" htmlFor="mw-zoom-toggle">
+          <input
+            type="checkbox"
+            id="mw-zoom-toggle"
+            className="mw-zoom-toggle"
+          />
+          {` Zoom in (${ZOOM_SCALE}×, bounded) — arrow keys or scroll to pan`}
+        </label>
+      )}
+
+      <div
+        className="mw-viewport"
+        style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
+        {...(zoomable
+          ? {
+              tabIndex: 0,
+              "aria-label":
+                "Pannable map area — arrow keys or scroll to pan when zoomed in.",
+            }
+          : {})}
+      >
+        <div className="mw-zoomable">
+          {/* Geometry only: the baked plate and the decorative, value-sized circles. No text — see
+              this file's own header note. `role="group"`, not `role="img"`: an `img` role would
+              flatten the (decorative-only, now) children into one opaque image, which is harmless
+              here since nothing inside is focusable any more, but `group` keeps the door open
+              without asserting a stronger claim than "here is a cluster of shapes" — the meaningful
+              description is `aria-label` below, and the real interaction lives in the HTML
+              overlay, not in this SVG. */}
+          <svg
+            className="map"
+            viewBox={`0 0 ${frame.width} ${frame.height}`}
+            preserveAspectRatio="xMidYMid meet"
+            role="group"
+            aria-label={alt}
+          >
+            <defs>
+              <clipPath id="plate-clip">
+                <rect x={0} y={0} width={frame.width} height={frame.height} />
+              </clipPath>
+            </defs>
+            <g clipPath="url(#plate-clip)">
+              <image
+                href={plate}
+                x={0}
+                y={0}
+                width={frame.width}
+                height={frame.height}
+              />
+              {drawn.map((point) => {
+                const isSubject = point.key === SUBJECT_KEY;
+                const r = radiusOf(point.value);
+                const fill = isSubject ? accent : muted;
+                return (
+                  <circle
+                    key={point.key}
+                    cx={point.px}
+                    cy={point.py}
+                    r={r}
+                    fill={fill}
+                    fillOpacity={isSubject ? 0.55 : 0.38}
+                    stroke={fill}
+                    strokeWidth={Math.max(1, frame.width * 0.0016)}
+                    // The filter (render-web.mjs's own CSS, `:has()`) has to reach this decorative
+                    // mark too, or a narrowed view still leaves every OTHER region's circle sitting
+                    // on the map unlabelled — ambiguous ghosts, not a genuinely narrower map.
+                    data-group={point.group}
+                  />
+                );
+              })}
+            </g>
+          </svg>
+
+          {/* Point-name labels: HTML, positioned by PERCENTAGE of the frame (so they track the
+              geometry as the container resizes) with a font-size fixed in CSS (so the text itself
+              never grows or shrinks). The offset from the circle's own edge is ALSO a percentage
+              of the frame, not a fixed pixel gap — so the gap scales together with the circle it is
+              labelling, the same way the circle itself scales with the container, while only the
+              GLYPHS stay a constant size. A small opaque "chip" (`background: var(--ground)` in
+              CSS) stands in for the old SVG halo-stroke trick, keeping the label legible over
+              whatever the plate paints underneath it. */}
+          {drawn.map((point) => {
+            const isSubject = point.key === SUBJECT_KEY;
+            const r = radiusOf(point.value);
+            // `labelPlacement`'s own `margin` default (90) is an ABSOLUTE frame-unit number tuned
+            // for the OLD 496px bake — at this genre's now much bigger PLATE_SIZE (1000) that same
+            // default is barely 9% of the frame, not nearly enough room for a right-anchored label
+            // like "Athens" to avoid spilling past the container's own right edge at the NARROWEST
+            // width this genre ships (375px, where every frame-unit percent is only a few real CSS
+            // pixels). Passed explicitly, AS a fraction of the actual frame (`0.18`, the exact
+            // fraction — 90/496 — the old fixed bake used to get "for free"), so the flip threshold
+            // scales with whatever `PLATE_SIZE` a future bake picks instead of silently shrinking as
+            // a fraction the way the hardcoded default just did. Render-verified against this seed's
+            // own thirteen points at 375px: enough to flip Athens before it clips, not so much that
+            // it over-flips Warsaw into colliding with Berlin's own label.
+            const { side, dy } = labelPlacement(
+              point.px,
+              point.py,
+              frame,
+              frame.width * 0.18,
+            );
+            const gap = r + frame.width * 0.014;
+            const xPct = (point.px / frame.width) * 100;
+            const yPct = (point.py / frame.height) * 100;
+            const gapPct = (gap / frame.width) * 100;
+            const dyPct = (dy / frame.height) * 100;
+            const style: Record<string, string> = {
+              top: `${yPct + dyPct}%`,
+              transform: "translateY(-50%)",
+            };
+            if (side === "right") {
+              style.left = `${xPct + gapPct}%`;
+              style.textAlign = "left";
+            } else {
+              style.right = `${100 - (xPct - gapPct)}%`;
+              style.textAlign = "right";
+            }
+            return (
+              <span
+                key={point.key}
+                className={`point-label${isSubject ? " subject" : ""}`}
+                data-group={point.group}
+                style={style}
               >
                 {point.name}
-              </text>
-              <text
-                x={cx + dx}
-                y={cy + dy}
-                textAnchor={anchor}
-                fontSize={layout.pointLabel.fontSize}
-                fontWeight={isSubject ? 700 : layout.pointLabel.fontWeight}
-                fill={isSubject ? accent : ink}
-              >
-                {point.name}
-              </text>
-              {/* Interaction layer: an invisible, larger hit target — transparent at rest, only
-                  CSS toggles it to `muted` on hover/focus (never inlined per-point). Every point is
-                  `tabIndex={0}` with its own `aria-label`/`data-detail` baked in at build time, and
-                  a nested `<title>` gives a native browser tooltip that works with the inline
-                  script absent entirely. `assets/interaction.mjs` (unchanged by a new beat) wires
-                  hover, tap and keyboard once `scripts/render-web.mjs` inlines this markup. */}
-              <circle
+              </span>
+            );
+          })}
+
+          {/* The interaction layer: one HTML `<button>` per point, positioned by percentage,
+              sized in FIXED CSS pixels (`HIT_TARGET_PX`) — a legitimate touch/pointer target at
+              every container width this genre ships, which an SVG-scaled hit circle is not (it
+              would be a few physical pixels across at 375px). `title` gives a native, no-JS
+              tooltip on hover — the HTML equivalent of the SVG `<title>` this genre used to nest;
+              `aria-label`/`data-detail` are baked in at build time, not assembled by the inline
+              script, so the no-JS page is still keyboard-reachable and its value is still
+              announced with the script absent entirely. `assets/interaction.mjs` (unchanged by a
+              new beat) wires hover, tap and keyboard once `scripts/render-web.mjs` inlines this
+              markup. */}
+          {drawn.map((point) => {
+            const detail = pointDetail(point);
+            const xPct = (point.px / frame.width) * 100;
+            const yPct = (point.py / frame.height) * 100;
+            return (
+              <button
+                key={point.key}
+                type="button"
                 className="pt"
-                cx={cx}
-                cy={cy}
-                r={hitR}
-                fill="transparent"
-                stroke="none"
-                tabIndex={0}
-                role="img"
+                style={{ left: `${xPct}%`, top: `${yPct}%` }}
                 aria-label={detail}
+                title={detail}
                 data-key={point.key}
                 data-detail={detail}
-              >
-                <title>{detail}</title>
-              </circle>
-            </Fragment>
-          );
-        })}
-      </g>
-
-      {/* ── The column ──────────────────────────────────────────────────────────────────── */}
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={columnX}
-          y={titleTop + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={columnX}
-          y={sourceTop + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-
-      <text
-        x={columnX}
-        y={legendTop}
-        fill={muted}
-        fontSize={layout.caption.fontSize}
-        fontWeight={layout.caption.fontWeight}
-      >
-        {legendCaption}
-      </text>
-
-      {/* The size legend: reference circles, smallest to largest left to right, sharing one
-          baseline. A short unit ("M", not "million inhabitants") on every mark, so the legend box
-          this loop draws into never has to reserve room for a word-length string —
-          `geo-discipline.md`'s own open problem ("a legend can still clip a long unit word") is a
-          known trap this beat sidesteps by keeping the per-mark unit short; the full word is spent
-          once, in the caption above. */}
-      {(() => {
-        const ordered = [...legend].reverse(); // smallest first
-        const gap = legendMaxR * 0.55 + 20;
-        let cx = columnX + radiusOf(ordered[0]!);
-        return ordered.map((v) => {
-          const r = radiusOf(v);
-          const mark = (
-            <Fragment key={v}>
-              <circle
-                cx={cx}
-                cy={legendBaseline - r}
-                r={r}
-                fill="none"
-                stroke={muted}
-                strokeWidth={1}
+                data-group={point.group}
               />
-              <text
-                x={cx}
-                y={legendBaseline - r * 2 - 8}
-                textAnchor="middle"
-                fill={muted}
-                fontSize={layout.legendLabel.fontSize}
-              >
-                {`${fr(v)} ${UNIT}`}
-              </text>
-            </Fragment>
-          );
-          cx += r + gap;
-          return mark;
-        });
-      })()}
+            );
+          })}
+        </div>
+      </div>
 
-      {/* The subject: context, not shouted — its own label above is already in the accent, so
-          this note only adds the one editorial sentence a script cannot derive from the numbers. */}
-      <text
-        x={columnX}
-        y={subjectY}
-        fill={accent}
-        fontSize={layout.legendLabel.fontSize}
-        fontWeight={700}
-      >
-        {`${subject.name} — ${SUBJECT_NOTE}`}
-      </text>
+      {/* The legend: entirely HTML, fixed-CSS-pixel swatches (`LEGEND_MAX_RADIUS_PX`) — a
+          schematic reference scale that reads the same size regardless of how big the map itself
+          is drawn, closing `geo-discipline.md`'s own open problem (a legend box sized for the
+          widest circle, not the longest unit word) the same way the prior two-layout version did:
+          a short per-mark unit ("M"), the full word spent once in the caption above. */}
+      <div className="mw-legend">
+        <p className="mw-legend-caption">{legendCaption}</p>
+        <div className="mw-legend-marks">
+          {[...legend].reverse().map((v) => {
+            const d = legendRadiusOf(v) * 2;
+            return (
+              <div key={v} className="mw-legend-item">
+                <span
+                  className="mw-legend-swatch"
+                  style={{ width: `${d}px`, height: `${d}px` }}
+                />
+                <span className="mw-legend-value">{`${fr(v)} ${UNIT}`}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-      {caveatLines.map((line, i) => (
-        <text
-          key={line}
-          x={columnX}
-          y={caveatTop + i * layout.note.lead}
-          fill={muted}
-          fontSize={layout.note.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-    </svg>
+      <p className="mw-subject">{`${subject.name} — ${SUBJECT_NOTE}`}</p>
+      <p className="mw-caveat">{CAVEAT_TEXT}</p>
+    </div>
   );
 }
 
@@ -421,10 +373,17 @@ export function MapWebSeed({
  * the map draws spatially, again, as one plain HTML table — captioned, ordered largest first,
  * ALWAYS rendered (not behind a disclosure widget, not screen-reader-only CSS), so a reader with no
  * spatial access to the map has a complete, linear, exact account of everything the map claims.
- * Rendered ONCE by `scripts/render-web.mjs` (not per layout — the same data does not need saying
+ * Rendered ONCE by `scripts/render-web.mjs` (not duplicated — the same data does not need saying
  * twice), as plain semantic HTML rather than SVG text, because a `<table>` with real `<th>` cells
- * is what a screen reader's own table navigation understands; an SVG `<text>` grid is not a table
- * to assistive technology no matter how it is laid out visually.
+ * is what a screen reader's own table navigation understands.
+ *
+ * Every row also carries `data-group` — the SAME filter that narrows the map's own points narrows
+ * this table too (`render-web.mjs`'s CSS, one `:has()` rule per group, reaches both). This is not
+ * an inconsistency with "the table always renders complete": with the default "All regions" radio
+ * checked, every row is present, exactly as this genre has always guaranteed. A reader who narrows
+ * the filter gets the SAME narrower reading on both channels, never a map that agrees with itself
+ * but disagrees with the table — the "two channels, not one" rule in `map-web-discipline.md`
+ * applied to filtering as much as to hover.
  */
 export function RegionTable({
   points,
@@ -449,6 +408,7 @@ export function RegionTable({
         {rows.map((point) => (
           <tr
             key={point.key}
+            data-group={point.group}
             className={point.key === SUBJECT_KEY ? "subject" : undefined}
           >
             <th scope="row">{point.name}</th>
@@ -459,39 +419,3 @@ export function RegionTable({
     </table>
   );
 }
-
-export const DESKTOP_LAYOUT: WebLayout = {
-  name: "desktop",
-  width: 860,
-  pad: 32,
-  mapSize: 420,
-  title: { fontSize: 21, fontWeight: 700, lead: 27 },
-  source: { fontSize: 13, fontWeight: 400, lead: 17 },
-  caption: { fontSize: 12.5, fontWeight: 600 },
-  note: { fontSize: 11.5, lead: 15 },
-  pointLabel: { fontSize: 11.5, fontWeight: 600 },
-  legendLabel: { fontSize: 12 },
-  maxRadiusPx: 26,
-  bottomPad: 40,
-};
-
-export const NARROW_LAYOUT: WebLayout = {
-  name: "narrow",
-  width: 360,
-  pad: 18,
-  mapSize: 324,
-  title: { fontSize: 16, fontWeight: 700, lead: 21 },
-  source: { fontSize: 11, fontWeight: 400, lead: 15 },
-  caption: { fontSize: 11, fontWeight: 600 },
-  note: { fontSize: 10, lead: 13 },
-  pointLabel: { fontSize: 9.5, fontWeight: 600 },
-  legendLabel: { fontSize: 10.5 },
-  maxRadiusPx: 15,
-  bottomPad: 28,
-};
-
-export const LAYOUTS = [DESKTOP_LAYOUT, NARROW_LAYOUT];
-
-/** The single layout `scripts/render-preview.mjs` renders — this skill's own static PNG preview
- *  needs only one of `LAYOUTS`, the same call `ChartWebSeed.tsx` makes for its own preview. */
-export const SEED_LAYOUT = DESKTOP_LAYOUT;

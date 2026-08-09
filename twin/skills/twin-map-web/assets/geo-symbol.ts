@@ -15,6 +15,9 @@ export type SymbolPoint = {
   lon: number;
   lat: number;
   value: number;
+  /** The filter dimension (`references/map-web-discipline.md`, "Filters") — every point declares
+   *  one, even a beat that never renders a filter UI (`groupsOf` would just report one group). */
+  group: string;
 };
 
 /** A point once the bake has projected it into the plate's own pixel space. */
@@ -97,4 +100,26 @@ export function fr(value: number, decimals = 1): string {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);
+}
+
+/**
+ * The distinct filter groups a study set carries, in a stable order — the one place this is
+ * computed, shared by `MapWebSeed.tsx` (which draws the `<fieldset>`) and `render-web.mjs` (which
+ * has to generate the matching `:has()` CSS rule per group) so the two never drift out of sync.
+ */
+export function groupsOf(points: { group: string }[]): string[] {
+  return Array.from(new Set(points.map((p) => p.group))).sort();
+}
+
+/**
+ * A CSS-id-safe slug for a group name ("Western Europe" → "western-europe") — used to build the
+ * filter radio's own `id` and the matching `:has(#id:checked)` selector. Shared for the same reason
+ * `groupsOf` is: the id `MapWebSeed.tsx` writes and the id `render-web.mjs`'s CSS targets must be
+ * the exact same string.
+ */
+export function slugOf(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }

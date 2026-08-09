@@ -43,41 +43,73 @@ accessible answer to that fact.
   skill's `geo-symbol.ts` follows) rather than this seed's point geometry.
 - **Not** to re-draw a map that already exists as a still or a video build — bake once, reuse the
   plate the same way `twin-map-beat` reuses one camera across its own two genres.
-- **Not** for pan/zoom on a live tile source. A baked plate with interactive overlays is the honest,
+- **Not** for pan/zoom on a LIVE tile source. A baked plate with interactive overlays is the honest,
   self-contained thing: it matches how this project already renders every map, and it means the
-  shipped HTML makes zero external request once the plate is inlined as a data URI.
+  shipped HTML makes zero external request once the plate is inlined as a data URI. Bounded pan/zoom
+  OVER that same baked plate is a different question — see the next bullet.
+
+**Add a filter only when the test passes — most beats do not need one.** A filter (`references/map-web-discipline.md`, "Filters") is warranted when the study set has a natural, orthogonal
+subsetting dimension a reader would plausibly want to isolate — enough distinct groups, and enough
+points per group, that narrowing to one is a genuinely different, useful reading. It is NOT
+warranted to declutter a busy map, hide outliers, or work around a legend/table with "too many
+rows" — that moves argument-bearing content behind an interaction under a different name, which this
+genre forbids regardless of motive. The unfiltered default must always already show the whole claim
+the title makes. This seed's own thirteen points across three regions is close to the honest floor
+for the test to pass — it demonstrates the mechanism, not evidence every beat needs one; a beat with
+one group renders no filter at all (`groupsOf(points).length <= 1`).
+
+**Add pan-and-zoom only when the test passes — most beats do not need this either**
+(`references/map-web-discipline.md`, "Pan and zoom"). Warranted when the points are dense enough
+that the overview scale makes them illegible or individually unreachable at the SMALLEST width this
+genre ships (375px) — an urban cluster, a metro transit map, markers close enough to overlap at map
+scale — or when the story deliberately moves a reader's attention between distinct places at
+different scales. This seed's own thirteen points are spread across a continent and stay legible and
+reachable at every tested width without zooming, so `zoomable` stays `false` for its own data even
+though the mechanism (`MapWebSeed`'s `zoomable` prop, a bounded `1.4×` step, no live tiles) is real
+and unit-tested. When it IS warranted: the unzoomed default must still show the whole claim, the
+accessible table must not read `zoomable` at all (panning is useless to a screen-reader user; the
+table is what serves them), and a reader can never zoom past the one fixed, capped multiplier.
 
 ## The one gotcha that will waste your day (read first)
 
 **A static render can be checked with a PNG; an interactive one cannot — and a map's own
 accessibility question is not the same question a chart's web genre already answered.** Every rule
 in `geo-discipline.md` about the pixels still applies to this genre's own furniture (the legend, the
-labels, the water tint), but the thing unique to THIS genre — does hovering circle X show circle X's
-own exact value, does Tab reach every one of the points, does the accessible table read correctly, do
-the map and its legend survive JavaScript being off — is a *behaviour over time*, provable only by
-driving a real browser and using it. See `references/map-web-discipline.md`, "The accessibility
-question," before assuming a hover tooltip is enough: it is not, because it requires spatial access
-to find in the first place, which is exactly what a screen-reader user does not have. The second trap
-this skill's own bake avoids by construction rather than by discipline: MapTiler's `dataviz-light`
-basemap paints water a near-grey (`hsl(240, 2%, 88%)`), and a point-based beat leaves nearly the
-whole plate exposed as basemap — `scripts/bake-plate.mjs` overrides the `Water`/`Water shadow` layers
-to a genuine blue tint (`#aac9e0`) before capture, the fix `geo-discipline.md` rule 7 requires and
-that another beat in this same project only found by looking at a rendered symbol map, not by
-reading the style.
+labels, the water tint), but the thing unique to THIS genre — does hovering point X show point X's
+own exact value, does Tab reach every one of the points AND every control (filter radios, the zoom
+checkbox), does the accessible table read correctly, do the map and its legend survive JavaScript
+being off — is a *behaviour over time*, provable only by driving a real browser and using it. See
+`references/map-web-discipline.md`, "The accessibility question," before assuming a hover tooltip is
+enough: it is not, because it requires spatial access to find in the first place, which is exactly
+what a screen-reader user does not have. The second trap this skill's own bake avoids by construction
+rather than by discipline: MapTiler's `dataviz-light` basemap paints water a near-grey (`hsl(240, 2%,
+88%)`), and a point-based beat leaves nearly the whole plate exposed as basemap —
+`scripts/bake-plate.mjs` overrides the `Water`/`Water shadow` layers to a genuine blue tint
+(`#aac9e0`) before capture, the fix `geo-discipline.md` rule 7 requires and that another beat in this
+same project only found by looking at a rendered symbol map, not by reading the style.
+
+**The third trap, specific to this genre's own rewrite for genuine responsiveness: a COMPUTED style
+value can disagree with what the screen actually shows, and the value is what's wrong.** Verify by
+screenshotting the beat at real widths (this skill's own proof: 1600/1024/768/375), not by reading
+`getBoundingClientRect()` or a CSS custom property off some element and trusting the number — a
+value can be measuring the wrong box (a wrapper that has already been overridden by a later rule, a
+percentage resolved against the wrong ancestor) and report a "pass" while the picture itself clips,
+letterboxes, or leaves a gutter. Trust the picture.
 
 ## Architecture
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/map-web-discipline.md` | The accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `<title>`, two pre-rendered layouts, what must never become interactive |
-| Pure core | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
-| Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG, one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
-| Composition | `assets/MapWebSeed.tsx` | `MapWebSeed` (the two-layout SVG: plate, circles, legend, subject note) and `RegionTable` (the accessible table, rendered once) |
-| Interaction | `assets/interaction.mjs` | `initMap`/`initAll` — hover/tap/keyboard per point, direct listeners (no proximity resolver needed: each circle is already discrete) |
-| Render | `scripts/render-web.mjs` | `renderMapWeb({ component, table, layouts, props, outDir, name })` — SSRs one SVG per layout plus the table once, inlines the interaction script, writes one self-contained HTML file. Also this skill's own seed runner (`ensurePlate`, `render`) behind a labelled CONFIG seam |
-| Preview | `scripts/render-preview.mjs` | The seed rendered from sample data to a static PNG (the desktop layout), for a reader of this skill to see without opening a browser |
-| Rasteriser | `scripts/render-still.mjs` | `deriveFurniture`/`measureText` — a byte-identical copy of `twin-chart-beat`'s, kept in step by hand (a skill never imports another skill) |
-| Sample | `assets/sample-data/regions.json` | Thirteen European metro areas, sample population figures, the seed's own data |
+| Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, bounded pan/zoom, what must never become interactive |
+| Pure core | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
+| Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG (baked generously — `1000`px, see the discipline file's "The plate strategy"), one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
+| Composition | `assets/MapWebSeed.tsx` | `MapWebSeed` — ONE fluid render: an SVG carrying only geometry (plate + decorative circles) plus an HTML overlay carrying every piece of furniture and every control (filter fieldset, point labels, hit-target buttons, legend, the optional bounded zoom toggle) — and `RegionTable` (the accessible table, rendered once) |
+| Interaction | `assets/interaction.mjs` | `initPoints`/`initAll` — hover/tap/keyboard per point, direct listeners on the HTML `.pt` buttons (no proximity resolver needed: each point is already a discrete, fixed-size target) |
+| Render | `scripts/render-web.mjs` | `renderMapWeb({ component, table, props, outDir, name })` — SSRs the one fluid map render plus the table once, inlines the interaction script, writes one self-contained HTML file. Also this skill's own seed runner (`ensurePlate`, `render`) behind a labelled CONFIG seam |
+| Preview | `scripts/render-preview.mjs` | The seed rendered from sample data, screenshotted through headless Chrome at one fixed viewport width — no longer a pure-SVG Resvg rasterise, since the furniture is now HTML |
+| Compare | `scripts/compare-png.mjs` | `comparePngBuffers` — tolerant, decoded-pixel PNG comparison through a real `<canvas>`; two Chrome launches of identical HTML are not always byte-identical (anti-aliasing jitter), so `--check`/the standalone test compare pictures, not bytes |
+| Rasteriser | `scripts/render-still.mjs` | `deriveFurniture`/`measureText` — a byte-identical copy of `twin-chart-beat`'s, kept in step by hand (a skill never imports another skill); only `deriveFurniture` (the colour maths) is used by this genre now |
+| Sample | `assets/sample-data/regions.json` | Thirteen European metro areas, sample population figures, each tagged with a `group` (the filter's own dimension), the seed's own data |
 
 **Why a symbol map, not a choropleth, for this skill's own seed.** A symbol map has no data JOIN
 (`twin-map-beat/references/types/proportional-symbol.md`: "there is no data JOIN for this type") and
@@ -87,71 +119,88 @@ to prove the web mechanics AND the accessibility answer on first; a choropleth's
 next one to write, importing this skill's OWN copy of `twin-map-beat/assets/geo.ts`'s join/ramp logic
 rather than `geo-symbol.ts`.
 
-**Why the accessible table is rendered once, not once per layout.** `RegionTable` does not take a
-`WebLayout` — the same thirteen facts do not read differently at 360px than at 860px, so
-`renderMapWeb` SSRs it exactly once and places it after the (layout-swapped) `<figure>`, not once per
-SVG. Duplicating it per layout would mean a screen reader encounters the same table twice on one
-page, which is worse than not having it duplicated, not merely wasteful.
+**Why the accessible table is rendered once — and why there is no longer a "per layout" to
+duplicate it for.** `RegionTable` takes no width/layout prop at all — the same thirteen facts do not
+read differently at 375px than at 1600px, and this genre no longer ships more than one layout to
+begin with (see the discipline file's "Full width, genuinely"). `renderMapWeb` SSRs the table exactly
+once and places it after the map, inside the same `.map-web-page` wrapper the filter's own `:has()`
+CSS is scoped to (`references/map-web-discipline.md`, "Filters") — one table, reachable by the same
+filter that narrows the map's own points.
 
 ## How it works (the shape)
 
-1. **Read `references/map-web-discipline.md`**, especially "The accessibility question," before
-   writing a second beat.
-2. **Bake the plate once.** `scripts/bake-plate.mjs` projects every point, records which ones missed
-   the frame (`keepPoint`), and overrides the basemap's water colour before capture.
-3. **Draw the circles, sized by value, largest-first** (`drawOrder`) so smaller circles stay paintable
-   on top rather than buried. Every circle gets an invisible, larger hit target
-   (`references/map-web-discipline.md`, "Touch and hover share one target"), a nested `<title>` for a
-   no-JS native tooltip, and a baked `aria-label`/`data-detail`.
-4. **Write the legend with a short per-mark unit.** `geo-discipline.md`'s own open problem (a legend
-   box sized for the widest circle, not the longest unit word) is sidestepped by keeping each
-   reference mark's own unit short ("M") and spending the full word once, in the caption.
-5. **Render the table**, once, from the same `readingOrder` the keyboard's Home/End also uses — one
-   order, two media.
-6. **Render the HTML**, then **drive a real browser**: desktop width first, then hover three
+1. **Read `references/map-web-discipline.md`** in full before writing a second beat — "Full width,
+   genuinely" and "The accessibility question" both matter from the first line of a new beat.
+2. **Bake the plate once, generously.** `scripts/bake-plate.mjs` projects every point, records which
+   ones missed the frame (`keepPoint`), and overrides the basemap's water colour before capture. Size
+   it for the widest container the beat will actually sit in (see "The plate strategy") — never for
+   one fixed layout, because there is no longer one to tune it for.
+3. **Draw the circles in the SVG, sized by value, largest-first** (`drawOrder`) so smaller circles
+   stay paintable on top rather than buried — geometry only, no text (`references/map-web-discipline.md`, "Text is HTML, not SVG"). **Draw everything else — point labels, the per-point hit
+   target, the legend, the title/source/caveat, the filter, the optional zoom toggle — as HTML**,
+   over the SVG. Every hit-target button gets a fixed-CSS-pixel diameter (never an SVG-scaled one), a
+   native `title` for a no-JS tooltip, and a baked `aria-label`/`data-detail`.
+4. **Write the legend with a short per-mark unit, at a fixed CSS pixel size.** `geo-discipline.md`'s
+   own open problem (a legend box sized for the widest circle, not the longest unit word) is
+   sidestepped by keeping each reference mark's own unit short ("M") and spending the full word once,
+   in the caption; the legend's own swatch size is deliberately NOT derived from the map's own
+   (container-scaled) circle size — see "Text is HTML, not SVG."
+5. **Render the table**, once, from the same `readingOrder` the keyboard's Left/Right/Home/End also
+   uses — one order, two media, tagged with the SAME `data-group` the filter reads on the map.
+6. **Add a filter or a zoom toggle only if the test in "When to use" passes** — most beats need
+   neither. Both are pure CSS (`:has()`), so wiring one in costs no new JavaScript.
+7. **Render the HTML, then drive a real browser AND screenshot it at real widths** — this genre's own
+   proof covers 1600/1024/768/375: confirm the beat fills each container without a gutter and without
+   distorting the plate, that the type reads the same visual size at every width, then hover three
    different points and check each against the source data, then keyboard-only (Tab reaches every
-   point; confirm the accessible table too), then ~360-375px wide, then disable JavaScript and
-   confirm the map, its legend and the table all still render. Screenshot each. A claim not driven is
+   point AND every control; confirm the accessible table too), then disable JavaScript and confirm
+   the map, its legend and the table all still render. A claim not driven, and not screenshotted, is
    not evidence — the same rule `twin-doctrine`'s verification section states for every genre in this
-   twin.
+   twin, sharpened by this genre's own gotcha above: a computed value can lie, a screenshot cannot.
 
 ## Quick start
 
 ```sh
 # the bake: one plate, this skill's own sample points, this skill's own namespace under /tmp so
 # concurrent work on other beats in this repository never collides with it
-bun skills/twin-map-web/scripts/bake-plate.mjs --size 496 --out /tmp/map-twin-web/plate-496
+bun skills/twin-map-web/scripts/bake-plate.mjs --size 1000 --out /tmp/map-twin-web/plate-1000
 
 # the skill's own seed, from the skill's own sample data — nothing else on disk is needed (the bake
 # above runs automatically if the plate is not already there)
 bun skills/twin-map-web/scripts/render-web.mjs /tmp/map-web-twin
 
-# then drive it — a static screenshot cannot verify an interactive claim
+# then drive it — a static screenshot of ONE width cannot verify a responsive claim
 python3 -m http.server 8935 --bind 127.0.0.1 --directory /tmp/map-web-twin &
 # open http://127.0.0.1:8935/population.html in a real (or automated) browser and:
 #  1. confirm the title, the legend and the accessible table are on screen before touching anything;
-#  2. hover three different circles, check the tooltip against assets/sample-data/regions.json;
-#  3. Tab through every circle, confirm the same detail appears from keyboard focus alone;
-#  4. resize to ~375px wide, confirm the narrow layout swaps in and nothing clips;
-#  5. disable JavaScript, reload, confirm the map, the legend and the table all still render.
+#  2. hover three different points, check the tooltip against assets/sample-data/regions.json;
+#  3. Tab through every point AND every control (filter radios; the zoom checkbox if present),
+#     confirm the same detail appears from keyboard focus alone;
+#  4. screenshot at 1600, 1024, 768 and 375px: confirm the beat fills the width at every one (no
+#     max-width gutter), the plate's own aspect never distorts, and the type is the SAME visual size
+#     across all four — not a computed value, the actual picture;
+#  5. try the filter: confirm the unfiltered "All regions" view already shows every point (the whole
+#     claim), and that narrowing it also narrows the accessible table, not just the map;
+#  6. disable JavaScript, reload, confirm the map, the legend, the table AND the filter (CSS-only)
+#     all still render/work.
 ```
 
 The first render command runs the SEED's runner (`render`, at the bottom of
 `scripts/render-web.mjs`), which reads `assets/sample-data/regions.json` and hands the seed
-component, `RegionTable`, and its `LAYOUTS` array to the genre's generic `renderMapWeb`. A real beat
-writes its own runner in the same shape, beside its own story, importing its own component and its
-own points — `renderMapWeb` itself does not change, the same rule `twin-chart-web`'s own
-`render-web.mjs` states for its own generic function.
+component and `RegionTable` to the genre's generic `renderMapWeb`. A real beat writes its own runner
+in the same shape, beside its own story, importing its own component and its own points —
+`renderMapWeb` itself does not change, the same rule `twin-chart-web`'s own `render-web.mjs` states
+for its own generic function.
 
 ## Tuning knobs
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| The two frame widths this genre ships | `860` (desktop) / `360` (narrow) | each `WebLayout`'s `width`, `MapWebSeed.tsx` |
-| The breakpoint the CSS media query swaps layouts at | `480px` | `buildCss`, `render-web.mjs` |
-| The square plate's own side inside each layout | `420` (desktop) / `324` (narrow) | `mapSize`, each `WebLayout` |
-| The largest circle's radius | `26px` (desktop) / `15px` (narrow) | `maxRadiusPx`, each `WebLayout` |
-| The smallest invisible hit target's radius (never below the visible circle's own) | `14px` | `hitR`, `MapWebSeed.tsx` |
+| The bake's own generous size (drives resolution vs. bake time/file size — see the discipline file's "The plate strategy") | `1000` logical px | `PLATE_SIZE`, `render-web.mjs` (and the CLI default, `bake-plate.mjs`) |
+| The largest circle's radius, as a FRACTION of the frame (not a fixed pixel — it has to scale with the fluid SVG) | `0.062` | `MARK_MAX_RADIUS_FRACTION`, `MapWebSeed.tsx` |
+| The legend swatch's own max radius, fixed CSS px (deliberately NOT frame-relative) | `22px` | `LEGEND_MAX_RADIUS_PX`, `MapWebSeed.tsx` |
+| The per-point hit target's own diameter, fixed CSS px (never SVG-scaled) | `28px` | `HIT_TARGET_PX`, `MapWebSeed.tsx` |
+| The bounded zoom step, when `zoomable` is on | `1.4×` | `ZOOM_SCALE`, `MapWebSeed.tsx` |
 | How many reference sizes the legend shows | `3` | `niceReferenceValues`'s `count` default, `geo-symbol.ts` |
 | The camera this seed bakes | `[[-14, 34], [28, 64]]` — Lisbon to Stockholm, padded ~5° | `BEAT.bounds`, `bake-plate.mjs` |
 | Which basemap | `"dataviz-light"`, water overridden to `#aac9e0` before capture | `BEAT.style` / the `style.load` handler, `bake-plate.mjs` |
@@ -159,23 +208,29 @@ own points — `renderMapWeb` itself does not change, the same rule `twin-chart-
 | This skill's own bake namespace (never collides with `twin-map-beat`'s `/tmp/map-twin`) | `/tmp/map-twin-web` | `DEFAULT_PLATE_DIR`, `render-web.mjs` |
 | The one point this seed highlights as the subject | `"paris"` | `SUBJECT_KEY`, `MapWebSeed.tsx` |
 | How the `#tooltip` is positioned relative to the pointer/focused point | `14px` above, clamped `8px` from the viewport edge | `show()`, `interaction.mjs` |
+| The filter's own dimension, and whether a beat ships one at all (skipped when `groupsOf(points).length <= 1`) | `group` per point, `assets/sample-data/regions.json` | `groupsOf`, `geo-symbol.ts` |
+| The PNG comparison's own tolerance (per-channel diff, and the allowed fraction of differing pixels) | tolerance `6`, max fraction `0.002` | `comparePngBuffers`'s options, `compare-png.mjs` |
 
 ## Files
 
 - `references/map-web-discipline.md` — the rules this genre is written under, each attached to the
   reasoning that produced it. Read before writing a second beat.
 - `assets/MapWebSeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
-  complete beat (thirteen European metro areas, Paris the largest), not a stripped mechanics demo.
-  Also where `WebLayout` is defined and where `RegionTable`, the accessible table, lives.
+  complete beat (thirteen European metro areas, Paris the largest, a three-region filter), not a
+  stripped mechanics demo. One fluid render: an SVG carrying only geometry, an HTML overlay carrying
+  every piece of furniture and every control, and `RegionTable`, the accessible table, alongside it.
 - `assets/geo-symbol.ts` — this skill's OWN copy of the pure proportional-symbol geometry, trimmed
-  to what this genre draws (no polygon join — a symbol map has none).
+  to what this genre draws (no polygon join — a symbol map has none), plus `groupsOf`/`slugOf`, the
+  filter's own shared vocabulary between the component and the CSS `render-web.mjs` generates.
 - `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML.
-  `initMap`/`initAll` are DOM wiring, verified by driving a real browser, not by a test.
+  `initPoints`/`initAll` are DOM wiring, verified by driving a real browser, not by a test.
 - `assets/sample-data/regions.json` — thirteen European metro areas with sample population figures
-  (Paris 11.0M largest, Dublin 1.4M smallest), the seed's data.
-- `assets/preview.png` — the static desktop layout, rendered on a light ground, so a reader of this
-  skill sees what it produces. Regenerate with `bun scripts/render-preview.mjs` whenever the seed
-  changes.
+  (Paris 11.0M largest, Dublin 1.4M smallest) and a `group` per point (the filter's own dimension),
+  the seed's data.
+- `assets/preview.png` — a full render of the seed at 1024px, screenshotted through headless Chrome
+  (furniture is HTML now, not pure SVG — a Resvg rasterise alone can no longer produce this), so a
+  reader of this skill sees what it produces. Regenerate with `bun scripts/render-preview.mjs`
+  whenever the seed changes.
 - `output-proof/preview.png` — the artifact this skill's seed produces from this skill's own sample
   data — regenerated by `bun scripts/render-preview.mjs --out output-proof`.
 - `scripts/bake-plate.mjs` — this skill's OWN copy of the bake: camera, gate, plate, projection, the
@@ -184,13 +239,22 @@ own points — `renderMapWeb` itself does not change, the same rule `twin-chart-
   runner (`ensurePlate`, `render`, the CLI block) behind a labelled `CONFIG — edit for your story`
   seam. Nothing in this file imports out of this skill.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data (never a
-  story's render) to `assets/preview.png`, or `--out <dir>` to write the proof there instead.
-  `--check` re-renders and fails non-zero if the committed PNG no longer matches a fresh render.
+  story's render), navigates a headless Chrome tab to it and screenshots the full page, to
+  `assets/preview.png`, or `--out <dir>` to write the proof there instead. `--check` re-renders and
+  fails non-zero if the committed PNG no longer matches (tolerantly — see `compare-png.mjs`) a fresh
+  render.
+- `scripts/compare-png.mjs` — `comparePngBuffers`, the tolerant decoded-pixel comparison both
+  `render-preview.mjs --check` and `test/standalone.test.ts` use in place of a raw byte-equality
+  check.
 - `scripts/render-still.mjs` — `deriveFurniture`/`measureText`, a byte-identical copy of
-  `twin-chart-beat`'s own file.
+  `twin-chart-beat`'s own file (this genre now only calls `deriveFurniture`).
 - `test/canon.test.ts` — the canon's own shape: the seed carries the exact `REPLACE ME` wording,
   the sample data is real rows the seed can render standalone, `preview.png` is a current render.
-- `test/render-web.test.ts` — `bun:test` coverage: the SSR'd markup's structure (point count, exact
-  formatted `data-detail`/`aria-label` per point, the palette, unconditional furniture), the
-  accessible table's own row count and order, and geometry helpers (`radiusScale`,
-  `niceReferenceValues`, `labelPlacement`).
+- `test/render-web.test.ts` — `bun:test` coverage: the SSR'd markup's structure (one `<svg>` with no
+  `<text>` inside it, point count, exact formatted `data-detail`/`aria-label`/`title` per point, the
+  filter fieldset present/absent matching the group count, the zoom checkbox present/absent matching
+  `zoomable`, the palette, unconditional furniture), the accessible table's own row count/order/
+  `data-group`, and geometry helpers (`radiusScale`, `niceReferenceValues`, `labelPlacement`,
+  `groupsOf`, `slugOf`).
+- `test/standalone.test.ts` — proves the skill directory alone, copied into a fresh root, still
+  renders the SAME picture as this repository's own `assets/preview.png` (tolerant pixel comparison).

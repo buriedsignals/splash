@@ -1,13 +1,12 @@
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, measureText } from "../scripts/render-still.mjs";
+import { deriveFurniture } from "../scripts/render-still.mjs";
 import {
   MapWebSeed,
   RegionTable,
-  DESKTOP_LAYOUT,
-  NARROW_LAYOUT,
   pointDetail,
+  ZOOM_SCALE,
 } from "../assets/MapWebSeed.tsx";
 import {
   radiusScale,
@@ -16,13 +15,13 @@ import {
   readingOrder,
   labelPlacement,
   keepPoint,
+  groupsOf,
+  slugOf,
   fr,
 } from "../assets/geo-symbol.ts";
 
-// `measureText` loads a native rasteriser (`@resvg/resvg-js`) that scans every system font on its
-// first call in a process — a one-time cost this file cannot assume is already warm when run alone
-// (`bun test skills/twin-map-web`), the same reasoning `twin-chart-web/test/render-web.test.ts`
-// gives for raising its own budget.
+// `deriveFurniture` is cheap (pure colour maths), unlike the old `measureText` this file used to
+// warm up — kept anyway in case a future addition reaches for a native rasteriser again.
 setDefaultTimeout(20000);
 
 // The seed's own `SUBJECT_KEY` constant is `"paris"` (`MapWebSeed.tsx`) — every fixture below that
@@ -37,6 +36,7 @@ const POINTS = [
     value: 11.0,
     px: 100,
     py: 100,
+    group: "West",
   },
   {
     key: "b",
@@ -46,6 +46,7 @@ const POINTS = [
     value: 5.6,
     px: 200,
     py: 150,
+    group: "East",
   },
   {
     key: "c",
@@ -55,6 +56,7 @@ const POINTS = [
     value: 1.4,
     px: 300,
     py: 200,
+    group: "East",
   },
 ];
 
@@ -71,17 +73,15 @@ const BASE = {
   alt: "Three circles on a fixture map.",
   ground: "#FFFFFF",
   accent: "#0B7A75",
-  measure: measureText,
 };
 
-function renderLayout(
-  layout: typeof DESKTOP_LAYOUT,
-  overrides: Partial<typeof BASE> = {},
+function renderSeed(
+  overrides: Partial<typeof BASE & { zoomable: boolean }> = {},
 ) {
   const furniture = deriveFurniture(
     (overrides.ground ?? BASE.ground) as string,
   );
-  const props = { ...BASE, ...furniture, ...overrides, layout };
+  const props = { ...BASE, ...furniture, ...overrides };
   return renderToStaticMarkup(createElement(MapWebSeed, props as any));
 }
 
@@ -161,56 +161,131 @@ describe("fr", () => {
 });
 
 describe("pointDetail", () => {
-  it("should be the one implementation the SVG attributes and the table both draw from", () => {
+  it("should be the one implementation the hit-target attributes and the table both draw from", () => {
     expect(pointDetail({ name: "Alpha City", value: 11 })).toBe(
       "Alpha City : 11,0 million inhabitants",
     );
   });
 });
 
+describe("groupsOf / slugOf", () => {
+  it("should list distinct groups once, in a stable sorted order", () => {
+    expect(groupsOf(POINTS)).toEqual(["East", "West"]);
+  });
+
+  it("should slug a group name into a CSS-id-safe string", () => {
+    expect(slugOf("Central & Northern Europe")).toBe("central-northern-europe");
+  });
+});
+
 describe("MapWebSeed", () => {
-  it("should carry the title, the source, the caveat and the alt text", () => {
-    const svg = renderLayout(DESKTOP_LAYOUT);
-    expect(svg).toContain("A fixture map");
-    expect(svg).toContain("Fixture source");
-    expect(svg).toContain("Fixture caveat");
-    expect(svg).toContain("<desc>Three circles");
+  it("should carry the title, the source and the caveat as plain HTML, not SVG text", () => {
+    const html = renderSeed();
+    expect(html).toContain('class="mw-title"');
+    expect(html).toContain("A fixture map");
+    expect(html).toContain('class="mw-source"');
+    expect(html).toContain("Fixture source");
+    expect(html).toContain('class="mw-caveat"');
+    expect(html).toContain("Fixture caveat");
+    expect(html).not.toMatch(/<svg[^>]*>[\s\S]*<text/); // the SVG itself carries no <text>
   });
 
-  it("should not flatten its children behind role=img on the root", () => {
-    // map-web-discipline.md's own departure, mirroring the chart genre's: role=img on the ROOT
-    // would silence every focusable circle below it.
-    const svg = renderLayout(DESKTOP_LAYOUT);
-    const rootTag = svg.slice(0, svg.indexOf(">") + 1);
-    expect(rootTag).not.toContain("role=");
+  it("should carry the alt text as the SVG's own aria-label, not a visible caption", () => {
+    const html = renderSeed();
+    expect(html).toContain('aria-label="Three circles on a fixture map."');
   });
 
-  it("should render one focusable, labelled hit-circle per point, none of it hidden without JS", () => {
-    const svg = renderLayout(DESKTOP_LAYOUT);
-    const points = svg.match(/class="pt"/g) ?? [];
+  it("should render one fluid <svg> with viewBox matching the frame and no fixed pixel width", () => {
+    const html = renderSeed();
+    expect(html).toContain('viewBox="0 0 420 420"');
+    expect(html).not.toMatch(/<svg[^>]*\bwidth="\d/); // no hardcoded pixel width on the svg itself
+  });
+
+  it("should render exactly one <svg> — no second, breakpoint-swapped layout", () => {
+    const html = renderSeed();
+    expect((html.match(/<svg/g) ?? []).length).toBe(1);
+  });
+
+  it("should render one focusable, labelled HTML button per point, none of it hidden without JS", () => {
+    const html = renderSeed();
+    const points = html.match(/class="pt"/g) ?? [];
     expect(points.length).toBe(POINTS.length);
-    expect(svg).toContain('tabindex="0"');
-    expect(svg).toContain('aria-label="Alpha City : 11,0 million inhabitants"');
-    expect(svg).toContain('data-detail="Beta Town : 5,6 million inhabitants"');
-  });
-
-  it("should nest a native <title> per point carrying the same detail string", () => {
-    const svg = renderLayout(DESKTOP_LAYOUT);
-    expect(svg).toContain("<title>Gamma : 1,4 million inhabitants</title>");
-  });
-
-  it("should keep every hit-circle transparent at rest, never inlined with the accent", () => {
-    const svg = renderLayout(DESKTOP_LAYOUT);
-    const ptFills = [...svg.matchAll(/class="pt"[^>]*fill="([^"]+)"/g)].map(
-      (m) => m[1],
+    expect(html).toContain('<button type="button" class="pt"');
+    expect(html).toContain(
+      'aria-label="Alpha City : 11,0 million inhabitants"',
     );
-    expect(ptFills.length).toBeGreaterThan(0);
-    expect(ptFills.every((f) => f === "transparent")).toBe(true);
+    expect(html).toContain('data-detail="Beta Town : 5,6 million inhabitants"');
+  });
+
+  it("should carry a native title attribute per point button, the no-JS tooltip", () => {
+    const html = renderSeed();
+    expect(html).toContain('title="Gamma : 1,4 million inhabitants"');
+  });
+
+  it("should tag every point button, decorative circle and point label with its own data-group", () => {
+    const html = renderSeed();
+    expect(html).toContain(
+      'data-key="paris" data-detail="Alpha City : 11,0 million inhabitants" data-group="West"',
+    );
+    // The decorative SVG mark too — not just the interactive button and the label — or a filtered
+    // view leaves unlabelled ghost circles on the map (caught by screenshotting the filtered
+    // state; see references/map-web-discipline.md, "Filters").
+    expect((html.match(/<circle[^>]*data-group="West"/g) ?? []).length).toBe(1);
+    expect((html.match(/<circle[^>]*data-group="East"/g) ?? []).length).toBe(2);
+    expect((html.match(/class="point-label[^"]*"/g) ?? []).length).toBe(
+      POINTS.length,
+    );
+  });
+
+  it("should render a filter fieldset with one radio per group plus an 'all' radio, all checked by 'All'", () => {
+    const html = renderSeed();
+    expect(html).toContain('class="mw-filter"');
+    expect(html).toContain('id="mw-filter-all"');
+    expect(html).toMatch(/id="mw-filter-all"[^>]*checked/);
+    expect(html).toContain('id="mw-filter-east"');
+    expect(html).toContain('id="mw-filter-west"');
+  });
+
+  it("should render no filter fieldset when every point shares one group", () => {
+    const oneGroup = POINTS.map((p) => ({ ...p, group: "Everywhere" }));
+    const html = renderSeed({
+      geometry: { frame: GEOMETRY.frame, points: oneGroup },
+    } as any);
+    expect(html).not.toContain('class="mw-filter"');
+  });
+
+  it("should not render a zoom toggle by default", () => {
+    const html = renderSeed();
+    expect(html).not.toContain("mw-zoom-toggle");
+  });
+
+  it("should render a bounded zoom checkbox when zoomable is true, unchecked by default", () => {
+    const html = renderSeed({ zoomable: true } as any);
+    expect(html).toContain('id="mw-zoom-toggle"');
+    expect(html).not.toMatch(/id="mw-zoom-toggle"[^>]*checked/);
+    expect(html).toContain(`${ZOOM_SCALE}×`);
+    // The pannable viewport is only keyboard-focusable in its own right when there is something
+    // to pan — not present at all when zoom is off.
+    expect(html).toContain("Pannable map area");
+  });
+
+  it("should not make the viewport independently focusable when not zoomable — nothing to pan", () => {
+    const html = renderSeed();
+    expect(html).not.toContain("Pannable map area");
+  });
+
+  it("should not flatten the map's interactive children behind role=img on the svg", () => {
+    const html = renderSeed();
+    const svgOpenTag = html.slice(
+      html.indexOf("<svg"),
+      html.indexOf(">", html.indexOf("<svg")) + 1,
+    );
+    expect(svgOpenTag).not.toContain('role="img"');
   });
 
   it("should throw rather than draw a symbol map with fewer than two points", () => {
     expect(() =>
-      renderLayout(DESKTOP_LAYOUT, {
+      renderSeed({
         geometry: { frame: GEOMETRY.frame, points: [POINTS[0]!] },
       } as any),
     ).toThrow("needs at least two points");
@@ -221,69 +296,34 @@ describe("MapWebSeed", () => {
       frame: GEOMETRY.frame,
       points: POINTS.filter((p) => p.key !== "paris"),
     };
-    // The fixture never has a "paris" point, so the seed's own SUBJECT_KEY constant is always
-    // unmet by this fixture — asserting the throw happens at all, and names the key.
-    expect(() =>
-      renderLayout(DESKTOP_LAYOUT, { geometry: withoutParis } as any),
-    ).toThrow("no point for the subject");
+    expect(() => renderSeed({ geometry: withoutParis } as any)).toThrow(
+      "no point for the subject",
+    );
   });
 
-  for (const layout of [DESKTOP_LAYOUT, NARROW_LAYOUT]) {
-    it(`should paint only with the ground, its derived furniture and the one accent at the ${layout.name} layout`, () => {
-      const ground = "#101820";
-      const accent = "#E6A700";
-      const furniture = deriveFurniture(ground);
-      const points = [
-        {
-          key: "paris",
-          name: "Paris",
-          lon: 2.35,
-          lat: 48.86,
-          value: 11.0,
-          px: 100,
-          py: 100,
-        },
-        {
-          key: "b",
-          name: "Beta Town",
-          lon: 3.0,
-          lat: 49.0,
-          value: 5.6,
-          px: 200,
-          py: 150,
-        },
-        {
-          key: "c",
-          name: "Gamma",
-          lon: 4.0,
-          lat: 50.0,
-          value: 1.4,
-          px: 300,
-          py: 200,
-        },
-      ];
-      const svg = renderToStaticMarkup(
-        createElement(MapWebSeed, {
-          ...BASE,
-          ground,
-          accent,
-          ...furniture,
-          geometry: { frame: GEOMETRY.frame, points },
-          layout,
-        } as any),
-      );
-      const allowed = new Set(
-        [ground, accent, furniture.ink, furniture.muted].map((c) =>
-          c.toLowerCase(),
-        ),
-      );
-      const used = new Set(
-        (svg.match(/#[0-9a-fA-F]{6}/g) ?? []).map((c) => c.toLowerCase()),
-      );
-      expect([...used].filter((c) => !allowed.has(c))).toEqual([]);
-      expect(used.has(accent.toLowerCase())).toBe(true);
-    });
-  }
+  it("should paint only with the ground, its derived furniture and the one accent", () => {
+    const ground = "#101820";
+    const accent = "#E6A700";
+    const furniture = deriveFurniture(ground);
+    const html = renderToStaticMarkup(
+      createElement(MapWebSeed, {
+        ...BASE,
+        ground,
+        accent,
+        ...furniture,
+      } as any),
+    );
+    const allowed = new Set(
+      [ground, accent, furniture.ink, furniture.muted].map((c) =>
+        c.toLowerCase(),
+      ),
+    );
+    const used = new Set(
+      (html.match(/#[0-9a-fA-F]{6}/g) ?? []).map((c) => c.toLowerCase()),
+    );
+    expect([...used].filter((c) => !allowed.has(c))).toEqual([]);
+    expect(used.has(accent.toLowerCase())).toBe(true);
+  });
 });
 
 describe("RegionTable", () => {
@@ -307,5 +347,14 @@ describe("RegionTable", () => {
     );
     expect(html).toContain("11,0 M");
     expect(html).toContain("1,4 M");
+  });
+
+  it("should tag every row with its own data-group, the same filter that narrows the map", () => {
+    const furniture = deriveFurniture(BASE.ground);
+    const html = renderToStaticMarkup(
+      createElement(RegionTable, { points: POINTS, ...furniture }),
+    );
+    expect(html).toContain('data-group="West"');
+    expect((html.match(/data-group="East"/g) ?? []).length).toBe(2);
   });
 });

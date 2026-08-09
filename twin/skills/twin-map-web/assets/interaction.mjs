@@ -3,26 +3,25 @@
 // The one script the map-web genre ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
-// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts). The same
-// mechanism `twin-chart-web/assets/interaction.mjs` uses; this is this skill's OWN copy, not an
-// import of it — nothing under a skill may import out of it.
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
-// A symbol map's points are already discrete circles at fixed screen positions, unlike the chart
-// genre's own series of x-ordered readings, so this file does NOT need a nearest-by-x resolver:
-// each `.pt` circle wires its own hover, tap and keyboard handlers directly. What IS shared with
-// the chart genre is everything about HOW a value is shown once a point is found — one tooltip,
-// positioned from the pointer or the focused element, reading a `data-detail` string that was
-// computed server-side and never reformatted here.
+// Each point's hit target is now a real HTML `<button class="pt">` (`MapWebSeed.tsx`'s own header
+// note explains why: a fixed-CSS-pixel touch target, not an SVG shape sized in frame units that
+// would shrink to a few physical pixels at 375px wide). That is a genuine DOM element with its own
+// native focus/click/keyboard handling already — what this file adds on top is the ONE thing HTML
+// does not give a `<button>` for free: a shared, positioned tooltip reading the point's own
+// `data-detail`, plus Arrow/Home/End cycling between points without leaving keyboard focus.
 //
-// `initMap`/`initAll` are DOM wiring and are NOT unit-tested here: per `twin-doctrine`'s own
+// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `twin-doctrine`'s own
 // verification rule, an interactive genre is verified by driving a real browser, not by asserting
 // against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 
-/** Wires one `<svg class="map">` — its `.pt` circles and the shared tooltip element — to hover,
- *  tap and keyboard. Every point already carries its own `data-detail` string and its own
- *  `aria-label`; this function never invents either. */
-export function initMap(svg, tooltip) {
-  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+/** Wires every `.pt` button on the page to hover, tap and keyboard, sharing the one tooltip
+ *  element. Every point already carries its own `data-detail` string and its own `aria-label`;
+ *  this function never invents either — and never needs to know which points a filter has hidden:
+ *  a hidden point (`display: none`, the CSS filter's own doing) is unreachable by Tab automatically,
+ *  the same native behaviour that makes this file need no filter-awareness of its own. */
+export function initPoints(points, tooltip) {
   if (points.length === 0) return;
 
   function clear() {
@@ -43,7 +42,7 @@ export function initMap(svg, tooltip) {
   }
 
   // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each point
-  // already carries its own larger, invisible hit circle (`MapWebSeed.tsx`'s own `hitR`), so no
+  // is already its own fixed-size hit target (MapWebSeed.tsx's own `HIT_TARGET_PX`), so no
   // proximity resolution is needed the way the chart genre's shared `.hit-area` overlay needs one.
   points.forEach((point, i) => {
     point.addEventListener("pointerenter", function (evt) {
@@ -54,10 +53,11 @@ export function initMap(svg, tooltip) {
     });
     point.addEventListener("pointerleave", clear);
 
-    // Keyboard: every point is already `tabIndex={0}` at build time (works with this script
-    // absent entirely — see the seed's own doc-comment). This layer adds the same detail box
-    // hover shows, plus Left/Right/Home/End to move between points without leaving focus, in the
-    // same largest-first order the accessible table below the map also reads in.
+    // Keyboard: a <button> is already natively focusable and reachable with the script absent
+    // entirely (works with JS off, exactly like the `title` attribute's own native tooltip — see
+    // MapWebSeed.tsx's own doc-comment). This layer adds the same detail box hover shows, plus
+    // Left/Right/Home/End to move between points without leaving focus, in the same largest-first
+    // order the accessible table below the map also reads in.
     point.addEventListener("focus", function () {
       const rect = point.getBoundingClientRect();
       show(point, rect.left + rect.width / 2, rect.top);
@@ -84,7 +84,7 @@ export function initMap(svg, tooltip) {
   });
 
   document.addEventListener("pointerdown", function (evt) {
-    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    if (points.some((p) => p.contains(evt.target)) || tooltip.contains(evt.target)) return;
     clear();
   });
 }
@@ -92,9 +92,8 @@ export function initMap(svg, tooltip) {
 export function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
-  document.querySelectorAll("svg.map").forEach(function (svg) {
-    initMap(svg, tooltip);
-  });
+  const points = Array.prototype.slice.call(document.querySelectorAll(".pt"));
+  initPoints(points, tooltip);
 }
 
 // Guarded rather than a bare top-level call: this file is also imported directly by

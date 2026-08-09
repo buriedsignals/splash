@@ -1,8 +1,13 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, setDefaultTimeout } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const ASSETS = join(import.meta.dirname, "..", "assets");
+
+// A cold-cache plate bake (headless Chrome + a real MapTiler capture, at this skill's own
+// generously-sized 1000px plate) plus the preview's own headless-Chrome screenshot can together
+// take well over bun's 5s default the first time this runs on a machine.
+setDefaultTimeout(120000);
 
 describe("twin-map-web assets — the canon's shape, not a story's", () => {
   it("should carry a seed marked with the canon's exact wording", async () => {
