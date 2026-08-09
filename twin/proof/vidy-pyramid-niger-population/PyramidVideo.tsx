@@ -75,6 +75,8 @@ const REFERENCE_LABEL = { fontSize: 16, fontWeight: 400 };
 const SUBJECT_LABEL = { fontSize: 24, fontWeight: 700 };
 const GUTTER_MARGIN = 12;
 const OUTLINE_PAD = 6;
+/** Breathing space above and below a band label's measured glyph band, where the spine gives way. */
+const SPINE_LABEL_CLEARANCE = 4;
 
 export type Band = { ageBand: string; male: number; female: number };
 
@@ -97,6 +99,29 @@ export function measureText(
   if (!measuringContext) return text.length * fontSize * 0.5;
   measuringContext.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
   return measuringContext.measureText(text).width;
+}
+
+/**
+ * The rendered VERTICAL extent of a string — how far its glyphs actually rise above and fall below
+ * the baseline, in the font they will really be drawn in. `measureText` above answers the same
+ * question horizontally; a centre-gutter label needs the other axis, because what it has to be kept
+ * clear of (the zero spine) is vertical. Read off the same Canvas metrics rather than guessed from
+ * the font size: "0-4" and "100+" have no descenders at all and a ratio-of-fontSize constant would
+ * be a magic number standing where a measurement belongs.
+ */
+function measureTextBand(
+  text: string,
+  font: { fontSize: number; fontWeight?: number },
+): { ascent: number; descent: number } {
+  // Primes the shared measuring context with exactly this font — the width is discarded.
+  measureText(text, font);
+  const metrics = measuringContext?.measureText(text);
+  if (!metrics || typeof metrics.actualBoundingBoxAscent !== "number")
+    return { ascent: font.fontSize * 0.72, descent: font.fontSize * 0.08 };
+  return {
+    ascent: metrics.actualBoundingBoxAscent,
+    descent: metrics.actualBoundingBoxDescent,
+  };
 }
 
 export function wrap(
@@ -350,6 +375,28 @@ export function PyramidVideo({
   const bandLabelBaselineOffset = BAND_LABEL.fontSize * 0.32;
   const subjectLabelY = g.plot.bottom + 44;
 
+  // The zero spine runs down the centre of the gutter, and the age-band labels are centred on that
+  // same x — so without this the dashed rule STRUCK THROUGH all 21 of them: "85-89" read as "85+89",
+  // "0-4" as "0⌐4". Measured on the delivered mp4's final frame, every band. The rule is not
+  // decoration (its caption says the two sides share this zero), and the labels are the vertical
+  // axis, so neither can move out of the other's way: the fix is that the spine YIELDS where a label
+  // is drawn. Each band's clearance is its own glyphs' measured vertical extent (`measureTextBand`,
+  // taking the taller of the plain and the accent weight) plus a breathing gap, and it fades in with
+  // the label's own opacity via the mask below — so a band whose label has not arrived yet still
+  // shows an unbroken rule, and the gap opens exactly as the label lands on it.
+  const spineMaskId = "pyramid-spine-clearance";
+  const labelClearances = g.rows.map((r) => {
+    const plain = measureTextBand(r.ageBand, BAND_LABEL);
+    const accent = measureTextBand(r.ageBand, BAND_LABEL_ACCENT);
+    const ascent = Math.max(plain.ascent, accent.ascent);
+    const descent = Math.max(plain.descent, accent.descent);
+    const baseline = r.y + bandLabelBaselineOffset;
+    return {
+      top: baseline - ascent - SPINE_LABEL_CLEARANCE,
+      height: ascent + descent + SPINE_LABEL_CLEARANCE * 2,
+    };
+  });
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -428,6 +475,34 @@ export function PyramidVideo({
           to it. Its caption states what a bar represents, once. */}
       {referenceProgress > 0 ? (
         <g>
+          <defs>
+            {/* White keeps the rule; a black rect erases it. Each rect carries its band label's own
+                opacity, so the erasure crossfades in with the label rather than pre-cutting 21 gaps
+                into a rule that is drawn before any band arrives. `maskUnits="userSpaceOnUse"` is
+                load-bearing: the default objectBoundingBox region collapses on a zero-width vertical
+                line and would mask the rule out entirely. */}
+            <mask
+              id={spineMaskId}
+              maskUnits="userSpaceOnUse"
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+            >
+              <rect x={0} y={0} width={width} height={height} fill="#FFFFFF" />
+              {labelClearances.map((clearance, i) => (
+                <rect
+                  key={g.rows[i].ageBand}
+                  x={g.centreX - gutter}
+                  y={clearance.top}
+                  width={gutter * 2}
+                  height={clearance.height}
+                  fill="#000000"
+                  opacity={rowReveal[i]}
+                />
+              ))}
+            </mask>
+          </defs>
           <line
             x1={g.centreX}
             x2={g.centreX}
@@ -436,6 +511,7 @@ export function PyramidVideo({
             stroke={muted}
             strokeWidth={2}
             strokeDasharray="8 6"
+            mask={`url(#${spineMaskId})`}
           />
           <text
             x={g.centreX}
