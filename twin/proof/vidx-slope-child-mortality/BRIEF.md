@@ -17,9 +17,14 @@ de-conflicted vertically where lines land close together — the type's own name
 - Fetched:
   `https://ourworldindata.org/grapher/child-mortality.csv?csvType=filtered&country=~NER~RWA~NGA~IND~BRA~CHE`
   — verified effective (6 entities only, not the full ~200-country set).
-- `data.csv`: 542 rows (543 with header), six countries (Niger, Rwanda, Nigeria, India, Brazil,
-  Switzerland) — verified by counting distinct entities. Years run 1751–2023 depending on country;
-  the beat draws only **1990** and **2023** — filter at render time, never re-fetch.
+- `data.csv`: **543 data rows** (544 lines with the header), six countries (Niger, Rwanda, Nigeria,
+  India, Brazil, Switzerland) — Switzerland 149 rows from **1876**, India 108 from 1911, Brazil 94
+  from 1931, Rwanda 71 from 1954, Nigeria 63 from 1962, Niger 58 from 1967, every one running to
+  **2024**. The beat draws only **1990** and **2023** — filter at render time, never re-fetch.
+  *(Corrected 2026-08-09: this line said 542 rows and a span of 1751–2023. The file has no trailing
+  newline, so `wc -l` reports one fewer line than it holds and the header was subtracted from the
+  wrong number; the true span is 1876–2024 and 1751 is not in this file. The counts above are
+  parsed records.)*
 
 ## Exact values (under-five mortality rate, %) — verified 2026-08-08
 

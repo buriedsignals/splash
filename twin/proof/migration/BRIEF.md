@@ -61,13 +61,21 @@ stillness). Contract-checked; `hold` ends exactly on frame 240.
 - Do not widen the window past the data. "Since 1991" is the file's own first year; "since 1990"
   would be a claim about a year that is not in it.
 
-## Noted while deriving this brief (not fixed here)
+## The pre-correction wording, and where it survived (closed 2026-08-09)
 
-`MigrationVideo.tsx`'s own header comment still describes this beat as *"Twice since 1990, more
-people left Switzerland than arrived."* — the pre-correction wording. Nothing rendered carries it
-(the still and the mp4 both read 1991), so it is documentation drift rather than a false claim in
-the artifact, but it is the same sentence that was wrong before, sitting one file away from the one
-that was fixed.
+`MigrationVideo.tsx`'s header comment used to describe this beat as *"Twice since 1990, more people
+left Switzerland than arrived."* — the pre-correction wording. It was fixed; this note was left
+saying it had not been, and, worse, **it named the wrong file**. The residue was in
+`timing-contract.ts`, which was still describing the subject as "1997, 1998" at "−1.9 and −3.4"
+against "swings up to +84.1" — the invented series, verbatim, with no marker of any kind — while the
+component beside it had been corrected. Both are now right, and `timing-contract.ts` carries a
+retraction naming what it used to say. Recomputed from `data.csv` (34 rows, 1991–2024): the only
+negative years are **1996 (−5.807)** and **1997 (−6.834)**, **1998 is positive** at +1.177, and the
+peak is **2023 (+139.118)**.
+
+The lesson worth keeping: a correction that fixes the render and leaves the contract beside it
+leaves a reader two internally consistent documents that disagree, and the note recording the debt
+pointed at the file that had already been paid.
 
 ## Source line
 

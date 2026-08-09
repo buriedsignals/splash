@@ -330,9 +330,20 @@ and **there is no 2024 row**. The endpoint the twin's design argument leaned on 
 
 `3-MIGRATION--main-datawrapper.png` draws a **bold native zero baseline** across the full width of
 the frame — Datawrapper's own line-chart engine draws it automatically when the series straddles
-zero; nothing in the mapper had to ask for it — and the frame is full: −45 to 84 rendered edge to
-edge. `1997−98: below zero` sits directly under the dip *(on the real data those are the wrong two
-years)*.
+zero; nothing in the mapper had to ask for it — and the frame is full: the axis is fitted to the
+series' own extent, about **−3.4 to 84**, and the line runs from the top of the plot band down to
+the zero rule with no empty margin at either end. `1997−98: below zero` sits directly under the dip
+*(on the real data those are the wrong two years)*.
+
+> **Correction, 2026-08-09.** This paragraph read *"the frame is full: −45 to 84 rendered edge to
+> edge"*. −45 is **not** in this image; it is the twin's own floor, which this document states three
+> paragraphs below, and it was carried across into a sentence about Datawrapper's render. Decoded
+> from the PNG itself: the image is **1200 × 676**; the gridlines for 80 / 60 / 40 / 20 sit at
+> y = 172.5 / 254.5 / 336.5 / 418.5 and the bold zero rule at y = **499.5**, i.e. **4.0875 px per
+> unit**; the series' own pixels run from y = 154 to y = 515 (84.5 down to −3.8, stroke edges
+> included). At that scale **−45 would fall at y ≈ 683 — seven pixels below the bottom of the
+> image.** Even the canvas edge is only −43.2. The comparison the paragraph draws is unaffected:
+> Datawrapper filled its frame and the twin's pre-switch build did not.
 
 `3-MIGRATION--twin.png` (the pre-switch build) ran an axis from **−45 to 105** against data
 spanning −3.4 to 84 — a third of the frame is visibly empty above the highest point, and the dip
@@ -541,6 +552,13 @@ confirmation. The cost figures in §6 are reported the same way, with the stated
 subagent tokens only, static path not isolable) carried forward as given rather than re-measured.
 
 Everything else in this document — every pixel claim, every axis range, every file size and canvas
-dimension, the timing contract's frame numbers, the git commits for the doctrine fix — was verified
-directly by the writer of this document, against the evidence in `proof/comparison/` or the
-committed source in this worktree.
+dimension, the timing contract's frame numbers, the git commits for the doctrine fix — was checked
+by the writer of this document against the evidence in `proof/comparison/` or the committed source
+in this worktree. **That sentence used to end "was verified directly", and the claim was false when
+it was written.** The 2026-08-09 audit found an axis range in §"the frame is full" — "−45 to 84
+rendered edge to edge" — that no reading of the named image can produce: decoding it puts −45 seven
+pixels below the bottom edge of a 676-pixel-tall PNG (the correction sits at that paragraph). One
+axis range in this document was therefore carried over from a neighbouring chart rather than read
+off the image it describes, and a blanket assurance of direct verification cannot survive a single
+counter-example. Treat the assurance as what it now says: the figures were checked, one of them was
+checked wrongly, and the check that caught it was somebody else's.

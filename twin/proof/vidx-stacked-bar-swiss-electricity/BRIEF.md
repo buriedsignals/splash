@@ -17,7 +17,9 @@ hydropower and "nuclear & other" stack above it, in a stacking order identical a
 - Fetched:
   `https://ourworldindata.org/grapher/electricity-prod-source-stacked.csv?csvType=filtered&country=~CHE`
   — verified effective (1 entity only, not the full ~200-country set).
-- `data.csv`: 25 rows (26 with header), 2000–2025, Switzerland only, columns `Other renewables`,
+- `data.csv`: **26 data rows** (27 lines with the header — corrected 2026-08-09, the file has no
+  trailing newline so `wc -l` reports one fewer line than it holds), 2000–2025, Switzerland only,
+  one row per year, columns `Other renewables`,
   `Bioenergy`, `Solar`, `Wind`, `Hydropower`, `Nuclear`, `Gas`, `Oil`, `Coal` (TWh). The beat draws
   four snapshot years — 2000, 2010, 2020, 2024 — bucketing the nine raw columns into three: **Solar
   & wind** (`Solar` + `Wind`), **Hydropower** (unchanged), **Nuclear & other** (`Nuclear` +

@@ -19,9 +19,14 @@ land.
 - Fetched:
   `https://ourworldindata.org/grapher/co-emissions-per-capita.csv?csvType=filtered&country=~USA~CHN~IND~BRA~NGA~OWID_WRL`
   — verified effective (6 entities only, not the full ~200-country set).
-- `data.csv`: 1007 rows, 1750–2023 (World's series is shorter; each country's own span varies), 6
-  entities. The beat draws only the **2000** and **2023** rows per country, plus the **World**
-  entity's 2023 row for the reference — filter at render time, never re-fetch.
+- `data.csv`: **1008 data rows** (1009 lines with the header), **1750–2024**, 6 entities — World 230
+  rows from 1750, United States 225 from 1800, Brazil 169 from 1856, India 156 from 1858, Nigeria
+  110 from 1915, China 118 from 1907, every one of them running to 2024. The beat draws only the
+  **2000** and **2023** rows per country, plus the **World** entity's 2023 row for the reference —
+  filter at render time, never re-fetch.
+  *(Corrected 2026-08-09: this line said 1007 rows, 1750–2023. The file has no trailing newline, so
+  `wc -l` reports one fewer line than the file holds and the header was then subtracted from the
+  wrong number; the counts above are parsed records, not line counts.)*
 
 ## Exact values (tonnes CO2 per capita) — verified 2026-08-08
 

@@ -28,8 +28,18 @@ Ce que j'ai lu dans le papier, du plus fort au plus faible :
 **Correction du journaliste :** « Le point 3 n'est pas une affirmation, c'est une limite — ne la
 traite pas comme un troisième candidat au visuel. Et le pic, de mémoire, c'est 2005, pas 1973. »
 
-**Vérifié dans les données gelées :** 1973 = 46,20 Mt ; 2005 = 45,83 Mt. 1973 est bien le maximum,
-de 0,37 Mt. Le journaliste accepte et garde 1973 dans le texte.
+**Vérifié dans les données gelées** (recalculé sur les 167 lignes de `data.csv`, 1858–2024, valeurs
+converties en Mt) **:** 1973 = **46,20 Mt** ; 2005 = **45,78 Mt**, et 2005 n'est que le **4ᵉ** plus
+haut de la série. 1973 est bien le maximum — mais son avance se joue sur **1991 (46,13 Mt)**, à
+**0,07 Mt** près, pas sur 2005, dont il est à 0,43 Mt. Le journaliste accepte et garde 1973 dans le
+texte.
+
+> **Correction, 2026-08-09.** Cette ligne — la seule du document présentée comme *vérifiée* — était
+> la seule à n'avoir pas été calculée. Elle donnait « 2005 = 45,83 Mt » (la valeur est 45,78) et une
+> avance de « 0,37 Mt » (l'écart 1973–2005 est 0,43), et elle laissait entendre que 2005 était le
+> second de la série, alors que 1991 le devance : la vraie marge du pic est cinq fois plus étroite
+> que celle annoncée. Les valeurs ci-dessus sont recalculées ; aucune n'est saisie à la main. Le
+> visuel rendu, lui, n'a jamais porté ces chiffres et reste juste.
 
 ## ② Le takeaway — G1
 

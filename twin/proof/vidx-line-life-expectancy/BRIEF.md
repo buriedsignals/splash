@@ -17,10 +17,14 @@ before either line.
   sources, via Our World in Data), filtered to Switzerland and France.
 - Fetched: `https://ourworldindata.org/grapher/life-expectancy.csv?csvType=filtered&country=~CHE~FRA`
   — verified effective (2 entities only, not the full ~200-country set).
-- `data.csv`: 355 rows (356 with header), 1751–2023, 2 countries (Switzerland's series starts later
-  than France's — France's begins in 1751, Switzerland's in 1876; the beat draws only **1990–2023**,
-  the window both countries share cleanly and where the finding — a persistent, narrowing gap — is
-  legible; filter at render time, never re-fetch).
+- `data.csv`: **356 data rows** (357 lines with the header), **1816–2023**, 2 countries — France 208
+  rows from **1816**, Switzerland 148 rows from 1876 (Switzerland's series starts later than
+  France's; the beat draws only **1990–2023**, the window both countries share cleanly and where the
+  finding — a persistent, narrowing gap — is legible; filter at render time, never re-fetch).
+  *(Corrected 2026-08-09: this line said 355 rows and 1751 for France's first year. The file has no
+  trailing newline, so `wc -l` reports one fewer line than it holds and the header was subtracted
+  from the wrong number; 1751 is not in this file at all. The counts and spans above are parsed
+  records.)*
 
 ## Exact values — verified 2026-08-08
 
