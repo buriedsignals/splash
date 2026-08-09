@@ -70,8 +70,12 @@ function build(
   return `---\n${head}\nslots:\n${body}\n---\n`;
 }
 
-function without<T extends Record<string, string>>(source: T, key: string): T {
-  const copy = { ...source };
+function without<T extends Record<string, string>>(
+  source: T,
+  key: string,
+  also: Partial<T> = {},
+): T {
+  const copy = { ...source, ...also };
   delete copy[key];
   return copy;
 }
@@ -253,14 +257,23 @@ describe("whereIs", () => {
   it("should stay in storyboard when a slot never recorded its medium, genre or size", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
-    for (const field of ["medium", "genre", "size"]) {
+    // `size` refuses in twin-storyboard's OWN words rather than this file's generic ones, because
+    // W4 Task 9 makes it the one slot field the two gates word identically on purpose — a
+    // journalist reading one gate's reason while the other holds is the A7/A14 defect with better
+    // manners. See "gate 2c: both readings of R2's genre × size rule, string for string" below.
+    const expected: Record<string, string> = {
+      medium: "slot 1: no medium was ever chosen",
+      genre: "slot 1: no genre was ever chosen",
+      size: "slot 1: size is missing — gate 2c never closed",
+    };
+    for (const [field, message] of Object.entries(expected)) {
       await writeFile(
         join(dir, "STORYBOARD.md"),
         build(SCALARS, without(SLOT, field)),
       );
       const state = await whereIs(dir);
       expect(state.phase).toBe("storyboard");
-      expect(state.missing).toContain(`slot 1: no ${field} was ever chosen`);
+      expect(state.missing).toContain(message);
     }
   });
 
@@ -336,7 +349,9 @@ describe("whereIs", () => {
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
-    expect(state.missing).toContain("beat 1-rainfall: rendered but not approved");
+    expect(state.missing).toContain(
+      "beat 1-rainfall: rendered but not approved",
+    );
   });
 
   it("should report delivery once a rendered beat has been approved", async () => {
@@ -351,7 +366,10 @@ describe("whereIs", () => {
       join(dir, "beats", "1-rainfall", "renders", "still.png"),
       "x",
     );
-    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen and approved");
+    await writeFile(
+      join(dir, "beats", "1-rainfall", "APPROVED.md"),
+      "seen and approved",
+    );
     expect((await whereIs(dir)).phase).toBe("delivery");
   });
 
@@ -366,7 +384,9 @@ describe("whereIs", () => {
     await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
     const state = await whereIs(dir);
     expect(state.phase).toBe("production");
-    expect(state.missing).toEqual(["beat 2-snowpack: rendered but not approved"]);
+    expect(state.missing).toEqual([
+      "beat 2-snowpack: rendered but not approved",
+    ]);
   });
 
   it("should report done once the export holds a file and a render exists", async () => {
@@ -420,9 +440,14 @@ const SLOT_FIELDS = [
 ];
 
 // One value per field that is present and well-formed as YAML but outside what the gates accept.
-// A field with no vocabulary of its own (medium, genre, size — the gates require them, they do not
-// judge them) still gets a fixture: that the two gates AGREE to tolerate the value is a parity fact
-// worth pinning, and it is the fixture that would redden if one side grew a vocabulary alone.
+// A field with no vocabulary of its own (medium, genre — the gates require them, they do not judge
+// them) still gets a fixture: that the two gates AGREE to tolerate the value is a parity fact worth
+// pinning, and it is the fixture that would redden if one side grew a vocabulary alone.
+//
+// `size` used to be in that no-vocabulary group. It is not any more (W4 Task 9, ruling R2): both
+// gates now know the three names this toolchain exports, and both know that a `web` slot takes no
+// size at all. This entry therefore moved from "both tolerate it" to "both refuse it" — and the
+// fixture below is what proved the move happened on BOTH sides at once rather than on one.
 const OUT_OF_VOCABULARY: Record<string, string> = {
   takeaway: "~",
   grounding: "contradicted",
@@ -433,6 +458,37 @@ const OUT_OF_VOCABULARY: Record<string, string> = {
   reachable: "no",
   chosen: "dumbbell",
 };
+
+// Ruling R2 as fixtures. The genre×size triple is the one rule where a gate can be wrong in two
+// opposite directions — refusing a correct storyboard and closing on a wrong one — so both are
+// pinned, and so is the case the old shape got wrong: a `web` slot could not close gate 2 at all
+// without naming a size that would never be used.
+const SIZE_FIXTURES: Array<{ name: string; slot: Record<string, string> }> = [
+  { name: "static + landscape (control)", slot: { ...SLOT } },
+  { name: "static + square", slot: { ...SLOT, size: "square" } },
+  { name: "static + portrait", slot: { ...SLOT, size: "portrait" } },
+  {
+    name: "video + portrait",
+    slot: { ...SLOT, genre: "video", size: "portrait" },
+  },
+  {
+    name: "static with a size nobody exports",
+    slot: { ...SLOT, size: "billboard" },
+  },
+  { name: "static with no size at all", slot: without(SLOT, "size") },
+  {
+    name: "web WITH a size — R2 says web is a range, not a fourth size",
+    slot: { ...SLOT, genre: "web", size: "landscape" },
+  },
+  {
+    name: "web with NO size — the correct shape, which the old flat requirement refused",
+    slot: without(SLOT, "size", { genre: "web" }),
+  },
+  {
+    name: "scrolly with no size — a scroll has no single exported frame",
+    slot: without(SLOT, "size", { genre: "scrolly" }),
+  },
+];
 
 const GATE2_FIXTURES: Array<{ name: string; text: string }> = [
   { name: "complete: every scalar, every slot field", text: build() },
@@ -535,4 +591,74 @@ describe("gate 2: where.mjs and twin-storyboard's own checkStoryboard agree on e
       expect(whereIsClosed).toBe(checkStoryboardClosed);
     });
   }
+});
+
+// ── R2's genre × size rule, held by BOTH gates, word for word ─────────────────────────────────
+//
+// The fixtures above compare a BOOLEAN: closed or not closed. That was enough while every slot rule
+// was a presence check, and it is not enough for this one. Two gates can agree that a storyboard is
+// refused and disagree about WHY — one refusing "size is missing", the other "a web beat takes no
+// size" — and a journalist reading the second while the first is what actually holds is back in
+// A7/A14 with better manners. So this block compares the refusal STRING.
+//
+// It compares only the size lines, deliberately and not out of laziness: the two gates word their
+// other gaps differently on purpose (`no medium was ever chosen` against `medium is missing — gate
+// 2a never closed`), each shaped for where it is read, and a blanket message comparison would go
+// red on all of that at once and be turned off. Widening it is a real follow-up; narrowing it to
+// nothing is what this replaces.
+//
+// THE MUTATIONS THAT REDDEN IT, run in a copy of the tree under /tmp, 2026-08-10:
+//
+//   where.mjs learns a fourth size the other gate does not         RED ×2
+//   storyboard.mjs starts treating `web` as a sized genre          RED ×2
+//   where.mjs REWORDS one refusal, same verdict, other sentence    RED ×2  ← the boolean form missed this
+//   storyboard.mjs stops naming the three it accepts               RED ×2
+//   both gates drop the size rule together                         RED ×10
+//
+// The third row is the whole reason this block exists: the fixtures above, comparing closed-or-not,
+// stay GREEN for it. Two gates refusing the same storyboard for two different-sounding reasons is
+// A7/A14 with better manners, and only a string comparison sees it.
+describe("gate 2c: both readings of R2's genre × size rule, string for string", () => {
+  const sizeLines = (gaps: string[]) =>
+    gaps.filter((g) => /\bsize\b/.test(g)).sort();
+
+  for (const { name, slot } of SIZE_FIXTURES) {
+    it(`should agree, verbatim, on: ${name}`, async () => {
+      const text = build(SCALARS, slot);
+      await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "profile.json"), "{}");
+      await writeFile(join(dir, "STORYBOARD.md"), text);
+
+      const state = await whereIs(dir);
+      const { meta } = parseStoryboard(text);
+      expect(sizeLines(state.missing)).toEqual(
+        sizeLines(checkStoryboard(meta)),
+      );
+    });
+  }
+
+  it("should let a web slot close gate 2 with no size, and refuse one that names a size", async () => {
+    // The pair the old flat requirement got wrong in BOTH directions, asserted as a phase rather
+    // than as a message — this is the fact a journalist actually experiences.
+    const closes = async (slot: Record<string, string>) => {
+      await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "profile.json"), "{}");
+      await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, slot));
+      return (await whereIs(dir)).phase !== "storyboard";
+    };
+    expect(await closes(without(SLOT, "size", { genre: "web" }))).toBe(true);
+    expect(await closes({ ...SLOT, genre: "web", size: "landscape" })).toBe(
+      false,
+    );
+  });
+
+  it("should name all three sizes when refusing one it does not export", () => {
+    const { meta } = parseStoryboard(
+      build(SCALARS, { ...SLOT, size: "billboard" }),
+    );
+    const [gap] = checkStoryboard(meta).filter((g) => g.includes("billboard"));
+    // Naming what IS accepted, not only what is not — the `sizeFor`/`readPalette` discipline, at
+    // the gate rather than at the renderer.
+    expect(gap).toContain("landscape, square, portrait");
+  });
 });

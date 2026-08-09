@@ -83,6 +83,15 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    fields, the two recorded verdicts `grounding` and `reference`, and
    `slots: [{id, proves, medium, genre, size, reachable, candidates, chosen}, ...]`) above the prose
    the journalist actually reads.
+
+   **`size` is asked at G2c only where the genre has one** (ruling R2). A `static` or `video` beat
+   ships at `landscape` (YouTube, article web), `square` (social posts) or `portrait` (stories), and
+   the slot records which. A `web` beat is asked NOTHING at G2c and must carry no `size` — web is
+   not a fourth size, it fills whatever container the CMS gives it, like an embed component; a
+   `scrolly` has no single exported frame at all. `checkStoryboard` refuses all three ways: a size
+   this toolchain does not export, a sized genre with none, and an unsized genre carrying one.
+   `splash-twin/scripts/where.mjs` reads the same rule independently and words its refusals
+   identically, and `splash-twin/test/where.test.ts` compares the two string for string.
 3. **`parseStoryboard`** reads that file back: a dependency-free reader for the narrow YAML subset
    in use here — scalars (quoted or bare, with `null`/`~` resolved to a real missing value), and a
    list of slot maps whose values are scalars or quote-aware inline string arrays (a comma inside

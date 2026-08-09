@@ -63,6 +63,36 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
 export const REQUIRED_SLOT_FIELDS = ["medium", "genre", "size", "reachable", "chosen"];
 
+// Ruling R2, spelled out here INDEPENDENTLY of twin-storyboard's own copy, for the same reason
+// `HAND` is spelled out independently: two readings of one rule, cross-checked by a test, never
+// unified by an import that would make this file un-copy-pasteable.
+//
+// `web` is deliberately absent from the sized genres, and that absence IS R2's other half: web is
+// not a fourth export size, it fills whatever container the CMS gives it, like an embed component.
+// `scrolly` is absent because a scroll-driven piece has no single exported frame at all. The pixel
+// dimensions live in each craft skill's `scripts/sizes.mjs`; a gate has no business knowing them.
+//
+// Note the ORDERING difference from the original Splash, kept on purpose: it picks a CHANNEL and
+// DERIVES the allowed formats from it. A5 asks for medium, then genre, then size, so the twin
+// CHECKS the triple after the journalist has chosen each part. `genreGap` already has that shape.
+const EXPORT_SIZES = ["landscape", "square", "portrait"];
+const SIZED_GENRES = ["static", "video"];
+
+// The three refusals, worded VERBATIM as twin-storyboard/scripts/storyboard.mjs's `sizeGap` words
+// them. `splash-twin/test/where.test.ts` compares the two gates' size verdicts string for string,
+// so a reworded message on either side reddens rather than quietly becoming two gates that refuse
+// the same storyboard for two different-sounding reasons.
+function sizeGapFor(genre, size, label) {
+  const takesASize = SIZED_GENRES.includes(genre);
+  if (!takesASize && size)
+    return `slot ${label}: a ${genre} beat takes no size — it fills the container it is given`;
+  if (!takesASize) return null;
+  if (!size) return `slot ${label}: size is missing — gate 2c never closed`;
+  if (!EXPORT_SIZES.includes(size))
+    return `slot ${label}: size ${JSON.stringify(size)} is not one this toolchain exports — ${EXPORT_SIZES.join(", ")}`;
+  return null;
+}
+
 // The closed vocabulary of `grounding:`. Mirrors twin-storyboard's own `isResolvedGrounding` for
 // the same reason `HAND` mirrors its `HAND`. `contradicted` is deliberately not a closing value: a
 // refuted takeaway is corrected, or overridden WITH A REASON.
@@ -192,6 +222,9 @@ function missingForGate2(frontmatter) {
     const candidates = Array.isArray(slot.candidates) ? slot.candidates : [];
 
     for (const field of REQUIRED_SLOT_FIELDS) {
+      // `size` is not a flat requirement — `sizeGapFor` owns it entirely, below, because whether
+      // it is required at all depends on the genre.
+      if (field === "size") continue;
       const value = slot[field];
       if (!value) {
         gaps.push(slotGap(field, label));
@@ -200,6 +233,9 @@ function missingForGate2(frontmatter) {
       const vocabulary = SLOT_VOCABULARY[field];
       if (vocabulary && !vocabulary(value)) gaps.push(slotGap(field, label));
     }
+
+    const sizeGap = sizeGapFor(slot.genre, slot.size, label);
+    if (sizeGap) gaps.push(sizeGap);
 
     if (!slot.chosen) return;
     if (candidates.length === 0) {

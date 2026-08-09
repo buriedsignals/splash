@@ -27,10 +27,48 @@ const HAND = ["subject", "comparison", "limits", "placement", "credit", "effecti
 // produces its own fixture the moment it lands.
 export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
 
-// Every field a slot must carry before Gate 2 can close on it. `size` is recorded from day one even
-// where only one value is reachable, so widening the reachable set later widens a set and re-plumbs
-// nothing.
+// Every field a slot must carry before Gate 2 can close on it. `size` is conditional — see
+// EXPORT_SIZES / SIZED_GENRES below — but it stays in this list because the list is what the parity
+// test generates its fixtures from, and a field removed from it is a field nobody tests.
 export const REQUIRED_SLOT_FIELDS = ["medium", "genre", "size", "reachable", "chosen"];
+
+// Ruling R2, read literally: landscape for YouTube and article web, portrait for stories, square
+// for social posts. Charts and maps alike, one model. The pixel dimensions are NOT here — they are
+// each craft skill's own `scripts/sizes.mjs`, and a gate has no business knowing them; what the
+// gate owns is whether the journalist chose a name the toolchain exports.
+export const EXPORT_SIZES = ["landscape", "square", "portrait"];
+
+// The genres that HAVE an export size, and therefore the ones a size is required for. `web` is
+// deliberately absent and that absence is R2's other half: web is not a fourth size, it fills
+// whatever container the CMS gives it, like an embed component. `scrolly` is absent for a related
+// but distinct reason — a scroll-driven piece has no single exported frame at all.
+//
+// This is why the requirement is conditional rather than flat. Before this, `size` was required of
+// EVERY slot, so a correct `genre: web` slot could not close gate 2 without naming a size that will
+// never be used, and a wrong one closed it by naming one. Both are the same defect: the toolchain
+// asking a question whose answer it will ignore.
+const SIZED_GENRES = ["static", "video"];
+
+/**
+ * `null` when this GENRE and this SIZE go together; otherwise the one line the gate refuses in.
+ *
+ * The message text below is duplicated VERBATIM in `splash-twin/scripts/where.mjs`, which reads
+ * gate 2 independently and must not be able to disagree with this file about what it read. That
+ * duplication is deliberate and it is cross-checked by `splash-twin/test/where.test.ts`, which
+ * compares the two gates' size verdicts string for string — the two gates diverging once already
+ * cost this project a gate reporting `production` on a storyboard the other gate was refusing
+ * (FEEDBACK-2026-08-10.md, A7/A14).
+ */
+export function sizeGap(genre, size, id) {
+  const takesASize = SIZED_GENRES.includes(genre);
+  if (!takesASize && size)
+    return `slot ${id}: a ${genre} beat takes no size — it fills the container it is given`;
+  if (!takesASize) return null;
+  if (!size) return `slot ${id}: size is missing — gate 2c never closed`;
+  if (!EXPORT_SIZES.includes(size))
+    return `slot ${id}: size ${JSON.stringify(size)} is not one this toolchain exports — ${EXPORT_SIZES.join(", ")}`;
+  return null;
+}
 
 // The closed vocabulary of `grounding:`. `contradicted` is deliberately NOT a closing value: a
 // takeaway the data refutes is corrected, or the journalist records an override WITH A REASON.
@@ -185,6 +223,9 @@ export function checkStoryboard(meta) {
     const candidates = Array.isArray(slot.candidates) ? slot.candidates : [];
 
     for (const field of REQUIRED_SLOT_FIELDS) {
+      // `size` is not a flat requirement — `sizeGap` owns it entirely, below, because whether it is
+      // required at all depends on the genre.
+      if (field === "size") continue;
       const value = slot[field];
       if (!value) {
         errors.push(slotGap(field, slot.id));
@@ -193,6 +234,9 @@ export function checkStoryboard(meta) {
       const vocabulary = SLOT_VOCABULARY[field];
       if (vocabulary && !vocabulary(value)) errors.push(slotGap(field, slot.id));
     }
+
+    const gap = sizeGap(slot.genre, slot.size, slot.id);
+    if (gap) errors.push(gap);
 
     // A chosen treatment is only a real choice if it was verifiably picked from a shown list —
     // that is what stops the exchange from being disguised parameter collection (references/
