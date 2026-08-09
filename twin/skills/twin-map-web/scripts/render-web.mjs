@@ -31,7 +31,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture } from "./render-still.mjs";
+import { deriveFurniture, readPalette } from "./render-still.mjs";
 import { MapWebSeed, RegionTable, ZOOM_SCALE } from "../assets/MapWebSeed.tsx";
 import { groupsOf, slugOf } from "../assets/geo-symbol.ts";
 
@@ -43,9 +43,12 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // `renderMapWeb` and its `{ component, table, props, outDir, name, regionTable }` signature,
 // `inlineable`, `escapeHtml`, `assertDistinctSlugs`, `buildCss` — is this genre's own mechanics and
 // is left alone.
+// The colours are the one part of `SEED` that is not words: READ back from this skill's own
+// `PALETTE.md`, exactly as a beat reads its story's answer.
+const SEED_PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
 const SEED = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground: SEED_PALETTE.ground,
+  accent: SEED_PALETTE.accent,
   title: "A sample of major European metro-area populations",
   source: "Sample data — not a real measurement",
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",

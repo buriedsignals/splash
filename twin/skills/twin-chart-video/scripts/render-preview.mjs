@@ -9,7 +9,7 @@ import { spawnSync } from "node:child_process";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "./render-still.mjs";
+import { deriveFurniture, readPalette } from "./render-still.mjs";
 import { CO2_TIMING } from "../assets/timing.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -38,7 +38,11 @@ const rainfallRaw = JSON.parse(
 // Transform rainfall data to match EmissionsVideo's data format (year + mt)
 const data = rainfallRaw.map(row => ({ year: row.year, mt: row.value }));
 
-const ground = "#FFFFFF";
+// Read, not typed — see `PALETTE.md` at this skill's own root for why the seed reads its colours
+// the same way a beat does.
+const { ground, accent } = readPalette(join(HERE, "..", "assets"), {
+  stopAt: join(HERE, ".."),
+});
 const furniture = deriveFurniture(ground);
 
 // Build the props for the preview
@@ -52,7 +56,7 @@ const props = {
   title: "Rainfall over the sample town fell by a third",
   source: "Sample data — not a real measurement",
   ground,
-  accent: "#0B7A75",
+  accent,
   reference: firstReading.mt,
   referenceLabel: `${firstReading.year} level`,
   ...furniture,

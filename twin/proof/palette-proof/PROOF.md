@@ -47,11 +47,22 @@ deliberate.
 
 ## What this does NOT prove
 
-- **Only the static chart genre.** The web, video, map and scrolly genres import the same vendored
-  `readPalette` and are guarded for parity, but none of them has been re-rendered through a
-  recorded answer here. That is the honest boundary of this proof.
+- **Only the static chart genre has been re-rendered through a recorded answer end to end.** That
+  is the honest boundary of this proof, and it did not move.
+
+  What the parity guard actually proves, stated precisely because the earlier wording overstated
+  it: `render-still-parity.test.ts` walks the tree, finds every `render-still.mjs`, and compares
+  each copy against the canonical one FUNCTION BY FUNCTION. A copy carrying no `readPalette` at all
+  is explicitly permitted (`:20-25`) — so "guarded for parity" never meant "carries it". As of
+  2026-08-10 the web, video, map, map-web, scrolly and image genres all DO carry it, and each of
+  their seed runners reads a recorded answer from the skill's own `PALETTE.md`; the previews come
+  out byte-identical, which is what proves no value drifted. None of those genres has a
+  palette-proof of its own.
 - **Not `typefaces`.** `NEWSROOM.md`'s third identity field still reaches nothing. The one font
   stack is `FONT_FAMILY` in `render-still.mjs`, and threading a newsroom's own faces means shipping
-  or resolving those faces — a different problem, not started.
+  or resolving those faces — a different problem, now MEASURED (`survey/typeface-feasibility.md`)
+  and not yet built. The measurement's own headline: resvg accepts a custom face but **never errors
+  on one it cannot resolve**, so a typeface answer's refusal has to happen before the render, not
+  during it.
 - **Not the proposal itself.** That `twin-palette` proposes sensibly is covered by its own tests;
   this proves only that an answer, once recorded, arrives intact in pixels.

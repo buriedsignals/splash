@@ -19,6 +19,7 @@ import {
   readImageMeta,
   checkOrientation,
   checkWeight,
+  readPalette,
   toDataUri,
 } from "./render-still.mjs";
 import { ImageBeatSeed, imageBeatLayout } from "../assets/ImageBeatSeed.tsx";
@@ -35,7 +36,9 @@ const TARGET = join(outDir, "preview.png");
 
 const MANIFEST = JSON.parse(await readFile(join(SAMPLE_DIR, "manifest.json"), "utf8"));
 
-const ground = "#FFFFFF";
+// Read, not typed — see `PALETTE.md` at this skill's own root for why the seed reads its
+// colours the same way a beat does.
+const { ground } = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
 const title = MANIFEST.title;
 
 const photos = await Promise.all(

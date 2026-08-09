@@ -49,7 +49,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, measureText } from "./render-still.mjs";
+import { deriveFurniture, measureText, readPalette } from "./render-still.mjs";
 import { ChartWebSeed, FRAME } from "../assets/ChartWebSeed.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -59,13 +59,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // journalist writing their own web beat replaces wholesale. Everything else in this file — `renderWeb`
 // and its `{ component, props, outDir, name }` signature, `inlineable`, `escapeHtml`, `buildCss` —
 // is this genre's own mechanics and is left alone.
+// The colours are the one part of `SEED` that is not words: they are read back from this
+// skill's own `PALETTE.md` with `readPalette`, exactly as a beat reads its story's answer.
+const SEED_PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
 /** The seed beat's own constants — the same words `scripts/render-preview.mjs` renders the seed's
  *  preview with, so the skill's two renders never disagree about what the chart says. Duplicated
  *  rather than imported from that script: importing it would also run its own top-level Remotion-free
  *  resvg render as a side effect, which this script must not trigger. */
 const SEED = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground: SEED_PALETTE.ground,
+  accent: SEED_PALETTE.accent,
   subject: "the sample town",
   title: "Rainfall over the sample town fell by a third",
   source: "Sample data — not a real measurement",

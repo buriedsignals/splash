@@ -33,7 +33,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, contrast } from "./render-still.mjs";
+import { deriveFurniture, contrast, readPalette } from "./render-still.mjs";
 import {
   STEPS_META,
   PROSE_LANE,
@@ -392,9 +392,12 @@ body {
 // mapping from `frameKind` to a component — the only part of this file allowed to know that a
 // "scrolly" is, this once, a photograph followed by a diagram. A real beat replaces all of it and
 // leaves `renderScrolly`, above, untouched.
+// The colours are the one part of `SEED` that is not words: READ back from this skill's own
+// `PALETTE.md`, exactly as a beat reads its story's answer.
+const SEED_PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
 const SEED = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground: SEED_PALETTE.ground,
+  accent: SEED_PALETTE.accent,
   title: "One gauge, one river, one number a day",
   source:
     "Readings: daily mean discharge, USGS site 01638500, National Water Information System " +

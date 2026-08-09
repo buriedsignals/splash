@@ -17,7 +17,7 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
-import { deriveFurniture } from "./render-still.mjs";
+import { deriveFurniture, readPalette } from "./render-still.mjs";
 import { STEPS_META, FRAME, DrawnGraphicFrame } from "../assets/ScrollySeed.tsx";
 
 const HERE = import.meta.dirname;
@@ -39,8 +39,9 @@ if (!drawnMeta)
     `render-preview.mjs renders STEPS_META's own DrawnGraphicFrame standalone — no step carries frameKind "drawn"`,
   );
 
-const ground = "#FFFFFF";
-const accent = "#0B7A75";
+// Read, not typed — see `PALETTE.md` at this skill's own root for why the seed reads its
+// colours the same way a beat does.
+const { ground, accent } = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
 const furniture = deriveFurniture(ground);
 
 const svg = renderToStaticMarkup(

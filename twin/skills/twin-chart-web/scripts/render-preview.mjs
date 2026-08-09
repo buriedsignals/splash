@@ -23,6 +23,7 @@ import { Resvg } from "@resvg/resvg-js";
 import {
   deriveFurniture,
   measureText,
+  readPalette,
 } from "./render-still.mjs";
 import { ChartWebPreviewSvg } from "../assets/ChartWebSeed.tsx";
 
@@ -41,7 +42,11 @@ const data = JSON.parse(
   await readFile(join(HERE, "..", "assets", "sample-data", "rainfall.json"), "utf8"),
 );
 
-const ground = "#FFFFFF";
+// Read, not typed — see `PALETTE.md` at this skill's own root for why the seed reads its colours
+// the same way a beat does.
+const { ground, accent } = readPalette(join(HERE, "..", "assets"), {
+  stopAt: join(HERE, ".."),
+});
 const furniture = deriveFurniture(ground);
 
 const svg = renderToStaticMarkup(
@@ -51,7 +56,7 @@ const svg = renderToStaticMarkup(
     source: "Sample data — not a real measurement",
     alt: "A line falling from 912 to 604 across eleven readings.",
     ground,
-    accent: "#0B7A75",
+    accent,
     subject: "the sample town",
     ...furniture,
     measure: measureText,

@@ -1,6 +1,6 @@
 ---
 name: twin-palette
-description: Use to decide the two colours a beat is drawn in — the ground and the one accent that carries the argument. Proposes the newsroom's house colours and, when the subject carries a convention a reader already holds, that convention beside them; measures each against the WCAG non-text floor; records the journalist's answer in PALETTE.md. Every render reads that file, and refuses rather than default.
+description: Use to decide the two colours a beat is drawn in — the ground and the one accent that carries the argument. Proposes the newsroom's house colours and, when the subject carries a convention a reader already holds, that convention beside them; measures each against the WCAG non-text floor; records the journalist's answer in PALETTE.md. Every craft skill's own seed reads that file and refuses rather than default; a beat that reads it refuses rather than default; 54 of 70 shipped beats still name their colours as hex literals and are the migration debt this mechanism is closing.
 ---
 
 # twin-palette — propose the colours, measure them, let the journalist decide
@@ -92,10 +92,24 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    most is the case where the house colours themselves do not measure up.
 6. **The answer is recorded by hand in `PALETTE.md`** (`assets/PALETTE.example.md` is the shape),
    with `origin:` naming who chose — `newsroom`, `subject` or `journalist`.
-7. **Every render reads it, and none defaults.** `readPalette` walks from the beat's own directory
-   up to `stopAt`, and a search that finds nothing **throws, naming every directory it looked in**.
-   A render that fell back to black-on-white would publish in a colour nobody chose, and it would
-   look deliberate.
+7. **A render that reads it never defaults, and the reach is measured, not claimed.**
+   `readPalette` walks from the beat's own directory up to `stopAt`, and a search that finds
+   nothing **throws, naming every directory it looked in**. A render that fell back to
+   black-on-white would publish in a colour nobody chose, and it would look deliberate.
+
+   Measured 2026-08-10, and the number is stated rather than rounded up to "every":
+
+   | population | reads a recorded palette |
+   |---|---|
+   | craft-skill seed runners | **12 of 12** |
+   | `render-still.mjs` copies carrying `readPalette` | 9 of 22 (the 13 `proof/` map copies reach the shared one through `#shared/…`) |
+   | beats under `proof/` | **16 of 70** |
+
+   The seed row is the one that decides the trend: until 2026-08-10 it read **0 of 12**, and eleven
+   runners named `#FFFFFF`/`#0B7A75` as literals — the defect this whole skill exists to remove,
+   sitting inside the files a new beat is copied from. `splash-twin/test/seed-reads-a-recorded-palette.test.ts`
+   walks for those runners and keeps the row at 12. The beat row is a backlog that stops growing
+   here; it does not shrink here.
 
 ## Quick start
 

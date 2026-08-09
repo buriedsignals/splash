@@ -14,7 +14,8 @@
 // exposes `getBBox()`, the real ink extent of rendered text.
 
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { join, dirname, resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
 
@@ -82,6 +83,70 @@ export function deriveFurniture(ground) {
 }
 
 const measured = new Map();
+
+/**
+ * The two colours a beat is drawn in — the ground and the one accent that carries the argument —
+ * read back from the decision the journalist actually made.
+ *
+ * This lives HERE, beside `deriveFurniture`, rather than in `twin-palette` where it is proposed: a
+ * beat already imports this module to render at all, and a second import path for two colours is
+ * one more thing to get wrong. `twin-palette` owns the question; this owns the answer. The two
+ * copies are the deliberate kind, guarded against drift by `helper-parity.test.ts`.
+ *
+ * Looks for `PALETTE.md` in `dir`, then in each ancestor up to `stopAt` — so one decision recorded
+ * at the story root serves every beat under it, and a beat that genuinely needs its own can hold
+ * one beside its data.
+ *
+ * This is a LOOKUP path, never a colour fallback. A search that finds nothing THROWS, naming every
+ * directory it looked in. That is the point: a render that quietly defaulted to black-on-white
+ * would publish a chart in a colour nobody chose, and it would look deliberate. Before this
+ * existed, every beat named its colours as hex literals with a `// from NEWSROOM.md` comment
+ * beside them — an instruction to copy by eye, which is exactly how a newsroom's identity gets
+ * collected and then never used.
+ */
+export function readPalette(dir, { stopAt } = {}) {
+  const start = resolve(dir);
+  const limit = stopAt ? resolve(stopAt) : null;
+  const searched = [];
+  let current = start;
+  for (;;) {
+    const candidate = join(current, "PALETTE.md");
+    searched.push(candidate);
+    if (existsSync(candidate)) return parsePalette(readFileSync(candidate, "utf8"), candidate);
+    if (limit && current === limit) break;
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  throw new Error(
+    `No PALETTE.md found for ${start}. Run twin-palette's proposal, let the journalist choose, ` +
+      `and record the answer. Looked in:\n  ${searched.join("\n  ")}`,
+  );
+}
+
+export function parsePalette(text, source = "PALETTE.md") {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text);
+  if (!match) throw new Error(`${source} has no front matter`);
+  const record = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const pair = /^([A-Za-z]+):\s*(.*)$/.exec(line.trim());
+    if (!pair) continue;
+    record[pair[1]] = pair[2].replace(/^["']|["']$/g, "").trim();
+  }
+  for (const field of ["ground", "accent"]) {
+    if (!record[field]) throw new Error(`${source} is missing ${field}`);
+    if (!HEX.test(record[field])) {
+      throw new Error(`${source}: ${field} must be #rrggbb, got ${JSON.stringify(record[field])}`);
+    }
+  }
+  if (!["newsroom", "subject", "journalist"].includes(record.origin)) {
+    throw new Error(
+      `${source}: origin must be newsroom, subject or journalist — got ${JSON.stringify(record.origin)}. ` +
+        `It records WHO chose these colours, and a render is allowed to say so.`,
+    );
+  }
+  return { ground: record.ground, accent: record.accent, origin: record.origin, source };
+}
 
 /**
  * The rendered width of a string, in the font it will actually be drawn in — resvg lays the

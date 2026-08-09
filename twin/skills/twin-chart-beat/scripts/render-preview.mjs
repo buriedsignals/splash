@@ -14,6 +14,7 @@ import { Resvg } from "@resvg/resvg-js";
 import {
   deriveFurniture,
   measureText,
+  readPalette,
 } from "./render-still.mjs";
 import { ChartSeed } from "../assets/ChartSeed.tsx";
 
@@ -32,7 +33,13 @@ const data = JSON.parse(
   await readFile(join(HERE, "..", "assets", "sample-data", "rainfall.json"), "utf8"),
 );
 
-const ground = "#FFFFFF";
+// The seed reads its colours the same way a beat does — `readPalette` walking up from `assets/`
+// and stopping at this skill's own root, where `PALETTE.md` records the answer. It used to name
+// `#FFFFFF` and `#0B7A75` as literals here, which put the exact defect the palette mechanism
+// exists to remove inside the file a new beat is copied from.
+const { ground, accent } = readPalette(join(HERE, "..", "assets"), {
+  stopAt: join(HERE, ".."),
+});
 const furniture = deriveFurniture(ground);
 
 const svg = renderToStaticMarkup(
@@ -42,7 +49,7 @@ const svg = renderToStaticMarkup(
     source: "Sample data — not a real measurement",
     alt: "A line falling from 912 to 604 across eleven readings.",
     ground,
-    accent: "#0B7A75",
+    accent,
     subject: "the sample town",
     ...furniture,
     measure: measureText,

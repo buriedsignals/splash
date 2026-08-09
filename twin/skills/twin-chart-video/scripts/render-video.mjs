@@ -17,19 +17,24 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "./render-still.mjs";
+import { deriveFurniture, readPalette } from "./render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
 const ENTRY = join(HERE, "../assets/index.ts");
 const COMPOSITION = "co2-suisse";
 
+// The colours are the one thing in `BEAT` that is NOT the journalist's words: they are the
+// recorded answer, read back with `readPalette` from this skill's own `PALETTE.md`. They used to
+// sit below as two hex literals, which is the defect the palette mechanism exists to remove.
+const PALETTE = readPalette(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") });
+
 /** The story's own constants — the journalist's words, from STORYBOARD.md and BRIEF.md. */
 const BEAT = {
   firstYear: 1950,
   reference: 32.5,
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground: PALETTE.ground,
+  accent: PALETTE.accent,
   title: "En 2024, la Suisse a émis moins de CO₂ sur son territoire qu'en 1967.",
   source:
     "Source : Global Carbon Budget 2025, via Our World in Data · données 2024",

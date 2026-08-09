@@ -19,10 +19,14 @@
  *      `twin-image-beat`'s says it carries the raster machinery a photograph needs; a `proof/`
  *      beat's says a beat never imports out of a skill. Those paragraphs are the opposite of drift.
  *   2. Copies legitimately differ in their SET of functions. `twin-image-beat` adds six
- *      (`readImageMeta`, `fitBox`, `toDataUri`, …); `twin-scrolly` and every `proof/` copy carry no
- *      `readPalette`/`parsePalette`, because nothing in them reads a recorded palette. A superset
- *      and a subset are both fine. What is never fine is two copies of the SAME function whose
- *      bodies disagree.
+ *      (`readImageMeta`, `fitBox`, `toDataUri`, …); every `proof/` copy carries no
+ *      `readPalette`/`parsePalette`, because a beat reaches the shared copy through `#shared/…`
+ *      instead. A superset and a subset are both fine. What is never fine is two copies of the
+ *      SAME function whose bodies disagree.
+ *      (Measured 2026-08-10: all seven CRAFT-skill copies now carry `readPalette`/`parsePalette` —
+ *      `twin-map-web`, `twin-scrolly` and `twin-image-beat` gained them when their own seed runners
+ *      stopped naming hex literals. This guard covered them the moment they landed, with nobody
+ *      wiring it up, which is the property the walk exists for.)
  *
  * WHY THE COMPARISON IS NORMALISED, and the false positive that forced it. The first draft of this
  * scan compared function bodies with whitespace collapsed, and reported `twin-scrolly`'s `mix` and
@@ -87,18 +91,20 @@ function findAll(dir: string, basename: string, out: string[] = []): string[] {
 // equal. Accepted deliberately — a guard a formatter can turn red is a guard someone disables, and
 // that failure costs more than this one.
 function stripComments(source: string): string {
-  return source
-    // Whole-line `//` comments and `/* … */` blocks only. A copy legitimately carries different
-    // explanatory prose — this guard's own header argues that for file headers, and the same is
-    // true inside a function: `twin-image-beat`'s `renderStill` is character-identical to the
-    // canonical one except for a two-line comment, and reporting that as drift is noise.
-    //
-    // Deliberately NOT stripping trailing `//` after code, because a regex literal like
-    // `/\bwidth="(\d+)"/` contains no `//` but a URL or a divided expression could, and eating
-    // code here would make the comparison vacuously equal on both sides — a guard that always
-    // passes is worse than one that occasionally cries wolf.
-    .replace(/^[ \t]*\/\/.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "");
+  return (
+    source
+      // Whole-line `//` comments and `/* … */` blocks only. A copy legitimately carries different
+      // explanatory prose — this guard's own header argues that for file headers, and the same is
+      // true inside a function: `twin-image-beat`'s `renderStill` is character-identical to the
+      // canonical one except for a two-line comment, and reporting that as drift is noise.
+      //
+      // Deliberately NOT stripping trailing `//` after code, because a regex literal like
+      // `/\bwidth="(\d+)"/` contains no `//` but a URL or a divided expression could, and eating
+      // code here would make the comparison vacuously equal on both sides — a guard that always
+      // passes is worse than one that occasionally cries wolf.
+      .replace(/^[ \t]*\/\/.*$/gm, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+  );
 }
 
 function normalise(source: string): string {
