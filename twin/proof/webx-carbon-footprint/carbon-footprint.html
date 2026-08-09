@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Six in ten countries emit under 4 tonnes of CO2 per person</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: #0B7A75;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  font-family: Helvetica, Arial, sans-serif;
+}
+.chart-figure { margin: 0; max-width: 900px; }
+svg.chart { display: block; width: 100%; height: auto; }
+/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
+   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
+   media query only chooses which server-rendered frame is on screen. */
+svg.chart[data-layout="narrow"] { display: none; }
+@media (max-width: 480px) {
+  svg.chart[data-layout="desktop"] { display: none; }
+  svg.chart[data-layout="narrow"] { display: block; }
+}
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+
+.bin-hit { cursor: pointer; }
+.bin-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+#tooltip { max-width: 320px; max-height: 220px; overflow-y: auto; }
+</style>
+</head>
+<body>
+<figure class="chart-figure">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>Histogram of CO2 emissions per capita for 213 countries in 2023, binned in 4-tonne intervals from 0 to 40. 127 countries (60%) sit under 4 tonnes; the distribution is right-skewed, with a handful of oil and gas producers stretching the tail out to 40 tonnes. A dashed line marks the median at 3.1 tonnes. Every bin&#x27;s exact count AND the full list of countries in it is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="900" height="520" fill="#FFFFFF"></rect><text x="40" y="65" fill="#000000" font-size="25" font-weight="700">Six in ten countries emit under 4 tonnes of CO2 per person</text><text x="40" y="94" fill="#616161" font-size="14">127 of 213 countries (60%) emitted under 4 tonnes of CO2 per person in 2023; the distribution is heavily right-skewed, with a</text><text x="40" y="114" fill="#616161" font-size="14">handful of oil and gas producers stretching the tail out to 40 tonnes. Median: 3.1 t/capita.</text><text x="40" y="136" fill="#616161" font-size="14">Source: Global Carbon Budget (2025), via Our World in Data · co-emissions-per-capita, 2023 data, extracted 8 August 2026</text><g><line x1="127.5810546875" x2="852" y1="468" y2="468" stroke="#616161" stroke-width="1"></line><text x="117.5810546875" y="472" fill="#616161" font-size="13" text-anchor="end">0</text></g><g><line x1="127.5810546875" x2="852" y1="421.84615384615387" y2="421.84615384615387" stroke="#d1d1d1" stroke-width="1"></line><text x="117.5810546875" y="425.84615384615387" fill="#616161" font-size="13" text-anchor="end">20</text></g><g><line x1="127.5810546875" x2="852" y1="375.6923076923077" y2="375.6923076923077" stroke="#d1d1d1" stroke-width="1"></line><text x="117.5810546875" y="379.6923076923077" fill="#616161" font-size="13" text-anchor="end">40</text></g><g><line x1="127.5810546875" x2="852" y1="329.53846153846155" y2="329.53846153846155" stroke="#d1d1d1" stroke-width="1"></line><text x="117.5810546875" y="333.53846153846155" fill="#616161" font-size="13" text-anchor="end">60</text></g><g><line x1="127.5810546875" x2="852" y1="283.38461538461536" y2="283.38461538461536" stroke="#d1d1d1" stroke-width="1"></line><text x="117.5810546875" y="287.38461538461536" fill="#616161" font-size="13" text-anchor="end">80</text></g><g><line x1="127.5810546875" x2="852" y1="237.23076923076923" y2="237.23076923076923" stroke="#d1d1d1" stroke-width="1"></line><text x="117.5810546875" y="241.23076923076923" fill="#616161" font-size="13" text-anchor="end">100</text></g><g><line x1="127.5810546875" x2="852" y1="191.07692307692307" y2="191.07692307692307" stroke="#d1d1d1" stroke-width="1"></line><text x="117.5810546875" y="195.07692307692307" fill="#616161" font-size="13" text-anchor="end">120 countries</text></g><rect x="127.5810546875" y="174.92307692307693" width="71.44189453125" height="293.0769230769231" fill="#616161"></rect><rect x="200.02294921875" y="345.6923076923077" width="71.44189453125" height="122.30769230769232" fill="#616161"></rect><rect x="272.46484375" y="433.38461538461536" width="71.44189453125" height="34.61538461538464" fill="#616161"></rect><rect x="344.90673828125" y="447.2307692307693" width="71.44189453125" height="20.769230769230717" fill="#616161"></rect><rect x="417.3486328125" y="461.0769230769231" width="71.44189453125" height="6.923076923076906" fill="#616161"></rect><rect x="489.79052734375" y="463.3846153846154" width="71.44189453125" height="4.615384615384585" fill="#616161"></rect><rect x="562.232421875" y="461.0769230769231" width="71.44189453125" height="6.923076923076906" fill="#616161"></rect><rect x="634.67431640625" y="468" width="71.44189453125" height="0" fill="#616161"></rect><rect x="707.1162109375" y="468" width="71.44189453125011" height="0" fill="#616161"></rect><rect x="779.5581054687501" y="465.69230769230774" width="71.44189453124989" height="2.307692307692264" fill="#616161"></rect><text x="163.802001953125" y="488" fill="#616161" font-size="13" text-anchor="middle">0</text><text x="236.243896484375" y="488" fill="#616161" font-size="13" text-anchor="middle">4</text><text x="308.685791015625" y="488" fill="#616161" font-size="13" text-anchor="middle">8</text><text x="381.127685546875" y="488" fill="#616161" font-size="13" text-anchor="middle">12</text><text x="453.569580078125" y="488" fill="#616161" font-size="13" text-anchor="middle">16</text><text x="526.011474609375" y="488" fill="#616161" font-size="13" text-anchor="middle">20</text><text x="598.453369140625" y="488" fill="#616161" font-size="13" text-anchor="middle">24</text><text x="670.895263671875" y="488" fill="#616161" font-size="13" text-anchor="middle">28</text><text x="743.337158203125" y="488" fill="#616161" font-size="13" text-anchor="middle">32</text><text x="815.779052734375" y="488" fill="#616161" font-size="13" text-anchor="middle">36</text><text x="852" y="488" fill="#616161" font-size="13" text-anchor="middle">40</text><text x="489.79052734375" y="504" fill="#616161" font-size="13" font-weight="600" text-anchor="middle">CO2 emissions per capita (tonnes/year)</text><line x1="184.43296453283693" x2="184.43296453283693" y1="168" y2="468" stroke="#0B7A75" stroke-width="2" stroke-dasharray="6 4"></line><text x="192.43296453283693" y="184" fill="#000000" font-size="13" font-weight="700">Median: 3.1 t</text><rect class="bin-hit" x="127.5810546875" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="0 to 4 tonnes: 127 countries — Afghanistan, Albania, Angola, Argentina, Armenia, Bangladesh, Belize, Benin, Bhutan, Bolivia, Botswana, Brazil, Burkina Faso, Burundi, Cambodia, Cameroon, Cape Verde, Central African Republic, Chad, Chile, Colombia, Comoros, Congo, Costa Rica, Cote d&#x27;Ivoire, Cuba, Democratic Republic of Congo, Djibouti, Dominica, Dominican Republic, East Timor, Ecuador, Egypt, El Salvador, Equatorial Guinea, Eritrea, Eswatini, Ethiopia, Fiji, French Polynesia, Gabon, Gambia, Georgia, Ghana, Grenada, Guatemala, Guinea, Guinea-Bissau, Haiti, Honduras, India, Indonesia, Jamaica, Jordan, Kenya, Kiribati, Kyrgyzstan, Laos, Latvia, Lebanon, Lesotho, Liberia, Liechtenstein, Macao, Madagascar, Malawi, Mali, Malta, Marshall Islands, Mauritania, Mauritius, Mexico, Micronesia (country), Moldova, Montenegro, Morocco, Mozambique, Myanmar, Namibia, Nepal, Nicaragua, Niger, Nigeria, Niue, North Korea, Pakistan, Palestine, Panama, Papua New Guinea, Paraguay, Peru, Philippines, Portugal, Romania, Rwanda, Saint Helena, Saint Lucia, Saint Vincent and the Grenadines, Samoa, Sao Tome and Principe, Senegal, Sierra Leone, Solomon Islands, Somalia, South Sudan, Sri Lanka, Sudan, Sweden, Switzerland, Syria, Tajikistan, Tanzania, Thailand, Togo, Tonga, Tunisia, Tuvalu, Uganda, Ukraine, Uruguay, Uzbekistan, Vanuatu, Vietnam, Wallis and Futuna, Yemen, Zambia, Zimbabwe" data-detail="0–4 t: 127 countries — Afghanistan, Albania, Angola, Argentina, Armenia, Bangladesh, Belize, Benin, Bhutan, Bolivia, Botswana, Brazil, Burkina Faso, Burundi, Cambodia, Cameroon, Cape Verde, Central African Republic, Chad, Chile, Colombia, Comoros, Congo, Costa Rica, Cote d&#x27;Ivoire, Cuba, Democratic Republic of Congo, Djibouti, Dominica, Dominican Republic, East Timor, Ecuador, Egypt, El Salvador, Equatorial Guinea, Eritrea, Eswatini, Ethiopia, Fiji, French Polynesia, Gabon, Gambia, Georgia, Ghana, Grenada, Guatemala, Guinea, Guinea-Bissau, Haiti, Honduras, India, Indonesia, Jamaica, Jordan, Kenya, Kiribati, Kyrgyzstan, Laos, Latvia, Lebanon, Lesotho, Liberia, Liechtenstein, Macao, Madagascar, Malawi, Mali, Malta, Marshall Islands, Mauritania, Mauritius, Mexico, Micronesia (country), Moldova, Montenegro, Morocco, Mozambique, Myanmar, Namibia, Nepal, Nicaragua, Niger, Nigeria, Niue, North Korea, Pakistan, Palestine, Panama, Papua New Guinea, Paraguay, Peru, Philippines, Portugal, Romania, Rwanda, Saint Helena, Saint Lucia, Saint Vincent and the Grenadines, Samoa, Sao Tome and Principe, Senegal, Sierra Leone, Solomon Islands, Somalia, South Sudan, Sri Lanka, Sudan, Sweden, Switzerland, Syria, Tajikistan, Tanzania, Thailand, Togo, Tonga, Tunisia, Tuvalu, Uganda, Ukraine, Uruguay, Uzbekistan, Vanuatu, Vietnam, Wallis and Futuna, Yemen, Zambia, Zimbabwe"></rect><rect class="bin-hit" x="200.02294921875" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="4 to 8 tonnes: 53 countries — Algeria, Andorra, Antigua and Barbuda, Austria, Azerbaijan, Bahamas, Barbados, Belarus, Belgium, Bonaire Sint Eustatius and Saba, Bosnia and Herzegovina, British Virgin Islands, Bulgaria, Cook Islands, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Guyana, Hong Kong, Hungary, Iraq, Ireland, Israel, Italy, Japan, Lithuania, Malaysia, Maldives, Montserrat, Nauru, Netherlands, New Zealand, North Macedonia, Norway, Poland, Saint Kitts and Nevis, Serbia, Seychelles, Slovakia, Slovenia, South Africa, Spain, Suriname, Turkey, Turks and Caicos Islands, United Kingdom, Venezuela" data-detail="4–8 t: 53 countries — Algeria, Andorra, Antigua and Barbuda, Austria, Azerbaijan, Bahamas, Barbados, Belarus, Belgium, Bonaire Sint Eustatius and Saba, Bosnia and Herzegovina, British Virgin Islands, Bulgaria, Cook Islands, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Guyana, Hong Kong, Hungary, Iraq, Ireland, Israel, Italy, Japan, Lithuania, Malaysia, Maldives, Montserrat, Nauru, Netherlands, New Zealand, North Macedonia, Norway, Poland, Saint Kitts and Nevis, Serbia, Seychelles, Slovakia, Slovenia, South Africa, Spain, Suriname, Turkey, Turks and Caicos Islands, United Kingdom, Venezuela"></rect><rect class="bin-hit" x="272.46484375" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="8 to 12 tonnes: 15 countries — Anguilla, Aruba, Bermuda, China, Curacao, Greenland, Iceland, Iran, Libya, Luxembourg, Russia, Saint Pierre and Miquelon, Singapore, South Korea, Taiwan" data-detail="8–12 t: 15 countries — Anguilla, Aruba, Bermuda, China, Curacao, Greenland, Iceland, Iran, Libya, Luxembourg, Russia, Saint Pierre and Miquelon, Singapore, South Korea, Taiwan"></rect><rect class="bin-hit" x="344.90673828125" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="12 to 16 tonnes: 9 countries — Australia, Canada, Faroe Islands, Kazakhstan, Mongolia, Oman, Palau, Turkmenistan, United States" data-detail="12–16 t: 9 countries — Australia, Canada, Faroe Islands, Kazakhstan, Mongolia, Oman, Palau, Turkmenistan, United States"></rect><rect class="bin-hit" x="417.3486328125" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="16 to 20 tonnes: 3 countries — New Caledonia, Sint Maarten (Dutch part), United Arab Emirates" data-detail="16–20 t: 3 countries — New Caledonia, Sint Maarten (Dutch part), United Arab Emirates"></rect><rect class="bin-hit" x="489.79052734375" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="20 to 24 tonnes: 2 countries — Saudi Arabia, Trinidad and Tobago" data-detail="20–24 t: 2 countries — Saudi Arabia, Trinidad and Tobago"></rect><rect class="bin-hit" x="562.232421875" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="24 to 28 tonnes: 3 countries — Bahrain, Brunei, Kuwait" data-detail="24–28 t: 3 countries — Bahrain, Brunei, Kuwait"></rect><rect class="bin-hit" x="634.67431640625" y="168" width="72.44189453125" height="300" fill="transparent" tabindex="0" role="img" aria-label="28 to 32 tonnes: 0 countries — none" data-detail="28–32 t: 0 countries — none"></rect><rect class="bin-hit" x="707.1162109375" y="168" width="72.44189453125011" height="300" fill="transparent" tabindex="0" role="img" aria-label="32 to 36 tonnes: 0 countries — none" data-detail="32–36 t: 0 countries — none"></rect><rect class="bin-hit" x="779.5581054687501" y="168" width="72.44189453124989" height="300" fill="transparent" tabindex="0" role="img" aria-label="36 to 40 tonnes: 1 country — Qatar" data-detail="36–40 t: 1 country — Qatar"></rect></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="433" viewBox="0 0 360 433" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>Histogram of CO2 emissions per capita for 213 countries in 2023, binned in 4-tonne intervals from 0 to 40. 127 countries (60%) sit under 4 tonnes; the distribution is right-skewed, with a handful of oil and gas producers stretching the tail out to 40 tonnes. A dashed line marks the median at 3.1 tonnes. Every bin&#x27;s exact count AND the full list of countries in it is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="360" height="433" fill="#FFFFFF"></rect><text x="20" y="36" fill="#000000" font-size="16" font-weight="700">Six in ten countries emit under 4 tonnes</text><text x="20" y="57" fill="#000000" font-size="16" font-weight="700">of CO2 per person</text><text x="20" y="76" fill="#616161" font-size="11">127 of 213 countries (60%) emitted under 4 tonnes of CO2 per</text><text x="20" y="91" fill="#616161" font-size="11">person in 2023; the distribution is heavily right-skewed, with a</text><text x="20" y="106" fill="#616161" font-size="11">handful of oil and gas producers stretching the tail out to 40</text><text x="20" y="121" fill="#616161" font-size="11">tonnes. Median: 3.1 t/capita.</text><text x="20" y="138" fill="#616161" font-size="11">Source: Global Carbon Budget (2025), via Our World in Data ·</text><text x="20" y="152" fill="#616161" font-size="11">co-emissions-per-capita, 2023 data, extracted 8 August 2026</text><g><line x1="89.677734375" x2="332" y1="393" y2="393" stroke="#616161" stroke-width="1"></line><text x="79.677734375" y="397" fill="#616161" font-size="10" text-anchor="end">0</text></g><g><line x1="89.677734375" x2="332" y1="359.1538461538462" y2="359.1538461538462" stroke="#d1d1d1" stroke-width="1"></line><text x="79.677734375" y="363.1538461538462" fill="#616161" font-size="10" text-anchor="end">50</text></g><g><line x1="89.677734375" x2="332" y1="325.3076923076923" y2="325.3076923076923" stroke="#d1d1d1" stroke-width="1"></line><text x="79.677734375" y="329.3076923076923" fill="#616161" font-size="10" text-anchor="end">100 countries</text></g><g><line x1="89.677734375" x2="332" y1="291.46153846153845" y2="291.46153846153845" stroke="#d1d1d1" stroke-width="1"></line><text x="79.677734375" y="295.46153846153845" fill="#616161" font-size="10" text-anchor="end"></text></g><g><line x1="89.677734375" x2="332" y1="257.6153846153846" y2="257.6153846153846" stroke="#d1d1d1" stroke-width="1"></line><text x="79.677734375" y="261.6153846153846" fill="#616161" font-size="10" text-anchor="end"></text></g><g><line x1="89.677734375" x2="332" y1="223.76923076923077" y2="223.76923076923077" stroke="#d1d1d1" stroke-width="1"></line><text x="79.677734375" y="227.76923076923077" fill="#616161" font-size="10" text-anchor="end"></text></g><g><line x1="89.677734375" x2="332" y1="189.9230769230769" y2="189.9230769230769" stroke="#d1d1d1" stroke-width="1"></line><text x="79.677734375" y="193.9230769230769" fill="#616161" font-size="10" text-anchor="end"></text></g><rect x="89.677734375" y="178.0769230769231" width="23.232226562500003" height="214.9230769230769" fill="#616161"></rect><rect x="113.9099609375" y="303.3076923076923" width="23.232226562500003" height="89.69230769230768" fill="#616161"></rect><rect x="138.1421875" y="367.6153846153846" width="23.23222656249999" height="25.384615384615415" fill="#616161"></rect><rect x="162.3744140625" y="377.7692307692308" width="23.232226562500017" height="15.230769230769226" fill="#616161"></rect><rect x="186.606640625" y="387.9230769230769" width="23.23222656249999" height="5.076923076923094" fill="#616161"></rect><rect x="210.8388671875" y="389.61538461538464" width="23.23222656249999" height="3.3846153846153584" fill="#616161"></rect><rect x="235.07109375" y="387.9230769230769" width="23.23222656249999" height="5.076923076923094" fill="#616161"></rect><rect x="259.3033203125" y="393" width="23.232226562500045" height="0" fill="#616161"></rect><rect x="283.535546875" y="393" width="23.23222656249999" height="0" fill="#616161"></rect><rect x="307.7677734375" y="391.3076923076923" width="23.23222656249999" height="1.6923076923076792" fill="#616161"></rect><text x="101.79384765625" y="413" fill="#616161" font-size="10" text-anchor="middle">0</text><text x="126.02607421875001" y="413" fill="#616161" font-size="10" text-anchor="middle">4</text><text x="150.25830078125" y="413" fill="#616161" font-size="10" text-anchor="middle">8</text><text x="174.49052734375" y="413" fill="#616161" font-size="10" text-anchor="middle">12</text><text x="198.72275390625" y="413" fill="#616161" font-size="10" text-anchor="middle">16</text><text x="222.95498046875" y="413" fill="#616161" font-size="10" text-anchor="middle">20</text><text x="247.18720703124998" y="413" fill="#616161" font-size="10" text-anchor="middle">24</text><text x="271.41943359375" y="413" fill="#616161" font-size="10" text-anchor="middle">28</text><text x="295.65166015625005" y="413" fill="#616161" font-size="10" text-anchor="middle">32</text><text x="319.88388671875" y="413" fill="#616161" font-size="10" text-anchor="middle">36</text><text x="332" y="413" fill="#616161" font-size="10" text-anchor="middle">40</text><text x="210.8388671875" y="421" fill="#616161" font-size="10" font-weight="600" text-anchor="middle">CO2 emissions per capita (tonnes/year)</text><line x1="108.6950222137207" x2="108.6950222137207" y1="173" y2="393" stroke="#0B7A75" stroke-width="2" stroke-dasharray="6 4"></line><text x="116.6950222137207" y="189" fill="#000000" font-size="10" font-weight="700">Median: 3.1 t</text><rect class="bin-hit" x="89.677734375" y="173" width="24.232226562500003" height="220" fill="transparent" tabindex="0" role="img" aria-label="0 to 4 tonnes: 127 countries — Afghanistan, Albania, Angola, Argentina, Armenia, Bangladesh, Belize, Benin, Bhutan, Bolivia, Botswana, Brazil, Burkina Faso, Burundi, Cambodia, Cameroon, Cape Verde, Central African Republic, Chad, Chile, Colombia, Comoros, Congo, Costa Rica, Cote d&#x27;Ivoire, Cuba, Democratic Republic of Congo, Djibouti, Dominica, Dominican Republic, East Timor, Ecuador, Egypt, El Salvador, Equatorial Guinea, Eritrea, Eswatini, Ethiopia, Fiji, French Polynesia, Gabon, Gambia, Georgia, Ghana, Grenada, Guatemala, Guinea, Guinea-Bissau, Haiti, Honduras, India, Indonesia, Jamaica, Jordan, Kenya, Kiribati, Kyrgyzstan, Laos, Latvia, Lebanon, Lesotho, Liberia, Liechtenstein, Macao, Madagascar, Malawi, Mali, Malta, Marshall Islands, Mauritania, Mauritius, Mexico, Micronesia (country), Moldova, Montenegro, Morocco, Mozambique, Myanmar, Namibia, Nepal, Nicaragua, Niger, Nigeria, Niue, North Korea, Pakistan, Palestine, Panama, Papua New Guinea, Paraguay, Peru, Philippines, Portugal, Romania, Rwanda, Saint Helena, Saint Lucia, Saint Vincent and the Grenadines, Samoa, Sao Tome and Principe, Senegal, Sierra Leone, Solomon Islands, Somalia, South Sudan, Sri Lanka, Sudan, Sweden, Switzerland, Syria, Tajikistan, Tanzania, Thailand, Togo, Tonga, Tunisia, Tuvalu, Uganda, Ukraine, Uruguay, Uzbekistan, Vanuatu, Vietnam, Wallis and Futuna, Yemen, Zambia, Zimbabwe" data-detail="0–4 t: 127 countries — Afghanistan, Albania, Angola, Argentina, Armenia, Bangladesh, Belize, Benin, Bhutan, Bolivia, Botswana, Brazil, Burkina Faso, Burundi, Cambodia, Cameroon, Cape Verde, Central African Republic, Chad, Chile, Colombia, Comoros, Congo, Costa Rica, Cote d&#x27;Ivoire, Cuba, Democratic Republic of Congo, Djibouti, Dominica, Dominican Republic, East Timor, Ecuador, Egypt, El Salvador, Equatorial Guinea, Eritrea, Eswatini, Ethiopia, Fiji, French Polynesia, Gabon, Gambia, Georgia, Ghana, Grenada, Guatemala, Guinea, Guinea-Bissau, Haiti, Honduras, India, Indonesia, Jamaica, Jordan, Kenya, Kiribati, Kyrgyzstan, Laos, Latvia, Lebanon, Lesotho, Liberia, Liechtenstein, Macao, Madagascar, Malawi, Mali, Malta, Marshall Islands, Mauritania, Mauritius, Mexico, Micronesia (country), Moldova, Montenegro, Morocco, Mozambique, Myanmar, Namibia, Nepal, Nicaragua, Niger, Nigeria, Niue, North Korea, Pakistan, Palestine, Panama, Papua New Guinea, Paraguay, Peru, Philippines, Portugal, Romania, Rwanda, Saint Helena, Saint Lucia, Saint Vincent and the Grenadines, Samoa, Sao Tome and Principe, Senegal, Sierra Leone, Solomon Islands, Somalia, South Sudan, Sri Lanka, Sudan, Sweden, Switzerland, Syria, Tajikistan, Tanzania, Thailand, Togo, Tonga, Tunisia, Tuvalu, Uganda, Ukraine, Uruguay, Uzbekistan, Vanuatu, Vietnam, Wallis and Futuna, Yemen, Zambia, Zimbabwe"></rect><rect class="bin-hit" x="113.9099609375" y="173" width="24.232226562500003" height="220" fill="transparent" tabindex="0" role="img" aria-label="4 to 8 tonnes: 53 countries — Algeria, Andorra, Antigua and Barbuda, Austria, Azerbaijan, Bahamas, Barbados, Belarus, Belgium, Bonaire Sint Eustatius and Saba, Bosnia and Herzegovina, British Virgin Islands, Bulgaria, Cook Islands, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Guyana, Hong Kong, Hungary, Iraq, Ireland, Israel, Italy, Japan, Lithuania, Malaysia, Maldives, Montserrat, Nauru, Netherlands, New Zealand, North Macedonia, Norway, Poland, Saint Kitts and Nevis, Serbia, Seychelles, Slovakia, Slovenia, South Africa, Spain, Suriname, Turkey, Turks and Caicos Islands, United Kingdom, Venezuela" data-detail="4–8 t: 53 countries — Algeria, Andorra, Antigua and Barbuda, Austria, Azerbaijan, Bahamas, Barbados, Belarus, Belgium, Bonaire Sint Eustatius and Saba, Bosnia and Herzegovina, British Virgin Islands, Bulgaria, Cook Islands, Croatia, Cyprus, Czechia, Denmark, Estonia, Finland, France, Germany, Greece, Guyana, Hong Kong, Hungary, Iraq, Ireland, Israel, Italy, Japan, Lithuania, Malaysia, Maldives, Montserrat, Nauru, Netherlands, New Zealand, North Macedonia, Norway, Poland, Saint Kitts and Nevis, Serbia, Seychelles, Slovakia, Slovenia, South Africa, Spain, Suriname, Turkey, Turks and Caicos Islands, United Kingdom, Venezuela"></rect><rect class="bin-hit" x="138.1421875" y="173" width="24.23222656249999" height="220" fill="transparent" tabindex="0" role="img" aria-label="8 to 12 tonnes: 15 countries — Anguilla, Aruba, Bermuda, China, Curacao, Greenland, Iceland, Iran, Libya, Luxembourg, Russia, Saint Pierre and Miquelon, Singapore, South Korea, Taiwan" data-detail="8–12 t: 15 countries — Anguilla, Aruba, Bermuda, China, Curacao, Greenland, Iceland, Iran, Libya, Luxembourg, Russia, Saint Pierre and Miquelon, Singapore, South Korea, Taiwan"></rect><rect class="bin-hit" x="162.3744140625" y="173" width="24.232226562500017" height="220" fill="transparent" tabindex="0" role="img" aria-label="12 to 16 tonnes: 9 countries — Australia, Canada, Faroe Islands, Kazakhstan, Mongolia, Oman, Palau, Turkmenistan, United States" data-detail="12–16 t: 9 countries — Australia, Canada, Faroe Islands, Kazakhstan, Mongolia, Oman, Palau, Turkmenistan, United States"></rect><rect class="bin-hit" x="186.606640625" y="173" width="24.23222656249999" height="220" fill="transparent" tabindex="0" role="img" aria-label="16 to 20 tonnes: 3 countries — New Caledonia, Sint Maarten (Dutch part), United Arab Emirates" data-detail="16–20 t: 3 countries — New Caledonia, Sint Maarten (Dutch part), United Arab Emirates"></rect><rect class="bin-hit" x="210.8388671875" y="173" width="24.23222656249999" height="220" fill="transparent" tabindex="0" role="img" aria-label="20 to 24 tonnes: 2 countries — Saudi Arabia, Trinidad and Tobago" data-detail="20–24 t: 2 countries — Saudi Arabia, Trinidad and Tobago"></rect><rect class="bin-hit" x="235.07109375" y="173" width="24.23222656249999" height="220" fill="transparent" tabindex="0" role="img" aria-label="24 to 28 tonnes: 3 countries — Bahrain, Brunei, Kuwait" data-detail="24–28 t: 3 countries — Bahrain, Brunei, Kuwait"></rect><rect class="bin-hit" x="259.3033203125" y="173" width="24.232226562500045" height="220" fill="transparent" tabindex="0" role="img" aria-label="28 to 32 tonnes: 0 countries — none" data-detail="28–32 t: 0 countries — none"></rect><rect class="bin-hit" x="283.535546875" y="173" width="24.23222656249999" height="220" fill="transparent" tabindex="0" role="img" aria-label="32 to 36 tonnes: 0 countries — none" data-detail="32–36 t: 0 countries — none"></rect><rect class="bin-hit" x="307.7677734375" y="173" width="24.23222656249999" height="220" fill="transparent" tabindex="0" role="img" aria-label="36 to 40 tonnes: 1 country — Qatar" data-detail="36–40 t: 1 country — Qatar"></rect></svg>
+</figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/twin-chart-web/assets/interaction.mjs
+//
+// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `twin-doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video genres use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    show(points[nearestIndex(cxs, local.x)], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+<script>
+// twin/proof/webx-carbon-footprint/histogram-interaction.mjs
+//
+// This beat's OWN interaction script — the skill's own `assets/interaction.mjs` resolves a pointer
+// to the NEAREST of many points along one continuous axis (built for a line); ten already-large,
+// edge-to-edge bins are each already their own direct hit target.
+//
+// What hover/tap/keyboard-focus reveals here that the static frame omits: WHICH countries fall in
+// a bin, not just how many — the one thing a histogram's bar height cannot carry
+// (`HistogramWeb.tsx`'s own header comment). The tooltip for this beat is taller/wider than the
+// skill's default (see `render-web.mjs`'s own CSS override) because a bin can hold well over a
+// hundred country names; it scrolls internally rather than truncating the list, so no country is
+// silently dropped from what a reader can ask for.
+// Plain script (no ES module `export`) — direct DOM wiring only, proven by driving a real browser.
+
+function initBins() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  const bins = Array.prototype.slice.call(document.querySelectorAll(".bin-hit"));
+  if (bins.length === 0) return;
+
+  function clear() {
+    bins.forEach(function (b) {
+      b.classList.remove("bin-active");
+    });
+    tooltip.hidden = true;
+  }
+
+  function show(bin, clientX, clientY) {
+    bins.forEach(function (b) {
+      b.classList.toggle("bin-active", b === bin);
+    });
+    tooltip.textContent = bin.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 220;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  bins.forEach(function (bin) {
+    bin.addEventListener("pointerenter", function (evt) {
+      show(bin, evt.clientX, evt.clientY);
+    });
+    bin.addEventListener("pointermove", function (evt) {
+      show(bin, evt.clientX, evt.clientY);
+    });
+    bin.addEventListener("pointerdown", function (evt) {
+      show(bin, evt.clientX, evt.clientY);
+    });
+    bin.addEventListener("pointerleave", clear);
+    bin.addEventListener("focus", function () {
+      const rect = bin.getBoundingClientRect();
+      show(bin, rect.left + rect.width / 2, rect.top);
+    });
+    bin.addEventListener("blur", clear);
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    const target = evt.target;
+    if (target && typeof target.closest === "function" && target.closest(".bin-hit")) return;
+    clear();
+  });
+}
+
+if (typeof document !== "undefined") initBins();
+
+</script>
+</body>
+</html>
