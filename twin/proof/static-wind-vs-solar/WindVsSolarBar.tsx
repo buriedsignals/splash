@@ -30,6 +30,12 @@ const VALUE_LABEL = { fontSize: 13, fontWeight: 700 };
 const LEGEND = { fontSize: 13, fontWeight: 600 };
 const NOTE = { fontSize: 13, fontWeight: 400 };
 const UNIT = "%";
+/** Baseline-to-baseline distance inside the callout block. */
+const CALLOUT_LEAD = 16;
+/** Descender room below a callout baseline, as a share of its own type size. */
+const CALLOUT_DESCENDER = 0.3;
+/** Clear space between the callout block's bottom and the top of its leader. */
+const CALLOUT_LEADER_GAP = 8;
 /** Wind: a cool hue. Solar: a warm one. Only one warm member sits in this two-colour set, so the
  *  "two warm hues adjacent" trap the grouped-bar sheet names (an orange next to a vermillion)
  *  cannot occur here — Okabe-Ito blue and Okabe-Ito orange. */
@@ -200,6 +206,17 @@ export function WindVsSolarBar({
         plot.right - calloutMaxWidth / 2,
       )
     : 0;
+  // The leader used to start at the callout's own FIRST baseline, which put its whole run behind
+  // the rest of the block: the dashed rule went straight down through the second line and cut
+  // "group" into "gr|oup" — a leader drawn over the very words it exists to connect. It starts
+  // below the block instead. The block's bottom is its last baseline plus that font's descender
+  // room, so this holds however many lines `wrap` returns, not just the two this text happens to
+  // produce today.
+  const calloutTop = plot.top + 10;
+  const calloutBottom =
+    calloutTop +
+    (calloutLines.length - 1) * CALLOUT_LEAD +
+    NOTE.fontSize * CALLOUT_DESCENDER;
 
   return (
     <svg
@@ -365,7 +382,7 @@ export function WindVsSolarBar({
           <line
             x1={calloutBar.groupCenter}
             x2={calloutBar.groupCenter}
-            y1={plot.top + 10}
+            y1={calloutBottom + CALLOUT_LEADER_GAP}
             y2={Math.min(calloutBar.wind.y, calloutBar.solar.y) - 6}
             stroke={muted}
             strokeWidth={1}
@@ -375,7 +392,7 @@ export function WindVsSolarBar({
             <text
               key={line}
               x={calloutAnchorX}
-              y={plot.top + 10 + i * 16}
+              y={calloutTop + i * CALLOUT_LEAD}
               fill={ink}
               fontSize={NOTE.fontSize}
               fontWeight={600}

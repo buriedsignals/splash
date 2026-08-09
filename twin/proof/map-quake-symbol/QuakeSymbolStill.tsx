@@ -26,7 +26,7 @@ const MAX_RADIUS = 30;
 
 const TITLE = { fontSize: 20, fontWeight: 700, lead: 26 };
 const SOURCE = { fontSize: 13, fontWeight: 400, lead: 17 };
-const CAPTION = { fontSize: 12, fontWeight: 600 };
+const CAPTION = { fontSize: 12, fontWeight: 600, lead: 16 };
 const NOTE = { fontSize: 11.5, fontWeight: 400, lead: 15 };
 const POINT_LABEL = { fontSize: 11, fontWeight: 600 };
 const LEGEND_LABEL = { fontSize: 11.5, fontWeight: 400 };
@@ -107,9 +107,18 @@ export function QuakeSymbolStill({
     34 -
     Math.max(...legend.map((v) => radiusOf(v))) * 2 -
     24;
-  if (legendTop - 16 < sourceBottom)
+  // The legend caption WRAPS to the column, exactly like the title, the source and the caveat. It
+  // was the one string in this frame drawn as a single unbreakable line, and the column is 308 wide:
+  // measured in Chrome, "Magnitude (radius scaled to √magnitude, not to energy released)" ran 367.98
+  // wide from x 32, so its right edge landed at 399.98 against a map plate that begins at x 372 — a
+  // 27.98px overrun, and on the rendered PNG the closing ")" of "released)" sits on the ocean. The
+  // block grows UPWARD, keeping its last baseline (and therefore the reference circles below it)
+  // exactly where they were; the fit check that follows now measures the block's real top.
+  const captionLines = wrap(legendCaption, COLUMN.width, CAPTION);
+  const captionTop = legendTop - (captionLines.length - 1) * CAPTION.lead;
+  if (captionTop - 16 < sourceBottom)
     throw new Error(
-      `the column does not fit: source ends at ${sourceBottom}, legend starts at ${legendTop}. Shorten the title or the source.`,
+      `the column does not fit: source ends at ${sourceBottom}, the legend caption starts at ${captionTop}. Shorten the title, the source or the legend caption.`,
     );
 
   const subject = geometry.points.find((p) => p.key === subjectKey);
@@ -253,15 +262,18 @@ export function QuakeSymbolStill({
         </text>
       ))}
 
-      <text
-        x={COLUMN.x}
-        y={legendTop}
-        fill={muted}
-        fontSize={CAPTION.fontSize}
-        fontWeight={CAPTION.fontWeight}
-      >
-        {legendCaption}
-      </text>
+      {captionLines.map((line, i) => (
+        <text
+          key={line}
+          x={COLUMN.x}
+          y={captionTop + i * CAPTION.lead}
+          fill={muted}
+          fontSize={CAPTION.fontSize}
+          fontWeight={CAPTION.fontWeight}
+        >
+          {line}
+        </text>
+      ))}
 
       {/* Reference circles: smallest to largest, left to right, sharing one baseline, each
           labelled directly above its own crown — a nested legend (all circles sharing one centre)
