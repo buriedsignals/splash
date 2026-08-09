@@ -1,15 +1,15 @@
-# Beat — 2024's magnitude-4+ earthquakes are not spread evenly: one hex cell holds 1,906 of them
+# Beat — 2024's magnitude-4+ earthquakes are not spread evenly: one hex cell holds 1,724 of them
 
 **Type:** hex grid (spatial bins). **Medium/genre:** map / static. **Channel:** article web,
-900 × 560, over an 836 × 300 baked plate (`bake.mjs --width 836 --height 300`, bounds
-`[-179.9, -60] → [179.9, 78]`).
+900 × 740, over an 836 × 480 baked plate (`bake.mjs --width 836 --height 480`, bounds
+`[-20, -60] → [340, 78]` — Pacific-centred, seam in the mid-Atlantic).
 
 ## Claim
 
 Magnitude-4-or-greater earthquakes in 2024 cluster on the Pacific plate boundaries rather than
-spreading across the globe: binned into equal hexagons, the densest single cell holds **1,906**
-events against a median non-empty cell of about 20 — roughly ninety times the middle of the
-distribution — and that cell sits over the Molucca Sea, between Indonesia and the Philippines.
+spreading across the globe: binned into equal hexagons, the densest single cell holds **1,724**
+events against a median non-empty cell of **12** — roughly 133 times the middle of the
+distribution — and its own events are catalogued by USGS as **Fiji** (49%) and **Tonga** (36%).
 
 ## Data
 
@@ -20,23 +20,23 @@ distribution — and that cell sits over the Molucca Sea, between Indonesia and 
 - The beat draws COUNT per cell only. Magnitude and depth are present in the file and deliberately
   unused — see the anti-patterns.
 
-## Exact values — computed 2026-08-09, recomputing the binning from the CSV
+## Exact values — recomputed 2026-08-09 after the plate was corrected (see below)
 
-The subject cell was identified by re-projecting the frozen CSV into the plate's own Mercator frame
-and re-binning it, then matching the result against the committed `render/static.svg`:
+Every figure below is printed by `render.mjs` on each run, from the frozen CSV and the plate's own
+geometry. Nothing here is typed into the furniture: the caveat's latitude range comes from the
+corners MapLibre settled on, and the alt's place names come from the subject cell's own member
+events.
 
-- The rendered SVG holds **107** hexagons; the accent-outlined one is centred at (616.8, 188.5) in
-  the map group's coordinates. The independent recomputation puts its densest cell at
-  (616.3, 188.4) — a **0.5 px** match — and the second-densest at (163.1, 219.8) against the SVG's
-  second dark cell at (163.3, 219.9).
-- Densest cell: **1,906 events**, member points averaging **130.5°E, 0.0°** — the Molucca Sea, top
-  place string "86 km ENE of Kinablangan, Philippines". The alt's "around Indonesia and the
-  Philippines" is correct.
-- Second: **1,534 events** at 176.9°W, 20.6°S (Fiji region). Third: 862 (Vanuatu), fourth: 832
-  (south-west Japan), fifth: 831 (northern Chile).
-- Median non-empty cell ≈ 20 events; the top cell is roughly **90×** the median. Class breaks
-  printed in the legend: 1–23, 24–91, 92–377, 378–886, 887+, with 53 / 27 / 17 / 7 / 3 cells in
-  each — a distribution whose bottom class holds half the cells.
+- **150 non-empty cells**, hex size 26.5 px, out of a far larger possible grid.
+- Ranked counts: **1,724 · 974 · 829 · 781 · 663 · 636 …**; median non-empty cell **12**, so the
+  top cell is **133×** the middle of the distribution.
+- Densest cell: **1,724 events**, catalogued as **Fiji 49% / Tonga 36%**. Then 974
+  (Philippines 69% / Indonesia 30%), 829 (Chile 53% / Argentina 23%), 781 (Indonesia 44% /
+  Papua New Guinea 35%), 663 (Japan 85%).
+- Class breaks printed in the legend: 1–13, 14–51, 52–284, 285–663, 664+, with
+  76 / 37 / 23 / 10 / 4 cells in each — a distribution whose bottom class holds half the cells.
+- The plate holds **61°S–78°N** (measured corners: −60.54° to 78.22°), and **104 of the 14,175**
+  catalogued events fall outside it, poleward. Both numbers are in the caveat, derived.
 
 ## Subject and accent
 
@@ -64,26 +64,53 @@ named by hand.
   is the same size on the projection, but a Mercator cell near 60°N covers far less ground than one
   at the equator — the frame is held to 60°S–78°N for exactly that reason.
 - **The subject is an artefact of the grid, and must be treated as one.** The web sibling
-  (`proof/mapgen-hexgrid-web`) bins the SAME 14,175 rows on a 836 × 520 plate and gets a different
-  winner — Fiji/Tonga at 1,374, with the Indonesia–Philippines cell second at 1,371, three events
-  behind. Change the cell size or the frame and the "densest cell" changes hands. Never write a
-  sentence that would be false at a different bin size; "the Ring of Fire, not an even spread" is
-  robust, "the densest place on Earth" would not be.
-- Do not draw empty cells. 107 non-empty cells are drawn out of a far larger possible grid, because
+  (`proof/mapgen-hexgrid-web`) bins the SAME 14,175 rows on a 836 × 520 Greenwich-centred plate and
+  gets 1,374 in the Fiji–Tonga cell, with an Indonesia–Philippines cell second at 1,371, three
+  events behind. This beat's own history is the sharpest demonstration: on the old 836 × 300 plate
+  the winner was Indonesia–Philippines at 1,906; on the corrected 836 × 480 plate it is Fiji–Tonga
+  at 1,724. Change the cell size, the frame or the seam and the "densest cell" changes hands. Never
+  write a sentence that would be false at a different bin size; "the Ring of Fire, not an even
+  spread" is robust, "the densest place on Earth" would not be. This is also why the alt names the
+  cell from its own events' catalogue entries rather than from a typed place.
+- Do not draw empty cells. 150 non-empty cells are drawn out of a far larger possible grid, because
   an empty hexagon over the mid-Atlantic asserts a measurement that was never taken.
 
-## Defect found while deriving this brief (not fixed here)
+## Defect found while deriving this brief — CORRECTED 2026-08-09
 
-**The plate shows the world twice.** The bake asks MapLibre to fit `[-179.9, -60] → [179.9, 78]`
+**The plate showed the world twice.** The bake asked MapLibre to fit `[-179.9, -60] → [179.9, 78]`
 into an 836 × 300 box. That box is height-limited: fitting 138° of latitude into 300 px forces a
-world only **528 px wide**, centred, so the actual map occupies x ≈ 154–682 of the 836 px frame —
-63% of it. MapLibre's `renderWorldCopies` default fills the remaining 37% with repeats of the same
-continents, and those copies carry **no hexagons**. The arithmetic is confirmed by the two cell
-matches above: pixel 163.1 is 176.9°W and pixel 616.3 is 130.5°E, giving 0.678°/px, i.e. a world
-530.8 px wide. So a reader sees Australia and the Americas drawn twice, once under the grid and once
-bare, and may reasonably read the bare copies as regions with no earthquakes. The web sibling does
-not have this problem: at 836 × 520 the fit is width-limited, the world fills the frame exactly, and
-no copies appear.
+world only **527.7 px wide**, centred, so the map occupied x ≈ 154–682 of the 836 px frame — 63% of
+it. MapLibre's `renderWorldCopies` default filled the remaining 37% with repeats of the same
+continents, and those copies carried **no hexagons**. A reader saw Australia and the Americas drawn
+twice, once under the grid and once bare, and could reasonably read the bare copies as regions with
+no earthquakes. Confirmed in the plate's own geometry: the baked points spanned exactly x = 154–682.
+
+**What the fix had to survive.** Switching `renderWorldCopies` off does NOT fix it — measured, with
+copies off MapLibre instead clamps the camera so the world fills the width, which at 836 × 300 zooms
+to 0.707 and shows only 35°S–67°N, silently dropping **1,057** of the 14,175 events off-frame. That
+is a different lie about where earthquakes are. The invariant is that **the world must fill the
+frame's width** — then a repeat, if drawn at all, lies entirely outside the picture — **and** the
+frame must still reach the bounds that were asked for. Both are now asserted in `bake.mjs`, and the
+assertion was mutation-checked: re-baking at 836 × 300 fails loudly, naming the height that fixes it.
+
+The plate is now **836 × 480** (475.3 px is the minimum for this latitude range at this width), and
+the still's frame height is derived from the plate rather than fixed at 560, so the legend cannot be
+pushed off the bottom.
+
+**And the camera moved to −20…340°.** Once the frame was honest, looking at it showed a second
+problem the old padding had hidden: on a Greenwich-centred world the antimeridian runs straight
+through the densest cluster. The Fiji–Tonga cell landed hard against the west edge with half its
+hexagon clipped away and its own neighbours binned into a separate cell 836 px east — **1,451**
+events in the visible half against **1,724** once the cluster is kept whole. Cutting at 20°W puts
+the seam in the mid-Atlantic instead, which leaves both the Ring of Fire and Africa uncut and costs
+this catalogue almost nothing. `map.project` does not wrap to the camera, so every longitude is
+normalised into [−20, 340) before projection.
+
+**Two typed strings went with it.** The caveat's "the map holds 60°S–78°N" and the alt's "a dark
+cell around Indonesia and the Philippines" were both true only of the 836 × 300 binning. The
+latitude range is now read from the plate's measured corners, and the place names from the subject
+cell's own member events (`cellMembers` + `dominantRegions` in `geo-hex.ts`), which is why the alt
+now says Fiji and Tonga.
 
 ## Source line
 

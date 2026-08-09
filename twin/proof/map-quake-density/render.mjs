@@ -8,8 +8,15 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
-import { HexGridStill } from "./HexGridStill.tsx";
-import { binHex, chooseHexSize, countBreaks, quakePointsFromCsv, sequentialRamp } from "./geo-hex.ts";
+import { HexGridStill, stillFrameHeight } from "./HexGridStill.tsx";
+import {
+  cellMembers,
+  chooseHexSize,
+  countBreaks,
+  dominantRegions,
+  quakePointsFromCsv,
+  sequentialRamp,
+} from "./geo-hex.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -21,15 +28,12 @@ const BEAT = {
   source: "Source: USGS Earthquake Catalog (earthquake.usgs.gov), magnitude 4.0+, worldwide, 2024",
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
   legendCaption: "Earthquakes per cell (count, not energy or magnitude) —",
-  caveat:
-    "This grid shows COUNT per cell, not total energy released — a cell packed with many small " +
-    "quakes can outrank a cell with fewer, larger ones. Cell size is chosen from point density; " +
-    "the map holds 60°S–78°N (Mercator distorts the poles beyond usefulness at this scale).",
-  alt:
-    "World map binned into a hexagonal grid. Cells are shaded by how many magnitude 4-or-greater " +
-    "earthquakes occurred there in 2024, from pale for a handful up to a dark cell around Indonesia " +
-    "and the Philippines, outlined in the accent colour, which holds the single densest cell.",
 };
+// The caveat's latitude range and the alt's place name used to be typed. Both are now read off the
+// plate and out of the file: the range from the corners MapLibre actually settled on, the place
+// from the subject cell's own member events. The old plate said "60°S–78°N" while drawing the
+// world twice inside its frame, and the old alt said "around Indonesia and the Philippines" — true
+// of the 836 × 300 binning, false of any other.
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -39,7 +43,7 @@ const flag = (name, fallback) => {
 
 const dataPath = flag("--data", join(HERE, "quakes-density.csv"));
 const outDir = flag("--out", join(HERE, "render"));
-const stillPlate = flag("--still-plate", "/tmp/map-twin/quake-density-836x300");
+const stillPlate = flag("--still-plate", "/tmp/map-twin/quake-density-836x480");
 const wantStill = argv.includes("--still");
 
 const points = quakePointsFromCsv(await readFile(dataPath, "utf8"));
@@ -70,6 +74,41 @@ if (wantStill) {
   if (!cells.every((c) => c.count <= subject.count)) throw new Error("subject is not actually the densest cell");
   console.log(`claim: densest cell (${subject.count}) is ${(subject.count / median).toFixed(1)}x the median cell (${median}) — supported.`);
 
+  // ── Where that cell is, and what this plate actually shows — both measured ──────────────────
+  if (!geometry.frameCorners || geometry.points.some((p) => p.i === undefined))
+    throw new Error(
+      "this plate predates the corrected bake (no frameCorners, or points with no source index). " +
+        "Re-bake: bun proof/map-quake-density/bake.mjs --width 836 --height 480 --out " +
+        "/tmp/map-twin/quake-density-836x480",
+    );
+  const members = cellMembers(geometry.points, hexSize);
+  const subjectPlaces = members.get(subject.key).map((i) => points[i].place);
+  const regions = dominantRegions(subjectPlaces, 2);
+  const subjectWhere = regions.map((r) => r.label).join(" and ");
+  console.log(
+    `densest cell's own events are catalogued as: ` +
+      regions.map((r) => `${r.label} ${(r.share * 100).toFixed(0)}%`).join(" · "),
+  );
+
+  const { north, south } = geometry.frameCorners;
+  const latRange =
+    `${Math.abs(south).toFixed(0)}°${south < 0 ? "S" : "N"}–` +
+    `${Math.abs(north).toFixed(0)}°${north < 0 ? "S" : "N"}`;
+  console.log(`plate ${geometry.frame.width}×${geometry.frame.height} holds ${latRange}`);
+
+  const caveat =
+    "This grid shows COUNT per cell, not total energy released — a cell packed with many small " +
+    "quakes can outrank a cell with fewer, larger ones. Cell size is chosen from point density; " +
+    `the map holds ${latRange} (Mercator distorts the poles beyond usefulness at this scale), and ` +
+    `${(points.length - geometry.points.length).toLocaleString()} of the ${points.length.toLocaleString()} ` +
+    "catalogued events fall outside it.";
+  const alt =
+    `World map binned into a hexagonal grid, ${cells.length} non-empty cells. Cells are shaded by how many ` +
+    `magnitude 4-or-greater earthquakes occurred there in 2024, from pale for a handful up to the single ` +
+    `densest cell, outlined in the accent colour, which holds ${subject.count.toLocaleString()} events — ` +
+    `${(subject.count / median).toFixed(0)}× the median non-empty cell. Its own events are catalogued as ` +
+    `${subjectWhere}.`;
+
   const furniture = deriveFurniture(BEAT.ground);
   const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1);
 
@@ -85,15 +124,15 @@ if (wantStill) {
       source: BEAT.source,
       basemapCredit: BEAT.basemapCredit,
       legendCaption: `${BEAT.legendCaption} aggregate mode: ${BEAT.aggregateMode}`,
-      caveat: BEAT.caveat,
-      alt: BEAT.alt,
+      caveat,
+      alt,
       ground: BEAT.ground,
       accent: BEAT.accent,
       ...furniture,
       subjectKey: subject.key,
     }),
     width: 900,
-    height: 560,
+    height: stillFrameHeight({ plateHeight: geometry.frame.height, caveat }),
     outDir,
     name: "static",
   });

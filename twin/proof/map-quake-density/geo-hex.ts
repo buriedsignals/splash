@@ -10,7 +10,13 @@
  * gap"). The padding this file DOES keep is around the drawn frame, not the binning itself.
  */
 
-export type QuakePoint = { lon: number; lat: number; mag: number };
+export type QuakePoint = {
+  lon: number;
+  lat: number;
+  mag: number;
+  /** The catalogue's own place string, kept so a cell's region can be derived rather than typed. */
+  place: string;
+};
 
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
@@ -60,6 +66,7 @@ export function quakePointsFromCsv(csv: string): QuakePoint[] {
   const lonAt = at("longitude");
   const latAt = at("latitude");
   const magAt = at("mag");
+  const placeAt = at("place");
   return rows
     .slice(1)
     .filter((r) => r.length === header.length)
@@ -67,6 +74,7 @@ export function quakePointsFromCsv(csv: string): QuakePoint[] {
       lon: Number(r[lonAt]),
       lat: Number(r[latAt]),
       mag: Number(r[magAt]),
+      place: r[placeAt]!,
     }))
     .filter(
       (p) =>
@@ -248,4 +256,85 @@ export function sequentialRamp(
   return Array.from({ length: steps }, (_, i) =>
     mixHex(ground, ink, FROM + ((TO - FROM) * i) / (steps - 1)),
   );
+}
+
+// ── Where a cell IS, read out of the file rather than typed ──────────────────────────────────────
+
+/**
+ * Which events landed in each cell, keyed the same way `binHex` keys them, valued by each point's
+ * own `i` — its row index in the frozen CSV. The bake carries `i` through the projection precisely
+ * so a cell can be asked what it holds.
+ */
+export function cellMembers(
+  points: { px: number; py: number; i?: number }[],
+  size: number,
+): Map<string, number[]> {
+  const members = new Map<string, number[]>();
+  points.forEach((p, fallbackIndex) => {
+    const a = pixelToAxial(p.px, p.py, size);
+    const key = `${a.q},${a.r}`;
+    const list = members.get(key);
+    const index = p.i ?? fallbackIndex;
+    if (list) list.push(index);
+    else members.set(key, [index]);
+  });
+  return members;
+}
+
+/** Leading bearing phrases USGS puts in front of a place: "86 km ENE of", "south of the". */
+const BEARING =
+  /^(north|south|east|west|northeast|northwest|southeast|southwest|[NSEW]{1,3})(ern)?\s+of\s+(the\s+)?/i;
+
+/**
+ * The region a USGS place string names. Two shapes appear in this catalogue:
+ * "86 km ENE of Kinablangan, Philippines" (the region is what follows the last comma) and bare
+ * strings like "Fiji region" or "south of the Fiji Islands" (the whole string, minus the bearing
+ * phrase and the trailing word "region").
+ */
+export function regionOf(place: string): string {
+  const tail = place.includes(",")
+    ? place.slice(place.lastIndexOf(",") + 1)
+    : place;
+  return tail
+    .trim()
+    .replace(BEARING, "")
+    .replace(/\s+region$/i, "")
+    .trim();
+}
+
+/**
+ * The regions a set of events is catalogued under, commonest first, with each one's share.
+ *
+ * Labels that begin with the same word are ONE region under three spellings — this catalogue writes
+ * "Fiji", "Fiji region" and "south of the Fiji Islands" for the same seismic zone — so they are
+ * merged and reported under the shortest of them. That merge is why this returns "Fiji 48%,
+ * Tonga 42%" for the densest cell rather than four splinters of 15–17% each.
+ *
+ * It exists because the alt text used to TYPE a place name beside a derived coordinate. On the web
+ * sibling that put "the Tonga-Kermadec trench" ~700 km east of where its own events average, and on
+ * the static sibling it left "around Indonesia and the Philippines" standing after a re-bake moved
+ * the densest cell to the Fiji–Tonga zone entirely.
+ */
+export function dominantRegions(
+  places: string[],
+  max = 2,
+): { label: string; count: number; share: number }[] {
+  if (places.length === 0) return [];
+  const counts = new Map<string, number>();
+  for (const place of places) {
+    const region = regionOf(place);
+    counts.set(region, (counts.get(region) ?? 0) + 1);
+  }
+  const groups = new Map<string, { label: string; count: number }>();
+  for (const [label, n] of counts) {
+    const key = label.split(/\s+/)[0]!.toLowerCase();
+    const group = groups.get(key) ?? { label, count: 0 };
+    if (label.length < group.label.length) group.label = label;
+    group.count += n;
+    groups.set(key, group);
+  }
+  return [...groups.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, max)
+    .map((g) => ({ ...g, share: g.count / places.length }));
 }

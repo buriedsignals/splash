@@ -9,7 +9,7 @@ import { Fragment } from "react";
 import { FONT_FAMILY, measureText } from "./render-still.mjs";
 import { binIndex, hexCorners, type HexCell } from "./geo-hex";
 
-const FRAME = { width: 900, height: 560 };
+const FRAME_WIDTH = 900;
 const PAD = 32;
 /** x, y are a layout choice; width/height are NOT — they come from `geometry.frame` below, the
  *  exact size the plate was baked at, so the hex cells (baked in that same pixel space) never need
@@ -61,6 +61,38 @@ export function wrap(
   return current ? [...lines, current] : lines;
 }
 
+const LEGEND_SWATCH = 16;
+const LEGEND_GAP = 30; // clear air between the map's bottom edge and the legend
+const CAVEAT_GAP = 26; // and between the legend and the caveat block
+
+/**
+ * How tall the frame must be for THIS plate and THIS caveat. The plate is drawn 1:1 — never scaled,
+ * or the hexagons would become ellipses — so the frame follows the plate, not the other way round.
+ * Called by the render before it rasterises, so the SVG it asks for and the SVG this component
+ * draws are the same size. The plate grew from 300 px to 480 px tall when the bake was corrected
+ * (a 300 px-tall world map could not hold 60°S–78°N without either repeating the continents or
+ * cropping the study area), and a fixed 560 px frame would have clipped the legend off the bottom.
+ */
+export function stillFrameHeight({
+  plateHeight,
+  caveat,
+}: {
+  plateHeight: number;
+  caveat: string;
+}): number {
+  const caveatLines = wrap(caveat, FRAME_WIDTH - PAD * 2, NOTE).length;
+  return (
+    MAP_Y +
+    plateHeight +
+    LEGEND_GAP +
+    LEGEND_SWATCH +
+    CAVEAT_GAP +
+    NOTE.fontSize +
+    (caveatLines - 1) * NOTE.lead +
+    PAD
+  );
+}
+
 function classLabel(index: number, breaks: number[]): string {
   const lower = index === 0 ? 1 : breaks[index - 1]! + 1;
   const upper = index === breaks.length ? null : breaks[index];
@@ -90,6 +122,10 @@ export function HexGridStill({
   muted,
   subjectKey,
 }: HexGridStillProps) {
+  const FRAME = {
+    width: FRAME_WIDTH,
+    height: stillFrameHeight({ plateHeight: geometry.frame.height, caveat }),
+  };
   const titleLines = wrap(title, FRAME.width - PAD * 2, TITLE);
   const sourceLines = wrap(
     `${source} · ${basemapCredit}`,
@@ -112,12 +148,12 @@ export function HexGridStill({
     height: geometry.frame.height,
   };
 
-  const legendSwatch = 16;
+  const legendSwatch = LEGEND_SWATCH;
   // At least one clear line of air below the map, never computed backwards from the caveat only —
   // the mismatched-scale bug this beat's first render caught was exactly this kind of box drawn
   // without checking it against its neighbour.
   const legendY = Math.max(
-    MAP.y + MAP.height + 30,
+    MAP.y + MAP.height + LEGEND_GAP,
     caveatTop - NOTE.fontSize - 40,
   );
   if (legendY + legendSwatch + 20 > caveatTop - NOTE.fontSize)

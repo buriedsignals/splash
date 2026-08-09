@@ -17,10 +17,37 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 // A world camera, clipped short of the poles — Mercator's own distortion there would blow up the
 // hex cells and a magnitude-4+ catalogue has almost nothing to show above ~80°.
+//
+// THE FRAME MUST BE WIDER THAN IT IS TALL BY THE WORLD'S OWN RATIO. `fitBounds` fits the bounds
+// inside the box on whichever axis binds first. Baked at 836 × 300 this box was HEIGHT-limited:
+// 138° of latitude in 300 px forced a world only 527.7 px wide inside an 836 px frame, and
+// MapLibre's `renderWorldCopies` filled the remaining 37% with repeat continents carrying NO
+// hexagons — a reader saw the Americas drawn twice, once binned and once bare, and could
+// reasonably read the bare copy as a place with no earthquakes. A geographic lie in a delivered
+// artifact, measured in the plate's own geometry: the baked points spanned x = 154–682 of an
+// 836 px frame, so 37% of the picture was un-binned repeat.
+//
+// The invariant that kills it is not "switch the copies off" — with `renderWorldCopies: false`
+// MapLibre instead CLAMPS the camera so the world fills the width, which at 836 × 300 cropped the
+// study area to 35°S–67°N and silently dropped 1,057 of the 14,175 events (measured, not assumed).
+// The invariant is that THE WORLD MUST FILL THE FRAME'S WIDTH: then a copy, if drawn at all, lies
+// entirely outside the picture. That is asserted after the fit, together with the bounds actually
+// reaching the frame's corners. For this latitude range the height must be at least
+// width × 0.5685 — 475.3 px at 836, hence the 480 this beat bakes.
+//
+// The camera is PACIFIC-CENTRED (−20…340 rather than −180…180) because the subject is the Ring of
+// Fire. On a Greenwich-centred world the antimeridian runs through the densest cluster: measured,
+// the Fiji–Tonga cell landed hard against the west edge with half of it clipped away by the frame
+// and its own neighbours binned into a separate cell 836 px east — 1,451 events in the visible
+// half against 1,713 when the cluster is kept whole. Cutting at 20°W instead puts the seam in the
+// mid-Atlantic, which leaves both the Ring of Fire AND Africa uncut and costs this catalogue
+// almost nothing. `map.project` does NOT wrap to the camera, so every longitude is normalised into
+// [−20, 340) before projection — without that, every western-Pacific event projects to a negative
+// x and is culled.
 const BEAT = {
   bounds: [
-    [-179.9, -60],
-    [179.9, 78],
+    [-20, -60],
+    [340, 78],
   ],
   style: "dataviz-light",
 };
@@ -74,6 +101,10 @@ if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
 
 const points = quakePointsFromCsv(await readFile(csvPath, "utf8"));
 
+/** Into the camera's own longitude frame, [west, west + 360) — see BEAT's note on the seam. */
+const west = BEAT.bounds[0][0];
+const normaliseLon = (lon) => west + (((lon - west) % 360) + 360) % 360;
+
 const browser = await puppeteer.launch({
   headless: true,
   executablePath: resolveChrome(),
@@ -92,7 +123,7 @@ await page.setContent(
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, bounds, settleMs }) => {
+  async ({ key, style, bounds, settleMs, width, height }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -126,10 +157,53 @@ const gate = await page.evaluate(
       map.once("idle", () => finish("idle"));
       setTimeout(() => finish("settle"), settleMs);
     });
-    return { how, ms: Date.now() - started, hidden: hidden.length, zoom: map.getZoom() };
+    const corners = {
+      topLeft: map.unproject([0, 0]),
+      bottomRight: map.unproject([width, height]),
+    };
+    return {
+      how,
+      ms: Date.now() - started,
+      hidden: hidden.length,
+      zoom: map.getZoom(),
+      // The world's own drawn width in CSS pixels at this zoom — 512 px at zoom 0, doubling each
+      // level. Compared against the frame below.
+      worldWidthPx: 512 * 2 ** map.getZoom(),
+      frameCorners: {
+        west: corners.topLeft.lng,
+        north: corners.topLeft.lat,
+        east: corners.bottomRight.lng,
+        south: corners.bottomRight.lat,
+      },
+    };
   },
-  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs },
+  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width, height },
 );
+
+// The two assertions this beat's own defect earned: the world must FILL the frame's width (or a
+// repeat continent shows, carrying no hexagons and reading as "no earthquakes here"), AND the
+// frame must actually reach the bounds that were asked for (or the study area is silently cropped
+// instead). Either one alone can be satisfied by a plate that lies.
+if (gate.worldWidthPx < width - 1)
+  throw new Error(
+    `this plate would not fill its frame: the world draws ${gate.worldWidthPx.toFixed(1)}px wide inside ` +
+      `${width}px (${((gate.worldWidthPx / width) * 100).toFixed(0)}%).`,
+  );
+const [[askedWest, askedSouth], [askedEast, askedNorth]] = BEAT.bounds;
+const shortfall = [];
+if (gate.frameCorners.south > askedSouth + 0.01)
+  shortfall.push(`south edge is ${gate.frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
+if (gate.frameCorners.north < askedNorth - 0.01)
+  shortfall.push(`north edge is ${gate.frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
+if (gate.frameCorners.west > askedWest + 0.01)
+  shortfall.push(`west edge is ${gate.frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
+if (gate.frameCorners.east < askedEast - 0.01)
+  shortfall.push(`east edge is ${gate.frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
+if (shortfall.length > 0)
+  throw new Error(
+    `this plate crops the study area — ${shortfall.join("; ")}. A ${width}px-wide frame needs at least ` +
+      `${Math.ceil(width * 0.5685)}px of height to hold ${askedSouth}°–${askedNorth}° without cropping.`,
+  );
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
@@ -146,7 +220,7 @@ const projected = await page.evaluate((coords) => {
     out[i + 1] = p.y;
   }
   return Array.from(out);
-}, points.flatMap((p) => [p.lon, p.lat]));
+}, points.flatMap((p) => [normaliseLon(p.lon), p.lat]));
 
 await browser.close();
 
@@ -160,15 +234,19 @@ for (let i = 0; i < points.length; i++) {
     offFrame++;
     continue;
   }
-  projectedPoints.push({ px: Math.round(px * 10) / 10, py: Math.round(py * 10) / 10 });
+  // `i` is the point's own row index in the frozen CSV. It travels so the render can ask a cell
+  // WHICH events it holds, and read their place names out of the file instead of typing one.
+  projectedPoints.push({ px: Math.round(px * 10) / 10, py: Math.round(py * 10) / 10, i });
 }
 
 const geometry = {
   frame,
   bounds: BEAT.bounds,
+  frameCorners: gate.frameCorners,
   style: BEAT.style,
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
+  worldWidthPx: Math.round(gate.worldWidthPx * 10) / 10,
   points: projectedPoints,
 };
 const geometryPath = join(outDir, "geometry.json");
@@ -176,6 +254,9 @@ await writeFile(geometryPath, JSON.stringify(geometry));
 
 console.log(
   `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} basemap layers · zoom ${geometry.zoom}\n` +
+    `world     ${geometry.worldWidthPx}px wide in a ${width}px frame (fills ${((gate.worldWidthPx / width) * 100).toFixed(1)}%)\n` +
+    `frame     ${gate.frameCorners.west.toFixed(2)}..${gate.frameCorners.east.toFixed(2)}°, ` +
+    `${gate.frameCorners.south.toFixed(2)}..${gate.frameCorners.north.toFixed(2)}°\n` +
     `plate    → ${platePath}\n` +
     `geometry → ${geometryPath}  ${projectedPoints.length}/${points.length} points on-frame (${offFrame} off)`,
 );
