@@ -50,11 +50,12 @@ order and a bad second choice silently wipes out a good first one.
 
 ## How it works (the shape)
 
-1. **`offerForms({medium, genre})`** looks `genre` up in `FORMS_BY_GENRE`. SP1 has one entry,
-   `"static"` — any other genre throws rather than returning an empty or partial list, so a
-   caller can never mistake "no forms for this genre yet" for "this beat has nothing to
-   deliver". For `"static"` it returns both forms in that genre's table, in the same order every
-   time, each carrying an `id`, a `label`, and a `gives` long enough to inform a real choice.
+1. **`offerForms({medium, genre})`** looks `genre` up in `FORMS_BY_GENRE`. Three genres are known
+   today — `"static"`, `"web"`, `"video"` — any other genre throws rather than returning an empty
+   or partial list, so a caller can never mistake "no forms for this genre yet" for "this beat has
+   nothing to deliver". For a known genre it returns both forms in that genre's table, in the same
+   order every time, each carrying an `id`, a `label`, and a `gives` long enough to inform a real
+   choice.
 2. **The conversation presents the list and waits.** This skill's code stops here; the doctrine
    of waiting is enforced by the calling conversation, the same way `twin-storyboard` enforces
    its exchange in prose, not in code that could be skipped.
@@ -100,8 +101,8 @@ const written = await materialise({
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| How many genres this skill knows how to deliver | `1` (`"static"` — everything else throws, in both `offerForms` and `materialise`) | `FORMS_BY_GENRE` |
-| How many forms SP1 offers for the static genre | `2` (`owned-file`, `source-bundle`) | `FORMS_BY_GENRE.static` |
+| How many genres this skill knows how to deliver | `3` (`"static"`, `"web"`, `"video"` — everything else throws, in both `offerForms` and `materialise`) | `FORMS_BY_GENRE` |
+| How many forms each known genre offers | `2` (`owned-file`, `source-bundle`) per genre | `FORMS_BY_GENRE` |
 | Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS_BY_GENRE` entries |
 | Which subdirectory of a beat never travels into the source-bundle form | `1` (`"renders"` — the other form's output) | `materialise` |
 

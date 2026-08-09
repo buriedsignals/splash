@@ -108,6 +108,37 @@ describe("checkStoryboard", () => {
     );
   });
 
+  it("should accept a chosen slot in a genre the toolchain can both produce and deliver", () => {
+    for (const genre of ["static", "web", "video"]) {
+      const meta = parseStoryboard(VALID).meta;
+      meta.slots[0].genre = genre;
+      expect(checkStoryboard(meta)).toEqual([]);
+    }
+  });
+
+  // The whole point of this fix: a chosen candidate that is otherwise perfectly well-formed
+  // (a real choice drawn from its own listed candidates) still must not close the gate if its
+  // genre cannot be delivered — this is the wall a journalist asking "for the web" used to hit
+  // three phases later, at twin-deliver, instead of here.
+  it("should refuse a chosen slot whose genre this toolchain does not know how to produce or deliver", () => {
+    const meta = parseStoryboard(VALID).meta;
+    meta.slots[0].genre = "print";
+    const errors = checkStoryboard(meta);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("slot 1");
+    expect(errors[0]).toContain('"print"');
+  });
+
+  it("should not report a genre gap for a slot that is already refused for having no chosen value", () => {
+    // A slot with nothing chosen has nothing to check a genre gap against yet — the "nothing
+    // chosen" error is the only one that should fire, not a second, confusing genre complaint.
+    const meta = parseStoryboard(VALID).meta;
+    meta.slots[0].genre = "print";
+    delete meta.slots[0].chosen;
+    const errors = checkStoryboard(meta);
+    expect(errors).toEqual(["slot 1: nothing chosen — gate 2 is not closed"]);
+  });
+
   it("should not consider a bare YAML null or tilde takeaway confirmed, agreeing with whereIs", () => {
     // where.mjs's hasConfirmedTakeaway (twin/skills/splash-twin/scripts/where.mjs) refuses the
     // raw tokens "null" and "~" as a confirmed takeaway. parseStoryboard must resolve the same

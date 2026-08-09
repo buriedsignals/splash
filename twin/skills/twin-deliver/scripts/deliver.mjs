@@ -9,9 +9,19 @@ import { join } from "node:path";
 
 const REACT_VERSION = "^19.1.0";
 
-// SP1 has one genre. `medium` is accepted on `offerForms`'s own interface for its future (a map
-// beat's forms will not read identically to a chart beat's), but is not yet branched on.
-const FORMS_BY_GENRE = {
+// Every genre this skill knows how to deliver, and the forms it can honestly offer for each.
+// `medium` is accepted on `offerForms`'s own interface for its future (a map beat's forms will not
+// always read identically to a chart beat's), but is not yet branched on — "static", "web" and
+// "video" mean the same thing to a chart beat and a map beat today.
+//
+// A genre only belongs here once a producer actually renders it AND this table can name honest
+// forms for it — see `twin-storyboard/scripts/genre-catalog.mjs` for the mirrored fact this table
+// is one half of, and `skills/splash-twin/test/genre-shippability.test.ts` for the drift test that
+// keeps the two halves from disagreeing. "web" and "video" were added here after the defect they
+// exist to fix: twin-chart-web and twin-chart-video both shipped complete, tested producers before
+// this table knew what to do with their output, so a chosen "web" or "video" slot could not be
+// delivered at all.
+export const FORMS_BY_GENRE = {
   static: {
     "owned-file": {
       label: "The file itself",
@@ -23,12 +33,38 @@ const FORMS_BY_GENRE = {
         "a folder with this chart's component and data, plus a real build.ts that bun install and bun run build actually execute",
     },
   },
+  web: {
+    "owned-file": {
+      label: "The file itself",
+      gives:
+        "one self-contained HTML file the newsroom owns outright — hover, keyboard focus and the tooltip all inlined, nothing else to run",
+    },
+    "source-bundle": {
+      label: "Runnable source",
+      gives:
+        "a folder with this beat's component and data, plus a real build.ts that bun install and bun run build actually execute",
+    },
+  },
+  video: {
+    "owned-file": {
+      label: "The file itself",
+      gives: "an mp4 the newsroom owns outright, nothing else to run",
+    },
+    "source-bundle": {
+      label: "Runnable source",
+      gives:
+        "a folder with this beat's Remotion composition and data, plus a real build.ts that bun install and bun run build actually execute",
+    },
+  },
+  // Deliberately absent: a hosted embed or a CMS insertion. Neither exists in this toolchain —
+  // offering one here would be a claim this skill cannot back, worse than not offering it at all.
 };
 
 export function offerForms({ medium, genre }) {
   const forms = FORMS_BY_GENRE[genre];
   if (!forms) {
-    throw new Error(`SP1 delivers the static genre only, got ${JSON.stringify(genre)}`);
+    const known = Object.keys(FORMS_BY_GENRE).join(", ");
+    throw new Error(`this skill delivers ${known} only, got ${JSON.stringify(genre)}`);
   }
   return Object.keys(forms).map((id) => ({ id, ...forms[id] }));
 }

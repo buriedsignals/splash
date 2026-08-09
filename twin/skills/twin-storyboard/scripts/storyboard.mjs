@@ -2,8 +2,9 @@
 // front matter is machine-checked; the prose beneath it is what the journalist actually reads.
 
 import { groundTakeaway } from "./ground-claim.mjs";
+import { genreGap } from "./genre-catalog.mjs";
 
-export { groundTakeaway };
+export { groundTakeaway, genreGap };
 
 const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
 
@@ -123,6 +124,18 @@ export function checkStoryboard(meta, profile) {
     }
     if (!candidates.includes(slot.chosen)) {
       errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} is not among its candidates`);
+      continue;
+    }
+    // A choice that is otherwise well-formed still cannot close the gate if nothing downstream
+    // can deliver it — the exact defect this check exists to catch: a genre a producer renders
+    // but twin-deliver cannot yet materialise (see genre-catalog.mjs's own header for the real
+    // instance that motivated this). Only checked when a genre was actually named: a slot with no
+    // genre at all is a different, pre-existing gap this fix does not extend into — checkStoryboard
+    // has never required `genre` to close the gate, and where.mjs's own `missingForGate2` does not
+    // either, so requiring it here would put the two gates' verdicts out of step.
+    if (slot.genre) {
+      const gap = genreGap(slot.genre);
+      if (gap) errors.push(`slot ${slot.id}: ${gap}`);
     }
   }
   return errors;

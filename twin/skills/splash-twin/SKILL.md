@@ -24,9 +24,11 @@ no fifth**:
    gotcha about a truthy-but-not-confirmed takeaway is a direct instance of this rule: a gate that
    can be satisfied by a fact readable *only* from a transcript is not really closed.
 4. **Dispatch to the craft skill.** This skill decides *which* skill runs next; it never runs the
-   render itself. Production of any pixel, embed or video belongs entirely to the craft skill named
-   by the chosen candidate's medium (SP1 ships one: `twin-chart-beat`, for `medium: chart, genre:
-   static`).
+   render itself. Production of any pixel, embed or video belongs entirely to the craft skill
+   matching the chosen candidate's medium and genre: `twin-chart-beat` (`chart`, `static`),
+   `twin-chart-web` (`chart`, `web`), `twin-chart-video` (`chart`, `video`), `twin-map-beat`
+   (`map`, `static` or `video`) — plus `twin-dw-beat`, the delegated Datawrapper path a chart
+   slot's `vehicle` can name instead of a bespoke component.
 
 This skill **produces nothing at runtime** — no artifact of its own, ever. Its entire value is the
 sequencing discipline above and the test (`test/phases.test.ts`) that keeps this document and
@@ -130,7 +132,7 @@ different tests, and neither claims more than it proves:
    | --- | --- |
    | `intake` | `twin-intake` |
    | `framing`, `storyboard` | `twin-storyboard` (which itself reads `twin-doctrine`'s reference set for the reference loop, movement ④) |
-   | `production` | the craft skill matching the chosen candidate's medium — SP1 ships `twin-chart-beat` for `medium: chart, genre: static`; other media are future sub-projects, not dispatched to because they do not exist yet |
+   | `production` | the craft skill matching the chosen candidate's medium and genre — `twin-chart-beat` (`chart`, `static`), `twin-chart-web` (`chart`, `web`), `twin-chart-video` (`chart`, `video`), `twin-map-beat` (`map`, `static` or `video`); `twin-dw-beat` instead of `twin-chart-beat` when the slot's `vehicle` names the delegated Datawrapper path |
    | `delivery` | `twin-deliver` |
    | `done` | nothing — report completion and stop |
 

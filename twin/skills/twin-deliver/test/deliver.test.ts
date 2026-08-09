@@ -45,11 +45,32 @@ describe("offerForms", () => {
 
   // Direct coverage of the genre-rejection path itself — the three tests above only ever call
   // offerForms with genre "static", so none of them would notice if this check stopped reading
-  // the given genre at all.
+  // the given genre at all. "print" stands in for a genre this project has never built a producer
+  // for — unlike "video", which is now a real, deliverable genre (see the tests below).
   it("should refuse to offer anything for a genre it does not know", () => {
-    expect(() => offerForms({ medium: "chart", genre: "video" })).toThrow(
-      "static genre only",
+    expect(() => offerForms({ medium: "chart", genre: "print" })).toThrow(
+      "print",
     );
+  });
+
+  it("should offer the owned file and the source bundle for a web chart", () => {
+    const ids = offerForms({ medium: "chart", genre: "web" }).map((f) => f.id);
+    expect(ids).toEqual(["owned-file", "source-bundle"]);
+  });
+
+  it("should offer the owned file and the source bundle for a video chart", () => {
+    const ids = offerForms({ medium: "chart", genre: "video" }).map(
+      (f) => f.id,
+    );
+    expect(ids).toEqual(["owned-file", "source-bundle"]);
+  });
+
+  it("should never offer an embed or a CMS insertion for web or video — neither exists in this toolchain", () => {
+    for (const genre of ["web", "video"]) {
+      const ids = offerForms({ medium: "chart", genre }).map((f) => f.id);
+      expect(ids).not.toContain("embed");
+      expect(ids).not.toContain("cms-insertion");
+    }
   });
 });
 
@@ -115,11 +136,12 @@ describe("materialise", () => {
 
   // A form id that exists under one genre must not be accepted for a different genre just
   // because the id matches — the check is on the {form, genre} PAIR, never on the form id
-  // alone. "owned-file" is a real id in FORMS_BY_GENRE.static, but genre "video" offers nothing
-  // (SP1 has one genre), so it must be refused exactly like an id that never existed anywhere.
+  // alone. "owned-file" is a real id in FORMS_BY_GENRE.static, but genre "print" offers nothing
+  // (no producer or delivery table for it), so it must be refused exactly like an id that never
+  // existed anywhere.
   it("should refuse a form that exists for a different genre than the one given", async () => {
     await expect(
-      materialise({ form: "owned-file", genre: "video", beatDir, exportDir }),
+      materialise({ form: "owned-file", genre: "print", beatDir, exportDir }),
     ).rejects.toThrow("not an offered form");
   });
 
@@ -213,4 +235,31 @@ describe("materialise", () => {
     const dist = await readdir(join(exportDir, "dist"));
     expect(dist).toContain("Rainfall.js");
   });
+
+  // The generic materialise path (both branches) must honour "web" and "video" exactly as it
+  // does "static" — this is the defect the genre table fix closes: before it, both genres threw
+  // "not an offered form" for every form id, however the renders/ directory was populated.
+  for (const genre of ["web", "video"]) {
+    it(`should write only the owned file for a ${genre} beat when that form is chosen`, async () => {
+      const written = await materialise({
+        form: "owned-file",
+        genre,
+        beatDir,
+        exportDir,
+      });
+      const files = await readdir(exportDir);
+      expect(files).toContain("still.png");
+      expect(files).toContain("still.svg");
+      expect(files).not.toContain("package.json");
+      expect(written).toHaveLength(2);
+    });
+
+    it(`should write a runnable bundle for a ${genre} beat when the source form is chosen`, async () => {
+      await materialise({ form: "source-bundle", genre, beatDir, exportDir });
+      const files = await readdir(exportDir);
+      expect(files).toContain("package.json");
+      expect(files).toContain("Rainfall.tsx");
+      expect(files).not.toContain("renders");
+    });
+  }
 });
