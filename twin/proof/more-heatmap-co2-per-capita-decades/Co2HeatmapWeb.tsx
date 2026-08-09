@@ -272,8 +272,16 @@ export function Co2HeatmapWeb({
 
   // Legend swatch: a small horizontal gradient strip built from the same ramp, min/max labelled —
   // "colour without a key is not decoded, it's just admired" (`heatmap.md`).
-  const legendWidth = Math.min(220, width - pad * 2 - 140);
   const legendSteps = 24;
+  const legendCaption = `t CO2/capita, decade average`;
+  // The swatch's own x offset, MEASURED from the caption text it sits beside, not a fixed
+  // "190 desktop / 95 narrow" guess — at the narrow layout's smaller font the caption still
+  // measured past 95px, so the gradient strip started mid-word and ghosted over "decade average",
+  // caught by looking at the rendered 375px page. A fixed gap after the caption's own real width
+  // holds at any layout's own font size, and the swatch's own width is capped by what is actually
+  // left of the frame after that offset, never assumed to fit a budget guessed before it existed.
+  const legendSwatchX = pad + measure(legendCaption, layout.legend) + 14;
+  const legendWidth = Math.min(220, width - pad - legendSwatchX);
 
   return (
     <svg
@@ -336,16 +344,12 @@ export function Co2HeatmapWeb({
         fill={muted}
         fontSize={layout.legend.fontSize}
       >
-        {`t CO2/capita, decade average`}
+        {legendCaption}
       </text>
       {Array.from({ length: legendSteps }).map((_, i) => (
         <rect
           key={i}
-          x={
-            pad +
-            190 * (width > 500 ? 1 : 0.5) +
-            (i * legendWidth) / legendSteps
-          }
+          x={legendSwatchX + (i * legendWidth) / legendSteps}
           y={legendBaseline - layout.legend.fontSize}
           width={legendWidth / legendSteps + 0.5}
           height={layout.legend.fontSize}
@@ -353,7 +357,7 @@ export function Co2HeatmapWeb({
         />
       ))}
       <text
-        x={pad + 190 * (width > 500 ? 1 : 0.5)}
+        x={legendSwatchX}
         y={legendBaseline + layout.legend.fontSize + 2}
         fill={muted}
         fontSize={layout.legend.fontSize}
@@ -361,7 +365,7 @@ export function Co2HeatmapWeb({
         {fr1(domain[0])}
       </text>
       <text
-        x={pad + 190 * (width > 500 ? 1 : 0.5) + legendWidth}
+        x={legendSwatchX + legendWidth}
         y={legendBaseline + layout.legend.fontSize + 2}
         fill={muted}
         fontSize={layout.legend.fontSize}
