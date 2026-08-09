@@ -25,7 +25,11 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const SEED = {
   ground: "#FFFFFF",
   accent: "#E69F00",
-  title: "Following the Danube: one river, nine countries, one continuous line",
+  // The Danube touches ten countries; Moldova's sub-1km frontage near Giurgiulesti does not
+  // register at this map's resolution (same fact the sibling static/video flow-map beats state in
+  // their own caveat), so only nine are ever drawn here. A bare "nine countries" repeated that
+  // beat's own since-fixed wrong-count claim — see mapmore-flow-danube/mapgen-flowmap-video.
+  title: "Following the Danube: one river, nine of its ten countries, one continuous line",
   source:
     "River course: Natural Earth 1:10m Rivers + Lake Centerlines. Territory shapes: Natural Earth " +
     "1:50m Admin 0 Countries. Same bake as the sibling static flow-map beat (mapmore-flow-danube) — " +
@@ -70,7 +74,8 @@ const STEP_GROUPS = [
     addKeys: ["UKR"],
     prose: [
       "The river finally splits into its delta near the Ukrainian border and empties into the Black " +
-        "Sea — the ninth and last country the Danube touches on its way there.",
+        "Sea — the ninth of the ten countries the Danube touches on its way there (Moldova's short " +
+        "frontage near Giurgiulești does not register at this map's resolution).",
     ],
   },
 ];

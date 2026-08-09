@@ -60,7 +60,15 @@ export function MapFrame({
       width={frame.width}
       height={frame.height}
       viewBox={`0 0 ${frame.width} ${frame.height}`}
-      preserveAspectRatio="xMidYMid slice"
+      // "meet" (contain), not "slice" (cover): the baked plate is a wide 900x420-ish frame, but the
+      // scrolly scaffold's own sticky graphic box (`--graphic-h: min(70vh, 640px)` wide, capped
+      // short and tall) is a much closer-to-square box at typical article widths — "slice" fills
+      // that box by cropping the plate's own left/right edges away, which is where this beat's own
+      // route ends: the last step's badge (9, Ukraine, the delta) sat past the crop line and never
+      // rendered at all, confirmed by screenshotting the live page rather than trusting the SVG
+      // markup alone. "meet" never crops real content — it letterboxes into the surrounding
+      // `ground` instead, guaranteeing every badge this beat promises in prose is actually visible.
+      preserveAspectRatio="xMidYMid meet"
       style={{ width: "100%", height: "100%", display: "block" }}
     >
       <image

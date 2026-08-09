@@ -272,18 +272,24 @@ function distToSegment(p: LonLat, a: LonLat, b: LonLat): number {
 
 // ── Colour: a cycling, CVD-safe qualitative palette for the crossed territories ──────────────────
 
-/** Okabe-Ito, the same CVD-safe qualitative set the sibling parameterised engine (map-native)
- *  ships — reused here as a fact about safe categorical colour, not re-derived. Orange is held back
- *  for the route's own accent (see `FlowMapStill.tsx`), so this cycle starts after it. */
+/** Tol Muted, a 9-colour CVD-safe qualitative set (Paul Tol's "Muted" scheme) — reused here as a
+ *  fact about safe categorical colour, not re-derived. The earlier 8-entry Okabe-Ito-plus-grey
+ *  cycle wrapped on this beat's own 9 territories (Germany and Ukraine landed on the same slot,
+ *  rendering in the identical blue — the same defect found and fixed in the sibling static/video
+ *  flow-map beats, `mapmore-flow-danube` and `mapgen-flowmap-video`). Nine distinct entries removes
+ *  the wrap outright; it also drops the plain grey/black pair the old cycle fell back to, which
+ *  this doctrine reserves for "no data" on a choropleth. Orange is held back for the route's own
+ *  accent (see `MapFrame.tsx`), so none of these nine overlaps it. */
 export const QUALITATIVE_CYCLE = [
-  "#0072B2", // blue
-  "#009E73", // bluish green
-  "#F0E442", // yellow
-  "#56B4E9", // sky blue
-  "#CC79A7", // reddish purple
-  "#D55E00", // vermillion
-  "#999999", // grey
-  "#000000", // black — last resort, only if a route ever crosses more than 7 territories
+  "#332288", // indigo
+  "#88CCEE", // cyan
+  "#44AA99", // teal
+  "#117733", // green
+  "#999933", // olive
+  "#DDCC77", // sand
+  "#CC6677", // rose
+  "#882255", // wine
+  "#AA4499", // purple
 ];
 
 export function territoryColour(index: number): string {
