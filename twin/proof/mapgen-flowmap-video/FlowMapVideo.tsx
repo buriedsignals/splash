@@ -50,6 +50,21 @@ const NOTE = { fontSize: 15, fontWeight: 400, lead: 20 };
 const LEGEND_LABEL = { fontSize: 14, fontWeight: 400 };
 const CONCLUSION = { fontSize: 24, fontWeight: 700, lead: 31 };
 const DESTINATION_LABEL = { fontSize: 20, fontWeight: 700 };
+/**
+ * WHERE THE FROZEN ROUTE ACTUALLY ENDS, named once and used by BOTH the label on the map and the
+ * sentence about it.
+ *
+ * The conclusion used to read "2,567 km from the Black Forest to the Black Sea". The distance is
+ * right — great-circle sum over the 911 points of `danube-route.csv` is 2567.31 km — but the
+ * sentence and the geometry disagreed about the destination. That last point is (28.747, 45.2307):
+ * 8.2 km from Tulcea, where the river splits into its three arms, and 68-77 km from any of the
+ * three mouths on the Black Sea (Chilia 68.0, Sulina 71.5, Sfântu Gheorghe 76.7 — measured over
+ * the same haversine). Natural Earth's 1:10m centerline stops at the head of the delta, so the
+ * beat can honestly claim the delta and cannot claim the sea; the dot the video plants at the end
+ * was already labelled "Danube Delta", so the picture was right and the sentence was not. Naming
+ * the destination here is what stops the two drifting apart again.
+ */
+const DESTINATION_NAME = "Danube Delta";
 
 const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
@@ -171,7 +186,7 @@ export function FlowMapVideo({
   // The Danube touches 10 countries; Moldova's sub-1km frontage near Giurgiulești doesn't register
   // at this map's resolution (see BEAT.caveat in render-map.mjs), so only 9 are ever drawn here. A
   // bare "9 countries crossed" would repeat the same wrong-count claim the title makes true above.
-  const conclusionText = `${fmtKm(totalKm)} km from the Black Forest to the Black Sea — ${crossings.length} of the 10 countries crossed, in order.`;
+  const conclusionText = `${fmtKm(totalKm)} km from the Black Forest to the ${DESTINATION_NAME} — ${crossings.length} of the 10 countries crossed, in order.`;
   const conclusionLines = wrap(
     conclusionText,
     FRAME.width - PAD * 2,
@@ -407,7 +422,7 @@ export function FlowMapVideo({
                 strokeLinejoin="round"
                 fill="none"
               >
-                Danube Delta
+                {DESTINATION_NAME}
               </text>
               <text
                 textAnchor={destinationLabelAnchor}
@@ -415,7 +430,7 @@ export function FlowMapVideo({
                 fontWeight={DESTINATION_LABEL.fontWeight}
                 fill={accent}
               >
-                Danube Delta
+                {DESTINATION_NAME}
               </text>
             </g>
           ) : null}
