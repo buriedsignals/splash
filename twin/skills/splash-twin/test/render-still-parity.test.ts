@@ -86,6 +86,21 @@ function findAll(dir: string, basename: string, out: string[] = []): string[] {
 // The cost, named: two bodies differing ONLY by whitespace inside a string literal now compare
 // equal. Accepted deliberately — a guard a formatter can turn red is a guard someone disables, and
 // that failure costs more than this one.
+function stripComments(source: string): string {
+  return source
+    // Whole-line `//` comments and `/* … */` blocks only. A copy legitimately carries different
+    // explanatory prose — this guard's own header argues that for file headers, and the same is
+    // true inside a function: `twin-image-beat`'s `renderStill` is character-identical to the
+    // canonical one except for a two-line comment, and reporting that as drift is noise.
+    //
+    // Deliberately NOT stripping trailing `//` after code, because a regex literal like
+    // `/\bwidth="(\d+)"/` contains no `//` but a URL or a divided expression could, and eating
+    // code here would make the comparison vacuously equal on both sides — a guard that always
+    // passes is worse than one that occasionally cries wolf.
+    .replace(/^[ \t]*\/\/.*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 function normalise(source: string): string {
   return source.replace(/,(\s*[)\]}])/g, "$1").replace(/\s+/g, "");
 }
@@ -96,7 +111,25 @@ function topLevelFunctions(text: string): Map<string, string> {
   const re = /^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z0-9_$]+)\s*\(/gm;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
-    const open = text.indexOf("{", m.index + m[0].length - 1);
+    // The body's `{`, found by BALANCING THE ARGUMENT PARENTHESES first — not by taking the next
+    // `{` after the name. That naive version was the first draft and it was quietly broken: in
+    // `wrap(text: string, maxWidth: number, font: { fontSize: number })` the next `{` is the
+    // ARGUMENT TYPE's, so brace-matching from there closed at the end of the signature and every
+    // comparison below ran on a signature instead of a body. Found by mutating a real `wrap`'s
+    // `>` to `>=` and watching this guard stay green — a test that cannot go red proves nothing,
+    // and this one could not, for every function whose parameters carry an inline object type or
+    // a destructured argument. Which is most of them.
+    let p = text.indexOf("(", m.index);
+    if (p === -1) continue;
+    let pd = 0;
+    for (; p < text.length; p++) {
+      if (text[p] === "(") pd++;
+      else if (text[p] === ")") {
+        pd--;
+        if (pd === 0) break;
+      }
+    }
+    const open = text.indexOf("{", p);
     if (open === -1) continue;
     let depth = 0;
     let end = open;
@@ -107,7 +140,7 @@ function topLevelFunctions(text: string): Map<string, string> {
         if (depth === 0) break;
       }
     }
-    found.set(m[1], normalise(text.slice(m.index, end + 1)));
+    found.set(m[1], normalise(stripComments(text.slice(m.index, end + 1))));
   }
   return found;
 }
