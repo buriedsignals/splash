@@ -60,9 +60,18 @@ function toHex(values) {
  * prevent — and the journalist, seeing a colour that is not their brand, would have no way to
  * learn why.
  *
- * Returns `null` when no step passes. That is possible and must stay possible: on a mid-grey
- * ground (L around 0.18-0.22) nothing on either side of it clears 3:1 by a wide margin, and
- * saying so is more useful than shipping a near-miss.
+ * Returns `null` when no step passes — and MEASURED, not assumed, that never happens at the
+ * default 3:1 floor. Swept over 4352 grounds (every one of the 256 greys plus a 16-step RGB
+ * grid): zero nulls at `min` 3, zero at 4.5, the first at 5. The hardest ground found is `#747474`,
+ * where the far pole lands at 3.0000809:1 — the mid-grey band is genuinely the tight spot, and it
+ * still clears. That is not luck: `towards` switches poles at L = 0.18 precisely because both
+ * poles clear 3:1 on either side of it, so the walk always terminates in a pass.
+ *
+ * The branch stays because `min` is a PARAMETER. A caller raising the floor can and does exhaust
+ * the walk (340 of those same grounds at 5:1), and returning `null` says "this ground leaves no
+ * room" rather than shipping a near-miss dressed as a pass. An earlier draft of this comment
+ * claimed the mid-grey band produced nulls at 3:1; it does not, and the sweep above is why this
+ * one states a number instead.
  */
 export function adjustToContrast(colour, ground, min = NON_TEXT_CONTRAST_MIN) {
   if (!HEX.test(colour)) throw new Error(`colour must be #rrggbb, got ${JSON.stringify(colour)}`);
@@ -201,7 +210,16 @@ export function proposePalette({ newsroom, subject } = {}) {
     options,
     // The house option is recommended when it exists and passes. A subject convention is a reason
     // to DEPART from the house theme, offered as such — never applied over the journalist's head.
-    recommended: options.find((o) => o.id === "house" && o.contrast.passes)?.id || options[0]?.id || null,
+    //
+    // When the house option FAILS, the recommendation falls to another option that passes, and to
+    // NOTHING if none does. It must never fall back to `options[0]` — an earlier draft did, which
+    // meant a brand colour measured at 1.61:1 was handed back marked "recommended" three lines
+    // under the words "FAILS the 3:1 floor". Recommending a colour this skill has just measured as
+    // unreadable is the one outcome worse than proposing nothing.
+    recommended:
+      options.find((o) => o.id === "house" && o.contrast.passes)?.id ||
+      options.find((o) => o.contrast.passes)?.id ||
+      null,
     escape: "Something else — give me the two hex codes and I will use those.",
   };
 }

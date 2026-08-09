@@ -107,8 +107,15 @@ This is what a real beat, written into an installed Splash root, actually import
 
 ```js
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import rainfall from "./data.json";
+
+// The two colours the journalist chose, read back from the `PALETTE.md` that `twin-palette`
+// proposed and they answered. Never hex literals here: a beat that names its own colours is a
+// beat that ignores the newsroom's charter, however carefully the charter was collected. If no
+// `PALETTE.md` exists at or above this beat, this THROWS and names every directory it searched —
+// rendering in a colour nobody chose is the failure it exists to prevent.
+const { ground, accent } = readPalette(import.meta.dirname, { stopAt: process.cwd() });
 
 // RainfallAnnemasse is THIS beat's own component, written from the seed's shape — not imported
 // from it. See "How it works" step 1: read `assets/ChartSeed.tsx`, then write this file fresh.

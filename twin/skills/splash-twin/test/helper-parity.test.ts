@@ -76,6 +76,31 @@ import { deriveFurniture as mapFurniture } from "../../twin-map-beat/scripts/ren
 import { deriveFurniture as sharedFurniture } from "../../../shared/twin-chart-beat/render-still.mjs";
 import { deriveFurniture as rootTemplateFurniture } from "../assets/root-template/shared/twin-chart-beat/render-still.mjs";
 
+// contrast — the WCAG ratio, duplicated into `twin-palette` because that skill proposes colours
+// against exactly the floor these renderers draw against. If the proposal's arithmetic ever
+// diverged from the renderer's, a palette could be approved at a ratio the render never achieves —
+// the two would disagree about the same chart while both looked correct on their own.
+import { contrast as beatContrast } from "../../twin-chart-beat/scripts/render-still.mjs";
+import { contrast as videoRasterContrast } from "../../twin-chart-video/scripts/render-still.mjs";
+import { contrast as webRasterContrast } from "../../twin-chart-web/scripts/render-still.mjs";
+import { contrast as mapRasterContrast } from "../../twin-map-beat/scripts/render-still.mjs";
+import { contrast as sharedContrast } from "../../../shared/twin-chart-beat/render-still.mjs";
+import { contrast as rootTemplateContrast } from "../assets/root-template/shared/twin-chart-beat/render-still.mjs";
+import { contrast as paletteContrast } from "../../twin-palette/scripts/palette.mjs";
+
+// readPalette/parsePalette — the recorded-answer reader, vendored into every render-still copy
+// (a beat already imports that module to render at all) and duplicated in `twin-palette`, which
+// owns the question the answer replies to. A drift here is the worst kind available: one copy
+// accepting an `origin` the other rejects, or one defaulting where the other throws, means a beat
+// renders in a colour nobody chose in exactly the places nobody is looking.
+import { parsePalette as beatParse } from "../../twin-chart-beat/scripts/render-still.mjs";
+import { parsePalette as videoRasterParse } from "../../twin-chart-video/scripts/render-still.mjs";
+import { parsePalette as webRasterParse } from "../../twin-chart-web/scripts/render-still.mjs";
+import { parsePalette as mapRasterParse } from "../../twin-map-beat/scripts/render-still.mjs";
+import { parsePalette as sharedParse } from "../../../shared/twin-chart-beat/render-still.mjs";
+import { parsePalette as rootTemplateParse } from "../assets/root-template/shared/twin-chart-beat/render-still.mjs";
+import { parsePalette as paletteParse } from "../../twin-palette/scripts/palette.mjs";
+
 // measureText — canvas/video family: the browser-Canvas substrate, duplicated (never vendored —
 // `#shared/*` only carries the node-only resvg module) into every video beat.
 import {
@@ -164,6 +189,84 @@ describe("deriveFurniture — resvg family agrees (every vendored render-still.m
       expect(mapFurniture(ground)).toEqual(reference);
       expect(sharedFurniture(ground)).toEqual(reference);
       expect(rootTemplateFurniture(ground)).toEqual(reference);
+    });
+  }
+});
+
+describe("contrast — every copy agrees, renderers and the palette proposal alike", () => {
+  // Two poles, a real house accent, a mid-grey, and one pair that lands near the 3:1 non-text
+  // floor — the band where a drifted implementation would flip a proposal's verdict rather than
+  // merely shift a number nobody reads.
+  const PAIRS: Array<[string, string]> = [
+    ["#000000", "#FFFFFF"],
+    ["#0B7A75", "#FFFFFF"],
+    ["#F2C744", "#FFFFFF"],
+    ["#71717A", "#71717A"],
+    ["#1B7F4B", "#111111"],
+  ];
+  for (const [a, b] of PAIRS) {
+    it(`should measure ${a} against ${b} identically in every copy`, () => {
+      const reference = beatContrast(a, b);
+      expect(videoRasterContrast(a, b)).toBe(reference);
+      expect(webRasterContrast(a, b)).toBe(reference);
+      expect(mapRasterContrast(a, b)).toBe(reference);
+      expect(sharedContrast(a, b)).toBe(reference);
+      expect(rootTemplateContrast(a, b)).toBe(reference);
+      expect(paletteContrast(a, b)).toBe(reference);
+    });
+  }
+});
+
+describe("parsePalette — every copy reads and REFUSES the same things", () => {
+  const VALID = `---\nground: "#FFFFFF"\naccent: "#0B7A75"\norigin: newsroom\n---\n`;
+  // Each rejection is a rule the copies must agree on, not just a shape they must parse. A copy
+  // that accepted `origin: default`, or filled in a missing ground, would put an unchosen colour
+  // into a chart while every other copy refused — the exact silent divergence this file exists for.
+  const REFUSALS: Array<[string, string]> = [
+    ["no front matter", "just prose"],
+    ["a missing ground", `---\naccent: "#0B7A75"\norigin: newsroom\n---\n`],
+    [
+      "a malformed ground",
+      `---\nground: white\naccent: "#0B7A75"\norigin: newsroom\n---\n`,
+    ],
+    [
+      "an origin nobody chose",
+      `---\nground: "#FFFFFF"\naccent: "#0B7A75"\norigin: default\n---\n`,
+    ],
+  ];
+  const copies: Array<[string, typeof beatParse]> = [
+    ["chart-video", videoRasterParse],
+    ["chart-web", webRasterParse],
+    ["map-beat", mapRasterParse],
+    ["shared", sharedParse],
+    ["root-template", rootTemplateParse],
+    ["twin-palette", paletteParse],
+  ];
+
+  it("should read a valid PALETTE.md identically in every copy", () => {
+    const reference = beatParse(VALID);
+    for (const [name, parse] of copies) {
+      expect([name, parse(VALID)]).toEqual([name, reference]);
+    }
+  });
+
+  for (const [label, text] of REFUSALS) {
+    it(`should refuse ${label} in every copy`, () => {
+      expect(() => beatParse(text)).toThrow();
+      for (const [name, parse] of copies) {
+        // The copy's name rides in the assertion so a failure names WHICH copy drifted.
+        expect([
+          name,
+          (() => {
+            try {
+              parse(text);
+              return "accepted";
+            } catch {
+              return "refused";
+            }
+          })(),
+        ]).toEqual([name, "refused"]);
+      }
     });
   }
 });
