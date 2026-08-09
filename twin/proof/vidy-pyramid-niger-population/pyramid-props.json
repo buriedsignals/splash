@@ -1,0 +1,125 @@
+{
+  "ground": "#FFFFFF",
+  "male": "#0072B2",
+  "female": "#D55E00",
+  "title": "Niger's youngest age band dwarfs its entire population aged 65 and older",
+  "note": "Each bar pair is a five-year age band's population by sex, 2023",
+  "source": "Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data",
+  "referenceLabel": "Both sides share a zero at the centre",
+  "legendLabels": [
+    "Male",
+    "Female"
+  ],
+  "subjectBand": "0-4",
+  "data": [
+    {
+      "ageBand": "0-4",
+      "male": 2369723,
+      "female": 2297427
+    },
+    {
+      "ageBand": "5-9",
+      "male": 2073417,
+      "female": 2005535
+    },
+    {
+      "ageBand": "10-14",
+      "male": 1801457,
+      "female": 1738611
+    },
+    {
+      "ageBand": "15-19",
+      "male": 1503382,
+      "female": 1449809
+    },
+    {
+      "ageBand": "20-24",
+      "male": 1211505,
+      "female": 1166342
+    },
+    {
+      "ageBand": "25-29",
+      "male": 949326,
+      "female": 911500
+    },
+    {
+      "ageBand": "30-34",
+      "male": 744709,
+      "female": 712860
+    },
+    {
+      "ageBand": "35-39",
+      "male": 607877,
+      "female": 579754
+    },
+    {
+      "ageBand": "40-44",
+      "male": 507282,
+      "female": 480886
+    },
+    {
+      "ageBand": "45-49",
+      "male": 406649,
+      "female": 388044
+    },
+    {
+      "ageBand": "50-54",
+      "male": 325810,
+      "female": 317146
+    },
+    {
+      "ageBand": "55-59",
+      "male": 263966,
+      "female": 261197
+    },
+    {
+      "ageBand": "60-64",
+      "male": 204743,
+      "female": 208331
+    },
+    {
+      "ageBand": "65-69",
+      "male": 146698,
+      "female": 154405
+    },
+    {
+      "ageBand": "70-74",
+      "male": 94294,
+      "female": 103136
+    },
+    {
+      "ageBand": "75-79",
+      "male": 46961,
+      "female": 65511
+    },
+    {
+      "ageBand": "80-84",
+      "male": 19117,
+      "female": 28527
+    },
+    {
+      "ageBand": "85-89",
+      "male": 4679,
+      "female": 7593
+    },
+    {
+      "ageBand": "90-94",
+      "male": 547,
+      "female": 1042
+    },
+    {
+      "ageBand": "95-99",
+      "male": 21,
+      "female": 54
+    },
+    {
+      "ageBand": "100+",
+      "male": 0,
+      "female": 0
+    }
+  ],
+  "elderTotal": 672585,
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

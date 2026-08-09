@@ -1,0 +1,99 @@
+{
+  "ground": "#FFFFFF",
+  "increase": "#0072B2",
+  "decrease": "#D55E00",
+  "total": "#3D3D3D",
+  "title": "Germany's electricity generation fell as coal and nuclear losses outpaced renewable growth, 2010–2023",
+  "source": "Source: Ember & Energy Institute, via Our World in Data · TWh, 2010 vs 2023",
+  "legendLabels": [
+    "Increase",
+    "Decrease",
+    "Total"
+  ],
+  "unit": "TWh",
+  "data": [
+    {
+      "id": "open",
+      "label": "2010",
+      "kind": "total",
+      "value": 624.21,
+      "runningBefore": 0,
+      "runningAfter": 624.21
+    },
+    {
+      "id": "bioenergy",
+      "label": "Bioenergy",
+      "kind": "increase",
+      "value": 17.499999999999993,
+      "runningBefore": 624.21,
+      "runningAfter": 641.71
+    },
+    {
+      "id": "solar",
+      "label": "Solar",
+      "kind": "increase",
+      "value": 51.91,
+      "runningBefore": 641.71,
+      "runningAfter": 693.62
+    },
+    {
+      "id": "wind",
+      "label": "Wind",
+      "kind": "increase",
+      "value": 101.99,
+      "runningBefore": 693.62,
+      "runningAfter": 795.61
+    },
+    {
+      "id": "hydropower",
+      "label": "Hydropower",
+      "kind": "increase",
+      "value": 0.28999999999999915,
+      "runningBefore": 795.61,
+      "runningAfter": 795.9
+    },
+    {
+      "id": "nuclear",
+      "label": "Nuclear",
+      "kind": "decrease",
+      "value": -133.34,
+      "runningBefore": 795.9,
+      "runningAfter": 662.56
+    },
+    {
+      "id": "gas",
+      "label": "Gas",
+      "kind": "decrease",
+      "value": -12.100000000000009,
+      "runningBefore": 662.56,
+      "runningAfter": 650.4599999999999
+    },
+    {
+      "id": "oil",
+      "label": "Oil",
+      "kind": "decrease",
+      "value": -5.629999999999999,
+      "runningBefore": 650.4599999999999,
+      "runningAfter": 644.8299999999999
+    },
+    {
+      "id": "coal",
+      "label": "Coal",
+      "kind": "decrease",
+      "value": -138.10999999999999,
+      "runningBefore": 644.8299999999999,
+      "runningAfter": 506.7199999999999
+    },
+    {
+      "id": "close",
+      "label": "2023",
+      "kind": "total",
+      "value": 506.72,
+      "runningBefore": 0,
+      "runningAfter": 506.72
+    }
+  ],
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}
