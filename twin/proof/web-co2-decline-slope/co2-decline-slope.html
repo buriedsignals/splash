@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Germany cut per-capita CO₂ emissions further than any other Western European country's since 1990</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: #0B7A75;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  font-family: Helvetica, Arial, sans-serif;
+}
+.chart-figure { margin: 0; max-width: 900px; }
+svg.chart { display: block; width: 100%; height: auto; }
+/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
+   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
+   media query only chooses which server-rendered frame is on screen. */
+svg.chart[data-layout="narrow"] { display: none; }
+@media (max-width: 480px) {
+  svg.chart[data-layout="desktop"] { display: none; }
+  svg.chart[data-layout="narrow"] { display: block; }
+}
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+</head>
+<body>
+<figure class="chart-figure">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="713" viewBox="0 0 900 713" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>A slope chart comparing per-capita CO2 emissions in 1990 and 2024 across ten Western European countries. All ten fell. Germany fell furthest, from 13.23 to 6.77 tonnes per capita, a drop of 6.46 — more than the United Kingdom&#x27;s fall from 10.49 to 4.53, a drop of 5.97. The other eight also fell, each by between 1.27 and 3.12 tonnes: Sweden 6.71 to 3.59, Switzerland 6.58 to 3.59, France 6.93 to 3.97, Poland 9.89 to 7.08, Italy 7.68 to 5.09, Austria 8.10 to 6.18, Norway 8.25 to 6.67, Spain 5.87 to 4.60.</desc><rect x="0" y="0" width="900" height="713" fill="#FFFFFF"></rect><text x="40" y="64" fill="#000000" font-size="24" font-weight="700">Germany cut per-capita CO₂ emissions further than any other Western</text><text x="40" y="94" fill="#000000" font-size="24" font-weight="700">European country&#x27;s since 1990</text><text x="40" y="121" fill="#616161" font-size="14">Tonnes of CO₂ per capita, territorial emissions. All ten countries fell between 1990 and 2024 — Germany&#x27;s fall was the largest,</text><text x="40" y="141" fill="#616161" font-size="14">ahead of the United Kingdom&#x27;s widely discussed decarbonisation.</text><text x="40" y="163" fill="#616161" font-size="13">Source: Global Carbon Budget (2025), via Our World in Data · 1990 &amp; 2024 data</text><text x="196.142578125" y="193" fill="#000000" font-size="14" font-weight="700" text-anchor="middle">1990</text><text x="703.857421875" y="193" fill="#000000" font-size="14" font-weight="700" text-anchor="middle">2024</text><g><line x1="196.142578125" y1="370.022515463319" x2="703.857421875" y2="579.3470744242447" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="370.022515463319" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="579.3470744242447" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="370.022515463319" x2="190.142578125" y2="369.10688123011766" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="0"></line><line x1="709.857421875" y1="579.3470744242447" x2="709.857421875" y2="583.7367242858747" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="373.86688123011766" fill="#000000" font-size="13" font-weight="600" text-anchor="end">United Kingdom 10.49 t</text><text x="715.857421875" y="588.4967242858747" fill="#000000" font-size="13" font-weight="600" text-anchor="start">United Kingdom 4.53 t</text></g><g><line x1="196.142578125" y1="502.77067136237827" x2="703.857421875" y2="612.1176470588236" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="502.77067136237827" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="612.1176470588236" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="502.77067136237827" x2="190.142578125" y2="508.0176567006457" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="709.857421875" y1="612.1176470588236" x2="709.857421875" y2="649.6086336101171" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="512.7776567006457" fill="#000000" font-size="13" font-weight="600" text-anchor="end">Sweden 6.71 t</text><text x="715.857421875" y="654.3686336101171" fill="#000000" font-size="13" font-weight="600" text-anchor="start">Sweden 3.59 t</text></g><g><line x1="196.142578125" y1="507.40920472727237" x2="703.857421875" y2="612.0113065690417" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="507.40920472727237" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="612.0113065690417" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="507.40920472727237" x2="190.142578125" y2="530.4362664260523" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="709.857421875" y1="612.0113065690417" x2="709.857421875" y2="626.6086336101171" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="535.1962664260523" fill="#000000" font-size="13" font-weight="600" text-anchor="end">Switzerland 6.58 t</text><text x="715.857421875" y="631.3686336101171" fill="#000000" font-size="13" font-weight="600" text-anchor="start">Switzerland 3.59 t</text></g><g><line x1="196.142578125" y1="495.0291517630557" x2="703.857421875" y2="598.8671407231632" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="495.0291517630557" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="598.8671407231632" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="495.0291517630557" x2="190.142578125" y2="486.1804372498327" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="709.857421875" y1="598.8671407231632" x2="709.857421875" y2="604.6513305020363" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="490.9404372498327" fill="#000000" font-size="13" font-weight="600" text-anchor="end">France 6.93 t</text><text x="715.857421875" y="609.4113305020363" fill="#000000" font-size="13" font-weight="600" text-anchor="start">France 3.97 t</text></g><g><line x1="196.142578125" y1="391.1912469969163" x2="703.857421875" y2="489.7397744682388" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="391.1912469969163" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="489.7397744682388" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="391.1912469969163" x2="190.142578125" y2="392.10688123011766" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="0"></line><line x1="709.857421875" y1="489.7397744682388" x2="709.857421875" y2="465.06362456456793" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="396.86688123011766" fill="#000000" font-size="13" font-weight="600" text-anchor="end">Poland 9.89 t</text><text x="715.857421875" y="469.8236245645679" fill="#000000" font-size="13" font-weight="600" text-anchor="start">Poland 7.08 t</text></g><g><line x1="196.142578125" y1="468.56813473466025" x2="703.857421875" y2="559.6286120556822" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="468.56813473466025" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="559.6286120556822" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="468.56813473466025" x2="190.142578125" y2="464.7891601571447" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="709.857421875" y1="559.6286120556822" x2="709.857421875" y2="544.3392039660978" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="469.5491601571447" fill="#000000" font-size="13" font-weight="600" text-anchor="end">Italy 7.68 t</text><text x="715.857421875" y="549.0992039660978" fill="#000000" font-size="13" font-weight="600" text-anchor="start">Italy 5.09 t</text></g><g><line x1="196.142578125" y1="454.0229952920643" x2="703.857421875" y2="521.3124283086455" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="454.0229952920643" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="521.3124283086455" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="454.0229952920643" x2="190.142578125" y2="443.5729295896446" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="709.857421875" y1="521.3124283086455" x2="709.857421875" y2="525.190647767258" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="448.3329295896446" fill="#000000" font-size="13" font-weight="600" text-anchor="end">Austria 8.10 t</text><text x="715.857421875" y="529.950647767258" fill="#000000" font-size="13" font-weight="600" text-anchor="start">Austria 6.18 t</text></g><g><line x1="196.142578125" y1="448.55747369175367" x2="703.857421875" y2="504.21038821674574" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="448.55747369175367" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="504.21038821674574" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="448.55747369175367" x2="190.142578125" y2="422.1577815991816" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="709.857421875" y1="504.21038821674574" x2="709.857421875" y2="505.84577367384816" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="426.9177815991816" fill="#000000" font-size="13" font-weight="600" text-anchor="end">Norway 8.25 t</text><text x="715.857421875" y="510.60577367384815" fill="#000000" font-size="13" font-weight="600" text-anchor="start">Norway 6.67 t</text></g><g><line x1="196.142578125" y1="532.2328665773692" x2="703.857421875" y2="576.7786076285743" stroke="#616161" stroke-width="1.5" stroke-linecap="round"></line><circle cx="196.142578125" cy="532.2328665773692" r="3.5" fill="#616161"></circle><circle cx="703.857421875" cy="576.7786076285743" r="3.5" fill="#616161"></circle><line x1="190.142578125" y1="532.2328665773692" x2="190.142578125" y2="553.4362664260523" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="709.857421875" y1="576.7786076285743" x2="709.857421875" y2="563.72553524899" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="558.1962664260523" fill="#000000" font-size="13" font-weight="600" text-anchor="end">Spain 5.87 t</text><text x="715.857421875" y="568.48553524899" fill="#000000" font-size="13" font-weight="600" text-anchor="start">Spain 4.60 t</text></g><g><line x1="196.142578125" y1="273.88235294117646" x2="703.857421875" y2="500.6599426146481" stroke="#0B7A75" stroke-width="3" stroke-linecap="round"></line><circle cx="196.142578125" cy="273.88235294117646" r="3.5" fill="#0B7A75"></circle><circle cx="703.857421875" cy="500.6599426146481" r="3.5" fill="#0B7A75"></circle><line x1="190.142578125" y1="273.88235294117646" x2="190.142578125" y2="273.88235294117646" stroke="#0B7A75" stroke-width="1" stroke-dasharray="2 2" opacity="0"></line><line x1="709.857421875" y1="500.6599426146481" x2="709.857421875" y2="485.9028148389018" stroke="#0B7A75" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="184.142578125" y="278.64235294117645" fill="#000000" font-size="13" font-weight="700" text-anchor="end">Germany 13.23 t</text><text x="715.857421875" y="490.6628148389018" fill="#000000" font-size="13" font-weight="700" text-anchor="start">Germany 6.77 t</text></g><circle class="pt" cx="196.142578125" cy="273.88235294117646" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Germany, 1990: 13.23 t" data-detail="Germany · 1990 · 13.23 t"></circle><circle class="pt" cx="703.857421875" cy="485.9028148389018" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Germany, 2024: 6.77 t" data-detail="Germany · 2024 · 6.77 t"></circle><circle class="pt" cx="196.142578125" cy="369.10688123011766" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom, 1990: 10.49 t" data-detail="United Kingdom · 1990 · 10.49 t"></circle><circle class="pt" cx="703.857421875" cy="583.7367242858747" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom, 2024: 4.53 t" data-detail="United Kingdom · 2024 · 4.53 t"></circle><circle class="pt" cx="196.142578125" cy="508.0176567006457" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Sweden, 1990: 6.71 t" data-detail="Sweden · 1990 · 6.71 t"></circle><circle class="pt" cx="703.857421875" cy="649.6086336101171" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Sweden, 2024: 3.59 t" data-detail="Sweden · 2024 · 3.59 t"></circle><circle class="pt" cx="196.142578125" cy="530.4362664260523" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland, 1990: 6.58 t" data-detail="Switzerland · 1990 · 6.58 t"></circle><circle class="pt" cx="703.857421875" cy="626.6086336101171" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland, 2024: 3.59 t" data-detail="Switzerland · 2024 · 3.59 t"></circle><circle class="pt" cx="196.142578125" cy="486.1804372498327" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="France, 1990: 6.93 t" data-detail="France · 1990 · 6.93 t"></circle><circle class="pt" cx="703.857421875" cy="604.6513305020363" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="France, 2024: 3.97 t" data-detail="France · 2024 · 3.97 t"></circle><circle class="pt" cx="196.142578125" cy="392.10688123011766" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Poland, 1990: 9.89 t" data-detail="Poland · 1990 · 9.89 t"></circle><circle class="pt" cx="703.857421875" cy="465.06362456456793" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Poland, 2024: 7.08 t" data-detail="Poland · 2024 · 7.08 t"></circle><circle class="pt" cx="196.142578125" cy="464.7891601571447" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Italy, 1990: 7.68 t" data-detail="Italy · 1990 · 7.68 t"></circle><circle class="pt" cx="703.857421875" cy="544.3392039660978" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Italy, 2024: 5.09 t" data-detail="Italy · 2024 · 5.09 t"></circle><circle class="pt" cx="196.142578125" cy="443.5729295896446" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Austria, 1990: 8.10 t" data-detail="Austria · 1990 · 8.10 t"></circle><circle class="pt" cx="703.857421875" cy="525.190647767258" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Austria, 2024: 6.18 t" data-detail="Austria · 2024 · 6.18 t"></circle><circle class="pt" cx="196.142578125" cy="422.1577815991816" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Norway, 1990: 8.25 t" data-detail="Norway · 1990 · 8.25 t"></circle><circle class="pt" cx="703.857421875" cy="505.84577367384816" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Norway, 2024: 6.67 t" data-detail="Norway · 2024 · 6.67 t"></circle><circle class="pt" cx="196.142578125" cy="553.4362664260523" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Spain, 1990: 5.87 t" data-detail="Spain · 1990 · 5.87 t"></circle><circle class="pt" cx="703.857421875" cy="563.72553524899" r="8" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Spain, 2024: 4.60 t" data-detail="Spain · 2024 · 4.60 t"></circle></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="1075" viewBox="0 0 360 1075" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>A slope chart comparing per-capita CO2 emissions in 1990 and 2024 across ten Western European countries. All ten fell. Germany fell furthest, from 13.23 to 6.77 tonnes per capita, a drop of 6.46 — more than the United Kingdom&#x27;s fall from 10.49 to 4.53, a drop of 5.97. The other eight also fell, each by between 1.27 and 3.12 tonnes: Sweden 6.71 to 3.59, Switzerland 6.58 to 3.59, France 6.93 to 3.97, Poland 9.89 to 7.08, Italy 7.68 to 5.09, Austria 8.10 to 6.18, Norway 8.25 to 6.67, Spain 5.87 to 4.60.</desc><rect x="0" y="0" width="360" height="1075" fill="#FFFFFF"></rect><text x="16" y="33" fill="#000000" font-size="17" font-weight="700">Germany cut per-capita CO₂ emissions</text><text x="16" y="55" fill="#000000" font-size="17" font-weight="700">further than any other Western</text><text x="16" y="77" fill="#000000" font-size="17" font-weight="700">European country&#x27;s since 1990</text><text x="16" y="97" fill="#616161" font-size="11">Tonnes of CO₂ per capita, territorial emissions. All ten countries fell</text><text x="16" y="112" fill="#616161" font-size="11">between 1990 and 2024 — Germany&#x27;s fall was the largest, ahead</text><text x="16" y="127" fill="#616161" font-size="11">of the United Kingdom&#x27;s widely discussed decarbonisation.</text><text x="16" y="144" fill="#616161" font-size="11">Source: Global Carbon Budget (2025), via Our World in Data ·</text><text x="16" y="158" fill="#616161" font-size="11">1990 &amp; 2024 data</text><text x="82.865234375" y="180" fill="#000000" font-size="12" font-weight="700" text-anchor="middle">1990</text><text x="277.134765625" y="180" fill="#000000" font-size="12" font-weight="700" text-anchor="middle">2024</text><g><line x1="82.865234375" y1="487.1503003126546" x2="277.134765625" y2="873.9456810013218" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="487.1503003126546" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="873.9456810013218" r="3" fill="#616161"></circle><line x1="79.865234375" y1="487.1503003126546" x2="79.865234375" y2="481.72886815874904" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="873.9456810013218" x2="280.134765625" y2="885.5652211846319" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="471.64886815874905" fill="#000000" font-size="11" font-weight="600" text-anchor="end">United</text><text x="76.865234375" y="485.64886815874905" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Kingdom</text><text x="76.865234375" y="499.64886815874905" fill="#000000" font-size="11" font-weight="600" text-anchor="end">10.49 t</text><text x="283.134765625" y="875.4852211846319" fill="#000000" font-size="11" font-weight="600" text-anchor="start">United</text><text x="283.134765625" y="889.4852211846319" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Kingdom</text><text x="283.134765625" y="903.4852211846319" fill="#000000" font-size="11" font-weight="600" text-anchor="start">4.53 t</text></g><g><line x1="82.865234375" y1="732.4458057783077" x2="277.134765625" y2="934.5000000000001" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="732.4458057783077" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="934.5000000000001" r="3" fill="#616161"></circle><line x1="79.865234375" y1="732.4458057783077" x2="79.865234375" y2="746.6452347214707" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="934.5000000000001" x2="280.134765625" y2="1021.521998895643" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="743.5652347214707" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Sweden</text><text x="76.865234375" y="757.5652347214707" fill="#000000" font-size="11" font-weight="600" text-anchor="end">6.71 t</text><text x="283.134765625" y="1018.441998895643" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Sweden</text><text x="283.134765625" y="1032.4419988956429" fill="#000000" font-size="11" font-weight="600" text-anchor="start">3.59 t</text></g><g><line x1="82.865234375" y1="741.0170087351772" x2="277.134765625" y2="934.3035012688815" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="741.0170087351772" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="934.3035012688815" r="3" fill="#616161"></circle><line x1="79.865234375" y1="741.0170087351772" x2="79.865234375" y2="793.1386525183782" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="934.3035012688815" x2="280.134765625" y2="973.521998895643" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="790.0586525183782" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Switzerland</text><text x="76.865234375" y="804.0586525183782" fill="#000000" font-size="11" font-weight="600" text-anchor="end">6.58 t</text><text x="283.134765625" y="970.441998895643" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Switzerland</text><text x="283.134765625" y="984.441998895643" fill="#000000" font-size="11" font-weight="600" text-anchor="start">3.59 t</text></g><g><line x1="82.865234375" y1="718.1408239099942" x2="277.134765625" y2="910.0153687275839" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="718.1408239099942" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="910.0153687275839" r="3" fill="#616161"></circle><line x1="79.865234375" y1="718.1408239099942" x2="79.865234375" y2="701.6583991276559" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="910.0153687275839" x2="280.134765625" y2="928.2030729919727" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="698.5783991276559" fill="#000000" font-size="11" font-weight="600" text-anchor="end">France</text><text x="76.865234375" y="712.5783991276559" fill="#000000" font-size="11" font-weight="600" text-anchor="end">6.93 t</text><text x="283.134765625" y="925.1230729919727" fill="#000000" font-size="11" font-weight="600" text-anchor="start">France</text><text x="283.134765625" y="939.1230729919727" fill="#000000" font-size="11" font-weight="600" text-anchor="start">3.97 t</text></g><g><line x1="82.865234375" y1="526.266434668215" x2="277.134765625" y2="708.3669745608761" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="526.266434668215" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="708.3669745608761" r="3" fill="#616161"></circle><line x1="79.865234375" y1="526.266434668215" x2="79.865234375" y2="527.3318246351262" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="708.3669745608761" x2="280.134765625" y2="648.2445831147566" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="524.2518246351261" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Poland</text><text x="76.865234375" y="538.2518246351261" fill="#000000" font-size="11" font-weight="600" text-anchor="end">9.89 t</text><text x="283.134765625" y="645.1645831147565" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Poland</text><text x="283.134765625" y="659.1645831147565" fill="#000000" font-size="11" font-weight="600" text-anchor="start">7.08 t</text></g><g><line x1="82.865234375" y1="669.2454663575245" x2="277.134765625" y2="837.5093918420214" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="669.2454663575245" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="837.5093918420214" r="3" fill="#616161"></circle><line x1="79.865234375" y1="669.2454663575245" x2="79.865234375" y2="657.8892793293523" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="837.5093918420214" x2="280.134765625" y2="806.6081320457079" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="661.8092793293523" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Italy 7.68 t</text><text x="283.134765625" y="810.5281320457078" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Italy 5.09 t</text></g><g><line x1="82.865234375" y1="642.3685782570753" x2="277.134765625" y2="766.7077479616275" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="642.3685782570753" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="766.7077479616275" r="3" fill="#616161"></circle><line x1="79.865234375" y1="642.3685782570753" x2="79.865234375" y2="614.7601425113974" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="766.7077479616275" x2="280.134765625" y2="768.6347099225836" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="611.6801425113973" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Austria</text><text x="76.865234375" y="625.6801425113973" fill="#000000" font-size="11" font-weight="600" text-anchor="end">8.10 t</text><text x="283.134765625" y="765.5547099225836" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Austria</text><text x="283.134765625" y="779.5547099225836" fill="#000000" font-size="11" font-weight="600" text-anchor="start">6.18 t</text></g><g><line x1="82.865234375" y1="632.269244865197" x2="277.134765625" y2="735.1061521396389" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="632.269244865197" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="735.1061521396389" r="3" fill="#616161"></circle><line x1="79.865234375" y1="632.269244865197" x2="79.865234375" y2="571.4994280392112" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="735.1061521396389" x2="280.134765625" y2="730.2452613777795" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="568.4194280392112" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Norway</text><text x="76.865234375" y="582.4194280392112" fill="#000000" font-size="11" font-weight="600" text-anchor="end">8.25 t</text><text x="283.134765625" y="727.1652613777794" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Norway</text><text x="283.134765625" y="741.1652613777794" fill="#000000" font-size="11" font-weight="600" text-anchor="start">6.67 t</text></g><g><line x1="82.865234375" y1="786.8868186755735" x2="277.134765625" y2="869.1996010528002" stroke="#616161" stroke-width="1.25" stroke-linecap="round"></line><circle cx="82.865234375" cy="786.8868186755735" r="3" fill="#616161"></circle><circle cx="277.134765625" cy="869.1996010528002" r="3" fill="#616161"></circle><line x1="79.865234375" y1="786.8868186755735" x2="79.865234375" y2="841.1386525183782" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><line x1="280.134765625" y1="869.1996010528002" x2="280.134765625" y2="845.2635219109745" stroke="#616161" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="845.0586525183782" fill="#000000" font-size="11" font-weight="600" text-anchor="end">Spain 5.87 t</text><text x="283.134765625" y="849.1835219109745" fill="#000000" font-size="11" font-weight="600" text-anchor="start">Spain 4.60 t</text></g><g><line x1="82.865234375" y1="309.5" x2="277.134765625" y2="728.545546135763" stroke="#0B7A75" stroke-width="2.5" stroke-linecap="round"></line><circle cx="82.865234375" cy="309.5" r="3" fill="#0B7A75"></circle><circle cx="277.134765625" cy="728.545546135763" r="3" fill="#0B7A75"></circle><line x1="79.865234375" y1="309.5" x2="79.865234375" y2="309.5" stroke="#0B7A75" stroke-width="1" stroke-dasharray="2 2" opacity="0"></line><line x1="280.134765625" y1="728.545546135763" x2="280.134765625" y2="690.3914643508224" stroke="#0B7A75" stroke-width="1" stroke-dasharray="2 2" opacity="1"></line><text x="76.865234375" y="306.42" fill="#000000" font-size="11" font-weight="700" text-anchor="end">Germany</text><text x="76.865234375" y="320.42" fill="#000000" font-size="11" font-weight="700" text-anchor="end">13.23 t</text><text x="283.134765625" y="687.3114643508223" fill="#000000" font-size="11" font-weight="700" text-anchor="start">Germany</text><text x="283.134765625" y="701.3114643508223" fill="#000000" font-size="11" font-weight="700" text-anchor="start">6.77 t</text></g><circle class="pt" cx="82.865234375" cy="309.5" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Germany, 1990: 13.23 t" data-detail="Germany · 1990 · 13.23 t"></circle><circle class="pt" cx="277.134765625" cy="690.3914643508224" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Germany, 2024: 6.77 t" data-detail="Germany · 2024 · 6.77 t"></circle><circle class="pt" cx="82.865234375" cy="481.72886815874904" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom, 1990: 10.49 t" data-detail="United Kingdom · 1990 · 10.49 t"></circle><circle class="pt" cx="277.134765625" cy="885.5652211846319" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom, 2024: 4.53 t" data-detail="United Kingdom · 2024 · 4.53 t"></circle><circle class="pt" cx="82.865234375" cy="746.6452347214707" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Sweden, 1990: 6.71 t" data-detail="Sweden · 1990 · 6.71 t"></circle><circle class="pt" cx="277.134765625" cy="1021.521998895643" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Sweden, 2024: 3.59 t" data-detail="Sweden · 2024 · 3.59 t"></circle><circle class="pt" cx="82.865234375" cy="793.1386525183782" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland, 1990: 6.58 t" data-detail="Switzerland · 1990 · 6.58 t"></circle><circle class="pt" cx="277.134765625" cy="973.521998895643" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland, 2024: 3.59 t" data-detail="Switzerland · 2024 · 3.59 t"></circle><circle class="pt" cx="82.865234375" cy="701.6583991276559" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="France, 1990: 6.93 t" data-detail="France · 1990 · 6.93 t"></circle><circle class="pt" cx="277.134765625" cy="928.2030729919727" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="France, 2024: 3.97 t" data-detail="France · 2024 · 3.97 t"></circle><circle class="pt" cx="82.865234375" cy="527.3318246351262" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Poland, 1990: 9.89 t" data-detail="Poland · 1990 · 9.89 t"></circle><circle class="pt" cx="277.134765625" cy="648.2445831147566" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Poland, 2024: 7.08 t" data-detail="Poland · 2024 · 7.08 t"></circle><circle class="pt" cx="82.865234375" cy="657.8892793293523" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Italy, 1990: 7.68 t" data-detail="Italy · 1990 · 7.68 t"></circle><circle class="pt" cx="277.134765625" cy="806.6081320457079" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Italy, 2024: 5.09 t" data-detail="Italy · 2024 · 5.09 t"></circle><circle class="pt" cx="82.865234375" cy="614.7601425113974" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Austria, 1990: 8.10 t" data-detail="Austria · 1990 · 8.10 t"></circle><circle class="pt" cx="277.134765625" cy="768.6347099225836" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Austria, 2024: 6.18 t" data-detail="Austria · 2024 · 6.18 t"></circle><circle class="pt" cx="82.865234375" cy="571.4994280392112" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Norway, 1990: 8.25 t" data-detail="Norway · 1990 · 8.25 t"></circle><circle class="pt" cx="277.134765625" cy="730.2452613777795" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Norway, 2024: 6.67 t" data-detail="Norway · 2024 · 6.67 t"></circle><circle class="pt" cx="82.865234375" cy="841.1386525183782" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Spain, 1990: 5.87 t" data-detail="Spain · 1990 · 5.87 t"></circle><circle class="pt" cx="277.134765625" cy="845.2635219109745" r="7" fill="transparent" stroke="none" pointer-events="all" tabindex="0" role="img" aria-label="Spain, 2024: 4.60 t" data-detail="Spain · 2024 · 4.60 t"></circle></svg>
+</figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/skills/twin-chart-web/assets/interaction.mjs
+//
+// The one script the web genre ships, inlined verbatim into the self-contained HTML by
+// `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
+// this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it
+// keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
+//
+// `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
+// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// per `twin-doctrine`'s own verification rule, an interactive genre is verified by driving a real
+// browser, not by asserting against a DOM emulation nobody looked at
+// (`references/web-discipline.md`, "Verification").
+//
+// What this file does NOT do: recompute any geometry. Every point's `cx`/`cy` and its exact
+// `data-detail` string were already computed server-side, from the same `crossingGeometry`/`fr`
+// the static and video genres use, and baked into the SVG at build time. This script only reads
+// those attributes back off the DOM and positions a tooltip — it never re-derives a coordinate or
+// re-formats a number, so there is exactly one implementation of "what year is this" for all three
+// genres to disagree about, and it lives in the story's own `crossing-geometry.ts` (for the CO₂
+// beat, `proof/co2-suisse/crossing-geometry.ts`).
+
+/** Index of the entry in `cxs` closest to `x`. Pure, so it is testable without a DOM — the same
+ *  boundary `crossingGeometry`'s own geometry/drawing split draws. */
+function nearestIndex(cxs, x) {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < cxs.length; i++) {
+    const d = Math.abs(cxs[i] - x);
+    if (d < bestDist) {
+      bestDist = d;
+      best = i;
+    }
+  }
+  return best;
+}
+
+/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
+ *  string and its own `aria-label`; this function never invents either. */
+function initChart(svg, tooltip) {
+  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+  if (points.length === 0) return;
+  const hitArea = svg.querySelector(".hit-area");
+  const cxs = points.map((p) => parseFloat(p.getAttribute("cx")));
+
+  function clear() {
+    points.forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(point, clientX, clientY) {
+    points.forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike, and the
+  // nearest-point-by-x overlay means a touch reader does not have to land a tap on a 5px circle —
+  // any tap inside the plot resolves to the reading closest to it.
+  function fromPointer(evt) {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const svgPoint = svg.createSVGPoint();
+    svgPoint.x = evt.clientX;
+    svgPoint.y = evt.clientY;
+    const local = svgPoint.matrixTransform(ctm.inverse());
+    show(points[nearestIndex(cxs, local.x)], evt.clientX, evt.clientY);
+  }
+
+  if (hitArea) {
+    hitArea.addEventListener("pointermove", fromPointer);
+    hitArea.addEventListener("pointerdown", fromPointer);
+    hitArea.addEventListener("pointerleave", clear);
+  }
+
+  // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
+  // entirely — see the component's own doc-comment). This layer adds the same detail box that
+  // hover shows, plus Left/Right/Home/End to move between readings without leaving focus.
+  points.forEach((point, i) => {
+    point.addEventListener("focus", function () {
+      const rect = point.getBoundingClientRect();
+      show(point, rect.left + rect.width / 2, rect.top);
+    });
+    point.addEventListener("blur", clear);
+    point.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowRight") nextIndex = Math.min(i + 1, points.length - 1);
+      else if (evt.key === "ArrowLeft") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = points.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        point.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        points[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` (for the pure `nearestIndex` helper), in a context with no `document`.
+// In the browser the guard is always true, so the inlined `<script>` still self-starts the moment
+// it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+<script>
+// twin/proof/web-co2-decline-slope/slope-interaction.mjs
+//
+// This beat's OWN interaction script — not the `twin-chart-web` skill's shared
+// `assets/interaction.mjs`. That file's `initChart` resolves a pointer to the nearest reading by X
+// alone, over one shared `.hit-area` rectangle: correct for a dense series where every point sits
+// at its own distinct X along one curve (the co2-suisse beat's 75 years), and wrong here — a slope
+// chart's twenty endpoints sit in exactly TWO columns, so the ten points sharing one column's fixed
+// X could never be told apart by X-distance alone; hovering the 1990 column would always resolve to
+// whichever point happens first in DOM order, regardless of where the pointer actually is
+// vertically. `render-web.mjs` still calls the skill's generic `renderWeb` for the SSR/CSS
+// scaffold (title, `#tooltip`, the `.pt`/`.pt-active` styling, the two-layout media query) — it
+// inlines the shared script for that scaffold's own sake, unchanged, and then this file is
+// appended as a second inlined `<script>` alongside it. The shared script still does one thing this
+// file relies on rather than re-implementing: `initChart` wires `focus`/`blur`/`keydown`
+// (Left/Right/Home/End) directly onto every `.pt` element regardless of whether a `.hit-area` is
+// present, so keyboard navigation and screen-reader `aria-label` reachability work unmodified.
+// This file adds only what a nearest-by-X hit area cannot give a discrete-target chart: direct
+// mouse/touch hover and tap on each of the twenty points themselves, since every point already
+// carries its own generous `pointerEvents="all"` overlay (`SlopeWeb.tsx`'s `hitRadius`) and needs
+// no shared resolver to find it.
+//
+// Reads back the same `data-detail` string the shared script's own `show()` would read — never a
+// second implementation of "what does this point say" — and writes to the same `#tooltip` element
+// and the same `.pt-active` class the shared stylesheet already styles, so the two scripts never
+// disagree about what a reading looked like once shown.
+
+function initSlopeInteraction() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+
+  function show(point, clientX, clientY) {
+    document
+      .querySelectorAll(".pt")
+      .forEach((p) => p.classList.toggle("pt-active", p === point));
+    tooltip.textContent = point.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function clear() {
+    document.querySelectorAll(".pt").forEach((p) => p.classList.remove("pt-active"));
+    tooltip.hidden = true;
+  }
+
+  document.querySelectorAll(".pt").forEach(function (point) {
+    // Pointer events fire for mouse, pen and touch alike — each point is its own hit target
+    // (`hitRadius` in `SlopeWeb.tsx`), so there is no nearest-point resolution to do: the point
+    // that fired the event IS the reading to show.
+    point.addEventListener("pointerenter", function (evt) {
+      show(point, evt.clientX, evt.clientY);
+    });
+    point.addEventListener("pointerdown", function (evt) {
+      show(point, evt.clientX, evt.clientY);
+    });
+    point.addEventListener("pointerleave", clear);
+    // `focus`/`blur`/arrow-key navigation are already wired by the shared script's own `initChart`
+    // (it runs unconditionally on every `.pt` regardless of `.hit-area`, see this file's own header
+    // note) — not duplicated here.
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (evt.target && evt.target.closest && evt.target.closest(".pt")) return;
+    if (evt.target && evt.target.closest && evt.target.closest("#tooltip")) return;
+    clear();
+  });
+}
+
+// Guarded the same way the shared script's own `initAll()` call is guarded: this file is inlined
+// into the rendered HTML as a plain classic `<script>` (no `type="module"`, so it keeps working in
+// a CMS iframe or a sandboxed embed that restricts module scripts) but stays a valid ES module for
+// anything that wants to import `initSlopeInteraction` directly outside a browser `document`.
+if (typeof document !== "undefined") initSlopeInteraction();
+
+</script>
+</body>
+</html>
