@@ -570,6 +570,68 @@ and a guard that happened.
 
 ---
 
+## 6b. EXECUTION LOG — 2026-08-10
+
+What landed, what did not, and why. Written as the spec's own record so nobody has to reconstruct it
+from the log.
+
+### Landed
+
+| # | Task | Commit | Notes |
+|---|---|---|---|
+| 0 | The probe | `W4 Task 0` | Answered question 4 TRUE. Findings and the revision they forced are in §4 Task 0 and §2. Artifacts: `proof/static-carbon-footprint-spread/probe/`. |
+| 1 | `SIZES` + `sizeFor` + the walking guard | `W4 Task 1` | Its own file, its own walker. Nine mutations; two deliberately green, both recorded in the guard's header. |
+| 4 | `twin-dw-beat` | `W4 Task 4` | Second copy of the table, no `typeScale`. The IHDR pin became a **check** — see below. |
+| 5 | Narrow the two `no @media` assertions | `W4 Task 5` | Seven mutations, six red. B3.3's 640px reversal deliberately untouched. |
+| 9 | `size` in both gate readings | `W4 Task 9` | One commit, parity guard extended in it. Closed a live defect: `web` could not pass gate 2 without naming a size it will never use. |
+| 3a | **The static SEED only** | `W4 Task 3 (the seed)` | `ChartSeed.tsx` reads `sizeFor(size)`; every spacing number scales. Rendered at three sizes and opened. |
+
+### Not landed, each with its reason
+
+- **Task 3b — the seventeen written static beats.** The seed is done; the beats are not. The probe
+  revised this task's cost from "medium-high" to **high**, and its own reason is why it cannot be
+  swept quickly: eleven spacing literals in the *simplest* type in this corpus, plus a per-type
+  portrait judgement for anything whose marks carry shape (§6's first residue), plus an opened
+  render per beat per size — 51 renders. `render-still.mjs`'s `× 2` retires **with** this task, in
+  the same step, because removing it while those seventeen frames are still 900×560 ships 900px
+  stills. Recorded in `twin-chart-beat/SKILL.md` so it is not a surprise.
+- **Task 2 — video, all nineteen beats. COLLISION, not cost.** Another agent is executing the
+  visual-mechanisms spec in this same worktree and owns the video components' handover and
+  annotation code; its in-flight `video-handover-is-a-cut.test.ts` is red against seven of the very
+  `*Video.tsx` files Task 2 rewrites. Editing across would have put two agents in the same nineteen
+  files. What Task 2 needs is unchanged and cheap once that clears: `useVideoConfig()` already
+  returns `{width, height}` and every beat destructures only `fps` from it.
+- **Task 6 — the web fill rule.** Task 5 cleared its way (the `@media` mechanism is now permitted by
+  pattern) and the rule itself is unwritten. It also wants Task 7 first, for the reason below.
+- **Task 7 — the `more-heatmap-co2-per-capita-decades` retrofit.** Measured before starting rather
+  than estimated: it is not a seam repair. That beat renders **two whole SVGs** (`data-layout=
+  "desktop"` and `data-layout="narrow"`), carries two complete 13-field layout tables, derives its
+  own rung boundary in a 40-line justified function, and caps `.chart-figure` at its desktop design
+  width — 482 lines of component plus 285 of runner, all of it organised around the two-rung model
+  the fluid frame replaced. The retrofit is a rewrite onto the seed's shape (geometry-only SVG,
+  words as HTML at fixed sizes, one layout), and it is honest to say so rather than to half-do it.
+  **Its `@media` is exactly what Task 5's narrowed assertion describes and it still contains the
+  defect** — which is the coordination cost of leaving it, named rather than hidden.
+- **Task 8 — `twin-image-beat`.** The spec calls it "last, and droppable if Task 3 overruns"; Task 3
+  overran, so it is dropped on the spec's own instruction. One measurement worth passing on, because
+  it makes the estimate wrong too: this seed's frame height is **content-derived**
+  (`ImageBeatSeed.tsx:155-156`, `lastBlock.creditTop + CREDIT.fontSize + PAD`), so changing
+  `FRAME_WIDTH` alone would produce a 1920 × whatever frame that claims a pinned size and does not
+  deliver one. Task 8 needs the same structural inversion as Task 3 — solve `BOX_HEIGHT` from the
+  row's height and the block count — plus a loud refusal when N photographs cannot fit the size
+  chosen. Not near-zero.
+- **`twin-dw-beat`'s measured IHDR pin.** The spec says "measure once what Datawrapper actually
+  returns for each size and pin it; do not assume it honours `height`". There is no
+  `DATAWRAPPER_TOKEN` on this branch, so there was nothing to measure with — and pinning a number
+  nobody has seen is the reasoning-from-source this chantier exists to stop. It ships as
+  `assertExportedSize`, which reads the returned PNG's own IHDR and throws naming both sizes. **The
+  first real run against the API is the measurement**, and what remains undone is recording what
+  Datawrapper does in that skill's `SKILL.md`.
+- **Per-size tick hints.** §4 Task 3 proposed making `Y_TICK_HINT`/`X_TICK_HINT` per-size values on
+  the row. The probe measured zero collisions at all three sizes with the hints unchanged, so they
+  are left alone: inventing a per-size hint nobody measured would be the same defect this spec
+  opened with. The trigger for revisiting is the first type whose ticks collide at portrait.
+
 ## 7. The proof
 
 Not "tests pass". Artifacts opened, at named sizes, with what is being looked at written down first.
