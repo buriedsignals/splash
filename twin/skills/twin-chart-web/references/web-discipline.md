@@ -264,6 +264,39 @@ rule closes.
 `aspect-ratio` and a narrow viewport therefore buys a short chart. Fitting and filling are two
 different rules; only the first is settled here.
 
+## A width query is not a rung — what "no `@media`" meant, and what it means now
+
+**NARROWED 2026-08-10 (W4 Task 5), under ruling R2.** The section above overturned the two-rung
+layout, and `seed-fluid-frame.test.ts` pinned the overturn as `expect(css).not.toContain("@media")`
+— twice. That assertion was right about the defect and wrong about the mechanism, and the difference
+matters because R2 makes this genre's job explicit: **web is not a fourth export size. It fills
+whatever container the CMS gives it, like an embed component.** Filling a 375px phone and filling a
+1600px article well are different instructions, and a width query is the only sentence CSS has for
+saying so. Forbidding the mechanism forces whoever implements the fill rule to DELETE the guard, and
+a guard deleted is the failure mode the handover already documents.
+
+So the rule is now stated as the pattern it always meant:
+
+1. **At most one `@media (max-width: …)` block.** A second rung is a rung. An `orientation` or
+   `resolution` query is a rung under another name and is refused too.
+2. **Nothing inside a query may cap the frame.** `max-width` on `.chart-figure`, `.chart-plot`,
+   `.chart` or any mark layer is the original defect, and it is refused by pattern rather than by
+   forbidding the block it would have to live in.
+3. **Nothing inside a query may take content away, except a redundant reading of a scale.**
+   `display: none` / `visibility: hidden` is allowed on an allowlist of tick-label selectors and
+   nowhere else. Dropping alternate x-tick labels on a phone removes a second way of reading an axis
+   that is still fully drawn. An end label, a data point, an annotation, the source line — each of
+   those IS the argument or its provenance, and a narrow window is not a reason to stop making it.
+4. **A capability query is not a rung either**, so the `@supports selector(:has(*))` block must not
+   have a width query nested inside it dressing a second layout up as a feature test.
+
+The three assertions ship with the mutations that redden them, listed in the test's own header,
+including the one that stays green on purpose.
+
+**Not touched by this narrowing:** the 640px reading-measure cap on the header and the source line.
+That is B3.3's, reversed by its own owner, and its guard scans the whole stylesheet — including
+anything nested in a query. See "The words take the same width as the graphic" above.
+
 ## What `preserveAspectRatio="none"` costs, and the shape it will ruin
 
 **The stretch that makes this genre fluid is a NON-UNIFORM scale, and a non-uniform scale turns a

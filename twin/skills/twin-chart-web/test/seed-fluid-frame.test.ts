@@ -83,6 +83,15 @@ describe("the seed's <svg> carries geometry only", () => {
 });
 
 describe("nothing caps the chart frame's own width", () => {
+  const css = () =>
+    buildCss({
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+
   it("should never set max-width on .chart-figure or .chart-plot in the shared stylesheet", () => {
     const css = buildCss({
       ground: "#FFFFFF",
@@ -136,15 +145,110 @@ describe("nothing caps the chart frame's own width", () => {
     );
   });
 
-  it("should carry no @media breakpoint — the redesign this file exists to prove has none", () => {
-    const css = buildCss({
-      ground: "#FFFFFF",
-      accent: "#0B7A75",
-      ink: "#000000",
-      muted: "#616161",
-      grid: "#D1D1D1",
-    });
-    expect(css).not.toContain("@media");
+  // NARROWED 2026-08-10, W4 Task 5. This assertion used to read `expect(css).not.toContain("@media")`
+  // and it was RIGHT about the defect and WRONG about the mechanism. What the fluid redesign
+  // overturned was a two-RUNG layout: a second pre-rendered arrangement that a width query swapped
+  // in, so the beat had two shapes and a reader saw whichever the query picked. `@media` is not
+  // that. It is the only way CSS can say "this container is narrower than the content needs", and
+  // ruling R2 requires exactly that sentence for the web genre — web is not a fourth export size,
+  // it fills whatever container the CMS gives it, and filling a 375px-wide phone is a different
+  // instruction from filling a 1600px article well.
+  //
+  // Left as written, whoever implements that DELETES this test, and a guard deleted is the failure
+  // mode `HANDOVER.md:725-729` documents. So it is narrowed to the PATTERN, with its reason, rather
+  // than removed: at most one query, and nothing inside it may take content away or cap the frame.
+  //
+  // NOT touched here, deliberately: the header/source width cap. That is B3.3's, already reversed
+  // by its own owner in the test above (`should cap neither the header block nor the source line`),
+  // whose scan runs over the WHOLE stylesheet and therefore already covers anything nested in a
+  // query. Re-pinning it from this direction would undo work that has just landed.
+  //
+  // THE MUTATIONS THAT REDDEN THE THREE ASSERTIONS BELOW. Run by injecting each rule into
+  // `buildCss`'s stylesheet in a copy of the tree under /tmp, 2026-08-10:
+  //
+  //   a second @media (max-width) block                       RED  — "at most ONE width query"
+  //   @media { .chart-figure { max-width: 560px } }           RED  — the cap defect, by pattern
+  //   @media { .chart-plot { display: none } }                RED  — ×2
+  //   @media { .end-label { display: none } }                 RED  — ×2, it carries a value
+  //   @media { .chart-source { display: none } }              RED  — provenance is not optional
+  //   @media (orientation: portrait) { … }                    RED  — a rung under another name
+  //   @media { .x-axis .tick:nth-child(2n) { display:none } } GREEN — the one legitimate removal
+  //
+  // The last row is the point of the allowlist: a redundant second reading of a scale that is still
+  // fully drawn may go on a phone. Nothing that carries a value may.
+  const mediaBlocks = (css: string) => {
+    // Top-level at-rule blocks, matched by brace-depth rather than by regex, so a nested rule
+    // inside the query does not terminate the block early.
+    const found: string[] = [];
+    for (const m of css.matchAll(/@media\b([^{]*)\{/g)) {
+      let depth = 1;
+      let i = m.index! + m[0].length;
+      for (; i < css.length && depth > 0; i++) {
+        if (css[i] === "{") depth++;
+        else if (css[i] === "}") depth--;
+      }
+      found.push(css.slice(m.index!, i));
+    }
+    return found;
+  };
+
+  it("should carry at most ONE width query — a second rung is a rung", () => {
+    const blocks = mediaBlocks(css());
+    expect(blocks.length).toBeLessThanOrEqual(1);
+    // And if there is one, it is a max-width query about the container's narrowness — not a
+    // print/orientation/resolution rule sneaking a different layout in under another name.
+    for (const block of blocks) {
+      expect(block.slice(0, block.indexOf("{"))).toMatch(/max-width:\s*\d+px/);
+    }
+  });
+
+  it("should never, inside a width query, cap the frame or hide a mark layer", () => {
+    // The two-rung defect and the cap defect, named as patterns instead of as a mechanism. A query
+    // may re-proportion the plot; it may not take the graphic away or put the cap back.
+    const STRUCTURE =
+      /\.(chart-figure|chart-plot|chart|seg|pt|overlay|hit-area|end-label|note)\b/;
+    for (const block of mediaBlocks(css())) {
+      for (const [, selector, body] of block.matchAll(
+        /([^{}]+)\{([^{}]*)\}/g,
+      )) {
+        if (!STRUCTURE.test(selector)) continue;
+        expect([selector.trim(), /\bmax-width\b/.test(body)]).toEqual([
+          selector.trim(),
+          false,
+        ]);
+        expect([selector.trim(), /\bdisplay:\s*none\b/.test(body)]).toEqual([
+          selector.trim(),
+          false,
+        ]);
+        expect([
+          selector.trim(),
+          /\bvisibility:\s*hidden\b/.test(body),
+        ]).toEqual([selector.trim(), false]);
+      }
+    }
+  });
+
+  it("should hide, inside a width query, only tick labels — never anything carrying a value", () => {
+    // Dropping alternate x-tick labels on a phone removes a redundant reading of a scale that is
+    // still fully drawn. That is the ONLY thing a query may remove. A data point, a series, an end
+    // label, an annotation, the source line — each of those IS the argument or its provenance, and
+    // a narrow window is not a reason to stop making it. The allowlist is written as classes,
+    // deliberately narrow, so widening it is a visible edit with a reason attached.
+    const ALLOWED_TO_HIDE =
+      /^\s*\.(x-axis|y-axis)\s+\.tick(-label)?(:nth-child\([^)]*\))?\s*$/;
+    for (const block of mediaBlocks(css())) {
+      for (const [, selector, body] of block.matchAll(
+        /([^{}]+)\{([^{}]*)\}/g,
+      )) {
+        if (!/\b(display:\s*none|visibility:\s*hidden)\b/.test(body)) continue;
+        for (const one of selector.split(",")) {
+          expect([one.trim(), ALLOWED_TO_HIDE.test(one)]).toEqual([
+            one.trim(),
+            true,
+          ]);
+        }
+      }
+    }
   });
 
   // Regression: filling the container is a claim about the FRAME's own edges, not about the
@@ -339,8 +443,14 @@ describe("the filter — default view complete, dimming only, native controls", 
     // The checked state is expressed through :has(); an engine without it must fall back to the
     // radios rather than to three identical unlit pills over a hidden input.
     expect(css).toContain(".chart-filter label:has(input:checked)");
-    // Still no width/height breakpoint anywhere — @supports is a capability query, not a rung.
-    expect(css).not.toContain("@media");
+    // NARROWED 2026-08-10, W4 Task 5, keeping this clause's REAL meaning. It used to read
+    // `expect(css).not.toContain("@media")` — a statement about the whole stylesheet, made from
+    // inside a test about the filter's capability query, and therefore load-bearing by accident.
+    // What it means is what it says in the sentence above it: a capability query is not a rung, so
+    // the `@supports` block must not have a width query nested inside it, dressing a second layout
+    // up as a feature test. The stylesheet-wide rule is now three assertions of its own, above.
+    const block = css.slice(at, css.indexOf("\n}", at));
+    expect(block).not.toContain("@media");
   });
 
   it("should never take a radio out of the focus order to make the pills look tidy", () => {
