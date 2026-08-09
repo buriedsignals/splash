@@ -52,7 +52,7 @@ function walk(dir, out = []) {
 const typeName = (s) =>
   s.split(/[,(—–]/)[0].trim().toLowerCase().replace(/[- ]+/g, " ").replace(/\s+/g, " ");
 
-function readBeats() {
+export function readBeats() {
   const beats = [];
   for (const name of readdirSync(PROOF)) {
     const dir = join(PROOF, name);
@@ -148,17 +148,22 @@ function render(beats) {
   return lines.join("\n") + "\n";
 }
 
-const target = join(TWIN, "MATRIX.md");
-const built = render(readBeats());
+// `readBeats` is exported and this file's CLI is guarded, so a sibling generator
+// (`type-survey.mjs`) reads the tree through THIS reader rather than keeping a second copy of it.
+// Two readers of the same 65 directories is exactly the drift this file was written to end.
+if (import.meta.main) {
+  const target = join(TWIN, "MATRIX.md");
+  const built = render(readBeats());
 
-if (process.argv.includes("--check")) {
-  const current = existsSync(target) ? readFileSync(target, "utf8") : "";
-  if (current !== built) {
-    console.error("MATRIX.md has drifted from the tree. Run: bun scripts/matrix.mjs");
-    process.exit(1);
+  if (process.argv.includes("--check")) {
+    const current = existsSync(target) ? readFileSync(target, "utf8") : "";
+    if (current !== built) {
+      console.error("MATRIX.md has drifted from the tree. Run: bun scripts/matrix.mjs");
+      process.exit(1);
+    }
+    console.log("MATRIX.md matches the tree.");
+  } else {
+    writeFileSync(target, built);
+    console.log(`wrote ${target}`);
   }
-  console.log("MATRIX.md matches the tree.");
-} else {
-  writeFileSync(target, built);
-  console.log(`wrote ${target}`);
 }

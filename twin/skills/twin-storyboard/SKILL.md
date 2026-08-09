@@ -63,6 +63,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 
 | Layer | File | Role |
 | --- | --- | --- |
+| Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim and the genres proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
 | Doctrine | `references/exchange.md` | The six movements of the editorial exchange, the five hand-of-the-journalist questions with their destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
@@ -180,8 +181,14 @@ if (errors.length > 0) {
 
 ## Files
 
-- `references/exchange.md` — the six movements, the five hand-of-the-journalist questions with
+- `references/exchange.md` — the movements, the hand-of-the-journalist questions with
   their destinations, and the discipline list. Read by every conversation running this phase.
+- `references/type-survey.md` — **generated, do not edit by hand.** Every type sheet in the tree,
+  what each is for in its own words, and which genres are proven on disk for it. Regenerate with
+  `bun scripts/type-survey.mjs` from `twin/`; `bun scripts/type-survey.mjs --check` fails on drift,
+  and `test/type-survey.test.ts` runs that check. It exists as a generated copy because a script in
+  this skill may not read `twin-chart-beat/references/types/` — that path resolves inside another
+  skill — which is the same reason `twin/MATRIX.md` is generated rather than hand-kept.
 - `scripts/storyboard.mjs` — `parseStoryboard`, `checkStoryboard`.
 - `scripts/ground-claim.mjs` — `groundTakeaway`, the claim-grounding guard `checkStoryboard` calls
   when given a profile.
