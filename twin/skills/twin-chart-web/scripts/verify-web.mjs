@@ -109,6 +109,7 @@ function resolveChrome() {
 
 const failures = [];
 let passes = 0;
+const skips = [];
 
 function check(ok, what, detail) {
   if (ok) {
@@ -120,7 +121,28 @@ function check(ok, what, detail) {
   }
 }
 
+/** A check that does not apply to THIS beat, announced rather than silently omitted. The summary
+ *  reprints every one: a run that verified nothing must not be able to look like a run that
+ *  verified everything, which is the failure mode a quiet `if (!el) return` produces. */
+function skip(what, why) {
+  skips.push(`${what} — ${why}`);
+  console.log(`  skip ${what}  — ${why}`);
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Every coordinate handed to `page.mouse.*` goes through here first.
+ *
+ *  PUPPETEER'S `mouse.move` SILENTLY DOES NOTHING AT FRACTIONAL COORDINATES. Measured by a
+ *  migrating agent on a real beat: a probe at x=65.63 produced no hover at all, the identical probe
+ *  at x=66 worked. Nothing throws, nothing warns — the tooltip simply never appears, which reads
+ *  exactly like a broken chart and cost that agent a whole wrong verification round before the
+ *  cause was found. Any probe computed from a `getBoundingClientRect` centre is fractional roughly
+ *  half the time, so this is not an edge case: it is the default. Round at the boundary, once,
+ *  rather than at each call site where one will eventually be forgotten. */
+function probe(x, y) {
+  return { x: Math.round(x), y: Math.round(y) };
+}
 
 /** WCAG relative luminance / contrast, on `rgb(r, g, b)` strings as `getComputedStyle` returns
  *  them. Duplicated here rather than reached for across a skill boundary, same rule as everything
@@ -184,11 +206,16 @@ async function checkFit(page, vp) {
     `${vp.label} ${vp.w}x${vp.h}: the source line is on screen`,
     `bottom at ${Math.round(m.source.bottom)}px of ${m.innerH}px`,
   );
-  check(
-    m.xAxis.bottom <= m.innerH + 1,
-    `${vp.label} ${vp.w}x${vp.h}: the x-axis is on screen`,
-    `bottom at ${Math.round(m.xAxis.bottom)}px of ${m.innerH}px`,
-  );
+  // Not every beat draws an x-axis row: a slope chart labels its own two ends, a ranking labels
+  // its rows, a small-multiples grid labels each panel. Asserting the row exists crashed this
+  // script outright on three shipped beats — a checker that dies on a sound beat is worse than one
+  // that says nothing about it.
+  if (m.xAxis)
+    check(
+      m.xAxis.bottom <= m.innerH + 1,
+      `${vp.label} ${vp.w}x${vp.h}: the x-axis is on screen`,
+      `bottom at ${Math.round(m.xAxis.bottom)}px of ${m.innerH}px`,
+    );
   check(
     m.plot.h >= 100,
     `${vp.label} ${vp.w}x${vp.h}: the plot is still a chart, not a strip`,
@@ -209,101 +236,298 @@ async function checkHover(page, vp) {
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
   await sleep(60);
 
-  const readings = await page.evaluate(() => {
-    const plot = document.querySelector(".chart-plot").getBoundingClientRect();
-    return Array.prototype.map.call(document.querySelectorAll(".pt"), (p) => {
-      const r = p.getBoundingClientRect();
-      return {
-        year: p.getAttribute("data-year"),
-        detail: p.getAttribute("data-detail"),
-        cx: r.left + r.width / 2,
-        cy: r.top + r.height / 2,
-        midY: plot.top + plot.height / 2,
-      };
-    });
+  // MARKS ARE DISCOVERED BY `[data-detail]`, NOT BY `.pt`. `.pt` is the SEED's own class for a
+  // point on a line; it is not the genre's contract and it is not what most beats draw. Measured
+  // across the thirteen shipped web beats: all 13 carry `data-detail`, only 5 carry `.pt`, and the
+  // hit element is called `bin-hit`, `segment-hit`, `step-hit`, `bar-hit`, `hit-row` or `row-hit`
+  // depending on what the beat is a chart OF. `data-detail` is the real contract — it is the
+  // attribute `assets/interaction.mjs` reads to fill the tooltip, and the one thing every beat must
+  // bake server-side — so it is what this script probes. Keying on `.pt` made this verifier
+  // unusable on eight beats out of thirteen.
+  const all = await page.evaluate(() => {
+    const plot = document.querySelector(".chart-plot")?.getBoundingClientRect();
+    return Array.prototype.map
+      .call(document.querySelectorAll("[data-detail]"), (p) => {
+        const r = p.getBoundingClientRect();
+        return {
+          name: p.getAttribute("data-year") ?? p.getAttribute("data-detail"),
+          detail: p.getAttribute("data-detail"),
+          isPoint: p.classList.contains("pt"),
+          cx: r.left + r.width / 2,
+          cy: r.top + r.height / 2,
+          w: r.width,
+          h: r.height,
+          midY: plot ? plot.top + plot.height / 2 : null,
+        };
+      })
+      // A mark with no box cannot be pointed at — off-screen, zero-sized or display:none. Probing
+      // it would report a false failure, so it is excluded here and counted below instead.
+      .filter((p) => p.w > 0 && p.h > 0);
   });
-  check(readings.length >= 2, `${vp.label}: readings found to hover`, `${readings.length} points`);
+
+  // A web beat whose readings answer nothing has no reason to be in this genre at all
+  // (`SKILL.md`, "When to use"): the honest use of interaction is the detail a static frame had to
+  // omit. So this one is a FAILURE, never a skip.
+  check(
+    all.length >= 2,
+    `${vp.label}: the beat has readings to hover at all`,
+    `${all.length} marks carrying data-detail`,
+  );
+  if (all.length < 2) return;
+
+  // Some beats draw hundreds of readings (measured: 224 in `webx-world-population`, 300 in
+  // `weby-small-multiples-co2-per-capita`). Probing every one at every viewport turns a check into
+  // a coffee break, so beyond a threshold this samples an even spread — always including the first
+  // and the last, which are the two most likely to sit against an edge.
+  const MAX_PROBES = 40;
+  const readings =
+    all.length <= MAX_PROBES
+      ? all
+      : Array.from({ length: MAX_PROBES }, (_, i) =>
+          all[Math.round((i * (all.length - 1)) / (MAX_PROBES - 1))],
+        );
+  if (readings.length < all.length)
+    console.log(
+      `       (sampling ${readings.length} of ${all.length} marks, first and last included)`,
+    );
 
   // The hit test itself, before a single event is sent: what does the compositor say is on top at
   // the plot's own centre? With the overlay defect this answers `.overlay`; correct, it answers the
   // svg's own `.hit-area`. Reported alongside the pointer probes because it names the CAUSE when
   // they fail, not just the symptom.
-  const topAtCentre = await page.evaluate(() => {
-    const plot = document.querySelector(".chart-plot").getBoundingClientRect();
-    const el = document.elementFromPoint(
-      plot.left + plot.width / 2,
-      plot.top + plot.height / 2,
-    );
-    return el ? `${el.tagName.toLowerCase()}.${el.getAttribute("class") ?? ""}` : "none";
-  });
-  check(
-    topAtCentre.includes("hit-area"),
-    `${vp.label}: the pointer's own hit test reaches the chart, not an overlay`,
-    `topmost element at the plot centre is ${topAtCentre}`,
+  // The nearest-by-x overlay is the POINT beats' own mechanism (`.hit-area` plus `.pt`); a bar,
+  // bin or row beat resolves a pointer by the mark's own rectangle instead. Only claim the
+  // hit-area contract where the beat actually ships it.
+  const columnResolved = await page.evaluate(
+    () => !!document.querySelector(".hit-area"),
   );
 
-  let onCircle = 0;
-  let anywhereInPlot = 0;
-  for (const r of readings) {
-    await page.mouse.move(r.cx, r.cy);
-    await sleep(25);
-    const shown = await page.evaluate(() => {
-      const t = document.getElementById("tooltip");
-      return { hidden: t.hidden, text: t.textContent, active: document.querySelectorAll(".pt-active").length };
-    });
-    if (!shown.hidden && shown.text === r.detail && shown.active === 1) onCircle += 1;
-    else
-      failures.push(
-        `${vp.label}: hovering the ${r.year} circle at (${Math.round(r.cx)}, ${Math.round(r.cy)}) — tooltip ${shown.hidden ? "never appeared" : `said "${shown.text}"`}, expected "${r.detail}"`,
+  if (columnResolved) {
+    const topAtCentre = await page.evaluate(() => {
+      const plot = document.querySelector(".chart-plot").getBoundingClientRect();
+      const el = document.elementFromPoint(
+        Math.round(plot.left + plot.width / 2),
+        Math.round(plot.top + plot.height / 2),
       );
+      if (!el) return { what: "none", inOverlay: false };
+      return {
+        what: `${el.tagName.toLowerCase()}.${el.getAttribute("class") ?? ""}`,
+        inOverlay: !!el.closest(".overlay"),
+      };
+    });
+    // The claim is that the OVERLAY is not eating the event, not that a hit area happens to sit at
+    // this particular pixel. A small-multiples grid puts a gutter between panels at the plot's own
+    // centre, and demanding `.hit-area` there failed a beat whose hover works perfectly — the
+    // checker mistaking its own layout assumption for a defect.
+    check(
+      !topAtCentre.inOverlay,
+      `${vp.label}: the pointer's own hit test is not swallowed by the overlay`,
+      `topmost element at the plot centre is ${topAtCentre.what}`,
+    );
+  } else {
+    skip(
+      `${vp.label}: the plot-wide hit test`,
+      "this beat resolves a pointer per mark, not through a shared .hit-area",
+    );
+  }
 
-    await page.mouse.move(r.cx, r.midY);
-    await sleep(25);
-    const anywhere = await page.evaluate(() => {
+  /**
+   * WHAT THE TOOLTIP MUST SAY AT A GIVEN PIXEL — asked of the page, never inferred from a class
+   * name. Two rounds of this script guessed instead, and both guesses were wrong about beats that
+   * were perfectly sound:
+   *
+   *   - "a `.pt` beat resolves by nearest x" — false for a SCATTER, where two countries share an
+   *     x and the point under the cursor is whichever was painted last. It reported 73 failures on
+   *     `web-income-life-expectancy`, every one of them the checker's error.
+   *   - "the mark I aimed at is the mark that answers" — false wherever marks overlap, which on a
+   *     375px phone is most dense beats.
+   *
+   * So: `elementFromPoint` decides. If the topmost thing at that pixel carries a `data-detail`,
+   * that is the answer the tooltip owes. If it is the shared `.hit-area` instead, the beat routes
+   * by nearest x (`assets/interaction.mjs`) and the answer is the nearest mark by x over ALL of
+   * them — computed with a 1px tolerance so a tie does not decide the verdict, and over `all`
+   * rather than the probe sample, which was the specific bug that made a 224-reading beat report
+   * 1815 where 1817 was correct.
+   */
+  async function expectedAt(at) {
+    const under = await page.evaluate((p) => {
+      const el = document.elementFromPoint(p.x, p.y);
+      if (!el) return { kind: "nothing" };
+      const mark = el.closest("[data-detail]");
+      if (mark) return { kind: "mark", detail: mark.getAttribute("data-detail") };
+      if (el.closest(".hit-area") || el.classList.contains("hit-area"))
+        return { kind: "hit-area" };
+      return { kind: "other", what: `${el.tagName.toLowerCase()}.${el.getAttribute("class") ?? ""}` };
+    }, at);
+    if (under.kind === "mark")
+      return { details: [under.detail], why: "the mark under the pointer" };
+    if (under.kind === "hit-area")
+      // A SHARED HIT AREA MEANS THE BEAT PICKS THE READING, AND WHICH RULE IT PICKS BY IS ITS OWN
+      // BUSINESS. The seed resolves by nearest x, which is right for a line; a SCATTER resolves by
+      // nearest in BOTH axes, which is right for a cloud where two countries share an income. A
+      // third guess at "the" rule would be wrong again — the first two were, and they invented 67
+      // failures on a sound beat. What this script may honestly demand here is the invariant that
+      // survives every rule: the tooltip APPEARS, and it names a reading this beat actually drew
+      // rather than an invented string. Exact identity is still asserted wherever the page names
+      // the mark itself, which is every probe aimed at a mark.
+      return {
+        details: all.map((m) => m.detail),
+        why: "a real reading, through the shared hit area (the beat's own resolution rule)",
+      };
+    return null; // empty plot: nothing is owed, so nothing is asserted
+  }
+
+  async function tooltipNow() {
+    return page.evaluate(() => {
       const t = document.getElementById("tooltip");
       return { hidden: t.hidden, text: t.textContent };
     });
-    if (!anywhere.hidden && anywhere.text === r.detail) anywhereInPlot += 1;
-    else
-      failures.push(
-        `${vp.label}: hovering the plot at the ${r.year} x, mid-height (${Math.round(r.cx)}, ${Math.round(r.midY)}) — tooltip ${anywhere.hidden ? "never appeared" : `said "${anywhere.text}"`}, expected "${r.detail}"`,
-      );
+  }
+
+  let onMark = 0;
+  let onMarkExpected = 0;
+  let inColumn = 0;
+  let inColumnExpected = 0;
+  for (const r of readings) {
+    const own = probe(r.cx, r.cy);
+    const want = await expectedAt(own);
+    if (want) {
+      onMarkExpected += 1;
+      await page.mouse.move(own.x, own.y);
+      await sleep(25);
+      const shown = await tooltipNow();
+      if (!shown.hidden && want.details.includes(shown.text)) onMark += 1;
+      else
+        failures.push(
+          `${vp.label}: hovering ${r.name} at (${own.x}, ${own.y}) — tooltip ${shown.hidden ? "never appeared" : `said "${shown.text}"`}, expected ${want.details.map((d) => `"${d}"`).join(" or ")} (${want.why})`,
+        );
+    }
+
+    // The same probe again, but at the plot's mid-height rather than on the mark — the path a
+    // phone reader takes, who must not be asked to land a tap on a 5px circle
+    // (`web-discipline.md`, "Keyboard and touch"). Where a beat's marks are their own targets this
+    // pixel is often empty plot, and `expectedAt` returns null, so nothing false is asserted.
+    if (r.midY !== null) {
+      const col = probe(r.cx, r.midY);
+      const wantCol = await expectedAt(col);
+      if (wantCol) {
+        inColumnExpected += 1;
+        await page.mouse.move(col.x, col.y);
+        await sleep(25);
+        const anywhere = await tooltipNow();
+        if (!anywhere.hidden && wantCol.details.includes(anywhere.text)) inColumn += 1;
+        else
+          failures.push(
+            `${vp.label}: hovering the plot at the ${r.name} x, mid-height (${col.x}, ${col.y}) — tooltip ${anywhere.hidden ? "never appeared" : `said "${anywhere.text}"`}, expected ${wantCol.details.map((d) => `"${d}"`).join(" or ")} (${wantCol.why})`,
+          );
+      }
+    }
   }
   check(
-    onCircle === readings.length,
+    onMarkExpected > 0 && onMark === onMarkExpected,
     `${vp.label}: every reading answers a real pointer on its own mark`,
-    `${onCircle}/${readings.length}`,
+    `${onMark}/${onMarkExpected}`,
   );
-  check(
-    anywhereInPlot === readings.length,
-    `${vp.label}: every reading answers a real pointer anywhere in its column`,
-    `${anywhereInPlot}/${readings.length}`,
-  );
+  if (inColumnExpected > 0)
+    check(
+      inColumn === inColumnExpected,
+      `${vp.label}: a pointer mid-plot answers with whatever is under it`,
+      `${inColumn}/${inColumnExpected}`,
+    );
+  else
+    skip(
+      `${vp.label}: pointing mid-plot rather than at a mark`,
+      "this beat's marks are their own targets, so mid-plot is empty ground",
+    );
 
   // The regression probe: the centre of an `.overlay` child. This pixel is covered by an HTML
   // element that is NOT the chart; the tooltip must still answer, which is only true while
   // `.overlay` stays `pointer-events: none`.
+  // Any `.overlay` child will do — not only the seed's own `.note.peak-label`. Beats annotate
+  // different things and name their labels differently; what matters is that SOME HTML sits over
+  // the plot and the pointer still reaches through it. The widest one is picked because it covers
+  // the most pixels a reader might aim at.
   const label = await page.evaluate(() => {
-    const el = document.querySelector(".chart-plot .overlay .note.peak-label");
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2, text: el.textContent };
-  });
-  if (label) {
-    const nearest = readings.reduce((best, r) =>
-      Math.abs(r.cx - label.x) < Math.abs(best.cx - label.x) ? r : best,
+    const els = Array.prototype.slice.call(
+      document.querySelectorAll(".chart-plot .overlay *"),
     );
-    await page.mouse.move(label.x, label.y);
+    let best = null;
+    for (const el of els) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0 && (!best || r.width > best.w))
+        best = {
+          x: r.left + r.width / 2,
+          y: r.top + r.height / 2,
+          w: r.width,
+          text: el.textContent,
+        };
+    }
+    return best;
+  });
+  if (!label)
+    skip(
+      `${vp.label}: pointing THROUGH the overlay`,
+      "this beat draws no HTML label over its plot",
+    );
+  if (label) {
+    const at = probe(label.x, label.y);
+
+    // THE ASSERTION IS THE HIT TEST, NOT THE TOOLTIP'S TEXT — and the first version of this probe
+    // got that wrong twice on real beats. It asked "does the tooltip name the mark nearest this
+    // label by x", which assumed (a) that nearest-by-x is how the beat resolves a pointer at all,
+    // false for every row-shaped beat — a lollipop's marks are separated by Y — and (b) that the
+    // nearest mark was in the probe SAMPLE, false on a 224-reading beat where sampling 40 left the
+    // true nearest out and the check reported 1815 where 1817 was correct. Both were the checker
+    // being wrong about a sound beat, which is the failure mode that costs the most trust.
+    //
+    // What the original defect actually was: `.overlay` with no `pointer-events: none` sat ON TOP
+    // and ate the event. That is a statement about HIT TESTING and nothing else, it is true for
+    // every chart shape, and `elementFromPoint` answers it exactly — it honours
+    // `pointer-events: none`, so with the defect it returns the overlay, and without it returns
+    // whatever the chart put underneath.
+    const under = await page.evaluate((p) => {
+      const el = document.elementFromPoint(p.x, p.y);
+      if (!el) return null;
+      const overlay = el.closest(".overlay");
+      return {
+        tag: el.tagName.toLowerCase(),
+        cls: el.getAttribute("class") ?? "",
+        inOverlay: !!overlay,
+        detail: el.getAttribute("data-detail"),
+      };
+    }, at);
+    check(
+      under !== null && !under.inOverlay,
+      `${vp.label}: a pointer ON an overlay label is not swallowed by it`,
+      `at (${at.x}, ${at.y}) over "${label.text?.trim().slice(0, 40)}" the topmost element is ${under ? `${under.tag}.${under.cls}` : "nothing"}`,
+    );
+
+    // And where the thing underneath IS a hoverable mark, the tooltip must actually answer with
+    // that mark's own detail — the full round trip, still driven by a real pointer. Where the
+    // label happens to sit over empty plot, there is nothing to answer and nothing to assert.
+    await page.mouse.move(at.x, at.y);
     await sleep(40);
     const shown = await page.evaluate(() => {
       const t = document.getElementById("tooltip");
       return { hidden: t.hidden, text: t.textContent };
     });
-    check(
-      !shown.hidden && shown.text === nearest.detail,
-      `${vp.label}: a pointer ON the overlay label still reaches the chart beneath it`,
-      `at (${Math.round(label.x)}, ${Math.round(label.y)}) over "${label.text}" the tooltip said ${shown.hidden ? "nothing" : `"${shown.text}"`}, expected "${nearest.detail}"`,
-    );
+    if (under?.detail)
+      check(
+        !shown.hidden && shown.text === under.detail,
+        `${vp.label}: the mark beneath that label answers the pointer`,
+        `tooltip said ${shown.hidden ? "nothing" : `"${shown.text}"`}, expected "${under.detail}"`,
+      );
+    else if (columnResolved)
+      check(
+        !shown.hidden,
+        `${vp.label}: pointing at the overlay still resolves to a reading through the hit area`,
+        `tooltip said ${shown.hidden ? "nothing" : `"${shown.text}"`}`,
+      );
+    else
+      skip(
+        `${vp.label}: the tooltip's answer under the overlay label`,
+        "the label sits over empty plot, so there is no mark to answer",
+      );
   }
 
   // Leaving the plot clears it — the other half of an honest hover.
@@ -320,6 +544,70 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
   const tag = scripting ? vp.label : `${vp.label} (no JS)`;
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
   await sleep(60);
+
+  // MOST BEATS SHIP NO FILTER, AND THAT IS THE CORRECT OUTCOME OF THIS SKILL'S OWN THREE-PART
+  // TEST (`SKILL.md`, "When to use" — "most beats should not have one"). Measured across the
+  // thirteen shipped web beats: none of them carries a filter. So a hard assumption that
+  // `#period-late` exists made this whole script unusable on them, which is the wrong way round —
+  // the genre's own doctrine says the filter is the exception. Absent, the filter checks are
+  // skipped ALOUD; present but malformed, they still fail.
+  const filter = await page.evaluate(() => {
+    const fs = document.querySelector("fieldset.chart-filter");
+    if (!fs) return null;
+    const radios = Array.prototype.map.call(
+      fs.querySelectorAll("input[type=radio]"),
+      (i) => i.id,
+    );
+    return { radios };
+  });
+  if (!filter) {
+    skip(
+      `${tag}: the filter's own behaviour`,
+      "this beat ships no filter — the expected outcome of the three-part test in SKILL.md",
+    );
+    // The invariant the filter checks were REALLY protecting still applies to a beat without one:
+    // the view a reader lands on must already carry the whole claim, with nothing dimmed and
+    // every argument-bearing word drawn. That part is checked for every beat, filter or not.
+    const rest = await page.evaluate(() => {
+      const marks = Array.prototype.map.call(
+        document.querySelectorAll("[data-detail], .seg, .pt"),
+        (el) => Number(getComputedStyle(el).opacity),
+      );
+      const words = Array.prototype.map
+        .call(
+          document.querySelectorAll(
+            ".chart-title, .chart-caveat, .chart-source, .chart-plot .overlay *",
+          ),
+          (el) => {
+            const cs = getComputedStyle(el);
+            return {
+              text: el.textContent.trim().slice(0, 30),
+              opacity: Number(cs.opacity),
+              hidden: cs.display === "none" || cs.visibility === "hidden",
+            };
+          },
+        )
+        .filter((w) => w.text.length > 0);
+      return { marks, words };
+    });
+    check(
+      rest.marks.length > 0 && rest.marks.every((o) => o === 1),
+      `${tag}: the default view dims nothing — the full claim is on screen`,
+      `${rest.marks.length} marks, opacities ${[...new Set(rest.marks)].join("/")}`,
+    );
+    check(
+      rest.words.length > 0 && rest.words.every((w) => w.opacity === 1 && !w.hidden),
+      `${tag}: every argument-bearing word is drawn unconditionally`,
+      `${rest.words.length} words checked`,
+    );
+    return;
+  }
+  check(
+    filter.radios.length >= 2,
+    `${tag}: the filter is a real radio group`,
+    `radios: ${filter.radios.join(", ") || "none"}`,
+  );
+  if (filter.radios.length < 2) return;
 
   const state = () =>
     page.evaluate(() => {
@@ -382,13 +670,17 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
   );
   argumentIntact(initial, "default");
 
-  const pillBox = (id) =>
-    page.evaluate((sel) => {
+  const pillBox = async (id) => {
+    const r = await page.evaluate((sel) => {
       const input = document.querySelector(sel);
       const label = input.closest("label");
-      const r = label.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: Math.round(r.width), h: Math.round(r.height) };
+      const b = label.getBoundingClientRect();
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2, w: Math.round(b.width), h: Math.round(b.height) };
     }, `#${id}`);
+    // Rounded before it ever reaches page.mouse — see `probe`'s own comment for the fractional
+    // coordinate that silently does nothing.
+    return { ...r, ...probe(r.x, r.y) };
+  };
 
   for (const [id, dimmed, kept] of [
     ["period-early", "late", "early"],
@@ -441,6 +733,17 @@ async function checkFilter(page, vp, { scripting = true } = {}) {
 async function checkControlAffordance(page, vp) {
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
   await sleep(60);
+
+  const present = await page.evaluate(
+    () => !!document.querySelector("fieldset.chart-filter"),
+  );
+  if (!present) {
+    skip(
+      `${vp.label}: the filter control's own affordance`,
+      "this beat ships no filter, so there is no control to reach or ring",
+    );
+    return;
+  }
 
   const structure = await page.evaluate(() => {
     const fs = document.querySelector("fieldset.chart-filter");
@@ -624,13 +927,22 @@ try {
     if (wantShots) {
       // A screenshot WITH the pointer parked on a reading, so the tooltip is in the frame a human
       // looks at rather than only in an assertion.
+      // A mark from the middle of whatever this beat draws — `[data-detail]`, not `.pt`, for the
+      // same reason the probes use it. This block indexed `.pt[5]` and crashed the whole run on
+      // every beat that draws bins, bars or rows instead of points.
       const r = await page.evaluate(() => {
-        const p = document.querySelectorAll(".pt")[5];
-        const b = p.getBoundingClientRect();
-        return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+        const marks = document.querySelectorAll("[data-detail]");
+        if (marks.length === 0) return null;
+        const b = marks[Math.floor(marks.length / 2)].getBoundingClientRect();
+        return {
+          x: Math.round(b.left + b.width / 2),
+          y: Math.round(b.top + b.height / 2),
+        };
       });
-      await page.mouse.move(r.x, r.y);
-      await sleep(80);
+      if (r) {
+        await page.mouse.move(r.x, r.y);
+        await sleep(80);
+      }
       await page.screenshot({ path: join(outDir, `hover-${vp.w}x${vp.h}.png`) });
     }
     await page.close();
@@ -642,9 +954,23 @@ try {
     await page.goto(`file://${filePath}`, { waitUntil: "load" });
     await checkFilter(page, vp);
     if (wantShots) {
-      await page.evaluate(() => document.querySelector("#period-late").click());
-      await sleep(200);
-      await page.screenshot({ path: join(outDir, `filter-late-${vp.w}x${vp.h}.png`) });
+      // Only when the beat HAS a filter — the same conditionality the checks themselves use. This
+      // line assumed `#period-late` and crashed the run on every filterless beat, which is all
+      // fifteen shipped ones.
+      const filtered = await page.evaluate(() => {
+        const last = document.querySelector(
+          "fieldset.chart-filter input[type=radio]:last-of-type",
+        );
+        if (!last) return false;
+        last.click();
+        return true;
+      });
+      if (filtered) {
+        await sleep(200);
+        await page.screenshot({
+          path: join(outDir, `filter-${vp.w}x${vp.h}.png`),
+        });
+      }
     }
     await page.close();
   }
@@ -677,10 +1003,23 @@ try {
       await page.keyboard.press("Tab");
       await sleep(80);
       const box = await page.evaluate(() => {
-        const r = document.querySelector(".chart-filter").getBoundingClientRect();
-        return { x: Math.max(0, r.left - 8), y: Math.max(0, r.top - 8), width: r.width + 16, height: r.height + 16 };
+        const el = document.querySelector(".chart-filter");
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          x: Math.max(0, r.left - 8),
+          y: Math.max(0, r.top - 8),
+          width: r.width + 16,
+          height: r.height + 16,
+        };
       });
-      await page.screenshot({ path: join(outDir, `control-focus-${vp.w}.png`), clip: box });
+      // No filter, no control to photograph — the last of the `.chart-filter` assumptions that
+      // crashed this script on the fifteen beats that ship without one.
+      if (box)
+        await page.screenshot({
+          path: join(outDir, `control-focus-${vp.w}.png`),
+          clip: box,
+        });
     }
     await page.close();
   }
@@ -688,7 +1027,13 @@ try {
   await browser.close();
 }
 
-console.log(`\n${passes} checks passed, ${failures.length} failed`);
+console.log(
+  `\n${passes} checks passed, ${failures.length} failed, ${skips.length} skipped`,
+);
+if (skips.length) {
+  console.log(`\nskipped (each one a check this beat's own shape does not have):`);
+  for (const s of skips) console.log(`  - ${s}`);
+}
 if (failures.length) {
   console.log(`\nfailures:`);
   for (const f of failures) console.log(`  - ${f}`);

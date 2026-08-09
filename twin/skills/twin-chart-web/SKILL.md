@@ -12,15 +12,20 @@ thing a static frame and a video build cannot have, a reader who can ask the cha
 get an exact answer back, without anything the static frame already states being gated behind that
 ask.
 
-One beat has been proven through this skill, `co2-suisse` — its composition
-(`proof/co2-suisse/EmissionsWeb.tsx`) lives with the rest of that story's own files, not inside
+**Fifteen beats ship through this skill** — `co2-suisse` plus the `web-*`, `webx-*` and `weby-*`
+workspaces — and every one of them is on the fluid frame this skill now teaches. Each composition
+(e.g. `proof/co2-suisse/EmissionsWeb.tsx`) lives with the rest of its story's own files, not inside
 this skill's `assets/`, so this skill never hosts a particular story's numbers, only the genre's own
 mechanics (`scripts/render-web.mjs`'s generic `renderWeb`, `assets/interaction.mjs`). A worked
 example lives beside the skill the same replace-me way `twin-chart-beat`'s seed and
-`twin-chart-video`'s compositions do — see "Quick start" for how to drive it. `co2-suisse`'s own
-files predate this skill's second build (see "How it works" below) and have not been migrated —
-they still ship two pre-rendered widths rather than the fluid frame this skill now teaches; a
-journalist writing a NEW web beat follows this seed, not that story.
+`twin-chart-video`'s compositions do — see "Quick start" for how to drive it.
+
+**A cost worth knowing before you change `renderWeb`'s signature.** The second build dropped the
+`layouts` argument without migrating the beats that passed it, and all fifteen stopped rendering
+with the same `Cannot destructure property 'width'` — for an hour and a half, with a green suite,
+because the only file that would have caught it (`test/render-web.test.ts`) imported the same
+removed export and could not load either. The genre's machinery and the beats that call it move
+together or not at all.
 
 Its THIRD build closed three things the owner named after looking at the rendered output: the beat
 now **fits the window it opens in** (it filled its container's width and then grew off the bottom of
@@ -86,6 +91,16 @@ Its SECOND build was corrected the same way: a screenshot at 900px, not a comput
 is what showed the first build's frame stopping short of its container with empty space either
 side — see `web-discipline.md`, "Verification."
 
+**A beat FITS the window; it does not FILL it, and at phone width that is very visible.** Height
+follows width through `aspect-ratio`, so a narrow viewport buys a short chart: measured across the
+migrated beats, the tallest plot at 375×812 is 504px in an 812px window, and the seed's is 153px.
+Nothing is clipped and nothing scrolls — the rule this genre settled is the fit — but the empty
+ground below reads as unfinished the first time you see it. Three separate agents reported it
+independently as a defect, which is the signal that saying it once in a doctrine file is not enough:
+**it is expected, it is not a bug, and filling the window is an open question nobody has decided.**
+If you want the chart to use that room, that is a change to the frame's own proportions and it needs
+the owner, not a patch at the CSS.
+
 **So run `scripts/verify-web.mjs`, and know exactly what it can and cannot tell you.** It dispatches
 real pointer events at real coordinates and real clicks, which is the only way to catch the class of
 defect that has actually bitten this genre: an HTML overlay with no `pointer-events: none` swallowed
@@ -104,7 +119,7 @@ look at them; each catches what the other is blind to.
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
 | Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
 | Preview | `scripts/render-preview.mjs` | Rasterises `ChartWebPreviewSvg` (SVG-only, baked text) to `assets/preview.png` — NOT what a real beat ships; see that component's own doc-comment in `assets/ChartWebSeed.tsx` |
-| Verify | `scripts/verify-web.mjs` | The genre's evidence, not its documentation: drives Chrome over a rendered beat and reports 153 measurements — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over every reading at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, run once with scripting on and once with JavaScript disabled), `checkControlAffordance` (Tab reach, the focus ring measured in pixels, the checked pill's contrast). Exit 0 only when every check passed |
+| Verify | `scripts/verify-web.mjs` | The genre's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
 | Test | `test/render-web.test.ts` | CSV parsing, the CO₂ story component's own SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
@@ -252,6 +267,7 @@ skill into a journalist's root — the whole premise — did not build.
 | Where the plot stops shrinking — below it, a short window gets a scrollbar rather than a strip | `120` | `PLOT_FLOOR_PX`, `render-web.mjs` |
 | The segmented filter pill's own padding and corner (the whole treatment sits behind `@supports selector(:has(*))`) | `5px 12px` / `999px` | `.chart-filter label`, `render-web.mjs` |
 | The viewport sizes the verification drives, and the two it dispatches pointers at | 7 sizes / 2 sizes | `VIEWPORTS`, `POINTER_VIEWPORTS`, `verify-web.mjs` |
+| How many marks a hover sweep probes before it starts sampling an even spread | `40` | `MAX_PROBES`, `verify-web.mjs` |
 | The invisible hit target's radius per point (keyboard focus outline, not the touch target — see `web-discipline.md`) | `5` | `.pt` circle `r`, the story's own composition file |
 | How the `#tooltip` is positioned relative to the pointer/focused point | `14px` above, clamped `8px` from the viewport edge | `show()`, `interaction.mjs` |
 | The level the seed's reference rule holds against | `2015` | `REFERENCE_YEAR`, `ChartWebSeed.tsx` |
@@ -311,11 +327,19 @@ skill into a journalist's root — the whole premise — did not build.
   supplies `measureText` as `measure` — the same division `render-web.mjs`'s `renderWeb` uses for a
   real beat, so the seed components themselves never import the rasteriser. `--check` re-renders
   and fails non-zero if the committed PNG no longer matches a fresh render of the seed.
-- `test/render-web.test.ts` — `bun:test` coverage: CSV parsing, the CO₂ story component's own SSR
-  output (closed palette, point count, exact per-point French-formatted values, everything
-  argument-bearing rendered unconditionally), the pure `nearestIndex` helper, and a direct
-  cross-check against `crossingGeometry` so this genre never carries a second implementation of
-  data-to-coordinates.
+- `test/render-web.test.ts` — `bun:test` coverage of the genre's contract against a REAL shipped
+  beat (the CO₂ story), rewritten against the fluid frame: CSV parsing; the words carried and the
+  argument-bearing furniture drawn unconditionally; exactly one `svg.chart` with no `<text>` inside
+  it and no root pixel size; nothing drawn outside the `viewBox`, with `POINT_INSET` keeping the
+  end points' own circles off the side edges; the `aspect-ratio` DERIVED from the measured
+  `--y-gutter` plus the real geometry rather than hand-picked (proven by re-rendering at a
+  different canonical frame and watching every derived number follow); one focusable, labelled,
+  `data-detail`-bearing mark per reading; a hit area covering the whole plot box and staying
+  transparent; a closed palette with the accent never on a non-subject point; the pure
+  `nearestIndex` helper; and a direct coordinate-for-coordinate cross-check against
+  `crossingGeometry`, so this genre never carries a second implementation of data-to-coordinates.
+  Its own header records what the two-rung version asserted, what was re-expressed and what was
+  dropped outright — including one assertion that would now assert a BUG if it were kept.
 - `test/canon.test.ts` — the canon's own shape, not a story's: no CO₂ story component under this
   skill's `assets/`, the seed carries the exact `REPLACE ME` wording and none of the CO₂ story's own
   copy, the sample data is real rows a seed can render standalone, and `preview.png` is a current

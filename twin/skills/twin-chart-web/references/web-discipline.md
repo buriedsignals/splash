@@ -244,6 +244,56 @@ rule closes.
 `aspect-ratio` and a narrow viewport therefore buys a short chart. Fitting and filling are two
 different rules; only the first is settled here.
 
+## What `preserveAspectRatio="none"` costs, and the shape it will ruin
+
+**The stretch that makes this genre fluid is a NON-UNIFORM scale, and a non-uniform scale turns a
+circle into an ellipse.** `preserveAspectRatio="none"` is what lets one `viewBox` fill any container
+without letterboxing; the price is that x and y are scaled by different factors, and every shape in
+the `<svg>` is distorted by exactly that difference. Nothing warns. It is invisible in the markup, it
+is invisible in a unit test, and at the width the author happened to look at it is often invisible on
+screen too.
+
+**When it does not matter.** A gridline, a reference rule, an axis-parallel bar, a line path: all of
+these carry their meaning in position, and position is preserved exactly — a point at 40% across and
+60% down stays at 40% across and 60% down under any stretch. A small round marker distorts, but a
+5px dot reading as a 5×7 dot says nothing false about the data. The seed's own points and the CO₂
+beat's end dot are in this category, which is why they are still `<circle>`.
+
+**When it ruins the beat.** When the MARK'S OWN SHAPE is the argument. A scatter is the clear case:
+the reader is being asked to see a cloud, and the roundness of the dots is part of reading its
+density and its outliers — stretch them into ellipses and the cloud acquires a directional grain
+that is a pure artefact of the container's width. One migrating beat hit exactly this and moved its
+dots out of the `<svg>` into fixed-size HTML positioned in `%` over the same grid cell — the same
+split this genre already uses for every word. That is the general remedy: **anything whose shape
+must survive belongs in the HTML layer, not in the stretched `viewBox`.**
+
+The test to apply, before drawing a mark as an SVG shape: *if this were 30% wider than tall, would
+the reader be misled?* Gridline, no. Bar, no. Scatter dot, yes. Proportional circle whose AREA
+encodes a value — emphatically yes, since the encoded quantity itself is what the distortion
+corrupts.
+
+## Nothing clipped — and the one edge this genre does not protect
+
+**An SVG clips to its `viewBox`.** No `overflow: visible` is set, and setting one would only move
+the problem into the neighbouring grid column, so a coordinate outside `[0, width] × [0, height]` is
+silently cut at every container width at once. That is why `POINT_INSET` exists: it insets the
+x-range on both sides by enough to clear the largest circle radius the genre draws, so a first or
+last point never loses half its dot against the frame edge.
+
+**The x promise is kept; there is no y equivalent, and that is a real gap.** The fitted vertical
+scale maps the data straight onto `[height, 0]`, so a reading at the bottom of its own fitted range
+sits within one radius of the floor and its hit circle overhangs it. Measured, rather than assumed:
+worst vertical overhang **2.125 units of a 460-unit box** in `proof/co2-suisse`, and **0.657 of 380**
+in `ChartWebSeed`; worst horizontal overhang **0.000** in both, which is `POINT_INSET` doing its job.
+
+What a reader can actually lose is small: the overhanging circle is the INVISIBLE hit target
+(`fill="transparent"`), so nothing is cut at rest — only a sliver of the muted disc CSS paints while
+that lowest reading is hovered or focused. It is recorded here rather than quietly fixed because
+closing it means changing the y-range in every composition in the genre, which is a decision about
+the frame, not a test's to make. `test/render-web.test.ts` asserts the bound that keeps it small —
+every point's CENTRE inside the box, so the overhang can never exceed the radius — and says in the
+file why it does not assert more.
+
 ## The filter obeys the same rule interaction does
 
 **Nothing argument-bearing may sit behind a filter — the same rule "What must not become
@@ -409,6 +459,45 @@ unfocused and focused and require the two frames to DIFFER; against the mutant i
 vs 5048B — IDENTICAL, so nothing is drawn for focus". **A computed style is a claim about a box;
 only a rendered frame is a claim about what a reader can see.** That lesson generalises past this
 one check and is the same one the "trust the pixels over any intermediate number" rule below states.
+
+**`page.mouse.move` SILENTLY DOES NOTHING AT FRACTIONAL COORDINATES.** Measured on a real beat
+during the migration: a probe at x=65.63 produced no hover at all; the identical probe at x=66
+worked. Nothing throws and nothing warns — the tooltip simply never appears, which is
+indistinguishable from a chart whose hover is broken, and it cost one agent an entire wrong
+verification round. Any probe computed from a `getBoundingClientRect` centre is fractional roughly
+half the time, so this is the default case rather than an edge one. `verify-web.mjs` rounds every
+coordinate at one boundary function (`probe`) rather than at each call site, where one would
+eventually be forgotten. **Anything else in this project that drives a pointer must do the same.**
+
+**Every check is conditional on the beat's own shape, and every skip is announced.** The first build
+of the verifier hard-coded the SEED's shape — `.pt` for a mark, `#period-late` for a filter — and was
+therefore unusable on most of the genre. Measured across the thirteen shipped web beats: all 13
+carry `data-detail`, only 5 carry `.pt`, the hit element is variously `bin-hit`, `segment-hit`,
+`step-hit`, `bar-hit`, `hit-row` or `row-hit`, and **not one of them ships a filter** — which is the
+correct outcome of the three-part test above, not an omission. So:
+
+- Marks are discovered by **`[data-detail]`**, the genre's real contract: it is the attribute
+  `interaction.mjs` reads to fill the tooltip and the one thing every beat bakes server-side.
+- The filter checks **skip aloud** when a beat ships no `fieldset.chart-filter`, and the invariant
+  they were really protecting — the default view dims nothing, every argument-bearing word is drawn
+  — is checked for every beat, filter or not.
+- **Which reading a shared hit area resolves to is the beat's own business.** The seed resolves by
+  nearest x, which is right for a line; a scatter resolves by nearest in both axes, which is right
+  for a cloud where two countries share an income. The verifier asserts exact identity only where
+  `elementFromPoint` names the mark itself, and otherwise demands only what survives every rule:
+  the tooltip appears, and it names a reading the beat actually drew.
+- A run prints `N passed, N failed, N skipped` and reprints every skip, so a run that verified
+  nothing cannot look like a run that verified everything.
+
+**A checker's own assumptions are the likeliest thing wrong with it.** Every one of the following
+was this script mistaking its own layout assumption for a defect in a sound beat, and each was found
+only by running it across all fifteen: "a `.pt` beat resolves by nearest x" (67 invented failures on
+a scatter); "the mark I aimed at is the mark that answers" (false wherever marks overlap, i.e. most
+dense beats at 375px); "the nearest mark is in my probe sample" (reported 1815 where 1817 was
+correct, on a 224-reading beat sampled down to 40); "a hit area sits at the plot's centre" (a
+small-multiples grid puts a gutter there); "every beat draws an x-axis row" (a slope, a ranking and a
+small-multiples grid do not — this one crashed the script outright). **Run a new check against every
+beat before believing what it says about one.**
 
 **What the script does not reach, so a human still looks.** It reads text, geometry, opacity and
 colour; it does not look at the picture. A label colliding with a line, a clipped mark, a squat plot
