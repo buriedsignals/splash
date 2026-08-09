@@ -269,10 +269,37 @@ export function LifeExpectancyVideo({
   const subjectLabel = `${subjectYear} · ${en(
     data.find((d) => d.year === subjectYear)!.value,
   )} ${UNIT}`;
-  const tickLabelsFor = (values: number[]) =>
-    values.map((v, i, all) =>
-      i === all.length - 1 ? `${en(v, 0)} ${UNIT}` : en(v, i === 1 ? 1 : 0),
+  // A GRIDLINE IS A POSITION, AND ITS LABEL IS READ AS THAT POSITION EXACTLY. `.nice()` returns
+  // [79.5, 84] for this series, and printing the floor with a typed `en(v, 0)` put "80" beside a
+  // line drawn at 79.5 — with the 2000 reading (79.834) sitting visibly ABOVE the line labelled 80,
+  // on a chart whose entire subject is a 0.72-year move. The precision now comes from the value:
+  // as many decimals as it takes to print the bound exactly, never a count typed here. Index 1 is
+  // the reference — a DATA reading, legitimately rounded to a tenth like every other value in this
+  // beat, so it is the one label this rule does not apply to.
+  const exactDecimals = (v: number) => {
+    for (let d = 0; d <= 3; d += 1) if (Number(v.toFixed(d)) === v) return d;
+    throw new Error(
+      `axis bound ${v} needs more than three decimals to print exactly — the scale is not "nice"`,
     );
+  };
+  // The tripwire, kept separate from the formatting above so it still fires if someone types a
+  // fixed decimal count back in: whatever the label ends up saying, reading it as a number must
+  // give back the gridline it sits on.
+  const boundLabel = (label: string, value: number) => {
+    const printed = Number(label.replace(UNIT, "").replace("−", "-").trim());
+    if (printed !== value)
+      throw new Error(
+        `axis bound label ${JSON.stringify(label)} is not the gridline it sits on (${value}) — ` +
+          `a rounded bound draws a line at one place and names another`,
+      );
+    return label;
+  };
+  const tickLabelsFor = (values: number[]) =>
+    values.map((v, i, all) => {
+      if (i === 1) return en(v, 1);
+      const label = en(v, exactDecimals(v));
+      return boundLabel(i === all.length - 1 ? `${label} ${UNIT}` : label, v);
+    });
   const provisionalTicks = tickLabelsFor(
     (() => {
       const g = lifeExpectancyGeometry(data, {
