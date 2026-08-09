@@ -53,24 +53,74 @@ describe("offerForms", () => {
     );
   });
 
-  it("should offer the owned file and the source bundle for a web chart", () => {
-    const ids = offerForms({ medium: "chart", genre: "web" }).map((f) => f.id);
-    expect(ids).toEqual(["owned-file", "source-bundle"]);
+  it("should offer the owned file, the source bundle, and a CMS insertion for a web chart with no Cloudflare credentials", () => {
+    const ids = offerForms({ medium: "chart", genre: "web", env: {} }).map(
+      (f) => f.id,
+    );
+    expect(ids).toEqual(["owned-file", "source-bundle", "cms-insertion"]);
   });
 
   it("should offer the owned file and the source bundle for a video chart", () => {
-    const ids = offerForms({ medium: "chart", genre: "video" }).map(
+    const ids = offerForms({ medium: "chart", genre: "video", env: {} }).map(
       (f) => f.id,
     );
     expect(ids).toEqual(["owned-file", "source-bundle"]);
   });
 
-  it("should never offer an embed or a CMS insertion for web or video — neither exists in this toolchain", () => {
-    for (const genre of ["web", "video"]) {
-      const ids = offerForms({ medium: "chart", genre }).map((f) => f.id);
+  it("should never offer an embed or a CMS insertion for static or video — neither genre is wired to either form yet", () => {
+    for (const genre of ["static", "video"]) {
+      const ids = offerForms({ medium: "chart", genre, env: {} }).map(
+        (f) => f.id,
+      );
       expect(ids).not.toContain("embed");
       expect(ids).not.toContain("cms-insertion");
     }
+  });
+
+  it("should never offer the hosted embed for a web chart when no Cloudflare credential is set", () => {
+    const ids = offerForms({ medium: "chart", genre: "web", env: {} }).map(
+      (f) => f.id,
+    );
+    expect(ids).not.toContain("embed");
+  });
+
+  it("should never offer the hosted embed when only the account id is set, missing the token", () => {
+    const ids = offerForms({
+      medium: "chart",
+      genre: "web",
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct" },
+    }).map((f) => f.id);
+    expect(ids).not.toContain("embed");
+  });
+
+  it("should never offer the hosted embed when only the token is set, missing the account id", () => {
+    const ids = offerForms({
+      medium: "chart",
+      genre: "web",
+      env: { CLOUDFLARE_API_TOKEN: "tok" },
+    }).map((f) => f.id);
+    expect(ids).not.toContain("embed");
+  });
+
+  it("should offer the hosted embed for a web chart once both Cloudflare credentials are set", () => {
+    const ids = offerForms({
+      medium: "chart",
+      genre: "web",
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+    }).map((f) => f.id);
+    expect(ids).toEqual([
+      "owned-file",
+      "source-bundle",
+      "embed",
+      "cms-insertion",
+    ]);
+  });
+
+  it("should describe the CMS insertion form honestly, naming that nothing is inserted automatically", () => {
+    const cmsForm = offerForms({ medium: "chart", genre: "web", env: {} }).find(
+      (f) => f.id === "cms-insertion",
+    );
+    expect(cmsForm?.gives).toMatch(/not yet wired to a live CMS/);
   });
 });
 
@@ -262,4 +312,177 @@ describe("materialise", () => {
       expect(files).not.toContain("renders");
     });
   }
+});
+
+// A fake of the same four-call Cloudflare sequence `test/deploy-embed.test.ts` exercises directly
+// — duplicated rather than imported, the same "a skill's own test files don't share fixtures
+// across files" shape the rest of this codebase already uses. This is only ever reached through
+// `materialise`, so it only needs to prove the plumbing gets there and back with the right URL.
+function fakeCloudflare() {
+  const fetchFn = async (url: string, init?: RequestInit) => {
+    const path = new URL(url).pathname;
+    if (path.endsWith("/upload-token")) {
+      return new Response(
+        JSON.stringify({ success: true, result: { jwt: "fake-jwt" } }),
+      );
+    }
+    if (path === "/client/v4/pages/assets/check-missing") {
+      const body = JSON.parse(init!.body as string);
+      return new Response(
+        JSON.stringify({ success: true, result: body.hashes }),
+      );
+    }
+    if (path === "/client/v4/pages/assets/upload") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: { successful_key_count: 1, unsuccessful_keys: [] },
+        }),
+      );
+    }
+    if (path.endsWith("/deployments") && init?.method === "POST") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          result: { url: "https://deadbeef.some-project.pages.dev" },
+        }),
+      );
+    }
+    if (path.endsWith("/projects") && init?.method === "POST") {
+      return new Response(JSON.stringify({ success: true, result: {} }));
+    }
+    throw new Error(
+      `fakeCloudflare: unhandled call ${init?.method ?? "GET"} ${path}`,
+    );
+  };
+  return fetchFn;
+}
+
+describe("materialise — hosted embed and CMS insertion (web genre)", () => {
+  let webBeatDir: string, webExportDir: string;
+  beforeEach(async () => {
+    const base = await mkdtemp(join(tmpdir(), "web-beat-"));
+    webBeatDir = join(base, "1-rainfall-web");
+    webExportDir = join(base, "export");
+    await mkdir(join(webBeatDir, "renders"), { recursive: true });
+    await writeFile(
+      join(webBeatDir, "renders", "rainfall.html"),
+      "<!doctype html><html><body><h1>rainfall</h1></body></html>",
+    );
+  });
+  afterEach(async () => {
+    await rm(join(webBeatDir, ".."), { recursive: true, force: true });
+  });
+
+  it("should refuse to materialise the embed form without a Cloudflare credential", async () => {
+    await expect(
+      materialise({
+        form: "embed",
+        genre: "web",
+        beatDir: webBeatDir,
+        exportDir: webExportDir,
+        env: {},
+      }),
+    ).rejects.toThrow("CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN");
+  });
+
+  it("should write only EMBED_URL.txt, holding the live deployment URL, when the embed form is chosen", async () => {
+    const written = await materialise({
+      form: "embed",
+      genre: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn: fakeCloudflare(),
+    });
+    const files = await readdir(webExportDir);
+    expect(files).toEqual(["EMBED_URL.txt"]);
+    const url = await Bun.file(join(webExportDir, "EMBED_URL.txt")).text();
+    expect(url.trim()).toBe("https://deadbeef.some-project.pages.dev");
+    expect(written).toEqual([join(webExportDir, "EMBED_URL.txt")]);
+  });
+
+  it("should refuse to materialise embed when renders/ holds more than one file", async () => {
+    await writeFile(join(webBeatDir, "renders", "extra.html"), "<p>extra</p>");
+    await expect(
+      materialise({
+        form: "embed",
+        genre: "web",
+        beatDir: webBeatDir,
+        exportDir: webExportDir,
+        env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+        fetchFn: fakeCloudflare(),
+      }),
+    ).rejects.toThrow("expected exactly one file");
+  });
+
+  it("should write a CMS-INSERTION.md document, never touch a network, when cms-insertion is chosen", async () => {
+    const written = await materialise({
+      form: "cms-insertion",
+      genre: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: {},
+      // A fetchFn that throws on any call — proves this form makes zero network calls, unlike
+      // "embed" right above it.
+      fetchFn: async () => {
+        throw new Error("cms-insertion must never call fetch");
+      },
+    });
+    const files = await readdir(webExportDir);
+    expect(files).toEqual(["CMS-INSERTION.md"]);
+    const doc = await Bun.file(join(webExportDir, "CMS-INSERTION.md")).text();
+    expect(doc).toContain("UNPROVEN");
+    expect(doc).toContain("<h1>rainfall</h1>"); // the beat's own HTML made it into the payload
+    expect(written).toEqual([join(webExportDir, "CMS-INSERTION.md")]);
+  });
+
+  it("should honour a caller-supplied cms option, building a livingdocs insertion instead of the we-publish default", async () => {
+    await materialise({
+      form: "cms-insertion",
+      genre: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: {},
+      cms: { kind: "livingdocs", articleId: "real-article-id" },
+    });
+    const doc = await Bun.file(join(webExportDir, "CMS-INSERTION.md")).text();
+    expect(doc).toContain("insertComponent");
+    expect(doc).toContain("real-article-id");
+  });
+
+  it("should refuse to materialise cms-insertion when renders/ holds more than one file", async () => {
+    await writeFile(join(webBeatDir, "renders", "extra.html"), "<p>extra</p>");
+    await expect(
+      materialise({
+        form: "cms-insertion",
+        genre: "web",
+        beatDir: webBeatDir,
+        exportDir: webExportDir,
+        env: {},
+      }),
+    ).rejects.toThrow("expected exactly one file");
+  });
+
+  it("should clear a previously materialised embed when cms-insertion is chosen next", async () => {
+    await materialise({
+      form: "embed",
+      genre: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
+      fetchFn: fakeCloudflare(),
+    });
+    expect(await readdir(webExportDir)).toEqual(["EMBED_URL.txt"]);
+
+    await materialise({
+      form: "cms-insertion",
+      genre: "web",
+      beatDir: webBeatDir,
+      exportDir: webExportDir,
+      env: {},
+    });
+    const files = await readdir(webExportDir);
+    expect(files).toEqual(["CMS-INSERTION.md"]);
+  });
 });
