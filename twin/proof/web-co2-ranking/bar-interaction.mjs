@@ -41,7 +41,21 @@ function initBars() {
     const tw = tooltip.offsetWidth || 160;
     const th = tooltip.offsetHeight || 28;
     const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
-    const y = Math.max(clientY - th - 14, 8);
+    // Above the row by default, but flipped BELOW when that would land the tooltip back over the
+    // chart's own header (title/subtitle/source) — the topmost row (Poland, in this beat's own
+    // data) sits close enough to the source line that "above the row, with a 14px gap" is only 3px
+    // short of clearing it, an overlap a fixed `Math.max(..., 8)` viewport-relative floor never
+    // catches, because the header's own bottom edge (~156px here) sits far below the viewport top
+    // (8px) it was checking against instead. Confirmed by hovering the real topmost row in a live
+    // browser and reading the two rects, not by eyeballing the offsets. The true floor is read from
+    // the DOM (the plot's own y-axis line, scoped to the row's own <svg> — desktop and narrow
+    // layouts share the markup but size differently), never hardcoded, so it stays correct if the
+    // header's own height ever changes.
+    const svg = row.closest("svg");
+    const axisLine = svg && svg.querySelector("line");
+    const plotTop = axisLine ? axisLine.getBoundingClientRect().top : 8;
+    const above = clientY - th - 14;
+    const y = above >= plotTop ? above : clientY + 14;
     tooltip.style.left = x + "px";
     tooltip.style.top = y + "px";
   }
