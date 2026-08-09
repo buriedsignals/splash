@@ -339,7 +339,11 @@ function initChart(svg, tooltip) {
   if (hitArea) {
     hitArea.addEventListener("pointermove", fromPointer);
     hitArea.addEventListener("pointerdown", fromPointer);
-    hitArea.addEventListener("pointerleave", clear);
+    hitArea.addEventListener("pointerleave", function (evt) {
+      // Mouse and pen only — see this beat's render-web.mjs for the measurement.
+      if (evt.pointerType === "touch") return;
+      clear();
+    });
   }
 
   // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent

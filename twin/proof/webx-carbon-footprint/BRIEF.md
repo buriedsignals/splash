@@ -29,9 +29,22 @@ structurally cannot state is MEMBERSHIP: a reader looking at the rightmost bar s
 countries" with no way to know which ones without leaving the chart. Hover, tap or keyboard focus
 on any of the ten bins reveals its exact count AND the full, sorted list of every country in it,
 straight from the frozen CSV's own `Entity` column — never fabricated, never the count restated.
-Because the fullest bins hold well over a hundred names, this beat's tooltip is widened and made
-internally scrollable (`render-web.mjs`'s own CSS override) rather than truncating the list — the
-one deliberate departure from the skill's default 220px, no-scroll tooltip.
+Because the fullest bins hold well over a hundred names, this beat's tooltip is WIDENED to 320px
+(`render-web.mjs`'s own CSS override) — the one deliberate departure from the skill's default 220px
+tooltip — and sized to its own content, so the whole list is visible at once.
+
+**It does not scroll, and an earlier build of this brief said it did.** That build capped the
+tooltip at 220px with `overflow-y: auto`; driven in Chrome at 1440×900 over the 0–4 t bin, the box
+measured `clientHeight` 218 against `scrollHeight` 502 and `scrollTop` stayed 0 after a 200px
+wheel — **56.6% of the 127 names were unreachable**, hidden behind the very sentence that promised
+they were not. The scroll was dropped rather than repaired, because none of the three inputs this
+beat's alt text names could ever have driven it: the tooltip is `pointer-events: none` (the genre's
+stylesheet — it follows the pointer, so it must not swallow its own trigger's events), which sends
+the wheel to the bin underneath; a keyboard reader's focus stays on the bin, never on the tooltip;
+and a finger dragging inside a fixed overlay fights the page scroll. The tallest list renders 502px
+tall, which sits inside the window at every viewport this genre targets, and
+`skills/splash-twin/test/interaction-promises-are-kept.test.ts` turns red if any delivered tooltip
+hides content again — by scrolling or by running off the window.
 
 ## Source line
 

@@ -117,8 +117,21 @@ async function repair(outPath) {
   html = html.replace("</body>", `${ownScript}</body>`);
 
   // This beat's tooltip carries a full country list, sometimes well over a hundred names — the
-  // skill's default 220px/no-scroll tooltip would either overflow the viewport or silently clip.
-  // Widened and made internally scrollable rather than truncating what a reader can ask for.
+  // skill's default 220px tooltip is too narrow for it. Widened to 320px, and SIZED TO ITS CONTENT.
+  //
+  // It used to also carry `max-height: 220px; overflow-y: auto`, and the BRIEF called that "made
+  // internally scrollable rather than truncating the list". Measured in Chrome at 1440x900,
+  // hovering the 0-4 t bin: `clientHeight` 218 against `scrollHeight` 502, `scrollTop` 0 after a
+  // 200px wheel — 56.6% of the 127 names unreachable. The tooltip carries `pointer-events: none`
+  // (the genre's own stylesheet, and correctly so: it follows the pointer, and a box that can
+  // swallow its own trigger's events is worse), so the wheel goes to the bin underneath it and
+  // nothing scrolls. Nor could any of the three inputs the alt text names ever scroll it: a
+  // keyboard reader's focus stays on the bin, and a finger dragging inside a fixed overlay fights
+  // the page. So the scroll is dropped rather than repaired — a promise no input mode could keep.
+  // The whole list is now simply visible: tallest content is 502px (bin 0), which sits inside the
+  // window at every viewport this genre targets, and
+  // `skills/splash-twin/test/interaction-promises-are-kept.test.ts` fails if any delivered tooltip
+  // ever hides content again, by scroll or by running off the window.
   const ownCss = `
 .bin-hit { cursor: pointer; }
 /* A bin answering a pointer is the only sign of WHICH bin answered, so it is drawn — a tint, never
@@ -149,7 +162,7 @@ svg.chart rect.bin-hit:hover, svg.chart rect.bin-hit.bin-active {
   color: var(--muted);
 }
 .x-axis-title { text-align: center; margin-top: 2px; }
-#tooltip { max-width: 320px; max-height: 220px; overflow-y: auto; }
+#tooltip { max-width: 320px; }
 `;
   if (!html.includes("</style>")) throw new Error("renderWeb output has no </style> to repair");
   html = html.replace("</style>", `${ownCss}</style>`);

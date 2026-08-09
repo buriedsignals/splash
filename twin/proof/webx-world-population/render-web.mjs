@@ -4,9 +4,10 @@
 // `proof/static-world-population/data.csv`, the already-verified static sibling) — 225 rows, World
 // only, 1800-2023; re-verified here (entity, row count, span) rather than trusted on sight.
 //
-// The skill's own `assets/interaction.mjs` is reused UNCHANGED — an area's continuous x-axis is
-// exactly the shape it was built for. Only the `lang` repair this beat's own English words need is
-// patched in after `renderWeb` writes the file.
+// The skill's own `assets/interaction.mjs` is reused nearly unchanged — an area's continuous x-axis
+// is exactly the shape it was built for. `repair()` below patches TWO things into the emitted file
+// after `renderWeb` writes it: the `lang` this beat's own English words need, and one anchored line
+// of the interaction script, so that a tap survives the finger lifting (see `repair`'s own note).
 //
 // SECOND BUILD: migrated to the genre's FLUID FRAME. `renderWeb` no longer takes a `layouts` array
 // (the two-rung design was overturned — see `WorldPopulationWeb.tsx`'s own doc-comment); this
@@ -107,9 +108,48 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   return { outPath, readings: data.length, crossingYear: crossingRow.year };
 }
 
+// The genre's own line, verbatim, and the guarded one that replaces it. A touch pointer is
+// destroyed the instant the finger lifts, and Chrome then fires `pointerleave` up the whole chain
+// for it — so an unguarded `pointerleave` handler wipes the tooltip the tap has just opened. This
+// beat's alt text promises every one of its 224 readings "on hover, tap or keyboard focus", and the
+// tap half was FALSE: measured on the committed artifact with a real CDP touch sequence
+// (touchStart → 150ms → touchEnd → 500ms) at 390x844, the reading appeared and then vanished
+// inside one gesture. Same defect, same remedy as
+// `proof/weby-small-multiples-co2-per-capita/small-multiples-interaction.mjs` — clear on
+// `pointerleave` for MOUSE AND PEN ONLY; a touch reader's tooltip is cleared instead by the
+// document-level `pointerdown` the genre already installs, so it holds until they tap elsewhere,
+// which is what a tap-to-inspect control should do.
+//
+// Patched HERE, into the emitted HTML, rather than into the genre's shared
+// `twin-chart-web/assets/interaction.mjs`, because that file is outside this beat's scope and is
+// being edited concurrently. It is an ANCHORED replacement, not a vendored copy of the whole
+// module: a copy would drift silently the moment the genre's script changed, whereas this throws
+// by name if the line it expects is no longer there.
+const LEAVE_LINE = '    hitArea.addEventListener("pointerleave", clear);';
+const LEAVE_GUARDED = `    hitArea.addEventListener("pointerleave", function (evt) {
+      // Mouse and pen only — see this beat's render-web.mjs for the measurement.
+      if (evt.pointerType === "touch") return;
+      clear();
+    });`;
+
 async function repair(outPath) {
   let html = await readFile(outPath, "utf8");
-  html = html.replace('<html lang="fr">', '<html lang="en">');
+
+  const langMarker = '<html lang="fr">';
+  if (!html.includes(langMarker))
+    throw new Error(
+      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to patch to English — its HTML shape may have changed`,
+    );
+  html = html.replace(langMarker, '<html lang="en">');
+
+  if (html.split(LEAVE_LINE).length !== 2)
+    throw new Error(
+      `expected exactly one ${JSON.stringify(LEAVE_LINE.trim())} in the inlined interaction script ` +
+        "to guard against a touch pointer's own leave — the genre's script may already guard it, in " +
+        "which case delete this patch rather than widening it",
+    );
+  html = html.replace(LEAVE_LINE, LEAVE_GUARDED);
+
   await writeFile(outPath, html);
 }
 
