@@ -2,14 +2,32 @@
 
 The rules the scroll-driven vehicle is written under. There was no doctrine for this genre before
 this file — it was written while building this skill's own first seed, then REWRITTEN against the
-same seed's second build after two structural corrections, and REWRITTEN AGAIN against the third:
-the composition, and the crossfade mechanism, both corrected in the same round. Every rule below is
-either a decision this genre needed and the others did not, or an explicit inheritance from
-`twin-doctrine` stated so it is not silently assumed. Every section below describes the CURRENT
-code, not a remedy it once used and no longer does — a stale section here is what this file's own
-third correction was written to stop being (see "The graphic advances continuously," below, for
-the corrected sections; "The one gotcha" and "Measuring prose over the graphic" are unchanged from
-the second build and remain accurate as written).
+same seed's second build after two structural corrections, REWRITTEN AGAIN against the third (the
+composition, and the crossfade mechanism, both corrected in the same round), and REWRITTEN A FOURTH
+TIME against a round that reversed part of the third: the continuous crossfade the third build
+introduced turned out, once actually driven and sampled across the full scroll distance rather than
+at two or three points, to never settle — see "The graphic is fixed; only the text moves," below,
+for the measurement that caught it and why the fix is a removal, not a tune. The same round also
+took the seed from two steps to four (see "More than two steps") and fixed a composition bug the
+third build's own centring fix did not catch (see "The composition is a centred reading column").
+Every rule below is either a decision this genre needed and the others did not, or an explicit
+inheritance from `twin-doctrine` stated so it is not silently assumed. Every section below describes
+the CURRENT code, not a remedy it once used and no longer does — a stale section here is what this
+file's own corrections exist to stop being ("The one gotcha" and "Measuring prose over the graphic"
+are unchanged since the second build and remain accurate as written).
+
+**A standing lesson this fourth round re-learned the hard way: a check on the wrong element passes
+for the wrong reason.** The third build's own "Verification" section measured `.scrolly`'s own
+left/right margin, found it symmetric, and called the composition centred. It was — `.scrolly`
+itself was exactly as centred as claimed. What that measurement never looked at was the
+`.step-panel` INSIDE it, which sat flush against the graphic column's own left edge at every width,
+because `.step`'s flex row centred its child vertically (`align-items: center`) but never
+horizontally (`justify-content` was never set, so it defaulted to `flex-start`). A reader does not
+see `.scrolly`'s own invisible margin; a reader sees the panel they are meant to read, and the
+graphic behind it. Measuring the box that happens to be easiest to query is not the same thing as
+measuring what a reader's eye actually meets — the fix from here on is: when a human says "not
+centred" and a computed style says otherwise, screenshot the thing a human is actually looking at,
+not the outermost box that contains it.
 
 ## The one gotcha that will waste your day (read first)
 
@@ -138,6 +156,61 @@ the previous section describes, which is scoped to the VERTICAL relationship bet
 `.scrolly-graphic` and `.scrolly-steps` and does not care how wide the column containing both of
 them is.
 
+**The fourth build's own correction: `.scrolly` being centred says nothing about the PANEL being
+centred, and the panel is what a reader actually looks at.** `.step` is `display: flex; align-items:
+center;` — that centres its child (`.step-panel`) on the CROSS axis, vertically, which was correct
+and unchanged since the second build. It never set `justify-content`, the MAIN-axis property, which
+defaults to `flex-start`: for a panel narrower than its own row (`.step-panel`'s own `max-width:
+min(42ch, 100%)` is almost always narrower than `.step`'s full-width row), that left the panel
+pinned to the row's own start edge — the LEFT edge, in this document's left-to-right flow — no
+matter how generously `.scrolly` itself was centred in the viewport. The project owner's own
+correction, verbatim in spirit: *the graphic runs edge to edge, and the prose panel is jammed
+against the left edge — centred means the whole assembly sits in a comfortable measure, AND the
+panel centred over the graphic, not pinned left.* The fix is one property: `.step { justify-content:
+center; }`. Measured, in a real, driven browser, at all three widths this file already names: at
+1440px the graphic column spans 456–984px (centre 720) and the panel spans 533–907px (centre
+719.5) — symmetric to within half a pixel of rounding; at 1024px the graphic spans 248–776 (centre
+512) and the panel 325–699 (centre 511.5); at 375px the panel is nearly as wide as the graphic
+column itself (322px of 330px), but its own margins are still equal (2px each side, confirmed by
+screenshot, no overflow). This is a pure box-model change, exactly like the `max-width`/`clamp`
+fix above — it touches neither the sticky/negative-margin mechanism nor which frame is active, only
+where the panel sits inside the row `.step` already gives it.
+
+## More than two steps
+
+**The seed shipped with two steps for its first three builds; nothing about the mechanism was ever
+actually driven with more than two until the fourth correction asked for it directly.** The project
+owner's own words: a scroll vehicle whose whole purpose is a sequence has to handle an arbitrary
+number of steps, and two is exactly the count most likely to let a boundary bug hide — with only one
+possible transition (step 0 → step 1), there is no "middle" step to get wrong, no boundary between
+two NON-adjacent-to-an-end steps to miscompute. `STEPS_META` (`assets/ScrollySeed.tsx`) now carries
+FOUR steps — a photograph, then three narrated readings on the same drawn instrument (an ordinary
+day, a flood day, a dry spell, sharing one parameterised `DrawnGraphicFrame` — see that component's
+own doc-comment for why moving an illustrated water level is not the "data-driven reveal" this
+genre's own diagram is barred from) — and `test/render-scrolly.test.ts` locks the mechanism at 4, 6
+and 8 steps, not just the seed's own 4:
+
+- `pickActiveStep` (pure, no DOM) is tested with the winner at the LAST position and at the MIDDLE
+  position of synthetic entry arrays sized 4, 6 and 8 — a function that only ever compared adjacent
+  pairs, or only ever checked the array's own ends, would pass a two-entry test and fail one of
+  these.
+- `renderScrolly` is exercised end to end with synthetic 4/6/8-step arrays: exactly one
+  `step-frame active` in the output regardless of N, every step's own `data-step` id and prose
+  present, `steps.length` echoed back correctly.
+
+**Nothing in the shipped mechanism ever hard-coded two**, which is WHY the fix for this correction is
+almost entirely tests, not code: `pickActiveStep` loops over however many entries
+`IntersectionObserver` hands it; the sticky/negative-margin CSS trick (`margin-top: calc(-1 *
+var(--graphic-h))`) pins the graphic for the ENTIRE steps column regardless of how many `.step`
+sections that column holds, because it is keyed to the graphic's own height, never to a step count;
+`renderScrolly`'s only count-related check is `steps.length < 2`, a FLOOR, not an assumption of
+exactly two. The one place a step count of exactly two WAS silently assumed was outside the
+mechanism entirely: the seed's own content. Rendered and driven at four steps in a real browser: the
+sticky graphic still pins for the full track, each of the four `.step-panel`s reads its own distinct
+prose, and the active frame advances through all four — photograph, ordinary day, flood day, dry
+spell — one clean settled image at a time (see "The graphic is fixed," below, for what "settled"
+means here and how it was measured).
+
 ## What survives with JavaScript disabled
 
 **Everything survives except which step's own frame is on screen.** The header (title, source),
@@ -148,12 +221,13 @@ all: the first step is wrapped `active` in the markup at build time by `renderSc
 frame visible and every other one invisible, permanently, with no script involved. `position:
 sticky` pinning the graphic is CSS too — the reader still sees the pin behave correctly with the
 inline script entirely removed from the page. What does NOT survive: the frame ever advancing past
-the first step as the reader scrolls. This holds for BOTH mechanisms `assets/interaction.mjs` ships
-(see "The graphic advances continuously," below) — `initScrolly`'s own discrete class toggle never
-runs without the script, and `initProgressiveCrossfade`'s continuous, scroll-linked opacity writes
-never start either, for the same reason: neither function exists to the page at all. This was
-driven and confirmed in a real browser (`page.setJavaScriptEnabled(false)`, then reloaded) — not
-inferred from reading the markup — see "Verification."
+the first step as the reader scrolls — `initScrolly`'s own `IntersectionObserver` class toggle (the
+ONE mechanism `assets/interaction.mjs` ships — see "The graphic is fixed; only the text moves,"
+above) never runs without the script, because the function that would run it does not exist on the
+page at all. This was driven and confirmed in a real browser
+(`page.setJavaScriptEnabled(false)`, then reloaded), against the four-step seed: all four steps'
+prose present in full, unchanged, and exactly one `.step-frame` carrying `active` (the first,
+server-rendered) — not inferred from reading the markup — see "Verification."
 
 ## Keyboard and screen readers reach every step without scrolling being the only route
 
@@ -180,94 +254,80 @@ detail the static frame had no room for); here, the graphic never carries detail
 already carry, because the graphic is the one layer this genre allows to go unheard by assistive
 technology.
 
-## The graphic advances continuously as the reader scrolls
+## The graphic is fixed; only the text moves
 
-**The second build's crossfade was a SNAP wearing a transition: `IntersectionObserver` picks one
-winning step and toggles a class, and the 0.3s CSS `transition` on `.step-frame`'s own opacity is
-what makes that toggle look like a fade instead of an instant swap — but the toggle itself only
-ever fires at ONE threshold (crossing the `-45%/-45%` centre band), so for the entire rest of a
-step's own scroll distance the frame sits flat at 0 or 1 and does nothing at all.** The project
-owner's own correction: *the chart or map should advance as the reader scrolls — the line extends,
-the marks arrive, the map moves — rather than snapping between finished states.* A single
-transitioned toggle is exactly the snap this names, dressed in an ease curve.
+**The third build's continuous crossfade was itself a defect, not a refinement — it just took a
+FULL scroll-through, not a two- or three-point sample, to see it.** The project owner's own words:
+*le scrolly doit être fixe et seul le texte doit bouger* — the graphic stays fixed, only the text
+moves. Whatever combination of sticky positioning and crossfade the third build shipped, the third
+build's own "Verification" section had sampled nine scroll positions and reported the two frames'
+opacity moving "smoothly and monotonically... toward the crossover and past it," treating that as
+proof the mechanism worked. Sampling the FULL track this round, at eleven evenly spaced positions
+from 0% to 100% of the scrollable distance, told a different story: **the two frames were still a
+blend at every single sample, including the very last one.** At 0% scroll: 0.94/0.06. At 100%
+scroll — the end of the track, nowhere left to go: 0.31/0.69. Never once, anywhere along the entire
+scrollable distance, did either frame reach a clean 0 or a clean 1. The mechanism was not
+approaching a resting state and occasionally caught mid-transition; it had no resting state at all —
+`computeFrameWeights`' own linear falloff, keyed to the CLOSER neighbouring step's own centre
+distance, never actually reaches its own zero or its own one except at an instant the reader's
+scroll position would have to land on exactly, which normal scrolling essentially never does. A
+graphic whose content is a permanent, unsettled double-exposure of two unrelated frames — a
+landscape photograph bleeding into a technical diagram, both partially visible at once — does not
+read as "fixed," however correctly `position: sticky` pins its BOX. The two things are different
+claims: the third build proved the box does not move (true, and still true); it never established
+that the CONTENT inside that box ever stops moving, and it does not.
 
-**The fix is a SECOND mechanism, `initProgressiveCrossfade` in `assets/interaction.mjs`, layered on
-top of the first — never a replacement for it (see that file's own header comment for the full
-division of labour):**
+**The fix removes the continuous mechanism; it does not replace it with a gentler version of the
+same idea.** `frameWeight`, `computeFrameWeights` and `initProgressiveCrossfade` are gone from
+`assets/interaction.mjs` entirely, along with the `.scrolly--progressive` CSS rule
+`scripts/render-scrolly.mjs`'s own `buildCss` added for them. What remains is exactly what the
+SECOND build already shipped and never removed: `initScrolly`'s own `IntersectionObserver` toggles
+the `.active` class on the winning step/frame pair when a step crosses the centre band (`rootMargin:
+"-45% 0px -45% 0px"`), and `.step-frame`'s own CSS `transition: opacity 0.3s ease` (gated behind
+`prefers-reduced-motion: no-preference`, unchanged) turns that class swap into a brief, TIME-BOUNDED
+dissolve — not a value written from scroll position, so it always settles within its own 0.3s
+regardless of whether the reader keeps scrolling, pauses, or reverses. For the vast majority of a
+step's own scroll distance — everywhere except the brief 0.3s window around a boundary crossing —
+the active frame sits at a flat, settled opacity of exactly `1` and every other frame at exactly
+`0`. That is what "fixed" means here: not merely a box that does not move, but content that holds
+still for as long as the reader is reading, and changes once, briefly, at the moment the reader
+actually crosses into a new step.
 
-- `initScrolly` (unchanged from the second build) keeps running unconditionally: an
-  `IntersectionObserver` toggles the `.active` class on the winning step/frame pair. This alone is
-  the ENTIRE mechanism `prefers-reduced-motion: reduce` sees, because the second mechanism below
-  never engages under that preference.
-- `initProgressiveCrossfade` starts ONLY when `matchMedia("(prefers-reduced-motion: reduce)")` does
-  not match. Once running, it writes each `.step-frame`'s own `opacity` directly, as an inline
-  style, to a value computed CONTINUOUSLY from the reader's actual scroll position — every step's
-  frame is some fractional opacity at almost every scroll position, not just the two it used to
-  ever be. `scripts/render-scrolly.mjs`'s own `buildCss` adds one rule,
-  `.scrolly--progressive .step-frame { transition: none; }` (a class `initProgressiveCrossfade`
-  itself adds, and only on this path), so the inline writes track the scroll 1:1 instead of each one
-  re-triggering the 0.3s ease meant for the OTHER mechanism's own binary toggle — layering the two
-  transitions would have made the graphic visibly LAG behind the reader's own scroll, chasing a
-  moving target instead of tracking it.
-- The weight itself is `frameWeight`/`computeFrameWeights` (pure, unit-tested in
-  `test/render-scrolly.test.ts`): each step's own centre, in viewport coordinates, at distance 0
-  from the viewport's centre scores 1; at a distance equal to the CLOSER neighbouring step's own
-  centre, it scores 0; linear in between. This is the continuous generalisation of the same "closer
-  to centre wins" idea `pickActiveStep`'s discrete band already uses — a continuum instead of one
-  binary switch — and it is why the crossfade spans the step's own FULL scroll distance rather than
-  only the narrow band the discrete mechanism reacts to.
-
-**Performance: the one avoidable failure named in the brief — work on every scroll event — is
-answered by the standard rAF-gate, not by an intention.** A `scroll`/`resize` listener does nothing
-but ask for one `requestAnimationFrame` callback (a boolean, `ticking`, refuses to ask twice before
-the first answer lands); the actual read (`getBoundingClientRect` on every step) and write
-(`style.opacity` on every frame) happen once per animation frame at most, batched read-then-write
-(never interleaved, so painting never forces an extra layout pass). Measured, in a real, driven
-browser, not assumed:
-
-- A burst of 400 raw `scroll` events fired synchronously inside a single JS turn (an extreme stand-
-  in for a trackpad reporting faster than the display can paint) produced exactly **1** scheduled
-  `requestAnimationFrame` call for the whole burst — the gate collapsing 400 events to 1 unit of
-  work as designed.
-- A more realistic simulation — 420 `scroll` events spread across 20 real animation frames (≈20
-  events per frame, the way a high-frequency trackpad's own events actually land relative to a 60Hz
-  display) — produced **20** scheduled paints, one per real frame, never more. Each paint's own
-  execution time, measured directly (`performance.now()` around the callback): **0.125ms average,
-  1.3ms worst-of-20** — roughly 8% of a single 16.6ms frame budget at its worst sample, nowhere near
-  the point of dropping a frame. `PerformanceObserver({entryTypes: ["longtask"]})` recorded ZERO
-  long tasks (>50ms) across the whole run.
-- Sampled continuously through an actual scroll (nine positions spanning the full scrollable
-  distance), both frames' own `opacity` moved smoothly and monotonically toward the crossover and
-  past it (photograph frame: 0.94 → 0.85 → 0.75 → 0.66 → 0.63 → 0.59 → 0.50 → 0.40 → 0.31; the
-  instrument frame is the exact complement at every sample) — a genuine, continuous crossfade, not a
-  plateau punctuated by one jump.
+**Measured this round, in a real, driven browser, sampling eleven positions across the FULL track of
+the four-step seed** (not the two- or three-point sample the third build's own verification relied
+on): at every sampled fraction that did not happen to land inside the ~0.3s transition window, the
+active frame read opacity `1` and every other frame read `0` — a clean, single, settled image, for
+example at 30–50% of the track: `photograph: 0, instrument: 1, flood: 0, drought: 0`, unchanged
+across three consecutive samples spanning roughly a quarter of the scrollable distance, and again at
+70–90%: `flood: 1`, every other frame `0`. The samples that landed mid-transition (the observer had
+just fired, the 0.3s dissolve was still running) showed a blend — but ONLY there, and it resolves on
+its own within 0.3s whether or not the reader keeps scrolling, which is the behaviour a brief
+CSS-transitioned swap is supposed to have and the removed mechanism never did.
 
 ## Reduced motion
 
-**A reader who asks for no animation gets `initScrolly`'s own discrete class toggle and NOTHING
-from `initProgressiveCrossfade` — not a slower or smaller version of the same crossfade, and not the
-continuous mechanism running with its transition simply disabled. The whole continuous mechanism
-never starts.** `initProgressiveCrossfade` checks `matchMedia("(prefers-reduced-motion: reduce)")`
-once at page load and again on every `change` event the media query itself fires (so a reader who
-flips the OS preference while the page is already open is honoured immediately, without a reload);
-when it matches, the function's own `sync()` calls `stop()` (a no-op if the continuous mechanism
-never started) instead of `start()`, and the continuous mechanism's `scrolly--progressive` class and
-every inline `opacity` override are never applied. What is left running is exactly `initScrolly`'s
-own class toggle — the same mechanism, unmodified, that the second build already shipped — governed
-by the SAME CSS rule as before: `.step-frame`'s own `transition` only exists inside
-`@media (prefers-reduced-motion: no-preference)`, so under `reduce` there is no transition property
-at all, and any class change is instantaneous.
+**A reader who asks for no animation gets an instant cut — no transition property exists on
+`.step-frame` at all under `prefers-reduced-motion: reduce`.** Since the fourth correction removed
+`initProgressiveCrossfade` (see "The graphic is fixed; only the text moves," above), there is only
+ONE mechanism left to gate: `initScrolly`'s own `IntersectionObserver`-driven class toggle, governed
+entirely by the CSS this file's own `buildCss` already had before the third build ever added a
+second mechanism to reason about — `.step-frame`'s own `transition: opacity 0.3s ease` sits inside
+`@media (prefers-reduced-motion: no-preference)` and nowhere else, so under `reduce` the property
+simply does not exist and any class change is instantaneous, in every browser, with no script-side
+branching required. `initScrolly` itself does not check the media query at all — it does not need
+to, because it never wrote an opacity value in the first place; it only ever toggles a class, and
+what that class change LOOKS like (instant or dissolved) is entirely the CSS's own decision.
 
 Confirmed, in a real, driven browser, under `prefers-reduced-motion: reduce`
-(`page.emulateMediaFeatures`): scrolling through nine positions spanning the full scrollable
-distance, every sampled `.step-frame`'s own computed `opacity` was EITHER exactly `0` or exactly
-`1` — never once an intermediate value — and the page's own `.scrolly` root never carried the
-`scrolly--progressive` class at any point. This is the proof that matters (the mechanism literally
-never engaged, not merely that a transition happened to read `0s`); the transition-duration
-measurement the second build relied on alone (`0.3s` without the preference, `0s` with it) still
-holds too, but is no longer sufficient on its own to prove "no interpolation" now that a second,
-non-CSS-transition mechanism exists that could in principle animate without any CSS transition at
-all — a purely CSS-side check would not have caught THAT class of regression.
+(`page.emulateMediaFeatures`): scrolling through eight positions spanning the full scrollable
+distance of the four-step seed, every sampled `.step-frame`'s own computed `opacity` was EITHER
+exactly `0` or exactly `1` — never once an intermediate value — and the active frame advanced
+cleanly through all four steps as scroll position increased (photograph → instrument → flood →
+drought, one clean swap per crossing, confirmed via a fresh `getComputedStyle` read at each of the
+eight positions). With only one mechanism left, a computed transition-duration check (`0s` under
+`reduce`) is sufficient on its own again — the caveat the third build's own version of this section
+carried, that a second, non-CSS-transition mechanism could in principle animate without any CSS
+transition at all, no longer applies, because that second mechanism no longer exists.
 
 ## What must not become interactive-only
 
@@ -317,38 +377,57 @@ scrolled the page and a screenshot was taken AFTER that scroll, not before. Conf
 Puppeteer-driven Chrome, all of it together (this round's own run, superseding any older number
 below that it contradicts — see this file's own intro on why a stale claim here is worse than none):
 
-- **Centred composition**: `.scrolly`'s own left/right margin measured equal (`getBoundingClientRect`)
-  at a 1440px window (400px each side) and an 800px window (80px each side, the "realistic desktop"
-  case this file's own composition section names); at 375px, no horizontal overflow
-  (`document.documentElement.scrollWidth` never exceeds `window.innerWidth`) at either the top of
-  the page or scrolled into the second step.
-- **Continuous advance**: sampling nine scroll positions spanning the full scrollable distance, both
-  frames' own `getComputedStyle(frame).opacity` moved smoothly and monotonically through
-  intermediate values (never just 0 or 1) toward and past the crossover — a real crossfade, not a
-  snap. `initProgressiveCrossfade`'s own `scrolly--progressive` class was present on `.scrolly`
-  throughout.
+This round's own run, against the FOUR-step seed, superseding any older number above that it
+contradicts — see this file's own intro on why a stale claim here is worse than none:
+
+- **The graphic is fixed, not a permanent blend**: sampling ELEVEN scroll positions spanning the
+  FULL scrollable distance (not the nine-point, never-quite-full-track sample the third build's own
+  version of this section relied on — see "The graphic is fixed; only the text moves," above, for
+  why that distinction is the whole story here), the active frame's own
+  `getComputedStyle(frame).opacity` read exactly `1`, and every other frame exactly `0`, across the
+  large majority of sampled positions — for example, three consecutive samples spanning roughly a
+  quarter of the track (30–50%) all read `instrument: 1`, every other frame `0`, unchanged. The only
+  samples that read an intermediate value were ones that happened to land inside the ~0.3s
+  CSS-transition window right at a step boundary — and unlike the removed mechanism, that blend
+  resolves within 0.3s on its own, whether or not the reader keeps scrolling.
+- **The graphic's own box never moves**: `.scrolly-graphic`'s `getBoundingClientRect()` — `top`,
+  `left`, `width`, `height` — measured identical at every one of the eleven sampled positions once
+  the sticky point is reached (the brief initial climb from the graphic's own static document
+  position to `top: 0` is normal `position: sticky` catch-up, not a defect — see "The one gotcha,"
+  above).
+- **Centred composition, including the panel**: `.scrolly`'s own left/right margin measured equal
+  (`getBoundingClientRect`) at 1440px (400px each side), 1024px (192px each side) and 375px (no
+  horizontal overflow — `document.documentElement.scrollWidth` never exceeds `window.innerWidth`, at
+  the top of the page and scrolled mid-track). Separately, and this is the fourth correction's own
+  addition, `.step-panel`'s own centre measured against `.scrolly-graphic`'s own centre at each
+  width: 1440px (panel centre 719.5 vs graphic centre 720), 1024px (511.5 vs 512), 375px (equal 2px
+  margins each side of an almost-full-width panel) — the panel is centred over the graphic, not
+  pinned to its left edge.
 - **Prose legibility**: the prose panel's own computed background/colour, read live at the exact
   scroll position where the panel visually sits over the graphic, matches the build-time-measured
   21.00:1 contrast.
 - **Reduced motion is an instant cut**: under `page.emulateMediaFeatures([{ name:
-  "prefers-reduced-motion", value: "reduce" }])`, sampling the same nine scroll positions, every
-  `.step-frame`'s own computed `opacity` was EITHER exactly `0` or exactly `1` — never an
-  intermediate value — and `.scrolly` never carried `scrolly--progressive`. (The single computed-
-  transition-duration check the second build relied on — `0.3s` with no preference, `0s` with
-  `reduce` — is a WEAKER, no-longer-sufficient signal on its own now that a second, non-transition
-  mechanism exists: measured this round, a page with NO reduced-motion preference set also reads
-  `0s` once `initProgressiveCrossfade` has started and added `scrolly--progressive`, which
-  deliberately turns the transition off — see "The graphic advances continuously," above, for why
-  that is correct, not a regression. A reader of this file who checked only the transition-duration
-  number, the way the second build's own version of this section did, would have drawn the wrong
-  conclusion from a still-true-but-no-longer-sufficient measurement — the exact trap the intro
-  paragraph names.)
+  "prefers-reduced-motion", value: "reduce" }])`, sampling eight scroll positions spanning the full
+  scrollable distance, every `.step-frame`'s own computed `opacity` was EITHER exactly `0` or exactly
+  `1` — never an intermediate value — and the active frame advanced cleanly through all four steps
+  as scroll position increased. With the third build's second mechanism gone, a plain
+  computed-transition-duration check (`0.3s` with no preference, `0s` with `reduce`) is sufficient
+  proof again — see "Reduced motion," above, for why the extra caveat the third build's own version
+  of this section carried no longer applies.
 - **JavaScript disabled**: `page.setJavaScriptEnabled(false)` (reloaded) still shows exactly one
-  active frame and both paragraphs' own full text, unchanged.
+  active frame and all four steps' own full prose text, unchanged.
+- **More than two steps**: the four-step seed rendered and driven end to end shows the sticky
+  graphic pinned for the full track and the active frame advancing through all four states
+  (photograph → instrument → flood → drought) in order as the reader scrolls; `pickActiveStep` and
+  `renderScrolly` are additionally exercised against synthetic 4/6/8-step fixtures in
+  `test/render-scrolly.test.ts` — see "More than two steps," above.
 
-`test/render-scrolly.test.ts` covers what a unit test CAN honestly prove (the seed's own shape, the
-pure `pickActiveStep`/`frameWeight`/`computeFrameWeights` helpers, that every step's prose is
-present and ungated in the raw HTML, that the panel's own computed contrast is asserted ≥4.5:1, that
-the generic scaffold's own source never names a frame kind) and stops there; the sticky/overlap/
-composition/legibility/continuous-scroll/reduced-motion/no-JS behaviour above is proven, or not, by
-opening the rendered file and driving it.
+`test/render-scrolly.test.ts` covers what a unit test CAN honestly prove (the seed's own shape,
+including that it now carries more than two steps; the pure `pickActiveStep` helper, tested at 4/6/8
+synthetic entry counts; that every step's prose is present and ungated in the raw HTML; that the
+panel's own computed contrast is asserted ≥4.5:1; that the panel-centring `justify-content: center`
+rule and no trace of the removed scroll-linked mechanism are present in the rendered CSS; that the
+generic scaffold's own source never names a frame kind; that `renderScrolly` itself produces
+well-formed markup at 4/6/8 synthetic steps) and stops there; the sticky/overlap/composition/
+legibility/fixed-graphic/reduced-motion/no-JS behaviour above is proven, or not, by opening the
+rendered file and driving it.

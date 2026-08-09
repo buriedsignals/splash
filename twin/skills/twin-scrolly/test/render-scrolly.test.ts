@@ -13,11 +13,7 @@ import {
   type ScrollyStepMeta,
 } from "../assets/ScrollySeed.tsx";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
-import {
-  pickActiveStep,
-  frameWeight,
-  computeFrameWeights,
-} from "../assets/interaction.mjs";
+import { pickActiveStep } from "../assets/interaction.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
 // nowhere in this file directly — kept anyway, the same default-timeout bump every other genre's
@@ -34,6 +30,13 @@ const SCRIPTS_DIR = join(import.meta.dirname, "..", "scripts");
 describe("STEPS_META — the seed's own narrative arc", () => {
   it("should carry at least two steps", () => {
     expect(STEPS_META.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // Correction 2: "it must work for more than two steps" — the seed itself, not just a synthetic
+  // fixture, has to carry more than the minimum the mechanism will accept, or nothing ever proves
+  // the two-step case wasn't accidentally the only one that worked.
+  it("should carry more than two steps — the seed itself proves the sequence generalises, not just a two-step fixture", () => {
+    expect(STEPS_META.length).toBeGreaterThan(2);
   });
 
   it("should give every step at least one non-empty paragraph", () => {
@@ -93,79 +96,34 @@ describe("pickActiveStep", () => {
   it("should return null for an empty entry list", () => {
     expect(pickActiveStep([])).toBeNull();
   });
-});
 
-// ---------------------------------------------------------------------------
-// frameWeight / computeFrameWeights — the continuous, scroll-linked crossfade the enhanced
-// (motion-allowed) path paints every animation frame, in place of `pickActiveStep`'s own discrete
-// binary switch. Pure, no DOM — see assets/interaction.mjs's own doc-comment on why
-// `initProgressiveCrossfade` itself is not unit-tested here.
-// ---------------------------------------------------------------------------
+  // Correction 2: "it must work for more than two steps" — pickActiveStep never reads the length
+  // of `entries` to decide how to behave (see its own doc-comment), but this locks that as a fact
+  // about the function, not an assumption about it, at exactly the counts the brief named.
+  for (const n of [4, 6, 8]) {
+    it(`should still pick the single largest-ratio winner among ${n} intersecting entries`, () => {
+      const entries = Array.from({ length: n }, (_, i) => ({
+        stepId: `s${i}`,
+        isIntersecting: true,
+        intersectionRatio: (i + 1) / (n + 1), // strictly increasing — last entry is the winner
+      }));
+      expect(pickActiveStep(entries)).toBe(`s${n - 1}`);
+    });
 
-describe("frameWeight — one step's own continuous crossfade weight", () => {
-  it("should be 1 when perfectly centred", () => {
-    expect(frameWeight(0, 400)).toBe(1);
-  });
-
-  it("should fall off linearly toward 0 as distance approaches spacing", () => {
-    expect(frameWeight(200, 400)).toBeCloseTo(0.5, 5);
-    expect(frameWeight(100, 400)).toBeCloseTo(0.75, 5);
-  });
-
-  it("should clamp to 0 at or beyond a full spacing away", () => {
-    expect(frameWeight(400, 400)).toBe(0);
-    expect(frameWeight(900, 400)).toBe(0);
-  });
-
-  it("should treat a negative distance the same as its magnitude", () => {
-    expect(frameWeight(-200, 400)).toBeCloseTo(frameWeight(200, 400), 5);
-  });
-
-  it("should fall back to all-or-nothing rather than dividing by zero when spacing is not positive", () => {
-    expect(frameWeight(0, 0)).toBe(1);
-    expect(frameWeight(5, 0)).toBe(0);
-    expect(frameWeight(0, -10)).toBe(1);
-  });
-});
-
-describe("computeFrameWeights — every step's own weight at once", () => {
-  it("should give a step exactly at the viewport centre a weight of 1", () => {
-    // viewportHeight 800 -> centre at 400; step 0's own centre sits exactly there.
-    const weights = computeFrameWeights([400, 1200], 800);
-    expect(weights[0]).toBe(1);
-  });
-
-  it("should split two steps evenly midway between their own centres", () => {
-    // viewportHeight 800 -> centre 400; steps centred at 100 and 700 -> spacing 600 each,
-    // both equidistant (300px) from the viewport centre.
-    const weights = computeFrameWeights([100, 700], 800);
-    expect(weights[0]).toBeCloseTo(0.5, 5);
-    expect(weights[1]).toBeCloseTo(0.5, 5);
-  });
-
-  it("should change continuously, not in one jump, as the reader scrolls a step toward the viewport centre", () => {
-    // Fixed viewport (800 -> centre 400); step 0's own centre approaches the viewport centre in
-    // even steps, exactly what scrolling looks like from a fixed step's own point of view (its
-    // document position never moves, its VIEWPORT position climbs steadily as the page scrolls).
-    // Step 1 rides along 600px behind it, so spacing stays constant at 600 throughout — isolating
-    // the one thing that should actually move the weight.
-    const samples = [700, 600, 500, 400].map(
-      (center0) => computeFrameWeights([center0, center0 + 600], 800)[0],
-    );
-    for (let i = 1; i < samples.length; i++) {
-      expect(samples[i]).toBeGreaterThan(samples[i - 1]);
-    }
-    expect(samples[0]).toBeGreaterThan(0);
-    expect(samples[samples.length - 1]).toBe(1);
-  });
-
-  it("should use whichever neighbour is closer for an unevenly spaced set of steps", () => {
-    // Steps at 0, 100, 1000: step 1's closer neighbour is step 0 (distance 100), not step 2
-    // (distance 900) — its own crossfade completes over the SHORT gap, not the long one.
-    const weights = computeFrameWeights([0, 100, 1000], 200);
-    // viewport centre = 100, exactly step 1's own centre.
-    expect(weights[1]).toBe(1);
-  });
+    it(`should pick the winner among ${n} entries regardless of which position in the array it sits at`, () => {
+      // The winner planted in the MIDDLE of the array, not at either end — a boundary-maths bug
+      // that only ever compares neighbours, or only ever checks the first/last entry, would miss
+      // this while still passing the "last entry wins" case above.
+      const entries = Array.from({ length: n }, (_, i) => ({
+        stepId: `s${i}`,
+        isIntersecting: true,
+        intersectionRatio: 0.1,
+      }));
+      const middle = Math.floor(n / 2);
+      entries[middle].intersectionRatio = 0.99;
+      expect(pickActiveStep(entries)).toBe(`s${middle}`);
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -388,6 +346,67 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).toContain("margin-top: calc(-1 * var(--graphic-h))");
     expect(html).not.toContain("grid-template-columns");
   });
+
+  // Correction 3: "the prose panel centred over the graphic rather than pinned left" — `.step`'s
+  // own flex row now centres its child on BOTH axes, not just vertically.
+  it("should centre the step panel horizontally, not just vertically", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      outDir: "/tmp/twin-scrolly-test-centred-panel",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    expect(html).toContain("justify-content: center");
+  });
+
+  // Correction 1: "the graphic must be fixed; only the text moves" — no mechanism in the shipped
+  // CSS may write an opacity value from anything other than the `.active` class itself.
+  it("should never ship a scroll-linked opacity mechanism — only the class-driven 0/1 swap", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      outDir: "/tmp/twin-scrolly-test-no-progressive",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    expect(html).not.toContain("scrolly--progressive");
+    expect(html).not.toContain("requestAnimationFrame");
+  });
+
+  // Correction 2, exercised at render time (not just against the pure `pickActiveStep` helper
+  // above): the generic scaffold's own markup — one active frame, every id present, the overlap
+  // scaffold — must hold at N steps for N well past two, not only the two the first three builds
+  // were ever driven with.
+  for (const n of [4, 6, 8]) {
+    it(`should render a well-formed page for ${n} steps — exactly one active frame, every id present`, async () => {
+      const steps = Array.from({ length: n }, (_, i) =>
+        makeStep(`s${i}`, [`Step ${i}'s own words.`]),
+      );
+      const { outPath, steps: count } = await renderScrolly({
+        steps,
+        title: "t",
+        source: "s",
+        ground: "#FFFFFF",
+        outDir: `/tmp/twin-scrolly-test-n${n}`,
+        name: "x.html",
+      });
+      expect(count).toBe(n);
+      const html = await readFile(outPath, "utf8");
+      const activeFrames = html.match(/class="step-frame active"/g) ?? [];
+      expect(activeFrames.length).toBe(1);
+      const stepFrames = html.match(/class="step-frame( active)?"/g) ?? [];
+      expect(stepFrames.length).toBe(n);
+      for (const step of steps) {
+        expect(html).toContain(`data-step="${step.id}"`);
+        for (const p of step.prose) expect(html).toContain(p);
+      }
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------

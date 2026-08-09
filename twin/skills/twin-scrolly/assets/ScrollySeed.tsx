@@ -79,11 +79,19 @@ export type ScrollyStepMeta = {
   prose: string[];
 };
 
-/** The two-step narrative this beat carries — deliberately not four states of one chart. A single
- *  chart stepped through several reveals belongs to `twin-chart-web` (it animates on its own,
- *  `SKILL.md`'s own "When to use" names this explicitly); this seed exists to prove the OTHER
- *  thing a scrolly is for — carrying two frames that no single chart or map component could ever
- *  be, one after the other, under one narrative. */
+/** The four-step narrative this beat carries — deliberately not four states of one chart (see
+ *  `frameKind` on each entry: one `"image"`, three `"drawn"`, never a repeated plot of a value
+ *  against a domain). A single chart stepped through several reveals belongs to `twin-chart-web`
+ *  (it animates on its own, `SKILL.md`'s own "When to use" names this explicitly); this seed exists
+ *  to prove the OTHER thing a scrolly is for — carrying frames that no single chart or map
+ *  component could ever be, one after the other, under one narrative. Four steps, not two, is
+ *  itself a correction: a mechanism whose whole purpose is a SEQUENCE is only proven generic once
+ *  it has run past the smallest case that could accidentally still be special-cased — see
+ *  `references/scrolly-discipline.md`, "More than two steps." The three `"drawn"` entries share one
+ *  component (`DrawnGraphicFrame`) parameterised by `waterLevelT`/`dayLabel` — a narrated water
+ *  level for three different days, never a value plotted against an axis (the prohibition
+ *  `DrawnGraphicFrame`'s own doc-comment states stays true: nothing here reads a domain or draws a
+ *  scale, it only moves where the illustrated water sits). */
 export const STEPS_META: ScrollyStepMeta[] = [
   {
     id: "photograph",
@@ -97,6 +105,20 @@ export const STEPS_META: ScrollyStepMeta[] = [
     frameKind: "drawn",
     prose: [
       "The instrument itself is simpler than the numbers suggest: water rises against a staff marked in centimetres, and a reading is taken once a day by hand — the raw measurement behind every figure this project reports.",
+    ],
+  },
+  {
+    id: "flood",
+    frameKind: "drawn",
+    prose: [
+      "On a flood day the same staff tells a different story: the water climbs well past its ordinary mark, and the reading taken that morning is the one that ends up flagged in every downstream report.",
+    ],
+  },
+  {
+    id: "drought",
+    frameKind: "drawn",
+    prose: [
+      "In a dry spell the staff shows almost nothing at all — the water drops close to the base of the post, and a reading that low is exactly what a decade of these daily numbers exists to catch early.",
     ],
   },
 ];
@@ -147,7 +169,12 @@ export function ImageFrame({ src }: { src: string }) {
  * diagram of the instrument, not a chart of a series: no axis, no data-driven reveal, nothing that
  * plots a value against a domain — the shape this rule needs to stay clear of is a second copy of
  * `twin-chart-beat`'s or `twin-chart-web`'s own "line traced against a scale" geometry, and this
- * component draws neither.
+ * component draws neither. `waterLevelT`/`dayLabel` do not change that: they move where the
+ * illustrated water sits and name which day is shown, the same way three different photographs
+ * would — there is still no scale drawn, no tick mapped to a number, nothing a reader could read a
+ * value off of. This is what lets three of `STEPS_META`'s own four steps share this one component
+ * (`instrument`/`flood`/`drought`) without becoming three states of one chart: they are three
+ * illustrations, not three samples of a series.
  *
  * Paints only with `ground`/`ink`/`muted`/`accent`, the same closed-palette rule every chart genre
  * in this twin keeps — nothing here is a hard-coded hex. `preserveAspectRatio="xMidYMid slice"` is
@@ -159,15 +186,25 @@ export function DrawnGraphicFrame({
   ink,
   muted,
   accent,
+  waterLevelT = 0.58,
+  dayLabel,
 }: {
   ground: string;
   ink: string;
   muted: string;
   accent: string;
+  /** Fraction of `FRAME.height` where the illustrated water sits — smaller means higher water
+   *  (closer to the top of the frame). Purely illustrative: it moves a fill and a dot, never a
+   *  value plotted against a labelled scale. Defaults to this seed's own original reading. */
+  waterLevelT?: number;
+  /** Optional word naming which day this reading belongs to ("today", "flood day", "dry spell") —
+   *  drawn as plain text next to the reading dot, the same register as the existing "flow"/"cm"
+   *  labels already on this diagram, never a number a reader could mistake for an axis tick. */
+  dayLabel?: string;
 }) {
   const { width, height } = FRAME;
   const bankTop = height * 0.52;
-  const waterTop = height * 0.58;
+  const waterTop = height * waterLevelT;
   const staffX = width * 0.46;
   const staffTop = height * 0.24;
   const staffBottom = height * 0.74;
@@ -241,6 +278,17 @@ export function DrawnGraphicFrame({
         stroke={ink}
         strokeWidth={1.5}
       />
+      {dayLabel && (
+        <text
+          x={staffX - 24}
+          y={waterTop + 5}
+          fill={ink}
+          fontSize={16}
+          textAnchor="end"
+        >
+          {dayLabel}
+        </text>
+      )}
 
       {/* Flow direction. */}
       <line

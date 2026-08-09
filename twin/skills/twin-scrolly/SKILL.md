@@ -16,19 +16,23 @@ demo, the same rule every other genre in this twin keeps.
 
 **This is the one vehicle Splash publicly promises and, before this skill, did not have.** Chart
 beats ship static, web (interactive) and video; maps ship the same three. Nothing scrolled. This
-skill closes that gap with the smallest thing that genuinely works: one beat, two steps of two
-different media, proven by driving a real browser through every one of them — not asserted from
-reading the markup.
+skill closes that gap with the smallest thing that genuinely works: one beat, four steps carrying
+two different kinds of media, proven by driving a real browser through every one of them — not
+asserted from reading the markup.
 
 `references/scrolly-discipline.md` was written against this seed's own first build, the way
 `twin-chart-web/references/web-discipline.md` was written against the CO₂ beat's first web build,
-rewritten against this seed's SECOND build after two structural corrections, and rewritten again
-against the THIRD, correcting the composition (a centred reading column, not edge-to-edge) and the
-crossfade (continuous and scroll-linked, not a snap wearing a transition). Read it before writing a
-second scrolly beat — its own "one gotcha" section names a real defect this skill's first render
-shipped, its own "Measuring prose over the graphic" section names the rule the second build lives
-under, and its own "The graphic advances continuously" section names the rule the third build lives
-under.
+rewritten against this seed's SECOND build after two structural corrections, rewritten again against
+the THIRD (a centred reading column, not edge-to-edge; a continuous, scroll-linked crossfade), and
+rewritten a FOURTH time after that third build turned out not to hold up once driven across the
+full scroll distance and past two steps: the graphic must be genuinely FIXED (a still image, not a
+permanent double-exposure blend — the continuous crossfade the third build shipped is gone), the
+composition fix from the third build centred `.scrolly` but never the prose panel INSIDE it (now
+fixed), and the seed carries four steps, not two, with the mechanism locked at 4/6/8 in tests. Read
+it before writing a second scrolly beat — its own "one gotcha" section names a real defect this
+skill's first render shipped, its own "Measuring prose over the graphic" section names the rule the
+second build lives under, and its own "The graphic is fixed; only the text moves" and "More than two
+steps" sections name the rules the fourth build lives under.
 
 ## When to use
 
@@ -98,8 +102,8 @@ reading `getComputedStyle` in a real, driven browser, not merely computed in nod
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/scrolly-discipline.md` | The sticky-reservation fact and how the overlap remedy uses it on purpose, the centred reading-measure composition, how prose-over-graphic contrast is measured (not assumed), what survives with JS off, what a screen reader reaches without scrolling, what the graphic is allowed to be silent about, the continuous scroll-linked crossfade and how it stays jank-free, reduced motion, what this genre does not attempt |
-| Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (this beat's own two-step arc: id, `frameKind`, prose), `ImageFrame` (a full-bleed `<img>`, this toolchain's stand-in for a photograph), `DrawnGraphicFrame` (a full-bleed `<svg>` diagram, painted only with ground/ink/muted/accent), `FRAME` (the drawn frame's own internal design canvas) |
-| Interaction | `assets/interaction.mjs` | `pickActiveStep` (pure, tested — given IntersectionObserver-shaped entries, picks the winning step id) + `initScrolly` (DOM wiring built on it: toggles `.active` on the matching `.step`/`.step-frame` pair — this ALONE is what `prefers-reduced-motion: reduce` sees). `frameWeight`/`computeFrameWeights` (pure, tested — the continuous, scroll-position-driven crossfade weight, closer-neighbour-normalised) + `initProgressiveCrossfade` (DOM wiring built on it: writes each frame's own inline `opacity` every animation frame, rAF-gated against a scroll listener, gated off entirely under reduced motion). `initAll` runs both — see `references/scrolly-discipline.md`, "The graphic advances continuously," for how the two coexist. |
+| Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (this beat's own four-step arc: id, `frameKind`, prose — a photograph, then three narrated readings sharing one parameterised drawn instrument), `ImageFrame` (a full-bleed `<img>`, this toolchain's stand-in for a photograph), `DrawnGraphicFrame` (a full-bleed `<svg>` diagram, painted only with ground/ink/muted/accent, parameterised by `waterLevelT`/`dayLabel` for the three narrated readings — still no axis, no plotted value), `FRAME` (the drawn frame's own internal design canvas) |
+| Interaction | `assets/interaction.mjs` | `pickActiveStep` (pure, tested at 4/6/8 synthetic entry counts — given IntersectionObserver-shaped entries, picks the winning step id) + `initScrolly` (DOM wiring built on it: toggles `.active` on the matching `.step`/`.step-frame` pair). This is the ONLY mechanism this file ships — see `references/scrolly-discipline.md`, "The graphic is fixed; only the text moves," for why a second, continuous scroll-linked crossfade mechanism was built, driven, found to never settle to a clean single image across the full scroll distance, and removed. `initAll` runs `initScrolly`. |
 | Render | `scripts/render-scrolly.mjs` | **Above the CONFIG marker**: `renderScrolly({ steps, title, source, ground, outDir, name })` — the genre's own MEDIA-AGNOSTIC machinery. `steps` is `{ id, prose, frame: ReactElement }[]`; this function SSRs each `frame`, wraps it in a generic `<div class="step-frame">` (never the frame component's own job), builds the overlap scaffold, measures panel contrast, inlines the interaction script. It never reads `frameKind` — `test/render-scrolly.test.ts` scans the function's own source to prove it. **Below the marker**: `SEED`, `buildFrame` (the ONE place that reads `frameKind` and builds a `ReactElement` from it), `render` (this seed's own runner) |
 | Rasteriser | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText` — a skill never imports another skill's copy |
 | Photo generator | `scripts/build-sample-photo.mjs` | Generates this seed's own `assets/sample-data/basin-photo.png` — a flat, illustrated scene authored from shapes (nothing in this toolchain fetches real photographs yet), not sourced from anywhere, so there is nothing to credit |
@@ -143,27 +147,36 @@ point of view, and that treatment must not be duplicated per frame kind.
    `renderScrolly` — not assigned by the inline script after the page loads. `assets/interaction.mjs`
    only ever MOVES that class after the page loads; it never assigns it for the first time.
 5. **Wire the interaction layer**, not the layout. `assets/interaction.mjs`'s `initScrolly` only
-   ever touches `.step`/`.step-frame` elements' own `class`; `initProgressiveCrossfade` only ever
-   touches `.step-frame` elements' own inline `opacity`, and only once `matchMedia` confirms motion
-   is allowed — neither has a code path that can hide or move the header or any step's own prose.
-6. **Render the HTML**, then **drive a real browser** — scroll through every step and confirm the
-   graphic crossfades CONTINUOUSLY as scroll position changes (sample several intermediate scroll
-   positions, not just the two endpoints, and confirm `getComputedStyle(frame).opacity` takes
-   genuinely intermediate values in between, not only 0 or 1 — a scrolly that only ever reads 0/1 at
-   every sample is still snapping, whatever its CSS transition claims); confirm the prose panel stays
-   legible at EVERY scroll position, including the moment it crosses the graphic (read the panel's
-   own computed background/colour and compute the contrast — do not assume an opaque-looking panel
-   settles it); disable JavaScript and confirm the default frame and every step's prose survive;
-   emulate `prefers-reduced-motion: reduce`, scroll through the same intermediate positions, and
-   confirm every sampled opacity is EXACTLY 0 or 1 — never intermediate (a computed
-   transition-duration of `0s` alone is not sufficient proof once a non-CSS-transition mechanism
-   exists — see `references/scrolly-discipline.md`, "Reduced motion"); confirm the assembly's own
-   left/right margins are equal at a wide desktop width AND still visibly nonzero at a realistic,
-   not-maximised desktop width (not only a maximised one); resize to ~375px and confirm nothing clips
-   and nothing overflows horizontally. Screenshot each. A scrolly that "renders" but does not step,
-   that steps but goes illegible mid-scroll, or that crossfades but only by snapping at 0/1 no matter
-   how many intermediate positions you sample, is the exact failure this project keeps finding by
-   looking at pictures instead of reading code — see this skill's own gotcha, above.
+   ever touches `.step`/`.step-frame` elements' own `class` — it never writes an opacity value
+   directly, and has no code path that can hide or move the header or any step's own prose. Do not
+   reach for a second, scroll-position-driven mechanism to make the swap feel smoother: it was tried
+   once, shipped a permanent double-exposure blend that never settled across the full scroll
+   distance, and was removed — see `references/scrolly-discipline.md`, "The graphic is fixed; only
+   the text moves."
+6. **Write more than two steps**, and prove the mechanism at more than the smallest case that could
+   accidentally still be special-cased — see `references/scrolly-discipline.md`, "More than two
+   steps," for why two steps hides boundary bugs a middle step would catch.
+7. **Render the HTML**, then **drive a real browser** — scroll through EVERY step, sampling scroll
+   position across the FULL scrollable distance (not just two or three points), and confirm the
+   active frame settles at a clean, single `opacity: 1` (every other frame `0`) for the large
+   majority of each step's own scroll distance — a scrolly whose two frames are still blended near
+   the END of the track, or at any sampled position far from a step boundary, is not fixed, whatever
+   its CSS transition claims (see "The graphic is fixed; only the text moves," above, for the
+   measurement that caught exactly this); confirm the prose panel stays legible at EVERY scroll
+   position, including the moment it crosses the graphic (read the panel's own computed
+   background/colour and compute the contrast — do not assume an opaque-looking panel settles it);
+   disable JavaScript and confirm the default frame and every step's prose survive; emulate
+   `prefers-reduced-motion: reduce`, scroll through the same positions, and confirm every sampled
+   opacity is EXACTLY 0 or 1 — never intermediate; confirm the assembly's own left/right margins are
+   equal at a wide desktop width AND still visibly nonzero at a realistic, not-maximised desktop
+   width — AND confirm the PROSE PANEL's own centre lines up with the graphic's own centre, not just
+   `.scrolly`'s own outer margins (a centred outer box says nothing about a panel pinned to one edge
+   inside it — see "The composition is a centred reading column," above); resize to ~375px and
+   confirm nothing clips and nothing overflows horizontally. Screenshot each. A scrolly that
+   "renders" but does not step, that steps but goes illegible mid-scroll, that never settles to a
+   still image, or whose outer box is centred while its own panel is not, is the exact failure this
+   project keeps finding by looking at pictures instead of reading code, or by measuring the wrong
+   element — see this skill's own gotcha, above.
 
 ## Quick start
 
@@ -176,13 +189,15 @@ python3 -m http.server 8931 --bind 127.0.0.1 --directory /tmp/canon-scrolly &
 # open http://127.0.0.1:8931/gauge-scrolly.html in a real (or automated) browser and:
 #  1. confirm the whole assembly sits in a centred column (equal left/right margin) at both a wide
 #     desktop width and a realistic, not-maximised one — the title, the source and the photograph
-#     step's own prose on screen before touching anything, the prose panel legible over the photo;
-#  2. scroll down slowly and confirm the graphic crossfades CONTINUOUSLY from the photograph toward
-#     the instrument diagram — sample several points along the way (`getComputedStyle(frame).opacity`
-#     on both frames) and confirm genuinely intermediate values appear, not just a jump from 0 to 1 at
-#     one threshold — while the prose panel stays legible the whole way through;
-#  3. disable JavaScript and reload — confirm the default (photograph) frame and both paragraphs are
-#     still there, unchanged, just not advancing;
+#     step's own prose on screen before touching anything, the prose panel legible over the photo,
+#     AND the prose panel itself centred over the graphic column, not pinned to its left edge;
+#  2. scroll down slowly through all four steps and confirm the graphic HOLDS STILL — a clean,
+#     single `opacity: 1` on the active frame (every other frame `0`) across the large majority of
+#     each step's own scroll distance (`getComputedStyle(frame).opacity` sampled at several points
+#     per step, not just the two endpoints) — never a permanent blend, only a brief swap right at
+#     each step boundary — while the prose panel stays legible the whole way through;
+#  3. disable JavaScript and reload — confirm the default (photograph) frame and all four steps' own
+#     prose are still there, unchanged, just not advancing;
 #  4. emulate prefers-reduced-motion: reduce, scroll through the same points, and confirm every
 #     sampled opacity is exactly 0 or 1 — never intermediate, and the frame swap is an instant cut;
 #  5. resize to ~375px and confirm nothing clips and the page never scrolls horizontally.
@@ -190,40 +205,45 @@ python3 -m http.server 8931 --bind 127.0.0.1 --directory /tmp/canon-scrolly &
 
 The seed's own runner (`render`, at the bottom of `scripts/render-scrolly.mjs`) reads
 `assets/sample-data/basin-photo.png`, embeds it as a data URI, and hands the genre's generic
-`renderScrolly` two built frames (one `ImageFrame`, one `DrawnGraphicFrame`) plus their prose. A
-real beat writes its own runner in that same shape, importing its own frame components and building
-its own `steps` array — never editing this skill's own runner in place.
+`renderScrolly` four built frames (one `ImageFrame`, three `DrawnGraphicFrame` variants keyed by
+step id via the runner's own `DRAWN_VARIANTS` map) plus their prose. A real beat writes its own
+runner in that same shape, importing its own frame components and building its own `steps` array —
+never editing this skill's own runner in place.
 
 ## Tuning knobs
 
 | Want | Knob | Where |
 | --- | --- | --- |
 | The drawn frame's own internal design canvas (not the box it renders at in the real page — see `DrawnGraphicFrame`'s own doc-comment) | `640 × 900` | `FRAME`, `ScrollySeed.tsx` |
-| How many narrative steps the seed carries | `2` | `STEPS_META`, `ScrollySeed.tsx` — any count ≥ 2 works, and at least two distinct `frameKind`s (canon-enforced) |
+| How many narrative steps the seed carries | `4` | `STEPS_META`, `ScrollySeed.tsx` — any count ≥ 2 works (mechanism locked at 4/6/8 in tests), and at least two distinct `frameKind`s (canon-enforced) |
 | The sticky graphic's own height (drives how much scroll the overlap covers) | `min(70vh, 640px)` | `--graphic-h`, `.scrolly-track`, `buildCss`, `render-scrolly.mjs` |
 | How long a reader has to scroll through one step | `70vh` (`60vh` for the last) | `.step`, `buildCss`, `render-scrolly.mjs` |
 | The whole assembly's own reading-measure width | `640px` | `.scrolly` max-width, `buildCss`, `render-scrolly.mjs` |
 | The assembly's own side gutter (scales with viewport so it never reads as edge-to-edge) | `clamp(16px, 6vw, 56px)` | `.scrolly` padding, `buildCss`, `render-scrolly.mjs` |
 | The prose panel's own max width | `min(42ch, 100%)` | `.step-panel`, `buildCss`, `render-scrolly.mjs` |
-| The reduced-motion-gated crossfade duration (`initScrolly`'s own path only — never runs alongside `initProgressiveCrossfade`, which turns it off via `.scrolly--progressive`) | `0.3s` | `.step-frame` transition, `buildCss`, `render-scrolly.mjs` |
-| The IntersectionObserver's own centre band (`initScrolly`'s discrete path) | `-45% 0px -45% 0px` (the middle 10% of the viewport) | `initScrolly`, `interaction.mjs` |
-| The continuous crossfade's own zero point per step (`initProgressiveCrossfade`'s path) — not a fixed constant: the CLOSER neighbouring step's own centre distance, so it adapts to however far apart the steps actually render | derived, not tunable directly | `computeFrameWeights`, `interaction.mjs` |
+| Whether the panel sits centred over the graphic column (main-axis) as well as vertically centred (cross-axis) | `justify-content: center` (+ `align-items: center`) | `.step`, `buildCss`, `render-scrolly.mjs` |
+| The step-boundary swap's own transition duration — the ONLY animated property this genre ships, and it only ever plays at a step boundary, never continuously from scroll position | `0.3s` | `.step-frame` transition, `buildCss`, `render-scrolly.mjs` |
+| The IntersectionObserver's own centre band (`initScrolly`, the only mechanism this genre ships) | `-45% 0px -45% 0px` (the middle 10% of the viewport) | `initScrolly`, `interaction.mjs` |
 | The WCAG floor `renderScrolly`'s own panel-contrast tripwire enforces | `4.5` | `renderScrolly`, `render-scrolly.mjs` |
+| The three drawn steps' own illustrated water level / day label (never a plotted value — see `DrawnGraphicFrame`'s own doc-comment) | `{ waterLevelT, dayLabel }` per step `id` | `DRAWN_VARIANTS`, `render-scrolly.mjs` |
 
 ## Files
 
 - `references/scrolly-discipline.md` — the sticky-reservation fact and how the shipped remedy uses
-  it deliberately, the centred reading-measure composition, how prose-over-graphic contrast is
-  measured (not assumed), what survives with JS off, what a screen reader reaches without scrolling,
-  what the graphic is allowed to be silent about, the continuous scroll-linked crossfade and its own
-  jank-avoidance discipline (measured, not assumed), reduced motion, what this genre does not
-  attempt, verification.
+  it deliberately, the centred reading-measure composition (now including the prose panel itself,
+  not just `.scrolly`'s own outer margin), how prose-over-graphic contrast is measured (not
+  assumed), what survives with JS off, what a screen reader reaches without scrolling, what the
+  graphic is allowed to be silent about, why the graphic is fixed rather than continuously
+  crossfading (the mechanism that was built, driven, found never to settle, and removed), more than
+  two steps, reduced motion, what this genre does not attempt, verification.
 - `assets/ScrollySeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat (the daily reading behind every figure this project's other beats report traces to
-  one instrument, at one place — told first with a photograph, then with a diagram), not a stripped
-  mechanics demo. `STEPS_META` is this beat's own narrative arc; `ImageFrame`/`DrawnGraphicFrame`
-  are its two frame components, neither one importing the rasteriser or knowing about the scaffold's
-  own wrapper classes.
+  one instrument, at one place — told first with a photograph, then across three narrated readings
+  on that same instrument: an ordinary day, a flood day, a dry spell), not a stripped mechanics
+  demo. `STEPS_META` is this beat's own four-step narrative arc; `ImageFrame`/`DrawnGraphicFrame`
+  are its two frame components (the latter parameterised by `waterLevelT`/`dayLabel` for the three
+  narrated readings, still no axis or plotted value), neither one importing the rasteriser or
+  knowing about the scaffold's own wrapper classes.
 - `assets/sample-data/basin-photo.png` — this seed's own illustrated "photograph", authored by
   `scripts/build-sample-photo.mjs` from flat shapes (nothing fetched, nothing to credit). The
   minimal graphic under this skill that needs nothing else on disk is `DrawnGraphicFrame`, not this
@@ -237,20 +257,23 @@ its own `steps` array — never editing this skill's own runner in place.
   changes.
 - `output-proof/preview.png` — the artifact this skill's seed produces from this skill's own data —
   regenerated by `bun scripts/render-preview.mjs --out output-proof`.
-- `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML. Two
-  independent mechanisms, both wired by `initAll`: `pickActiveStep` (pure, unit-tested) backs
-  `initScrolly` (the original discrete class toggle — the ENTIRE mechanism under reduced motion);
-  `frameWeight`/`computeFrameWeights` (pure, unit-tested) back `initProgressiveCrossfade` (the
-  continuous, rAF-gated, scroll-linked opacity crossfade — gated off entirely under reduced motion).
-  Both sets of DOM wiring are verified by driving a real browser, not by a test. Neither knows what a
-  `.step-frame` holds.
+- `assets/interaction.mjs` — the one script this genre ships, inlined verbatim into the HTML. ONE
+  mechanism, wired by `initAll`: `pickActiveStep` (pure, unit-tested at 4/6/8 synthetic entry
+  counts) backs `initScrolly` (the `IntersectionObserver`-driven class toggle — the entire
+  mechanism, under every motion preference alike; the CSS-side transition it triggers is gated
+  behind reduced motion, not the script). A second, continuous scroll-linked opacity mechanism was
+  built, driven, and found to never settle to a clean single image across the full scroll distance —
+  removed, see `references/scrolly-discipline.md`, "The graphic is fixed; only the text moves."
+  `initScrolly`'s own DOM wiring is verified by driving a real browser, not by a test; it does not
+  know what a `.step-frame` holds.
 - `scripts/render-scrolly.mjs` — **above its own CONFIG marker**: `renderScrolly({ steps, title,
   source, ground, outDir, name })`, the genre's MEDIA-AGNOSTIC machinery — SSRs whatever
   `ReactElement` each step hands it, wraps it generically, builds the sticky-graphic/overlapping-
-  prose scaffold, measures and asserts panel contrast, inlines the interaction script. **Below the
-  marker**: `SEED` (this seed's own words), `buildFrame` (the one place that reads `frameKind`),
-  `render` and the CLI block (this seed's own runner). Nothing in this file imports out of this
-  skill.
+  prose scaffold (panel centred both axes), measures and asserts panel contrast, inlines the
+  interaction script. **Below the marker**: `SEED` (this seed's own words), `DRAWN_VARIANTS` (the
+  `id` → `{ waterLevelT, dayLabel }` map for the seed's three drawn steps), `buildFrame` (the one
+  place that reads `frameKind`), `render` and the CLI block (this seed's own runner). Nothing in
+  this file imports out of this skill.
 - `scripts/render-still.mjs` — this skill's OWN copy of `deriveFurniture`/`contrast`/`measureText`/
   `renderStill` — a skill never imports another skill's copy of its rasteriser.
 - `scripts/render-preview.mjs` — renders THIS skill's own `DrawnGraphicFrame` standalone (never a
@@ -259,12 +282,14 @@ its own `steps` array — never editing this skill's own runner in place.
   pointed at an empty `--out` directory, this is also the proof this skill renders with nothing else
   on disk (`test/canon.test.ts`).
 - `test/render-scrolly.test.ts` — `bun:test` coverage: `STEPS_META`'s own shape (including the
-  ≥2-distinct-`frameKind`s structural check), `ImageFrame`/`DrawnGraphicFrame` SSR in isolation
-  (closed palette, no self-assigned scaffold classes), `pickActiveStep`, the generic `renderScrolly`
-  (refuses <2 steps, refuses duplicate ids, media-agnostic by source-scan of its own function body,
-  panel contrast measured and asserted ≥4.5:1, overlap markup present and two-column markup absent),
-  and the seed's own `render` end to end (photograph embedded as a data URI, every step's prose
-  present).
+  more-than-two-steps and ≥2-distinct-`frameKind`s structural checks), `ImageFrame`/
+  `DrawnGraphicFrame` SSR in isolation (closed palette, no self-assigned scaffold classes),
+  `pickActiveStep` (including at 4/6/8 synthetic entry counts), the generic `renderScrolly` (refuses
+  <2 steps, refuses duplicate ids, media-agnostic by source-scan of its own function body, panel
+  contrast measured and asserted ≥4.5:1, overlap markup present and two-column markup absent, panel
+  horizontally centred, no trace of the removed scroll-linked mechanism, well-formed markup at 4/6/8
+  synthetic steps), and the seed's own `render` end to end (photograph embedded as a data URI, every
+  step's prose present).
 - `test/canon.test.ts` — the canon's own shape: the seed carries the exact `REPLACE ME` wording, the
   seed's own photograph decodes as a real PNG, the seed renders standalone into an empty `--out`
   directory with nothing else on disk, `STEPS_META` carries at least two distinct `frameKind`s, no
