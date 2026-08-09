@@ -1,0 +1,43 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "title": "China's per-person CO₂ emissions have nearly tripled since 2000, overtaking the world average",
+  "source": "Source: Global Carbon Budget (2025), via Our World in Data · 2000 & 2023 data, per capita",
+  "legendLabels": [
+    "2000",
+    "2023"
+  ],
+  "subjectCountry": "China",
+  "data": [
+    {
+      "country": "United States",
+      "y2000": 21.39786,
+      "y2023": 14.31945
+    },
+    {
+      "country": "China",
+      "y2000": 2.8700879,
+      "y2023": 8.556261
+    },
+    {
+      "country": "Brazil",
+      "y2000": 1.9548683,
+      "y2023": 2.2922719
+    },
+    {
+      "country": "India",
+      "y2000": 0.9330219,
+      "y2023": 2.1297693
+    },
+    {
+      "country": "Nigeria",
+      "y2000": 0.7661745,
+      "y2023": 0.5677305
+    }
+  ],
+  "reference": 4.707772,
+  "referenceLabel": "World average, 2023: 4.71 t",
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

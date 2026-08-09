@@ -1,0 +1,48 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "title": "Rwanda cut its child mortality rate by three-quarters since 1990",
+  "source": "Source: UN Inter-agency Group for Child Mortality Estimation, via Our World in Data · 1990 & 2023 data",
+  "reference": 2.5,
+  "referenceLabel": "UN SDG target for 2030: 2.5%",
+  "periodLabels": [
+    "1990",
+    "2023"
+  ],
+  "subjectCountry": "Rwanda",
+  "data": [
+    {
+      "country": "Niger",
+      "v1990": 33.24,
+      "v2023": 11.35
+    },
+    {
+      "country": "Nigeria",
+      "v1990": 20.76,
+      "v2023": 11.68
+    },
+    {
+      "country": "Rwanda",
+      "v1990": 15.07,
+      "v2023": 3.88
+    },
+    {
+      "country": "India",
+      "v1990": 12.7,
+      "v2023": 2.8
+    },
+    {
+      "country": "Brazil",
+      "v1990": 6.28,
+      "v2023": 1.44
+    },
+    {
+      "country": "Switzerland",
+      "v1990": 0.82,
+      "v2023": 0.39
+    }
+  ],
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

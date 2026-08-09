@@ -1,0 +1,137 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#1E7B45",
+  "title": "Iceland has run entirely on renewable electricity every year since 2016 — most of Europe is still catching up",
+  "source": "Source: Ember & Energy Institute, via Our World in Data · Share of electricity generation from renewables, 2016–2024",
+  "legendTitle": "Share of electricity from renewables",
+  "subjectCountry": "Iceland",
+  "subjectNote": "Iceland: 100% renewable electricity in every single year of the period",
+  "years": [
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "data": [
+    {
+      "country": "Iceland",
+      "values": [
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100,
+        100
+      ]
+    },
+    {
+      "country": "Norway",
+      "values": [
+        98.05444,
+        98.11829,
+        98.01974,
+        97.93768,
+        98.51607,
+        99.31903,
+        98.6453,
+        98.470345,
+        98.60607
+      ]
+    },
+    {
+      "country": "Switzerland",
+      "values": [
+        61.882164,
+        62.776386,
+        58.651382,
+        59.869633,
+        62.20438,
+        66.58741,
+        58.311733,
+        63.165405,
+        67.44928
+      ]
+    },
+    {
+      "country": "Germany",
+      "values": [
+        29.481544,
+        33.466778,
+        35.25811,
+        40.18897,
+        44.374065,
+        40.167233,
+        44.372704,
+        54.685036,
+        58.64231
+      ]
+    },
+    {
+      "country": "Spain",
+      "values": [
+        38.65164,
+        32.282104,
+        38.271927,
+        37.331806,
+        43.854782,
+        46.44506,
+        42.803413,
+        51.51374,
+        57.336086
+      ]
+    },
+    {
+      "country": "United Kingdom",
+      "values": [
+        24.473732,
+        29.238365,
+        32.99976,
+        36.596474,
+        43.06478,
+        39.7824,
+        41.6107,
+        46.378147,
+        50.647522
+      ]
+    },
+    {
+      "country": "Poland",
+      "values": [
+        13.740964,
+        14.201635,
+        12.760433,
+        15.5985775,
+        17.96373,
+        17.092678,
+        21.103022,
+        27.706621,
+        31.146875
+      ]
+    },
+    {
+      "country": "France",
+      "values": [
+        17.715267,
+        16.538311,
+        19.757393,
+        19.963926,
+        23.713608,
+        22.187494,
+        24.201088,
+        26.889639,
+        27.176117
+      ]
+    }
+  ],
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

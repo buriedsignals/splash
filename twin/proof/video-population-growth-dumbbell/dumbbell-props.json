@@ -1,0 +1,77 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "title": "Switzerland's population grew fastest of ten European countries since 2000",
+  "source": "Source: HYDE, Gapminder & UN, via Our World in Data · 2000 & 2023 data, indexed to 2000 = 100",
+  "referenceLabel": "Population, indexed to 2000 = 100",
+  "legendLabels": [
+    "2000",
+    "2023"
+  ],
+  "subjectCountry": "Switzerland",
+  "data": [
+    {
+      "country": "Switzerland",
+      "index2000": 100,
+      "index2023": 123.47661881544315,
+      "gap": 23.476618815443146
+    },
+    {
+      "country": "Norway",
+      "index2000": 100,
+      "index2023": 122.8976651263543,
+      "gap": 22.897665126354298
+    },
+    {
+      "country": "Sweden",
+      "index2000": 100,
+      "index2023": 118.92893665861935,
+      "gap": 18.92893665861935
+    },
+    {
+      "country": "Spain",
+      "index2000": 100,
+      "index2023": 116.801192849146,
+      "gap": 16.801192849146005
+    },
+    {
+      "country": "United Kingdom",
+      "index2000": 100,
+      "index2023": 116.29879222619147,
+      "gap": 16.298792226191466
+    },
+    {
+      "country": "Austria",
+      "index2000": 100,
+      "index2023": 113.94627357861276,
+      "gap": 13.946273578612761
+    },
+    {
+      "country": "France",
+      "index2000": 100,
+      "index2023": 111.6924638669178,
+      "gap": 11.692463866917805
+    },
+    {
+      "country": "Italy",
+      "index2000": 100,
+      "index2023": 103.88888850087825,
+      "gap": 3.8888885008782523
+    },
+    {
+      "country": "Germany",
+      "index2000": 100,
+      "index2023": 103.36316664905199,
+      "gap": 3.3631666490519905
+    },
+    {
+      "country": "Poland",
+      "index2000": 100,
+      "index2023": 101.31938152563183,
+      "gap": 1.319381525631826
+    }
+  ],
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

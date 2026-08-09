@@ -1,0 +1,85 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "title": "Switzerland's share of renewable electricity trails Norway's by more than 31 points",
+  "source": "Source: Ember & Energy Institute – Statistical Review of World Energy, via Our World in Data · latest available year, mostly 2025 (Iceland: 2024) · share of electricity generation from renewables",
+  "subjectCountry": "Switzerland",
+  "compareCountry": "Norway",
+  "countries": [
+    "Iceland",
+    "Norway",
+    "Denmark",
+    "Austria",
+    "Portugal",
+    "Sweden",
+    "Switzerland",
+    "Germany",
+    "Finland",
+    "Spain",
+    "United Kingdom",
+    "Italy",
+    "Poland",
+    "France"
+  ],
+  "data": [
+    {
+      "country": "Iceland",
+      "value": 100
+    },
+    {
+      "country": "Norway",
+      "value": 98.99882
+    },
+    {
+      "country": "Denmark",
+      "value": 91.17117
+    },
+    {
+      "country": "Austria",
+      "value": 83.597374
+    },
+    {
+      "country": "Portugal",
+      "value": 80.950516
+    },
+    {
+      "country": "Sweden",
+      "value": 71.1909
+    },
+    {
+      "country": "Switzerland",
+      "value": 67.82529
+    },
+    {
+      "country": "Germany",
+      "value": 59.09245
+    },
+    {
+      "country": "Finland",
+      "value": 56.464153
+    },
+    {
+      "country": "Spain",
+      "value": 55.858135
+    },
+    {
+      "country": "United Kingdom",
+      "value": 51.97222
+    },
+    {
+      "country": "Italy",
+      "value": 48.77597
+    },
+    {
+      "country": "Poland",
+      "value": 31.507563
+    },
+    {
+      "country": "France",
+      "value": 26.064074
+    }
+  ],
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

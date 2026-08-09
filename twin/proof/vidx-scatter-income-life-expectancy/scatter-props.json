@@ -1,0 +1,116 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "title": "Among twenty wealthy countries, the United States has the lowest life expectancy",
+  "source": "Source: World Bank via Gapminder, UN World Population Prospects (2024), via Our World in Data · 2022 data",
+  "subjectCountry": "United States",
+  "xAxisLabel": "GDP per capita ($)",
+  "yAxisLabel": "Life expectancy at birth (years)",
+  "data": [
+    {
+      "country": "Spain",
+      "gdp": 34123.387,
+      "lifeExpectancy": 82.3661
+    },
+    {
+      "country": "Italy",
+      "gdp": 36224.293,
+      "lifeExpectancy": 82.052
+    },
+    {
+      "country": "Japan",
+      "gdp": 38268.79,
+      "lifeExpectancy": 84.0541
+    },
+    {
+      "country": "United Kingdom",
+      "gdp": 38406.53,
+      "lifeExpectancy": 81.0744
+    },
+    {
+      "country": "France",
+      "gdp": 39065.71,
+      "lifeExpectancy": 82.4753
+    },
+    {
+      "country": "Finland",
+      "gdp": 40701.465,
+      "lifeExpectancy": 81.2435
+    },
+    {
+      "country": "South Korea",
+      "gdp": 41320.9,
+      "lifeExpectancy": 82.727
+    },
+    {
+      "country": "Belgium",
+      "gdp": 41872.395,
+      "lifeExpectancy": 81.1589
+    },
+    {
+      "country": "Austria",
+      "gdp": 43792.855,
+      "lifeExpectancy": 81.2959
+    },
+    {
+      "country": "Canada",
+      "gdp": 45529.645,
+      "lifeExpectancy": 81.2493
+    },
+    {
+      "country": "Germany",
+      "gdp": 46647.793,
+      "lifeExpectancy": 80.5796
+    },
+    {
+      "country": "Sweden",
+      "gdp": 47126.13,
+      "lifeExpectancy": 83.046
+    },
+    {
+      "country": "Netherlands",
+      "gdp": 49669.867,
+      "lifeExpectancy": 81.9121
+    },
+    {
+      "country": "Denmark",
+      "gdp": 50689.68,
+      "lifeExpectancy": 81.2906
+    },
+    {
+      "country": "Australia",
+      "gdp": 52049.43,
+      "lifeExpectancy": 82.7662
+    },
+    {
+      "country": "United States",
+      "gdp": 58487.465,
+      "lifeExpectancy": 77.9789
+    },
+    {
+      "country": "Ireland",
+      "gdp": 60257.082,
+      "lifeExpectancy": 82.0505
+    },
+    {
+      "country": "Switzerland",
+      "gdp": 63323.254,
+      "lifeExpectancy": 83.2003
+    },
+    {
+      "country": "Singapore",
+      "gdp": 80320.086,
+      "lifeExpectancy": 82.9211
+    },
+    {
+      "country": "Norway",
+      "gdp": 88366.22,
+      "lifeExpectancy": 82.6309
+    }
+  ],
+  "reference": 82.052,
+  "referenceLabel": "Peer median: 82.1 years",
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}
