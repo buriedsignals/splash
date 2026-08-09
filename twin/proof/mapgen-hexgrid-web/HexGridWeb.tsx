@@ -33,15 +33,23 @@
  * doctrine's "ordered, readable list of the regions and their values" assumes each row has a
  * meaningful NAME (`RegionTable`'s "Metro area" column). A hex cell has none — the type sheet
  * itself says a reader "can't name, can't look up" an arbitrary cell
- * (`references/types/hex-grid.md`, "When not to use it"). Reverse-geocoding cell centres into place
- * names was considered and rejected as out of scope and dishonest (it would invent a specificity
- * the grid does not have). `DensityTable` instead ships Rank / Event count / Density class — three
- * facts that ARE real and checkable about an arbitrary cell, in the same densest-first order a
- * sighted reader's own eye takes across the shaded field, and in the same order the keyboard's
- * Home/End also uses across the map's own cells. This preserves the doctrine's two-channel
- * principle (an exact per-cell count on hover/focus for a reader who can point at a pixel; the same
- * distribution, complete and linear, for a reader who cannot) without pretending an unnamed cell has
- * a name.
+ * (`references/types/hex-grid.md`, "When not to use it"). Reverse-geocoding a cell's CENTRE into a
+ * place name is still rejected: it would invent a specificity the grid does not have.
+ *
+ * But the first version of this table drew the wrong conclusion from that, and shipped Rank /
+ * Event count / Density class only — three facts that are real and checkable, and not one of them
+ * spatial. On a map, whose entire subject is where, that left the table unable to answer the only
+ * question a reader who cannot see it has. So there is now a fourth column, and it is neither a
+ * guess nor a geocode: every event in the frozen catalogue carries USGS's OWN place string, so a
+ * cell can be described by the regions ITS MEMBER EVENTS are filed under ("Fiji, Tonga"), computed
+ * in `render-web.mjs` from the cell's members. That is a fact about the data, not a claim about
+ * the cell's geometry, and the column header and the caption both say so. The sibling
+ * `mapgen-choropleth-web`'s table carries names; this one now does too.
+ *
+ * The rows stay in the same densest-first order a sighted reader's own eye takes across the shaded
+ * field, and the same order the keyboard's Home/End uses across the map's own cells. This preserves
+ * the doctrine's two-channel principle (an exact per-cell count on hover/focus for a reader who can
+ * point at a pixel; the same distribution, complete and linear, for a reader who cannot).
  *
  * This component never imports the rasteriser — `ink`/`muted`/`measure` are props, derived once in
  * node by `render-web.mjs`.
@@ -386,12 +394,15 @@ export function DensityTable({
   cells,
   breaks,
   subjectKey,
+  whereOf,
   ink,
   muted,
 }: {
   cells: HexCell[];
   breaks: number[];
   subjectKey: string;
+  /** The regions a cell's OWN member events are catalogued under — see the WHERE column below. */
+  whereOf: (key: string) => string;
   ink: string;
   muted: string;
 }) {
@@ -399,13 +410,14 @@ export function DensityTable({
   return (
     <table className="density-table" style={{ color: ink, borderColor: muted }}>
       <caption>
-        {`Every reading behind the map above — one row per non-empty cell, ${ranked.length} cells, ranked by earthquake count, densest first.`}
+        {`Every reading behind the map above — one row per non-empty cell, ${ranked.length} cells, ranked by earthquake count, densest first. The last column names the regions each cell's own events are catalogued under, not the cell's position.`}
       </caption>
       <thead>
         <tr>
           <th scope="col">Rank</th>
           <th scope="col">Event count</th>
           <th scope="col">Density class</th>
+          <th scope="col">Where its events are catalogued</th>
         </tr>
       </thead>
       <tbody>
@@ -420,6 +432,7 @@ export function DensityTable({
               <th scope="row">{rank}</th>
               <td>{cell.count}</td>
               <td>{densityClassLabel(classIndex, breaks)}</td>
+              <td>{whereOf(cell.key)}</td>
             </tr>
           );
         })}

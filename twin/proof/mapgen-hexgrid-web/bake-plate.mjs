@@ -190,7 +190,11 @@ for (let i = 0; i < points.length; i++) {
     offFrame++;
     continue;
   }
-  projectedPoints.push({ px: Math.round(px * 10) / 10, py: Math.round(py * 10) / 10 });
+  // `i` is the point's own row index in the frozen CSV, carried through the projection so a cell
+  // can be asked WHICH events it holds and their own catalogued place names can be read out of the
+  // file. Without it the alt text and the accessible table can only type a location, which is how
+  // "the Tonga-Kermadec trench" came to sit beside a coordinate 700 km away.
+  projectedPoints.push({ px: Math.round(px * 10) / 10, py: Math.round(py * 10) / 10, i });
 }
 
 const geometry = {

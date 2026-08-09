@@ -29,7 +29,8 @@ computed grid, not from typed strings. Read back out of the committed `hex-grid.
 
 - **156 non-empty cells**; the accessible table carries 156 rows, counted in the file.
 - Ranked counts: **1,374 · 1,371 · 774 · 709 · 696 · 590 · 518 · 490 · 456 · 441 …**
-- Subject: **1,374 events, 91.6× the median non-empty cell** (median 15).
+- Subject: **1,374 events, 91.6× the median non-empty cell** (median 15), its events averaging
+  **19.8°S, 176.7°W** and catalogued as **Fiji 49% / Tonga 45%** — all three derived at render time.
 - Independent recomputation from the CSV, re-projecting into an 836 × 520 Mercator frame and
   re-binning at the same target cell count, agrees on the shape and the order: 155 non-empty cells,
   top five **1,415 · 1,367 · 775 · 710 · 696**, median 16, top/median 88.4. Rank 1's member points
@@ -54,7 +55,7 @@ drawn unconditionally, so the claim survives with JavaScript off. Hover, tap and
 cell's own count. Nothing argument-bearing sits behind a control.
 
 The table is the non-visual route: a map is spatial, a screen reader is not, and 156 rows ranked
-densest-first are the answer.
+densest-first, each naming the regions its own events are catalogued under, are the answer.
 
 ## Anti-patterns for this case
 
@@ -65,26 +66,42 @@ densest-first are the answer.
   rank 2, and with the winner changing when the plate changes shape, the honest sentence is about
   the PATTERN (boundaries, not an even spread), which every binning agrees on.
 - Do not draw empty cells — an empty hexagon asserts a measurement.
-- Do not let a hand-typed place name ride along with a derived coordinate. This beat derives the
-  subject's latitude and longitude; the place name beside them is the one part still typed — see
-  below.
+- Do not let a hand-typed place name ride along with a derived coordinate. Every part of this
+  beat's location sentence — the coordinate, the region names, and the table's own WHERE column —
+  now comes out of the events themselves. See the corrections below.
 
-## Defect found while deriving this brief (not fixed here)
+## Defects found while deriving this brief — BOTH CORRECTED 2026-08-09
 
-Two, both small, both of the class this project keeps finding:
+1. **A typed place name rode a derived coordinate.** The alt said the densest cell sat "in the South
+   Pacific near 21°S, 170°W (the Tonga-Kermadec trench)". The coordinate was computed; the
+   parenthetical was typed, and it named a trench ~700 km east of where the cell's own events are.
 
-1. **The derived coordinate and the typed place name disagree.** The alt says the densest cell sits
-   "in the South Pacific near 21°S, 170°W (the Tonga-Kermadec trench)". The coordinate is computed
-   from the plate's own measured corners; the parenthetical is typed. Recomputed from the CSV, the
-   member events of that cell average **19.9°S, 176.8°W**, and their own USGS place strings are
-   overwhelmingly "Fiji region" and "south of the Fiji Islands" — roughly 700 km west of the named
-   longitude. "Fiji–Tonga" is what the data says; "the Tonga-Kermadec trench" is a gloss nothing in
-   the file supports.
-2. **The accessible table has no location column.** Its three columns are Rank, Event count and
-   Density class. A reader using the table therefore learns that some unidentified cell holds 1,374
-   events and cannot find out WHERE — on a map, whose entire subject is where. The table exists
-   because a screen reader has no spatial access; without a place column it does not deliver the one
-   thing it was built to deliver. The sibling `mapgen-choropleth-web` table does carry names.
+   Fixed at the source of the problem: `bake-plate.mjs` now carries each projected point's own row
+   index in the frozen CSV, so a cell can be asked WHICH events it holds, and `dominantRegions()`
+   reads their USGS place strings. Labels that begin with the same word ("Fiji", "Fiji region",
+   "south of the Fiji Islands") are one region under three spellings and are merged under the
+   shortest. The densest cell comes back **Fiji 49% / Tonga 45%**, and the alt now names those.
+
+   The COORDINATE moved too, for the same reason: it now reports the mean position of the cell's own
+   **1,374 events — 19.8°S, 176.7°W** (longitude averaged circularly, because this cluster straddles
+   the antimeridian and a plain mean of +179 and −179 is 0°, in Africa) — rather than the cell's
+   geometric centre at 21.0°S, 169.6°W. This cell sits against the frame's west edge, where half the
+   hexagon covers ocean the frame has already cut away, so the centre of the cell is not where its
+   data is. The derived mean agrees with this brief's own independent recomputation (19.9°S,
+   176.8°W) to a tenth of a degree.
+
+2. **The accessible table had no location column.** Rank / Event count / Density class — three facts
+   that are real and checkable, and not one of them spatial, on a map whose entire subject is where.
+   The table now carries a fourth column, **"Where its events are catalogued"**, from the same
+   derivation: rank 1 Fiji, Tonga · rank 2 Indonesia, Philippines · rank 3 Chile, Argentina · rank 4
+   Taiwan, Japan, and so on for all 156 rows. It is not a geocode of the cell's centre — that is
+   still rejected, and both the column header and the table caption say the column names where the
+   events are FILED, not where the cell is. `HexGridWeb.tsx`'s own doc-comment, which argued the
+   column could not honestly exist, has been rewritten to record why it can.
+
+   Verified by loading the rendered `hex-grid.html` in a browser and reading it: 156 rows, the
+   subject row highlighted, every name plausible against the map beside it. One label is unhelpful
+   rather than wrong — USGS files Californian events as "CA", so one cell reads "Canada, CA".
 
 ## Source line
 

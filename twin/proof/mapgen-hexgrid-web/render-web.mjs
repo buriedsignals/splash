@@ -20,8 +20,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, measureText } from "./render-still.mjs";
 import { HexGridWeb, DensityTable, LAYOUTS } from "./HexGridWeb.tsx";
 import {
+  cellMembers,
   chooseHexSize,
   countBreaks,
+  dominantRegions,
   quakePointsFromCsv,
   sequentialRamp,
   pixelToLonLat,
@@ -68,6 +70,7 @@ async function renderHexGridWeb({ component, table, layouts, props, outDir, name
       cells: props.cells,
       breaks: props.breaks,
       subjectKey: props.subjectKey,
+      whereOf: props.whereOf,
       ...furniture,
     }),
   );
@@ -273,10 +276,62 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   // hand-typed place name that can silently point at the wrong cell.
   if (!geometry.frameCorners)
     throw new Error("plate geometry has no frameCorners — re-bake with the current bake-plate.mjs");
-  const subjectLonLat = pixelToLonLat(subject.cx, subject.cy, geometry.frameCorners, geometry.frame);
-  const subjectLatLabel = `${Math.abs(subjectLonLat.lat).toFixed(0)}°${subjectLonLat.lat < 0 ? "S" : "N"}`;
-  const subjectLonLabel = `${Math.abs(subjectLonLat.lon).toFixed(0)}°${subjectLonLat.lon < 0 ? "W" : "E"}`;
-  console.log(`densest cell location: ${subjectLonLat.lon.toFixed(1)}, ${subjectLonLat.lat.toFixed(1)}`);
+  const cellCentre = pixelToLonLat(subject.cx, subject.cy, geometry.frameCorners, geometry.frame);
+  console.log(`densest cell's centre: ${cellCentre.lon.toFixed(1)}, ${cellCentre.lat.toFixed(1)}`);
+
+  // ── And the NAME beside that coordinate, read out of the events themselves ──────────────────
+  // The coordinate was already derived; the place name next to it was not, and the two disagreed:
+  // the alt said "(the Tonga-Kermadec trench)" while this cell's own member events average 19.9°S,
+  // 176.8°W and are catalogued by USGS as "Fiji region" and "south of the Fiji Islands" — roughly
+  // 700 km west of the trench that was typed. Every cell now carries the regions ITS OWN events
+  // are filed under, which is also what gives the accessible table the WHERE column it lacked.
+  if (geometry.points.some((p) => p.i === undefined))
+    throw new Error(
+      "this plate predates the corrected bake (points carry no source index). Delete " +
+        `${plateDir} and re-run, or bake directly with bake-plate.mjs.`,
+    );
+  const members = cellMembers(geometry.points, hexSize);
+  const regionsOfCell = new Map(
+    cells.map((cell) => [
+      cell.key,
+      dominantRegions(
+        (members.get(cell.key) ?? []).map((i) => points[i].place),
+        2,
+      ),
+    ]),
+  );
+  const whereOf = (key) =>
+    (regionsOfCell.get(key) ?? []).map((r) => r.label).join(", ") || "—";
+  const subjectWhere = whereOf(subject.key);
+
+  // The coordinate the alt quotes is the MEAN POSITION OF THE CELL'S OWN EVENTS, not the cell's
+  // geometric centre. The two differ here by ~700 km, because this cell sits hard against the
+  // frame's west edge and half of its hexagon covers ocean the frame has already cut away — the
+  // centre of an edge cell is not where its data is. Longitude is averaged CIRCULARLY: this
+  // cluster straddles the antimeridian, and a plain mean of +179 and −179 is 0°, in Africa.
+  const subjectMembers = (members.get(subject.key) ?? []).map((i) => points[i]);
+  const meanLat =
+    subjectMembers.reduce((sum, p) => sum + p.lat, 0) / subjectMembers.length;
+  const meanLon =
+    (Math.atan2(
+      subjectMembers.reduce((sum, p) => sum + Math.sin((p.lon * Math.PI) / 180), 0),
+      subjectMembers.reduce((sum, p) => sum + Math.cos((p.lon * Math.PI) / 180), 0),
+    ) *
+      180) /
+    Math.PI;
+  const subjectLatLabel = `${Math.abs(meanLat).toFixed(0)}°${meanLat < 0 ? "S" : "N"}`;
+  const subjectLonLabel = `${Math.abs(meanLon).toFixed(0)}°${meanLon < 0 ? "W" : "E"}`;
+  console.log(
+    `densest cell's ${subjectMembers.length} events average ${meanLon.toFixed(1)}, ${meanLat.toFixed(1)} ` +
+      `(the cell's own centre is ${cellCentre.lon.toFixed(1)}, ${cellCentre.lat.toFixed(1)})`,
+  );
+  console.log(
+    `densest cell's own events are catalogued as: ` +
+      regionsOfCell
+        .get(subject.key)
+        .map((r) => `${r.label} ${(r.share * 100).toFixed(0)}%`)
+        .join(" · "),
+  );
 
   const furniture = deriveFurniture(BEAT.ground);
   const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1);
@@ -291,9 +346,9 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   const alt =
     `World map binned into a hexagonal grid, ${cells.length} non-empty cells. Cells are shaded by how many ` +
     `magnitude 4-or-greater earthquakes occurred there in 2024, from pale for a handful up to a dark cell in ` +
-    `the South Pacific near ${subjectLatLabel}, ${subjectLonLabel} (the Tonga-Kermadec trench), outlined in ` +
-    `the accent colour, which holds the single densest cell (${subject.count} events, ${ratio.toFixed(1)}× ` +
-    `the median nonempty cell).`;
+    `the South Pacific: its ${subject.count.toLocaleString()} events average ${subjectLatLabel}, ` +
+    `${subjectLonLabel} and are catalogued as ${subjectWhere}. That cell is the single densest, ` +
+    `${ratio.toFixed(1)}× the median non-empty cell, and is the one outlined in the accent colour.`;
 
   const { outPath } = await renderHexGridWeb({
     component: HexGridWeb,
@@ -307,6 +362,7 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
       breaks,
       ramp,
       subjectKey: subject.key,
+      whereOf,
       title: BEAT.title,
       source: BEAT.source,
       basemapCredit: BEAT.basemapCredit,
