@@ -181,6 +181,88 @@ describe("checkStoryboard", () => {
     ).toBe(true);
   });
 
+  it("should not check a slot's medium against capabilities unless both are present — a slot with no medium behaves exactly as before", () => {
+    const capabilities = {
+      map: {
+        id: "map",
+        opens: "map beats",
+        available: false,
+        reason: "no MapTiler key",
+      },
+    };
+    // No `medium` on the slot at all: passing capabilities must not invent a new refusal.
+    expect(
+      checkStoryboard(parseStoryboard(VALID).meta, undefined, capabilities),
+    ).toEqual([]);
+    // A `medium` on the slot, but no capabilities handed in: nothing to check the choice against.
+    const withMedium = parseStoryboard(VALID).meta;
+    withMedium.slots[0].medium = "map";
+    expect(checkStoryboard(withMedium)).toEqual([]);
+  });
+
+  it("should refuse a chosen slot whose medium the environment cannot honour, naming the reason in the journalist's terms", () => {
+    const meta = parseStoryboard(VALID).meta;
+    meta.slots[0].medium = "map";
+    const capabilities = {
+      map: {
+        id: "map",
+        opens: "map beats",
+        available: false,
+        reason: "no MapTiler key",
+      },
+    };
+    const errors = checkStoryboard(meta, undefined, capabilities);
+    expect(errors).toContain(
+      "slot 1: map beats are unavailable: no MapTiler key",
+    );
+    // The whole point: never framed as the environment having failed.
+    expect(errors.join(" ").toLowerCase()).not.toContain("environment failed");
+  });
+
+  it("should pass the same slot once the capability opens", () => {
+    const meta = parseStoryboard(VALID).meta;
+    meta.slots[0].medium = "map";
+    const capabilities = {
+      map: {
+        id: "map",
+        opens: "map beats",
+        available: true,
+        reason: "MapTiler answered 200",
+      },
+    };
+    expect(checkStoryboard(meta, undefined, capabilities)).toEqual([]);
+  });
+
+  it("should not invent a gap for a medium capabilities has no opinion about", () => {
+    const meta = parseStoryboard(VALID).meta;
+    meta.slots[0].medium = "chart";
+    const capabilities = {
+      map: {
+        id: "map",
+        opens: "map beats",
+        available: false,
+        reason: "no MapTiler key",
+      },
+    };
+    expect(checkStoryboard(meta, undefined, capabilities)).toEqual([]);
+  });
+
+  it("should not report a capability gap for a slot that is already refused for having no chosen value", () => {
+    const meta = parseStoryboard(VALID).meta;
+    meta.slots[0].medium = "map";
+    delete meta.slots[0].chosen;
+    const capabilities = {
+      map: {
+        id: "map",
+        opens: "map beats",
+        available: false,
+        reason: "no MapTiler key",
+      },
+    };
+    const errors = checkStoryboard(meta, undefined, capabilities);
+    expect(errors).toEqual(["slot 1: nothing chosen — gate 2 is not closed"]);
+  });
+
   it("should not turn an unverifiable claim into a gate error", () => {
     const meta = {
       ...parseStoryboard(VALID).meta,

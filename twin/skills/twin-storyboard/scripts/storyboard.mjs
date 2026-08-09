@@ -3,8 +3,9 @@
 
 import { groundTakeaway } from "./ground-claim.mjs";
 import { genreGap } from "./genre-catalog.mjs";
+import { capabilityGap } from "./capability-gap.mjs";
 
-export { groundTakeaway, genreGap };
+export { groundTakeaway, genreGap, capabilityGap };
 
 const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
 
@@ -91,7 +92,17 @@ export function parseStoryboard(text) {
 // Gate 2 cannot honestly close on a takeaway the data refutes (twin/TRIAL-THREE-BEATS.md, "no
 // claim-grounding"). An "unverifiable" claim is not an error: it is information the journalist
 // should see, not a reason to block the gate on a claim nobody could actually check.
-export function checkStoryboard(meta, profile) {
+//
+// `capabilities` is optional too — the same `{map, datawrapper, hostedEmbed}` shape
+// `runPreflight` returns (`skills/splash-twin/scripts/preflight.mjs`), passed in by the caller
+// that already ran preflight this session; this file never runs preflight itself, only reads its
+// result. When given, a chosen slot whose `medium` names a capability the environment cannot
+// honour is refused with the reason in the journalist's terms ("map beats are unavailable: no
+// MapTiler key"), never as a generic environment failure — the same closure `genreGap` above
+// applies to a genre nothing can deliver, one gate learning one more question. A slot with no
+// `medium` at all, or `capabilities` omitted entirely, is untouched: this is additive, not a new
+// requirement on every existing storyboard.
+export function checkStoryboard(meta, profile, capabilities) {
   const errors = [];
   if (!meta.takeaway) errors.push("takeaway is missing");
   for (const field of HAND) if (!meta[field]) errors.push(`${field} is missing`);
@@ -135,6 +146,15 @@ export function checkStoryboard(meta, profile) {
     // either, so requiring it here would put the two gates' verdicts out of step.
     if (slot.genre) {
       const gap = genreGap(slot.genre);
+      if (gap) errors.push(`slot ${slot.id}: ${gap}`);
+    }
+    // Only checked when both a medium was actually named on the slot AND the caller handed in a
+    // capabilities report to check it against — mirrors the `slot.genre` guard immediately above,
+    // and for the same reason: a slot that never named a medium is a different, pre-existing gap
+    // this closure does not extend into, and a caller that never ran preflight has nothing to
+    // check the choice against.
+    if (slot.medium && capabilities) {
+      const gap = capabilityGap(capabilities, slot.medium);
       if (gap) errors.push(`slot ${slot.id}: ${gap}`);
     }
   }
