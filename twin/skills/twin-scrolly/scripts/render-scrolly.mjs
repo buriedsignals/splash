@@ -176,19 +176,29 @@ body {
   color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-/* A comfortable reading measure (~640px, the classic editorial column width — well under the
-   ~75-character line-length ceiling even at the panel's own 17px prose), centred with \`margin: 0
-   auto\` — not the assembly's own graphic bleeding to whatever the window happens to be. The side
-   padding SCALES with the viewport (\`clamp\`) rather than sitting at a fixed 16px, so a realistic,
-   not-maximised desktop window (the common case a fixed 16px still let the column read as
-   edge-to-edge in, at anything under roughly 670px of window width) keeps a visible gutter on both
-   sides too, not only a viewport wide enough to hit the 640px ceiling with room to spare. */
-.scrolly { max-width: 640px; margin: 0 auto; padding: 0 clamp(16px, 6vw, 56px); }
+/* \`.scrolly\` itself carries NO width constraint — a sixth correction. The fourth build's fix
+   constrained THIS element to a 640px reading measure, which centred it correctly but also capped
+   every child inside it, including the sticky GRAPHIC, to that same narrow column — a visual meant
+   to fill the frame it is pinned in, stranded in the middle of a wide page instead. The reading
+   measure now belongs to the two things that are actually PROSE — \`.scrolly-header\`, below, and
+   \`.step-panel\` (\`.step\`'s own \`justify-content: center\` already centres it, see "Measuring prose
+   over the graphic") — never to \`.scrolly-track\`/\`.scrolly-graphic\`, which are left to size
+   themselves to their parent's own full width, all the way out to \`body\`. See
+   references/scrolly-discipline.md, "The graphic fills the width it is given." */
 
-/* The header states the beat's own argument in full, unconditional and ahead of every step's own
-   reveal — and, deliberately, ahead of the sticky graphic too: it sits in plain document flow,
-   scrolled past once, so it is never the thing a step's prose panel has to be measured against. */
-.scrolly-header { margin: 0 0 24px; padding: 4px 0 0; }
+/* The comfortable reading measure (~640px, the classic editorial column width — well under the
+   ~75-character line-length ceiling) now lives HERE, not on \`.scrolly\` — the header is prose, not
+   the visual, and stays in a centred column even though the graphic beneath it goes full-bleed. The
+   side padding SCALES with the viewport (\`clamp\`) rather than sitting at a fixed 16px, so a
+   realistic, not-maximised desktop window still keeps a visible gutter on both sides. The header
+   states the beat's own argument in full, unconditional and ahead of every step's own reveal — and,
+   deliberately, ahead of the sticky graphic too: it sits in plain document flow, scrolled past once,
+   so it is never the thing a step's prose panel has to be measured against. */
+.scrolly-header {
+  max-width: 640px;
+  margin: 0 auto 24px;
+  padding: 4px clamp(16px, 6vw, 56px) 0;
+}
 .scrolly-header h2 { margin: 0 0 4px; font-size: 22px; line-height: 1.25; }
 .scrolly-header .source { margin: 0; font-size: 13px; color: var(--muted); }
 
@@ -268,12 +278,18 @@ body {
    otherwise gated. A screen reader or keyboard user reaches every step's own text by reading or
    tabbing through the page exactly like any other paragraph; scrolling into the sticky graphic's
    own centre band is only what changes the GRAPHIC, never what reveals the prose. */
+/* \`.step\`'s own horizontal padding now carries the reading-measure gutter that used to live on
+   \`.scrolly\` — \`.step\` itself spans the full sticky graphic's own width (it has no width
+   constraint of its own, same as \`.scrolly-track\`/\`.scrolly-graphic\`), so without this the panel
+   below would sit only 4px from the true screen edge on a narrow phone. The panel's own \`max-width\`
+   (below) still caps how WIDE it ever gets; this only guarantees a floor of breathing room on either
+   side at any viewport, matching \`.scrolly-header\`'s own gutter. */
 .step {
   min-height: 70vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 4px;
+  padding: 24px clamp(16px, 6vw, 56px);
 }
 .step:last-child { min-height: 60vh; }
 

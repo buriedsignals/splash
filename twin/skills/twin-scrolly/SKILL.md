@@ -28,16 +28,22 @@ rewritten a FOURTH time after that third build turned out not to hold up once dr
 scroll distance and past two steps (the graphic must be genuinely FIXED — a still image, not a
 permanent double-exposure blend, the continuous crossfade the third build shipped is gone; the
 composition fix from the third build centred `.scrolly` but never the prose panel INSIDE it, now
-fixed; the seed carries four steps, not two, with the mechanism locked at 4/6/8 in tests), and
-rewritten a FIFTH time after the fourth build's own width fix shipped alongside an unexamined height:
-the sticky graphic was capped at `min(70vh, 640px)`, a leftover from before it became the sticky
-ground, leaving up to 30% of a real desktop viewport as bare page below a graphic that read as small
-and adrift rather than pinned and filling the frame — now `100vh`, cropped (never stretched) to fit.
-Read it before writing a second scrolly beat — its own "one gotcha" section names a real defect this
-skill's first render shipped, its own "Measuring prose over the graphic" section names the rule the
-second build lives under, its own "The graphic is fixed; only the text moves" and "More than two
-steps" sections name the rules the fourth build lives under, and its own "The graphic fills the
-viewport it is pinned in" names the rule the fifth build lives under.
+fixed; the seed carries four steps, not two, with the mechanism locked at 4/6/8 in tests), rewritten
+a FIFTH time after the fourth build's own width fix shipped alongside an unexamined height (the
+sticky graphic was capped at `min(70vh, 640px)`, a leftover from before it became the sticky ground,
+leaving up to 30% of a real desktop viewport as bare page below a graphic that read as small and
+adrift rather than pinned and filling the frame — now `100vh`), and rewritten a SIXTH time after the
+FOURTH build's own width fix turned out to have been wrong in the first place: it correctly centred
+the prose but, because the graphic shared the same ancestor, also capped the GRAPHIC to a narrow
+column — reversed, the reading-measure constraint now lives on the header and the step panel only,
+never on `.scrolly`, so the sticky graphic fills the full viewport width it is pinned in, cropped
+(never stretched) to fit, exactly as `--graphic-h: 100vh` already does on the vertical axis. Read it
+before writing a second scrolly beat — its own "one gotcha" section names a real defect this skill's
+first render shipped, its own "Measuring prose over the graphic" section names the rule the second
+build lives under, its own "The graphic is fixed; only the text moves" and "More than two steps"
+sections name the rules the fourth build lives under, its own "The graphic fills the viewport it is
+pinned in" names the rule the fifth build lives under, and its own "The reading measure belongs to
+the prose; the graphic goes full-bleed" names the rule the sixth build lives under.
 
 ## When to use
 
@@ -106,13 +112,13 @@ reading `getComputedStyle` in a real, driven browser, not merely computed in nod
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/scrolly-discipline.md` | The sticky-reservation fact and how the overlap remedy uses it on purpose, the centred reading-measure composition, how prose-over-graphic contrast is measured (not assumed), what survives with JS off, what a screen reader reaches without scrolling, what the graphic is allowed to be silent about, the continuous scroll-linked crossfade and how it stays jank-free, reduced motion, what this genre does not attempt |
+| Doctrine | `references/scrolly-discipline.md` | The sticky-reservation fact and how the overlap remedy uses it on purpose, the reading-measure living on the prose (header + panel) while the graphic goes full-bleed on both axes, how prose-over-graphic contrast is measured (not assumed), what survives with JS off, what a screen reader reaches without scrolling, what the graphic is allowed to be silent about, why the graphic is fixed rather than continuously crossfading, more than two steps, reduced motion, what this genre does not attempt |
 | Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (this beat's own four-step arc: id, `frameKind`, prose — a photograph, then three narrated readings sharing one parameterised drawn instrument), `ImageFrame` (a full-bleed `<img>`, this toolchain's stand-in for a photograph), `DrawnGraphicFrame` (a full-bleed `<svg>` diagram, painted only with ground/ink/muted/accent, parameterised by `waterLevelT`/`dayLabel` for the three narrated readings — still no axis, no plotted value), `FRAME` (the drawn frame's own internal design canvas) |
 | Interaction | `assets/interaction.mjs` | `pickActiveStep` (pure, tested at 4/6/8 synthetic entry counts — given IntersectionObserver-shaped entries, picks the winning step id) + `initScrolly` (DOM wiring built on it: toggles `.active` on the matching `.step`/`.step-frame` pair). This is the ONLY mechanism this file ships — see `references/scrolly-discipline.md`, "The graphic is fixed; only the text moves," for why a second, continuous scroll-linked crossfade mechanism was built, driven, found to never settle to a clean single image across the full scroll distance, and removed. `initAll` runs `initScrolly`. |
 | Render | `scripts/render-scrolly.mjs` | **Above the CONFIG marker**: `renderScrolly({ steps, title, source, ground, outDir, name })` — the genre's own MEDIA-AGNOSTIC machinery. `steps` is `{ id, prose, frame: ReactElement }[]`; this function SSRs each `frame`, wraps it in a generic `<div class="step-frame">` (never the frame component's own job), builds the overlap scaffold, measures panel contrast, inlines the interaction script. It never reads `frameKind` — `test/render-scrolly.test.ts` scans the function's own source to prove it. **Below the marker**: `SEED`, `buildFrame` (the ONE place that reads `frameKind` and builds a `ReactElement` from it), `render` (this seed's own runner) |
 | Rasteriser | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText` — a skill never imports another skill's copy |
 | Photo generator | `scripts/build-sample-photo.mjs` | Generates this seed's own `assets/sample-data/basin-photo.png` — a flat, illustrated scene authored from shapes (nothing in this toolchain fetches real photographs yet), not sourced from anywhere, so there is nothing to credit |
-| Test | `test/render-scrolly.test.ts` | `STEPS_META`'s own shape (including the ≥2-distinct-`frameKind`s structural check), `ImageFrame`/`DrawnGraphicFrame` SSR in isolation, `pickActiveStep`, the generic `renderScrolly` (media-agnostic by source-scan, panel contrast measured, overlap markup present, no two-column markup), the seed's own `render` end to end |
+| Test | `test/render-scrolly.test.ts` | `STEPS_META`'s own shape (including more-than-two-steps and the ≥2-distinct-`frameKind`s structural checks), `ImageFrame`/`DrawnGraphicFrame` SSR in isolation, `pickActiveStep` (including at 4/6/8 synthetic entry counts), the generic `renderScrolly` (media-agnostic by source-scan, panel contrast measured, overlap markup present, no two-column markup, panel horizontally centred, `--graphic-h: 100vh` present, no `max-width` on `.scrolly` itself while `.scrolly-header` keeps its own, well-formed markup at 4/6/8 synthetic steps), the seed's own `render` end to end |
 | Test | `test/canon.test.ts` | The canon's own shape: `REPLACE ME` wording present, the seed's own photograph is a real decoded PNG, the seed renders standalone into an empty `--out` directory with nothing else on disk, no registry/dispatcher file, preview current |
 
 **Why the title and source live in the HTML `<header>`, ahead of the sticky track entirely.** The
@@ -172,16 +178,17 @@ point of view, and that treatment must not be duplicated per frame kind.
    background/colour and compute the contrast — do not assume an opaque-looking panel settles it);
    disable JavaScript and confirm the default frame and every step's prose survive; emulate
    `prefers-reduced-motion: reduce`, scroll through the same positions, and confirm every sampled
-   opacity is EXACTLY 0 or 1 — never intermediate; confirm the assembly's own left/right margins are
-   equal at a wide desktop width AND still visibly nonzero at a realistic, not-maximised desktop
-   width — AND confirm the PROSE PANEL's own centre lines up with the graphic's own centre, not just
-   `.scrolly`'s own outer margins (a centred outer box says nothing about a panel pinned to one edge
-   inside it — see "The composition is a centred reading column," above); confirm the sticky
-   graphic's own `getBoundingClientRect().height` equals `window.innerHeight` while pinned — a
-   graphic that renders correctly inside a too-short box is still a bug if the box itself leaves bare
-   page below it (see "The graphic fills the viewport it is pinned in," above); resize to ~375px and
-   confirm nothing clips and nothing overflows horizontally, and that the graphic still fills that
-   viewport's own height too. Screenshot each. A scrolly that
+   opacity is EXACTLY 0 or 1 — never intermediate; confirm the STICKY GRAPHIC spans the full viewport
+   WIDTH (`getBoundingClientRect().left === 0` and `.right === window.innerWidth`, no margin either
+   side — see "The reading measure belongs to the prose; the graphic goes full-bleed," above) AND the
+   full viewport HEIGHT while pinned (`.height === window.innerHeight` — see "The graphic fills the
+   viewport it is pinned in," above) — a graphic that renders correctly inside a too-narrow OR
+   too-short box is still a bug, on whichever axis was never checked; confirm the PROSE PANEL's own
+   centre lines up with the VIEWPORT's own centre (not the graphic's — the graphic has no narrower
+   column left to centre against once it is full-bleed) and that `.scrolly-header` still keeps its
+   own comfortable measure independent of the graphic's width; resize to ~375px and confirm nothing
+   clips and nothing overflows horizontally, and that the graphic still fills that viewport's own
+   width AND height. Screenshot each. A scrolly that
    "renders" but does not step, that steps but goes illegible mid-scroll, that never settles to a
    still image, or whose outer box is centred while its own panel is not, is the exact failure this
    project keeps finding by looking at pictures instead of reading code, or by measuring the wrong
@@ -196,13 +203,16 @@ bun skills/twin-scrolly/scripts/render-scrolly.mjs /tmp/canon-scrolly
 # then drive it — a screenshot taken before scrolling proves nothing about a scrolly
 python3 -m http.server 8931 --bind 127.0.0.1 --directory /tmp/canon-scrolly &
 # open http://127.0.0.1:8931/gauge-scrolly.html in a real (or automated) browser and:
-#  1. confirm the whole assembly sits in a centred column (equal left/right margin) at both a wide
-#     desktop width and a realistic, not-maximised one — the title, the source and the photograph
-#     step's own prose on screen before touching anything, the prose panel legible over the photo,
-#     AND the prose panel itself centred over the graphic column, not pinned to its left edge;
-#  2. confirm the sticky graphic FILLS the viewport height it is pinned in
-#     (`getBoundingClientRect().height` == `window.innerHeight`) — not a capped band with bare page
-#     visible below it;
+#  1. confirm the HEADER sits in a centred, comfortable reading column (equal left/right margin) at
+#     both a wide desktop width and a realistic, not-maximised one, and the STICKY GRAPHIC instead
+#     spans the FULL viewport width edge to edge (`getBoundingClientRect().left` == 0, `.right` ==
+#     `window.innerWidth`, no margin either side) — a visual, not prose, and the owner's own rule is
+#     that visuals take the full width;
+#  2. confirm the PROSE PANEL — the only other centred thing — floats as a narrow, centred card ON
+#     TOP of that full-bleed graphic (its own centre lines up with the viewport's own centre, not
+#     pinned to either edge) and confirm the sticky graphic ALSO fills the viewport height it is
+#     pinned in (`getBoundingClientRect().height` == `window.innerHeight`) — not a capped band with
+#     bare page visible below it;
 #  3. scroll down slowly through all four steps and confirm the graphic HOLDS STILL — a clean,
 #     single `opacity: 1` on the active frame (every other frame `0`) across the large majority of
 #     each step's own scroll distance (`getComputedStyle(frame).opacity` sampled at several points
@@ -229,10 +239,10 @@ never editing this skill's own runner in place.
 | --- | --- | --- |
 | The drawn frame's own internal design canvas (not the box it renders at in the real page — see `DrawnGraphicFrame`'s own doc-comment) | `640 × 900` | `FRAME`, `ScrollySeed.tsx` |
 | How many narrative steps the seed carries | `4` | `STEPS_META`, `ScrollySeed.tsx` — any count ≥ 2 works (mechanism locked at 4/6/8 in tests), and at least two distinct `frameKind`s (canon-enforced) |
-| The sticky graphic's own height — the graphic fills the FULL viewport it is pinned in, cropped (never stretched) to fit | `100vh` | `--graphic-h`, `.scrolly-track`, `buildCss`, `render-scrolly.mjs` |
+| The sticky graphic's own height AND width — the graphic fills the FULL viewport it is pinned in on both axes, cropped (never stretched) to fit; carries no width rule of its own, `.scrolly` itself is unconstrained | `100vh` height; width = whatever `.scrolly`'s own ancestor chain gives it (full page) | `--graphic-h`, `.scrolly-track`/`.scrolly-graphic`, `buildCss`, `render-scrolly.mjs` |
 | How long a reader has to scroll through one step | `70vh` (`60vh` for the last) | `.step`, `buildCss`, `render-scrolly.mjs` |
-| The whole assembly's own reading-measure width | `640px` | `.scrolly` max-width, `buildCss`, `render-scrolly.mjs` |
-| The assembly's own side gutter (scales with viewport so it never reads as edge-to-edge) | `clamp(16px, 6vw, 56px)` | `.scrolly` padding, `buildCss`, `render-scrolly.mjs` |
+| The HEADER's own reading-measure width (the graphic does NOT share this — see above) | `640px` | `.scrolly-header` max-width, `buildCss`, `render-scrolly.mjs` |
+| The header's and the step panel's own side gutter (scales with viewport so it never reads as edge-to-edge) | `clamp(16px, 6vw, 56px)` | `.scrolly-header` padding + `.step` padding, `buildCss`, `render-scrolly.mjs` |
 | The prose panel's own max width | `min(42ch, 100%)` | `.step-panel`, `buildCss`, `render-scrolly.mjs` |
 | Whether the panel sits centred over the graphic column (main-axis) as well as vertically centred (cross-axis) | `justify-content: center` (+ `align-items: center`) | `.step`, `buildCss`, `render-scrolly.mjs` |
 | The step-boundary swap's own transition duration — the ONLY animated property this genre ships, and it only ever plays at a step boundary, never continuously from scroll position | `0.3s` | `.step-frame` transition, `buildCss`, `render-scrolly.mjs` |
@@ -243,12 +253,13 @@ never editing this skill's own runner in place.
 ## Files
 
 - `references/scrolly-discipline.md` — the sticky-reservation fact and how the shipped remedy uses
-  it deliberately, the centred reading-measure composition (now including the prose panel itself,
-  not just `.scrolly`'s own outer margin), how prose-over-graphic contrast is measured (not
-  assumed), what survives with JS off, what a screen reader reaches without scrolling, what the
-  graphic is allowed to be silent about, why the graphic is fixed rather than continuously
-  crossfading (the mechanism that was built, driven, found never to settle, and removed), more than
-  two steps, reduced motion, what this genre does not attempt, verification.
+  it deliberately, why the reading measure lives on the prose (header + step panel) and NEVER on
+  `.scrolly` itself — the sticky graphic is a visual, not prose, and goes full-bleed on both axes —
+  how prose-over-graphic contrast is measured (not assumed), what survives with JS off, what a
+  screen reader reaches without scrolling, what the graphic is allowed to be silent about, why the
+  graphic is fixed rather than continuously crossfading (the mechanism that was built, driven, found
+  never to settle, and removed), more than two steps, reduced motion, what this genre does not
+  attempt, verification.
 - `assets/ScrollySeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat (the daily reading behind every figure this project's other beats report traces to
   one instrument, at one place — told first with a photograph, then across three narrated readings
@@ -282,11 +293,13 @@ never editing this skill's own runner in place.
 - `scripts/render-scrolly.mjs` — **above its own CONFIG marker**: `renderScrolly({ steps, title,
   source, ground, outDir, name })`, the genre's MEDIA-AGNOSTIC machinery — SSRs whatever
   `ReactElement` each step hands it, wraps it generically, builds the sticky-graphic/overlapping-
-  prose scaffold (panel centred both axes), measures and asserts panel contrast, inlines the
-  interaction script. **Below the marker**: `SEED` (this seed's own words), `DRAWN_VARIANTS` (the
-  `id` → `{ waterLevelT, dayLabel }` map for the seed's three drawn steps), `buildFrame` (the one
-  place that reads `frameKind`), `render` and the CLI block (this seed's own runner). Nothing in
-  this file imports out of this skill.
+  prose scaffold (the graphic full-bleed on width and height alike, `.scrolly-header`/`.step-panel`
+  the only things carrying a reading-measure `max-width`, the panel centred both axes within the
+  full-bleed row), measures and asserts panel contrast, inlines the interaction script. **Below the
+  marker**: `SEED` (this seed's own words), `DRAWN_VARIANTS` (the `id` → `{ waterLevelT, dayLabel }`
+  map for the seed's three drawn steps), `buildFrame` (the one place that reads `frameKind`),
+  `render` and the CLI block (this seed's own runner). Nothing in this file imports out of this
+  skill.
 - `scripts/render-still.mjs` — this skill's OWN copy of `deriveFurniture`/`contrast`/`measureText`/
   `renderStill` — a skill never imports another skill's copy of its rasteriser.
 - `scripts/render-preview.mjs` — renders THIS skill's own `DrawnGraphicFrame` standalone (never a

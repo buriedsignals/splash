@@ -377,6 +377,26 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).toContain("--graphic-h: 100vh");
   });
 
+  // Correction 6: "all web visuals must take the full width" — the reading-measure constraint
+  // must live on the PROSE (the header), never on `.scrolly` itself, or every child of `.scrolly`
+  // — including the sticky graphic — inherits a narrow column it should not have.
+  it("should carry the reading-measure max-width on the header, never on .scrolly itself", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      outDir: "/tmp/twin-scrolly-test-full-width",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    // No rule constrains `.scrolly` itself to a narrow max-width — the sticky graphic (a
+    // descendant with no width rule of its own) must be free to size to the full page width.
+    expect(html).not.toMatch(/\.scrolly\s*\{[^}]*max-width/);
+    // The header still carries its own comfortable measure.
+    expect(html).toMatch(/\.scrolly-header\s*\{[^}]*max-width:\s*640px/);
+  });
+
   // Correction 1: "the graphic must be fixed; only the text moves" — no mechanism in the shipped
   // CSS may write an opacity value from anything other than the `.active` class itself.
   it("should never ship a scroll-linked opacity mechanism — only the class-driven 0/1 swap", async () => {
