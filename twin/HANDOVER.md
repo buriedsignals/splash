@@ -234,7 +234,13 @@ the only layer the engine cannot absorb with a patch.
 
 ---
 
-## 9. The recommendation on record (2026-08-08)
+## 9. The recommendation on record (2026-08-08) — OVERTURNED THE SAME DAY
+
+> **Overturned by Rémy, 2026-08-08, before any of §7 was resumed.** His words: the twin's structure,
+> architecture and logic are better, and he wants it pushed until it rivals the engine. The
+> recommendation below is kept because its reasoning is still the honest case against, and because a
+> reader who finds it should know it was heard and set aside rather than missed. **It is no longer
+> the project's position.** What follows from the reversal is §11.
 
 **Do not develop the twin as a product. Keep it as a laboratory.**
 
@@ -261,6 +267,70 @@ Two things cannot be patched in, because they are not features: **the editorial 
    applied to a static chart).
 
 ---
+
+## 11. The canon restoration (2026-08-08, 30 commits)
+
+The twin claimed Tom's structure. It was measured against it and did not hold. Spec:
+`docs/superpowers/specs/2026-08-08-twin-canon-restoration-design.md`; plan:
+`docs/superpowers/plans/2026-08-08-twin-canon-restoration.md`. Suite went 382 → **460 tests, 457
+pass, 3 skip, 0 fail**.
+
+**What was measured, before anything was changed.** `SKILL.md` was compliant 9/9. `assets/` was
+compliant 1/4. Nine runtime cross-skill imports existed in shipped code, against the project's own
+§6 rule. `wrap()` was copied three times with nothing making the copies disagree.
+
+**Two rules were settled by reading Tom's actual skills rather than by reasoning.** Neither had been
+written down, and both had been guessed wrong first:
+- **Skills duplicate; they never link.** No import leaves a skill's own directory in
+  `~/Downloads/cesium-flyover` or `map-explainer`, and his two geo-prep scripts — same job, 105 and
+  130 lines — share *zero* function names. A shared-library refactor was designed and rejected on
+  this evidence.
+- **The idiom is a labelled seam, not genericity.** `prep-geo.mjs` hardcodes its story
+  (`COUNTRIES`, `RIVER`, per-country `ANCHOR_BBOX`) behind `// ===== CONFIG — edit for your river`.
+  A skill's script *is* its seed's runner; what must be visible is what the journalist replaces.
+- Corollary, found later: **his seed IS his story** — `sample-data/yarlung-flow.json` is the real
+  river. A draft that asked for a story-free seed was more abstract than anything he ships.
+- And: **he has no tests at all.** His gate is the rendered artifact committed beside the skill.
+  Here the suite is kept, but test *counts* were ruled estimates; the artifact is the gate.
+
+**What now holds, each verified by attacking it, not by reading it.** One seed per genre a skill
+ships, marked verbatim, with sample data, a generated preview and an `output-proof`. Every preview
+regenerable and `--check`-guarded. Story artifacts live in `proof/<slug>/`. **No import leaves a
+skill** — `skills/splash-twin/test/no-cross-skill-imports.test.ts`, which took five fix rounds and
+whose header states honestly what it cannot catch. **A skill copied alone still renders** —
+`seed-renders-standalone.test.ts` copies a skill into a temp root holding nothing else and renders
+its seed; proven by re-adding a `proof/` import and watching the isolated render fail. Duplication
+is made safe by `helper-parity.test.ts`, comparing 10 `wrap` and 10 `measureText` copies within
+substrate families.
+
+**Open, deliberately, with rulings:**
+1. **Alias/symlink indirection defeats the guard silently.** A `package.json` `imports` mapping or a
+   symlink into `skills/` is invisible to a path scan. Both are now asserted against, but the
+   general class needs an AST. **Priority is higher than it looks:** `shared/` already holds
+   skill-named directories of byte-identical copies, so "why are these duplicated, let's symlink
+   them" is the most natural tidy-up there is, and it is the exact move that blinds the guard.
+2. **None of the three video beats has a frozen dataset**, and each credits a real institution
+   ("Federal Statistical Office", "Global Carbon Budget via Our World in Data") with nothing
+   committed that reproduces it. Pre-existing, not worsened here. It is still a false attribution in
+   a repository about journalistic craft, and the fix is small: commit the CSVs, or credit sample
+   data the way the seeds now do.
+3. **The `--check` guards do not travel.** They byte-compare PNGs rendered with this machine's
+   fonts, and the map one needs `MAPTILER_KEY` plus a warm `/tmp` plate cache — and hard-fails
+   rather than skipping, unlike the `DATAWRAPPER_TOKEN` convention. On a fresh clone they go red for
+   reasons that are not defects.
+4. **`twin-chart-video` is still CO₂-branded** — composition id, `BEAT`, filename — around a
+   rainfall seed. This is believed to be *why* seven false documentation claims survived three
+   sweeps: "EmissionsVideo" and "co2-suisse" make "shares geometry with `proof/co2-suisse`" read as
+   plausible instead of obviously wrong.
+5. Smaller: the video parity family only ever exercises its no-DOM fallback, never the real canvas
+   measurer; `proof/co2-suisse/render-web.mjs` reaches the skill directly rather than through
+   `#shared/*`; there is still no typecheck gate.
+
+**The method lesson this plan adds to §10.** Every guard built here scans **code**. Markdown is
+scanned by nothing — and seven false statements about the code survived in documentation, needing
+three sweeps, the last settled only by running `git log` instead of reading. The code is now guarded
+six ways; the sentences describing it are guarded by nobody, and a reader follows the sentences
+first.
 
 ## Evidence
 
