@@ -59,7 +59,10 @@ export const BEAT = {
 };
 
 const DEFAULT_DATA_PATH = join(HERE, "data.csv");
-const DEFAULT_OUT_DIR = "/tmp/web-twin";
+// And the OUTPUT defaults beside the beat too — where this beat's html is actually committed. It
+// used to default to a scratch directory, so running this script the obvious way produced a fresh
+// file nobody looks at, printed a path, exited zero, and left the committed one stale.
+const DEFAULT_OUT_DIR = HERE;
 const OUTPUT_NAME = "co2-decline-slope.html";
 
 /**

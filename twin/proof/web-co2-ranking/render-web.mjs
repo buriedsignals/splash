@@ -49,7 +49,11 @@ export const BEAT = {
 // per country (`BRIEF.md`, "Data"). No longer `/tmp` — a story folder only a previous run's scratch
 // directory could reproduce is not the self-contained folder this project promises.
 const DEFAULT_DATA_PATH = join(HERE, "data.csv");
-const DEFAULT_OUT_DIR = "/tmp/web-co2-ranking";
+// And the OUTPUT defaults beside the beat too — where this beat's html is actually committed. It
+// used to default to a scratch directory, so running this script the obvious way produced a fresh
+// file nobody looks at, printed a path, exited zero, and left the committed one stale.
+// This beat's html is committed under `dist/`, so that is where its default lands.
+const DEFAULT_OUT_DIR = join(HERE, "dist");
 const OUTPUT_NAME = "co2-ranking.html";
 const TARGET_YEAR = 2024;
 

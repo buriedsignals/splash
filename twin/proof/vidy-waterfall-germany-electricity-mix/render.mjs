@@ -165,7 +165,11 @@ const flag = (name, fallback) => {
 // export, `&country=~DEU&csvType=filtered` (redirected from the `electricity-prod-source-stacked`
 // slug — `BRIEF.md`). Never re-fetched.
 const dataPath = flag("--data", join(HERE, "data.csv"));
-const outDir = flag("--out", "/tmp/vidy-waterfall-germany-electricity-mix");
+// The artifact lands in the beat's own folder by default — where its mp4 is committed and where it
+// is audited from. It used to default to a scratch directory, so running this script the obvious way
+// — no arguments — produced a fresh video nobody looks at, printed a path, exited zero, and left the
+// committed one stale: the presence of a file mistaken for the existence of a result.
+const outDir = flag("--out", HERE);
 const stillOnly = argv.includes("--still-only");
 
 await mkdir(outDir, { recursive: true });

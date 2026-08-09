@@ -36,7 +36,10 @@ export const BEAT = {
 };
 
 const DEFAULT_DATA_PATH = join(HERE, "data.csv");
-const DEFAULT_OUT_DIR = "/tmp/webx-life-expectancy";
+// And the OUTPUT defaults beside the beat too — where this beat's html is actually committed. It
+// used to default to a scratch directory, so running this script the obvious way produced a fresh
+// file nobody looks at, printed a path, exited zero, and left the committed one stale.
+const DEFAULT_OUT_DIR = HERE;
 const OUTPUT_NAME = "life-expectancy.html";
 
 /** Parses the frozen CSV, verifies the entity/row-count/span it expects, and filters to the
