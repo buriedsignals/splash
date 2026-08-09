@@ -214,3 +214,60 @@ export function scatterInParts(
     scatterInRings(rings, base[i]!, `${seedKey}#${i}`),
   );
 }
+
+// ── What a reader actually SEES: fill tightness, which is not the same quantity as the title's ──
+
+/** Signed shoelace area of one ring, in whatever units the ring's coordinates are in. */
+function ringArea(ring: Ring): number {
+  let a = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    a += ring[j]![0] * ring[i]![1] - ring[i]![0] * ring[j]![1];
+  }
+  return a / 2;
+}
+
+/** True drawn area of a MultiPolygon in plate pixels: every part's outer ring, its holes removed. */
+export function drawnAreaPx(parts: Ring[][]): number {
+  let area = 0;
+  for (const part of parts) {
+    const [outer, ...holes] = part;
+    if (!outer || outer.length < 3) continue;
+    area += Math.abs(ringArea(outer));
+    for (const hole of holes) area -= Math.abs(ringArea(hole));
+  }
+  return Math.max(0, area);
+}
+
+/**
+ * How TIGHTLY each region's dots are packed on the plate — dots per 1,000 drawn pixels — ranked
+ * densest first.
+ *
+ * This exists because the alt text used to call the five countries the title names "the densest,
+ * most continuous clusters". They are the five LARGEST clouds, which is the title's claim; they are
+ * not the tightest fills, which is a different measurement entirely. Dots are scattered uniformly
+ * inside each country, so fill tightness reads as people per unit area — and on this plate the
+ * tightest fills belong to Malta, the Netherlands and Belgium, none of which the sentence named,
+ * while France and Spain sit outside the top ten. A sighted reader sees the big clouds; a screen
+ * reader was being told about a ranking the picture does not carry.
+ *
+ * Measured in PLATE PIXELS rather than km², because pixels are what a reader's eye compares.
+ * Mercator inflates area with latitude, so this ranking is not identical to a people-per-km² one —
+ * it is the ranking of the thing actually drawn.
+ */
+export function fillTightness<T extends { key: string; parts: Ring[][] }>(
+  shapes: T[],
+  dotsByKey: Map<string, number>,
+): { key: string; dots: number; areaPx: number; dotsPerKilopixel: number }[] {
+  return shapes
+    .map((shape) => {
+      const areaPx = drawnAreaPx(shape.parts);
+      const dots = dotsByKey.get(shape.key) ?? 0;
+      return {
+        key: shape.key,
+        dots,
+        areaPx,
+        dotsPerKilopixel: areaPx > 0 ? dots / (areaPx / 1000) : 0,
+      };
+    })
+    .sort((a, b) => b.dotsPerKilopixel - a.dotsPerKilopixel);
+}

@@ -23,7 +23,13 @@ function mixHex(ground, ink, ratio) {
   );
 }
 import { DotDensityStill } from "./DotDensityStill.tsx";
-import { parsePopulationCsv, joinPopulation, chooseDotValue, scatterInParts } from "./geo-dot.ts";
+import {
+  parsePopulationCsv,
+  joinPopulation,
+  chooseDotValue,
+  scatterInParts,
+  fillTightness,
+} from "./geo-dot.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -112,11 +118,41 @@ if (wantStill) {
   const furniture = deriveFurniture(BEAT.ground);
   const landFill = mixHex(BEAT.ground, furniture.ink, 0.06);
 
+  // ── The alt says what the picture shows, and both quantities are measured ────────────────────
+  // The five named countries hold the five BIGGEST clouds of dots — that is the title's claim, and
+  // the dot counts below prove it. They are NOT the tightest fills: dots are scattered uniformly
+  // inside each country, so tightness reads as people per unit area, a different measurement whose
+  // top three (computed below) the sentence never named. The alt used to assert the second while
+  // meaning the first.
+  const dotsByKey = new Map(dots.map((d) => [d.key, d.points.length]));
+  const rankedByDots = [...dotsByKey.entries()].sort((a, b) => b[1] - a[1]);
+  const topFiveByDots = rankedByDots.slice(0, 5).map(([key]) => key);
+  if ([...topFiveByDots].sort().join() !== [...TOP5].sort().join())
+    throw new Error(
+      `alt check failed: the five biggest dot clouds are ${topFiveByDots.join(", ")}, not ${TOP5.join(", ")}.`,
+    );
+  const namedDots = TOP5.reduce((s, code) => s + dotsByKey.get(code), 0);
+  const tightest = fillTightness(geometry.shapes, dotsByKey);
+  const tightestNames = tightest.slice(0, 3).map((t) => byKey.get(t.key).name);
+  const rankOf = (code) => tightest.findIndex((t) => t.key === code) + 1;
+  console.log(
+    `fill tightness (dots per 1,000 plate px), densest first: ` +
+      tightest
+        .slice(0, 5)
+        .map((t) => `${byKey.get(t.key).name} ${t.dotsPerKilopixel.toFixed(1)}`)
+        .join(" · ") +
+      ` — France ranks ${rankOf("FRA")} of ${tightest.length}, Spain ${rankOf("ESP")}.`,
+  );
+
   const alt =
     `Map of Europe. Small blue dots are scattered inside each country, one dot per ${dotValue.toLocaleString()} people, ` +
-    `${totalDots.toLocaleString()} dots in total. The densest, most continuous clusters sit over Germany, the United ` +
-    `Kingdom, France, Italy and Spain, each labelled directly on its own cluster — together, more than half of the ` +
-    `map's total population. Russia and seven micro-territories are not shown (see the caveat).`;
+    `${totalDots.toLocaleString()} dots in total. The five countries the title names — Germany, the United Kingdom, ` +
+    `France, Italy and Spain — carry the five biggest clouds of dots, each labelled directly on its own cluster: ` +
+    `${namedDots.toLocaleString()} of the ${totalDots.toLocaleString()} dots, more than half the map's population. ` +
+    `Dots fall at random inside each country, so a tighter fill means more people per square kilometre rather than a ` +
+    `bigger population — the tightest fills on this map are over ${tightestNames.slice(0, -1).join(", ")} and ` +
+    `${tightestNames[tightestNames.length - 1]}, none of them among the five. ` +
+    `Russia and seven micro-territories are not shown (see the caveat).`;
 
   const { pngPath } = await renderStill({
     element: createElement(DotDensityStill, {

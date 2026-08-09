@@ -69,23 +69,29 @@ biggest, and recolouring them would beg its own question.
   so on-screen dot density is population per unit area — a different quantity from the one the
   title is about. See the defect below.
 
-## Defect found while deriving this brief (not fixed here)
+## Defect found while deriving this brief — CORRECTED 2026-08-09
 
-**The alt text asserts a density claim the data contradicts.** It reads: "The densest, most
+**The alt text asserted a density claim the data contradicts.** It read: "The densest, most
 continuous clusters sit over Germany, the United Kingdom, France, Italy and Spain." Because dots are
-scattered uniformly inside each country, drawn density IS population per km². Computed from this
-beat's own frozen CSV and its own `countries.geojson` (spherical polygon area, holes subtracted),
-people per km², rank of 41:
+scattered uniformly inside each country, drawn density IS population per unit area — a different
+measurement from the one the title makes.
 
-- Netherlands **481** (2nd), Belgium **385** (3rd), Malta **2,019** (1st) — none of them named.
-- United Kingdom 286 (5th), Germany 234 (7th), Italy 196 (9th), **France 108 (17th)**, **Spain 96
-  (20th)**.
+Measured on the plate itself (`fillTightness()` in `geo-dot.ts`: dots per 1,000 drawn pixels, holes
+subtracted, ranked densest first), the tightest fills are **Malta 438.0 · Netherlands 54.2 ·
+Belgium 45.9 · Italy 31.3 · Switzerland 30.3**, with **France 11th of 42** and **Spain 13th**. Two
+of the five named countries sit outside the top ten, and the three tightest fills belong to
+countries the sentence never mentioned.
 
-So two of the five named countries sit in the bottom half of the density ranking, and the three
-densest fills on the map belong to countries the sentence does not mention. The TITLE's claim
-(more than half the population in five countries) is true and checked; the alt restates it as a
-statement about density, which is a different measurement, and it is the alt that a non-sighted
-reader receives instead of the picture.
+The alt now says what the picture actually shows, with both quantities derived: the five named
+countries carry the five biggest CLOUDS of dots (**1,646 of the 2,996**, checked against a
+recomputed ranking that throws if the five are not in fact the five largest), and a separate
+sentence tells a non-sighted reader that a tighter fill means more people per square kilometre
+rather than a bigger population, naming the three tightest fills. Measured in plate pixels rather
+than km² on purpose: pixels are what a reader's eye compares, and Mercator inflates area with
+latitude.
+
+Re-rendered and looked at — `render/static.png`, 2,996 `<circle>` elements, France's fill visibly
+looser than Belgium's and the Netherlands'.
 
 ## Source line
 
