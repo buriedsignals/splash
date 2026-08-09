@@ -18,7 +18,10 @@ export type Country = {
 };
 
 export function fr(value: number, decimals = 1): string {
-  return value.toFixed(decimals);
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }
 
 export const STACK_ORDER: Segment[] = ["renewables", "nuclear", "fossil"];

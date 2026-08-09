@@ -35,7 +35,10 @@ const VALUE_LABEL = { fontSize: 13, fontWeight: 600 };
  *  beat's own `fr` — copied rather than imported, because sharing that one-line helper across an
  *  unrelated story is not worth a module boundary. */
 function fr(value: number, decimals = 2): string {
-  return value.toFixed(decimals).replace(".", ",");
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }
 
 /** Wrap on the measured width of the real string, never on a character count — this beat's own

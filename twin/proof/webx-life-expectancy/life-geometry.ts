@@ -15,7 +15,10 @@ export type Reading = { year: number; value: number };
  *  co2-suisse/ranking beats' French-formatted numbers; there is no house convention forcing a
  *  French thousands/decimal style onto an English-language beat. */
 export function fr(value: number, decimals = 1): string {
-  return value.toFixed(decimals);
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }
 
 /** Fitted, not zero-anchored — a line carries its value by slope, and this series sits 69-84,

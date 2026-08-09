@@ -21,12 +21,10 @@ export type Row = { name: string; value: number };
  *  fractional digits the same regex mis-grouped the FRACTION too: `3,5947` came out as `3,5 947`,
  *  caught by driving the rendered file and reading the tooltip text, not by a unit test. */
 export function fr(value: number, decimals = 1): string {
-  const [intPart, fracPart] = Math.abs(value).toFixed(decimals).split(".");
-  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  const sign = value < 0 ? "-" : "";
-  return fracPart !== undefined
-    ? `${sign}${grouped},${fracPart}`
-    : `${sign}${grouped}`;
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }
 
 export type PositionedRow = Row & {

@@ -18,10 +18,10 @@ export type Reading = { year: number; mt: number };
 
 /** French: comma decimal, thin space for thousands. The furniture speaks the journalist's language. */
 export function fr(value: number, decimals = 1): string {
-  return value
-    .toFixed(decimals)
-    .replace(".", ",")
-    .replace(/\B(?=(\d{3})+(?!\d))/, " ");
+  return new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
 }
 
 /**
