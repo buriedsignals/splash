@@ -51,6 +51,8 @@ export type LocatorStillProps = {
   ground: string;
   ink: string;
   muted: string;
+  /** Keys the furniture names in words, which must therefore be labelled in the picture. */
+  mustLabel?: string[];
 };
 
 export function wrap(
@@ -82,6 +84,7 @@ export function LocatorStill({
   ground,
   ink,
   muted,
+  mustLabel = [],
 }: LocatorStillProps) {
   const scale = MAP / geometry.frame.width;
 
@@ -133,6 +136,21 @@ export function LocatorStill({
       height: LABEL.fontSize + 4,
     };
   });
+
+  // The words and the picture must agree. A beat whose caveat and alt single out one organisation
+  // by name, over a frame where the declutter has silently dropped that organisation's own label,
+  // sends a reader looking for something that is not drawn — which is exactly what this beat
+  // shipped until now. Failing loudly is the only way that stays fixed.
+  const missing = mustLabel.filter((key) => !shown.has(key));
+  if (missing.length > 0) {
+    const named = missing
+      .map((key) => separated.find((p) => p.key === key)?.name ?? key)
+      .join(", ");
+    throw new Error(
+      `the furniture names ${named}, but the label declutter dropped ${missing.length === 1 ? "it" : "them"}. ` +
+        "Raise the priority, shorten the label, or stop naming it in the words.",
+    );
+  }
 
   return (
     <svg

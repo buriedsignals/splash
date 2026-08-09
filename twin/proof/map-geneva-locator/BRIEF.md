@@ -60,18 +60,43 @@ rank then alphabetical name, never from the file's own row order.
   concession, and no reader may treat a locator marker as a surveyed position.
 - Do not put a right-hand label on a marker near the right edge — the WEF is this data's own case,
   and `labelSide` flips it from the projected pixel, not from the coordinate.
+- **Do not name in words a marker the picture does not label.** See the correction below; the render
+  now refuses rather than ship the mismatch.
 - A coordinate is not an address. Every point is the organisation's own Wikidata point; the caveat
   says so rather than implying doorstep precision.
 
-## Known gap, stated rather than hidden
+## The gap that was stated rather than hidden — CLOSED 2026-08-09
 
-The static frame labels **5 of the 11 markers** (ILO, UNOG, WHO, WIPO, ICDO — counted in
-`render/static.svg`); the other six are drawn but unnamed, which is the declutter working. But the
-alt text and the caveat both name the **World Economic Forum**, and the WEF is one of the six with
-no label on the frame — so a sighted reader cannot find in the picture the marker the words single
-out. The web sibling (`proof/mapgen-locator-web`) closes this by shipping all eleven names in a real
-table; the static genre has no such surface, and the honest options are to label the WEF or to stop
-naming it in the furniture.
+The static frame labelled **5 of the 11 markers** and the World Economic Forum was not one of them,
+while the alt text AND the caveat both singled the WEF out by name. A sighted reader could not find
+in the picture the marker the words pointed at. The cause was the priority rule: it runs category
+rank then alphabetically, and "World Economic Forum" in the "Other international body" tier came
+last of eleven, so the declutter dropped its label first.
+
+Closed in three parts, all in this beat's own folder:
+
+- **The outlier is derived, not typed.** `render.mjs` finds the easternmost organisation in the CSV
+  and measures its distance from the mean position of the other ten: **4.3 km**. The caveat and the
+  alt are built from that, so the sentence can never name the wrong organisation, and the "in
+  Cologny" that no committed data supported is gone.
+- **It is promoted to the top of the label priority.** The type's own doctrine says a declared
+  priority is the correct lever for importance, and a beat that names an organisation in its
+  furniture has declared it important. The promotion travels on the geometry the component draws;
+  the baked priority on disk is untouched.
+- **`mustLabel` makes the mismatch impossible to ship again.** `LocatorStill` now throws if any key
+  the furniture names is missing from the declutter's own shown set. Mutation-checked: removing the
+  promotion turns the render red with "the furniture names World Economic Forum, but the label
+  declutter dropped it."
+
+Re-rendered and looked at: five tight labels — WHO, ILO, WEF, WIPO, ICDO — each beside its own
+marker. The United Nations Office at Geneva's label is the one the declutter now drops instead; the
+furniture does not name it, so the words and the picture agree.
+
+**A route not taken, and why.** A first attempt let a dropped label try one line up or down before
+giving up, which recovered a sixth label. Looking at the render killed it: "United Nations Office at
+Geneva", nudged down, began closer to the World Intellectual Property Organization's dot than to its
+own. A label that names the wrong marker is worse than a label that is missing, so the placement
+stayed tight.
 
 ## Source line
 
