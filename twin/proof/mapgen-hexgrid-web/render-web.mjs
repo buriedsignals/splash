@@ -19,7 +19,13 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, measureText } from "./render-still.mjs";
 import { HexGridWeb, DensityTable, LAYOUTS } from "./HexGridWeb.tsx";
-import { chooseHexSize, countBreaks, quakePointsFromCsv, sequentialRamp } from "./geo-hex.ts";
+import {
+  chooseHexSize,
+  countBreaks,
+  quakePointsFromCsv,
+  sequentialRamp,
+  pixelToLonLat,
+} from "./geo-hex.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -258,6 +264,20 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
     `claim: densest cell (${subject.count}) is ${ratio.toFixed(1)}x the median nonempty cell (${median}) — supported.`,
   );
 
+  // Where the subject cell actually IS, in the real world — a render audit caught the alt text
+  // naming "Indonesia, the Philippines and Japan" while the true densest cell (same 1374-event
+  // count the alt text already quoted correctly) sits in the South Pacific near Tonga, ~169.6°W
+  // 21°S; the Indonesia/Philippines cell is real but is the SECOND-densest (1371, three fewer),
+  // not the subject. `frameCorners` (measured at bake time via `map.unproject`, not the nominal
+  // `bounds` fitBounds was asked for — see bake-plate.mjs) makes this derivable instead of a
+  // hand-typed place name that can silently point at the wrong cell.
+  if (!geometry.frameCorners)
+    throw new Error("plate geometry has no frameCorners — re-bake with the current bake-plate.mjs");
+  const subjectLonLat = pixelToLonLat(subject.cx, subject.cy, geometry.frameCorners, geometry.frame);
+  const subjectLatLabel = `${Math.abs(subjectLonLat.lat).toFixed(0)}°${subjectLonLat.lat < 0 ? "S" : "N"}`;
+  const subjectLonLabel = `${Math.abs(subjectLonLat.lon).toFixed(0)}°${subjectLonLat.lon < 0 ? "W" : "E"}`;
+  console.log(`densest cell location: ${subjectLonLat.lon.toFixed(1)}, ${subjectLonLat.lat.toFixed(1)}`);
+
   const furniture = deriveFurniture(BEAT.ground);
   const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1);
 
@@ -270,9 +290,10 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
     `the poles beyond usefulness at this scale).`;
   const alt =
     `World map binned into a hexagonal grid, ${cells.length} non-empty cells. Cells are shaded by how many ` +
-    `magnitude 4-or-greater earthquakes occurred there in 2024, from pale for a handful up to a dark cell around ` +
-    `Indonesia, the Philippines and Japan, outlined in the accent colour, which holds the single densest cell ` +
-    `(${subject.count} events, ${ratio.toFixed(1)}× the median nonempty cell).`;
+    `magnitude 4-or-greater earthquakes occurred there in 2024, from pale for a handful up to a dark cell in ` +
+    `the South Pacific near ${subjectLatLabel}, ${subjectLonLabel} (the Tonga-Kermadec trench), outlined in ` +
+    `the accent colour, which holds the single densest cell (${subject.count} events, ${ratio.toFixed(1)}× ` +
+    `the median nonempty cell).`;
 
   const { outPath } = await renderHexGridWeb({
     component: HexGridWeb,

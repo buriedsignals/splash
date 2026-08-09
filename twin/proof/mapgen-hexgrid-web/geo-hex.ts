@@ -217,6 +217,31 @@ export function binIndex(value: number, breaks: number[]): number {
   return index;
 }
 
+/** A cell's pixel centre back to real lon/lat, using the plate's own TRUE frame corners
+ *  (`bake-plate.mjs`'s `frameCorners`, measured with `map.unproject()` after the camera settled —
+ *  NOT the nominal `bounds` passed to `fitBounds`, which a render audit found `fitBounds` widens to
+ *  preserve the frame's own aspect ratio). Longitude is linear in pixel-x under Web Mercator;
+ *  latitude needs the inverse Mercator formula because pixel-y is linear in Mercator-y, not in
+ *  latitude itself. Exists so a beat can name which real place its subject cell sits over, derived
+ *  from the same projection the bake used, instead of a hand-typed place name that can drift out of
+ *  sync with which cell the data actually makes the subject. */
+export function pixelToLonLat(
+  px: number,
+  py: number,
+  frameCorners: { west: number; north: number; east: number; south: number },
+  frame: { width: number; height: number },
+): { lon: number; lat: number } {
+  const { west, north, east, south } = frameCorners;
+  const lon = west + (px / frame.width) * (east - west);
+  const mercatorY = (lat: number) =>
+    Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+  const yNorth = mercatorY(north);
+  const ySouth = mercatorY(south);
+  const y = yNorth + (py / frame.height) * (ySouth - yNorth);
+  const lat = ((2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180) / Math.PI;
+  return { lon, lat };
+}
+
 const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/;
 
 function channels(hex: string): number[] {

@@ -159,6 +159,25 @@ const projected = await page.evaluate((coords) => {
   return Array.from(out);
 }, points.flatMap((p) => [p.lon, p.lat]));
 
+// The frame's own TRUE corners, in lon/lat — not the nominal `BEAT.bounds` passed to `fitBounds`.
+// A render audit found the two differ: `fitBounds` preserves this frame's own aspect ratio, so it
+// zooms OUT until the requested bounds fit, which widens the visible lat range beyond what was
+// asked for (measured here: -64.48..79.85, not the requested -60..78). A caller that later wants
+// to name which real place a pixel/hex-cell sits over (`geo-hex.ts`'s `pixelToLonLat`) needs these
+// true corners, or it silently mislabels the cell by several degrees of latitude — the bug this
+// capture exists to prevent.
+const frameCorners = await page.evaluate(({ width, height }) => {
+  const map = window.__map;
+  const topLeft = map.unproject([0, 0]);
+  const bottomRight = map.unproject([width, height]);
+  return {
+    west: topLeft.lng,
+    north: topLeft.lat,
+    east: bottomRight.lng,
+    south: bottomRight.lat,
+  };
+}, { width, height });
+
 await browser.close();
 
 const frame = { width, height };
@@ -177,6 +196,7 @@ for (let i = 0; i < points.length; i++) {
 const geometry = {
   frame,
   bounds: BEAT.bounds,
+  frameCorners,
   style: BEAT.style,
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
