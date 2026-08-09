@@ -227,7 +227,14 @@ export function ScatterVideo({
   const subjectProgress = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // The axis furniture still fades in over `establish` — it is the frame the data will be measured
+  // in, and it has nothing to say before the data does.
+  const axisOpacity = establish;
 
   const referenceX2 = interpolate(
     referenceProgress,
@@ -269,7 +276,7 @@ export function ScatterVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -293,7 +300,11 @@ export function ScatterVideo({
             {text}
           </text>
         ))}
+      </g>
 
+      {/* Axis furniture — the frame the points will be measured in, faded in over `establish`
+          rather than present at frame 0. */}
+      <g opacity={axisOpacity}>
         {g.yTicks.map((tick) => (
           <g key={tick}>
             <line

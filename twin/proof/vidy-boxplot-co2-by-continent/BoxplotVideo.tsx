@@ -288,10 +288,16 @@ export function BoxplotVideo({
   const subject = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  // Furniture: title, source, axis unit — one fade, together, then still forever. The title is
-  // furniture (`motion-grammar.md`, "the conclusion appears only after its evidence" governs
-  // assertions, not the title): it establishes what the reader is looking at.
-  const furnitureOpacity = establish;
+  // The title, the source and the axis unit are on screen at FRAME ZERO, at full opacity, never
+  // faded in. Extracting frame 0 from this beat's mp4 returned a completely blank white image —
+  // measured, not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and
+  // everything gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform
+  // pulls as the thumbnail before anyone presses play, and a blank poster frame is a beat that
+  // says nothing. `motion-grammar.md`'s "the conclusion appears only after its evidence" governs
+  // assertions, not the title; the title establishes what the reader is looking at.
+  // The value axis still fades in over `establish` — it is the frame the boxes will be measured
+  // in, and it has nothing to say before they exist.
+  const axisOpacity = establish;
 
   // The reference: the shared median line every box is implicitly read against, drawn left-to-
   // right like every prior beat's horizontal reference line, laid down before the boxes and left
@@ -376,7 +382,7 @@ export function BoxplotVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -405,10 +411,12 @@ export function BoxplotVideo({
         >
           {axisUnit}
         </text>
+      </g>
 
-        {/* The value axis: sparse ticks, established once with the rest of the furniture, never
-            moving again — a box plot needs its unit labelled (`boxplot.md`), but this genre asks
-            for the sparsest version of that rule, not the static genre's dense grid. */}
+      {/* The value axis: sparse ticks, faded in over `establish` rather than present at frame 0,
+          then never moving again — a box plot needs its unit labelled (`boxplot.md`), but this
+          genre asks for the sparsest version of that rule, not the static genre's dense grid. */}
+      <g opacity={axisOpacity}>
         {ticks.map((t) => (
           <g key={t}>
             <line

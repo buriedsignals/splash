@@ -278,10 +278,16 @@ export function PyramidVideo({
   const subject = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  // Furniture: title, subtitle, source, legend — one fade, together, then still forever. The title
-  // is furniture (`motion-grammar.md`, "the conclusion appears only after its evidence" governs
-  // assertions, not the title): it establishes what the reader is looking at.
-  const furnitureOpacity = establish;
+  // The title, the note and the source are on screen at FRAME ZERO, at full opacity, never faded
+  // in. Extracting frame 0 from this beat's mp4 returned a completely blank white image —
+  // measured, not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and
+  // everything gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform
+  // pulls as the thumbnail before anyone presses play, and a blank poster frame is a beat that
+  // says nothing. `motion-grammar.md`'s "the conclusion appears only after its evidence" governs
+  // assertions, not the title; the title establishes what the reader is looking at.
+  // The legend still fades in over `establish` — it names two sides of a pyramid that has no bars
+  // yet.
+  const axisOpacity = establish;
 
   // The reference: the central zero spine, drawn top-to-bottom — vertical rather than horizontal,
   // same device the dumbbell's index-100 rule used, still laid down before any band and left alone
@@ -354,7 +360,7 @@ export function PyramidVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -378,9 +384,12 @@ export function PyramidVideo({
         >
           {source}
         </text>
+      </g>
 
-        {/* Legend: the only thing telling a reader which side is which group — load-bearing, not
-            decorative (`population-pyramid.md`'s only accessibility trap, checked as a pair). */}
+      {/* Legend: the only thing telling a reader which side is which group — load-bearing, not
+          decorative (`population-pyramid.md`'s only accessibility trap, checked as a pair). Faded
+          in over `establish` rather than present at frame 0. */}
+      <g opacity={axisOpacity}>
         <rect
           x={PAD}
           y={legendBaseline - 15}

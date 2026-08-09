@@ -220,7 +220,16 @@ export function FlowMapVideo({
   const reveal = progressOf(frame, timing.reveal);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  const furniture = interpolate(establish, [0, 1], [0, 1], {
+  // The title, the source and the caveat are on screen at FRAME ZERO, at full opacity, never faded
+  // in. Extracting frame 0 from this beat's mp4 returned a completely blank white image —
+  // measured, not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and
+  // everything gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform
+  // pulls as the thumbnail before anyone presses play, and a blank poster frame is a beat that
+  // says nothing.
+  // The PLATE still fades in over `establish` — the basemap is this genre's axis furniture, the
+  // frame the route will be read in, and it has nothing to say before the route does. So do the
+  // things drawn on it: the dashed full route and the legend.
+  const plateOpacity = interpolate(establish, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
   const referenceOpacity = interpolate(reference, [0, 1], [0, 1], {
@@ -271,7 +280,7 @@ export function FlowMapVideo({
           top: MAP_Y,
           width: MAP.width,
           height: MAP.height,
-          opacity: furniture,
+          opacity: plateOpacity,
         }}
       />
       <svg
@@ -345,7 +354,7 @@ export function FlowMapVideo({
               strokeWidth={2 / scale}
               strokeDasharray={`${7 / scale} ${6 / scale}`}
               strokeLinecap="round"
-              opacity={0.55 * furniture}
+              opacity={0.55 * plateOpacity}
             />
             {travelled.length >= 2 && (
               <>
@@ -412,8 +421,8 @@ export function FlowMapVideo({
           ) : null}
         </g>
 
-        {/* ── Furniture ─────────────────────────────────────────────────────────────────────── */}
-        <g opacity={furniture}>
+        {/* ── Furniture: on screen from frame 0, never faded — see `plateOpacity` above ─────── */}
+        <g>
           {titleLines.map((line, i) => (
             <text
               key={line}
@@ -441,7 +450,7 @@ export function FlowMapVideo({
 
         {/* ── The legend: present from `establish`, dimmed for a territory that has not yet
               arrived, never invisible — flips to full colour and order the moment it does. */}
-        <g opacity={furniture * referenceOpacity}>
+        <g opacity={plateOpacity * referenceOpacity}>
           <text
             x={PAD}
             y={legendY}
@@ -517,7 +526,7 @@ export function FlowMapVideo({
           ))}
         </g>
 
-        <g opacity={furniture}>
+        <g>
           {caveatLines.map((line, i) => (
             <text
               key={line}

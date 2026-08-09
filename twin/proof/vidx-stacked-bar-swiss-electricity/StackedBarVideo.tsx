@@ -241,7 +241,14 @@ export function StackedBarVideo({
   const subjectProgress = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // The legend and the axis still fade in over `establish` — they name and measure segments that
+  // do not exist yet.
+  const axisOpacity = establish;
 
   const referenceX2 = interpolate(
     referenceProgress,
@@ -289,7 +296,7 @@ export function StackedBarVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -313,10 +320,14 @@ export function StackedBarVideo({
             {text}
           </text>
         ))}
+      </g>
 
-        {/* Legend: three swatches, top-to-bottom order matching the stack (`stacked-bar.md`'s one
-            accepted exception to direct labelling — three segments can't each carry their own
-            label without crowding a 1080px-wide frame at this scale). */}
+      {/* Legend and value axis — the frame the stack will be read in, faded in over `establish`
+          rather than present at frame 0.
+          Legend: three swatches, top-to-bottom order matching the stack (`stacked-bar.md`'s one
+          accepted exception to direct labelling — three segments can't each carry their own
+          label without crowding a 1080px-wide frame at this scale). */}
+      <g opacity={axisOpacity}>
         {legendLabels.map((label, i) => {
           const fills = [accent, muted, muted];
           const opacities = [1, 1, 0.5];

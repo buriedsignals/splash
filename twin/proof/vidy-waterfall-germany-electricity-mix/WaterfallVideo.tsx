@@ -327,10 +327,15 @@ export function WaterfallVideo({
   const subjectProgress = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  // Furniture: title, source, three-swatch legend — one fade, together, then still forever. The
-  // title is furniture (`motion-grammar.md`, "the conclusion appears only after its evidence"
-  // governs assertions, not the title).
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // `motion-grammar.md`'s "the conclusion appears only after its evidence" governs assertions, not
+  // the title. The three-swatch legend still fades in over `establish` — it names roles that no
+  // bar carries yet.
+  const axisOpacity = establish;
 
   // How far through step `i`'s own arrival window the master `reveal` progress is, 0..1, already
   // eased — the same value drives that step's connector fade, bar growth AND value-label position,
@@ -400,7 +405,7 @@ export function WaterfallVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -421,9 +426,12 @@ export function WaterfallVideo({
         >
           {source}
         </text>
+      </g>
 
-        {/* The three-role legend — load-bearing, not decorative: without it a reader has no way
-            to read a bar's colour as "grew" vs "shrank" vs "the anchor." */}
+      {/* The three-role legend — load-bearing, not decorative: without it a reader has no way
+          to read a bar's colour as "grew" vs "shrank" vs "the anchor." Faded in over `establish`
+          rather than present at frame 0. */}
+      <g opacity={axisOpacity}>
         {(() => {
           const swatches: Array<[string, string]> = [
             [legendLabels[0], increase],

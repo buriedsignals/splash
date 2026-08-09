@@ -364,7 +364,14 @@ export function HeatmapVideo({
 
   // Furniture: title, source, both axes, the empty grid's outlines — one fade, together, then
   // still forever (`motion-grammar.md`: the title is furniture, not a conclusion).
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // Both axes' headers still fade in over `establish` — they are the empty grid the cells will
+  // fill, and they have nothing to say before the cells exist.
+  const axisOpacity = establish;
 
   // The reference: the colour legend, growing left to right and then left alone to be read —
   // same device, same pause, every prior beat in this corpus uses for its own reference layer.
@@ -427,7 +434,7 @@ export function HeatmapVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -448,8 +455,11 @@ export function HeatmapVideo({
         >
           {source}
         </text>
+      </g>
 
-        {/* Column headers (years) and row headers (countries) — both axes, established once. */}
+      {/* Column headers (years) and row headers (countries) — both axes, faded in over
+          `establish` rather than present at frame 0, then still. */}
+      <g opacity={axisOpacity}>
         {years.map((year, j) => (
           <text
             key={`col-${year}`}

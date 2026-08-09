@@ -288,10 +288,16 @@ export function CumulativeCo2AreaVideo({
   const reveal = progressOf(frame, timing.reveal);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  // Furniture: title, source, axis, ticks, gridlines — one fade, together, then still forever.
-  // The title is furniture, not the conclusion (`motion-grammar.md`): it establishes what the
-  // reader is looking at, and a video whose first seconds carry no title has no poster frame.
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // `motion-grammar.md` already argues the title is furniture that establishes what the reader is
+  // looking at; taken literally that means it cannot be absent at the start.
+  // The axis furniture still fades in over `establish` — it is the frame the data will be measured
+  // in, and it has nothing to say before the data does.
+  const axisOpacity = establish;
 
   const referenceX2 = interpolate(
     referenceProgress,
@@ -351,7 +357,7 @@ export function CumulativeCo2AreaVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -372,7 +378,11 @@ export function CumulativeCo2AreaVideo({
         >
           {source}
         </text>
+      </g>
 
+      {/* Axis ticks and gridlines — the frame the data will be measured in, faded in over
+          `establish` rather than present at frame 0. */}
+      <g opacity={axisOpacity}>
         {g.ticksY.map((tick, i) => (
           <g key={tick.value}>
             {/* The middle tick IS the reference; its rule is drawn on its own, dashed, in its own

@@ -236,12 +236,19 @@ export function SmallMultiplesCo2Video({
   });
 
   // ── The edit. Six windows, all read off the timing contract.
-  const establish = progressOf(frame, timing.establish);
   const referenceProgress = progressOf(frame, timing.reference);
   const revealProgress = progressOf(frame, timing.reveal);
   const conclusionProgress = progressOf(frame, timing.conclusion);
 
-  const furnitureOpacity = establish;
+  // The title, the limits line and the source are on screen at FRAME ZERO, at full opacity, never
+  // faded in. Extracting frame 0 from this beat's mp4 returned a completely blank white image —
+  // measured, not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and
+  // everything gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform
+  // pulls as the thumbnail before anyone presses play, and a blank poster frame is a beat that
+  // says nothing. This beat has no axis furniture of its own to fade in `establish`'s place — its
+  // gridlines and tick labels are PANEL furniture and already gate on `reference` below — so
+  // `timing.establish` is now a held pause on the title alone, which is what a poster frame is.
+  //
   // Panel furniture (gridlines, tick labels, country name) — a distinct event from the title,
   // laid down together across all four panels, then left alone before any line starts drawing.
   const panelFurnitureOpacity = referenceProgress;
@@ -280,7 +287,7 @@ export function SmallMultiplesCo2Video({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((tline, i) => (
           <text
             key={tline}

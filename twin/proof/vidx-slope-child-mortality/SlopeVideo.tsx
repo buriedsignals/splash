@@ -242,7 +242,14 @@ export function SlopeVideo({
   const subjectProgress = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // The period captions and their two rules still fade in over `establish` — they are the frame
+  // the slopes will be read in, and they have nothing to say before the lines exist.
+  const axisOpacity = establish;
 
   const referenceLabelOpacity = interpolate(
     referenceProgress,
@@ -286,7 +293,7 @@ export function SlopeVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -310,9 +317,12 @@ export function SlopeVideo({
             {text}
           </text>
         ))}
+      </g>
 
-        {/* Each period's own caption — a slope chart with unlabelled ends states half its claim
-            (`slope.md`). */}
+      {/* Each period's own caption and its rule — the frame the slopes will be read in, faded in
+          over `establish` rather than present at frame 0. A slope chart with unlabelled ends
+          states half its claim (`slope.md`). */}
+      <g opacity={axisOpacity}>
         <text
           x={g.plot.left}
           y={captionBaseline}

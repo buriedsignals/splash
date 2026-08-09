@@ -233,7 +233,14 @@ export function GroupedBarVideo({
   const subjectProgress = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // The legend, the axis and the category labels still fade in over `establish` — they name and
+  // measure bars that do not exist yet.
+  const axisOpacity = establish;
 
   const referenceX2 = interpolate(
     referenceProgress,
@@ -282,7 +289,7 @@ export function GroupedBarVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -306,9 +313,13 @@ export function GroupedBarVideo({
             {text}
           </text>
         ))}
+      </g>
 
-        {/* Legend: the only thing telling a reader which bar is which year, in every group —
-            load-bearing, same left-to-right order as the bars within a group. */}
+      {/* Legend, value axis and category labels — the frame the bars will be read in, faded in
+          over `establish` rather than present at frame 0.
+          Legend: the only thing telling a reader which bar is which year, in every group —
+          load-bearing, same left-to-right order as the bars within a group. */}
+      <g opacity={axisOpacity}>
         <rect
           x={PAD}
           y={legendBaseline - 16}

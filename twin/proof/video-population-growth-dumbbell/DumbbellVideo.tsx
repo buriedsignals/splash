@@ -268,11 +268,15 @@ export function DumbbellVideo({
   const subject = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  // Furniture: title, source, legend — one fade, together, then still forever. The title is
-  // furniture (`motion-grammar.md`, "the conclusion appears only after its evidence" governs
-  // assertions, not the title): it establishes what the reader is looking at, and a video whose
-  // first seconds carry no title has no poster frame.
-  const furnitureOpacity = establish;
+  // The title and the source are on screen at FRAME ZERO, at full opacity, never faded in.
+  // Extracting frame 0 from this beat's mp4 returned a completely blank white image — measured,
+  // not assumed: `establish` starts at frame 0, so its progress there is exactly 0 and everything
+  // gated on it is invisible. Frame 0 is the poster frame a CMS or a social platform pulls as the
+  // thumbnail before anyone presses play, and a blank poster frame is a beat that says nothing.
+  // `motion-grammar.md`'s "the conclusion appears only after its evidence" governs assertions, not
+  // the title; the title establishes what the reader is looking at, so it cannot be absent at the
+  // start. The legend still fades in over `establish` — it names two dots that do not exist yet.
+  const axisOpacity = establish;
 
   // The reference: the vertical rule at index 100, drawn top-to-bottom (it is vertical, not
   // horizontal, but it is still laid down before the evidence and left alone to be read — same
@@ -347,7 +351,7 @@ export function DumbbellVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -368,9 +372,12 @@ export function DumbbellVideo({
         >
           {source}
         </text>
+      </g>
 
-        {/* Legend: the only thing telling a reader which dot is which year, on every row —
-            load-bearing, not decorative (`dumbbell.md`'s accessibility trap). */}
+      {/* Legend: the only thing telling a reader which dot is which year, on every row —
+          load-bearing, not decorative (`dumbbell.md`'s accessibility trap). Faded in over
+          `establish` with the rest of the mark furniture, not present at frame 0. */}
+      <g opacity={axisOpacity}>
         <circle cx={PAD + 7} cy={legendBaseline - 7} r={7} fill={muted} />
         <text
           x={PAD + 22}
