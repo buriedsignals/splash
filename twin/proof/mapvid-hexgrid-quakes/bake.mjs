@@ -103,6 +103,33 @@ function parseEnvFile(text) {
   return env;
 }
 
+// What the camera already knows, and what `geometry.json` used to throw away. Every downstream
+// "big enough / too big / too close together" decision needs these three numbers; without them each
+// one is re-guessed as a pixel constant tuned by eye against this beat's own extent.
+
+/** The extent ACTUALLY shown, which is NOT the bounds that were asked for: `fitBounds` fits the
+ * bounds inside the box on whichever axis binds first, so the other axis always overshoots. @parity */
+function frameCornersOf(topLeft, bottomRight) {
+  return { west: topLeft.lng, north: topLeft.lat, east: bottomRight.lng, south: bottomRight.lat };
+}
+
+/** Web-Mercator northing for a latitude, in world units where a full turn of longitude is 2π. @parity */
+function mercY(latDeg) {
+  return Math.log(Math.tan(Math.PI / 4 + (latDeg * Math.PI) / 360));
+}
+
+/** How wide the world draws at this zoom (512px at zoom 0, doubling each level), and what one drawn
+ * pixel is worth in degrees and in metres at the frame's own centre latitude. @parity */
+function cameraFacts(zoom, corners) {
+  const worldWidthPx = 512 * 2 ** zoom;
+  const centreLat = (corners.north + corners.south) / 2;
+  return {
+    worldWidthPx: Math.round(worldWidthPx * 10) / 10,
+    degreesPerPixel: Number((360 / worldWidthPx).toPrecision(6)),
+    metresPerPixel: Number(((40075016.686 * Math.cos((centreLat * Math.PI) / 180)) / worldWidthPx).toPrecision(6)),
+  };
+}
+
 const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
 const env = parseEnvFile(await readFile(keyPath, "utf8"));
 const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((a) => env[a]).find(Boolean);
@@ -166,48 +193,40 @@ const gate = await page.evaluate(
       map.once("idle", () => finish("idle"));
       setTimeout(() => finish("settle"), settleMs);
     });
-    const corners = {
-      topLeft: map.unproject([0, 0]),
-      bottomRight: map.unproject([width, height]),
-    };
     return {
       how,
       ms: Date.now() - started,
       hidden: hidden.length,
       zoom: map.getZoom(),
-      // The world's own drawn width in CSS pixels at this zoom — 512 px at zoom 0, doubling each
-      // level. Compared against the frame below.
-      worldWidthPx: 512 * 2 ** map.getZoom(),
-      frameCorners: {
-        west: corners.topLeft.lng,
-        north: corners.topLeft.lat,
-        east: corners.bottomRight.lng,
-        south: corners.bottomRight.lat,
-      },
+      topLeft: map.unproject([0, 0]),
+      bottomRight: map.unproject([width, height]),
     };
   },
   { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width, height },
 );
 
+const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
+const camera = cameraFacts(gate.zoom, frameCorners);
+
 // The two assertions this beat's own defect earned: the world must FILL the frame's width (or a
 // repeat continent shows, carrying no hexagons and reading as "no earthquakes here"), AND the
 // frame must actually reach the bounds that were asked for (or the study area is silently cropped
 // instead). Either one alone can be satisfied by a plate that lies.
-if (gate.worldWidthPx < width - 1)
+if (camera.worldWidthPx < width - 1)
   throw new Error(
-    `this plate would not fill its frame: the world draws ${gate.worldWidthPx.toFixed(1)}px wide inside ` +
-      `${width}px (${((gate.worldWidthPx / width) * 100).toFixed(0)}%).`,
+    `this plate would not fill its frame: the world draws ${camera.worldWidthPx.toFixed(1)}px wide inside ` +
+      `${width}px (${((camera.worldWidthPx / width) * 100).toFixed(0)}%).`,
   );
 const [[askedWest, askedSouth], [askedEast, askedNorth]] = BEAT.bounds;
 const shortfall = [];
-if (gate.frameCorners.south > askedSouth + 0.01)
-  shortfall.push(`south edge is ${gate.frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
-if (gate.frameCorners.north < askedNorth - 0.01)
-  shortfall.push(`north edge is ${gate.frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
-if (gate.frameCorners.west > askedWest + 0.01)
-  shortfall.push(`west edge is ${gate.frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
-if (gate.frameCorners.east < askedEast - 0.01)
-  shortfall.push(`east edge is ${gate.frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
+if (frameCorners.south > askedSouth + 0.01)
+  shortfall.push(`south edge is ${frameCorners.south.toFixed(2)}°, asked for ${askedSouth}°`);
+if (frameCorners.north < askedNorth - 0.01)
+  shortfall.push(`north edge is ${frameCorners.north.toFixed(2)}°, asked for ${askedNorth}°`);
+if (frameCorners.west > askedWest + 0.01)
+  shortfall.push(`west edge is ${frameCorners.west.toFixed(2)}°, asked for ${askedWest}°`);
+if (frameCorners.east < askedEast - 0.01)
+  shortfall.push(`east edge is ${frameCorners.east.toFixed(2)}°, asked for ${askedEast}°`);
 if (shortfall.length > 0)
   throw new Error(
     `this plate crops the study area — ${shortfall.join("; ")}. A ${width}px-wide frame needs at least ` +
@@ -251,11 +270,13 @@ for (let i = 0; i < points.length; i++) {
 const geometry = {
   frame,
   bounds: BEAT.bounds,
-  frameCorners: gate.frameCorners,
   style: BEAT.style,
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
-  worldWidthPx: Math.round(gate.worldWidthPx * 10) / 10,
+  frameCorners,
+  worldWidthPx: camera.worldWidthPx,
+  degreesPerPixel: camera.degreesPerPixel,
+  metresPerPixel: camera.metresPerPixel,
   points: projectedPoints,
 };
 const geometryPath = join(outDir, "geometry.json");
@@ -263,9 +284,9 @@ await writeFile(geometryPath, JSON.stringify(geometry));
 
 console.log(
   `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} basemap layers · zoom ${geometry.zoom}\n` +
-    `world     ${geometry.worldWidthPx}px wide in a ${width}px frame (fills ${((gate.worldWidthPx / width) * 100).toFixed(1)}%)\n` +
-    `frame     ${gate.frameCorners.west.toFixed(2)}..${gate.frameCorners.east.toFixed(2)}°, ` +
-    `${gate.frameCorners.south.toFixed(2)}..${gate.frameCorners.north.toFixed(2)}°\n` +
+    `world     ${geometry.worldWidthPx}px wide in a ${width}px frame (fills ${((camera.worldWidthPx / width) * 100).toFixed(1)}%)\n` +
+    `frame     ${frameCorners.west.toFixed(2)}..${frameCorners.east.toFixed(2)}°, ` +
+    `${frameCorners.south.toFixed(2)}..${frameCorners.north.toFixed(2)}°\n` +
     `plate    → ${platePath}\n` +
     `geometry → ${geometryPath}  ${projectedPoints.length}/${points.length} points on-frame (${offFrame} off)`,
 );

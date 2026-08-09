@@ -76,6 +76,33 @@ function parseEnvFile(text) {
   return env;
 }
 
+// What the camera already knows, and what `geometry.json` used to throw away. Every downstream
+// "big enough / too big / too close together" decision needs these three numbers; without them each
+// one is re-guessed as a pixel constant tuned by eye against this beat's own extent.
+
+/** The extent ACTUALLY shown, which is NOT the bounds that were asked for: `fitBounds` fits the
+ * bounds inside the box on whichever axis binds first, so the other axis always overshoots. @parity */
+function frameCornersOf(topLeft, bottomRight) {
+  return { west: topLeft.lng, north: topLeft.lat, east: bottomRight.lng, south: bottomRight.lat };
+}
+
+/** Web-Mercator northing for a latitude, in world units where a full turn of longitude is 2π. @parity */
+function mercY(latDeg) {
+  return Math.log(Math.tan(Math.PI / 4 + (latDeg * Math.PI) / 360));
+}
+
+/** How wide the world draws at this zoom (512px at zoom 0, doubling each level), and what one drawn
+ * pixel is worth in degrees and in metres at the frame's own centre latitude. @parity */
+function cameraFacts(zoom, corners) {
+  const worldWidthPx = 512 * 2 ** zoom;
+  const centreLat = (corners.north + corners.south) / 2;
+  return {
+    worldWidthPx: Math.round(worldWidthPx * 10) / 10,
+    degreesPerPixel: Number((360 / worldWidthPx).toPrecision(6)),
+    metresPerPixel: Number(((40075016.686 * Math.cos((centreLat * Math.PI) / 180)) / worldWidthPx).toPrecision(6)),
+  };
+}
+
 const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
 const env = parseEnvFile(await readFile(keyPath, "utf8"));
 const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((a) => env[a]).find(Boolean);
@@ -118,7 +145,7 @@ await page.setContent(
 await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
 
 const gate = await page.evaluate(
-  async ({ key, style, bounds, settleMs }) => {
+  async ({ key, style, bounds, settleMs, width, height }) => {
     const map = new maplibregl.Map({
       container: "map",
       style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
@@ -154,10 +181,20 @@ const gate = await page.evaluate(
       map.once("idle", () => finish("idle"));
       setTimeout(() => finish("settle"), settleMs);
     });
-    return { how, ms: Date.now() - started, hidden: hidden.length, zoom: map.getZoom() };
+    return {
+      how,
+      ms: Date.now() - started,
+      hidden: hidden.length,
+      zoom: map.getZoom(),
+      topLeft: map.unproject([0, 0]),
+      bottomRight: map.unproject([width, height]),
+    };
   },
-  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs },
+  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, width, height },
 );
+
+const frameCorners = frameCornersOf(gate.topLeft, gate.bottomRight);
+const camera = cameraFacts(gate.zoom, frameCorners);
 
 await mkdir(outDir, { recursive: true });
 const platePath = join(outDir, "plate.png");
@@ -232,6 +269,10 @@ const geometry = {
   style: BEAT.style,
   gatedBy: gate.how,
   zoom: Math.round(gate.zoom * 1000) / 1000,
+  frameCorners,
+  worldWidthPx: camera.worldWidthPx,
+  degreesPerPixel: camera.degreesPerPixel,
+  metresPerPixel: camera.metresPerPixel,
   shapes: shapesOut,
 };
 const geometryPath = join(outDir, "geometry.json");
