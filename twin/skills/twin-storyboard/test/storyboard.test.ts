@@ -1,5 +1,11 @@
 import { describe, it, expect } from "bun:test";
-import { parseStoryboard, checkStoryboard } from "../scripts/storyboard.mjs";
+import {
+  parseStoryboard,
+  checkStoryboard,
+  groundTakeaway,
+  genreGap,
+  capabilityGap,
+} from "../scripts/storyboard.mjs";
 
 const VALID = `---
 takeaway: "Rainfall over Annemasse fell by a third in ten years."
@@ -9,6 +15,8 @@ limits: "One station; says nothing about the wider basin."
 placement: "after the fourth paragraph"
 credit: "MeteoSwiss"
 effectiveDate: "2026-05-31"
+grounding: supported
+reference: "The Pudding, redraft — mid-table deviation"
 language: "fr"
 channel: "article-web"
 slots:
@@ -16,6 +24,8 @@ slots:
     proves: "The fall is a trend, not one bad year."
     medium: "chart"
     genre: "static"
+    size: "landscape"
+    reachable: "yes"
     candidates: ["trajectory", "comparison"]
     chosen: "trajectory"
 ---
@@ -108,39 +118,68 @@ describe("checkStoryboard", () => {
     );
   });
 
-  it("should accept a chosen slot in a genre the toolchain can both produce and deliver", () => {
-    for (const genre of ["static", "web", "video"]) {
+  // The three sub-gates of Gate 2, each recorded as it closed. The gate reads the record; it does
+  // NOT re-run genreGap or capabilityGap, because where.mjs's own gate structurally cannot, and
+  // two gates running different checks is the divergence this contract exists to make impossible.
+  for (const field of ["medium", "genre", "size"]) {
+    it(`should refuse a slot that never recorded its ${field}`, () => {
       const meta = parseStoryboard(VALID).meta;
-      meta.slots[0].genre = genre;
-      expect(checkStoryboard(meta)).toEqual([]);
-    }
+      delete meta.slots[0][field];
+      expect(checkStoryboard(meta).join(" ")).toContain(
+        `slot 1: ${field} is missing`,
+      );
+    });
+  }
+
+  it("should refuse a slot whose medium and genre were never confirmed reachable", () => {
+    const meta = parseStoryboard(VALID).meta;
+    meta.slots[0].reachable = "no";
+    expect(checkStoryboard(meta).join(" ")).toContain(
+      "never confirmed reachable",
+    );
   });
 
-  // The whole point of this fix: a chosen candidate that is otherwise perfectly well-formed
-  // (a real choice drawn from its own listed candidates) still must not close the gate if its
-  // genre cannot be delivered — this is the wall a journalist asking "for the web" used to hit
-  // three phases later, at twin-deliver, instead of here.
-  it("should refuse a chosen slot whose genre this toolchain does not know how to produce or deliver", () => {
+  it("should refuse a storyboard whose takeaway was never grounded at G1", () => {
     const meta = parseStoryboard(VALID).meta;
-    meta.slots[0].genre = "print";
-    const errors = checkStoryboard(meta);
-    expect(errors).toHaveLength(1);
-    expect(errors[0]).toContain("slot 1");
-    expect(errors[0]).toContain('"print"');
+    delete meta.grounding;
+    expect(checkStoryboard(meta).join(" ")).toContain("grounding is missing");
   });
 
-  it("should not report a genre gap for a slot that is already refused for having no chosen value", () => {
-    // A slot with nothing chosen has nothing to check a genre gap against yet — the "nothing
-    // chosen" error is the only one that should fire, not a second, confusing genre complaint.
-    const meta = parseStoryboard(VALID).meta;
-    meta.slots[0].genre = "print";
-    delete meta.slots[0].chosen;
-    const errors = checkStoryboard(meta);
-    expect(errors).toEqual(["slot 1: nothing chosen — gate 2 is not closed"]);
+  // `contradicted` is not a closing value. A refuted takeaway is corrected, or the journalist
+  // records an override AND says why — which is what the run improvised, correctly, by hand.
+  it("should refuse a grounding verdict of contradicted, and accept an override that carries a reason", () => {
+    const refuted = parseStoryboard(VALID).meta;
+    refuted.grounding = "contradicted";
+    expect(checkStoryboard(refuted).join(" ")).toContain(
+      "is not a resolved verdict",
+    );
+
+    const overridden = parseStoryboard(VALID).meta;
+    overridden.grounding =
+      'overridden — "34 is the sum of glace_fondue_mt (14 + 11 + 9)"';
+    expect(checkStoryboard(overridden)).toEqual([]);
+
+    const reasonless = parseStoryboard(VALID).meta;
+    reasonless.grounding = "overridden —";
+    expect(checkStoryboard(reasonless).join(" ")).toContain(
+      "is not a resolved verdict",
+    );
+  });
+
+  it("should refuse a storyboard whose reference loop never closed into a field, and accept a recorded rejection", () => {
+    const missing = parseStoryboard(VALID).meta;
+    delete missing.reference;
+    expect(checkStoryboard(missing).join(" ")).toContain(
+      "reference is missing",
+    );
+
+    const rejected = parseStoryboard(VALID).meta;
+    rejected.reference = "none — both rejected";
+    expect(checkStoryboard(rejected)).toEqual([]);
   });
 
   it("should not consider a bare YAML null or tilde takeaway confirmed, agreeing with whereIs", () => {
-    // where.mjs's hasConfirmedTakeaway (twin/skills/splash-twin/scripts/where.mjs) refuses the
+    // where.mjs's isMissingScalar (twin/skills/splash-twin/scripts/where.mjs) refuses the
     // raw tokens "null" and "~" as a confirmed takeaway. parseStoryboard must resolve the same
     // two YAML null sentinels to a real missing value, or the two gates would disagree about
     // whether G1 has closed.
@@ -160,121 +199,14 @@ describe("checkStoryboard", () => {
     );
   });
 
-  it("should surface a takeaway claim the frozen data contradicts as a gate error", () => {
-    const meta = {
-      ...parseStoryboard(VALID).meta,
-      takeaway: "Rainfall was lower in 2024 than in any year since 1993",
-    };
-    const profile = {
-      columns: [
-        { name: "year", type: "number", min: 1993, max: 2024 },
-        { name: "rainfall", type: "number", min: 604, max: 912 },
-      ],
-      rows: [
-        { year: 1993, rainfall: 604 },
-        { year: 2024, rainfall: 912 },
-      ],
-    };
-    const errors = checkStoryboard(meta, profile);
-    expect(
-      errors.some((e) => e.includes("contradicted by the frozen data")),
-    ).toBe(true);
-  });
-
-  it("should not check a slot's medium against capabilities unless both are present — a slot with no medium behaves exactly as before", () => {
-    const capabilities = {
-      map: {
-        id: "map",
-        opens: "map beats",
-        available: false,
-        reason: "no MapTiler key",
-      },
-    };
-    // No `medium` on the slot at all: passing capabilities must not invent a new refusal.
-    expect(
-      checkStoryboard(parseStoryboard(VALID).meta, undefined, capabilities),
-    ).toEqual([]);
-    // A `medium` on the slot, but no capabilities handed in: nothing to check the choice against.
-    const withMedium = parseStoryboard(VALID).meta;
-    withMedium.slots[0].medium = "map";
-    expect(checkStoryboard(withMedium)).toEqual([]);
-  });
-
-  it("should refuse a chosen slot whose medium the environment cannot honour, naming the reason in the journalist's terms", () => {
-    const meta = parseStoryboard(VALID).meta;
-    meta.slots[0].medium = "map";
-    const capabilities = {
-      map: {
-        id: "map",
-        opens: "map beats",
-        available: false,
-        reason: "no MapTiler key",
-      },
-    };
-    const errors = checkStoryboard(meta, undefined, capabilities);
-    expect(errors).toContain(
-      "slot 1: map beats are unavailable: no MapTiler key",
-    );
-    // The whole point: never framed as the environment having failed.
-    expect(errors.join(" ").toLowerCase()).not.toContain("environment failed");
-  });
-
-  it("should pass the same slot once the capability opens", () => {
-    const meta = parseStoryboard(VALID).meta;
-    meta.slots[0].medium = "map";
-    const capabilities = {
-      map: {
-        id: "map",
-        opens: "map beats",
-        available: true,
-        reason: "MapTiler answered 200",
-      },
-    };
-    expect(checkStoryboard(meta, undefined, capabilities)).toEqual([]);
-  });
-
-  it("should not invent a gap for a medium capabilities has no opinion about", () => {
-    const meta = parseStoryboard(VALID).meta;
-    meta.slots[0].medium = "chart";
-    const capabilities = {
-      map: {
-        id: "map",
-        opens: "map beats",
-        available: false,
-        reason: "no MapTiler key",
-      },
-    };
-    expect(checkStoryboard(meta, undefined, capabilities)).toEqual([]);
-  });
-
-  it("should not report a capability gap for a slot that is already refused for having no chosen value", () => {
-    const meta = parseStoryboard(VALID).meta;
-    meta.slots[0].medium = "map";
-    delete meta.slots[0].chosen;
-    const capabilities = {
-      map: {
-        id: "map",
-        opens: "map beats",
-        available: false,
-        reason: "no MapTiler key",
-      },
-    };
-    const errors = checkStoryboard(meta, undefined, capabilities);
-    expect(errors).toEqual(["slot 1: nothing chosen — gate 2 is not closed"]);
-  });
-
-  it("should not turn an unverifiable claim into a gate error", () => {
-    const meta = {
-      ...parseStoryboard(VALID).meta,
-      takeaway: "Rainfall was lower in 2024 than in any year since 1993",
-    };
-    const profile = {
-      columns: [
-        { name: "year", type: "number", min: 1993, max: 2024 },
-        { name: "rainfall", type: "number", min: 604, max: 912 },
-      ],
-      rows: [], // no row-level data — the comparison can only come back unverifiable
-    };
-    expect(checkStoryboard(meta, profile)).toEqual([]);
+  // The gate takes ONE argument, and that is the point rather than an omission. The three
+  // expensive semantic checks it used to re-derive are still this skill's own work — they are just
+  // run by the PHASE that owns each (grounding at G1, genre and capability at G2b), which records
+  // the verdict. A second argument here would be a rule where.mjs's gate could not see.
+  it("should take one argument, and still export the checks the phases run", () => {
+    expect(checkStoryboard.length).toBe(1);
+    expect(typeof groundTakeaway).toBe("function");
+    expect(typeof genreGap).toBe("function");
+    expect(typeof capabilityGap).toBe("function");
   });
 });

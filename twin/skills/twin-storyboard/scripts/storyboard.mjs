@@ -5,12 +5,83 @@ import { groundTakeaway } from "./ground-claim.mjs";
 import { genreGap } from "./genre-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 
+// Still exported, and still this skill's own work — but no longer called by the GATE. Each is an
+// expensive semantic check owned by exactly one phase: `groundTakeaway` runs at G1, the moment the
+// takeaway is confirmed, and `genreGap`/`capabilityGap` run at the genre sub-gate G2b. Each records
+// its resolved verdict into `STORYBOARD.md` (`grounding:`, and the slot's `reachable:`), and BOTH
+// gates then read the recorded scalar.
+//
+// That is what closes the divergence class by construction. `checkStoryboard` used to take a
+// `profile` and a `capabilities` argument that `where.mjs`'s `missingForGate2` structurally could
+// not have, so this gate could refuse for three reasons the other gate could not see — and did:
+// `whereIs` reported `production` on a storyboard this function was refusing
+// (twin/FEEDBACK-2026-08-10.md, A7/A14). Neither gate can now run a check the other cannot, because
+// neither runs one at all: they read the same recorded fields.
 export { groundTakeaway, genreGap, capabilityGap };
 
 const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
 
+// Every story-level scalar Gate 2 requires. `where.mjs` exports the same list, spelled
+// independently — the deliberate duplicate, cross-checked by `splash-twin/test/where.test.ts`,
+// which GENERATES its fixtures from the union of both copies so a field added to either side
+// produces its own fixture the moment it lands.
+export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
+
+// Every field a slot must carry before Gate 2 can close on it. `size` is recorded from day one even
+// where only one value is reachable, so widening the reachable set later widens a set and re-plumbs
+// nothing.
+export const REQUIRED_SLOT_FIELDS = ["medium", "genre", "size", "reachable", "chosen"];
+
+// The closed vocabulary of `grounding:`. `contradicted` is deliberately NOT a closing value: a
+// takeaway the data refutes is corrected, or the journalist records an override WITH A REASON.
+// Silence and an override must not look alike, which is the same rule ground-claim.mjs holds.
+const GROUNDING_VERDICTS = ["supported", "unverifiable"];
+const OVERRIDE_RE = /^overridden\s*[—–-]\s*(.+)$/;
+
+function isResolvedGrounding(value) {
+  if (typeof value !== "string") return false;
+  const text = value.trim();
+  if (GROUNDING_VERDICTS.includes(text)) return true;
+  const override = OVERRIDE_RE.exec(text);
+  return Boolean(override && override[1].replace(/^["']|["']$/g, "").trim());
+}
+
+// The wording each missing scalar and slot field is refused in. A field with no entry falls back to
+// "<field> is missing" — which is what the six HAND fields have always read as.
+const SCALAR_GAP = {
+  grounding: "grounding is missing — the takeaway was never grounded at G1",
+  reference: "reference is missing — the reference loop never closed into a field",
+};
+
+// The scalars whose VALUE is checked, not merely their presence.
+const SCALAR_VOCABULARY = { grounding: isResolvedGrounding };
+const SCALAR_VOCABULARY_GAP = {
+  grounding: (value) =>
+    `grounding ${JSON.stringify(value)} is not a resolved verdict — expected supported, unverifiable, or overridden — "<reason>"`,
+};
+
+// Gate 2's three sub-gates, each recorded as it closes: the KIND (2a), then the genre within that
+// kind (2b), then the size within that genre (2c). A slot naming none of them is a slot the
+// journalist was never asked about — the run pinned "chart / static" in one undifferentiated move
+// and then offered three variants of the same bar.
+const SLOT_SUB_GATE = { medium: "2a", genre: "2b", size: "2c" };
+
+// `reachable` carries the recorded verdict of genreGap + capabilityGap, run once at G2b by the
+// phase that owns them. The gate reads the record; it never re-runs the check, because the other
+// gate structurally cannot.
+const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
+
+function slotGap(field, id) {
+  if (field === "chosen") return `slot ${id}: nothing chosen — gate 2 is not closed`;
+  if (field === "reachable") return `slot ${id}: this medium and genre were never confirmed reachable`;
+  const subGate = SLOT_SUB_GATE[field];
+  return subGate
+    ? `slot ${id}: ${field} is missing — gate ${subGate} never closed`
+    : `slot ${id}: ${field} is missing`;
+}
+
 // Bare (unquoted) YAML null sentinels. `twin/skills/splash-twin/scripts/where.mjs` refuses these
-// same two raw tokens as a confirmed takeaway (hasConfirmedTakeaway) — this parser has to resolve
+// same two raw tokens as a confirmed takeaway (isMissingScalar) — this parser has to resolve
 // them to a real missing value too, or the two gates would disagree about whether G1 has closed.
 // A *quoted* "null" or "~" is a literal string, not the sentinel, so this only fires on the bare form.
 function isNullSentinel(value) {
@@ -86,33 +157,25 @@ export function parseStoryboard(text) {
   return { meta, prose: match[2] };
 }
 
-// `profile` is optional (twin-intake's `source/profile.json` shape, extended with row-level
-// `rows` where available — see `ground-claim.mjs`'s header comment for the exact shape). When
-// given, a takeaway claim the frozen data actively contradicts is surfaced as a gate error —
-// Gate 2 cannot honestly close on a takeaway the data refutes (twin/TRIAL-THREE-BEATS.md, "no
-// claim-grounding"). An "unverifiable" claim is not an error: it is information the journalist
-// should see, not a reason to block the gate on a claim nobody could actually check.
-//
-// `capabilities` is optional too — the same `{map, datawrapper, hostedEmbed}` shape
-// `runPreflight` returns (`skills/splash-twin/scripts/preflight.mjs`), passed in by the caller
-// that already ran preflight this session; this file never runs preflight itself, only reads its
-// result. When given, a chosen slot whose `medium` names a capability the environment cannot
-// honour is refused with the reason in the journalist's terms ("map beats are unavailable: no
-// MapTiler key"), never as a generic environment failure — the same closure `genreGap` above
-// applies to a genre nothing can deliver, one gate learning one more question. A slot with no
-// `medium` at all, or `capabilities` omitted entirely, is untouched: this is additive, not a new
-// requirement on every existing storyboard.
-export function checkStoryboard(meta, profile, capabilities) {
+// ONE argument, deliberately. Everything this gate reads is a resolved scalar already written into
+// `STORYBOARD.md` by the phase that owns the check — nothing is re-derived here, so there is no
+// argument a caller could omit to switch a rule off. The false green this closes was exactly that:
+// `where.test.ts` called `checkStoryboard(meta)` with one argument inside the test that exists to
+// prove the two gates agree, silencing the very checks it was meant to compare.
+export function checkStoryboard(meta) {
   const errors = [];
-  if (!meta.takeaway) errors.push("takeaway is missing");
-  for (const field of HAND) if (!meta[field]) errors.push(`${field} is missing`);
 
-  if (profile) {
-    for (const result of groundTakeaway(meta.takeaway, profile)) {
-      if (result.verdict === "contradicted") {
-        errors.push(`takeaway claim contradicted by the frozen data: "${result.claim}" — ${result.detail}`);
-      }
+  // Driven off REQUIRED_SCALARS rather than a hand-written sequence of `if`s, so the exported
+  // constant IS the rule — remove a field from it and the gate stops requiring it, which is what
+  // makes the parity test's generated fixtures a real guard rather than a decoration.
+  for (const field of REQUIRED_SCALARS) {
+    const value = meta[field];
+    if (!value) {
+      errors.push(SCALAR_GAP[field] ?? `${field} is missing`);
+      continue;
     }
+    const vocabulary = SCALAR_VOCABULARY[field];
+    if (vocabulary && !vocabulary(value)) errors.push(SCALAR_VOCABULARY_GAP[field](value));
   }
 
   const slots = meta.slots ?? [];
@@ -120,42 +183,27 @@ export function checkStoryboard(meta, profile, capabilities) {
 
   for (const slot of slots) {
     const candidates = Array.isArray(slot.candidates) ? slot.candidates : [];
-    if (!slot.chosen) {
-      errors.push(`slot ${slot.id}: nothing chosen — gate 2 is not closed`);
-      continue;
+
+    for (const field of REQUIRED_SLOT_FIELDS) {
+      const value = slot[field];
+      if (!value) {
+        errors.push(slotGap(field, slot.id));
+        continue;
+      }
+      const vocabulary = SLOT_VOCABULARY[field];
+      if (vocabulary && !vocabulary(value)) errors.push(slotGap(field, slot.id));
     }
+
     // A chosen treatment is only a real choice if it was verifiably picked from a shown list —
     // that is what stops the exchange from being disguised parameter collection (references/
     // exchange.md, §③). A slot with `chosen` set but no `candidates` ever listed means the
     // proposal step was skipped, not that there was nothing to check membership against — so
     // this is malformed, not legitimate, and refuses on its own, distinct from a mismatch.
+    if (!slot.chosen) continue;
     if (candidates.length === 0) {
       errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} but no candidates were listed`);
-      continue;
-    }
-    if (!candidates.includes(slot.chosen)) {
+    } else if (!candidates.includes(slot.chosen)) {
       errors.push(`slot ${slot.id}: chosen ${JSON.stringify(slot.chosen)} is not among its candidates`);
-      continue;
-    }
-    // A choice that is otherwise well-formed still cannot close the gate if nothing downstream
-    // can deliver it — the exact defect this check exists to catch: a genre a producer renders
-    // but twin-deliver cannot yet materialise (see genre-catalog.mjs's own header for the real
-    // instance that motivated this). Only checked when a genre was actually named: a slot with no
-    // genre at all is a different, pre-existing gap this fix does not extend into — checkStoryboard
-    // has never required `genre` to close the gate, and where.mjs's own `missingForGate2` does not
-    // either, so requiring it here would put the two gates' verdicts out of step.
-    if (slot.genre) {
-      const gap = genreGap(slot.genre);
-      if (gap) errors.push(`slot ${slot.id}: ${gap}`);
-    }
-    // Only checked when both a medium was actually named on the slot AND the caller handed in a
-    // capabilities report to check it against — mirrors the `slot.genre` guard immediately above,
-    // and for the same reason: a slot that never named a medium is a different, pre-existing gap
-    // this closure does not extend into, and a caller that never ran preflight has nothing to
-    // check the choice against.
-    if (slot.medium && capabilities) {
-      const gap = capabilityGap(capabilities, slot.medium);
-      if (gap) errors.push(`slot ${slot.id}: ${gap}`);
     }
   }
   return errors;

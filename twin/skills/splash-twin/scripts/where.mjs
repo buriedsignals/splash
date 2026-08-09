@@ -27,15 +27,16 @@ function isMissingScalar(value) {
   return value === '""' || value === "''" || value === "null" || value === "~";
 }
 
-function hasScalarField(frontmatter, field) {
-  if (!frontmatter) return false;
+// Reads one top-level scalar out of the front matter and resolves it the way twin-storyboard's own
+// `scalar()` does — quotes stripped, the bare `null`/`~` sentinels resolved to a real missing
+// value — so the two gates read the same string out of the same line. Returns the VALUE rather
+// than a boolean because some scalars (`grounding`) are checked for their vocabulary, not merely
+// their presence; a falsy return means "missing" for the ones that are not.
+function scalarFieldValue(frontmatter, field) {
+  if (!frontmatter) return null;
   const match = frontmatter.match(new RegExp(`^${field}:[ \\t]*([^\\n]+)$`, "m"));
-  if (!match) return false;
-  return !isMissingScalar(match[1].trim());
-}
-
-function hasConfirmedTakeaway(frontmatter) {
-  return hasScalarField(frontmatter, "takeaway");
+  if (!match) return null;
+  return scalarValue(match[1]);
 }
 
 // The six hand-of-the-journalist fields Gate 2 requires (spec §7 ③). This list, and the slot
@@ -47,6 +48,56 @@ function hasConfirmedTakeaway(frontmatter) {
 // either list, mirror the change in the other — a test in `test/where.test.ts` pins every branch
 // below so a real divergence fails loud rather than silently reporting `production` too early.
 const HAND = ["subject", "comparison", "limits", "placement", "credit", "effectiveDate"];
+
+// EVERY rule below reads a RECORDED SCALAR. That is the whole design, and it is what makes the
+// mirroring above safe rather than merely careful. `checkStoryboard` used to accept a `profile` and
+// a `capabilities` argument this gate structurally could not have, so it could refuse for three
+// reasons this file could not see — and it did: `whereIs` reported `production` on a storyboard the
+// other gate was refusing (twin/FEEDBACK-2026-08-10.md, A7/A14). The expensive checks now run ONCE,
+// in the phase that owns them (grounding at G1, genre and capability at G2b), and write their
+// resolved verdict into `STORYBOARD.md`. Neither gate can run a check the other cannot, because
+// neither runs one at all.
+//
+// The four scalars added by that change: `grounding` (the G1 verdict), `reference` (the reference
+// loop's answer, including "the journalist rejected both"), and per slot `size` and `reachable`.
+export const REQUIRED_SCALARS = ["takeaway", ...HAND, "grounding", "reference"];
+export const REQUIRED_SLOT_FIELDS = ["medium", "genre", "size", "reachable", "chosen"];
+
+// The closed vocabulary of `grounding:`. Mirrors twin-storyboard's own `isResolvedGrounding` for
+// the same reason `HAND` mirrors its `HAND`. `contradicted` is deliberately not a closing value: a
+// refuted takeaway is corrected, or overridden WITH A REASON.
+const GROUNDING_VERDICTS = ["supported", "unverifiable"];
+const OVERRIDE_RE = /^overridden\s*[—–-]\s*(.+)$/;
+
+function isResolvedGrounding(value) {
+  if (typeof value !== "string") return false;
+  const text = value.trim();
+  if (GROUNDING_VERDICTS.includes(text)) return true;
+  const override = OVERRIDE_RE.exec(text);
+  return Boolean(override && override[1].replace(/^["']|["']$/g, "").trim());
+}
+
+// `missing` is read aloud to somebody resuming a story three days later, so every entry names the
+// DECISION that has not been taken, not the field that is empty. A scalar with no entry here falls
+// back to the hand-of-the-journalist wording, which is what the six of them have always read as.
+const SCALAR_GAP = {
+  takeaway: "a confirmed takeaway",
+  grounding: "the G1 grounding verdict",
+  reference: "the reference loop's answer",
+};
+
+const SCALAR_VOCABULARY = { grounding: isResolvedGrounding };
+const SCALAR_VOCABULARY_GAP = {
+  grounding: (value) => `a resolved grounding verdict (found ${JSON.stringify(value)})`,
+};
+
+const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
+
+function slotGap(field, label) {
+  if (field === "chosen") return `slot ${label}: nothing chosen`;
+  if (field === "reachable") return `slot ${label}: this medium and genre were never confirmed reachable`;
+  return `slot ${label}: no ${field} was ever chosen`;
+}
 
 // Quote-aware comma split, so a candidate name that itself contains a comma inside quotes
 // (`["a, b", "c"]`) is not fragmented by a naive `.split(",")`. Mirrors
@@ -115,10 +166,19 @@ function parseSlotsForGate(frontmatter) {
 // than stopping at the first gap, so a resumed session sees everything still missing at once.
 function missingForGate2(frontmatter) {
   const gaps = [];
-  if (!hasConfirmedTakeaway(frontmatter)) gaps.push("a confirmed takeaway");
 
-  for (const field of HAND) {
-    if (!hasScalarField(frontmatter, field)) gaps.push(`the hand-of-the-journalist field "${field}"`);
+  // Driven off REQUIRED_SCALARS rather than a hand-written sequence of checks, so the exported
+  // constant IS the rule. Remove a field from it and this gate stops requiring it — which is
+  // exactly the mutation the parity test has to catch, and can, because its fixtures are generated
+  // from the UNION of this list and twin-storyboard's own.
+  for (const field of REQUIRED_SCALARS) {
+    const value = scalarFieldValue(frontmatter, field);
+    if (!value) {
+      gaps.push(SCALAR_GAP[field] ?? `the hand-of-the-journalist field "${field}"`);
+      continue;
+    }
+    const vocabulary = SCALAR_VOCABULARY[field];
+    if (vocabulary && !vocabulary(value)) gaps.push(SCALAR_VOCABULARY_GAP[field](value));
   }
 
   const slots = parseSlotsForGate(frontmatter);
@@ -130,9 +190,19 @@ function missingForGate2(frontmatter) {
   slots.forEach((slot, index) => {
     const label = slot.id ?? String(index + 1);
     const candidates = Array.isArray(slot.candidates) ? slot.candidates : [];
-    if (!slot.chosen) {
-      gaps.push(`slot ${label}: nothing chosen`);
-    } else if (candidates.length === 0) {
+
+    for (const field of REQUIRED_SLOT_FIELDS) {
+      const value = slot[field];
+      if (!value) {
+        gaps.push(slotGap(field, label));
+        continue;
+      }
+      const vocabulary = SLOT_VOCABULARY[field];
+      if (vocabulary && !vocabulary(value)) gaps.push(slotGap(field, label));
+    }
+
+    if (!slot.chosen) return;
+    if (candidates.length === 0) {
       gaps.push(`slot ${label}: chosen but no candidates were ever listed`);
     } else if (!candidates.includes(slot.chosen)) {
       gaps.push(`slot ${label}: chosen is not among its candidates`);

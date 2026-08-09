@@ -50,7 +50,7 @@ should see, never silently upgraded to "supported."
 ## The one gotcha that will waste your day (read first)
 
 **A "confirmed" takeaway and a `truthy` takeaway are not the same thing, and the two gates in
-this codebase must agree on which one they mean.** `where.mjs`'s `hasConfirmedTakeaway` refuses
+this codebase must agree on which one they mean.** `where.mjs`'s `isMissingScalar` refuses
 the bare YAML sentinels `null` and `~` as well as an empty string — a `takeaway: null` line reports
 `phase: "storyboard"`, gate still open. A naive front-matter scalar reader that just trims and
 strips quotes turns `null` into the **non-empty string `"null"`**, which is truthy — `checkStoryboard`
@@ -64,7 +64,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/exchange.md` | The six movements of the editorial exchange, the five hand-of-the-journalist questions with their destinations, and the discipline list — what a conversation running this phase must actually do |
-| Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta, profile?, capabilities?)` returns the list of reasons Gate 2 has not closed (empty means it has) |
+| Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Capability gate | `scripts/capability-gap.mjs` | `capabilityGap(capabilities, medium)` says whether a chosen slot's medium is one the environment can actually honour — a **carried copy** of `splash-twin`'s own function (see Files below), not an import |
 
@@ -82,23 +82,31 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    list of slot maps whose values are scalars or quote-aware inline string arrays (a comma inside
    a quoted element, e.g. `["a, b", "c"]`, does not split it — a naive `.split(",")` would silently
    fragment a candidate name that happens to contain one).
-4. **`checkStoryboard`** names every reason the gate has not closed: a missing or unconfirmed
-   takeaway, any missing hand-of-the-journalist field, zero slots (nothing would be produced), a
-   slot with nothing chosen, a slot whose `chosen` value has no `candidates` ever listed to verify
-   it against (malformed — a real choice can only be confirmed from a list that was actually
-   shown), or a slot whose `chosen` value is not one of its own listed `candidates`. Given a second
-   argument — the story's data profile — it also runs `groundTakeaway` on the confirmed takeaway
-   and adds a gate error for every claim the data actively contradicts. Given a **third** argument —
-   `capabilities`, the same `{map, datawrapper, hostedEmbed}` report `runPreflight` returns
-   (`skills/splash-twin/scripts/preflight.mjs`), handed in by whoever already ran preflight this
-   session — it also refuses a chosen slot whose `medium` names a capability the environment cannot
-   honour, appended in the same `slot <id>: …` shape as every other refusal here, in the exact
-   journalist-facing wording `capabilityGap` emits, e.g. `slot 1: map beats are unavailable: no
-   MapTiler key` — never a generic "environment failed". **Both are optional, and only checked
-   together**: a slot that never named a `medium`, or a caller that never passed `capabilities`,
-   is untouched — every existing `STORYBOARD.md` and every existing two-argument call keeps working
-   exactly as it did before this capability gate existed. An empty array is the only "yes" — Gate 2
-   closes into this file, or it has not closed.
+4. **`checkStoryboard(meta)`** names every reason the gate has not closed: a missing or unconfirmed
+   takeaway, any missing hand-of-the-journalist field, a missing or unresolved `grounding` verdict,
+   a missing `reference`, zero slots (nothing would be produced), a slot missing its `medium`,
+   `genre` or `size` (Gate 2's three sub-gates), a slot whose `reachable` is not `yes`, a slot with
+   nothing chosen, a slot whose `chosen` value has no `candidates` ever listed to verify it against
+   (malformed — a real choice can only be confirmed from a list that was actually shown), or a slot
+   whose `chosen` value is not one of its own listed `candidates`. An empty array is the only
+   "yes" — Gate 2 closes into this file, or it has not closed.
+
+   **It takes ONE argument, and that is load-bearing.** It used to accept a `profile` and a
+   `capabilities` argument and re-derive three expensive semantic checks from them —
+   `groundTakeaway`, `genreGap`, `capabilityGap`. `where.mjs`'s own Gate-2 reading has neither
+   argument, so it could not run any of the three, and the two gates disagreed for real: `whereIs`
+   reported `production` on a storyboard this function was refusing
+   (`twin/FEEDBACK-2026-08-10.md`, A7/A14). Each check now runs ONCE, in the phase that owns it —
+   grounding at **G1**, genre and capability at **G2b** — and records its verdict into
+   `STORYBOARD.md` (`grounding:`, and the slot's `reachable:`). Both gates read the record. Neither
+   can run a check the other cannot, because neither runs one at all. Do not reintroduce a second
+   argument here without adding the same reading to `where.mjs`; the parity test
+   (`skills/splash-twin/test/where.test.ts`) generates its fixtures from both sides' exported
+   `REQUIRED_SCALARS` / `REQUIRED_SLOT_FIELDS`, so a field added to one side alone turns red.
+
+   `grounding:` closes on `supported`, `unverifiable`, or `overridden — "<reason>"` with a
+   non-empty reason. **`contradicted` is never a closing value**: a takeaway the data refutes is
+   corrected, or the journalist records the override and says why.
 5. **`groundTakeaway`** checks the takeaway text against `profile` for exactly one class of
    failure: a number or a direction the frozen data itself contradicts. It is not a fact-checker
    (it knows nothing outside `profile`) and not a conformance engine (it never looks at a rendered
@@ -123,27 +131,35 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 
 ```js
 import { readFile } from "node:fs/promises";
-import { parseStoryboard, checkStoryboard } from "./scripts/storyboard.mjs";
+import {
+  parseStoryboard,
+  checkStoryboard,
+  groundTakeaway,
+  genreGap,
+  capabilityGap,
+} from "./scripts/storyboard.mjs";
 
+// At G1, the moment the takeaway is confirmed — BEFORE the journalist is asked to pick anything.
+// The verdict is written into STORYBOARD.md as `grounding:`; a claim the data actually refutes is
+// corrected here, or the journalist records `overridden — "<reason>"` and says why.
+const profile = JSON.parse(await readFile("stories/annemasse-rain/source/profile.json", "utf8"));
+const claims = groundTakeaway(confirmedTakeaway, profile);
+
+// At G2b, once a medium and a genre have been offered and picked. The verdict is written into the
+// slot as `reachable:`; a pair nothing can produce or deliver is refused HERE, at the gate, not
+// three phases downstream at twin-deliver.
+const { capabilities } = await runPreflight({ root, env: process.env, fetchFn: fetch });
+const unreachable = genreGap(medium, genre) ?? capabilityGap(capabilities, medium);
+
+// And the gate itself, which re-derives none of it — one argument, recorded scalars only.
 const text = await readFile("stories/annemasse-rain/STORYBOARD.md", "utf8");
 const { meta, prose } = parseStoryboard(text);
-
-// profile is optional — twin-intake's source/profile.json shape, extended with row-level `rows`
-// where available (see ground-claim.mjs's header comment for the exact shape). Omit it and
-// checkStoryboard behaves exactly as it did before claim-grounding existed.
-const profile = JSON.parse(await readFile("stories/annemasse-rain/source/profile.json", "utf8"));
-
-// capabilities is optional too — the {map, datawrapper, hostedEmbed} report runPreflight already
-// produced this session (skills/splash-twin/scripts/preflight.mjs). Omit it, or omit `medium` on
-// every slot, and checkStoryboard behaves exactly as it did before this capability gate existed.
-const { capabilities } = await runPreflight({ root, env: process.env, fetchFn: fetch });
-const errors = checkStoryboard(meta, profile, capabilities);
+const errors = checkStoryboard(meta);
 
 if (errors.length > 0) {
-  // Gate 2 is not closed — surface `errors` to the exchange, do not proceed to production. A
-  // takeaway the frozen data contradicts is one of these reasons now, not a silent pass-through —
-  // and so is a chosen slot whose medium the environment cannot honour, e.g.
-  // "slot 1: map beats are unavailable: no MapTiler key".
+  // Gate 2 is not closed — surface `errors` to the exchange, do not proceed to production. An
+  // ungrounded takeaway, an unanswered reference loop, and a slot whose medium/genre/size were
+  // never chosen or never confirmed reachable are all among these reasons.
 } else {
   // meta.slots[*].chosen names the candidate production reads.
 }

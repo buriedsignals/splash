@@ -68,7 +68,7 @@ truthy takeaway standing in for it.
 That condition is reimplemented in `where.mjs`'s own `missingForGate2`, not imported from
 `twin-storyboard`'s `checkStoryboard` — this branch's runtime code never imports across a skill
 boundary, only the file format two skills share. `where.mjs` already had precedent for this before
-the fix: its `hasConfirmedTakeaway` and `twin-storyboard`'s null-sentinel handling were already two
+the fix: its `isMissingScalar` and `twin-storyboard`'s null-sentinel handling were already two
 independent readings of the same rule, cross-referenced by comment rather than unified by an import
 (see that file's own `isNullSentinel` note). `HAND` and the slot/candidate check follow the same
 pattern — and a reimplementation is exactly the shape of risk that got this document written in the
@@ -81,12 +81,30 @@ different tests, and neither claims more than it proves:
   the same way any other function's tests would.
 - **A second, narrower test proves the two implementations still agree with each other.** Runtime
   code never crosses a skill boundary — this one test does, for exactly this reason: it imports
-  `checkStoryboard`/`parseStoryboard` from `twin-storyboard` and feeds nine shared fixtures to both
+  `checkStoryboard`/`parseStoryboard` from `twin-storyboard` and feeds shared fixtures to both
   gates, asserting they reach the same open/closed verdict every time. This is the one that catches
   the failure a same-file mutation cannot: a rule changed on `checkStoryboard`'s side alone (a
   seventh `HAND` field added there, say) with `where.mjs` left untouched. Verified in both
   directions — a rule mutated on the `twin-storyboard` side only, and a rule mutated on the
   `where.mjs` side only, both turn this test red.
+
+  **Those fixtures are GENERATED, and that is the second half of this gotcha.** They used to be
+  nine hand-typed strings, and a hand-typed list cannot know about a rule added after it was
+  written: three rules landed on `checkStoryboard` (grounding, genre, capability) and this suite
+  stayed green through all three. Worse, the parity call itself read
+  `checkStoryboard(meta).length === 0` — one argument — which switched the new rules off inside the
+  test that existed to compare them (`twin/FEEDBACK-2026-08-10.md`, A14). Both halves are closed:
+  `checkStoryboard` genuinely takes one argument now, and the fixtures are built from ONE complete
+  template mutated field by field, with the field list read from **both** gates' exported
+  `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` and unioned. Add a required field to either side and
+  its fixtures exist immediately; add it to only one side and the two gates disagree, loudly.
+
+- **The expensive semantic checks are not in either gate any more.** `groundTakeaway`, `genreGap`
+  and `capabilityGap` each run ONCE, in the phase that owns them — grounding at G1, genre and
+  capability at G2b — and record a resolved scalar into `STORYBOARD.md` (`grounding:`, and the
+  slot's `reachable:`). Both gates read the record. That is what closes this divergence class *by
+  construction* rather than by vigilance: neither gate can run a check the other cannot, because
+  neither runs one. Do not give `checkStoryboard` a second argument again.
 
 ## Preflight establishes what is possible — it does not validate an environment
 
@@ -171,7 +189,7 @@ un-renamed is the one shape that never resolves.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, every slot resolved) before ever reporting `production` |
+| Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/genre/size/`reachable`/`chosen`) before ever reporting `production`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
 | Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
 | Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty |
 | Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces, or a recorded `decision: declined`) |
@@ -201,7 +219,7 @@ un-renamed is the one shape that never resolves.
    | --- | --- | --- | --- |
    | `intake` | Article and data frozen and profiled, silently — `twin-intake` asks nothing. | — | `source/article.md`, `source/profile.json` |
    | `framing` | Intent named, the editorial exchange opens, `STORYBOARD.md` is created. | G1 | `STORYBOARD.md` (created) |
-   | `storyboard` | Restitution, the journalist's hand, the reference loop, slots and candidates — `twin-storyboard`'s exchange completes the contract. | G2 | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, and every slot's `chosen` drawn from its own `candidates` |
+   | `storyboard` | Restitution, the journalist's hand, the survey, the medium/genre/size sub-gates, the reference loop, slots and candidates — `twin-storyboard`'s exchange completes the contract. | G1, G2a, G2b, G2c | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, the recorded `grounding` verdict (G1) and `reference` answer, and every slot's `medium` (G2a), `genre` (G2b), `size` (G2c), `reachable: yes` and `chosen` drawn from its own `candidates` |
    | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. | G3, per beat | `beats/<n>-<slug>/renders/*` |
    | `delivery` | Per beat, `twin-deliver` offers the forms its genre allows; the journalist chooses; only that one is materialised. | — | `export/*` |
    | `done` | Terminal — the story has been delivered. | — | (`export/` already holds the chosen form) |

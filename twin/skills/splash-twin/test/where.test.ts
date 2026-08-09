@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { whereIs } from "../scripts/where.mjs";
+import {
+  whereIs,
+  REQUIRED_SCALARS as WHERE_SCALARS,
+  REQUIRED_SLOT_FIELDS as WHERE_SLOT_FIELDS,
+} from "../scripts/where.mjs";
 // A test-only cross-skill import, permitted specifically for this purpose: asserting that two
 // independent implementations of the same rule agree. Runtime code in this branch never imports
 // across a skill boundary (see the gotcha in ../SKILL.md); this file does, once, to prove
@@ -10,6 +14,8 @@ import { whereIs } from "../scripts/where.mjs";
 import {
   checkStoryboard,
   parseStoryboard,
+  REQUIRED_SCALARS as STORYBOARD_SCALARS,
+  REQUIRED_SLOT_FIELDS as STORYBOARD_SLOT_FIELDS,
 } from "../../twin-storyboard/scripts/storyboard.mjs";
 
 let dir: string;
@@ -22,23 +28,55 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-// Gate-2-complete: a confirmed takeaway, all six hand-of-the-journalist fields, and one slot
-// whose `chosen` is drawn from its own listed `candidates` — everything `missingForGate2` in
-// `where.mjs` requires before a story may leave the `storyboard` phase.
-const storyboard = `---
-takeaway: "Rainfall fell by a third in ten years."
-subject: "Rainfall trends in the Rhône basin"
-comparison: "the last decade against the one before it"
-limits: "single weather station, not basin-wide"
-placement: "above the fold, article-web"
-credit: "Data: MeteoSwiss"
-effectiveDate: "2026-08-01"
-slots:
-  - id: 1
-    chosen: trajectory
-    candidates: [trajectory, comparison]
----
-`;
+// ONE Gate-2-complete template, in two halves. Every fixture below is this template with exactly
+// one thing changed — nothing is typed out twice, so a rule added to either gate cannot be guarded
+// by a fixture list somebody forgot to extend.
+const SCALARS: Record<string, string> = {
+  takeaway: '"Rainfall fell by a third in ten years."',
+  subject: '"Rainfall trends in the Rhône basin"',
+  comparison: '"the last decade against the one before it"',
+  limits: '"single weather station, not basin-wide"',
+  placement: '"above the fold, article-web"',
+  credit: '"Data: MeteoSwiss"',
+  effectiveDate: '"2026-08-01"',
+  grounding: "supported",
+  reference: '"The Pudding, redraft — mid-table deviation"',
+};
+
+// `id` first: it is the line the slot list item opens on.
+const SLOT: Record<string, string> = {
+  id: "1",
+  medium: "chart",
+  genre: "static",
+  size: "landscape",
+  reachable: "yes",
+  chosen: "trajectory",
+  candidates: "[trajectory, comparison]",
+};
+
+function build(
+  scalars: Record<string, string> = SCALARS,
+  slot: Record<string, string> | null = SLOT,
+): string {
+  const head = Object.entries(scalars)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join("\n");
+  if (!slot) return `---\n${head}\nslots: []\n---\n`;
+  const [[firstKey, firstValue], ...rest] = Object.entries(slot);
+  const body = [
+    `  - ${firstKey}: ${firstValue}`,
+    ...rest.map(([k, v]) => `    ${k}: ${v}`),
+  ].join("\n");
+  return `---\n${head}\nslots:\n${body}\n---\n`;
+}
+
+function without<T extends Record<string, string>>(source: T, key: string): T {
+  const copy = { ...source };
+  delete copy[key];
+  return copy;
+}
+
+const storyboard = build();
 
 describe("whereIs", () => {
   it("should report intake when the source is empty", async () => {
@@ -72,7 +110,7 @@ describe("whereIs", () => {
     expect(state.missing).toContain("STORYBOARD.md");
   });
 
-  it("should report production once the storyboard's takeaway, hand fields, and every slot are all resolved", async () => {
+  it("should report production once every Gate-2 scalar and every slot field is resolved", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
@@ -83,10 +121,7 @@ describe("whereIs", () => {
   it("should stay in storyboard when the takeaway and hand fields are confirmed but no slot exists — the resumed-session case", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(
-      join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots: []\n---\n`,
-    );
+    await writeFile(join(dir, "STORYBOARD.md"), build(SCALARS, null));
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
     expect(state.missing).toContain("no slot: nothing would be produced");
@@ -97,7 +132,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    candidates: [trajectory, comparison]\n---\n`,
+      build(SCALARS, without(SLOT, "chosen")),
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
@@ -109,7 +144,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    chosen: trajectory\n---\n`,
+      build(SCALARS, without(SLOT, "candidates")),
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
@@ -123,7 +158,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\ncredit: "Data: MeteoSwiss"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [comparison, dumbbell]\n---\n`,
+      build(SCALARS, { ...SLOT, candidates: "[comparison, dumbbell]" }),
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
@@ -137,7 +172,7 @@ describe("whereIs", () => {
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(
       join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
+      build(without(without(SCALARS, "credit"), "effectiveDate")),
     );
     const state = await whereIs(dir);
     expect(state.phase).toBe("storyboard");
@@ -146,6 +181,100 @@ describe("whereIs", () => {
     );
     expect(state.missing).toContain(
       'the hand-of-the-journalist field "effectiveDate"',
+    );
+  });
+
+  // The two scalars the recorded-verdict contract added, each named in the journalist's terms
+  // rather than as a field name — this gate's `missing` list is read aloud to somebody resuming.
+  it("should stay in storyboard when the takeaway was never grounded at G1", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build(without(SCALARS, "grounding")),
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain("the G1 grounding verdict");
+  });
+
+  it("should refuse a grounding verdict of 'contradicted' — a refuted takeaway is corrected or overridden, never left standing", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build({ ...SCALARS, grounding: "contradicted" }),
+    );
+    expect((await whereIs(dir)).phase).toBe("storyboard");
+  });
+
+  it("should accept an override that carries a reason, and refuse one that does not", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build({
+        ...SCALARS,
+        grounding: `'overridden — "34 is the sum of glace_fondue_mt (14 + 11 + 9)"'`,
+      }),
+    );
+    expect((await whereIs(dir)).phase).toBe("production");
+
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build({ ...SCALARS, grounding: "'overridden — '" }),
+    );
+    expect((await whereIs(dir)).phase).toBe("storyboard");
+  });
+
+  it("should stay in storyboard when the reference loop never closed into a field", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build(without(SCALARS, "reference")),
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain("the reference loop's answer");
+  });
+
+  it("should treat 'none — both rejected' as a real answer to the reference loop", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build({ ...SCALARS, reference: '"none — both rejected"' }),
+    );
+    expect((await whereIs(dir)).phase).toBe("production");
+  });
+
+  it("should stay in storyboard when a slot never recorded its medium, genre or size", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    for (const field of ["medium", "genre", "size"]) {
+      await writeFile(
+        join(dir, "STORYBOARD.md"),
+        build(SCALARS, without(SLOT, field)),
+      );
+      const state = await whereIs(dir);
+      expect(state.phase).toBe("storyboard");
+      expect(state.missing).toContain(`slot 1: no ${field} was ever chosen`);
+    }
+  });
+
+  it("should stay in storyboard when the medium and genre were never confirmed reachable", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(
+      join(dir, "STORYBOARD.md"),
+      build(SCALARS, { ...SLOT, reachable: "no" }),
+    );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("storyboard");
+    expect(state.missing).toContain(
+      "slot 1: this medium and genre were never confirmed reachable",
     );
   });
 
@@ -158,53 +287,24 @@ describe("whereIs", () => {
     expect(state.missing).toContain("a confirmed takeaway");
   });
 
-  it("should stay in storyboard when takeaway is an empty string", async () => {
-    await writeFile(join(dir, "source", "article.md"), "text");
-    await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(
-      join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: ""\nslots: []\n---\n`,
-    );
-    const state = await whereIs(dir);
-    expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("a confirmed takeaway");
-  });
-
-  it("should stay in storyboard when takeaway is YAML null", async () => {
-    await writeFile(join(dir, "source", "article.md"), "text");
-    await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(
-      join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: null\nslots: []\n---\n`,
-    );
-    const state = await whereIs(dir);
-    expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("a confirmed takeaway");
-  });
-
-  it("should stay in storyboard when takeaway is YAML tilde null", async () => {
-    await writeFile(join(dir, "source", "article.md"), "text");
-    await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(
-      join(dir, "STORYBOARD.md"),
-      `---\ntakeaway: ~\nslots: []\n---\n`,
-    );
-    const state = await whereIs(dir);
-    expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("a confirmed takeaway");
-  });
-
-  it("should stay in storyboard when takeaway is only whitespace", async () => {
-    await writeFile(join(dir, "source", "article.md"), "text");
-    await writeFile(join(dir, "source", "profile.json"), "{}");
-    await writeFile(
-      join(dir, "STORYBOARD.md"),
-      `---\ntakeaway:   \nslots: []\n---\n`,
-    );
-    const state = await whereIs(dir);
-    expect(state.phase).toBe("storyboard");
-    expect(state.missing).toContain("a confirmed takeaway");
-  });
+  for (const [name, value] of [
+    ["an empty string", '""'],
+    ["YAML null", "null"],
+    ["YAML tilde null", "~"],
+    ["only whitespace", "  "],
+  ]) {
+    it(`should stay in storyboard when takeaway is ${name}`, async () => {
+      await writeFile(join(dir, "source", "article.md"), "text");
+      await writeFile(join(dir, "source", "profile.json"), "{}");
+      await writeFile(
+        join(dir, "STORYBOARD.md"),
+        build({ ...SCALARS, takeaway: value }, null),
+      );
+      const state = await whereIs(dir);
+      expect(state.phase).toBe("storyboard");
+      expect(state.missing).toContain("a confirmed takeaway");
+    });
+  }
 
   it("should stay in storyboard when takeaway: appears in prose below frontmatter", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
@@ -260,59 +360,130 @@ describe("whereIs", () => {
   });
 });
 
-// A hand-of-the-journalist block that is complete on its own, reused verbatim by every fixture
-// below except the one that deliberately drops a field from it.
-const COMPLETE_HAND = `subject: "Rainfall trends in the Rhône basin"
-comparison: "the last decade against the one before it"
-limits: "single weather station, not basin-wide"
-placement: "above the fold, article-web"
-credit: "Data: MeteoSwiss"
-effectiveDate: "2026-08-01"`;
+// ---------------------------------------------------------------------------------------------
+// The parity guard, and why it is GENERATED rather than listed.
+//
+// The nine hand-written fixtures this replaced were the second half of the false green
+// (twin/FEEDBACK-2026-08-10.md, A14). The first half was `checkStoryboard(meta)` called with one
+// argument inside the test that exists to prove the two gates agree, which switched off the checks
+// only the second and third arguments enabled. `checkStoryboard` now genuinely takes one argument,
+// so that call is correct — but a hand-typed fixture list still cannot know about a rule added
+// after it was written, which is exactly how three rules (grounding, genre, capability) landed and
+// this suite stayed green.
+//
+// So the field list is read from BOTH GATES' OWN EXPORTED CONSTANTS and unioned. Remove a field
+// from one side only and its fixture still exists, generated from the other side's copy — and the
+// two gates then disagree on it, loudly. This is the property `render-still-parity.test.ts` has and
+// `helper-parity.test.ts` lacks.
+// ---------------------------------------------------------------------------------------------
 
-// Nine STORYBOARD.md texts, each otherwise Gate-2-complete except for the one thing its name
-// says it deviates on. Fed to BOTH gates below — where.mjs's missingForGate2 (via whereIs) and
-// twin-storyboard's own checkStoryboard (via parseStoryboard) — asserting they always agree on
-// whether Gate 2 has closed.
+const SCALAR_FIELDS = [...new Set([...WHERE_SCALARS, ...STORYBOARD_SCALARS])];
+const SLOT_FIELDS = [
+  ...new Set([...WHERE_SLOT_FIELDS, ...STORYBOARD_SLOT_FIELDS]),
+];
+
+// One value per field that is present and well-formed as YAML but outside what the gates accept.
+// A field with no vocabulary of its own (medium, genre, size — the gates require them, they do not
+// judge them) still gets a fixture: that the two gates AGREE to tolerate the value is a parity fact
+// worth pinning, and it is the fixture that would redden if one side grew a vocabulary alone.
+const OUT_OF_VOCABULARY: Record<string, string> = {
+  takeaway: "~",
+  grounding: "contradicted",
+  reference: '""',
+  medium: "hologram",
+  genre: "print",
+  size: "billboard",
+  reachable: "no",
+  chosen: "dumbbell",
+};
+
 const GATE2_FIXTURES: Array<{ name: string; text: string }> = [
-  {
-    name: "complete: takeaway, all hand fields, one resolved slot",
-    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
-  },
-  {
-    name: "missing a hand field (credit)",
-    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\nsubject: "Rainfall trends in the Rhône basin"\ncomparison: "the last decade against the one before it"\nlimits: "single weather station, not basin-wide"\nplacement: "above the fold, article-web"\neffectiveDate: "2026-08-01"\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
-  },
-  {
-    name: "no slots",
-    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots: []\n---\n`,
-  },
-  {
-    name: "slot with no chosen",
-    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    candidates: [trajectory, comparison]\n---\n`,
-  },
-  {
-    name: "slot with chosen absent from its candidates",
-    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [comparison, dumbbell]\n---\n`,
-  },
-  {
-    name: "slot with chosen and no candidates key at all",
-    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n---\n`,
-  },
-  {
-    name: "bare null takeaway",
-    text: `---\ntakeaway: null\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
-  },
+  { name: "complete: every scalar, every slot field", text: build() },
+  { name: "no slots", text: build(SCALARS, null) },
+];
+
+for (const field of SCALAR_FIELDS) {
+  GATE2_FIXTURES.push({
+    name: `scalar "${field}" absent`,
+    text: build(without(SCALARS, field)),
+  });
+  GATE2_FIXTURES.push({
+    name: `scalar "${field}" bare null`,
+    text: build({ ...SCALARS, [field]: "null" }),
+  });
+  if (OUT_OF_VOCABULARY[field] !== undefined) {
+    GATE2_FIXTURES.push({
+      name: `scalar "${field}" set to ${OUT_OF_VOCABULARY[field]}`,
+      text: build({ ...SCALARS, [field]: OUT_OF_VOCABULARY[field] }),
+    });
+  }
+}
+
+for (const field of SLOT_FIELDS) {
+  GATE2_FIXTURES.push({
+    name: `slot field "${field}" absent`,
+    text: build(SCALARS, without(SLOT, field)),
+  });
+  GATE2_FIXTURES.push({
+    name: `slot field "${field}" bare null`,
+    text: build(SCALARS, { ...SLOT, [field]: "null" }),
+  });
+  if (OUT_OF_VOCABULARY[field] !== undefined) {
+    GATE2_FIXTURES.push({
+      name: `slot field "${field}" set to ${OUT_OF_VOCABULARY[field]}`,
+      text: build(SCALARS, { ...SLOT, [field]: OUT_OF_VOCABULARY[field] }),
+    });
+  }
+}
+
+// The two shape regressions no constant implies, kept explicitly. Both are about how the two
+// parsers read a LINE, not about which fields a gate requires, so no field list can generate them:
+// a quoted "null" must stay a literal string on both sides, and a comma inside a quoted array
+// element must not split it on either.
+GATE2_FIXTURES.push(
   {
     name: 'quoted "null" takeaway (control — a literal string, not the sentinel)',
-    text: `---\ntakeaway: "null"\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: trajectory\n    candidates: [trajectory, comparison]\n---\n`,
+    text: build({ ...SCALARS, takeaway: '"null"' }),
   },
   {
     name: "quoted comma inside an inline candidates array",
-    text: `---\ntakeaway: "Rainfall fell by a third in ten years."\n${COMPLETE_HAND}\nslots:\n  - id: 1\n    chosen: "a, b"\n    candidates: ["a, b", "c"]\n---\n`,
+    text: build(SCALARS, {
+      ...SLOT,
+      chosen: '"a, b"',
+      candidates: '["a, b", "c"]',
+    }),
   },
-];
+  {
+    name: "an override verdict carrying its reason",
+    text: build({
+      ...SCALARS,
+      grounding: `'overridden — "34 is the sum of glace_fondue_mt"'`,
+    }),
+  },
+  {
+    name: "an override verdict with no reason",
+    text: build({ ...SCALARS, grounding: "'overridden — '" }),
+  },
+);
 
 describe("gate 2: where.mjs and twin-storyboard's own checkStoryboard agree on every fixture", () => {
+  it("should generate a fixture for every required field on both sides", () => {
+    // Guards the guard, and it reads the two gates' constants DIRECTLY rather than the local
+    // unions above — so replacing the generation with a hand-typed list reddens here, by name, the
+    // moment either gate grows a field the list has never heard of. That is the whole failure this
+    // file was rebuilt to end.
+    for (const field of [
+      ...WHERE_SCALARS,
+      ...STORYBOARD_SCALARS,
+      ...WHERE_SLOT_FIELDS,
+      ...STORYBOARD_SLOT_FIELDS,
+    ]) {
+      expect(GATE2_FIXTURES.some((f) => f.name.includes(`"${field}"`))).toBe(
+        true,
+      );
+    }
+  });
+
   for (const { name, text } of GATE2_FIXTURES) {
     it(`should agree on: ${name}`, async () => {
       await writeFile(join(dir, "source", "article.md"), "text");
