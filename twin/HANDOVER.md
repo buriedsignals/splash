@@ -694,6 +694,61 @@ its reveal order, its single accent, its anti-patterns. Those thirteen have data
 artifact, but nothing recording what they were meant to demonstrate — and it is why the map half of
 the matrix cannot be measured as reliably as the chart half.
 
+### What the night of 2026-08-09 added, beyond the nine items
+
+**A redesign silently broke every beat in its own genre, and the suite stayed green.** `a1fc4d92`
+replaced the chart-web genre's two fixed layouts with one fluid frame — the owner's own overturn,
+correct and not in question — and removed `layouts` from `renderWeb`'s signature **without migrating
+the fifteen beats that pass it**. Every one now dies with `Cannot destructure property 'width' from
+null`. Established by exporting four commits with `git archive` into `/tmp` and running the same
+script in each: it passed at `a1fc4d92~1` and failed at `a1fc4d92`. Nothing was red, because a beat's
+render script is not a test — **the genre had fifteen artifacts on disk and no way to reproduce any
+of them.** The tree documented a fluid window-fitting genre while every shipped `.html` was two-rung
+HTML from before it. This is the deepest instance yet of the file-mistaken-for-a-result class: not a
+missing artifact, but fifteen present ones that had become unreproducible.
+
+**The number formatter was three different functions wearing one name.** Nine copies of `fr()`:
+three delegating to `Intl.NumberFormat("fr-FR")` (correct), three hand-rolled regexes emitting a
+PLAIN space — which lets a browser break a line inside a number — half of them missing the regex's
+`g` flag so only the first thousand grouped, and **three defined as `value.toFixed(decimals)`: a
+function named `fr` returning an English number.** That last one reached delivered artifacts.
+Unified onto `Intl`, guarded by a new `fr` family in `helper-parity.test.ts` — and then a re-render
+exposed the deeper defect the unification had hidden: **five of the six beats using it declare
+`lang="en"`.** They now printed French decimals under English prose, an axis reading `68,9` beneath
+a headline reading "rose 15.0 years". The real rule is that **a beat's formatter takes its locale
+from the beat's own declared language**, the same way its colours now come from `PALETTE.md`, and
+not from a function's historical name. Being right about the function and wrong about the beat is
+its own lesson: unifying copies makes them consistent, not correct.
+
+**`helper-parity.test.ts` guarded six of twenty copies.** A hand-written import list cannot know
+about a file created after it was written. `render-still-parity.test.ts` now WALKS the tree and
+compares every `render-still.mjs` function by function — a superset (`twin-image-beat` adds six) and
+a subset (every `proof/` copy carries no `readPalette`) are both legitimate; two copies of the same
+function disagreeing is not. Whitespace is stripped entirely rather than collapsed, because
+collapsing reported `twin-scrolly` as drifted twice and both were the formatter breaking a method
+chain across lines. **A guard a formatter can turn red is a guard someone disables.**
+
+**Two missing guards, not one — and the second is the harder half.** Of the false claims delivered
+to readers, one shape is a **false title over true numbers** (the data is real and correctly drawn;
+the headline overstates it). A grounding check catches that: claim and data are both present and
+they disagree. The other shape is a **true title over invented numbers** — three evidence artifacts
+render a migration series existing nowhere in the tree, credited to the Federal Statistical Office,
+with negatives at 1997/1998 where the real series has 1996/1997 and 1998 **positive**. Those titles
+agree perfectly with the numbers beside them; every consistency check passes. What is wrong is that
+the render read a CSV from `/tmp` that no longer exists. That needs a **provenance** guard — does a
+beat's render resolve all its inputs inside its own folder — which is a different and more
+mechanical question than "is this sentence true of this data".
+
+**A render script whose default output path points outside the repository.** `mapmore-scrolly-danube`
+defaulted to `/tmp/scrolly-twin/`. Run the obvious way, it produced a fresh artifact nobody looks at,
+printed a path, exited zero, and left the committed one stale — so its own non-collision measurements
+had been taken against a build the repository did not contain. Fixed to write beside the beat.
+
+**Frame 0 of every pre-existing video is blank** (measured: zero non-white pixels on `lollipop.mp4`,
+`line.mp4`, `waterfall.mp4`). The reveal starts at frame 0, so everything gated on it is invisible in
+**the poster frame** — the one image a reader sees before pressing play, and the thumbnail a CMS or
+social platform pulls.
+
 ### Still open
 
 - The map track for the scrolly; images as a medium; the assembly phase in `whereIs`.
