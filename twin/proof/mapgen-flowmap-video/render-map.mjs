@@ -30,8 +30,9 @@ const BEAT = {
   ground: "#FFFFFF",
   accent: "#E69F00", // Okabe-Ito orange — held back from the territory cycle for the route itself.
   title:
-    "From the Black Forest to the Black Sea: the Danube touches nine countries, in this order — " +
-    "Germany, Austria, Slovakia, Hungary, Croatia, Serbia, Romania, Bulgaria, Ukraine.",
+    "From the Black Forest to the Black Sea: the Danube touches ten countries — nine of them " +
+    "shown here, in crossing order — Germany, Austria, Slovakia, Hungary, Croatia, Serbia, " +
+    "Romania, Bulgaria, Ukraine.",
   source:
     "Source: river course — Natural Earth 1:10m Rivers + Lake Centerlines (“Danube” and " +
     "“Donau” features, merged into one ordered path); territory shapes — Natural Earth " +
@@ -45,10 +46,11 @@ const BEAT = {
     "(under 1 km) does not register at this map's resolution and is not shown.",
   alt:
     "Map of central and southeastern Europe. A single orange line traces the Danube from " +
-    "southwestern Germany to the Black Sea delta near the Ukrainian border. Nine countries along " +
-    "its path are filled in distinct colours and numbered in the order the route first reaches " +
-    "them: 1 Germany, 2 Austria, 3 Slovakia, 4 Hungary, 5 Croatia, 6 Serbia, 7 Romania, 8 Bulgaria, " +
-    "9 Ukraine.",
+    "southwestern Germany to the Black Sea delta near the Ukrainian border. Nine of the ten " +
+    "countries the river touches are filled in distinct colours and numbered in the order the " +
+    "route first reaches them: 1 Germany, 2 Austria, 3 Slovakia, 4 Hungary, 5 Croatia, 6 Serbia, " +
+    "7 Romania, 8 Bulgaria, 9 Ukraine. The tenth, Moldova, has too short a frontage to register " +
+    "at this map's resolution and is not shown.",
 };
 
 const EXPECTED_ORDER = ["DEU", "AUT", "SVK", "HUN", "HRV", "SRB", "ROU", "BGR", "UKR"];

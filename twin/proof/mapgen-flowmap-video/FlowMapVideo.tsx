@@ -168,7 +168,10 @@ export function FlowMapVideo({
   const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 30;
 
   const totalKm = cumKm[cumKm.length - 1] ?? 0;
-  const conclusionText = `${fmtKm(totalKm)} km from the Black Forest to the Black Sea — ${crossings.length} countries crossed, in order.`;
+  // The Danube touches 10 countries; Moldova's sub-1km frontage near Giurgiulești doesn't register
+  // at this map's resolution (see BEAT.caveat in render-map.mjs), so only 9 are ever drawn here. A
+  // bare "9 countries crossed" would repeat the same wrong-count claim the title makes true above.
+  const conclusionText = `${fmtKm(totalKm)} km from the Black Forest to the Black Sea — ${crossings.length} of the 10 countries crossed, in order.`;
   const conclusionLines = wrap(
     conclusionText,
     FRAME.width - PAD * 2,

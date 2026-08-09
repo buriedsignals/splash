@@ -11,7 +11,9 @@ import { FONT_FAMILY, measureText } from "./render-still.mjs";
 const FRAME = { width: 960, height: 780 };
 const PAD = 32;
 const MAP_X = 30;
-const MAP_Y = 96;
+/** Not a fixed constant — see below. A hardcoded MAP_Y here is the bug this beat's own title-length
+ *  edit caught: a longer title wraps to a third line, and a fixed map top drawn from a two-line
+ *  assumption gets that third line's text sliced off by the map plate drawn on top of it. */
 
 const TITLE = { fontSize: 21, fontWeight: 700, lead: 27 };
 const SOURCE = { fontSize: 13, fontWeight: 400, lead: 17 };
@@ -105,10 +107,14 @@ export function FlowMapStill({
 
   const titleTop = PAD + TITLE.fontSize;
   const sourceTop = titleTop + (titleLines.length - 1) * TITLE.lead + 26;
+  // Measured from the source block's own last line, not assumed from a title line-count guess —
+  // however many lines the title wraps to, the map starts clear of whatever text is above it.
+  const sourceBottom = sourceTop + (sourceLines.length - 1) * SOURCE.lead;
+  const mapY = sourceBottom + 24;
 
   const MAP = {
     x: MAP_X,
-    y: MAP_Y,
+    y: mapY,
     width: geometry.frame.width,
     height: geometry.frame.height,
   };
