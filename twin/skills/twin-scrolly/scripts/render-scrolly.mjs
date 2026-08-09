@@ -1,107 +1,102 @@
 // twin/skills/twin-scrolly/scripts/render-scrolly.mjs
 //
-// The vehicle's own render step. It SSRs one complete SVG frame per narrative step, wraps them in
-// a sticky graphic column, lays every step's own prose out below it in ordinary document flow, and
-// inlines the one interaction script — one self-contained HTML file, no external request, the same
-// discipline `twin-chart-web/scripts/render-web.mjs` already keeps for its two layouts.
+// The vehicle's own render step. It SSRs one complete frame per narrative step, stacks them behind
+// a sticky graphic column, lays every step's own prose out in an opaque panel that travels OVER
+// that graphic as the reader scrolls, and inlines the one interaction script — one self-contained
+// HTML file, no external request, the same discipline `twin-chart-web/scripts/render-web.mjs`
+// already keeps for its two layouts.
 //
-// It runs in node, which is why it is the piece that derives the furniture colours and measures
-// every gutter: `deriveFurniture`/`measureText` live beside a native rasteriser in this skill's OWN
-// `./render-still.mjs` — a copy of `twin-chart-beat`'s, because a skill never imports another
-// skill — which no browser bundle can load. Deriving here and passing ink/muted/grid/measure in as
-// props keeps ONE implementation of the colour rule and the text-measurement rule per render.
+// It runs in node, which is why it is the piece that derives the furniture colours: `deriveFurniture`
+// / `contrast` live beside a native rasteriser in this skill's OWN `./render-still.mjs` — a copy of
+// `twin-chart-beat`'s, because a skill never imports another skill — which no browser bundle can
+// load. Deriving here and passing `ground`/`ink`/`muted`/`grid` in as props (or, for `renderScrolly`
+// itself, straight into the CSS custom properties every panel and header reads) keeps ONE
+// implementation of the colour rule per render.
 //
-// `renderScrolly` below is this genre's own machinery and knows nothing of any one story: it takes
-// the component and the steps to call it with as arguments, never reaches for one story's own
-// constants by name — the same "the skill's renderer does not import a story's numbers" rule
-// `render-web.mjs`'s own header note states, learned there the hard way (it used to import the
-// CO₂ story's component directly). Everything under it (the CONFIG block, `render`, the CLI block)
-// is the runner for THIS SKILL'S OWN SEED — `assets/ScrollySeed.tsx`, drawn from
-// `assets/sample-data/` — the same "the skill's script hosts its own worked values behind a
-// labelled seam" shape every other genre in this twin uses.
+// `renderScrolly` below is this genre's OWN MACHINERY and knows nothing of any one story, and —
+// this is the part correction earned tonight — nothing of any one MEDIUM either. It takes an array
+// of `{ id, prose, frame }` and never asks what `frame` is a picture of: not a chart, not a photo,
+// not a diagram. It only ever calls `renderToStaticMarkup` on the `ReactElement` it was handed and
+// wraps the result in a generic `<div class="step-frame">` — the wrapper this file owns, never the
+// frame component itself, which is what lets an `<img>` and an `<svg>` sit in the exact same stack.
+// Everything under the CONFIG marker (`SEED`, `buildFrame`, `render`, the CLI block) is the runner
+// for THIS SKILL'S OWN SEED — `assets/ScrollySeed.tsx`'s `STEPS_META`, drawn from `assets/sample-
+// data/` — the only place in this file that is allowed to read a step's own `frameKind` and decide
+// which component to build from it. A real beat writes its own runner in that same shape, importing
+// its own `STEPS_META`-equivalent and its own frame components; `renderScrolly` itself does not
+// change, and does not need to: it never had an opinion about what a frame was.
 //
-// Usage:  bun skills/twin-scrolly/scripts/render-scrolly.mjs [outDir] [--data <json>]
+// Usage:  bun skills/twin-scrolly/scripts/render-scrolly.mjs [outDir]
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, measureText } from "./render-still.mjs";
-import { ScrollyChartSeed, STEPS, FRAME } from "../assets/ScrollySeed.tsx";
+import { deriveFurniture, contrast } from "./render-still.mjs";
+import { STEPS_META, ImageFrame, DrawnGraphicFrame } from "../assets/ScrollySeed.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
-// ===== CONFIG — edit for your story =====
-// Everything between here and the closing marker is the SEED beat's own words and defaults: what a
-// journalist writing their own scrolly beat replaces wholesale. Everything else in this file —
-// `renderScrolly` and its `{ component, steps, props, data, outDir, name }` signature,
-// `inlineable`, `escapeHtml`, `buildCss` — is this genre's own mechanics and is left alone.
-/** The seed beat's own constants — the same words `scripts/render-preview.mjs` renders the seed's
- *  own preview with, so the skill's two renders never disagree about what the story says.
- *  Duplicated rather than imported from that script for the same reason `render-web.mjs`'s own
- *  `SEED` object is: importing it would also run that script's own top-level render as a side
- *  effect, which this script must not trigger. */
-const SEED = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
-  subject: "the sample basin",
-  title: "Flow through the sample basin fell by more than a third",
-  source: "Sample data — not a real measurement",
-};
-const DEFAULT_DATA_PATH = join(HERE, "../assets/sample-data/rainfall.json");
-const DEFAULT_OUT_DIR = "/tmp/scrolly-twin";
-const OUTPUT_NAME = "rainfall-scrolly.html";
-// =========================================
+// ---------------------------------------------------------------------------------------------
+// GENERIC SCAFFOLD — this genre's own mechanics. Media-agnostic: reads no field off a step but
+// `id`, `prose` and `frame`. Nothing below this line may reference `frameKind`, `ImageFrame` or
+// `DrawnGraphicFrame` by name — that is the CONFIG seam's job, further down this file.
+// ---------------------------------------------------------------------------------------------
 
 /**
- * SSRs one React element per entry in `steps`, wraps every resulting SVG plus every step's own
- * prose into one self-contained HTML file (sticky graphic column, prose steps in ordinary flow,
- * inlined interaction script) and writes it to disk. Generic across every scrolly beat: it does
- * not know a story's own reveal cutoffs, prose or numbers — only how many steps to render and how
- * to stitch the result together. Each entry of `steps` is passed to `component` verbatim as its
- * `step` prop, and `active` is set `true` for index `0` only — this function never reads a field
- * off a step directly beyond that, so it is not coupled to any one story's step shape.
+ * SSRs one React element per entry in `steps`, stacks every resulting frame behind a sticky
+ * graphic column, lays every step's own prose out in an opaque panel in ordinary document flow
+ * OVER that graphic, and inlines the one interaction script — one self-contained HTML file.
  *
- * `props` carries everything the component needs BESIDES `step`/`active` and the derived
- * furniture/measure (`subject`/`ground`/`accent` — the story's own numbers) plus `title`/`source`,
- * which this function itself renders into the HTML `<header>` (never into the SVG — see
- * `assets/ScrollySeed.tsx`'s own doc-comment on why the title lives in HTML for this genre).
+ * `steps` is `{ id, prose, frame }[]` — `frame` is a `ReactElement`, already built by the CALLER
+ * (the CONFIG seam below, for this skill's own seed; a real beat's own runner for anything else).
+ * This function never asks what kind of thing `frame` is; it treats an `<img>` and an `<svg>`
+ * identically — SSR it, wrap it, toggle which wrapped copy is visible. That is the entire contract
+ * that makes this scaffold able to assemble different media without knowing it is doing so.
  */
-async function renderScrolly({ component, steps, props, outDir, name }) {
+async function renderScrolly({ steps, title, source, ground, outDir, name }) {
   if (steps.length < 2)
     throw new Error(
       `a scrolly needs at least two steps to advance through, got ${steps.length}`,
     );
-  for (let i = 1; i < steps.length; i++) {
-    if (steps[i].revealThrough < steps[i - 1].revealThrough) {
-      throw new Error(
-        `steps must reveal forward only — step ${i} ("${steps[i].id}") reveals through ${steps[i].revealThrough}, earlier than step ${i - 1} ("${steps[i - 1].id}")'s ${steps[i - 1].revealThrough}`,
-      );
-    }
-  }
+  const ids = new Set(steps.map((s) => s.id));
+  if (ids.size !== steps.length)
+    throw new Error(
+      `every step needs a unique id — assets/interaction.mjs matches a step to its frame by this id alone`,
+    );
 
-  const furniture = deriveFurniture(props.ground);
-  const frames = steps.map((step, i) =>
-    renderToStaticMarkup(
-      createElement(component, {
-        data: props.data,
-        step,
-        active: i === 0,
-        subject: props.subject,
-        ground: props.ground,
-        accent: props.accent,
-        ...furniture,
-        measure: measureText,
-      }),
-    ),
-  );
+  const furniture = deriveFurniture(ground);
+  // Tripwire, not a decision: `deriveFurniture` already guarantees `ink` clears WCAG AA against
+  // `ground` (the mid-grey escalation `twin-doctrine/references/visual-system.md` describes). The
+  // prose panel below is painted fully OPAQUE with this exact `ground` — never a translucent scrim
+  // whose effective colour would depend on whatever part of the graphic sits behind it at a given
+  // scroll position — so ink-on-ground IS the contrast the reader actually sees wherever the panel
+  // crosses the graphic. This asserts that measurement locally, the same "measured again, not
+  // inherited silently" discipline `visual-system.md` states for a mark's colour reused as a label
+  // — see references/scrolly-discipline.md, "Measuring prose over the graphic."
+  const panelContrast = contrast(furniture.ink, ground);
+  if (panelContrast < 4.5)
+    throw new Error(
+      `prose panel contrast measured ${panelContrast.toFixed(2)}:1 against ground ${ground} — below the 4.5:1 floor; this should be structurally impossible given deriveFurniture's own guarantee, so something upstream is wrong`,
+    );
+
+  const frameHtml = steps
+    .map((step, i) => {
+      const inner = renderToStaticMarkup(step.frame);
+      return `      <div class="step-frame${i === 0 ? " active" : ""}" data-step="${escapeHtml(step.id)}" aria-hidden="true">
+${inner}
+      </div>`;
+    })
+    .join("\n");
 
   const stepsHtml = steps
     .map(
-      (step, i) => `<section class="step${i === 0 ? " active" : ""}" data-step="${escapeHtml(step.id)}">
-${step.prose.map((p) => `      <p>${escapeHtml(p)}</p>`).join("\n")}
-</section>`,
+      (step, i) => `      <section class="step${i === 0 ? " active" : ""}" data-step="${escapeHtml(step.id)}">
+        <div class="step-panel">
+${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
+        </div>
+      </section>`,
     )
     .join("\n");
 
@@ -115,22 +110,22 @@ ${step.prose.map((p) => `      <p>${escapeHtml(p)}</p>`).join("\n")}
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>${escapeHtml(props.title)}</title>
+<title>${escapeHtml(title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground: props.ground, ...furniture })}
+${buildCss({ ground, ...furniture })}
 </style>
 </head>
 <body>
 <article class="scrolly">
+  <header class="scrolly-header">
+    <h2>${escapeHtml(title)}</h2>
+    <p class="source">${escapeHtml(source)}</p>
+  </header>
   <div class="scrolly-track">
     <div class="scrolly-graphic">
-      <header class="scrolly-graphic__header">
-        <h2>${escapeHtml(props.title)}</h2>
-        <p class="source">${escapeHtml(props.source)}</p>
-      </header>
       <div class="frame-stack">
-${frames.join("\n")}
+${frameHtml}
       </div>
     </div>
     <div class="scrolly-steps">
@@ -148,7 +143,7 @@ ${inlineScript}
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
   await writeFile(outPath, html);
-  return { outPath, steps: steps.length };
+  return { outPath, steps: steps.length, panelContrast };
 }
 
 /** Strips the `export` keyword from each top-level declaration so `interaction.mjs` — authored as
@@ -181,59 +176,40 @@ body {
   color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.scrolly { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+.scrolly { max-width: 720px; margin: 0 auto; padding: 0 16px; }
 
-/* Below the two-column breakpoint, the graphic is NOT sticky — it sits once, statically, above
-   every step's own prose, in ordinary document flow. This is a deliberate scope cut, not an
-   oversight: a single stacked column has nowhere to put an opaque pinned graphic that a normal-
-   flow paragraph below it can never scroll UNDER, and an "advances as you scroll" graphic pinned
-   over prose it visually overlaps is worse than a graphic that does not advance at all — see
-   references/scrolly-discipline.md, "The one gotcha" for the layout this replaced and why. Below
-   this width the reader still gets the full, final graphic and every step's own words, in order;
-   only the per-step advancing is desktop-only. */
-.scrolly-track { display: block; }
-.scrolly-graphic {
-  position: static;
-  max-width: ${FRAME.width}px;
-  margin: 0 auto 24px;
-  padding: 10px 0;
-  background: var(--ground);
-}
-.scrolly-graphic__header { padding: 0 4px; }
-.scrolly-graphic__header h2 { margin: 0 0 4px; font-size: 20px; line-height: 1.25; }
-.scrolly-graphic__header .source { margin: 0; font-size: 13px; color: var(--muted); }
+/* The header states the beat's own argument in full, unconditional and ahead of every step's own
+   reveal — and, deliberately, ahead of the sticky graphic too: it sits in plain document flow,
+   scrolled past once, so it is never the thing a step's prose panel has to be measured against. */
+.scrolly-header { margin: 0 0 24px; padding: 4px 0 0; }
+.scrolly-header h2 { margin: 0 0 4px; font-size: 22px; line-height: 1.25; }
+.scrolly-header .source { margin: 0; font-size: 13px; color: var(--muted); }
 
-/* Two columns, side by side, is what makes the overlap this genre's own gotcha describes
-   STRUCTURALLY impossible rather than merely unlikely: the graphic's sticky column and the
-   steps' scrolling column never share the same horizontal space, so no scroll position can ever
-   place one over the other, unlike a single stacked column where a pinned, opaque graphic and a
-   normal-flow paragraph below it inevitably cross paths as the reader scrolls past the point
-   where the graphic has stuck. */
-@media (min-width: 720px) {
-  .scrolly-track {
-    display: grid;
-    grid-template-columns: minmax(320px, ${FRAME.width}px) minmax(280px, 1fr);
-    gap: 32px;
-    align-items: start;
-  }
-  .scrolly-graphic {
-    position: sticky;
-    top: 24px;
-    margin: 0;
-  }
-}
-
-/* Every step's own frame is SSR'd and stacked in the SAME box (aspect-ratio fixed to this
-   genre's own FRAME so no frame ever reflows the page as it swaps). Exactly one carries .active
-   at build time (assets/ScrollySeed.tsx's own doc-comment, item 3) — that is the ENTIRE no-JS
-   contract: with the inline script absent, the CSS below is what keeps that one frame visible and
-   every other one invisible, permanently. */
-.frame-stack {
+/* The overlap this genre's own gotcha describes is now DELIBERATE, not engineered away: the
+   graphic is the sticky ground, every step's own prose travels OVER it. \`position: sticky\`
+   reserves its element's ORIGINAL box at the top of \`.scrolly-track\` — the exact behaviour that
+   caused the original defect (see references/scrolly-discipline.md, "The one gotcha," for why).
+   The fix does not fight that behaviour, it uses it: \`.scrolly-steps\`'s negative top margin,
+   exactly \`--graphic-h\` tall, pulls the steps column back UP over that same reserved box on
+   purpose, so the sticky graphic and the scrolling prose occupy the same screen coordinates for as
+   long as the track has steps left to give. */
+.scrolly-track {
+  --graphic-h: min(70vh, 640px);
   position: relative;
-  width: 100%;
-  aspect-ratio: ${FRAME.width} / ${FRAME.height};
-  margin-top: 8px;
 }
+.scrolly-graphic {
+  position: sticky;
+  top: 0;
+  height: var(--graphic-h);
+  overflow: hidden;
+  z-index: 0;
+}
+.frame-stack { position: absolute; inset: 0; }
+/* Every step's own frame is SSR'd and stacked in the SAME box (an \`<img>\` and an \`<svg>\` sit in
+   an identical wrapper — this scaffold does not know which is which). Exactly one wrapper carries
+   \`.active\` at build time (this file's own \`renderScrolly\`, never the frame component) — that is
+   the ENTIRE no-JS contract: with the inline script absent, the CSS below is what keeps that one
+   frame visible and every other one invisible, permanently. */
 .step-frame {
   position: absolute;
   inset: 0;
@@ -242,13 +218,19 @@ body {
   opacity: 0;
 }
 .step-frame.active { opacity: 1; }
+.step-frame img,
+.step-frame svg { display: block; width: 100%; height: 100%; }
 /* Reduced motion: a reader who asks for no animation gets no animation — the swap becomes an
    instant cut instead of a crossfade. This is the ONLY animated property this genre ships. */
 @media (prefers-reduced-motion: no-preference) {
   .step-frame { transition: opacity 0.3s ease; }
 }
 
-.scrolly-steps { padding-top: 8px; }
+.scrolly-steps {
+  position: relative;
+  z-index: 1;
+  margin-top: calc(-1 * var(--graphic-h));
+}
 /* Prose is ALWAYS in normal document flow — nothing here is display:none, visibility:hidden or
    otherwise gated. A screen reader or keyboard user reaches every step's own text by reading or
    tabbing through the page exactly like any other paragraph; scrolling into the sticky graphic's
@@ -260,54 +242,97 @@ body {
   padding: 24px 4px;
 }
 .step:last-child { min-height: 60vh; }
-.step p {
-  max-width: 42ch;
+
+/* The panel is OPAQUE, painted with the exact \`--ground\` this render's furniture was derived
+   from — never a translucent scrim whose effective colour drifts with whatever part of the
+   graphic happens to sit behind it. Because the panel fully occludes the graphic at its own
+   footprint, ink-on-ground is the only contrast question left, and \`deriveFurniture\` already
+   answers it (asserted again in \`renderScrolly\`, above, and in this skill's own test). See
+   references/scrolly-discipline.md, "Measuring prose over the graphic." */
+.step-panel {
+  max-width: min(42ch, 100%);
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--grid);
+  padding: 14px 16px;
+}
+.step-panel p {
   margin: 0;
   font-size: 17px;
   line-height: 1.5;
-  padding: 12px 14px;
-  background: var(--ground);
 }
+.step-panel p + p { margin-top: 12px; }
 `.trim();
 }
 
-/** The seed beat's own runner: reads the seed's own `{ year, value }` series, hands the seed
- *  component and its `STEPS` array (imported above from this skill's own `assets/`) to the
- *  genre's generic `renderScrolly`. */
-async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
-  const data = JSON.parse(await readFile(dataPath, "utf8"));
-  if (data.length < 2)
-    throw new Error(`need at least two readings, got ${data.length}`);
+// ---------------------------------------------------------------------------------------------
+// ===== CONFIG — edit for your story =====
+// Everything from here to the closing marker is THIS SEED's own words, its own image and its own
+// mapping from `frameKind` to a component — the only part of this file allowed to know that a
+// "scrolly" is, this once, a photograph followed by a diagram. A real beat replaces all of it and
+// leaves `renderScrolly`, above, untouched.
+const SEED = {
+  ground: "#FFFFFF",
+  accent: "#0B7A75",
+  title: "Every reading in this project traces back to one gauge, at one place",
+  source: "Illustrative scene and instrument diagram — not a real gauge station",
+};
+const PHOTO_PATH = join(HERE, "../assets/sample-data/basin-photo.png");
+const DEFAULT_OUT_DIR = "/tmp/scrolly-twin";
+const OUTPUT_NAME = "gauge-scrolly.html";
 
-  const { outPath } = await renderScrolly({
-    component: ScrollyChartSeed,
-    steps: STEPS,
-    props: {
-      data,
-      title: SEED.title,
-      source: SEED.source,
-      subject: SEED.subject,
+/** The ONE place in this file that reads a step's own `frameKind` and turns it into a built
+ *  `ReactElement` — `renderScrolly`, above, never sees `frameKind` at all. Teach this function a
+ *  new case for a new medium; `renderScrolly` does not change. */
+function buildFrame(meta, { photoDataUri, ground, ink, muted, accent }) {
+  if (meta.frameKind === "image") return createElement(ImageFrame, { src: photoDataUri });
+  if (meta.frameKind === "drawn")
+    return createElement(DrawnGraphicFrame, { ground, ink, muted, accent });
+  throw new Error(
+    `unknown frameKind "${meta.frameKind}" — teach buildFrame a new case, or fix STEPS_META`,
+  );
+}
+// =========================================
+
+/** The seed beat's own runner: reads its own photograph off disk, embeds it as a data URI (the
+ *  self-contained-HTML rule this genre keeps for every asset, an SVG frame gets for free just by
+ *  being SSR'd inline), and hands `renderScrolly` the two built frames plus their prose. */
+async function render({ outDir, name = OUTPUT_NAME }) {
+  const photoBuffer = await readFile(PHOTO_PATH);
+  const photoDataUri = `data:image/png;base64,${photoBuffer.toString("base64")}`;
+  const furniture = deriveFurniture(SEED.ground);
+
+  const steps = STEPS_META.map((meta) => ({
+    id: meta.id,
+    prose: meta.prose,
+    frame: buildFrame(meta, {
+      photoDataUri,
       ground: SEED.ground,
       accent: SEED.accent,
-    },
+      ...furniture,
+    }),
+  }));
+
+  const { outPath, panelContrast } = await renderScrolly({
+    steps,
+    title: SEED.title,
+    source: SEED.source,
+    ground: SEED.ground,
     outDir,
     name,
   });
-  return { outPath, readings: data.length, steps: STEPS.length };
+  return { outPath, steps: steps.length, panelContrast };
 }
 
 if (import.meta.main) {
   const argv = process.argv.slice(2);
-  const flag = (name, fallback) => {
-    const at = argv.indexOf(name);
-    return at >= 0 ? argv[at + 1] : fallback;
-  };
   const positional = argv.find((a) => !a.startsWith("--"));
-  const dataPath = resolve(flag("--data", DEFAULT_DATA_PATH));
-  const outDir = resolve(positional ?? flag("--out", DEFAULT_OUT_DIR));
+  const outDir = resolve(positional ?? DEFAULT_OUT_DIR);
 
-  const { outPath, readings, steps } = await render({ dataPath, outDir });
-  console.log(`scrolly beat → ${outPath}  [${readings} readings, ${steps} steps]`);
+  const { outPath, steps, panelContrast } = await render({ outDir });
+  console.log(
+    `scrolly beat → ${outPath}  [${steps} steps, panel contrast ${panelContrast.toFixed(2)}:1]`,
+  );
 }
 
 export { render, renderScrolly, SEED };

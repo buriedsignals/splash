@@ -11,31 +11,18 @@ describe("twin-scrolly — the canon's assets", () => {
     expect(seed).toContain("REPLACE ME. Do not parameterise me.");
   });
 
-  it("should carry sample data the seed can render on its own", async () => {
-    const raw = await readFile(
-      join(ASSETS, "sample-data", "rainfall.json"),
-      "utf8",
+  it("should carry its own photograph — a real PNG, not a placeholder file", async () => {
+    const raw = await readFile(join(ASSETS, "sample-data", "basin-photo.png"));
+    // PNG magic number — proves this is a real decoded raster, not an empty or truncated stub.
+    expect(raw.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     );
-    const rows = JSON.parse(raw);
-    expect(Array.isArray(rows)).toBe(true);
-    expect(rows.length).toBeGreaterThanOrEqual(4);
-    for (const r of rows) {
-      expect(typeof r.year).toBe("number");
-      expect(typeof r.value).toBe("number");
-    }
-  });
-
-  it("should not carry any other beat's own copy of the sample data", async () => {
-    const raw = await readFile(
-      join(ASSETS, "sample-data", "rainfall.json"),
-      "utf8",
-    );
-    // This skill's own data is distinct in value from twin-chart-beat's and twin-chart-web's own
-    // rainfall.json — comparable only in shape, per this project's own convention (see
-    // twin-chart-web/SKILL.md, "Files"). 2016 is this seed's own reference year; the other two
-    // genres' files start at 2015.
-    expect(raw).toContain("2016");
-    expect(raw).not.toContain('"year": 2015');
+    // IHDR: width/height are the first two 4-byte big-endian ints after the 8-byte signature and
+    // the 4-byte length + "IHDR" tag (offset 16).
+    const width = raw.readUInt32BE(16);
+    const height = raw.readUInt32BE(20);
+    expect(width).toBeGreaterThan(0);
+    expect(height).toBeGreaterThan(0);
   });
 
   it("should have a preview.png that is a current render of the seed", async () => {
@@ -44,9 +31,35 @@ describe("twin-scrolly — the canon's assets", () => {
     });
     expect(await proc.exited).toBe(0);
   });
+
+  it("should render standalone with nothing else on disk — proof `render-preview.mjs` needs only this skill's own directory", async () => {
+    // `render-preview.mjs` reads only `assets/ScrollySeed.tsx` (relative, inside this skill) and
+    // writes to a caller-supplied --out directory: nothing here depends on a story, another skill,
+    // or a file outside this skill's own root. Proven by pointing --out at an otherwise-empty tmp
+    // directory and confirming a real PNG lands there.
+    const outDir = "/tmp/twin-scrolly-empty-root-test";
+    const proc = Bun.spawn(
+      ["bun", "scripts/render-preview.mjs", "--out", outDir],
+      { cwd: join(import.meta.dirname, "..") },
+    );
+    expect(await proc.exited).toBe(0);
+    expect(existsSync(join(outDir, "preview.png"))).toBe(true);
+    const png = await readFile(join(outDir, "preview.png"));
+    expect(png.subarray(0, 8)).toEqual(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    );
+  });
 });
 
 describe("twin-scrolly — a vehicle, not a new genre of chart", () => {
+  it("should carry a seed that assembles at least two VISIBLY DIFFERENT kinds of frame, not several states of one chart", async () => {
+    const { STEPS_META } = await import("../assets/ScrollySeed.tsx");
+    const kinds = new Set(
+      STEPS_META.map((s: { frameKind: string }) => s.frameKind),
+    );
+    expect(kinds.size).toBeGreaterThanOrEqual(2);
+  });
+
   it("should not carry a registry or dispatcher file", async () => {
     // The brief this skill was built from: "A scrolly is a vehicle: it carries beats, it is not a
     // new kind of beat. Do not build a registry or a dispatcher." Structural check: no source file

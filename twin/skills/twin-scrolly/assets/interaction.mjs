@@ -12,11 +12,13 @@
 // real browser, not by asserting against a DOM/IntersectionObserver emulation nobody looked at
 // (`references/scrolly-discipline.md`, "Verification").
 //
-// What this file does NOT do: decide which step is narratively "first". `STEPS[0]` is already
-// marked `active` in the SSR'd markup by `assets/ScrollySeed.tsx` (see that file's own
-// doc-comment, item 3) — this script only ever MOVES that class as the reader scrolls a new step
-// into the centre band of the viewport. With this script entirely absent, the page still shows
-// that one step's own frame and every step's own prose, unchanged.
+// What this file does NOT do: decide which step is narratively "first", or know what kind of
+// content a `.step-frame` holds — an `<img>`, an `<svg>`, or anything else a future beat hands the
+// scaffold. The first step's own frame is already marked `active` in the SSR'd markup by
+// `scripts/render-scrolly.mjs`'s own loop over `steps` — this script only ever MOVES that class as
+// the reader scrolls a new step into the centre band of the viewport, on whichever element already
+// carries it. With this script entirely absent, the page still shows that one step's own frame and
+// every step's own prose, unchanged.
 
 /**
  * Pure decision function: given the current IntersectionObserver entries — each reduced to just
