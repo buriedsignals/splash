@@ -30,8 +30,9 @@ async function main() {
   const rows = parseCsv(csv);
   console.log(`read ${rows.length} rows from data.csv`);
 
-  const y2024 = rows.filter((r) => r.Year === "2024");
-  if (y2024.length !== 6) throw new Error(`expected 6 countries for 2024, got ${y2024.length}`);
+  const LAST_YEAR = String(Math.max(...rows.map((r) => Number(r.Year))));
+  const y2024 = rows.filter((r) => r.Year === LAST_YEAR);
+  if (y2024.length !== 6) throw new Error(`expected 6 countries for ${LAST_YEAR}, got ${y2024.length}`);
 
   const groups = y2024
     .map((r) => {
@@ -46,15 +47,31 @@ async function main() {
 
   console.table(groups.map((g) => ({ country: g.name, wind: g.wind.toFixed(2), solar: g.solar.toFixed(2) })));
 
+  // The whole beat rests on there being exactly ONE country where solar beats wind, and the alt
+  // text stated that country's two shares as literals beside the array that computes them. Both
+  // the outlier and its figures are now found in the data, and the beat refuses to draw itself if
+  // the "only reversal" claim stops holding.
+  const reversals = groups.filter((g) => g.solar > g.wind);
+  if (reversals.length !== 1)
+    throw new Error(`this beat's claim needs exactly one country where solar beats wind, found ${reversals.length}: ${reversals.map((g) => g.name).join(", ")}`);
+  const outlier = reversals[0];
+  const rest = groups.filter((g) => g !== outlier).map((g) => g.name);
+  const restList = `${rest.slice(0, -1).join(", ")} and ${rest[rest.length - 1]}`;
+  const alt =
+    `Grouped bar chart of wind and solar shares of ${LAST_YEAR} electricity generation for ` +
+    `${groups.length} countries. In ${restList}, wind's share is larger than solar's. ` +
+    `${outlier.name} is the reverse: solar ${outlier.solar.toFixed(1)}%, wind ${outlier.wind.toFixed(1)}%.`;
+  console.log(`alt: ${alt}`);
+
   const { pngPath } = await renderStill({
     element: createElement(WindVsSolarBar, {
       groups,
-      title: "Switzerland is the outlier: everywhere else here, wind beats solar",
-      limits: "Share of each country's total electricity generation in 2024, from generation by source in terawatt-hours.",
+      title: `${outlier.name} is the outlier: everywhere else here, wind beats solar`,
+      limits: `Share of each country's total electricity generation in ${LAST_YEAR}, from generation by source in terawatt-hours.`,
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8 August 2026",
-      alt: "Grouped bar chart of wind and solar shares of 2024 electricity generation for six countries. In France, Germany, Norway, Poland and Sweden, wind's share is larger than solar's. Switzerland is the reverse: solar 7.2%, wind 0.2%.",
+      alt,
       ground: "#FFFFFF",
-      calloutSubject: "Switzerland",
+      calloutSubject: outlier.name,
       calloutText: "Solar leads wind here — the only reversal in this group",
     }),
     width: 900,

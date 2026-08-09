@@ -19,11 +19,13 @@ const COMPOSITION = "vidx-stacked-bar-swiss-electricity";
 
 const YEARS = [2000, 2010, 2020, 2024];
 
-/** The story's own constants — the journalist's words, from `BRIEF.md`. */
+/** The story's own constants — the journalist's words, from `BRIEF.md`. The title is NOT among
+ *  them: it states solar and wind's share of the subject year, which is arithmetic over the same
+ *  CSV this script reads, so it is built after the read (see `title` below) rather than typed
+ *  beside constants that cannot move with the file. */
 const BEAT = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
-  title: "Solar and wind went from almost nothing to 7% of Switzerland's electricity",
   source: "Source: Ember & Energy Institute, via Our World in Data · 2000, 2010, 2020 & 2024 data",
   legendLabels: ["Solar & wind", "Hydropower", "Nuclear & other"],
   subjectYear: 2024,
@@ -101,10 +103,23 @@ if (data[data.length - 1].solarWind <= data[0].solarWind)
     `expected solar & wind to have grown by the last year, got ${data[0].solarWind} -> ${data[data.length - 1].solarWind}`,
   );
 
-const referenceLabel = `2000 total: ${reference.toFixed(1)} TWh`;
+const referenceLabel = `${data[0].year} total: ${reference.toFixed(1)} TWh`;
+
+// The headline share, read off the same four rows the columns are drawn from. "Almost nothing" is
+// pinned too: the first year's share has to round to zero at one decimal for that phrase to hold.
+const subject = data[data.length - 1];
+const subjectShare = (subject.solarWind / total(subject)) * 100;
+const firstShare = (data[0].solarWind / reference) * 100;
+console.log(`solar & wind: ${firstShare.toFixed(2)}% in ${data[0].year} -> ${subjectShare.toFixed(2)}% in ${subject.year}`);
+if (Math.round(firstShare * 10) / 10 !== 0)
+  throw new Error(`the title says "almost nothing" in ${data[0].year}, but the share is ${firstShare.toFixed(2)}%`);
+const title = `Solar and wind went from almost nothing to ${Math.round(subjectShare)}% of Switzerland's electricity`;
+console.log(`title: ${title}`);
 
 const props = {
   ...BEAT,
+  title,
+  subjectYear: subject.year,
   data,
   reference,
   referenceLabel,

@@ -33,21 +33,19 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 // ===== CONFIG — this beat's own words, data and claim =====
+// The title and the alt text are NOT here: both state how many countries the map carries, and the
+// alt states the two extreme readings and the class boundaries as well. All of those are products
+// of the join this script performs, so they are built in `render()` from the joined rows — see
+// `claimSentences`. Typed here, "41 countries" would have kept its wording after a code was added
+// to `CO2_2023_STUDY` and the map drew 42. The two country NAMES stay in the wording because
+// `checkClaim` already refuses to render if either stops being the extreme it is named as.
 const SEED = {
   ground: "#FFFFFF",
   accent: "#B2182B",
-  title:
-    "The Faroe Islands' per-capita CO₂ emissions are the highest of the 41 countries on this map — more than eight times Albania's, the lowest",
   source: "Global Carbon Budget 2025, via Our World in Data — 2023 data",
   basemapCredit: "shapes: Natural Earth 1:50m Admin 0 Countries · basemap © MapTiler, © OpenStreetMap",
-  legendCaption: "CO₂ emissions per capita, tonnes/person, 2023",
   caveat:
     "Territorial, per-capita figures: a small-population country can rank far above or below its neighbours on a small absolute change. This map states the ranking, not a cause.",
-  alt:
-    "A choropleth of 41 European countries shaded by 2023 per-capita CO2 emissions, in six classes " +
-    "from under 2 to 10 tonnes and over. The Faroe Islands, outlined in this map's accent colour, " +
-    "carry the darkest class at just over 13 tonnes per person, the highest on the map. Albania, " +
-    "outlined in ink, carries the lightest class at about 1.6 tonnes per person, the lowest.",
 };
 const PLATE_SIZE = 496;
 // FROZEN BESIDE THE BEAT, for the same reason its csv is: a basemap living in `/tmp` cannot be
@@ -96,6 +94,47 @@ export function checkClaim(values) {
     throw new Error(`claim check failed:\n  ${violations.join("\n  ")}`);
 
   return { subject: { key: maxKey, value: maxValue }, comparison: { key: minKey, value: minValue }, ratio };
+}
+
+/**
+ * Every figure a reader receives, written from the joined rows rather than typed beside them: how
+ * many countries were actually drawn, which year the csv holds, how many classes `CO2_BREAKS` cuts
+ * and where its ends sit, and the two extreme readings `checkClaim` has just pinned.
+ */
+export function claimSentences({ count, breaks, claim, year, names }) {
+  const nameOf = (key) => names.get(key) ?? key;
+  const tonnes = (v) => v.toFixed(1);
+  const subjectName = nameOf(claim.subject.key);
+  const comparisonName = nameOf(claim.comparison.key);
+  const title =
+    `The ${subjectName}' per-capita CO₂ emissions are the highest of the ${count} countries ` +
+    `on this map — more than eight times ${comparisonName}'s, the lowest`;
+  const legendCaption = `CO₂ emissions per capita, tonnes/person, ${year}`;
+  const alt =
+    `A choropleth of ${count} European countries shaded by ${year} per-capita CO2 emissions, ` +
+    `in ${breaks.length + 1} classes from under ${breaks[0]} to ${breaks[breaks.length - 1]} tonnes ` +
+    `and over. The darkest class on the map is the ${subjectName}, outlined in this map's accent ` +
+    `colour, at ${tonnes(claim.subject.value)} tonnes per person — the highest reading here. The ` +
+    `lightest is ${comparisonName}, outlined in ink, at ${tonnes(claim.comparison.value)} tonnes per ` +
+    `person — the lowest.`;
+  return { title, legendCaption, alt };
+}
+
+/** `Code,Entity,Year,value` — the csv's own country names and its own single reference year, so
+ *  neither has to be retyped in a sentence. Natural Earth's shape names are abbreviations
+ *  ("Faeroe Is."); the source table spells them out, and it is the source's spelling a reader of
+ *  the credit line would look up. */
+export function labelsFromCsv(csv) {
+  const [, ...lines] = csv.trim().split(/\r?\n/);
+  const names = new Map();
+  const years = new Set();
+  for (const line of lines) {
+    const [code, entity, year] = line.split(",");
+    names.set(code, entity);
+    years.add(year);
+  }
+  if (years.size !== 1) throw new Error(`expected one reference year in the csv, got ${[...years].join(", ")}`);
+  return { names, year: [...years][0] };
 }
 
 /**
@@ -278,6 +317,17 @@ async function render({ valuesPath, plateDir, outDir, name = OUTPUT_NAME }) {
   // The claim, checked against the ACTUAL joined values, not just asserted true in the title.
   const claim = checkClaim(values);
 
+  const { names, year } = labelsFromCsv(csv);
+  const { title, legendCaption, alt } = claimSentences({
+    count: named.length,
+    breaks: CO2_BREAKS,
+    claim,
+    year,
+    names,
+  });
+  console.log(`title: ${title}`);
+  console.log(`alt: ${alt}`);
+
   const { outPath } = await renderMapWeb({
     component: ChoroplethWeb,
     table: RegionTable,
@@ -287,12 +337,12 @@ async function render({ valuesPath, plateDir, outDir, name = OUTPUT_NAME }) {
       rows: named,
       breaks: CO2_BREAKS,
       plate,
-      title: SEED.title,
+      title,
       source: SEED.source,
       basemapCredit: SEED.basemapCredit,
-      legendCaption: SEED.legendCaption,
+      legendCaption,
       caveat: SEED.caveat,
-      alt: SEED.alt,
+      alt,
       ground: SEED.ground,
       accent: SEED.accent,
     },

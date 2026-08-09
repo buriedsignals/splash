@@ -40,15 +40,22 @@ async function main() {
   console.log(`read ${rows.length} rows from data.csv`);
   if (rows.length !== 2) throw new Error(`expected 2 rows (Germany 2015 and 2024), got ${rows.length}`);
 
-  const y2015 = totals(rows.find((r) => r.Year === "2015"));
-  const y2024 = totals(rows.find((r) => r.Year === "2024"));
+  // Entity and both years are read off the file rather than retyped, so a re-export covering
+  // different years cannot leave the labels and the sentences pointing at the old ones.
+  const entity = rows[0].Entity;
+  const years = [...new Set(rows.map((r) => r.Year))].sort();
+  if (years.length !== 2) throw new Error(`expected exactly two years in data.csv, got ${years.join(", ")}`);
+  const [FIRST_YEAR, LAST_YEAR] = years;
+
+  const y2015 = totals(rows.find((r) => r.Year === FIRST_YEAR));
+  const y2024 = totals(rows.find((r) => r.Year === LAST_YEAR));
 
   const steps = [
-    { label: "2015 total generation", value: Math.round(y2015.total * 10) / 10, kind: "total" },
+    { label: `${FIRST_YEAR} total generation`, value: Math.round(y2015.total * 10) / 10, kind: "total" },
     { label: "Renewables", value: Math.round((y2024.renewables - y2015.renewables) * 10) / 10, kind: "increase" },
     { label: "Nuclear", value: Math.round((y2024.nuclear - y2015.nuclear) * 10) / 10, kind: "decrease" },
     { label: "Fossil fuel", value: Math.round((y2024.fossil - y2015.fossil) * 10) / 10, kind: "decrease" },
-    { label: "2024 total generation", value: Math.round(y2024.total * 10) / 10, kind: "total" },
+    { label: `${LAST_YEAR} total generation`, value: Math.round(y2024.total * 10) / 10, kind: "total" },
   ];
   console.table(steps);
 
@@ -63,15 +70,32 @@ async function main() {
   console.log("bridge balances exactly.");
 
   const netChange = closing - steps[0].value;
-  console.log(`net change 2015->2024: ${netChange.toFixed(1)} TWh`);
+  console.log(`net change ${FIRST_YEAR}->${LAST_YEAR}: ${netChange.toFixed(1)} TWh`);
+
+  // The bridge's own five figures were typed into the alt text and the title, beside the very
+  // computation that produces them. They are correct today; nothing turned red if a row moved.
+  // They now come from `steps` and `netChange` — one arithmetic, read twice.
+  const [opening, renewablesStep, nuclearStep, fossilStep, closingStep] = steps;
+  if (!(renewablesStep.value > 0)) throw new Error(`the alt says renewables GREW, got ${renewablesStep.value}`);
+  if (!(nuclearStep.value < 0)) throw new Error(`the alt says nuclear FELL, got ${nuclearStep.value}`);
+  if (!(fossilStep.value < 0)) throw new Error(`the alt says the fossil share FELL, got ${fossilStep.value}`);
+  if (!(netChange < 0)) throw new Error(`the title says generation FELL, got a net change of ${netChange}`);
+  const twh = (v) => `${Math.round(Math.abs(v))} TWh`;
+  const alt =
+    `Waterfall chart of ${entity}'s electricity generation, ${FIRST_YEAR} to ${LAST_YEAR}, in ` +
+    `terawatt-hours: ${twh(opening.value)} in ${FIRST_YEAR}, plus ${twh(renewablesStep.value)} from ` +
+    `renewables growth, minus ${twh(nuclearStep.value)} from the nuclear phase-out, minus ` +
+    `${twh(fossilStep.value)} from a falling fossil share, arriving at ${twh(closingStep.value)} in ` +
+    `${LAST_YEAR} — a net drop of ${twh(netChange)}.`;
+  console.log(`alt: ${alt}`);
 
   const { pngPath } = await renderStill({
     element: createElement(ElectricityBridgeWaterfall, {
       steps,
-      title: "Germany generated 143 fewer terawatt-hours of electricity in 2024 than in 2015",
+      title: `${entity} generated ${Math.round(Math.abs(netChange))} fewer terawatt-hours of electricity in ${LAST_YEAR} than in ${FIRST_YEAR}`,
       limits: "The nuclear phase-out and a falling fossil share together outweighed the renewables build-out — renewables alone grew, but not enough to offset the other two.",
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026",
-      alt: "Waterfall chart of Germany's electricity generation, 2015 to 2024, in terawatt-hours: 639 TWh in 2015, plus 103 TWh from renewables growth, minus 92 TWh from the nuclear phase-out, minus 154 TWh from a falling fossil share, arriving at 496 TWh in 2024 — a net drop of 143 TWh.",
+      alt,
       ground: "#FFFFFF",
     }),
     width: 900,

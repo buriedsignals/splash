@@ -51,21 +51,50 @@ async function main() {
 
   console.table(series.map((s) => ({ country: s.name, "2015": s.start.toFixed(1), "2024": s.end.toFixed(1), "change (pp)": (s.end - s.start).toFixed(1) })));
 
-  const biggestMover = [...series].sort((a, b) => b.end - b.start - (a.end - a.start))[0];
+  const byClimb = [...series].sort((a, b) => b.end - b.start - (a.end - a.start));
+  const biggestMover = byClimb[0];
+  const flattest = byClimb[byClimb.length - 1];
   console.log(`biggest riser: ${biggestMover.name} (+${(biggestMover.end - biggestMover.start).toFixed(1)}pp)`);
+  console.log(`flattest: ${flattest.name} (+${(flattest.end - flattest.start).toFixed(1)}pp)`);
+
+  // Every figure the alt text states is read off `series` — the same array the chart plots. The
+  // hand-typed version said Sweden and Switzerland stayed "in the mid-60s"; Sweden ends at 69.4%,
+  // so the sentence disagreed with the label drawn beside it. Naming each country's own endpoints
+  // makes that impossible: change a row in data.csv and the sentence moves with the chart.
+  const START_YEAR = "2015";
+  const END_YEAR = "2024";
+  const pct = (v) => `${Math.round(v)}%`;
+  const rest = series.filter((s) => s !== biggestMover && s !== flattest);
+  const alt =
+    `Slope chart of ${series.length} countries' renewable share of electricity generation, ` +
+    `${START_YEAR} versus ${END_YEAR}. ` +
+    `${biggestMover.name} rises from ${pct(biggestMover.start)} to ${pct(biggestMover.end)}, the ` +
+    `steepest climb at ${(biggestMover.end - biggestMover.start).toFixed(0)} percentage points. ` +
+    `${flattest.name} moves least, from ${pct(flattest.start)} to ${pct(flattest.end)}, already near ` +
+    `the top of the scale. The others: ` +
+    rest.map((s) => `${s.name} ${pct(s.start)} to ${pct(s.end)}`).join(", ") +
+    `.`;
+  console.log(`alt: ${alt}`);
+
+  // The title's two remaining words-as-claims, pinned against the data rather than trusted:
+  // "nearly doubled" (a ratio just under two) and "nine years" (the span the axis labels state).
+  const ratio = biggestMover.end / biggestMover.start;
+  console.log(`${biggestMover.name} ${START_YEAR}->${END_YEAR} ratio: ${ratio.toFixed(2)}x`);
+  if (ratio < 1.8 || ratio >= 2) throw new Error(`"nearly doubled" needs a ratio in [1.8, 2), got ${ratio.toFixed(2)}`);
+  if (Number(END_YEAR) - Number(START_YEAR) !== 9) throw new Error(`"nine years" needs a nine-year span, got ${Number(END_YEAR) - Number(START_YEAR)}`);
 
   const { pngPath } = await renderStill({
     element: createElement(RenewablesShiftSlope, {
       series,
-      title: "Germany's renewable electricity share nearly doubled in nine years",
-      limits: "Share of each country's own total generation. Norway was already near-total renewable in 2015, so it had almost no room left to climb.",
+      title: `${biggestMover.name}'s renewable electricity share nearly doubled in nine years`,
+      limits: `Share of each country's own total generation. ${flattest.name} was already near-total renewable in ${START_YEAR}, so it had almost no room left to climb.`,
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026",
-      alt: "Slope chart of six countries' renewable share of electricity generation, 2015 versus 2024. Germany rises from 29% to 59%, the steepest climb. Norway stays flat near the top, from 98% to 99%. Poland rises from 14% to 31%, France from 16% to 27%. Sweden and Switzerland both rise a few points, staying in the mid-60s.",
+      alt,
       ground: "#FFFFFF",
       accent: "#0B7A75",
-      highlighted: "Germany",
-      startLabel: "2015",
-      endLabel: "2024",
+      highlighted: biggestMover.name,
+      startLabel: START_YEAR,
+      endLabel: END_YEAR,
       unit: "%",
     }),
     width: 900,

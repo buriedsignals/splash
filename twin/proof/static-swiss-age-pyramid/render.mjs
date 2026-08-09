@@ -31,6 +31,13 @@ async function main() {
 
   const bands = rows.map((r) => ({ ageBand: r.age_band, male: Number(r.male), female: Number(r.female) }));
 
+  // The reference year was typed into the alt text while the file itself said nothing about which
+  // year it holds — nothing could have contradicted it. It is now a column in data.csv (every row
+  // is a 2023 reading), read here and stated only from what the file says.
+  const years = [...new Set(rows.map((r) => r.year))];
+  if (years.length !== 1) throw new Error(`expected every row to carry one reference year, got ${years.join(", ")}`);
+  const YEAR = years[0];
+
   // Find the true peak band by total (male + female) — checked by the script, not guessed, so the
   // callout names the band the data actually supports.
   const withTotal = bands.map((b) => ({ ...b, total: b.male + b.female }));
@@ -62,7 +69,7 @@ async function main() {
       title: `Switzerland's population bulges at ages ${peak.ageBand}, not among the youngest`,
       limits: "Age bands run in their natural sequence, oldest at top — sorting by population size would destroy the shape this chart exists to show.",
       source: "Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026",
-      alt: `Population pyramid of Switzerland by age and sex, 2023. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward.`,
+      alt: `Population pyramid of Switzerland by age and sex, ${YEAR}. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward.`,
       ground: "#FFFFFF",
       peakBand: peak.ageBand,
       peakLabel: `${peak.ageBand}: the widest band (${peak.total.toLocaleString()})`,

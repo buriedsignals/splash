@@ -50,13 +50,40 @@ async function main() {
 
   console.table(countries.map((c) => ({ country: c.name, renewables: c.renewables.toFixed(1), nuclear: c.nuclear.toFixed(1), fossil: c.fossil.toFixed(1) })));
 
+  // The year is a claim like any other, so it is read off the rows rather than retyped, and the
+  // file has to agree with itself before anything is drawn.
+  const years = [...new Set(rows.map((r) => r.Year))];
+  if (years.length !== 1) throw new Error(`expected a single year in data.csv, got ${years.join(", ")}`);
+  const YEAR = years[0];
+
+  // Every share the alt and the title state comes off `countries` — the same array the columns are
+  // drawn from — including which country leads on renewables and which on fossil fuel. Typed, they
+  // would keep their wording after a row changed and the columns moved underneath them.
+  const pct = (v) => `${Math.round(v)}%`;
+  const mostRenewable = countries[0];
+  const mostFossil = [...countries].sort((a, b) => b.fossil - a.fossil)[0];
+  const alt =
+    // grounded-by-hand: 100 — "100%-stacked" names the chart's construction (every column is
+    // normalised to its own total), not a reading from data.csv. The shares themselves are all
+    // interpolated below.
+    `100%-stacked bar chart of ${countries.length} countries' ${YEAR} electricity generation by ` +
+    `renewables, nuclear and fossil fuel: ` +
+    countries
+      .map((c) => `${c.name} ${pct(c.renewables)} renewable, ${pct(c.nuclear)} nuclear, ${pct(c.fossil)} fossil`)
+      .join("; ") +
+    `. ${mostRenewable.name} has the highest renewable share of the ${countries.length}, ` +
+    `${mostFossil.name} the highest fossil share.`;
+  console.log(`alt: ${alt}`);
+
   const { pngPath } = await renderStill({
     element: createElement(ElectricityMixStack, {
       countries,
-      title: "Norway ran its grid on 99% renewables in 2024 — Poland leaned on fossil fuel",
-      limits: "Each column is 100% of that country's own 2024 electricity generation; totals in TWh differ a lot between them.",
+      title: `${mostRenewable.name} ran its grid on ${pct(mostRenewable.renewables)} renewables in ${YEAR} — ${mostFossil.name} leaned on fossil fuel`,
+      // grounded-by-hand: 100 — "100% of that country's own generation" states how the columns are
+      // normalised; it is the chart's construction, not a value read from data.csv.
+      limits: `Each column is 100% of that country's own ${YEAR} electricity generation; totals in TWh differ a lot between them.`,
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8 August 2026",
-      alt: "100%-stacked bar chart of six countries' 2024 electricity generation by renewables, nuclear and fossil fuel. Norway is 99% renewable. Sweden and Switzerland are roughly two-thirds renewable with the rest split between nuclear and a small fossil share. Germany is 59% renewable and 41% fossil, with no nuclear. Poland is 69% fossil, the highest fossil share of the six.",
+      alt,
       ground: "#FFFFFF",
     }),
     width: 900,
