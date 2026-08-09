@@ -7,11 +7,11 @@
  * 1-4, 6): the camera is spent ONCE by `scripts/bake-plate.mjs`, and this component draws an
  * `<image>` and some `<circle>`s, never a live map. What THIS genre adds on top of that is the
  * thing static and video cannot have: every point's own exact value, on demand, without spending
- * the frame's fixed room printing all thirteen — and, because a map is a spatial medium and not
- * every reader has spatial access to it, the SAME thirteen values again as an ordered, linear,
- * always-rendered table (`RegionTable` below), so nothing this beat claims lives ONLY in a hover.
- * `references/map-web-discipline.md`'s own "The accessibility question" answers this in full —
- * read it before writing a second beat.
+ * the frame's fixed room printing all thirteen. The ordered, linear table of the same values
+ * (`RegionTable` below) is now OPT-IN per beat, not automatic — `renderMapWeb`'s own
+ * `regionTable` option, off for this seed. `references/map-web-discipline.md`'s own "The
+ * accessibility question" states exactly what a reader without spatial access loses when a beat
+ * leaves it off, and it is not a small thing — read it before deciding.
  *
  * THE SPLIT THAT MAKES THIS GENUINELY RESPONSIVE (`references/map-web-discipline.md`, "Full width,
  * genuinely"): the SVG below carries ONLY geometry — the baked plate `<image>` and the decorative,
@@ -20,16 +20,23 @@
  * per-point hit target, the filter, the zoom toggle) is plain HTML, absolutely positioned over the
  * SVG by PERCENTAGE (so it tracks the geometry as the container resizes) but sized in CSS pixels
  * (so a font, once set, never grows or shrinks with the container — the defect this whole rewrite
- * exists to remove). The SVG's own `viewBox` is the bake's native frame; `width:100%` plus a CSS
- * `aspect-ratio` on its wrapper is the entire responsive mechanism — one render, no breakpoint, no
- * second layout to keep in sync with the first.
+ * exists to remove). The SVG's own `viewBox` is the bake's native frame; the plate keeps that
+ * frame's exact aspect at every size, and the `.mw-stage` wrapper below is what bounds it to the
+ * room the WINDOW actually has left after the furniture — see `render-web.mjs`'s own `buildCss`
+ * and `references/map-web-discipline.md`, "Fit the window". One render, no breakpoint, no second
+ * layout to keep in sync with the first.
  *
  * Two capabilities layered on top of that split, both governed by the same rule this genre has
  * always followed for interaction (`references/map-web-discipline.md`, "What must not become
  * interactive"): nothing the title claims may live ONLY behind them.
- *   - A FILTER (`.mw-filter`, radios) narrows which points are drawn, labelled and listed in the
- *     table — never which points exist. The "All regions" radio is checked by default, so the
- *     unfiltered view already shows the whole claim; a reader narrows past it, never into it.
+ *   - A FILTER (`.mw-filter`, radios drawn as chips) narrows which points are drawn, labelled and
+ *     listed in the table — never which points exist. The "All regions" radio is checked by
+ *     default, so the unfiltered view already shows the whole claim; a reader narrows past it,
+ *     never into it. Each element carries its group as a SLUG (`slugOf`), the same string the
+ *     radio's own `id` is built from, because the CSS that hides the other groups has to quote
+ *     that value inside a selector — see `render-web.mjs`'s `buildCss` for the defect that taught
+ *     this (an HTML-escaped `&amp;` inside a CSS string matched nothing, and one of this seed's
+ *     own three filters emptied the map).
  *   - An optional bounded ZOOM (`zoomable` prop, off for this seed's own data — see `SKILL.md`'s
  *     "When to use" for the test). Off, the frame shows exactly the full claim. On, a checkbox lets
  *     a reader scale the plate up by a fixed, capped factor (`ZOOM_SCALE`) inside a viewport that
@@ -149,33 +156,43 @@ export function MapWebSeed({
 
   return (
     <div className="map-web">
+      <p className="mw-title">{title}</p>
+      <p className="mw-source">{`${source} · ${basemapCredit}`}</p>
+
+      {/* The filter, drawn as a row of chips rather than bare radios. Every input below is a REAL
+          radio in a REAL `<fieldset>` — it is only moved out of sight by CSS (`render-web.mjs`'s
+          `.mw-chip input` rule), never replaced by a div pretending to be one: Tab still reaches
+          the group, Arrow keys still move within it, clicking the chip still activates the input
+          through the native `<label>` association, and with JavaScript off the whole thing still
+          works because nothing here is script-driven (`:has()` + `:checked` do the hiding). The
+          chip order is the reading order: "All regions" first, because that is the state the beat
+          renders in and the one that carries the whole claim. */}
       {groups.length > 1 && (
         <fieldset className="mw-filter">
           <legend>Filter by region</legend>
-          <label>
-            <input
-              type="radio"
-              name="mw-filter"
-              id="mw-filter-all"
-              defaultChecked
-            />
-            {" All regions"}
-          </label>
-          {groups.map((g) => (
-            <label key={g}>
+          <div className="mw-filter-options">
+            <label className="mw-chip">
               <input
                 type="radio"
                 name="mw-filter"
-                id={`mw-filter-${slugOf(g)}`}
+                id="mw-filter-all"
+                defaultChecked
               />
-              {` ${g}`}
+              <span>All regions</span>
             </label>
-          ))}
+            {groups.map((g) => (
+              <label className="mw-chip" key={g}>
+                <input
+                  type="radio"
+                  name="mw-filter"
+                  id={`mw-filter-${slugOf(g)}`}
+                />
+                <span>{g}</span>
+              </label>
+            ))}
+          </div>
         </fieldset>
       )}
-
-      <p className="mw-title">{title}</p>
-      <p className="mw-source">{`${source} · ${basemapCredit}`}</p>
 
       {zoomable && (
         <label className="mw-zoom-toggle-label" htmlFor="mw-zoom-toggle">
@@ -188,153 +205,162 @@ export function MapWebSeed({
         </label>
       )}
 
-      <div
-        className="mw-viewport"
-        style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
-        {...(zoomable
-          ? {
-              tabIndex: 0,
-              "aria-label":
-                "Pannable map area — arrow keys or scroll to pan when zoomed in.",
-            }
-          : {})}
-      >
-        <div className="mw-zoomable">
-          {/* Geometry only: the baked plate and the decorative, value-sized circles. No text — see
-              this file's own header note. `role="group"`, not `role="img"`: an `img` role would
-              flatten the (decorative-only, now) children into one opaque image, which is harmless
-              here since nothing inside is focusable any more, but `group` keeps the door open
-              without asserting a stronger claim than "here is a cluster of shapes" — the meaningful
-              description is `aria-label` below, and the real interaction lives in the HTML
-              overlay, not in this SVG. */}
-          <svg
-            className="map"
-            viewBox={`0 0 ${frame.width} ${frame.height}`}
-            preserveAspectRatio="xMidYMid meet"
-            role="group"
-            aria-label={alt}
-          >
-            <defs>
-              <clipPath id="plate-clip">
-                <rect x={0} y={0} width={frame.width} height={frame.height} />
-              </clipPath>
-            </defs>
-            <g clipPath="url(#plate-clip)">
-              <image
-                href={plate}
-                x={0}
-                y={0}
-                width={frame.width}
-                height={frame.height}
-              />
-              {drawn.map((point) => {
-                const isSubject = point.key === SUBJECT_KEY;
-                const r = radiusOf(point.value);
-                const fill = isSubject ? accent : muted;
-                return (
-                  <circle
-                    key={point.key}
-                    cx={point.px}
-                    cy={point.py}
-                    r={r}
-                    fill={fill}
-                    fillOpacity={isSubject ? 0.55 : 0.38}
-                    stroke={fill}
-                    strokeWidth={Math.max(1, frame.width * 0.0016)}
-                    // The filter (render-web.mjs's own CSS, `:has()`) has to reach this decorative
-                    // mark too, or a narrowed view still leaves every OTHER region's circle sitting
-                    // on the map unlabelled — ambiguous ghosts, not a genuinely narrower map.
-                    data-group={point.group}
-                  />
-                );
-              })}
-            </g>
-          </svg>
+      {/* The stage: the one box that gets whatever vertical room the window has left once every
+          piece of furniture above and below has taken its own (`render-web.mjs`'s `buildCss`,
+          `.mw-stage`). The viewport inside it keeps the bake's own aspect EXACTLY — it is bounded
+          by the stage's height as well as its width, so a wide, short window shrinks the map and
+          centres it rather than pushing it past the fold, and a stretched plate (a lie about
+          distance and shape) is never one of the outcomes. */}
+      <div className="mw-stage">
+        <div
+          className="mw-viewport"
+          style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
+          {...(zoomable
+            ? {
+                tabIndex: 0,
+                "aria-label":
+                  "Pannable map area — arrow keys or scroll to pan when zoomed in.",
+              }
+            : {})}
+        >
+          <div className="mw-zoomable">
+            {/* Geometry only: the baked plate and the decorative, value-sized circles. No text — see
+                this file's own header note. `role="group"`, not `role="img"`: an `img` role would
+                flatten the (decorative-only, now) children into one opaque image, which is harmless
+                here since nothing inside is focusable any more, but `group` keeps the door open
+                without asserting a stronger claim than "here is a cluster of shapes" — the meaningful
+                description is `aria-label` below, and the real interaction lives in the HTML
+                overlay, not in this SVG. */}
+            <svg
+              className="map"
+              viewBox={`0 0 ${frame.width} ${frame.height}`}
+              preserveAspectRatio="xMidYMid meet"
+              role="group"
+              aria-label={alt}
+            >
+              <defs>
+                <clipPath id="plate-clip">
+                  <rect x={0} y={0} width={frame.width} height={frame.height} />
+                </clipPath>
+              </defs>
+              <g clipPath="url(#plate-clip)">
+                <image
+                  href={plate}
+                  x={0}
+                  y={0}
+                  width={frame.width}
+                  height={frame.height}
+                />
+                {drawn.map((point) => {
+                  const isSubject = point.key === SUBJECT_KEY;
+                  const r = radiusOf(point.value);
+                  const fill = isSubject ? accent : muted;
+                  return (
+                    <circle
+                      key={point.key}
+                      cx={point.px}
+                      cy={point.py}
+                      r={r}
+                      fill={fill}
+                      fillOpacity={isSubject ? 0.55 : 0.38}
+                      stroke={fill}
+                      strokeWidth={Math.max(1, frame.width * 0.0016)}
+                      // The filter (render-web.mjs's own CSS, `:has()`) has to reach this decorative
+                      // mark too, or a narrowed view still leaves every OTHER region's circle sitting
+                      // on the map unlabelled — ambiguous ghosts, not a genuinely narrower map. The
+                      // SLUG, not the raw name: this value is quoted inside a generated CSS selector.
+                      data-group={slugOf(point.group)}
+                    />
+                  );
+                })}
+              </g>
+            </svg>
 
-          {/* Point-name labels: HTML, positioned by PERCENTAGE of the frame (so they track the
-              geometry as the container resizes) with a font-size fixed in CSS (so the text itself
-              never grows or shrinks). The offset from the circle's own edge is ALSO a percentage
-              of the frame, not a fixed pixel gap — so the gap scales together with the circle it is
-              labelling, the same way the circle itself scales with the container, while only the
-              GLYPHS stay a constant size. A small opaque "chip" (`background: var(--ground)` in
-              CSS) stands in for the old SVG halo-stroke trick, keeping the label legible over
-              whatever the plate paints underneath it. */}
-          {drawn.map((point) => {
-            const isSubject = point.key === SUBJECT_KEY;
-            const r = radiusOf(point.value);
-            // `labelPlacement`'s own `margin` default (90) is an ABSOLUTE frame-unit number tuned
-            // for the OLD 496px bake — at this genre's now much bigger PLATE_SIZE (1000) that same
-            // default is barely 9% of the frame, not nearly enough room for a right-anchored label
-            // like "Athens" to avoid spilling past the container's own right edge at the NARROWEST
-            // width this genre ships (375px, where every frame-unit percent is only a few real CSS
-            // pixels). Passed explicitly, AS a fraction of the actual frame (`0.18`, the exact
-            // fraction — 90/496 — the old fixed bake used to get "for free"), so the flip threshold
-            // scales with whatever `PLATE_SIZE` a future bake picks instead of silently shrinking as
-            // a fraction the way the hardcoded default just did. Render-verified against this seed's
-            // own thirteen points at 375px: enough to flip Athens before it clips, not so much that
-            // it over-flips Warsaw into colliding with Berlin's own label.
-            const { side, dy } = labelPlacement(
-              point.px,
-              point.py,
-              frame,
-              frame.width * 0.18,
-            );
-            const gap = r + frame.width * 0.014;
-            const xPct = (point.px / frame.width) * 100;
-            const yPct = (point.py / frame.height) * 100;
-            const gapPct = (gap / frame.width) * 100;
-            const dyPct = (dy / frame.height) * 100;
-            const style: Record<string, string> = {
-              top: `${yPct + dyPct}%`,
-              transform: "translateY(-50%)",
-            };
-            if (side === "right") {
-              style.left = `${xPct + gapPct}%`;
-              style.textAlign = "left";
-            } else {
-              style.right = `${100 - (xPct - gapPct)}%`;
-              style.textAlign = "right";
-            }
-            return (
-              <span
-                key={point.key}
-                className={`point-label${isSubject ? " subject" : ""}`}
-                data-group={point.group}
-                style={style}
-              >
-                {point.name}
-              </span>
-            );
-          })}
+            {/* Point-name labels: HTML, positioned by PERCENTAGE of the frame (so they track the
+                geometry as the container resizes) with a font-size fixed in CSS (so the text itself
+                never grows or shrinks). The offset from the circle's own edge is ALSO a percentage
+                of the frame, not a fixed pixel gap — so the gap scales together with the circle it is
+                labelling, the same way the circle itself scales with the container, while only the
+                GLYPHS stay a constant size. A small opaque "chip" (`background: var(--ground)` in
+                CSS) stands in for the old SVG halo-stroke trick, keeping the label legible over
+                whatever the plate paints underneath it. */}
+            {drawn.map((point) => {
+              const isSubject = point.key === SUBJECT_KEY;
+              const r = radiusOf(point.value);
+              // `labelPlacement`'s own `margin` default (90) is an ABSOLUTE frame-unit number tuned
+              // for the OLD 496px bake — at this genre's now much bigger PLATE_SIZE (1000) that same
+              // default is barely 9% of the frame, not nearly enough room for a right-anchored label
+              // like "Athens" to avoid spilling past the container's own right edge at the NARROWEST
+              // width this genre ships (375px, where every frame-unit percent is only a few real CSS
+              // pixels). Passed explicitly, AS a fraction of the actual frame (`0.18`, the exact
+              // fraction — 90/496 — the old fixed bake used to get "for free"), so the flip threshold
+              // scales with whatever `PLATE_SIZE` a future bake picks instead of silently shrinking as
+              // a fraction the way the hardcoded default just did. Render-verified against this seed's
+              // own thirteen points at 375px: enough to flip Athens before it clips, not so much that
+              // it over-flips Warsaw into colliding with Berlin's own label.
+              const { side, dy } = labelPlacement(
+                point.px,
+                point.py,
+                frame,
+                frame.width * 0.18,
+              );
+              const gap = r + frame.width * 0.014;
+              const xPct = (point.px / frame.width) * 100;
+              const yPct = (point.py / frame.height) * 100;
+              const gapPct = (gap / frame.width) * 100;
+              const dyPct = (dy / frame.height) * 100;
+              const style: Record<string, string> = {
+                top: `${yPct + dyPct}%`,
+                transform: "translateY(-50%)",
+              };
+              if (side === "right") {
+                style.left = `${xPct + gapPct}%`;
+                style.textAlign = "left";
+              } else {
+                style.right = `${100 - (xPct - gapPct)}%`;
+                style.textAlign = "right";
+              }
+              return (
+                <span
+                  key={point.key}
+                  className={`point-label${isSubject ? " subject" : ""}`}
+                  data-group={slugOf(point.group)}
+                  style={style}
+                >
+                  {point.name}
+                </span>
+              );
+            })}
 
-          {/* The interaction layer: one HTML `<button>` per point, positioned by percentage,
-              sized in FIXED CSS pixels (`HIT_TARGET_PX`) — a legitimate touch/pointer target at
-              every container width this genre ships, which an SVG-scaled hit circle is not (it
-              would be a few physical pixels across at 375px). `title` gives a native, no-JS
-              tooltip on hover — the HTML equivalent of the SVG `<title>` this genre used to nest;
-              `aria-label`/`data-detail` are baked in at build time, not assembled by the inline
-              script, so the no-JS page is still keyboard-reachable and its value is still
-              announced with the script absent entirely. `assets/interaction.mjs` (unchanged by a
-              new beat) wires hover, tap and keyboard once `scripts/render-web.mjs` inlines this
-              markup. */}
-          {drawn.map((point) => {
-            const detail = pointDetail(point);
-            const xPct = (point.px / frame.width) * 100;
-            const yPct = (point.py / frame.height) * 100;
-            return (
-              <button
-                key={point.key}
-                type="button"
-                className="pt"
-                style={{ left: `${xPct}%`, top: `${yPct}%` }}
-                aria-label={detail}
-                title={detail}
-                data-key={point.key}
-                data-detail={detail}
-                data-group={point.group}
-              />
-            );
-          })}
+            {/* The interaction layer: one HTML `<button>` per point, positioned by percentage,
+                sized in FIXED CSS pixels (`HIT_TARGET_PX`) — a legitimate touch/pointer target at
+                every container width this genre ships, which an SVG-scaled hit circle is not (it
+                would be a few physical pixels across at 375px). `title` gives a native, no-JS
+                tooltip on hover — the HTML equivalent of the SVG `<title>` this genre used to nest;
+                `aria-label`/`data-detail` are baked in at build time, not assembled by the inline
+                script, so the no-JS page is still keyboard-reachable and its value is still
+                announced with the script absent entirely. `assets/interaction.mjs` (unchanged by a
+                new beat) wires hover, tap and keyboard once `scripts/render-web.mjs` inlines this
+                markup. */}
+            {drawn.map((point) => {
+              const detail = pointDetail(point);
+              const xPct = (point.px / frame.width) * 100;
+              const yPct = (point.py / frame.height) * 100;
+              return (
+                <button
+                  key={point.key}
+                  type="button"
+                  className="pt"
+                  style={{ left: `${xPct}%`, top: `${yPct}%` }}
+                  aria-label={detail}
+                  title={detail}
+                  data-key={point.key}
+                  data-detail={detail}
+                  data-group={slugOf(point.group)}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -368,22 +394,23 @@ export function MapWebSeed({
 }
 
 /**
- * The accessibility answer this beat is built to demonstrate
+ * The accessibility answer this genre offers, now OPT-IN per beat
  * (`references/map-web-discipline.md`, "The accessibility question"): the SAME thirteen readings
- * the map draws spatially, again, as one plain HTML table — captioned, ordered largest first,
- * ALWAYS rendered (not behind a disclosure widget, not screen-reader-only CSS), so a reader with no
- * spatial access to the map has a complete, linear, exact account of everything the map claims.
- * Rendered ONCE by `scripts/render-web.mjs` (not duplicated — the same data does not need saying
- * twice), as plain semantic HTML rather than SVG text, because a `<table>` with real `<th>` cells
- * is what a screen reader's own table navigation understands.
+ * the map draws spatially, again, as one plain HTML table — captioned, ordered largest first, and
+ * when a beat asks for it, rendered plainly and visibly (never behind a disclosure widget, never
+ * screen-reader-only CSS), so a reader with no spatial access to the map has a complete, linear,
+ * exact account of everything the map claims. Rendered by `scripts/render-web.mjs` ONLY when that
+ * beat passes `regionTable: true` — this seed does not, and the discipline file names exactly what
+ * that costs. As plain semantic HTML rather than SVG text, because a `<table>` with real `<th>`
+ * cells is what a screen reader's own table navigation understands.
  *
- * Every row also carries `data-group` — the SAME filter that narrows the map's own points narrows
- * this table too (`render-web.mjs`'s CSS, one `:has()` rule per group, reaches both). This is not
- * an inconsistency with "the table always renders complete": with the default "All regions" radio
- * checked, every row is present, exactly as this genre has always guaranteed. A reader who narrows
- * the filter gets the SAME narrower reading on both channels, never a map that agrees with itself
- * but disagrees with the table — the "two channels, not one" rule in `map-web-discipline.md`
- * applied to filtering as much as to hover.
+ * Every row also carries `data-group` (the slug, the same string the map's own marks carry) — the
+ * SAME filter that narrows the map's own points narrows this table too (`render-web.mjs`'s CSS, one
+ * `:has()` rule per group, reaches both). This is not an inconsistency with "the table, when
+ * present, renders complete": with the default "All regions" radio checked, every row is present. A
+ * reader who narrows the filter gets the SAME narrower reading on both channels, never a map that
+ * agrees with itself but disagrees with the table — the "two channels, not one" rule in
+ * `map-web-discipline.md` applied to filtering as much as to hover.
  */
 export function RegionTable({
   points,
@@ -408,7 +435,7 @@ export function RegionTable({
         {rows.map((point) => (
           <tr
             key={point.key}
-            data-group={point.group}
+            data-group={slugOf(point.group)}
             className={point.key === SUBJECT_KEY ? "subject" : undefined}
           >
             <th scope="row">{point.name}</th>

@@ -3,9 +3,10 @@
 // The map genre's own third rung, the same role `twin-chart-web/scripts/render-web.mjs` plays for
 // charts: rung one and two of a map beat are the still and the video
 // (`twin-map-beat/scripts/render-map.mjs`); this turns the SAME baked plate into one self-contained
-// HTML file — one fluid SVG (geometry only) plus its full HTML overlay (furniture, controls), one
-// always-rendered accessible table, one inlined interaction script, no external request once the
-// plate is inlined as a data URI.
+// HTML file — one fluid SVG (geometry only) plus its full HTML overlay (furniture, controls), the
+// accessible region table when the beat opted into it (`regionTable`, off by default), one inlined
+// interaction script, no external request once the plate is inlined as a data URI. The beat it
+// writes fits the reader's window: see `buildCss`'s own "FIT THE WINDOW" note.
 //
 // It runs in node, which is why it derives the furniture colours: `deriveFurniture` lives beside a
 // native rasteriser in this skill's OWN `./render-still.mjs` (a byte-identical copy of
@@ -39,8 +40,9 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // ===== CONFIG — edit for your story =====
 // Everything between here and the closing marker is the SEED beat's own words and defaults — what
 // a journalist writing their own map-web beat replaces wholesale. Everything else in this file —
-// `renderMapWeb` and its `{ component, table, props, outDir, name }` signature, `inlineable`,
-// `escapeHtml`, `buildCss` — is this genre's own mechanics and is left alone.
+// `renderMapWeb` and its `{ component, table, props, outDir, name, regionTable }` signature,
+// `inlineable`, `escapeHtml`, `assertDistinctSlugs`, `buildCss` — is this genre's own mechanics and
+// is left alone.
 const SEED = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
@@ -57,6 +59,11 @@ const SEED = {
   // mechanism is real and unit-tested (test/render-web.test.ts exercises `zoomable: true`
   // directly) but this seed's own data does not warrant turning it on.
   zoomable: false,
+  // The accessible region table: OPT-IN per beat, and off here. What that costs a reader with no
+  // spatial access to the map is stated plainly in references/map-web-discipline.md, "The
+  // accessibility question" — read it before leaving this false in a beat of your own. Turning it
+  // on costs one word here; every `.pt` button keeps its own `aria-label` either way.
+  regionTable: false,
 };
 // Baked generously so the plate stays at or near native resolution across the tested width range
 // (375–1600px, minus the page's own 16px body padding on each side) rather than a narrow max-width
@@ -71,21 +78,30 @@ const OUTPUT_NAME = "population.html";
 
 /**
  * SSRs the map component ONCE (no per-layout duplication — the fluid SVG plus its HTML overlay IS
- * the one responsive render, see `MapWebSeed.tsx`'s own header note), SSRs `table` ONCE, wraps both
- * in one self-contained HTML file and writes it to disk. Generic across every map-web beat: it does
- * not know a story's own point count or its own filter groups.
+ * the one responsive render, see `MapWebSeed.tsx`'s own header note), SSRs `table` when — and only
+ * when — the beat asked for it, wraps the result in one self-contained HTML file and writes it to
+ * disk. Generic across every map-web beat: it does not know a story's own point count or its own
+ * filter groups.
+ *
+ * `regionTable` (default FALSE) is the accessible region table's own switch. It is opt-in rather
+ * than automatic, and `references/map-web-discipline.md`'s "The accessibility question" states in
+ * full what a reader with no spatial access to the map loses when a beat leaves it off — a beat
+ * making that choice should have read it.
  */
-async function renderMapWeb({ component, table, props, outDir, name }) {
+async function renderMapWeb({ component, table, props, outDir, name, regionTable = false }) {
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
-  const tableHtml = renderToStaticMarkup(
-    createElement(table, { points: props.geometry.points, ...furniture }),
-  );
+  const tableHtml = regionTable
+    ? renderToStaticMarkup(
+        createElement(table, { points: props.geometry.points, ...furniture }),
+      )
+    : "";
 
   const interactionSource = await readFile(join(HERE, "../assets/interaction.mjs"), "utf8");
   const inlineScript = inlineable(interactionSource);
 
   const groups = groupsOf(props.geometry.points);
+  assertDistinctSlugs(groups);
 
   const html = `<!doctype html>
 <html lang="en">
@@ -94,7 +110,7 @@ async function renderMapWeb({ component, table, props, outDir, name }) {
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ...props, ...furniture, groups })}
+${buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame })}
 </style>
 </head>
 <body>
@@ -126,8 +142,32 @@ function escapeHtml(text) {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function escapeAttr(text) {
-  return text.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+/**
+ * Fails loud when two filter groups slug to the same string, or when one of them slugs to `all` —
+ * both would silently break the filter rather than break the build. Every group's identity travels
+ * through `slugOf` twice over (the radio's `id`, and the `data-group` every mark/label/button/row
+ * carries), and `#mw-filter-all` is the reserved id of the unfiltered option, so a study set with
+ * groups named "All" and "all", or "Nord-Ost" and "Nord/Ost", would render a control that quietly
+ * narrows to the wrong set. There is no correct silent behaviour here, so there is none.
+ */
+function assertDistinctSlugs(groups) {
+  const seen = new Map();
+  for (const group of groups) {
+    const slug = slugOf(group);
+    if (slug === "all")
+      throw new Error(
+        `the filter group ${JSON.stringify(group)} slugs to "all", the reserved id of the unfiltered option — rename it`,
+      );
+    if (!slug)
+      throw new Error(
+        `the filter group ${JSON.stringify(group)} slugs to an empty string — rename it`,
+      );
+    if (seen.has(slug))
+      throw new Error(
+        `the filter groups ${JSON.stringify(seen.get(slug))} and ${JSON.stringify(group)} both slug to ${JSON.stringify(slug)} — one filter would narrow to both`,
+      );
+    seen.set(slug, group);
+  }
 }
 
 /**
@@ -142,11 +182,24 @@ function escapeAttr(text) {
  * view still renders complete" on anything older, which is exactly the guarantee this genre already
  * makes for JavaScript being off.
  */
-function buildCss({ ground, accent, ink, muted, groups }) {
+function buildCss({ ground, accent, ink, muted, groups, frame }) {
+  // The plate's own aspect, the one number both the stage's width bound and the viewport's
+  // `aspect-ratio` are computed from, so the box can never be asked to be two shapes at once.
+  const aspect = frame.width / frame.height;
   const filterRules = groups
     .map((g) => {
       const id = `mw-filter-${slugOf(g)}`;
-      const attr = escapeAttr(g);
+      // The SLUG is what every mark, label, button and table row carries as `data-group`, and the
+      // slug is what this selector quotes — because the two used to differ and one of this seed's
+      // own three filters emptied the entire map. The raw group name was HTML-escaped into the
+      // selector (`escapeAttr`), so "Central & Northern Europe" became `[data-group="Central &amp;
+      // Northern Europe"]`: inside a CSS string `&amp;` is five literal characters, matching no
+      // element, so `:not(...)` matched EVERY element and hid all thirteen points, all thirteen
+      // circles and every table row. Nothing was red; the markup and the CSS each looked correct in
+      // isolation. `slugOf` output is `[a-z0-9-]+` by construction, so there is no escaping
+      // question left to get wrong, and `assertDistinctSlugs` above refuses the collisions that
+      // one vocabulary makes possible.
+      const attr = slugOf(g);
       return [
         `.map-web-page:has(#${id}:checked) .pt:not([data-group="${attr}"]) { display: none; }`,
         `.map-web-page:has(#${id}:checked) .point-label:not([data-group="${attr}"]) { display: none; }`,
@@ -166,38 +219,143 @@ function buildCss({ ground, accent, ink, muted, groups }) {
   --accent: ${accent};
   --ink: ${ink};
   --muted: ${muted};
+  /* One number, used by the body's own padding AND by the height the beat is asked to fit inside,
+     so the two can never disagree about how much room the page edge takes. */
+  --page-pad: 16px;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  padding: 16px;
+  padding: var(--page-pad);
   background: var(--ground);
   color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-/* No max-width anywhere below: the beat takes the width its container gives it
-   (map-web-discipline.md, "Full width, genuinely"). The only bound is the map frame's own
-   aspect-ratio, which keeps the plate from ever stretching into a letterbox strip. */
-.map-web-page, .map-web { width: 100%; }
+.map-web-page { width: 100%; }
+/* FIT THE WINDOW (map-web-discipline.md, "Fit the window"). The beat is a column exactly one
+   window tall: every piece of furniture takes the height it needs, and .mw-stage is handed
+   whatever is left. Nothing scrolls inside the visual, at any width — before this, the map's own
+   aspect-locked height grew with the width, so a 1600px-wide window drew a 1568px-tall map and the
+   claim ("Paris is the largest") sat 800px below the fold, unseen.
+   'svh', not 'vh': on a phone with a retracting toolbar, 'vh' is the LARGE viewport, which is
+   exactly the height the beat must not assume it has. The 'vh' line above it is the fallback for a
+   browser without 'svh', and errs one toolbar too tall rather than clipping. */
+.map-web {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--page-pad) * 2);
+  height: calc(100svh - var(--page-pad) * 2);
+}
+/* Only the stage gives up height. Measured, and not obvious: with 'min-height' here instead of
+   'height', the stage's own height stays INDEFINITE for container-query purposes and every 'cqh'
+   inside it resolves to zero — the map collapsed to its 2px border and nothing was red. A definite
+   height is what makes the stage a real size container. */
+.map-web > *:not(.mw-stage) { flex: 0 0 auto; }
 .mw-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; }
 .mw-source { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+/* THE FILTER, drawn as chips (map-web-discipline.md, "Filters"). Bare browser radios read as an
+   unfinished form, not as an editorial control — and a 15px-tall label row is a poor pointer target
+   besides. Every input below is still a real radio in a real fieldset: it is moved out of sight,
+   never replaced, so Tab still reaches the group, Arrow keys still move within it, the native
+   <label> association still makes the whole chip clickable, and none of it needs JavaScript. */
 .mw-filter {
-  border: 1px solid var(--muted);
-  border-radius: 4px;
-  padding: 8px 12px;
-  margin: 0 0 12px;
-  font-size: 13px;
+  border: 0;
+  padding: 0;
+  margin: 0 0 14px;
+  min-width: 0;
 }
-.mw-filter legend { font-size: 12px; font-weight: 600; padding: 0 4px; }
-.mw-filter label { margin-right: 14px; white-space: nowrap; cursor: pointer; }
+.mw-filter legend {
+  padding: 0;
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.mw-filter-options { display: flex; flex-wrap: wrap; gap: 6px; }
+.mw-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 5px 14px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--ink);
+  background: var(--ground);
+  cursor: pointer;
+}
+/* Out of sight, still in the accessibility tree, still focusable, still keyboard-operable. NOT
+   'display: none' and NOT 'visibility: hidden' — either would take the radio out of the tab
+   order and out of the arrow-key group, which is the whole thing this treatment must not cost. */
+.mw-chip input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.mw-chip:hover { border-color: var(--ink); }
+.mw-chip:has(input:checked) {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--ground);
+  font-weight: 600;
+}
+.mw-chip:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* In forced-colours mode the system paints its own background and text, so "the filled chip is the
+   checked one" stops being visible at all. Rather than invent a substitute, put the native control
+   back: the OS already draws a radio the reader recognises. */
+@media (forced-colors: active) {
+  .mw-chip input {
+    position: static;
+    width: auto;
+    height: auto;
+    opacity: 1;
+    pointer-events: auto;
+    margin-right: 6px;
+  }
+  .mw-chip:has(input:checked) { font-weight: 700; }
+}
 .mw-zoom-toggle-label { display: inline-block; font-size: 13px; margin: 0 0 8px; cursor: pointer; }
-/* The viewport: aspect-ratio locked to the plate's own frame, so height grows WITH the width
-   instead of staying fixed while the width alone stretches (the letterbox failure mode this genre
-   exists to avoid). Not zoomed: overflow hidden, content exactly fills it, nothing to pan. */
+/* The stage: the leftover height, and the container the map is measured against. 'container-type:
+   size' is what lets the viewport below bound itself by the stage's HEIGHT as well as its width —
+   CSS has no other way to say "as wide as you like, but never taller than the room left". */
+.mw-stage {
+  flex: 1 1 auto;
+  container-type: size;
+  min-height: 180px;
+}
+/* The viewport: the bake's own aspect, exactly, at every size — bounded by the stage's width AND
+   its height, whichever binds first, and centred when it is the height. A plate stretched to fill
+   a shape it was not baked for is a lie about distance and shape (geo-discipline.md), so it is not
+   one of the outcomes here; a smaller, correct map is. The plain 'width: 100%' above the 'min()'
+   is the fallback for a browser without container query units — it fills the width, exactly as this
+   genre did before, rather than collapsing. */
 .mw-viewport {
   position: relative;
   width: 100%;
-  overflow: hidden;
+  width: min(100cqw, calc(100cqh * ${aspect}));
+  max-width: 100%;
+  /* Left-aligned, not centred. When the WINDOW's height is what bounds the map, the leftover room
+     is horizontal, and a centred map floats away from the title, the filter chips and the legend —
+     which are all flush left, at full width. Flush left puts every edge of the beat on one line and
+     collects the spare room as a margin. When width is what binds (the common case), the map fills
+     it and this does nothing at all. */
+  margin-inline: 0 auto;
+  /* 'visible', not 'hidden'. The plate and its circles are already clipped to the frame by the
+     SVG's own clipPath, so the only thing this would clip is a point LABEL — a name, which is
+     data. A label's width is a fixed number of CSS pixels while the frame it is placed in is a
+     percentage, so at the narrow end the two stop fitting together no matter how the flip margin
+     is tuned: measured at 375px, 'Stockholm' and 'Warsaw' each lost 3-4px off their last letter.
+     Letting them spill into the page's own side gutter keeps the word whole. Zoomed, the rule
+     below takes over and this becomes 'auto' — a pannable box must clip. */
+  overflow: visible;
   border: 1px solid var(--muted);
 }
 .mw-viewport[tabindex] { outline-offset: 2px; }
@@ -276,9 +434,11 @@ ${filterRules}
   z-index: 10;
 }
 #tooltip[hidden] { display: none; }
-/* The accessible table (MapWebSeed.tsx's RegionTable): a real, always-visible table, not a
-   screen-reader-only trick — see references/map-web-discipline.md, "The accessibility
-   question". Styled plainly enough to read as a data table, not hidden or shrunk to decoration. */
+/* The accessible table (MapWebSeed.tsx's RegionTable), present only when the beat opted in: when it
+   IS here it is a real, plainly visible table, never a screen-reader-only trick — see
+   references/map-web-discipline.md, "The accessibility question", which also states what the
+   default (off) costs a reader with no spatial access to the map. Styled plainly enough to read as
+   a data table, not hidden or shrunk to decoration. */
 .region-table {
   width: 100%;
   border-collapse: collapse;
@@ -356,6 +516,7 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
     },
     outDir,
     name,
+    regionTable: SEED.regionTable,
   });
   return { outPath, points: merged.length };
 }

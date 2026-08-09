@@ -1,4 +1,7 @@
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "../scripts/render-still.mjs";
@@ -8,6 +11,7 @@ import {
   pointDetail,
   ZOOM_SCALE,
 } from "../assets/MapWebSeed.tsx";
+import { renderMapWeb } from "../scripts/render-web.mjs";
 import {
   radiusScale,
   niceReferenceValues,
@@ -225,16 +229,35 @@ describe("MapWebSeed", () => {
   it("should tag every point button, decorative circle and point label with its own data-group", () => {
     const html = renderSeed();
     expect(html).toContain(
-      'data-key="paris" data-detail="Alpha City : 11,0 million inhabitants" data-group="West"',
+      'data-key="paris" data-detail="Alpha City : 11,0 million inhabitants" data-group="west"',
     );
     // The decorative SVG mark too — not just the interactive button and the label — or a filtered
     // view leaves unlabelled ghost circles on the map (caught by screenshotting the filtered
     // state; see references/map-web-discipline.md, "Filters").
-    expect((html.match(/<circle[^>]*data-group="West"/g) ?? []).length).toBe(1);
-    expect((html.match(/<circle[^>]*data-group="East"/g) ?? []).length).toBe(2);
+    expect((html.match(/<circle[^>]*data-group="west"/g) ?? []).length).toBe(1);
+    expect((html.match(/<circle[^>]*data-group="east"/g) ?? []).length).toBe(2);
     expect((html.match(/class="point-label[^"]*"/g) ?? []).length).toBe(
       POINTS.length,
     );
+  });
+
+  it("should carry the group SLUG in data-group, never the raw name — the value a CSS selector has to quote", () => {
+    // The defect this pins: the raw name was HTML-escaped into the generated selector, so a group
+    // called "Central & Northern Europe" produced `[data-group="Central &amp; Northern Europe"]`,
+    // which matches nothing in CSS — and the `:not()` around it then matched everything, emptying
+    // the map. See references/map-web-discipline.md, "Filters".
+    const ampersand = POINTS.map((p) =>
+      p.group === "East" ? { ...p, group: "Central & Northern" } : p,
+    );
+    const html = renderSeed({
+      geometry: { frame: GEOMETRY.frame, points: ampersand },
+    } as any);
+    expect(html).toContain('data-group="central-northern"');
+    expect(html).toContain('id="mw-filter-central-northern"');
+    // The raw name still reads as the chip's own visible label — it is the value carried in
+    // `data-group` (and quoted in a CSS selector) that must never be the escaped form.
+    expect(html).toContain("<span>Central &amp; Northern</span>");
+    expect(html).not.toMatch(/data-group="[^"]*&amp;/);
   });
 
   it("should render a filter fieldset with one radio per group plus an 'all' radio, all checked by 'All'", () => {
@@ -244,6 +267,34 @@ describe("MapWebSeed", () => {
     expect(html).toMatch(/id="mw-filter-all"[^>]*checked/);
     expect(html).toContain('id="mw-filter-east"');
     expect(html).toContain('id="mw-filter-west"');
+  });
+
+  it("should draw each filter option as a chip around a REAL radio, not a div wearing a role", () => {
+    // The styling must not cost the native control (references/map-web-discipline.md, "Filters"):
+    // whatever the chip looks like, Tab reaching the group and Arrow keys moving within it come
+    // from the input being a real radio in a real fieldset, and nothing else.
+    const html = renderSeed();
+    const chips = html.match(/<label class="mw-chip">/g) ?? [];
+    expect(chips.length).toBe(groupsOf(POINTS).length + 1); // one per group, plus "All regions"
+    expect(html).not.toContain('role="radio"');
+    expect(html).toMatch(
+      /<label class="mw-chip"><input type="radio" id="mw-filter-all" name="mw-filter" checked/,
+    );
+  });
+
+  it("should put the title before the filter — a control never precedes the claim it narrows", () => {
+    const html = renderSeed();
+    expect(html.indexOf('class="mw-title"')).toBeLessThan(
+      html.indexOf('class="mw-filter"'),
+    );
+  });
+
+  it("should wrap the map in a stage — the box that gets whatever height the window has left", () => {
+    const html = renderSeed();
+    expect(html).toContain('class="mw-stage"');
+    expect(html.indexOf('class="mw-stage"')).toBeLessThan(
+      html.indexOf('class="mw-viewport"'),
+    );
   });
 
   it("should render no filter fieldset when every point shares one group", () => {
@@ -349,12 +400,97 @@ describe("RegionTable", () => {
     expect(html).toContain("1,4 M");
   });
 
-  it("should tag every row with its own data-group, the same filter that narrows the map", () => {
+  it("should tag every row with its own data-group SLUG, the same filter that narrows the map", () => {
     const furniture = deriveFurniture(BASE.ground);
     const html = renderToStaticMarkup(
       createElement(RegionTable, { points: POINTS, ...furniture }),
     );
-    expect(html).toContain('data-group="West"');
-    expect((html.match(/data-group="East"/g) ?? []).length).toBe(2);
+    expect(html).toContain('data-group="west"');
+    expect((html.match(/data-group="east"/g) ?? []).length).toBe(2);
+  });
+});
+
+/**
+ * `renderMapWeb` — the genre's own machinery, exercised through the file it actually writes. These
+ * assertions are about the HTML on disk, not about a React tree, because the two places this genre
+ * has been wrong were both in the assembly: a CSS selector that quoted a string the markup never
+ * carried, and a table nobody chose to include.
+ */
+describe("renderMapWeb", () => {
+  const PROPS = { ...BASE, geometry: GEOMETRY };
+
+  async function build(options: Record<string, unknown> = {}) {
+    const outDir = mkdtempSync(join(tmpdir(), "map-web-render-"));
+    try {
+      await renderMapWeb({
+        component: MapWebSeed,
+        table: RegionTable,
+        props: PROPS as any,
+        outDir,
+        name: "beat.html",
+        ...options,
+      });
+      return readFileSync(join(outDir, "beat.html"), "utf8");
+    } finally {
+      rmSync(outDir, { recursive: true, force: true });
+    }
+  }
+
+  it("should leave the accessible region table OUT by default — it is opt-in per beat", async () => {
+    const html = await build();
+    expect(html).not.toContain('class="region-table"');
+    // What a reader without the table still has, and what the discipline file weighs the choice
+    // against: every point is still a labelled, focusable button.
+    expect(html).toContain('aria-label="Alpha City : 11,0 million inhabitants"');
+  });
+
+  it("should render the table when the beat asks for it, with one row per point", async () => {
+    const html = await build({ regionTable: true });
+    expect(html).toContain('class="region-table"');
+    expect((html.match(/<th scope="row">/g) ?? []).length).toBe(POINTS.length);
+  });
+
+  it("should generate a filter selector quoting the SLUG, never an HTML-escaped group name", async () => {
+    const ampersand = POINTS.map((p) =>
+      p.group === "East" ? { ...p, group: "Central & Northern" } : p,
+    );
+    const html = await build({
+      props: { ...PROPS, geometry: { ...GEOMETRY, points: ampersand } },
+    });
+    expect(html).toContain(
+      '.map-web-page:has(#mw-filter-central-northern:checked) .pt:not([data-group="central-northern"])',
+    );
+    // The exact string that used to be generated, and that matched nothing.
+    expect(html).not.toContain('[data-group="Central &amp; Northern"]');
+  });
+
+  it("should refuse two groups that slug alike rather than render a filter that narrows to both", async () => {
+    const collide = POINTS.map((p, i) => ({
+      ...p,
+      group: i === 0 ? "Nord-Ost" : "Nord/Ost",
+    }));
+    await expect(
+      build({ props: { ...PROPS, geometry: { ...GEOMETRY, points: collide } } }),
+    ).rejects.toThrow("both slug to");
+  });
+
+  it("should refuse a group named so that it slugs to the unfiltered option's own reserved id", async () => {
+    const reserved = POINTS.map((p, i) => ({
+      ...p,
+      group: i === 0 ? "All" : "East",
+    }));
+    await expect(
+      build({ props: { ...PROPS, geometry: { ...GEOMETRY, points: reserved } } }),
+    ).rejects.toThrow('slugs to "all"');
+  });
+
+  it("should bound the map by the window's height, not only by its width", async () => {
+    // The mechanism, asserted as text because its EFFECT is only observable in a browser — which is
+    // what scripts/verify-interaction.mjs measures. This test's job is to notice the rule being
+    // deleted, not to prove it works.
+    const html = await build();
+    expect(html).toContain("container-type: size");
+    expect(html).toContain("width: min(100cqw, calc(100cqh * 1))");
+    expect(html).toContain("height: calc(100svh - var(--page-pad) * 2)");
   });
 });

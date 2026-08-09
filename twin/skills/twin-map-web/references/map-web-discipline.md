@@ -20,14 +20,17 @@ either sat in a gutter or (worse) never filled the space it was given at all.
 
 - The SVG's `viewBox` is set to the baked plate's own frame (`geometry.frame`), and the SVG itself
   is drawn at `width: 100%` inside a wrapper (`.mw-viewport`) whose CSS `aspect-ratio` is locked to
-  that SAME frame. **Width fills the container; height grows WITH the width**, because the aspect
-  ratio — not a fixed height — is what is held constant. This is the fix for the specific failure
+  that SAME frame. **The map's shape is held constant and its size is not** — the aspect ratio, not
+  a fixed height, is what never changes. (Width alone used to decide the size; since "Fit the
+  window" below, the smaller of the room's width and its remaining height does.) This is the fix for the specific failure
   the beat's own owner named while this was mid-build: setting `width: 100%` on an element that
   still has a FIXED height turns a wide container into a letterbox strip, stretching the plate's own
   pixels horizontally without ever growing them vertically to match — a real distortion of the
   basemap, the exact thing this project's whole geo discipline exists to prevent. `aspect-ratio`
   (not a max-width, not a fixed height) is the one CSS property doing that job.
-- **No max-width anywhere in this genre's own CSS.** An earlier draft of this rewrite bounded the
+- **No max-width anywhere in this genre's own CSS** (the only bound on the map is the window's own
+  remaining height — "Fit the window" below — which is a bound on the SCREEN, not a fixed number of
+  pixels chosen at authoring time). An earlier draft of this rewrite bounded the
   map's own display size with a `max-width`, reasoning that a raster plate should not be asked to
   cover more screen than it was baked for. That is real (see "The plate strategy" below), but a
   `max-width` is the WRONG place to put that reasoning: it leaves an empty gutter beside the map on
@@ -39,6 +42,62 @@ either sat in a gutter or (worse) never filled the space it was given at all.
   container resizes, at every width, not just the two this genre used to ship. Their FONT SIZE stays
   a fixed CSS number regardless: see "Text is HTML, not SVG" below for why that is the one thing
   that must NOT scale with the container.
+
+**One thing on this page is now bounded, and it is the height** — see "Fit the window" immediately
+below, written after the owner looked at a real render and found the beat taller than the screen it
+was on. The width still fills; what changed is that filling the width no longer buys an unbounded
+height with it.
+
+## Fit the window
+
+**A beat that does not fit the window is not finished.** Measured on the shipped render before this
+rule existed: at 1600×900 the page was **2275px tall** — the map alone was 1568px, because its
+height was locked to the plate's aspect and its width filled the container. The claim the title
+makes ("Paris draws the largest circle") sat **800px below the fold**, and a reader arriving at the
+beat saw the Baltic and no Paris at all. That is the defect this section closes.
+
+**The rule: the visual — title, source, controls, map, legend, subject note, caveat — occupies at
+most one window, and nothing scrolls inside it.** The optional region table (see "The accessibility
+question") sits below the beat and is normal document reading, not scrolling *inside* the visual.
+
+**The mechanism** (`render-web.mjs`'s `buildCss`, and `.mw-stage` in `MapWebSeed.tsx`):
+
+- `.map-web` is a flex column with a **definite** height of `calc(100svh - page padding)`. `svh`,
+  not `vh`: on a phone with a retracting toolbar `vh` is the LARGE viewport, which is exactly the
+  height the beat must not assume it has. A `vh` line precedes it as the fallback for a browser
+  without `svh`, erring one toolbar too tall rather than clipping.
+- Every piece of furniture takes the height it needs (`flex: 0 0 auto`); `.mw-stage` is handed
+  whatever is left, with a `min-height` floor of `180px`. Below that floor — a very short window —
+  the page scrolls again, deliberately: a 40px-tall map would be worse than a scrollbar.
+- `.mw-stage` carries `container-type: size`, and the map box inside it is
+  `width: min(100cqw, 100cqh × aspect)` with the bake's own `aspect-ratio`. That is the whole fit:
+  **as wide as the room allows, never taller than the room left, and always the plate's own shape.**
+  CSS has no other way to state "bounded by both axes at once" for a non-replaced box — `max-height`
+  on an `aspect-ratio` box clamps the height WITHOUT re-deriving the width, which distorts.
+- A plain `width: 100%` precedes the `min()` as the fallback for a browser with no container query
+  units: it fills the width, exactly as this genre did before, rather than collapsing.
+
+**One measured trap, or this costs an evening.** The stage's height must be **definite** for `cqh`
+to resolve. With `min-height` on `.map-web` instead of `height`, every `cqh` inside the stage
+resolved to **zero** and the map collapsed to its 2px border — while `cqw` resolved correctly, and
+nothing anywhere was red. If a map ever renders as a hairline, this is why.
+
+**What the fit costs, and why it is the right trade.** This seed's plate is square (the study set's
+own Mercator extent is near-square — a landscape bake would only add ocean). In a wide, short
+window the height binds first, so the map is drawn smaller than the full width and the leftover room
+becomes margin. **The map is flush LEFT, not centred**, so its edge lines up with the title, the
+filter chips and the legend rather than floating away from them. The alternative — stretching the
+plate to fill the width — is not on the table at all: a non-uniform scale is a lie about distance
+and shape (`geo-discipline.md`), and this genre would rather draw a smaller true map than a larger
+false one.
+
+**Point labels are allowed to spill past the frame.** `.mw-viewport` is `overflow: visible` when not
+zoomed. The plate and its circles are already clipped by the SVG's own `clipPath`, so the only thing
+that overflow would ever clip is a point NAME — which is data. A label's width is a fixed number of
+CSS pixels while its position is a percentage of a shrinking frame, so at the narrow end the two
+stop fitting no matter how the flip margin is tuned: measured at 375px, "Stockholm" and "Warsaw"
+each lost 3-4px off their last letter. Spilling into the page's own gutter keeps the word whole.
+Zoomed, the box must clip, and the zoom rule sets `overflow: auto`.
 
 ## The plate strategy
 
@@ -127,24 +186,52 @@ Two answers were on the table for this beat, and only one of them is honest:
   read every fact the pattern is made of, in a stable order, with the same exactness a sighted
   reader gets from a hover.
 
-This beat ships the second answer, as `RegionTable` in `assets/MapWebSeed.tsx`: the same thirteen
-`(name, value)` pairs the map draws, rendered ONCE (not per responsive layout — the same facts do
-not need saying twice, and there is no longer a second layout to duplicate it for regardless — see
-"Full width, genuinely" above) as a real HTML `<table>`, captioned, with `<th scope="row">`/`<th
-scope="col">` so a screen reader's own table navigation (row-by-row, column-by-column) actually
-works on it, largest value first so "the first row" means something instead of being an accident of
-data order. It is `readingOrder`, the exported function every consumer of the geometry uses, so the
-table's order and a sighted keyboard user's Left/Right/Home/End order are the same order — nobody
-gets a *different* map depending on how they read it, only a different medium for the same one.
+This genre SHIPS the second answer, as `RegionTable` in `assets/MapWebSeed.tsx`: the same thirteen
+`(name, value)` pairs the map draws, rendered as a real HTML `<table>`, captioned, with `<th
+scope="row">`/`<th scope="col">` so a screen reader's own table navigation (row-by-row,
+column-by-column) actually works on it, largest value first so "the first row" means something
+instead of being an accident of data order. It is `readingOrder`, the exported function every
+consumer of the geometry uses, so the table's order and a sighted keyboard user's
+Left/Right/Home/End order are the same order — nobody gets a *different* map depending on how they
+read it, only a different medium for the same one.
 
-Three choices this table deliberately makes, each closing a way the same idea goes wrong in
-practice:
+### The table is OPT-IN, and this is what leaving it off costs
 
-- **Always rendered, never behind a toggle or `sr-only` CSS.** A disclosure widget ("show data
-  table") adds an extra interaction step for the one reader who most needs the fallback not to be
-  optional, and screen-reader-only CSS has a well-known failure mode: a positioning bug, a CSS reset
-  that strips it, an author who "cleans up" a rule they do not recognise the purpose of, and the
-  content silently stops reaching anyone. Visible-to-everyone is what makes it un-losable.
+**The owner's call, taken with the reasoning above intact rather than against it:** `renderMapWeb`'s
+`regionTable` option defaults to **false**, and this skill's own seed leaves it false. A beat that
+wants the table writes one word.
+
+**State it plainly, because a default is what most beats will ship with.** A map is a spatial
+medium. A screen-reader user has no spatial access to it. The table was the answer to that fact —
+the only one this genre found that is honest — and **a beat that leaves it off has no answer.**
+Concretely, that reader loses:
+
+- **the complete set of readings.** With the table, they have all thirteen names and all thirteen
+  values, in a stable order, exactly as exact as a sighted reader's hover. Without it, the values
+  exist only on thirteen `.pt` buttons, reachable one Tab at a time in an order they cannot see and
+  have no map of — the values survive, the ACCOUNT of them does not.
+- **the comparison the beat is about.** "Paris is the largest" is a claim about thirteen numbers
+  side by side. A table makes it checkable in one pass. Thirteen separate focus stops do not: by the
+  eighth the reader is remembering, not reading.
+- **any reading at all without a keyboard trap of patience.** The table is one element a screen
+  reader announces as a table, with row and column navigation built in. The button sweep is thirteen
+  interactions to obtain what the table gives in one.
+
+The `.pt` buttons keep their own `aria-label`s either way, and the SVG keeps its `alt`. That is not
+a substitute — see "Two channels, not one" below, which says exactly this in the other direction.
+**Leave the table off when the beat genuinely does not need it; do not leave it off by not
+deciding.**
+
+Two choices the table still deliberately makes when a beat DOES turn it on, each closing a way the
+same idea goes wrong in practice:
+
+- **Rendered plainly and visibly, never behind a toggle or `sr-only` CSS.** A disclosure widget
+  ("show data table") adds an extra interaction step for the one reader who most needs the fallback
+  not to be optional, and screen-reader-only CSS has a well-known failure mode: a positioning bug, a
+  CSS reset that strips it, an author who "cleans up" a rule they do not recognise the purpose of,
+  and the content silently stops reaching anyone. Visible-to-everyone is what makes it un-losable.
+  Opt-in at BUILD time by an author who read this section is a different thing entirely from
+  opt-in at READ time by the reader who needs it.
 - **A `<table>`, not an SVG text grid.** `role="table"`/`role="row"`/`role="cell"` on SVG nodes is
   unreliable across screen readers in exactly the way a real `<table>`, `<tr>`, `<th>`, `<td>` is
   not — this genre's own SVG carries no text at ALL now (see "Text is HTML, not SVG"), so this
@@ -168,8 +255,10 @@ their own pace, without needing a mouse's fine motor precision to land on a smal
 the table because the buttons are "already accessible" would be wrong (spatial access is not linear
 access), and dropping the per-point `aria-label`s because the table exists would ALSO be wrong (a
 keyboard user reading the map spatially, point by point, is a real and different reading strategy
-from reading the table top to bottom). Ship both; neither substitutes for the other. **The filter
-narrows both channels together, never one alone** — see "Filters" below.
+from reading the table top to bottom). Neither substitutes for the other — which is the reason the
+opt-in above is a real cost and not a tidy-up: **a beat that ships the table has two channels; a
+beat that leaves it off has one, and it is the spatial one.** **The filter narrows both channels
+together, never one alone** — see "Filters" below.
 
 ## Touch and hover share one target
 
@@ -219,10 +308,37 @@ close to the honest floor for the test to pass at all (`MapWebSeed.tsx` skips re
 `<fieldset>` entirely when there is only one group, `groupsOf(points).length <= 1`) — it is included
 here to prove the mechanism works end to end, not as evidence that every beat needs one.
 
+**The control is drawn, not defaulted.** Bare browser radios read as an unfinished form rather than
+as an editorial control, and their label row measured **15px tall** — a poor pointer target beside
+everything else on the page. The filter is now a row of chips (`.mw-chip`): 32px tall, rounded,
+outlined when unselected, filled with the ink colour when selected. **Every input is still a real
+radio inside a real `<fieldset>`** — moved out of sight by CSS (a 1px transparent box), never
+replaced by a `<div>` wearing `role="radio"`. That distinction is the whole treatment: Tab still
+reaches the group, Arrow keys still move within it, the native `<label>` association still makes the
+whole chip clickable, the focus ring is drawn on the chip via `:has(input:focus-visible)`, and none
+of it needs a line of JavaScript. Under `forced-colors: active` the CSS puts the native radio BACK,
+because "the filled chip is the checked one" stops being visible once the system paints its own
+colours — a substitute indicator would be an invention; the control the reader already knows is not.
+
 **Mechanism: pure CSS, `:has()`, no JavaScript.** Each group gets one rule in `render-web.mjs`'s own
 `buildCss` — `.map-web-page:has(#mw-filter-<slug>:checked) .pt:not([data-group="<slug>"])`, and the
-matching rule for `.point-label` and for `.region-table tbody tr` — hiding everything NOT tagged
-with the checked group. This means the filter (like the zoom toggle below it) works identically with
+matching rule for `.point-label`, for the decorative `<circle>` and for `.region-table tbody tr` —
+hiding everything NOT tagged with the checked group.
+
+**One vocabulary, because two of them shipped a broken filter.** Every mark, label, button and table
+row carries its group as the SLUG (`slugOf`), the same string the radio's own `id` is built from,
+and the slug is what the selector quotes. It used to carry the RAW group name, HTML-escaped into the
+selector — so this seed's own `Central & Northern Europe` became
+`[data-group="Central &amp; Northern Europe"]`, and inside a CSS string `&amp;` is five literal
+characters matching no element, so `:not(...)` matched EVERY element: **one of this beat's three
+filters hid all thirteen points, all thirteen circles and every table row, and left the reader an
+empty map.** Nothing was red; the markup and the CSS each looked correct read on their own. It was
+found by clicking the chip in a real browser and counting what remained. `slugOf` output is
+`[a-z0-9-]+` by construction, so no escaping question survives, and `assertDistinctSlugs` refuses
+the two collisions one vocabulary makes possible (two groups slugging alike, or a group slugging to
+`all`, the reserved id of the unfiltered option).
+
+This means the filter (like the zoom toggle below it) works identically with
 the page's own inline `<script>` running or absent: the ONLY modern-CSS assumption this genre now
 makes is `:has()` (Chrome 105+/Safari 15.4+/Firefox 121+, long-shipped in every evergreen browser
 this self-contained HTML targets) — accepted rather than hand-rolling a JS-only fallback for a
@@ -316,3 +432,24 @@ A unit test (`test/render-web.test.ts`) covers what it honestly can: the SSR'd m
 (one `<svg>`, no `<text>` inside it, one HTML button/label per point, the exact formatted value
 baked into every `data-detail`, the filter fieldset present/absent matching the group count, the
 zoom checkbox present/absent matching the `zoomable` prop, the palette). It stops there on purpose.
+
+**`scripts/verify-interaction.mjs` is the part a unit test cannot reach** — and `test/canon.test.ts`
+runs it, so it is part of `bun test` rather than a script someone has to remember, and it is the reason this
+section is no longer only prose. It drives the rendered beat in a real browser and asserts, at real
+viewport sizes: the beat fits the window and the plate is not stretched; every point's hit target is
+**the topmost thing at its own centre** (`document.elementFromPoint`); a real `page.mouse.move` at
+that centre shows **that point's** value, compared against `assets/sample-data/regions.json` rather
+than against the page's own markup; a real click on each filter chip narrows the map to exactly that
+group and **changes the picture** (compared pixel to pixel); the default state shows all thirteen;
+Tab and Arrow reach and operate the chips; and the filter still narrows with **JavaScript disabled**.
+
+**Why it insists on real input.** This genre already shipped a defect of exactly the shape it exists
+to catch: an HTML overlay with no `pointer-events: none` swallowed every hover while keyboard focus
+kept working, because `.focus()` does not hit-test. A check written with `dispatchEvent`, `.focus()`
+or a read of `data-detail` PASSES in that broken world. This one was proven to fail in it: four
+mutated copies of the rendered HTML (the overlay put back; the `&amp;` selector put back; the fit
+removed; the plate stretched) each turned the matching checks red, and only those.
+
+**What it does not catch, stated so it is not trusted past its reach:** it is a behaviour check, not
+a picture check. Label collisions, camera choice, colour legibility and whether the numbers are true
+are all invisible to it — those still need `render-preview.mjs` and a person looking.

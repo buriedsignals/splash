@@ -45,6 +45,30 @@ describe("twin-map-web assets — the canon's shape, not a story's", () => {
     }
   });
 
+  /**
+   * The behaviour half of this genre's verification, run rather than merely shipped. It drives a
+   * real browser with real pointer events, real clicks and real key presses — see the script's own
+   * header for why nothing cheaper can catch the defect class it exists for (an overlay that
+   * swallows hovers passes every dispatched-event and `.focus()` check ever written). It costs a
+   * Chrome launch, which this file already pays for `--check` directly below.
+   */
+  it("should pass every real-browser interaction check the genre claims", async () => {
+    const proc = Bun.spawn(["bun", "scripts/verify-interaction.mjs"], {
+      cwd: join(import.meta.dirname, ".."),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const code = await proc.exited;
+    if (code !== 0) {
+      const out = await new Response(proc.stdout).text();
+      const err = await new Response(proc.stderr).text();
+      throw new Error(
+        `verify-interaction.mjs failed:\n${out.slice(-3000)}\n${err.slice(-2000)}`,
+      );
+    }
+    expect(code).toBe(0);
+  });
+
   it("should have a preview.png that is a current render of the seed", async () => {
     const proc = Bun.spawn(["bun", "scripts/render-preview.mjs", "--check"], {
       cwd: join(import.meta.dirname, ".."),
