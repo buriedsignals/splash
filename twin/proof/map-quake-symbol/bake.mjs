@@ -3,8 +3,13 @@
 // (`references/types/proportional-symbol.md`: "there is no data JOIN for this type").
 //
 // Usage:
-//   bun proof/map-quake-symbol/bake.mjs --size 496 --out /tmp/map-twin/quake-symbol-496
-//   bun proof/map-quake-symbol/bake.mjs --size 620 --out /tmp/map-twin/quake-symbol-620
+// Both plates are FROZEN BESIDE THE BEAT (`plate-496/`, `plate-620/`), for the same reason its csv
+// is: a basemap living in `/tmp` cannot be committed, so neither the still nor the mp4 could be
+// reproduced or audited — and MapTiler restyles, so a re-bake months later is a different picture
+// under the same circles. `render.mjs` calls this bake only when the folder it wants is empty.
+//
+//   bun proof/map-quake-symbol/bake.mjs --size 496   # → proof/map-quake-symbol/plate-496
+//   bun proof/map-quake-symbol/bake.mjs --size 620   # → proof/map-quake-symbol/plate-620
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -39,7 +44,7 @@ const flag = (name, fallback) => {
 };
 
 const size = Number(flag("--size", "620"));
-const outDir = flag("--out", `/tmp/map-twin/quake-symbol-${size}`);
+const outDir = flag("--out", join(HERE, `plate-${size}`));
 const csvPath = flag("--data", join(HERE, "quakes-symbol.csv"));
 const settleMs = Number(flag("--settle", "15000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));
