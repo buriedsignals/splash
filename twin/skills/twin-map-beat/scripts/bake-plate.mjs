@@ -91,8 +91,30 @@ function resolveChrome() {
   return found;
 }
 
-const key = (await readFile(keyPath, "utf8")).match(/MAPTILER_KEY=(\S+)/)?.[1];
-if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
+// A DUPLICATE of splash-twin's own key-alias resolution (`scripts/keys.mjs`'s `KEY_ALIASES` /
+// `resolveEnvKey`), not an import — a skill directory has to stay copy-pasteable on its own (see
+// `../assets/geo.ts`'s own header, or `twin-storyboard/scripts/capability-gap.mjs`, for the same
+// rule applied elsewhere in this branch). The sibling engine (splash's own skills/map-native,
+// skills/dw-chart) reads the map key under these names, not this project's own `MAPTILER_KEY` —
+// measured in that repository's own scripts, not guessed. A newsroom whose engine `.env` already
+// works should not have to keep a second copy of the key under a different name just for this
+// toolchain. Canonical name wins when both happen to be set — read it first, fall back to each
+// alias in order, never the reverse.
+const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
+
+/** Parses `KEY=value` lines from a `.env` file's text into a plain object — one pair per line. */
+function parseEnvFile(text) {
+  const env = {};
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\S+)\s*$/.exec(line);
+    if (match) env[match[1]] = match[2];
+  }
+  return env;
+}
+
+const env = parseEnvFile(await readFile(keyPath, "utf8"));
+const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => env[alias]).find(Boolean);
+if (!key) throw new Error(`no MAPTILER_KEY (or alias: ${MAPTILER_KEY_ALIASES.join(", ")}) in ${keyPath}`);
 
 // ── The shapes, keyed the way Natural Earth actually keys them ─────────────────────────────────
 const collection = JSON.parse(await readFile(shapesPath, "utf8"));
