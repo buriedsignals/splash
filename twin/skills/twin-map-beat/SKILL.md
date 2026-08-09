@@ -170,9 +170,10 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   and red on a timing mutated to break exactly that rule.
 - `test/canon.test.ts` — validation that both genre seeds carry the canon's marker wording and
   explicit genre labels, and that sample data exists with sufficient variation.
-- **Story workspaces:** the beats that used to live here now each have their own proof workspace with
-  their own Remotion registrations, render scripts, and timing contracts — see `proof/co2-suisse/`,
-  `proof/life-expectancy/`, and `proof/migration/`.
+- **No departed beats.** Nothing has ever moved out of this skill: it ships exactly two seeds, one
+  per genre (`Co2MapStill.tsx`, `Co2MapVideo.tsx`), and both are listed above. The story workspaces
+  under `proof/` (`co2-suisse`, `life-expectancy`, `migration`) are CHART beats belonging to the
+  chart skills — nothing to do with this one.
 
 ## What this beat found
 
