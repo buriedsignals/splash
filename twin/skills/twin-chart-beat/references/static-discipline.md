@@ -196,6 +196,46 @@ found by eye, none by a test, because the tests were written against the constan
 stack it measures with is the same constant the component draws with. If those two ever diverge,
 every gutter in the chart is measured against a font nobody is looking at.
 
+## Three export sizes, and the frame IS the delivered pixel size
+
+Ruling R2: a static ships at **landscape 1920×1080** (YouTube, article web), **square 1080×1080**
+(social posts) or **portrait 1080×1920** (stories). One per beat, pinned at gate 2c and recorded on
+the slot. Web is not a fourth size — it fills whatever container the CMS gives it, which is the
+`twin-chart-web` genre's whole subject and not this one's. The table is `scripts/sizes.mjs`.
+
+**The rasteriser draws 1:1, and that is a decision with a loser.** `rasterise` used to render at
+`fitTo: { mode: "width", value: width * 2 }`, so a 900×560 element shipped an 1800×1120 PNG. The
+alternative on the table was to keep that: halve every frame (960×540 / 540×540 / 540×960) and let
+the 2× deliver the platform's pixels, which preserves crispness and keeps the type tokens near
+their tuned values. It lost, measured rather than argued
+(`proof/static-carbon-footprint-spread/probe/`): both candidates were rendered at 1920×1080 and
+their **type is indistinguishable**, because resvg is a vector rasteriser and resolves glyphs at
+whatever scale it is handed. What is not indistinguishable is that at 2× **every `strokeWidth` and
+every `strokeDasharray` doubles** — a component asking for a 1px gridline is delivered a 2px one,
+and a `"6 4"` dash arrives as `"12 8"`. The rasteriser was taking a design decision the component
+believed it had taken. At 1× every number in the component means the pixel it will actually be.
+
+*Sequencing, because the two halves are one change:* the `× 2` is retired in the same step that
+makes `FRAME` come from `sizeFor(size)`. Removing it while frames are still 900×560 would ship
+900px stills — the same defect from the other side.
+
+**A size scales SPACING, not only type.** The named font constants are not a beat's whole tuning.
+The simplest static in this corpus carries **eleven further bare literals** inside its layout
+arithmetic — the gaps between title, subtitle and source; the insets inside `padding`; the offsets
+at the tick labels, the axis title and the median note. Scaling the type and leaving those at their
+literal value is what collided the title into the subtitle at 1920×1080, by 1634 × 4.5 px, on the
+probe's first run. Every spacing number in a beat goes through the same integer-rounding multiplier;
+integers, so `measureText`'s cache keys stay stable.
+
+**A green measurement is not a good chart, and this is where that was learned on this axis.** At
+portrait the histogram came back with zero clipped runs, zero collisions and 84% plot fill — and a
+destroyed argument: the plot's aspect went 2.35:1 → 0.54:1 and its tallest bar 4.2:1 → 18.4:1, so a
+right-skewed distribution read as one column beside nine slivers. A distribution's argument IS a
+shape and a shape IS an aspect ratio. This is the same lesson `twin-chart-web`'s
+`preserveAspectRatio="none"` rule already carries, arriving on the static path the moment the frame
+stopped being fixed. **Before a beat is offered at a size, its render at that size is opened.** No
+counter in the toolchain sees this one.
+
 ## Gaps are shown, not bridged
 
 A missing reading ends the run: the line is not drawn across the hole, and no dashed bridge spans
