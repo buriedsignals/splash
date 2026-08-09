@@ -1,0 +1,294 @@
+// twin/proof/mapgen-choropleth-web/bake-plate.mjs
+//
+// The bake for THIS beat's choropleth: one camera, one basemap capture, one file of pixel-space
+// polygon rings for the 41 declared countries. After this runs, `ChoroplethWeb.tsx` draws an
+// `<image>` and some `<path>`s — never a live map.
+//
+// This is `geo-discipline.md` rules 1, 2, 3, 4, 6, 7, 9, 11 and 12 in one script, the same list
+// `twin-map-beat/scripts/bake-plate.mjs` states for its own build:
+//   1. the frame gate is `idle` OR a bounded settle, and it records which one fired;
+//   2. the plate is fixed, so the web genre never re-renders tiles per interaction and shimmers;
+//   3. the shapes are baked to ordered pixel rings HERE — a provider basemap serves administrative
+//      boundary LINES, never polygons, so a choropleth's shapes can never come from the tiles;
+//   4. the subject/comparison label anchors are projected here too, by `map.project()`;
+//   6. capture plumbing: `preserveDrawingBuffer`, `--use-gl=angle`, a Chrome resolved and named if
+//      missing;
+//   7. `dataviz-light` paints water GREY — overridden to a genuine blue (`#aac9e0`, from
+//      `geo-choropleth.ts`'s own `WATER_FILL`) in the `style.load` handler before capture, the exact
+//      defect `mapmore-flow-danube/bake.mjs`'s own header names for the next map beat to avoid;
+//   9. every symbol/boundary basemap layer is hidden before capture — the beat draws the only
+//      labels;
+//  11. rings are culled by their projected box and thinned to the drawing resolution, in node, after
+//      capture — see `geo-choropleth.ts`'s own `keepRing` doc-comment for why flattening a
+//      MultiPolygon's rings across DIFFERENT shapes (never within one shape's own parts) would be
+//      the trap, and why this file's own `ringsOf` (below) does not fall into it;
+//  12. the camera bounds below are the SAME box `twin-map-beat/scripts/bake-plate.mjs` uses for the
+//      near-identical European CO₂ study set (Iceland and the Faroe Islands both need the -26° west
+//      edge; the box is near-square on purpose, so a landscape frame never smuggles in the
+//      mid-Atlantic and a third of North Africa the way a wider one would).
+//
+// Baked at the EXACT pixel size `ChoroplethWeb.tsx`'s desktop layout displays it at (496), scaled
+// down uniformly for the narrow layout inside the SVG (`mapSize / geometry.frame.width`, applied to
+// both the plate `<image>` and every projected mark) — one plate, never baked twice, the same
+// pattern `twin-map-web/assets/MapWebSeed.tsx` already proves for the symbol-map genre.
+//
+// Usage:
+//   bun proof/mapgen-choropleth-web/bake-plate.mjs --size 496 --out /tmp/map-twin/choropleth-web-496
+
+import { existsSync, readdirSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import puppeteer from "puppeteer";
+import {
+  CO2_2023_STUDY,
+  WATER_FILL,
+  keepRing,
+  simplifyRing,
+} from "./geo-choropleth.ts";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+/** The beat's camera and its anchors — the same near-square European box
+ *  `twin-map-beat/scripts/bake-plate.mjs` uses for the near-identical study set (rule 12). */
+const BEAT = {
+  bounds: [
+    [-26, 36],
+    [33, 67],
+  ],
+  style: "dataviz-light",
+  anchors: {
+    // Faroe Islands (the subject) and Albania (the comparison) — where each one's own direct label
+    // hangs, projected once here rather than guessed as a fixed pixel offset (rule 4).
+    subject: [-6.8, 62.35],
+    comparison: [20.1, 41.0],
+  },
+};
+
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+
+const argv = process.argv.slice(2);
+const flag = (name, fallback) => {
+  const at = argv.indexOf(name);
+  return at >= 0 ? argv[at + 1] : fallback;
+};
+
+const size = Number(flag("--size", "496"));
+const outDir = flag("--out", `/tmp/map-twin/choropleth-web-${size}`);
+const shapesPath = flag("--shapes", join(HERE, "countries.geojson"));
+const settleMs = Number(flag("--settle", "15000"));
+const keyPath = flag("--env", join(HERE, "../../.env"));
+
+function resolveChrome() {
+  const candidates = [];
+  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
+  const cache = join(homedir(), ".cache/puppeteer/chrome");
+  if (existsSync(cache))
+    for (const build of readdirSync(cache).sort().reverse())
+      candidates.push(
+        join(cache, build, "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+        join(cache, build, "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
+        join(cache, build, "chrome-linux64/chrome"),
+      );
+  candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+  const found = candidates.find((path) => existsSync(path));
+  if (!found)
+    throw new Error(
+      `no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}\nSet CHROME_PATH, or run: bunx puppeteer browsers install chrome`,
+    );
+  return found;
+}
+
+// A duplicate of the sibling map beats' own key-alias resolution — not an import, a beat directory
+// stays copy-pasteable on its own (see `geo-choropleth.ts`'s own header for the same rule stated
+// there).
+const MAPTILER_KEY_ALIASES = ["MAPTILER_API_KEY", "REMOTION_MAPTILER_KEY", "VITE_MAPTILER_KEY"];
+
+function parseEnvFile(text) {
+  const env = {};
+  for (const line of text.split(/\r?\n/)) {
+    const match = /^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\S+)\s*$/.exec(line);
+    if (match) env[match[1]] = match[2];
+  }
+  return env;
+}
+
+const env = parseEnvFile(await readFile(keyPath, "utf8"));
+const key = env.MAPTILER_KEY ?? MAPTILER_KEY_ALIASES.map((alias) => env[alias]).find(Boolean);
+if (!key) throw new Error(`no MAPTILER_KEY (or alias: ${MAPTILER_KEY_ALIASES.join(", ")}) in ${keyPath}`);
+
+// ── The shapes, keyed the way Natural Earth actually keys them (ADM0_A3, never ISO_A3) ───────────
+const collection = JSON.parse(await readFile(shapesPath, "utf8"));
+const byKey = new Map();
+for (const feature of collection.features) byKey.set(feature.properties.ADM0_A3, feature);
+const missingShapes = CO2_2023_STUDY.filter((code) => !byKey.has(code));
+if (missingShapes.length > 0)
+  throw new Error(`${missingShapes.length} declared countries have no shape: ${missingShapes.join(", ")}`);
+
+/**
+ * MultiPolygon and Polygon both become a flat list of rings; holes are rings too. Flattens across a
+ * shape's own PARTS (never across two different shapes — this runs once per feature, below), which
+ * is safe here because the drawing path fills with `fill-rule="evenodd"` — see `geo-choropleth.ts`'s
+ * own `keepRing` doc-comment for the full reasoning and the trap this is NOT.
+ */
+function ringsOf(geometry) {
+  const polygons = geometry.type === "MultiPolygon" ? geometry.coordinates : [geometry.coordinates];
+  return polygons.flat();
+}
+
+const payload = CO2_2023_STUDY.map((code) => {
+  const feature = byKey.get(code);
+  return {
+    key: code,
+    name: feature.properties.NAME,
+    rings: ringsOf(feature.geometry),
+  };
+});
+
+// ── The capture ────────────────────────────────────────────────────────────────────────────────
+const browser = await puppeteer.launch({
+  headless: true,
+  executablePath: resolveChrome(),
+  args: [
+    "--use-gl=angle",
+    "--use-angle=swiftshader",
+    "--enable-unsafe-swiftshader",
+    "--no-sandbox",
+    "--hide-scrollbars",
+  ],
+});
+const page = await browser.newPage();
+await page.setViewport({ width: size, height: size, deviceScaleFactor: 2 });
+await page.setContent(
+  `<!doctype html><html><head>
+<link href="${MAPLIBRE_CSS}" rel="stylesheet"/>
+<script src="${MAPLIBRE}"></script>
+<style>html,body{margin:0;padding:0}#map{width:${size}px;height:${size}px}</style>
+</head><body><div id="map"></div></body></html>`,
+  { waitUntil: "load" },
+);
+await page.waitForFunction("window.maplibregl !== undefined", { timeout: 60000 });
+
+const gate = await page.evaluate(
+  async ({ key, style, bounds, settleMs, waterFill }) => {
+    const map = new maplibregl.Map({
+      container: "map",
+      style: `https://api.maptiler.com/maps/${style}/style.json?key=${key}`,
+      interactive: false,
+      attributionControl: false,
+      fadeDuration: 0,
+      preserveDrawingBuffer: true, // rule 6: empty canvas at screenshot time without this
+      bounds,
+      fitBoundsOptions: { padding: 0, animate: false },
+    });
+    window.__map = map;
+    await new Promise((resolve) => map.once("style.load", resolve));
+
+    // Rule 7: water is a blue tint, never grey — `dataviz-light` paints it near-grey by default.
+    for (const id of ["Water", "Water shadow"])
+      if (map.getLayer(id)) map.setPaintProperty(id, "fill-color", waterFill);
+
+    // Rule 9: quiet the plate — every place label, road label and boundary line the provider ships
+    // competes with the one label this beat draws itself.
+    const hidden = [];
+    for (const layer of map.getStyle().layers)
+      if (layer.type === "symbol" || /border|boundary|admin/i.test(layer.id)) {
+        map.setLayoutProperty(layer.id, "visibility", "none");
+        hidden.push(layer.id);
+      }
+
+    // Rule 1: idle OR a bounded settle, and say which — `idle` alone never fires when one tile
+    // never resolves, and the capture then hangs forever rather than slowly.
+    const started = Date.now();
+    const how = await new Promise((resolve) => {
+      let done = false;
+      const finish = (how) => {
+        if (!done) {
+          done = true;
+          resolve(how);
+        }
+      };
+      map.once("idle", () => finish("idle"));
+      setTimeout(() => finish("settle"), settleMs);
+    });
+    return { how, ms: Date.now() - started, hidden: hidden.length, zoom: map.getZoom(), center: map.getCenter() };
+  },
+  { key, style: BEAT.style, bounds: BEAT.bounds, settleMs, waterFill: WATER_FILL },
+);
+
+await mkdir(outDir, { recursive: true });
+const platePath = join(outDir, "plate.png");
+await page.screenshot({ path: platePath, clip: { x: 0, y: 0, width: size, height: size } });
+
+// ── The projection (rule 3 and rule 4) ─────────────────────────────────────────────────────────
+const projected = await page.evaluate((shapes) => {
+  const map = window.__map;
+  const at = (lng, lat) => {
+    const p = map.project([lng, lat]);
+    return [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10];
+  };
+  return shapes.map((shape) => ({
+    key: shape.key,
+    name: shape.name,
+    rings: shape.rings.map((ring) => ring.map(([lng, lat]) => at(lng, lat))),
+  }));
+}, payload);
+
+const anchors = await page.evaluate((points) => {
+  const map = window.__map;
+  return Object.fromEntries(
+    Object.entries(points).map(([name, [lng, lat]]) => {
+      const p = map.project([lng, lat]);
+      return [name, [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]];
+    }),
+  );
+}, BEAT.anchors);
+
+await browser.close();
+
+// ── Cull and thin, in node, with the pure functions the tests cover ────────────────────────────
+const frame = { width: size, height: size };
+const minGap = 0.6;
+let ringsIn = 0;
+let ringsOut = 0;
+let pointsIn = 0;
+let pointsOut = 0;
+
+const shapes = projected.map((shape) => {
+  const rings = [];
+  for (const ring of shape.rings) {
+    ringsIn++;
+    pointsIn += ring.length;
+    if (!keepRing(ring, frame)) continue;
+    const thin = simplifyRing(ring, minGap);
+    ringsOut++;
+    pointsOut += thin.length;
+    rings.push(thin);
+  }
+  return { key: shape.key, name: shape.name, rings };
+});
+
+const empty = shapes.filter((s) => s.rings.length === 0).map((s) => s.key);
+if (empty.length > 0)
+  throw new Error(`${empty.length} declared shapes had every ring culled out of frame: ${empty.join(", ")}`);
+
+const geometry = {
+  frame,
+  bounds: BEAT.bounds,
+  style: BEAT.style,
+  gatedBy: gate.how,
+  zoom: Math.round(gate.zoom * 1000) / 1000,
+  anchors,
+  shapes,
+};
+const geometryPath = join(outDir, "geometry.json");
+await writeFile(geometryPath, JSON.stringify(geometry));
+
+console.log(
+  `gated by ${gate.how} in ${gate.ms}ms · hid ${gate.hidden} basemap layers · zoom ${geometry.zoom}\n` +
+    `plate    → ${platePath}\n` +
+    `geometry → ${geometryPath}  ${ringsOut}/${ringsIn} rings, ${pointsOut}/${pointsIn} points\n` +
+    `off-frame entirely: ${empty.length ? empty.join(", ") : "none"}`,
+);
