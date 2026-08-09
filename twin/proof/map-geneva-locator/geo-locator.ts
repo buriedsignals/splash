@@ -120,6 +120,47 @@ export function labelSide(
   return px > frameWidth - margin ? "left" : "right";
 }
 
+export type MarkerPoint = { key: string; cx: number; cy: number };
+
+/**
+ * Nudges markers whose DRAWN positions are closer than `minSeparation` apart until every pair
+ * clears it — a locator's own accessibility trap the label declutter above doesn't cover. Two
+ * organisations can sit only metres apart in the real world (ILO and the International Social
+ * Security Association in this beat's own data, ~13m) and land on the exact same pixel at map
+ * scale. Left alone, whichever marker is drawn last silently paints over the other — a reader sees
+ * ONE colour next to a label that names an organisation of the OTHER colour's category, misreporting
+ * the very thing this map exists to show (caught by looking at the rendered PNG: the ILO label sat
+ * beside a visibly orange marker). Deterministic and order-stable: run a fixed number of passes
+ * rather than iterate to a convergence tolerance, and break an exact tie (dist === 0) with the
+ * pair's own index order rather than anything random, so the same input always draws the same frame.
+ */
+export function separateOverlappingMarkers<T extends MarkerPoint>(
+  points: T[],
+  minSeparation: number,
+): T[] {
+  const out = points.map((p) => ({ ...p }));
+  for (let pass = 0; pass < 6; pass++) {
+    for (let i = 0; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        const a = out[i]!;
+        const b = out[j]!;
+        const dx = b.cx - a.cx;
+        const dy = b.cy - a.cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist >= minSeparation) continue;
+        const angle =
+          dist > 0.01 ? Math.atan2(dy, dx) : (i - j) * 0.001 + Math.PI / 2;
+        const push = (minSeparation - dist) / 2 + 0.01;
+        a.cx -= Math.cos(angle) * push;
+        a.cy -= Math.sin(angle) * push;
+        b.cx += Math.cos(angle) * push;
+        b.cy += Math.sin(angle) * push;
+      }
+    }
+  }
+  return out;
+}
+
 export type LabelBox = { x: number; y: number; width: number; height: number };
 
 /**

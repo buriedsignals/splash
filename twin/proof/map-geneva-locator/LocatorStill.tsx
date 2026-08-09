@@ -10,6 +10,7 @@ import {
   CATEGORY_ORDER,
   declutterLabels,
   labelSide,
+  separateOverlappingMarkers,
   type OrgRow,
 } from "./geo-locator";
 
@@ -103,19 +104,31 @@ export function LocatorStill({
       `the column does not fit: source ends at ${sourceBottom}, legend starts at ${legendTop}.`,
     );
 
+  // Markers first, in the DRAWN (scaled) frame: two organisations whose real-world coordinates are
+  // only metres apart can land on the identical pixel at this scale, and an unadjusted draw lets
+  // whichever is painted last silently replace the other's colour under a label that still names
+  // the first (see `separateOverlappingMarkers`'s own doc-comment). Every later step — the label
+  // declutter and the drawn circles both — reads these adjusted positions, never the raw `px`/`py`.
+  const separated = separateOverlappingMarkers(
+    geometry.points.map((p) => ({
+      ...p,
+      cx: p.px * scale,
+      cy: p.py * scale,
+    })),
+    MARKER_R * 2 + 4,
+  );
+
   // Declutter: a label's box, in the DRAWN (scaled) frame, so the decision is made at the size a
   // reader actually sees it, not the bake's own pixel space. The side is edge-aware FIRST (computed
   // from the marker's own drawn position against the plate's edge), so the box the declutter tests
   // is the box that will actually be drawn — a locator's accessibility trap is exactly a label that
   // doesn't collide with a neighbour but still runs off the canvas.
-  const shown = declutterLabels(geometry.points, (p) => {
-    const cx = p.px * scale;
-    const cy = p.py * scale;
-    const side = labelSide(cx, MAP);
+  const shown = declutterLabels(separated, (p) => {
+    const side = labelSide(p.cx, MAP);
     const w = measureText(p.name, LABEL) + 10;
     return {
-      x: side === "right" ? cx + MARKER_R + 4 : cx - MARKER_R - 4 - w,
-      y: cy - LABEL.fontSize / 2 - 2,
+      x: side === "right" ? p.cx + MARKER_R + 4 : p.cx - MARKER_R - 4 - w,
+      y: p.cy - LABEL.fontSize / 2 - 2,
       width: w,
       height: LABEL.fontSize + 4,
     };
@@ -148,9 +161,9 @@ export function LocatorStill({
       {/* ── The map ─────────────────────────────────────────────────────────────────────── */}
       <g transform={`translate(${MAP_X},${PAD})`} clipPath="url(#plate-clip)">
         <image href={plate} x={0} y={0} width={MAP} height={MAP} />
-        {geometry.points.map((point) => {
-          const cx = point.px * scale;
-          const cy = point.py * scale;
+        {separated.map((point) => {
+          const cx = point.cx;
+          const cy = point.cy;
           const colour = CATEGORY_COLOUR[point.category] ?? muted;
           const side = labelSide(cx, MAP);
           const labelX =
