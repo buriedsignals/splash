@@ -2,9 +2,11 @@
 //
 // This story's own render script — the render ladder's second rung, same shape as
 // `twin-chart-video/scripts/render-video.mjs` (`readingsFromCsv`, then still-first, then mp4),
-// its own story constants and its own CSV column names, because the story is not the CO₂ beat's
-// and should not pretend to share its nouns. See `render-video.mjs` for the doc-comment on why
-// this runs in node (`deriveFurniture`) and why the still is rendered before the mp4.
+// its own story constants. `readingsFromCsv` now reads OWID's own grapher columns
+// (`Year,Life expectancy`) rather than a hand-shaped `year,value` — the committed `data.csv` is
+// OWID's raw, unedited fetch, and a story folder should not reshape the source data it credits.
+// See `render-video.mjs` for the doc-comment on why this runs in node (`deriveFurniture`) and why
+// the still is rendered before the mp4.
 //
 // Usage:  bun proof/life-expectancy/render.mjs [--still-only] [--data <csv>] [--out <dir>]
 
@@ -19,13 +21,26 @@ const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "life-expectancy";
 
-/** The story's own constants — the journalist's words, from the CADRAGE exchange. */
+/** The story's own constants — the journalist's words, from the CADRAGE exchange.
+ *
+ * `source` was corrected 2026-08-09: the beat had credited "Federal Statistical Office" over
+ * numbers that lived only in `/tmp` — no committed data reproduced them. The FSO's own published
+ * annual life-expectancy table (`lebenserwartung-2000-2024`, opendata.swiss) carries only sex-split
+ * series (Hommes/Femmes), not the single combined figure this beat plots; averaging the two by hand
+ * would be an invented number wearing a real institution's name, which is the exact defect this
+ * fix closes. Our World in Data's `life-expectancy` grapher carries the combined series the FSO
+ * table does not, sourced from the UN World Population Prospects (2024 revision) for this range —
+ * fetched with `&csvType=filtered&country=~CHE`, verified single-country. The credit now names that
+ * source. The narrative survives unchanged: 2019 = 83.8 (reference, matches previously), 2020 dips
+ * to 83.06, and 2023 (83.95) is the first year back above the 2019 level — but the real series has
+ * no 2024 row yet, so "data 2024" is now "data 2023".
+ */
 const BEAT = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
   title:
     "Covid cost Switzerland nearly a year of life expectancy — and it took three years to win it back.",
-  source: "Source: Federal Statistical Office · data 2024",
+  source: "Source: UN World Population Prospects (2024), via Our World in Data · data 2023",
   reference: 83.8,
   // Not "the 2019 level (83.8 years)" — the y axis already states 83.8 on the tick this rule sits
   // on, and the text beside this beat already gives 83.8, so printing it again here would be
@@ -33,21 +48,26 @@ const BEAT = {
   referenceLabel: "2019 level",
   subjectYear: 2020,
   recoveryYear: 2023,
+  // The committed CSV is OWID's full series back to 1876 (its raw, unedited fetch) — this beat's
+  // own window, same convention `co2-suisse/render-web.mjs` uses for its `firstYear`.
+  firstYear: 2000,
 };
 
-/** A plain `year,value` CSV — this beat's own frozen series, not OWID's column names. */
-export function readingsFromCsv(csv) {
+/** OWID's grapher CSV: `Entity,Code,Year,Life expectancy`, one country once filtered. */
+export function readingsFromCsv(csv, firstYear = -Infinity) {
   const [header, ...rows] = csv.trim().split(/\r?\n/);
   const columns = header.split(",");
-  const yearAt = columns.indexOf("year");
-  const valueAt = columns.indexOf("value");
+  const yearAt = columns.indexOf("Year");
+  const valueAt = columns.indexOf("Life expectancy");
   if (yearAt < 0 || valueAt < 0)
-    throw new Error(`csv has no year / value column, got: ${header}`);
+    throw new Error(`csv has no Year / Life expectancy column, got: ${header}`);
 
   return rows
     .map((row) => row.split(","))
     .map((cells) => ({ year: Number(cells[yearAt]), value: Number(cells[valueAt]) }))
-    .filter((r) => Number.isFinite(r.year) && Number.isFinite(r.value))
+    .filter(
+      (r) => Number.isFinite(r.year) && Number.isFinite(r.value) && r.year >= firstYear,
+    )
     .sort((a, b) => a.year - b.year);
 }
 
@@ -66,13 +86,16 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-const dataPath = flag("--data", "/tmp/video-twin/life-expectancy.csv");
+// The story's own frozen series, committed beside it — OWID's raw `life-expectancy` grapher
+// export for Switzerland, `&csvType=filtered&country=~CHE`, verified single-country before being
+// trusted. No longer `/tmp`.
+const dataPath = flag("--data", join(HERE, "data.csv"));
 const outDir = flag("--out", "/tmp/video-twin");
 const stillOnly = argv.includes("--still-only");
 
 await mkdir(outDir, { recursive: true });
 
-const data = readingsFromCsv(await readFile(dataPath, "utf8"));
+const data = readingsFromCsv(await readFile(dataPath, "utf8"), BEAT.firstYear);
 if (data.length < 2) throw new Error(`need at least two readings, got ${data.length}`);
 
 const props = { ...BEAT, data, ...deriveFurniture(BEAT.ground) };
