@@ -61,16 +61,25 @@ exactly on frame 240.
 - Territorial accounting only: the caveat says emissions embedded in imports and international
   aviation are excluded, on the frame, unconditionally.
 
-## Two things worth watching, found while deriving this brief
+## Two things found while deriving this brief — BOTH CORRECTED 2026-08-09
 
-- The alt describes Sweden as "the lightest-marked comparison on the same scale". Sweden is 37th of
-  41, not the lightest reading on the map: Malta (3.317), Liechtenstein (3.312), Moldova (1.738) and
-  Albania (1.571) are all lower. Read as "the comparison, marked light", it is fine; read as "the
-  lightest", it is false. The sibling `mapgen-choropleth-web` makes the extremes its claim and names
-  Albania as the minimum.
-- The static frame crops at the plate's own bounds `[-26, 36] → [33, 67]`, which cuts through
-  Ukraine — a study country that is shaded but not wholly visible. "Each of 41 countries is shaded"
-  is true of the join and not quite true of what a reader can count in the frame.
+- The alt described Sweden as "the lightest-marked comparison on the same scale". Sweden is **5th
+  lightest of 41** (37th from the top): Malta 3.317, Liechtenstein 3.312, Moldova 1.738 and Albania
+  1.571 are all below its 3.479. Read as "the comparison, marked light" it is fine; read as written
+  it is false. The alt now says so in the data's own words — "Sweden is the comparison, not the
+  minimum: it is 5th lightest of 41, and the lightest shading on the map belongs to Albania at 1.6
+  tonnes" — with the rank, the minimum and the minimum's NAME all computed from the frozen CSV and
+  the plate's own shape list.
+
+- The alt also said "each of 41 countries is shaded", which is true of the JOIN and not of the
+  PICTURE: the plate's bounds `[-26, 36] → [33, 67]` cut through five of the shapes. Measured by
+  testing every ring point against the frame — **Finland, Norway, Portugal, Sweden and Ukraine** —
+  and the alt now names them: all 41 are shaded, five are not wholly visible. The check runs per
+  plate, so the still (496 px) and the video (620 px) each state their own frame's truth rather than
+  sharing one typed sentence.
+
+Re-rendered and looked at: `render/static.png` (Ukraine cut at the right edge, Norway and Finland at
+the top, exactly as the alt now says) and `render/choropleth.mp4`.
 
 ## Source line
 

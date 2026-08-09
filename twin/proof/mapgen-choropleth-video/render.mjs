@@ -53,11 +53,6 @@ const BEAT = {
   caveat:
     "Territorial emissions: excludes emissions embedded in imported goods and international aviation.",
   noDataLabel: "no data",
-  alt:
-    "Map of Europe. Each of 41 countries is shaded by its 2023 per-capita CO2 emissions, from a " +
-    "light shade under 2 tonnes to a dark shade at 10 tonnes and above. Poland, outlined and " +
-    "named, is in the 6-to-8-tonne class at 7.3 tonnes per person — more than double Sweden's " +
-    "3.5 tonnes, the lightest-marked comparison on the same scale.",
 };
 
 const argv = process.argv.slice(2);
@@ -102,6 +97,58 @@ if (violations.length === 0) {
   throw new Error("claim check failed — refusing to render a title the source does not support");
 }
 
+// ── The alt, measured against this study set and against the frame it is drawn in ──────────────
+// Two claims used to be typed here and neither survived checking. Sweden was called "the
+// lightest-marked comparison on the same scale" — it ranks 37th of 41, and Albania, Moldova and
+// two others are lighter; read as "the comparison, marked light" it is fine, read as written it is
+// false. And "each of 41 countries is shaded" is true of the JOIN and not of the PICTURE: the
+// plate's bounds cut through five of the shapes, Ukraine most visibly, so a reader counting
+// countries in the frame cannot get to 41.
+const ranked = [...values.entries()]
+  .filter(([code]) => CHOROPLETH_STUDY.includes(code))
+  .sort((a, b) => a[1] - b[1]);
+const comparisonRank = ranked.findIndex(([code]) => code === BEAT.comparison) + 1;
+const [lightestCode, lightestValue] = ranked[0];
+console.log(
+  `${BEAT.comparisonLabel} ranks ${comparisonRank} of ${ranked.length} from the bottom ` +
+    `(${en(values.get(BEAT.comparison), 2)} t); the lightest is ${lightestCode} at ${en(lightestValue, 2)} t.`,
+);
+
+/** Which shapes this plate's own bounds cut through — any ring point outside the frame. */
+function clippedShapes(geometry) {
+  const cut = [];
+  for (const shape of geometry.shapes) {
+    const outside = shape.parts.some((part) =>
+      part.some((ring) =>
+        ring.some(
+          ([x, y]) =>
+            x < 0 || y < 0 || x > geometry.frame.width || y > geometry.frame.height,
+        ),
+      ),
+    );
+    if (outside) cut.push(shape.name ?? shape.key);
+  }
+  return cut;
+}
+
+function altFor(geometry) {
+  const cut = clippedShapes(geometry);
+  // The plate carries each shape's own name, so the lightest country is named from the same source
+  // the picture is drawn from rather than from a second table that could drift out of step.
+  const nameOf = (code) =>
+    geometry.shapes.find((shape) => shape.key === code)?.name ?? code;
+  return (
+    `Map of Europe. All ${CHOROPLETH_STUDY.length} countries in the study set are shaded by their ` +
+    `${BEAT.year} per-capita CO2 emissions, from a light shade under 2 tonnes to a dark shade at 10 ` +
+    `tonnes and above; the frame cuts through ${cut.length} of them (${cut.join(", ")}), which are ` +
+    `shaded but not wholly visible. Poland, outlined and named, is in the 6-to-8-tonne class at ` +
+    `${en(values.get(BEAT.subject), 1)} tonnes per person — more than double Sweden's ` +
+    `${en(values.get(BEAT.comparison), 1)} tonnes. Sweden is the comparison, not the minimum: it is ` +
+    `${comparisonRank}th lightest of ${ranked.length}, and the lightest shading on the map belongs to ` +
+    `${nameOf(lightestCode)} at ${en(lightestValue, 1)} tonnes.`
+  );
+}
+
 const furniture = deriveFurniture(BEAT.ground);
 const ramp = sequentialRamp(BEAT.ground, furniture.ink, CHOROPLETH_BREAKS.length + 1);
 
@@ -121,7 +168,6 @@ const shared = {
   legendCaption: BEAT.legendCaption,
   caveat: BEAT.caveat,
   noDataLabel: BEAT.noDataLabel,
-  alt: BEAT.alt,
   ground: BEAT.ground,
   accent: BEAT.accent,
   ...furniture,
@@ -138,7 +184,7 @@ await mkdir(outDir, { recursive: true });
 if (wantStill) {
   const { geometry, plate } = await plateOf(stillPlate);
   const { pngPath } = await renderStill({
-    element: createElement(ChoroplethStill, { ...shared, geometry, plate }),
+    element: createElement(ChoroplethStill, { ...shared, geometry, plate, alt: altFor(geometry) }),
     width: 900,
     height: 560,
     outDir,
@@ -162,7 +208,10 @@ function remotion(args) {
 if (wantFinalFrame || wantVideo) {
   const { geometry, plate } = await plateOf(videoPlate);
   const propsPath = join(outDir, "video-props.json");
-  await writeFile(propsPath, JSON.stringify({ ...shared, geometry, plate }));
+  await writeFile(
+    propsPath,
+    JSON.stringify({ ...shared, geometry, plate, alt: altFor(geometry) }),
+  );
 
   const framePath = join(outDir, "final-frame.png");
   const stillSeconds = remotion([
