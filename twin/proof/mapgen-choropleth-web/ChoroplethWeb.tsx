@@ -243,16 +243,24 @@ export function ChoroplethWeb({
       "the subject and the comparison must both have a joined value",
     );
 
+  // WRAPPED AT THE FONT THEY ARE DRAWN IN. Both callouts are drawn at `layout.markerLabel`
+  // (12.5px/700 desktop, 11px/700 narrow) but used to be wrapped at `layout.note` (11.5px/400,
+  // 10px/400) — a smaller, lighter font than the one that reaches the frame, so `wrap` cleared a
+  // line the renderer could not fit. Measured on this beat's own strings at 860px: the subject
+  // callout wraps to 332.9px and draws at 383.3px against a 344px column — 39px past the frame's
+  // right edge, with "per person" cut to "per perso". It overflowed by 17px even under the
+  // shapefile's shorter "Faeroe Is.", so this is the pre-existing defect the longer, correct name
+  // exposed rather than one it caused.
   const subjectLines = wrap(
     `${subject.name} — highest of the 41, ${en(subject.value)} ${UNIT_WORD}`,
     columnWidth,
-    layout.note,
+    layout.markerLabel,
     measure,
   );
   const comparisonLines = wrap(
     `${comparison.name} — lowest of the 41, ${en(comparison.value)} ${UNIT_WORD}`,
     columnWidth,
-    layout.note,
+    layout.markerLabel,
     measure,
   );
   const subjectNoteTop = notesTop;
@@ -290,6 +298,15 @@ export function ChoroplethWeb({
 
   return (
     <svg
+      // `role="group"` + a name, the pattern `mapgen-dot-web` and `mapgen-symbol-web` already use.
+      // Measured in Chrome on a delivered artifact: without a name the root came back from
+      // `Accessibility.getFullAXTree` as `SvgRoot`, `name: ""`, carrying the `<desc>` as a
+      // description with nothing to announce it against — which is why a bare `<desc>` is not
+      // reliably read out. `group` was chosen over `img` because `img` raises the ARIA
+      // children-presentational question for the per-region paths below; measured, Chrome does not
+      // actually prune them, but `group` does not depend on that.
+      role="group"
+      aria-label={title}
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={frameHeight}
@@ -298,9 +315,6 @@ export function ChoroplethWeb({
       data-layout={layout.name}
       fontFamily="Helvetica, Arial, sans-serif"
     >
-      {/* No root role="img" — the same deliberate departure `web-discipline.md` names: that role
-          would flatten every child into one opaque image, silencing the per-region paths below.
-          `<desc>` still carries the alt text. */}
       <desc>{alt}</desc>
       <defs>
         <clipPath id="plate-clip">

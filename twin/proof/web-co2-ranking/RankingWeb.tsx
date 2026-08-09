@@ -159,8 +159,16 @@ export function RankingWeb({
   // Printed labels are rounded to one decimal — glanceable. Hover/focus reveals the PRECISE reading
   // (`data-detail` below), the detail the rounded printed label omits, never the same number
   // repeated (`web-discipline.md`, "What hover reveals").
+  //
+  // THREE decimals, and the count is derived rather than picked. What the printed label actually
+  // drops here is a RANKING: Sweden and Switzerland both print "3.6 t", and the title calls one of
+  // them second-lowest. Rounding this beat's ten frozen 2024 readings and counting distinct values:
+  // 1 dp → 9 of 10, 2 dp → still 9 (the same pair tied), 3 dp → 10 of 10. So three is the fewest at
+  // which every row is its own number and the sentence over the chart can be checked against the
+  // chart. This was 4, which added a digit that separated nothing — a tenth of a gram of CO₂ per
+  // person, from a national inventory divided by a population estimate.
   const printedLabels = data.map((r) => `${en(r.value, 1)} ${UNIT}`);
-  const preciseLabels = data.map((r) => `${en(r.value, 4)} ${UNIT}`);
+  const preciseLabels = data.map((r) => `${en(r.value, 3)} ${UNIT}`);
 
   // Both gutters measured from the real strings at their own FIXED type size — never a guessed
   // constant, and never resized on the fly.
@@ -243,15 +251,20 @@ export function RankingWeb({
 
         {/* GEOMETRY ONLY below — no `<text>`. */}
         <svg
+          // Named `group`, not `img` — see the note in `SlopeWeb.tsx`: the root used to come back
+          // from Chrome's AX tree as `SvgRoot` with `name: ""`, and `group` names it without
+          // raising the ARIA children-presentational question `img` raises.
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
           fontFamily="Helvetica, Arial, sans-serif"
         >
-          {/* No root role="img" — this genre's one deliberate departure from the static genre's
-              accessibility pattern: that role would flatten every child into one opaque image,
-              silencing the ten per-row hit targets below. `<desc>` still carries the alt text. */}
+          {/* `role="group"`, not `role="img"` — see `SlopeWeb.tsx`'s note: the reason recorded here
+              was measured and is not what Chrome does, and `group` names the graphic without
+              raising the question. `<desc>` still carries the alt text. */}
           <desc>{alt}</desc>
           <rect
             x={0}

@@ -48,13 +48,19 @@ export const BEAT = {
   highlighted: "Germany",
   ground: "#FFFFFF",
   accent: "#0B7A75",
+  // The claim names the SET IT DRAWS, not a region. "Western European" was false of these ten:
+  // under the UN geoscheme only Austria, France, Germany and Switzerland are Western Europe —
+  // Poland is Eastern, Italy and Spain Southern, Norway and Sweden Northern. Widening the claim to
+  // "any other European country" instead would have been false in the other direction (Estonia,
+  // Bulgaria and Romania each cut more per head since 1990). So the sentence is scoped to the ten
+  // rows a reader can actually see, and `checkSubjectFellFurthest` below pins it to the data.
   title:
-    "Germany cut per-capita CO₂ emissions further than any other Western European country's since 1990",
+    "Of these ten European countries, Germany cut per-capita CO₂ emissions the furthest since 1990",
   limits:
     "Tonnes of CO₂ per capita, territorial emissions. All ten countries fell between 1990 and 2024 — Germany's fall was the largest, ahead of the United Kingdom's widely discussed decarbonisation.",
   source:
     "Source: Global Carbon Budget (2025), via Our World in Data · 1990 & 2024 data",
-  alt: "A slope chart comparing per-capita CO2 emissions in 1990 and 2024 across ten Western European countries. All ten fell. Germany fell furthest, from 13.23 to 6.77 tonnes per capita, a drop of 6.46 — more than the United Kingdom's fall from 10.49 to 4.53, a drop of 5.97. The other eight also fell, each by between 1.27 and 3.12 tonnes: Sweden 6.71 to 3.59, Switzerland 6.58 to 3.59, France 6.93 to 3.97, Poland 9.89 to 7.08, Italy 7.68 to 5.09, Austria 8.10 to 6.18, Norway 8.25 to 6.67, Spain 5.87 to 4.60.",
+  alt: "A slope chart comparing per-capita CO2 emissions in 1990 and 2024 across ten European countries. All ten fell. Germany fell furthest, from 13.23 to 6.77 tonnes per capita, a drop of 6.46 — more than the United Kingdom's fall from 10.49 to 4.53, a drop of 5.97. The other eight also fell, each by between 1.27 and 3.12 tonnes: Sweden 6.71 to 3.59, Switzerland 6.58 to 3.59, France 6.93 to 3.97, Poland 9.89 to 7.08, Italy 7.68 to 5.09, Austria 8.10 to 6.18, Norway 8.25 to 6.67, Spain 5.87 to 4.60.",
   periodLabels: { p1990: "1990", p2024: "2024" },
 };
 
@@ -163,11 +169,38 @@ svg.chart rect.pt:hover, svg.chart rect.pt:focus, svg.chart rect.pt.pt-active {
 svg.chart rect.pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 `;
 
+/**
+ * The title's comparative, checked against the rows actually drawn instead of asserted in prose.
+ * Throws if the highlighted country is not the one whose 1990 → 2024 fall is largest, or if any
+ * row rose — both of which the sentence and the `limits` line state as facts. Every fall is
+ * computed here from the same two readings the chart plots, so the claim cannot outlive the data.
+ */
+export function checkSubjectFellFurthest(data, subject) {
+  const falls = data.map((d) => ({ name: d.name, fall: d.v1990 - d.v2024 }));
+  const rose = falls.filter((f) => f.fall <= 0);
+  if (rose.length > 0)
+    throw new Error(
+      `the title and the limits line say all ${data.length} fell, but ${rose
+        .map((r) => `${r.name} (${r.fall.toFixed(2)})`)
+        .join(", ")} did not`,
+    );
+  const ranked = [...falls].sort((a, b) => b.fall - a.fall);
+  if (ranked[0].name !== subject)
+    throw new Error(
+      `the title says ${subject} cut the furthest of these ${data.length}, but ${ranked[0].name} fell ${ranked[0].fall.toFixed(2)} against ${subject}'s ${falls.find((f) => f.name === subject).fall.toFixed(2)}`,
+    );
+  return ranked;
+}
+
 export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const csv = await readFile(dataPath, "utf8");
   const data = countriesFromCsv(csv, { countries: BEAT.countries });
   if (data.length < 2)
     throw new Error(`need at least two categories, got ${data.length}`);
+  const ranked = checkSubjectFellFurthest(data, BEAT.highlighted);
+  console.log(
+    `furthest fall: ${ranked[0].name} (−${ranked[0].fall.toFixed(2)} t) — smallest: ${ranked.at(-1).name} (−${ranked.at(-1).fall.toFixed(2)} t)`,
+  );
 
   const { outPath } = await renderWeb({
     component: SlopeWeb,

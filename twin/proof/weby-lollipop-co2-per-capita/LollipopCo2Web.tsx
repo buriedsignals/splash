@@ -41,9 +41,13 @@
  * honest use of interaction here is detail the static frame had to omit, never the same numbers
  * repeated on demand") means this beat must NOT bolt on a tooltip that just restates the same
  * "3.6 t" already printed in ink next to the dot. What genuinely IS omitted: the printed label
- * rounds to one decimal; the source data carries far more precision (Switzerland's own frozen
- * reading is 3.5946856 t, not 3.6). So hover/focus here reveals exactly that — the row's exact
- * unrounded reading — and nothing more dramatic. See `BRIEF.md`'s own "Interaction" section.
+ * rounds to one decimal, and one decimal cannot separate Switzerland from Sweden — both print
+ * "3.6 t" and only one of them can be third-lowest. So hover/focus reveals the row's reading to
+ * THREE decimals (`formatValueFine`) — measured to be the fewest at which all fifteen frozen
+ * readings are distinct, and so the fewest at which the title's ranking can be checked. It used to
+ * reveal the CSV's own literal instead — five to seven decimals depending on the row, "3.4089074 t"
+ * for Portugal — a float's digit count standing in for an editorial one. See `BRIEF.md`'s own
+ * "Interaction" section.
  *
  * INTERACTION SHAPE — deliberately NOT this skill's `assets/interaction.mjs` (a line's
  * nearest-by-x mechanic). A lollipop's 15 rows already tile the plot's full height as disjoint
@@ -58,7 +62,7 @@
 
 import {
   formatValue,
-  formatValueExact,
+  formatValueFine,
   lollipopGeometry,
   type Row,
 } from "./lollipop-geometry";
@@ -236,14 +240,19 @@ export function LollipopCo2Web({
         {/* GEOMETRY ONLY below — no `<text>`. `preserveAspectRatio="none"` lets this stretch to
             fill exactly whatever box the grid gives it at any container width. */}
         <svg
+          // Named `group`, not `img` — see the note in `SlopeWeb.tsx`: the root used to come back
+          // from Chrome's AX tree as `SvgRoot` with `name: ""`, and `group` names it without
+          // raising the ARIA children-presentational question `img` raises.
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
         >
-          {/* No root role="img" — this genre's one deliberate departure from the static genre's
-              accessibility pattern (`web-discipline.md`): that role would flatten every child into
-              one opaque image, silencing the 15 individually-focusable row hit-rects below. */}
+          {/* `role="group"`, not `role="img"` — see `SlopeWeb.tsx`'s note: the reason recorded here
+              was measured and is not what Chrome does, and `group` names the graphic without
+              raising the question. `<desc>` still carries the alt text. */}
           <desc>{alt}</desc>
           <rect
             x={0}
@@ -315,9 +324,9 @@ export function LollipopCo2Web({
               pointerEvents="all"
               tabIndex={0}
               role="img"
-              aria-label={`${p.country}: ${formatValueExact(p.value)}, ${YEAR}`}
+              aria-label={`${p.country}: ${formatValueFine(p.value)}, ${YEAR}`}
               data-country={p.country}
-              data-detail={`${p.country} · ${formatValueExact(p.value)} (${YEAR})`}
+              data-detail={`${p.country} · ${formatValueFine(p.value)} (${YEAR})`}
             />
           ))}
         </svg>

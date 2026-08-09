@@ -301,6 +301,11 @@ export function IncomeLifeExpectancyWeb({
             own doc-comment. What is left here is what genuinely must stretch with the frame — the
             gridlines, and the three leader lines that connect a named dot to its own label. */}
         <svg
+          // Named `group`, not `img` — see the note in `SlopeWeb.tsx`: the root used to come back
+          // from Chrome's AX tree as `SvgRoot` with `name: ""`, and `group` names it without
+          // raising the ARIA children-presentational question `img` raises.
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}

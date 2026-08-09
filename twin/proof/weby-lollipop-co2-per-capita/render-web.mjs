@@ -224,7 +224,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       rows: sorted,
       title: claim,
       source: "Source: Global Carbon Budget 2025, via Our World in Data · 2024 data",
-      alt: `Lollipop chart ranking 2024 per-capita CO2 emissions across 15 European countries, highest to lowest. ${highest.country} is highest at ${highest.value.toFixed(1)} tonnes per capita. Switzerland, highlighted, is ${rankFromBottom}${ordinalSuffix(rankFromBottom)}-lowest at ${subjectRow.value.toFixed(1)} tonnes. Every row prints its own rounded value; hovering, tapping or focusing a row reveals its exact unrounded reading.`,
+      alt: `Lollipop chart ranking 2024 per-capita CO2 emissions across 15 European countries, highest to lowest. ${highest.country} is highest at ${highest.value.toFixed(1)} tonnes per capita. Switzerland, highlighted, is ${rankFromBottom}${ordinalSuffix(rankFromBottom)}-lowest at ${subjectRow.value.toFixed(1)} tonnes. Every row prints its own rounded value; hovering, tapping or focusing a row reveals that row's reading to three decimals, which is what separates Switzerland from Sweden.`,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       subject: SUBJECT,

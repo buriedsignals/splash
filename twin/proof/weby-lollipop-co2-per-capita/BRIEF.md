@@ -46,10 +46,15 @@ here is detail the static frame had to omit, never the same numbers repeated on 
 does not bolt on a tooltip that just restates "3.6 t" a reader can already see printed in ink next to
 Switzerland's dot — that would be exactly the anti-pattern the doctrine warns against.
 
-What genuinely IS omitted: the printed label rounds to one decimal, but the underlying data carries
-far more precision — Switzerland's own frozen reading is 3.5946856 t, not 3.6. So hover, tap or
-keyboard focus on any row reveals that row's exact unrounded reading (e.g.
-`"Switzerland · 3.5946856 t (2024)"` against the printed "3.6 t"), and nothing more. With every row
+What genuinely IS omitted: the printed label rounds to one decimal, and at one decimal Switzerland
+and Sweden are the same number — both print "3.6 t", and the title calls one of them third-lowest. So
+hover, tap or keyboard focus on any row reveals that row's reading to THREE decimals (e.g.
+`"Switzerland · 3.595 t (2024)"` against Sweden's `3.592`), and nothing more. Three is derived, not
+picked: rounding all fifteen frozen readings gives 14 distinct values at one decimal and still 14 at
+two — Sweden and Switzerland tie in both — and 15 at three. Three decimals is therefore the fewest at
+which every row is its own number, and the fewest at which "3rd-lowest" is checkable. It formerly
+revealed the CSV's own literal, which gave five decimals on one row, six on seven and seven on seven
+— the float's digit count, not a decision. With every row
 already labelled, this type gains comparatively little from interaction at this row count — the one
 honest thing hover adds is the precision rounding necessarily dropped, not a redundant restatement of
 what is already on screen. Design: one invisible hit-rect per row, spanning the plot's full width and

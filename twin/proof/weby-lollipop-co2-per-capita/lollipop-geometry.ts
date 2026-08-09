@@ -110,14 +110,25 @@ export function formatValue(v: number): string {
 }
 
 /**
- * The full-precision reading — the one thing this genre's interaction adds that the printed label
- * (rounded to one decimal) had to drop. `v.toString()` on a value parsed straight out of the CSV's
- * own decimal literal round-trips exactly for every reading in this dataset (double-precision
- * numbers with this few significant digits re-stringify to the same digits they were parsed from);
- * this function never re-rounds or reformats what the source already carries.
+ * The finer reading hover adds — THREE decimals, the same count on every row.
+ *
+ * It used to be `${v}`: the CSV's own decimal literal, re-stringified. That is defensible as a
+ * citation and indefensible as a reading. Measured across this beat's fifteen rows, it printed
+ * **five decimals on one row, six on seven, and seven on seven** — a float's own digit count
+ * standing in for an editorial one, so a reader hovering Portugal was told "3.4089074 t": CO₂ per
+ * head to a ten-thousandth of a gram, from a national inventory divided by a mid-year population
+ * estimate.
+ *
+ * THREE is derived, not chosen. The hover's job here is the detail the printed label had to drop,
+ * and the only detail actually dropped is a RANKING: at one decimal Sweden and Switzerland both
+ * print "3.6 t", while the title calls Switzerland third-lowest. Rounding all fifteen frozen
+ * readings and counting distinct values: **1 dp → 14 of 15, 2 dp → 14 of 15 (Sweden and
+ * Switzerland still tied), 3 dp → 15 of 15**. Three decimals is the fewest at which every row in
+ * this beat is a different number, and therefore the fewest at which the sentence over the chart
+ * can be checked against it. A fourth would add a digit that separates nothing.
  */
-export function formatValueExact(v: number): string {
-  return `${v} ${UNIT}`;
+export function formatValueFine(v: number): string {
+  return `${v.toFixed(3)} ${UNIT}`;
 }
 
 /**

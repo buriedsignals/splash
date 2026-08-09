@@ -244,14 +244,20 @@ export function StackedBarWeb({
 
         {/* GEOMETRY ONLY — no `<text>`. */}
         <svg
+          // Named `group`, not `img` — see the note in `SlopeWeb.tsx`: the root used to come back
+          // from Chrome's AX tree as `SvgRoot` with `name: ""`, and `group` names it without
+          // raising the ARIA children-presentational question `img` raises.
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
           fontFamily="Helvetica, Arial, sans-serif"
         >
-          {/* No root role="img" — eighteen individually-focusable segments below need their own
-              names. */}
+          {/* `role="group"`, not `role="img"` — see `SlopeWeb.tsx`'s note: the reason recorded here
+              was measured and is not what Chrome does, and `group` names the graphic without
+              raising the question. `<desc>` still carries the alt text. */}
           <desc>{alt}</desc>
           <rect
             x={0}

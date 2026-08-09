@@ -252,14 +252,20 @@ export function LifeExpectancyWeb({
         {/* GEOMETRY ONLY below — no `<text>` at all. `preserveAspectRatio="none"` lets this stretch
             to exactly whatever box the grid gives it at any container width. */}
         <svg
+          // Named `group`, not `img` — see the note in `SlopeWeb.tsx`: the root used to come back
+          // from Chrome's AX tree as `SvgRoot` with `name: ""`, and `group` names it without
+          // raising the ARIA children-presentational question `img` raises.
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
           fontFamily="Helvetica, Arial, sans-serif"
         >
-          {/* No root role="img" — this genre's departure from the static genre's a11y pattern
-              (`web-discipline.md`): every one of the 74 points below needs its own name. */}
+          {/* `role="group"`, not `role="img"` — see `SlopeWeb.tsx`'s note: the reason recorded here
+              was measured and is not what Chrome does, and `group` names the graphic without
+              raising the question. `<desc>` still carries the alt text. */}
           <desc>{alt}</desc>
           <rect
             x={0}

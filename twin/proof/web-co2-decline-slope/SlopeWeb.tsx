@@ -1,6 +1,6 @@
 /**
- * The web beat of "Germany cut per-capita CO₂ emissions further than any other Western European
- * country's since 1990" — the interactive genre, a slopegraph over ten countries and two discrete
+ * The web beat of "Of these ten European countries, Germany cut per-capita CO₂ emissions the
+ * furthest since 1990" — the interactive genre, a slopegraph over ten countries and two discrete
  * periods (1990, 2024).
  *
  * Not a second chart: the coordinates come from `./slope-geometry.ts` (`slopeGeometry`, `fmt`), the
@@ -357,15 +357,35 @@ export function SlopeWeb({
 
         {/* GEOMETRY ONLY below — no `<text>`. */}
         <svg
+          // NAMED, and named `group` rather than `img`. Before this the root carried a `<desc>` and
+          // nothing else: measured in Chrome through `Accessibility.getFullAXTree`, the node came
+          // back as `SvgRoot` with `name: ""` — a description with no name to hang it on, which is
+          // why a bare `<desc>` is not reliably announced. `role="group"` gives it a name while
+          // leaving every focusable mark below it in the tree, which is what this genre's whole
+          // keyboard contract depends on. (`role="img"` was measured too, on this same file: Chrome
+          // did NOT prune the marks under it — all ten stayed unignored — so the "it would flatten
+          // every descendant" reason two of these components state is not what Chrome does. It is
+          // still the ARIA spec's rule for non-focusable children, and `group` avoids the question
+          // entirely, which is why it is what the two map beats that already got this right use.)
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
           fontFamily="Helvetica, Arial, sans-serif"
         >
-          {/* No root role="img": that role would flatten every descendant into one opaque image,
-              silencing the twenty individually-focusable endpoints below. `<desc>` still carries
-              the alt text. */}
+          {/* `role="group"`, not `role="img"` — MEASURED, not reasoned. The claim this comment used
+              to make ("that role would flatten every descendant into one opaque image, silencing the
+              twenty individually-focusable endpoints below") was checked in Chrome through
+              `Accessibility.getFullAXTree` against a copy of a delivered artifact with `role="img"`
+              added: every mark stayed in the tree, unignored, with its own name. It is still the
+              ARIA rule for NON-focusable children, and `group` — the role the two map beats that
+              already carried an accessible name use — sidesteps it entirely while doing the one
+              thing that was actually missing: giving the graphic a NAME. Without one the root came
+              back as `SvgRoot` with `name: ""`, carrying a `<desc>` description with nothing to
+              announce it against. `<desc>` still carries the alt text, and now has a name to sit
+              under. */}
           <desc>{alt}</desc>
           <rect
             x={0}

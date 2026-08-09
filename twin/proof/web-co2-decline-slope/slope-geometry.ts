@@ -1,6 +1,6 @@
 /**
- * The pure core of "Germany cut per-capita CO₂ emissions further than any other Western European
- * country's since 1990" — a slopegraph, ten countries, two discrete periods (1990, 2024). No
+ * The pure core of "Of these ten European countries, Germany cut per-capita CO₂ emissions the
+ * furthest since 1990" — a slopegraph, ten countries, two discrete periods (1990, 2024). No
  * colour, no font, no React — the same boundary `crossing-geometry.ts` keeps for the co2-suisse
  * beat next door, adapted for a type with exactly two fixed x positions per category
  * (`references/types/slope.md`) instead of a continuous time series.

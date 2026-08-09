@@ -1,8 +1,12 @@
 # Beat — who cut per-capita CO2 emissions furthest since 1990
 
-**Proves:** Germany's per-capita CO2 emissions fell further between 1990 and 2024 than any of nine
-other Western European countries' — more than the United Kingdom's much-discussed decarbonisation,
-and every one of the ten fell.
+**Proves:** Germany's per-capita CO2 emissions fell further between 1990 and 2024 than any of the
+nine other European countries this beat draws — more than the United Kingdom's much-discussed
+decarbonisation — and every one of the ten fell. The set is NOT "Western European": under the UN
+geoscheme only Austria, France, Germany and Switzerland are, and widening the claim to Europe as a
+whole would be false (Estonia, Bulgaria and Romania each cut more per head since 1990). The claim is
+scoped to the rows drawn, and `checkSubjectFellFurthest` in `render-web.mjs` throws if the data ever
+stops supporting it.
 
 **Medium / genre:** chart / web. **Type:** slope (slopegraph) — two vertical axes (1990, 2024), one
 line per country from its 1990 value to its 2024 value, position-encoded (no forced zero), one

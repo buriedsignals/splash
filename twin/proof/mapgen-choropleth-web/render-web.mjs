@@ -307,9 +307,28 @@ async function render({ valuesPath, plateDir, outDir, name = OUTPUT_NAME }) {
   const { rows } = joinValues(CO2_2023_STUDY, values, { alias: {}, expectedNoData: [] });
 
   const valueByKey = new Map(rows.map((r) => [r.key, r.value]));
+
+  // The name a reader is shown comes from the SOURCE TABLE, never from the shapefile. Natural
+  // Earth's `NAME` is a cartographic abbreviation sized to fit inside a polygon — "Faeroe Is.",
+  // "Bosnia and Herz." — and the frozen `countries.geojson` carries no long form at all. Those
+  // abbreviations used to reach the tooltip, the region table, the accessible label and the
+  // legend callout, under a headline this same script spells "the Faroe Islands" out of the csv:
+  // one artifact naming one country two ways. `labelsFromCsv` already existed and already read the
+  // csv's spellings for the title and the alt; it was simply never threaded into the rows. Now it
+  // is, and `displayName` throws rather than silently falling back, so a code the csv stops naming
+  // cannot quietly reintroduce an abbreviation.
+  const { names, year } = labelsFromCsv(csv);
+  const displayName = (key, shapeName) => {
+    const spelled = names.get(key);
+    if (!spelled)
+      throw new Error(
+        `the csv names no entity for ${key}, so the map would fall back to the shapefile's own "${shapeName}" — every reader-facing name in this beat comes from the source table`,
+      );
+    return spelled;
+  };
   const named = shapes.map((shape) => ({
     key: shape.key,
-    name: shape.name,
+    name: displayName(shape.key, shape.name),
     rings: shape.rings,
     value: valueByKey.get(shape.key) ?? null,
   }));
@@ -317,7 +336,6 @@ async function render({ valuesPath, plateDir, outDir, name = OUTPUT_NAME }) {
   // The claim, checked against the ACTUAL joined values, not just asserted true in the title.
   const claim = checkClaim(values);
 
-  const { names, year } = labelsFromCsv(csv);
   const { title, legendCaption, alt } = claimSentences({
     count: named.length,
     breaks: CO2_BREAKS,

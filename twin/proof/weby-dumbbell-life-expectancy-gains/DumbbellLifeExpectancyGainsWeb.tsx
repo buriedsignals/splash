@@ -32,8 +32,8 @@
  * NUMBER LOCALE. This beat's words are English and its `<html lang>` is patched to `en`, so its
  * figures are English too: `formatYears` prints `78.4` with a decimal POINT. There is no `fr` in
  * this beat, and the formatter is named for what it returns — years to one decimal — not for a
- * locale. The gap in `describeRow` uses the same function, so the prose, the axis and the tooltip
- * cannot disagree.
+ * locale. The detail layer uses `formatYearsFine`, the same rule one decimal finer, and derives its
+ * gain by subtracting the two numbers it prints, so no tooltip can contradict its own arithmetic.
  *
  * INTERACTION: one hit-rect per row, never a shared nearest-point overlay — each row already owns a
  * non-overlapping `scaleBand` band, so there is nothing to resolve "nearest". `data-detail` LEADS
@@ -107,14 +107,39 @@ export function formatYears(v: number): string {
   return v.toFixed(1);
 }
 
-/** The tooltip line and the screen-reader label for one row, from the SAME numbers the frame
- *  prints — the gap leads, because it is the one reading neither printed value states. */
+/** The DETAIL layer's precision: one decimal finer than the frame's printed endpoints. */
+export function formatYearsFine(v: number): string {
+  return v.toFixed(2);
+}
+
+/**
+ * The tooltip line and the screen-reader label for one row.
+ *
+ * THE GAIN IS SUBTRACTED FROM THE TWO NUMBERS THE STRING SHOWS, never rounded separately from
+ * them. Rounding three quantities independently does not reconcile, and it did not: on 2 of these
+ * 10 rows the string invited a subtraction that contradicted its own answer — "Switzerland: +4.1
+ * years (79.8 → 84.0)", where 84.0 − 79.8 is 4.2, and "Netherlands: +4.0 years (78.1 → 82.2)",
+ * where the difference is 4.1. Both gains were correctly rounded from the raw difference (4.1196
+ * and 4.0276); the endpoints were correctly rounded too; the string was still wrong, because a
+ * reader can only subtract what they are shown.
+ *
+ * Measured over these ten rows: independent rounding leaves 2 rows broken at one decimal, 3 at two
+ * and 3 at three, and only reconciles at four — the source's own precision. So the fix is not more
+ * digits, it is deriving the gain from the printed endpoints, which reconciles by construction at
+ * any precision. Two decimals here (`formatYearsFine`), one finer than the frame prints, so hover
+ * still adds something the frame does not; the derived gain then differs from the raw gain by at
+ * most 0.01 years — under four days, against a life-expectancy estimate — and the rank order of
+ * the ten derived gains is identical to the raw order the rows are sorted in (checked: strictly
+ * decreasing, 4.98 → 2.49).
+ */
 export function describeRow(r: Row): { detail: string; label: string } {
-  const gap = `+${formatYears(r.gap)} ${UNIT}`;
-  const detail = `${r.country}: ${gap} (${formatYears(r.y2000)} → ${formatYears(r.y2023)})`;
+  const from = Number(formatYearsFine(r.y2000));
+  const to = Number(formatYearsFine(r.y2023));
+  const gain = formatYearsFine(to - from);
+  const detail = `${r.country}: +${gain} ${UNIT} (${formatYearsFine(r.y2000)} → ${formatYearsFine(r.y2023)})`;
   const label =
-    `${r.country}: gained ${formatYears(r.gap)} years of life expectancy, from ` +
-    `${formatYears(r.y2000)} years in 2000 to ${formatYears(r.y2023)} years in 2023`;
+    `${r.country}: gained ${gain} years of life expectancy, from ` +
+    `${formatYearsFine(r.y2000)} years in 2000 to ${formatYearsFine(r.y2023)} years in 2023`;
   return { detail, label };
 }
 
@@ -256,14 +281,19 @@ export function DumbbellLifeExpectancyGainsWeb({
 
         {/* GEOMETRY ONLY below — no `<text>`. */}
         <svg
+          // Named `group`, not `img` — see the note in `SlopeWeb.tsx`: the root used to come back
+          // from Chrome's AX tree as `SvgRoot` with `name: ""`, and `group` names it without
+          // raising the ARIA children-presentational question `img` raises.
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
           preserveAspectRatio="none"
         >
-          {/* No root role="img" — this genre's one deliberate departure from the static genre's
-              accessibility pattern: that role would flatten every child into one opaque image,
-              silencing the ten individually-focusable hit-rects below. */}
+          {/* `role="group"`, not `role="img"` — see `SlopeWeb.tsx`'s note: the reason recorded here
+              was measured and is not what Chrome does, and `group` names the graphic without
+              raising the question. `<desc>` still carries the alt text. */}
           <desc>{alt}</desc>
           <rect
             x={0}
