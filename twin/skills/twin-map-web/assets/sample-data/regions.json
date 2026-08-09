@@ -1,0 +1,75 @@
+[
+  { "key": "paris", "name": "Paris", "lon": 2.35, "lat": 48.86, "value": 11.0 },
+  {
+    "key": "london",
+    "name": "London",
+    "lon": -0.13,
+    "lat": 51.51,
+    "value": 9.5
+  },
+  {
+    "key": "madrid",
+    "name": "Madrid",
+    "lon": -3.7,
+    "lat": 40.42,
+    "value": 6.7
+  },
+  {
+    "key": "barcelona",
+    "name": "Barcelona",
+    "lon": 2.17,
+    "lat": 41.39,
+    "value": 5.6
+  },
+  { "key": "rome", "name": "Rome", "lon": 12.5, "lat": 41.9, "value": 4.3 },
+  {
+    "key": "berlin",
+    "name": "Berlin",
+    "lon": 13.4,
+    "lat": 52.52,
+    "value": 3.9
+  },
+  {
+    "key": "athens",
+    "name": "Athens",
+    "lon": 23.73,
+    "lat": 37.98,
+    "value": 3.2
+  },
+  { "key": "milan", "name": "Milan", "lon": 9.19, "lat": 45.46, "value": 3.2 },
+  {
+    "key": "lisbon",
+    "name": "Lisbon",
+    "lon": -9.14,
+    "lat": 38.72,
+    "value": 2.9
+  },
+  {
+    "key": "vienna",
+    "name": "Vienna",
+    "lon": 16.37,
+    "lat": 48.21,
+    "value": 2.0
+  },
+  {
+    "key": "warsaw",
+    "name": "Warsaw",
+    "lon": 21.01,
+    "lat": 52.23,
+    "value": 1.9
+  },
+  {
+    "key": "stockholm",
+    "name": "Stockholm",
+    "lon": 18.06,
+    "lat": 59.33,
+    "value": 1.7
+  },
+  {
+    "key": "dublin",
+    "name": "Dublin",
+    "lon": -6.26,
+    "lat": 53.35,
+    "value": 1.4
+  }
+]
