@@ -3,31 +3,41 @@
 The rules the scroll-driven vehicle is written under. There was no doctrine for this genre before
 this file — it was written while building this skill's own first seed, then REWRITTEN against the
 same seed's second build after two structural corrections, REWRITTEN AGAIN against the third (the
-composition, and the crossfade mechanism, both corrected in the same round), and REWRITTEN A FOURTH
-TIME against a round that reversed part of the third: the continuous crossfade the third build
-introduced turned out, once actually driven and sampled across the full scroll distance rather than
-at two or three points, to never settle — see "The graphic is fixed; only the text moves," below,
-for the measurement that caught it and why the fix is a removal, not a tune. The same round also
-took the seed from two steps to four (see "More than two steps") and fixed a composition bug the
-third build's own centring fix did not catch (see "The composition is a centred reading column").
+composition, and the crossfade mechanism, both corrected in the same round), REWRITTEN A FOURTH TIME
+against a round that reversed part of the third (the continuous crossfade the third build introduced
+turned out, once actually driven and sampled across the full scroll distance rather than at two or
+three points, to never settle — see "The graphic is fixed; only the text moves," below; the same
+round also took the seed from two steps to four, see "More than two steps," and fixed a composition
+bug the third build's own centring fix did not catch, see "The composition is a centred reading
+column"), and REWRITTEN A FIFTH TIME against a round that fixed a defect the fourth round's own
+centring fix introduced: constraining the graphic's WIDTH to a comfortable measure was right, but
+the fourth round left its HEIGHT capped at `min(70vh, 640px)` — a leftover from before the graphic
+became the sticky ground — which read as a small illustration adrift in empty page, not a graphic
+filling the frame it is pinned in (see "The graphic fills the viewport it is pinned in," below).
 Every rule below is either a decision this genre needed and the others did not, or an explicit
 inheritance from `twin-doctrine` stated so it is not silently assumed. Every section below describes
 the CURRENT code, not a remedy it once used and no longer does — a stale section here is what this
 file's own corrections exist to stop being ("The one gotcha" and "Measuring prose over the graphic"
 are unchanged since the second build and remain accurate as written).
 
-**A standing lesson this fourth round re-learned the hard way: a check on the wrong element passes
-for the wrong reason.** The third build's own "Verification" section measured `.scrolly`'s own
-left/right margin, found it symmetric, and called the composition centred. It was — `.scrolly`
-itself was exactly as centred as claimed. What that measurement never looked at was the
-`.step-panel` INSIDE it, which sat flush against the graphic column's own left edge at every width,
-because `.step`'s flex row centred its child vertically (`align-items: center`) but never
-horizontally (`justify-content` was never set, so it defaulted to `flex-start`). A reader does not
-see `.scrolly`'s own invisible margin; a reader sees the panel they are meant to read, and the
-graphic behind it. Measuring the box that happens to be easiest to query is not the same thing as
-measuring what a reader's eye actually meets — the fix from here on is: when a human says "not
-centred" and a computed style says otherwise, screenshot the thing a human is actually looking at,
-not the outermost box that contains it.
+**A standing lesson repeated across two rounds: a check on the wrong element, or the wrong
+dimension, passes for the wrong reason.** The third build's own "Verification" section measured
+`.scrolly`'s own left/right margin, found it symmetric, and called the composition centred. It
+was — `.scrolly` itself was exactly as centred as claimed. What that measurement never looked at was
+the `.step-panel` INSIDE it, which sat flush against the graphic column's own left edge at every
+width, because `.step`'s flex row centred its child vertically (`align-items: center`) but never
+horizontally (`justify-content` was never set, so it defaulted to `flex-start`) — fixed in the fourth
+round. That same fourth round then fixed the WIDTH of the composition without ever re-examining the
+HEIGHT, and shipped a graphic that filled its own box completely (no bug in the fill itself) while
+that box was itself too short for a full viewport — a dimension nobody had asked "is this still
+right?" about since the third build's two-column era. A reader does not see `.scrolly`'s own
+invisible margin, and does not read a percentage of viewport height either; a reader sees the panel
+they are meant to read, and the graphic behind it, at whatever size it actually renders. Measuring
+the box that happens to be easiest to query, on the one axis that happens to be under discussion, is
+not the same thing as measuring what a reader's eye actually meets — the standing fix: when a human
+says something looks wrong and a computed style says otherwise, screenshot the thing a human is
+actually looking at, not the outermost box that contains it, and check every dimension the human
+named, not only the one the previous round happened to be fixing.
 
 ## The one gotcha that will waste your day (read first)
 
@@ -60,10 +70,15 @@ built anywhere in this project.** Put the sticky graphic BEHIND the scrolling pr
 using the SAME reservation behaviour that caused the original defect rather than fighting it:
 
 ```css
-.scrolly-track { --graphic-h: min(70vh, 640px); position: relative; }
+.scrolly-track { --graphic-h: 100vh; position: relative; }
 .scrolly-graphic { position: sticky; top: 0; height: var(--graphic-h); z-index: 0; }
 .scrolly-steps { position: relative; z-index: 1; margin-top: calc(-1 * var(--graphic-h)); }
 ```
+
+(`--graphic-h` shown here at its CURRENT value, `100vh` — see "The graphic fills the viewport it is
+pinned in," below, for why it is not the `min(70vh, 640px)` an earlier round of this file shipped;
+the mechanism this section describes does not care what the value is, only that `.scrolly-steps`'s
+own negative margin matches it exactly.)
 
 `.scrolly-graphic` reserves a `--graphic-h`-tall box at the top of `.scrolly-track`, in normal flow
 — exactly the reservation the "one gotcha" paragraph above describes. `.scrolly-steps`, the very
@@ -175,6 +190,51 @@ column itself (322px of 330px), but its own margins are still equal (2px each si
 screenshot, no overflow). This is a pure box-model change, exactly like the `max-width`/`clamp`
 fix above — it touches neither the sticky/negative-margin mechanism nor which frame is active, only
 where the panel sits inside the row `.step` already gives it.
+
+## The graphic fills the viewport it is pinned in
+
+**Constraining the graphic's WIDTH to a comfortable reading measure was right; letting its HEIGHT
+stay capped at a fraction of the viewport was a separate mistake the same round made without
+noticing.** `--graphic-h` had been `min(70vh, 640px)` since before the graphic was ever the sticky
+ground — a value tuned for the third build's own two-column layout and never revisited once the
+graphic became full-bleed-behind. At a 900px-tall desktop viewport that resolves to 630px, leaving
+270px — 30% of the viewport — as bare page below the graphic while it is pinned. The project owner's
+own correction: *the graphic is small and adrift in white space... the reader's viewport is the
+frame, and the graphic should occupy it.* A graphic that fills three-quarters of its own box exactly
+as designed is still a bug if the box itself is the wrong size for what a reader expects a PINNED,
+full-screen graphic to be.
+
+**The fix is one value: `--graphic-h: 100vh`.** The graphic now fills the FULL viewport height for
+as long as it is pinned, not a capped band with page visible past its bottom edge. This does not
+distort anything: `ImageFrame` already paints with `object-fit: cover` and `DrawnGraphicFrame` with
+`preserveAspectRatio="xMidYMid slice"` — both CROP to whatever box they are given rather than
+stretch, the same trade-off every full-bleed frame in this genre already makes at every width it
+ships. A taller box only means more of the artwork's own left/right edge is cropped away to cover
+it; nothing in the artwork itself is squashed or stretched. `FRAME`'s own native aspect (640×900,
+≈0.71) is portrait already, so at typical desktop widths (the graphic's own COLUMN, not the
+viewport — still capped by `.scrolly`'s own `max-width`/`clamp` padding, e.g. ~528px at 1440px) a
+100vh-tall box is narrower still than that native aspect, meaning MORE is cropped from the sides
+than before, not less legible — confirmed by screenshot, below, nothing in the drawn instrument or
+the photograph reads as cut off in a way that loses the image's own subject (the staff, the gauge
+house, the water line all stay comfortably inside frame at every width checked).
+
+**Sizing the sticky box does not touch step-boundary timing.** `.step`'s own `min-height` (`70vh`,
+`60vh` for the last) governs when `pickActiveStep`'s centre-band crossing fires — entirely
+independent of `--graphic-h`, which only sets how tall the PINNED BOX is while any step is active.
+Because the seed's total steps height (four steps' worth, ~280vh+) is far larger than a single
+`100vh` graphic, `position: sticky`'s own pin distance (container height minus sticky height) barely
+changes from before — the graphic still pins for effectively the entire track, unpinning naturally
+only in the last sliver of scroll as the track itself ends, exactly as "The one gotcha" describes.
+
+Measured, in a real, driven browser, at all three widths: at 1440×900, `.scrolly-graphic`'s own
+`getBoundingClientRect().height` is `900` — **100% of the viewport height** — confirmed by
+screenshot, the graphic's own top and bottom edges exactly meeting the top and bottom of the browser
+window while pinned, no bare page visible past either edge. At 1024×800, height `800` — 100%. At
+375×800, height `800` — 100%, with `.scrolly`'s own width constraint (the reading-measure fix from
+the previous section) still holding: the graphic's own COLUMN stays narrower than the full 375px
+screen width (330px, the same `clamp`-derived inset as before), it is only the HEIGHT that now fills
+the viewport, and no horizontal overflow was introduced (`document.documentElement.scrollWidth`
+still never exceeds `window.innerWidth` at any sampled width or scroll position).
 
 ## More than two steps
 
@@ -377,9 +437,6 @@ scrolled the page and a screenshot was taken AFTER that scroll, not before. Conf
 Puppeteer-driven Chrome, all of it together (this round's own run, superseding any older number
 below that it contradicts — see this file's own intro on why a stale claim here is worse than none):
 
-This round's own run, against the FOUR-step seed, superseding any older number above that it
-contradicts — see this file's own intro on why a stale claim here is worse than none:
-
 - **The graphic is fixed, not a permanent blend**: sampling ELEVEN scroll positions spanning the
   FULL scrollable distance (not the nine-point, never-quite-full-track sample the third build's own
   version of this section relied on — see "The graphic is fixed; only the text moves," above, for
@@ -395,6 +452,14 @@ contradicts — see this file's own intro on why a stale claim here is worse tha
   the sticky point is reached (the brief initial climb from the graphic's own static document
   position to `top: 0` is normal `position: sticky` catch-up, not a defect — see "The one gotcha,"
   above).
+- **The graphic fills the viewport it is pinned in**: `.scrolly-graphic`'s own measured height while
+  pinned equals `window.innerHeight` exactly at all three widths checked — 900px of a 900px-tall
+  window at 1440×900, 800px of 800px at 1024×800, 800px of 800px at 375×800 — 100% in every case,
+  confirmed by screenshot (the graphic's own top and bottom edges exactly meeting the browser
+  window's own top and bottom, no bare page visible past either edge). See "The graphic fills the
+  viewport it is pinned in," above, for the fifth correction this fixes and why filling the height
+  does not distort the artwork (crop, via `object-fit: cover`/`preserveAspectRatio="...slice"`,
+  never stretch).
 - **Centred composition, including the panel**: `.scrolly`'s own left/right margin measured equal
   (`getBoundingClientRect`) at 1440px (400px each side), 1024px (192px each side) and 375px (no
   horizontal overflow — `document.documentElement.scrollWidth` never exceeds `window.innerWidth`, at

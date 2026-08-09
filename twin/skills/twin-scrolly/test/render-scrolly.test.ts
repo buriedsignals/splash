@@ -362,6 +362,21 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).toContain("justify-content: center");
   });
 
+  // Correction 5: "the graphic should fill the height it is given" — the sticky graphic's own box
+  // must be sized to the full viewport it is pinned in, not a capped fraction of it.
+  it("should size the sticky graphic to the full viewport height, not a capped fraction of it", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      outDir: "/tmp/twin-scrolly-test-full-height",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    expect(html).toContain("--graphic-h: 100vh");
+  });
+
   // Correction 1: "the graphic must be fixed; only the text moves" — no mechanism in the shipped
   // CSS may write an opacity value from anything other than the `.active` class itself.
   it("should never ship a scroll-linked opacity mechanism — only the class-driven 0/1 swap", async () => {

@@ -199,9 +199,22 @@ body {
    The fix does not fight that behaviour, it uses it: \`.scrolly-steps\`'s negative top margin,
    exactly \`--graphic-h\` tall, pulls the steps column back UP over that same reserved box on
    purpose, so the sticky graphic and the scrolling prose occupy the same screen coordinates for as
-   long as the track has steps left to give. */
+   long as the track has steps left to give.
+
+   \`--graphic-h: 100vh\` — a FIFTH correction: the reader's own viewport is the frame the graphic is
+   pinned in, and the graphic should fill it, not sit as a capped, medium-sized band with empty page
+   below it. The previous \`min(70vh, 640px)\` was itself a leftover of the third build's
+   two-column-era sizing, never revisited once the graphic became the sticky ground — it read fine
+   in a screenshot taken AT that band's own edges, but left up to 30% of a real desktop viewport as
+   bare page below the graphic, which is exactly the "small and adrift" defect a full-viewport reader
+   actually sees. Filling the height does not distort anything: every frame this genre ships already
+   paints with \`object-fit: cover\` (\`ImageFrame\`) or \`preserveAspectRatio="xMidYMid slice"\`
+   (\`DrawnGraphicFrame\`) — cropping to whatever box it is given, never stretching — so a taller box
+   only changes how much of the artwork's own left/right edge is cropped away, the same trade-off
+   \`object-fit: cover\` already makes at every width this genre ships. See
+   references/scrolly-discipline.md, "The graphic fills the viewport it is pinned in." */
 .scrolly-track {
-  --graphic-h: min(70vh, 640px);
+  --graphic-h: 100vh;
   position: relative;
 }
 .scrolly-graphic {
