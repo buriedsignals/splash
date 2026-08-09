@@ -355,22 +355,31 @@ export function BoxplotVideo({
 
   const categoryLabelBaselineOffset = CATEGORY_LABEL.fontSize * 0.32;
 
-  // Two Americas outliers (Canada, the US) sit close together in value — stack their labels so
-  // they never overlap, the higher value's label pushed further up when the raw gap is too small.
+  // Two Americas outliers (Canada, the US) sit close together in value — 0.44 t apart, about 12px
+  // on this scale — so their labels have to be stacked. The stack is ordered the way the DOTS are:
+  // the higher value on the higher line. The previous version placed each label at its own natural
+  // offset and pushed collisions upward, which put Canada (13.9, the LOWER dot) above the United
+  // States (14.3, the higher one) — a reader matching label to dot read the pair inverted.
+  // Crowded stacks lift clear of the topmost dot rather than being pushed down onto their own
+  // marks; an uncrowded pair keeps its natural offset so a distant outlier's label stays with it.
   // Shared by BOTH the plain value label (pre-conclusion) and the conclusion's "× median" label,
   // so the text never jumps position when it swaps wording.
   const MIN_LABEL_GAP = 22;
+  const naturalLabelY = subjectOutliersSorted.map(
+    (o) => g.y(o.value) - OUTLIER_R - 10,
+  );
+  const crowded = naturalLabelY.some(
+    (y, i) => i > 0 && y - naturalLabelY[i - 1] < MIN_LABEL_GAP,
+  );
+  const stackFloor = Math.min(...naturalLabelY);
   const subjectOutlierLabelY = new Map<string, number>();
-  let previousY: number | undefined;
-  for (const o of subjectOutliersSorted) {
-    const naturalY = g.y(o.value) - OUTLIER_R - 10;
-    const placedY =
-      previousY !== undefined
-        ? Math.min(naturalY, previousY - MIN_LABEL_GAP)
-        : naturalY;
+  subjectOutliersSorted.forEach((o, i) => {
+    // `subjectOutliersSorted` is descending by value, so index 0 takes the topmost line.
+    const placedY = crowded
+      ? stackFloor - (subjectOutliersSorted.length - 1 - i) * MIN_LABEL_GAP
+      : naturalLabelY[i];
     subjectOutlierLabelY.set(o.country, placedY);
-    previousY = placedY;
-  }
+  });
 
   return (
     <svg
@@ -658,7 +667,16 @@ export function BoxplotVideo({
 
       {/* The conclusion: each Americas outlier's plain value label swaps in place for the "× the
           median" framing — the actual finding, stated once both dots have landed and been rung.
-          Same stacked Y positions as the plain label above, so the text never jumps. */}
+          Same stacked Y positions as the plain label above, so the text never jumps.
+
+          THE DENOMINATOR IS THE SUBJECT GROUP'S OWN MEDIAN, and that is the whole point of the
+          beat: "what this box HIDES" is a statement about the Americas' own middle, drawn as the
+          median line inside the box these two dots escape from. It used to divide by
+          `referenceValue` — the 53-country median on the dashed line — while the title divided by
+          the region's median, so the artifact printed "over 4×" above two labels reading 3.8× and
+          3.9×. Both were true against their own denominator, which is exactly why nothing caught
+          it. `render.mjs` now fails if the title's multiple stops bounding what these labels
+          print. */}
       {subjectOutliersSorted.map((o) => (
         <text
           key={`conclusion-${o.country}`}
@@ -670,8 +688,8 @@ export function BoxplotVideo({
           textAnchor="middle"
           opacity={groupOpacity[subjectIndex] * conclusion}
         >
-          {o.country} {en(o.value)} · {en(o.value / referenceValue, 1)}× overall
-          median
+          {o.country} {en(o.value)} · {en(o.value / subjectGroup.median, 1)}×
+          the {subjectContinent} median
         </text>
       ))}
     </svg>

@@ -1,0 +1,82 @@
+{
+  "data": [
+    {
+      "continent": "Africa",
+      "n": 12,
+      "min": 0.13653299,
+      "q1": 0.4338800225,
+      "median": 0.687455315,
+      "q3": 2.288892525,
+      "max": 6.9069405,
+      "whiskerLo": 0.13653299,
+      "whiskerHi": 4.394023,
+      "outliers": [
+        {
+          "country": "South Africa",
+          "value": 6.9069405
+        }
+      ]
+    },
+    {
+      "continent": "Americas",
+      "n": 12,
+      "min": 1.7199993,
+      "q1": 2.10005055,
+      "median": 3.0063003,
+      "q3": 4.01705905,
+      "max": 14.31945,
+      "whiskerLo": 1.7199993,
+      "whiskerHi": 4.2255874,
+      "outliers": [
+        {
+          "country": "Canada",
+          "value": 13.880179
+        },
+        {
+          "country": "United States",
+          "value": 14.31945
+        }
+      ]
+    },
+    {
+      "continent": "Asia",
+      "n": 14,
+      "min": 0.60960233,
+      "q1": 2.275122575,
+      "median": 4.837638,
+      "q3": 8.400999375,
+      "max": 20.36544,
+      "whiskerLo": 0.60960233,
+      "whiskerHi": 11.385368,
+      "outliers": [
+        {
+          "country": "Saudi Arabia",
+          "value": 20.36544
+        }
+      ]
+    },
+    {
+      "continent": "Europe",
+      "n": 15,
+      "min": 3.4789953,
+      "q1": 4.2748415,
+      "median": 5.248631,
+      "q3": 7.032678000000001,
+      "max": 7.6997585,
+      "whiskerLo": 3.4789953,
+      "whiskerHi": 7.6997585,
+      "outliers": []
+    }
+  ],
+  "title": "CO₂ emissions per capita vary widely within every continent — and in the Americas, the US and Canada each emit over 4× the region's median",
+  "source": "Source: Global Carbon Budget, via Our World in Data · 2023 data · whiskers = 1.5× IQR (Tukey)",
+  "axisUnit": "t CO₂ per person per year",
+  "referenceValue": 3.6921155,
+  "referenceLabel": "Median across all 53 countries",
+  "subjectContinent": "Americas",
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1",
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75"
+}

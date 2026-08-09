@@ -29,8 +29,15 @@ const COMPOSITION = "vidy-boxplot-co2-by-continent";
 const BEAT = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
-  title:
-    "CO₂ emissions per capita vary widely within every continent — and in the Americas, the US and Canada each emit over 4× the region's median",
+  // The multiple is a HOLE the data fills, not a number typed into a sentence. It used to read
+  // "over 4×" as a literal — true against the Americas' own median (4.6× and 4.8×) while the two
+  // conclusion labels beside it divided by the 53-country median and printed 3.8× and 3.9×. Two
+  // true statements, one artifact, two denominators, and a reader left to reconcile them. Both
+  // halves now divide by the subject group's own median — the line drawn inside the box the dots
+  // escape from — and `titleGroundedInLabels` below fails the render if they ever drift apart
+  // again.
+  titleFor: (multiple) =>
+    `CO₂ emissions per capita vary widely within every continent — and in the Americas, the US and Canada each emit over ${multiple}× the region's median`,
   source:
     "Source: Global Carbon Budget, via Our World in Data · 2023 data · whiskers = 1.5× IQR (Tukey)",
   axisUnit: "t CO₂ per person per year",
@@ -185,6 +192,58 @@ export function overallMedian(csv, { year = BEAT.year } = {}) {
   return quantile(values, 0.5);
 }
 
+/**
+ * The claim guard this beat shipped without.
+ *
+ * The rendered title asserted a multiple; the two conclusion labels beside it printed a multiple;
+ * nothing anywhere compared them, and the render's existing throws — four continents, their order,
+ * the subject group's presence, exactly two outliers — all passed while the artifact carried "over
+ * 4×" above labels reading 3.8× and 3.9×. Structure was guarded and the argument was not.
+ *
+ * What it asserts, on the SAME numbers `BoxplotVideo.tsx` divides and formats:
+ *   1. the headline multiple is the floor of the smallest multiple any label prints, so the word
+ *      "over" is true of every outlier and not just the largest;
+ *   2. every label's own printed multiple — `en(value / median, 1)`, i.e. one decimal, the exact
+ *      string a reader sees — still exceeds the headline after rounding, which is the check that
+ *      would have caught the original defect (3.8 is not over 4);
+ *   3. the title states exactly one multiple, so an editor who types a second one gets a red
+ *      render instead of a second denominator.
+ *
+ * Returns the title. Deliberately not "returns nothing and throws": the caller cannot use the
+ * sentence without going through the check.
+ */
+export function titleGroundedInLabels(group) {
+  const median = group.median;
+  if (!Number.isFinite(median) || median <= 0)
+    throw new Error(`subject group has no usable median: ${median}`);
+  // `en(v, 1)` in BoxplotVideo.tsx — the string the reader actually gets, rounding included.
+  const printed = group.outliers.map((o) => ({
+    country: o.country,
+    multiple: o.value / median,
+    label: Math.abs(o.value / median).toFixed(1),
+  }));
+  if (printed.length === 0)
+    throw new Error("subject group has no outliers to state a multiple about");
+
+  const claimed = Math.floor(Math.min(...printed.map((p) => p.multiple)));
+  for (const p of printed) {
+    if (!(Number(p.label) > claimed))
+      throw new Error(
+        `the title claims over ${claimed}× the ${group.continent} median, but the label for ` +
+          `${p.country} prints ${p.label}× (raw ${p.multiple.toFixed(4)}, median ${median.toFixed(4)}) ` +
+          `— the headline and the labels are not reading the same denominator`,
+      );
+  }
+
+  const title = BEAT.titleFor(claimed);
+  const stated = [...title.matchAll(/(\d+(?:\.\d+)?)×/g)].map((m) => m[1]);
+  if (stated.length !== 1 || Number(stated[0]) !== claimed)
+    throw new Error(
+      `the title must state exactly one multiple and it must be ${claimed}, got [${stated.join(", ")}] in: ${title}`,
+    );
+  return title;
+}
+
 function remotion(args) {
   const binary = join(PACKAGE_ROOT, "node_modules/.bin/remotion");
   const started = Date.now();
@@ -235,7 +294,7 @@ if (americas.outliers.length !== 2)
 
 const props = {
   data,
-  title: BEAT.title,
+  title: titleGroundedInLabels(americas),
   source: BEAT.source,
   axisUnit: BEAT.axisUnit,
   referenceValue,
