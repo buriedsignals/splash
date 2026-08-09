@@ -1,5 +1,16 @@
 import { describe, it, expect } from "bun:test";
-import { parseNewsroom, validateNewsroom } from "../scripts/newsroom.mjs";
+import {
+  parseNewsroom,
+  validateNewsroom,
+  isDeclinedProfile,
+} from "../scripts/newsroom.mjs";
+
+const DECLINED = `---
+decision: declined
+---
+
+The newsroom was asked and said no. Recorded, not defaulted.
+`;
 
 const COMPLETE = `---
 name: Heidi.news
@@ -44,5 +55,19 @@ describe("validateNewsroom", () => {
       brandColor: "teal",
     });
     expect(errors).toContain('brandColor must be #rrggbb, got "teal"');
+  });
+});
+
+describe("isDeclinedProfile", () => {
+  it("should recognise a profile whose front matter carries decision: declined", () => {
+    expect(isDeclinedProfile(parseNewsroom(DECLINED))).toBe(true);
+  });
+
+  it("should not treat a complete profile as declined", () => {
+    expect(isDeclinedProfile(parseNewsroom(COMPLETE))).toBe(false);
+  });
+
+  it("should not treat an incomplete profile with no decision field as declined", () => {
+    expect(isDeclinedProfile({ name: "X" })).toBe(false);
   });
 });

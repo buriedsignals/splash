@@ -9,9 +9,14 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
-import { runPreflight } from "../scripts/preflight.mjs";
+import {
+  runPreflight,
+  assertPreflightReady,
+  capabilityGap,
+} from "../scripts/preflight.mjs";
 
 const okFetch = async () => new Response("{}", { status: 200 });
+const rejectingFetch = async () => new Response("Invalid key", { status: 403 });
 let root: string;
 
 // Source of truth for "what a real Splash root needs": the same file preflight.mjs reads.
@@ -77,6 +82,15 @@ async function installAllSharedFiles(): Promise<void> {
   }
 }
 
+// Installs everything checkDependencies needs so a test can focus purely on the newsroom check or
+// on capabilities without also having to reason about the dependency check.
+async function installEverything(): Promise<void> {
+  for (const name of await declaredDependencyNames()) {
+    await installResolvableDependency(name);
+  }
+  await installAllSharedFiles();
+}
+
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "splash-root-"));
 });
@@ -94,48 +108,264 @@ typefaces: "Source Serif"
 ---
 `;
 
-describe("runPreflight", () => {
-  it("should report the newsroom profile missing when NEWSROOM.md is absent", async () => {
-    const verdict = await runPreflight({
+const declined = `---
+decision: declined
+---
+
+The newsroom was asked whether to derive a house profile and said no. This is a recorded choice,
+not a missing default.
+`;
+
+describe("runPreflight — dependencies and the newsroom's identity are the only hard stops", () => {
+  it("should report not ready when node_modules is absent", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.ready).toBe(false);
+    expect(report.blockers.map((b) => b.id)).toContain("dependencies");
+  });
+
+  it("should report not ready, naming newsroom-profile, when NEWSROOM.md is absent", async () => {
+    await installEverything();
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const newsroom = report.checks.find((c) => c.id === "newsroom-profile");
+    expect(newsroom?.status).toBe("missing");
+    expect(report.ready).toBe(false);
+    expect(report.blockers.map((b) => b.id)).toContain("newsroom-profile");
+  });
+
+  it("should report not ready when NEWSROOM.md exists but cannot be parsed", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), `\n${complete}`);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const newsroom = report.checks.find((c) => c.id === "newsroom-profile");
+    expect(newsroom?.status).toBe("fail");
+    expect(newsroom?.detail).toContain("front matter");
+    expect(report.ready).toBe(false);
+  });
+
+  it("should report not ready when NEWSROOM.md is present but incomplete", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), "---\nname: X\n---\n");
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.checks.find((c) => c.id === "newsroom-profile")?.status).toBe(
+      "fail",
+    );
+    expect(report.ready).toBe(false);
+  });
+
+  it("should be ready when dependencies resolve and NEWSROOM.md is complete, even with no keys set at all", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.ready).toBe(true);
+    expect(report.blockers).toEqual([]);
+  });
+});
+
+describe("runPreflight — the newsroom's identity has three honest outcomes, not two", () => {
+  it("should report `declined`, distinct from both `pass` and `missing`, when NEWSROOM.md records a decline", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), declined);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const newsroom = report.checks.find((c) => c.id === "newsroom-profile");
+    expect(newsroom?.status).toBe("declined");
+    expect(newsroom?.status).not.toBe("pass");
+    expect(newsroom?.status).not.toBe("missing");
+    expect(newsroom?.status).not.toBe("fail");
+  });
+
+  it("should treat `declined` as an answered question — ready, exactly like `pass`", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), declined);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.ready).toBe(true);
+    expect(report.blockers).toEqual([]);
+  });
+
+  // MUTATION PROOF 4: a declined theme must be distinguishable from a missing one by a later
+  // phase. Both leave a story able to proceed (readiness), but they are NOT the same fact — a
+  // later reader must be able to tell "the journalist was asked and said no" apart from "nobody
+  // was ever asked". Collapsing them to the same status would be exactly the silent-default bug
+  // this design exists to prevent.
+  it("MUTATION: declined and missing must not collapse to the same status", async () => {
+    await installEverything();
+
+    await writeFile(join(root, "NEWSROOM.md"), declined);
+    const declinedReport = await runPreflight({
+      root,
+      env: {},
+      fetchFn: okFetch,
+    });
+    const declinedStatus = declinedReport.checks.find(
+      (c) => c.id === "newsroom-profile",
+    )?.status;
+
+    await rm(join(root, "NEWSROOM.md"));
+    const missingReport = await runPreflight({
+      root,
+      env: {},
+      fetchFn: okFetch,
+    });
+    const missingStatus = missingReport.checks.find(
+      (c) => c.id === "newsroom-profile",
+    )?.status;
+
+    expect(declinedStatus).toBe("declined");
+    expect(missingStatus).toBe("missing");
+    expect(declinedStatus).not.toBe(missingStatus);
+  });
+});
+
+describe("runPreflight — capabilities, not a verdict", () => {
+  // MUTATION PROOF 1: a chart-only story with no MapTiler key must reach production. Before this
+  // rebuild, a missing MAPTILER_KEY made `ok` false unconditionally — the whole session refused to
+  // proceed over a key a chart-only story would never touch. Now `ready` depends only on the two
+  // hard stops above; a closed capability narrows the menu, it never blocks the journey.
+  it("MUTATION 1: should stay ready with no MAPTILER_KEY and no DATAWRAPPER_TOKEN set at all", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(report.ready).toBe(true);
+    expect(report.capabilities.map.available).toBe(false);
+    expect(report.capabilities.datawrapper.available).toBe(false);
+  });
+
+  it("should report the map capability open when MAPTILER_KEY probes green", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
       root,
       env: { MAPTILER_KEY: "k" },
       fetchFn: okFetch,
     });
-    const check = verdict.checks.find((c) => c.id === "newsroom-profile");
-    expect(check.status).toBe("missing");
-    expect(verdict.ok).toBe(false);
+    expect(report.capabilities.map.available).toBe(true);
+    expect(report.ready).toBe(true);
   });
 
-  it("should report a key as failed when the probe is rejected, not merely absent", async () => {
+  it("should keep the session ready even when a present MapTiler key is rejected (403) — closed capability, not a blocker", async () => {
+    await installEverything();
     await writeFile(join(root, "NEWSROOM.md"), complete);
-    await mkdir(join(root, "node_modules"), { recursive: true });
-    const rejecting = async () => new Response("Invalid key", { status: 403 });
-    const verdict = await runPreflight({
+    const report = await runPreflight({
       root,
       env: { MAPTILER_KEY: "present-but-stale" },
-      fetchFn: rejecting,
+      fetchFn: rejectingFetch,
     });
-    const check = verdict.checks.find((c) => c.id === "maptiler-key");
-    expect(check.status).toBe("fail");
-    expect(check.detail).toContain("403");
-    expect(verdict.ok).toBe(false);
+    expect(report.capabilities.map.available).toBe(false);
+    expect(report.capabilities.map.reason).toContain("403");
+    expect(report.ready).toBe(true);
   });
 
-  it("should pass when the root is installed, the profile is valid and the key probes green", async () => {
+  it("should report the datawrapper capability open when DATAWRAPPER_TOKEN probes green", async () => {
+    await installEverything();
     await writeFile(join(root, "NEWSROOM.md"), complete);
-    for (const name of await declaredDependencyNames()) {
-      await installResolvableDependency(name);
-    }
-    await installAllSharedFiles();
-    const verdict = await runPreflight({
+    const report = await runPreflight({
+      root,
+      env: { DATAWRAPPER_TOKEN: "t" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.datawrapper.available).toBe(true);
+  });
+
+  it("should report the hosted-embed capability permanently closed, never probing the environment for it", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
+      root,
+      env: { CLOUDFLARE_API_TOKEN: "anything" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.hostedEmbed.available).toBe(false);
+  });
+
+  // MUTATION PROOF 3: an engine-style .env must be recognised. A working engine `.env` uses
+  // VITE_MAPTILER_KEY / REMOTION_MAPTILER_KEY / MAPTILER_API_KEY and DATAWRAPPER_API_TOKEN, never
+  // this project's own short names — before this rebuild, that root reported "missing" on a
+  // machine that plainly has the key.
+  it("MUTATION 3: should open the map capability from VITE_MAPTILER_KEY alone, the engine's own name", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
+      root,
+      env: { VITE_MAPTILER_KEY: "engine-key" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.map.available).toBe(true);
+  });
+
+  it("MUTATION 3: should open the datawrapper capability from DATAWRAPPER_API_TOKEN alone, the engine's own name", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
+      root,
+      env: { DATAWRAPPER_API_TOKEN: "engine-token" },
+      fetchFn: okFetch,
+    });
+    expect(report.capabilities.datawrapper.available).toBe(true);
+  });
+
+  it("should prefer the canonical MAPTILER_KEY over an alias when both are set", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    let seenKey = "";
+    const capturing = async (url: string) => {
+      seenKey = String(url);
+      return new Response("{}", { status: 200 });
+    };
+    await runPreflight({
+      root,
+      env: { MAPTILER_KEY: "canonical-key", VITE_MAPTILER_KEY: "alias-key" },
+      fetchFn: capturing,
+    });
+    expect(seenKey).toContain("canonical-key");
+    expect(seenKey).not.toContain("alias-key");
+  });
+});
+
+describe("assertPreflightReady — mechanical enforcement, not prose a caller has to remember", () => {
+  it("should throw, naming every blocker, when the report is not ready", async () => {
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(() => assertPreflightReady(report)).toThrow("dependencies");
+  });
+
+  it("should not throw when the report is ready, even with every capability closed", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(() => assertPreflightReady(report)).not.toThrow();
+  });
+});
+
+describe("capabilityGap — the seam a later phase reads before offering a medium", () => {
+  // MUTATION PROOF 2: a map story with no MapTiler key must be told maps are unavailable, rather
+  // than that its environment failed. Before this rebuild there was no such seam at all — a
+  // missing key surfaced as a generic environment failure indistinguishable from a broken install.
+  it("MUTATION 2: should say map beats are unavailable, and must never say the environment failed", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const gap = capabilityGap(report.capabilities, "map");
+    expect(gap).toContain("map beats are unavailable");
+    expect(gap?.toLowerCase()).not.toContain("environment");
+    expect(gap?.toLowerCase()).not.toContain("failed");
+  });
+
+  it("should return null when the capability is open", async () => {
+    await installEverything();
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({
       root,
       env: { MAPTILER_KEY: "k" },
       fetchFn: okFetch,
     });
-    expect(verdict.ok).toBe(true);
-    expect(verdict.checks.every((c) => c.status === "pass")).toBe(true);
+    expect(capabilityGap(report.capabilities, "map")).toBeNull();
   });
 
+  it("should return null for a medium it has no opinion about, rather than inventing a gap", () => {
+    expect(capabilityGap({}, "chart")).toBeNull();
+  });
+});
+
+describe("runPreflight — dependency-checking behaviour carried over unchanged", () => {
   it("should report dependencies as fail, naming the missing vendored craft file, when packages resolve but shared/ is absent — the toolkit-not-portable gap (TRIAL-THREE-BEATS.md §4, PROOF.md §1)", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     for (const name of await declaredDependencyNames()) {
@@ -143,15 +373,11 @@ describe("runPreflight", () => {
     }
     // shared/ is deliberately never created here — the exact shape of a root whose
     // node_modules is fine but whose vendored craft code never arrived.
-    const verdict = await runPreflight({
-      root,
-      env: { MAPTILER_KEY: "k" },
-      fetchFn: okFetch,
-    });
-    const check = verdict.checks.find((c) => c.id === "dependencies");
-    expect(check.status).toBe("fail");
-    expect(check.detail).toContain("shared/twin-chart-beat/render-still.mjs");
-    expect(verdict.ok).toBe(false);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = report.checks.find((c) => c.id === "dependencies");
+    expect(check?.status).toBe("fail");
+    expect(check?.detail).toContain("shared/twin-chart-beat/render-still.mjs");
+    expect(report.ready).toBe(false);
   });
 
   it("should report dependencies as fail, naming only the shared file actually missing, when the rest of shared/ is present", async () => {
@@ -169,16 +395,14 @@ describe("runPreflight", () => {
       await mkdir(join(dest, ".."), { recursive: true });
       await writeFile(dest, "// stub\n");
     }
-    const verdict = await runPreflight({
-      root,
-      env: { MAPTILER_KEY: "k" },
-      fetchFn: okFetch,
-    });
-    const check = verdict.checks.find((c) => c.id === "dependencies");
-    expect(check.status).toBe("fail");
-    expect(check.detail).toContain("shared/twin-chart-beat/inspect-render.mjs");
-    expect(check.detail).not.toContain("render-still.mjs");
-    expect(verdict.ok).toBe(false);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = report.checks.find((c) => c.id === "dependencies");
+    expect(check?.status).toBe("fail");
+    expect(check?.detail).toContain(
+      "shared/twin-chart-beat/inspect-render.mjs",
+    );
+    expect(check?.detail).not.toContain("render-still.mjs");
+    expect(report.ready).toBe(false);
   });
 
   it("should report dependencies as fail, naming the package, when node_modules exists but a declared dependency does not resolve", async () => {
@@ -191,15 +415,11 @@ describe("runPreflight", () => {
     for (const name of rest) {
       await installResolvableDependency(name);
     }
-    const verdict = await runPreflight({
-      root,
-      env: { MAPTILER_KEY: "k" },
-      fetchFn: okFetch,
-    });
-    const check = verdict.checks.find((c) => c.id === "dependencies");
-    expect(check.status).toBe("fail");
-    expect(check.detail).toContain(unresolved);
-    expect(verdict.ok).toBe(false);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = report.checks.find((c) => c.id === "dependencies");
+    expect(check?.status).toBe("fail");
+    expect(check?.detail).toContain(unresolved);
+    expect(report.ready).toBe(false);
   });
 
   it("should report dependencies as fail, naming @resvg/resvg-js, when the rasteriser is not resolvable — the original incident this suite pins", async () => {
@@ -210,62 +430,10 @@ describe("runPreflight", () => {
       if (name === "@resvg/resvg-js") continue;
       await installResolvableDependency(name);
     }
-    const verdict = await runPreflight({
-      root,
-      env: { MAPTILER_KEY: "k" },
-      fetchFn: okFetch,
-    });
-    const check = verdict.checks.find((c) => c.id === "dependencies");
-    expect(check.status).toBe("fail");
-    expect(check.detail).toContain("@resvg/resvg-js");
-    expect(verdict.ok).toBe(false);
-  });
-
-  it("should report dependencies missing when node_modules is absent", async () => {
-    await writeFile(join(root, "NEWSROOM.md"), complete);
-    const verdict = await runPreflight({
-      root,
-      env: { MAPTILER_KEY: "k" },
-      fetchFn: okFetch,
-    });
-    expect(verdict.checks.find((c) => c.id === "dependencies").status).toBe(
-      "missing",
-    );
-  });
-
-  it("should report the maptiler key as missing, not failed, when MAPTILER_KEY is absent from env", async () => {
-    await writeFile(join(root, "NEWSROOM.md"), complete);
-    await mkdir(join(root, "node_modules"), { recursive: true });
-    const verdict = await runPreflight({ root, env: {}, fetchFn: okFetch });
-    const check = verdict.checks.find((c) => c.id === "maptiler-key");
-    expect(check.status).toBe("missing");
-    expect(verdict.ok).toBe(false);
-  });
-
-  it("should report the newsroom profile as failed, not missing, when the file exists but cannot be parsed", async () => {
-    // A leading blank line breaks the front-matter regex without ever making the file unreadable.
-    await writeFile(join(root, "NEWSROOM.md"), `\n${complete}`);
-    await mkdir(join(root, "node_modules"), { recursive: true });
-    const verdict = await runPreflight({
-      root,
-      env: { MAPTILER_KEY: "k" },
-      fetchFn: okFetch,
-    });
-    const check = verdict.checks.find((c) => c.id === "newsroom-profile");
-    expect(check.status).toBe("fail");
-    expect(check.detail).toContain("front matter");
-  });
-
-  it("should report the newsroom profile as failed when NEWSROOM.md is present but incomplete", async () => {
-    await writeFile(join(root, "NEWSROOM.md"), "---\nname: X\n---\n");
-    await mkdir(join(root, "node_modules"), { recursive: true });
-    const verdict = await runPreflight({
-      root,
-      env: { MAPTILER_KEY: "k" },
-      fetchFn: okFetch,
-    });
-    const check = verdict.checks.find((c) => c.id === "newsroom-profile");
-    expect(check.status).toBe("fail");
-    expect(verdict.ok).toBe(false);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = report.checks.find((c) => c.id === "dependencies");
+    expect(check?.status).toBe("fail");
+    expect(check?.detail).toContain("@resvg/resvg-js");
+    expect(report.ready).toBe(false);
   });
 });

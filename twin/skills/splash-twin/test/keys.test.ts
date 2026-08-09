@@ -1,5 +1,64 @@
 import { describe, it, expect } from "bun:test";
-import { probeMapTiler, probeDatawrapper } from "../scripts/keys.mjs";
+import {
+  probeMapTiler,
+  probeDatawrapper,
+  resolveEnvKey,
+} from "../scripts/keys.mjs";
+
+describe("resolveEnvKey — canonical name first, then the engine's own aliases", () => {
+  it("should read the canonical MAPTILER_KEY when set", () => {
+    expect(resolveEnvKey({ MAPTILER_KEY: "canonical" }, "MAPTILER_KEY")).toBe(
+      "canonical",
+    );
+  });
+
+  it("should fall back to MAPTILER_API_KEY, the engine's own name, when MAPTILER_KEY is absent", () => {
+    expect(resolveEnvKey({ MAPTILER_API_KEY: "engine" }, "MAPTILER_KEY")).toBe(
+      "engine",
+    );
+  });
+
+  it("should fall back to REMOTION_MAPTILER_KEY, the engine's own name, when MAPTILER_KEY is absent", () => {
+    expect(
+      resolveEnvKey({ REMOTION_MAPTILER_KEY: "engine" }, "MAPTILER_KEY"),
+    ).toBe("engine");
+  });
+
+  it("should fall back to VITE_MAPTILER_KEY, the engine's own name, when MAPTILER_KEY is absent", () => {
+    expect(resolveEnvKey({ VITE_MAPTILER_KEY: "engine" }, "MAPTILER_KEY")).toBe(
+      "engine",
+    );
+  });
+
+  it("should prefer the canonical name over an alias when both are set", () => {
+    expect(
+      resolveEnvKey(
+        { MAPTILER_KEY: "canonical", VITE_MAPTILER_KEY: "engine" },
+        "MAPTILER_KEY",
+      ),
+    ).toBe("canonical");
+  });
+
+  it("should read the canonical DATAWRAPPER_TOKEN when set", () => {
+    expect(
+      resolveEnvKey({ DATAWRAPPER_TOKEN: "canonical" }, "DATAWRAPPER_TOKEN"),
+    ).toBe("canonical");
+  });
+
+  it("should fall back to DATAWRAPPER_API_TOKEN, the engine's own name, when DATAWRAPPER_TOKEN is absent", () => {
+    expect(
+      resolveEnvKey({ DATAWRAPPER_API_TOKEN: "engine" }, "DATAWRAPPER_TOKEN"),
+    ).toBe("engine");
+  });
+
+  it("should return an empty string when neither the canonical name nor any alias is set", () => {
+    expect(resolveEnvKey({}, "MAPTILER_KEY")).toBe("");
+  });
+
+  it("should return an empty string for a name with no declared aliases at all, when it is itself absent from env", () => {
+    expect(resolveEnvKey({ MAPTILER_KEY: "x" }, "SOME_OTHER_VAR")).toBe("");
+  });
+});
 
 describe("probeMapTiler", () => {
   it("should report ok when the tiles endpoint answers 200", async () => {

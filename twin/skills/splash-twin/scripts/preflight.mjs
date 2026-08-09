@@ -3,8 +3,8 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseNewsroom, validateNewsroom } from "./newsroom.mjs";
-import { probeMapTiler } from "./keys.mjs";
+import { parseNewsroom, validateNewsroom, isDeclinedProfile } from "./newsroom.mjs";
+import { probeMapTiler, probeDatawrapper, resolveEnvKey } from "./keys.mjs";
 
 const ROOT_TEMPLATE_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "assets", "root-template");
 const ROOT_TEMPLATE_PACKAGE_JSON = join(ROOT_TEMPLATE_DIR, "package.json");
@@ -82,37 +82,133 @@ async function checkDependencies(root) {
   return { id: "dependencies", status: "fail", detail: details.join("; ") };
 }
 
-export async function runPreflight({ root, env, fetchFn }) {
-  const checks = [];
-
-  checks.push(await checkDependencies(root));
-
-  let newsroomText;
+// The newsroom's identity check has three honest outcomes, not two (see SKILL.md, "The newsroom's
+// identity gets three honest outcomes"): `pass` (a complete, valid profile), `missing` (nobody has
+// answered the question yet — invoke twin-newsroom-charter to derive one from the newsroom's own
+// website, or to record a decline), and `declined` (a recorded decision that the newsroom has no
+// house profile — front matter carrying `decision: declined`). `fail` is reserved for a file that
+// exists, was meant to answer the question, and does not: unparsable front matter, or a profile
+// short of the six required fields. `declined` behaves like `pass` for readiness below — a
+// considered "no" is exactly as closed a question as a "yes"; the whole point of recording it is
+// that neither one is a silent default a later reader could mistake for a bug and "fix".
+async function checkNewsroom(root) {
+  let text;
   try {
-    newsroomText = await readFile(join(root, "NEWSROOM.md"), "utf8");
+    text = await readFile(join(root, "NEWSROOM.md"), "utf8");
   } catch {
     // The file could not be read at all: missing, or inaccessible. Not a parse question.
-    checks.push({ id: "newsroom-profile", status: "missing", detail: "NEWSROOM.md is absent" });
+    return {
+      id: "newsroom-profile",
+      status: "missing",
+      detail:
+        "NEWSROOM.md is absent — invoke twin-newsroom-charter to derive one from the newsroom's own website, or to record a decline",
+    };
   }
 
-  if (newsroomText !== undefined) {
-    try {
-      const errors = validateNewsroom(parseNewsroom(newsroomText));
-      checks.push(errors.length === 0
-        ? { id: "newsroom-profile", status: "pass", detail: "NEWSROOM.md is complete" }
-        : { id: "newsroom-profile", status: "fail", detail: errors.join("; ") });
-    } catch (error) {
-      // The file exists but is not what we expect: a real failure, distinct from absent.
-      checks.push({ id: "newsroom-profile", status: "fail", detail: `NEWSROOM.md could not be parsed: ${error.message}` });
-    }
+  let profile;
+  try {
+    profile = parseNewsroom(text);
+  } catch (error) {
+    // The file exists but is not what we expect: a real failure, distinct from absent.
+    return { id: "newsroom-profile", status: "fail", detail: `NEWSROOM.md could not be parsed: ${error.message}` };
   }
 
-  const maptiler = await probeMapTiler(env.MAPTILER_KEY ?? "", fetchFn);
-  checks.push({
-    id: "maptiler-key",
-    status: maptiler.ok ? "pass" : (env.MAPTILER_KEY ? "fail" : "missing"),
-    detail: maptiler.detail,
-  });
+  if (isDeclinedProfile(profile)) {
+    return {
+      id: "newsroom-profile",
+      status: "declined",
+      detail: "the newsroom declined a house profile — a recorded decision, not a missing default",
+    };
+  }
 
-  return { ok: checks.every((c) => c.status === "pass"), checks };
+  const errors = validateNewsroom(profile);
+  return errors.length === 0
+    ? { id: "newsroom-profile", status: "pass", detail: "NEWSROOM.md is complete" }
+    : { id: "newsroom-profile", status: "fail", detail: errors.join("; ") };
+}
+
+// One row of `capabilities`: whether a key actually opens the medium it gates, probed for real
+// (never merely "is it set") — the same discipline `checkDependencies` applies to `node_modules`.
+// Absence and a rejected key both resolve to `available: false`; only `reason` tells them apart,
+// because neither one may ever stop the session (spec: "A. Preflight reports capabilities, not a
+// verdict" in SKILL.md) — a capability that is not open only narrows what a later phase may offer,
+// it is never a verdict on the environment as a whole.
+async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn }) {
+  const key = resolveEnvKey(env, canonicalEnv);
+  const result = await probeFn(key, fetchFn);
+  return { id, opens, available: result.ok, reason: result.detail };
+}
+
+export async function runPreflight({ root, env, fetchFn }) {
+  const dependencies = await checkDependencies(root);
+  const newsroom = await checkNewsroom(root);
+  const checks = [dependencies, newsroom];
+
+  const capabilities = {
+    map: await checkCapability({
+      id: "map",
+      opens: "map beats",
+      canonicalEnv: "MAPTILER_KEY",
+      env,
+      probeFn: probeMapTiler,
+      fetchFn,
+    }),
+    datawrapper: await checkCapability({
+      id: "datawrapper",
+      opens: "Datawrapper beats",
+      canonicalEnv: "DATAWRAPPER_TOKEN",
+      env,
+      probeFn: probeDatawrapper,
+      fetchFn,
+    }),
+    // No Cloudflare Pages producer exists anywhere in this toolchain yet (twin-deliver's own
+    // FORMS_BY_GENRE says so explicitly, in a comment: "Deliberately absent"). Reporting this
+    // "available" on the strength of a present key would be a claim nothing here can back, so it
+    // is hardcoded closed rather than probed — "never — optional" in the capability table means
+    // this row never even reads the environment.
+    hostedEmbed: {
+      id: "hosted-embed",
+      opens: "the hosted embed delivery form",
+      available: false,
+      reason: "no producer in this toolchain delivers a hosted embed yet",
+    },
+  };
+
+  // Hard stops — the only two questions that block the session outright. Dependencies are a
+  // precondition to run anything at all. The newsroom's identity must have been ANSWERED, one way
+  // or the other, before continuing: `pass` and `declined` both count as answered, `missing` does
+  // not (nobody has said yes or no yet) and `fail` means the answer on file cannot be trusted.
+  // Neither capability above ever appears here — a closed capability narrows `capabilities`, it
+  // never blocks `ready`. This is the mechanical half of the fix: the old `ok` verdict conflated
+  // "the environment cannot run this session at all" with "one key does not work yet", which is
+  // exactly what let a chart-only story get told its environment had failed over a map key it
+  // would never touch.
+  const blockers = checks.filter((c) => c.status !== "pass" && c.status !== "declined");
+
+  return { ready: blockers.length === 0, blockers, checks, capabilities };
+}
+
+// The mechanical enforcement SKILL.md describes in prose ("the session stops there") now has a
+// real function behind it, not just a report a human has to remember to honour. Call this right
+// after `runPreflight`; it throws, naming every blocker, when `ready` is false, and does nothing
+// at all otherwise. It never inspects `capabilities` — a closed capability is not a blocker, so it
+// can never make this throw.
+export function assertPreflightReady(report) {
+  if (report.ready) return;
+  const reasons = report.blockers.map((b) => `${b.id}: ${b.detail}`).join("; ");
+  throw new Error(`preflight is not ready — ${reasons}`);
+}
+
+// The seam a later phase (twin-storyboard, when it proposes a slot) reads to keep from offering a
+// medium the environment cannot honour. Returns `null` when `medium` is open (or unrecognised —
+// this function is declarative, not a gate on mediums it has no opinion about); otherwise the
+// exact line to surface to the journalist, phrased as an unavailable CAPABILITY ("map beats are
+// unavailable: …"), never as an environment failure — the distinction this rebuild exists to
+// preserve. A chart-only story never calls this with "map" at all; a map story that does, with no
+// working MapTiler key, is told the truth about what is missing instead of being told its whole
+// environment is broken.
+export function capabilityGap(capabilities, medium) {
+  const row = capabilities[medium];
+  if (!row || row.available) return null;
+  return `${row.opens} are unavailable: ${row.reason}`;
 }

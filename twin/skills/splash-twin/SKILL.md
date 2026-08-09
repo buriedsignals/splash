@@ -43,8 +43,9 @@ had stopped producing.
 - When a caller (human or agent) asks to skip a phase — refuse, and report `missing` verbatim.
   A missing prerequisite is **reported**, never argued around.
 - Once per session, before any story exists: run `runPreflight` (`scripts/preflight.mjs`) —
-  dependencies, `NEWSROOM.md`, and a **probed** (not merely present) `MAPTILER_KEY`. Silent when
-  every check passes.
+  dependencies, `NEWSROOM.md`'s identity, and a **probed** (not merely present) `MAPTILER_KEY` /
+  `DATAWRAPPER_TOKEN`. Silent when the session is `ready`; see "Preflight establishes what is
+  possible" below for what "ready" actually means now — it is not "every check passed".
 - **Not** for writing a chart, a map, a brief, or an export. Those are `twin-intake`,
   `twin-storyboard`, the craft skill, and `twin-deliver` respectively — this skill only decides
   which one of them runs next.
@@ -87,22 +88,108 @@ different tests, and neither claims more than it proves:
   directions — a rule mutated on the `twin-storyboard` side only, and a rule mutated on the
   `where.mjs` side only, both turn this test red.
 
+## Preflight establishes what is possible — it does not validate an environment
+
+Preflight's whole job changed shape: it used to hand back a pass/fail verdict on the environment,
+gating the entire session on every check at once — a chart-only story got told its environment had
+failed because `MAPTILER_KEY` was absent, a key it would never touch. That conflated two different
+questions: "can this session run at all" and "what can this session honestly offer". `runPreflight`
+now answers only the first question with `ready`, and answers the second with `capabilities` — a
+small declarative report, not a dispatcher, meant to be read by whichever later phase is about to
+offer a medium or a delivery form.
+
+**A key gates a capability, never the session.**
+
+| key | opens | when required |
+| --- | --- | --- |
+| `MAPTILER_KEY` | map beats | only if the story has a map |
+| `DATAWRAPPER_TOKEN` | Datawrapper beats | only if the story uses one |
+| Cloudflare Pages | the hosted embed delivery form | never — optional, and not yet built: this row is hardcoded closed, never probed |
+
+`runPreflight({root, env, fetchFn})` returns `{ready, blockers, checks, capabilities}`:
+
+- `checks` holds only the two facts that can block the session outright: `dependencies` and
+  `newsroom-profile`. `ready` is `true` exactly when neither is a blocker — see the newsroom
+  section below for what counts as answered.
+- `capabilities.map` / `capabilities.datawrapper` / `capabilities.hostedEmbed` each carry
+  `{available, reason}` (plus `opens`, the label from the table above) — a missing or rejected key
+  narrows `capabilities`, and never appears in `blockers`.
+- `assertPreflightReady(report)` (`scripts/preflight.mjs`) is the mechanical stop the old prose
+  only described: it throws, naming every blocker, when `ready` is false, and does nothing at all
+  otherwise. It never inspects `capabilities` — call it once, right after `runPreflight`, instead of
+  trusting a human to read the JSON and honour it by hand.
+- `capabilityGap(capabilities, medium)` (`scripts/preflight.mjs`) is the seam a later phase reads
+  before offering a medium: `null` when the medium is open, otherwise the exact line to surface —
+  phrased as an unavailable **capability** ("map beats are unavailable: …"), never as an environment
+  failure. A map story with no working `MAPTILER_KEY` is told the truth about what is missing
+  instead of being told its whole environment is broken; a chart-only story never calls this with
+  `"map"` at all, so a missing map key never reaches it.
+
+**Both naming conventions are accepted.** This project's own names (`MAPTILER_KEY`,
+`DATAWRAPPER_TOKEN`) stay canonical; `resolveEnvKey` (`scripts/keys.mjs`) also accepts the sibling
+engine's own names as aliases — `MAPTILER_API_KEY` / `REMOTION_MAPTILER_KEY` / `VITE_MAPTILER_KEY`
+for the map key, `DATAWRAPPER_API_TOKEN` for the Datawrapper token (measured directly in that
+repository's scripts, not guessed) — so a `.env` that already works for the engine does not
+silently report `missing` here. The canonical name always wins when both happen to be set. Same
+remedy the main repository used for its own `ATELIER_*`→`SPLASH_*` rename
+(`process.env.SPLASH_X ?? process.env.ATELIER_X`, canonical first) — a repeated inline idiom, not a
+shared module, and this project follows the same shape rather than inventing a registry for it.
+
+**The newsroom's identity gets three honest outcomes, not two.** `newsroom-profile` in `checks` is:
+
+- `pass` — `NEWSROOM.md` is present and complete (as before).
+- `missing` — nobody has answered the question yet. This is where **twin-newsroom-charter** plugs
+  in: the seam it fills is "when this status is `missing`, offer to derive a profile by measuring
+  the newsroom's own website, and offer to skip". Whichever it does, it must leave `NEWSROOM.md`
+  resolved — either a complete, valid profile, or the `declined` shape below. Nothing else counts as
+  resolved; a session that dispatches to it and gets neither back has not actually closed this
+  question, whatever twin-newsroom-charter itself reports.
+- `declined` — the journalist was asked and said no, recorded in `NEWSROOM.md`'s own front matter
+  as `decision: declined` (checked by `isDeclinedProfile` in `scripts/newsroom.mjs`, **before**
+  `validateNewsroom` ever runs, so a declined stub is never scored against the six fields it was
+  never meant to carry). This is the subtle part: **a declined theme is a recorded choice, not a
+  silent default.** It behaves like `pass` for `ready` — a considered "no" is exactly as closed a
+  question as a "yes" — but it is a genuinely different fact from `missing`, and a later reader must
+  be able to tell them apart (`newsroom-profile: missing` means "ask"; `newsroom-profile: declined`
+  means "already asked, the answer was no"). Reading a declined profile and "fixing" it by inventing
+  a default colour would be exactly the anti-fallback failure this whole design exists to prevent —
+  a visual must never ship in a colour nobody chose, and an explicit refusal is not that.
+- `fail` — a file exists, was meant to answer the question, and does not: unparsable front matter,
+  or a profile short of one of the six required fields. This is the only newsroom outcome that
+  blocks the session the same way `missing` does — the file is present and wrong, not merely unmade.
+
+**Installing a fresh root leaves it at `missing`, and that is the gap this closes.** The root
+template ships `NEWSROOM.example.md`, never `NEWSROOM.md` — nothing before this rebuild told anyone
+to rename it, so a freshly-installed root reliably failed preflight on a file nobody was ever told
+to create. The install step, made explicit: after copying `root-template/`, either
+`cp NEWSROOM.example.md NEWSROOM.md` and fill in the newsroom's own values, or leave it absent and
+let preflight's `newsroom-profile: missing` status be the prompt to invoke twin-newsroom-charter
+(derive or decline). Either path lands `NEWSROOM.md` in a resolved state; leaving the example file
+un-renamed is the one shape that never resolves.
+
 ## Architecture
 
 | Layer | File | Role |
 | --- | --- | --- |
 | Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, every slot resolved) before ever reporting `production` |
-| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` — dependencies installed, `NEWSROOM.md` present and valid, `MAPTILER_KEY` **probed** with a real call, not just present. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
-| Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed |
-| Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces) |
+| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
+| Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty |
+| Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces, or a recorded `decision: declined`) |
 | Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into |
 
 ## How it works (the shape)
 
-1. **Preflight runs once, silently when green** (`execute-shell` the dependency check, `read-file`
-   `NEWSROOM.md`, `fetch` the MapTiler probe). Any check that is not `"pass"` is reported and the
-   session stops there — a missing key, a missing `NEWSROOM.md`, or a present-but-failing key is
-   **never** worked around by falling back to a default.
+1. **Preflight runs once, silently when `ready`** (`execute-shell` the dependency check, `read-file`
+   `NEWSROOM.md`, `fetch` the MapTiler and Datawrapper probes). Call `assertPreflightReady` right
+   after — it throws, naming every blocker, exactly when `dependencies` or `newsroom-profile` is not
+   `pass`/`declined`; this is the one point that halts the session, and it is mechanical, not a line
+   of prose a caller has to remember to honour. A missing or rejected `MAPTILER_KEY` /
+   `DATAWRAPPER_TOKEN` is **never** a blocker — it narrows `capabilities`, reported honestly rather
+   than worked around, and a later phase reads `capabilityGap` before it would otherwise offer a
+   medium the environment cannot honour. When `newsroom-profile` is `missing` — the one blocker
+   `assertPreflightReady` reports that is not a broken install — `invoke-skill` **twin-newsroom-charter**
+   before retrying preflight: it offers to derive a profile by measuring the newsroom's own website,
+   or to record a decline, and either way leaves `NEWSROOM.md` resolved (`pass` or `declined`).
 2. **Recover the phase.** `read-file` the story's own directory tree via `whereIs(storyDir)`. Its
    result is the entire input to every dispatch decision — nothing else is consulted, nothing is
    carried over from an earlier turn.
@@ -122,7 +209,7 @@ different tests, and neither claims more than it proves:
 4. **Dispatch, one `invoke-skill` per phase** — every action in this skill is named with an
    abstract verb, precisely so this doctrine can move to a different runtime without a rewrite.
    This skill uses four of spec §8's six verbs — `read-file` (a story's directory, `NEWSROOM.md`),
-   `execute-shell` (the dependency check), `fetch` (the MapTiler probe), and `invoke-skill` (every
+   `execute-shell` (the dependency check), `fetch` (the MapTiler and Datawrapper probes), and `invoke-skill` (every
    dispatch below). It never uses the other two: `write-file` and `search` belong to the skills it
    dispatches to (`twin-intake` writes the frozen source, `twin-doctrine`'s reference loop searches
    for a new reference) — naming a verb this skill never itself performs would be decoration, not
@@ -150,7 +237,11 @@ different tests, and neither claims more than it proves:
    - It **never continues past a producer that exited non-zero.** A failed `execute-shell` call
      halts the phase right there.
    - **A missing prerequisite is reported and never designed around.** (`scripts/preflight.mjs`
-     carries the same line verbatim, for the same reason.)
+     carries the same line verbatim, for the same reason.) A missing hard prerequisite — unresolved
+     dependencies, or a newsroom identity nobody has answered yet — blocks `ready` and is reported
+     via `assertPreflightReady`, never worked around. A missing **capability** key is reported too,
+     honestly, in `capabilities` — but it is not a workaround to leave it out of `blockers`: it was
+     never a prerequisite for the whole session, only for the one medium it opens.
 
 ## Quick start
 
@@ -186,13 +277,21 @@ if (missing.length > 0) {
 | Source files intake must freeze before leaving `intake` | `2` (`article.md`, `profile.json`) | `whereIs` |
 | Hand-of-the-journalist fields `whereIs` itself requires before leaving `storyboard` | `6` (`HAND.length` — mirrors `twin-storyboard`'s own `HAND` constant) | `scripts/where.mjs` |
 | Turns a beat gets before production stalls | `3` | spec §8, `How it works` step 5 |
+| Hard stops preflight recognises | `2` (`dependencies`, `newsroom-profile`) — capability keys are never among them | `scripts/preflight.mjs`, `runPreflight` |
+| Capabilities preflight reports | `3` (`map`, `datawrapper`, `hostedEmbed`) | `scripts/preflight.mjs`, `runPreflight` |
+| Newsroom identity outcomes | `4` (`pass`, `missing`, `declined`, `fail`) — `pass`/`declined` both count as answered | `scripts/preflight.mjs`, `checkNewsroom` |
 
 ## Files
 
 - `scripts/where.mjs` — `whereIs(storyDir)`, the six-phase recovery function.
-- `scripts/preflight.mjs` — `runPreflight`, the once-per-session environment gate.
-- `scripts/keys.mjs` — `probeMapTiler`, `probeDatawrapper`.
-- `scripts/newsroom.mjs` — `parseNewsroom`, `validateNewsroom`.
+- `scripts/preflight.mjs` — `runPreflight` (capabilities, not a verdict — see "Preflight
+  establishes what is possible" above), `assertPreflightReady` (the mechanical stop), and
+  `capabilityGap` (the seam a later phase reads before offering a medium).
+- `scripts/keys.mjs` — `probeMapTiler`, `probeDatawrapper`, `resolveEnvKey` (canonical name first,
+  then the sibling engine's own aliases).
+- `scripts/newsroom.mjs` — `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` (a recorded
+  `decision: declined` in `NEWSROOM.md`'s own front matter — a different answer, not an invalid
+  one).
 - `scripts/new-story.mjs` — `slugify`, `createStory`.
 - `assets/root-template/` — `package.json` (declares the root's npm dependencies **and** its
   `"imports": {"#shared/*": "./shared/*"}` subpath map), `tsconfig.json`, `NEWSROOM.example.md` —

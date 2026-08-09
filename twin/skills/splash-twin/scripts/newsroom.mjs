@@ -15,6 +15,15 @@ export function parseNewsroom(text) {
   return profile;
 }
 
+// A recorded decline (see splash-twin/SKILL.md, "The newsroom's identity") is a DIFFERENT answer
+// to "does this newsroom have a house profile", not a malformed one — front matter carrying
+// `decision: declined` is checked for BEFORE validateNewsroom ever runs, so a declined stub is
+// never scored against the six fields it was never meant to carry, and never mistaken for one
+// nobody got around to filling in.
+export function isDeclinedProfile(profile) {
+  return profile.decision === "declined";
+}
+
 export function validateNewsroom(profile) {
   const errors = [];
   for (const field of FIELDS) {
