@@ -118,13 +118,20 @@ async function checkNewsroom(root) {
       id: "newsroom-profile",
       status: "declined",
       detail: "the newsroom declined a house profile — a recorded decision, not a missing default",
+      profile,
     };
   }
 
+  // The parsed profile is CARRIED, not discarded. It used to be thrown away here — only the status
+  // reached `checks` — and `SKILL.md` said preflight runs "silently when ready", so a journalist
+  // first heard what their own `NEWSROOM.md` said nine phases later, from twin-palette, long past
+  // the point where a wrong value could still have been corrected. In the run, that file recorded
+  // in its own prose that four of its six values were assumed rather than measured, and nobody was
+  // ever told.
   const errors = validateNewsroom(profile);
   return errors.length === 0
-    ? { id: "newsroom-profile", status: "pass", detail: "NEWSROOM.md is complete" }
-    : { id: "newsroom-profile", status: "fail", detail: errors.join("; ") };
+    ? { id: "newsroom-profile", status: "pass", detail: "NEWSROOM.md is complete", profile }
+    : { id: "newsroom-profile", status: "fail", detail: errors.join("; "), profile };
 }
 
 // One row of `capabilities`: whether a key actually opens the medium it gates, probed for real
@@ -133,10 +140,16 @@ async function checkNewsroom(root) {
 // because neither one may ever stop the session (spec: "A. Preflight reports capabilities, not a
 // verdict" in SKILL.md) — a capability that is not open only narrows what a later phase may offer,
 // it is never a verdict on the environment as a whole.
-async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn }) {
+// `fill` is what turns a report into an OFFER. Every reason string already names the exact variable
+// ("MAPTILER_KEY is not set"), and yet there was no code path anywhere in this toolchain that
+// accepted a key from a journalist — so a closed capability closed for the whole session with no
+// moment at which it could be opened. `fill` says the variable, where the key comes from, and the
+// file it goes in; `recordKey` (scripts/keys.mjs) is where an answer lands. It is carried on OPEN
+// rows too: a row is a description of a capability, not of a failure.
+async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn, fill }) {
   const key = resolveEnvKey(env, canonicalEnv);
   const result = await probeFn(key, fetchFn);
-  return { id, opens, available: result.ok, reason: result.detail };
+  return { id, opens, available: result.ok, reason: result.detail, fill };
 }
 
 export async function runPreflight({ root, env, fetchFn }) {
@@ -152,6 +165,7 @@ export async function runPreflight({ root, env, fetchFn }) {
       env,
       probeFn: probeMapTiler,
       fetchFn,
+      fill: "MAPTILER_KEY — a free key from maptiler.com/cloud (Account → Keys), written into the .env at the Splash root",
     }),
     datawrapper: await checkCapability({
       id: "datawrapper",
@@ -160,6 +174,7 @@ export async function runPreflight({ root, env, fetchFn }) {
       env,
       probeFn: probeDatawrapper,
       fetchFn,
+      fill: "DATAWRAPPER_TOKEN — an API token from app.datawrapper.de/account/api-tokens, written into the .env at the Splash root",
     }),
     // Cloudflare Pages producer exists in twin-deliver (deploy-embed.mjs). Probe both credentials
     // independently so the feedback tells which one, if any, is missing. Both must resolve to
@@ -173,6 +188,7 @@ export async function runPreflight({ root, env, fetchFn }) {
         opens: "the hosted embed delivery form",
         available: result.ok,
         reason: result.detail,
+        fill: "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN — the account id from dash.cloudflare.com and a token with Pages:Edit, both written into the .env at the Splash root",
       };
     })(),
   };

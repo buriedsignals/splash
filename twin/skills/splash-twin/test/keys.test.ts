@@ -1,8 +1,12 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach } from "bun:test";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   probeMapTiler,
   probeDatawrapper,
   probeCloudflare,
+  recordKey,
   resolveEnvKey,
 } from "../scripts/keys.mjs";
 
@@ -232,4 +236,85 @@ describe("probeMapTiler against the real endpoint", () => {
       );
     },
   );
+});
+
+// The one code path in this toolchain that accepts a key FROM A JOURNALIST. Before it existed,
+// preflight reported a closed capability accurately and there was nowhere for an answer to go.
+describe("recordKey — one key, into the root .env, and nowhere else", () => {
+  let root: string;
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), "recordkey-"));
+  });
+  afterEach(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  const envText = () => readFile(join(root, ".env"), "utf8");
+
+  it("should create a .env that did not exist", async () => {
+    await recordKey({ root, name: "MAPTILER_KEY", value: "abc123" });
+    expect(await envText()).toBe("MAPTILER_KEY=abc123\n");
+  });
+
+  it("should append beside keys that are already there", async () => {
+    await writeFile(join(root, ".env"), "DATAWRAPPER_TOKEN=tok\n");
+    await recordKey({ root, name: "MAPTILER_KEY", value: "abc123" });
+    const text = await envText();
+    expect(text).toContain("DATAWRAPPER_TOKEN=tok");
+    expect(text).toContain("MAPTILER_KEY=abc123");
+  });
+
+  it("should append to a file with no trailing newline without joining two keys onto one line", async () => {
+    await writeFile(join(root, ".env"), "DATAWRAPPER_TOKEN=tok");
+    await recordKey({ root, name: "MAPTILER_KEY", value: "abc123" });
+    expect(await envText()).toBe("DATAWRAPPER_TOKEN=tok\nMAPTILER_KEY=abc123\n");
+  });
+
+  // The case that matters, because a duplicate line is worse than a wrong one: a journalist who
+  // pastes a corrected key must not leave the stale one below it, where the next reader cannot
+  // tell which is live.
+  it("should REPLACE an existing line for the same key rather than appending a second", async () => {
+    await writeFile(join(root, ".env"), "MAPTILER_KEY=stale\nDATAWRAPPER_TOKEN=tok\n");
+    await recordKey({ root, name: "MAPTILER_KEY", value: "fresh" });
+    const text = await envText();
+    expect(text.match(/MAPTILER_KEY=/g)).toHaveLength(1);
+    expect(text).toContain("MAPTILER_KEY=fresh");
+    expect(text).not.toContain("stale");
+    expect(text).toContain("DATAWRAPPER_TOKEN=tok");
+  });
+
+  // And the case the whole seam exists for: the key a journalist just gave is the key the next
+  // probe reads. A recordKey that wrote somewhere nothing reads would look identical from here.
+  it("should be read back by resolveEnvKey once the .env is loaded", async () => {
+    await recordKey({ root, name: "DATAWRAPPER_TOKEN", value: "fresh-token" });
+    const loaded: Record<string, string> = {};
+    for (const line of (await envText()).split("\n")) {
+      const pair = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
+      if (pair) loaded[pair[1]] = pair[2];
+    }
+    expect(resolveEnvKey(loaded, "DATAWRAPPER_TOKEN")).toBe("fresh-token");
+  });
+
+  it("should refuse a name this toolchain does not read, so nothing pasted can set an arbitrary variable", async () => {
+    await expect(
+      recordKey({ root, name: "PATH", value: "/tmp" }),
+    ).rejects.toThrow(/not a key this toolchain reads/);
+    // An alias is refused too: the canonical name is what resolveEnvKey reads first.
+    await expect(
+      recordKey({ root, name: "MAPTILER_API_KEY", value: "x" }),
+    ).rejects.toThrow(/not a key this toolchain reads/);
+  });
+
+  it("should refuse an empty value and a value carrying a line break", async () => {
+    await expect(
+      recordKey({ root, name: "MAPTILER_KEY", value: "   " }),
+    ).rejects.toThrow(/no value/);
+    await expect(
+      recordKey({ root, name: "MAPTILER_KEY", value: "abc\nPATH=/tmp" }),
+    ).rejects.toThrow(/line break/);
+  });
+
+  it("should return nothing, so the value is never echoed back to a caller that might print it", async () => {
+    expect(await recordKey({ root, name: "MAPTILER_KEY", value: "abc123" })).toBeUndefined();
+  });
 });

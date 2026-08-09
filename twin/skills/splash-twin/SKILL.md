@@ -44,8 +44,10 @@ had stopped producing.
   A missing prerequisite is **reported**, never argued around.
 - Once per session, before any story exists: run `runPreflight` (`scripts/preflight.mjs`) —
   dependencies, `NEWSROOM.md`'s identity, and a **probed** (not merely present) `MAPTILER_KEY` /
-  `DATAWRAPPER_TOKEN`. Silent when the session is `ready`; see "Preflight establishes what is
-  possible" below for what "ready" actually means now — it is not "every check passed".
+  `DATAWRAPPER_TOKEN`. **Never silent**: it states the newsroom's identity, its credit convention,
+  and every capability with what would open it, and asks once whether the journalist wants to fill
+  a closed one. See "Preflight establishes what is possible" below for what "ready" actually means
+  now — it is not "every check passed".
 - **Not** for writing a chart, a map, a brief, or an export. Those are `twin-intake`,
   `twin-storyboard`, the craft skill, and `twin-deliver` respectively — this skill only decides
   which one of them runs next.
@@ -190,24 +192,46 @@ un-renamed is the one shape that never resolves.
 | Layer | File | Role |
 | --- | --- | --- |
 | Phase recovery | `scripts/where.mjs` | `whereIs(storyDir)` — the state machine; the sole source of truth for "what phase is this story in". `missingForGate2` applies the real Gate 2 condition (takeaway, all six hand fields, the recorded `grounding` and `reference` scalars, every slot's medium/genre/size/`reachable`/`chosen`) before ever reporting `production`. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported for the parity test to generate fixtures from |
-| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
-| Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty |
-| Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces, or a recorded `decision: declined`) |
+| Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
+| Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty. `recordKey({root, name, value})` is the ONE path that accepts a key from a journalist: it writes or replaces a single line in the root `.env`, refuses a name this toolchain does not read, and never returns, logs or echoes the value |
+| Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, language, brandColor, ground, typefaces, or a recorded `decision: declined`), plus `OPTIONAL_FIELDS` — today `credit`, the house credit convention, optional so every profile written before it stays valid |
 | Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into |
 
 ## How it works (the shape)
 
-1. **Preflight runs once, silently when `ready`** (`execute-shell` the dependency check, `read-file`
-   `NEWSROOM.md`, `fetch` the MapTiler and Datawrapper probes). Call `assertPreflightReady` right
-   after — it throws, naming every blocker, exactly when `dependencies` or `newsroom-profile` is not
-   `pass`/`declined`; this is the one point that halts the session, and it is mechanical, not a line
-   of prose a caller has to remember to honour. A missing or rejected `MAPTILER_KEY` /
-   `DATAWRAPPER_TOKEN` is **never** a blocker — it narrows `capabilities`, reported honestly rather
-   than worked around, and a later phase reads `capabilityGap` before it would otherwise offer a
-   medium the environment cannot honour. When `newsroom-profile` is `missing` — the one blocker
-   `assertPreflightReady` reports that is not a broken install — `invoke-skill` **twin-newsroom-charter**
-   before retrying preflight: it offers to derive a profile by measuring the newsroom's own website,
-   or to record a decline, and either way leaves `NEWSROOM.md` resolved (`pass` or `declined`).
+1. **Preflight runs once, and it is NEVER silent** (`execute-shell` the dependency check,
+   `read-file` `NEWSROOM.md`, `fetch` the MapTiler and Datawrapper probes). It used to run
+   "silently when `ready`", which meant a journalist first heard what their own `NEWSROOM.md` said
+   nine phases later, from `twin-palette` — long past the point where a wrong value could still
+   have been corrected — and heard about a closed key only as a restriction, with no moment at
+   which it could be opened. Three things are STATED, and one is ASKED, in one turn:
+
+   - **The newsroom's identity, read back.** `checkNewsroom` now carries the parsed `profile` on
+     its check. State the values and which are present. On `missing`, offer the three branches by
+     name: derive it with **twin-newsroom-charter** (it measures the newsroom's own website) ·
+     supply your own (hand over `assets/root-template/NEWSROOM.example.md`, which documents every
+     field) · decline, recorded. On `pass`, still say what it holds — a profile whose values were
+     assumed rather than measured is exactly what a journalist can correct here and nowhere later.
+   - **Credits.** The profile's optional seventh field, `credit`, is the newsroom's standing
+     convention. When it is absent, say so plainly — *"no house credit convention is recorded, so
+     credit is asked per story"* (it is already hand field 5) — rather than leaving the journalist
+     to discover it at movement ③.
+   - **The capabilities, with what would open each.** Every row carries a `fill` naming its own
+     environment variable, where the key is obtained, and the file it goes in.
+
+   Then, **when any capability row is closed, ask ONCE**: *"these are closed — paste a key now, or
+   continue without them."* `recordKey` (`scripts/keys.mjs`) writes what is given into the root
+   `.env` and never echoes it; re-probe **that one capability**; move on either way. Say in the same
+   turn that a key pasted into a chat is a secret in a transcript, which is outside this
+   toolchain's reach. One question, one re-probe, "continue" always available. It never branches,
+   never installs, and never blocks.
+
+   Call `assertPreflightReady` right after — it throws, naming every blocker, exactly when
+   `dependencies` or `newsroom-profile` is not `pass`/`declined`; this is the one point that halts
+   the session, and it is mechanical, not a line of prose a caller has to remember to honour. A
+   missing or rejected `MAPTILER_KEY` / `DATAWRAPPER_TOKEN` is **never** a blocker — it narrows
+   `capabilities`, reported honestly rather than worked around, and the genre gate (G2b) reads
+   `capabilityGap` before it would otherwise offer a medium the environment cannot honour.
 2. **Recover the phase.** `read-file` the story's own directory tree via `whereIs(storyDir)`. Its
    result is the entire input to every dispatch decision — nothing else is consulted, nothing is
    carried over from an earlier turn.

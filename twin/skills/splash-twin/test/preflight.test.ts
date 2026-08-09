@@ -422,6 +422,76 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(report.ready).toBe(false);
   });
 
+  // PREFLIGHT OFFERS, it does not only report. Before this, every reason string named the exact
+  // variable and there was nowhere for an answer to go: DATAWRAPPER_TOKEN closed a whole story's
+  // delegated path with no moment at which it could have been opened.
+  it("should carry, on every capability row, a fill line naming that row's own environment variable", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const expected: Record<string, string> = {
+      map: "MAPTILER_KEY",
+      datawrapper: "DATAWRAPPER_TOKEN",
+      hostedEmbed: "CLOUDFLARE_ACCOUNT_ID",
+    };
+    expect(Object.keys(report.capabilities).sort()).toEqual(
+      Object.keys(expected).sort(),
+    );
+    for (const [id, variable] of Object.entries(expected)) {
+      const row = report.capabilities[id];
+      expect(row.fill).toBeTruthy();
+      expect(row.fill).toContain(variable);
+      // Where the key comes from, and where it goes — a variable name alone is not an offer.
+      expect(row.fill).toContain(".env");
+    }
+  });
+
+  // The parsed profile used to be discarded here, and SKILL.md said preflight runs "silently when
+  // ready" — so a journalist first heard what their own NEWSROOM.md said nine phases later.
+  it("should carry the parsed newsroom profile on the check, not only its status", async () => {
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = report.checks.find((c) => c.id === "newsroom-profile");
+    expect(check?.status).toBe("pass");
+    expect(check?.profile?.name).toBe("Heidi.news");
+    expect(check?.profile?.brandColor).toBe("#0B7A75");
+  });
+
+  it("should carry the profile on a declined stub too, so the decline can be read back as the decision it is", async () => {
+    await writeFile(
+      join(root, "NEWSROOM.md"),
+      "---\ndecision: declined\n---\n",
+    );
+    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = report.checks.find((c) => c.id === "newsroom-profile");
+    expect(check?.status).toBe("declined");
+    expect(check?.profile?.decision).toBe("declined");
+  });
+
+  // The seventh, OPTIONAL field. Its absence is a fact to state ("no house credit convention is
+  // recorded, so credit is asked per story"), never an error — every NEWSROOM.md written before it
+  // existed stays valid.
+  it("should read a house credit convention when one is recorded, and stay valid without one", async () => {
+    await writeFile(
+      join(root, "NEWSROOM.md"),
+      complete.replace("---\n$", "") .replace(
+        'typefaces: "Source Serif"',
+        'typefaces: "Source Serif"\ncredit: "Source : {source} · Heidi.news"',
+      ),
+    );
+    const withCredit = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    expect(
+      withCredit.checks.find((c) => c.id === "newsroom-profile")?.profile
+        ?.credit,
+    ).toContain("Heidi.news");
+    expect(withCredit.checks.find((c) => c.id === "newsroom-profile")?.status).toBe("pass");
+
+    await writeFile(join(root, "NEWSROOM.md"), complete);
+    const without = await runPreflight({ root, env: {}, fetchFn: okFetch });
+    const check = without.checks.find((c) => c.id === "newsroom-profile");
+    expect(check?.status).toBe("pass");
+    expect(check?.profile?.credit).toBeUndefined();
+  });
+
   it("should report dependencies as fail, naming @resvg/resvg-js, when the rasteriser is not resolvable — the original incident this suite pins", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const declared = await declaredDependencyNames();

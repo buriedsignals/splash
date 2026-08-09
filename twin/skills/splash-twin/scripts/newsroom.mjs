@@ -1,6 +1,15 @@
 // NEWSROOM.md: YAML front matter (machine-read) + prose (ignored).
 
 const FIELDS = ["name", "url", "language", "brandColor", "ground", "typefaces"];
+
+// A SEVENTH, OPTIONAL field: the newsroom's standing credit convention, read back at preflight and
+// proposed by the hand's credit question. It is not in FIELDS on purpose — every `NEWSROOM.md`
+// written before this existed, and every recorded `declined` stub, stays valid. Its absence is a
+// fact worth stating out loud ("no house credit convention is recorded, so credit is asked per
+// story"), which is exactly what the run had to improvise by hand; its absence is not an error.
+// `parseNewsroom` reads any front-matter key, so nothing there needs to know about it.
+export const OPTIONAL_FIELDS = ["credit"];
+
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 export function parseNewsroom(text) {

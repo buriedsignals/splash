@@ -1,5 +1,8 @@
 // Real key probes. A present key is not a working key.
 
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+
 // Env var name resolution: this project's own short names stay canonical; the sibling engine
 // (splash's own skills/map-native, skills/dw-chart) reads these under different names —
 // MAPTILER_API_KEY / REMOTION_MAPTILER_KEY / VITE_MAPTILER_KEY for the map key,
@@ -25,6 +28,57 @@ export function resolveEnvKey(env, canonical) {
     if (env[alias]) return env[alias];
   }
   return "";
+}
+
+/**
+ * Write one key into the root `.env`, replacing the line if that name is already there and
+ * appending it if not. The ONE code path in this toolchain that accepts a key from a journalist —
+ * before this, preflight reported a closed capability accurately and there was nowhere for an
+ * answer to go, so `DATAWRAPPER_TOKEN` closed a whole story's delegated path with no moment at
+ * which it could have been opened.
+ *
+ * It returns nothing, logs nothing, and never echoes the value. A key pasted into a chat is
+ * already a secret in a transcript, which is outside this seam's reach and should be said to the
+ * journalist in the same turn that asks; what this function can guarantee is that it does not make
+ * a second copy anywhere a reader would see.
+ *
+ * `name` is validated against the canonical key set above — an unknown name throws — so nothing
+ * pasted can name an arbitrary environment variable, and an alias is refused too: the canonical
+ * name is what a later `resolveEnvKey` reads first.
+ */
+export async function recordKey({ root, name, value }) {
+  if (!Object.prototype.hasOwnProperty.call(KEY_ALIASES, name)) {
+    throw new Error(
+      `${JSON.stringify(name)} is not a key this toolchain reads — expected one of ${Object.keys(KEY_ALIASES).join(", ")}`,
+    );
+  }
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(`${name} was given no value to record`);
+  }
+  if (/[\r\n]/.test(value)) {
+    throw new Error(`${name}'s value contains a line break, which would corrupt the .env file`);
+  }
+
+  const path = join(root, ".env");
+
+  let existing = "";
+  try {
+    existing = await readFile(path, "utf8");
+  } catch {
+    existing = "";
+  }
+
+  const line = `${name}=${value.trim()}`;
+  const lines = existing.split(/\r?\n/);
+  const index = lines.findIndex((l) => l.trimStart().startsWith(`${name}=`));
+  if (index === -1) {
+    if (existing !== "" && !existing.endsWith("\n")) lines.push("");
+    lines[lines.length - 1] = line;
+    lines.push("");
+  } else {
+    lines[index] = line;
+  }
+  await writeFile(path, lines.join("\n"));
 }
 
 const MAPTILER_PROBE = (key) =>
