@@ -171,6 +171,13 @@ export function QuakeSymbolVideo({
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
 
+  // Tohoku arrives LAST, in the reveal, like every other event — the final slot of a cascade one
+  // longer than `order`. It used to be drawn from frame one as a pending outline at its true final
+  // radius and only take its fill at `subject`, which announced the whole finding before the
+  // reveal had begun. The `subject` event is now what it says it is: the moment the mark it is
+  // about takes the accent, not the moment it first exists.
+  const subjectArrived = arrivalProgress(order.length, order.length + 1, reveal);
+
   return (
     <AbsoluteFill style={{ backgroundColor: ground, fontFamily: FONT_FAMILY }}>
       <Img
@@ -207,54 +214,41 @@ export function QuakeSymbolVideo({
                 order.length,
                 reveal,
               );
+              // ONE circle per event, carrying its outline AND its fill, arriving on the mark's
+              // own window. Drawn as two nodes — a "pending" outline on the master clock with the
+              // fill arriving later — the map showed seventeen empty rings the moment the plate
+              // appeared, each already at its true final radius, so the reader could read every
+              // magnitude before a single event had arrived. `motion-grammar.md:159` names this:
+              // the accent before the thing it accents. SVG gives one node both properties.
+              if (arrived <= 0) return null;
               return (
-                <Fragment key={point.key}>
-                  {/* Pending: the true final size, visible from frame one as an outline only. */}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={r}
-                    fill="none"
-                    stroke={muted}
-                    strokeWidth={1.2 / scale}
-                    opacity={furniture}
-                  />
-                  {arrived > 0 && (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={r}
-                      fill={muted}
-                      fillOpacity={0.38}
-                      stroke={muted}
-                      strokeWidth={1.4 / scale}
-                      opacity={arrived}
-                    />
-                  )}
-                </Fragment>
+                <circle
+                  key={point.key}
+                  cx={cx}
+                  cy={cy}
+                  r={r}
+                  fill={muted}
+                  fillOpacity={0.38}
+                  stroke={muted}
+                  strokeWidth={1.4 / scale}
+                  opacity={arrived}
+                />
               );
             })}
 
-            {/* The subject: pending outline throughout, then crossfades to the accent as its own event. */}
-            <circle
-              cx={subject.px}
-              cy={subject.py}
-              r={radiusOf(subject.mag)}
-              fill="none"
-              stroke={muted}
-              strokeWidth={1.2 / scale}
-              opacity={furniture * (1 - subjectSpring)}
-            />
-            {subjectSpring > 0 && (
+            {/* The subject: ONE circle whose colour switches to the accent at its own event's
+                boundary. It arrives with the rest of the field, on its own place in the reveal —
+                not as an outline held over from frame one and dissolved into an accent copy. */}
+            {subjectArrived > 0 && (
               <circle
                 cx={subject.px}
                 cy={subject.py}
                 r={radiusOf(subject.mag)}
-                fill={accent}
-                fillOpacity={0.55}
-                stroke={accent}
-                strokeWidth={2.4 / scale}
-                opacity={subjectSpring}
+                fill={subjectSpring > 0 ? accent : muted}
+                fillOpacity={subjectSpring > 0 ? 0.55 : 0.38}
+                stroke={subjectSpring > 0 ? accent : muted}
+                strokeWidth={(subjectSpring > 0 ? 2.4 : 1.4) / scale}
+                opacity={subjectArrived}
               />
             )}
           </g>

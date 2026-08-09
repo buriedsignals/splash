@@ -320,12 +320,9 @@ export function HistogramVideo({
     easing: Easing.out(Easing.cubic),
   });
 
-  // The subject: the 75-to-80 bin's fill crossfades from the shared neutral to the one accent,
-  // once every bar (including its own) is already fully up — `subject.start` cannot precede
-  // `reveal`'s end, so this is structural, not just editorial intent.
-  const subjectAccentOpacity = interpolate(subject, [0, 1], [0, 1], {
-    easing: Easing.out(Easing.cubic),
-  });
+  // The subject: the 75-to-80 bin takes the one accent at `subject`'s own boundary — a cut, not a
+  // dissolve. It happens once every bar (including its own) is already fully up: `subject.start`
+  // cannot precede `reveal`'s end, so that ordering is structural, not just editorial intent.
   const subjectSpring = spring({
     frame: frame - timing.subject.start,
     fps,
@@ -336,11 +333,9 @@ export function HistogramVideo({
   // The conclusion: the subject bin's short count label extends in place into the sentence the
   // beat is actually making — the same two-stage label technique the dumbbell's gap-extension and
   // `EmissionsVideo.tsx`'s `endLabel` both use.
-  const valueOpacity =
-    interpolate(subject, [0, 1], [0, 1], {
-      easing: Easing.out(Easing.cubic),
-    }) *
-    (1 - interpolate(conclusion, [0, 1], [0, 1]));
+  const valueOpacity = interpolate(subject, [0, 1], [0, 1], {
+    easing: Easing.out(Easing.cubic),
+  });
   const conclusionOpacity = interpolate(conclusion, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
@@ -473,23 +468,17 @@ export function HistogramVideo({
         const isSubject = i === subjectIndex;
         return (
           <g key={`bar-${b.start}`}>
+            {/* ONE rect whose fill switches at the subject's own boundary. Drawn as two rects —
+                a neutral one with an accent one dissolving over it — the bin spent the whole
+                22-frame window in a blend of `muted` and `accent` that nobody chose, which is the
+                first invariant broken on the one mark the beat is about. */}
             <rect
               x={b.x1}
               y={barY}
               width={b.x2 - b.x1}
               height={barHeight}
-              fill={muted}
+              fill={isSubject && subject > 0 ? accent : muted}
             />
-            {isSubject ? (
-              <rect
-                x={b.x1}
-                y={barY}
-                width={b.x2 - b.x1}
-                height={barHeight}
-                fill={accent}
-                opacity={subjectAccentOpacity}
-              />
-            ) : null}
           </g>
         );
       })}
@@ -537,31 +526,37 @@ export function HistogramVideo({
       ) : null}
 
       {/* The subject bin's value label, in ink (never the accent — the type doctrine's own
-          accessibility trap: a colour safe as a mark can fail as text). */}
-      <text
-        x={(subjectBar.x1 + subjectBar.x2) / 2}
-        y={subjectBar.yTop - 16}
-        fill={ink}
-        fontSize={VALUE_LABEL.fontSize}
-        fontWeight={VALUE_LABEL.fontWeight}
-        textAnchor="middle"
-        opacity={valueOpacity}
-      >
-        {valueLabel}
-      </text>
+          accessibility trap: a colour safe as a mark can fail as text).
 
-      {/* The conclusion: the value label extends into the sentence the beat is actually making,
-          at the same anchor height as the value label it replaces. */}
-      <text
-        x={conclusionX}
-        y={subjectBar.yTop - 16}
-        fill={ink}
-        fontSize={CONCLUSION_LABEL.fontSize}
-        fontWeight={CONCLUSION_LABEL.fontWeight}
-        opacity={conclusionOpacity}
-      >
-        {conclusionLabel}
-      </text>
+          The value label EXTENDS into the sentence the beat is actually making, at the same
+          baseline. An extension is a cut, not a dissolve: exactly one of the two is mounted at any
+          frame. Drawn as two crossfading nodes — which is how this was first written — frames 154
+          to 179 printed both, and because the sentence opens with the same token as the short
+          label a reader saw "65 countries, 75–80 yea65 — the most of any span" for 0.87s. */}
+      {conclusion > 0 ? (
+        <text
+          x={conclusionX}
+          y={subjectBar.yTop - 16}
+          fill={ink}
+          fontSize={CONCLUSION_LABEL.fontSize}
+          fontWeight={CONCLUSION_LABEL.fontWeight}
+          opacity={conclusionOpacity}
+        >
+          {conclusionLabel}
+        </text>
+      ) : (
+        <text
+          x={(subjectBar.x1 + subjectBar.x2) / 2}
+          y={subjectBar.yTop - 16}
+          fill={ink}
+          fontSize={VALUE_LABEL.fontSize}
+          fontWeight={VALUE_LABEL.fontWeight}
+          textAnchor="middle"
+          opacity={valueOpacity}
+        >
+          {valueLabel}
+        </text>
+      )}
     </svg>
   );
 }

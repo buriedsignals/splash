@@ -516,23 +516,17 @@ export function ColumnRankingVideo({
         const isSubject = i === subjectIndex;
         return (
           <g key={b.country}>
+            {/* ONE column whose fill switches at the same boundary its category label already
+                switches on (`emphasis > 0.5` below) — never a second accent-coloured column
+                dissolving over a neutral one, which spends the whole window in a blend of `muted`
+                and `accent` that nobody chose. */}
             <rect
               x={b.x}
               y={top}
               width={b.width}
               height={Math.max(0, grown)}
-              fill={muted}
+              fill={isSubject && emphasis > 0.5 ? accent : muted}
             />
-            {isSubject && emphasis > 0 ? (
-              <rect
-                x={b.x}
-                y={top}
-                width={b.width}
-                height={Math.max(0, grown)}
-                fill={accent}
-                opacity={emphasis}
-              />
-            ) : null}
             <text
               x={b.centre}
               y={top - 10}

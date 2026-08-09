@@ -569,9 +569,12 @@ export function PyramidVideo({
           [0, 1],
           [r.femaleZeroX, r.femaleTipX],
         );
-        const labelOpacity = isSubject
-          ? rowReveal[i] * (1 - labelAccentOpacity)
-          : rowReveal[i];
+        // The subject band's label takes the bold form at `subject`'s own boundary — a CUT. Drawn
+        // as a plain copy crossfading out under a bold copy crossfading in, both at the same
+        // centre and the same baseline, the artifact printed "0-4" over "0-4" at partial opacity
+        // for the width of the window: one grey ghost behind one bold label.
+        const accented = isSubject && subject > 0;
+        const labelOpacity = rowReveal[i];
         const barHeight = g.rowHeight * 0.62;
         return (
           <g key={r.ageBand}>
@@ -595,8 +598,12 @@ export function PyramidVideo({
               x={g.centreX}
               y={r.y + bandLabelBaselineOffset}
               fill={ink}
-              fontSize={BAND_LABEL.fontSize}
-              fontWeight={BAND_LABEL.fontWeight}
+              fontSize={
+                accented ? BAND_LABEL_ACCENT.fontSize : BAND_LABEL.fontSize
+              }
+              fontWeight={
+                accented ? BAND_LABEL_ACCENT.fontWeight : BAND_LABEL.fontWeight
+              }
               textAnchor="middle"
               opacity={labelOpacity}
             >
@@ -643,19 +650,6 @@ export function PyramidVideo({
         </g>
       ) : null}
 
-      {/* The subject's age-band label, crossfading to bold. */}
-      <text
-        x={g.centreX}
-        y={g.rows[subjectIndex].y + bandLabelBaselineOffset}
-        fill={ink}
-        fontSize={BAND_LABEL_ACCENT.fontSize}
-        fontWeight={BAND_LABEL_ACCENT.fontWeight}
-        textAnchor="middle"
-        opacity={rowReveal[subjectIndex] * labelAccentOpacity}
-      >
-        {subjectRow.ageBand}
-      </text>
-
       {/* The subject's total label, centred below the widest row — where the pyramid's own base
           just finished drawing — then extended in place, during `conclusion`, into the ratio
           against the 65+ population. */}
@@ -666,20 +660,11 @@ export function PyramidVideo({
         fontSize={SUBJECT_LABEL.fontSize}
         fontWeight={SUBJECT_LABEL.fontWeight}
         textAnchor="middle"
-        opacity={subjectValueOpacity * (1 - conclusionOpacity)}
+        opacity={subjectValueOpacity}
       >
-        {abbrev(subjectTotal)}
-      </text>
-      <text
-        x={g.centreX}
-        y={subjectLabelY}
-        fill={ink}
-        fontSize={SUBJECT_LABEL.fontSize}
-        fontWeight={SUBJECT_LABEL.fontWeight}
-        textAnchor="middle"
-        opacity={subjectValueOpacity * conclusionOpacity}
-      >
-        {`${abbrev(subjectTotal)} · ~${ratio.toFixed(1)}× the 65+ population (${abbrev(elderTotal)})`}
+        {conclusion > 0
+          ? `${abbrev(subjectTotal)} · ~${ratio.toFixed(1)}× the 65+ population (${abbrev(elderTotal)})`
+          : abbrev(subjectTotal)}
       </text>
     </svg>
   );

@@ -478,21 +478,25 @@ export function LollipopVideo({
           extrapolateLeft: "clamp",
           extrapolateRight: "clamp",
         });
-        const valueOpacity = isSubject
-          ? labelOpacity[i] * (1 - conclusionOpacity)
-          : labelOpacity[i];
-        const categoryOpacity = isSubject
-          ? labelOpacity[i] * (1 - emphasis)
-          : labelOpacity[i];
+        // Three handovers belong to the subject row — its mark takes the accent, its label takes
+        // the bold accent, its value takes the gap sentence. All three are CUTS. Written as
+        // crossfades this row drew its stem and dot TWICE, a muted pair under an accent pair
+        // dissolving over it, which composites to a hue between `muted` and `accent` that nobody
+        // chose, and printed "Switzerland" over "Switzerland" at the same anchor.
+        const accented = isSubject && subject > 0;
+        const concluded = isSubject && conclusion > 0;
+        const valueOpacity = labelOpacity[i];
+        const categoryOpacity = labelOpacity[i];
         return (
           <g key={p.country}>
-            {/* Neutral stem + dot — every row, always. */}
+            {/* ONE stem and ONE dot per row, whose colour switches at the subject's own
+                boundary — never a second accent-coloured pair dissolving over the first. */}
             <line
               x1={g.zeroX}
               x2={tipX}
               y1={p.y}
               y2={p.y}
-              stroke={muted}
+              stroke={accented ? accent : muted}
               strokeWidth={4}
               opacity={markOpacity[i]}
             />
@@ -500,37 +504,17 @@ export function LollipopVideo({
               cx={tipX}
               cy={p.y}
               r={DOT_R}
-              fill={muted}
+              fill={accented ? accent : muted}
               opacity={markOpacity[i]}
             />
-            {/* The subject's accent recolour — a second, accent-coloured stem+dot cross-dissolved
-                on top, gated on `emphasis` alone (never before the subject event starts). */}
-            {isSubject && emphasis > 0 ? (
-              <>
-                <line
-                  x1={g.zeroX}
-                  x2={tipX}
-                  y1={p.y}
-                  y2={p.y}
-                  stroke={accent}
-                  strokeWidth={4}
-                  opacity={markOpacity[i] * emphasis}
-                />
-                <circle
-                  cx={tipX}
-                  cy={p.y}
-                  r={DOT_R}
-                  fill={accent}
-                  opacity={markOpacity[i] * emphasis}
-                />
-              </>
-            ) : null}
             <text
               x={g.plot.left - 14}
               y={p.y + rowLabelBaselineOffset}
-              fill={ink}
-              fontSize={ROW_LABEL.fontSize}
-              fontWeight={ROW_LABEL.fontWeight}
+              fill={accented ? accent : ink}
+              fontSize={accented ? ROW_LABEL_ACCENT.fontSize : ROW_LABEL.fontSize}
+              fontWeight={
+                accented ? ROW_LABEL_ACCENT.fontWeight : ROW_LABEL.fontWeight
+              }
               textAnchor="end"
               opacity={categoryOpacity}
             >
@@ -544,7 +528,7 @@ export function LollipopVideo({
               fontWeight={VALUE_LABEL.fontWeight}
               opacity={valueOpacity}
             >
-              {valueLabelFor(p)}
+              {concluded ? conclusionLabelFor(p) : valueLabelFor(p)}
             </text>
           </g>
         );
@@ -563,31 +547,6 @@ export function LollipopVideo({
         />
       ) : null}
 
-      {/* Switzerland's category label, crossfading to bold accent. */}
-      <text
-        x={g.plot.left - 14}
-        y={g.points[subjectIndex].y + rowLabelBaselineOffset}
-        fill={accent}
-        fontSize={ROW_LABEL_ACCENT.fontSize}
-        fontWeight={ROW_LABEL_ACCENT.fontWeight}
-        textAnchor="end"
-        opacity={labelOpacity[subjectIndex] * emphasis}
-      >
-        {subjectRow.country}
-      </text>
-
-      {/* The conclusion: the value label extends in place into the gap-to-compare-country itself,
-          the one new fact the beat has not yet stated. */}
-      <text
-        x={g.points[subjectIndex].xValue + 14}
-        y={g.points[subjectIndex].y + rowLabelBaselineOffset}
-        fill={ink}
-        fontSize={VALUE_LABEL.fontSize}
-        fontWeight={VALUE_LABEL.fontWeight}
-        opacity={labelOpacity[subjectIndex] * conclusionOpacity}
-      >
-        {conclusionLabelFor(subjectRow)}
-      </text>
     </svg>
   );
 }

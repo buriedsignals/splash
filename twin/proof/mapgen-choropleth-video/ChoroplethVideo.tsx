@@ -296,8 +296,12 @@ export function ChoroplethVideo({
           </clipPath>
         </defs>
 
-        {/* ── The field, arriving lowest value first ─────────────────────────────────────────── */}
-        <g clipPath="url(#plate-clip)">
+        {/* ── The field, arriving lowest value first. Gated on `furniture`, the same signal the
+              plate <Img> is on, so frame 0 — the poster frame — carries the title and the source
+              and NOTHING else. Ungated, every country's "pending" dot texture was painted at full
+              opacity on a white ground at 0:00, before the basemap it sits on had appeared: a map
+              of dashes with no title, no source and no land. ─────────────────────────────────── */}
+        <g clipPath="url(#plate-clip)" opacity={furniture}>
           <g transform={`translate(${PAD},${MAP_Y}) scale(${scale})`}>
             {geometry.shapes.map((shape) => {
               const v = value.get(shape.key);
@@ -331,31 +335,22 @@ export function ChoroplethVideo({
                 );
               }
 
-              // A value-bearing shape is opaque from its first frame: it holds the "pending" dots
-              // — visibly not a shade the ramp could have produced — until its own window opens,
-              // then crossfades to its true colour. Never translucent against the basemap, so it
-              // never reads lighter than the lightest filled class.
+              // A value-bearing shape is opaque from its first frame and drawn ONCE: it holds the
+              // "pending" dots — visibly not a shade the ramp could have produced — until its own
+              // window opens, then CUTS to its true colour. Never translucent against the basemap,
+              // so it never reads lighter than the lightest filled class
+              // (`twin-map-beat/SKILL.md:194-203`). Drawn as two superimposed paths crossfading
+              // into each other, the dot texture and the true fill were both painted for the whole
+              // of every country's window, which is that same defect with an extra layer.
               const trueFill = ramp[binIndexLowerInclusive(v, breaks)];
               return (
-                <Fragment key={shape.key}>
-                  {arrived < 1 && (
-                    <path
-                      d={d}
-                      fill="url(#pending)"
-                      fillRule="evenodd"
-                      {...stroke}
-                    />
-                  )}
-                  {arrived > 0 && (
-                    <path
-                      d={d}
-                      fill={trueFill}
-                      fillRule="evenodd"
-                      {...stroke}
-                      opacity={arrived}
-                    />
-                  )}
-                </Fragment>
+                <path
+                  key={shape.key}
+                  d={d}
+                  fill={arrived >= 1 ? trueFill : "url(#pending)"}
+                  fillRule="evenodd"
+                  {...stroke}
+                />
               );
             })}
 
@@ -408,32 +403,37 @@ export function ChoroplethVideo({
           ) : null}
         </g>
 
-        {/* ── Furniture ─────────────────────────────────────────────────────────────────────── */}
-        <g opacity={furniture}>
-          {titleLines.map((line, i) => (
-            <text
-              key={line}
-              x={PAD}
-              y={titleTop + i * TITLE.lead}
-              fill={ink}
-              fontSize={TITLE.fontSize}
-              fontWeight={TITLE.fontWeight}
-            >
-              {line}
-            </text>
-          ))}
-          {sourceLines.map((line, i) => (
-            <text
-              key={line}
-              x={PAD}
-              y={sourceTop + i * SOURCE.lead}
-              fill={muted}
-              fontSize={SOURCE.fontSize}
-            >
-              {line}
-            </text>
-          ))}
+        {/* ── The title and the source: full opacity from frame 0, never gated on `establish`,
+              whose progress at frame 0 is exactly 0. They say what the reader is looking at, and
+              they are what makes the poster frame a frame rather than a blank. Every other video
+              beat in this corpus already draws them this way. ──────────────────────────────── */}
+        {titleLines.map((line, i) => (
+          <text
+            key={line}
+            x={PAD}
+            y={titleTop + i * TITLE.lead}
+            fill={ink}
+            fontSize={TITLE.fontSize}
+            fontWeight={TITLE.fontWeight}
+          >
+            {line}
+          </text>
+        ))}
+        {sourceLines.map((line, i) => (
+          <text
+            key={line}
+            x={PAD}
+            y={sourceTop + i * SOURCE.lead}
+            fill={muted}
+            fontSize={SOURCE.fontSize}
+          >
+            {line}
+          </text>
+        ))}
 
+        {/* ── The rest of the furniture — the legend and its caption — belongs to the field and
+              comes up with it. ─────────────────────────────────────────────────────────────── */}
+        <g opacity={furniture}>
           <text
             x={COLUMN.x}
             y={LEGEND.top - 22}

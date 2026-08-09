@@ -478,30 +478,44 @@ export function HeatmapVideo({
             key={`row-${row.country}`}
             x={g.plot.left - 14}
             y={g.rowY[i] + g.rowHeight / 2 + rowLabelBaselineOffset}
-            fill={i === subjectIndex ? undefined : ink}
-            fontSize={ROW_LABEL.fontSize}
-            fontWeight={ROW_LABEL.fontWeight}
+            fill={i === subjectIndex && subjectProgress > 0 ? accent : ink}
+            fontSize={
+              i === subjectIndex && subjectProgress > 0
+                ? ROW_LABEL_ACCENT.fontSize
+                : ROW_LABEL.fontSize
+            }
+            fontWeight={
+              i === subjectIndex && subjectProgress > 0
+                ? ROW_LABEL_ACCENT.fontWeight
+                : ROW_LABEL.fontWeight
+            }
             textAnchor="end"
-            opacity={i === subjectIndex ? 1 - labelAccentOpacity : 1}
           >
             {row.country}
           </text>
         ))}
 
-        {/* The empty grid: outlines only, no fill — colour has not arrived yet. */}
+        {/* The empty grid: outlines only, drawn for the columns whose colour has NOT arrived. A
+            cell that has its colour draws ONE node below, carrying both the fill and this same
+            outline — never two nodes, one over the other. Drawn as an outline grid under a
+            separately-fading fill grid, every cell spent its column's window as a half-opaque
+            colour over the ground, reading as a lighter class than the one the ramp assigned it —
+            the same defect `twin-map-beat/SKILL.md:194-203` records for a choropleth. */}
         {data.map((row, i) =>
-          years.map((year, j) => (
-            <rect
-              key={`outline-${row.country}-${year}`}
-              x={g.colX[j] + CELL_GAP / 2}
-              y={g.rowY[i] + CELL_GAP / 2}
-              width={g.colWidth - CELL_GAP}
-              height={g.rowHeight - CELL_GAP}
-              fill="none"
-              stroke={grid}
-              strokeWidth={1}
-            />
-          )),
+          years.map((year, j) =>
+            colOpacity[j] > 0 ? null : (
+              <rect
+                key={`outline-${row.country}-${year}`}
+                x={g.colX[j] + CELL_GAP / 2}
+                y={g.rowY[i] + CELL_GAP / 2}
+                width={g.colWidth - CELL_GAP}
+                height={g.rowHeight - CELL_GAP}
+                fill="none"
+                stroke={grid}
+                strokeWidth={1}
+              />
+            ),
+          ),
         )}
       </g>
 
@@ -565,11 +579,12 @@ export function HeatmapVideo({
         />
       ) : null}
 
-      {/* The cells: each fades in on its own column's window, filled with the value's ramp
-          colour. Opacity is an ABSOLUTE value per cell (never divided from a parent group's
-          opacity), so nothing produces NaN in the frame before a column's own window opens. */}
+      {/* The cells: each takes its ramp colour at its own column's window, at FULL opacity, and
+          carries the grid outline itself. A cell is one node — the colour cuts in where the empty
+          outline was, so no frame shows a cell in a shade the ramp never assigned. */}
       {data.map((row, i) =>
         years.map((year, j) => {
+          if (colOpacity[j] <= 0) return null;
           const value = row.values[j];
           const fill = colorFor(value);
           return (
@@ -580,7 +595,8 @@ export function HeatmapVideo({
               width={g.colWidth - CELL_GAP}
               height={g.rowHeight - CELL_GAP}
               fill={fill}
-              opacity={colOpacity[j]}
+              stroke={grid}
+              strokeWidth={1}
             />
           );
         }),
@@ -599,20 +615,6 @@ export function HeatmapVideo({
           opacity={outlineOpacity}
         />
       ) : null}
-
-      {/* Iceland's row label, crossfaded to bold accent — drawn above the furniture group so it
-          is never dimmed by the furniture's own (already-1) opacity. */}
-      <text
-        x={g.plot.left - 14}
-        y={g.rowY[subjectIndex] + g.rowHeight / 2 + rowLabelBaselineOffset}
-        fill={accent}
-        fontSize={ROW_LABEL_ACCENT.fontSize}
-        fontWeight={ROW_LABEL_ACCENT.fontWeight}
-        textAnchor="end"
-        opacity={labelAccentOpacity}
-      >
-        {subjectCountry}
-      </text>
 
       {/* The conclusion: the grid's final-column numbers, one per row, each in the text colour
           ITS OWN cell's fill picks — never a single global ink. */}

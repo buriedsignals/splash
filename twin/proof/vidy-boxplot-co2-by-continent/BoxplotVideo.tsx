@@ -521,12 +521,13 @@ export function BoxplotVideo({
           opacity), so nothing produces NaN in the frame before a group's own window opens. */}
       {g.points.map((p, i) => {
         const isSubject = i === subjectIndex;
-        const categoryOpacity = isSubject
-          ? groupOpacity[i] * (1 - labelAccentOpacity)
-          : groupOpacity[i];
-        const outlierPlainOpacity = isSubject
-          ? groupOpacity[i] * (1 - conclusionOpacity)
-          : groupOpacity[i];
+        // Two handovers belong to the subject column — its category label takes the bold accent,
+        // and each of its outlier labels takes the "x the median" framing. Both are CUTS: one
+        // form is mounted at a time. Written as crossfading twins they printed "Americas" over
+        // "Americas" and "Canada 13.9" over "Canada 13.9 - 4.6x the Americas median", two copies
+        // superimposed at partial opacity for the width of the window.
+        const accented = isSubject && subject > 0;
+        const concluded = isSubject && conclusion > 0;
         return (
           <g key={p.continent}>
             {/* Whisker: one vertical line from whisker-lo to whisker-hi, with caps — the honest
@@ -600,25 +601,27 @@ export function BoxplotVideo({
                 stacked Y positions computed above (`subjectOutlierLabelY`) so Canada's and the
                 US's close values never collide; every other group's outliers are far enough
                 apart that the natural position never needs stacking. */}
-            {p.outliers.map((o) => (
-              <text
-                key={`label-${o.country}`}
-                x={p.cx}
-                y={
-                  isSubject
-                    ? (subjectOutlierLabelY.get(o.country) ??
-                      o.y - OUTLIER_R - 10)
-                    : o.y - OUTLIER_R - 10
-                }
-                fill={ink}
-                fontSize={OUTLIER_LABEL.fontSize}
-                fontWeight={OUTLIER_LABEL.fontWeight}
-                textAnchor="middle"
-                opacity={isSubject ? outlierPlainOpacity : groupOpacity[i]}
-              >
-                {o.country} {en(o.value)}
-              </text>
-            ))}
+            {concluded
+              ? null
+              : p.outliers.map((o) => (
+                  <text
+                    key={`label-${o.country}`}
+                    x={p.cx}
+                    y={
+                      isSubject
+                        ? (subjectOutlierLabelY.get(o.country) ??
+                          o.y - OUTLIER_R - 10)
+                        : o.y - OUTLIER_R - 10
+                    }
+                    fill={ink}
+                    fontSize={OUTLIER_LABEL.fontSize}
+                    fontWeight={OUTLIER_LABEL.fontWeight}
+                    textAnchor="middle"
+                    opacity={groupOpacity[i]}
+                  >
+                    {o.country} {en(o.value)}
+                  </text>
+                ))}
             {/* Category label, beneath the box — plain ink, crossfading OUT for the subject as
                 its bold accent twin (drawn once, after this loop, so it sits above every column's
                 highlight wash) crossfades IN. Every other group's label just stays at
@@ -627,11 +630,19 @@ export function BoxplotVideo({
             <text
               x={p.cx}
               y={g.plot.bottom + 30}
-              fill={ink}
-              fontSize={CATEGORY_LABEL.fontSize}
-              fontWeight={CATEGORY_LABEL.fontWeight}
+              fill={accented ? accent : ink}
+              fontSize={
+                accented
+                  ? CATEGORY_LABEL_ACCENT.fontSize
+                  : CATEGORY_LABEL.fontSize
+              }
+              fontWeight={
+                accented
+                  ? CATEGORY_LABEL_ACCENT.fontWeight
+                  : CATEGORY_LABEL.fontWeight
+              }
               textAnchor="middle"
-              opacity={categoryOpacity}
+              opacity={groupOpacity[i]}
             >
               {p.continent}
             </text>
@@ -659,22 +670,6 @@ export function BoxplotVideo({
           </g>
         );
       })}
-
-      {/* The Americas category label's bold-accent twin — crossfades IN as the plain ink label
-          (drawn in the loop above) crossfades OUT, gated on the SUBJECT event's own progress, not
-          the master reveal signal (`motion-grammar.md`'s "a label's reveal gates on its own mark,
-          never on a master clock"). */}
-      <text
-        x={g.points[subjectIndex].cx}
-        y={g.plot.bottom + 30}
-        fill={accent}
-        fontSize={CATEGORY_LABEL_ACCENT.fontSize}
-        fontWeight={CATEGORY_LABEL_ACCENT.fontWeight}
-        textAnchor="middle"
-        opacity={groupOpacity[subjectIndex] * labelAccentOpacity}
-      >
-        {subjectGroup.continent}
-      </text>
 
       {/* The subject's ring — pops onto both of Americas' outlier dots once the subject event
           starts. */}

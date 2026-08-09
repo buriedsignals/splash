@@ -466,12 +466,15 @@ export function DumbbellVideo({
           NaN in the frame before a row's own window opens. */}
       {g.points.map((p, i) => {
         const isSubject = i === subjectIndex;
-        const valueOpacity = isSubject
-          ? rowOpacity[i] * (1 - conclusionOpacity)
-          : rowOpacity[i];
-        const categoryOpacity = isSubject
-          ? rowOpacity[i] * (1 - labelAccentOpacity)
-          : rowOpacity[i];
+        // The subject's label and value each hand over to a second form — bold accent for the
+        // category, the gap sentence for the value. Both handovers are CUTS: the row draws one
+        // form or the other, never both. Written as crossfading pairs they printed
+        // "Switzerland" over "Switzerland" and "123.5" over "123.5 · +23.5 pts" for a full
+        // second each, two superimposed copies compositing to a colour nobody chose.
+        const accented = isSubject && subject > 0;
+        const concluded = isSubject && conclusion > 0;
+        const valueOpacity = rowOpacity[i];
+        const categoryOpacity = rowOpacity[i];
         return (
           <g key={p.country}>
             <line
@@ -493,9 +496,11 @@ export function DumbbellVideo({
             <text
               x={g.plot.left - 14}
               y={p.y + rowLabelBaselineOffset}
-              fill={ink}
-              fontSize={ROW_LABEL.fontSize}
-              fontWeight={ROW_LABEL.fontWeight}
+              fill={accented ? accent : ink}
+              fontSize={accented ? ROW_LABEL_ACCENT.fontSize : ROW_LABEL.fontSize}
+              fontWeight={
+                accented ? ROW_LABEL_ACCENT.fontWeight : ROW_LABEL.fontWeight
+              }
               textAnchor="end"
               opacity={categoryOpacity}
             >
@@ -509,7 +514,7 @@ export function DumbbellVideo({
               fontWeight={VALUE_LABEL.fontWeight}
               opacity={valueOpacity}
             >
-              {valueLabelFor(p)}
+              {concluded ? conclusionLabelFor(p) : valueLabelFor(p)}
             </text>
           </g>
         );
@@ -537,31 +542,6 @@ export function DumbbellVideo({
         </g>
       ) : null}
 
-      {/* Switzerland's category label, crossfading to bold accent. */}
-      <text
-        x={g.plot.left - 14}
-        y={g.points[subjectIndex].y + rowLabelBaselineOffset}
-        fill={accent}
-        fontSize={ROW_LABEL_ACCENT.fontSize}
-        fontWeight={ROW_LABEL_ACCENT.fontWeight}
-        textAnchor="end"
-        opacity={rowOpacity[subjectIndex] * labelAccentOpacity}
-      >
-        {subjectRow.country}
-      </text>
-
-      {/* The conclusion: the value label extends in place into the gap itself, the one new fact
-          the beat has not yet stated. */}
-      <text
-        x={g.points[subjectIndex].xRight + 14}
-        y={g.points[subjectIndex].y + rowLabelBaselineOffset}
-        fill={ink}
-        fontSize={VALUE_LABEL.fontSize}
-        fontWeight={VALUE_LABEL.fontWeight}
-        opacity={rowOpacity[subjectIndex] * conclusionOpacity}
-      >
-        {conclusionLabelFor(subjectRow)}
-      </text>
     </svg>
   );
 }
