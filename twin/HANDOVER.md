@@ -769,10 +769,24 @@ defaults to `/tmp/video-twin/data.csv` — a renderer whose DATA default is a sc
 `twin-map-beat/scripts/render-preview.mjs` compares its `--check` guard against a plate in `/tmp`.
 Both are named rather than fixed, because their skills were being edited concurrently.
 
-**Eleven video beats commit a `<name>-still.png` that no script produces** — the scripts write
-`<name>-final-frame.png`. Nothing is red (the artifact guard keys on extension), so a committed
-still with no producer stays stale forever. Which of the two is the artifact of record is an
-editorial call, not a mechanical one, and is left open deliberately.
+**"Eleven video beats commit a `<name>-still.png` that no script produces" — MEASURED, AND FALSE.**
+This claim was reported by one agent, repeated by the coordinator several times across the night,
+and written into this file, before anyone checked it. The measurement: for every beat holding a
+`*-still.png`, does any `.mjs` in that beat write that name? **Exactly one does not: `co2-suisse`.**
+The three beats holding both a `-still.png` and a `-final-frame.png` (`life-expectancy`,
+`migration`, `vidy-pyramid-niger-population`) write both, deliberately, and the pairs are
+byte-identical.
+
+Worth keeping for two reasons. First, the one real case is the telling one: **`co2-suisse` is the
+project's first beat** — the reference everything else was written against — and it is the only beat
+with no `BRIEF.md` AND the only one with an unproduced artifact. The most-cited beat is the least
+tended. Second, this is the failure the whole night was about, committed by the person policing it:
+a number taken from a report, repeated until it sounded established, and false the whole time. It
+cost nothing here only because someone finally ran the check.
+
+The real open question is narrower than the false one: three beats write the same image under two
+names. That is a duplicate, not an orphan, and which name is the artifact of record is still an
+editorial call.
 
 ### Still open
 
