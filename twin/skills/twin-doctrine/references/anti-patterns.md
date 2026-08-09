@@ -51,6 +51,31 @@ A colour key sitting apart from the marks it explains, forcing a look-away, hold
 that a label touching the line collapses to one glance. See `visual-system.md`'s "labels are
 direct" rule — a legend is the fallback for genuine crowding, not the default layout choice.
 
+## A fixed gutter where a measurement belongs
+
+Reserved space for text — a label gutter, a legend box, an annotation margin — sized as a constant
+picked to fit whatever sample string happened to be on hand while building the component, instead of
+measured against the actual string about to be drawn. The failure is silent until a longer string
+arrives: a gutter sized for "Renewables" clips "Renewables 280" down to "28"; a gutter sized for a
+short weekday clips "Vendredi" and "Dimanche"; a category-label gutter sized for a typical short name
+truncates a longer one into an abbreviation nobody chose. This is not a one-off bug, it is a class —
+it has independently clipped a stacked-area band label, two legends, an annotation, a heatmap row
+label, and category labels on four more chart types, each one found by a person looking at the
+rendered image, none by a test, because every test that existed was written against the same
+constant the render was.
+
+The fix is never a bigger constant — a bigger constant just moves the same defect to a longer string.
+It is to measure the actual string, in the actual font the component draws with, every time a beat
+renders, not once at design time against a sample dataset. And "measured" is itself a claim worth
+checking, not just asserting: a measurement built from a character-count formula (`text.length *
+fontSize * a-fudge-factor`) is an estimate wearing the shape of a measurement, and it drifts exactly
+where a fixed constant does — on wide characters, accents, mixed scripts. This project's own text
+measurer was found to disagree with itself by 3.3× between two superficially similar call shapes (a
+bare font-size number versus the options object the function actually expects), with no error at the
+call site — proof that even a function whose entire purpose is "stop guessing" can still silently
+guess, and the fix was to make the wrong call shape throw instead of returning a plausible small
+number. A gutter is only as honest as the measurement underneath it.
+
 ## Tiny footer sources
 
 A source line set so small, so low-contrast, or so far from the graphic it credits that a reader

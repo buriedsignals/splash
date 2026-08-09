@@ -88,6 +88,43 @@ sentence on screen, long enough to read that sentence.
 The held frame is the one a reader actually reads, the one that gets screenshotted, and the one a
 still export is taken from. A video that ends on its own last transition has no such frame.
 
+## Furniture's density is a genre decision, and this genre asks for less of it
+
+A static frame earns dense, conventional axis ticks precisely because a reader can stop and
+scrutinise it at their own pace — that rule, and the render that forced it, belong to the static
+genre's own discipline file, not this one. A moving frame earns the opposite: a viewer watching a
+line draw reads its position and its change, not a printed axis, and a tick grid dense enough to be
+useful in a still is, in a build, one more layer competing with the reveal for attention it was not
+established to compete for. This genre's own line reveal draws with **no tick axis at all** — the
+sparsest version of the static rule, not a compromise of it.
+
+Carrying the static rule's density into this genre produces a specific, recognisable defect: a grid
+busy enough to read on its own terms, undermining the very draw it was meant to support. Carrying
+this genre's sparseness the other way — into a static frame — produces the mirror defect: an axis so
+sparse a reader cannot locate the year the chart's own argument is about. Neither rule is correct in
+the other's genre; each is correct only in its own, and a beat author who reaches for "the axis rule"
+without first checking which genre they are drafting for is reaching for the wrong half of it.
+
+## A label's reveal gates on its own mark, never on a master clock
+
+The mark a subject's label refers to is not always where the master progress signal says it is. A
+line reveal windows and eases its own draw separately from the composition's overall frame count; a
+scroll-driven build drives that same chart's progress from the reader's scroll position, not from
+time. A label gated on the master signal and positioned at the mark's fixed, final coordinate —
+instead of gated on the mark's own local reveal fraction and positioned at wherever that reveal
+currently is — reads correct only once the reveal happens to finish, and wrong at every frame before
+that: gated on the master signal, it can appear from the very first frame of a scroll-driven build,
+before any of the line it names has actually drawn; gated on the same signal in a timed build, it can
+fade in ahead of the draw itself, naming a point the line has not yet reached. Both shipped,
+independently, from the same underlying mistake.
+
+The fix runs the other way on both counts: gate the label's opacity on the *mark's own reveal
+progress*, never on a signal that only describes the composition as a whole; position the label at
+the mark's *current* location as that reveal proceeds, never at its eventual one. The two
+prescriptions converge exactly once the reveal completes, which is precisely why this defect is
+invisible in a finished still and shows up only mid-build — the one place a still-only review will
+never catch it.
+
 ## Furniture establishes, then stops
 
 Source line, axis, ticks, gridlines — the layers that support verification and give the marks a

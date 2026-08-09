@@ -163,8 +163,15 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
 
 - `references/editorial-standard.md` — the five jobs a layer may do, and the removal test.
 - `references/information-architecture.md` — reading order, the stack, proximity, alignment, density.
-- `references/visual-system.md` — the concrete colour, label and furniture rules.
-- `references/anti-patterns.md` — named recurring failures, one entry per anti-pattern.
+- `references/visual-system.md` — the concrete colour, label and furniture rules. Includes the
+  cross-cutting rule that a label's ink is measured against its own background even when that
+  background is a data mark, not the page — the single most independently-rediscovered defect in
+  this project's history — and names one still-open gap: a CVD-safe palette's members are not
+  separately checked for adjacency to each other.
+- `references/anti-patterns.md` — named recurring failures, one entry per anti-pattern, including
+  the fixed-gutter class (a reserved text space sized as a constant instead of measured against the
+  real string about to be drawn — the second most independently-rediscovered defect in this
+  project's history, and the reason "measured" is itself a claim this file teaches how to check).
 - `references/reference-set.md` — **seven** rows, past the original six-row target. The floor in
   `test/reference-set.test.ts` tracks that reality (`7`) so the suite stays green against what is
   actually true rather than standing permanently red against an unmet aspiration or, just as bad,
@@ -196,7 +203,21 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
   first real build. Read by any beat whose output is frames. Its one departure from
   `information-architecture.md` is deliberate and argued in place: in a video the takeaway is the
   **conclusion event**, not furniture, because time is the stack and the reader does not choose
-  their own reading order.
+  their own reading order. Also states which two rules are genre-scoped and why applying either one
+  outside its own genre produces a named defect: axis/tick density (dense for a static frame a
+  reader can scrutinise at their own pace, sparse — this genre's own line reveal draws with none at
+  all — for a frame the reader cannot pause), and an end-label's reveal (gated on the mark's own
+  local progress and positioned at its current location, never gated on a signal describing the
+  whole composition and pinned to the mark's eventual, final one — the mistake that shipped
+  independently in both a scroll-driven build and a timed one).
+- `references/geo-discipline.md` — the rules a map beat is written under, in either genre. Includes
+  the three-colour basemap discipline (water as a blue tint, land as a very light neutral, no-data as
+  a distinct mid-grey — a flat colour, not the textured hatching an earlier draft of this rule
+  called for, corrected here because hatching reads illegibly at the size a no-data region is
+  actually drawn), the antimeridian and frame-gating discipline paid for by this project's own CO₂
+  choropleth beat, and one problem recorded as still open rather than solved: a proportional-symbol
+  legend box sized only to its widest mark can still clip a long unit word ("8 magnitud…") because
+  nothing measures the legend the way a label gutter is measured.
 - `scripts/check-reference-set.mjs` — `checkReferenceSet(markdown)`, `countReferenceRows(markdown)`.
 - `test/reference-set.test.ts` — `bun:test` coverage, including the test that reads the shipped
   `reference-set.md` and asserts it, not a fixture, actually passes the check.

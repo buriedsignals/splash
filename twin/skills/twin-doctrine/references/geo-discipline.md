@@ -75,15 +75,31 @@ notices.
 `--use-gl=angle` with a software backend, generous timeouts, and `--concurrency=1` for the video
 render. Headless Chrome must be *found*: resolve it explicitly and fail with the path you looked in.
 
-## 7. No-data is a category, not a gap
+## 7. Basemap colour is three distinct layers, and no-data is a category, not a gap
 
-The no-data fill must be **visually distinct from every value in the scale** — a texture (hatching)
-rather than another shade, because any shade you pick is a shade the ramp could have used — and it
-must appear **in the legend**, named in the beat's language. A grey that happens to sit between two
-ramp steps is the same defect as a bad join, arrived at by design.
+A choropleth basemap carries three colours, and each must read as a different *kind of thing* at a
+glance, not just a different shade of the same thing:
 
-Its converse is the editorial standard: if nothing on the canvas is no-data, the legend entry is
-decoration and comes out. Make the entry **conditional on a shape actually carrying it**.
+- **Water is a blue tint, never grey** — cartographic convention (OSM Carto `#aad3df`, Mapbox Light
+  `#c6e2f5`), because grey water is visually indistinguishable from a no-data region.
+- **Land under a region carrying no value is a very light neutral**, well below the data ramp so the
+  data itself is what pops.
+- **No-data is a distinct mid-grey, darker than the land and outside the ramp** — this project's own
+  choropleth fixes it at `#b9b9b9` against a water tint of `#aac9e0`, specifically so a failed join
+  (which silently renders as no-data — rule 5, above) is never mistaken for the ocean, or for a real
+  low value the ramp could have produced.
+
+All three must stay distinguishable from each other under a deuteranopia simulation, not merely under
+normal vision — the entire point of a third, dedicated no-data colour is to be legible to a reader for
+whom the ramp's own low end and a plain grey are otherwise hard to tell apart. A textured fill
+(hatching) looks like the theoretically safer no-data treatment on paper — no shade to confuse with
+the ramp at all — but it reads illegibly at the size a no-data region is actually drawn on a newsroom
+map; a flat, distinct grey is the third *colour*, not a third *texture*, and it is what this project's
+own maps use.
+
+No-data must appear **in the legend**, named in the beat's language — and, the editorial standard's
+own converse, only when a shape on the canvas actually carries it. An unused no-data legend entry is
+decoration, not information, and comes out.
 
 ## 8. In a choropleth the ramp is the quantity; the accent is spent on the subject's outline
 
@@ -150,3 +166,17 @@ resolutions, one geometry.
 
 *Defect:* the first framing asked `fitBounds` for `[-11, 35] → [31, 66]` in a 900 × 560 frame and
 got a map spanning −30° to +45°, with the subject 40 px wide and Tunisia in shot.
+
+## An open problem this beat did not close: a legend can still clip a long unit word
+
+A proportional-symbol legend's box has been sized by a formula built from the widest circle diameter
+alone — it reserves room for the largest mark, not for the longest string that has to sit beside it.
+A short unit ("km", "%") fits inside that reserve by accident; a word-length unit ("magnitude") does
+not, and clips — "8 magnitud…" is the shipped instance in the project this discipline is checked
+against. This is the same failure class as a fixed label gutter (a reserved space sized against one
+dimension of the content while another dimension of the same content grows past it), and it remains
+open: not yet fixed, and not yet even mechanically caught, because the guard that exists measures
+label gutters, not a legend box's width against its own longest label-plus-unit string. Closing it
+means either measuring the legend box the same way a label gutter is measured, or dropping the unit
+from the legend rows entirely on the grounds that it is already stated on the labels and the
+subtitle — recorded here as the two live options, neither chosen yet.
