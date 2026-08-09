@@ -744,10 +744,35 @@ defaulted to `/tmp/scrolly-twin/`. Run the obvious way, it produced a fresh arti
 printed a path, exited zero, and left the committed one stale — so its own non-collision measurements
 had been taken against a build the repository did not contain. Fixed to write beside the beat.
 
-**Frame 0 of every pre-existing video is blank** (measured: zero non-white pixels on `lollipop.mp4`,
-`line.mp4`, `waterfall.mp4`). The reveal starts at frame 0, so everything gated on it is invisible in
-**the poster frame** — the one image a reader sees before pressing play, and the thumbnail a CMS or
-social platform pulls.
+**Frame 0 of every pre-existing video is blank** (measured: 19 of 22 mp4s at 0.0000% non-ground
+pixels; `mapgen-choropleth-video` was the one beat that already got it right, so "every" was one
+beat too broad). The reveal starts at frame 0, so everything gated on it is invisible in **the
+poster frame** — the one image a reader sees before pressing play, and the thumbnail a CMS or social
+platform pulls. All 19 fixed, guarded by `video-first-frame-not-empty.test.ts`, which takes the
+frame's own MODAL colour as ground rather than hardcoding white, so a dark house theme cannot pass a
+blank black poster.
+
+**And the class behind it, found while fixing it: 32 beat render scripts defaulted their OUTPUT to
+`/tmp`.** Run one the obvious way and it wrote a fresh artifact into a scratch directory, printed a
+path, exited zero, and left the committed one stale — **a fix reaches source and never reaches an
+artifact**. The project had already frozen every beat's DATA beside it, and froze the 11 map beats'
+PLATES beside them this same night; output was never done. All 32 now write beside their own beat,
+guarded by `render-output-lands-in-its-own-beat.test.ts`, which collects destinations
+*behaviourally* (the first argument of every write call, every `outDir:` property) rather than by
+grepping for `/tmp`. The strongest evidence it worked: **all 16 web beats, re-run with no arguments,
+produced output byte-identical to what is committed** — so the fifteen artifacts the fluid-frame
+redesign had made unreproducible are both current and reproducible again.
+
+The input half of that class survives OUTSIDE `proof/`, and one instance is the exact shape that
+produced the invented migration series: `twin-chart-video/scripts/render-video.mjs`'s `--data`
+defaults to `/tmp/video-twin/data.csv` — a renderer whose DATA default is a scratch file.
+`twin-map-beat/scripts/render-preview.mjs` compares its `--check` guard against a plate in `/tmp`.
+Both are named rather than fixed, because their skills were being edited concurrently.
+
+**Eleven video beats commit a `<name>-still.png` that no script produces** — the scripts write
+`<name>-final-frame.png`. Nothing is red (the artifact guard keys on extension), so a committed
+still with no producer stays stale forever. Which of the two is the artifact of record is an
+editorial call, not a mechanical one, and is left open deliberately.
 
 ### Still open
 
