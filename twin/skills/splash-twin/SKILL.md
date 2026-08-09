@@ -244,7 +244,7 @@ un-renamed is the one shape that never resolves.
    | `intake` | Article and data frozen and profiled, silently — `twin-intake` asks nothing. | — | `source/article.md`, `source/profile.json` |
    | `framing` | Intent named, the editorial exchange opens, `STORYBOARD.md` is created. | G1 | `STORYBOARD.md` (created) |
    | `storyboard` | Restitution, the journalist's hand, the survey, the medium/genre/size sub-gates, the reference loop, slots and candidates — `twin-storyboard`'s exchange completes the contract. | G1, G2a, G2b, G2c | `STORYBOARD.md`'s front matter carries a confirmed `takeaway`, all six hand-of-the-journalist fields, the recorded `grounding` verdict (G1) and `reference` answer, and every slot's `medium` (G2a), `genre` (G2b), `size` (G2c), `reachable: yes` and `chosen` drawn from its own `candidates` |
-   | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. | G3, per beat | `beats/<n>-<slug>/renders/*` |
+   | `production` | Beat by beat: `BRIEF.md` written first, bespoke component written under doctrine, render ladder climbed one rung at a time, checklist applied to the pixels. Then **SURFACE THE ARTIFACT** — the file path to open for a static, the opened HTML for a web or scrolly beat, the mp4 for a video — and ask approve-or-correct. That turn says **nothing about delivery**: the forms are `offerForms`' output and cannot be known before it runs. | G3, per beat | `beats/<n>-<slug>/APPROVED.md` |
    | `delivery` | Per beat, `twin-deliver` offers the forms its genre allows; the journalist chooses; only that one is materialised. | — | `export/*` |
    | `done` | Terminal — the story has been delivered. | — | (`export/` already holds the chosen form) |
 
@@ -278,6 +278,11 @@ un-renamed is the one shape that never resolves.
      closed.
    - It **never continues past a producer that exited non-zero.** A failed `execute-shell` call
      halts the phase right there.
+   - It **never states a delivery constraint that did not come from `offerForms`.** Delivery's
+     forms are that function's output; anything said about them before it runs is a guess. The run
+     guessed twice, both times wrongly, once *inside* the Gate-3 approval question — and had to
+     retract it. `offerForms` now requires the beat's `APPROVED.md` and throws without it, so
+     calling it early fails loudly instead of licensing a guess.
    - **A missing prerequisite is reported and never designed around.** (`scripts/preflight.mjs`
      carries the same line verbatim, for the same reason.) A missing hard prerequisite — unresolved
      dependencies, or a newsroom identity nobody has answered yet — blocks `ready` and is reported

@@ -93,7 +93,13 @@ async function driveEveryPhase(storyDir: string): Promise<Set<string>> {
     join(storyDir, "beats", "1-rainfall", "renders", "still.png"),
     "x",
   );
-  observed.add((await whereIs(storyDir)).phase); // delivery: a beat has rendered, nothing exported
+  observed.add((await whereIs(storyDir)).phase); // production: rendered, not yet approved
+
+  await writeFile(
+    join(storyDir, "beats", "1-rainfall", "APPROVED.md"),
+    "the journalist looked at it and said yes",
+  );
+  observed.add((await whereIs(storyDir)).phase); // delivery: approved, nothing exported
 
   await writeFile(join(storyDir, "export", "rainfall.png"), "x");
   observed.add((await whereIs(storyDir)).phase); // done: something has been exported

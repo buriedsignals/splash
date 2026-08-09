@@ -318,7 +318,11 @@ describe("whereIs", () => {
     expect(state.missing).toContain("a confirmed takeaway");
   });
 
-  it("should report delivery once a beat has a render", async () => {
+  // G3 closes into a file, like every other gate. A render existing is not the journalist having
+  // seen it: the run read the renders into the model's context, gave the journalist prose, and
+  // asked "the beat, as you see it. Do you validate?" in a turn where nothing had been put in
+  // front of anyone to open.
+  it("should stay in production when a beat has rendered but nobody has approved it", async () => {
     await writeFile(join(dir, "source", "article.md"), "text");
     await writeFile(join(dir, "source", "profile.json"), "{}");
     await writeFile(join(dir, "STORYBOARD.md"), storyboard);
@@ -330,7 +334,39 @@ describe("whereIs", () => {
       join(dir, "beats", "1-rainfall", "renders", "still.png"),
       "x",
     );
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toContain("beat 1-rainfall: rendered but not approved");
+  });
+
+  it("should report delivery once a rendered beat has been approved", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    await mkdir(join(dir, "beats", "1-rainfall", "renders"), {
+      recursive: true,
+    });
+    await writeFile(join(dir, "beats", "1-rainfall", "BRIEF.md"), "brief");
+    await writeFile(
+      join(dir, "beats", "1-rainfall", "renders", "still.png"),
+      "x",
+    );
+    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen and approved");
     expect((await whereIs(dir)).phase).toBe("delivery");
+  });
+
+  it("should name every rendered beat still waiting, not only the first", async () => {
+    await writeFile(join(dir, "source", "article.md"), "text");
+    await writeFile(join(dir, "source", "profile.json"), "{}");
+    await writeFile(join(dir, "STORYBOARD.md"), storyboard);
+    for (const beat of ["1-rainfall", "2-snowpack"]) {
+      await mkdir(join(dir, "beats", beat, "renders"), { recursive: true });
+      await writeFile(join(dir, "beats", beat, "renders", "still.png"), "x");
+    }
+    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
+    const state = await whereIs(dir);
+    expect(state.phase).toBe("production");
+    expect(state.missing).toEqual(["beat 2-snowpack: rendered but not approved"]);
   });
 
   it("should report done once the export holds a file and a render exists", async () => {
@@ -345,6 +381,7 @@ describe("whereIs", () => {
       join(dir, "beats", "1-rainfall", "renders", "still.png"),
       "x",
     );
+    await writeFile(join(dir, "beats", "1-rainfall", "APPROVED.md"), "seen");
     await writeFile(join(dir, "export", "rainfall.png"), "x");
     expect((await whereIs(dir)).phase).toBe("done");
   });

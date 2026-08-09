@@ -212,13 +212,31 @@ function missingForGate2(frontmatter) {
   return gaps;
 }
 
-async function hasAnyRender(storyDir) {
+// G3 CLOSES INTO A FILE, like every other gate. A beat leaves `production` only when the beat
+// directory that holds renders also holds `APPROVED.md` — the journalist having been shown the
+// artifact and having said yes.
+//
+// It used to leave on the mere EXISTENCE of a render, so nobody was ever asked. In the run the
+// renders were read into the model's context and the journalist received prose; the Gate-3
+// question — "the beat, as you see it. Do you validate?" — presupposed sight in a turn where
+// nothing had been put in front of anyone to open.
+//
+// Returns the beats that have rendered and not been approved, so `missing` names them. A directory
+// read, which is all this file has ever done, and it needs no slot-to-beat mapping.
+async function renderedBeats(storyDir) {
+  const rendered = [];
   for (const beat of await list(join(storyDir, "beats"))) {
-    if ((await list(join(storyDir, "beats", beat, "renders"))).length > 0) {
-      return true;
-    }
+    if ((await list(join(storyDir, "beats", beat, "renders"))).length > 0) rendered.push(beat);
   }
-  return false;
+  return rendered;
+}
+
+async function beatsAwaitingApproval(storyDir) {
+  const waiting = [];
+  for (const beat of await renderedBeats(storyDir)) {
+    if ((await read(join(storyDir, "beats", beat, "APPROVED.md"))) === null) waiting.push(beat);
+  }
+  return waiting;
 }
 
 export async function whereIs(storyDir) {
@@ -234,7 +252,8 @@ export async function whereIs(storyDir) {
   const gateGaps = missingForGate2(frontmatter);
   if (gateGaps.length > 0) return { phase: "storyboard", missing: gateGaps };
 
-  const hasRender = await hasAnyRender(storyDir);
+  const rendered = await renderedBeats(storyDir);
+  const hasRender = rendered.length > 0;
   const exported = await list(join(storyDir, "export"));
 
   if (!hasRender && exported.length > 0) {
@@ -242,7 +261,17 @@ export async function whereIs(storyDir) {
   }
 
   if (exported.length > 0) return { phase: "done", missing: [] };
-  if (hasRender) return { phase: "delivery", missing: [] };
+
+  if (hasRender) {
+    const waiting = await beatsAwaitingApproval(storyDir);
+    if (waiting.length > 0) {
+      return {
+        phase: "production",
+        missing: waiting.map((beat) => `beat ${beat}: rendered but not approved`),
+      };
+    }
+    return { phase: "delivery", missing: [] };
+  }
 
   return { phase: "production", missing: [] };
 }

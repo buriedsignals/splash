@@ -18,14 +18,44 @@ beforeEach(async () => {
     "export const Rainfall = () => null;",
   );
   await writeFile(join(beatDir, "data.json"), "[]");
+  // G3 has closed for this fixture: the journalist was shown the render and approved it.
+  // `offerForms` refuses to name a single delivery form before that file exists.
+  await writeFile(join(beatDir, "APPROVED.md"), "seen at full size, approved");
 });
 afterEach(async () => {
   await rm(join(beatDir, ".."), { recursive: true, force: true });
 });
 
+describe("offerForms — Gate 3 before Gate 4", () => {
+  // Delivery cannot honestly be discussed before the journalist has SEEN the thing being
+  // delivered. The run discussed it twice before it could -- once before production began, once
+  // inside the Gate-3 approval question itself ("hosted embed = closed") -- and both statements
+  // were wrong and had to be retracted the moment this function was finally called. The forms are
+  // this function's output; they are not knowable without it. So calling it early fails loudly.
+  it("should refuse to name a single form before the beat has been approved", async () => {
+    await rm(join(beatDir, "APPROVED.md"));
+    expect(() =>
+      offerForms({ beatDir, medium: "chart", genre: "static" }),
+    ).toThrow(/has not been approved yet/);
+  });
+
+  it("should say what it looked for, so the refusal is actionable", async () => {
+    await rm(join(beatDir, "APPROVED.md"));
+    expect(() =>
+      offerForms({ beatDir, medium: "chart", genre: "static" }),
+    ).toThrow(/APPROVED\.md/);
+  });
+
+  it("should refuse a call that names no beat directory at all", () => {
+    expect(() => offerForms({ medium: "chart", genre: "static" })).toThrow(
+      /needs the beat directory/,
+    );
+  });
+});
+
 describe("offerForms", () => {
   it("should offer the owned file and the source bundle for a static chart", () => {
-    const ids = offerForms({ medium: "chart", genre: "static" }).map(
+    const ids = offerForms({ beatDir, medium: "chart", genre: "static" }).map(
       (f) => f.id,
     );
     expect(ids).toEqual(["owned-file", "source-bundle"]);
@@ -33,12 +63,12 @@ describe("offerForms", () => {
 
   it("should never offer an embed for a static beat", () => {
     expect(
-      offerForms({ medium: "chart", genre: "static" }).map((f) => f.id),
+      offerForms({ beatDir, medium: "chart", genre: "static" }).map((f) => f.id),
     ).not.toContain("embed");
   });
 
   it("should describe what each form gives, so the choice is informed", () => {
-    for (const form of offerForms({ medium: "chart", genre: "static" })) {
+    for (const form of offerForms({ beatDir, medium: "chart", genre: "static" })) {
       expect(form.gives.split(/\s+/).length).toBeGreaterThan(4);
     }
   });
@@ -48,20 +78,20 @@ describe("offerForms", () => {
   // the given genre at all. "print" stands in for a genre this project has never built a producer
   // for — unlike "video", which is now a real, deliverable genre (see the tests below).
   it("should refuse to offer anything for a genre it does not know", () => {
-    expect(() => offerForms({ medium: "chart", genre: "print" })).toThrow(
+    expect(() => offerForms({ beatDir, medium: "chart", genre: "print" })).toThrow(
       "print",
     );
   });
 
   it("should offer the owned file, the source bundle, and a CMS insertion for a web chart with no Cloudflare credentials", () => {
-    const ids = offerForms({ medium: "chart", genre: "web", env: {} }).map(
+    const ids = offerForms({ beatDir, medium: "chart", genre: "web", env: {} }).map(
       (f) => f.id,
     );
     expect(ids).toEqual(["owned-file", "source-bundle", "cms-insertion"]);
   });
 
   it("should offer the owned file and the source bundle for a video chart", () => {
-    const ids = offerForms({ medium: "chart", genre: "video", env: {} }).map(
+    const ids = offerForms({ beatDir, medium: "chart", genre: "video", env: {} }).map(
       (f) => f.id,
     );
     expect(ids).toEqual(["owned-file", "source-bundle"]);
@@ -69,7 +99,7 @@ describe("offerForms", () => {
 
   it("should never offer an embed or a CMS insertion for static or video — neither genre is wired to either form yet", () => {
     for (const genre of ["static", "video"]) {
-      const ids = offerForms({ medium: "chart", genre, env: {} }).map(
+      const ids = offerForms({ beatDir, medium: "chart", genre, env: {} }).map(
         (f) => f.id,
       );
       expect(ids).not.toContain("embed");
@@ -78,15 +108,14 @@ describe("offerForms", () => {
   });
 
   it("should never offer the hosted embed for a web chart when no Cloudflare credential is set", () => {
-    const ids = offerForms({ medium: "chart", genre: "web", env: {} }).map(
+    const ids = offerForms({ beatDir, medium: "chart", genre: "web", env: {} }).map(
       (f) => f.id,
     );
     expect(ids).not.toContain("embed");
   });
 
   it("should never offer the hosted embed when only the account id is set, missing the token", () => {
-    const ids = offerForms({
-      medium: "chart",
+    const ids = offerForms({ beatDir, medium: "chart",
       genre: "web",
       env: { CLOUDFLARE_ACCOUNT_ID: "acct" },
     }).map((f) => f.id);
@@ -94,8 +123,7 @@ describe("offerForms", () => {
   });
 
   it("should never offer the hosted embed when only the token is set, missing the account id", () => {
-    const ids = offerForms({
-      medium: "chart",
+    const ids = offerForms({ beatDir, medium: "chart",
       genre: "web",
       env: { CLOUDFLARE_API_TOKEN: "tok" },
     }).map((f) => f.id);
@@ -103,8 +131,7 @@ describe("offerForms", () => {
   });
 
   it("should offer the hosted embed for a web chart once both Cloudflare credentials are set", () => {
-    const ids = offerForms({
-      medium: "chart",
+    const ids = offerForms({ beatDir, medium: "chart",
       genre: "web",
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
     }).map((f) => f.id);
@@ -117,7 +144,7 @@ describe("offerForms", () => {
   });
 
   it("should describe the CMS insertion form honestly, naming that nothing is inserted automatically", () => {
-    const cmsForm = offerForms({ medium: "chart", genre: "web", env: {} }).find(
+    const cmsForm = offerForms({ beatDir, medium: "chart", genre: "web", env: {} }).find(
       (f) => f.id === "cms-insertion",
     );
     expect(cmsForm?.gives).toMatch(/not yet wired to a live CMS/);

@@ -8,7 +8,7 @@ description: Use to run the DELIVERY phase of the doctrine twin — offer the jo
 ## Overview
 
 Runs the DELIVERY phase: the last step of a beat's life, after a still has already been
-rendered into `<beatDir>/renders/`. `offerForms({medium, genre, env})` names the delivery forms a
+rendered into `<beatDir>/renders/`. `offerForms({medium, genre, beatDir, env})` names the delivery forms a
 beat's genre allows, each with a plain-language `gives` so the choice is informed. Nothing is
 built at this point — `offerForms` only lists what could be built. `materialise({form, genre,
 beatDir, exportDir, env, fetchFn, projectName, cms})` is the only function that writes anything,
@@ -35,7 +35,8 @@ until the choice does.
 ## When to use
 
 - At the end of a beat's production, once `<beatDir>/renders/` holds a still — call
-  `offerForms` with the beat's medium and genre, present the list, and wait.
+  `offerForms` with the beat's medium, genre and directory, present the list, and wait. It throws
+  if the beat has not been approved — show the render first.
 - Once the journalist has named a form (its `id`, exactly), call `materialise` with that id, the
   *same* genre, the beat's directory, and the export directory. Nothing before that call.
 - **Not** for production. This skill never renders a chart or a map — it only decides which
@@ -56,7 +57,7 @@ order and a bad second choice silently wipes out a good first one.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; filters `embed` out when no Cloudflare credential is present |
+| Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
 | CMS insertion mechanism | `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace` | Builds the We.Publish/Livingdocs mutation shape and the partial-article guard — pure, no network, UNPROVEN against a live CMS |
@@ -64,8 +65,13 @@ order and a bad second choice silently wipes out a good first one.
 
 ## How it works (the shape)
 
-1. **`offerForms({medium, genre, env = process.env})`** looks `genre` up in `FORMS_BY_GENRE`. Three
-   genres are known today — `"static"`, `"web"`, `"video"`, `"scrolly"` — any other genre throws rather than
+1. **`offerForms({medium, genre, beatDir, env = process.env})`** first refuses outright unless
+   `beatDir/APPROVED.md` exists — **Gate 3 closes before Gate 4 opens.** Delivery cannot honestly be
+   discussed before the journalist has seen the thing being delivered, and the forms are this
+   function's own output: anything said about them before it runs is a guess. The run guessed twice,
+   both times wrongly, once *inside* the Gate-3 approval question, and had to retract it. Then it
+   looks `genre` up in `FORMS_BY_GENRE`. **Four** genres are known today —
+   `"static"`, `"web"`, `"video"`, `"scrolly"` — any other genre throws rather than
    returning an empty or partial list, so a caller can never mistake "no forms for this genre yet"
    for "this beat has nothing to deliver". For a known genre it returns every form in that genre's
    table, in the same order every time, each carrying an `id`, a `label`, and a `gives` long enough
@@ -126,7 +132,13 @@ order and a bad second choice silently wipes out a good first one.
 ```js
 import { offerForms, materialise } from "./scripts/deliver.mjs";
 
-const forms = offerForms({ medium: "chart", genre: "web" });
+// `beatDir` is REQUIRED, and its APPROVED.md must exist: Gate 3 closes before Gate 4 opens, so a
+// form cannot be named before the journalist has seen the render.
+const forms = offerForms({
+  medium: "chart",
+  genre: "web",
+  beatDir: "stories/water-wars/beats/1-rainfall",
+});
 // present `forms` (id, label, gives) to the journalist here, and wait for a choice —
 // do not call materialise until one comes back. "embed" is only in this list when
 // CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are both set.
