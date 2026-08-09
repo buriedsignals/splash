@@ -278,6 +278,15 @@ un-renamed is the one shape that never resolves.
      closed.
    - It **never continues past a producer that exited non-zero.** A failed `execute-shell` call
      halts the phase right there.
+   - **A defect in this toolchain is written to `stories/<slug>/NOTES-FOR-MAINTAINER.md` and never
+     spoken to the journalist; a question to the journalist is never about our code.** The run's
+     closing message was four fifths internals — three paragraphs naming our own files and their
+     defects — and at one point the journalist was asked to arbitrate an internal defect, with
+     options naming two of our modules. All of it was valuable, and none of it was theirs. Write it
+     to the story root, never to `export/`, never to the conversation. `formatHandover`
+     (`twin-deliver/scripts/format-handover.mjs`) is the mechanical half of this: it takes a closed
+     parameter set with no free-text field, and throws on any string naming one of our paths or
+     modules, so a maintainer-facing sentence physically cannot reach a delivered document.
    - It **never states a delivery constraint that did not come from `offerForms`.** Delivery's
      forms are that function's output; anything said about them before it runs is a guess. The run
      guessed twice, both times wrongly, once *inside* the Gate-3 approval question — and had to

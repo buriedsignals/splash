@@ -21,6 +21,31 @@
 
 const REQUIRED = ["genre", "placement", "alt", "credit"];
 
+// A MAINTAINER-FACING SENTENCE PHYSICALLY CANNOT PASS THROUGH THIS FUNCTION.
+//
+// The run's closing message was four fifths internals: three paragraphs naming `ground-claim.mjs`,
+// `where.mjs` and their defects, addressed to a journalist. Earlier turns leaked the same way — one
+// narrated reading a source file, one presented a table of gate verdicts, one explained how
+// `#shared/*` resolves — and at one point the journalist was asked to arbitrate an internal defect,
+// with options naming two of our files by name. All of it was valuable, and none of it was theirs.
+//
+// The closed parameter set above is the first half of the answer. This is the second: any string
+// this function is handed that names one of our paths or modules is REFUSED, loudly, with where it
+// belongs instead. The accepted cost, stated rather than discovered: a legitimate caveat that
+// happens to name a filename is refused. No real caveat does — a caveat is about the DATA.
+const OUR_PATH = /\bskills\//;
+const OUR_MODULE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)\b/;
+
+function refuseMaintainerText(field, value) {
+  const text = String(value);
+  if (!OUR_PATH.test(text) && !OUR_MODULE.test(text)) return;
+  throw new Error(
+    `${field} names this toolchain's own code, and a hand-over is written for the journalist. ` +
+      `A defect in our code goes to stories/<slug>/NOTES-FOR-MAINTAINER.md — never into a delivered ` +
+      `document, and never into a question put to the journalist.`,
+  );
+}
+
 // What each delivered file is FOR, by extension. A journalist holding a PNG and an SVG needs to be
 // told which one goes to the CMS; "here are two files" is what the run said and it is not an answer.
 const ROLE_BY_EXTENSION = {
@@ -61,6 +86,14 @@ export function formatHandover({ files, placement, alt, credit, caveat, genre })
   }
   if (!Array.isArray(files) || files.length === 0) {
     throw new Error("a hand-over cannot be written before anything has been delivered");
+  }
+
+  // The file paths are exempt: `materialise` hands in the real paths it wrote, which legitimately
+  // carry `.html`/`.mjs` extensions and, in a source bundle, our own component filenames. They are
+  // never printed whole — only their basenames reach the page — so nothing about where this
+  // toolchain lives travels with them.
+  for (const [field, value] of Object.entries({ placement, alt, credit, caveat })) {
+    if (value) refuseMaintainerText(field, value);
   }
 
   const lines = [
