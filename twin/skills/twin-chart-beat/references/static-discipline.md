@@ -136,19 +136,46 @@ type sizes) before that list becomes gridlines or gutter width. The reference's 
 on the axis, in its own dedicated label; it has simply stopped sharing the vertical band with a
 line that was never the one the reader needed there.
 
-## The source under the header, not in a footer
+## The source on the frame's bottom margin
 
-The source line sits directly beneath the title — and beneath the limits subtitle, when the beat
-carries one (`information-architecture.md`'s "Subtitle" zone) — at reading size, in muted ink. Not
-9px, not in the bottom-right corner, not cropped when somebody screenshots the top of the chart. It
-carries the effective date the journalist gave, because "as of" is part of the claim.
+**The source's last line sits on a baseline at `height - PAD`** — the frame's own bottom inner
+margin, the same inset the title hangs off at the top, left-aligned on the same `x` as the title.
+At reading size, in muted ink. Not 9px, not in the bottom-right corner. It carries the effective
+date the journalist gave, because "as of" is part of the claim. Where the source wraps to n lines,
+the FIRST line's baseline is `height - PAD - (n - 1) * SOURCE.lead`, so the block grows upward and
+the last line always lands on the margin.
 
-A beat whose header block has both a limits subtitle and a source line stacks them title, then
-subtitle, then source — the same top-to-bottom order `information-architecture.md` states for the
-general case, only anchored at the top of the frame instead of the bottom, per this file's own
-override of that zone. The two lines are not interchangeable: a subtitle answers "what can't this
-data support," a source answers "where did it come from and as of when" — a beat that spends its
-one subtitle slot on the source, the way an earlier draft of this file's own reference case did,
+**REVERSED 2026-08-10.** Until this date this section was titled *"The source under the header, not
+in a footer"* and required the opposite: the source directly beneath the title (and beneath the
+limits subtitle, where the beat carries one), on the argument that it is then *"not cropped when
+somebody screenshots the top of the chart"*.
+
+**The cost that reversal accepts, named:** a reader who screenshots only the top of a chart now
+gets no source. What makes that acceptable is what a beat actually is here — the graphic is
+delivered as ONE file (a PNG, an mp4, a self-contained HTML), not as a scrolling region somebody
+crops; and a credit in a **constant** position across every graphic this project ships is worth
+more than robustness against a partial screenshot of one of them. It is also where a reader looks
+for a credit, which the old rule was trading away.
+
+**What this is NOT, in the layout.** Moving the source is never just moving a `<text>`. Every
+component reserved its plot from the source's own baseline (`padding.top = sourceBaseline + …`), so
+the three edits are always: anchor the source to `height - PAD`; re-point `padding.top` at the
+**last drawn HEADER line** with the clearance the type already used; and grow `padding.bottom` by
+the source block's own height plus clear air, so the axis-label band beneath the plot ends above
+the source's ink. Measured on `ChartSeed`: the plot's top edge rises 26px, its bottom edge rises
+22px, its height gains 4px, and **no horizontal geometry moves at all** — the source is not in a
+gutter, so no measured gutter is re-measured. That is what keeps this change out of the
+label-collision class this project keeps finding by eye. (The first arithmetic tried reserved only
+`PAD + SOURCE.fontSize + 14` on the floor, and the rendered preview showed the source struck
+through the x-axis years. The tick drop is now a named constant that `padding.bottom` and the tick
+`<text y>` both read.)
+
+A beat whose header block has both a limits subtitle and a source line no longer stacks all three:
+the header is title, then subtitle; the source is at the bottom. That is now the same arrangement
+`information-architecture.md` states for the general case — this file no longer overrides that
+zone. The two lines are still not interchangeable: a subtitle answers "what can't this data
+support," a source answers "where did it come from and as of when" — a beat that spends its one
+subtitle slot on the source, the way an earlier draft of this file's own reference case did,
 answers neither question and drops the caveat the framing exchange already extracted.
 
 ## Direct end labels, not a legend

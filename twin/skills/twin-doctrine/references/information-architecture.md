@@ -61,12 +61,22 @@ for a single engine and a single format, such as `twin-chart-beat/references/sta
 for the static chart genre — is allowed to override a zone's default position when its own render
 actually places it differently, because it sits closer to the real pixels than this file does.
 
-**Where the two disagree, the genre-scoped file wins.** The source line is the live example: this
-file's default (item 5 above) fixes it at the bottom; `static-discipline.md` places it directly
-beneath the title for a static chart beat, matching what the seed component actually draws. For a
-static chart beat, follow `static-discipline.md` — directly beneath the title, not the bottom. A
-beat author who stops at this file's default without checking their engine's genre-scoped file has
-not yet read the authoritative answer for their own format.
+**Where the two disagree, the genre-scoped file wins.**
+
+**The worked example this section used to carry no longer exists, and that is worth recording
+rather than quietly replacing.** Until 2026-08-10 the live example was the source line: this file's
+default (item 5 above) fixes it at the bottom, and `static-discipline.md` placed it directly
+beneath the title for a static chart beat. The owner's feedback reversed the genre-scoped file
+(*"put the credits at the bottom of the visual"*), so `static-discipline.md` now says
+`height - PAD` too — and **the default is what won.** Not because the override mechanism failed:
+because the genre-scoped file had been describing what its component happened to draw rather than
+what the format needed, which is the one way an override can be wrong.
+
+**As of 2026-08-10 no genre-scoped file overrides any zone in this stack.** The mechanism below
+stands unexercised, and it is still correct and still needed — a file that sits closer to the real
+pixels than this one does should be able to say so. A beat author who stops at this file's default
+without checking their engine's genre-scoped file still has not read the authoritative answer for
+their own format; today the two simply agree.
 
 If a genre-scoped file is silent on a zone — true for most zones, most of the time — this file's
 default stands unchallenged. The override is narrow: it reaches only the zone the genre-scoped
