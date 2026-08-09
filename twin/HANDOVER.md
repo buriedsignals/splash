@@ -500,6 +500,51 @@ Up to six agents wrote into this one tree at once. Two failure modes appeared, n
   failures that were not theirs; all three correctly said so, but one "fixing" what it thought was
   broken would have cost real work. Mutate in a copy, or declare the window.
 
+### The web genres became genuinely responsive, and what it cost to get there
+
+The owner overturned a documented decision: the web genre pre-rendered **two fixed layouts** (900px
+and 360px) swapped by a media query, defended in `web-discipline.md` as "two rungs, not a continuous
+reflow". He wanted full-width, continuously adaptive output.
+
+**The problem that decision had been avoiding:** in a fluid SVG, scaling the viewBox scales the
+*text with it*. A title correct at 900px is oversized at 1600 and unreadable at 400.
+
+**The answer, now shipped in both web genres:** the SVG carries **geometry only — zero `<text>`
+elements** — and every word (title, caveat, source, axis labels, annotations) is HTML positioned in
+percentages over the same grid cell, at a fixed pixel font size. Geometry stretches; type does not.
+Measured: 24px title at 1600, 1024, 768 and 375. The map genre took the same separation, plus a
+deliberate plate decision — bake generously at 1000px and scale within that, **never distort**, since
+a stretched basemap is a lie about distance and shape.
+
+Both genres gained **filters** in pure CSS (`:checked` + `:has()`, no script, so they survive with
+JavaScript disabled), and the map gained **bounded pan-and-zoom over the same baked plate** — live
+tiles were considered and rejected in writing, because they would break self-containment and ship a
+MapTiler key inside the delivered file. One rule governs all of it: **nothing argument-bearing sits
+behind a control.** The default view already shows what the title claims.
+
+**Two defects only real browser driving could find:** an HTML overlay with no `pointer-events: none`
+silently swallowed every hover while keyboard focus still worked — because `.focus()` bypasses hit
+testing, which is exactly why no test reached it; and a label-flip margin hardcoded to the old plate
+size clipped a right-edge label at 375px.
+
+### Open, and precisely described
+
+**The eleven web chart beats are not retrofitted onto the new seed.** They work, on the old
+two-rung pattern. Retrofitting means re-rendering and re-driving each one — the verification that
+takes the time and cannot be skipped without reproducing what this session spent the night fixing.
+
+**The scroll vehicle's prose panel collides with the graphic's own annotations.** At some scroll
+offsets within a step the opaque panel covers the step's label (verified: "flood day" reduced to
+"flo…" at 1600×900, 55% scroll), and during transitions two steps' panels are visible at once. The
+vehicle does the four hard things — graphic pinned, N steps, full width, nothing clipped by the
+frame — and this is collision polish between panel and annotation. Five rounds went into this
+element; a fresh eye will do better than a sixth.
+
+**A verification script of its own can be wrong.** One agent found a race in its own checker — a
+live `IntersectionObserver` reasserting the wrong step mid-measurement. Another disputed the render
+audit twice and was right both times: an alt text the audit called false was correct, and a video
+the audit called clean was defective. **The audit is a report like any other.**
+
 ### Still open
 
 - The map track for the scrolly; images as a medium; the assembly phase in `whereIs`.
