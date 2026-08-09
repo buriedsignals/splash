@@ -418,13 +418,30 @@ furniture completely unchanged.
 ## One deliberate departure from the static genre's accessibility pattern
 
 `static-discipline.md` says: "no root `<title>`... use `role="img"` plus `<desc>` for the alt text."
-This genre keeps `<desc>` and drops `role="img"` from the SVG root. The reason is structural, not
-stylistic: `role="img"` tells assistive technology to treat the element and everything inside it as
-one flat, non-interactive image — correct for a static beat, and exactly wrong here, because it would
-silence the individually-focusable, individually-labelled points this file spends most of its words
-defending. `<desc>` is still picked up as the SVG's accessible description without that role,
-so the beat-level alt text survives; only the "flatten my children" behaviour is opted out of, and
-only because this genre, uniquely among the three, has children that need their own names.
+This genre keeps `<desc>`, drops `role="img"` from the SVG root, and puts **`role="group"` plus an
+`aria-label` carrying the beat's own headline** there instead. Two separate reasons, and the second
+one was missing for a long time.
+
+`role="img"` tells assistive technology to treat the element and everything inside it as one flat,
+non-interactive image — correct for a static beat, and wrong here, because it would silence the
+individually-focusable, individually-labelled points this file spends most of its words defending.
+`role="group"` carries no such rule, which is why it is the one used.
+
+**And the root needs a NAME, which the earlier version of this section assumed `<desc>` supplied.**
+It does not. Measured in Chrome on a delivered artifact, through `Accessibility.getFullAXTree`: a
+root `<svg>` carrying only a `<desc>` comes back as `SvgRoot` with `name: ""`. The description is
+there — Chrome does expose it — but it is a description attached to a nameless node, which is
+precisely why a bare `<desc>` is announced inconsistently or not at all. Twenty-three root `<svg>`s
+in this repository shipped that way; the two that did not (`mapgen-dot-web`, `mapgen-symbol-web`)
+had already reached for `role="group"` plus a label, and are what the rest now follow.
+
+One correction worth keeping, because it is the kind of claim this project keeps having to walk
+back: this section, and three components, stated that `role="img"` **would** flatten the focusable
+marks. That was reasoned from the spec, never measured. Measured now, in Chrome, with `role="img"`
+added to a copy of a delivered beat: all ten marks stayed in the accessibility tree, unignored, each
+with its own name. The spec's children-presentational rule is real and applies to non-focusable
+children; Chrome's SVG implementation does not apply it here. `group` is used because it does not
+depend on which of those two is true, not because `img` was proven to break anything.
 
 ## Verification
 

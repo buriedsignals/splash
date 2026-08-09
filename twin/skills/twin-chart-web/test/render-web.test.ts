@@ -221,9 +221,31 @@ describe("EmissionsWeb — the words", () => {
     // the component's own root element is now a `<figure>`, so slicing the first tag of the
     // markup (what this test used to do) would inspect the wrong element entirely and pass for
     // the wrong reason.
+    //
+    // NARROWED FROM "no `role=` at all", which was too blunt and cost the graphic its NAME. Measured
+    // in Chrome on a delivered artifact through `Accessibility.getFullAXTree`: a root `<svg>` with a
+    // `<desc>` and no name comes back as `SvgRoot`, `name: ""` — a description with nothing to
+    // announce it against, which is why a bare `<desc>` is not reliably read out. The rule this test
+    // is really about is the CHILDREN-FLATTENING roles, so those are what it names; `group` is
+    // children-inclusive and is what `mapgen-dot-web` and `mapgen-symbol-web` already carried.
     const svg = svgOf(renderBeat());
     const rootTag = svg.slice(0, svg.indexOf(">") + 1);
-    expect(rootTag).not.toContain("role=");
+    for (const flattening of [
+      'role="img"',
+      'role="presentation"',
+      'role="none"',
+    ])
+      expect(rootTag).not.toContain(flattening);
+  });
+
+  it("should give the SVG root its own accessible name, not a bare <desc>", () => {
+    // The other half of the same rule, and the half that was missing: a `<desc>` is a DESCRIPTION.
+    // Without a name on the element it describes, it is announced inconsistently or not at all. This
+    // fails if someone removes the name while "tidying up" the root tag.
+    const svg = svgOf(renderBeat());
+    const rootTag = svg.slice(0, svg.indexOf(">") + 1);
+    const name = /aria-label(?:ledby)?="([^"]+)"/.exec(rootTag);
+    expect(name?.[1] ?? "").not.toBe("");
   });
 
   it("should keep the reference rule, its label and the subject's end label unconditional", () => {

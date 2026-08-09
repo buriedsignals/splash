@@ -80,7 +80,13 @@ async function main() {
   if (!(nuclearStep.value < 0)) throw new Error(`the alt says nuclear FELL, got ${nuclearStep.value}`);
   if (!(fossilStep.value < 0)) throw new Error(`the alt says the fossil share FELL, got ${fossilStep.value}`);
   if (!(netChange < 0)) throw new Error(`the title says generation FELL, got a net change of ${netChange}`);
-  const twh = (v) => `${Math.round(Math.abs(v))} TWh`;
+  // ONE DECIMAL, the same precision the chart prints. It used to be `Math.round`, so the alt read
+  // "639 TWh ... plus 103 ... minus 92 ... minus 154 ... arriving at 496" under a picture labelled
+  // 639.2 / +102.7 / −91.8 / −154.1 — a screen-reader user handed a strictly coarser chart than a
+  // sighted one, and a set of deltas that no longer sums to the arrival it names (639 + 103 − 92 −
+  // 154 = 496 only by luck; at these roundings it is 496 against a true 495.99). The web sibling
+  // (`proof/webx-germany-bridge`) already reads one decimal; this is the static half catching up.
+  const twh = (v) => `${Math.abs(v).toFixed(1)} TWh`;
   const alt =
     `Waterfall chart of ${entity}'s electricity generation, ${FIRST_YEAR} to ${LAST_YEAR}, in ` +
     `terawatt-hours: ${twh(opening.value)} in ${FIRST_YEAR}, plus ${twh(renewablesStep.value)} from ` +

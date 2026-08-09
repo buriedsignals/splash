@@ -35,6 +35,16 @@ const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 13, fontWeight: 400 };
 const CATEGORY = { fontSize: 12, fontWeight: 400, lead: 15 };
 const VALUE_LABEL = { fontSize: 13, fontWeight: 700 };
+
+/** Every printed value at the one decimal this beat's own data is rounded to — English grouping,
+ *  matching the beat's declared language, and the SAME count on every bar so no label looks
+ *  measured more coarsely than its neighbours. */
+function oneDecimal(value: number): string {
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+}
 const LEGEND = { fontSize: 13, fontWeight: 600 };
 /** Increase/decrease deliberately NOT red/green — the pairing colour-vision deficiency confuses
  *  most (`references/types/waterfall.md`). Okabe-Ito blue and vermillion, still distinguishable to
@@ -366,9 +376,14 @@ export function ElectricityBridgeWaterfall({
             fontWeight={VALUE_LABEL.fontWeight}
             textAnchor="middle"
           >
+            {/* One decimal on EVERY bar, never `toLocaleString`'s own idea of how many a value
+                needs. The closing total is 496 exactly after the source is rounded to a tenth, so
+                it printed as a bare "496" in a row of 639.2 / +102.7 / −91.8 / −154.1 — the one
+                label in the frame that looked measured to a different precision than its
+                neighbours. */}
             {b.kind === "total"
-              ? b.value.toLocaleString("en-US")
-              : `${b.value > 0 ? "+" : "−"}${Math.abs(b.value).toLocaleString("en-US")}`}
+              ? oneDecimal(b.value)
+              : `${b.value > 0 ? "+" : "−"}${oneDecimal(Math.abs(b.value))}`}
           </text>
           {categoryLines[bars.indexOf(b)].map((line, i) => (
             <text

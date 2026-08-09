@@ -445,6 +445,14 @@ export function ChartWebSeed({
             above already keeps that box's own proportions sane as it grows (see
             `references/web-discipline.md`, "Responsive behaviour"). */}
         <svg
+          // The graphic's own NAME. Measured in Chrome on a delivered artifact through
+          // `Accessibility.getFullAXTree`: a root `<svg>` carrying a `<desc>` and nothing else comes
+          // back as `SvgRoot` with `name: ""` — a description with nothing to announce it against,
+          // which is why a bare `<desc>` is not reliably read out. `group` rather than `img`,
+          // because `img` is the role the ARIA spec makes children-presentational and this genre's
+          // whole keyboard contract lives in the focusable marks below.
+          role="group"
+          aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           viewBox={`0 0 ${frame.width} ${frame.height}`}
