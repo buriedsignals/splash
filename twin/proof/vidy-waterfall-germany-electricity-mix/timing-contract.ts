@@ -29,11 +29,15 @@
  *   it is fully drawn. 26 frames — same room as the dumbbell's subject event — to grow the 2023 bar
  *   from zero AND pop the third-channel emphasis (an ink outline + a wash in the `total` colour,
  *   never a fourth hue — the increase/decrease/total channel is already spent).
- * - `conclusion` extends the already-visible 2023 total label ("506.72 TWh") in place into the one
- *   fact the beat has not yet stated on screen: the net change, "−117.49 TWh net" — same in-place
- *   two-stage label technique `../video-population-growth-dumbbell/DumbbellVideo.tsx`'s
- *   `conclusionLabelFor` uses, for the same reason: no collision to solve, so no detached
- *   leader-line is needed.
+ * - `conclusion` replaces the already-visible 2023 total label ("506.72 TWh") with the one fact the
+ *   beat has not yet stated on screen: the net change, "net −117.49 TWh". It was written as the
+ *   in-place two-stage crossfade `../video-population-growth-dumbbell/DumbbellVideo.tsx`'s
+ *   `conclusionLabelFor` uses, on the reasoning that there was no collision to solve — and there
+ *   WAS one: as one centred line the extended label was drawn inside the Coal bar's own fill
+ *   (`WaterfallVideo.tsx`'s layout block has the pixel measurement). It is now two lines
+ *   right-anchored to the frame margin, which means the two labels no longer share an anchor and
+ *   cannot crossfade; the window is split at `CONCLUSION_HANDOVER`, the first half taking the old
+ *   label off and the second half bringing the block on, so no frame carries both.
  * - `hold` — 50 frames, comfortably over the half-second floor, long enough to read the conclusion
  *   sentence and the finished bridge as a whole (ten bars, eight of them signed, is more to take in
  *   than a single line's end value).

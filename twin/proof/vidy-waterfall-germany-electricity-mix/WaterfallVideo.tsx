@@ -88,6 +88,13 @@ const ROTATION_DEG = -34;
 const MAX_CATEGORY_LABEL_WIDTH = 132;
 const CATEGORY_STRIP = 96;
 const LABEL_GAP = 10;
+/** Leading between the conclusion's two lines. */
+const CONCLUSION_LEAD = 24;
+/** Where inside the `conclusion` window the base value label has finished leaving and the
+ *  conclusion block starts arriving — they never share a frame. */
+const CONCLUSION_HANDOVER = 0.5;
+/** The minimum clear space between one bar's label and the neighbouring bar's own column. */
+const LABEL_CLEARANCE = 10;
 
 export type WaterfallStepKind = "total" | "increase" | "decrease";
 
@@ -303,13 +310,32 @@ export function WaterfallVideo({
   const openValueText = `${en(openBar.runningAfter)} ${unit}`;
   const closeValueText = `${en(closeBar.runningAfter)} ${unit}`;
   const netChange = closeBar.runningAfter - openBar.runningAfter;
-  const conclusionText = `${en(closeBar.runningAfter)} ${unit} · net ${signed(netChange)} ${unit}`;
+  // The conclusion is TWO clauses — the level the bridge lands on, and the net move that got it
+  // there — and it is drawn as two lines, split on that seam rather than by greedy wrapping. As one
+  // 268.75px line centred on the closing bar it was 49px wider than the whole right end of the plot
+  // and its first clause was drawn INSIDE the Coal bar's own vermillion fill (measured on the
+  // delivered mp4's final frame: 286 dark glyph pixels inside the rect x 794–843, y 406–513), which
+  // is the exact trap `BRIEF.md:112` forbids — "value labels never sit inside a bar's own fill".
+  // Two lines right-anchored to the frame's own margin bring the widest line down to 148.37px, which
+  // fits in the space right of the last delta bar; `conclusionClearance` below proves it rather than
+  // assuming it.
+  const conclusionLines = [
+    `${en(closeBar.runningAfter)} ${unit} ·`,
+    `net ${signed(netChange)} ${unit}`,
+  ];
+  const conclusionBlockWidth = Math.max(
+    ...conclusionLines.map((line) => measureText(line, CONCLUSION_LABEL)),
+  );
   const leftGutter = measureText(openValueText, VALUE_LABEL) / 2;
-  const rightGutter =
-    Math.max(
-      measureText(closeValueText, VALUE_LABEL),
-      measureText(conclusionText, CONCLUSION_LABEL),
-    ) / 2;
+  // Two different reservations, for two labels anchored two different ways. The closing bar's own
+  // value label is CENTRED on that bar, so half of it hangs past the plot's right edge. The
+  // conclusion block is right-anchored at the frame margin and cannot overrun the canvas at all —
+  // what it needs from this reservation is the opposite thing: enough right margin that the block's
+  // LEFT edge stays clear of the last delta bar, so reserving its own width is what buys that room.
+  const rightGutter = Math.max(
+    measureText(closeValueText, VALUE_LABEL) / 2,
+    conclusionBlockWidth,
+  );
 
   const padding = {
     top: legendBaseline + 60,
@@ -319,6 +345,29 @@ export function WaterfallVideo({
   };
 
   const g = waterfallGeometry(data, { width, height, padding });
+
+  // Both of the closing bar's labels have to clear the bar standing immediately to their left. This
+  // is measured against the geometry that was actually produced, not against the reservation that
+  // asked for it, and it throws rather than drawing over a bar — a silently overprinted label is
+  // the defect this beat shipped, and a render that fails loud is the only thing that cannot ship it
+  // twice.
+  const closeBarGeometry = g.bars[g.bars.length - 1];
+  const lastDeltaBar = g.bars[g.bars.length - 2];
+  const lastDeltaRight = lastDeltaBar.x + lastDeltaBar.width;
+  const conclusionRightAnchor = width - PAD;
+  const conclusionBlockLeft = conclusionRightAnchor - conclusionBlockWidth;
+  const closeValueLeft =
+    closeBarGeometry.centerX - measureText(closeValueText, VALUE_LABEL) / 2;
+  for (const [what, left] of [
+    ["the conclusion block", conclusionBlockLeft],
+    ["the closing total's value label", closeValueLeft],
+  ] as const)
+    if (left < lastDeltaRight + LABEL_CLEARANCE)
+      throw new Error(
+        `${what} starts at x=${left.toFixed(2)}, inside the ${lastDeltaBar.label} bar's own column ` +
+          `(right edge x=${lastDeltaRight.toFixed(2)}, clearance ${LABEL_CLEARANCE}px) — it would be ` +
+          `drawn on that bar's fill`,
+      );
 
   // ── The edit. Six windows, all read off the timing contract — no frame literal below.
   const establish = progressOf(frame, timing.establish);
@@ -640,9 +689,13 @@ export function WaterfallVideo({
               opacity={outlineOpacity}
             />
           ) : null}
-          {/* The base total label, crossfading out as the conclusion's extended label crossfades
-              in — same in-place, two-stage technique
-              `../video-population-growth-dumbbell/DumbbellVideo.tsx`'s `conclusionLabelFor` uses. */}
+          {/* The base total label. It hands OVER to the conclusion rather than crossfading with it,
+              and that is a consequence of the layout fix above rather than a preference: the two
+              labels no longer share an anchor, so any frame that showed both showed two different
+              strings superimposed. Rendering the first draft of this fix proved it — frame 245 of
+              the mp4 printed "506.72 TWh" and "net −117.49 TWh" on top of each other, unreadable,
+              for a full second. The base label is therefore gone by the halfway point of
+              `conclusion` and the block only starts appearing there, so no frame carries both. */}
           <text
             x={g.bars[g.bars.length - 1].centerX}
             y={closeCurrent - LABEL_GAP}
@@ -655,24 +708,45 @@ export function WaterfallVideo({
                 extrapolateLeft: "clamp",
                 extrapolateRight: "clamp",
               }) *
-              (1 - conclusion)
+              interpolate(conclusion, [0, CONCLUSION_HANDOVER], [1, 0], {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+              })
             }
           >
             {closeValueText}
           </text>
-          <text
-            x={g.bars[g.bars.length - 1].centerX}
-            y={closeCurrent - LABEL_GAP}
-            fill={ink}
-            fontSize={CONCLUSION_LABEL.fontSize}
-            fontWeight={CONCLUSION_LABEL.fontWeight}
-            textAnchor="middle"
-            opacity={interpolate(conclusion, [0, 1], [0, 1], {
-              easing: Easing.out(Easing.cubic),
-            })}
-          >
-            {conclusionText}
-          </text>
+          {/* The conclusion, right-anchored to the frame's own margin and stacked upward from the
+              base label's baseline, so its last line keeps that baseline. Right-anchored rather than
+              centred on the bar because centred is what put its first clause inside the Coal bar —
+              see the layout block above. */}
+          {conclusionLines.map((line, i) => (
+            <text
+              key={line}
+              x={conclusionRightAnchor}
+              y={
+                closeCurrent -
+                LABEL_GAP -
+                (conclusionLines.length - 1 - i) * CONCLUSION_LEAD
+              }
+              fill={ink}
+              fontSize={CONCLUSION_LABEL.fontSize}
+              fontWeight={CONCLUSION_LABEL.fontWeight}
+              textAnchor="end"
+              opacity={interpolate(
+                conclusion,
+                [CONCLUSION_HANDOVER, 1],
+                [0, 1],
+                {
+                  extrapolateLeft: "clamp",
+                  extrapolateRight: "clamp",
+                  easing: Easing.out(Easing.cubic),
+                },
+              )}
+            >
+              {line}
+            </text>
+          ))}
           <text
             x={g.bars[g.bars.length - 1].centerX}
             y={g.plot.bottom + 20}
