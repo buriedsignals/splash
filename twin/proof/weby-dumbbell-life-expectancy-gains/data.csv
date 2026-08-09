@@ -1,0 +1,1420 @@
+Entity,Code,Year,Life expectancy
+France,FRA,1816,40.1
+France,FRA,1817,39.23
+France,FRA,1818,38.6
+France,FRA,1819,37.32
+France,FRA,1820,39.28
+France,FRA,1821,39.88
+France,FRA,1822,38.37
+France,FRA,1823,40.04
+France,FRA,1824,39.21
+France,FRA,1825,38.58
+France,FRA,1826,37.8
+France,FRA,1827,39.41
+France,FRA,1828,37.6
+France,FRA,1829,39.44
+France,FRA,1830,39.63
+France,FRA,1831,39.73
+France,FRA,1832,35.87
+France,FRA,1833,38.88
+France,FRA,1834,35.09
+France,FRA,1835,39.52
+France,FRA,1836,42
+France,FRA,1837,39.42
+France,FRA,1838,39.37
+France,FRA,1839,40.95
+France,FRA,1840,40.41
+France,FRA,1841,40.71
+France,FRA,1842,40.03
+France,FRA,1843,40.79
+France,FRA,1844,42.33
+France,FRA,1845,43.61
+France,FRA,1846,40.7
+France,FRA,1847,40.45
+France,FRA,1848,40.33
+France,FRA,1849,35.95
+France,FRA,1850,43.31
+France,FRA,1851,41.8
+France,FRA,1852,41.35
+France,FRA,1853,42.55
+France,FRA,1854,36.16
+France,FRA,1855,37.56
+France,FRA,1856,40.19
+France,FRA,1857,39.6
+France,FRA,1858,39.71
+France,FRA,1859,35.33
+France,FRA,1860,43.34
+France,FRA,1861,40.58
+France,FRA,1862,42.7
+France,FRA,1863,41.82
+France,FRA,1864,42.06
+France,FRA,1865,40.2
+France,FRA,1866,41.82
+France,FRA,1867,42.41
+France,FRA,1868,40.29
+France,FRA,1869,41.12
+France,FRA,1870,36.52
+France,FRA,1871,29.74
+France,FRA,1872,42.5
+France,FRA,1873,41.87
+France,FRA,1874,44.29
+France,FRA,1875,43.19
+France,FRA,1876,43.59
+France,FRA,1877,44.29
+France,FRA,1878,43.37
+France,FRA,1879,43.98
+France,FRA,1880,42.79
+France,FRA,1881,43.48
+France,FRA,1882,43.14
+France,FRA,1883,43.27
+France,FRA,1884,42.46
+France,FRA,1885,43.94
+France,FRA,1886,43.17
+France,FRA,1887,43.72
+France,FRA,1888,44.15
+France,FRA,1889,45.54
+France,FRA,1890,43.43
+France,FRA,1891,44.11
+France,FRA,1892,43.56
+France,FRA,1893,43.55
+France,FRA,1894,45.49
+France,FRA,1895,45.26
+France,FRA,1896,47.49
+France,FRA,1897,47.88
+France,FRA,1898,46.01
+France,FRA,1899,45.17
+France,FRA,1900,45.1
+France,FRA,1901,47
+France,FRA,1902,47.98
+France,FRA,1903,48.4
+France,FRA,1904,48.07
+France,FRA,1905,48.38
+France,FRA,1906,47.73
+France,FRA,1907,48.3
+France,FRA,1908,49.29
+France,FRA,1909,50.01
+France,FRA,1910,51.35
+France,FRA,1911,48.21
+France,FRA,1912,51.55
+France,FRA,1913,51.36
+France,FRA,1914,38.23
+France,FRA,1915,36.55
+France,FRA,1916,39.75
+France,FRA,1917,42.97
+France,FRA,1918,34.84
+France,FRA,1919,47.14
+France,FRA,1920,51.82
+France,FRA,1921,52.69
+France,FRA,1922,54.89
+France,FRA,1923,54.59
+France,FRA,1924,55.19
+France,FRA,1925,54.35
+France,FRA,1926,53.96
+France,FRA,1927,55.74
+France,FRA,1928,55.41
+France,FRA,1929,54.24
+France,FRA,1930,56.8
+France,FRA,1931,56.9
+France,FRA,1932,57.22
+France,FRA,1933,57.65
+France,FRA,1934,58.3
+France,FRA,1935,58.28
+France,FRA,1936,58.76
+France,FRA,1937,59.11
+France,FRA,1938,58.93
+France,FRA,1939,59.55
+France,FRA,1940,49.6
+France,FRA,1941,57.42
+France,FRA,1942,57.44
+France,FRA,1943,53.3
+France,FRA,1944,47.17
+France,FRA,1945,54.93
+France,FRA,1946,62.36
+France,FRA,1947,63.95
+France,FRA,1948,65.78
+France,FRA,1949,64.9
+France,FRA,1950,66.3819
+France,FRA,1951,66.0968
+France,FRA,1952,67.3912
+France,FRA,1953,67.3191
+France,FRA,1954,68.1882
+France,FRA,1955,68.4442
+France,FRA,1956,68.4647
+France,FRA,1957,68.8972
+France,FRA,1958,70.1071
+France,FRA,1959,70.1683
+France,FRA,1960,70.3675
+France,FRA,1961,70.9582
+France,FRA,1962,70.4704
+France,FRA,1963,70.3204
+France,FRA,1964,71.2802
+France,FRA,1965,71.1067
+France,FRA,1966,71.5138
+France,FRA,1967,71.4983
+France,FRA,1968,71.4857
+France,FRA,1969,71.2063
+France,FRA,1970,72.0915
+France,FRA,1971,72.0735
+France,FRA,1972,72.3134
+France,FRA,1973,72.4756
+France,FRA,1974,72.8037
+France,FRA,1975,72.9001
+France,FRA,1976,73.122
+France,FRA,1977,73.7282
+France,FRA,1978,73.8445
+France,FRA,1979,74.125
+France,FRA,1980,74.2335
+France,FRA,1981,74.3965
+France,FRA,1982,74.7657
+France,FRA,1983,74.7344
+France,FRA,1984,75.2175
+France,FRA,1985,75.309
+France,FRA,1986,75.5776
+France,FRA,1987,76.1465
+France,FRA,1988,76.398
+France,FRA,1989,76.5432
+France,FRA,1990,76.8351
+France,FRA,1991,77.0162
+France,FRA,1992,77.2973
+France,FRA,1993,77.3488
+France,FRA,1994,77.7681
+France,FRA,1995,77.8715
+France,FRA,1996,78.0613
+France,FRA,1997,78.4246
+France,FRA,1998,78.5879
+France,FRA,1999,78.7457
+France,FRA,2000,79.0438
+France,FRA,2001,79.2208
+France,FRA,2002,79.4109
+France,FRA,2003,79.419
+France,FRA,2004,80.3363
+France,FRA,2005,80.3367
+France,FRA,2006,80.7449
+France,FRA,2007,80.9602
+France,FRA,2008,81.0392
+France,FRA,2009,81.1635
+France,FRA,2010,81.4047
+France,FRA,2011,81.781
+France,FRA,2012,81.739
+France,FRA,2013,81.9786
+France,FRA,2014,82.4366
+France,FRA,2015,82.1487
+France,FRA,2016,82.4008
+France,FRA,2017,82.4385
+France,FRA,2018,82.5682
+France,FRA,2019,82.7304
+France,FRA,2020,82.1993
+France,FRA,2021,82.3216
+France,FRA,2022,82.4753
+France,FRA,2023,83.3253
+Germany,DEU,1875,38.37
+Germany,DEU,1885,39.44
+Germany,DEU,1895,42.38
+Germany,DEU,1905,45.45
+Germany,DEU,1911,49
+Germany,DEU,1915,40.52
+Germany,DEU,1925,57.42
+Germany,DEU,1935,61.5
+Germany,DEU,1946,60.511
+Germany,DEU,1950,66.8112
+Germany,DEU,1951,67.1418
+Germany,DEU,1952,67.4591
+Germany,DEU,1953,67.7647
+Germany,DEU,1954,68.0585
+Germany,DEU,1955,68.3412
+Germany,DEU,1956,68.5853
+Germany,DEU,1957,68.4992
+Germany,DEU,1958,69.2328
+Germany,DEU,1959,69.3345
+Germany,DEU,1960,69.2509
+Germany,DEU,1961,69.837
+Germany,DEU,1962,69.9991
+Germany,DEU,1963,70.1167
+Germany,DEU,1964,70.6493
+Germany,DEU,1965,70.6251
+Germany,DEU,1966,70.7413
+Germany,DEU,1967,70.9581
+Germany,DEU,1968,70.6078
+Germany,DEU,1969,70.4581
+Germany,DEU,1970,70.6782
+Germany,DEU,1971,70.9119
+Germany,DEU,1972,71.1482
+Germany,DEU,1973,71.362
+Germany,DEU,1974,71.6776
+Germany,DEU,1975,71.5162
+Germany,DEU,1976,71.9791
+Germany,DEU,1977,72.5901
+Germany,DEU,1978,72.5703
+Germany,DEU,1979,72.9181
+Germany,DEU,1980,73.0883
+Germany,DEU,1981,73.331
+Germany,DEU,1982,73.6277
+Germany,DEU,1983,73.9176
+Germany,DEU,1984,74.3796
+Germany,DEU,1985,74.4919
+Germany,DEU,1986,74.6953
+Germany,DEU,1987,75.1073
+Germany,DEU,1988,75.2806
+Germany,DEU,1989,75.467
+Germany,DEU,1990,75.3414
+Germany,DEU,1991,75.5597
+Germany,DEU,1992,76.0035
+Germany,DEU,1993,76.0803
+Germany,DEU,1994,76.3799
+Germany,DEU,1995,76.5515
+Germany,DEU,1996,76.7833
+Germany,DEU,1997,77.2182
+Germany,DEU,1998,77.5759
+Germany,DEU,1999,77.7977
+Germany,DEU,2000,78.0563
+Germany,DEU,2001,78.4023
+Germany,DEU,2002,78.4749
+Germany,DEU,2003,78.5361
+Germany,DEU,2004,79.1186
+Germany,DEU,2005,79.254
+Germany,DEU,2006,79.5862
+Germany,DEU,2007,79.7306
+Germany,DEU,2008,79.8161
+Germany,DEU,2009,79.9151
+Germany,DEU,2010,80.0814
+Germany,DEU,2011,80.3549
+Germany,DEU,2012,80.5017
+Germany,DEU,2013,80.454
+Germany,DEU,2014,80.9056
+Germany,DEU,2015,80.5658
+Germany,DEU,2016,80.8371
+Germany,DEU,2017,80.9371
+Germany,DEU,2018,80.8747
+Germany,DEU,2019,81.1893
+Germany,DEU,2020,81.0036
+Germany,DEU,2021,81.1059
+Germany,DEU,2022,80.5796
+Germany,DEU,2023,81.3777
+Italy,ITA,1872,29.76
+Italy,ITA,1873,31.66
+Italy,ITA,1874,31.81
+Italy,ITA,1875,31.39
+Italy,ITA,1876,33.67
+Italy,ITA,1877,34.96
+Italy,ITA,1878,34.39
+Italy,ITA,1879,34.01
+Italy,ITA,1880,32.82
+Italy,ITA,1881,34.27
+Italy,ITA,1882,34.35
+Italy,ITA,1883,35.23
+Italy,ITA,1884,36.67
+Italy,ITA,1885,36.92
+Italy,ITA,1886,35.18
+Italy,ITA,1887,36.05
+Italy,ITA,1888,37.02
+Italy,ITA,1889,39.13
+Italy,ITA,1890,38.58
+Italy,ITA,1891,38.55
+Italy,ITA,1892,38.93
+Italy,ITA,1893,39.88
+Italy,ITA,1894,40
+Italy,ITA,1895,39.69
+Italy,ITA,1896,40.76
+Italy,ITA,1897,43.35
+Italy,ITA,1898,42.38
+Italy,ITA,1899,43.71
+Italy,ITA,1900,41.85
+Italy,ITA,1901,43.64
+Italy,ITA,1902,43.01
+Italy,ITA,1903,43.2
+Italy,ITA,1904,44.4
+Italy,ITA,1905,43.99
+Italy,ITA,1906,45.11
+Italy,ITA,1907,45.48
+Italy,ITA,1908,43.11
+Italy,ITA,1909,44.8
+Italy,ITA,1910,46.72
+Italy,ITA,1911,44.83
+Italy,ITA,1912,48.85
+Italy,ITA,1913,48.49
+Italy,ITA,1914,49.86
+Italy,ITA,1915,42.63
+Italy,ITA,1916,39.71
+Italy,ITA,1917,38.08
+Italy,ITA,1918,25.82
+Italy,ITA,1919,41.7
+Italy,ITA,1920,45.82
+Italy,ITA,1921,49.17
+Italy,ITA,1922,50.12
+Italy,ITA,1923,51.48
+Italy,ITA,1924,51.53
+Italy,ITA,1925,51.28
+Italy,ITA,1926,50.96
+Italy,ITA,1927,52.57
+Italy,ITA,1928,52.66
+Italy,ITA,1929,52.27
+Italy,ITA,1930,55.17
+Italy,ITA,1931,54.8
+Italy,ITA,1932,54.74
+Italy,ITA,1933,56.25
+Italy,ITA,1934,56.88
+Italy,ITA,1935,56.2
+Italy,ITA,1936,56.74
+Italy,ITA,1937,55.4
+Italy,ITA,1938,56.15
+Italy,ITA,1939,57.6
+Italy,ITA,1940,56.95
+Italy,ITA,1941,54.77
+Italy,ITA,1942,52.45
+Italy,ITA,1943,49.44
+Italy,ITA,1944,52.49
+Italy,ITA,1945,54.86
+Italy,ITA,1946,58.94
+Italy,ITA,1947,61.2
+Italy,ITA,1948,63.42
+Italy,ITA,1949,64.15
+Italy,ITA,1950,65.7249
+Italy,ITA,1951,65.322
+Italy,ITA,1952,65.914
+Italy,ITA,1953,66.5789
+Italy,ITA,1954,67.8593
+Italy,ITA,1955,68.2514
+Italy,ITA,1956,67.6395
+Italy,ITA,1957,67.7777
+Italy,ITA,1958,68.8543
+Italy,ITA,1959,69.3067
+Italy,ITA,1960,69.2074
+Italy,ITA,1961,69.8205
+Italy,ITA,1962,69.2196
+Italy,ITA,1963,69.3165
+Italy,ITA,1964,70.3842
+Italy,ITA,1965,70.2601
+Italy,ITA,1966,70.9989
+Italy,ITA,1967,71.0343
+Italy,ITA,1968,70.8687
+Italy,ITA,1969,70.8639
+Italy,ITA,1970,71.6296
+Italy,ITA,1971,71.8827
+Italy,ITA,1972,72.1451
+Italy,ITA,1973,72.1053
+Italy,ITA,1974,72.8037
+Italy,ITA,1975,72.7281
+Italy,ITA,1976,73.0698
+Italy,ITA,1977,73.4398
+Italy,ITA,1978,73.7759
+Italy,ITA,1979,74.106
+Italy,ITA,1980,74.0518
+Italy,ITA,1981,74.4385
+Italy,ITA,1982,74.9126
+Italy,ITA,1983,74.7351
+Italy,ITA,1984,75.4991
+Italy,ITA,1985,75.6068
+Italy,ITA,1986,75.9188
+Italy,ITA,1987,76.3436
+Italy,ITA,1988,76.5324
+Italy,ITA,1989,76.9269
+Italy,ITA,1990,76.9936
+Italy,ITA,1991,76.9898
+Italy,ITA,1992,77.3647
+Italy,ITA,1993,77.6529
+Italy,ITA,1994,77.8725
+Italy,ITA,1995,78.1253
+Italy,ITA,1996,78.4381
+Italy,ITA,1997,78.7346
+Italy,ITA,1998,78.8068
+Italy,ITA,1999,79.205
+Italy,ITA,2000,79.607
+Italy,ITA,2001,79.8849
+Italy,ITA,2002,80.112
+Italy,ITA,2003,80.191
+Italy,ITA,2004,81.0175
+Italy,ITA,2005,81.0201
+Italy,ITA,2006,81.4137
+Italy,ITA,2007,81.5002
+Italy,ITA,2008,81.6454
+Italy,ITA,2009,81.7619
+Italy,ITA,2010,82.1319
+Italy,ITA,2011,82.2282
+Italy,ITA,2012,82.252
+Italy,ITA,2013,82.6522
+Italy,ITA,2014,82.9008
+Italy,ITA,2015,82.5211
+Italy,ITA,2016,83.0459
+Italy,ITA,2017,82.7263
+Italy,ITA,2018,83.1844
+Italy,ITA,2019,83.3423
+Italy,ITA,2020,82.1814
+Italy,ITA,2021,82.8652
+Italy,ITA,2022,82.052
+Italy,ITA,2023,83.7157
+Japan,JPN,1865,36.426
+Japan,JPN,1870,36.593
+Japan,JPN,1875,36.799
+Japan,JPN,1880,37.036
+Japan,JPN,1885,37.328
+Japan,JPN,1890,37.676
+Japan,JPN,1895,38.098
+Japan,JPN,1900,38.6
+Japan,JPN,1905,39.222
+Japan,JPN,1910,39.974
+Japan,JPN,1915,40.899
+Japan,JPN,1920,42.044
+Japan,JPN,1922,42.616
+Japan,JPN,1927,45.659
+Japan,JPN,1935,48.242
+Japan,JPN,1945,30.537
+Japan,JPN,1947,51.71
+Japan,JPN,1948,56.84
+Japan,JPN,1949,57.72
+Japan,JPN,1950,59.2548
+Japan,JPN,1951,60.9885
+Japan,JPN,1952,62.9959
+Japan,JPN,1953,63.3252
+Japan,JPN,1954,64.5367
+Japan,JPN,1955,65.7115
+Japan,JPN,1956,65.5598
+Japan,JPN,1957,65.4387
+Japan,JPN,1958,67.0429
+Japan,JPN,1959,67.4564
+Japan,JPN,1960,67.718
+Japan,JPN,1961,68.3705
+Japan,JPN,1962,68.6668
+Japan,JPN,1963,69.7463
+Japan,JPN,1964,70.1973
+Japan,JPN,1965,70.257
+Japan,JPN,1966,71.0552
+Japan,JPN,1967,71.401
+Japan,JPN,1968,71.6718
+Japan,JPN,1969,71.9225
+Japan,JPN,1970,72.0073
+Japan,JPN,1971,72.827
+Japan,JPN,1972,73.2584
+Japan,JPN,1973,73.4218
+Japan,JPN,1974,73.8494
+Japan,JPN,1975,74.3569
+Japan,JPN,1976,74.7611
+Japan,JPN,1977,75.3257
+Japan,JPN,1978,75.6571
+Japan,JPN,1979,76.1671
+Japan,JPN,1980,76.1408
+Japan,JPN,1981,76.5629
+Japan,JPN,1982,77.0723
+Japan,JPN,1983,77.1069
+Japan,JPN,1984,77.5068
+Japan,JPN,1985,77.799
+Japan,JPN,1986,78.2119
+Japan,JPN,1987,78.6307
+Japan,JPN,1988,78.5454
+Japan,JPN,1989,78.9799
+Japan,JPN,1990,78.9928
+Japan,JPN,1991,79.262
+Japan,JPN,1992,79.303
+Japan,JPN,1993,79.4461
+Japan,JPN,1994,79.8366
+Japan,JPN,1995,79.6837
+Japan,JPN,1996,80.3627
+Japan,JPN,1997,80.5836
+Japan,JPN,1998,80.6487
+Japan,JPN,1999,80.6129
+Japan,JPN,2000,81.1788
+Japan,JPN,2001,81.5101
+Japan,JPN,2002,81.7952
+Japan,JPN,2003,81.854
+Japan,JPN,2004,82.1275
+Japan,JPN,2005,82.0073
+Japan,JPN,2006,82.3699
+Japan,JPN,2007,82.5488
+Japan,JPN,2008,82.6332
+Japan,JPN,2009,82.9699
+Japan,JPN,2010,82.916
+Japan,JPN,2011,82.6705
+Japan,JPN,2012,83.1676
+Japan,JPN,2013,83.4018
+Japan,JPN,2014,83.6434
+Japan,JPN,2015,83.8832
+Japan,JPN,2016,84.0568
+Japan,JPN,2017,84.1891
+Japan,JPN,2018,84.289
+Japan,JPN,2019,84.4177
+Japan,JPN,2020,84.6703
+Japan,JPN,2021,84.55
+Japan,JPN,2022,84.0541
+Japan,JPN,2023,84.7123
+Netherlands,NLD,1850,39.84
+Netherlands,NLD,1851,40.14
+Netherlands,NLD,1852,38.71
+Netherlands,NLD,1853,38.74
+Netherlands,NLD,1854,38.72
+Netherlands,NLD,1855,34.58
+Netherlands,NLD,1856,38.47
+Netherlands,NLD,1857,35.41
+Netherlands,NLD,1858,34.79
+Netherlands,NLD,1859,30.91
+Netherlands,NLD,1860,37
+Netherlands,NLD,1861,36.51
+Netherlands,NLD,1862,38.37
+Netherlands,NLD,1863,38.31
+Netherlands,NLD,1864,37.65
+Netherlands,NLD,1865,36.47
+Netherlands,NLD,1866,33.69
+Netherlands,NLD,1867,39.3
+Netherlands,NLD,1868,37.78
+Netherlands,NLD,1869,40.43
+Netherlands,NLD,1870,37.54
+Netherlands,NLD,1871,33.01
+Netherlands,NLD,1872,36.47
+Netherlands,NLD,1873,39.27
+Netherlands,NLD,1874,41.3
+Netherlands,NLD,1875,38.34
+Netherlands,NLD,1876,40.46
+Netherlands,NLD,1877,42.08
+Netherlands,NLD,1878,41.09
+Netherlands,NLD,1879,41.98
+Netherlands,NLD,1880,40.41
+Netherlands,NLD,1881,42.89
+Netherlands,NLD,1882,43.8
+Netherlands,NLD,1883,42.36
+Netherlands,NLD,1884,41.34
+Netherlands,NLD,1885,43.28
+Netherlands,NLD,1886,41.98
+Netherlands,NLD,1887,44.98
+Netherlands,NLD,1888,44.23
+Netherlands,NLD,1889,44.37
+Netherlands,NLD,1890,44.42
+Netherlands,NLD,1891,44.27
+Netherlands,NLD,1892,43.95
+Netherlands,NLD,1893,45.86
+Netherlands,NLD,1894,46.99
+Netherlands,NLD,1895,46.73
+Netherlands,NLD,1896,48.56
+Netherlands,NLD,1897,49.43
+Netherlands,NLD,1898,49.11
+Netherlands,NLD,1899,49.36
+Netherlands,NLD,1900,48.48
+Netherlands,NLD,1901,48.75
+Netherlands,NLD,1902,50.65
+Netherlands,NLD,1903,51.54
+Netherlands,NLD,1904,50.87
+Netherlands,NLD,1905,52.1
+Netherlands,NLD,1906,52.78
+Netherlands,NLD,1907,53.51
+Netherlands,NLD,1908,52.77
+Netherlands,NLD,1909,54.92
+Netherlands,NLD,1910,55.14
+Netherlands,NLD,1911,53.18
+Netherlands,NLD,1912,57.14
+Netherlands,NLD,1913,57.35
+Netherlands,NLD,1914,57.19
+Netherlands,NLD,1915,57.24
+Netherlands,NLD,1916,56.16
+Netherlands,NLD,1917,55.65
+Netherlands,NLD,1918,47.63
+Netherlands,NLD,1919,54.78
+Netherlands,NLD,1920,57.98
+Netherlands,NLD,1921,59.71
+Netherlands,NLD,1922,59.78
+Netherlands,NLD,1923,62
+Netherlands,NLD,1924,62.88
+Netherlands,NLD,1925,63.12
+Netherlands,NLD,1926,62.98
+Netherlands,NLD,1927,62.61
+Netherlands,NLD,1928,63.71
+Netherlands,NLD,1929,62.15
+Netherlands,NLD,1930,64.66
+Netherlands,NLD,1931,64.32
+Netherlands,NLD,1932,65.39
+Netherlands,NLD,1933,66.03
+Netherlands,NLD,1934,66.6
+Netherlands,NLD,1935,66.51
+Netherlands,NLD,1936,66.73
+Netherlands,NLD,1937,66.97
+Netherlands,NLD,1938,67.39
+Netherlands,NLD,1939,67.72
+Netherlands,NLD,1940,65.4
+Netherlands,NLD,1941,65.33
+Netherlands,NLD,1942,65.8
+Netherlands,NLD,1943,64.41
+Netherlands,NLD,1944,61.27
+Netherlands,NLD,1945,55.58
+Netherlands,NLD,1946,67.53
+Netherlands,NLD,1947,69.56
+Netherlands,NLD,1948,71.04
+Netherlands,NLD,1949,70.29
+Netherlands,NLD,1950,71.4403
+Netherlands,NLD,1951,71.4982
+Netherlands,NLD,1952,72.1175
+Netherlands,NLD,1953,71.6981
+Netherlands,NLD,1954,72.3856
+Netherlands,NLD,1955,72.4989
+Netherlands,NLD,1956,72.525
+Netherlands,NLD,1957,72.9716
+Netherlands,NLD,1958,73.1365
+Netherlands,NLD,1959,73.1863
+Netherlands,NLD,1960,73.3538
+Netherlands,NLD,1961,73.5503
+Netherlands,NLD,1962,73.2232
+Netherlands,NLD,1963,73.3506
+Netherlands,NLD,1964,73.7356
+Netherlands,NLD,1965,73.6055
+Netherlands,NLD,1966,73.5541
+Netherlands,NLD,1967,73.8313
+Netherlands,NLD,1968,73.6374
+Netherlands,NLD,1969,73.5603
+Netherlands,NLD,1970,73.6279
+Netherlands,NLD,1971,73.8712
+Netherlands,NLD,1972,73.7829
+Netherlands,NLD,1973,74.23
+Netherlands,NLD,1974,74.6073
+Netherlands,NLD,1975,74.5546
+Netherlands,NLD,1976,74.6717
+Netherlands,NLD,1977,75.2652
+Netherlands,NLD,1978,75.174
+Netherlands,NLD,1979,75.6466
+Netherlands,NLD,1980,75.7719
+Netherlands,NLD,1981,75.9906
+Netherlands,NLD,1982,76.0614
+Netherlands,NLD,1983,76.2551
+Netherlands,NLD,1984,76.3272
+Netherlands,NLD,1985,76.3758
+Netherlands,NLD,1986,76.3549
+Netherlands,NLD,1987,76.8133
+Netherlands,NLD,1988,77.0001
+Netherlands,NLD,1989,76.8363
+Netherlands,NLD,1990,77.0122
+Netherlands,NLD,1991,77.1617
+Netherlands,NLD,1992,77.3648
+Netherlands,NLD,1993,77.0408
+Netherlands,NLD,1994,77.5183
+Netherlands,NLD,1995,77.5512
+Netherlands,NLD,1996,77.5561
+Netherlands,NLD,1997,77.9311
+Netherlands,NLD,1998,78.0044
+Netherlands,NLD,1999,77.9678
+Netherlands,NLD,2000,78.13
+Netherlands,NLD,2001,78.3379
+Netherlands,NLD,2002,78.4119
+Netherlands,NLD,2003,78.6649
+Netherlands,NLD,2004,79.2389
+Netherlands,NLD,2005,79.488
+Netherlands,NLD,2006,79.8466
+Netherlands,NLD,2007,80.255
+Netherlands,NLD,2008,80.3866
+Netherlands,NLD,2009,80.6712
+Netherlands,NLD,2010,80.8293
+Netherlands,NLD,2011,81.1096
+Netherlands,NLD,2012,81.059
+Netherlands,NLD,2013,81.3011
+Netherlands,NLD,2014,81.6503
+Netherlands,NLD,2015,81.49
+Netherlands,NLD,2016,81.5549
+Netherlands,NLD,2017,81.7366
+Netherlands,NLD,2018,81.7813
+Netherlands,NLD,2019,82.053
+Netherlands,NLD,2020,81.3931
+Netherlands,NLD,2021,81.356
+Netherlands,NLD,2022,81.9121
+Netherlands,NLD,2023,82.1576
+Poland,POL,1931,49.8
+Poland,POL,1950,58.3331
+Poland,POL,1951,58.8567
+Poland,POL,1952,59.6938
+Poland,POL,1953,61.3137
+Poland,POL,1954,62.2827
+Poland,POL,1955,63.0598
+Poland,POL,1956,63.4261
+Poland,POL,1957,64.4363
+Poland,POL,1958,64.8933
+Poland,POL,1959,66.413
+Poland,POL,1960,67.0803
+Poland,POL,1961,67.7976
+Poland,POL,1962,68.0397
+Poland,POL,1963,68.3219
+Poland,POL,1964,68.9427
+Poland,POL,1965,69.3849
+Poland,POL,1966,69.6559
+Poland,POL,1967,69.902
+Poland,POL,1968,69.8421
+Poland,POL,1969,69.8397
+Poland,POL,1970,69.5572
+Poland,POL,1971,69.8261
+Poland,POL,1972,70.1409
+Poland,POL,1973,70.6986
+Poland,POL,1974,70.6625
+Poland,POL,1975,70.6308
+Poland,POL,1976,70.403
+Poland,POL,1977,70.3284
+Poland,POL,1978,70.3784
+Poland,POL,1979,70.249
+Poland,POL,1980,70.4785
+Poland,POL,1981,70.6086
+Poland,POL,1982,70.9149
+Poland,POL,1983,70.809
+Poland,POL,1984,70.6022
+Poland,POL,1985,70.531
+Poland,POL,1986,70.5536
+Poland,POL,1987,70.7694
+Poland,POL,1988,70.8229
+Poland,POL,1989,70.8161
+Poland,POL,1990,70.606
+Poland,POL,1991,70.653
+Poland,POL,1992,70.8996
+Poland,POL,1993,71.3445
+Poland,POL,1994,71.6825
+Poland,POL,1995,71.9588
+Poland,POL,1996,72.2531
+Poland,POL,1997,72.5915
+Poland,POL,1998,72.8465
+Poland,POL,1999,73.2237
+Poland,POL,2000,73.6453
+Poland,POL,2001,74.1771
+Poland,POL,2002,74.5183
+Poland,POL,2003,74.7716
+Poland,POL,2004,74.9434
+Poland,POL,2005,75.127
+Poland,POL,2006,75.2504
+Poland,POL,2007,75.4143
+Poland,POL,2008,75.5829
+Poland,POL,2009,75.9063
+Poland,POL,2010,76.2823
+Poland,POL,2011,76.5683
+Poland,POL,2012,76.7748
+Poland,POL,2013,77.0758
+Poland,POL,2014,77.312
+Poland,POL,2015,77.5894
+Poland,POL,2016,77.6395
+Poland,POL,2017,77.7155
+Poland,POL,2018,77.6232
+Poland,POL,2019,77.9213
+Poland,POL,2020,76.5951
+Poland,POL,2021,75.6387
+Poland,POL,2022,77.9229
+Poland,POL,2023,78.6329
+Spain,ESP,1882,29.5
+Spain,ESP,1892,32.1
+Spain,ESP,1900,34.8
+Spain,ESP,1908,41.41
+Spain,ESP,1909,41
+Spain,ESP,1910,40.84
+Spain,ESP,1911,39.79
+Spain,ESP,1912,43.43
+Spain,ESP,1913,42.61
+Spain,ESP,1914,42.78
+Spain,ESP,1915,43.09
+Spain,ESP,1916,43.91
+Spain,ESP,1917,42.6
+Spain,ESP,1918,30.36
+Spain,ESP,1919,40.95
+Spain,ESP,1920,39.38
+Spain,ESP,1921,41.99
+Spain,ESP,1922,44.2
+Spain,ESP,1923,44.75
+Spain,ESP,1924,46.3
+Spain,ESP,1925,46.98
+Spain,ESP,1926,47.7
+Spain,ESP,1927,48.48
+Spain,ESP,1928,48.62
+Spain,ESP,1929,49.49
+Spain,ESP,1930,49.25
+Spain,ESP,1931,49.28
+Spain,ESP,1932,51.14
+Spain,ESP,1933,51.6
+Spain,ESP,1934,52.22
+Spain,ESP,1935,52.65
+Spain,ESP,1936,51.01
+Spain,ESP,1937,47.32
+Spain,ESP,1938,47.6
+Spain,ESP,1939,47.23
+Spain,ESP,1940,48.63
+Spain,ESP,1941,47.25
+Spain,ESP,1942,52.26
+Spain,ESP,1943,54.89
+Spain,ESP,1944,56.27
+Spain,ESP,1945,57.79
+Spain,ESP,1946,57.59
+Spain,ESP,1947,59.13
+Spain,ESP,1948,61.31
+Spain,ESP,1949,60.94
+Spain,ESP,1950,61.7542
+Spain,ESP,1951,61.4821
+Spain,ESP,1952,64.8283
+Spain,ESP,1953,65.7308
+Spain,ESP,1954,66.9111
+Spain,ESP,1955,66.6811
+Spain,ESP,1956,66.7509
+Spain,ESP,1957,66.5702
+Spain,ESP,1958,68.7834
+Spain,ESP,1959,68.6908
+Spain,ESP,1960,69.2066
+Spain,ESP,1961,69.5682
+Spain,ESP,1962,69.6292
+Spain,ESP,1963,69.7665
+Spain,ESP,1964,70.4937
+Spain,ESP,1965,70.9
+Spain,ESP,1966,71.1603
+Spain,ESP,1967,71.3491
+Spain,ESP,1968,71.6743
+Spain,ESP,1969,71.1386
+Spain,ESP,1970,72.1491
+Spain,ESP,1971,71.7353
+Spain,ESP,1972,72.9533
+Spain,ESP,1973,72.7324
+Spain,ESP,1974,73.0928
+Spain,ESP,1975,73.4918
+Spain,ESP,1976,73.8069
+Spain,ESP,1977,74.3066
+Spain,ESP,1978,74.496
+Spain,ESP,1979,74.9895
+Spain,ESP,1980,75.5259
+Spain,ESP,1981,75.7061
+Spain,ESP,1982,76.3188
+Spain,ESP,1983,76.0966
+Spain,ESP,1984,76.4822
+Spain,ESP,1985,76.4105
+Spain,ESP,1986,76.7034
+Spain,ESP,1987,76.9564
+Spain,ESP,1988,76.9491
+Spain,ESP,1989,76.998
+Spain,ESP,1990,77.0004
+Spain,ESP,1991,77.1285
+Spain,ESP,1992,77.5888
+Spain,ESP,1993,77.728
+Spain,ESP,1994,78.1141
+Spain,ESP,1995,78.2002
+Spain,ESP,1996,78.3389
+Spain,ESP,1997,78.8504
+Spain,ESP,1998,78.9395
+Spain,ESP,1999,78.9437
+Spain,ESP,2000,79.4123
+Spain,ESP,2001,79.7387
+Spain,ESP,2002,79.8177
+Spain,ESP,2003,79.7482
+Spain,ESP,2004,80.3283
+Spain,ESP,2005,80.3196
+Spain,ESP,2006,80.9627
+Spain,ESP,2007,80.9696
+Spain,ESP,2008,81.2782
+Spain,ESP,2009,81.627
+Spain,ESP,2010,82.0063
+Spain,ESP,2011,82.1804
+Spain,ESP,2012,82.1905
+Spain,ESP,2013,82.6943
+Spain,ESP,2014,82.8283
+Spain,ESP,2015,82.6109
+Spain,ESP,2016,82.9999
+Spain,ESP,2017,82.9862
+Spain,ESP,2018,83.0956
+Spain,ESP,2019,83.4794
+Spain,ESP,2020,82.2413
+Spain,ESP,2021,82.9508
+Spain,ESP,2022,82.3661
+Spain,ESP,2023,83.6703
+Switzerland,CHE,1876,40.19
+Switzerland,CHE,1877,39.99
+Switzerland,CHE,1878,40.57
+Switzerland,CHE,1879,41.83
+Switzerland,CHE,1880,42.47
+Switzerland,CHE,1881,41.94
+Switzerland,CHE,1882,43.02
+Switzerland,CHE,1883,45.02
+Switzerland,CHE,1884,45.07
+Switzerland,CHE,1885,43.92
+Switzerland,CHE,1886,44.75
+Switzerland,CHE,1887,45.46
+Switzerland,CHE,1888,46
+Switzerland,CHE,1889,45.18
+Switzerland,CHE,1890,45.01
+Switzerland,CHE,1891,44.81
+Switzerland,CHE,1892,47.2
+Switzerland,CHE,1893,46.08
+Switzerland,CHE,1894,45.85
+Switzerland,CHE,1895,46.93
+Switzerland,CHE,1896,48.87
+Switzerland,CHE,1897,49.1
+Switzerland,CHE,1898,48.26
+Switzerland,CHE,1899,49.31
+Switzerland,CHE,1900,47.59
+Switzerland,CHE,1901,48.97
+Switzerland,CHE,1902,50.44
+Switzerland,CHE,1903,50.08
+Switzerland,CHE,1904,49.23
+Switzerland,CHE,1905,49.69
+Switzerland,CHE,1906,50.75
+Switzerland,CHE,1907,51.19
+Switzerland,CHE,1908,52.29
+Switzerland,CHE,1909,51.65
+Switzerland,CHE,1910,52.93
+Switzerland,CHE,1911,51.77
+Switzerland,CHE,1912,54.4
+Switzerland,CHE,1913,54.23
+Switzerland,CHE,1914,55.11
+Switzerland,CHE,1915,55.91
+Switzerland,CHE,1916,56.52
+Switzerland,CHE,1917,55.77
+Switzerland,CHE,1918,46.3
+Switzerland,CHE,1919,54.83
+Switzerland,CHE,1920,54.5
+Switzerland,CHE,1921,57.77
+Switzerland,CHE,1922,58.48
+Switzerland,CHE,1923,59.98
+Switzerland,CHE,1924,59.47
+Switzerland,CHE,1925,59.91
+Switzerland,CHE,1926,60.59
+Switzerland,CHE,1927,60.09
+Switzerland,CHE,1928,60.43
+Switzerland,CHE,1929,60.14
+Switzerland,CHE,1930,61.4
+Switzerland,CHE,1931,61.23
+Switzerland,CHE,1932,61.2
+Switzerland,CHE,1933,62.37
+Switzerland,CHE,1934,62.83
+Switzerland,CHE,1935,62.13
+Switzerland,CHE,1936,63.14
+Switzerland,CHE,1937,63.48
+Switzerland,CHE,1938,63.83
+Switzerland,CHE,1939,63.98
+Switzerland,CHE,1940,63.54
+Switzerland,CHE,1941,64.91
+Switzerland,CHE,1942,65.63
+Switzerland,CHE,1943,65.82
+Switzerland,CHE,1944,64.86
+Switzerland,CHE,1945,65.38
+Switzerland,CHE,1946,66.06
+Switzerland,CHE,1947,66.23
+Switzerland,CHE,1948,67.31
+Switzerland,CHE,1949,67.95
+Switzerland,CHE,1950,68.9133
+Switzerland,CHE,1951,68.6939
+Switzerland,CHE,1952,69.5876
+Switzerland,CHE,1953,69.5183
+Switzerland,CHE,1954,69.9846
+Switzerland,CHE,1955,70.0701
+Switzerland,CHE,1956,70.1987
+Switzerland,CHE,1957,70.5385
+Switzerland,CHE,1958,71.2912
+Switzerland,CHE,1959,71.4531
+Switzerland,CHE,1960,71.4137
+Switzerland,CHE,1961,71.7428
+Switzerland,CHE,1962,71.3027
+Switzerland,CHE,1963,71.2924
+Switzerland,CHE,1964,72.1791
+Switzerland,CHE,1965,72.318
+Switzerland,CHE,1966,72.4497
+Switzerland,CHE,1967,72.7412
+Switzerland,CHE,1968,72.7054
+Switzerland,CHE,1969,72.7176
+Switzerland,CHE,1970,73.1238
+Switzerland,CHE,1971,73.2406
+Switzerland,CHE,1972,73.7591
+Switzerland,CHE,1973,74.0598
+Switzerland,CHE,1974,74.4013
+Switzerland,CHE,1975,74.7913
+Switzerland,CHE,1976,74.9059
+Switzerland,CHE,1977,75.3673
+Switzerland,CHE,1978,75.3079
+Switzerland,CHE,1979,75.6078
+Switzerland,CHE,1980,75.5898
+Switzerland,CHE,1981,75.8183
+Switzerland,CHE,1982,76.1624
+Switzerland,CHE,1983,76.1574
+Switzerland,CHE,1984,76.756
+Switzerland,CHE,1985,76.882
+Switzerland,CHE,1986,77.0403
+Switzerland,CHE,1987,77.3317
+Switzerland,CHE,1988,77.3646
+Switzerland,CHE,1989,77.5573
+Switzerland,CHE,1990,77.3851
+Switzerland,CHE,1991,77.6485
+Switzerland,CHE,1992,77.9441
+Switzerland,CHE,1993,78.2335
+Switzerland,CHE,1994,78.4946
+Switzerland,CHE,1995,78.565
+Switzerland,CHE,1996,79.0494
+Switzerland,CHE,1997,79.2329
+Switzerland,CHE,1998,79.4752
+Switzerland,CHE,1999,79.7235
+Switzerland,CHE,2000,79.834
+Switzerland,CHE,2001,80.2511
+Switzerland,CHE,2002,80.4438
+Switzerland,CHE,2003,80.5325
+Switzerland,CHE,2004,81.0549
+Switzerland,CHE,2005,81.2362
+Switzerland,CHE,2006,81.5495
+Switzerland,CHE,2007,81.7028
+Switzerland,CHE,2008,81.9709
+Switzerland,CHE,2009,81.9891
+Switzerland,CHE,2010,82.2873
+Switzerland,CHE,2011,82.5738
+Switzerland,CHE,2012,82.6167
+Switzerland,CHE,2013,82.6892
+Switzerland,CHE,2014,83.0841
+Switzerland,CHE,2015,82.8461
+Switzerland,CHE,2016,83.4457
+Switzerland,CHE,2017,83.414
+Switzerland,CHE,2018,83.5639
+Switzerland,CHE,2019,83.7804
+Switzerland,CHE,2020,83.0626
+Switzerland,CHE,2021,83.6477
+Switzerland,CHE,2022,83.2003
+Switzerland,CHE,2023,83.9536
+United Kingdom,GBR,1543,33.94
+United Kingdom,GBR,1548,38.82
+United Kingdom,GBR,1553,39.59
+United Kingdom,GBR,1558,22.38
+United Kingdom,GBR,1563,36.66
+United Kingdom,GBR,1568,39.67
+United Kingdom,GBR,1573,41.06
+United Kingdom,GBR,1578,41.56
+United Kingdom,GBR,1583,42.7
+United Kingdom,GBR,1588,37.05
+United Kingdom,GBR,1593,38.05
+United Kingdom,GBR,1598,37.82
+United Kingdom,GBR,1603,38.53
+United Kingdom,GBR,1608,39.59
+United Kingdom,GBR,1613,36.79
+United Kingdom,GBR,1618,40.31
+United Kingdom,GBR,1623,33.39
+United Kingdom,GBR,1628,39.69
+United Kingdom,GBR,1633,39.72
+United Kingdom,GBR,1638,34.03
+United Kingdom,GBR,1643,36.32
+United Kingdom,GBR,1648,39.74
+United Kingdom,GBR,1653,39.14
+United Kingdom,GBR,1658,33.04
+United Kingdom,GBR,1663,33.27
+United Kingdom,GBR,1668,32.48
+United Kingdom,GBR,1673,37.41
+United Kingdom,GBR,1678,32.4
+United Kingdom,GBR,1683,31.27
+United Kingdom,GBR,1688,35.93
+United Kingdom,GBR,1693,36.35
+United Kingdom,GBR,1698,38.06
+United Kingdom,GBR,1703,38.47
+United Kingdom,GBR,1708,38.5
+United Kingdom,GBR,1713,36.89
+United Kingdom,GBR,1718,35.75
+United Kingdom,GBR,1723,35.49
+United Kingdom,GBR,1728,25.34
+United Kingdom,GBR,1733,36.34
+United Kingdom,GBR,1738,35.26
+United Kingdom,GBR,1743,34.27
+United Kingdom,GBR,1748,36.47
+United Kingdom,GBR,1753,39.77
+United Kingdom,GBR,1758,38.12
+United Kingdom,GBR,1763,35.37
+United Kingdom,GBR,1768,36.19
+United Kingdom,GBR,1773,39.09
+United Kingdom,GBR,1778,37.74
+United Kingdom,GBR,1783,35.81
+United Kingdom,GBR,1788,38.97
+United Kingdom,GBR,1793,37.92
+United Kingdom,GBR,1798,38.93
+United Kingdom,GBR,1803,40.02
+United Kingdom,GBR,1808,40.58
+United Kingdom,GBR,1813,41.25
+United Kingdom,GBR,1818,40.84
+United Kingdom,GBR,1823,40.47
+United Kingdom,GBR,1828,41.43
+United Kingdom,GBR,1833,40.89
+United Kingdom,GBR,1838,40.56
+United Kingdom,GBR,1842,40.995
+United Kingdom,GBR,1843,41.56
+United Kingdom,GBR,1844,41.24
+United Kingdom,GBR,1845,42.17
+United Kingdom,GBR,1846,40.15
+United Kingdom,GBR,1847,38.515
+United Kingdom,GBR,1848,39.89
+United Kingdom,GBR,1849,37.68
+United Kingdom,GBR,1850,42.77
+United Kingdom,GBR,1851,40.95
+United Kingdom,GBR,1852,40.41
+United Kingdom,GBR,1853,39.985
+United Kingdom,GBR,1854,39.48
+United Kingdom,GBR,1855,40.74
+United Kingdom,GBR,1856,42.47
+United Kingdom,GBR,1857,40.925
+United Kingdom,GBR,1858,39.545
+United Kingdom,GBR,1859,40.405
+United Kingdom,GBR,1860,41.945
+United Kingdom,GBR,1861,41.62
+United Kingdom,GBR,1862,42.13
+United Kingdom,GBR,1863,40.37
+United Kingdom,GBR,1864,39.585
+United Kingdom,GBR,1865,39.75
+United Kingdom,GBR,1866,40.085
+United Kingdom,GBR,1867,41.995
+United Kingdom,GBR,1868,41.7
+United Kingdom,GBR,1869,41.34
+United Kingdom,GBR,1870,40.605
+United Kingdom,GBR,1871,41.135
+United Kingdom,GBR,1872,42.72
+United Kingdom,GBR,1873,43.29
+United Kingdom,GBR,1874,42.105
+United Kingdom,GBR,1875,41.45
+United Kingdom,GBR,1876,42.665
+United Kingdom,GBR,1877,43.69
+United Kingdom,GBR,1878,42.04
+United Kingdom,GBR,1879,43.505
+United Kingdom,GBR,1880,42.975
+United Kingdom,GBR,1881,45.055
+United Kingdom,GBR,1882,43.985
+United Kingdom,GBR,1883,44.015
+United Kingdom,GBR,1884,43.635
+United Kingdom,GBR,1885,44.57
+United Kingdom,GBR,1886,44.585
+United Kingdom,GBR,1887,45.08
+United Kingdom,GBR,1888,46.28
+United Kingdom,GBR,1889,45.93
+United Kingdom,GBR,1890,44.12
+United Kingdom,GBR,1891,44.43
+United Kingdom,GBR,1892,45.59
+United Kingdom,GBR,1893,44.68
+United Kingdom,GBR,1894,48.275
+United Kingdom,GBR,1895,45.41
+United Kingdom,GBR,1896,47.07
+United Kingdom,GBR,1897,46.445
+United Kingdom,GBR,1898,46.14
+United Kingdom,GBR,1899,45.245
+United Kingdom,GBR,1900,45.62
+United Kingdom,GBR,1901,46.93
+United Kingdom,GBR,1902,48.355
+United Kingdom,GBR,1903,49.54
+United Kingdom,GBR,1904,48.145
+United Kingdom,GBR,1905,49.92
+United Kingdom,GBR,1906,49.595
+United Kingdom,GBR,1907,50.565
+United Kingdom,GBR,1908,51.02
+United Kingdom,GBR,1909,51.67
+United Kingdom,GBR,1910,53.255
+United Kingdom,GBR,1911,51.225
+United Kingdom,GBR,1912,54.31
+United Kingdom,GBR,1913,53.355
+United Kingdom,GBR,1914,53.21
+United Kingdom,GBR,1915,51.205
+United Kingdom,GBR,1916,54.24
+United Kingdom,GBR,1917,54.155
+United Kingdom,GBR,1918,47.275
+United Kingdom,GBR,1919,54.31
+United Kingdom,GBR,1920,57.255
+United Kingdom,GBR,1921,58.085
+United Kingdom,GBR,1922,57.02
+United Kingdom,GBR,1923,59.3
+United Kingdom,GBR,1924,58.07
+United Kingdom,GBR,1925,58.42
+United Kingdom,GBR,1926,59.56
+United Kingdom,GBR,1927,58.95
+United Kingdom,GBR,1928,59.91
+United Kingdom,GBR,1929,57.62
+United Kingdom,GBR,1930,60.77
+United Kingdom,GBR,1931,60
+United Kingdom,GBR,1932,60.52
+United Kingdom,GBR,1933,60.58
+United Kingdom,GBR,1934,61.3
+United Kingdom,GBR,1935,61.96
+United Kingdom,GBR,1936,61.75
+United Kingdom,GBR,1937,61.79
+United Kingdom,GBR,1938,63.23
+United Kingdom,GBR,1939,63.61
+United Kingdom,GBR,1940,60.9
+United Kingdom,GBR,1941,61.29
+United Kingdom,GBR,1942,63.98
+United Kingdom,GBR,1943,64.04
+United Kingdom,GBR,1944,64.8
+United Kingdom,GBR,1945,65.76
+United Kingdom,GBR,1946,66.24
+United Kingdom,GBR,1947,66.44
+United Kingdom,GBR,1948,68.37
+United Kingdom,GBR,1949,68.11
+United Kingdom,GBR,1950,68.631
+United Kingdom,GBR,1951,68.2386
+United Kingdom,GBR,1952,69.5267
+United Kingdom,GBR,1953,69.8047
+United Kingdom,GBR,1954,70.1715
+United Kingdom,GBR,1955,70.1344
+United Kingdom,GBR,1956,70.4055
+United Kingdom,GBR,1957,70.5245
+United Kingdom,GBR,1958,70.7048
+United Kingdom,GBR,1959,70.8276
+United Kingdom,GBR,1960,71.0251
+United Kingdom,GBR,1961,70.7895
+United Kingdom,GBR,1962,70.8576
+United Kingdom,GBR,1963,70.7609
+United Kingdom,GBR,1964,71.5407
+United Kingdom,GBR,1965,71.5157
+United Kingdom,GBR,1966,71.4329
+United Kingdom,GBR,1967,72.0706
+United Kingdom,GBR,1968,71.6842
+United Kingdom,GBR,1969,71.6625
+United Kingdom,GBR,1970,71.8819
+United Kingdom,GBR,1971,72.234
+United Kingdom,GBR,1972,71.9882
+United Kingdom,GBR,1973,72.1846
+United Kingdom,GBR,1974,72.376
+United Kingdom,GBR,1975,72.65
+United Kingdom,GBR,1976,72.6341
+United Kingdom,GBR,1977,73.1111
+United Kingdom,GBR,1978,73.0429
+United Kingdom,GBR,1979,73.1607
+United Kingdom,GBR,1980,73.5906
+United Kingdom,GBR,1981,73.9162
+United Kingdom,GBR,1982,74.0388
+United Kingdom,GBR,1983,74.2927
+United Kingdom,GBR,1984,74.6741
+United Kingdom,GBR,1985,74.5362
+United Kingdom,GBR,1986,74.7948
+United Kingdom,GBR,1987,75.147
+United Kingdom,GBR,1988,75.2593
+United Kingdom,GBR,1989,75.3971
+United Kingdom,GBR,1990,75.7377
+United Kingdom,GBR,1991,75.9108
+United Kingdom,GBR,1992,76.3074
+United Kingdom,GBR,1993,76.1602
+United Kingdom,GBR,1994,76.7198
+United Kingdom,GBR,1995,76.614
+United Kingdom,GBR,1996,76.8719
+United Kingdom,GBR,1997,77.1389
+United Kingdom,GBR,1998,77.2745
+United Kingdom,GBR,1999,77.3728
+United Kingdom,GBR,2000,77.8491
+United Kingdom,GBR,2001,78.1208
+United Kingdom,GBR,2002,78.237
+United Kingdom,GBR,2003,78.3302
+United Kingdom,GBR,2004,78.8998
+United Kingdom,GBR,2005,79.1061
+United Kingdom,GBR,2006,79.3474
+United Kingdom,GBR,2007,79.5337
+United Kingdom,GBR,2008,79.6554
+United Kingdom,GBR,2009,80.1556
+United Kingdom,GBR,2010,80.3908
+United Kingdom,GBR,2011,80.7961
+United Kingdom,GBR,2012,80.8594
+United Kingdom,GBR,2013,80.9232
+United Kingdom,GBR,2014,81.1529
+United Kingdom,GBR,2015,80.919
+United Kingdom,GBR,2016,81.0675
+United Kingdom,GBR,2017,81.164
+United Kingdom,GBR,2018,81.1229
+United Kingdom,GBR,2019,81.4426
+United Kingdom,GBR,2020,80.3854
+United Kingdom,GBR,2021,80.708
+United Kingdom,GBR,2022,81.0744
+United Kingdom,GBR,2023,81.3015
+United States,USA,1880,39.41
+United States,USA,1890,45.21
+United States,USA,1901,49.3
+United States,USA,1902,50.5
+United States,USA,1903,50.6
+United States,USA,1904,49.6
+United States,USA,1905,50.3
+United States,USA,1906,50.1
+United States,USA,1907,50.2
+United States,USA,1908,51.9
+United States,USA,1909,52.8
+United States,USA,1910,51.8
+United States,USA,1911,53.4
+United States,USA,1912,54.1
+United States,USA,1913,53.5
+United States,USA,1914,54.6
+United States,USA,1915,55.1
+United States,USA,1916,54.2
+United States,USA,1917,54
+United States,USA,1918,47.2
+United States,USA,1919,55.3
+United States,USA,1920,55.4
+United States,USA,1921,58.2
+United States,USA,1922,58.1
+United States,USA,1923,57.5
+United States,USA,1924,58.5
+United States,USA,1925,58.5
+United States,USA,1926,57.9
+United States,USA,1927,59.4
+United States,USA,1928,58.3
+United States,USA,1929,58.5
+United States,USA,1930,59.6
+United States,USA,1931,60.3
+United States,USA,1932,61
+United States,USA,1933,60.9
+United States,USA,1934,60.19
+United States,USA,1935,60.91
+United States,USA,1936,60.35
+United States,USA,1937,61.03
+United States,USA,1938,62.39
+United States,USA,1939,63.07
+United States,USA,1940,63.22
+United States,USA,1941,63.79
+United States,USA,1942,64.54
+United States,USA,1943,64.36
+United States,USA,1944,65.06
+United States,USA,1945,65.59
+United States,USA,1946,66.13
+United States,USA,1947,66.8
+United States,USA,1948,67.22
+United States,USA,1949,67.63
+United States,USA,1950,68.0669
+United States,USA,1951,68.1743
+United States,USA,1952,68.38
+United States,USA,1953,68.7112
+United States,USA,1954,69.4996
+United States,USA,1955,69.5573
+United States,USA,1956,69.643
+United States,USA,1957,69.4183
+United States,USA,1958,69.6733
+United States,USA,1959,69.9044
+United States,USA,1960,69.8293
+United States,USA,1961,70.2536
+United States,USA,1962,70.1162
+United States,USA,1963,69.9428
+United States,USA,1964,70.1993
+United States,USA,1965,70.2495
+United States,USA,1966,70.21
+United States,USA,1967,70.5202
+United States,USA,1968,70.2004
+United States,USA,1969,70.4763
+United States,USA,1970,70.7343
+United States,USA,1971,71.0979
+United States,USA,1972,71.1779
+United States,USA,1973,71.3966
+United States,USA,1974,71.9592
+United States,USA,1975,72.5434
+United States,USA,1976,72.8448
+United States,USA,1977,73.2267
+United States,USA,1978,73.4091
+United States,USA,1979,73.8331
+United States,USA,1980,73.73
+United States,USA,1981,74.1174
+United States,USA,1982,74.4635
+United States,USA,1983,74.5528
+United States,USA,1984,74.6747
+United States,USA,1985,74.65
+United States,USA,1986,74.7284
+United States,USA,1987,74.8599
+United States,USA,1988,74.8333
+United States,USA,1989,75.1091
+United States,USA,1990,75.3743
+United States,USA,1991,75.5243
+United States,USA,1992,75.779
+United States,USA,1993,75.5677
+United States,USA,1994,75.7381
+United States,USA,1995,75.8522
+United States,USA,1996,76.1749
+United States,USA,1997,76.4981
+United States,USA,1998,76.6592
+United States,USA,1999,76.6691
+United States,USA,2000,76.8058
+United States,USA,2001,76.9194
+United States,USA,2002,76.9883
+United States,USA,2003,77.1369
+United States,USA,2004,77.535
+United States,USA,2005,77.5264
+United States,USA,2006,77.7976
+United States,USA,2007,78.0471
+United States,USA,2008,78.1273
+United States,USA,2009,78.4758
+United States,USA,2010,78.6681
+United States,USA,2011,78.7023
+United States,USA,2012,78.8169
+United States,USA,2013,78.8175
+United States,USA,2014,78.8785
+United States,USA,2015,78.7219
+United States,USA,2016,78.686
+United States,USA,2017,78.6483
+United States,USA,2018,78.7997
+United States,USA,2019,78.916
+United States,USA,2020,77.0115
+United States,USA,2021,76.3836
+United States,USA,2022,77.9789
+United States,USA,2023,79.3043

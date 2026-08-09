@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Every one of these ten countries added years of life expectancy between 2000 and 2023 — Poland gained the most, +5.0 years; United States gained the least, +2.5 years</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: undefined;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  font-family: Helvetica, Arial, sans-serif;
+}
+.chart-figure { margin: 0; max-width: 900px; }
+svg.chart { display: block; width: 100%; height: auto; }
+/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
+   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
+   media query only chooses which server-rendered frame is on screen. */
+svg.chart[data-layout="narrow"] { display: none; }
+@media (max-width: 480px) {
+  svg.chart[data-layout="desktop"] { display: none; }
+  svg.chart[data-layout="narrow"] { display: block; }
+}
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+<style>
+
+.hit-row { cursor: pointer; }
+.hit-row:hover, .hit-row:focus, .hit-row-active {
+  fill: rgba(0, 0, 0, 0.05);
+  outline: none;
+}
+.hit-row:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+
+</style>
+</head>
+<body>
+<figure class="chart-figure">
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="766" viewBox="0 0 900 766" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>Dumbbell chart of life expectancy at birth in 2000 (blue) and 2023 (vermillion) for ten countries, sorted by the size of the gain, largest first. Every country&#x27;s 2023 dot sits to the right of its 2000 dot. Poland rose from 73.6 to 78.6 years, the largest gain (+5.0); United States rose from 76.8 to 79.3 years, the smallest gain (+2.5). Every row&#x27;s own exact gap is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="900" height="766" fill="#FFFFFF"></rect><text x="40" y="62" fill="#000000" font-size="22" font-weight="700">Every one of these ten countries added years of life expectancy between 2000</text><text x="40" y="90" fill="#000000" font-size="22" font-weight="700">and 2023 — Poland gained the most, +5.0 years; United States gained the</text><text x="40" y="118" fill="#000000" font-size="22" font-weight="700">least, +2.5 years</text><text x="40" y="143" fill="#616161" font-size="14">Source: UN, World Population Prospects (2024), via Our World in Data · 2000 and 2023, extracted 8 August 2026</text><circle cx="46" cy="167" r="6" fill="#0072B2"></circle><text x="58" y="171" fill="#000000" font-size="13" font-weight="600">2000</text><circle cx="130" cy="167" r="6" fill="#D55E00"></circle><text x="142" y="171" fill="#000000" font-size="13" font-weight="600">2023</text><g><line x1="252.16727701822913" x2="252.16727701822913" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="252.16727701822913" y="738" fill="#616161" font-size="12" text-anchor="middle">74</text></g><g><line x1="356.3319091796875" x2="356.3319091796875" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="356.3319091796875" y="738" fill="#616161" font-size="12" text-anchor="middle">76</text></g><g><line x1="460.49654134114587" x2="460.49654134114587" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="460.49654134114587" y="738" fill="#616161" font-size="12" text-anchor="middle">78</text></g><g><line x1="564.6611735026042" x2="564.6611735026042" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="564.6611735026042" y="738" fill="#616161" font-size="12" text-anchor="middle">80</text></g><g><line x1="668.8258056640625" x2="668.8258056640625" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="668.8258056640625" y="738" fill="#616161" font-size="12" text-anchor="middle">82</text></g><g><line x1="772.9904378255208" x2="772.9904378255208" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="772.9904378255208" y="738" fill="#616161" font-size="12" text-anchor="middle">84 years</text></g><g><text x="40" y="219.26446280991735" fill="#000000" font-size="14" font-weight="600">Poland</text><line x1="233.69367950439485" x2="493.45943918863964" y1="214.26446280991735" y2="214.26446280991735" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="233.69367950439485" cy="214.26446280991735" r="6" fill="#0072B2"></circle><circle cx="493.45943918863964" cy="214.26446280991735" r="6" fill="#D55E00"></circle><text x="223.69367950439485" y="219.26446280991735" fill="#000000" font-size="13" font-weight="600" text-anchor="end">73.6</text><text x="503.45943918863964" y="219.26446280991735" fill="#000000" font-size="13" font-weight="600" text-anchor="start">78.6</text></g><g><text x="40" y="272.9834710743802" fill="#000000" font-size="14" font-weight="600">France</text><line x1="514.8600628662111" x2="737.8504991658527" y1="267.9834710743802" y2="267.9834710743802" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="514.8600628662111" cy="267.9834710743802" r="6" fill="#0072B2"></circle><circle cx="737.8504991658527" cy="267.9834710743802" r="6" fill="#D55E00"></circle><text x="504.86006286621114" y="272.9834710743802" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.0</text><text x="747.8504991658527" y="272.9834710743802" fill="#000000" font-size="13" font-weight="600" text-anchor="start">83.3</text></g><g><text x="40" y="326.702479338843" fill="#000000" font-size="14" font-weight="600">Spain</text><line x1="534.0523963419597" x2="755.8188982137043" y1="321.702479338843" y2="321.702479338843" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="534.0523963419597" cy="321.702479338843" r="6" fill="#0072B2"></circle><circle cx="755.8188982137043" cy="321.702479338843" r="6" fill="#D55E00"></circle><text x="524.0523963419597" y="326.702479338843" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.4</text><text x="765.8188982137043" y="326.702479338843" fill="#000000" font-size="13" font-weight="600" text-anchor="start">83.7</text></g><g><text x="40" y="380.4214876033058" fill="#000000" font-size="14" font-weight="600">Switzerland</text><line x1="556.0155090332032" x2="770.5738183593746" y1="375.4214876033058" y2="375.4214876033058" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="556.0155090332032" cy="375.4214876033058" r="6" fill="#0072B2"></circle><circle cx="770.5738183593746" cy="375.4214876033058" r="6" fill="#D55E00"></circle><text x="546.0155090332032" y="380.4214876033058" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.8</text><text x="780.5738183593746" y="380.4214876033058" fill="#000000" font-size="13" font-weight="600" text-anchor="start">84.0</text></g><g><text x="40" y="434.1404958677686" fill="#000000" font-size="14" font-weight="600">Italy</text><line x1="544.1928232828776" x2="758.1834353637694" y1="429.1404958677686" y2="429.1404958677686" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="544.1928232828776" cy="429.1404958677686" r="6" fill="#0072B2"></circle><circle cx="758.1834353637694" cy="429.1404958677686" r="6" fill="#D55E00"></circle><text x="534.1928232828776" y="434.1404958677686" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.6</text><text x="768.1834353637694" y="434.1404958677686" fill="#000000" font-size="13" font-weight="600" text-anchor="start">83.7</text></g><g><text x="40" y="487.8595041322314" fill="#000000" font-size="14" font-weight="600">Netherlands</text><line x1="467.2672424316404" x2="677.0339786783856" y1="482.8595041322314" y2="482.8595041322314" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="467.2672424316404" cy="482.8595041322314" r="6" fill="#0072B2"></circle><circle cx="677.0339786783856" cy="482.8595041322314" r="6" fill="#D55E00"></circle><text x="457.2672424316404" y="487.8595041322314" fill="#000000" font-size="13" font-weight="600" text-anchor="end">78.1</text><text x="687.0339786783856" y="487.8595041322314" fill="#000000" font-size="13" font-weight="600" text-anchor="start">82.2</text></g><g><text x="40" y="541.5785123966944" fill="#000000" font-size="14" font-weight="600">Japan</text><line x1="626.0558076985676" x2="810.0886715698242" y1="536.5785123966944" y2="536.5785123966944" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="626.0558076985676" cy="536.5785123966944" r="6" fill="#0072B2"></circle><circle cx="810.0886715698242" cy="536.5785123966944" r="6" fill="#D55E00"></circle><text x="616.0558076985676" y="541.5785123966944" fill="#000000" font-size="13" font-weight="600" text-anchor="end">81.2</text><text x="820.0886715698242" y="541.5785123966944" fill="#000000" font-size="13" font-weight="600" text-anchor="start">84.7</text></g><g><text x="40" y="595.2975206611571" fill="#000000" font-size="14" font-weight="600">United Kingdom</text><line x1="452.63731984456416" x2="632.4463078816734" y1="590.2975206611571" y2="590.2975206611571" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="452.63731984456416" cy="590.2975206611571" r="6" fill="#0072B2"></circle><circle cx="632.4463078816734" cy="590.2975206611571" r="6" fill="#D55E00"></circle><text x="442.63731984456416" y="595.2975206611571" fill="#000000" font-size="13" font-weight="600" text-anchor="end">77.8</text><text x="642.4463078816734" y="595.2975206611571" fill="#000000" font-size="13" font-weight="600" text-anchor="start">81.3</text></g><g><text x="40" y="649.0165289256199" fill="#000000" font-size="14" font-weight="600">Germany</text><line x1="463.42877573649054" x2="636.414980367025" y1="644.0165289256199" y2="644.0165289256199" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="463.42877573649054" cy="644.0165289256199" r="6" fill="#0072B2"></circle><circle cx="636.414980367025" cy="644.0165289256199" r="6" fill="#D55E00"></circle><text x="453.42877573649054" y="649.0165289256199" fill="#000000" font-size="13" font-weight="600" text-anchor="end">78.1</text><text x="646.414980367025" y="649.0165289256199" fill="#000000" font-size="13" font-weight="600" text-anchor="start">81.4</text></g><g><text x="40" y="702.7355371900827" fill="#000000" font-size="14" font-weight="600">United States</text><line x1="398.2998394775393" x2="528.4275062052408" y1="697.7355371900827" y2="697.7355371900827" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="398.2998394775393" cy="697.7355371900827" r="6" fill="#0072B2"></circle><circle cx="528.4275062052408" cy="697.7355371900827" r="6" fill="#D55E00"></circle><text x="388.2998394775393" y="702.7355371900827" fill="#000000" font-size="13" font-weight="600" text-anchor="end">76.8</text><text x="538.4275062052408" y="702.7355371900827" fill="#000000" font-size="13" font-weight="600" text-anchor="start">79.3</text></g><rect class="hit-row" x="200.0849609375" y="196" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: gained 5.0 years of life expectancy, from 73.6 years in 2000 to 78.6 years in 2023" data-country="Poland" data-detail="Poland: +5.0 years (73.6 → 78.6)" data-row="0"></rect><rect class="hit-row" x="200.0849609375" y="249.71900826446281" width="624.98779296875" height="36.52892561983472" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: gained 4.3 years of life expectancy, from 79.0 years in 2000 to 83.3 years in 2023" data-country="France" data-detail="France: +4.3 years (79.0 → 83.3)" data-row="1"></rect><rect class="hit-row" x="200.0849609375" y="303.43801652892563" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: gained 4.3 years of life expectancy, from 79.4 years in 2000 to 83.7 years in 2023" data-country="Spain" data-detail="Spain: +4.3 years (79.4 → 83.7)" data-row="2"></rect><rect class="hit-row" x="200.0849609375" y="357.1570247933885" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: gained 4.1 years of life expectancy, from 79.8 years in 2000 to 84.0 years in 2023" data-country="Switzerland" data-detail="Switzerland: +4.1 years (79.8 → 84.0)" data-row="3"></rect><rect class="hit-row" x="200.0849609375" y="410.87603305785126" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: gained 4.1 years of life expectancy, from 79.6 years in 2000 to 83.7 years in 2023" data-country="Italy" data-detail="Italy: +4.1 years (79.6 → 83.7)" data-row="4"></rect><rect class="hit-row" x="200.0849609375" y="464.59504132231405" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Netherlands: gained 4.0 years of life expectancy, from 78.1 years in 2000 to 82.2 years in 2023" data-country="Netherlands" data-detail="Netherlands: +4.0 years (78.1 → 82.2)" data-row="5"></rect><rect class="hit-row" x="200.0849609375" y="518.314049586777" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Japan: gained 3.5 years of life expectancy, from 81.2 years in 2000 to 84.7 years in 2023" data-country="Japan" data-detail="Japan: +3.5 years (81.2 → 84.7)" data-row="6"></rect><rect class="hit-row" x="200.0849609375" y="572.0330578512397" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: gained 3.5 years of life expectancy, from 77.8 years in 2000 to 81.3 years in 2023" data-country="United Kingdom" data-detail="United Kingdom: +3.5 years (77.8 → 81.3)" data-row="7"></rect><rect class="hit-row" x="200.0849609375" y="625.7520661157025" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: gained 3.3 years of life expectancy, from 78.1 years in 2000 to 81.4 years in 2023" data-country="Germany" data-detail="Germany: +3.3 years (78.1 → 81.4)" data-row="8"></rect><rect class="hit-row" x="200.0849609375" y="679.4710743801653" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United States: gained 2.5 years of life expectancy, from 76.8 years in 2000 to 79.3 years in 2023" data-country="United States" data-detail="United States: +2.5 years (76.8 → 79.3)" data-row="9"></rect></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="669" viewBox="0 0 360 669" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>Dumbbell chart of life expectancy at birth in 2000 (blue) and 2023 (vermillion) for ten countries, sorted by the size of the gain, largest first. Every country&#x27;s 2023 dot sits to the right of its 2000 dot. Poland rose from 73.6 to 78.6 years, the largest gain (+5.0); United States rose from 76.8 to 79.3 years, the smallest gain (+2.5). Every row&#x27;s own exact gap is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="360" height="669" fill="#FFFFFF"></rect><text x="18" y="35" fill="#000000" font-size="17" font-weight="700">Every one of these ten countries added</text><text x="18" y="57" fill="#000000" font-size="17" font-weight="700">years of life expectancy between 2000</text><text x="18" y="79" fill="#000000" font-size="17" font-weight="700">and 2023 — Poland gained the most,</text><text x="18" y="101" fill="#000000" font-size="17" font-weight="700">+5.0 years; United States gained the</text><text x="18" y="123" fill="#000000" font-size="17" font-weight="700">least, +2.5 years</text><text x="18" y="143" fill="#616161" font-size="11">Source: UN, World Population Prospects (2024), via Our World in</text><text x="18" y="158" fill="#616161" font-size="11">Data · 2000 and 2023, extracted 8 August 2026</text><circle cx="24" cy="175" r="6" fill="#0072B2"></circle><text x="36" y="179" fill="#000000" font-size="11" font-weight="600">2000</text><circle cx="92" cy="175" r="6" fill="#D55E00"></circle><text x="104" y="179" fill="#000000" font-size="11" font-weight="600">2023</text><g><line x1="176.61344401041669" x2="176.61344401041669" y1="199" y2="629" stroke="#d1d1d1" stroke-width="1"></line><text x="176.61344401041669" y="651" fill="#616161" font-size="10" text-anchor="middle">75</text></g><g><line x1="244.71931966145834" x2="244.71931966145834" y1="199" y2="629" stroke="#d1d1d1" stroke-width="1"></line><text x="244.71931966145834" y="651" fill="#616161" font-size="10" text-anchor="middle">80</text></g><g><line x1="312.8251953125" x2="312.8251953125" y1="199" y2="629" stroke="#d1d1d1" stroke-width="1"></line><text x="312.8251953125" y="651" fill="#616161" font-size="10" text-anchor="middle">85 years</text></g><g><text x="18" y="219.10330578512395" fill="#000000" font-size="11" font-weight="600">Poland</text><line x1="158.16083806152355" x2="226.09781114095063" y1="214.10330578512395" y2="214.10330578512395" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="158.16083806152355" cy="214.10330578512395" r="6" fill="#0072B2"></circle><circle cx="226.09781114095063" cy="214.10330578512395" r="6" fill="#D55E00"></circle><text x="148.16083806152355" y="219.10330578512395" fill="#000000" font-size="10" font-weight="600" text-anchor="end">73.6</text><text x="236.09781114095063" y="219.10330578512395" fill="#000000" font-size="10" font-weight="600" text-anchor="start">78.6</text></g><g><text x="18" y="263.52479338842977" fill="#000000" font-size="11" font-weight="600">France</text><line x1="231.6947520019532" x2="290.0138133219401" y1="258.52479338842977" y2="258.52479338842977" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="231.6947520019532" cy="258.52479338842977" r="6" fill="#0072B2"></circle><circle cx="290.0138133219401" cy="258.52479338842977" r="6" fill="#D55E00"></circle><text x="221.6947520019532" y="263.52479338842977" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.0</text><text x="300.0138133219401" y="263.52479338842977" fill="#000000" font-size="10" font-weight="600" text-anchor="start">83.3</text></g><g><text x="18" y="307.94628099173553" fill="#000000" font-size="11" font-weight="600">Spain</text><line x1="236.71415503743492" x2="294.71311874186193" y1="302.94628099173553" y2="302.94628099173553" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="236.71415503743492" cy="302.94628099173553" r="6" fill="#0072B2"></circle><circle cx="294.71311874186193" cy="302.94628099173553" r="6" fill="#D55E00"></circle><text x="226.71415503743492" y="307.94628099173553" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.4</text><text x="304.71311874186193" y="307.94628099173553" fill="#000000" font-size="10" font-weight="600" text-anchor="start">83.7</text></g><g><text x="18" y="352.3677685950413" fill="#000000" font-size="11" font-weight="600">Switzerland</text><line x1="242.45820458984377" x2="298.57199765624995" y1="347.3677685950413" y2="347.3677685950413" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="242.45820458984377" cy="347.3677685950413" r="6" fill="#0072B2"></circle><circle cx="298.57199765624995" cy="347.3677685950413" r="6" fill="#D55E00"></circle><text x="232.45820458984377" y="352.3677685950413" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.8</text><text x="308.57199765624995" y="352.3677685950413" fill="#000000" font-size="10" font-weight="600" text-anchor="start">84.0</text></g><g><text x="18" y="396.7892561983471" fill="#000000" font-size="11" font-weight="600">Italy</text><line x1="239.36619783528644" x2="295.3315200927734" y1="391.7892561983471" y2="391.7892561983471" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="239.36619783528644" cy="391.7892561983471" r="6" fill="#0072B2"></circle><circle cx="295.3315200927734" cy="391.7892561983471" r="6" fill="#D55E00"></circle><text x="229.36619783528644" y="396.7892561983471" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.6</text><text x="305.3315200927734" y="396.7892561983471" fill="#000000" font-size="10" font-weight="600" text-anchor="start">83.7</text></g><g><text x="18" y="441.2107438016529" fill="#000000" font-size="11" font-weight="600">Netherlands</text><line x1="219.24772216796867" x2="274.10836712239586" y1="436.2107438016529" y2="436.2107438016529" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="219.24772216796867" cy="436.2107438016529" r="6" fill="#0072B2"></circle><circle cx="274.10836712239586" cy="436.2107438016529" r="6" fill="#D55E00"></circle><text x="209.24772216796867" y="441.2107438016529" fill="#000000" font-size="10" font-weight="600" text-anchor="end">78.1</text><text x="284.10836712239586" y="441.2107438016529" fill="#000000" font-size="10" font-weight="600" text-anchor="start">82.2</text></g><g><text x="18" y="485.63223140495865" fill="#000000" font-size="11" font-weight="600">Japan</text><line x1="260.77596090494785" x2="308.90638322753904" y1="480.63223140495865" y2="480.63223140495865" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="260.77596090494785" cy="480.63223140495865" r="6" fill="#0072B2"></circle><circle cx="308.90638322753904" cy="480.63223140495865" r="6" fill="#D55E00"></circle><text x="250.77596090494785" y="485.63223140495865" fill="#000000" font-size="10" font-weight="600" text-anchor="end">81.2</text><text x="318.90638322753904" y="485.63223140495865" fill="#000000" font-size="10" font-weight="600" text-anchor="start">84.7</text></g><g><text x="18" y="530.0537190082645" fill="#000000" font-size="11" font-weight="600">United Kingdom</text><line x1="215.42153407389333" x2="262.4472790934245" y1="525.0537190082645" y2="525.0537190082645" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="215.42153407389333" cy="525.0537190082645" r="6" fill="#0072B2"></circle><circle cx="262.4472790934245" cy="525.0537190082645" r="6" fill="#D55E00"></circle><text x="205.42153407389333" y="530.0537190082645" fill="#000000" font-size="10" font-weight="600" text-anchor="end">77.8</text><text x="272.4472790934245" y="530.0537190082645" fill="#000000" font-size="10" font-weight="600" text-anchor="start">81.3</text></g><g><text x="18" y="574.4752066115703" fill="#000000" font-size="11" font-weight="600">Germany</text><line x1="218.24384156087228" x2="263.4852126383464" y1="569.4752066115703" y2="569.4752066115703" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="218.24384156087228" cy="569.4752066115703" r="6" fill="#0072B2"></circle><circle cx="263.4852126383464" cy="569.4752066115703" r="6" fill="#D55E00"></circle><text x="208.24384156087228" y="574.4752066115703" fill="#000000" font-size="10" font-weight="600" text-anchor="end">78.1</text><text x="273.4852126383464" y="574.4752066115703" fill="#000000" font-size="10" font-weight="600" text-anchor="start">81.4</text></g><g><text x="18" y="618.896694214876" fill="#000000" font-size="11" font-weight="600">United States</text><line x1="201.21056206054692" x2="235.24306812337238" y1="613.896694214876" y2="613.896694214876" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="201.21056206054692" cy="613.896694214876" r="6" fill="#0072B2"></circle><circle cx="235.24306812337238" cy="613.896694214876" r="6" fill="#D55E00"></circle><text x="191.21056206054692" y="618.896694214876" fill="#000000" font-size="10" font-weight="600" text-anchor="end">76.8</text><text x="245.24306812337238" y="618.896694214876" fill="#000000" font-size="10" font-weight="600" text-anchor="start">79.3</text></g><rect class="hit-row" x="149.37109375" y="199" width="163.4541015625" height="30.20661157024793" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: gained 5.0 years of life expectancy, from 73.6 years in 2000 to 78.6 years in 2023" data-country="Poland" data-detail="Poland: +5.0 years (73.6 → 78.6)" data-row="0"></rect><rect class="hit-row" x="149.37109375" y="243.4214876033058" width="163.4541015625" height="30.20661157024793" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: gained 4.3 years of life expectancy, from 79.0 years in 2000 to 83.3 years in 2023" data-country="France" data-detail="France: +4.3 years (79.0 → 83.3)" data-row="1"></rect><rect class="hit-row" x="149.37109375" y="287.8429752066116" width="163.4541015625" height="30.206611570247958" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: gained 4.3 years of life expectancy, from 79.4 years in 2000 to 83.7 years in 2023" data-country="Spain" data-detail="Spain: +4.3 years (79.4 → 83.7)" data-row="2"></rect><rect class="hit-row" x="149.37109375" y="332.26446280991735" width="163.4541015625" height="30.206611570247958" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: gained 4.1 years of life expectancy, from 79.8 years in 2000 to 84.0 years in 2023" data-country="Switzerland" data-detail="Switzerland: +4.1 years (79.8 → 84.0)" data-row="3"></rect><rect class="hit-row" x="149.37109375" y="376.68595041322317" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: gained 4.1 years of life expectancy, from 79.6 years in 2000 to 83.7 years in 2023" data-country="Italy" data-detail="Italy: +4.1 years (79.6 → 83.7)" data-row="4"></rect><rect class="hit-row" x="149.37109375" y="421.10743801652893" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Netherlands: gained 4.0 years of life expectancy, from 78.1 years in 2000 to 82.2 years in 2023" data-country="Netherlands" data-detail="Netherlands: +4.0 years (78.1 → 82.2)" data-row="5"></rect><rect class="hit-row" x="149.37109375" y="465.5289256198347" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Japan: gained 3.5 years of life expectancy, from 81.2 years in 2000 to 84.7 years in 2023" data-country="Japan" data-detail="Japan: +3.5 years (81.2 → 84.7)" data-row="6"></rect><rect class="hit-row" x="149.37109375" y="509.9504132231405" width="163.4541015625" height="30.206611570247958" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: gained 3.5 years of life expectancy, from 77.8 years in 2000 to 81.3 years in 2023" data-country="United Kingdom" data-detail="United Kingdom: +3.5 years (77.8 → 81.3)" data-row="7"></rect><rect class="hit-row" x="149.37109375" y="554.3719008264463" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: gained 3.3 years of life expectancy, from 78.1 years in 2000 to 81.4 years in 2023" data-country="Germany" data-detail="Germany: +3.3 years (78.1 → 81.4)" data-row="8"></rect><rect class="hit-row" x="149.37109375" y="598.793388429752" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United States: gained 2.5 years of life expectancy, from 76.8 years in 2000 to 79.3 years in 2023" data-country="United States" data-detail="United States: +2.5 years (76.8 → 79.3)" data-row="9"></rect></svg>
+</figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/proof/weby-dumbbell-life-expectancy-gains/dumbbell-interaction.mjs
+//
+// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs` (the line
+// genre's `nearestIndex`-by-x mechanic, wrong here) and not
+// `web-income-life-expectancy/scatter-interaction.mjs` (nearest-by-2D-distance over a shared
+// `.hit-area`, also wrong here). `render-web.mjs` inlines THIS file instead, the same way both of
+// those other beats swap the skill's generic script for their own.
+//
+// Why a THIRD implementation was needed, not a reuse of either: both existing scripts solve a
+// "which of these scattered points is the pointer nearest to" problem. This beat has no such
+// problem. Ten countries, each with its own non-overlapping horizontal band
+// (`dumbbell-geometry.ts`'s `scaleBand`-derived `bandTop`/`bandBottom`), already partition the
+// entire plot rectangle — a pointer at any (x, y) inside the plot is inside exactly one row's own
+// band, never ambiguous between two. So `DumbbellLifeExpectancyGainsWeb.tsx` draws one `.hit-row`
+// rectangle PER ROW, each already sized to its own band and positioned at its own y — this script
+// wires each rectangle directly to its own pointer/focus events. There is no shared `.hit-area`
+// overlay here and no distance calculation: the DOM element the pointer is over/the element that
+// has focus already tells this script which row to show, in a single step.
+//
+// `data-detail`/`aria-label` on each `.hit-row` were baked in server-side by
+// `DumbbellLifeExpectancyGainsWeb.tsx`'s own `describeRow` — this script never formats a number or
+// invents a string, it only reads an attribute back, the same discipline every web beat in this
+// skill keeps.
+
+/** Wires one `<svg class="chart">` — its `.hit-row` rectangles and the shared tooltip element —
+ *  to hover, tap and keyboard. `rows` is in top-to-bottom DOM order, which is also this beat's
+ *  own gap-size-descending sort order (`render-web.mjs`), so `ArrowDown`/`ArrowUp` moving through
+ *  DOM order also moves visually down/up the stacked rows — an intuitive keyboard mapping that
+ *  needed no separate "next visually below" calculation. */
+function initChart(svg, tooltip) {
+  const rows = Array.prototype.slice.call(svg.querySelectorAll(".hit-row"));
+  if (rows.length === 0) return;
+
+  function clear() {
+    rows.forEach((r) => r.classList.remove("hit-row-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(row, clientX, clientY) {
+    rows.forEach((r) => r.classList.toggle("hit-row-active", r === row));
+    tooltip.textContent = row.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 160;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(Math.max(clientX - tw / 2, 8), window.innerWidth - tw - 8);
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each row's
+  // own rectangle already spans the full plot width and that row's own band height
+  // (`DumbbellLifeExpectancyGainsWeb.tsx`), so a touch reader never has to land a tap on a 6px
+  // dot — any tap anywhere in a row's own horizontal band resolves to that row.
+  rows.forEach((row, i) => {
+    row.addEventListener("pointermove", function (evt) {
+      show(row, evt.clientX, evt.clientY);
+    });
+    row.addEventListener("pointerdown", function (evt) {
+      show(row, evt.clientX, evt.clientY);
+    });
+    row.addEventListener("pointerleave", clear);
+
+    // Keyboard: every row is already `tabIndex={0}` at build time (works with this script absent
+    // entirely — the same invariant `web-discipline.md`, "Keyboard and touch", states for the
+    // line genre). This layer adds the same detail box hover shows, plus
+    // ArrowUp/ArrowDown/Home/End to move between rows without leaving focus — rows stack
+    // vertically here, unlike the line/scatter beats' horizontal ArrowLeft/ArrowRight.
+    row.addEventListener("focus", function () {
+      const rect = row.getBoundingClientRect();
+      show(row, rect.left + rect.width / 2, rect.top);
+    });
+    row.addEventListener("blur", clear);
+    row.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowDown") nextIndex = Math.min(i + 1, rows.length - 1);
+      else if (evt.key === "ArrowUp") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = rows.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        row.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        rows[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file can also be read/imported in a context
+// with no `document`. In the browser the guard is always true, so the inlined `<script>`
+// self-starts the moment it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>
