@@ -1,11 +1,11 @@
-# Beat — world population passed 8 billion in 2023
+# Beat — world population passed 8 billion in 2022
 
 **Type:** area. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
 
 ## Claim
 
-World population reached 8.09 billion in 2023, more than eight times its 1800 level of about 0.98
-billion.
+World population passed 8 billion in 2022 (8.02 billion) and reached 8.09 billion by 2023, the
+series' final year — more than eight times its 1800 level of about 0.98 billion.
 
 ## Subject and accent
 
@@ -26,3 +26,11 @@ indicator's own metadata JSON rather than a remembered "OWID population" credit.
 Nothing wrong in the render itself; the catch here was upstream, in research — my first pass
 recalled "population crossed 1 billion around 1804" from general knowledge. The data itself puts
 the crossing at 1805, which is what the beat states.
+
+## What went wrong, caught later (2026-08-09 audit)
+
+The headline itself had the same class of defect: `render.mjs` typed "passed 8 billion in 2023" by
+hand, conflating the series' FINAL year (2023) with the year the threshold was actually crossed
+(2022 — `data.csv` shows 2022 already at 8,021,407,196). Fixed the same way the 1-billion marker
+was already doing it right: `data.find((d) => d.population >= 8e9)` derives the crossing year from
+the frozen series, and the title/alt text now state that derived year instead of a typed one.

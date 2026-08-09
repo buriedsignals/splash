@@ -38,13 +38,22 @@ async function main() {
   const crossing = data.find((d) => d.population >= 1e9);
   console.log(`crossed 1 billion in ${crossing.year} (${crossing.population.toLocaleString()})`);
 
+  // The headline claims 8 billion by name — derive WHICH year that happened from the data itself,
+  // the same way the 1-billion marker already does, rather than typing a year by hand. The final
+  // row of the series (2023) is not necessarily the crossing row: 2022 (8,021,407,196) already
+  // cleared 8 billion here, so a hand-typed "2023" states the wrong year even though 2023 IS the
+  // last year in the frozen series — the exact "final year != crossing year" mistake this fix closes.
+  const eightBillion = data.find((d) => d.population >= 8e9);
+  if (!eightBillion) throw new Error(`series never reaches 8 billion — got up to ${last.population.toLocaleString()}`);
+  console.log(`crossed 8 billion in ${eightBillion.year} (${eightBillion.population.toLocaleString()})`);
+
   const { pngPath } = await renderStill({
     element: createElement(WorldPopulationArea, {
       data,
-      title: "World population passed 8 billion in 2023 — more than eight times its 1800 level",
+      title: `World population passed 8 billion in ${eightBillion.year} — more than eight times its 1800 level`,
       limits: "1800-1949 are HYDE/Gapminder historical estimates, not census counts; 1950 onward is the UN's own recorded and revised series.",
       source: "Source: HYDE (2023), Gapminder (2022) & UN World Population Prospects (2024), via Our World in Data · extracted 8 August 2026",
-      alt: "Area chart of world population from 1800 to 2023, rising from about 1 billion to about 8.1 billion, with the growth rate visibly steepening through the 20th century.",
+      alt: `Area chart of world population from 1800 to 2023, rising from about 1 billion to about 8.1 billion, passing 8 billion in ${eightBillion.year}, with the growth rate visibly steepening through the 20th century.`,
       ground: "#FFFFFF",
       accent: "#0B7A75",
       crossing: { year: crossing.year, population: crossing.population, label: `1 billion (${crossing.year})` },
