@@ -527,6 +527,31 @@ silently swallowed every hover while keyboard focus still worked — because `.f
 testing, which is exactly why no test reached it; and a label-flip margin hardcoded to the old plate
 size clipped a right-edge label at 375px.
 
+### The number that matters most: one beat in four carried a false claim
+
+Every beat's rendered title, subtitle, annotations and alt text were checked against its own frozen
+data, recomputing each assertion from the file rather than trusting the brief. **55 beats checked.
+12 carried a false claim** — five found earlier by eye, seven more by the sweep.
+
+What they were: a year typed instead of derived ("passed 8 billion in 2023"; the data crosses in
+2022, in two separate beats). Two negative years named when the data says two different ones. A
+count asserted ("nine countries") that the beat's own footnote contradicts. A credit naming an
+institution that does not publish the figure shown. A range wrong by five years. "Well under half"
+where the real figure is ~65%. An alt text naming the wrong region for a map's densest cell. And
+once in the other direction — "almost entirely" where the value is exactly 100% every year.
+
+**Every one had the same cause: a value typed by hand instead of computed from the data.** Not one
+was caught by a test, and the suite was green throughout. The corrections were required to *derive*
+their values, because a hand-typed correction is the same defect with a better number.
+
+**A spot-check is not a check.** The controller personally verified one figure in the age pyramid's
+alt text, found it correct, and reported the beat sound — while two further claims in the same
+sentence were wrong. Checking one assertion in a sentence says nothing about the others.
+
+**This is the strongest argument in the repository for freezing data beside the beat.** None of
+these was findable before the data travelled with the artifact; a render reading a CSV from `/tmp`
+cannot be audited at all.
+
 ### Open, and precisely described
 
 **The eleven web chart beats are not retrofitted onto the new seed.** They work, on the old
