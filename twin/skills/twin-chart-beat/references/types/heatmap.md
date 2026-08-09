@@ -45,3 +45,28 @@ on (the non-text contrast floor, since a cell is a shape, not prose) — measure
 background colour, not an assumed white or an assumed black. A ramp that was checked on paper
 against white and then dropped onto a dark theme without re-checking is exactly how a "readable"
 heatmap ships with an invisible bottom third.
+
+That floor has a consequence worth knowing before you meet it in a render, because it is not
+obvious and it looks like a data problem rather than a scale one. Holding the pale end at 3:1
+against a white ground puts the lightest usable stop at a solid mid-grey, which leaves the whole
+ramp roughly 90 of 255 levels to spend. Spend those *linearly* across a domain whose maximum is an
+outlier — a grid running to 87% where three quarters of the readings sit under 25% — and nearly
+every real reading lands in the same grey. The grid renders as one flat slab, every assertion in
+it true, every mechanical check green, and the finding invisible: one beat's steepest movement,
+a 98% collapse, could not be seen at all.
+
+**The remedy is the scale, not the floor.** Position a value on the ramp by a monotonic transform
+of its share of the maximum — a square root works, and is close to how brightness is perceived
+anyway — so the readings that actually exist spread across the range available. Monotonic is the
+word that matters: a bigger value is still a darker cell, always, so the type's one failure mode
+is untouched. What it costs is proportionality, and that cost has to be paid in the open — the
+legend's ticks are placed on the same transform, so its uneven spacing shows the non-linearity
+rather than hiding it, and the subtitle says what was done. Hand-chosen bins are the other way out
+and are usually worse: they let a value crossing an edge flip a whole shade for a rounding's worth
+of change. The other half of the remedy is at the dark end, which unlike the pale end is free to
+move: carry the accent part of the way toward the ground's own derived ink and the ramp buys back
+about a third more range without naming a second hue.
+
+And say what the floor still costs, rather than papering over it. On a white ground, "almost none"
+cannot be drawn as almost nothing — the palest cell is a mid-grey. If the alt text calls it "pale
+grey", a reader who cannot see the grid has been told something the grid does not show.
