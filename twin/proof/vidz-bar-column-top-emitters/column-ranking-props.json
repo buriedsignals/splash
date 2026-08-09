@@ -1,0 +1,58 @@
+{
+  "year": 2024,
+  "axisTitle": "Billion tonnes of CO₂, 2024",
+  "unit": "billion tonnes",
+  "source": "Source: Global Carbon Budget (2025) – with major processing by Our World in Data · fossil fuels and industry only; land-use change is not included",
+  "data": [
+    {
+      "country": "China",
+      "gt": 12.289037
+    },
+    {
+      "country": "United States",
+      "gt": 4.90412
+    },
+    {
+      "country": "India",
+      "gt": 3.1934781
+    },
+    {
+      "country": "Russia",
+      "gt": 1.7805244
+    },
+    {
+      "country": "Japan",
+      "gt": 0.9618673
+    },
+    {
+      "country": "Indonesia",
+      "gt": 0.8122202
+    },
+    {
+      "country": "Iran",
+      "gt": 0.7926312
+    },
+    {
+      "country": "Saudi Arabia",
+      "gt": 0.6921335
+    },
+    {
+      "country": "South Korea",
+      "gt": 0.58367917
+    },
+    {
+      "country": "Germany",
+      "gt": 0.57231917
+    }
+  ],
+  "title": "China emits more CO₂ than the next five biggest emitters combined",
+  "subjectCountry": "China",
+  "combinedCount": 5,
+  "combinedTotal": 11.65221,
+  "combinedLabel": "The next five combined",
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

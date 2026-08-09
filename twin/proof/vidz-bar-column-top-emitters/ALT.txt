@@ -1,0 +1,1 @@
+A column chart of the 10 countries with the highest CO₂ emissions in 2024. China's column, in the accent colour, reaches 12.29 billion tonnes. A dashed rule crosses the chart at 11.65 billion tonnes, the combined total of the next five columns (United States, India, Russia, Japan, Indonesia), and China's column stands above it.
