@@ -21,10 +21,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import {
-  SmallMultiplesCo2Web,
-  LAYOUTS,
-} from "./SmallMultiplesCo2Web.tsx";
+import { SmallMultiplesCo2Web, FRAME } from "./SmallMultiplesCo2Web.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -46,7 +43,10 @@ export const BEAT = {
     "Tonnes CO2 per person, 1950-2024. Same zero-based scale on every panel.",
   source:
     "Source: Global Carbon Budget 2025, via Our World in Data · extracted 8 August 2026",
-  alt: "Four small line panels, one per country (Switzerland, France, Germany, Poland), all sharing one zero-based y-axis and one 1950-2024 x-axis. All four fell sharply from their own 1973-1980 peaks. Poland, the accented panel, ends 2024 above Germany's line — a gap that did not exist a decade earlier, when Germany was still higher. Every one of the 300 annual readings across the four panels is available on hover, tap or keyboard focus.",
+  // The alt text is NOT here. It counts the readings the panels actually carry, names the span of
+  // the x-axis and the span of the four peaks, and states the subject's final year — all products
+  // of the read below. `totalReadings` was already computed in `render()` and thrown away on the
+  // return line while the sentence beside it said "300"; it is now what the sentence says.
 };
 
 const DEFAULT_DATA_PATH = join(HERE, "data.csv");
@@ -141,9 +141,11 @@ export function verifyClaim(byCountry) {
     `${decadeYear} check: Poland ${polandDecadeAgo.value.toFixed(2)} < Germany ${germanyDecadeAgo.value.toFixed(2)} — gap did not exist a decade earlier`,
   );
 
+  const peaks = [];
   for (const country of COUNTRIES) {
     const p = peak(country);
     const l = last(country);
+    peaks.push({ country, year: p.year, value: p.value });
     if (l.value >= p.value)
       throw new Error(
         `${country}: last reading (${l.value}) is not below its own peak (${p.value} in ${p.year})`,
@@ -153,7 +155,7 @@ export function verifyClaim(byCountry) {
     );
   }
 
-  return { polandLast, germanyLast, decadeYear, polandDecadeAgo, germanyDecadeAgo };
+  return { polandLast, germanyLast, decadeYear, polandDecadeAgo, germanyDecadeAgo, peaks };
 }
 
 /** Strips the `export` keyword from each top-level declaration — same one-line transform the
@@ -171,6 +173,73 @@ function inlineable(moduleSource) {
  *  reads fine at this smaller panel scale already (inherited from the skill's own stylesheet), so
  *  the only addition is a small pointer-cursor affordance on each panel's own hit-area. */
 const EXTRA_CSS = `
+.chart-plot.small-multiples {
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: var(--panel-gap);
+}
+.chart-plot.small-multiples .panel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--y-gutter) minmax(0, 1fr);
+  grid-template-rows: var(--panel-label-h) minmax(0, 1fr) var(--x-axis-h);
+}
+.panel .panel-name {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+  font-size: var(--panel-label-size);
+  font-weight: var(--panel-label-weight);
+  line-height: 1.1;
+}
+.panel .panel-y { grid-column: 1; grid-row: 2; position: relative; }
+.panel .panel-y .axis-label.y { right: 4px; }
+.panel svg.panel-chart {
+  grid-column: 2;
+  grid-row: 2;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* pointer-events:none is load-bearing, not decoration — this div shares the exact cell the svg's
+   own .hit-area occupies, and without it every hover over the panel would land here instead. */
+.panel .panel-overlay {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  pointer-events: none;
+}
+.panel .panel-x { grid-column: 2; grid-row: 3; position: relative; }
+.panel .panel-x .axis-label.x { top: 3px; transform: none; }
+.panel .panel-x .axis-label.x.start { left: 0; }
+.panel .panel-x .axis-label.x.end { right: 0; }
+.panel .panel-overlay .end-dot {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.panel .panel-overlay .panel-end-label {
+  position: absolute;
+  transform: translate(-100%, -50%) translateY(-13px);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  background: var(--ground);
+  padding: 0 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+/* The alt text, readable by a screen reader and out of the layout — it is absolutely positioned, so
+   it never claims one of the four grid cells. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .hit-area { cursor: crosshair; }
 `;
 
@@ -218,21 +287,32 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       throw new Error(`expected 75 annual readings (1950-2024) for ${c}, got ${n}`);
   }
 
-  verifyClaim(byCountry);
+  const claim = verifyClaim(byCountry);
 
   const countries = COUNTRIES.map((name) => ({ name, data: byCountry.get(name) }));
 
+  const totalReadings = countries.reduce((sum, c) => sum + c.data.length, 0);
+  const peakYears = claim.peaks.map((p) => p.year);
+  const alt =
+    `Four small line panels, one per country (${COUNTRIES.join(", ")}), all sharing one zero-based ` +
+    `y-axis and one ${FIRST_YEAR}-${LAST_YEAR} x-axis. All four fell sharply from their own ` +
+    `${Math.min(...peakYears)}-${Math.max(...peakYears)} peaks. ${SUBJECT}, the accented panel, ends ` +
+    `${claim.polandLast.year} above Germany's line — a gap that did not exist a decade earlier, when ` +
+    `Germany was still higher. Every one of the ${totalReadings} annual readings across the four ` +
+    `panels is available on hover, tap or keyboard focus.`;
+  console.log(`alt: ${alt}`);
+
   const { outPath } = await renderWeb({
     component: SmallMultiplesCo2Web,
-    layouts: LAYOUTS,
     props: {
+      frame: FRAME,
       countries,
       order: [0, 1, 2, 3], // COUNTRIES is already ascending-2024-value; render order == array order
       subject: SUBJECT,
       title: BEAT.title,
       caption: BEAT.caption,
       source: BEAT.source,
-      alt: BEAT.alt,
+      alt,
       ground: BEAT.ground,
       accent: BEAT.accent,
     },
@@ -242,7 +322,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   await patchForThisBeat(outPath);
 
-  const totalReadings = countries.reduce((sum, c) => sum + c.data.length, 0);
   return { outPath, countries: countries.length, totalReadings };
 }
 

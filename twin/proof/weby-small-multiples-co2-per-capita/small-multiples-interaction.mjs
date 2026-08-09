@@ -53,12 +53,18 @@ export function nearestIndex(cxs, x) {
   return best;
 }
 
-/** Wires one `<svg class="chart">` holding FOUR independent `<g class="panel">` elements — each
- *  panel's own `.hit-area` rect and its own 75 `.pt` circles, plus the one shared tooltip element.
- *  Every point already carries its own `data-detail` string (`"Poland, 1973: 12.4 t"`-shaped) and
- *  its own `aria-label`, baked in server-side; this function never invents or recomputes either. */
-export function initChart(svg, tooltip) {
-  const panelEls = Array.prototype.slice.call(svg.querySelectorAll(".panel"));
+/** Wires one `.chart-plot` holding FOUR independent `.panel` boxes — each panel's OWN `<svg>`, its
+ *  own `.hit-area` rect and its own 75 `.pt` circles, plus the one shared tooltip element. Every
+ *  point already carries its own `data-detail` string (`"Poland, 1973: 12.4 t"`-shaped) and its own
+ *  `aria-label`, baked in server-side; this function never invents or recomputes either.
+ *
+ *  FOUR SVGs, NOT ONE `<g>` PER PANEL — changed when this beat moved to the fluid frame. Each panel
+ *  is now its own CSS grid cell with its own stretched `viewBox`, so the client-to-user-unit
+ *  transform (`getScreenCTM`) differs per panel and must be read off THAT panel's own svg. Reading
+ *  it off a single shared svg, as this file used to, would resolve every pointer against the wrong
+ *  scale the moment the panels stopped sharing one coordinate system. */
+export function initChart(plot, tooltip) {
+  const panelEls = Array.prototype.slice.call(plot.querySelectorAll(".panel"));
   // Collected across every panel ONLY so `show`/`clearAll` can toggle the single active dot and
   // hide the one shared tooltip regardless of which panel it currently belongs to — this array is
   // never consulted to RESOLVE a hover or a keyboard step, only to clear one once it is known.
@@ -86,8 +92,10 @@ export function initChart(svg, tooltip) {
   }
 
   panelEls.forEach(function (panelEl) {
-    // Scoped to THIS panel only — `querySelectorAll` called on `panelEl`, not `svg`, is what
-    // keeps `points`/`cxs` from ever containing another country's readings.
+    // Scoped to THIS panel only — `querySelectorAll` called on `panelEl`, not on the whole plot, is
+    // what keeps `points`/`cxs` from ever containing another country's readings.
+    const svg = panelEl.querySelector("svg");
+    if (!svg) return;
     const points = Array.prototype.slice.call(panelEl.querySelectorAll(".pt"));
     if (points.length === 0) return;
     allPoints.push.apply(allPoints, points);
@@ -113,7 +121,20 @@ export function initChart(svg, tooltip) {
     if (hitArea) {
       hitArea.addEventListener("pointermove", fromPointer);
       hitArea.addEventListener("pointerdown", fromPointer);
-      hitArea.addEventListener("pointerleave", clearAll);
+      // MOUSE AND PEN ONLY. A touch pointer is destroyed the instant the finger lifts, and the
+      // browser fires `pointerleave` immediately after `pointerup` for it — so an unguarded
+      // `pointerleave` handler wiped the tooltip the tap had just opened. This beat's own alt text
+      // says every one of the 300 readings "is available on hover, tap or keyboard focus", and on
+      // a touch device the tap half of that was false: the reading appeared and vanished inside
+      // one gesture. Found by an audit reading the captured event sequence, fixed here, and
+      // re-verified by dispatching a real touch sequence — pointerenter(touch) → pointerdown(touch)
+      // → pointerup(touch) → pointerleave(touch) — and reading the tooltip after it. A touch
+      // reader's tooltip is cleared by the document-level `pointerdown` below instead: it stays up
+      // until they tap somewhere else, which is what a tap-to-inspect control should do.
+      hitArea.addEventListener("pointerleave", function (evt) {
+        if (evt.pointerType === "touch") return;
+        clearAll();
+      });
     }
 
     // Keyboard, scoped the same way: `i` and `points.length` below are THIS panel's own index and
@@ -146,7 +167,7 @@ export function initChart(svg, tooltip) {
   });
 
   document.addEventListener("pointerdown", function (evt) {
-    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    if (plot.contains(evt.target) || tooltip.contains(evt.target)) return;
     clearAll();
   });
 }
@@ -154,8 +175,8 @@ export function initChart(svg, tooltip) {
 export function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
-  document.querySelectorAll("svg.chart").forEach(function (svg) {
-    initChart(svg, tooltip);
+  document.querySelectorAll(".chart-plot").forEach(function (plot) {
+    initChart(plot, tooltip);
   });
 }
 

@@ -26,7 +26,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { summarizeDecade } from "./boxplot-geometry.ts";
-import { DecadeBoxplotWeb, LAYOUTS } from "./DecadeBoxplotWeb.tsx";
+import { DecadeBoxplotWeb, FRAME } from "./DecadeBoxplotWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -158,6 +158,37 @@ function inlineable(moduleSource) {
  *  target class names this beat does not use at all — nothing here collides with or silently
  *  depends on them; `.cat` is this beat's own name for its per-decade hit rectangle, styled fresh. */
 const EXTRA_CSS = `
+.chart-plot.boxplot { grid-template-columns: var(--y-gutter) 1fr var(--r-gutter); }
+.chart-plot .x-axis .cat-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.25;
+  font-size: var(--cat-size);
+  font-weight: var(--cat-weight);
+  color: var(--ink);
+}
+.chart-plot .x-axis .cat-label .n {
+  font-size: var(--n-size);
+  font-weight: 400;
+  color: var(--muted);
+}
+.chart-plot .overlay .outlier-dot {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.chart-plot .overlay .outlier-label {
+  position: absolute;
+  transform: translateY(-50%) translateX(9px);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 1px 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
 .cat { cursor: pointer; fill: transparent; outline: none; }
 .cat:hover, .cat:focus, .cat-active {
   fill: var(--muted);
@@ -208,8 +239,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: DecadeBoxplotWeb,
-    layouts: LAYOUTS,
     props: {
+      frame: FRAME,
       decades,
       title,
       source,

@@ -56,7 +56,17 @@ export function initChart(svg, tooltip) {
     rect.addEventListener("pointermove", function (evt) {
       show(rect, evt.clientX, evt.clientY);
     });
-    rect.addEventListener("pointerleave", clear);
+    // MOUSE AND PEN ONLY. A touch pointer is destroyed the instant the finger lifts, and the
+    // browser fires `pointerleave` immediately after `pointerup` for it — so an unguarded
+    // `pointerleave` handler wipes the tooltip a tap has just opened, and the five-number summary
+    // this beat says is available "via hover or keyboard focus" would be available on a phone for
+    // about a frame. Measured by dispatching a real touch sequence, not read off the source. A
+    // touch reader's tooltip is cleared by the document-level `pointerdown` below instead: it
+    // stays up until they tap somewhere else.
+    rect.addEventListener("pointerleave", function (evt) {
+      if (evt.pointerType === "touch") return;
+      clear();
+    });
 
     // Keyboard: every rectangle is already `tabIndex={0}` at build time (works with this script
     // absent entirely — `web-discipline.md`, "Keyboard and touch"). This layer adds the same detail
