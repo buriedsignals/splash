@@ -9,7 +9,6 @@ import {
   MapWebSeed,
   RegionTable,
   pointDetail,
-  ZOOM_SCALE,
 } from "../assets/MapWebSeed.tsx";
 import { renderMapWeb } from "../scripts/render-web.mjs";
 import {
@@ -80,7 +79,7 @@ const BASE = {
 };
 
 function renderSeed(
-  overrides: Partial<typeof BASE & { zoomable: boolean }> = {},
+  overrides: Partial<typeof BASE> = {},
 ) {
   const furniture = deriveFurniture(
     (overrides.ground ?? BASE.ground) as string,
@@ -305,24 +304,32 @@ describe("MapWebSeed", () => {
     expect(html).not.toContain('class="mw-filter"');
   });
 
-  it("should not render a zoom toggle by default", () => {
+  // Ruling R1 deleted the bounded-zoom checkbox and the `ZOOM_SCALE` constant behind it: the map is
+  // a live MapTiler map with its own zoom and pan now, and B6.14b asked for the out-of-map button's
+  // removal by name. These pin that it is gone rather than merely off by default.
+  it("should render no out-of-map zoom control at all", () => {
     const html = renderSeed();
     expect(html).not.toContain("mw-zoom-toggle");
-  });
-
-  it("should render a bounded zoom checkbox when zoomable is true, unchecked by default", () => {
-    const html = renderSeed({ zoomable: true } as any);
-    expect(html).toContain('id="mw-zoom-toggle"');
-    expect(html).not.toMatch(/id="mw-zoom-toggle"[^>]*checked/);
-    expect(html).toContain(`${ZOOM_SCALE}×`);
-    // The pannable viewport is only keyboard-focusable in its own right when there is something
-    // to pan — not present at all when zoom is off.
-    expect(html).toContain("Pannable map area");
-  });
-
-  it("should not make the viewport independently focusable when not zoomable — nothing to pan", () => {
-    const html = renderSeed();
+    expect(html).not.toContain("bounded");
     expect(html).not.toContain("Pannable map area");
+  });
+
+  it("should ship the two map layers, with the fallback carrying the plate", () => {
+    const html = renderSeed();
+    expect(html).toContain('id="mw-map"');
+    expect(html).toContain('id="mw-fallback"');
+    expect(html).toContain("data:image/png;base64,");
+  });
+
+  it("should keep the labels and hit targets OUT of the fallback, so hiding it keeps every Tab stop", () => {
+    // The first live draft nested them inside `#mw-fallback`. Hiding the fallback on `map.on(load)`
+    // took every point label and every keyboard target with it — a total loss of keyboard reach on
+    // the exact path the ruling was meant to improve, and nothing was red.
+    const html = renderSeed();
+    const fallbackStart = html.indexOf('id="mw-fallback"');
+    const overlayStart = html.indexOf('class="mw-overlay"');
+    expect([fallbackStart >= 0, overlayStart > fallbackStart]).toEqual([true, true]);
+    expect(html.slice(fallbackStart, overlayStart)).not.toContain('class="pt"');
   });
 
   it("should not flatten the map's interactive children behind role=img on the svg", () => {

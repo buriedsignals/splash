@@ -45,9 +45,14 @@ accessible answer to that fact.
   skill's `geo-symbol.ts` follows) rather than this seed's point geometry.
 - **Not** to re-draw a map that already exists as a still or a video build — bake once, reuse the
   plate the same way `twin-map-beat` reuses one camera across its own two genres.
-- **Not** for pan/zoom on a LIVE tile source. A baked plate with interactive overlays is the honest,
-  self-contained thing: it matches how this project already renders every map, and it means the
-  shipped HTML makes zero external request once the plate is inlined as a data URI. Bounded pan/zoom
+- **REVERSED 2026-08-10 (ruling R1).** This bullet used to read *"Not for pan/zoom on a LIVE tile
+  source… the shipped HTML makes zero external request once the plate is inlined as a data URI."*
+  The owner overturned it: *a web map you cannot move through is a picture.* The map IS a live
+  MapTiler map now, constrained to the subject's area, and the delivered file DOES make a request to
+  `api.maptiler.com`. The baked plate is still shipped, as the FALLBACK layer — so the page still
+  renders complete with JavaScript off, offline, and after a key is rotated. The reversal, and what
+  it costs (payload, a ground that is no longer frozen, reader IP addresses, CSP, quota), is written
+  out in `references/map-web-discipline.md`, "Pan and zoom". Old text, kept: bounded pan/zoom
   OVER that same baked plate is a different question — see the next bullet.
 
 **Add a filter only when the test passes — most beats do not need one.** A filter (`references/map-web-discipline.md`, "Filters") is warranted when the study set has a natural, orthogonal
@@ -60,17 +65,18 @@ the title makes. This seed's own thirteen points across three regions is close t
 for the test to pass — it demonstrates the mechanism, not evidence every beat needs one; a beat with
 one group renders no filter at all (`groupsOf(points).length <= 1`).
 
-**Add pan-and-zoom only when the test passes — most beats do not need this either**
-(`references/map-web-discipline.md`, "Pan and zoom"). Warranted when the points are dense enough
-that the overview scale makes them illegible or individually unreachable at the SMALLEST width this
-genre ships (375px) — an urban cluster, a metro transit map, markers close enough to overlap at map
-scale — or when the story deliberately moves a reader's attention between distinct places at
-different scales. This seed's own thirteen points are spread across a continent and stay legible and
-reachable at every tested width without zooming, so `zoomable` stays `false` for its own data even
-though the mechanism (`MapWebSeed`'s `zoomable` prop, a bounded `1.4×` step, no live tiles) is real
-and unit-tested. When it IS warranted: the unzoomed default must still show the whole claim, the
-accessible table must not read `zoomable` at all (panning is useless to a screen-reader user; the
-table is what serves them), and a reader can never zoom past the one fixed, capped multiplier.
+**Pan and zoom are no longer a per-beat decision** (ruling R1): every map × web beat is a live map a
+reader can move through. What IS per beat is `SEED.live` — set it `false` for a beat that must stay
+request-free (an offline archive, a CMS whose Content-Security-Policy refuses `api.maptiler.com`),
+and the page ships as the fallback layer alone, exactly as this genre worked before the ruling.
+
+The reader's leash is derived, never picked: `minZoom` is the zoom the camera fitted to at the
+reader's own container size, so the claim the title makes is always fully on screen; `maxBounds` is
+the extent the bake's camera actually showed; `maxZoom` comes from `maxZoomForStudySet` — for a
+proportional symbol, the zoom at which the study set stops filling the frame. A camera already tight
+on its subject therefore gets a short leash (measured on this seed: half a zoom level), which is the
+intended behaviour and not a defect. The accessible table reads no camera state at all, so panning
+never regresses the one channel that serves a screen-reader user.
 
 ## The one gotcha that will waste your day (read first)
 
@@ -115,10 +121,10 @@ letterboxes, or leaves a gutter. Trust the picture.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, bounded pan/zoom, what must never become interactive |
+| Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, live tiles and the reversal that brought them, what must never become interactive |
 | Pure core | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG (baked generously — `1000`px, see the discipline file's "The plate strategy"), one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
-| Composition | `assets/MapWebSeed.tsx` | `MapWebSeed` — ONE fluid render: an SVG carrying only geometry (plate + decorative circles) plus an HTML overlay carrying every piece of furniture and every control (filter chips, point labels, hit-target buttons, legend, the optional bounded zoom toggle), inside a `.mw-stage` that bounds it to the window's leftover height — and `RegionTable` (the accessible table, opt-in) |
+| Composition | `assets/MapWebSeed.tsx` | `MapWebSeed` — ONE fluid render: an SVG carrying only geometry (plate + decorative circles) plus an HTML overlay carrying every piece of furniture and every control (filter chips, point labels, hit-target buttons, legend, and, as a third layer that is a sibling of both map layers, the point labels and hit targets), inside a `.mw-stage` that bounds it to the window's leftover height — and `RegionTable` (the accessible table, opt-in) |
 | Interaction | `assets/interaction.mjs` | `initPoints`/`initAll` — hover/tap/keyboard per point, direct listeners on the HTML `.pt` buttons (no proximity resolver needed: each point is already a discrete, fixed-size target) |
 | Verify | `scripts/verify-interaction.mjs` | Drives the rendered beat in a real browser with REAL input: fit at four viewport sizes, `elementFromPoint` + a real pointer move per point checked against the sample data, a real click per filter chip, keyboard, and the no-JS pass. Mutation-proven to fail when the hover is swallowed, the filter selector is wrong, the fit is removed or the plate is stretched |
 | Render | `scripts/render-web.mjs` | `renderMapWeb({ component, table, props, outDir, name, regionTable })` — SSRs the one fluid map render, plus the table only when the beat opted in, inlines the interaction script, writes one self-contained HTML file. `assertDistinctSlugs` refuses a filter vocabulary that cannot work. Also this skill's own seed runner (`ensurePlate`, `render`) behind a labelled CONFIG seam |
@@ -168,7 +174,7 @@ cost thirteen separate interactions. Read it before choosing; do not choose by n
 5. **Decide about the table, deliberately** (`regionTable`). On, it is rendered from the same
    `readingOrder` the keyboard's Left/Right/Home/End uses — one order, two media, tagged with the
    SAME `data-group` the filter reads on the map. Off — the default — read what that costs first.
-6. **Add a filter or a zoom toggle only if the test in "When to use" passes** — most beats need
+6. **Add a filter only if the test in "When to use" passes** — most beats need
    neither. Both are pure CSS (`:has()`), so wiring one in costs no new JavaScript. Every group
    travels as its SLUG, the one vocabulary the markup and the generated selector share.
 7. **Fit the window.** The beat occupies at most one screen: `.mw-stage` takes the leftover height
@@ -229,7 +235,9 @@ for its own generic function.
 | The largest circle's radius, as a FRACTION of the frame (not a fixed pixel — it has to scale with the fluid SVG) | `0.062` | `MARK_MAX_RADIUS_FRACTION`, `MapWebSeed.tsx` |
 | The legend swatch's own max radius, fixed CSS px (deliberately NOT frame-relative) | `22px` | `LEGEND_MAX_RADIUS_PX`, `MapWebSeed.tsx` |
 | The per-point hit target's own diameter, fixed CSS px (never SVG-scaled) | `28px` | `HIT_TARGET_PX`, `MapWebSeed.tsx` |
-| The bounded zoom step, when `zoomable` is on | `1.4×` | `ZOOM_SCALE`, `MapWebSeed.tsx` |
+| Live tiles on or off for this beat | `true` | `SEED.live`, `scripts/render-web.mjs` |
+| The MapTiler key placeholder the delivery substitutes | `__MAPTILER_KEY__` | `KEY_PLACEHOLDER`, `scripts/render-web.mjs` |
+| The padding the runtime fit leaves around the study set | `48px` | `fitBoundsOptions`, `assets/live-map.mjs` |
 | Whether the beat ships the accessible region table at all (opt-in — read the discipline file's "The accessibility question" first) | `false` | `regionTable`, `SEED` in `render-web.mjs` (the option on `renderMapWeb`) |
 | The smallest height the map is ever squeezed to before the page scrolls again | `180px` | `.mw-stage`'s `min-height`, `buildCss` in `render-web.mjs` |
 | The filter chip's own height (a pointer target, not a text row) | `32px` | `.mw-chip`'s `min-height`, `buildCss` in `render-web.mjs` |

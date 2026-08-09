@@ -25,6 +25,7 @@
 // Usage:  bun skills/twin-map-web/scripts/render-web.mjs [outDir] [--data <json>]
 
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -32,10 +33,18 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
-import { MapWebSeed, RegionTable, ZOOM_SCALE } from "../assets/MapWebSeed.tsx";
-import { groupsOf, slugOf } from "../assets/geo-symbol.ts";
+import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
+import { groupsOf, markLayers, maxZoomForStudySet, slugOf } from "../assets/geo-symbol.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// Resolved through node's own module resolution, never by a relative path out of this skill.
+// `no-cross-skill-imports.test.ts` reads path STRINGS, not just import statements, and a literal
+// `../../../node_modules/...` reads to it — correctly — as a specifier leaving the skill. A package
+// name is the honest way to say "this comes from a dependency", and it is what a copy-pasted skill
+// with its own `bun install` would resolve too.
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
+const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 
 // ===== CONFIG — edit for your story =====
 // Everything between here and the closing marker is the SEED beat's own words and defaults — what
@@ -57,11 +66,15 @@ const SEED = {
   alt:
     "A map of Europe with thirteen circles, one per sample metro area, sized by population. " +
     "Paris draws the largest circle; Dublin the smallest.",
-  // Off — see SKILL.md's "When to use": thirteen points spread across a continent stay legible and
-  // individually reachable at every tested width (1600/1024/768/375) without zooming. The
-  // mechanism is real and unit-tested (test/render-web.test.ts exercises `zoomable: true`
-  // directly) but this seed's own data does not warrant turning it on.
-  zoomable: false,
+  // Ruling R1: map × web is a LIVE MapTiler map. Set this false for a beat that must stay
+  // request-free (an offline archive, a CMS with a Content-Security-Policy that refuses
+  // api.maptiler.com) — the page then ships as the fallback layer alone, which is exactly what it
+  // was before the ruling.
+  live: true,
+  // The subject, and the seed's own mark sizing — the live layer draws from the SAME `radiusScale`
+  // the SVG draws from, so the swap cannot change how big a circle is.
+  subjectKey: "paris",
+  waterFill: "#aac9e0",
   // The accessible region table: OPT-IN per beat, and off here. What that costs a reader with no
   // spatial access to the map is stated plainly in references/map-web-discipline.md, "The
   // accessibility question" — read it before leaving this false in a beat of your own. Turning it
@@ -91,7 +104,62 @@ const OUTPUT_NAME = "population.html";
  * full what a reader with no spatial access to the map loses when a beat leaves it off — a beat
  * making that choice should have read it.
  */
-async function renderMapWeb({ component, table, props, outDir, name, regionTable = false }) {
+/**
+ * R1b — THE KEY NEVER ENTERS THE REPOSITORY. R1 accepted the key being visible to a reader of a
+ * published article; it did not accept an unbounded public leak, and the two are different
+ * exposures. Every map × web beat commits its rendered HTML, and the FJM deliverable is an MIT
+ * open-source release, so a real key here would be scanned by bots within minutes of the push and
+ * would survive in the history after any later removal. `twin-deliver` substitutes the real key at
+ * the moment the file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts`
+ * reddens if one ever reaches a tracked file.
+ *
+ * The delivered key should be a SECOND, origin-restricted MapTiler key, not the development one:
+ * MapTiler's documented mitigation for a client-side key is Allowed HTTP origins, enforced
+ * server-side, and an account's DEFAULT key cannot be restricted — a dedicated one has to be
+ * created (docs.maptiler.com/cloud/api/authentication-key/).
+ */
+export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
+
+/**
+ * The plan the live layer reads out of the page: the style URL with its placeholder, the reader's
+ * leash, and the marks as GeoJSON. Every camera number comes from the bake's own `geometry.json`
+ * — `frameCorners` is the extent the camera ACTUALLY showed, which is not the bounds it was asked
+ * for, and it has only been recorded since 2026-08-10. This function is why that task came first.
+ */
+export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
+  const corners = geometry.frameCorners;
+  if (!corners)
+    throw new Error(
+      "this plate predates the camera facts: re-bake it, or the live map has no bounds to be constrained to",
+    );
+  const lons = geometry.points.map((p) => p.lon);
+  const lats = geometry.points.map((p) => p.lat);
+  const studyLonSpan = Math.max(...lons) - Math.min(...lons);
+  const maxValue = Math.max(...geometry.points.map((p) => p.value));
+  return {
+    styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
+    waterFill,
+    frame: geometry.frame,
+    maxBounds: corners,
+    minZoom: geometry.zoom,
+    maxZoom: maxZoomForStudySet(geometry.zoom, Math.abs(corners.east - corners.west), studyLonSpan),
+    studyBounds: {
+      west: Math.min(...lons),
+      east: Math.max(...lons),
+      south: Math.min(...lats),
+      north: Math.max(...lats),
+    },
+    marks: markLayers(geometry.points, {
+      maxValue,
+      maxRadiusFrameUnits: geometry.frame.width * 0.062,
+      subjectKey,
+      accent,
+      muted,
+    }),
+  };
+}
+
+async function renderMapWeb({ component, table, props, outDir, name, regionTable = false, live = false, plan = null }) {
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = regionTable
@@ -102,6 +170,19 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
 
   const interactionSource = await readFile(join(HERE, "../assets/interaction.mjs"), "utf8");
   const inlineScript = inlineable(interactionSource);
+
+  // maplibre-gl inlined rather than loaded from a CDN. A `<script src>` would trade 803 KB of
+  // payload for a SECOND third-party host; inlining keeps the count at one — api.maptiler.com —
+  // which is the honest reading of R1. Measured 2026-08-10: 803 KB of JS and 65.5 KB of CSS, against
+  // committed pages that ran 186–642 KB, almost all of it the plate. Keeping the fallback AND adding
+  // the library roughly doubles the file, and that is the price of the ruling, stated rather than
+  // discovered.
+  const liveBlock = live
+    ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
+      `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
+      `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
+      `<script>\n${inlineable(await readFile(join(HERE, "../assets/live-map.mjs"), "utf8"))}\n</script>`
+    : "";
 
   const groups = groupsOf(props.geometry.points);
   assertDistinctSlugs(groups);
@@ -125,6 +206,7 @@ ${tableHtml}
 <script>
 ${inlineScript}
 </script>
+${liveBlock}
 </body>
 </html>
 `;
@@ -363,7 +445,31 @@ body {
 }
 .mw-viewport[tabindex] { outline-offset: 2px; }
 .mw-viewport[tabindex]:focus-visible { outline: 2px solid var(--ink); }
-.mw-zoomable { position: relative; width: 100%; height: 100%; }
+/* The two layers occupy the SAME box, the live one underneath. It is laid out from the first frame
+   rather than revealed later, because a container with no size is a map with no size: MapLibre reads
+   the box at construction, and a display:none container gives it 0x0 and a canvas nothing ever
+   paints into. Invisible-but-laid-out, then, and the swap is one flip of the fallback's own
+   hidden attribute. */
+.mw-fallback, .mw-live-map, .mw-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mw-live-map { z-index: 0; }
+.mw-fallback { z-index: 1; background: var(--ground); }
+.mw-fallback[hidden] { display: none; }
+/* The overlay is a SIBLING of both map layers and is never hidden with either: it carries the point
+   names and every Tab stop, so hiding it with the fallback would take the whole keyboard path away
+   at the moment the live map arrives. Found by looking at the live page, not by an assertion. */
+.mw-overlay { z-index: 2; pointer-events: none; }
+.mw-overlay .pt { pointer-events: auto; }
+/* Live, the canvas is what a pointer talks to: queryRenderedFeatures makes the hit area the
+   RENDERED MARK at every size and every zoom, which is what B6.18a asked for and what a fixed 28px
+   button under a 90px disc could never give. The buttons stay in the DOM, still Tab-reachable and
+   still carrying their own aria-label — only their pointer-events go. */
+html.mw-live .mw-overlay .pt { pointer-events: none; }
+/* B5.1, and the conflict that dissolves with the ruling. The viewport keeps the PLATE's aspect,
+   because scaling a raster non-uniformly is a lie about distance and shape. A LIVE map has no plate
+   aspect to preserve — the canvas IS the container and the camera fills it — so live, the map takes
+   the whole stage. The fallback keeps its aspect-ratio, unchanged, because it is still a plate. */
+html.mw-live .mw-viewport { overflow: hidden; width: 100%; height: 100%; aspect-ratio: auto !important; }
+.maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* Furniture, in HTML: font-size is a fixed CSS number on every rule below, so it never tracks the
    container's own width the way an SVG-embedded <text> inside a scaling viewBox would. */
@@ -413,16 +519,6 @@ svg.map { display: block; width: 100%; height: 100%; }
 .mw-subject { font-size: 12px; font-weight: 700; color: var(--accent); margin: 10px 0 4px; }
 .mw-caveat { font-size: 11.5px; color: var(--muted); margin: 0 0 16px; }
 ${filterRules}
-/* The bounded zoom (map-web-discipline.md, "Pan and zoom"): unchecked (the default), the frame
-   shows exactly the full claim — nothing argument-bearing lives only past this control. Checked,
-   the viewport becomes natively scrollable and its content grows by the one fixed, capped factor
-   (ZOOM_SCALE) — a reader cannot zoom further than that, so the plate never degrades into
-   unreadable blur. */
-.map-web-page:has(#mw-zoom-toggle:checked) .mw-viewport { overflow: auto; }
-.map-web-page:has(#mw-zoom-toggle:checked) .mw-zoomable {
-  width: ${ZOOM_SCALE * 100}%;
-  height: ${ZOOM_SCALE * 100}%;
-}
 #tooltip {
   position: fixed;
   max-width: 220px;
@@ -515,11 +611,20 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
       alt: SEED.alt,
       ground: SEED.ground,
       accent: SEED.accent,
-      zoomable: SEED.zoomable,
     },
     outDir,
     name,
     regionTable: SEED.regionTable,
+    live: SEED.live,
+    plan: SEED.live
+      ? livePlan({
+          geometry: { ...geometry, points: merged },
+          subjectKey: SEED.subjectKey,
+          accent: SEED.accent,
+          muted: deriveFurniture(SEED.ground).muted,
+          waterFill: SEED.waterFill,
+        })
+      : null,
   });
   return { outPath, points: merged.length };
 }

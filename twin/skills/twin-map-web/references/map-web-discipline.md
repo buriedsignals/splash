@@ -354,31 +354,112 @@ present, exactly as this genre has always required. A reader who narrows the fil
 narrower reading on both channels, never a map that says one thing and a table that still says
 another — "Two channels, not one" applied to filtering as much as to hover.
 
-## Pan and zoom
+## Pan and zoom — OVERTURNED 2026-08-10 by ruling R1
 
-**A map beat may, when the story needs it, offer bounded pan-and-zoom.** This collides directly with
-this genre's own baked-plate approach, which is what makes the shipped HTML self-contained and free
-of any external request. Two ways to reconcile them were on the table:
+**The map is a LIVE MapTiler map with its native zoom and pan, constrained to the subject's area.**
+The plate is still baked and still shipped — as the FALLBACK layer, not as the display surface.
 
-- reach for LIVE map tiles once a reader zooms past the baked plate's own resolution — rejected: it
-  breaks self-containment (a request to a tile server at read time) and would ship a MapTiler key
-  inside the delivered file, a real credential leak this project's own local-first, self-contained
-  design exists to avoid;
-- **a bounded pan-and-zoom over the SAME generously-baked plate this genre already ships, capped at
-  a fixed multiplier a reader cannot exceed.**
+### The position that was overturned, kept verbatim
 
-**This genre takes the second — the honest answer, and the only one that keeps the file
-self-contained.** `MapWebSeed`'s own `zoomable` prop (off by default) renders one checkbox
-(`#mw-zoom-toggle`); unchecked, `.mw-viewport` clips its content and the `.mw-zoomable` inner layer
-sits at exactly `100%`/`100%` — the SAME full-claim view every non-zoomable beat in this genre
-renders. Checked, `.map-web-page:has(#mw-zoom-toggle:checked)` (the SAME `:has()` mechanism the
-filter uses, no JavaScript) switches `.mw-viewport` to `overflow: auto` and grows `.mw-zoomable` to
-a FIXED `ZOOM_SCALE` (`1.4`, `MapWebSeed.tsx`) — a reader cannot zoom further than that one step, so
-the plate never degrades into unreadable blur past a bound the code itself enforces, not one a
-reader could scroll or pinch their way out of. Panning inside that enlarged content is native
-browser scroll — no script required for it either, and a focused, scrollable `.mw-viewport`
-(`tabIndex={0}` only when `zoomable` is true) is already reachable with the arrow keys in every
-evergreen browser without this genre writing a single line of pan-handling JavaScript.
+This section used to read as follows, and it is left standing rather than tidied away, because a
+future reader should meet a decision with its cost attached rather than a page that never argued the
+other way:
+
+> **A map beat may, when the story needs it, offer bounded pan-and-zoom.** This collides directly
+> with this genre's own baked-plate approach, which is what makes the shipped HTML self-contained and
+> free of any external request. Two ways to reconcile them were on the table:
+>
+> - reach for LIVE map tiles once a reader zooms past the baked plate's own resolution — rejected: it
+>   breaks self-containment (a request to a tile server at read time) and would ship a MapTiler key
+>   inside the delivered file, a real credential leak this project's own local-first, self-contained
+>   design exists to avoid;
+> - **a bounded pan-and-zoom over the SAME generously-baked plate this genre already ships, capped at
+>   a fixed multiplier a reader cannot exceed.**
+>
+> **This genre takes the second — the honest answer, and the only one that keeps the file
+> self-contained.** … `.map-web-page:has(#mw-zoom-toggle:checked)` … grows `.mw-zoomable` to a FIXED
+> `ZOOM_SCALE` (`1.4`) — a reader cannot zoom further than that one step, so the plate never degrades
+> into unreadable blur.
+
+### The ruling
+
+The owner was shown the cost explicitly — the key becomes visible to anyone who opens the article, on
+an account billed by usage, and the file stops working without network or an active account — and
+ruled, verbatim: *"la carte doit rester interactive tout le temps sinon il n'y a pas d'intérêt d'être
+sur le web si on peut pas naviguer dedans. On a le droit d'utiliser pleinement MapTiler. Et garder
+l'export du HTML pas grave pour la clé."*
+
+The reasoning is editorial and it is right: **a web map you cannot move through is a picture.** If a
+beat pays the cost of being web, it should give what web gives. The bounded `ZOOM_SCALE` step was
+also, in the owner's own words, an out-of-map button that should not exist (B6.14b).
+
+### How it is built, and what it does not cost
+
+Two layers in one file (`assets/live-map.mjs`):
+
+1. `#mw-fallback` — the SSR'd beat exactly as this genre rendered it before: the baked plate as a
+   `data:` URI, the circles, the legend. Complete, script-free, request-free.
+2. `#mw-map` — an empty box filled with a live MapLibre map and swapped in **only** on
+   `map.on("load")`. A style failure, a tile failure, a rotated key, no network or no JavaScript
+   leaves layer 1 exactly where it is.
+
+A third layer, `.mw-overlay`, carries the point labels and the per-point hit targets and is a
+SIBLING of both, never a child of either. Its first draft lived inside the fallback, and hiding the
+fallback took every label and every Tab stop with it — a total loss of keyboard reach on the exact
+path the ruling was meant to improve, visible only by looking at the live page.
+
+**The genre's stated rule survives verbatim, read against the fallback**: the unzoomed state is not a
+preview of the real view — it IS the full claim.
+
+**What the live map fixes by construction rather than by tuning.** The hit area is the RENDERED
+MARK, via `queryRenderedFeatures`, at every size and every zoom — so there is no fixed 28px button
+under a 90px disc (B6.18a) and no country whose hover only fires over its capital (B6.14a). The
+`.pt` buttons stay for keyboard reach and their `aria-label`; only their pointer-events go.
+
+**Where the leash comes from.** Every number is read off the bake's own `geometry.json`, which has
+recorded the camera's own facts since 2026-08-10: `minZoom` is the bake's zoom, so a reader can never
+pull back past the frame the title makes its claim about; `maxBounds` is `frameCorners`, the extent
+the camera actually showed; `maxZoom` is derived per type in the geometry core
+(`maxZoomForStudySet`), never picked.
+
+### The price, measured
+
+- **Payload.** `maplibre-gl@4.7.1` inlined is 803 KB of JS and 65.5 KB of CSS. Committed pages ran
+  186–642 KB, almost all of it the plate; keeping the fallback AND adding the library roughly doubles
+  the file. Inlined rather than loaded from a CDN, because a `<script src>` would trade payload for a
+  SECOND third-party host — inlining keeps the count at one, `api.maptiler.com`, which is the honest
+  reading of the ruling.
+- **The archive stops being frozen.** The bakes say in their own headers why the plate is committed
+  beside the beat: *"MapTiler restyles, so a re-bake months later is a different picture under the
+  same marks."* A live map has no frozen ground. A published article's map can change appearance
+  years after publication with nobody touching the file, and the same beat's static and video
+  genres — which keep their plate — will drift away from their own web sibling. This is not
+  recoverable by engineering. It is a property of the ruling.
+- **Reader IP addresses reach MapTiler on every article view**, and a newsroom CMS with a strict
+  `Content-Security-Policy` may refuse `api.maptiler.com` outright. That newsroom sees the fallback.
+- **Quota.** MapTiler invalidates ALL of an account's keys at 100% of its spending limit
+  (documented). Tiles stop; the map goes blank. The fallback layer is what stands between that and
+  an article with a hole in it — which is the strongest argument for keeping it, independent of
+  accessibility.
+- **A leash derived is a leash that can be short.** Measured on this skill's own seed: the camera
+  already sits tight on its thirteen points, so `maxZoomForStudySet` yields 4.419 against a
+  `minZoom` of 3.879 — barely half a zoom level. That is honest rather than generous, and the
+  alternative is a free parameter, which rule 7a's spirit refuses. A beat whose camera holds more
+  room than its study set needs gets a correspondingly longer leash, automatically.
+
+### The key (ruling R1b)
+
+The rendered HTML carries a documented placeholder, never a key. `twin-deliver` substitutes at
+delivery (`substituteKeys`), reading `MAPTILER_DELIVERY_KEY` before `MAPTILER_KEY`, and
+`splash-twin/test/no-key-in-the-repository.test.ts` reddens if a real key ever reaches a tracked
+file. Every map × web beat commits its own HTML and the FJM deliverable is an MIT open-source
+release: a key pushed to a public repository is found by scanners within minutes and survives in the
+history after any later removal.
+
+**The delivered key should be a SECOND, origin-restricted key**, not the development one. MapTiler's
+documented mitigation for a client-side key is Allowed HTTP origins, enforced server-side — copied
+elsewhere it does not work — and **an account's default key cannot be restricted**, so a dedicated
+one has to be created (<https://docs.maptiler.com/cloud/api/authentication-key/>).
 
 **The rules that already govern interaction here apply, and matter more with a zoom control than
 without:**
@@ -386,10 +467,11 @@ without:**
 - **Nothing argument-bearing lives only behind zoom.** The unzoomed state is not a "preview" of the
   real view — it IS the full claim, at the same completeness every non-zoomable beat in this genre
   ships. A reader who never touches the toggle must still get the point.
-- **Keyboard reaches the control** (the checkbox is a native, focusable form element) **and the
-  accessible table is untouched by zoom** — `RegionTable` does not read `zoomable` at all, so panning
-  (useless to a screen-reader user regardless of how it is implemented) never regresses the one
-  channel that actually serves that reader.
+- **Keyboard reaches the map** — MapLibre's own `NavigationControl` is a pair of real buttons, and
+  every `.pt` hit target stays in the tab order in both states — **and the accessible table is
+  untouched by the camera**: `RegionTable` reads no camera state at all, so panning (useless to a
+  screen-reader user regardless of how it is implemented) never regresses the one channel that
+  actually serves that reader.
 - **With JavaScript disabled, the default (unzoomed) view still renders complete** — trivially true
   here, since the entire mechanism, default state included, is CSS and native scroll, not script.
 

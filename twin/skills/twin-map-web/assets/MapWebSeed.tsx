@@ -37,16 +37,17 @@
  *     that value inside a selector — see `render-web.mjs`'s `buildCss` for the defect that taught
  *     this (an HTML-escaped `&amp;` inside a CSS string matched nothing, and one of this seed's
  *     own three filters emptied the map).
- *   - An optional bounded ZOOM (`zoomable` prop, off for this seed's own data — see `SKILL.md`'s
- *     "When to use" for the test). Off, the frame shows exactly the full claim. On, a checkbox lets
- *     a reader scale the plate up by a fixed, capped factor (`ZOOM_SCALE`) inside a viewport that
- *     becomes natively scrollable — no unbounded zoom into raster blur, and no JavaScript: `:has()`
- *     drives both the filter and the zoom toggle directly off `:checked` state, so every one of
- *     these controls, and the map/legend/table they narrow, is exactly as complete with the page's
- *     own inline `<script>` never running as with it running. What the script (`interaction.mjs`)
- *     still adds on top is the exact hover/focus VALUE — the legend's own three rounded reference
- *     sizes can only approximate it, and the `title` attribute's native no-JS tooltip only shows it
- *     one point at a time, slowly.
+ *   - REAL ZOOM AND PAN, from MapTiler, constrained to the subject's area — ruling R1, 2026-08-10.
+ *     The beat ships in two layers: `#mw-fallback` is this SSR'd markup over the baked plate, and
+ *     `#mw-map` is an empty box that `assets/live-map.mjs` fills with a live MapLibre map and swaps
+ *     in on `map.on("load")`. Everything below therefore still renders complete with JavaScript off,
+ *     offline, and after a key is rotated — the ruling asked for a map a reader can move through, not
+ *     for a page that breaks without a network. The bounded `ZOOM_SCALE` checkbox this genre used to
+ *     put ABOVE the map is gone (B6.14b asked for its removal by name).
+ *   - The FILTER is still pure CSS: `:has()` + `:checked`, so it narrows the map, the labels and the
+ *     table identically with the inline `<script>` never running. What `interaction.mjs` adds is the
+ *     exact hover/focus VALUE — the legend's three rounded reference sizes can only approximate it,
+ *     and the `title` attribute's native no-JS tooltip shows it one point at a time, slowly.
  */
 
 import {
@@ -85,10 +86,11 @@ const LEGEND_MAX_RADIUS_PX = 22;
  *  at 375px wide and balloon at 1600px; a fixed CSS size is a legitimate touch target at every
  *  width this genre ships (`references/map-web-discipline.md`, "Full width, genuinely"). */
 const HIT_TARGET_PX = 28;
-/** The one bounded zoom step this genre ships when a beat opts in — a reader cannot zoom further
- *  than this, so the plate never degrades into unreadable blur (`references/map-web-discipline.md`,
- *  "Pan and zoom"). */
-export const ZOOM_SCALE = 1.4;
+/* THE BOUNDED ZOOM STEP IS GONE. `ZOOM_SCALE = 1.4` scaled a raster plate inside a scrollable box
+   and put an out-of-map checkbox above the beat reading "Zoom in (1.4×, bounded) — arrow keys or
+   scroll to pan". Ruling R1 (2026-08-10) replaced it with MapTiler's own zoom and pan, constrained
+   to the subject's area (`assets/live-map.mjs`), and B6.14b asked for exactly that removal. The
+   plate is still baked and still shipped — as the FALLBACK layer, not as the display surface. */
 // =======================================================
 
 /** One point's own detail string, the single implementation the hit-target's `aria-label`/
@@ -111,7 +113,6 @@ export function MapWebSeed({
   accent,
   ink,
   muted,
-  zoomable = false,
 }: {
   geometry: {
     frame: { width: number; height: number };
@@ -129,11 +130,6 @@ export function MapWebSeed({
   /** Derived from `ground` by `deriveFurniture` in whatever node runner calls this component. */
   ink: string;
   muted: string;
-  /** Off by default — see `SKILL.md`'s "When to use" for the test this seed's own data fails
-   *  (spread across a continent, legible and reachable at every width without it). Exercised with
-   *  `true` by a dedicated fixture in `test/render-web.test.ts` so the mechanism itself is proven
-   *  even though the shipped seed does not turn it on. */
-  zoomable?: boolean;
 }) {
   const { frame, points } = geometry;
   if (points.length < 2)
@@ -194,17 +190,6 @@ export function MapWebSeed({
         </fieldset>
       )}
 
-      {zoomable && (
-        <label className="mw-zoom-toggle-label" htmlFor="mw-zoom-toggle">
-          <input
-            type="checkbox"
-            id="mw-zoom-toggle"
-            className="mw-zoom-toggle"
-          />
-          {` Zoom in (${ZOOM_SCALE}×, bounded) — arrow keys or scroll to pan`}
-        </label>
-      )}
-
       {/* The stage: the one box that gets whatever vertical room the window has left once every
           piece of furniture above and below has taken its own (`render-web.mjs`'s `buildCss`,
           `.mw-stage`). The viewport inside it keeps the bake's own aspect EXACTLY — it is bounded
@@ -215,15 +200,17 @@ export function MapWebSeed({
         <div
           className="mw-viewport"
           style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
-          {...(zoomable
-            ? {
-                tabIndex: 0,
-                "aria-label":
-                  "Pannable map area — arrow keys or scroll to pan when zoomed in.",
-              }
-            : {})}
         >
-          <div className="mw-zoomable">
+          {/* LAYER 2 — the live MapTiler map (R1). Empty and hidden until `live-map.mjs` gets a
+              `map.on("load")`; a style failure, a dead key, no network or no JavaScript at all
+              leaves layer 1 below exactly where it is. Its own container, not a wrapper around the
+              fallback, so the swap is one `hidden` flip and never a half-drawn state. */}
+          <div id="mw-map" className="mw-live-map" />
+          {/* LAYER 1 — the baked plate, complete and script-free: what a reader gets with
+              JavaScript off, offline, or after the account's keys are invalidated at 100% of its
+              spending limit. `map-web-discipline.md`'s rule survives verbatim here — the unzoomed
+              state is not a preview of the real view, it IS the full claim. */}
+          <div id="mw-fallback" className="mw-fallback">
             {/* Geometry only: the baked plate and the decorative, value-sized circles. No text — see
                 this file's own header note. `role="group"`, not `role="img"`: an `img` role would
                 flatten the (decorative-only, now) children into one opaque image, which is harmless
@@ -275,7 +262,18 @@ export function MapWebSeed({
                 })}
               </g>
             </svg>
+          </div>
 
+          {/* LAYER 3 — the overlay: the point labels and the per-point hit targets. A SIBLING of
+              the two map layers, never a child of either, because it belongs to BOTH: it is the
+              only keyboard path to the data and the only place the point names are written. Its
+              first draft lived inside the fallback, and hiding the fallback on `map.on("load")`
+              took every label and every Tab stop with it — visible only by looking at the live
+              page, invisible to every assertion, and a total loss of keyboard reach on the exact
+              path the ruling was supposed to improve. Positioned in PERCENTAGES here, which is what
+              the fallback needs; `live-map.mjs` repositions the same nodes with `map.project()` on
+              every camera move, which is what the live map needs. */}
+          <div className="mw-overlay">
             {/* Point-name labels: HTML, positioned by PERCENTAGE of the frame (so they track the
                 geometry as the container resizes) with a font-size fixed in CSS (so the text itself
                 never grows or shrinks). The offset from the circle's own edge is ALSO a percentage
@@ -324,6 +322,15 @@ export function MapWebSeed({
                 <span
                   key={point.key}
                   className={`point-label${isSubject ? " subject" : ""}`}
+                  data-key={point.key}
+                  // The side it flipped to and the gap it keeps from its own circle, in CSS pixels
+                  // at the bake's own frame size. `live-map.mjs` repositions this node with
+                  // `map.project()` and needs the SAME two numbers `labelPlacement` computed here —
+                  // without them the live label sits ON its circle instead of beside it, which is
+                  // how the first live render drew "Paris" across the Paris disc.
+                  data-side={side}
+                  data-gap={gap}
+                  data-dy={dy}
                   data-group={slugOf(point.group)}
                   style={style}
                 >

@@ -129,18 +129,52 @@ export function offerForms({ medium, genre, env = process.env }) {
 // written. Directories are walked, never handed to `copyFile` directly — a beat carrying a
 // subdirectory anywhere other than "renders" (an "assets" folder, say) must be copied whole,
 // not throw EISDIR.
-async function copyTree(srcDir, destDir, written) {
+async function copyTree(srcDir, destDir, written, { env = process.env } = {}) {
   await mkdir(destDir, { recursive: true });
   for (const entry of await readdir(srcDir, { withFileTypes: true })) {
     const srcPath = join(srcDir, entry.name);
     const destPath = join(destDir, entry.name);
     if (entry.isDirectory()) {
-      await copyTree(srcPath, destPath, written);
+      await copyTree(srcPath, destPath, written, { env });
+    } else if (entry.name.endsWith(".html")) {
+      await writeFile(destPath, substituteKeys(await readFile(srcPath, "utf8"), env));
+      written.push(destPath);
     } else {
       await copyFile(srcPath, destPath);
       written.push(destPath);
     }
   }
+}
+
+/**
+ * RULING R1b — the moment the key enters the file, and the only one.
+ *
+ * A map × web beat renders with a documented PLACEHOLDER where its MapTiler key belongs, because
+ * every beat commits its own HTML and the FJM deliverable is an MIT open-source release: a real key
+ * pushed to a public repository is found by scanners within minutes and survives in the history
+ * after any later removal. Worse than the usual leak, because MapTiler invalidates ALL of an
+ * account's keys at 100% of its spending limit — one abused key blanks the maps in articles that
+ * are already published.
+ *
+ * So the key is substituted HERE, when the file goes to the newsroom, and nowhere earlier.
+ * `splash-twin/test/no-key-in-the-repository.test.ts` reddens if one ever reaches a tracked file.
+ *
+ * `MAPTILER_DELIVERY_KEY` is read BEFORE `MAPTILER_KEY`, and that order is the operational advice
+ * rather than a preference. MapTiler's documented mitigation for a client-side key is Allowed HTTP
+ * origins, enforced server-side — copied elsewhere, a restricted key does not work — and an
+ * account's DEFAULT key cannot be restricted, so a dedicated one has to be created. The delivered
+ * key should be that second, origin-restricted key, never the development one.
+ *
+ * With neither set, the placeholder travels through untouched. That is not a silent failure: the
+ * delivered page still renders its complete fallback layer, exactly as it does offline or with
+ * JavaScript off. The live layer simply never boots, which is the honest outcome for a delivery
+ * nobody gave a key to.
+ */
+export function substituteKeys(html, env = process.env) {
+  const key = env.MAPTILER_DELIVERY_KEY || env.MAPTILER_KEY;
+  if (!key) return html;
+  const placeholder = "__MAPTILER" + "_KEY__";
+  return html.split(placeholder).join(key);
 }
 
 // A real, dependency-free build entry point: Bun's own bundler ships inside the Bun runtime,
@@ -207,7 +241,7 @@ export async function materialise({
   const written = [];
 
   if (form === "owned-file") {
-    await copyTree(join(beatDir, "renders"), exportDir, written);
+    await copyTree(join(beatDir, "renders"), exportDir, written, { env });
     return written;
   }
 
@@ -223,14 +257,20 @@ export async function materialise({
       );
     }
     const fileName = await singleOwnedFile(beatDir);
+    // The hosted copy carries the key too, or a live map beat would deploy a page whose live layer
+    // can never boot. Written into the export directory first so what is deployed is a real file on
+    // disk that can be inspected, never a string only this function ever saw.
+    const stagedPath = join(exportDir, fileName);
+    await writeFile(stagedPath, substituteKeys(await readFile(join(beatDir, "renders", fileName), "utf8"), env));
     const { url } = await deployFile({
       accountId: creds.accountId,
       apiToken: creds.apiToken,
       projectName,
-      filePath: join(beatDir, "renders", fileName),
+      filePath: stagedPath,
       fileName,
       fetchFn,
     });
+    await rm(stagedPath, { force: true });
     // A hosted embed has no local file to keep — the URL IS the delivery. Mirrors the sibling
     // engine's own `EMBED_URL.txt` convention for a hosted-Datawrapper delivery, the same shape
     // for the same reason: nothing to own, only a live address to remember it by.
@@ -242,7 +282,7 @@ export async function materialise({
 
   if (form === "cms-insertion") {
     const fileName = await singleOwnedFile(beatDir);
-    const insertionHtml = await readFile(join(beatDir, "renders", fileName), "utf8");
+    const insertionHtml = substituteKeys(await readFile(join(beatDir, "renders", fileName), "utf8"), env);
 
     // Without a live CMS to fetch a real article from, this form demonstrates its own mechanics
     // against a clearly-labelled placeholder rather than pretending to have read a real article —
