@@ -1,36 +1,54 @@
 /**
- * The web beat of "Switzerland's population bulges at ages 55-59, not among the youngest" — a
- * population pyramid, not a line or a scatter. Coordinates and formatting come from
- * `./pyramid-geometry.ts`; this file adds the one thing neither the static frame
- * (`proof/static-swiss-age-pyramid/SwissAgePyramid.tsx`) nor a video build has — a reader who can
- * ask any of the 21 age bands what its EXACT figures are, for both sexes at once, and get an answer
- * back, without anything the static frame already states being gated behind that ask.
- *
- * Read `twin-chart-web/references/web-discipline.md` and
+ * The web beat of "Switzerland's population bulges in middle age, not among the youngest" — a
+ * population pyramid. Coordinates come from `./pyramid-geometry.ts`. Read
+ * `twin-chart-web/references/web-discipline.md` and
  * `twin-chart-beat/references/types/population-pyramid.md` before changing this file.
  *
- * The structural difference from every other web beat built so far (a line, a scatter): the
- * interactive unit here is neither a point nor a circle, it is a whole ROW — one hit-rect per age
- * band, spanning the FULL plot width (both sides of the mirror plus the central gutter), sized to
- * that band's own row slot (`pyramidGeometry`'s `hitY`/`hitHeight`, edge-to-edge with its
- * neighbours, no dead zones between bars). A pointer or a tap anywhere in a row — over either bar,
- * over the gutter, over the gap between bars — resolves to that row's own reading, both sexes at
- * once, because the pyramid's own claim (which AGE is widest) is a per-row question, not a per-side
- * one. This is why `pyramid-interaction.mjs` needs neither the line genre's x-nearest resolution nor
- * the scatter's 2D-nearest resolution: the rows already tile the plot exactly, so each row's own
- * native pointer events are enough.
+ * MIGRATED TO THE FLUID FRAME (`web-discipline.md`, "Responsive behaviour", second build). This
+ * beat used to ship two pre-rendered rungs — a 900px `DESKTOP_LAYOUT` and a 360px `NARROW_LAYOUT`
+ * swapped by a media query, everything drawn as `<text>` inside one SVG. That is overturned: ONE
+ * `WebFrame`, SSR'd once; every word (title, caveat, source, legend, the 21 age-band labels, both
+ * magnitude axes, the peak annotation) is plain HTML at a FIXED pixel size. Geometry stretches;
+ * type does not.
  *
- * `WebLayout` lives here, not imported from `twin-chart-web/assets/ChartWebSeed.tsx` — the "duplicate,
- * do not link" ruling that file's own doc-comment states applies here exactly as it does to
- * `proof/web-income-life-expectancy/IncomeLifeExpectancyWeb.tsx`'s own `ScatterLayout`.
+ * TWO SVGs AND A LABEL COLUMN — the shape this type forced, and the one real design decision in
+ * this migration. A pyramid's age labels sit in a reserved gutter down the MIDDLE. The two-rung
+ * build sized that gutter in SVG user units, which a fluid frame cannot do: the labels are now
+ * fixed-pixel HTML while the `viewBox` stretches, so a gutter measured in user units is ~50px on a
+ * laptop and ~20px on a phone while the label it must hold stays 24px wide either way — the label
+ * would sit on top of the bars at exactly the width where there is least room for it. So the
+ * gutter is a real CSS grid track (`--band-gutter`, measured in node from the widest age label at
+ * its own fixed size) and the two halves of the mirror are two independent `<svg>`s in the tracks
+ * either side of it. Each half stretches inside its own cell; the gutter never does. They stay a
+ * true mirror because both `1fr` tracks are equal and both halves are drawn from ONE shared
+ * magnitude scale (`pyramidGeometry` is called once, over the full mirrored width, and the right
+ * half's coordinates are shifted by `HALF` — never a second scale that happens to look similar,
+ * which `population-pyramid.md` names as this type's own cardinal error).
  *
- * Two layouts, not a continuous reflow (`web-discipline.md`, "Responsive behaviour"): each is its
- * own call to this component, SSR'd once at build time. The frame's total height is DERIVED, not a
- * fixed guess — see `rowHeight` below and its own doc-comment.
+ * THE HIT ROWS ARE HTML, NOT SVG RECTS. A band's hit target spans BOTH halves and the label gutter
+ * between them, and no SVG rect can span two separate `<svg>` elements. Each band's target is a
+ * `<div class="row-hit">` in a layer over all three tracks, positioned by the same `%` as the bars,
+ * still `tabIndex={0}` with its own `aria-label` and `data-detail` baked in at build time — so the
+ * no-JS page is keyboard-reachable band by band with the script absent entirely, exactly as before.
  *
- * This component never imports the rasteriser: `ink`/`muted`/`grid`/`measure` below are props,
- * derived once in node by `twin-chart-web/scripts/render-web.mjs`'s `renderWeb`, called from this
- * beat's own `render-web.mjs`.
+ * THE ROW-HEIGHT FLOOR. Height follows width through `aspect-ratio`, which at 375px would put 21
+ * bands about 8px apart — half the height of the 11px label each one has to hold. `.chart-plot`
+ * carries an inline `min-height` of `bands x MIN_ROW_PX`, this beat's own version of the genre's
+ * `PLOT_FLOOR_PX`.
+ *
+ * NUMBER LOCALE. This beat's words are English and its `<html lang>` is patched to `en`. Its
+ * figures are English too and always were: `thousands` and `exactCount` both delegate to
+ * `toLocaleString("en-US")`, so a band reads `144,800` with a comma grouping THOUSANDS, never a
+ * French decimal comma. Neither function is named for a locale, and there is no `fr` in this beat.
+ *
+ * WHAT STAYS UNCONDITIONAL: the title, the caveat, the source, the legend, every bar, every age
+ * label, both magnitude axes and the peak annotation. Interaction only ever adds each band's own
+ * EXACT figures — the 42 numbers the static frame has no room to print — and only ever toggles a
+ * `.row-hit`'s own class and the shared `#tooltip` (`web-discipline.md`, "What must not become
+ * interactive").
+ *
+ * This component never imports the rasteriser: `ink`/`muted`/`grid`/`measure` are props, derived
+ * once in node by whatever runner calls it.
  */
 
 import {
@@ -40,100 +58,68 @@ import {
   type Band,
 } from "./pyramid-geometry";
 
+/** The two sexes' own fixed hues — Okabe-Ito blue and vermillion. */
+const COLOURS = { male: "#0072B2", female: "#D55E00" };
+/** ONE half of the mirror, in canonical SVG user units. The full geometry is computed over
+ *  `HALF * 2` with a zero-width central gutter (the gutter is a CSS track now, not user units), and
+ *  the right half's coordinates are shifted back by this amount into its own `viewBox`. */
+const HALF = 380;
+/** The row-height floor, in CSS pixels — see this file's own doc-comment. */
+const MIN_ROW_PX = 17;
+/** Where the peak annotation's vertical leader stands, in canonical SVG user units from the left
+ *  half's own edge — far enough in that its dashes are not flush against the frame, close enough
+ *  that the label's own ground chip covers its top end. */
+const LEADER_X = 6;
+
 type Measure = (
   text: string,
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-export type WebLayout = {
-  name: "desktop" | "narrow";
-  width: number;
-  pad: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  /** The caveat line under the title — "age bands run in their natural sequence" — wrapped the same
-   *  way the title is. */
-  subtitle: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
+/** `WebFrame` is declared here, duplicated rather than imported from `ChartWebSeed.tsx` — the same
+ *  "duplicate, do not link" ruling that file states. Fields are this TYPE's own shape: a mirrored
+ *  magnitude axis, a central label gutter, one row per age band. */
+export type WebFrame = {
+  /** ONE half of the mirror's canonical height, in SVG user units — proportions only, never a
+   *  rendered pixel cap. Width comes from `HALF`. */
+  height: number;
+  /** Fixed CSS pixel row below the plot for both magnitude axes' tick labels. */
+  xAxisRowPx: number;
+  title: { fontSize: number; fontWeight: number };
+  subtitle: { fontSize: number };
+  source: { fontSize: number };
   legend: { fontSize: number; fontWeight: number };
   axis: { fontSize: number };
   bandLabel: { fontSize: number };
-  /** The peak annotation's own label. */
   note: { fontSize: number; fontWeight: number };
-  /** How many round ticks `magnitude.ticks` is hinted to produce on each mirrored half-axis. */
-  xTickHint: number;
-  /** Horizontal padding either side of the widest age-band label, inside the reserved central
-   *  gutter — the gutter's own width is MEASURED from the real label strings plus this padding
-   *  (`bandGutter` below), never a fixed guess, because a fixed number is exactly what clipped a
-   *  label the first time this genre's own line beat was driven (`web-discipline.md`'s own header
-   *  note). */
+  /** Horizontal padding either side of the widest age-band label, inside the central gutter — the
+   *  gutter's own width is MEASURED from the real label strings plus this padding, never a fixed
+   *  guess, because a fixed number is exactly what clipped a label the first time this genre's own
+   *  line beat was driven. */
   bandLabelPad: number;
-  /** Pixel height of one age band's own row. Together with the data's own band count, this is what
-   *  DERIVES the frame's plot height — never a fixed `plotMinHeight` guessed to be tall enough, the
-   *  same invariant `ChartWebSeed.tsx` keeps for its header block: the plot's own extent is computed
-   *  from real inputs (here, `bands.length * rowHeight`), so a beat with more or fewer age bands
-   *  than this one's 21 never silently clips or leaves dead space. */
-  rowHeight: number;
-  bottomPad: number;
+  /** How many round ticks each mirrored half-axis is hinted to produce. Decided ONCE, at the
+   *  canonical size — never re-derived as the frame stretches. */
+  xTickHint: number;
 };
 
-export const DESKTOP_LAYOUT: WebLayout = {
-  name: "desktop",
-  width: 900,
-  pad: 40,
-  title: { fontSize: 24, fontWeight: 700, lead: 30 },
-  subtitle: { fontSize: 14, fontWeight: 400, lead: 20 },
-  source: { fontSize: 14, fontWeight: 400, lead: 19 },
+export const FRAME: WebFrame = {
+  height: 460,
+  xAxisRowPx: 20,
+  title: { fontSize: 24, fontWeight: 700 },
+  subtitle: { fontSize: 13 },
+  source: { fontSize: 12 },
   legend: { fontSize: 13, fontWeight: 600 },
-  axis: { fontSize: 12 },
+  axis: { fontSize: 11 },
   bandLabel: { fontSize: 11 },
   note: { fontSize: 12, fontWeight: 700 },
+  bandLabelPad: 10,
   xTickHint: 4,
-  bandLabelPad: 14,
-  rowHeight: 30,
-  bottomPad: 40,
 };
 
-export const NARROW_LAYOUT: WebLayout = {
-  name: "narrow",
-  width: 360,
-  pad: 18,
-  title: { fontSize: 17, fontWeight: 700, lead: 22 },
-  subtitle: { fontSize: 11, fontWeight: 400, lead: 15 },
-  source: { fontSize: 10, fontWeight: 400, lead: 14 },
-  legend: { fontSize: 11, fontWeight: 600 },
-  axis: { fontSize: 9 },
-  bandLabel: { fontSize: 8.5 },
-  note: { fontSize: 9.5, fontWeight: 700 },
-  xTickHint: 3,
-  bandLabelPad: 8,
-  rowHeight: 17,
-  bottomPad: 30,
-};
-
-export const LAYOUTS: WebLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];
-
-/** Two hues a colour-vision-deficient reader can tell apart, checked as a pair
- *  (`population-pyramid.md`) — the same fixed pair the static beat uses. Not derived from `ground`:
- *  a sex/group encoding is a categorical distinction, not a magnitude, so it stays put regardless of
- *  the newsroom's own ground colour, the same way the static beat's own `COLOURS` do. */
-const COLOURS = { male: "#0072B2", female: "#D55E00" };
-
-function wrap(
-  text: string,
-  maxWidth: number,
-  font: { fontSize: number; fontWeight: number },
-  measure: Measure,
-): string[] {
-  const lines: string[] = [];
-  let line = "";
-  for (const word of text.split(/\s+/)) {
-    const trial = line ? `${line} ${word}` : word;
-    if (line && measure(trial, font) > maxWidth) {
-      lines.push(line);
-      line = word;
-    } else line = trial;
-  }
-  return line ? [...lines, line] : lines;
+/** `value / total` as a percentage, one decimal — puts an HTML label on the exact spot the SVG
+ *  geometry it annotates was drawn at, as a fraction of the SAME box, so it tracks the stretch. */
+function pct(value: number, total: number): number {
+  return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
 }
 
 export function SwissAgePyramidWeb({
@@ -150,7 +136,7 @@ export function SwissAgePyramidWeb({
   muted,
   grid,
   measure,
-  layout,
+  frame,
 }: {
   bands: Band[];
   title: string;
@@ -169,298 +155,298 @@ export function SwissAgePyramidWeb({
   muted: string;
   grid: string;
   measure: Measure;
-  layout: WebLayout;
+  frame: WebFrame;
 }) {
   if (bands.length < 3)
     throw new Error(
       `a population pyramid beat needs at least three age bands, got ${bands.length}`,
     );
 
-  const { width, pad } = layout;
+  // The central gutter, MEASURED from the widest age-band label that will actually be drawn in it,
+  // at that label's own fixed font size, plus this frame's padding either side.
+  const bandGutterPx =
+    Math.max(...bands.map((b) => measure(b.ageBand, frame.bandLabel))) +
+    frame.bandLabelPad * 2;
 
-  const titleLines = wrap(title, width - pad * 2, layout.title, measure);
-  const titleBaseline = pad + layout.title.fontSize;
-  const limitsLines = wrap(limits, width - pad * 2, layout.subtitle, measure);
-  const limitsBaseline =
-    titleBaseline +
-    (titleLines.length - 1) * layout.title.lead +
-    Math.round(layout.title.lead * 0.9);
-  const sourceLines = wrap(source, width - pad * 2, layout.source, measure);
-  const sourceBaseline =
-    limitsBaseline +
-    (limitsLines.length - 1) * layout.subtitle.lead +
-    Math.round(layout.subtitle.lead * 1.1);
-  const legendBaseline =
-    sourceBaseline +
-    (sourceLines.length - 1) * layout.source.lead +
-    Math.round(layout.source.lead * 1.3);
-
-  // The frame's total height is derived from the header block above (already fixed) plus the
-  // data's own band count times this layout's own row height, plus the bottom margin — never a
-  // fixed constant. A beat with more or fewer than 21 bands changes the frame's height, not its
-  // legibility.
-  const plotTop = legendBaseline + Math.round(layout.title.lead * 0.7);
-  const plotBottom = plotTop + bands.length * layout.rowHeight;
-  const height = plotBottom + layout.bottomPad;
-
-  // The central gutter is MEASURED from the widest age-band label that will actually be drawn in
-  // it, plus this layout's own padding either side — never a fixed guess (see `WebLayout.bandGutter`
-  // — sorry, `bandLabelPad`'s own doc-comment for why a fixed number is exactly the defect class
-  // this genre's own header note warns about).
-  const bandGutter =
-    Math.max(...bands.map((b) => measure(b.ageBand, layout.bandLabel))) +
-    layout.bandLabelPad * 2;
-
-  const padding = {
-    top: plotTop,
-    right: pad + 8,
-    bottom: layout.bottomPad,
-    left: pad + 8,
-  };
-
+  // ONE geometry pass over the whole mirrored width, with a zero-width central gutter: the gutter
+  // is a CSS track now, so it must not occupy user units. `centerX` therefore lands exactly on
+  // `HALF`, which is the boundary between the two `<svg>`s.
   const { plot, centerX, bars, ticksLeft, ticksRight } = pyramidGeometry(
     bands,
-    { width, height, padding, bandGutter, xTickHint: layout.xTickHint },
+    {
+      width: HALF * 2,
+      height: frame.height,
+      padding: { top: 0, right: 0, bottom: 0, left: 0 },
+      bandGutter: 0,
+      xTickHint: frame.xTickHint,
+    },
   );
 
   const peak = bars.find((b) => b.ageBand === peakBand);
-
-  // Visual top-to-bottom order (oldest band at the top, per `pyramidGeometry`'s own reversed
-  // domain) — DOM/tab order for the hit-rects below follows this same order, so `ArrowUp`/
-  // `ArrowDown` in `pyramid-interaction.mjs` moves focus in the direction a sighted reader would
-  // expect: up the frame to older bands, down to younger ones.
+  // Visual top-to-bottom order (oldest band at the top, per `pyramidGeometry`'s reversed domain) —
+  // DOM/tab order for the hit rows follows this same order, so `ArrowUp`/`ArrowDown` in
+  // `pyramid-interaction.mjs` moves focus the way a sighted reader expects.
   const rowsTopToBottom = [...bars].sort((a, b) => a.y - b.y);
 
+  const totalWidth = HALF * 2 + bandGutterPx;
+  const totalHeight = frame.height + frame.xAxisRowPx;
+
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="chart"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
+    <figure
+      className="chart-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--accent" as string]: accent,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ["--male" as string]: COLOURS.male,
+        ["--female" as string]: COLOURS.female,
+        // Fixed CSS pixel type sizes, threaded as custom properties. None of these ever changes
+        // with a viewBox's width — that is the whole point of the redesign.
+        ["--title-size" as string]: `${frame.title.fontSize}px`,
+        ["--title-weight" as string]: frame.title.fontWeight,
+        ["--subtitle-size" as string]: `${frame.subtitle.fontSize}px`,
+        ["--source-size" as string]: `${frame.source.fontSize}px`,
+        ["--axis-size" as string]: `${frame.axis.fontSize}px`,
+        ["--label-size" as string]: `${frame.note.fontSize}px`,
+        ["--label-weight" as string]: frame.note.fontWeight,
+        ["--note-size" as string]: `${frame.note.fontSize}px`,
+        ["--band-size" as string]: `${frame.bandLabel.fontSize}px`,
+        ["--legend-size" as string]: `${frame.legend.fontSize}px`,
+        ["--legend-weight" as string]: frame.legend.fontWeight,
+      }}
     >
-      {/* No root role="img" — this genre's one deliberate departure from the static genre's
-          accessibility pattern (`web-discipline.md`): the per-row rects below need to stay
-          individually reachable and named. */}
-      <desc>{alt}</desc>
-      <rect x={0} y={0} width={width} height={height} fill={ground} />
+      <div className="chart-header">
+        <h2 className="chart-title">{title}</h2>
+        <p className="chart-caveat">{limits}</p>
+      </div>
 
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={titleBaseline + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {limitsLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={limitsBaseline + i * layout.subtitle.lead}
-          fill={muted}
-          fontSize={layout.subtitle.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={sourceBaseline + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
+      {/* Load-bearing legend: the two hues are the only thing naming which side is which. Plain
+          HTML, outside any overlay and NOT `aria-hidden`, because nothing else states it. */}
+      <div className="chart-legend">
+        <span className="legend-key">
+          <span
+            className="legend-swatch"
+            style={{ background: COLOURS.male }}
+          />
+          Men
+        </span>
+        <span className="legend-key">
+          <span
+            className="legend-swatch"
+            style={{ background: COLOURS.female }}
+          />
+          Women
+        </span>
+      </div>
 
-      <rect
-        x={centerX - 180}
-        y={legendBaseline - 10}
-        width={11}
-        height={11}
-        fill={COLOURS.male}
-      />
-      <text
-        x={centerX - 164}
-        y={legendBaseline}
-        fill={ink}
-        fontSize={layout.legend.fontSize}
-        fontWeight={layout.legend.fontWeight}
+      <div
+        className="chart-plot pyramid"
+        style={{
+          ["--band-gutter" as string]: `${bandGutterPx}px`,
+          ["--x-axis-h" as string]: `${frame.xAxisRowPx}px`,
+          aspectRatio: `${totalWidth} / ${totalHeight}`,
+          minHeight: `${bands.length * MIN_ROW_PX}px`,
+        }}
       >
-        Men
-      </text>
-      <rect
-        x={centerX + 30}
-        y={legendBaseline - 10}
-        width={11}
-        height={11}
-        fill={COLOURS.female}
-      />
-      <text
-        x={centerX + 46}
-        y={legendBaseline}
-        fill={ink}
-        fontSize={layout.legend.fontSize}
-        fontWeight={layout.legend.fontWeight}
-      >
-        Women
-      </text>
+        <p className="visually-hidden">{alt}</p>
 
-      {/* Tick labels on BOTH magnitude axes read as positive numbers — the left side is a group,
-          not a negative quantity (`references/types/population-pyramid.md`). Both are the rounded
-          thousands the static frame prints unconditionally; the exact figure lives only in each
-          row's own `data-detail`, on demand. */}
-      {ticksLeft.map((t) => (
-        <g key={`l-${t.value}`}>
+        {/* LEFT HALF — men. Geometry only, no `<text>`. Its own `viewBox` is the left half of the
+            shared scale, so `male_.x` needs no shifting. */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="half left"
+          viewBox={`0 0 ${HALF} ${frame.height}`}
+          preserveAspectRatio="none"
+        >
+          <rect x={0} y={0} width={HALF} height={frame.height} fill={ground} />
+          {ticksLeft.map((t) => (
+            <line
+              key={`l-${t.value}`}
+              x1={t.x}
+              x2={t.x}
+              y1={plot.top}
+              y2={plot.bottom}
+              stroke={grid}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          {bars.map((b) => (
+            <rect
+              key={b.ageBand}
+              x={b.male_.x}
+              y={b.y}
+              width={b.male_.width}
+              height={b.height}
+              fill={COLOURS.male}
+            />
+          ))}
+          {/* The centre rule — drawn on the left half's own right edge, where the label gutter
+              begins. */}
           <line
-            x1={t.x}
-            x2={t.x}
+            x1={HALF}
+            x2={HALF}
             y1={plot.top}
             y2={plot.bottom}
-            stroke={grid}
+            stroke={muted}
             strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
           />
-          <text
-            x={t.x}
-            y={plot.bottom + 16}
-            fill={muted}
-            fontSize={layout.axis.fontSize}
-            textAnchor="middle"
-          >
-            {thousands(t.value)}
-          </text>
-        </g>
-      ))}
-      {ticksRight.map((t) => (
-        <g key={`r-${t.value}`}>
+          {/* The peak annotation's own leader — an L, not a straight rule, and the bend is the
+              whole point. The widest band is BY DEFINITION the bar with the least empty space
+              beside it: at 1024px there were 60px between the frame edge and its own bar and the
+              label needs 95px, and at 375px there were 6px. A label parked on that row therefore
+              printed its ground chip straight through the bar above it — a white hole punched in
+              the 60-64 men's bar, visible in the render at every width. So the label sits in the
+              plot's top-left corner instead, where the oldest bands' bars are a percent of the
+              half-width and nothing is ever drawn, and the leader runs down from it and then right
+              into the peak bar. Unconditional — it is the argument, not a reveal
+              (`web-discipline.md`, "What must not become interactive"). The LABEL itself is HTML,
+              in the overlay below. */}
+          {peak && (
+            <path
+              d={`M ${LEADER_X} 0 L ${LEADER_X} ${peak.centerLabelY} L ${peak.male_.x} ${peak.centerLabelY}`}
+              fill="none"
+              stroke={ink}
+              strokeWidth={1}
+              strokeDasharray="3 3"
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
+        </svg>
+
+        {/* The peak annotation's label — HTML at a fixed size, over the left half's own cell. */}
+        <div className="overlay left" aria-hidden="true">
+          {peak && (
+            <span
+              className="note peak-label"
+              style={{ left: "0%", top: "0%", color: ink }}
+            >
+              {peakLabel}
+            </span>
+          )}
+        </div>
+
+        {/* The reserved central gutter: one age-band label per row, centred, at a FIXED pixel size
+            that never tracks either half's stretch. Never printed over a bar — that is what the
+            track is for. */}
+        <div className="band-labels">
+          {bars.map((b) => (
+            <span
+              key={b.ageBand}
+              className="band-label"
+              style={{ top: `${pct(b.centerLabelY, frame.height)}%` }}
+            >
+              {b.ageBand}
+            </span>
+          ))}
+        </div>
+
+        {/* RIGHT HALF — women. Same shared scale, coordinates shifted back into its own `viewBox`
+            by `HALF`; never a second scale. */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="half right"
+          viewBox={`0 0 ${HALF} ${frame.height}`}
+          preserveAspectRatio="none"
+        >
+          <rect x={0} y={0} width={HALF} height={frame.height} fill={ground} />
+          {ticksRight.map((t) => (
+            <line
+              key={`r-${t.value}`}
+              x1={t.x - centerX}
+              x2={t.x - centerX}
+              y1={plot.top}
+              y2={plot.bottom}
+              stroke={grid}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          {bars.map((b) => (
+            <rect
+              key={b.ageBand}
+              x={b.female_.x - centerX}
+              y={b.y}
+              width={b.female_.width}
+              height={b.height}
+              fill={COLOURS.female}
+            />
+          ))}
           <line
-            x1={t.x}
-            x2={t.x}
+            x1={0}
+            x2={0}
             y1={plot.top}
             y2={plot.bottom}
-            stroke={grid}
+            stroke={muted}
             strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
           />
-          <text
-            x={t.x}
-            y={plot.bottom + 16}
-            fill={muted}
-            fontSize={layout.axis.fontSize}
-            textAnchor="middle"
-          >
-            {thousands(t.value)}
-          </text>
-        </g>
-      ))}
-      <line
-        x1={centerX}
-        x2={centerX}
-        y1={plot.top}
-        y2={plot.bottom}
-        stroke={muted}
-        strokeWidth={1}
-      />
+        </svg>
 
-      {bars.map((b) => (
-        <g key={b.ageBand}>
-          <rect
-            x={b.male_.x}
-            y={b.y}
-            width={b.male_.width}
-            height={b.height}
-            fill={COLOURS.male}
-          />
-          <rect
-            x={b.female_.x}
-            y={b.y}
-            width={b.female_.width}
-            height={b.height}
-            fill={COLOURS.female}
-          />
-          {/* The age-band label sits in the reserved central gutter, never printed over a bar. */}
-          <text
-            x={centerX}
-            y={b.centerLabelY + 4}
-            fill={muted}
-            fontSize={layout.bandLabel.fontSize}
-            textAnchor="middle"
-          >
-            {b.ageBand}
-          </text>
-        </g>
-      ))}
+        {/* Tick labels on BOTH magnitude axes read as positive numbers — the left side is a group,
+            not a negative quantity (`references/types/population-pyramid.md`). Both print the
+            rounded thousands the static frame states unconditionally; each band's exact figure
+            lives only in its own `data-detail`, on demand. */}
+        <div className="x-axis left">
+          {ticksLeft.map((t) => (
+            <span
+              key={`lx-${t.value}`}
+              className="axis-label x"
+              style={{ left: `${pct(t.x, HALF)}%` }}
+            >
+              {thousands(t.value)}
+            </span>
+          ))}
+        </div>
+        <div className="x-axis right">
+          {ticksRight.map((t) => (
+            <span
+              key={`rx-${t.value}`}
+              className="axis-label x"
+              style={{ left: `${pct(t.x - centerX, HALF)}%` }}
+            >
+              {thousands(t.value)}
+            </span>
+          ))}
+        </div>
 
-      {/* The peak annotation: unconditional, drawn regardless of interaction — the argument, not a
-          reveal (`web-discipline.md`, "What must not become interactive"). It names the band but
-          stays silent on its own exact figure, the same restraint the static frame keeps; the exact
-          figure is still reachable on that row's own hover/tap/keyboard focus below, because "do not
-          restate on the frame" and "do not answer on request" are not the same rule
-          (`web-discipline.md`, "What hover reveals"). */}
-      {peak && (
-        <g>
-          <line
-            x1={plot.left}
-            x2={peak.male_.x}
-            y1={peak.centerLabelY}
-            y2={peak.centerLabelY}
-            stroke={ink}
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
-          <text
-            x={plot.left}
-            y={peak.centerLabelY - 8}
-            fill={ink}
-            fontSize={layout.note.fontSize}
-            fontWeight={layout.note.fontWeight}
-          >
-            {peakLabel}
-          </text>
-        </g>
-      )}
+        {/* Interaction layer — one hit row per AGE BAND (not per side), spanning both halves AND
+            the label gutter between them, which is why these are HTML and not SVG rects: no rect
+            can span two `<svg>` elements. Each row covers that band's own full slot
+            (`hitY`/`hitHeight`, edge-to-edge with its neighbours, see `pyramid-geometry.ts`), is
+            `tabIndex={0}`, and carries its own `aria-label`/`data-detail` baked in at build time —
+            reachable by plain Tab with `pyramid-interaction.mjs` absent entirely. `data-detail`
+            states BOTH sexes' EXACT figures for that band, the reading the static frame has no room
+            to print for any of its 42 numbers. */}
+        <div className="hit-rows">
+          {rowsTopToBottom.map((b) => {
+            const isPeak = b.ageBand === peakBand;
+            const men = exactCount(b.male);
+            const women = exactCount(b.female);
+            const detail = `${b.ageBand}${isPeak ? " (widest band)" : ""}: men ${men} · women ${women}`;
+            const ariaLabel = `Age ${b.ageBand}${isPeak ? ", the widest band" : ""}: ${men} men, ${women} women`;
+            return (
+              <div
+                key={b.ageBand}
+                className="row-hit"
+                style={{
+                  top: `${pct(b.hitY, frame.height)}%`,
+                  height: `${pct(b.hitHeight, frame.height)}%`,
+                }}
+                tabIndex={0}
+                role="img"
+                aria-label={ariaLabel}
+                data-band={b.ageBand}
+                data-detail={detail}
+              />
+            );
+          })}
+        </div>
+      </div>
 
-      {/* Interaction layer — one hit-rect per AGE BAND (not per side), spanning the full plot width
-          (both sides of the mirror plus the central gutter) and that band's own full row slot
-          (`hitY`/`hitHeight`, edge-to-edge with its neighbours, see `pyramid-geometry.ts`'s own
-          doc-comment). Every row is `tabIndex={0}` with its own `aria-label`/`data-detail` baked in
-          at build time — reachable by plain Tab with `pyramid-interaction.mjs` absent entirely.
-          `data-detail` states BOTH sexes' EXACT figures for that band, the reading the static frame
-          had no room to print for any of its 42 numbers. `fill="transparent"` at rest;
-          `pyramid-interaction.mjs` and its own CSS only ever toggle these rects' own class and the
-          shared `#tooltip` — never anything drawn above. */}
-      {rowsTopToBottom.map((b) => {
-        const isPeak = b.ageBand === peakBand;
-        const men = exactCount(b.male);
-        const women = exactCount(b.female);
-        const detail = `${b.ageBand}${isPeak ? " (widest band)" : ""}: men ${men} · women ${women}`;
-        const ariaLabel = `Age ${b.ageBand}${isPeak ? ", the widest band" : ""}: ${men} men, ${women} women`;
-        return (
-          <rect
-            key={b.ageBand}
-            className="row-hit"
-            x={plot.left}
-            y={b.hitY}
-            width={plot.right - plot.left}
-            height={b.hitHeight}
-            fill="transparent"
-            pointerEvents="all"
-            tabIndex={0}
-            role="img"
-            aria-label={ariaLabel}
-            data-band={b.ageBand}
-            data-detail={detail}
-          />
-        );
-      })}
-    </svg>
+      <p className="chart-source">{source}</p>
+    </figure>
   );
 }

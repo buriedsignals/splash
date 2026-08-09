@@ -23,11 +23,18 @@
 // `initChart`/`initAll` are DOM wiring and are proven, per `twin-doctrine`'s own rule, by driving a
 // real browser, never by asserting against an unwatched DOM emulation.
 
-/** Wires one `<svg class="chart">` — its `.row-hit` rects and the shared tooltip element — to
- *  hover, tap and keyboard. Every row already carries its own `data-detail` string and its own
- *  `aria-label`, baked in server-side; this function never invents or recomputes either. */
-export function initChart(svg, tooltip) {
-  const rows = Array.prototype.slice.call(svg.querySelectorAll(".row-hit"));
+/** Wires one `.chart-plot` — its `.row-hit` elements and the shared tooltip — to hover, tap and
+ *  keyboard. Every row already carries its own `data-detail` string and its own `aria-label`, baked
+ *  in server-side; this function never invents or recomputes either.
+ *
+ *  IT TAKES THE PLOT, NOT AN `<svg>` — changed when this beat moved to the fluid frame. A band's
+ *  hit target spans BOTH halves of the mirror AND the age-label gutter between them, and the two
+ *  halves are now two independent `<svg>` elements with a CSS track in the middle, so no SVG rect
+ *  can cover a whole band. The rows are `<div class="row-hit">` in a layer over all three tracks
+ *  instead. Nothing else about this file's mechanic changed: 21 rows still tile the plot exactly,
+ *  so each row's own native pointer events still resolve on their own. */
+export function initChart(plot, tooltip) {
+  const rows = Array.prototype.slice.call(plot.querySelectorAll(".row-hit"));
   if (rows.length === 0) return;
 
   function clear() {
@@ -57,7 +64,17 @@ export function initChart(svg, tooltip) {
     row.addEventListener("pointerdown", function (evt) {
       show(row, evt.clientX, evt.clientY);
     });
-    row.addEventListener("pointerleave", clear);
+    // MOUSE AND PEN ONLY. A touch pointer is destroyed the instant the finger lifts, and the
+    // browser fires `pointerleave` immediately after `pointerup` for it — so an unguarded
+    // `pointerleave` handler wipes the tooltip a tap has just opened. This beat's own caveat line
+    // says "Hover, tap or focus any band for its exact figures", and the tap half of that was
+    // false: the figures appeared and vanished inside one gesture. Measured by dispatching a real
+    // touch sequence, not read off the source. A touch reader's tooltip is cleared by the
+    // document-level `pointerdown` below instead: it stays up until they tap somewhere else.
+    row.addEventListener("pointerleave", function (evt) {
+      if (evt.pointerType === "touch") return;
+      clear();
+    });
   });
 
   // Keyboard: every row is already `tabIndex={0}` at build time (works with this script absent
@@ -91,7 +108,7 @@ export function initChart(svg, tooltip) {
   });
 
   document.addEventListener("pointerdown", function (evt) {
-    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    if (plot.contains(evt.target) || tooltip.contains(evt.target)) return;
     clear();
   });
 }
@@ -99,8 +116,8 @@ export function initChart(svg, tooltip) {
 export function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
-  document.querySelectorAll("svg.chart").forEach(function (svg) {
-    initChart(svg, tooltip);
+  document.querySelectorAll(".chart-plot").forEach(function (plot) {
+    initChart(plot, tooltip);
   });
 }
 

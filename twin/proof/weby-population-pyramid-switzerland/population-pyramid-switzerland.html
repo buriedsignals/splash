@@ -16,18 +16,222 @@
 body {
   margin: 0;
   background: var(--ground);
+  color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.chart-figure { margin: 0; max-width: 900px; }
-svg.chart { display: block; width: 100%; height: auto; }
-/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
-   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
-   media query only chooses which server-rendered frame is on screen. */
-svg.chart[data-layout="narrow"] { display: none; }
-@media (max-width: 480px) {
-  svg.chart[data-layout="desktop"] { display: none; }
-  svg.chart[data-layout="narrow"] { display: block; }
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
 }
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { max-width: 640px; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
+   for the test a beat applies before shipping one at all. Native radios: reachable and operable
+   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
+   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
+   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
+   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
+   every hover/focus answer honest regardless of which radio is checked. */
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
+   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
+   rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: three default blue dots with a bare word beside
+   each, indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with three identical unlit pills and a hidden
+   input, the entire block is dropped there and the reader gets the plain native radios above,
+   which state their own checked-ness without any help. That is the same engine in which this
+   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
+   the fallback is not a second design to maintain -- it is the design this genre already had.
+   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
+   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
+   announces it as a radio group, and the CSS-only dimming still fires with the inline script
+   absent. The input is made transparent and stretched over its own pill -- never display:none or
+   visibility:hidden, either of which would take it out of the focus order and out of the
+   accessibility tree.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrows it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
+   peak marker, the end point or any of the HTML furniture above, none of which carries a
+   data-period attribute at all and so can never match these selectors. :has() on the
+   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
+   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
+   supported in every evergreen browser this genre targets. */
+.chart-figure:has(#period-early:checked) .seg[data-period="late"],
+.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
+.chart-figure:has(#period-late:checked) .seg[data-period="early"],
+.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
+
 .pt { cursor: pointer; }
 .pt:hover, .pt:focus, .pt-active {
   fill: var(--muted);
@@ -54,23 +258,102 @@ svg.chart[data-layout="narrow"] { display: none; }
 </style>
 <style>
 
-.row-hit { cursor: pointer; }
-.row-hit:hover, .row-hit:focus, .row-hit.row-active {
-  stroke: var(--ink);
-  stroke-width: 1.5px;
+/* The peak annotation hangs from the plot's own top-left corner, where nothing is ever drawn — see
+   SwissAgePyramidWeb.tsx's leader-path comment for why it cannot sit on the row it points at. */
+.chart-plot.pyramid .overlay .note.peak-label {
+  transform: none;
 }
-.row-hit:focus-visible {
+/* THE MIRROR'S OWN GRID — three tracks, and the middle one is the whole reason this beat needed a
+   layout of its own. The age labels sit in a reserved gutter down the CENTRE, and in a fluid frame
+   that gutter cannot be measured in SVG user units: the label is fixed-pixel HTML while the viewBox
+   stretches, so a user-unit gutter is ~50px on a laptop and ~20px on a phone while the label stays
+   24px wide either way. It is a real CSS track instead (--band-gutter, measured in node), with one
+   independent <svg> either side of it. Both flanking tracks are 1fr, so the mirror stays true. */
+.chart-plot.pyramid {
+  grid-template-columns: 1fr var(--band-gutter) 1fr;
+  grid-template-rows: minmax(0, 1fr) var(--x-axis-h);
+}
+.chart-plot.pyramid svg.half {
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.chart-plot.pyramid svg.half.left { grid-column: 1; }
+.chart-plot.pyramid svg.half.right { grid-column: 3; }
+.chart-plot.pyramid .overlay.left { grid-column: 1; grid-row: 1; }
+.chart-plot.pyramid .band-labels {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+}
+.chart-plot.pyramid .band-labels .band-label {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--band-size);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chart-plot.pyramid .x-axis { grid-row: 2; }
+.chart-plot.pyramid .x-axis.left { grid-column: 1; }
+.chart-plot.pyramid .x-axis.right { grid-column: 3; }
+/* The hit rows span BOTH halves and the gutter between them — which is exactly why they are HTML
+   and not SVG rects: no rect can span two <svg> elements. They tile the plot edge to edge, so
+   there is nothing to resolve by "nearest". */
+.chart-plot.pyramid .hit-rows {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  position: relative;
+}
+.chart-plot.pyramid .row-hit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  cursor: pointer;
+}
+.chart-plot.pyramid .row-hit:hover,
+.chart-plot.pyramid .row-hit:focus,
+.chart-plot.pyramid .row-hit.row-active {
+  /* A FRAME, not a fill — the rule this beat has kept since its first build, and the reason is one
+     line up: these rows sit ON TOP of both halves and the age label between them, so a translucent
+     fill paints over the bars and the label it is meant to point at. An inset box-shadow outlines
+     the active row without covering a pixel of it, and costs no layout. */
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+  outline: none;
+}
+.chart-plot.pyramid .row-hit:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: -2px;
+}
+.chart-legend {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 10px 0 6px;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  color: var(--ink);
+}
+.chart-legend .legend-key { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend .legend-swatch { width: 12px; height: 12px; display: inline-block; }
+/* The alt text, readable by a screen reader and out of the layout — absolutely positioned, so it
+   never claims one of the grid's own cells. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 </style>
 </head>
 <body>
-<figure class="chart-figure">
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="849" viewBox="0 0 900 849" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>Population pyramid of Switzerland by age and sex, 2023. The widest band is 55-59 at 669,962 people, not the youngest band: 0-4 year-olds total 434,030, about 65% of the peak band&#x27;s width. Women outnumber men in every band from 60-64 upward. Every band&#x27;s exact figures for both sexes are reachable by hover, tap or keyboard focus.</desc><rect x="0" y="0" width="900" height="849" fill="#FFFFFF"></rect><text x="40" y="64" fill="#000000" font-size="24" font-weight="700">Switzerland&#x27;s population bulges at ages 55-59, not among the youngest</text><text x="40" y="91" fill="#616161" font-size="14">Age bands run in their natural sequence, oldest at top — sorting by population size would destroy the shape this chart exists to</text><text x="40" y="111" fill="#616161" font-size="14">show. Hover, tap or focus any band for its exact figures.</text><text x="40" y="133" fill="#616161" font-size="14">Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026</text><rect x="270" y="148" width="11" height="11" fill="#0072B2"></rect><text x="286" y="158" fill="#000000" font-size="13" font-weight="600">Men</text><rect x="480" y="148" width="11" height="11" fill="#D55E00"></rect><text x="496" y="158" fill="#000000" font-size="13" font-weight="600">Women</text><g><line x1="315.2255161830357" x2="315.2255161830357" y1="179" y2="809" stroke="#d1d1d1" stroke-width="1"></line><text x="315.2255161830357" y="825" fill="#616161" font-size="12" text-anchor="middle">100k</text></g><g><line x1="208.33530970982144" x2="208.33530970982144" y1="179" y2="809" stroke="#d1d1d1" stroke-width="1"></line><text x="208.33530970982144" y="825" fill="#616161" font-size="12" text-anchor="middle">200k</text></g><g><line x1="101.44510323660717" x2="101.44510323660717" y1="179" y2="809" stroke="#d1d1d1" stroke-width="1"></line><text x="101.44510323660717" y="825" fill="#616161" font-size="12" text-anchor="middle">300k</text></g><g><line x1="584.7744838169642" x2="584.7744838169642" y1="179" y2="809" stroke="#d1d1d1" stroke-width="1"></line><text x="584.7744838169642" y="825" fill="#616161" font-size="12" text-anchor="middle">100k</text></g><g><line x1="691.6646902901786" x2="691.6646902901786" y1="179" y2="809" stroke="#d1d1d1" stroke-width="1"></line><text x="691.6646902901786" y="825" fill="#616161" font-size="12" text-anchor="middle">200k</text></g><g><line x1="798.5548967633929" x2="798.5548967633929" y1="179" y2="809" stroke="#d1d1d1" stroke-width="1"></line><text x="798.5548967633929" y="825" fill="#616161" font-size="12" text-anchor="middle">300k</text></g><line x1="450" x2="450" y1="179" y2="809" stroke="#616161" stroke-width="1"></line><g><rect x="184.1353669642857" y="783.3165467625898" width="237.9803556919643" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="783.3165467625898" width="225.9552074637277" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="800.1582733812949" fill="#616161" font-size="11" text-anchor="middle">0-4</text></g><g><rect x="173.77556815290177" y="753.1007194244604" width="248.34015450334823" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="753.1007194244604" width="235.20227922572542" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="769.9424460431654" fill="#616161" font-size="11" text-anchor="middle">5-9</text></g><g><rect x="177.6674405705915" y="722.8848920863309" width="244.4482820856585" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="722.8848920863309" width="231.37881654017858" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="739.7266187050359" fill="#616161" font-size="11" text-anchor="middle">10-14</text></g><g><rect x="186.1801766141183" y="692.6690647482014" width="235.9355460421317" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="692.6690647482014" width="222.92593901227679" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="709.5107913669065" fill="#616161" font-size="11" text-anchor="middle">15-19</text></g><g><rect x="169.57157633231026" y="662.4532374100719" width="252.54414632393974" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="662.4532374100719" width="235.62128883510044" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="679.2949640287769" fill="#616161" font-size="11" text-anchor="middle">20-24</text></g><g><rect x="129.45675074497768" y="632.2374100719423" width="292.6589719112723" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="632.2374100719423" width="279.08284678710936" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="649.0791366906474" fill="#616161" font-size="11" text-anchor="middle">25-29</text></g><g><rect x="84.32556776785714" y="602.0215827338129" width="337.79015488839286" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="602.0215827338129" width="328.5869081110491" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="618.863309352518" fill="#616161" font-size="11" text-anchor="middle">30-34</text></g><g><rect x="78.19006991629465" y="571.8057553956835" width="343.92565273995535" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="571.8057553956835" width="336.5448839829799" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="588.6474820143885" fill="#616161" font-size="11" text-anchor="middle">35-39</text></g><g><rect x="83.68529543108258" y="541.589928057554" width="338.4304272251674" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="541.589928057554" width="332.709663374721" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="558.431654676259" fill="#616161" font-size="11" text-anchor="middle">40-44</text></g><g><rect x="100.26824206333708" y="511.3741007194244" width="321.8474805929129" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="511.3741007194244" width="318.8973108942522" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="528.2158273381294" fill="#616161" font-size="11" text-anchor="middle">45-49</text></g><g><rect x="81.25995664620535" y="481.1582733812949" width="340.85576601004465" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="481.1582733812949" width="338.88150389648433" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="497.99999999999994" fill="#616161" font-size="11" text-anchor="middle">50-54</text></g><g><rect x="61.30889960797987" y="450.94244604316543" width="360.80682304827013" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="450.94244604316543" width="355.3169420438058" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="467.78417266187046" fill="#616161" font-size="11" text-anchor="middle">55-59</text></g><g><rect x="109.77078141880583" y="420.72661870503595" width="312.3449412374442" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="420.72661870503595" width="313.2438878738839" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="437.56834532374097" fill="#616161" font-size="11" text-anchor="middle">60-64</text></g><g><rect x="176.0843966127232" y="390.51079136690646" width="246.0313260435268" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="390.51079136690646" width="257.62356893554687" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="407.3525179856115" fill="#616161" font-size="11" text-anchor="middle">65-69</text></g><g><rect x="218.0409404575893" y="360.294964028777" width="204.0747821986607" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="360.294964028777" width="227.94550310825895" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="377.136690647482" fill="#616161" font-size="11" text-anchor="middle">70-74</text></g><g><rect x="244.5123000906808" y="330.0791366906475" width="177.6034225655692" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="330.0791366906475" width="207.41723895507815" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="346.9208633093525" fill="#616161" font-size="11" text-anchor="middle">75-79</text></g><g><rect x="304.0212847405134" y="299.86330935251794" width="118.0944379157366" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="299.86330935251794" width="154.86253113839285" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="316.70503597122297" fill="#616161" font-size="11" text-anchor="middle">80-84</text></g><g><rect x="357.1916801464844" y="269.6474820143885" width="64.92404250976563" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="269.6474820143885" width="102.71079940011161" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="286.48920863309354" fill="#616161" font-size="11" text-anchor="middle">85-89</text></g><g><rect x="397.3492618164062" y="239.43165467625897" width="24.76646083984375" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="239.43165467625897" width="51.97643179966518" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="256.273381294964" fill="#616161" font-size="11" text-anchor="middle">90-94</text></g><g><rect x="417.18167072544645" y="209.2158273381295" width="4.934051930803571" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="209.2158273381295" width="14.432315678013394" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="226.0575539568345" fill="#616161" font-size="11" text-anchor="middle">95-99</text></g><g><rect x="421.7041953613281" y="179" width="0.411527294921875" height="25.68345323741007" fill="#0072B2"></rect><rect x="477.88427734375" y="179" width="1.6952786746651787" height="25.68345323741007" fill="#D55E00"></rect><text x="450" y="195.84172661870502" fill="#616161" font-size="11" text-anchor="middle">100+</text></g><g><line x1="48" x2="61.30889960797987" y1="463.78417266187046" y2="463.78417266187046" stroke="#000000" stroke-width="1" stroke-dasharray="3 3"></line><text x="48" y="455.78417266187046" fill="#000000" font-size="12" font-weight="700">55-59: the widest band (669,962)</text></g><rect class="row-hit" x="48" y="176.73381294964028" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 100+: 385 men, 1,586 women" data-band="100+" data-detail="100+: men 385 · women 1,586"></rect><rect class="row-hit" x="48" y="206.94964028776977" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 95-99: 4,616 men, 13,502 women" data-band="95-99" data-detail="95-99: men 4,616 · women 13,502"></rect><rect class="row-hit" x="48" y="237.16546762589925" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 90-94: 23,170 men, 48,626 women" data-band="90-94" data-detail="90-94: men 23,170 · women 48,626"></rect><rect class="row-hit" x="48" y="267.3812949640288" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 85-89: 60,739 men, 96,090 women" data-band="85-89" data-detail="85-89: men 60,739 · women 96,090"></rect><rect class="row-hit" x="48" y="297.59712230215825" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 80-84: 110,482 men, 144,880 women" data-band="80-84" data-detail="80-84: men 110,482 · women 144,880"></rect><rect class="row-hit" x="48" y="327.8129496402878" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 75-79: 166,155 men, 194,047 women" data-band="75-79" data-detail="75-79: men 166,155 · women 194,047"></rect><rect class="row-hit" x="48" y="358.0287769784173" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 70-74: 190,920 men, 213,252 women" data-band="70-74" data-detail="70-74: men 190,920 · women 213,252"></rect><rect class="row-hit" x="48" y="388.24460431654677" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 65-69: 230,172 men, 241,017 women" data-band="65-69" data-detail="65-69: men 230,172 · women 241,017"></rect><rect class="row-hit" x="48" y="418.46043165467626" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 60-64: 292,211 men, 293,052 women" data-band="60-64" data-detail="60-64: men 292,211 · women 293,052"></rect><rect class="row-hit" x="48" y="448.67625899280574" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 55-59, the widest band: 337,549 men, 332,413 women" data-band="55-59" data-detail="55-59 (widest band): men 337,549 · women 332,413"></rect><rect class="row-hit" x="48" y="478.89208633093523" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 50-54: 318,884 men, 317,037 women" data-band="50-54" data-detail="50-54: men 318,884 · women 317,037"></rect><rect class="row-hit" x="48" y="509.1079136690647" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 45-49: 301,101 men, 298,341 women" data-band="45-49" data-detail="45-49: men 301,101 · women 298,341"></rect><rect class="row-hit" x="48" y="539.3237410071943" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 40-44: 316,615 men, 311,263 women" data-band="40-44" data-detail="40-44: men 316,615 · women 311,263"></rect><rect class="row-hit" x="48" y="569.5395683453238" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 35-39: 321,756 men, 314,851 women" data-band="35-39" data-detail="35-39: men 321,756 · women 314,851"></rect><rect class="row-hit" x="48" y="599.7553956834532" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 30-34: 316,016 men, 307,406 women" data-band="30-34" data-detail="30-34: men 316,016 · women 307,406"></rect><rect class="row-hit" x="48" y="629.9712230215827" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 25-29: 273,794 men, 261,093 women" data-band="25-29" data-detail="25-29: men 273,794 · women 261,093"></rect><rect class="row-hit" x="48" y="660.1870503597122" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 20-24: 236,265 men, 220,433 women" data-band="20-24" data-detail="20-24: men 236,265 · women 220,433"></rect><rect class="row-hit" x="48" y="690.4028776978417" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 15-19: 220,727 men, 208,556 women" data-band="15-19" data-detail="15-19: men 220,727 · women 208,556"></rect><rect class="row-hit" x="48" y="720.6187050359712" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 10-14: 228,691 men, 216,464 women" data-band="10-14" data-detail="10-14: men 228,691 · women 216,464"></rect><rect class="row-hit" x="48" y="750.8345323741007" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 5-9: 232,332 men, 220,041 women" data-band="5-9" data-detail="5-9: men 232,332 · women 220,041"></rect><rect class="row-hit" x="48" y="781.0503597122301" width="804" height="30.215827338129493" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 0-4: 222,640 men, 211,390 women" data-band="0-4" data-detail="0-4: men 222,640 · women 211,390"></rect></svg>
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="558" viewBox="0 0 360 558" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>Population pyramid of Switzerland by age and sex, 2023. The widest band is 55-59 at 669,962 people, not the youngest band: 0-4 year-olds total 434,030, about 65% of the peak band&#x27;s width. Women outnumber men in every band from 60-64 upward. Every band&#x27;s exact figures for both sexes are reachable by hover, tap or keyboard focus.</desc><rect x="0" y="0" width="360" height="558" fill="#FFFFFF"></rect><text x="18" y="35" fill="#000000" font-size="17" font-weight="700">Switzerland&#x27;s population bulges at ages</text><text x="18" y="57" fill="#000000" font-size="17" font-weight="700">55-59, not among the youngest</text><text x="18" y="77" fill="#616161" font-size="11">Age bands run in their natural sequence, oldest at top — sorting</text><text x="18" y="92" fill="#616161" font-size="11">by population size would destroy the shape this chart exists to</text><text x="18" y="107" fill="#616161" font-size="11">show. Hover, tap or focus any band for its exact figures.</text><text x="18" y="124" fill="#616161" font-size="10">Source: UN, World Population Prospects (2024), via Our World in Data ·</text><text x="18" y="138" fill="#616161" font-size="10">2023 data, extracted 8 August 2026</text><rect x="0" y="146" width="11" height="11" fill="#0072B2"></rect><text x="16" y="156" fill="#000000" font-size="11" font-weight="600">Men</text><rect x="210" y="146" width="11" height="11" fill="#D55E00"></rect><text x="226" y="156" fill="#000000" font-size="11" font-weight="600">Women</text><g><line x1="122.622314453125" x2="122.622314453125" y1="171" y2="528" stroke="#d1d1d1" stroke-width="1"></line><text x="122.622314453125" y="544" fill="#616161" font-size="9" text-anchor="middle">100k</text></g><g><line x1="83.973388671875" x2="83.973388671875" y1="171" y2="528" stroke="#d1d1d1" stroke-width="1"></line><text x="83.973388671875" y="544" fill="#616161" font-size="9" text-anchor="middle">200k</text></g><g><line x1="45.324462890625" x2="45.324462890625" y1="171" y2="528" stroke="#d1d1d1" stroke-width="1"></line><text x="45.324462890625" y="544" fill="#616161" font-size="9" text-anchor="middle">300k</text></g><g><line x1="237.377685546875" x2="237.377685546875" y1="171" y2="528" stroke="#d1d1d1" stroke-width="1"></line><text x="237.377685546875" y="544" fill="#616161" font-size="9" text-anchor="middle">100k</text></g><g><line x1="276.026611328125" x2="276.026611328125" y1="171" y2="528" stroke="#d1d1d1" stroke-width="1"></line><text x="276.026611328125" y="544" fill="#616161" font-size="9" text-anchor="middle">200k</text></g><g><line x1="314.675537109375" x2="314.675537109375" y1="171" y2="528" stroke="#d1d1d1" stroke-width="1"></line><text x="314.675537109375" y="544" fill="#616161" font-size="9" text-anchor="middle">300k</text></g><line x1="180" x2="180" y1="171" y2="528" stroke="#616161" stroke-width="1"></line><g><rect x="75.223271875" y="513.4460431654677" width="86.047968359375" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="513.4460431654677" width="81.69996420898438" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="524.7230215827338" fill="#616161" font-size="8.5" text-anchor="middle">0-4</text></g><g><rect x="71.47741798828125" y="496.32374100719426" width="89.79382224609375" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="496.32374100719426" width="85.04348277832031" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="507.60071942446046" fill="#616161" font-size="8.5" text-anchor="middle">5-9</text></g><g><rect x="72.88462537597655" y="479.2014388489209" width="88.38661485839845" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="479.2014388489209" width="83.661010703125" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="490.4784172661871" fill="#616161" font-size="8.5" text-anchor="middle">10-14</text></g><g><rect x="75.9626258251953" y="462.0791366906475" width="85.3086144091797" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="462.0791366906475" width="80.60465365234374" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="473.3561151079137" fill="#616161" font-size="8.5" text-anchor="middle">15-19</text></g><g><rect x="69.95735573730468" y="444.9568345323741" width="91.31388449707032" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="444.9568345323741" width="85.19498656738281" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="456.2338129496403" fill="#616161" font-size="8.5" text-anchor="middle">20-24</text></g><g><rect x="55.45280038085937" y="427.8345323741007" width="105.81843985351563" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="427.8345323741007" width="100.90963979003907" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="439.1115107913669" fill="#616161" font-size="8.5" text-anchor="middle">25-29</text></g><g><rect x="39.134450937500006" y="410.71223021582733" width="122.136789296875" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="410.71223021582733" width="118.80911678710937" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="421.98920863309354" fill="#616161" font-size="8.5" text-anchor="middle">30-34</text></g><g><rect x="36.91600259765626" y="393.58992805755395" width="124.35523763671874" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="393.58992805755395" width="121.68652931152343" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="404.86690647482015" fill="#616161" font-size="8.5" text-anchor="middle">35-39</text></g><g><rect x="38.90294387207031" y="376.46762589928056" width="122.36829636230469" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="376.46762589928056" width="120.29980585449219" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="387.74460431654677" fill="#616161" font-size="8.5" text-anchor="middle">40-44</text></g><g><rect x="44.898938217773434" y="359.3453237410072" width="116.37230201660157" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="359.3453237410072" width="115.30559166503906" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="370.6223021582734" fill="#616161" font-size="8.5" text-anchor="middle">45-49</text></g><g><rect x="38.02599974609376" y="342.22302158273385" width="123.24524048828124" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="342.22302158273385" width="122.53139482910156" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="353.50000000000006" fill="#616161" font-size="8.5" text-anchor="middle">50-54</text></g><g><rect x="30.81217774902342" y="325.1007194244604" width="130.45906248535158" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="325.1007194244604" width="128.47405365722656" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="336.3776978417266" fill="#616161" font-size="8.5" text-anchor="middle">55-59</text></g><g><rect x="48.33482771972656" y="307.9784172661871" width="112.93641251464844" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="307.9784172661871" width="113.26144998046875" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="319.2553956834533" fill="#616161" font-size="8.5" text-anchor="middle">60-64</text></g><g><rect x="72.31223478515625" y="290.85611510791364" width="88.95900544921875" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="290.85611510791364" width="93.15048145019531" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="302.13309352517985" fill="#616161" font-size="8.5" text-anchor="middle">65-69</text></g><g><rect x="87.48271113281251" y="273.7338129496403" width="73.78852910156249" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="273.7338129496403" width="82.41960720703125" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="285.0107913669065" fill="#616161" font-size="8.5" text-anchor="middle">70-74</text></g><g><rect x="97.05411760253907" y="256.6115107913669" width="64.21712263183593" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="256.6115107913669" width="74.99708101074219" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="267.88848920863313" fill="#616161" font-size="8.5" text-anchor="middle">75-79</text></g><g><rect x="118.57113405273438" y="239.48920863309354" width="42.70010618164062" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="239.48920863309354" width="55.99456367187501" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="250.76618705035972" fill="#616161" font-size="8.5" text-anchor="middle">80-84</text></g><g><rect x="137.79626920410158" y="222.36690647482015" width="23.474971030273437" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="222.36690647482015" width="37.137752783203126" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="233.64388489208633" fill="#616161" font-size="8.5" text-anchor="middle">85-89</text></g><g><rect x="152.31628413085937" y="205.24460431654677" width="8.954956103515624" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="205.24460431654677" width="18.793426650390625" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="216.52158273381295" fill="#616161" font-size="8.5" text-anchor="middle">90-94</text></g><g><rect x="159.4872058203125" y="188.12230215827338" width="1.7840344140625" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="188.12230215827338" width="5.218377958984375" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="199.39928057553956" fill="#616161" font-size="8.5" text-anchor="middle">95-99</text></g><g><rect x="161.1224418701172" y="171" width="0.1487983642578125" height="14.553956834532373" fill="#0072B2"></rect><rect x="198.728759765625" y="171" width="0.612971962890625" height="14.553956834532373" fill="#D55E00"></rect><text x="180" y="182.27697841726618" fill="#616161" font-size="8.5" text-anchor="middle">100+</text></g><g><line x1="26" x2="30.81217774902342" y1="332.3776978417266" y2="332.3776978417266" stroke="#000000" stroke-width="1" stroke-dasharray="3 3"></line><text x="26" y="324.3776978417266" fill="#000000" font-size="9.5" font-weight="700">55-59: the widest band (669,962)</text></g><rect class="row-hit" x="26" y="169.7158273381295" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 100+: 385 men, 1,586 women" data-band="100+" data-detail="100+: men 385 · women 1,586"></rect><rect class="row-hit" x="26" y="186.83812949640287" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 95-99: 4,616 men, 13,502 women" data-band="95-99" data-detail="95-99: men 4,616 · women 13,502"></rect><rect class="row-hit" x="26" y="203.96043165467626" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 90-94: 23,170 men, 48,626 women" data-band="90-94" data-detail="90-94: men 23,170 · women 48,626"></rect><rect class="row-hit" x="26" y="221.08273381294964" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 85-89: 60,739 men, 96,090 women" data-band="85-89" data-detail="85-89: men 60,739 · women 96,090"></rect><rect class="row-hit" x="26" y="238.20503597122303" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 80-84: 110,482 men, 144,880 women" data-band="80-84" data-detail="80-84: men 110,482 · women 144,880"></rect><rect class="row-hit" x="26" y="255.3273381294964" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 75-79: 166,155 men, 194,047 women" data-band="75-79" data-detail="75-79: men 166,155 · women 194,047"></rect><rect class="row-hit" x="26" y="272.4496402877698" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 70-74: 190,920 men, 213,252 women" data-band="70-74" data-detail="70-74: men 190,920 · women 213,252"></rect><rect class="row-hit" x="26" y="289.5719424460431" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 65-69: 230,172 men, 241,017 women" data-band="65-69" data-detail="65-69: men 230,172 · women 241,017"></rect><rect class="row-hit" x="26" y="306.69424460431657" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 60-64: 292,211 men, 293,052 women" data-band="60-64" data-detail="60-64: men 292,211 · women 293,052"></rect><rect class="row-hit" x="26" y="323.8165467625899" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 55-59, the widest band: 337,549 men, 332,413 women" data-band="55-59" data-detail="55-59 (widest band): men 337,549 · women 332,413"></rect><rect class="row-hit" x="26" y="340.93884892086334" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 50-54: 318,884 men, 317,037 women" data-band="50-54" data-detail="50-54: men 318,884 · women 317,037"></rect><rect class="row-hit" x="26" y="358.06115107913666" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 45-49: 301,101 men, 298,341 women" data-band="45-49" data-detail="45-49: men 301,101 · women 298,341"></rect><rect class="row-hit" x="26" y="375.18345323741005" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 40-44: 316,615 men, 311,263 women" data-band="40-44" data-detail="40-44: men 316,615 · women 311,263"></rect><rect class="row-hit" x="26" y="392.30575539568343" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 35-39: 321,756 men, 314,851 women" data-band="35-39" data-detail="35-39: men 321,756 · women 314,851"></rect><rect class="row-hit" x="26" y="409.4280575539568" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 30-34: 316,016 men, 307,406 women" data-band="30-34" data-detail="30-34: men 316,016 · women 307,406"></rect><rect class="row-hit" x="26" y="426.5503597122302" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 25-29: 273,794 men, 261,093 women" data-band="25-29" data-detail="25-29: men 273,794 · women 261,093"></rect><rect class="row-hit" x="26" y="443.6726618705036" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 20-24: 236,265 men, 220,433 women" data-band="20-24" data-detail="20-24: men 236,265 · women 220,433"></rect><rect class="row-hit" x="26" y="460.794964028777" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 15-19: 220,727 men, 208,556 women" data-band="15-19" data-detail="15-19: men 220,727 · women 208,556"></rect><rect class="row-hit" x="26" y="477.91726618705036" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 10-14: 228,691 men, 216,464 women" data-band="10-14" data-detail="10-14: men 228,691 · women 216,464"></rect><rect class="row-hit" x="26" y="495.03956834532374" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 5-9: 232,332 men, 220,041 women" data-band="5-9" data-detail="5-9: men 232,332 · women 220,041"></rect><rect class="row-hit" x="26" y="512.1618705035972" width="308" height="17.12230215827338" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Age 0-4: 222,640 men, 211,390 women" data-band="0-4" data-detail="0-4: men 222,640 · women 211,390"></rect></svg>
-</figure>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#0072B2;--ink:#000000;--muted:#616161;--male:#0072B2;--female:#D55E00;--title-size:24px;--title-weight:700;--subtitle-size:13px;--source-size:12px;--axis-size:11px;--label-size:12px;--label-weight:700;--note-size:12px;--band-size:11px;--legend-size:13px;--legend-weight:600"><div class="chart-header"><h2 class="chart-title">Switzerland&#x27;s population bulges at ages 55-59, not among the youngest</h2><p class="chart-caveat">Age bands run in their natural sequence, oldest at top — sorting by population size would destroy the shape this chart exists to show. Hover, tap or focus any band for its exact figures.</p></div><div class="chart-legend"><span class="legend-key"><span class="legend-swatch" style="background:#0072B2"></span>Men</span><span class="legend-key"><span class="legend-swatch" style="background:#D55E00"></span>Women</span></div><div class="chart-plot pyramid" style="--band-gutter:47.7685546875px;--x-axis-h:20px;aspect-ratio:807.7685546875 / 480;min-height:357px"><p class="visually-hidden">Population pyramid of Switzerland by age and sex, 2023. The widest band is 55-59 at 669,962 people, not the youngest band: 0-4 year-olds total 434,030, about 65% of the peak band&#x27;s width. Women outnumber men in every band from 60-64 upward. Every band&#x27;s exact figures for both sexes are reachable by hover, tap or keyboard focus.</p><svg xmlns="http://www.w3.org/2000/svg" class="half left" viewBox="0 0 380 460" preserveAspectRatio="none"><rect x="0" y="0" width="380" height="460" fill="#FFFFFF"></rect><line x1="271.42857142857144" x2="271.42857142857144" y1="0" y2="460" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="162.85714285714286" x2="162.85714285714286" y1="0" y2="460" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="54.28571428571428" x2="54.28571428571428" y1="0" y2="460" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="138.27657142857143" y="441.24700239808146" width="241.72342857142857" height="18.752997601918462" fill="#0072B2"></rect><rect x="127.75382857142856" y="419.1846522781774" width="252.24617142857144" height="18.752997601918462" fill="#0072B2"></rect><rect x="131.70691428571428" y="397.1223021582733" width="248.29308571428572" height="18.752997601918462" fill="#0072B2"></rect><rect x="140.35354285714286" y="375.05995203836926" width="239.64645714285714" height="18.752997601918462" fill="#0072B2"></rect><rect x="123.48371428571426" y="352.9976019184652" width="256.51628571428574" height="18.752997601918462" fill="#0072B2"></rect><rect x="82.73794285714285" y="330.9352517985611" width="297.26205714285715" height="18.752997601918462" fill="#0072B2"></rect><rect x="36.896914285714274" y="308.87290167865706" width="343.1030857142857" height="18.752997601918462" fill="#0072B2"></rect><rect x="30.664914285714303" y="286.810551558753" width="349.3350857142857" height="18.752997601918462" fill="#0072B2"></rect><rect x="36.24657142857143" y="264.7482014388489" width="343.75342857142857" height="18.752997601918462" fill="#0072B2"></rect><rect x="53.09034285714284" y="242.68585131894483" width="326.90965714285716" height="18.752997601918462" fill="#0072B2"></rect><rect x="33.78308571428573" y="220.62350119904073" width="346.21691428571427" height="18.752997601918462" fill="#0072B2"></rect><rect x="13.518228571428551" y="198.56115107913666" width="366.48177142857145" height="18.752997601918462" fill="#0072B2"></rect><rect x="62.74234285714283" y="176.4988009592326" width="317.25765714285717" height="18.752997601918462" fill="#0072B2"></rect><rect x="130.09897142857142" y="154.43645083932853" width="249.90102857142858" height="18.752997601918462" fill="#0072B2"></rect><rect x="172.7154285714286" y="132.37410071942446" width="207.2845714285714" height="18.752997601918462" fill="#0072B2"></rect><rect x="199.60314285714284" y="110.31175059952037" width="180.39685714285716" height="18.752997601918462" fill="#0072B2"></rect><rect x="260.0481142857143" y="88.2494004796163" width="119.95188571428571" height="18.752997601918462" fill="#0072B2"></rect><rect x="314.0548" y="66.18705035971223" width="65.9452" height="18.752997601918462" fill="#0072B2"></rect><rect x="354.844" y="44.12470023980815" width="25.156" height="18.752997601918462" fill="#0072B2"></rect><rect x="374.98834285714287" y="22.062350119904075" width="5.011657142857143" height="18.752997601918462" fill="#0072B2"></rect><rect x="379.582" y="0" width="0.41800000000000004" height="18.752997601918462" fill="#0072B2"></rect><line x1="380" x2="380" y1="0" y2="460" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><path d="M 6 0 L 6 207.9376498800959 L 13.518228571428551 207.9376498800959" fill="none" stroke="#000000" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></path></svg><div class="overlay left" aria-hidden="true"><span class="note peak-label" style="left:0%;top:0%;color:#000000">the widest band</span></div><div class="band-labels"><span class="band-label" style="top:98%">0-4</span><span class="band-label" style="top:93.2%">5-9</span><span class="band-label" style="top:88.4%">10-14</span><span class="band-label" style="top:83.6%">15-19</span><span class="band-label" style="top:78.8%">20-24</span><span class="band-label" style="top:74%">25-29</span><span class="band-label" style="top:69.2%">30-34</span><span class="band-label" style="top:64.4%">35-39</span><span class="band-label" style="top:59.6%">40-44</span><span class="band-label" style="top:54.8%">45-49</span><span class="band-label" style="top:50%">50-54</span><span class="band-label" style="top:45.2%">55-59</span><span class="band-label" style="top:40.4%">60-64</span><span class="band-label" style="top:35.6%">65-69</span><span class="band-label" style="top:30.8%">70-74</span><span class="band-label" style="top:26%">75-79</span><span class="band-label" style="top:21.2%">80-84</span><span class="band-label" style="top:16.4%">85-89</span><span class="band-label" style="top:11.6%">90-94</span><span class="band-label" style="top:6.8%">95-99</span><span class="band-label" style="top:2%">100+</span></div><svg xmlns="http://www.w3.org/2000/svg" class="half right" viewBox="0 0 380 460" preserveAspectRatio="none"><rect x="0" y="0" width="380" height="460" fill="#FFFFFF"></rect><line x1="108.57142857142856" x2="108.57142857142856" y1="0" y2="460" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="217.1428571428571" x2="217.1428571428571" y1="0" y2="460" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="325.7142857142858" x2="325.7142857142858" y1="0" y2="460" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="0" y="441.24700239808146" width="229.50914285714288" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="419.1846522781774" width="238.90165714285712" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="397.1223021582733" width="235.01805714285717" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="375.05995203836926" width="226.43222857142857" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="352.9976019184652" width="239.32725714285712" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="330.9352517985611" width="283.4724" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="308.87290167865706" width="333.7550857142857" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="286.810551558753" width="341.83822857142854" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="264.7482014388489" width="337.94268571428574" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="242.68585131894483" width="323.9130857142857" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="220.62350119904073" width="344.2116" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="198.56115107913666" width="360.90554285714285" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="176.4988009592326" width="318.17074285714284" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="154.43645083932853" width="261.67560000000003" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="132.37410071942446" width="231.53074285714285" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="110.31175059952037" width="210.67960000000002" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="88.2494004796163" width="157.29828571428573" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="66.18705035971223" width="104.32628571428572" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="44.12470023980815" width="52.79394285714285" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="22.062350119904075" width="14.659314285714286" height="18.752997601918462" fill="#D55E00"></rect><rect x="0" y="0" width="1.7219428571428572" height="18.752997601918462" fill="#D55E00"></rect><line x1="0" x2="0" y1="0" y2="460" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line></svg><div class="x-axis left"><span class="axis-label x" style="left:71.4%">100k</span><span class="axis-label x" style="left:42.9%">200k</span><span class="axis-label x" style="left:14.3%">300k</span></div><div class="x-axis right"><span class="axis-label x" style="left:28.6%">100k</span><span class="axis-label x" style="left:57.1%">200k</span><span class="axis-label x" style="left:85.7%">300k</span></div><div class="hit-rows"><div class="row-hit" style="top:-0.4%;height:4.8%" tabindex="0" role="img" aria-label="Age 100+: 385 men, 1,586 women" data-band="100+" data-detail="100+: men 385 · women 1,586"></div><div class="row-hit" style="top:4.4%;height:4.8%" tabindex="0" role="img" aria-label="Age 95-99: 4,616 men, 13,502 women" data-band="95-99" data-detail="95-99: men 4,616 · women 13,502"></div><div class="row-hit" style="top:9.2%;height:4.8%" tabindex="0" role="img" aria-label="Age 90-94: 23,170 men, 48,626 women" data-band="90-94" data-detail="90-94: men 23,170 · women 48,626"></div><div class="row-hit" style="top:14%;height:4.8%" tabindex="0" role="img" aria-label="Age 85-89: 60,739 men, 96,090 women" data-band="85-89" data-detail="85-89: men 60,739 · women 96,090"></div><div class="row-hit" style="top:18.8%;height:4.8%" tabindex="0" role="img" aria-label="Age 80-84: 110,482 men, 144,880 women" data-band="80-84" data-detail="80-84: men 110,482 · women 144,880"></div><div class="row-hit" style="top:23.6%;height:4.8%" tabindex="0" role="img" aria-label="Age 75-79: 166,155 men, 194,047 women" data-band="75-79" data-detail="75-79: men 166,155 · women 194,047"></div><div class="row-hit" style="top:28.4%;height:4.8%" tabindex="0" role="img" aria-label="Age 70-74: 190,920 men, 213,252 women" data-band="70-74" data-detail="70-74: men 190,920 · women 213,252"></div><div class="row-hit" style="top:33.2%;height:4.8%" tabindex="0" role="img" aria-label="Age 65-69: 230,172 men, 241,017 women" data-band="65-69" data-detail="65-69: men 230,172 · women 241,017"></div><div class="row-hit" style="top:38%;height:4.8%" tabindex="0" role="img" aria-label="Age 60-64: 292,211 men, 293,052 women" data-band="60-64" data-detail="60-64: men 292,211 · women 293,052"></div><div class="row-hit" style="top:42.8%;height:4.8%" tabindex="0" role="img" aria-label="Age 55-59, the widest band: 337,549 men, 332,413 women" data-band="55-59" data-detail="55-59 (widest band): men 337,549 · women 332,413"></div><div class="row-hit" style="top:47.6%;height:4.8%" tabindex="0" role="img" aria-label="Age 50-54: 318,884 men, 317,037 women" data-band="50-54" data-detail="50-54: men 318,884 · women 317,037"></div><div class="row-hit" style="top:52.4%;height:4.8%" tabindex="0" role="img" aria-label="Age 45-49: 301,101 men, 298,341 women" data-band="45-49" data-detail="45-49: men 301,101 · women 298,341"></div><div class="row-hit" style="top:57.2%;height:4.8%" tabindex="0" role="img" aria-label="Age 40-44: 316,615 men, 311,263 women" data-band="40-44" data-detail="40-44: men 316,615 · women 311,263"></div><div class="row-hit" style="top:62%;height:4.8%" tabindex="0" role="img" aria-label="Age 35-39: 321,756 men, 314,851 women" data-band="35-39" data-detail="35-39: men 321,756 · women 314,851"></div><div class="row-hit" style="top:66.8%;height:4.8%" tabindex="0" role="img" aria-label="Age 30-34: 316,016 men, 307,406 women" data-band="30-34" data-detail="30-34: men 316,016 · women 307,406"></div><div class="row-hit" style="top:71.6%;height:4.8%" tabindex="0" role="img" aria-label="Age 25-29: 273,794 men, 261,093 women" data-band="25-29" data-detail="25-29: men 273,794 · women 261,093"></div><div class="row-hit" style="top:76.4%;height:4.8%" tabindex="0" role="img" aria-label="Age 20-24: 236,265 men, 220,433 women" data-band="20-24" data-detail="20-24: men 236,265 · women 220,433"></div><div class="row-hit" style="top:81.2%;height:4.8%" tabindex="0" role="img" aria-label="Age 15-19: 220,727 men, 208,556 women" data-band="15-19" data-detail="15-19: men 220,727 · women 208,556"></div><div class="row-hit" style="top:86%;height:4.8%" tabindex="0" role="img" aria-label="Age 10-14: 228,691 men, 216,464 women" data-band="10-14" data-detail="10-14: men 228,691 · women 216,464"></div><div class="row-hit" style="top:90.8%;height:4.8%" tabindex="0" role="img" aria-label="Age 5-9: 232,332 men, 220,041 women" data-band="5-9" data-detail="5-9: men 232,332 · women 220,041"></div><div class="row-hit" style="top:95.6%;height:4.8%" tabindex="0" role="img" aria-label="Age 0-4: 222,640 men, 211,390 women" data-band="0-4" data-detail="0-4: men 222,640 · women 211,390"></div></div></div><p class="chart-source">Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026</p></figure>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/proof/weby-population-pyramid-switzerland/pyramid-interaction.mjs
@@ -98,11 +381,18 @@ svg.chart[data-layout="narrow"] { display: none; }
 // `initChart`/`initAll` are DOM wiring and are proven, per `twin-doctrine`'s own rule, by driving a
 // real browser, never by asserting against an unwatched DOM emulation.
 
-/** Wires one `<svg class="chart">` — its `.row-hit` rects and the shared tooltip element — to
- *  hover, tap and keyboard. Every row already carries its own `data-detail` string and its own
- *  `aria-label`, baked in server-side; this function never invents or recomputes either. */
-function initChart(svg, tooltip) {
-  const rows = Array.prototype.slice.call(svg.querySelectorAll(".row-hit"));
+/** Wires one `.chart-plot` — its `.row-hit` elements and the shared tooltip — to hover, tap and
+ *  keyboard. Every row already carries its own `data-detail` string and its own `aria-label`, baked
+ *  in server-side; this function never invents or recomputes either.
+ *
+ *  IT TAKES THE PLOT, NOT AN `<svg>` — changed when this beat moved to the fluid frame. A band's
+ *  hit target spans BOTH halves of the mirror AND the age-label gutter between them, and the two
+ *  halves are now two independent `<svg>` elements with a CSS track in the middle, so no SVG rect
+ *  can cover a whole band. The rows are `<div class="row-hit">` in a layer over all three tracks
+ *  instead. Nothing else about this file's mechanic changed: 21 rows still tile the plot exactly,
+ *  so each row's own native pointer events still resolve on their own. */
+function initChart(plot, tooltip) {
+  const rows = Array.prototype.slice.call(plot.querySelectorAll(".row-hit"));
   if (rows.length === 0) return;
 
   function clear() {
@@ -132,7 +422,17 @@ function initChart(svg, tooltip) {
     row.addEventListener("pointerdown", function (evt) {
       show(row, evt.clientX, evt.clientY);
     });
-    row.addEventListener("pointerleave", clear);
+    // MOUSE AND PEN ONLY. A touch pointer is destroyed the instant the finger lifts, and the
+    // browser fires `pointerleave` immediately after `pointerup` for it — so an unguarded
+    // `pointerleave` handler wipes the tooltip a tap has just opened. This beat's own caveat line
+    // says "Hover, tap or focus any band for its exact figures", and the tap half of that was
+    // false: the figures appeared and vanished inside one gesture. Measured by dispatching a real
+    // touch sequence, not read off the source. A touch reader's tooltip is cleared by the
+    // document-level `pointerdown` below instead: it stays up until they tap somewhere else.
+    row.addEventListener("pointerleave", function (evt) {
+      if (evt.pointerType === "touch") return;
+      clear();
+    });
   });
 
   // Keyboard: every row is already `tabIndex={0}` at build time (works with this script absent
@@ -166,7 +466,7 @@ function initChart(svg, tooltip) {
   });
 
   document.addEventListener("pointerdown", function (evt) {
-    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    if (plot.contains(evt.target) || tooltip.contains(evt.target)) return;
     clear();
   });
 }
@@ -174,8 +474,8 @@ function initChart(svg, tooltip) {
 function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
-  document.querySelectorAll("svg.chart").forEach(function (svg) {
-    initChart(svg, tooltip);
+  document.querySelectorAll(".chart-plot").forEach(function (plot) {
+    initChart(plot, tooltip);
   });
 }
 

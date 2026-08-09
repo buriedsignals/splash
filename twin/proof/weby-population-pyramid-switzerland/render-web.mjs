@@ -21,9 +21,9 @@
 //      `pyramid-interaction.mjs`'s own header comment for why that needs neither nearest-x nor
 //      nearest-2D resolution at all). The skill's `renderWeb` has no parameter to swap which
 //      interaction script it inlines (by design — nothing in that file may import a story's own
-//      files), so this runner still calls it for what it DOES generalise (SSR both layouts, derive
-//      the furniture, build the HTML shell, write the file) and then patches the one piece that
-//      doesn't. Both substitutions fail loud if the shape they expect to find has changed.
+//      files), so this runner still calls it for what it DOES generalise (SSR the one fluid frame,
+//      derive the furniture, build the HTML shell, write the file) and then patches the one piece
+//      that doesn't. Both substitutions fail loud if the shape they expect to find has changed.
 //
 // Usage:  bun proof/weby-population-pyramid-switzerland/render-web.mjs [outDir] [--data <csv>]
 
@@ -31,7 +31,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { LAYOUTS, SwissAgePyramidWeb } from "./SwissAgePyramidWeb.tsx";
+import { FRAME, SwissAgePyramidWeb } from "./SwissAgePyramidWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -75,14 +75,96 @@ function inlineable(moduleSource) {
  *  pointer coverage). A stroke outline framing the whole row highlights it without hiding anything
  *  underneath. */
 const EXTRA_CSS = `
-.row-hit { cursor: pointer; }
-.row-hit:hover, .row-hit:focus, .row-hit.row-active {
-  stroke: var(--ink);
-  stroke-width: 1.5px;
+/* The peak annotation hangs from the plot's own top-left corner, where nothing is ever drawn — see
+   SwissAgePyramidWeb.tsx's leader-path comment for why it cannot sit on the row it points at. */
+.chart-plot.pyramid .overlay .note.peak-label {
+  transform: none;
 }
-.row-hit:focus-visible {
+/* THE MIRROR'S OWN GRID — three tracks, and the middle one is the whole reason this beat needed a
+   layout of its own. The age labels sit in a reserved gutter down the CENTRE, and in a fluid frame
+   that gutter cannot be measured in SVG user units: the label is fixed-pixel HTML while the viewBox
+   stretches, so a user-unit gutter is ~50px on a laptop and ~20px on a phone while the label stays
+   24px wide either way. It is a real CSS track instead (--band-gutter, measured in node), with one
+   independent <svg> either side of it. Both flanking tracks are 1fr, so the mirror stays true. */
+.chart-plot.pyramid {
+  grid-template-columns: 1fr var(--band-gutter) 1fr;
+  grid-template-rows: minmax(0, 1fr) var(--x-axis-h);
+}
+.chart-plot.pyramid svg.half {
+  grid-row: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.chart-plot.pyramid svg.half.left { grid-column: 1; }
+.chart-plot.pyramid svg.half.right { grid-column: 3; }
+.chart-plot.pyramid .overlay.left { grid-column: 1; grid-row: 1; }
+.chart-plot.pyramid .band-labels {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+}
+.chart-plot.pyramid .band-labels .band-label {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--band-size);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chart-plot.pyramid .x-axis { grid-row: 2; }
+.chart-plot.pyramid .x-axis.left { grid-column: 1; }
+.chart-plot.pyramid .x-axis.right { grid-column: 3; }
+/* The hit rows span BOTH halves and the gutter between them — which is exactly why they are HTML
+   and not SVG rects: no rect can span two <svg> elements. They tile the plot edge to edge, so
+   there is nothing to resolve by "nearest". */
+.chart-plot.pyramid .hit-rows {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  position: relative;
+}
+.chart-plot.pyramid .row-hit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  cursor: pointer;
+}
+.chart-plot.pyramid .row-hit:hover,
+.chart-plot.pyramid .row-hit:focus,
+.chart-plot.pyramid .row-hit.row-active {
+  /* A FRAME, not a fill — the rule this beat has kept since its first build, and the reason is one
+     line up: these rows sit ON TOP of both halves and the age label between them, so a translucent
+     fill paints over the bars and the label it is meant to point at. An inset box-shadow outlines
+     the active row without covering a pixel of it, and costs no layout. */
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+  outline: none;
+}
+.chart-plot.pyramid .row-hit:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: -2px;
+}
+.chart-legend {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 10px 0 6px;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  color: var(--ink);
+}
+.chart-legend .legend-key { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend .legend-swatch { width: 12px; height: 12px; display: inline-block; }
+/* The alt text, readable by a screen reader and out of the layout — absolutely positioned, so it
+   never claims one of the grid's own cells. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 `;
 
@@ -124,6 +206,14 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     female: Number(r.female),
   }));
 
+  // The reference year was typed into the alt text while data.csv said nothing about which year it
+  // holds — nothing in this beat could have contradicted it. It is a column now (every row is a
+  // 2023 reading, same as the static twin's), read here and stated only from what the file says.
+  const years = [...new Set(rows.map((r) => r.year))];
+  if (years.length !== 1)
+    throw new Error(`expected every row to carry one reference year, got ${years.join(", ")}`);
+  const YEAR = years[0];
+
   // Find the true peak band by total (male + female) — checked here, not guessed, so the callout
   // and the tooltip both name the band the data actually supports.
   const withTotal = bands.map((b) => ({ ...b, total: b.male + b.female }));
@@ -155,19 +245,25 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: SwissAgePyramidWeb,
-    layouts: LAYOUTS,
     props: {
+      frame: FRAME,
       bands,
       title: `Switzerland's population bulges at ages ${peak.ageBand}, not among the youngest`,
       limits:
         "Age bands run in their natural sequence, oldest at top — sorting by population size would destroy the shape this chart exists to show. Hover, tap or focus any band for its exact figures.",
       source:
         "Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026",
-      alt: `Population pyramid of Switzerland by age and sex, 2023. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward. Every band's exact figures for both sexes are reachable by hover, tap or keyboard focus.`,
+      alt: `Population pyramid of Switzerland by age and sex, ${YEAR}. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward. Every band's exact figures for both sexes are reachable by hover, tap or keyboard focus.`,
       ground: "#FFFFFF",
       accent: NOMINAL_ACCENT,
       peakBand: peak.ageBand,
-      peakLabel: `${peak.ageBand}: the widest band (${peak.total.toLocaleString()})`,
+      // "the widest band", not "55-59: the widest band (669,962)". The band is already named in
+      // the gutter the leader line points out of, and the exact total is already in that band's own
+      // tooltip and in the alt text — while the long form measured 230px against a 143px half-frame
+      // at 375px and printed straight across the age labels for two whole rows. Seen in the render,
+      // not reasoned about. This also restores what the component's own doc-comment always claimed
+      // the annotation did: name the band, stay silent on its figure.
+      peakLabel: "the widest band",
     },
     outDir,
     name,
