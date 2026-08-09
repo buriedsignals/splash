@@ -30,16 +30,25 @@ const HEIGHT = 900;
 // field is flat"). This is decorative sample content, not a data mark, so it is not subject to that
 // rule's letter — but there is no reason to reach for a texture this project's own doctrine would
 // flag if it WERE a data ground, so it does not.
+// THE SUBJECT SITS IN THE SAME BAND EVERY OTHER FRAME KEEPS ITS MEANING IN. This scene was
+// originally composed for a portrait frame and put the gauge hut at 58–83% of the canvas height.
+// Once the graphic went full-bleed, a 1600×900 viewport COVER-crops this portrait canvas to the
+// middle 40% of it (vb-y 270–630) — so a reader met a hillside and no gauge at all, which a
+// screenshot showed immediately and no test could ever have. The hut now sits at 33–56%: inside
+// the crop at every aspect in the envelope, and above the prose lane at every one of them too.
+// An image carries no LABEL to crop, so nothing mechanical enforces this — but "nothing annotated
+// can be cropped" is a rule about what the reader must be able to see, and on a photograph the
+// subject is that thing.
 const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}">
   <rect x="0" y="0" width="${WIDTH}" height="${HEIGHT}" fill="#BFD9E8"/>
-  <circle cx="${WIDTH * 0.78}" cy="${HEIGHT * 0.16}" r="52" fill="#F2C14E"/>
-  <polygon points="0,${HEIGHT * 0.42} ${WIDTH * 0.35},${HEIGHT * 0.3} ${WIDTH * 0.62},${HEIGHT * 0.44} ${WIDTH},${HEIGHT * 0.34} ${WIDTH},${HEIGHT * 0.58} 0,${HEIGHT * 0.58}" fill="#8FAF8A"/>
-  <rect x="0" y="${HEIGHT * 0.58}" width="${WIDTH}" height="${HEIGHT * 0.42}" fill="#5B7A52"/>
-  <rect x="0" y="${HEIGHT * 0.82}" width="${WIDTH}" height="${HEIGHT * 0.18}" fill="#4C7A93"/>
-  <rect x="${WIDTH * 0.44}" y="${HEIGHT * 0.66}" width="${WIDTH * 0.14}" height="${HEIGHT * 0.12}" fill="#E8E4DA"/>
-  <polygon points="${WIDTH * 0.42},${HEIGHT * 0.66} ${WIDTH * 0.51},${HEIGHT * 0.58} ${WIDTH * 0.6},${HEIGHT * 0.66}" fill="#A8543F"/>
-  <line x1="${WIDTH * 0.51}" x2="${WIDTH * 0.51}" y1="${HEIGHT * 0.66}" y2="${HEIGHT * 0.83}" stroke="#3A3A38" stroke-width="6"/>
+  <circle cx="${WIDTH * 0.8}" cy="${HEIGHT * 0.22}" r="46" fill="#F2C14E"/>
+  <polygon points="0,${HEIGHT * 0.3} ${WIDTH * 0.35},${HEIGHT * 0.19} ${WIDTH * 0.62},${HEIGHT * 0.31} ${WIDTH},${HEIGHT * 0.22} ${WIDTH},${HEIGHT * 0.38} 0,${HEIGHT * 0.38}" fill="#8FAF8A"/>
+  <rect x="0" y="${HEIGHT * 0.38}" width="${WIDTH}" height="${HEIGHT * 0.62}" fill="#5B7A52"/>
+  <rect x="0" y="${HEIGHT * 0.53}" width="${WIDTH}" height="${HEIGHT * 0.47}" fill="#4C7A93"/>
+  <rect x="${WIDTH * 0.44}" y="${HEIGHT * 0.4}" width="${WIDTH * 0.14}" height="${HEIGHT * 0.1}" fill="#E8E4DA"/>
+  <polygon points="${WIDTH * 0.42},${HEIGHT * 0.4} ${WIDTH * 0.51},${HEIGHT * 0.33} ${WIDTH * 0.6},${HEIGHT * 0.4}" fill="#A8543F"/>
+  <line x1="${WIDTH * 0.51}" x2="${WIDTH * 0.51}" y1="${HEIGHT * 0.4}" y2="${HEIGHT * 0.56}" stroke="#3A3A38" stroke-width="6"/>
 </svg>
 `.trim();
 

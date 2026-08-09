@@ -11,6 +11,23 @@ describe("twin-scrolly — the canon's assets", () => {
     expect(seed).toContain("REPLACE ME. Do not parameterise me.");
   });
 
+  it("should carry its own baked map plate — a real JPEG, not a placeholder file", async () => {
+    const raw = await readFile(join(ASSETS, "sample-data", "potomac-plate.jpg"));
+    // JPEG SOI marker + JFIF/EXIF app segment: proof this is a real decoded raster, not a stub.
+    expect(raw.subarray(0, 2)).toEqual(Buffer.from([0xff, 0xd8]));
+    expect(raw.length).toBeGreaterThan(10000);
+  });
+
+  it("should carry its own frozen readings and station file, beside the beat that credits them", async () => {
+    const csv = await readFile(join(ASSETS, "sample-data", "potomac-2024.csv"), "utf8");
+    const rdb = await readFile(join(ASSETS, "sample-data", "potomac-station.rdb"), "utf8");
+    // A beat whose render reads its data from somewhere else cannot be audited at all — the single
+    // strongest argument this project has for freezing data beside the artifact.
+    expect(csv.split("\n")[0]).toBe("date,discharge_cfs");
+    expect(csv.trim().split("\n").length).toBeGreaterThan(300);
+    expect(rdb).toContain("01638500");
+  });
+
   it("should carry its own photograph — a real PNG, not a placeholder file", async () => {
     const raw = await readFile(join(ASSETS, "sample-data", "basin-photo.png"));
     // PNG magic number — proves this is a real decoded raster, not an empty or truncated stub.
@@ -52,12 +69,18 @@ describe("twin-scrolly — the canon's assets", () => {
 });
 
 describe("twin-scrolly — a vehicle, not a new genre of chart", () => {
-  it("should carry a seed that assembles at least two VISIBLY DIFFERENT kinds of frame, not several states of one chart", async () => {
+  it("should carry a seed that assembles DIFFERENT MEDIA — including a real map track and a real chart track", async () => {
+    // The vehicle's whole justification. A seed carrying only a picture and a diagram demonstrated
+    // the mechanism but never the point: a map and a chart are media other skills in this project
+    // already produce on their own, and assembling BOTH behind one narrative is the thing none of
+    // them can do. Losing either track would leave a scrolly that a single beat could replace.
     const { STEPS_META } = await import("../assets/ScrollySeed.tsx");
     const kinds = new Set(
       STEPS_META.map((s: { frameKind: string }) => s.frameKind),
     );
-    expect(kinds.size).toBeGreaterThanOrEqual(2);
+    expect(kinds.size).toBeGreaterThanOrEqual(3);
+    expect(kinds.has("map")).toBe(true);
+    expect(kinds.has("chart")).toBe(true);
   });
 
   it("should not carry a registry or dispatcher file", async () => {

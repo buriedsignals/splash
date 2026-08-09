@@ -30,10 +30,13 @@ if (!outDir.startsWith("/")) {
 }
 const TARGET = join(outDir, "preview.png");
 
-const lastMeta = STEPS_META[STEPS_META.length - 1];
-if (lastMeta.frameKind !== "drawn")
+// The DRAWN step is the one frame under this skill that renders with nothing else on disk: the
+// image, map and chart tracks each need a frozen file from `assets/sample-data/`. Found by KIND,
+// never by position — the seed's own step order is editorial and has already changed once.
+const drawnMeta = STEPS_META.find((meta) => meta.frameKind === "drawn");
+if (!drawnMeta)
   throw new Error(
-    `render-preview.mjs renders STEPS_META's own DrawnGraphicFrame standalone — the last entry must be frameKind "drawn", got "${lastMeta.frameKind}"`,
+    `render-preview.mjs renders STEPS_META's own DrawnGraphicFrame standalone — no step carries frameKind "drawn"`,
   );
 
 const ground = "#FFFFFF";

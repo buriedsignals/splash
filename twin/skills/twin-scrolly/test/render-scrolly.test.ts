@@ -9,10 +9,12 @@ import {
   STEPS_META,
   FRAME,
   SAFE_AREA,
+  PROSE_LANE,
   ImageFrame,
   DrawnGraphicFrame,
   type ScrollyStepMeta,
 } from "../assets/ScrollySeed.tsx";
+import { deriveFacts, parseReadings, readStation } from "../assets/gauge-data.ts";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
 import { pickActiveStep } from "../assets/interaction.mjs";
 
@@ -40,10 +42,12 @@ describe("STEPS_META — the seed's own narrative arc", () => {
     expect(STEPS_META.length).toBeGreaterThan(2);
   });
 
-  it("should give every step at least one non-empty paragraph", () => {
+  it("should give every step at least one non-empty paragraph, resolved from the beat's own facts", async () => {
+    const facts = await seedFacts();
     for (const step of STEPS_META) {
-      expect(step.prose.length).toBeGreaterThan(0);
-      for (const p of step.prose) expect(p.trim().length).toBeGreaterThan(0);
+      const paragraphs = step.prose(facts);
+      expect(paragraphs.length).toBeGreaterThan(0);
+      for (const p of paragraphs) expect(p.trim().length).toBeGreaterThan(0);
     }
   });
 
@@ -61,6 +65,17 @@ describe("STEPS_META — the seed's own narrative arc", () => {
     expect(kinds.size).toBeGreaterThanOrEqual(2);
   });
 });
+
+/** The seed's own facts, read from its own frozen files — the argument every step's `prose` takes.
+ *  See `assets/gauge-data.ts` for why the prose is a function of these rather than a literal. */
+async function seedFacts() {
+  const dir = join(import.meta.dirname, "..", "assets", "sample-data");
+  const [rdb, csv] = await Promise.all([
+    readFile(join(dir, "potomac-station.rdb"), "utf8"),
+    readFile(join(dir, "potomac-2024.csv"), "utf8"),
+  ]);
+  return { station: readStation(rdb), gauge: deriveFacts(parseReadings(csv)) };
+}
 
 // ---------------------------------------------------------------------------
 // pickActiveStep — the one pure piece of the DOM wiring, unit-tested directly
@@ -367,8 +382,8 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(end).toBeGreaterThan(start);
     const mechanics = source.slice(start, end);
     expect(mechanics).not.toContain("frameKind");
-    expect(mechanics).not.toContain("ImageFrame");
-    expect(mechanics).not.toContain("DrawnGraphicFrame");
+    for (const component of ["ImageFrame", "DrawnGraphicFrame", "MapFrame", "ChartFrame"])
+      expect(mechanics).not.toContain(component);
   });
 
   it("should write one HTML file carrying every step's prose, ungated, and exactly one active frame", async () => {
@@ -461,7 +476,7 @@ describe("renderScrolly — the full self-contained page", () => {
 
   // Correction 3: "the prose panel centred over the graphic rather than pinned left" — `.step`'s
   // own flex row now centres its child on BOTH axes, not just vertically.
-  it("should centre the step panel horizontally, not just vertically", async () => {
+  it("should centre the step panel horizontally", async () => {
     const { outPath } = await renderScrolly({
       steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
       title: "t",
@@ -472,6 +487,82 @@ describe("renderScrolly — the full self-contained page", () => {
     });
     const html = await readFile(outPath, "utf8");
     expect(html).toContain("justify-content: center");
+  });
+
+  // The correction that ended five rounds of panel-over-annotation patching: the panel no longer
+  // travels with the scroll, it is PINNED in a reserved lane at the bottom of the graphic. Three
+  // facts, each one load-bearing and each one wrong in an earlier build.
+  it("should pin the prose panel in a lane instead of letting it travel with the scroll", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      outDir: "/tmp/twin-scrolly-test-lane",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    const panelRule = html.slice(html.indexOf(".step-panel {"), html.indexOf(".step-panel p"));
+    expect(panelRule).toContain("position: sticky");
+    expect(panelRule).toContain("bottom:");
+    // A `bottom` sticky offset can only ever shift a box UP, so the panel has to START at the
+    // bottom of its step or the offset does nothing at all — measured in a real browser: with
+    // `flex-start` the panel travelled from y=768 to y=-32 across one step.
+    const stepRule = html.slice(html.indexOf(".step {"), html.indexOf(".step-panel {"));
+    expect(stepRule).toContain("align-items: flex-end");
+  });
+
+  it("should reserve exactly the lane the seed's own frames keep clear", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      proseLane: PROSE_LANE,
+      outDir: "/tmp/twin-scrolly-test-lane-value",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    expect(html).toContain(`--prose-lane: ${(PROSE_LANE * 100).toFixed(0)}vh`);
+    // The interaction layer observes that same lane, and reads it from the markup rather than
+    // re-deriving it.
+    expect(html).toContain(`data-prose-lane="${Math.round(PROSE_LANE * 100)}"`);
+  });
+
+  it("should refuse a lane that is not a usable fraction of the graphic", async () => {
+    await expect(
+      renderScrolly({
+        steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+        title: "t",
+        source: "s",
+        ground: "#FFFFFF",
+        proseLane: 0.9,
+        outDir: "/tmp/twin-scrolly-test-lane-refuse",
+        name: "x.html",
+      }),
+    ).rejects.toThrow("proseLane");
+  });
+
+  // One panel is PAINTED at a time, and only where a script is running — with JavaScript off no
+  // rule hides a word. `opacity`, never `display`/`visibility`: a faded panel stays in the
+  // accessibility tree, so a screen reader still meets every step's words in order.
+  it("should paint only the active step's panel, and only once the script has run", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+      title: "t",
+      source: "s",
+      ground: "#FFFFFF",
+      outDir: "/tmp/twin-scrolly-test-one-panel",
+      name: "x.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    expect(html).toContain(".scrolly--live .step:not(.active) .step-panel");
+    expect(html).toMatch(/\.scrolly--live[^{]*\{[^}]*opacity: 0/);
+    expect(html).not.toMatch(/\.step-panel[^{]*\{[^}]*display: none/);
+    expect(html).not.toMatch(/\.step-panel[^{]*\{[^}]*visibility: hidden/);
+    // The class is added by the script, never baked into the markup.
+    expect(html).not.toContain('class="scrolly scrolly--live"');
+    expect(html).toContain('root.classList.add("scrolly--live")');
   });
 
   // Correction 5: "the graphic should fill the height it is given" — the sticky graphic's own box
@@ -561,9 +652,9 @@ describe("renderScrolly — the full self-contained page", () => {
 // ---------------------------------------------------------------------------
 
 describe("render — the seed's own runner", () => {
-  it("should render the seed end to end, embedding its own photograph as a data URI", async () => {
+  it("should render the seed end to end, embedding its own rasters as data URIs", async () => {
     const outDir = "/tmp/twin-scrolly-test-seed";
-    const { outPath, steps, panelContrast } = await render({ outDir });
+    const { outPath, steps, panelContrast, facts } = await render({ outDir });
     expect(steps).toBe(STEPS_META.length);
     expect(panelContrast).toBeGreaterThanOrEqual(4.5);
     expect(existsSync(outPath)).toBe(true);
@@ -574,7 +665,7 @@ describe("render — the seed's own runner", () => {
     // No external request — the photograph never appears as a bare filename src.
     expect(html).not.toContain('src="../assets/sample-data/basin-photo.png"');
     for (const step of STEPS_META) {
-      for (const p of step.prose) expect(html).toContain(p);
+      for (const p of step.prose(facts)) expect(html).toContain(p);
     }
   });
 });

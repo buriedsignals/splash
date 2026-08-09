@@ -299,57 +299,42 @@ the viewport, and the top of the gauge is outside the frame entirely — fix so 
 can be cropped at any width.*
 
 **The fix — route 2 of the two the owner named, "keep cover, but define a safe area... and guarantee
-the crop never reaches it"** — is `SAFE_AREA`, a constant exported from `assets/ScrollySeed.tsx`:
-`{ x: [150, 490], y: [330, 570] }`, in `FRAME`'s own viewBox coordinates. It is computed, not
-eyeballed, from an explicit, documented `ASPECT_ENVELOPE` (`{ min: 0.42, max: 2.4 }` — a tall phone
-through a 21:9 ultrawide monitor, comfortably covering the acceptance widths this round was checked
-against and a realistic margin beyond them) via COVER's own scale-factor math (`ScrollySeed.tsx`'s
-own doc-comment on `SAFE_AREA` walks the derivation), with margin kept inside both computed limits
-for text-metric slack. Every element `DrawnGraphicFrame` draws that carries MEANING — the staff, its
-six ticks, the "cm" label, the reading dot, `dayLabel`, the flow arrow and its own "flow" label — is
-now placed inside `SAFE_AREA` BY CONSTRUCTION: `staffTop`/`staffBottom` (350/520) sit inside
-`SAFE_AREA.y`; `staffX` (320) sits at `SAFE_AREA.x`'s own centre; the reading dot's own `waterTop` is
-`staffTop + clamp(waterLevelT, 0, 1) * (staffBottom - staffTop)`, which cannot leave
-`[staffTop, staffBottom] ⊂ SAFE_AREA.y` for ANY caller-supplied `waterLevelT`, in or out of `[0, 1]`;
-the flow arrow/label sit at fixed coordinates (380–460, y 545/565) chosen inside `SAFE_AREA` and
-INDEPENDENT of `waterLevelT` (they name a direction, not a reading, so they do not need to track the
-water level the way the dot does). Only the bank/water RECTANGLES — plain colour fills, no text on
-either edge — are free to bleed past `SAFE_AREA`, and past `FRAME` itself, at any aspect ratio;
-cropping a fill is not a legibility problem the way cropping a label is.
+the crop never reaches it"** — is `safeBand()`, exported from `assets/ScrollySeed.tsx`. It is
+COMPUTED, never eyeballed, from an explicit `ASPECT_ENVELOPE` (`{ min: 0.42, max: 2.4 }` — a tall
+phone through a 21:9 ultrawide) via COVER's own scale-factor math, with margin kept for text-metric
+slack: the NARROWEST aspect in the envelope sets how narrow the visible width ever gets, the WIDEST
+sets how short the visible height ever gets. `SAFE_AREA` is `safeBand(FRAME)` — a call, not a pair
+of literals that can drift from the envelope they are supposed to come from, which is what they were
+in the round that introduced them.
 
-**Enforced, not eyeballed: `test/render-scrolly.test.ts`'s own "nothing annotated can be cropped"
-suite parses every `<text>`/`<line>`/`<circle>` coordinate straight out of the RENDERED SVG STRING**
-(not re-derived from the component's own formula, so a typo'd literal would be caught exactly as a
-wrong formula would) and asserts each one falls inside `SAFE_AREA`, at seven `waterLevelT` values —
-the default, both safe extremes (`t=0`, `t=1`), the seed's own real flood/drought readings (`0.05`,
-`0.95`), AND two DELIBERATELY out-of-range values (`t=-1`, `t=2`) to prove the clamp holds even
-against a caller that ignores the prop's own documented range — plus a dedicated check against the
-seed's own three real `DRAWN_VARIANTS` values (`scripts/render-scrolly.mjs`'s own map), not only
-synthetic ones.
+**The same function now returns a band that is BOTH uncropped AND above the prose lane** (see "The
+prose lane", above): it takes `PROSE_LANE` off the bottom of the visible slice, in viewBox units, so
+one call answers both placement questions at once — they are the same measurement made from
+opposite edges. Every element `DrawnGraphicFrame` draws that carries MEANING — the staff, its six
+ticks, the "cm" label, the reading dot, `dayLabel`, the flow arrow and its own "flow" label — is
+placed inside that band BY CONSTRUCTION; the reading dot's own `waterTop` is
+`staffTop + clamp(waterLevelT, 0, 1) * (staffBottom - staffTop)`, which cannot leave it for ANY
+caller-supplied `waterLevelT`, in or out of `[0, 1]`. `MapFrame` uses the same function against the
+PLATE's own dimensions rather than `FRAME`'s, and clamps a station the bake put outside the band
+rather than drawing it off screen. Only plain colour fills — the bank and water rectangles, no text
+on either edge — are free to bleed past the band and past `FRAME` itself; cropping a fill is not a
+legibility problem the way cropping a label is.
 
-**Confirmed by screenshot, in a real, driven browser, at all four widths the acceptance test named
-(1600×900, 1440×900, 1024×768, 375×812), on the "flood" step — the most extreme real reading
-(`waterLevelT: 0.05`) and the one the owner's own screenshot caught the original defect on:** at
-every width, EVERY element `DrawnGraphicFrame` draws for that step — "cm", "flood day", the reading
-dot, all six ticks, the flow arrow, and the "flow" label — measured fully inside the viewport
-(`getBoundingClientRect()` never negative, never past `innerWidth`/`innerHeight`), confirmed across a
-spread of scroll offsets within the step's own active window, not a single lucky instant.
+**Enforced, not eyeballed, in two independent places.** `test/render-scrolly.test.ts` parses every
+`<text>`/`<line>`/`<circle>` coordinate straight out of the RENDERED SVG STRING (not re-derived from
+the component's own formula, so a typo'd literal is caught exactly as a wrong formula would be) and
+asserts each falls inside the band, at seven `waterLevelT` values including two deliberately
+out-of-range ones. `test/seed-tracks.test.ts` goes the other way and checks the FUNCTION against
+real boxes: for six viewport sizes spanning the envelope, it recomputes COVER's visible slice
+independently and asserts the band survives the crop and its bottom edge lands above the lane.
 
-**A second, DIFFERENT thing was found while checking this, and it is reported here rather than
-cropped out of the account: the opaque PROSE PANEL, travelling over the full-bleed graphic exactly as
-"Measuring prose over the graphic" (above) describes it doing since the second build, can — at the
-widest aspect ratios (1600×900, 1440×900, 1024×768), where COVER's own scale factor is largest and
-the safe-area content therefore renders at its most magnified — transiently cover part of the flow
-arrow's own "flow" text label at some scroll instants within the "flood" step's active window.** This
-is NOT the crop this round fixes — the label is never cut by the viewport edge, at any width, at any
-scroll position; it is covered by another piece of this genre's own furniture that is DELIBERATELY
-opaque and DELIBERATELY sits on top of the graphic, and whose own prose states the exact same
-direction in words nowhere the flow arrow does not already show it wordlessly. At 375×812 (the
-narrowest, least-magnified case) and at a majority of scroll offsets at the wider three, no overlap
-occurs at all. Distinguishing the two — a viewport-edge CROP (this round's own bug, now closed) from
-a panel TRAVELLING OVER a full-bleed graphic it was always going to travel over (a different, already
-proven-safe mechanism from round one) — is the same discipline this file's own intro states for every
-correction in it: report what is actually happening, not merely what confirms the round's own thesis.
+**And confirmed by driving, which is the check that matters.** Across 1600×900, 1280×800 and
+375×812, sampling 25 scroll positions each, every annotated element of the active frame measured
+fully inside the viewport AND non-overlapping with every visible prose panel: 0 collisions,
+0 off-screen. The earlier round of this file reported the opposite honestly — that the travelling
+panel "can transiently cover part of the flow arrow's own label at the widest aspect ratios" — and
+recorded it as a different, already-proven-safe mechanism rather than a bug. It was a bug, and the
+lane is what closed it.
 
 ## More than two steps
 
@@ -513,12 +498,115 @@ changes per step is only which FRAME is on screen and which step's own prose the
 beside — never the beat's own argument, which the persistent header states in full before the reader
 has scrolled at all.
 
+## The prose lane, and why five rounds of collision patching did not fix the collision
+
+**The panel used to TRAVEL. That is the whole defect, and no safe area could survive it.** Every
+build up to the fifth centred each step's panel inside its own step box (`align-items: center`), so
+across a step's scroll distance the panel crossed the screen from bottom to top — passing over every
+part of the graphic at some offset. Whatever rectangle a frame kept its labels inside, the panel
+reached it eventually. The owner's own measured symptom: the seed's "flood day" label reduced to
+"flo…" at 1600×900, 55% of the way through a step, and two steps' panels on screen together during
+every transition.
+
+**The fix is a LANE, and it has two halves that must agree.**
+
+1. **The panel is pinned.** `.step-panel` is `position: sticky` with a BOTTOM offset, so it parks at
+   a fixed distance from the viewport's bottom edge for the whole of its step — 100vh of a 115vh
+   step, measured. Its screen position no longer depends on where inside the step the reader is.
+2. **The frames keep out of the lane.** `PROSE_LANE` (a fraction of the graphic's own height,
+   currently 0.28) is reserved at the bottom, and every frame places everything it annotates above
+   it — `safeBand()` for the COVER-cropped frames, `CONTENT_TOP` for the fitted ones.
+
+`renderScrolly` writes that same fraction into `--prose-lane` and onto the root as
+`data-prose-lane`, so the CSS, the frames and the interaction layer all read ONE number.
+`test/render-scrolly.test.ts` asserts they agree; a lane the CSS reserves and the frames ignore (or
+the reverse) is exactly the collision this constant exists to make impossible.
+
+**The one thing about `position: sticky` that will cost you an hour.** A `bottom` offset only ever
+shifts a box UP — it clamps a box that would otherwise sit BELOW the offset line, and it can never
+push one down. A panel placed at the TOP of its step therefore has nowhere to be shifted to, and
+travels with the scroll exactly as if `position: sticky` were not there. This was shipped and
+measured before it was caught: the panel moved from y=768 to y=−32 across one step at 1600×900,
+every annotation collision still present, and the CSS looked correct the whole time. The panel must
+sit at the BOTTOM of its step box (`align-items: flex-end`) for the offset to do anything at all.
+
+**And every step must be the SAME height, including the last.** A shorter final step ends the
+document while its own panel has already un-pinned and started riding up the screen — which puts the
+last step's prose back over the last step's graphic at the one scroll position every reader is
+guaranteed to stop at. Measured with a 96vh last step: the final panel settled at y=35 of a 900px
+viewport, over the chart.
+
+**One panel is PAINTED at a time.** Pinning does not stop two panels being on screen together: the
+outgoing one is still riding out of the lane while the incoming one has parked in it. That is
+unavoidable in a flow layout, and it is not fixed by geometry — it is fixed by painting only the
+step the reader is on. `assets/interaction.mjs` adds `.scrolly--live` to the root at init, and the
+CSS fades every non-active panel to `opacity: 0` only under that class. Three properties of that
+choice are load-bearing: the rule exists ONLY where a script runs, so with JavaScript off no word is
+ever hidden; `opacity` rather than `display`/`visibility`, so a faded panel stays in the document
+and in the accessibility tree and a screen reader still meets every step's words in order; and the
+class is added by the script, never baked into the markup.
+
+**The interaction layer observes the PANEL, not the section.** An earlier build watched the `.step`
+sections through a thin band at the middle of the screen — which asks "whose 115vh-tall section
+crosses the centre right now", a different question from "whose words are in the lane right now",
+with a different answer for tens of vh either side of every boundary. Observing the pinned panel
+through a band the size of the lane makes the active step and the visible prose the same fact by
+construction, which is what makes fading the others safe.
+
+## Two kinds of frame: scenery is cropped, evidence is fitted
+
+**Not every medium wants the same treatment, and this is the rule that decides.** A photograph and a
+basemap are SCENERY: they read best full-bleed, and cropping them costs nothing, because no part of
+the image is a claim. A chart is EVIDENCE: cropping an axis label is not a cosmetic loss, it is a
+chart that reads wrong.
+
+- **Cropped (`preserveAspectRatio="xMidYMid slice"` / `object-fit: cover`)** — the image track, the
+  drawn track, the map track. They fill the viewport edge to edge; anything they annotate goes
+  inside `safeBand()`, which is the rectangle guaranteed to survive the crop across
+  `ASPECT_ENVELOPE` AND to sit above the lane.
+- **Fitted (an HTML box in percentages, or `meet`)** — the chart track. A fitted frame needs no
+  aspect envelope at all: fitted height is always at most the box height and the fitted box is
+  centred, so content ending at `CONTENT_TOP` of the viewBox lands at `H/2 + f·(CONTENT_TOP − 0.5)`
+  on screen, which is at most `H · CONTENT_TOP` — clear of the lane for EVERY aspect ratio, with
+  nothing to compute per box.
+
+**And a chart's type does not scale with its box.** The chart frame's SVG carries geometry only,
+stretched with `preserveAspectRatio="none"`; every word is HTML at a fixed pixel size positioned in
+percentages over the same box — the separation the two web genres in this project already ship
+("geometry stretches; type does not"). A 15px tick label stays 15px at 375px and at 1600px.
+
+**One number in that layout is a `max()`, not a percentage, and driving found out why.** The
+y-axis gutter is `max(62px, 13%)`: a fixed-size label in a shrinking box eventually runs out of
+room, and `80,000` at 15px needs about 50px against 13% of a 375px phone, which is 49px. A
+percentage-only gutter clips the widest tick label at exactly the width where legibility matters
+most.
+
+## A map track without a live map
+
+The map track carries a plate BAKED once (`scripts/bake-plate.mjs`) and embedded as a data URI —
+there is no MapLibre, no tile request and no MapTiler key anywhere in the delivered file, the same
+invariant the sibling map genres keep. Two decisions are worth copying:
+
+- **The camera is a centre and a zoom, not a bounds box**, so the marked point lands on the plate's
+  own centre by construction. That is what makes "the marker is inside the safe band" a fact rather
+  than a coincidence to re-check every time the camera moves. The frame still clamps a point that
+  falls outside the band rather than drawing it off screen.
+- **The basemap's own place labels stay.** `geo-discipline.md` rule 9 ("quiet the plate") exists
+  because a layer doing none of the beat's jobs is noise — but a locator's whole job is "where is
+  this", and the toponyms are what answer it. Boundary lines are still hidden; water is still tinted
+  blue rather than left as `dataviz-light`'s near-grey, which on a river beat would read as no-data
+  exactly where the subject is.
+- **The plate is a JPEG.** It is embedded in a self-contained file, and a 2000×1280 PNG of a basemap
+  costs several megabytes where a quality-88 JPEG of the same capture costs a few hundred kilobytes.
+  Continuous-tone imagery is the one medium JPEG is built for; the drawn and chart frames stay
+  vector, where the same trade would be a real loss.
+
 ## What this genre does not attempt
 
-**A map track.** This seed carries a photograph and a diagram; a scroll-driven map beat (`flyTo`
-waypoints reusing `twin-map-beat`'s own `mapStory` shape) is a different vehicle load, not built
-here, and would need its own pass through this file's own "one gotcha" before it ships — a map's
-basemap tiles are not free to duplicate the way an SSR'd `<svg>` frame or an embedded `<img>` is.
+**A moving camera.** The map track shows one baked plate. A scroll-driven `flyTo` between waypoints
+would mean either a live map in the delivered file (no longer self-contained, and shipping a key) or
+one baked plate per waypoint. Reusing one plate and changing only what is drawn ON it is the shape
+`proof/mapmore-scrolly-danube` already ships as a consumer of this scaffold.
 
 **Roving-tabindex / single-stop keyboard navigation of the reveal itself.** There is no keyboard
 shortcut that advances the active step directly (no `ArrowDown` handler, unlike
@@ -532,8 +620,13 @@ gap, the same register `web-discipline.md`'s own "Known cost, not hidden" sectio
 use," states this as the primary reason to reach for a DIFFERENT tool: a scrolly earns its existence
 by assembling media a single beat cannot assemble on its own; a chart stepped through several states
 belongs to `twin-chart-web`, which animates on its own. This skill's own `test/canon.test.ts` locks
-the seed itself to at least two visibly different `frameKind`s so this genre's own worked example
-never regresses into the shape it exists to redirect a reader away from.
+the seed itself to at least three visibly different `frameKind`s — and specifically to carrying a
+`map` and a `chart` — so this genre's own worked example never regresses into the shape it exists to
+redirect a reader away from. Two kinds was the earlier floor, and it was too weak: a picture and a
+diagram are media no other skill here produces, so a seed carrying only those demonstrated the
+mechanism without ever demonstrating the point. A map and a chart are media other skills DO produce
+on their own, which is exactly why assembling BOTH behind one narrative is the thing that earns this
+vehicle its keep.
 
 **A per-beat-tinted prose panel.** `renderScrolly`'s `ground` argument derives furniture for the
 whole render once; a beat wanting its prose panel tinted differently from the page's own ground

@@ -71,19 +71,33 @@ export function pickActiveStep(entries) {
   return winner ? winner.stepId : null;
 }
 
-/** Wires one `.scrolly` root's `.step` sections to its `.step-frame` SVGs via one
- *  IntersectionObserver watching a thin band centred in the viewport (`rootMargin: "-45% 0px
- *  -45% 0px"` — a step is "active" once it crosses the middle 10% of the screen, not merely once
- *  it appears at the bottom or leaves at the top). Every `.step`/`.step-frame` pair is matched by
- *  its shared `data-step` id, baked into the markup at build time by
- *  `assets/ScrollySeed.tsx`/`scripts/render-scrolly.mjs` — this function never invents an id, and
- *  never reads `steps.length` to decide how to behave, so it wires N steps exactly as it wires two. */
+/**
+ * Wires one `.scrolly` root's steps to its frames with one IntersectionObserver watching THE PROSE
+ * LANE — the band at the bottom of the viewport where `scripts/render-scrolly.mjs`'s own CSS pins
+ * each step's panel (`--prose-lane`, mirrored onto the root as `data-prose-lane` so this script
+ * never has to parse a CSS length).
+ *
+ * **What is observed is the PANEL, not the section.** An earlier build watched the `.step` sections
+ * through a thin band at the middle of the screen, which asked "whose 115vh-tall section crosses the
+ * centre right now" — a different question from the one that matters, "whose words are in the lane
+ * right now", with a different answer for tens of vh around every step boundary. Observing the
+ * pinned panel makes the active step and the visible prose the same fact by construction, which is
+ * what lets the CSS fade every panel that is not the active one without ever fading the one the
+ * reader is actually reading.
+ *
+ * Every `.step`/`.step-panel`/`.step-frame` triple is matched by its shared `data-step` id, baked
+ * into the markup at build time — this function never invents an id, and never reads how many steps
+ * there are to decide how to behave, so it wires N steps exactly as it wires two.
+ */
 export function initScrolly(root) {
   const steps = Array.prototype.slice.call(root.querySelectorAll(".step"));
+  const panels = Array.prototype.slice.call(
+    root.querySelectorAll(".step-panel"),
+  );
   const frames = Array.prototype.slice.call(
     root.querySelectorAll(".step-frame"),
   );
-  if (steps.length === 0 || frames.length === 0) return;
+  if (steps.length === 0 || frames.length === 0 || panels.length === 0) return;
 
   function activate(stepId) {
     steps.forEach((s) =>
@@ -94,6 +108,15 @@ export function initScrolly(root) {
     );
   }
 
+  // The lane, as a percentage of the viewport's own height. The fallback matches `renderScrolly`'s
+  // own default rather than a number invented here.
+  const lane = Number(root.getAttribute("data-prose-lane")) || 28;
+
+  // `.scrolly--live` is what turns on the CSS that paints only the active step's panel. It is added
+  // HERE, by the script, so that a page whose script never runs never hides a word: see
+  // `scripts/render-scrolly.mjs`'s own `buildCss` note on `.scrolly--live`.
+  root.classList.add("scrolly--live");
+
   const observer = new IntersectionObserver(
     (rawEntries) => {
       const entries = rawEntries.map((e) => ({
@@ -102,17 +125,19 @@ export function initScrolly(root) {
         intersectionRatio: e.intersectionRatio,
       }));
       const next = pickActiveStep(entries);
-      // `next === null` means none of the steps this callback just heard about are currently in
-      // the centre band — NOT that the reader has scrolled away from the whole track (a step
-      // scrolled fully off-screen simply never fires again until it re-enters). Leaving the
-      // previous `active` class untouched in that case is deliberate: it is what keeps the very
-      // first scroll tick, before any step has crossed the centre band yet, from clearing the
-      // server-rendered default (`STEPS[0]`) prematurely.
+      // `next === null` means none of the panels this callback just heard about are currently in
+      // the lane — NOT that the reader has left the track (a panel scrolled fully off-screen simply
+      // never fires again until it re-enters). Leaving the previous `active` class untouched in
+      // that case is deliberate: it is what keeps the very first scroll tick, and the tail of the
+      // last step, from clearing the server-rendered default prematurely.
       if (next) activate(next);
     },
-    { rootMargin: "-45% 0px -45% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
+    {
+      rootMargin: "-" + (100 - lane) + "% 0px 0px 0px",
+      threshold: [0, 0.25, 0.5, 0.75, 1],
+    },
   );
-  steps.forEach((s) => observer.observe(s));
+  panels.forEach((p) => observer.observe(p));
 }
 
 export function initAll() {

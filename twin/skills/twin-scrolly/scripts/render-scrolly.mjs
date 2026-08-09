@@ -34,7 +34,15 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, contrast } from "./render-still.mjs";
-import { STEPS_META, ImageFrame, DrawnGraphicFrame } from "../assets/ScrollySeed.tsx";
+import {
+  STEPS_META,
+  PROSE_LANE,
+  ImageFrame,
+  DrawnGraphicFrame,
+  MapFrame,
+  ChartFrame,
+} from "../assets/ScrollySeed.tsx";
+import { deriveFacts, parseReadings, readStation } from "../assets/gauge-data.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -55,7 +63,11 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * identically — SSR it, wrap it, toggle which wrapped copy is visible. That is the entire contract
  * that makes this scaffold able to assemble different media without knowing it is doing so.
  */
-async function renderScrolly({ steps, title, source, ground, outDir, name }) {
+async function renderScrolly({ steps, title, source, ground, outDir, name, proseLane = 0.28 }) {
+  if (!(proseLane > 0 && proseLane < 0.6))
+    throw new Error(
+      `proseLane is the fraction of the graphic's own height reserved for the pinned prose panel; got ${proseLane}`,
+    );
   if (steps.length < 2)
     throw new Error(
       `a scrolly needs at least two steps to advance through, got ${steps.length}`,
@@ -90,10 +102,15 @@ ${inner}
     })
     .join("\n");
 
+  // `data-step` sits on the PANEL as well as the section: the panel is the element the interaction
+  // layer observes, because the panel is the thing that is actually pinned in the prose lane, and
+  // "which step is the reader reading" has to mean "whose words are in the lane right now" —
+  // never "whose 115vh-tall section happens to cross the middle of the screen", which is a
+  // different question with a different answer at every step boundary.
   const stepsHtml = steps
     .map(
       (step, i) => `      <section class="step${i === 0 ? " active" : ""}" data-step="${escapeHtml(step.id)}">
-        <div class="step-panel">
+        <div class="step-panel" data-step="${escapeHtml(step.id)}">
 ${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
         </div>
       </section>`,
@@ -113,11 +130,11 @@ ${step.prose.map((p) => `          <p>${escapeHtml(p)}</p>`).join("\n")}
 <title>${escapeHtml(title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground, ...furniture })}
+${buildCss({ ground, ...furniture, proseLane })}
 </style>
 </head>
 <body>
-<article class="scrolly">
+<article class="scrolly" data-prose-lane="${Math.round(proseLane * 100)}">
   <header class="scrolly-header">
     <h2>${escapeHtml(title)}</h2>
     <p class="source">${escapeHtml(source)}</p>
@@ -161,13 +178,19 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
-function buildCss({ ground, ink, muted, grid }) {
+function buildCss({ ground, ink, muted, grid, proseLane }) {
   return `
 :root {
   --ground: ${ground};
   --ink: ${ink};
   --muted: ${muted};
   --grid: ${grid};
+  /* THE PROSE LANE — the band at the BOTTOM of the sticky graphic that belongs to the pinned prose
+     panel, and that no frame may place anything meaningful inside. The same fraction the seed's own
+     frames compute their safe bands from (assets/ScrollySeed.tsx, \`PROSE_LANE\`), passed in rather
+     than written twice: a lane the CSS reserves and the frames do not respect (or the reverse) is
+     precisely the panel-over-annotation collision this constant exists to make impossible. */
+  --prose-lane: ${(proseLane * 100).toFixed(0)}vh;
 }
 * { box-sizing: border-box; }
 body {
@@ -274,43 +297,61 @@ body {
   z-index: 1;
   margin-top: calc(-1 * var(--graphic-h));
 }
-/* Prose is ALWAYS in normal document flow — nothing here is display:none, visibility:hidden or
-   otherwise gated. A screen reader or keyboard user reaches every step's own text by reading or
-   tabbing through the page exactly like any other paragraph; scrolling into the sticky graphic's
-   own centre band is only what changes the GRAPHIC, never what reveals the prose. */
-/* \`.step\`'s own horizontal padding now carries the reading-measure gutter that used to live on
-   \`.scrolly\` — \`.step\` itself spans the full sticky graphic's own width (it has no width
-   constraint of its own, same as \`.scrolly-track\`/\`.scrolly-graphic\`), so without this the panel
-   below would sit only 4px from the true screen edge on a narrow phone. The panel's own \`max-width\`
-   (below) still caps how WIDE it ever gets; this only guarantees a floor of breathing room on either
-   side at any viewport, matching \`.scrolly-header\`'s own gutter. */
+/* Prose is ALWAYS in normal document flow — nothing here is display:none or visibility:hidden, and
+   nothing removes a paragraph from the accessibility tree. A screen reader or keyboard user reaches
+   every step's own text by reading or tabbing through the page exactly like any other paragraph;
+   scrolling is only what changes the GRAPHIC and which panel is PAINTED, never what puts the words
+   in the document.
+
+   \`.step\`'s own horizontal padding carries the gutter: \`.step\` spans the full sticky graphic's
+   own width, so without this the panel would sit 1px from the true screen edge on a narrow phone.
+
+   \`align-items: flex-end\` is not a taste decision, it is what makes the sticky panel below work at
+   all, and getting it wrong was the first thing driving a browser caught. A \`bottom\` sticky offset
+   only ever shifts a box UP — it clamps a box that would otherwise sit BELOW the offset line, and
+   it can never push one down. A panel placed at the TOP of its step therefore has nowhere to be
+   shifted to and travels with the scroll exactly as if \`position: sticky\` were not there: measured
+   at 1600x900, the panel moved from y=768 to y=-32 across one step, and the annotation collisions
+   this whole correction exists to remove were all still present. Placed at the BOTTOM of a 115vh
+   box, the same offset pins it: it enters below the fold, is pulled up to the lane, and holds there
+   for 100vh of the step's own 115vh. \`justify-content: center\` still centres it horizontally, which
+   is the correction that first put it over the middle of the graphic rather than flush left.
+
+   Every step is the same height, INCLUDING the last: a shorter final step ends the document while
+   its own panel has already un-pinned and started riding up the screen, which puts the last step's
+   prose back over the last step's graphic at the one scroll position a reader is guaranteed to
+   stop at. Measured: with a 96vh last step the final panel settled at y=35 of a 900px viewport. */
 .step {
-  min-height: 70vh;
+  min-height: 115vh;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 24px clamp(16px, 6vw, 56px);
+  padding: 0 clamp(16px, 6vw, 56px);
 }
-.step:last-child { min-height: 60vh; }
 
-/* The panel is OPAQUE, painted with the exact \`--ground\` this render's furniture was derived
-   from — never a translucent scrim whose effective colour drifts with whatever part of the
-   graphic happens to sit behind it. Because the panel fully occludes the graphic at its own
-   footprint, ink-on-ground is the only contrast question left, and \`deriveFurniture\` already
-   answers it (asserted again in \`renderScrolly\`, above, and in this skill's own test). See
-   references/scrolly-discipline.md, "Measuring prose over the graphic."
+/* THE PANEL IS PINNED IN THE LANE, and this is the correction that ends five rounds of collision
+   patching. Every earlier build let the panel TRAVEL with the scroll — centred in its step, moving
+   from the bottom of the screen to the top across that step's own scroll distance. A travelling
+   opaque panel crosses every part of the graphic at SOME offset, so no safe area a frame could
+   respect was ever safe for the whole of a step: the measured symptom was this seed's own "flood
+   day" label reduced to "flo…" at 1600x900, 55% of the way through a step.
 
-   \`max-width\` narrower than \`.step\`'s own box is what leaves the panel free to be CENTRED by
-   \`.step\`'s own \`justify-content: center\` (above) rather than pinned to the flex row's default
-   start edge — the bug the fourth correction caught: \`.step\` centred the panel VERTICALLY
-   (\`align-items: center\`) from the very first build but never HORIZONTALLY, so the panel sat flush
-   against the graphic column's own left edge at every width, while \`.scrolly\`'s own left/right
-   margin (measured and reported centred) said nothing about it — a reader looks at the panel, not
-   at an invisible outer box, and the panel was the thing off-centre. See
-   references/scrolly-discipline.md, "The composition is a centred reading column," for the
-   measurement that caught this. */
+   \`position: sticky\` with a BOTTOM offset parks the panel at a fixed distance from the viewport's
+   own bottom edge for the whole of its step, inside \`--prose-lane\`. Bottom-anchored, not
+   top-anchored, so a panel that needs an extra line grows UPWARD into the lane instead of
+   overflowing past the fold. The frames keep everything they annotate above the lane
+   (assets/ScrollySeed.tsx, \`safeBand\`/\`CONTENT_TOP\`), so panel and annotation now occupy disjoint
+   bands of the screen by construction rather than by luck.
+
+   The panel is OPAQUE, painted with the exact \`--ground\` this render's furniture was derived from —
+   never a translucent scrim whose effective colour drifts with whatever part of the graphic happens
+   to sit behind it. Because it fully occludes the graphic at its own footprint, ink-on-ground is the
+   only contrast question left, and \`deriveFurniture\` already answers it (asserted again in
+   \`renderScrolly\`, above, and in this skill's own test). */
 .step-panel {
-  max-width: min(42ch, 100%);
+  position: sticky;
+  bottom: clamp(16px, 4vh, 40px);
+  max-width: min(46ch, 100%);
   background: var(--ground);
   color: var(--ink);
   border: 1px solid var(--grid);
@@ -321,7 +362,25 @@ body {
   font-size: 17px;
   line-height: 1.5;
 }
-.step-panel p + p { margin-top: 12px; }
+.step-panel p + p { margin-top: 10px; }
+
+/* ONE PANEL AT A TIME — the second half of the same correction. Two steps' panels used to be on
+   screen together through every transition, because the outgoing one is still riding up out of the
+   lane while the incoming one has already parked in it. That is unavoidable in a flow layout and it
+   is not fixed by geometry; it is fixed by PAINTING only the step the reader is on.
+
+   \`.scrolly--live\` is added by \`assets/interaction.mjs\` at init, so this rule exists only where a
+   script is actually running: with JavaScript off no panel is ever faded, every step's prose reads
+   in flow, and the page degrades to exactly what it degraded to before. \`opacity\` (not
+   \`display\`/\`visibility\`) is the deliberate choice — a faded panel stays in the accessibility tree
+   and in the document, so a screen reader user still meets every step's words in order. */
+.scrolly--live .step:not(.active) .step-panel {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .step-panel { transition: opacity 0.3s ease; }
+}
 `.trim();
 }
 
@@ -334,10 +393,14 @@ body {
 const SEED = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
-  title: "Every reading in this project traces back to one gauge, at one place",
-  source: "Illustrative scene and instrument diagram — not a real gauge station",
+  title: "One gauge, one river, one number a day",
+  source:
+    "Readings: daily mean discharge, USGS site 01638500, National Water Information System " +
+    "(sample-data/potomac-2024.csv). Station: USGS site file (potomac-station.rdb). Map: MapTiler " +
+    "dataviz-light basemap, © OpenStreetMap contributors. The opening scene and the instrument " +
+    "diagram are drawings of how a staff gauge works, not photographs of this station.",
 };
-const PHOTO_PATH = join(HERE, "../assets/sample-data/basin-photo.png");
+const SAMPLE_DATA = join(HERE, "../assets/sample-data");
 const DEFAULT_OUT_DIR = "/tmp/scrolly-twin";
 const OUTPUT_NAME = "gauge-scrolly.html";
 
@@ -351,44 +414,85 @@ const OUTPUT_NAME = "gauge-scrolly.html";
  *  `staffTop`..`staffBottom`, both inside `SAFE_AREA.y` — see `ScrollySeed.tsx`'s own doc-comment
  *  on `SAFE_AREA`), not of the whole canvas: 0 is the highest safe reading, 1 the lowest, and every
  *  value in between stays on the visible staff by construction. */
-const DRAWN_VARIANTS = {
-  instrument: { waterLevelT: 0.5, dayLabel: "today" },
-  flood: { waterLevelT: 0.05, dayLabel: "flood day" },
-  drought: { waterLevelT: 0.95, dayLabel: "dry spell" },
-};
+const DRAWN_VARIANT = { waterLevelT: 0.5, dayLabel: "today" };
 
 /** The ONE place in this file that reads a step's own `frameKind` and turns it into a built
  *  `ReactElement` — `renderScrolly`, above, never sees `frameKind` at all. Teach this function a
- *  new case for a new medium; `renderScrolly` does not change. */
-function buildFrame(meta, { photoDataUri, ground, ink, muted, accent }) {
-  if (meta.frameKind === "image") return createElement(ImageFrame, { src: photoDataUri });
-  if (meta.frameKind === "drawn") {
-    const variant = DRAWN_VARIANTS[meta.id] ?? {};
-    return createElement(DrawnGraphicFrame, { ground, ink, muted, accent, ...variant });
-  }
+ *  new case for a new medium; `renderScrolly` does not change, and did not change when the MAP and
+ *  CHART tracks were added: the two extra branches below are the entire cost of a new medium. */
+function buildFrame(meta, ctx) {
+  const { ground, ink, muted, grid, accent } = ctx;
+  if (meta.frameKind === "image") return createElement(ImageFrame, { src: ctx.photoDataUri });
+  if (meta.frameKind === "drawn")
+    return createElement(DrawnGraphicFrame, { ground, ink, muted, accent, ...DRAWN_VARIANT });
+  if (meta.frameKind === "map")
+    return createElement(MapFrame, {
+      plate: ctx.plateDataUri,
+      frame: ctx.plate.frame,
+      station: {
+        px: ctx.plate.station.px,
+        py: ctx.plate.station.py,
+        // Derived from the station's own name, never re-typed: everything after "at" is the place,
+        // which is what a marker on a map has room to say.
+        label: ctx.station.name.split(" at ").pop(),
+      },
+      ground,
+      ink,
+      accent,
+    });
+  if (meta.frameKind === "chart")
+    return createElement(ChartFrame, {
+      readings: ctx.readings,
+      facts: ctx.gauge,
+      ground,
+      ink,
+      muted,
+      grid,
+      accent,
+    });
   throw new Error(
     `unknown frameKind "${meta.frameKind}" — teach buildFrame a new case, or fix STEPS_META`,
   );
 }
 // =========================================
 
-/** The seed beat's own runner: reads its own photograph off disk, embeds it as a data URI (the
- *  self-contained-HTML rule this genre keeps for every asset, an SVG frame gets for free just by
- *  being SSR'd inline), and hands `renderScrolly` the two built frames plus their prose. */
+/** The seed beat's own runner: reads its own frozen files off disk, DERIVES every fact its prose
+ *  claims from them, embeds the two rasters as data URIs (the self-contained-HTML rule this genre
+ *  keeps for every asset — an SVG frame gets it for free just by being SSR'd inline), and hands
+ *  `renderScrolly` the four built frames plus their resolved prose. */
 async function render({ outDir, name = OUTPUT_NAME }) {
-  const photoBuffer = await readFile(PHOTO_PATH);
-  const photoDataUri = `data:image/png;base64,${photoBuffer.toString("base64")}`;
+  const [photoBuffer, plateBuffer, plateGeometry, stationRdb, readingsCsv] = await Promise.all([
+    readFile(join(SAMPLE_DATA, "basin-photo.png")),
+    readFile(join(SAMPLE_DATA, "potomac-plate.jpg")),
+    readFile(join(SAMPLE_DATA, "potomac-plate.json"), "utf8"),
+    readFile(join(SAMPLE_DATA, "potomac-station.rdb"), "utf8"),
+    readFile(join(SAMPLE_DATA, "potomac-2024.csv"), "utf8"),
+  ]);
+
+  const station = readStation(stationRdb);
+  const readings = parseReadings(readingsCsv);
+  const gauge = deriveFacts(readings);
   const furniture = deriveFurniture(SEED.ground);
 
+  const ctx = {
+    photoDataUri: `data:image/png;base64,${photoBuffer.toString("base64")}`,
+    plateDataUri: `data:image/jpeg;base64,${plateBuffer.toString("base64")}`,
+    plate: JSON.parse(plateGeometry),
+    station,
+    readings,
+    gauge,
+    ground: SEED.ground,
+    accent: SEED.accent,
+    ...furniture,
+  };
+
+  const facts = { station, gauge };
   const steps = STEPS_META.map((meta) => ({
     id: meta.id,
-    prose: meta.prose,
-    frame: buildFrame(meta, {
-      photoDataUri,
-      ground: SEED.ground,
-      accent: SEED.accent,
-      ...furniture,
-    }),
+    // The prose is RESOLVED here, from the facts derived above — see `ScrollySeed.tsx`'s own
+    // doc-comment on why no figure this beat says out loud is a literal.
+    prose: meta.prose(facts),
+    frame: buildFrame(meta, ctx),
   }));
 
   const { outPath, panelContrast } = await renderScrolly({
@@ -396,10 +500,11 @@ async function render({ outDir, name = OUTPUT_NAME }) {
     title: SEED.title,
     source: SEED.source,
     ground: SEED.ground,
+    proseLane: PROSE_LANE,
     outDir,
     name,
   });
-  return { outPath, steps: steps.length, panelContrast };
+  return { outPath, steps: steps.length, panelContrast, facts };
 }
 
 if (import.meta.main) {

@@ -1,0 +1,18 @@
+{
+  "frame": {
+    "width": 1000,
+    "height": 640
+  },
+  "style": "dataviz-light",
+  "zoom": 9,
+  "gatedBy": "idle",
+  "station": {
+    "id": "01638500",
+    "name": "Potomac River at Point of Rocks, MD",
+    "lon": -77.5431111,
+    "lat": 39.2735833,
+    "drainageSqMi": 9651,
+    "px": 500,
+    "py": 320
+  }
+}
