@@ -146,6 +146,7 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
 
 ## Files
 
+- `references/types/` — six prose sheets, one per map type, harvested from the sibling parameterised engine and read before writing that type's beat; see its own `README.md` for what is covered and what is not.
 - `scripts/bake-plate.mjs` — the camera, the gate, the plate, the projection, the culling.
 - `scripts/render-map.mjs` — the render ladder, the join, the claim check, the beat's own words.
 - `scripts/render-preview.mjs` — renders THIS skill's static seed from THIS skill's sample data.

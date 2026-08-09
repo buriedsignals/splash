@@ -157,6 +157,7 @@ by an ordinary relative path — that import is for this skill's own tests
 ## Files
 
 - `references/static-discipline.md` — the rules, each one attached to the defect that produced it.
+- `references/types/` — sixteen prose sheets, one per chart type, harvested from the sibling parameterised engine and read before writing that type's beat; see its own `README.md` for what is covered and what is not.
 - `references/seed-anatomy.md` — what the seed teaches, and what adding a prop to it would cost.
 - `references/svg-xmlns-requirement.md` — the SVG namespace declaration required by the rasteriser; without it, rendering fails with a misleading error about document structure.
 - `assets/ChartSeed.tsx` — the seed. `lineGeometry` and `yTickValues` are pure and exported. Read
