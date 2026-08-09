@@ -419,7 +419,7 @@ export function SmallMultiplesCo2Video({
                 {panelProgress(p.slot) >= 0.999 && (
                   <text
                     x={endPoint.x}
-                    y={endPoint.y - 10}
+                    y={endLabelY(p.points, measureText(endLabel, END_LABEL))}
                     fill={lineColour}
                     fontSize={END_LABEL.fontSize}
                     fontWeight={END_LABEL.fontWeight}
@@ -450,6 +450,31 @@ export function SmallMultiplesCo2Video({
       </g>
     </svg>
   );
+}
+
+/**
+ * Where the end-label sits, clear of the curve's own path — not a flat `y - 10` above the final
+ * point. `endPoint.y - 10` alone is only safe when the curve approaches its endpoint from BELOW
+ * on screen; Germany's and Poland's final years each fall sharply into 2024 (a steeper local drop
+ * than the decades before it), so the line arrives at the endpoint from ABOVE and the last one or
+ * two segments pass directly through the small fixed gap the old offset assumed was empty — caught
+ * by looking at the rendered PNG, where the stroke visibly crosses the digits. Text-anchor is
+ * "end", so the label's own footprint runs backward in x from the point by its measured width; any
+ * point whose x falls in that footprint is checked, and the label clears the highest (smallest-y)
+ * of them, not just the endpoint itself — safe however the curve happens to be shaped near its own
+ * end, ascending or descending, gentle or steep.
+ */
+export function endLabelY(
+  points: { x: number; y: number }[],
+  labelWidth: number,
+): number {
+  const endPoint = points[points.length - 1];
+  const footprintLeft = endPoint.x - labelWidth - 8;
+  const highestNearbyY = points.reduce(
+    (min, pt) => (pt.x >= footprintLeft ? Math.min(min, pt.y) : min),
+    endPoint.y,
+  );
+  return highestNearbyY - 12;
 }
 
 /** Channel-wise linear interpolation between two #rrggbb colours — this beat's own tiny helper
