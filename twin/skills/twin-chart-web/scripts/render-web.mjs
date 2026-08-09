@@ -159,6 +159,16 @@ function escapeHtml(text) {
  * from the component's own `--title-size` etc. custom properties, set once per render on the
  * figure's own inline style) so nothing here ever tracks the `<svg>`'s `viewBox` width.
  */
+// The frame's own inner margin -- FIXED, never a fraction of container width, on purpose: this
+// genre's whole redesign is "type/spacing stays a fixed CSS value, only the plot geometry
+// stretches" (see web-discipline.md, "Responsive behaviour"), and an inset is furniture, not
+// geometry. A value big enough to read as deliberate at 1600px (24px) is still a small, safe
+// fraction of a 375px frame (~6%) rather than the large-fixed-value failure mode that would eat a
+// narrow frame -- checked directly at all four widths this beat's own report screenshots, not
+// assumed. Found missing by the owner's own screenshot: filling the container was read, correctly,
+// as "the frame spans it," which does not by itself mean the CONTENT inside may touch its edges.
+const FRAME_PAD_PX = 24;
+
 function buildCss({ ground, accent, ink, muted, grid }) {
   return `
 :root {
@@ -184,8 +194,15 @@ body {
    letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
    empty gutters, and the failure mode letting width AND height both float freely would risk
    instead. Only the two places a long line of prose would become unreadable at full bleed -- the
-   header block and the source line -- are given a reading-measure cap; the chart itself never is. */
-.chart-figure { margin: 0; width: 100%; }
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure { margin: 0; width: 100%; padding: ${FRAME_PAD_PX}px; }
 .chart-header, .chart-source { max-width: 640px; }
 .chart-title {
   margin: 0 0 4px;

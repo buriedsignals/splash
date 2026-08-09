@@ -195,6 +195,7 @@ skill into a journalist's root — the whole premise — did not build.
 | A regular gridline this close to the reference is dropped | `20` | `FRAME.minGridlineGapPx`, `ChartWebSeed.tsx` |
 | The fixed pixel type sizes for title/subtitle/source/axis/label/note/filter — never tracks the viewBox | `24`/`14`/`13`/`12`/`14`/`12`/`13` | `FRAME.title`/`subtitle`/`source`/`axis`/`label`/`note`/`filter`, `ChartWebSeed.tsx` |
 | The reading-measure cap on the header block and the source line — the chart frame itself is never capped | `640px` | `.chart-header, .chart-source`, `render-web.mjs` |
+| The frame's own fixed inner margin — content never touches the frame's edge, at any width | `24` | `FRAME_PAD_PX`, `render-web.mjs` |
 | The invisible hit target's radius per point (keyboard focus outline, not the touch target — see `web-discipline.md`) | `5` | `.pt` circle `r`, the story's own composition file |
 | How the `#tooltip` is positioned relative to the pointer/focused point | `14px` above, clamped `8px` from the viewport edge | `show()`, `interaction.mjs` |
 | The level the seed's reference rule holds against | `2015` | `REFERENCE_YEAR`, `ChartWebSeed.tsx` |

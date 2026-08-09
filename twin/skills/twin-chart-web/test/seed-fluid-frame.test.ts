@@ -127,6 +127,40 @@ describe("nothing caps the chart frame's own width", () => {
     expect(css).not.toContain("@media");
   });
 
+  // Regression: filling the container is a claim about the FRAME's own edges, not about the
+  // content inside it. The owner's own 1600px screenshot showed the title, the axis labels, the
+  // source line and the end-point mark all touching the frame's edge with zero inner margin — a
+  // real defect a "no max-width" assertion alone cannot catch, since the frame filling its
+  // container and its content having room to breathe are two different claims.
+  it("should give .chart-figure a fixed, non-zero inner padding on every side", () => {
+    const css = buildCss({
+      ground: "#FFFFFF",
+      accent: "#0B7A75",
+      ink: "#000000",
+      muted: "#616161",
+      grid: "#D1D1D1",
+    });
+    const figureRule = css.slice(
+      css.indexOf(".chart-figure {"),
+      css.indexOf("}", css.indexOf(".chart-figure {")),
+    );
+    const paddingMatch = figureRule.match(/padding:\s*([\d.]+)px/);
+    expect(paddingMatch).not.toBeNull();
+    const px = Number(paddingMatch![1]);
+    expect(px).toBeGreaterThan(0);
+    // Fixed CSS pixels, never a fraction of the container — this genre's own "type/spacing is a
+    // fixed value, only geometry stretches" rule, extended to the frame's inner margin. A `%`- or
+    // `vw`-based inset would either shrink toward nothing on a narrow frame or balloon on a wide
+    // one; a modest fixed value reads as deliberate at every width instead (see this file's own
+    // 1600/1024/768/375px screenshots).
+    expect(figureRule).not.toMatch(/padding:[^;]*%/);
+    expect(figureRule).not.toMatch(/padding:[^;]*vw/);
+    // Small enough that it cannot "eat" the narrowest width this genre verifies at (375px) — an
+    // explicit ceiling so a future edit cannot silently turn this back into the large-fixed-value
+    // failure mode the beat's own report warns against.
+    expect(px).toBeLessThan(48);
+  });
+
   // Regression: driving a real browser (see the beat's own report) found that `.overlay` — sharing
   // the svg's own grid cell so its `%`-positioned labels line up with the geometry — intercepted
   // every pointer event over the WHOLE plot before it ever reached the svg's `.hit-area` beneath

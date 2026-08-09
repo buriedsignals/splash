@@ -168,6 +168,25 @@ annotates, at any width). **What is fixed for the life of the render**: every fo
 width, the point/hit-area geometry — none of it scales continuously the way the `viewBox` does; only
 the `viewBox`-to-container ratio does, via ordinary responsive SVG.
 
+**"Fills the container" is a claim about the frame, not a licence for content to touch its edge.**
+A first pass at this redesign filled the container correctly and stopped there — the owner's own
+1600px screenshot showed the title, the axis labels, the source line and the end-point mark all
+flush against the frame's own edge, which reads as unfinished rather than deliberate full-bleed.
+`FRAME_PAD_PX` (`render-web.mjs`, `24`) is a fixed inner margin applied once, to `.chart-figure`,
+so every word and every mark this genre draws has room to breathe at any width. FIXED, not a
+fraction of the container, for the same reason every type size in this file is fixed: a `%`- or
+`vw`-based inset shrinks toward nothing on a narrow frame or balloons on a wide one, and the whole
+point of this section is that spacing should read the same at 375px as it does at 1600px. Measured
+directly (not assumed) at all four verification widths: the gap between the frame's own edge and
+its leftmost text (`.axis-label.y`, the topmost gridline's own label) and its topmost/bottommost
+text stays at essentially the same ~24px at 1600, 1024, 768 and 375px — a fixed value that is
+comfortably small at the widest width verified and does not eat the narrowest one. The end-point
+label needed no separate fix beyond this: it is positioned relative to the point it labels
+(`transform: translate(-100%, -50%) translateX(-10px)`, `ChartWebSeed.tsx`), which is itself already
+inset from the frame edge by `POINT_INSET` plus, now, `FRAME_PAD_PX` — the label's own right edge
+measures FARTHER from the frame edge than the point's own mark does, at every width checked, so it
+never needed its own padding rule, only the frame's.
+
 ## The filter obeys the same rule interaction does
 
 **Nothing argument-bearing may sit behind a filter — the same rule "What must not become
