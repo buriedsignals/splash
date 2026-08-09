@@ -18,15 +18,25 @@ const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "migration";
 
-/** The story's own constants — the journalist's words, from the CADRAGE exchange. */
+/** The story's own constants — the journalist's words, from the CADRAGE exchange.
+ *
+ * `title` and `subjectYears` corrected 2026-08-09: the beat credited "Federal Statistical Office"
+ * over numbers that lived only in `/tmp`. The FSO's own published table (`internationale-wanderungen
+ * -der-standigen-wohnbevolkerung-nach-staatsangehorigkeit-ges-1991-2024`, opendata.swiss, "Total ·
+ * Solde migratoire" row) gives the real annual balance for 1991–2024 — and in that real series the
+ * two negative years are **1996** (−5,807) and **1997** (−6,834), not 1997/1998 as the beat claimed;
+ * 1998 is +1,177. The table only starts in 1991, so "since 1990" is narrowed to "since 1991" — the
+ * window the committed data can actually stand behind. The credit itself was already the real
+ * source and did not need to change, only the claim did.
+ */
 const BEAT = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
-  title: "Twice since 1990, more people left Switzerland than arrived.",
+  title: "Twice since 1991, more people left Switzerland than arrived.",
   source: "Source: Federal Statistical Office · data 2024",
   reference: 0,
   referenceLabel: "Balance",
-  subjectYears: [1997, 1998],
+  subjectYears: [1996, 1997],
 };
 
 /** A plain `year,value` CSV — this beat's own frozen series. */
@@ -60,7 +70,10 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-const dataPath = flag("--data", "/tmp/video-twin/migration.csv");
+// The story's own frozen series, committed beside it — the FSO's real annual "solde migratoire"
+// total (STATPOP/ESPOP, opendata.swiss), converted from people to thousands (this beat's own `k`
+// unit — see `MigrationVideo.tsx`). No longer `/tmp`.
+const dataPath = flag("--data", join(HERE, "data.csv"));
 const outDir = flag("--out", "/tmp/video-twin");
 const stillOnly = argv.includes("--still-only");
 

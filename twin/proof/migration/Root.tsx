@@ -8,10 +8,10 @@ import { MIGRATION_TIMING } from "./timing-contract";
 // is driven by ./render.mjs, which reads the frozen CSV and passes the real props.
 const PLACEHOLDER: MigrationVideoProps = {
   data: [
-    { year: 1996, value: 4.7 },
-    { year: 1997, value: -1.9 },
-    { year: 1998, value: -3.4 },
-    { year: 1999, value: 11.2 },
+    { year: 1995, value: 14.458 },
+    { year: 1996, value: -5.807 },
+    { year: 1997, value: -6.834 },
+    { year: 1998, value: 1.177 },
   ],
   title: "Placeholder — render through render.mjs",
   source: "Placeholder",
@@ -22,7 +22,7 @@ const PLACEHOLDER: MigrationVideoProps = {
   grid: "#D1D1D1",
   reference: 0,
   referenceLabel: "Placeholder",
-  subjectYears: [1997, 1998],
+  subjectYears: [1996, 1997],
 };
 
 export const RemotionRoot: React.FC = () => (
