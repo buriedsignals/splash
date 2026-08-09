@@ -6,9 +6,9 @@ import {
   countReferenceRows,
 } from "../scripts/check-reference-set.mjs";
 
-const GOOD = `| Reference | Moment | Transferable lesson |
-| --- | ---: | --- |
-| Max Fisher — [America's job market is collapsing](https://example.org/a) | 0:48 | Warm paper field, source under the title, stable timeline. |
+const GOOD = `| Argument structure | Reference | Moment | Transferable lesson |
+| --- | --- | ---: | --- |
+| a long, noisy series read against a historical level | Max Fisher — [America's job market is collapsing](https://example.org/a) | 0:48 | Warm paper field, source under the title, stable timeline. |
 `;
 
 describe("checkReferenceSet", () => {
@@ -76,19 +76,52 @@ describe("checkReferenceSet", () => {
     // GFM tables do not require a leading "|". A row-detector that requires one
     // makes a malformed row invisible instead of catching it — the row is
     // skipped from the count and from validation alike.
-    const bad = `| Reference | Moment | Transferable lesson |
-| --- | ---: | --- |
-some video without a link | 0:48 | Warm paper field, source under the title, stable timeline. |
+    const bad = `| Argument structure | Reference | Moment | Transferable lesson |
+| --- | --- | ---: | --- |
+a long, noisy series read against a historical level | some video without a link | 0:48 | Warm paper field, source under the title, stable timeline. |
 `;
     expect(checkReferenceSet(bad)[0]).toContain("no link");
   });
 
   it("should validate a row even when the table is indented", () => {
-    const bad = `| Reference | Moment | Transferable lesson |
-| --- | ---: | --- |
-  | some video without a link | 0:48 | Warm paper field, source under the title, stable timeline. |
+    const bad = `| Argument structure | Reference | Moment | Transferable lesson |
+| --- | --- | ---: | --- |
+  | a long, noisy series read against a historical level | some video without a link | 0:48 | Warm paper field, source under the title, stable timeline. |
 `;
     expect(checkReferenceSet(bad)[0]).toContain("no link");
+  });
+
+  // The column the file's own opening sentence promised for three rounds and never had: without it
+  // the reference loop cannot LOOK a structure UP, it can only read seven long prose cells and
+  // judge. A key shorter than the floor is a chart family, not a shape of argument.
+  it("should reject a row whose argument structure cell is empty", () => {
+    const bad = GOOD.replace(
+      "| a long, noisy series read against a historical level |",
+      "|  |",
+    );
+    expect(checkReferenceSet(bad)[0]).toContain("no argument structure");
+  });
+
+  it("should reject a structure key too short to be one (pins the 12-character floor)", () => {
+    const bad = GOOD.replace(
+      "| a long, noisy series read against a historical level |",
+      "| ranking |",
+    );
+    expect(checkReferenceSet(bad)[0]).toContain("no argument structure");
+  });
+
+  it("should give every shipped row a distinct argument structure, since the loop looks one up", async () => {
+    const shipped = await readFile(
+      new URL("../references/reference-set.md", import.meta.url),
+      "utf8",
+    );
+    const structures = shipped
+      .split("\n")
+      .filter((line) => /^\|/.test(line.trim()) && !/^[\s|:-]+$/.test(line.trim()))
+      .slice(1)
+      .map((line) => line.split("|")[1].trim());
+    expect(structures.length).toBeGreaterThanOrEqual(7);
+    expect(new Set(structures).size).toBe(structures.length);
   });
 
   it("should require at least seven references in the shipped file", async () => {

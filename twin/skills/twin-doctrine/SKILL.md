@@ -89,7 +89,7 @@ skill's own output has to survive.
 | Structure | `references/information-architecture.md` | Reading order, the fixed stack, proximity, alignment, density — how a graphic's layers are arranged, not what they look like |
 | System | `references/visual-system.md` | The concrete rules: flat field, colour grammar, direct labels, derived furniture, contrast escalation |
 | Failures | `references/anti-patterns.md` | Named recurring failures of the standard, structure and system, one entry each, with the rule each one violates |
-| Targets | `references/reference-set.md` | Verified, published, standalone newsroom graphics, each with a link, a locator, and one transferable lesson |
+| Targets | `references/reference-set.md` | Verified, published, standalone newsroom graphics, each indexed by its **argument structure** — the key the reference loop looks a row up by — and carrying a link, a locator, and one transferable lesson |
 | Check | `scripts/check-reference-set.mjs` | `checkReferenceSet(markdown)` — the list of reasons a reference table is not usable; empty means every row is |
 | Motion | `references/motion-grammar.md` | The video genre only — data arriving is the motion event, chronological or argumentative order, the pause on the baseline, the subject as a distinct event, the conclusion after its evidence, the final hold, and the editorial timing contract |
 
@@ -100,8 +100,13 @@ skill's own output has to survive.
    standard and information architecture and the visual system govern what gets built; the
    anti-patterns name what to catch before it ships; the reference set supplies the concrete
    target for the argument structure at hand.
-2. **`reference-set.md` is a markdown table**: `| Reference | Moment | Transferable lesson |`,
-   one row per verified graphic. The reference cell is `Outlet/person — [Title](url)`; the moment
+2. **`reference-set.md` is a markdown table**:
+   `| Argument structure | Reference | Moment | Transferable lesson |`, one row per verified
+   graphic. **The argument structure comes first because it is the KEY the reference loop looks a
+   row up by** — the file's opening sentence promised "a named argument structure" for three rounds
+   while the table had no such column, so a conversation could only read seven long prose cells and
+   judge. Each key is written from its own row's lesson, never invented beside it. The reference
+   cell is `Outlet/person — [Title](url)`; the moment
    is a **locator** — a real timecode (`m:ss`) for the rare video row, or, for a published static
    graphic (which has no timecode), whatever actually identifies where in the piece the graphic
    sits: a chart's own title, its on-page caption, its element id. The lesson states an
@@ -115,7 +120,9 @@ skill's own output has to survive.
    link"` when the reference cell has no `[text](http...)` markdown link, `"reference N: no
    locator"` when the moment cell is neither a clean, anchored timecode nor a non-trivial piece of
    text naming a real spot in the graphic, `"reference N: lesson is too thin"` when the lesson is
-   fewer than five words. An empty array means every row in the table is structurally usable — it
+   fewer than five words, and `"reference N: no argument structure"` when the structure cell is
+   shorter than `MIN_STRUCTURE_CHARS` — "ranking" names a chart family, not a shape of argument, and
+   a key that names a chart family sends the loop back to guessing. An empty array means every row in the table is structurally usable — it
    does not by itself assert a minimum row count; `countReferenceRows(markdown)` does that,
    sharing the same row-detection the check itself uses, and a shipped file is required to carry
    at least seven by `test/reference-set.test.ts` reading the file directly — the floor tracks what
@@ -155,6 +162,7 @@ enforced by a test, not by hoping nobody ever ships a row with the link forgotte
 | Minimum words before a lesson counts as substantive, not thin | `5` | `checkReferenceSet` (`lesson.split(/\s+/).filter(Boolean).length < 5`) |
 | Minimum verified rows the shipped reference set must carry — tracks what the file actually ships today; `6` was the original target, passed this round (see Files section below) | `7` | `test/reference-set.test.ts`, via `countReferenceRows` |
 | Minimum characters a non-timecode locator must carry, so a blank or stray-character cell cannot pass | `2` | `checkReferenceSet` (`MIN_LOCATOR_CHARS`) |
+| Minimum characters an argument-structure key must carry, so a chart family cannot pass as a shape of argument | `12` | `checkReferenceSet` (`MIN_STRUCTURE_CHARS`) |
 | Maximum leading digits a timecode's first segment (minutes, or hours) may carry | `3` | `checkReferenceSet` (`TIMECODE_RE`, `\d{1,3}`) |
 | Minimum unescaped pipes for a trimmed line to count as a candidate table row | `2` | `checkReferenceSet` (`isTableRow`) |
 | Whether a reference cell counts as linked | **not a number** — `](http` is a fixed structural pattern (a markdown link is present or it is not; there is no threshold to tune here, so none is invented) | `checkReferenceSet` |

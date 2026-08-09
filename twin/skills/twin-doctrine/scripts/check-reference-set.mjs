@@ -60,12 +60,19 @@ function isLocator(moment) {
   return moment.length >= MIN_LOCATOR_CHARS;
 }
 
+// The reference loop looks a row up BY ITS ARGUMENT STRUCTURE — that is what the file's own opening
+// sentence promises, and for three rounds the table had no such column, so the loop could only read
+// seven long prose cells and judge. A key too short to be a key ("ranking", "maps") is the failure
+// this floor catches: it has to name a SHAPE OF ARGUMENT, not a chart family.
+const MIN_STRUCTURE_CHARS = 12;
+
 export function checkReferenceSet(markdown) {
   const errors = [];
   const rows = tableRows(markdown);
   rows.slice(1).forEach((row, index) => {
-    const [, reference = "", moment = "", lesson = ""] = splitRow(row);
+    const [, structure = "", reference = "", moment = "", lesson = ""] = splitRow(row);
     const label = `reference ${index + 1}`;
+    if (structure.length < MIN_STRUCTURE_CHARS) errors.push(`${label}: no argument structure`);
     if (!/\]\(https?:\/\/\S+\)/.test(reference)) errors.push(`${label}: no link`);
     if (!isLocator(moment)) errors.push(`${label}: no locator`);
     if (lesson.split(/\s+/).filter(Boolean).length < 5) errors.push(`${label}: lesson is too thin`);
