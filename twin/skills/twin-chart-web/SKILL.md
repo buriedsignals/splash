@@ -17,11 +17,13 @@ One beat has been proven through this skill, `co2-suisse` — its composition
 this skill's `assets/`, so this skill never hosts a particular story's numbers, only the genre's own
 mechanics (`scripts/render-web.mjs`'s generic `renderWeb`, `assets/interaction.mjs`). A worked
 example lives beside the skill the same replace-me way `twin-chart-beat`'s seed and
-`twin-chart-video`'s compositions do — see "Quick start" for how to drive it. The CO₂ beat's
-geometry (`proof/co2-suisse/crossing-geometry.ts`) is the same pure core the static beat
-(`proof/co2-suisse/EmissionsLine.tsx`) and the video beat
-(`twin-chart-video/assets/EmissionsVideo.tsx`) already share — one geometry, three outputs. What
-this genre adds on top: every one of the series' 75 readings gets an exact, on-demand value via
+`twin-chart-video`'s compositions do — see "Quick start" for how to drive it. Inside that story's
+workspace, its web beat (`proof/co2-suisse/EmissionsWeb.tsx`) and its still beat
+(`proof/co2-suisse/EmissionsLine.tsx`) draw from one pure core,
+`proof/co2-suisse/crossing-geometry.ts` — one geometry, two outputs, both of them story files. The
+video SEED in `twin-chart-video/assets/EmissionsVideo.tsx` does **not** import it, despite the shared
+`co2-suisse` naming: it carries its own inlined copy, because nothing under a skill may import out of
+the skill. What this genre adds on top: every one of the series' 75 readings gets an exact, on-demand value via
 hover, tap or keyboard focus, none of it printed by default.
 
 There was no doctrine for this genre before this skill. `references/web-discipline.md` was written
@@ -38,10 +40,12 @@ web beat.
   interaction is detail the static frame had to omit, never the same numbers repeated for effect.
   See `web-discipline.md`, "What hover reveals."
 - **Not** to re-draw a chart that already exists as a still or a video build. Import its geometry —
-  a story's web composition imports its own `crossing-geometry.ts`-shaped module exactly as its
-  static and video siblings do (`proof/co2-suisse/EmissionsWeb.tsx` imports
-  `proof/co2-suisse/crossing-geometry.ts`, the same file `EmissionsLine.tsx` and `EmissionsVideo.tsx`
-  import).
+  a story's web composition imports its own `crossing-geometry.ts`-shaped module **from its own
+  workspace**, exactly as its static sibling does (`proof/co2-suisse/EmissionsWeb.tsx` and
+  `proof/co2-suisse/EmissionsLine.tsx` both import `proof/co2-suisse/crossing-geometry.ts`). That
+  sharing is between story files. A SKILL's seed is the exception and not an oversight: it carries its
+  own copy (`twin-chart-video/assets/EmissionsVideo.tsx` inlines the same arithmetic) because a skill
+  directory has to build alone once copied into a journalist's root.
 - **Not** for a map (a different engine) and **not** for a Datawrapper chart (a different producer).
 
 ## The one gotcha that will waste your day (read first)
@@ -63,7 +67,7 @@ test suite says "clipped," only a screenshot does.
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/web-discipline.md` | What hover reveals that static could not, keyboard/touch parity, what survives with JS off, two pre-rendered layouts instead of a live reflow, what must never become interactive, the one box this genre allows |
-| Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with the static and video beats — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here |
+| Geometry | the story's own `crossing-geometry.ts` (e.g. `proof/co2-suisse/crossing-geometry.ts`) | Shared with that story's own STILL beat — `crossingGeometry`, `fr`, `yTickValues`. Not reimplemented here. Not shared with the video SEED: that is a skill file and carries its own inlined copy |
 | Composition | the story's own `EmissionsWeb.tsx`-shaped file, filed beside its story, not under this skill's `assets/` | A `WebLayout`-parameterised component, called once per layout the story supplies — not a live-reflow engine |
 | Interaction | `assets/interaction.mjs` | `nearestIndex` (pure, tested), `initChart`, `initAll` — hover/tap via one `.hit-area` overlay, keyboard via native `tabIndex={0}` on every point plus arrow-key shortcuts |
 | Render | `scripts/render-web.mjs` | Exports the genre's generic `renderWeb({ component, layouts, props, outDir, name })` — SSRs one element per layout, derives furniture/measures gutters in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own layout constants, and never a story's component; the caller hands both in |

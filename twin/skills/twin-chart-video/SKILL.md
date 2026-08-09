@@ -17,9 +17,14 @@ its own composition, its own timing contract instance, and its own pure geometry
 chart" parameterised by data, per the replace-me discipline below:
 
 1. **`co2-suisse`** (`EmissionsVideo.tsx`, `timing.ts`'s `CO2_TIMING`) — the seed. A series climbs to a
-   peak and later falls back through a level the reader is shown first. Its geometry
-   (`proof/co2-suisse/crossing-geometry.ts`) is shared with the still beat that draws the same
-   coordinates on disk — one geometry, two outputs.
+   peak and later falls back through a level the reader is shown first. It carries its **own inlined**
+   pure geometry (`fr`, `yTickValues`, `crossingGeometry`, at the top of `EmissionsVideo.tsx`) and
+   imports none: nothing under a skill may import out of the skill, and this seed reached into
+   `proof/co2-suisse/crossing-geometry.ts` until that was caught — see "The one gotcha". The story
+   beats under `proof/co2-suisse/` do share that file **among themselves**, which is a statement about
+   that workspace and not about this skill. (The seed's id, its filename and its `BEAT` constants
+   still say `co2-suisse` while the beat it draws is the rainfall sample — a rename parked as its own
+   task. Read every `co2-suisse` in this skill as the seed's name, never as a link to `proof/`.)
 
 **Moved out:** `life-expectancy` and `migration` now live outside this skill. See `proof/life-expectancy/`
 and `proof/migration/` for their own compositions, timing contracts, and render scripts. Each carries its
@@ -52,10 +57,12 @@ against the first of these builds.
   a sentence that only holds once the marks are on screen. A chart with no order in its argument is
   a still, and a still is a whole genre — animating it anyway is the motion grammar's first
   anti-pattern.
-- **Not** to re-draw a chart that already exists as a still. Import its geometry. If the geometry is
+- **Not** to re-draw a chart that already exists as a still. Reuse its geometry. If the geometry is
   entangled with the still's rasteriser, split the pure core out first (that is what
-  `proof/co2-suisse/crossing-geometry.ts` is — the extraction, done once, that let both genres share
-  one core).
+  `proof/co2-suisse/crossing-geometry.ts` is — the extraction, done once, that lets that STORY's still
+  and web beats draw one core). How you reuse it depends on which side of the skill boundary you are
+  on: a story's own video composition, filed beside its story, imports that module; this skill's SEED
+  cannot, and carries its own copy — see "The one gotcha".
 - **Not** for a map (a different engine) and **not** for a Datawrapper chart (a different producer).
 
 ## The one gotcha that will waste your day (read first)
@@ -91,7 +98,7 @@ about what "muted" means on the same newsroom ground.
 | Contract | `assets/timing.ts` | `BeatTiming`, `progressOf` (clamped), `checkTiming` (the structural rules as arithmetic), and `CO2_TIMING` (the seed's instance). `life-expectancy`'s and `migration`'s instances are now in their own proof workspaces: `proof/life-expectancy/timing-contract.ts` and `proof/migration/timing-contract.ts` |
 | Composition | `assets/EmissionsVideo.tsx` | The seed beat's drawing, frame by frame, with its own pure geometry and exports `drawnSoFar` (the chronological partial path). Other compositions have been moved to `proof/life-expectancy/LifeExpectancyVideo.tsx` and `proof/migration/MigrationVideo.tsx` |
 | Registration | `assets/Root.tsx`, `assets/index.ts` | The seed composition (`co2-suisse`, `durationInFrames` IS `CO2_TIMING.total`) and the one entry point. Other stories register in their own proof workspaces: `proof/life-expectancy/Root.tsx` + `index.ts` and `proof/migration/Root.tsx` + `index.ts` |
-| Geometry | `proof/co2-suisse/crossing-geometry.ts` | Pure core, shared with the static beat. Other stories' geometries (`migrationGeometry`, `lifeExpectancyGeometry`) live inside their moved compositions in proof workspaces |
+| Geometry | inlined in `assets/EmissionsVideo.tsx` (`fr`, `yTickValues`, `crossingGeometry`) | The seed's own pure core, carried not imported — a skill imports nothing outside itself. `proof/co2-suisse/crossing-geometry.ts` is the STORY's copy, shared between that workspace's own still and web beats; the two are kept in step by `splash-twin/test/helper-parity.test.ts`. Other stories' geometries (`migrationGeometry`, `lifeExpectancyGeometry`) likewise live inside their moved compositions in proof workspaces |
 | Render | `scripts/render-video.mjs` | The seed beat's render ladder second rung: reads frozen CSV, derives furniture in node, renders final-frame still, then mp4. Other scripts now live in proof workspaces: `proof/life-expectancy/render.mjs` and `proof/migration/render.mjs` |
 | Test | `test/timing.test.ts`, `canon.test.ts` | `timing.test.ts` pins the seed beat's contract. `canon.test.ts` asserts this skill's `assets/` no longer carries the migrated stories. Other contract tests are now in proof workspaces: `proof/life-expectancy/timing.test.ts` and `proof/migration/timing.test.ts` |
 
