@@ -81,10 +81,17 @@ const MARK_MAX_RADIUS_FRACTION = 0.062;
  *  frame — a legend is a fixed schematic scale, not a second copy of the map's own sizing, so it
  *  reads the same regardless of how big or small the map itself is drawn at. */
 const LEGEND_MAX_RADIUS_PX = 22;
-/** The per-point hit target's own diameter, in real CSS pixels — an HTML `<button>` overlay, NOT
- *  an SVG shape sized in frame units. A frame-unit hit target would shrink to a few physical pixels
- *  at 375px wide and balloon at 1600px; a fixed CSS size is a legitimate touch target at every
- *  width this genre ships (`references/map-web-discipline.md`, "Full width, genuinely"). */
+/** The per-point hit target's FLOOR, in real CSS pixels — not its size. The target is an HTML
+ *  `<button>` overlay whose own extent is derived from the mark it sits on: `max(this floor, the
+ *  circle's own drawn diameter)`, the diameter expressed as the same fraction of the frame the
+ *  circle itself is drawn at, so the two scale together at every container width. The floor is what
+ *  a frame-unit target alone could not give — at 375px a small mark is a few physical pixels across
+ *  and unhittable (`references/map-web-discipline.md`, "Touch and hover share one target").
+ *
+ *  It used to be the SIZE, and being only that was the defect: measured in Chrome at 1400x900 the
+ *  drawn circles are 49-53px across and the target was 28x28 on the same centre, so a probe four
+ *  pixels inside a circle's own right edge got no answer and the tooltip only fired on a small
+ *  inner disc. The owner reported exactly that, on the symbol map and on the dot map. */
 const HIT_TARGET_PX = 28;
 /* THE BOUNDED ZOOM STEP IS GONE. `ZOOM_SCALE = 1.4` scaled a raster plate inside a scrollable box
    and put an out-of-map checkbox above the beat reading "Zoom in (1.4×, bounded) — arrow keys or
@@ -257,6 +264,9 @@ export function MapWebSeed({
                       // on the map unlabelled — ambiguous ghosts, not a genuinely narrower map. The
                       // SLUG, not the raw name: this value is quoted inside a generated CSS selector.
                       data-group={slugOf(point.group)}
+                      // The hit target below reads its own extent off this circle, and the guard
+                      // that probes the target's edges pairs the two by this key.
+                      data-key={point.key}
                     />
                   );
                 })}
@@ -353,12 +363,24 @@ export function MapWebSeed({
               const detail = pointDetail(point);
               const xPct = (point.px / frame.width) * 100;
               const yPct = (point.py / frame.height) * 100;
+              // The target is the MARK, with a floor. Its diameter is the circle's own drawn
+              // diameter written as the same fraction of the frame the circle is drawn at, so the
+              // two scale together however wide the container is; `max()` keeps HIT_TARGET_PX as
+              // the floor for a mark too small to hit. Never a second radius constant.
+              const hitDiameter = radiusOf(point.value) * 2;
+              const wPct = (hitDiameter / frame.width) * 100;
+              const hPct = (hitDiameter / frame.height) * 100;
               return (
                 <button
                   key={point.key}
                   type="button"
                   className="pt"
-                  style={{ left: `${xPct}%`, top: `${yPct}%` }}
+                  style={{
+                    left: `${xPct}%`,
+                    top: `${yPct}%`,
+                    width: `max(${HIT_TARGET_PX}px, ${wPct}%)`,
+                    height: `max(${HIT_TARGET_PX}px, ${hPct}%)`,
+                  }}
                   aria-label={detail}
                   title={detail}
                   data-key={point.key}

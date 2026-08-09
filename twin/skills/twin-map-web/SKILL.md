@@ -246,7 +246,7 @@ for its own generic function.
 | The bake's own generous size (drives resolution vs. bake time/file size — see the discipline file's "The plate strategy") | `1000` logical px | `PLATE_SIZE`, `render-web.mjs` (and the CLI default, `bake-plate.mjs`) |
 | The largest circle's radius, as a FRACTION of the frame (not a fixed pixel — it has to scale with the fluid SVG) | `0.062` | `MARK_MAX_RADIUS_FRACTION`, `MapWebSeed.tsx` |
 | The legend swatch's own max radius, fixed CSS px (deliberately NOT frame-relative) | `22px` | `LEGEND_MAX_RADIUS_PX`, `MapWebSeed.tsx` |
-| The per-point hit target's own diameter, fixed CSS px (never SVG-scaled) | `28px` | `HIT_TARGET_PX`, `MapWebSeed.tsx` |
+| The per-point hit target's FLOOR in CSS px — its size is `max(floor, the mark's own drawn diameter)` | `28px` | `HIT_TARGET_PX`, `MapWebSeed.tsx` |
 | Live tiles on or off for this beat | `true` | `SEED.live`, `scripts/render-web.mjs` |
 | The MapTiler key placeholder the delivery substitutes | `__MAPTILER_KEY__` | `KEY_PLACEHOLDER`, `scripts/render-web.mjs` |
 | The padding the runtime fit leaves around the study set | `48px` | `fitBoundsOptions`, `assets/live-map.mjs` |

@@ -85,6 +85,22 @@
  *      mechanical closure of D9 — a tooltip that carried 502px of country names inside a 218px box
  *      with `pointer-events: none`, so a wheel scrolled the bin underneath it and 57% of the list
  *      was unreachable by any input, while the beat's BRIEF promised it "scrolls internally".
+ *   4b. THE TARGET IS THE MARK, NOT A SQUARE AT ITS ANCHOR. Every probed mark whose own drawn
+ *      shape can be found in the page is also probed FOUR PIXELS INSIDE ITS OWN EDGES, and must
+ *      answer there. Assertions 1-3 above are blind to this BY CONSTRUCTION — they probe the
+ *      `data-detail` element's own centre, so a 28px button sitting on a 51px circle answers every
+ *      time. The owner reported the consequence from a live page: on the symbol map the tooltip
+ *      fires on a small inner disc rather than on entering the circle he can see.
+ *
+ *      THE RADIUS ASSERTED IS NEVER A SECOND CONSTANT. It is read off the drawn mark in the page —
+ *      `svg [data-key]`, paired with the hit element by the key the hit element already carries —
+ *      so a beat that changes its radius scale changes what this guard demands, in the same
+ *      direction, without anyone editing this file. And inside the bounding box is not the same as
+ *      ON the mark: each candidate point is tested against the element's real fill with
+ *      `isPointInFill` in the SVG's own user space, and points that land off the painted shape are
+ *      dropped. `mapgen-choropleth-web`'s Iceland is why — its box is 78px across and the top-left
+ *      of that box is open sea, so a guard demanding an answer there would have been wrong about a
+ *      correct artifact.
  *   5. AN INTERACTIVE ARTIFACT ANSWERS SOMETHING. Any file shipping both marks and a `#tooltip` must
  *      answer at least one input on at least one mark. A file where nothing at all responds is dead
  *      furniture regardless of what its prose says.
@@ -123,6 +139,15 @@
  *      tooltip a hundred milliseconds later. This guard measures behaviour, so it passes them, and
  *      it is right to: the reader gets the reading. But the mechanism is incidental, and a future
  *      change that makes those marks unfocusable would break tap on four beats at once.
+ *   8a. A MARK WITH NO DRAWN SHAPE OF ITS OWN IS NOT EDGE-PROBED. Assertion 4b needs to find the
+ *      mark in the page — a `[data-key]` inside the `<svg>` matching the hit element's key. Where a
+ *      beat's hit element has no such twin, the mark is counted in the report as `no-drawn-mark`
+ *      and nothing is asserted about it. `mapgen-dot-web` is the whole of that today: its hit
+ *      elements sit at a country's anchor and the country's own polygon carries no key, so the
+ *      defect the owner reported there — a probe 60px inside France answering nothing — is
+ *      MEASURED BY NOBODY. Closing it means the polygon becoming the hit region, which is what
+ *      ruling R1 rewrites that layer to do (`queryRenderedFeatures`), so it is deliberately left
+ *      for that work rather than built twice.
  *   8. IT REPORTS, BUT DOES NOT FAIL, a broken mode that was never promised. Measured today:
  *      `co2-suisse`, `web-income-life-expectancy` and `webz-bump-emitter-rank` all lose their
  *      tooltip when a finger lifts. None of them promises tap, so none of them fails — the contract
@@ -142,6 +167,13 @@
  * mid-measurement, and an unanchored `r="` regex reading a point's year as its radius). Hence the
  * explicit `probesUnreachable` accounting below, and hence assertion 5: a run where nothing could
  * be probed must be loud, never silently green.
+ *
+ * THE EDGE PROBE'S OWN MUTATION, run the same way in a copy under /tmp: `HIT_TARGET_PX` put back
+ * as the SIZE rather than the floor in `QuakeSymbolWeb.tsx`, and the beat re-rendered. → 1 fail,
+ * naming three marks, each with its drawn diameter, its target's diameter and which edges went
+ * silent: "M9.1 · 2011 Great Tohoku Earthquake, Japan — drawn 53px across, target 28px, silent at
+ * left, right, top". Before the fix the whole corpus reddened there without any mutation at all,
+ * which was the first proof run.
  *
  * MUTATION-CHECKED BEFORE IT WAS FINISHED, in a copy under a temporary directory, never in this
  * tree — five agents were working here and mutating a shared file would have failed their work
@@ -227,6 +259,18 @@ type Probe = {
   offWindow: boolean;
 };
 
+/** One probed mark's four EDGE readings — see the edge-probe section of the header. */
+type EdgeProbe = {
+  index: number;
+  detail: string;
+  /** The drawn mark's own width in CSS pixels, read off the page. */
+  drawnPx: number;
+  /** The hit target's own width in CSS pixels, read off the page. */
+  targetPx: number;
+  /** Which of the four inset points answered, by name. */
+  silent: string[];
+};
+
 type ArtifactReport = {
   file: string;
   marks: number;
@@ -235,6 +279,9 @@ type ArtifactReport = {
   promiseSentences: string[];
   probes: Record<Mode, Probe[]>;
   probesUnreachable: number;
+  edges: EdgeProbe[];
+  /** Marks whose own drawn shape could not be found — see blind spot 9. */
+  edgesUnderivable: number;
 };
 
 /** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
@@ -319,6 +366,82 @@ function aimAtMark(i: number) {
       y >= 0 &&
       x < window.innerWidth &&
       y < window.innerHeight,
+  };
+}
+
+/**
+ * FOUR POINTS JUST INSIDE THE DRAWN MARK'S OWN EDGES, in the page's own coordinates.
+ *
+ * `aimAtMark` probes the hit element's own centre, which is why the existing checks are blind to a
+ * target smaller than its mark BY CONSTRUCTION: a 28px button on a 51px circle answers at its
+ * centre every time. The radius asserted here is never a second constant — it is READ OFF THE DRAWN
+ * MARK in the page (`svg [data-key]`, the same key the hit element carries), so a beat that changes
+ * its radius scale changes what this guard demands, automatically and in the same direction.
+ *
+ * Every coordinate is rounded to an integer for the reason the header gives: `page.mouse.move` at a
+ * fractional coordinate silently does nothing, and `rect.right - INSET` is fractional on a fluid
+ * layout about half the time.
+ */
+function aimAtMarkEdges(i: number) {
+  const INSET = 4;
+  const hit = document.querySelectorAll("[data-detail]")[i] as
+    | HTMLElement
+    | undefined;
+  if (!hit) return null;
+  const key = hit.getAttribute("data-key");
+  if (!key) return { derivable: false as const };
+  const drawn = document.querySelector(
+    `svg [data-key="${key.replace(/"/g, '\\"')}"]`,
+  ) as SVGGraphicsElement | null;
+  if (!drawn) return { derivable: false as const };
+  hit.scrollIntoView({ block: "center", inline: "center" });
+  const d = drawn.getBoundingClientRect();
+  const t = hit.getBoundingClientRect();
+  if (d.width <= 2 * INSET || d.height <= 2 * INSET)
+    return { derivable: false as const };
+  const cx = Math.round(d.left + d.width / 2);
+  const cy = Math.round(d.top + d.height / 2);
+  // Inside the bounding box is not the same as ON the mark. Iceland's own polygon proves it: its
+  // box is 78px across and the top-left of that box is open sea, so a probe there SHOULD get no
+  // answer and a guard demanding one would be wrong. Each candidate is therefore tested against
+  // the element's real fill — `isPointInFill`, in the SVG's own user space — and only the points
+  // that land on painted mark are kept. For a circle all four survive; for a concave country some
+  // do not, and those are not a promise anybody made.
+  const ctm = drawn.getScreenCTM();
+  const owner = drawn.ownerSVGElement ?? (drawn as unknown as SVGSVGElement);
+  const onMark = (x: number, y: number) => {
+    if (!ctm || typeof (drawn as any).isPointInFill !== "function") return true;
+    const p = owner.createSVGPoint();
+    p.x = x;
+    p.y = y;
+    const local = p.matrixTransform(ctm.inverse());
+    try {
+      return (drawn as any).isPointInFill(local);
+    } catch {
+      return true;
+    }
+  };
+  const points = [
+    { name: "left", x: Math.round(d.left + INSET), y: cy },
+    { name: "right", x: Math.round(d.right - INSET), y: cy },
+    { name: "top", x: cx, y: Math.round(d.top + INSET) },
+    { name: "bottom", x: cx, y: Math.round(d.bottom - INSET) },
+  ].filter(
+    (p) =>
+      p.x >= 0 &&
+      p.y >= 0 &&
+      p.x < window.innerWidth &&
+      p.y < window.innerHeight &&
+      onMark(p.x, p.y),
+  );
+  // Fewer than two points on painted mark is not a measurement, it is a coincidence.
+  if (points.length < 2) return { derivable: false as const };
+  return {
+    derivable: true as const,
+    detail: (hit.getAttribute("data-detail") || "").trim(),
+    drawnPx: Math.round(d.width),
+    targetPx: Math.round(t.width),
+    points,
   };
 }
 
@@ -412,6 +535,8 @@ async function driveArtifact(
     promiseSentences: [],
     probes: { hover: [], tap: [], keyboard: [] },
     probesUnreachable: 0,
+    edges: [],
+    edgesUnderivable: 0,
   };
 
   const desktop = await browser.newPage();
@@ -450,6 +575,34 @@ async function driveArtifact(
         "index" | "detail"
       >;
       report.probes.hover.push({ index: i, detail: aim.detail, ...hovered });
+
+      // THE EDGES OF THE DRAWN MARK. The centre probe above answers whatever the hit element's
+      // own size is; this one asks whether the target is the MARK. Four points, four real mouse
+      // moves, each parked in the corner first so every move is a genuine crossing.
+      const edges = await desktop.evaluate(aimAtMarkEdges, i);
+      if (!edges) {
+        // nothing to probe — already counted as unreachable above
+      } else if (!edges.derivable) report.edgesUnderivable += 1;
+      else {
+        const silent: string[] = [];
+        for (const point of edges.points) {
+          await desktop.mouse.move(3, 3);
+          await desktop.mouse.move(point.x, point.y);
+          await new Promise((r) => setTimeout(r, 60));
+          const seen = (await desktop.evaluate(READ_TOOLTIP)) as Omit<
+            Probe,
+            "index" | "detail"
+          >;
+          if (!seen.shown || !seen.text) silent.push(point.name);
+        }
+        report.edges.push({
+          index: i,
+          detail: edges.detail,
+          drawnPx: edges.drawnPx,
+          targetPx: edges.targetPx,
+          silent,
+        });
+      }
 
       // KEYBOARD — `.focus()` is the mechanism a keyboard reader actually uses, and this is the ONE
       // place in this file it is allowed to appear. It bypasses hit testing, so it can never stand
@@ -578,6 +731,8 @@ function summary(r: ArtifactReport): string {
     mode("tap"),
     mode("keyboard"),
     r.probesUnreachable ? `unreachable ${r.probesUnreachable}` : "",
+    r.edges.length ? `edges ${r.edges.filter((e) => !e.silent.length).length}/${r.edges.length}` : "",
+    r.edgesUnderivable ? `no-drawn-mark ${r.edgesUnderivable}` : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -645,6 +800,22 @@ describe("every delivered interactive artifact keeps the promise its own alt tex
           );
         });
       }
+
+      it("should answer wherever its own mark is painted, not only at its centre", () => {
+        const failed = report.edges.filter((e) => e.silent.length > 0);
+        expect(
+          failed.length,
+          `${report.file}: ${failed.length} mark(s) answer at their centre but not inside their own ` +
+            `drawn edges — the hit target is smaller than the mark a reader is pointing at:\n  ` +
+            failed
+              .map(
+                (e) =>
+                  `"${e.detail}" — drawn ${e.drawnPx}px across, target ${e.targetPx}px, silent at ` +
+                  `${e.silent.join(", ")}`,
+              )
+              .join("\n  "),
+        ).toBe(0);
+      });
 
       it("should never show a reading it does not own", () => {
         if (!interactive) return;

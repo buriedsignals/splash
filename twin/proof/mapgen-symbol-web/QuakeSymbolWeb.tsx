@@ -33,7 +33,7 @@ import {
   drawOrder,
   targetOrder,
   labelPlacement,
-  niceReferenceValues,
+  halfMagnitudeReferenceValues,
   radiusScale,
   readingOrder,
   groupsOf,
@@ -61,8 +61,15 @@ const MARK_MAX_RADIUS_FRACTION = 0.045;
  *  frame. A legend is a fixed schematic scale, not a second copy of the map's own sizing, so it reads
  *  the same regardless of how large the map itself is drawn. */
 const LEGEND_MAX_RADIUS_PX = 16;
-/** The per-point hit target's diameter, in real CSS pixels — an HTML `<button>`, never an SVG shape
- *  sized in frame units, which would shrink to a few physical pixels at 375px wide. */
+/** The per-point hit target's FLOOR, in real CSS pixels — not its size. The target is an HTML
+ *  `<button>` whose own extent is derived from the mark it sits on: `max(this floor, the circle's
+ *  own drawn diameter)`, the diameter written as the same fraction of the frame the circle is drawn
+ *  at, so the two scale together at every width. The floor is what a frame-unit target alone could
+ *  not give — at 375px a small mark is a few physical pixels across and unhittable.
+ *
+ *  It used to be the SIZE. Measured in Chrome at 1400x900 the drawn circles here are 49-53px across
+ *  and the target was 28x28 on the same centre: a probe four pixels inside a circle's right edge
+ *  got no answer, and the tooltip fired only on a small inner disc. */
 const HIT_TARGET_PX = 28;
 // ===========================
 
@@ -124,7 +131,7 @@ export function QuakeSymbolWeb({
   const drawn = drawOrder(points); // largest first, so smaller circles paint on top
   const targets = targetOrder(points); // smallest first, so the largest are never covered
   const groups = groupsOf(points);
-  const legend = niceReferenceValues(maxMag);
+  const legend = halfMagnitudeReferenceValues(maxMag);
 
   // The subject's own label, placed against the FRAME edge rather than the data — the flip margin is
   // a fraction of the real frame, so it scales with whatever size the plate was baked at instead of
@@ -237,6 +244,9 @@ export function QuakeSymbolWeb({
                       // rather than a genuinely narrower map. The SLUG, because this value is quoted
                       // inside a generated CSS selector.
                       data-group={slugOf(point.arc)}
+                      // The hit target below reads its own extent off this circle, and the guard
+                      // that probes the target's edges pairs the two by this key.
+                      data-key={point.key}
                     />
                   );
                 })}
@@ -260,6 +270,9 @@ export function QuakeSymbolWeb({
                 measured against. */}
             {targets.map((point) => {
               const detail = quakeDetail(point);
+              // The target is the MARK, with a floor — the circle's own drawn diameter as the same
+              // fraction of the frame the circle is drawn at. Never a second radius constant.
+              const hitDiameter = radiusOf(point.mag) * 2;
               return (
                 <button
                   key={point.key}
@@ -268,6 +281,8 @@ export function QuakeSymbolWeb({
                   style={{
                     left: `${(point.px / frame.width) * 100}%`,
                     top: `${(point.py / frame.height) * 100}%`,
+                    width: `max(${HIT_TARGET_PX}px, ${(hitDiameter / frame.width) * 100}%)`,
+                    height: `max(${HIT_TARGET_PX}px, ${(hitDiameter / frame.height) * 100}%)`,
                   }}
                   aria-label={detail}
                   title={detail}
