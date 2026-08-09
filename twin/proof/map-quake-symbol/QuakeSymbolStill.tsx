@@ -11,7 +11,7 @@ import {
   declutterLabels,
   drawOrder,
   labelPlacement,
-  niceReferenceValues,
+  spanReferenceValues,
   radiusScale,
   type QuakeRow,
 } from "./geo-symbol";
@@ -100,7 +100,7 @@ export function QuakeSymbolStill({
   const sourceBottom = sourceTop + (sourceLines.length - 1) * SOURCE.lead;
   const caveatTop = FRAME.height - PAD - (caveatLines.length - 1) * NOTE.lead;
 
-  const legend = niceReferenceValues(maxMag);
+  const legend = spanReferenceValues(geometry.points.map((p) => p.mag));
   const legendTop =
     caveatTop -
     NOTE.fontSize -

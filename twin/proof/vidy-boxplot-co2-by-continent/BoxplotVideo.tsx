@@ -275,6 +275,34 @@ export function BoxplotVideo({
 
   const g = boxplotGeometry(data, { width, height, padding });
   const ticks = g.y.ticks(5);
+  // ONE decimal count for the whole axis, taken from the tick set as a set. Each tick used to pick
+  // its own (`t < 1 ? 1 : 0`), which printed this beat's own axis as `0.0, 5, 10, 15, 20`: the
+  // zero alone carrying a decimal, as if it were measured to a different precision than the four
+  // above it. An axis is one scale and reads as one column of numbers, so the count is derived
+  // once, from the finest step the ticks actually need — 0 here, and 1 for any domain d3 ticks at
+  // 0.5 or 2.5.
+  //
+  // `exactDecimals` is this beat's own copy of the one `proof/life-expectancy/LifeExpectancyVideo
+  // .tsx` added for the same class of defect (a tick label that names a position it is not drawn
+  // at) — duplicated rather than reached for across a beat boundary, the settled rule here.
+  const exactDecimals = (v: number) => {
+    for (let d = 0; d <= 3; d += 1) if (Number(v.toFixed(d)) === v) return d;
+    throw new Error(
+      `axis tick ${v} needs more than three decimals to print exactly — the scale is not "nice"`,
+    );
+  };
+  const tickDecimals = Math.max(...ticks.map(exactDecimals));
+  // The tripwire, kept separate from the formatting so it still fires if a fixed count is typed
+  // back in: whatever a tick label says, reading it back as a number must give the tick it sits on.
+  const tickLabel = (t: number) => {
+    const label = en(t, tickDecimals);
+    const printed = Number(label.replace("−", "-"));
+    if (printed !== t)
+      throw new Error(
+        `axis tick label ${JSON.stringify(label)} is not the gridline it sits on (${t}) — a rounded tick draws a line at one place and names another`,
+      );
+    return label;
+  };
 
   const subjectGroup = data[subjectIndex];
   const subjectOutliersSorted = [...subjectGroup.outliers].sort(
@@ -443,7 +471,7 @@ export function BoxplotVideo({
               fontSize={TICK_LABEL.fontSize}
               textAnchor="end"
             >
-              {en(t, t < 1 ? 1 : 0)}
+              {tickLabel(t)}
             </text>
           </g>
         ))}

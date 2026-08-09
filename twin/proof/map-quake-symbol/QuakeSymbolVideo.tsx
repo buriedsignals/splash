@@ -24,7 +24,7 @@ import {
   arrivalProgress,
   drawOrder,
   energyRatio,
-  niceReferenceValues,
+  spanReferenceValues,
   radiusScale,
   type QuakeRow,
 } from "./geo-symbol";
@@ -132,7 +132,7 @@ export function QuakeSymbolVideo({
 
   const maxMag = Math.max(...geometry.points.map((p) => p.mag));
   const radiusOf = radiusScale(maxMag, MAX_RADIUS);
-  const legend = niceReferenceValues(maxMag);
+  const legend = spanReferenceValues(geometry.points.map((p) => p.mag));
   const subject = geometry.points.find((p) => p.key === subjectKey);
   if (!subject) throw new Error(`no point for the subject ${subjectKey}`);
   const comparison = geometry.points.find((p) => p.key === comparisonKey);

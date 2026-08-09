@@ -91,6 +91,24 @@ previous one ends, and `hold` ends exactly at frame 240.
    confirms the point: the M9.1 circle and the M8.6 circle off Sumatra are indistinguishable in
    size, and only the accent outline separates them.
 
+3. **The size legend did not bracket the data it keyed.** Its three references came from
+   `niceReferenceValues`, half-magnitude steps down from the max rounded to the nearest half — for a
+   maximum of 9.1 that is 9.0, so the legend's LARGEST key (r = 29.83) was smaller than the largest
+   circle on the map (r = 30.00, M9.1), and its smallest key named M8.0 while four of the seventeen
+   events drawn are below it, down to M7.8. A size legend is a ruler; it has to start and stop where
+   the marks do. Replaced by `spanReferenceValues`, which keys the legend to the smallest mark, the
+   largest, and the value halfway between, at the data's own one-decimal precision: **M7.8 / M8.5 /
+   M9.1**, radii **27.775 / 28.994 / 30.000**, read out of the re-rendered `render/static.svg`. The
+   top key is now the same radius as the M9.1 circle, exactly.
+
+   **What this does not fix, deliberately.** The three legend circles are still within 8.0% of each
+   other (was 6.1%), because that is what the encoding says: radius ∝ √magnitude rooted at zero over
+   a file spanning 7.8 to 9.1 puts every circle it draws between 27.8 and 30 px. Making those
+   circles visibly different would mean sizing by ENERGY, which point 2 above rejected in writing
+   and for the same reasons. The caveat in the frame already says the size difference is not the
+   event difference — and it says it about "a circle 1.3 units bigger", which is now precisely the
+   legend's own span.
+
 ## Source line
 
 `Source: USGS Earthquake Catalog (earthquake.usgs.gov), M7.8+, western Pacific, 2005–2017 · basemap © MapTiler, © OpenStreetMap`

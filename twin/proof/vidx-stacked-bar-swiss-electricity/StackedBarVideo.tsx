@@ -128,6 +128,40 @@ export function stackedBarGeometry(
   };
 }
 
+/** Air between a column's own top and the baseline of the total printed above it. */
+const TOTAL_GAP = 12;
+/** The total label's own ink height above its baseline, at `TOTAL.fontSize`. */
+const TOTAL_INK = 20;
+/** Air the label keeps between its baseline and a gridline it would otherwise rest on. */
+const TOTAL_GRID_CLEAR = 7;
+
+/**
+ * Where a column's own total is printed, given the gridlines it has to live among.
+ *
+ * `barTop - TOTAL_GAP` alone is not enough, and this beat is the proof: 2024's total is 78.37 TWh
+ * against a `nice()`d domain that tops out at 80, so the column's top lands 1.63 TWh — about 13px —
+ * under the topmost gridline, and the label's baseline came to rest ON it. Measured off frame 247
+ * of the delivered mp4: the "78.4 TWh" glyphs occupy rows 322–336 and the 80 gridline is drawn at
+ * rows 335–336, so the line ran through the type's own feet.
+ *
+ * No amount of headroom in the scale fixes that — a column whose value sits just under ANY gridline
+ * puts its label on that gridline, wherever the scale is cut. So the label steps up over the line
+ * instead: if a gridline falls inside the label's own ink band, the baseline moves to
+ * `gridline − TOTAL_GRID_CLEAR`, which puts the whole word above the rule with air under it. Every
+ * other column here is nowhere near a gridline and is left exactly where it was.
+ */
+export function totalLabelBaseline(
+  barTop: number,
+  gridlineYs: number[],
+): number {
+  let baseline = barTop - TOTAL_GAP;
+  for (const gy of gridlineYs) {
+    if (gy <= baseline + 2 && gy >= baseline - TOTAL_INK)
+      baseline = Math.min(baseline, gy - TOTAL_GRID_CLEAR);
+  }
+  return baseline;
+}
+
 /** Column `i`'s own overlapping slice of the master `reveal` progress — proven by
  *  `DumbbellVideo.tsx`'s `rowWindow` and the grouped-bar beat's `categoryWindow`. */
 export function columnWindow(
@@ -232,6 +266,7 @@ export function StackedBarVideo({
   };
 
   const g = stackedBarGeometry(data, { width, height, padding, reference });
+  const gridlineYs = g.yTicks.map((t) => g.yScale(t));
   const subjectIndex = data.findIndex((d) => d.year === subjectYear);
   const subjectColumn = g.columns[subjectIndex];
 
@@ -501,7 +536,7 @@ export function StackedBarVideo({
             ) : null}
             <text
               x={col.x + col.width / 2}
-              y={nuclearOtherY - 12}
+              y={totalLabelBaseline(nuclearOtherY, gridlineYs)}
               fill={ink}
               fontSize={TOTAL.fontSize}
               fontWeight={TOTAL.fontWeight}

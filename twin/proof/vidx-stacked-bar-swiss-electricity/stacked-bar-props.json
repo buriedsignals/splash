@@ -1,0 +1,43 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "source": "Source: Ember & Energy Institute, via Our World in Data · 2000, 2010, 2020 & 2024 data",
+  "legendLabels": [
+    "Solar & wind",
+    "Hydropower",
+    "Nuclear & other"
+  ],
+  "subjectYear": 2024,
+  "title": "Solar and wind went from almost nothing to 7% of Switzerland's electricity",
+  "data": [
+    {
+      "year": 2000,
+      "solarWind": 0.01,
+      "hydro": 36.83,
+      "nuclearOther": 29.279999999999998
+    },
+    {
+      "year": 2010,
+      "solarWind": 0.13,
+      "hydro": 36.06,
+      "nuclearOther": 29.860000000000003
+    },
+    {
+      "year": 2020,
+      "solarWind": 2.75,
+      "hydro": 37.87,
+      "nuclearOther": 27.88
+    },
+    {
+      "year": 2024,
+      "solarWind": 5.84,
+      "hydro": 44.94,
+      "nuclearOther": 27.589999999999996
+    }
+  ],
+  "reference": 66.11999999999999,
+  "referenceLabel": "2000 total: 66.1 TWh",
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}

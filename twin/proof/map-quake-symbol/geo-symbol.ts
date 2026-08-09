@@ -119,7 +119,12 @@ export function radiusScale(maxMag: number, maxRadiusPx: number) {
   return (mag: number) => scale(mag);
 }
 
-/** Three round reference sizes for the legend, half-magnitude steps down from the rounded max. */
+/** Three round reference sizes for the legend, half-magnitude steps down from the rounded max.
+ *
+ *  NOT what this beat's legend uses any more — see `spanReferenceValues` below. Kept because this
+ *  file is one of several trimmed copies of the same module and a helper deleted from one copy is
+ *  the silent divergence this project duplicates deliberately to avoid; a beat whose values genuinely
+ *  are round-numbered still wants it. */
 export function niceReferenceValues(maxMag: number, count = 3): number[] {
   const top = Math.round(maxMag * 2) / 2;
   const values: number[] = [];
@@ -128,6 +133,42 @@ export function niceReferenceValues(maxMag: number, count = 3): number[] {
     if (v > 0) values.push(v);
   }
   return values;
+}
+
+/**
+ * Reference sizes that BRACKET the values drawn: the smallest mark, the largest, and the value
+ * halfway between, at the data's own one-decimal precision.
+ *
+ * `niceReferenceValues` rounded the top to the nearest half-magnitude, which for this file's
+ * maximum of 9.1 gives 9.0 — so the legend's biggest key was SMALLER than the biggest circle on the
+ * map, and its three keys (M8.0 / M8.5 / M9.0) sat outside the range at the bottom too: nothing in
+ * the file is under 7.8, so the legend's own smallest key named an event size the map does not
+ * contain while leaving four real magnitudes below it unkeyed. A size legend is a ruler, and a
+ * ruler has to start and stop where the thing it measures does.
+ *
+ * What this does NOT fix, and must not be read as fixing: the three circles remain within about 6%
+ * of each other, because that is what this beat's encoding says. Radius goes as √magnitude rooted
+ * at zero over a file spanning 7.8 to 9.1, so every circle it draws is between 27.8 and 30 px. That
+ * is a deliberate, written decision (`BRIEF.md`, "The claim was rewritten, not the encoding"): area
+ * ∝ magnitude is USGS's own convention, magnitude is logarithmic, and the caveat in the frame says
+ * so in words. Keying the legend to the extremes at least makes the flatness legible AS the range,
+ * instead of hiding it behind three round numbers that bracket nothing.
+ */
+export function spanReferenceValues(mags: number[], count = 3): number[] {
+  if (mags.length === 0) throw new Error("no magnitudes to key a legend to");
+  if (count < 2)
+    throw new Error(
+      `a bracketing legend needs at least two keys, got ${count}`,
+    );
+  const min = Math.min(...mags);
+  const max = Math.max(...mags);
+  const round = (v: number) => Math.round(v * 10) / 10;
+  const values: number[] = [];
+  for (let i = 0; i < count; i++)
+    values.push(round(max - ((max - min) * i) / (count - 1)));
+  // Largest first, matching `niceReferenceValues`' own order, so the callers' `[...legend].reverse()`
+  // still puts the smallest circle first in the drawn row.
+  return [...new Set(values)];
 }
 
 /** Largest first, so later (smaller) circles are drawn on top and stay hoverable/visible. */
