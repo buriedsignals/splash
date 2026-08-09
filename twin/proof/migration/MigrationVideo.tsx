@@ -304,7 +304,9 @@ export function MigrationVideo({
   const subject = progressOf(frame, timing.subject);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  const furnitureOpacity = establish;
+  // Renamed from `furnitureOpacity`: it no longer governs the title and source (see the ungated
+  // group below), only the axis ticks and gridlines. The old name outlived what it described.
+  const axisOpacity = establish;
 
   const referenceX2 = interpolate(
     referenceProgress,
@@ -369,7 +371,14 @@ export function MigrationVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      {/* Title and source are UNGATED. Frame 0 is the poster frame — the one image a reader sees
+          before pressing play, and the frame a CMS or a social platform pulls as the thumbnail.
+          These used to sit inside the `establish` fade, whose progress at frame 0 is exactly 0, so
+          the poster was a blank white rectangle: measured at 0.0000% non-ground pixels, and the
+          beat said nothing in the only frame most people ever see. The axis furniture below keeps
+          its fade — it is the frame the line will be measured in and has nothing to say before the
+          line exists. */}
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -390,7 +399,9 @@ export function MigrationVideo({
         >
           {source}
         </text>
+      </g>
 
+      <g opacity={axisOpacity}>
         {g.ticksY.map((tick, i) => (
           <g key={tick.value}>
             {i === 1 ? null : (

@@ -314,7 +314,9 @@ export function LifeExpectancyVideo({
   // Furniture: title, source, axis, ticks, gridlines — one fade, together, then still forever.
   // The title is furniture, not the conclusion (`motion-grammar.md`): it establishes what the
   // reader is looking at, and a video whose first seconds carry no title has no poster frame.
-  const furnitureOpacity = establish;
+  // Renamed from `furnitureOpacity`: it no longer governs the title and source (see the ungated
+  // group below), only the axis ticks and gridlines. The old name outlived what it described.
+  const axisOpacity = establish;
 
   const referenceX2 = interpolate(
     referenceProgress,
@@ -395,7 +397,13 @@ export function LifeExpectancyVideo({
     >
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
-      <g opacity={furnitureOpacity}>
+      {/* Title and source are UNGATED. Frame 0 is the poster frame — the one image a reader sees
+          before pressing play, and the frame a CMS or a social platform pulls as the thumbnail.
+          These used to sit inside the `establish` fade, whose progress at frame 0 is exactly 0, so
+          the poster was a blank white rectangle: measured at 0.0000% non-ground pixels. The axis
+          furniture below keeps its fade — it is the frame the line will be measured in and has
+          nothing to say before the line exists. */}
+      <g>
         {titleLines.map((text, i) => (
           <text
             key={text}
@@ -416,7 +424,9 @@ export function LifeExpectancyVideo({
         >
           {source}
         </text>
+      </g>
 
+      <g opacity={axisOpacity}>
         {g.ticksY.map((tick, i) => (
           <g key={tick.value}>
             {i === 1 ? null : (

@@ -282,7 +282,11 @@ export function QuakeSymbolVideo({
         </g>
 
         {/* ── Furniture ───────────────────────────────────────────────────────────────────── */}
-        <g opacity={furniture}>
+        {/* Title, source and caveat are UNGATED — frame 0 is the poster frame, the one image a
+            reader sees before pressing play and the frame a CMS pulls as the thumbnail. Gated on
+            `establish`, whose progress at frame 0 is exactly 0, the poster was blank: measured at
+            0.0000% non-ground pixels. The basemap and legend keep their fade. */}
+        <g>
           {titleLines.map((line, i) => (
             <text
               key={line}
@@ -376,7 +380,7 @@ export function QuakeSymbolVideo({
           ))}
         </g>
 
-        <g opacity={furniture}>
+        <g>
           {caveatLines.map((line, i) => (
             <text
               key={line}

@@ -74,7 +74,10 @@ const flag = (name, fallback) => {
 // total (STATPOP/ESPOP, opendata.swiss), converted from people to thousands (this beat's own `k`
 // unit — see `MigrationVideo.tsx`). No longer `/tmp`.
 const dataPath = flag("--data", join(HERE, "data.csv"));
-const outDir = flag("--out", "/tmp/video-twin");
+// Defaults BESIDE THE BEAT, not to /tmp. It used to default to a scratch directory, so running
+// this script the obvious way produced a fresh artifact nobody looks at, printed a path, exited
+// zero, and left the committed mp4 stale. An explicit --out still overrides.
+const outDir = flag("--out", HERE);
 const stillOnly = argv.includes("--still-only");
 
 await mkdir(outDir, { recursive: true });

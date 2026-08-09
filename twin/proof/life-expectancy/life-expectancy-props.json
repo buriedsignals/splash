@@ -1,0 +1,115 @@
+{
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "source": "Source: UN World Population Prospects (2024), via Our World in Data · data 2023",
+  "firstYear": 2000,
+  "reference": 83.7804,
+  "referenceLabel": "2019 level",
+  "subjectYear": 2020,
+  "recoveryYear": 2023,
+  "fallYears": 0.7177999999999969,
+  "fallMonths": 8.613599999999963,
+  "recoverySpanWords": "three",
+  "title": "Covid cost Switzerland 8.6 months of life expectancy — and it took three years to win it back.",
+  "data": [
+    {
+      "year": 2000,
+      "value": 79.834
+    },
+    {
+      "year": 2001,
+      "value": 80.2511
+    },
+    {
+      "year": 2002,
+      "value": 80.4438
+    },
+    {
+      "year": 2003,
+      "value": 80.5325
+    },
+    {
+      "year": 2004,
+      "value": 81.0549
+    },
+    {
+      "year": 2005,
+      "value": 81.2362
+    },
+    {
+      "year": 2006,
+      "value": 81.5495
+    },
+    {
+      "year": 2007,
+      "value": 81.7028
+    },
+    {
+      "year": 2008,
+      "value": 81.9709
+    },
+    {
+      "year": 2009,
+      "value": 81.9891
+    },
+    {
+      "year": 2010,
+      "value": 82.2873
+    },
+    {
+      "year": 2011,
+      "value": 82.5738
+    },
+    {
+      "year": 2012,
+      "value": 82.6167
+    },
+    {
+      "year": 2013,
+      "value": 82.6892
+    },
+    {
+      "year": 2014,
+      "value": 83.0841
+    },
+    {
+      "year": 2015,
+      "value": 82.8461
+    },
+    {
+      "year": 2016,
+      "value": 83.4457
+    },
+    {
+      "year": 2017,
+      "value": 83.414
+    },
+    {
+      "year": 2018,
+      "value": 83.5639
+    },
+    {
+      "year": 2019,
+      "value": 83.7804
+    },
+    {
+      "year": 2020,
+      "value": 83.0626
+    },
+    {
+      "year": 2021,
+      "value": 83.6477
+    },
+    {
+      "year": 2022,
+      "value": 83.2003
+    },
+    {
+      "year": 2023,
+      "value": 83.9536
+    }
+  ],
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}
