@@ -8,6 +8,7 @@ import { deriveFurniture, contrast } from "../scripts/render-still.mjs";
 import {
   STEPS_META,
   FRAME,
+  SAFE_AREA,
   ImageFrame,
   DrawnGraphicFrame,
   type ScrollyStepMeta,
@@ -197,6 +198,117 @@ describe("DrawnGraphicFrame", () => {
     );
     expect(svg).not.toContain("step-frame");
     expect(svg).not.toContain("aria-hidden");
+  });
+
+  // Correction 7 (a full-bleed graphic can be COVER-cropped hard at either extreme of the aspect
+  // envelope this genre guarantees) — every element that carries meaning stays inside SAFE_AREA,
+  // mechanically, not by eyeballing a screenshot. Every numeric coordinate is parsed straight out
+  // of the rendered SVG string, not re-derived from the component's own formula, so a typo'd
+  // literal in the component would be caught here exactly as a wrong formula would.
+  describe("nothing annotated can be cropped — every element stays inside SAFE_AREA", () => {
+    const ground = "#FFFFFF";
+    const accent = "#0B7A75";
+    const furniture = deriveFurniture(ground);
+
+    function parseSvg(svg: string) {
+      const texts = [...svg.matchAll(/<text x="([\d.-]+)" y="([\d.-]+)"/g)].map(
+        (m) => ({
+          x: Number(m[1]),
+          y: Number(m[2]),
+        }),
+      );
+      const lines = [
+        ...svg.matchAll(
+          /<line x1="([\d.-]+)" x2="([\d.-]+)" y1="([\d.-]+)" y2="([\d.-]+)"/g,
+        ),
+      ].map((m) => ({
+        x1: Number(m[1]),
+        x2: Number(m[2]),
+        y1: Number(m[3]),
+        y2: Number(m[4]),
+      }));
+      const circles = [
+        ...svg.matchAll(/<circle cx="([\d.-]+)" cy="([\d.-]+)"/g),
+      ].map((m) => ({
+        cx: Number(m[1]),
+        cy: Number(m[2]),
+      }));
+      return { texts, lines, circles };
+    }
+
+    // Text anchor points get extra horizontal slack (SAFE_AREA's own margin over the computed
+    // envelope bound already budgets for this — see ScrollySeed.tsx's own doc-comment on
+    // SAFE_AREA): a glyph's own rendered width is not computed here, only its anchor.
+    const TEXT_SLACK_X = 90;
+
+    for (const [label, waterLevelT] of [
+      ["default", undefined],
+      ["highest safe reading (t=0)", 0],
+      ["lowest safe reading (t=1)", 1],
+      ["a flood-like reading (t=0.05)", 0.05],
+      ["a drought-like reading (t=0.95)", 0.95],
+      ["out-of-range t=-1 (must clamp)", -1],
+      ["out-of-range t=2 (must clamp)", 2],
+    ] as const) {
+      it(`should keep every element inside SAFE_AREA for ${label}`, () => {
+        const svg = renderToStaticMarkup(
+          createElement(DrawnGraphicFrame, {
+            ground,
+            accent,
+            ...furniture,
+            ...(waterLevelT === undefined ? {} : { waterLevelT }),
+            dayLabel: "flood day", // the longest of the three real labels — the honest stress case
+          }),
+        );
+        const { texts, lines, circles } = parseSvg(svg);
+        expect(texts.length).toBeGreaterThan(0);
+        expect(lines.length).toBeGreaterThan(0);
+        expect(circles.length).toBe(1);
+
+        for (const t of texts) {
+          expect(t.y).toBeGreaterThanOrEqual(SAFE_AREA.y[0]);
+          expect(t.y).toBeLessThanOrEqual(SAFE_AREA.y[1]);
+          expect(t.x).toBeGreaterThanOrEqual(SAFE_AREA.x[0] - TEXT_SLACK_X);
+          expect(t.x).toBeLessThanOrEqual(SAFE_AREA.x[1] + TEXT_SLACK_X);
+        }
+        for (const l of lines) {
+          expect(Math.min(l.y1, l.y2)).toBeGreaterThanOrEqual(SAFE_AREA.y[0]);
+          expect(Math.max(l.y1, l.y2)).toBeLessThanOrEqual(SAFE_AREA.y[1]);
+          expect(Math.min(l.x1, l.x2)).toBeGreaterThanOrEqual(SAFE_AREA.x[0]);
+          // the flow arrow's own marker overshoots x2 by its own markerWidth — budgeted here.
+          expect(Math.max(l.x1, l.x2)).toBeLessThanOrEqual(SAFE_AREA.x[1] + 10);
+        }
+        for (const c of circles) {
+          expect(c.cy).toBeGreaterThanOrEqual(SAFE_AREA.y[0]);
+          expect(c.cy).toBeLessThanOrEqual(SAFE_AREA.y[1]);
+          expect(c.cx).toBeGreaterThanOrEqual(SAFE_AREA.x[0]);
+          expect(c.cx).toBeLessThanOrEqual(SAFE_AREA.x[1]);
+        }
+      });
+    }
+
+    it("should keep the seed's own three real DRAWN_VARIANTS readings inside SAFE_AREA", async () => {
+      // Not synthetic values — the exact waterLevelT the seed's own runner passes for
+      // instrument/flood/drought (scripts/render-scrolly.mjs's own DRAWN_VARIANTS).
+      const variants = [
+        { waterLevelT: 0.5, dayLabel: "today" },
+        { waterLevelT: 0.05, dayLabel: "flood day" },
+        { waterLevelT: 0.95, dayLabel: "dry spell" },
+      ];
+      for (const v of variants) {
+        const svg = renderToStaticMarkup(
+          createElement(DrawnGraphicFrame, {
+            ground,
+            accent,
+            ...furniture,
+            ...v,
+          }),
+        );
+        const { circles } = parseSvg(svg);
+        expect(circles[0].cy).toBeGreaterThanOrEqual(SAFE_AREA.y[0]);
+        expect(circles[0].cy).toBeLessThanOrEqual(SAFE_AREA.y[1]);
+      }
+    });
   });
 });
 

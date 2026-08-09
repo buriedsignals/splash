@@ -37,13 +37,21 @@ FOURTH build's own width fix turned out to have been wrong in the first place: i
 the prose but, because the graphic shared the same ancestor, also capped the GRAPHIC to a narrow
 column — reversed, the reading-measure constraint now lives on the header and the step panel only,
 never on `.scrolly`, so the sticky graphic fills the full viewport width it is pinned in, cropped
-(never stretched) to fit, exactly as `--graphic-h: 100vh` already does on the vertical axis. Read it
-before writing a second scrolly beat — its own "one gotcha" section names a real defect this skill's
-first render shipped, its own "Measuring prose over the graphic" section names the rule the second
-build lives under, its own "The graphic is fixed; only the text moves" and "More than two steps"
-sections name the rules the fourth build lives under, its own "The graphic fills the viewport it is
-pinned in" names the rule the fifth build lives under, and its own "The reading measure belongs to
-the prose; the graphic goes full-bleed" names the rule the sixth build lives under.
+(never stretched) to fit, exactly as `--graphic-h: 100vh` already does on the vertical axis. Rewritten
+a SEVENTH time after that sixth build's own fix made a DIFFERENT, previously-dormant defect routine:
+a full-bleed graphic gets COVER-cropped hard at real desktop and phone aspect ratios, and
+`DrawnGraphicFrame`'s own annotations (the "cm" label, the staff's own top) were never placed against
+that crop — some sat outside the visible slice at a 1600px-wide window, cut by the viewport's own top
+edge. Fixed with a mechanically-enforced `SAFE_AREA` (`assets/ScrollySeed.tsx`) that every annotated
+element is now placed inside BY CONSTRUCTION, locked by a test that parses the rendered SVG's own
+coordinates, not the component's formula. Read it before writing a second scrolly beat — its own "one
+gotcha" section names a real defect this skill's first render shipped, its own "Measuring prose over
+the graphic" section names the rule the second build lives under, its own "The graphic is fixed; only
+the text moves" and "More than two steps" sections name the rules the fourth build lives under, its
+own "The graphic fills the viewport it is pinned in" names the rule the fifth build lives under, its
+own "The reading measure belongs to the prose; the graphic goes full-bleed" names the rule the sixth
+build lives under, and its own "Nothing annotated can be cropped" names the rule the seventh build
+lives under.
 
 ## When to use
 
@@ -113,7 +121,7 @@ reading `getComputedStyle` in a real, driven browser, not merely computed in nod
 | Layer | File | Role |
 | --- | --- | --- |
 | Doctrine | `references/scrolly-discipline.md` | The sticky-reservation fact and how the overlap remedy uses it on purpose, the reading-measure living on the prose (header + panel) while the graphic goes full-bleed on both axes, how prose-over-graphic contrast is measured (not assumed), what survives with JS off, what a screen reader reaches without scrolling, what the graphic is allowed to be silent about, why the graphic is fixed rather than continuously crossfading, more than two steps, reduced motion, what this genre does not attempt |
-| Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (this beat's own four-step arc: id, `frameKind`, prose — a photograph, then three narrated readings sharing one parameterised drawn instrument), `ImageFrame` (a full-bleed `<img>`, this toolchain's stand-in for a photograph), `DrawnGraphicFrame` (a full-bleed `<svg>` diagram, painted only with ground/ink/muted/accent, parameterised by `waterLevelT`/`dayLabel` for the three narrated readings — still no axis, no plotted value), `FRAME` (the drawn frame's own internal design canvas) |
+| Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (this beat's own four-step arc: id, `frameKind`, prose — a photograph, then three narrated readings sharing one parameterised drawn instrument), `ImageFrame` (a full-bleed `<img>`, this toolchain's stand-in for a photograph), `DrawnGraphicFrame` (a full-bleed `<svg>` diagram, painted only with ground/ink/muted/accent, parameterised by `waterLevelT`/`dayLabel` for the three narrated readings — still no axis, no plotted value; every annotated element placed inside `SAFE_AREA`), `FRAME` (the drawn frame's own internal design canvas), `SAFE_AREA`/`ASPECT_ENVELOPE` (the sub-rectangle, in `FRAME`'s own viewBox coordinates, that COVER's own crop is guaranteed never to reach, across a documented aspect-ratio range) |
 | Interaction | `assets/interaction.mjs` | `pickActiveStep` (pure, tested at 4/6/8 synthetic entry counts — given IntersectionObserver-shaped entries, picks the winning step id) + `initScrolly` (DOM wiring built on it: toggles `.active` on the matching `.step`/`.step-frame` pair). This is the ONLY mechanism this file ships — see `references/scrolly-discipline.md`, "The graphic is fixed; only the text moves," for why a second, continuous scroll-linked crossfade mechanism was built, driven, found to never settle to a clean single image across the full scroll distance, and removed. `initAll` runs `initScrolly`. |
 | Render | `scripts/render-scrolly.mjs` | **Above the CONFIG marker**: `renderScrolly({ steps, title, source, ground, outDir, name })` — the genre's own MEDIA-AGNOSTIC machinery. `steps` is `{ id, prose, frame: ReactElement }[]`; this function SSRs each `frame`, wraps it in a generic `<div class="step-frame">` (never the frame component's own job), builds the overlap scaffold, measures panel contrast, inlines the interaction script. It never reads `frameKind` — `test/render-scrolly.test.ts` scans the function's own source to prove it. **Below the marker**: `SEED`, `buildFrame` (the ONE place that reads `frameKind` and builds a `ReactElement` from it), `render` (this seed's own runner) |
 | Rasteriser | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText` — a skill never imports another skill's copy |
@@ -188,11 +196,17 @@ point of view, and that treatment must not be duplicated per frame kind.
    column left to centre against once it is full-bleed) and that `.scrolly-header` still keeps its
    own comfortable measure independent of the graphic's width; resize to ~375px and confirm nothing
    clips and nothing overflows horizontally, and that the graphic still fills that viewport's own
-   width AND height. Screenshot each. A scrolly that
+   width AND height; **at every width you check — a full-bleed graphic is COVER-cropped hardest at
+   the widest and narrowest aspects, not the ones in between — confirm every element `DrawnGraphicFrame`
+   (or any drawn component you write) marks as carrying meaning is fully inside the viewport, not
+   merely inside its own box** (see `references/scrolly-discipline.md`, "Nothing annotated can be
+   cropped," for the `SAFE_AREA` mechanism and why "renders correctly inside its own SVG" is not the
+   same claim as "renders inside the reader's own screen"). Screenshot each. A scrolly that
    "renders" but does not step, that steps but goes illegible mid-scroll, that never settles to a
-   still image, or whose outer box is centred while its own panel is not, is the exact failure this
-   project keeps finding by looking at pictures instead of reading code, or by measuring the wrong
-   element — see this skill's own gotcha, above.
+   still image, whose outer box is centred while its own panel is not, or whose own annotations crop
+   at the aspect ratios a full-bleed graphic actually meets, is the exact failure this project keeps
+   finding by looking at pictures instead of reading code, or by measuring the wrong element or the
+   wrong dimension — see this skill's own gotcha, above.
 
 ## Quick start
 
@@ -222,8 +236,11 @@ python3 -m http.server 8931 --bind 127.0.0.1 --directory /tmp/canon-scrolly &
 #     prose are still there, unchanged, just not advancing;
 #  5. emulate prefers-reduced-motion: reduce, scroll through the same points, and confirm every
 #     sampled opacity is exactly 0 or 1 — never intermediate, and the frame swap is an instant cut;
-#  6. resize to ~375px and confirm nothing clips, the page never scrolls horizontally, and the
-#     graphic still fills that viewport's own height.
+#  6. resize to ~375px (and check at least one wide desktop width like 1600px too — COVER crops
+#     hardest at the aspect extremes, not the ones in between) and confirm nothing clips, the page
+#     never scrolls horizontally, the graphic still fills that viewport's own height, AND every
+#     label/tick/reference mark the drawn frame carries is fully on screen, not sliced by the
+#     viewport's own edge.
 ```
 
 The seed's own runner (`render`, at the bottom of `scripts/render-scrolly.mjs`) reads
@@ -249,24 +266,30 @@ never editing this skill's own runner in place.
 | The IntersectionObserver's own centre band (`initScrolly`, the only mechanism this genre ships) | `-45% 0px -45% 0px` (the middle 10% of the viewport) | `initScrolly`, `interaction.mjs` |
 | The WCAG floor `renderScrolly`'s own panel-contrast tripwire enforces | `4.5` | `renderScrolly`, `render-scrolly.mjs` |
 | The three drawn steps' own illustrated water level / day label (never a plotted value — see `DrawnGraphicFrame`'s own doc-comment) | `{ waterLevelT, dayLabel }` per step `id` | `DRAWN_VARIANTS`, `render-scrolly.mjs` |
+| The aspect-ratio range the drawn frame's own annotations are GUARANTEED never to be COVER-cropped across (tall phone .. 21:9 ultrawide) | `{ min: 0.42, max: 2.4 }` | `ASPECT_ENVELOPE`, `ScrollySeed.tsx` |
+| The sub-rectangle (in `FRAME`'s own viewBox coordinates) every annotated element is placed inside BY CONSTRUCTION, computed from `ASPECT_ENVELOPE` — see `ScrollySeed.tsx`'s own doc-comment for the derivation | `{ x: [150, 490], y: [330, 570] }` | `SAFE_AREA`, `ScrollySeed.tsx` |
 
 ## Files
 
 - `references/scrolly-discipline.md` — the sticky-reservation fact and how the shipped remedy uses
   it deliberately, why the reading measure lives on the prose (header + step panel) and NEVER on
   `.scrolly` itself — the sticky graphic is a visual, not prose, and goes full-bleed on both axes —
-  how prose-over-graphic contrast is measured (not assumed), what survives with JS off, what a
-  screen reader reaches without scrolling, what the graphic is allowed to be silent about, why the
-  graphic is fixed rather than continuously crossfading (the mechanism that was built, driven, found
-  never to settle, and removed), more than two steps, reduced motion, what this genre does not
-  attempt, verification.
+  why a full-bleed graphic's own annotations need a mechanically-enforced `SAFE_AREA` (COVER crops
+  hard at real aspect ratios, and the panel-over-graphic overlap this is NOT the same thing as), how
+  prose-over-graphic contrast is measured (not assumed), what survives with JS off, what a screen
+  reader reaches without scrolling, what the graphic is allowed to be silent about, why the graphic
+  is fixed rather than continuously crossfading (the mechanism that was built, driven, found never to
+  settle, and removed), more than two steps, reduced motion, what this genre does not attempt,
+  verification.
 - `assets/ScrollySeed.tsx` — the seed, marked `REPLACE ME. Do not parameterise me.`: a real,
   complete beat (the daily reading behind every figure this project's other beats report traces to
   one instrument, at one place — told first with a photograph, then across three narrated readings
   on that same instrument: an ordinary day, a flood day, a dry spell), not a stripped mechanics
   demo. `STEPS_META` is this beat's own four-step narrative arc; `ImageFrame`/`DrawnGraphicFrame`
   are its two frame components (the latter parameterised by `waterLevelT`/`dayLabel` for the three
-  narrated readings, still no axis or plotted value), neither one importing the rasteriser or
+  narrated readings, still no axis or plotted value, every annotated element placed inside
+  `SAFE_AREA` — see that constant's own doc-comment for the COVER-crop math it is derived from),
+  neither one importing the rasteriser or
   knowing about the scaffold's own wrapper classes.
 - `assets/sample-data/basin-photo.png` — this seed's own illustrated "photograph", authored by
   `scripts/build-sample-photo.mjs` from flat shapes (nothing fetched, nothing to credit). The
@@ -309,13 +332,16 @@ never editing this skill's own runner in place.
   on disk (`test/canon.test.ts`).
 - `test/render-scrolly.test.ts` — `bun:test` coverage: `STEPS_META`'s own shape (including the
   more-than-two-steps and ≥2-distinct-`frameKind`s structural checks), `ImageFrame`/
-  `DrawnGraphicFrame` SSR in isolation (closed palette, no self-assigned scaffold classes),
-  `pickActiveStep` (including at 4/6/8 synthetic entry counts), the generic `renderScrolly` (refuses
-  <2 steps, refuses duplicate ids, media-agnostic by source-scan of its own function body, panel
-  contrast measured and asserted ≥4.5:1, overlap markup present and two-column markup absent, panel
-  horizontally centred, no trace of the removed scroll-linked mechanism, well-formed markup at 4/6/8
-  synthetic steps), and the seed's own `render` end to end (photograph embedded as a data URI, every
-  step's prose present).
+  `DrawnGraphicFrame` SSR in isolation (closed palette, no self-assigned scaffold classes; every
+  annotated element parsed straight out of the rendered SVG stays inside `SAFE_AREA` at seven
+  `waterLevelT` values including two deliberately out-of-range ones, plus the seed's own three real
+  `DRAWN_VARIANTS` readings), `pickActiveStep` (including at 4/6/8 synthetic entry counts), the
+  generic `renderScrolly` (refuses <2 steps, refuses duplicate ids, media-agnostic by source-scan of
+  its own function body, panel contrast measured and asserted ≥4.5:1, overlap markup present and
+  two-column markup absent, panel horizontally centred, `--graphic-h: 100vh` present, no `max-width`
+  on `.scrolly` itself while `.scrolly-header` keeps its own, no trace of the removed scroll-linked
+  mechanism, well-formed markup at 4/6/8 synthetic steps), and the seed's own `render` end to end
+  (photograph embedded as a data URI, every step's prose present).
 - `test/canon.test.ts` — the canon's own shape: the seed carries the exact `REPLACE ME` wording, the
   seed's own photograph decodes as a real PNG, the seed renders standalone into an empty `--out`
   directory with nothing else on disk, `STEPS_META` carries at least two distinct `frameKind`s, no

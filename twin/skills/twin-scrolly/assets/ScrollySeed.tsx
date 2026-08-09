@@ -134,6 +134,31 @@ export const STEPS_META: ScrollyStepMeta[] = [
 export const FRAME = { width: 640, height: 900 };
 
 /**
+ * A seventh correction: `preserveAspectRatio="xMidYMid slice"` (COVER) crops whatever falls outside
+ * the box it is given — and a box far wider or narrower than `FRAME`'s own 640×900 portrait canvas
+ * crops HARD. `SAFE_AREA` is the sub-rectangle, in `FRAME`'s own viewBox coordinates, that stays
+ * visible across the box-aspect-ratio ENVELOPE this genre guarantees (`ASPECT_ENVELOPE`, below) —
+ * every annotated element `DrawnGraphicFrame` draws (a tick, a label, the reading dot, the flow
+ * arrow) is placed inside it BY CONSTRUCTION, never past its own edges. Decorative fills (the bank
+ * and water rectangles, which carry no text) are free to bleed past `SAFE_AREA` and past `FRAME`
+ * itself — cropping a plain colour is not a legibility problem, cropping a label is.
+ *
+ * The math: for a box of width `W`/height `H`, COVER's own scale factor is
+ * `max(W/FRAME.width, H/FRAME.height)`, and the SLICE of the viewBox that stays visible is
+ * `FRAME.width/scale` wide and `FRAME.height/scale` tall, centred on the viewBox's own centre. A
+ * LANDSCAPE box (aspect `W/H` above `FRAME.width/FRAME.height`, i.e. wider than this canvas) crops
+ * top/bottom; a PORTRAIT box narrower than that crops left/right. `SAFE_AREA` is sized to the
+ * TIGHTEST crop the envelope's own two extremes ever produce — the widest landscape aspect sets how
+ * SHORT the safe height can be, the tallest-relative-to-width (smallest aspect) sets how NARROW the
+ * safe width can be — with a margin kept inside both computed limits for text-metric slack (exact
+ * glyph widths are not computed here; the margin is what makes an anchor-point check a reliable
+ * proxy for full-glyph visibility, see `test/render-scrolly.test.ts`, "DrawnGraphicFrame — nothing
+ * annotated can be cropped").
+ */
+export const ASPECT_ENVELOPE = { min: 0.42, max: 2.4 } as const; // tall phone .. 21:9 ultrawide
+export const SAFE_AREA = { x: [150, 490], y: [330, 570] } as const; // computed from ASPECT_ENVELOPE, margin kept
+
+/**
  * A plain, full-bleed image frame — the stand-in this toolchain uses for a photograph. Nothing in
  * this project generates or fetches images yet (`SKILL.md`'s own "When to use" names the gap
  * explicitly), so a step whose evidence is a photograph embeds one directly, exactly the way a
@@ -179,23 +204,30 @@ export function ImageFrame({ src }: { src: string }) {
  * Paints only with `ground`/`ink`/`muted`/`accent`, the same closed-palette rule every chart genre
  * in this twin keeps — nothing here is a hard-coded hex. `preserveAspectRatio="xMidYMid slice"` is
  * what lets this same SVG fill an arbitrary full-bleed box in the real page without distorting the
- * drawing, the vector equivalent of `ImageFrame`'s own `object-fit: cover`.
+ * drawing, the vector equivalent of `ImageFrame`'s own `object-fit: cover` — and every element that
+ * carries meaning (the staff, its ticks, the "cm" label, the reading dot, `dayLabel`, the flow arrow
+ * and its own "flow" label) is placed inside `SAFE_AREA`, above, so COVER's own crop — which this
+ * genre's full-bleed graphic (see `references/scrolly-discipline.md`, "The reading measure belongs
+ * to the prose; the graphic goes full-bleed") makes routine, not exceptional — can never reach it.
+ * Only the bank/water fills (plain colour, no text) are allowed to run past `SAFE_AREA`'s own edges.
  */
 export function DrawnGraphicFrame({
   ground,
   ink,
   muted,
   accent,
-  waterLevelT = 0.58,
+  waterLevelT = 0.5,
   dayLabel,
 }: {
   ground: string;
   ink: string;
   muted: string;
   accent: string;
-  /** Fraction of `FRAME.height` where the illustrated water sits — smaller means higher water
-   *  (closer to the top of the frame). Purely illustrative: it moves a fill and a dot, never a
-   *  value plotted against a labelled scale. Defaults to this seed's own original reading. */
+  /** Fraction of the STAFF's own safe range (`SAFE_STAFF_TOP`..`SAFE_STAFF_BOTTOM`, both inside
+   *  `SAFE_AREA.y`) where the illustrated water sits and the reading dot is drawn — 0 is the
+   *  highest safe reading, 1 the lowest. Purely illustrative: it moves a fill and a dot within a
+   *  region every annotation is already guaranteed to stay inside, never a value plotted against a
+   *  labelled scale. Defaults to this seed's own original reading, now mid-staff. */
   waterLevelT?: number;
   /** Optional word naming which day this reading belongs to ("today", "flood day", "dry spell") —
    *  drawn as plain text next to the reading dot, the same register as the existing "flow"/"cm"
@@ -204,15 +236,25 @@ export function DrawnGraphicFrame({
 }) {
   const { width, height } = FRAME;
   const bankTop = height * 0.52;
-  const waterTop = height * waterLevelT;
-  const staffX = width * 0.46;
-  const staffTop = height * 0.24;
-  const staffBottom = height * 0.74;
+  const staffX = 320; // SAFE_AREA.x's own centre (150..490) — dead centre of the safe band.
+
+  // The staff itself, and every tick on it, live entirely inside SAFE_AREA.y (330..570) — a fixed
+  // 170px run, independent of `waterLevelT`, with margin left above for the "cm" label and below
+  // for the flow-direction group (see those elements' own coordinates further down).
+  const staffTop = 350;
+  const staffBottom = 520;
   const tickCount = 6;
   const ticks = Array.from({ length: tickCount }, (_, i) => {
     const t = i / (tickCount - 1);
     return staffTop + t * (staffBottom - staffTop);
   });
+
+  // The reading dot (and the water fill's own top edge, which tracks it for visual consistency —
+  // the fill is free to bleed past SAFE_AREA on either side of that top edge, only the edge/dot
+  // pairing itself needs to stay safe) — clamped to [staffTop, staffBottom] BY CONSTRUCTION, so no
+  // caller-supplied `waterLevelT` outside [0, 1] can push it out of SAFE_AREA either.
+  const clampedT = Math.max(0, Math.min(1, waterLevelT));
+  const waterTop = staffTop + clampedT * (staffBottom - staffTop);
 
   return (
     <svg
@@ -226,7 +268,8 @@ export function DrawnGraphicFrame({
       <rect x={0} y={0} width={width} height={height} fill={ground} />
 
       {/* The channel: a flat bank, a flat body of water — no gradient wash, the same "the field is
-          flat" rule every chart and map ground in this twin keeps. */}
+          flat" rule every chart and map ground in this twin keeps. Plain colour, no text on either
+          edge — free to bleed past SAFE_AREA (and past FRAME itself) at any aspect ratio. */}
       <rect
         x={0}
         y={bankTop}
@@ -244,7 +287,8 @@ export function DrawnGraphicFrame({
         opacity={0.35}
       />
 
-      {/* The staff gauge itself: a post, six ticks, one reading marked against it. */}
+      {/* The staff gauge itself: a post, six ticks, one reading marked against it — every
+          coordinate inside SAFE_AREA (see staffTop/staffBottom/staffX, above). */}
       <line
         x1={staffX}
         x2={staffX}
@@ -265,7 +309,7 @@ export function DrawnGraphicFrame({
           strokeWidth={2}
         />
       ))}
-      <text x={staffX + 24} y={staffTop + 6} fill={muted} fontSize={18}>
+      <text x={staffX + 24} y={staffTop - 12} fill={muted} fontSize={18}>
         cm
       </text>
 
@@ -290,17 +334,19 @@ export function DrawnGraphicFrame({
         </text>
       )}
 
-      {/* Flow direction. */}
+      {/* Flow direction — fixed inside SAFE_AREA's own lower-right corner, independent of
+          `waterLevelT` (it names which way the channel flows, not a reading, so it does not need to
+          track the water level the way the dot does). */}
       <line
-        x1={width * 0.66}
-        x2={width * 0.86}
-        y1={waterTop + 30}
-        y2={waterTop + 30}
+        x1={380}
+        x2={460}
+        y1={545}
+        y2={545}
         stroke={ink}
         strokeWidth={2.5}
         markerEnd="url(#scrolly-seed-arrow)"
       />
-      <text x={width * 0.66} y={waterTop + 56} fill={muted} fontSize={16}>
+      <text x={380} y={565} fill={muted} fontSize={16}>
         flow
       </text>
 

@@ -21,16 +21,22 @@ reading measure belongs to the prose; the graphic goes full-bleed," below — sa
 fourth round's panel fix, since both are the same "who does `.scrolly`'s own width rule actually
 belong to" question, answered twice). The reading measure was never wrong for the PROSE — the
 header, and the step panel already fixed in the fourth round — only for the graphic that happened to
-share a parent with it. Every rule below is either a decision this genre needed and the
-others did not, or an explicit
-inheritance from `twin-doctrine` stated so it is not silently assumed. Every section below describes
-the CURRENT code, not a remedy it once used and no longer does — a stale section here is what this
-file's own corrections exist to stop being ("The one gotcha" and "Measuring prose over the graphic"
-are unchanged since the second build and remain accurate as written).
+share a parent with it. REWRITTEN A SEVENTH TIME against a round that fixed a defect the sixth round's
+own full-bleed fix made ROUTINE rather than exceptional: a full-bleed graphic gets COVER-cropped hard
+at the width/height extremes this genre's own full-bleed shape now guarantees it will actually meet,
+and `DrawnGraphicFrame`'s own annotations (a label, a tick, the reading dot) were never designed
+against that crop — see "Nothing annotated can be cropped," below, for the geometry and the
+mechanically-enforced `SAFE_AREA` that fixes it. Every rule below is either a decision this genre
+needed and the others did not, or an explicit inheritance from `twin-doctrine` stated so it is not
+silently assumed. Every section below describes the CURRENT code, not a remedy it once used and no
+longer does — a stale section here is what this file's own corrections exist to stop being ("The one
+gotcha" and "Measuring prose over the graphic" are unchanged since the second build and remain
+accurate as written).
 
-**A standing lesson repeated across THREE rounds: a check on the wrong element, or the wrong
+**A standing lesson repeated across FOUR rounds: a check on the wrong element, or the wrong
 dimension, passes for the wrong reason — and fixing the dimension a human named does not mean the
-fix was the right SHAPE.** The third build's own "Verification" section measured `.scrolly`'s own
+fix was the right SHAPE, and does not mean the fix has no cost elsewhere.** The third build's own
+"Verification" section measured `.scrolly`'s own
 left/right margin, found it symmetric, and called the composition centred. It was — `.scrolly`
 itself was exactly as centred as claimed. What that measurement never looked at was the
 `.step-panel` INSIDE it, which sat flush against the graphic column's own left edge at every width,
@@ -50,7 +56,14 @@ at whatever size it actually renders, in both dimensions at once. Measuring the 
 under discussion is not the same thing as measuring what a reader's eye actually meets — the
 standing fix: when a human says something looks wrong and a computed style says otherwise,
 screenshot the thing a human is actually looking at, not the outermost box that contains it, and
-check EVERY dimension of it, not only the one the previous round happened to be fixing.
+check EVERY dimension of it, not only the one the previous round happened to be fixing. The sixth
+round's own fix — making the graphic full-bleed on both axes — is itself the clearest instance yet
+of this lesson's second half: it was the CORRECT fix for the width defect it targeted, and it made a
+DIFFERENT, previously-dormant defect routine — a graphic that only ever rendered at a narrow column's
+own width never got cropped hard enough for `DrawnGraphicFrame`'s own top-of-frame annotations to
+fall outside the visible slice; a graphic that fills a 1600px-wide viewport does, every time. Fixing
+a defect can EXPOSE the next one; that is not a reason to distrust the fix, it is a reason to look
+again at the picture the fix produces before calling the round closed.
 
 ## The one gotcha that will waste your day (read first)
 
@@ -269,6 +282,74 @@ reading measure belongs to the prose; the graphic goes full-bleed," above, for t
 measurements, taken after that constraint was removed. No horizontal overflow was introduced by
 either fix, then or now: `document.documentElement.scrollWidth` never exceeds `window.innerWidth`
 at any sampled width or scroll position.)
+
+## Nothing annotated can be cropped
+
+**A full-bleed graphic gets COVER-cropped hard at the width and height extremes the sixth round's
+own fix made routine, not exceptional — and `DrawnGraphicFrame`'s own annotations were never placed
+against that crop.** `preserveAspectRatio="xMidYMid slice"` scales `FRAME`'s own 640×900 portrait
+viewBox up until it fully covers whatever box `.scrolly-graphic` gives it, then crops whatever
+overflows. At a 1600×900 box (aspect 1.778, well past `FRAME`'s own 0.711), the scale factor is set
+by WIDTH (`1600/640 = 2.5`) and the visible SLICE of the viewBox is only `900/2.5 = 360px` tall,
+centred on the canvas — vb-y `[270, 630]` out of `[0, 900]`. The staff's own top (vb-y 216, before
+this round) and the "cm" label beside it (vb-y 222) both sat OUTSIDE that visible slice — cropped by
+the viewport's own top edge, not by a bug in the crop math, which is exactly what COVER is supposed
+to do. The project owner's own correction: *the "flood day" label is cut in half by the top edge of
+the viewport, and the top of the gauge is outside the frame entirely — fix so that nothing annotated
+can be cropped at any width.*
+
+**The fix — route 2 of the two the owner named, "keep cover, but define a safe area... and guarantee
+the crop never reaches it"** — is `SAFE_AREA`, a constant exported from `assets/ScrollySeed.tsx`:
+`{ x: [150, 490], y: [330, 570] }`, in `FRAME`'s own viewBox coordinates. It is computed, not
+eyeballed, from an explicit, documented `ASPECT_ENVELOPE` (`{ min: 0.42, max: 2.4 }` — a tall phone
+through a 21:9 ultrawide monitor, comfortably covering the acceptance widths this round was checked
+against and a realistic margin beyond them) via COVER's own scale-factor math (`ScrollySeed.tsx`'s
+own doc-comment on `SAFE_AREA` walks the derivation), with margin kept inside both computed limits
+for text-metric slack. Every element `DrawnGraphicFrame` draws that carries MEANING — the staff, its
+six ticks, the "cm" label, the reading dot, `dayLabel`, the flow arrow and its own "flow" label — is
+now placed inside `SAFE_AREA` BY CONSTRUCTION: `staffTop`/`staffBottom` (350/520) sit inside
+`SAFE_AREA.y`; `staffX` (320) sits at `SAFE_AREA.x`'s own centre; the reading dot's own `waterTop` is
+`staffTop + clamp(waterLevelT, 0, 1) * (staffBottom - staffTop)`, which cannot leave
+`[staffTop, staffBottom] ⊂ SAFE_AREA.y` for ANY caller-supplied `waterLevelT`, in or out of `[0, 1]`;
+the flow arrow/label sit at fixed coordinates (380–460, y 545/565) chosen inside `SAFE_AREA` and
+INDEPENDENT of `waterLevelT` (they name a direction, not a reading, so they do not need to track the
+water level the way the dot does). Only the bank/water RECTANGLES — plain colour fills, no text on
+either edge — are free to bleed past `SAFE_AREA`, and past `FRAME` itself, at any aspect ratio;
+cropping a fill is not a legibility problem the way cropping a label is.
+
+**Enforced, not eyeballed: `test/render-scrolly.test.ts`'s own "nothing annotated can be cropped"
+suite parses every `<text>`/`<line>`/`<circle>` coordinate straight out of the RENDERED SVG STRING**
+(not re-derived from the component's own formula, so a typo'd literal would be caught exactly as a
+wrong formula would) and asserts each one falls inside `SAFE_AREA`, at seven `waterLevelT` values —
+the default, both safe extremes (`t=0`, `t=1`), the seed's own real flood/drought readings (`0.05`,
+`0.95`), AND two DELIBERATELY out-of-range values (`t=-1`, `t=2`) to prove the clamp holds even
+against a caller that ignores the prop's own documented range — plus a dedicated check against the
+seed's own three real `DRAWN_VARIANTS` values (`scripts/render-scrolly.mjs`'s own map), not only
+synthetic ones.
+
+**Confirmed by screenshot, in a real, driven browser, at all four widths the acceptance test named
+(1600×900, 1440×900, 1024×768, 375×812), on the "flood" step — the most extreme real reading
+(`waterLevelT: 0.05`) and the one the owner's own screenshot caught the original defect on:** at
+every width, EVERY element `DrawnGraphicFrame` draws for that step — "cm", "flood day", the reading
+dot, all six ticks, the flow arrow, and the "flow" label — measured fully inside the viewport
+(`getBoundingClientRect()` never negative, never past `innerWidth`/`innerHeight`), confirmed across a
+spread of scroll offsets within the step's own active window, not a single lucky instant.
+
+**A second, DIFFERENT thing was found while checking this, and it is reported here rather than
+cropped out of the account: the opaque PROSE PANEL, travelling over the full-bleed graphic exactly as
+"Measuring prose over the graphic" (above) describes it doing since the second build, can — at the
+widest aspect ratios (1600×900, 1440×900, 1024×768), where COVER's own scale factor is largest and
+the safe-area content therefore renders at its most magnified — transiently cover part of the flow
+arrow's own "flow" text label at some scroll instants within the "flood" step's active window.** This
+is NOT the crop this round fixes — the label is never cut by the viewport edge, at any width, at any
+scroll position; it is covered by another piece of this genre's own furniture that is DELIBERATELY
+opaque and DELIBERATELY sits on top of the graphic, and whose own prose states the exact same
+direction in words nowhere the flow arrow does not already show it wordlessly. At 375×812 (the
+narrowest, least-magnified case) and at a majority of scroll offsets at the wider three, no overlap
+occurs at all. Distinguishing the two — a viewport-edge CROP (this round's own bug, now closed) from
+a panel TRAVELLING OVER a full-bleed graphic it was always going to travel over (a different, already
+proven-safe mechanism from round one) — is the same discipline this file's own intro states for every
+correction in it: report what is actually happening, not merely what confirms the round's own thesis.
 
 ## More than two steps
 
@@ -523,6 +604,15 @@ below that it contradicts — see this file's own intro on why a stale claim her
   (photograph → instrument → flood → drought) in order as the reader scrolls; `pickActiveStep` and
   `renderScrolly` are additionally exercised against synthetic 4/6/8-step fixtures in
   `test/render-scrolly.test.ts` — see "More than two steps," above.
+- **Nothing annotated is cropped**: at all four acceptance-test widths (1600×900, 1440×900,
+  1024×768, 375×812), on the "flood" step, every element `DrawnGraphicFrame` draws for it — "cm",
+  "flood day", the reading dot, all six ticks, the flow arrow, the "flow" label — measured fully
+  inside the viewport at a spread of scroll offsets within the step's own active window; the
+  mechanically-enforced `SAFE_AREA` this depends on is additionally locked in
+  `test/render-scrolly.test.ts` at seven `waterLevelT` values including two deliberately
+  out-of-range ones. See "Nothing annotated can be cropped," above, for the full account — including
+  the separate, pre-existing prose-panel-over-graphic overlap this round's own screenshots also
+  surfaced and did not paper over.
 
 `test/render-scrolly.test.ts` covers what a unit test CAN honestly prove (the seed's own shape,
 including that it now carries more than two steps; the pure `pickActiveStep` helper, tested at 4/6/8
@@ -530,7 +620,10 @@ synthetic entry counts; that every step's prose is present and ungated in the ra
 panel's own computed contrast is asserted ≥4.5:1; that the panel-centring `justify-content: center`
 rule and no trace of the removed scroll-linked mechanism are present in the rendered CSS; that the
 sticky graphic's own `--graphic-h: 100vh` is present; that no `max-width` rule constrains `.scrolly`
-itself while `.scrolly-header` still carries its own `max-width: 640px`; that the generic scaffold's
-own source never names a frame kind; that `renderScrolly` itself produces well-formed markup at
-4/6/8 synthetic steps) and stops there; the sticky/overlap/composition/legibility/fixed-graphic/
-reduced-motion/no-JS behaviour above is proven, or not, by opening the rendered file and driving it.
+itself while `.scrolly-header` still carries its own `max-width: 640px`; that every annotated element
+`DrawnGraphicFrame` draws — parsed straight out of the rendered SVG string — stays inside `SAFE_AREA`
+at seven `waterLevelT` values, including two out-of-range ones proving the clamp holds, and at the
+seed's own three real `DRAWN_VARIANTS` readings; that the generic scaffold's own source never names a
+frame kind; that `renderScrolly` itself produces well-formed markup at 4/6/8 synthetic steps) and
+stops there; the sticky/overlap/composition/legibility/fixed-graphic/crop/reduced-motion/no-JS
+behaviour above is proven, or not, by opening the rendered file and driving it.

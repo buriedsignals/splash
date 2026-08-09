@@ -345,11 +345,16 @@ const OUTPUT_NAME = "gauge-scrolly.html";
  *  place any of this seed's three drawn frames differ from one another. Keyed by `id`, not by some
  *  new field on `STEPS_META`, because the shape a scrolly step needs (`id`/`frameKind`/`prose`)
  *  stays exactly what `assets/interaction.mjs` matches a step to its frame by; a per-day reading is
- *  this SEED's own editorial content, not a fourth field the generic type needs to carry. */
+ *  this SEED's own editorial content, not a fourth field the generic type needs to carry.
+ *
+ *  `waterLevelT` is a fraction of the STAFF's own safe range (`DrawnGraphicFrame`'s own
+ *  `staffTop`..`staffBottom`, both inside `SAFE_AREA.y` — see `ScrollySeed.tsx`'s own doc-comment
+ *  on `SAFE_AREA`), not of the whole canvas: 0 is the highest safe reading, 1 the lowest, and every
+ *  value in between stays on the visible staff by construction. */
 const DRAWN_VARIANTS = {
-  instrument: { waterLevelT: 0.58, dayLabel: "today" },
-  flood: { waterLevelT: 0.3, dayLabel: "flood day" },
-  drought: { waterLevelT: 0.7, dayLabel: "dry spell" },
+  instrument: { waterLevelT: 0.5, dayLabel: "today" },
+  flood: { waterLevelT: 0.05, dayLabel: "flood day" },
+  drought: { waterLevelT: 0.95, dayLabel: "dry spell" },
 };
 
 /** The ONE place in this file that reads a step's own `frameKind` and turns it into a built
