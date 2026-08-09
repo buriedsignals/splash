@@ -21,6 +21,18 @@ Global Carbon Budget (2025), via Our World in Data · `co-emissions-per-capita.c
 `references/types/histogram.md`'s own "value range divided into about ten roughly-round bins"
 default.
 
+## Task 0's probe (W4) — this beat is the one the size table rests on
+
+`probe/` draws this same histogram at 1920×1080, 1080×1080 and 1080×1920 and measures it. The
+spec's question 4 — *did anything outside {typeScale, tick hints, collision thresholds} need
+editing?* — answers **TRUE**: eleven bare spacing literals in this file's own layout arithmetic
+(`+ 28`, `+ 22`, `+ 34`, `+ 8`, `+ 24`, `+ 6`, `+ 10`, `+ 20`, `+ 4`, `+ 16`, `− 10`) are 900×560
+tuning under no name, and leaving them unscaled collided the title into the subtitle at landscape.
+Question 3 splits: everything that goes through `measureText` re-derived with no edit; the literals
+did not. `probe/VERDICT.md` is what was seen when the three PNGs were opened — including the one
+finding no counter caught, that portrait comes back with zero clipping, zero collisions, 84% plot
+fill **and a destroyed distribution shape** (plot aspect 2.35:1 → 0.54:1).
+
 ## What went wrong, caught by looking
 
 Two real catches. First, during research a bash `sort -k4 -n` pass on a header-included file

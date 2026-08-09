@@ -7,6 +7,13 @@ the owner's binding ruling **R2**.
 Built on `survey/export-sizes.md`. That survey's finding work is not redone here; where a line
 number differs from the survey's it is because I re-measured it, and the re-measured one is used.
 
+> **REVISED 2026-08-10, after Task 0 ran.** The probe answered question 4 **TRUE**, which this spec
+> says stops Task 1 until it is revised. It is revised: §2's `typeScale` table gains the finding
+> that a beat's *spacing* literals are as much 900×560 tuning as its font sizes are; §4 Task 3's
+> token list and its cost estimate change; §6 gains a residue the probe found and no measurement in
+> it caught. Evidence: `proof/static-carbon-footprint-spread/probe/` — `MEASUREMENTS.md` (generated)
+> and `VERDICT.md` (what a person saw). The sequencing below survives unchanged.
+
 ## Scope, and the half that is not mine
 
 **Mine:** `twin-chart-beat` (17 chart statics), `twin-chart-video` (19 chart videos),
@@ -178,15 +185,33 @@ number cannot express this** — which is precisely what the original tries. So 
 `square` row and `twin-chart-video`'s `square` row will carry the **same** `width`/`height` and
 **different** `typeScale`, deliberately, and the parity guard compares dimensions only.
 
-### The rasteriser question the probe settles
+**A `typeScale` scales SPACING, not only type — the probe's correction.** The seven named
+constants (`PAD`, `TITLE`, `SUBTITLE`, `SOURCE`, `AXIS`, `AXIS_TITLE`, `NOTE`) are not the whole of
+a beat's 900×560 tuning. `static-carbon-footprint-spread` — the simplest static in the corpus, no
+packing, no bespoke collision code — carries **eleven further bare literals** inside its layout
+arithmetic (`+ 28`/`+ 22`/`+ 34` between header blocks, `+ 8`/`+ 24`/`+ 6`/`+ 10` inside `padding`,
+`+ 20`/`+ 4`/`+ 16`/`− 10` at the marks). Scaling the type and not those literals is what collided
+the title into the subtitle at 1920×1080 on the probe's first run, by 1634 × 4.5 px. So the row's
+`typeScale` is applied through one rounding helper to **every spacing number in the file**, and
+"parameterise the type tokens" is the wrong instruction. Detail:
+`proof/static-carbon-footprint-spread/probe/VERDICT.md`.
 
-Making the declared frame equal the delivered pixel size retires `rasterise`'s `× 2`
-(`render-still.mjs:216-219`) and with it the tuning-knob row *"How closely the still survives being
-looked at | 2"*. That is the proposal. The alternative is halved frames (960×540 / 540×540 /
-540×960) kept at 2×, which preserves crispness and delivers the same pixels. **Both deliver the
-platform's pixels; they differ in what the type is measured against.** The probe (Task 0) decides,
-and whichever wins, the losing option and the reason are written into `static-discipline.md`. What
-is **not** allowed is shipping both.
+### The rasteriser question, SETTLED by Task 0
+
+**The frame IS the export size, rasterised 1:1. `rasterise`'s `× 2` (`render-still.mjs:216-219`)
+goes, and with it the tuning-knob row *"How closely the still survives being looked at | 2"*.**
+
+Measured, not argued: `probe-landscape.png` (1920×1080 frame at 1×) and `probe-landscape-half2x.png`
+(960×540 frame at 2×) are both 1920×1080 and their **type is indistinguishable** — resvg is a vector
+rasteriser, so the crispness argument for 2× does not survive contact with it. What separates them is
+that at 2× **every `strokeWidth` and `strokeDasharray` doubles**: a component asking for a 1px
+gridline is delivered a 2px one, and a `"6 4"` dash arrives as `"12 8"`. The rasteriser was taking a
+design decision the component believed it had taken.
+
+*The losing option, recorded:* halved frames (960×540 / 540×540 / 540×960) at 2×. Same pixel count,
+same text quality, and it would have kept the existing type tokens nearer their tuned values. It
+loses because hairlines stop being hairlines. This paragraph goes into `static-discipline.md`
+verbatim at Task 1. What is **not** allowed is shipping both.
 
 ### No `allowedFormats` on this table
 
@@ -230,7 +255,7 @@ Cheapest-to-dearest, with the two ordering constraints that are not about cost.
 | **0** | **The probe: one histogram at three sizes, looked at** | — | half a day; **blocks 1-4** |
 | 1 | `SIZES` + `sizeFor` + the walking guard, in `twin-chart-beat` only | 0 | low |
 | 2 | Video: `useVideoConfig()`, three `<Composition>`s, a real rendered-size throw | 1 | low mechanically, 3× render time |
-| 3 | Static: `FRAME` → `sizeFor(name)`, type tokens from `typeScale` | 1 | **medium-high — the looking, not the editing** |
+| 3 | Static: `FRAME` → `sizeFor(name)`, type **and spacing** tokens from `typeScale` | 1 | **high** — revised up by Task 0; ~11 spacing literals per beat on the simplest type, plus a per-type portrait aspect decision |
 | 4 | `twin-dw-beat`: one call site | 1 | near zero |
 | 5 | **Narrow the two `no @media` assertions** — its own commit, its own reasoning | — | low |
 | 6 | Web: the fill rule (`--plot-aspect`) + per-size content decisions | 5 | low mechanically, medium editorially |
@@ -256,7 +281,34 @@ narrow-form fill rule until it is on the fluid frame at all, so doing it later m
 
 ## 4. The change, per craft skill, file by file
 
-### Task 0 — the probe. **First, before anything is built.**
+### Task 0 — the probe. **RUN 2026-08-10. Findings below; artifacts in `probe/`.**
+
+Ran as written. Five answers, in
+`proof/static-carbon-footprint-spread/probe/{MEASUREMENTS.md,VERDICT.md}`:
+
+1. **Clipping / collisions:** 0 / 0 at all three sizes — *after* the eleven spacing literals were
+   scaled. Before that, 2 collisions at landscape.
+2. **Plot fill:** 51% / 71.9% / 84.2% (landscape / square / portrait) against the base's 55% and the
+   original Splash's ~47%-before / ~63%-after. **No `boostPlotAspect` is needed.** The survey's
+   hypothesis — that portrait would come back starved — is refuted; it comes back the opposite.
+3. **Did the gutters and the wrapped title re-derive with no edit?** **Split.** Yes for everything
+   through `measureText` (`wrap()` re-flowed at every width; `padding.left` re-derived from the
+   widest tick label at its own new size). No for the eleven bare spacing literals.
+4. **Anything outside {typeScale, tick hints, collision thresholds}?** **TRUE**, on those literals —
+   which is why this spec carries a revision banner. Nothing beyond them: no bespoke label placement
+   moved, no annotation was re-anchored.
+5. **Rasteriser:** settled at 1× — see §2.
+
+**The one finding no measurement in this task caught, and it is the important one.** Portrait comes
+back with zero clipping, zero collisions and 84% plot fill, and it is a **bad chart**: the plot's
+aspect goes from 2.35:1 to **0.54:1** and the tallest bar from 4.2:1 to **18.4:1**, so a right-skewed
+distribution becomes one enormous grey column beside nine slivers. A histogram's argument IS a shape,
+and shape is an aspect ratio. This is `web-discipline.md:247-273`'s `preserveAspectRatio="none"`
+lesson — *a non-uniform scale distorts any mark whose shape is the argument* — arriving on the
+static path the moment the frame stops being fixed, where nobody had looked for it. It becomes a
+residue in §6 with a trigger, not a silent absorption.
+
+### Task 0 — the probe, as originally specified
 
 Take `proof/static-carbon-footprint-spread` — a simple histogram, buckets A+B only, no packing and
 no bespoke collision code. Draw it at **1920×1080**, **1080×1080** and **1080×1920** with a
@@ -313,7 +365,7 @@ portrait, the honest answer is that Task 3 costs more than "medium-high" and the
 
 | file | change | copies |
 |---|---|---|
-| `skills/twin-chart-beat/assets/ChartSeed.tsx:25, 21-30, 37, 43` | `const FRAME` → `const { width, height, typeScale } = sizeFor(size)`, where `size` is a prop. `PAD`, `TITLE`, `SOURCE`, `AXIS`, `LABEL` become integer-rounded functions of `typeScale` (integers, so `measureText`'s cache keys stay stable). `Y_TICK_HINT`/`X_TICK_HINT` become per-size values on the row. | **17 chart-static beats** |
+| `skills/twin-chart-beat/assets/ChartSeed.tsx:25, 21-30, 37, 43` | `const FRAME` → `const { width, height, typeScale } = sizeFor(size)`, where `size` is a prop. `PAD`, `TITLE`, `SOURCE`, `AXIS`, `LABEL` become integer-rounded functions of `typeScale` (integers, so `measureText`'s cache keys stay stable) — **and so does every bare spacing literal in the layout arithmetic**, through one `sp(v) = Math.round(v * typeScale)` helper. Task 0 measured eleven of those in the corpus's *simplest* static; leaving them at their 900×560 value while the type grows is what collides the header. `Y_TICK_HINT`/`X_TICK_HINT` become per-size values on the row. | **17 chart-static beats** |
 | each beat's `render.mjs` (e.g. `proof/static-carbon-footprint-spread/render.mjs:85-86`) | `renderStill({ element, ...sizeFor(name), outDir, name })` — **one statement of the size instead of two**, which kills survey finding #1 at its source. `renderStill` itself is **unchanged**; its throw becomes the backstop it was written to be rather than the thing that has to agree with a literal. | 17 |
 | `proof/static-small-multiples-solar-eu-six/SolarSmallMultiples.tsx:41` | `const COLUMNS = 3` → chosen from the size's aspect: 3×2 at landscape, 2×3 at portrait. **The beat asks the size for its dimensions and decides its own packing** — `SIZES` must not learn how many columns a six-panel grid takes, or it stops being a table. Same shape for the heatmap and any other packing type. | per beat |
 
@@ -493,8 +545,24 @@ and a guard that happened.
   at a new size, it is **unverified** at a new size. Task 3's cost is that verification and Task 0
   is what tells us how large it is. Any beat where the probe's answer is "needs a real second layout"
   is named in this spec's execution log, not silently absorbed.
-- **A `boostPlotAspect` equivalent**, if Task 0's fill measurement demands one. Named as a
-  conditional follow-up with its trigger written down rather than pre-built.
+- **A `boostPlotAspect` equivalent.** Task 0 fired this trigger and **pointed it the other way**:
+  portrait comes back over-filled (84%), not starved, and what it needs is a **cap** on how far a
+  plot may be stretched away from the aspect its marks were designed at — not a boost. The measured
+  case: the histogram's plot goes 2.35:1 → 0.54:1 and its tallest bar 4.2:1 → 18.4:1, with every
+  clipping and collision count at zero. **Deliberately not pre-built**, because the right shape of
+  the answer is a per-type judgement (a pyramid WANTS portrait; a 27-row diverging bar wants
+  portrait; a right-skewed histogram does not) and one number in `SIZES` cannot hold it — that is
+  the original's `scale: 1.7` defect wearing a different name. The trigger for building it: the
+  first Task 3 beat whose portrait render needs a real second layout rather than a scale.
+- **Whether `static-carbon-footprint-spread` should be reachable at portrait at all.** Task 0's
+  honest reading is that this type at 9:16 is a worse chart than the same claim at 1:1, and the
+  toolchain has no way to say so — `SIZES` is a table, and §2 forbids it learning a second question.
+  The place that knowledge belongs is the type sheet (`references/types/histogram.md`) and the
+  proposition phase, not the size table. Named, unclosed.
+- **`square`'s static `typeScale`.** The probe's hand-picked 1.2 preserves apparent size *in an
+  article column*, and R2 says square is a **social post** — a phone feed at ~400 CSS px, where a
+  30px title on a 1080 frame lands at 11px. Picking the real number needs a phone-sized look, which
+  Task 0 did not do. Recorded rather than guessed.
 - **Print.** The original carries a fourth channel (`print-page`, 2480×1748). R2 named three; a
   fourth row is a decision nobody has taken.
 - **Whether a journalist can ask for two sizes of one beat.** Task 9 lets a slot pin one. Producing
