@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import {
   DumbbellLifeExpectancyGainsWeb,
-  LAYOUTS,
+  FRAME,
 } from "./DumbbellLifeExpectancyGainsWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -137,13 +137,77 @@ function inlineable(moduleSource) {
   return moduleSource.replace(/^export /gm, "");
 }
 
-/** CSS appended after the skill's own generic stylesheet. The skill's generic rules
- *  (`twin-chart-web/scripts/render-web.mjs`'s `buildCss`) style `.pt` circles — this beat has no
- *  `.pt` elements at all, only `.hit-row` rectangles, so those generic rules are inert here and
- *  this beat needs its own hover/focus treatment: a faint fill wash over the active row's whole
- *  band (never a colour that could be mistaken for either dot's own accent hue) plus a visible
- *  keyboard-focus outline. */
+/** CSS appended after the skill's own generic stylesheet. Four things live here, none of which the
+ *  generic sheet can know about:
+ *
+ *  1. THE FOUR GRID TRACKS. The genre's `.chart-plot` is two columns (a measured y-gutter and the
+ *     fluid plot). A dumbbell row carries three fixed-pixel strings around a fluid plot — the
+ *     country name, and a value printed OUTSIDE each of the two dots — so three fixed tracks are
+ *     reserved: the names in the first, and empty room either side of the plot (`--lv-gutter`,
+ *     `--rv-gutter`, measured in node) for the value labels to overflow into. The `<svg>`, the
+ *     overlay and the x-axis row all move to the third track together, so they stay in register.
+ *  2. `.chart-legend` — a real flex row of two swatch+word keys, `flex: 0 0 auto` like every other
+ *     word in the figure's column, so the window-fit rule never squeezes it (the plot absorbs the
+ *     shortfall instead).
+ *  3. `.dot`, `.value-label` and the `.cat` name column — the type and mark styles this beat adds,
+ *     all FIXED CSS pixel sizes read from the figure's own custom properties, never anything that
+ *     tracks the `viewBox`. The value labels carry a `--ground` chip so a gridline passing behind
+ *     one stays behind it (the one box this genre allows, `web-discipline.md`).
+ *  4. `.hit-row`'s hover/focus treatment — the skill's `.pt` rules never match this beat's markup:
+ *     a faint wash over the active row's whole band, never a colour that could be mistaken for
+ *     either dot's own hue, plus a visible keyboard-focus outline. */
 const EXTRA_CSS = `
+.chart-plot.dumbbell {
+  grid-template-columns: var(--cat-gutter) var(--lv-gutter) 1fr var(--rv-gutter);
+}
+.chart-plot.dumbbell svg.chart,
+.chart-plot.dumbbell .overlay,
+.chart-plot.dumbbell .x-axis { grid-column: 3; }
+.chart-legend {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 10px 0 6px;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  color: var(--ink);
+}
+.chart-legend .legend-key { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend .legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.chart-plot .y-axis .cat {
+  right: auto;
+  left: 0;
+  font-size: var(--cat-size);
+  font-weight: var(--cat-weight);
+  color: var(--ink);
+}
+.chart-plot .overlay .dot {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.chart-plot .overlay .value-label {
+  position: absolute;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.chart-plot .overlay .value-label.left {
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+.chart-plot .overlay .value-label.right {
+  transform: translateY(-50%) translateX(10px);
+}
 .hit-row { cursor: pointer; }
 .hit-row:hover, .hit-row:focus, .hit-row-active {
   fill: rgba(0, 0, 0, 0.05);
@@ -205,14 +269,19 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: DumbbellLifeExpectancyGainsWeb,
-    layouts: LAYOUTS,
     props: {
+      frame: FRAME,
       rows: sorted,
       title,
       source:
         "Source: UN, World Population Prospects (2024), via Our World in Data · 2000 and 2023, extracted 8 August 2026",
       alt,
       ground: "#FFFFFF",
+      // Nominal only. This beat carries no single semantic accent — the two series' own fixed hues
+      // do that job — but `renderWeb`'s shared CSS shell always writes `--accent` from this prop,
+      // and omitting it wrote the literal token `undefined` into the stylesheet. Nothing in this
+      // beat's markup or CSS reads it.
+      accent: "#0B7A75",
     },
     outDir,
     name,

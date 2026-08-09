@@ -27,7 +27,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { LollipopCo2Web, LAYOUTS } from "./LollipopCo2Web.tsx";
+import { LollipopCo2Web, FRAME } from "./LollipopCo2Web.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -127,12 +127,45 @@ function inlineable(moduleSource) {
   return moduleSource.replace(/^export /gm, "");
 }
 
-/** CSS appended after the skill's own generic stylesheet — the skill's `.pt` rules never match this
- *  beat's markup (`.row-hit`), so this beat supplies its own hover/focus/active treatment: a
- *  translucent wash across the row's full hit-rect (mouse and touch alike get a visible cue for
- *  where the "row" boundary actually is, not just the thin stem), plus a visible focus ring for
- *  keyboard users. */
+/** CSS appended after the skill's own generic stylesheet. Three things live here, none of which the
+ *  generic sheet can know about:
+ *
+ *  1. THE THIRD GRID TRACK. The genre's `.chart-plot` is two columns (a measured y-gutter and the
+ *     fluid plot). A lollipop prints a value label to the RIGHT of every dot, and the top row's dot
+ *     sits at the plot's own right edge — so a fixed-pixel track is reserved beyond it
+ *     (`--r-gutter`, measured in node from the widest label actually drawn) for those labels to
+ *     overflow into. Without it the longest label runs off the frame at 375px, which is exactly the
+ *     defect class this genre's own gotcha section says only a screenshot ever catches.
+ *  2. `.value-label` and the `.cat` name column — the two type styles this beat adds. Both are
+ *     FIXED CSS pixel sizes read from the figure's own custom properties, never anything that
+ *     tracks the `viewBox`. `.value-label` carries a `--ground` chip so a gridline passing behind
+ *     it stays behind it (the one box this genre allows, `web-discipline.md`).
+ *  3. `.row-hit`'s hover/focus/active treatment — the skill's `.pt` rules never match this beat's
+ *     markup: a translucent wash across the row's full hit-rect, so mouse and touch alike get a
+ *     visible cue for where the "row" boundary is, not just the thin stem, plus a focus ring. */
 const EXTRA_CSS = `
+.chart-plot.lollipop { grid-template-columns: var(--y-gutter) 1fr var(--r-gutter); }
+.chart-plot .y-axis .cat {
+  font-size: var(--cat-size);
+  font-weight: var(--cat-weight);
+  color: var(--ink);
+}
+.chart-plot .overlay .dot {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.chart-plot .overlay .value-label {
+  position: absolute;
+  transform: translateY(-50%) translateX(10px);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
 .row-hit { cursor: pointer; }
 .row-hit:hover, .row-hit:focus, .row-active {
   fill: var(--muted);
@@ -183,8 +216,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: LollipopCo2Web,
-    layouts: LAYOUTS,
     props: {
+      frame: FRAME,
       rows: sorted,
       title: claim,
       source: "Source: Global Carbon Budget 2025, via Our World in Data · 2024 data",

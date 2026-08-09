@@ -47,7 +47,17 @@ export function initChart(svg, tooltip) {
     row.addEventListener("pointerenter", fromPointer);
     row.addEventListener("pointermove", fromPointer);
     row.addEventListener("pointerdown", fromPointer);
-    row.addEventListener("pointerleave", clear);
+    // MOUSE AND PEN ONLY. A touch pointer is destroyed the instant the finger lifts, and the
+    // browser fires `pointerleave` immediately after `pointerup` for it — so an unguarded
+    // `pointerleave` handler wipes the tooltip a tap has just opened, and the reading this beat's
+    // own alt text promises a tap reveals is never actually visible on a phone. Measured by
+    // dispatching a real `Input.dispatchTouchEvent` sequence, not read off the source. A touch
+    // reader's tooltip is cleared by the document-level `pointerdown` below instead: it stays up
+    // until they tap somewhere else, which is the behaviour a tap-to-inspect control should have.
+    row.addEventListener("pointerleave", function (evt) {
+      if (evt.pointerType === "touch") return;
+      clear();
+    });
 
     // Keyboard: every row's rect is already `tabIndex={0}` at build time (works with this script
     // absent entirely — the same invariant `web-discipline.md`, "Keyboard and touch", states for

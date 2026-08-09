@@ -1,114 +1,127 @@
 /**
- * The web beat of "every one of these ten countries added years of life expectancy between 2000
- * and 2023" — a dumbbell, not a line, not a scatter. Geometry comes from
- * `./dumbbell-geometry.ts`; this file adds the one thing neither the static frame nor a video
- * build has — a reader who can ask ANY of the ten rows its own gap and get an exact answer back,
- * without anything the static frame already states being gated behind that ask. Read
+ * The web beat of "every one of these ten countries added years of life expectancy between 2000 and
+ * 2023" — a dumbbell. Coordinates come from `./dumbbell-geometry.ts`. Read
  * `twin-chart-web/references/web-discipline.md` and `twin-chart-beat/references/types/dumbbell.md`
  * before changing this file.
  *
- * The structural departure from `web-income-life-expectancy/IncomeLifeExpectancyWeb.tsx` (a
- * scatter): there, the hit-test resolves a pointer position to the NEAREST of ~164 freely
- * scattered points, because two points can sit close together in both axes. Here there is
- * nothing to resolve "nearest" for: each of the ten rows already owns one non-overlapping
- * horizontal band (`dumbbell-geometry.ts`'s own `bandTop`/`bandBottom`, from `scaleBand`). So this
- * beat draws TEN hit-rects directly — one per row, spanning the full plot width and that row's
- * own band height — each wired straight to its own pointer/focus events by
- * `dumbbell-interaction.mjs`. No shared `.hit-area` overlay, no distance calculation.
+ * MIGRATED TO THE FLUID FRAME (`web-discipline.md`, "Responsive behaviour", second build). This
+ * beat used to ship two pre-rendered rungs — a 900px `DESKTOP_LAYOUT` and a 360px `NARROW_LAYOUT`
+ * swapped by a media query. That design is overturned: there is now ONE `WebFrame`, SSR'd once, and
+ * the `<svg>` below carries GEOMETRY ONLY — not one `<text>` element. Every word (title, source,
+ * the legend, the ten country names, both value labels on every row, the value-axis ticks) is plain
+ * HTML at a FIXED pixel font size, positioned by `%` over or beside the same grid cell the `<svg>`
+ * occupies. Geometry stretches; type does not.
  *
- * `data-detail` LEADS with the row's own GAP, not the two endpoint values: the static frame
- * already prints both endpoint values in ink beside their own dots (2000 in blue, 2023 in
- * vermillion), so repeating them as the headline of a hover would be exactly the anti-pattern
- * `web-discipline.md` names — "the same numbers repeated on demand". What the static frame could
- * NOT print, for 8 of the 10 rows, is the gap itself (only the two rows the title happens to name,
- * Poland and the United States, have their gap stated anywhere in prose). `describeRow` below
- * folds the two already-visible endpoint values back in as a parenthetical confirmation, never the
- * headline — see this file's own header and `BRIEF.md`'s "Interaction" section for the reasoning
- * in full.
+ * FOUR COLUMNS, NOT TWO — this beat's own departure from the seed's grid, and the reason is the
+ * type sheet's own named failure mode (`references/types/dumbbell.md`, "The one thing that goes
+ * wrong": this chart has shipped with zero reserved space for its category column). A dumbbell row
+ * carries THREE fixed-pixel things around a fluid plot: the country name, the 2000 value printed
+ * OUTSIDE the left dot, and the 2023 value printed OUTSIDE the right dot. The value labels sit at
+ * their own dots' `%` (so they track the stretch for free) and overflow into fixed-pixel tracks
+ * reserved either side of the plot — `--lv-gutter` on the left, `--rv-gutter` on the right, both
+ * measured in node from the widest string that will actually land there. The names get the first
+ * track. Without the reserved tracks the outermost label runs off the frame at 375px, which is
+ * exactly the defect class this genre's gotcha section says only a screenshot ever catches.
  *
- * Two layouts, not a continuous reflow (`web-discipline.md`, "Responsive behaviour"), the same
- * pattern every other web beat in this skill keeps — one hand-authored `WebLayout` per rung,
- * each SSR'd once at build time, a CSS media query alone picking between them.
+ * THE ROW-HEIGHT FLOOR. Height follows width through `aspect-ratio`, which is right for a line
+ * chart and wrong for ten stacked rows: at 375px that leaves rows about 20px apart, under the point
+ * where a 14px name and two 13px numbers read as one row rather than a smear. `.chart-plot` carries
+ * an inline `min-height` of `rows x MIN_ROW_PX`, this beat's own version of the genre's
+ * `PLOT_FLOOR_PX`. The `<svg>`'s `preserveAspectRatio="none"` absorbs the difference.
+ *
+ * NUMBER LOCALE. This beat's words are English and its `<html lang>` is patched to `en`, so its
+ * figures are English too: `formatYears` prints `78.4` with a decimal POINT. There is no `fr` in
+ * this beat, and the formatter is named for what it returns — years to one decimal — not for a
+ * locale. The gap in `describeRow` uses the same function, so the prose, the axis and the tooltip
+ * cannot disagree.
+ *
+ * INTERACTION: one hit-rect per row, never a shared nearest-point overlay — each row already owns a
+ * non-overlapping `scaleBand` band, so there is nothing to resolve "nearest". `data-detail` LEADS
+ * with the row's own GAP, the one reading neither printed number states.
+ *
+ * This component never imports the rasteriser: `ink`/`muted`/`grid`/`measure` are props, derived
+ * once in node by whatever runner calls it.
  */
 
 import { dumbbellGeometry, type Row } from "./dumbbell-geometry";
 
 const UNIT = "years";
-/** Two CVD-safe hues, capped at exactly two per `references/types/dumbbell.md` — the same pair
- *  the static sibling uses, one per year, reused consistently across every row so a reader learns
- *  "which dot is which series" once. */
+/** The unit, stated ONCE under the title instead of being appended to the last axis tick. It used
+ *  to ride on that tick ("84 years"), which made one label four times wider than its neighbours —
+ *  and at 375px, where the plot column is about 140px wide, that one wide label measurably
+ *  overlapped the tick before it. Caught by driving the page, not by reading it. */
+const CAVEAT = "Life expectancy at birth, in years.";
+/** The two series' own fixed hues — Okabe-Ito blue and vermillion, the pair this project uses
+ *  wherever two categories must be told apart by colour alone. */
 const COLOURS = { y2000: "#0072B2", y2023: "#D55E00" };
-
-/** `WebLayout` lives here, not imported from `twin-chart-web/assets/ChartWebSeed.tsx` — that
- *  type describes the LINE genre's own mechanics (a reference rule, a peak marker, single-series
- *  tick hints), and this beat's own shape (a legend, a category-label gutter, per-row bands) is
- *  different data. The same "duplicate, do not link" ruling this project applies elsewhere
- *  (`twin-chart-web/SKILL.md`'s own doc-comment on `ChartWebSeed.tsx`): a type definition is the
- *  cheapest thing there is to duplicate. */
-export type WebLayout = {
-  name: "desktop" | "narrow";
-  width: number;
-  pad: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
-  legend: { fontSize: number; fontWeight: number };
-  axis: { fontSize: number };
-  categoryLabel: { fontSize: number; fontWeight: number };
-  valueLabel: { fontSize: number; fontWeight: number };
-  /** How many x ticks `scale.ticks` derives at this layout's own width. */
-  xTickHint: number;
-  /** The plot's own floor for usable height, independent of how many lines the header wraps to.
-   *  The frame's total height is DERIVED from this plus the header block's real height — never a
-   *  fixed constant guessed to be tall enough for ten rows plus a wrapped title, the exact rule
-   *  `ChartWebSeed.tsx` states for its own single-series frame, applied here to a ten-row plot. */
-  plotMinHeight: number;
-  bottomPad: number;
-};
+const DOT_RADIUS = 6;
+/** The plot's own inset, in canonical SVG user units, so an end dot's own mark is never clipped in
+ *  half by the `viewBox` edge. The LABEL beyond it is HTML and lands in a reserved gutter. */
+const DOT_INSET = 8;
+/** The row-height floor, in CSS pixels — see this file's own doc-comment. */
+const MIN_ROW_PX = 30;
 
 type Measure = (
   text: string,
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-/** Wrap on the measured width of the real string, never on a character count — the exact bug
- *  `web-discipline.md`'s own header note names: a sentence-length line clipped clean off the
- *  narrow layout's right edge the first time that genre's first beat was actually driven. */
-function wrap(
-  text: string,
-  maxWidth: number,
-  font: { fontSize: number; fontWeight: number },
-  measure: Measure,
-): string[] {
-  const lines: string[] = [];
-  let line = "";
-  for (const word of text.split(/\s+/)) {
-    const trial = line ? `${line} ${word}` : word;
-    if (line && measure(trial, font) > maxWidth) {
-      lines.push(line);
-      line = word;
-    } else line = trial;
-  }
-  return line ? [...lines, line] : lines;
-}
+/** `WebFrame` is declared here, duplicated rather than imported from `ChartWebSeed.tsx` — the same
+ *  "duplicate, do not link" ruling that file states (a compile-time-only type with no vendoring
+ *  path a story could reach). Fields are this TYPE's own shape: a category axis of rows, one shared
+ *  value axis, a legend that names the two hues. */
+export type WebFrame = {
+  /** The plot rectangle's canonical width/height, in SVG user units — proportions and tick density
+   *  only, never a rendered pixel cap. */
+  width: number;
+  height: number;
+  /** Fixed CSS pixel row below the plot for the value-axis tick labels. */
+  xAxisRowPx: number;
+  title: { fontSize: number; fontWeight: number };
+  source: { fontSize: number };
+  legend: { fontSize: number; fontWeight: number };
+  axis: { fontSize: number };
+  category: { fontSize: number; fontWeight: number };
+  value: { fontSize: number; fontWeight: number };
+  /** How many x ticks the shared value scale is hinted to produce. Decided ONCE, at the canonical
+   *  width — never re-derived as the frame stretches. */
+  xTickHint: number;
+};
 
-function formatValue(v: number): string {
+export const FRAME: WebFrame = {
+  width: 820,
+  height: 440,
+  xAxisRowPx: 26,
+  title: { fontSize: 22, fontWeight: 700 },
+  source: { fontSize: 13 },
+  legend: { fontSize: 13, fontWeight: 600 },
+  axis: { fontSize: 12 },
+  category: { fontSize: 13, fontWeight: 600 },
+  value: { fontSize: 12, fontWeight: 600 },
+  xTickHint: 5,
+};
+
+/** Years to one decimal — English, matching this beat's own declared language. Named for what it
+ *  returns, not for a locale it does not implement. */
+export function formatYears(v: number): string {
   return v.toFixed(1);
 }
 
-/**
- * `data-detail`/`aria-label`'s exact shape for one row. Exported so `render-web.mjs`'s own
- * verification note and a reader of this file can check the exact string hover/focus produces,
- * not just that hover does something. `detail` is the short string the visual tooltip shows,
- * leading with the gap; `label` is the fuller sentence assistive tech reads via `aria-label`
- * (present even with the script absent, per `web-discipline.md`'s "Keyboard and touch").
- */
+/** The tooltip line and the screen-reader label for one row, from the SAME numbers the frame
+ *  prints — the gap leads, because it is the one reading neither printed value states. */
 export function describeRow(r: Row): { detail: string; label: string } {
-  const gap = `+${r.gap.toFixed(1)} ${UNIT}`;
-  const detail = `${r.country}: ${gap} (${formatValue(r.y2000)} → ${formatValue(r.y2023)})`;
+  const gap = `+${formatYears(r.gap)} ${UNIT}`;
+  const detail = `${r.country}: ${gap} (${formatYears(r.y2000)} → ${formatYears(r.y2023)})`;
   const label =
-    `${r.country}: gained ${r.gap.toFixed(1)} years of life expectancy, from ` +
-    `${formatValue(r.y2000)} years in 2000 to ${formatValue(r.y2023)} years in 2023`;
+    `${r.country}: gained ${formatYears(r.gap)} years of life expectancy, from ` +
+    `${formatYears(r.y2000)} years in 2000 to ${formatYears(r.y2023)} years in 2023`;
   return { detail, label };
+}
+
+/** `value / total` as a percentage, one decimal — puts an HTML label on the exact spot the SVG
+ *  geometry it annotates was drawn at, as a fraction of the SAME box, so it tracks the stretch. */
+function pct(value: number, total: number): number {
+  return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
 }
 
 export function DumbbellLifeExpectancyGainsWeb({
@@ -121,302 +134,284 @@ export function DumbbellLifeExpectancyGainsWeb({
   muted,
   grid,
   measure,
-  layout,
+  frame,
 }: {
-  /** Must already be sorted by gap, descending — see `dumbbell-geometry.ts`'s own doc-comment.
-   *  This component draws whatever order it is handed and does not re-sort. */
+  /** Must already be sorted by gap, descending — this component draws whatever order it is handed
+   *  and does not re-sort. */
   rows: Row[];
   title: string;
   source: string;
   alt: string;
   ground: string;
-  /** Derived from `ground` by `deriveFurniture`, in whatever node runner calls this component
-   *  (`twin-chart-web/scripts/render-web.mjs`'s `renderWeb`) — never derived in here. */
+  /** Derived from `ground` by `deriveFurniture` in whatever node runner calls this component —
+   *  never derived in here. */
   ink: string;
   muted: string;
   grid: string;
   measure: Measure;
-  layout: WebLayout;
+  frame: WebFrame;
 }) {
   if (rows.length < 2)
     throw new Error(
       `a dumbbell beat needs at least two rows, got ${rows.length}`,
     );
 
-  const { width, pad } = layout;
-
-  // The header is laid out first — title, then source, then the legend — because the plot starts
-  // where the header stops, exactly the order the static sibling and `ChartWebSeed.tsx` both use.
-  const titleLines = wrap(title, width - pad * 2, layout.title, measure);
-  const titleBaseline = pad + layout.title.fontSize;
-  const sourceLines = wrap(source, width - pad * 2, layout.source, measure);
-  const sourceBaseline =
-    titleBaseline +
-    (titleLines.length - 1) * layout.title.lead +
-    Math.round(layout.title.lead * 0.9);
-  const legendBaseline =
-    sourceBaseline +
-    (sourceLines.length - 1) * layout.source.lead +
-    Math.round(layout.source.lead * 1.4);
-
-  // The frame's total height is derived, not guessed: header block (already fixed above) + a
-  // floor for the plot's own usable height + the bottom margin — see this file's own `WebLayout`
-  // doc-comment on `plotMinHeight`.
-  const plotTop = legendBaseline + Math.round(layout.title.lead * 0.9);
-  const plotBottom = plotTop + layout.plotMinHeight;
-  const height = plotBottom + layout.bottomPad;
-
-  // The category gutter is measured from the widest name actually drawn — the type sheet's own
-  // named failure mode (`references/types/dumbbell.md`, "The one thing that goes wrong"): this
-  // chart has, in production, shipped with zero reserved space for this column before. Both value
-  // gutters are measured the same way, since value labels sit on the OUTER side of each dot and
-  // both frame edges need room reserved for the widest label that could land there.
-  const categoryGutter = Math.max(
-    ...rows.map((r) => measure(r.country, layout.categoryLabel)),
-  );
-  const leftLabelGutter = Math.max(
-    ...rows.map((r) => measure(formatValue(r.y2000), layout.valueLabel)),
-  );
-  const rightLabelGutter = Math.max(
-    ...rows.map((r) => measure(formatValue(r.y2023), layout.valueLabel)),
-  );
-
-  const padding = {
-    top: plotTop,
-    right: pad + 10 + rightLabelGutter,
-    bottom: layout.bottomPad,
-    left: pad + categoryGutter + 18 + 10 + leftLabelGutter,
-  };
+  // Three fixed tracks, each MEASURED from the widest string that will actually be drawn in it, at
+  // its own fixed font size — never a constant. Both value gutters are measured separately because
+  // the two series' labels are not the same width.
+  const catGutterPx =
+    12 + Math.max(...rows.map((r) => measure(r.country, frame.category)));
+  const leftGutterPx =
+    12 +
+    Math.max(...rows.map((r) => measure(formatYears(r.y2000), frame.value)));
+  const rightGutterPx =
+    12 +
+    Math.max(...rows.map((r) => measure(formatYears(r.y2023), frame.value)));
 
   const { plot, dots, ticksX } = dumbbellGeometry(rows, {
-    width,
-    height,
-    padding,
-    xTickHint: layout.xTickHint,
+    width: frame.width,
+    height: frame.height,
+    padding: { top: 0, right: DOT_INSET, bottom: 0, left: DOT_INSET },
+    xTickHint: frame.xTickHint,
   });
 
-  const legendGap = layout.name === "narrow" ? 74 : 90;
+  const totalWidth = catGutterPx + leftGutterPx + frame.width + rightGutterPx;
+  const totalHeight = frame.height + frame.xAxisRowPx;
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="chart"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
+    <figure
+      className="chart-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ["--y2000" as string]: COLOURS.y2000,
+        ["--y2023" as string]: COLOURS.y2023,
+        // Fixed CSS pixel type sizes, threaded as custom properties. None of these ever changes
+        // with the viewBox's width — that is the whole point of the redesign.
+        ["--title-size" as string]: `${frame.title.fontSize}px`,
+        ["--title-weight" as string]: frame.title.fontWeight,
+        ["--subtitle-size" as string]: `${frame.source.fontSize}px`,
+        ["--source-size" as string]: `${frame.source.fontSize}px`,
+        ["--axis-size" as string]: `${frame.axis.fontSize}px`,
+        ["--label-size" as string]: `${frame.value.fontSize}px`,
+        ["--label-weight" as string]: frame.value.fontWeight,
+        ["--note-size" as string]: `${frame.axis.fontSize}px`,
+        ["--cat-size" as string]: `${frame.category.fontSize}px`,
+        ["--cat-weight" as string]: frame.category.fontWeight,
+        ["--legend-size" as string]: `${frame.legend.fontSize}px`,
+        ["--legend-weight" as string]: frame.legend.fontWeight,
+      }}
     >
-      {/* No root role="img" — this genre's one deliberate departure from the static genre's
-          accessibility pattern (`web-discipline.md`): that role would flatten every child into
-          one opaque image, silencing the ten individually-focusable, individually-labelled
-          hit-rects below. */}
-      <desc>{alt}</desc>
-      <rect x={0} y={0} width={width} height={height} fill={ground} />
+      <div className="chart-header">
+        <h2 className="chart-title">{title}</h2>
+        <p className="chart-caveat">{CAVEAT}</p>
+      </div>
 
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={titleBaseline + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={sourceBaseline + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-
-      {/* Load-bearing legend, not decorative: with no time-axis convention telling left from
-          right, the two dot colours are the ONLY thing naming which series is which, on every
-          single row (`references/types/dumbbell.md`, "The accessibility trap"). Drawn
-          unconditionally, exactly like the static sibling — the web genre adds interaction on top
-          of this, it never gates it behind interaction (`web-discipline.md`, "What must not
-          become interactive"). */}
-      <circle cx={pad + 6} cy={legendBaseline - 4} r={6} fill={COLOURS.y2000} />
-      <text
-        x={pad + 18}
-        y={legendBaseline}
-        fill={ink}
-        fontSize={layout.legend.fontSize}
-        fontWeight={layout.legend.fontWeight}
-      >
-        2000
-      </text>
-      <circle
-        cx={pad + legendGap}
-        cy={legendBaseline - 4}
-        r={6}
-        fill={COLOURS.y2023}
-      />
-      <text
-        x={pad + legendGap + 12}
-        y={legendBaseline}
-        fill={ink}
-        fontSize={layout.legend.fontSize}
-        fontWeight={layout.legend.fontWeight}
-      >
-        2023
-      </text>
-
-      {/* Vertical gridlines on the shared value scale — decoration, not a competing mark. The
-          unit is stated once, on the rightmost tick actually drawn. */}
-      {ticksX.map((tick, i) => (
-        <g key={tick.value}>
-          <line
-            x1={tick.x}
-            x2={tick.x}
-            y1={plot.top}
-            y2={plot.bottom}
-            stroke={grid}
-            strokeWidth={1}
+      {/* Load-bearing legend, not decoration: with no time-axis convention telling left from right,
+          the two dot colours are the ONLY thing naming which series is which, on every single row
+          (`references/types/dumbbell.md`, "The accessibility trap"). Plain HTML, outside the
+          overlay and NOT `aria-hidden`, because nothing else in this frame states it. */}
+      <div className="chart-legend">
+        <span className="legend-key">
+          <span
+            className="legend-swatch"
+            style={{ background: COLOURS.y2000 }}
           />
-          <text
-            x={tick.x}
-            y={plot.bottom + 22}
-            fill={muted}
-            fontSize={layout.axis.fontSize}
-            textAnchor="middle"
-          >
-            {i === ticksX.length - 1 ? `${tick.value} ${UNIT}` : tick.value}
-          </text>
-        </g>
-      ))}
+          2000
+        </span>
+        <span className="legend-key">
+          <span
+            className="legend-swatch"
+            style={{ background: COLOURS.y2023 }}
+          />
+          2023
+        </span>
+      </div>
 
-      {dots.map((d) => (
-        <g key={d.country}>
-          {/* Category label, left-aligned in its own measured column. */}
-          <text
-            x={pad}
-            y={d.rowY + 5}
-            fill={ink}
-            fontSize={layout.categoryLabel.fontSize}
-            fontWeight={layout.categoryLabel.fontWeight}
-          >
-            {d.country}
-          </text>
+      <div
+        className="chart-plot dumbbell"
+        style={{
+          ["--cat-gutter" as string]: `${catGutterPx}px`,
+          ["--lv-gutter" as string]: `${leftGutterPx}px`,
+          ["--rv-gutter" as string]: `${rightGutterPx}px`,
+          ["--x-axis-h" as string]: `${frame.xAxisRowPx}px`,
+          aspectRatio: `${totalWidth} / ${totalHeight}`,
+          // This beat's own floor — see the doc-comment. Overrides the genre stylesheet's generic
+          // PLOT_FLOOR_PX, which is sized for a single-line frame, not ten stacked rows.
+          minHeight: `${rows.length * MIN_ROW_PX}px`,
+        }}
+      >
+        <div className="y-axis">
+          {dots.map((d) => (
+            <span
+              key={d.country}
+              className="axis-label y cat"
+              style={{ top: `${pct(d.rowY, frame.height)}%` }}
+            >
+              {d.country}
+            </span>
+          ))}
+        </div>
+
+        {/* GEOMETRY ONLY below — no `<text>`. */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          viewBox={`0 0 ${frame.width} ${frame.height}`}
+          preserveAspectRatio="none"
+        >
+          {/* No root role="img" — this genre's one deliberate departure from the static genre's
+              accessibility pattern: that role would flatten every child into one opaque image,
+              silencing the ten individually-focusable hit-rects below. */}
+          <desc>{alt}</desc>
+          <rect
+            x={0}
+            y={0}
+            width={frame.width}
+            height={frame.height}
+            fill={ground}
+          />
+
+          {/* Vertical gridlines on the shared value scale — decoration, not a competing mark. Their
+              own tick VALUES are HTML, in the x-axis row below. */}
+          {ticksX.map((tick) => (
+            <line
+              key={tick.value}
+              x1={tick.x}
+              x2={tick.x}
+              y1={plot.top}
+              y2={plot.bottom}
+              stroke={grid}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
 
           {/* The connector reads as neutral scaffolding, not a third mark competing with the two
               dots — its whole job is to make the gap visible as a length. */}
-          <line
-            x1={d.x2000}
-            x2={d.x2023}
-            y1={d.rowY}
-            y2={d.rowY}
-            stroke={muted}
-            strokeWidth={2}
-            strokeLinecap="round"
-          />
+          {dots.map((d) => (
+            <line
+              key={d.country}
+              x1={d.x2000}
+              x2={d.x2023}
+              y1={d.rowY}
+              y2={d.rowY}
+              stroke={muted}
+              strokeWidth={2}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
 
-          <circle cx={d.x2000} cy={d.rowY} r={6} fill={COLOURS.y2000} />
-          <circle cx={d.x2023} cy={d.rowY} r={6} fill={COLOURS.y2023} />
+          {/* Interaction layer: one hit-rect per row, spanning the full plot width and that row's
+              own band height. `tabIndex`, `aria-label` and `data-detail` are baked in at build time
+              — the no-JS frame is still keyboard-reachable, row by row, with the script absent
+              entirely. `dumbbell-interaction.mjs` only ever touches these rects' own class and the
+              shared `#tooltip`. */}
+          {dots.map((d, i) => {
+            const { detail, label } = describeRow(d);
+            return (
+              <rect
+                key={`hit-${d.country}`}
+                className="hit-row"
+                x={0}
+                y={d.bandTop}
+                width={frame.width}
+                height={d.bandBottom - d.bandTop}
+                fill="transparent"
+                pointerEvents="all"
+                tabIndex={0}
+                role="img"
+                aria-label={label}
+                data-country={d.country}
+                data-detail={detail}
+                data-row={i}
+              />
+            );
+          })}
+        </svg>
 
-          {/* Value labels on the OUTER side of each dot, in ink — never in either dot's own
-              accent colour, which has previously failed WCAG contrast here
-              (`references/types/dumbbell.md`, "The accessibility trap"). Drawn unconditionally:
-              interaction adds the row's own GAP on top, it never gates these two numbers. */}
-          <text
-            x={d.x2000 - 10}
-            y={d.rowY + 5}
-            fill={ink}
-            fontSize={layout.valueLabel.fontSize}
-            fontWeight={layout.valueLabel.fontWeight}
-            textAnchor="end"
-          >
-            {formatValue(d.y2000)}
-          </text>
-          <text
-            x={d.x2023 + 10}
-            y={d.rowY + 5}
-            fill={ink}
-            fontSize={layout.valueLabel.fontSize}
-            fontWeight={layout.valueLabel.fontWeight}
-            textAnchor="start"
-          >
-            {formatValue(d.y2023)}
-          </text>
-        </g>
-      ))}
+        {/* HTML overlay — the same grid cell as the `<svg>`, so a `%` lands on the exact dot it
+            annotates at any width. `aria-hidden`: both printed values and the gap are already
+            carried by each row's own `aria-label` above.
+            THE DOTS LIVE HERE, not in the `<svg>`: a `<circle>` inside a
+            `preserveAspectRatio="none"` viewBox is scaled independently on each axis, so it reads
+            as a wide oval at 1600px and collapses to a sliver at 375px — a dumbbell whose dots are
+            slivers is a set of bare connectors. As HTML they are a FIXED pixel size at every
+            width, positioned by the same `%` as every label. The connector stays in the `<svg>`:
+            its LENGTH is the reading, and `vector-effect` already holds its thickness constant. */}
+        <div className="overlay" aria-hidden="true">
+          {dots.map((d) => (
+            <span
+              key={`d2000-${d.country}`}
+              className="dot"
+              style={{
+                left: `${pct(d.x2000, frame.width)}%`,
+                top: `${pct(d.rowY, frame.height)}%`,
+                width: `${DOT_RADIUS * 2}px`,
+                height: `${DOT_RADIUS * 2}px`,
+                background: COLOURS.y2000,
+              }}
+            />
+          ))}
+          {dots.map((d) => (
+            <span
+              key={`d2023-${d.country}`}
+              className="dot"
+              style={{
+                left: `${pct(d.x2023, frame.width)}%`,
+                top: `${pct(d.rowY, frame.height)}%`,
+                width: `${DOT_RADIUS * 2}px`,
+                height: `${DOT_RADIUS * 2}px`,
+                background: COLOURS.y2023,
+              }}
+            />
+          ))}
+          {/* Value labels on the OUTER side of each dot, in ink — never in either dot's own hue,
+              which has previously failed WCAG contrast here (`references/types/dumbbell.md`, "The
+              accessibility trap"). Drawn unconditionally: interaction adds the row's own GAP on
+              top, it never gates these two numbers. */}
+          {dots.map((d) => (
+            <span
+              key={`l2000-${d.country}`}
+              className="value-label left"
+              style={{
+                left: `${pct(d.x2000, frame.width)}%`,
+                top: `${pct(d.rowY, frame.height)}%`,
+              }}
+            >
+              {formatYears(d.y2000)}
+            </span>
+          ))}
+          {dots.map((d) => (
+            <span
+              key={`l2023-${d.country}`}
+              className="value-label right"
+              style={{
+                left: `${pct(d.x2023, frame.width)}%`,
+                top: `${pct(d.rowY, frame.height)}%`,
+              }}
+            >
+              {formatYears(d.y2023)}
+            </span>
+          ))}
+        </div>
 
-      {/* Interaction layer: one hit-rect per row, spanning the full plot width and that row's own
-          band height (`d.bandTop`/`d.bandBottom`, from `dumbbell-geometry.ts`'s `scaleBand`) —
-          never a shared overlay, because each row already owns a non-overlapping band, so there
-          is nothing to resolve "nearest". `tabIndex`, `aria-label` and `data-detail` are baked in
-          at build time — the no-JS frame is still keyboard-reachable, row by row, with the script
-          absent entirely (`web-discipline.md`, "Keyboard and touch"). `data-detail` LEADS with
-          the row's own gap — see this file's own doc-comment and `describeRow` above.
-          `dumbbell-interaction.mjs` (this beat's own, not the line genre's `interaction.mjs`)
-          only ever touches these rects' own `class` and the shared `#tooltip`; it has no code
-          path that can hide or move the title, the legend, the connectors, the dots or either
-          value label. */}
-      {dots.map((d, i) => {
-        const { detail, label } = describeRow(d);
-        return (
-          <rect
-            key={`hit-${d.country}`}
-            className="hit-row"
-            x={plot.left}
-            y={d.bandTop}
-            width={plot.right - plot.left}
-            height={d.bandBottom - d.bandTop}
-            fill="transparent"
-            pointerEvents="all"
-            tabIndex={0}
-            role="img"
-            aria-label={label}
-            data-country={d.country}
-            data-detail={detail}
-            data-row={i}
-          />
-        );
-      })}
-    </svg>
+        <div className="x-axis">
+          {ticksX.map((tick, i) => (
+            <span
+              key={tick.value}
+              className="axis-label x"
+              style={{ left: `${pct(tick.x, frame.width)}%` }}
+            >
+              {tick.value}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <p className="chart-source">{source}</p>
+    </figure>
   );
 }
-
-/** The two rungs, in render order — handed to `twin-chart-web/scripts/render-web.mjs`'s generic
- *  `renderWeb` by this beat's own `render-web.mjs`. Tuned for ten rows and the widest country
- *  name in this dataset ("United Kingdom" / "United States"), not this genre's general defaults —
- *  a different beat with more/fewer rows or longer names writes its own numbers. */
-export const DESKTOP_LAYOUT: WebLayout = {
-  name: "desktop",
-  width: 900,
-  pad: 40,
-  title: { fontSize: 22, fontWeight: 700, lead: 28 },
-  source: { fontSize: 14, fontWeight: 400, lead: 20 },
-  legend: { fontSize: 13, fontWeight: 600 },
-  axis: { fontSize: 12 },
-  categoryLabel: { fontSize: 14, fontWeight: 600 },
-  valueLabel: { fontSize: 13, fontWeight: 600 },
-  xTickHint: 5,
-  plotMinHeight: 520,
-  bottomPad: 50,
-};
-
-export const NARROW_LAYOUT: WebLayout = {
-  name: "narrow",
-  width: 360,
-  pad: 18,
-  title: { fontSize: 17, fontWeight: 700, lead: 22 },
-  source: { fontSize: 11, fontWeight: 400, lead: 15 },
-  legend: { fontSize: 11, fontWeight: 600 },
-  axis: { fontSize: 10 },
-  categoryLabel: { fontSize: 11, fontWeight: 600 },
-  valueLabel: { fontSize: 10, fontWeight: 600 },
-  xTickHint: 3,
-  plotMinHeight: 430,
-  bottomPad: 40,
-};
-
-export const LAYOUTS: WebLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];

@@ -7,7 +7,7 @@
 <style>
 :root {
   --ground: #FFFFFF;
-  --accent: undefined;
+  --accent: #0B7A75;
   --ink: #000000;
   --muted: #616161;
   --grid: #d1d1d1;
@@ -16,18 +16,222 @@
 body {
   margin: 0;
   background: var(--ground);
+  color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.chart-figure { margin: 0; max-width: 900px; }
-svg.chart { display: block; width: 100%; height: auto; }
-/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
-   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
-   media query only chooses which server-rendered frame is on screen. */
-svg.chart[data-layout="narrow"] { display: none; }
-@media (max-width: 480px) {
-  svg.chart[data-layout="desktop"] { display: none; }
-  svg.chart[data-layout="narrow"] { display: block; }
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
 }
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { max-width: 640px; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
+   for the test a beat applies before shipping one at all. Native radios: reachable and operable
+   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
+   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
+   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
+   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
+   every hover/focus answer honest regardless of which radio is checked. */
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
+   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
+   rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: three default blue dots with a bare word beside
+   each, indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with three identical unlit pills and a hidden
+   input, the entire block is dropped there and the reader gets the plain native radios above,
+   which state their own checked-ness without any help. That is the same engine in which this
+   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
+   the fallback is not a second design to maintain -- it is the design this genre already had.
+   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
+   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
+   announces it as a radio group, and the CSS-only dimming still fires with the inline script
+   absent. The input is made transparent and stretched over its own pill -- never display:none or
+   visibility:hidden, either of which would take it out of the focus order and out of the
+   accessibility tree.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrows it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
+   peak marker, the end point or any of the HTML furniture above, none of which carries a
+   data-period attribute at all and so can never match these selectors. :has() on the
+   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
+   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
+   supported in every evergreen browser this genre targets. */
+.chart-figure:has(#period-early:checked) .seg[data-period="late"],
+.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
+.chart-figure:has(#period-late:checked) .seg[data-period="early"],
+.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
+
 .pt { cursor: pointer; }
 .pt:hover, .pt:focus, .pt-active {
   fill: var(--muted);
@@ -54,6 +258,57 @@ svg.chart[data-layout="narrow"] { display: none; }
 </style>
 <style>
 
+.chart-plot.dumbbell {
+  grid-template-columns: var(--cat-gutter) var(--lv-gutter) 1fr var(--rv-gutter);
+}
+.chart-plot.dumbbell svg.chart,
+.chart-plot.dumbbell .overlay,
+.chart-plot.dumbbell .x-axis { grid-column: 3; }
+.chart-legend {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 10px 0 6px;
+  font-size: var(--legend-size);
+  font-weight: var(--legend-weight);
+  color: var(--ink);
+}
+.chart-legend .legend-key { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend .legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.chart-plot .y-axis .cat {
+  right: auto;
+  left: 0;
+  font-size: var(--cat-size);
+  font-weight: var(--cat-weight);
+  color: var(--ink);
+}
+.chart-plot .overlay .dot {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.chart-plot .overlay .value-label {
+  position: absolute;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.chart-plot .overlay .value-label.left {
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+.chart-plot .overlay .value-label.right {
+  transform: translateY(-50%) translateX(10px);
+}
 .hit-row { cursor: pointer; }
 .hit-row:hover, .hit-row:focus, .hit-row-active {
   fill: rgba(0, 0, 0, 0.05);
@@ -67,10 +322,7 @@ svg.chart[data-layout="narrow"] { display: none; }
 </style>
 </head>
 <body>
-<figure class="chart-figure">
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="766" viewBox="0 0 900 766" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>Dumbbell chart of life expectancy at birth in 2000 (blue) and 2023 (vermillion) for ten countries, sorted by the size of the gain, largest first. Every country&#x27;s 2023 dot sits to the right of its 2000 dot. Poland rose from 73.6 to 78.6 years, the largest gain (+5.0); United States rose from 76.8 to 79.3 years, the smallest gain (+2.5). Every row&#x27;s own exact gap is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="900" height="766" fill="#FFFFFF"></rect><text x="40" y="62" fill="#000000" font-size="22" font-weight="700">Every one of these ten countries added years of life expectancy between 2000</text><text x="40" y="90" fill="#000000" font-size="22" font-weight="700">and 2023 — Poland gained the most, +5.0 years; United States gained the</text><text x="40" y="118" fill="#000000" font-size="22" font-weight="700">least, +2.5 years</text><text x="40" y="143" fill="#616161" font-size="14">Source: UN, World Population Prospects (2024), via Our World in Data · 2000 and 2023, extracted 8 August 2026</text><circle cx="46" cy="167" r="6" fill="#0072B2"></circle><text x="58" y="171" fill="#000000" font-size="13" font-weight="600">2000</text><circle cx="130" cy="167" r="6" fill="#D55E00"></circle><text x="142" y="171" fill="#000000" font-size="13" font-weight="600">2023</text><g><line x1="252.16727701822913" x2="252.16727701822913" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="252.16727701822913" y="738" fill="#616161" font-size="12" text-anchor="middle">74</text></g><g><line x1="356.3319091796875" x2="356.3319091796875" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="356.3319091796875" y="738" fill="#616161" font-size="12" text-anchor="middle">76</text></g><g><line x1="460.49654134114587" x2="460.49654134114587" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="460.49654134114587" y="738" fill="#616161" font-size="12" text-anchor="middle">78</text></g><g><line x1="564.6611735026042" x2="564.6611735026042" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="564.6611735026042" y="738" fill="#616161" font-size="12" text-anchor="middle">80</text></g><g><line x1="668.8258056640625" x2="668.8258056640625" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="668.8258056640625" y="738" fill="#616161" font-size="12" text-anchor="middle">82</text></g><g><line x1="772.9904378255208" x2="772.9904378255208" y1="196" y2="716" stroke="#d1d1d1" stroke-width="1"></line><text x="772.9904378255208" y="738" fill="#616161" font-size="12" text-anchor="middle">84 years</text></g><g><text x="40" y="219.26446280991735" fill="#000000" font-size="14" font-weight="600">Poland</text><line x1="233.69367950439485" x2="493.45943918863964" y1="214.26446280991735" y2="214.26446280991735" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="233.69367950439485" cy="214.26446280991735" r="6" fill="#0072B2"></circle><circle cx="493.45943918863964" cy="214.26446280991735" r="6" fill="#D55E00"></circle><text x="223.69367950439485" y="219.26446280991735" fill="#000000" font-size="13" font-weight="600" text-anchor="end">73.6</text><text x="503.45943918863964" y="219.26446280991735" fill="#000000" font-size="13" font-weight="600" text-anchor="start">78.6</text></g><g><text x="40" y="272.9834710743802" fill="#000000" font-size="14" font-weight="600">France</text><line x1="514.8600628662111" x2="737.8504991658527" y1="267.9834710743802" y2="267.9834710743802" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="514.8600628662111" cy="267.9834710743802" r="6" fill="#0072B2"></circle><circle cx="737.8504991658527" cy="267.9834710743802" r="6" fill="#D55E00"></circle><text x="504.86006286621114" y="272.9834710743802" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.0</text><text x="747.8504991658527" y="272.9834710743802" fill="#000000" font-size="13" font-weight="600" text-anchor="start">83.3</text></g><g><text x="40" y="326.702479338843" fill="#000000" font-size="14" font-weight="600">Spain</text><line x1="534.0523963419597" x2="755.8188982137043" y1="321.702479338843" y2="321.702479338843" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="534.0523963419597" cy="321.702479338843" r="6" fill="#0072B2"></circle><circle cx="755.8188982137043" cy="321.702479338843" r="6" fill="#D55E00"></circle><text x="524.0523963419597" y="326.702479338843" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.4</text><text x="765.8188982137043" y="326.702479338843" fill="#000000" font-size="13" font-weight="600" text-anchor="start">83.7</text></g><g><text x="40" y="380.4214876033058" fill="#000000" font-size="14" font-weight="600">Switzerland</text><line x1="556.0155090332032" x2="770.5738183593746" y1="375.4214876033058" y2="375.4214876033058" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="556.0155090332032" cy="375.4214876033058" r="6" fill="#0072B2"></circle><circle cx="770.5738183593746" cy="375.4214876033058" r="6" fill="#D55E00"></circle><text x="546.0155090332032" y="380.4214876033058" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.8</text><text x="780.5738183593746" y="380.4214876033058" fill="#000000" font-size="13" font-weight="600" text-anchor="start">84.0</text></g><g><text x="40" y="434.1404958677686" fill="#000000" font-size="14" font-weight="600">Italy</text><line x1="544.1928232828776" x2="758.1834353637694" y1="429.1404958677686" y2="429.1404958677686" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="544.1928232828776" cy="429.1404958677686" r="6" fill="#0072B2"></circle><circle cx="758.1834353637694" cy="429.1404958677686" r="6" fill="#D55E00"></circle><text x="534.1928232828776" y="434.1404958677686" fill="#000000" font-size="13" font-weight="600" text-anchor="end">79.6</text><text x="768.1834353637694" y="434.1404958677686" fill="#000000" font-size="13" font-weight="600" text-anchor="start">83.7</text></g><g><text x="40" y="487.8595041322314" fill="#000000" font-size="14" font-weight="600">Netherlands</text><line x1="467.2672424316404" x2="677.0339786783856" y1="482.8595041322314" y2="482.8595041322314" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="467.2672424316404" cy="482.8595041322314" r="6" fill="#0072B2"></circle><circle cx="677.0339786783856" cy="482.8595041322314" r="6" fill="#D55E00"></circle><text x="457.2672424316404" y="487.8595041322314" fill="#000000" font-size="13" font-weight="600" text-anchor="end">78.1</text><text x="687.0339786783856" y="487.8595041322314" fill="#000000" font-size="13" font-weight="600" text-anchor="start">82.2</text></g><g><text x="40" y="541.5785123966944" fill="#000000" font-size="14" font-weight="600">Japan</text><line x1="626.0558076985676" x2="810.0886715698242" y1="536.5785123966944" y2="536.5785123966944" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="626.0558076985676" cy="536.5785123966944" r="6" fill="#0072B2"></circle><circle cx="810.0886715698242" cy="536.5785123966944" r="6" fill="#D55E00"></circle><text x="616.0558076985676" y="541.5785123966944" fill="#000000" font-size="13" font-weight="600" text-anchor="end">81.2</text><text x="820.0886715698242" y="541.5785123966944" fill="#000000" font-size="13" font-weight="600" text-anchor="start">84.7</text></g><g><text x="40" y="595.2975206611571" fill="#000000" font-size="14" font-weight="600">United Kingdom</text><line x1="452.63731984456416" x2="632.4463078816734" y1="590.2975206611571" y2="590.2975206611571" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="452.63731984456416" cy="590.2975206611571" r="6" fill="#0072B2"></circle><circle cx="632.4463078816734" cy="590.2975206611571" r="6" fill="#D55E00"></circle><text x="442.63731984456416" y="595.2975206611571" fill="#000000" font-size="13" font-weight="600" text-anchor="end">77.8</text><text x="642.4463078816734" y="595.2975206611571" fill="#000000" font-size="13" font-weight="600" text-anchor="start">81.3</text></g><g><text x="40" y="649.0165289256199" fill="#000000" font-size="14" font-weight="600">Germany</text><line x1="463.42877573649054" x2="636.414980367025" y1="644.0165289256199" y2="644.0165289256199" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="463.42877573649054" cy="644.0165289256199" r="6" fill="#0072B2"></circle><circle cx="636.414980367025" cy="644.0165289256199" r="6" fill="#D55E00"></circle><text x="453.42877573649054" y="649.0165289256199" fill="#000000" font-size="13" font-weight="600" text-anchor="end">78.1</text><text x="646.414980367025" y="649.0165289256199" fill="#000000" font-size="13" font-weight="600" text-anchor="start">81.4</text></g><g><text x="40" y="702.7355371900827" fill="#000000" font-size="14" font-weight="600">United States</text><line x1="398.2998394775393" x2="528.4275062052408" y1="697.7355371900827" y2="697.7355371900827" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="398.2998394775393" cy="697.7355371900827" r="6" fill="#0072B2"></circle><circle cx="528.4275062052408" cy="697.7355371900827" r="6" fill="#D55E00"></circle><text x="388.2998394775393" y="702.7355371900827" fill="#000000" font-size="13" font-weight="600" text-anchor="end">76.8</text><text x="538.4275062052408" y="702.7355371900827" fill="#000000" font-size="13" font-weight="600" text-anchor="start">79.3</text></g><rect class="hit-row" x="200.0849609375" y="196" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: gained 5.0 years of life expectancy, from 73.6 years in 2000 to 78.6 years in 2023" data-country="Poland" data-detail="Poland: +5.0 years (73.6 → 78.6)" data-row="0"></rect><rect class="hit-row" x="200.0849609375" y="249.71900826446281" width="624.98779296875" height="36.52892561983472" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: gained 4.3 years of life expectancy, from 79.0 years in 2000 to 83.3 years in 2023" data-country="France" data-detail="France: +4.3 years (79.0 → 83.3)" data-row="1"></rect><rect class="hit-row" x="200.0849609375" y="303.43801652892563" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: gained 4.3 years of life expectancy, from 79.4 years in 2000 to 83.7 years in 2023" data-country="Spain" data-detail="Spain: +4.3 years (79.4 → 83.7)" data-row="2"></rect><rect class="hit-row" x="200.0849609375" y="357.1570247933885" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: gained 4.1 years of life expectancy, from 79.8 years in 2000 to 84.0 years in 2023" data-country="Switzerland" data-detail="Switzerland: +4.1 years (79.8 → 84.0)" data-row="3"></rect><rect class="hit-row" x="200.0849609375" y="410.87603305785126" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: gained 4.1 years of life expectancy, from 79.6 years in 2000 to 83.7 years in 2023" data-country="Italy" data-detail="Italy: +4.1 years (79.6 → 83.7)" data-row="4"></rect><rect class="hit-row" x="200.0849609375" y="464.59504132231405" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Netherlands: gained 4.0 years of life expectancy, from 78.1 years in 2000 to 82.2 years in 2023" data-country="Netherlands" data-detail="Netherlands: +4.0 years (78.1 → 82.2)" data-row="5"></rect><rect class="hit-row" x="200.0849609375" y="518.314049586777" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Japan: gained 3.5 years of life expectancy, from 81.2 years in 2000 to 84.7 years in 2023" data-country="Japan" data-detail="Japan: +3.5 years (81.2 → 84.7)" data-row="6"></rect><rect class="hit-row" x="200.0849609375" y="572.0330578512397" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: gained 3.5 years of life expectancy, from 77.8 years in 2000 to 81.3 years in 2023" data-country="United Kingdom" data-detail="United Kingdom: +3.5 years (77.8 → 81.3)" data-row="7"></rect><rect class="hit-row" x="200.0849609375" y="625.7520661157025" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: gained 3.3 years of life expectancy, from 78.1 years in 2000 to 81.4 years in 2023" data-country="Germany" data-detail="Germany: +3.3 years (78.1 → 81.4)" data-row="8"></rect><rect class="hit-row" x="200.0849609375" y="679.4710743801653" width="624.98779296875" height="36.528925619834695" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United States: gained 2.5 years of life expectancy, from 76.8 years in 2000 to 79.3 years in 2023" data-country="United States" data-detail="United States: +2.5 years (76.8 → 79.3)" data-row="9"></rect></svg>
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="669" viewBox="0 0 360 669" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>Dumbbell chart of life expectancy at birth in 2000 (blue) and 2023 (vermillion) for ten countries, sorted by the size of the gain, largest first. Every country&#x27;s 2023 dot sits to the right of its 2000 dot. Poland rose from 73.6 to 78.6 years, the largest gain (+5.0); United States rose from 76.8 to 79.3 years, the smallest gain (+2.5). Every row&#x27;s own exact gap is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="360" height="669" fill="#FFFFFF"></rect><text x="18" y="35" fill="#000000" font-size="17" font-weight="700">Every one of these ten countries added</text><text x="18" y="57" fill="#000000" font-size="17" font-weight="700">years of life expectancy between 2000</text><text x="18" y="79" fill="#000000" font-size="17" font-weight="700">and 2023 — Poland gained the most,</text><text x="18" y="101" fill="#000000" font-size="17" font-weight="700">+5.0 years; United States gained the</text><text x="18" y="123" fill="#000000" font-size="17" font-weight="700">least, +2.5 years</text><text x="18" y="143" fill="#616161" font-size="11">Source: UN, World Population Prospects (2024), via Our World in</text><text x="18" y="158" fill="#616161" font-size="11">Data · 2000 and 2023, extracted 8 August 2026</text><circle cx="24" cy="175" r="6" fill="#0072B2"></circle><text x="36" y="179" fill="#000000" font-size="11" font-weight="600">2000</text><circle cx="92" cy="175" r="6" fill="#D55E00"></circle><text x="104" y="179" fill="#000000" font-size="11" font-weight="600">2023</text><g><line x1="176.61344401041669" x2="176.61344401041669" y1="199" y2="629" stroke="#d1d1d1" stroke-width="1"></line><text x="176.61344401041669" y="651" fill="#616161" font-size="10" text-anchor="middle">75</text></g><g><line x1="244.71931966145834" x2="244.71931966145834" y1="199" y2="629" stroke="#d1d1d1" stroke-width="1"></line><text x="244.71931966145834" y="651" fill="#616161" font-size="10" text-anchor="middle">80</text></g><g><line x1="312.8251953125" x2="312.8251953125" y1="199" y2="629" stroke="#d1d1d1" stroke-width="1"></line><text x="312.8251953125" y="651" fill="#616161" font-size="10" text-anchor="middle">85 years</text></g><g><text x="18" y="219.10330578512395" fill="#000000" font-size="11" font-weight="600">Poland</text><line x1="158.16083806152355" x2="226.09781114095063" y1="214.10330578512395" y2="214.10330578512395" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="158.16083806152355" cy="214.10330578512395" r="6" fill="#0072B2"></circle><circle cx="226.09781114095063" cy="214.10330578512395" r="6" fill="#D55E00"></circle><text x="148.16083806152355" y="219.10330578512395" fill="#000000" font-size="10" font-weight="600" text-anchor="end">73.6</text><text x="236.09781114095063" y="219.10330578512395" fill="#000000" font-size="10" font-weight="600" text-anchor="start">78.6</text></g><g><text x="18" y="263.52479338842977" fill="#000000" font-size="11" font-weight="600">France</text><line x1="231.6947520019532" x2="290.0138133219401" y1="258.52479338842977" y2="258.52479338842977" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="231.6947520019532" cy="258.52479338842977" r="6" fill="#0072B2"></circle><circle cx="290.0138133219401" cy="258.52479338842977" r="6" fill="#D55E00"></circle><text x="221.6947520019532" y="263.52479338842977" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.0</text><text x="300.0138133219401" y="263.52479338842977" fill="#000000" font-size="10" font-weight="600" text-anchor="start">83.3</text></g><g><text x="18" y="307.94628099173553" fill="#000000" font-size="11" font-weight="600">Spain</text><line x1="236.71415503743492" x2="294.71311874186193" y1="302.94628099173553" y2="302.94628099173553" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="236.71415503743492" cy="302.94628099173553" r="6" fill="#0072B2"></circle><circle cx="294.71311874186193" cy="302.94628099173553" r="6" fill="#D55E00"></circle><text x="226.71415503743492" y="307.94628099173553" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.4</text><text x="304.71311874186193" y="307.94628099173553" fill="#000000" font-size="10" font-weight="600" text-anchor="start">83.7</text></g><g><text x="18" y="352.3677685950413" fill="#000000" font-size="11" font-weight="600">Switzerland</text><line x1="242.45820458984377" x2="298.57199765624995" y1="347.3677685950413" y2="347.3677685950413" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="242.45820458984377" cy="347.3677685950413" r="6" fill="#0072B2"></circle><circle cx="298.57199765624995" cy="347.3677685950413" r="6" fill="#D55E00"></circle><text x="232.45820458984377" y="352.3677685950413" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.8</text><text x="308.57199765624995" y="352.3677685950413" fill="#000000" font-size="10" font-weight="600" text-anchor="start">84.0</text></g><g><text x="18" y="396.7892561983471" fill="#000000" font-size="11" font-weight="600">Italy</text><line x1="239.36619783528644" x2="295.3315200927734" y1="391.7892561983471" y2="391.7892561983471" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="239.36619783528644" cy="391.7892561983471" r="6" fill="#0072B2"></circle><circle cx="295.3315200927734" cy="391.7892561983471" r="6" fill="#D55E00"></circle><text x="229.36619783528644" y="396.7892561983471" fill="#000000" font-size="10" font-weight="600" text-anchor="end">79.6</text><text x="305.3315200927734" y="396.7892561983471" fill="#000000" font-size="10" font-weight="600" text-anchor="start">83.7</text></g><g><text x="18" y="441.2107438016529" fill="#000000" font-size="11" font-weight="600">Netherlands</text><line x1="219.24772216796867" x2="274.10836712239586" y1="436.2107438016529" y2="436.2107438016529" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="219.24772216796867" cy="436.2107438016529" r="6" fill="#0072B2"></circle><circle cx="274.10836712239586" cy="436.2107438016529" r="6" fill="#D55E00"></circle><text x="209.24772216796867" y="441.2107438016529" fill="#000000" font-size="10" font-weight="600" text-anchor="end">78.1</text><text x="284.10836712239586" y="441.2107438016529" fill="#000000" font-size="10" font-weight="600" text-anchor="start">82.2</text></g><g><text x="18" y="485.63223140495865" fill="#000000" font-size="11" font-weight="600">Japan</text><line x1="260.77596090494785" x2="308.90638322753904" y1="480.63223140495865" y2="480.63223140495865" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="260.77596090494785" cy="480.63223140495865" r="6" fill="#0072B2"></circle><circle cx="308.90638322753904" cy="480.63223140495865" r="6" fill="#D55E00"></circle><text x="250.77596090494785" y="485.63223140495865" fill="#000000" font-size="10" font-weight="600" text-anchor="end">81.2</text><text x="318.90638322753904" y="485.63223140495865" fill="#000000" font-size="10" font-weight="600" text-anchor="start">84.7</text></g><g><text x="18" y="530.0537190082645" fill="#000000" font-size="11" font-weight="600">United Kingdom</text><line x1="215.42153407389333" x2="262.4472790934245" y1="525.0537190082645" y2="525.0537190082645" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="215.42153407389333" cy="525.0537190082645" r="6" fill="#0072B2"></circle><circle cx="262.4472790934245" cy="525.0537190082645" r="6" fill="#D55E00"></circle><text x="205.42153407389333" y="530.0537190082645" fill="#000000" font-size="10" font-weight="600" text-anchor="end">77.8</text><text x="272.4472790934245" y="530.0537190082645" fill="#000000" font-size="10" font-weight="600" text-anchor="start">81.3</text></g><g><text x="18" y="574.4752066115703" fill="#000000" font-size="11" font-weight="600">Germany</text><line x1="218.24384156087228" x2="263.4852126383464" y1="569.4752066115703" y2="569.4752066115703" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="218.24384156087228" cy="569.4752066115703" r="6" fill="#0072B2"></circle><circle cx="263.4852126383464" cy="569.4752066115703" r="6" fill="#D55E00"></circle><text x="208.24384156087228" y="574.4752066115703" fill="#000000" font-size="10" font-weight="600" text-anchor="end">78.1</text><text x="273.4852126383464" y="574.4752066115703" fill="#000000" font-size="10" font-weight="600" text-anchor="start">81.4</text></g><g><text x="18" y="618.896694214876" fill="#000000" font-size="11" font-weight="600">United States</text><line x1="201.21056206054692" x2="235.24306812337238" y1="613.896694214876" y2="613.896694214876" stroke="#616161" stroke-width="2" stroke-linecap="round"></line><circle cx="201.21056206054692" cy="613.896694214876" r="6" fill="#0072B2"></circle><circle cx="235.24306812337238" cy="613.896694214876" r="6" fill="#D55E00"></circle><text x="191.21056206054692" y="618.896694214876" fill="#000000" font-size="10" font-weight="600" text-anchor="end">76.8</text><text x="245.24306812337238" y="618.896694214876" fill="#000000" font-size="10" font-weight="600" text-anchor="start">79.3</text></g><rect class="hit-row" x="149.37109375" y="199" width="163.4541015625" height="30.20661157024793" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: gained 5.0 years of life expectancy, from 73.6 years in 2000 to 78.6 years in 2023" data-country="Poland" data-detail="Poland: +5.0 years (73.6 → 78.6)" data-row="0"></rect><rect class="hit-row" x="149.37109375" y="243.4214876033058" width="163.4541015625" height="30.20661157024793" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: gained 4.3 years of life expectancy, from 79.0 years in 2000 to 83.3 years in 2023" data-country="France" data-detail="France: +4.3 years (79.0 → 83.3)" data-row="1"></rect><rect class="hit-row" x="149.37109375" y="287.8429752066116" width="163.4541015625" height="30.206611570247958" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: gained 4.3 years of life expectancy, from 79.4 years in 2000 to 83.7 years in 2023" data-country="Spain" data-detail="Spain: +4.3 years (79.4 → 83.7)" data-row="2"></rect><rect class="hit-row" x="149.37109375" y="332.26446280991735" width="163.4541015625" height="30.206611570247958" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: gained 4.1 years of life expectancy, from 79.8 years in 2000 to 84.0 years in 2023" data-country="Switzerland" data-detail="Switzerland: +4.1 years (79.8 → 84.0)" data-row="3"></rect><rect class="hit-row" x="149.37109375" y="376.68595041322317" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: gained 4.1 years of life expectancy, from 79.6 years in 2000 to 83.7 years in 2023" data-country="Italy" data-detail="Italy: +4.1 years (79.6 → 83.7)" data-row="4"></rect><rect class="hit-row" x="149.37109375" y="421.10743801652893" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Netherlands: gained 4.0 years of life expectancy, from 78.1 years in 2000 to 82.2 years in 2023" data-country="Netherlands" data-detail="Netherlands: +4.0 years (78.1 → 82.2)" data-row="5"></rect><rect class="hit-row" x="149.37109375" y="465.5289256198347" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Japan: gained 3.5 years of life expectancy, from 81.2 years in 2000 to 84.7 years in 2023" data-country="Japan" data-detail="Japan: +3.5 years (81.2 → 84.7)" data-row="6"></rect><rect class="hit-row" x="149.37109375" y="509.9504132231405" width="163.4541015625" height="30.206611570247958" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: gained 3.5 years of life expectancy, from 77.8 years in 2000 to 81.3 years in 2023" data-country="United Kingdom" data-detail="United Kingdom: +3.5 years (77.8 → 81.3)" data-row="7"></rect><rect class="hit-row" x="149.37109375" y="554.3719008264463" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: gained 3.3 years of life expectancy, from 78.1 years in 2000 to 81.4 years in 2023" data-country="Germany" data-detail="Germany: +3.3 years (78.1 → 81.4)" data-row="8"></rect><rect class="hit-row" x="149.37109375" y="598.793388429752" width="163.4541015625" height="30.2066115702479" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United States: gained 2.5 years of life expectancy, from 76.8 years in 2000 to 79.3 years in 2023" data-country="United States" data-detail="United States: +2.5 years (76.8 → 79.3)" data-row="9"></rect></svg>
-</figure>
+<figure class="chart-figure" style="--ground:#FFFFFF;--ink:#000000;--muted:#616161;--y2000:#0072B2;--y2023:#D55E00;--title-size:22px;--title-weight:700;--subtitle-size:13px;--source-size:13px;--axis-size:12px;--label-size:12px;--label-weight:600;--note-size:12px;--cat-size:13px;--cat-weight:600;--legend-size:13px;--legend-weight:600"><div class="chart-header"><h2 class="chart-title">Every one of these ten countries added years of life expectancy between 2000 and 2023 — Poland gained the most, +5.0 years; United States gained the least, +2.5 years</h2><p class="chart-caveat">Life expectancy at birth, in years.</p></div><div class="chart-legend"><span class="legend-key"><span class="legend-swatch" style="background:#0072B2"></span>2000</span><span class="legend-key"><span class="legend-swatch" style="background:#D55E00"></span>2023</span></div><div class="chart-plot dumbbell" style="--cat-gutter:111.556640625px;--lv-gutter:34.95703125px;--rv-gutter:35.009765625px;--x-axis-h:26px;aspect-ratio:1001.5234375 / 466;min-height:300px"><div class="y-axis"><span class="axis-label y cat" style="top:3.5%">Poland</span><span class="axis-label y cat" style="top:13.8%">France</span><span class="axis-label y cat" style="top:24.2%">Spain</span><span class="axis-label y cat" style="top:34.5%">Switzerland</span><span class="axis-label y cat" style="top:44.8%">Italy</span><span class="axis-label y cat" style="top:55.2%">Netherlands</span><span class="axis-label y cat" style="top:65.5%">Japan</span><span class="axis-label y cat" style="top:75.8%">United Kingdom</span><span class="axis-label y cat" style="top:86.2%">Germany</span><span class="axis-label y cat" style="top:96.5%">United States</span></div><svg xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 820 440" preserveAspectRatio="none"><desc>Dumbbell chart of life expectancy at birth in 2000 (blue) and 2023 (vermillion) for ten countries, sorted by the size of the gain, largest first. Every country&#x27;s 2023 dot sits to the right of its 2000 dot. Poland rose from 73.6 to 78.6 years, the largest gain (+5.0); United States rose from 76.8 to 79.3 years, the smallest gain (+2.5). Every row&#x27;s own exact gap is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="820" height="440" fill="#FFFFFF"></rect><line x1="74.99999999999999" x2="74.99999999999999" y1="0" y2="440" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="209" x2="209" y1="0" y2="440" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="343.00000000000006" x2="343.00000000000006" y1="0" y2="440" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="477" x2="477" y1="0" y2="440" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="611" x2="611" y1="0" y2="440" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="744.9999999999999" x2="744.9999999999999" y1="0" y2="440" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="51.23510000000039" x2="385.40430000000043" y1="15.454545454545453" y2="15.454545454545453" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="412.93460000000033" x2="699.7950999999998" y1="60.90909090909091" y2="60.90909090909091" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="437.6241000000001" x2="722.9100999999999" y1="106.36363636363636" y2="106.36363636363636" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="465.8780000000002" x2="741.8911999999996" y1="151.8181818181818" y2="151.8181818181818" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="450.669" x2="725.9518999999998" y1="197.27272727272725" y2="197.27272727272725" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="351.70999999999964" x2="621.5592000000003" y1="242.7272727272727" y2="242.7272727272727" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="555.9795999999997" x2="792.7240999999999" y1="288.1818181818182" y2="288.1818181818182" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="332.88970000000046" x2="564.2005000000004" y1="333.6363636363636" y2="333.6363636363636" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="346.77209999999957" x2="569.3059000000002" y1="379.09090909090907" y2="379.09090909090907" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><line x1="262.98860000000036" x2="430.3880999999999" y1="424.5454545454545" y2="424.5454545454545" stroke="#616161" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"></line><rect class="hit-row" x="0" y="0" width="820" height="30.909090909090907" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: gained 5.0 years of life expectancy, from 73.6 years in 2000 to 78.6 years in 2023" data-country="Poland" data-detail="Poland: +5.0 years (73.6 → 78.6)" data-row="0"></rect><rect class="hit-row" x="0" y="45.45454545454545" width="820" height="30.909090909090907" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: gained 4.3 years of life expectancy, from 79.0 years in 2000 to 83.3 years in 2023" data-country="France" data-detail="France: +4.3 years (79.0 → 83.3)" data-row="1"></rect><rect class="hit-row" x="0" y="90.9090909090909" width="820" height="30.909090909090907" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: gained 4.3 years of life expectancy, from 79.4 years in 2000 to 83.7 years in 2023" data-country="Spain" data-detail="Spain: +4.3 years (79.4 → 83.7)" data-row="2"></rect><rect class="hit-row" x="0" y="136.36363636363637" width="820" height="30.909090909090907" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: gained 4.1 years of life expectancy, from 79.8 years in 2000 to 84.0 years in 2023" data-country="Switzerland" data-detail="Switzerland: +4.1 years (79.8 → 84.0)" data-row="3"></rect><rect class="hit-row" x="0" y="181.8181818181818" width="820" height="30.909090909090907" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: gained 4.1 years of life expectancy, from 79.6 years in 2000 to 83.7 years in 2023" data-country="Italy" data-detail="Italy: +4.1 years (79.6 → 83.7)" data-row="4"></rect><rect class="hit-row" x="0" y="227.27272727272725" width="820" height="30.909090909090878" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Netherlands: gained 4.0 years of life expectancy, from 78.1 years in 2000 to 82.2 years in 2023" data-country="Netherlands" data-detail="Netherlands: +4.0 years (78.1 → 82.2)" data-row="5"></rect><rect class="hit-row" x="0" y="272.72727272727275" width="820" height="30.909090909090878" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Japan: gained 3.5 years of life expectancy, from 81.2 years in 2000 to 84.7 years in 2023" data-country="Japan" data-detail="Japan: +3.5 years (81.2 → 84.7)" data-row="6"></rect><rect class="hit-row" x="0" y="318.1818181818182" width="820" height="30.909090909090935" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: gained 3.5 years of life expectancy, from 77.8 years in 2000 to 81.3 years in 2023" data-country="United Kingdom" data-detail="United Kingdom: +3.5 years (77.8 → 81.3)" data-row="7"></rect><rect class="hit-row" x="0" y="363.6363636363636" width="820" height="30.909090909090878" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: gained 3.3 years of life expectancy, from 78.1 years in 2000 to 81.4 years in 2023" data-country="Germany" data-detail="Germany: +3.3 years (78.1 → 81.4)" data-row="8"></rect><rect class="hit-row" x="0" y="409.09090909090907" width="820" height="30.909090909090935" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United States: gained 2.5 years of life expectancy, from 76.8 years in 2000 to 79.3 years in 2023" data-country="United States" data-detail="United States: +2.5 years (76.8 → 79.3)" data-row="9"></rect></svg><div class="overlay" aria-hidden="true"><span class="dot" style="left:6.2%;top:3.5%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:50.4%;top:13.8%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:53.4%;top:24.2%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:56.8%;top:34.5%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:55%;top:44.8%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:42.9%;top:55.2%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:67.8%;top:65.5%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:40.6%;top:75.8%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:42.3%;top:86.2%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:32.1%;top:96.5%;width:12px;height:12px;background:#0072B2"></span><span class="dot" style="left:47%;top:3.5%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:85.3%;top:13.8%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:88.2%;top:24.2%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:90.5%;top:34.5%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:88.5%;top:44.8%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:75.8%;top:55.2%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:96.7%;top:65.5%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:68.8%;top:75.8%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:69.4%;top:86.2%;width:12px;height:12px;background:#D55E00"></span><span class="dot" style="left:52.5%;top:96.5%;width:12px;height:12px;background:#D55E00"></span><span class="value-label left" style="left:6.2%;top:3.5%">73.6</span><span class="value-label left" style="left:50.4%;top:13.8%">79.0</span><span class="value-label left" style="left:53.4%;top:24.2%">79.4</span><span class="value-label left" style="left:56.8%;top:34.5%">79.8</span><span class="value-label left" style="left:55%;top:44.8%">79.6</span><span class="value-label left" style="left:42.9%;top:55.2%">78.1</span><span class="value-label left" style="left:67.8%;top:65.5%">81.2</span><span class="value-label left" style="left:40.6%;top:75.8%">77.8</span><span class="value-label left" style="left:42.3%;top:86.2%">78.1</span><span class="value-label left" style="left:32.1%;top:96.5%">76.8</span><span class="value-label right" style="left:47%;top:3.5%">78.6</span><span class="value-label right" style="left:85.3%;top:13.8%">83.3</span><span class="value-label right" style="left:88.2%;top:24.2%">83.7</span><span class="value-label right" style="left:90.5%;top:34.5%">84.0</span><span class="value-label right" style="left:88.5%;top:44.8%">83.7</span><span class="value-label right" style="left:75.8%;top:55.2%">82.2</span><span class="value-label right" style="left:96.7%;top:65.5%">84.7</span><span class="value-label right" style="left:68.8%;top:75.8%">81.3</span><span class="value-label right" style="left:69.4%;top:86.2%">81.4</span><span class="value-label right" style="left:52.5%;top:96.5%">79.3</span></div><div class="x-axis"><span class="axis-label x" style="left:9.1%">74</span><span class="axis-label x" style="left:25.5%">76</span><span class="axis-label x" style="left:41.8%">78</span><span class="axis-label x" style="left:58.2%">80</span><span class="axis-label x" style="left:74.5%">82</span><span class="axis-label x" style="left:90.9%">84</span></div></div><p class="chart-source">Source: UN, World Population Prospects (2024), via Our World in Data · 2000 and 2023, extracted 8 August 2026</p></figure>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/proof/weby-dumbbell-life-expectancy-gains/dumbbell-interaction.mjs
@@ -134,7 +386,17 @@ function initChart(svg, tooltip) {
     row.addEventListener("pointerdown", function (evt) {
       show(row, evt.clientX, evt.clientY);
     });
-    row.addEventListener("pointerleave", clear);
+    // MOUSE AND PEN ONLY. A touch pointer is destroyed the instant the finger lifts, and the
+    // browser fires `pointerleave` immediately after `pointerup` for it — so an unguarded
+    // `pointerleave` handler wipes the tooltip a tap has just opened, and the reading this beat's
+    // own alt text promises "on hover, tap or keyboard focus" is never actually visible on a
+    // phone. Measured by dispatching a real touch sequence, not read off the source. A touch
+    // reader's tooltip is cleared by the document-level `pointerdown` below instead: it stays up
+    // until they tap somewhere else.
+    row.addEventListener("pointerleave", function (evt) {
+      if (evt.pointerType === "touch") return;
+      clear();
+    });
 
     // Keyboard: every row is already `tabIndex={0}` at build time (works with this script absent
     // entirely — the same invariant `web-discipline.md`, "Keyboard and touch", states for the

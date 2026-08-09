@@ -6,10 +6,10 @@
  * Structurally the web sibling of `proof/more-lollipop-co2-per-capita/LollipopCo2.tsx`'s own
  * `lollipopGeometry` (the static beat of this exact claim) — not imported from there (a beat never
  * imports another beat's files, `SKILL.md`'s "duplicate, do not link" ruling), and adapted to this
- * genre's own frame shape: `tickHint` is passed in per call rather than fixed at module scope, so a
- * desktop and a narrow layout can each ask the value axis for their own density
- * (`web-discipline.md`, "Responsive behaviour": "gutters... x-tick density... re-run at that
- * layout's own hint").
+ * genre's own frame shape: `tickHint` is passed in per call rather than fixed at module scope, so
+ * the one fluid frame states its own density explicitly (`web-discipline.md`, "Cheap, not
+ * recomputed": the hint is decided ONCE, at the canonical width, and never re-derived as the frame
+ * stretches).
  *
  * The value axis keeps the bar family's non-negotiable zero floor
  * (`references/types/lollipop.md`, "The one thing that goes wrong": the stem's LENGTH is what a
@@ -121,27 +121,12 @@ export function formatValueExact(v: number): string {
 }
 
 /**
- * A regular value-axis gridline that would pass straight through a row's own value label is
- * dropped for that row's band only — ported from the static beat's own fix
- * (`proof/more-lollipop-co2-per-capita/LollipopCo2.tsx`'s `verticalSegments`, written after a real
- * defect: the "4t" gridline visibly bisected Switzerland's and Sweden's own "3.6 t" labels). With
- * 15 rows any tick can land under any row's label, not just one chosen annotation, so the check
- * runs against every row's own measured label span.
+ * GONE, deliberately: `verticalSegments` used to cut each value-axis gridline around the rows whose
+ * own value label sat on it (the static sibling's fix for the "4t" gridline bisecting "3.6 t"). It
+ * required the label's WIDTH in the same user units the gridline is drawn in — which the fluid
+ * frame no longer has: the label is HTML at a fixed pixel size while the gridline lives in a
+ * `viewBox` that stretches, so the two cannot be compared at build time at all. The collision is
+ * closed the way the genre already closes it for its own reference/peak/end labels instead: each
+ * value label carries a `--ground` chip behind it (`.value-label`, `render-web.mjs`'s `EXTRA_CSS`)
+ * and simply covers whatever passes underneath, at every container width, with nothing measured.
  */
-export function verticalSegments(
-  top: number,
-  bottom: number,
-  gaps: [number, number][],
-): [number, number][] {
-  const sorted = [...gaps].sort((a, b) => a[0] - b[0]);
-  const segments: [number, number][] = [];
-  let cursor = top;
-  for (const [gapStart, gapEnd] of sorted) {
-    const start = Math.max(cursor, top);
-    const end = Math.min(gapStart, bottom);
-    if (end > start) segments.push([start, end]);
-    cursor = Math.max(cursor, gapEnd);
-  }
-  if (cursor < bottom) segments.push([cursor, bottom]);
-  return segments;
-}
