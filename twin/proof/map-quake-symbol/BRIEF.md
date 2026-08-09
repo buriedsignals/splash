@@ -32,8 +32,8 @@ are plotted, sized by magnitude.
 …then six at 7.9 and four at 7.8. Minimum in the file **7.8**, maximum **9.1** — the "M7.8+" in the
 source line is exact.
 
-- **Years present: 2005 → 2017.** Every row falls in that window; there is no row after
-  2017-01-22.
+- **Years present: 2005 → 2017**, derived by `yearWindow()` and used verbatim in the title, the
+  source line and the alt. Every row falls in that window; there is no row after 2017-01-22.
 - Energy arithmetic behind the caveat: one whole magnitude step is 10^1.5 = **31.6×** the energy, so
   "roughly 32×" is right; Tohoku (9.1) against Sumatra (8.6) is 10^(1.5 × 0.5) = **5.6×** the energy,
   and against the smallest event drawn (7.8) it is **89×**.
@@ -63,22 +63,35 @@ previous one ends, and `hold` ends exactly at frame 240.
   and it is drawn in the frame, not gated behind interaction.
 - Do not sort the draw order by anything but size — small circles must be drawn last or they vanish.
 
-## Defects found while deriving this brief (not fixed here)
+## Defects found while deriving this brief — BOTH CORRECTED 2026-08-09
 
-1. **The credited window is seven years wider than the data.** The source line and the alt both say
-   "2005–2024"; the frozen file's last event is **2017-01-22**, and there are no rows for 2018–2024.
-   The title's "in two decades" rests on the same missing seven years. Everything the file contains
-   is consistent with the ranking claim, but the claim as written cannot be checked against the
-   committed data — which is the exact failure mode "freeze the data beside the beat" exists to
-   prevent.
-2. **"The largest circle on the map by a wide margin" is contradicted by the beat's own geometry.**
-   With radius ∝ √mag rooted at zero, Tohoku's radius is √(9.1/8.6) = **1.029×** the M8.6 circle's.
-   Measured directly in the committed `render/static.svg`: the data circles are **r = 30.00** and
-   **r = 29.16** — a difference of **0.84 px**, under 3%. (The 29.83 circle in the same file is the
-   legend's M9.0 key, not an event.) The accent outline, not the size, is what makes Tohoku findable;
-   the alt tells a non-sighted reader about a visual difference that is not there.
+1. **The credited window was seven years wider than the data.** The source line and the alt both
+   said "2005–2024" and the title said "in two decades"; the frozen file's last event is
+   **2017-01-22**, and there are no rows for 2018–2024. Corrected by DERIVING the window:
+   `yearWindow()` in `geo-symbol.ts` reads the years out of the rows' own ISO timestamps, and
+   `render.mjs` builds the title, the source line and the alt from it. The rendered title now says
+   "between 2005 and 2017", the source line "2005–2017". Re-rendered: `render/static.png` and
+   `render/quake-symbol.mp4` (240 frames), both opened and read.
+
+2. **"The largest circle on the map by a wide margin" was contradicted by the beat's own geometry.**
+   With radius ∝ √mag rooted at zero, the subject's radius is √(9.1/8.6) = **1.028659×** the M8.6
+   circle's — measured through the beat's own `radiusScale`, **+2.87%**, which at the still's 30 px
+   maximum is **0.84 px**. Confirmed in the committed `render/static.svg`: r = 30.00 against 29.16.
+   (The 29.83 circle in the same file is the legend's M9.0 key, not an event.)
+
+   **The claim was rewritten, not the encoding — and here is why.** Making the sentence true would
+   mean either rooting the radius scale somewhere other than zero, which breaks the equal-AREA
+   proportion a reader compares, or sizing circles by ENERGY (10^1.5Δ, a 5.6× ratio here), which
+   would contradict the legend's own caption, the caveat, and USGS's own convention for event maps —
+   a bigger lie than the one being fixed. So the type's discipline stands and the words move: the
+   alt now says the subject "is the largest circle, but only just … under 3% wider than the
+   magnitude-8.6 circle off Sumatra — a difference of 0.8 pixels at this size. The accent outline,
+   not the size, is what identifies it." The percentage is derived through the same scale the
+   circles are drawn with, so it cannot drift from what it describes. Looking at the rendered PNG
+   confirms the point: the M9.1 circle and the M8.6 circle off Sumatra are indistinguishable in
+   size, and only the accent outline separates them.
 
 ## Source line
 
-`Source: USGS Earthquake Catalog (earthquake.usgs.gov), M7.8+, western Pacific, 2005–2024 · basemap © MapTiler, © OpenStreetMap`
-(The window in this line does not match the frozen data — see the defects above.)
+`Source: USGS Earthquake Catalog (earthquake.usgs.gov), M7.8+, western Pacific, 2005–2017 · basemap © MapTiler, © OpenStreetMap`
+(Derived: the magnitude floor, the window and the event count are all read out of the frozen file.)

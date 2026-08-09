@@ -1,5 +1,5 @@
 /**
- * The static genre of "The Western Pacific's most powerful earthquake in two decades" — 900 × 560,
+ * The static genre of "the western Pacific's most powerful earthquake, 2005–2017" — 900 × 560,
  * one frame, no order. A PROPORTIONAL SYMBOL beat: circles sized by magnitude at each epicentre,
  * not a choropleth — there is no polygon, no join, no ramp. See
  * `twin-map-beat/references/types/proportional-symbol.md`.

@@ -12,32 +12,18 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
 import { QuakeSymbolStill } from "./QuakeSymbolStill.tsx";
-import { quakesFromCsv, symbolClaimViolations } from "./geo-symbol.ts";
+import {
+  drawOrder,
+  quakesFromCsv,
+  radiusScale,
+  symbolClaimViolations,
+  yearWindow,
+} from "./geo-symbol.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "quake-symbol";
-
-/** The story's own constants: the confirmed title, its source, its subject. */
-const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#C1440E",
-  subjectKey: "q0", // 2011 Tohoku, 9.1 — the largest row in quakes-symbol.csv (sorted by mag desc)
-  comparisonKey: "q1", // 2005 Sumatra (Nias), 8.6 — the next-largest
-  title:
-    "The 2011 Tohoku earthquake was the most powerful to strike the western Pacific in two decades.",
-  source: "Source: USGS Earthquake Catalog (earthquake.usgs.gov), M7.8+, western Pacific, 2005–2024",
-  basemapCredit: "basemap © MapTiler, © OpenStreetMap",
-  legendCaption: "Magnitude (radius scaled to √magnitude, not to energy released)",
-  caveat:
-    "Moment magnitude is a logarithmic scale: each whole step is roughly 32× the energy release, " +
-    "so a circle 1.3 units bigger is not 1.3× the event — it is orders of magnitude bigger.",
-  alt:
-    "Map of the western Pacific. A circle marks each of 17 earthquakes of magnitude 7.8 or higher, " +
-    "2005–2024, sized by magnitude. The 2011 Tohoku earthquake, magnitude 9.1 off Japan, is the " +
-    "largest circle on the map by a wide margin, outlined in the accent colour.",
-};
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -55,6 +41,65 @@ const wantVideo = argv.includes("--video");
 
 const quakes = quakesFromCsv(await readFile(dataPath, "utf8"));
 console.log(`data: ${quakes.length} events, M${Math.min(...quakes.map((q) => q.mag))}–M${Math.max(...quakes.map((q) => q.mag))}`);
+
+// ── Everything the furniture says about this file is READ OUT OF THE FILE ──────────────────
+// The window, the magnitudes, the ranking and the size margin between the two biggest circles
+// are all derived below. The previous version typed "2005–2024" and "in two decades" beside a
+// file whose last event is 2017-01-22, and typed "the largest circle by a wide margin" beside a
+// √-scaled encoding that makes the subject 2.9% wider than its runner-up. A number typed next to
+// data it does not come from is the defect class this whole beat folder exists to prevent.
+const window = yearWindow(quakes);
+const ranked = drawOrder(quakes); // largest magnitude first
+const subject = ranked[0];
+const runnerUp = ranked[1];
+const smallest = ranked[ranked.length - 1];
+const subjectYear = Number(subject.time.slice(0, 4));
+const minMag = smallest.mag;
+// The size margin is a RATIO, so it holds at any maximum radius — the still draws at 30 px, the
+// video at 46. Measured through the beat's own scale rather than by re-deriving √(9.1/8.6) by hand.
+const STILL_MAX_RADIUS = 30;
+const radiusOf = radiusScale(subject.mag, STILL_MAX_RADIUS);
+const radiusGainPct = (radiusOf(subject.mag) / radiusOf(runnerUp.mag) - 1) * 100;
+const radiusGainPx = radiusOf(subject.mag) - radiusOf(runnerUp.mag);
+const magSpan = Math.round((subject.mag - minMag) * 10) / 10;
+console.log(
+  `derived: window ${window.label} · subject M${subject.mag} vs runner-up M${runnerUp.mag} ` +
+    `· radius ratio ${(1 + radiusGainPct / 100).toFixed(6)} (+${radiusGainPct.toFixed(2)}%, ` +
+    `+${radiusGainPx.toFixed(2)}px at the still's 30px maximum)`,
+);
+
+/**
+ * The story's own constants. Only the editorial words are typed here; every quantity, every year
+ * and the size comparison come from the derivations above.
+ */
+const BEAT = {
+  ground: "#FFFFFF",
+  accent: "#C1440E",
+  subjectKey: subject.key, // the largest row in quakes-symbol.csv, found by sorting it
+  comparisonKey: runnerUp.key, // the next-largest
+  title:
+    `The ${subjectYear} Tohoku earthquake was the most powerful to strike the western Pacific ` +
+    `between ${window.first} and ${window.last}.`,
+  source:
+    `Source: USGS Earthquake Catalog (earthquake.usgs.gov), M${minMag}+, western Pacific, ` +
+    `${window.label}`,
+  basemapCredit: "basemap © MapTiler, © OpenStreetMap",
+  legendCaption: "Magnitude (radius scaled to √magnitude, not to energy released)",
+  // grounded-by-hand: 32 — a constant of the moment-magnitude scale (10^1.5 = 31.6 times the
+  // energy per whole step), not a reading from quakes-symbol.csv. No computation over this beat's
+  // own rows could ever produce it; it holds whatever earthquakes the file happens to contain.
+  caveat:
+    "Moment magnitude is a logarithmic scale: each whole step is roughly 32× the energy release, " +
+    `so a circle ${magSpan} units bigger is not ${magSpan}× the event — it is orders of magnitude bigger.`,
+  alt:
+    `Map of the western Pacific. A circle marks each of ${quakes.length} earthquakes of magnitude ` +
+    `${minMag} or higher, ${window.label}, sized by magnitude. The ${subjectYear} Tohoku earthquake, ` +
+    `magnitude ${subject.mag} off Japan, is outlined in the accent colour. It is the largest circle, but ` +
+    `only just: radius goes as the square root of magnitude from zero, so it is under ` +
+    `${Math.ceil(radiusGainPct)}% wider than the magnitude-${runnerUp.mag} circle off Sumatra — a ` +
+    `difference of ${radiusGainPx.toFixed(1)} pixels at this size. The accent outline, not the size, ` +
+    `is what identifies it.`,
+};
 
 const violations = symbolClaimViolations({ rows: quakes, subjectKey: BEAT.subjectKey });
 if (violations.length === 0) console.log("claim: supported by the source.");

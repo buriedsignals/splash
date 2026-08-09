@@ -80,6 +80,33 @@ export function quakesFromCsv(csv: string): QuakeRow[] {
 }
 
 /**
+ * The calendar-year window the rows actually cover, read out of their own ISO timestamps. Exists
+ * because the source line and the alt text used to CREDIT a window ("2005–2024") seven years wider
+ * than the frozen file, whose last event is 2017-01-22 — a credit no reader could have checked and
+ * no test could have caught, since nothing compared the sentence to the data. Anything the
+ * furniture says about the period must come through here.
+ */
+export function yearWindow(rows: { time: string }[]): {
+  first: number;
+  last: number;
+  span: number;
+  label: string;
+} {
+  if (rows.length === 0) throw new Error("no rows to take a window from");
+  const years = rows.map((r) => {
+    const year = Number(r.time.slice(0, 4));
+    if (!Number.isInteger(year))
+      throw new Error(
+        `row time "${r.time}" does not start with a four-digit year`,
+      );
+    return year;
+  });
+  const first = Math.min(...years);
+  const last = Math.max(...years);
+  return { first, last, span: last - first, label: `${first}–${last}` };
+}
+
+/**
  * The radius scale: rooted at zero, radius ∝ √magnitude — an equal-AREA encoding, per
  * `references/types/proportional-symbol.md`'s "don't linear-scale the radius". Magnitude itself is
  * already a logarithmic quantity (a step of 1.0 is ~32× the energy release), which this scale does
