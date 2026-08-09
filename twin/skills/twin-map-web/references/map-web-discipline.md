@@ -459,6 +459,54 @@ drawn radius to where `queryRenderedFeatures` said the mark ended — the same n
 MapLibre hit-tests the circle it painted — and it passed against a copy with the defect deliberately
 put back.
 
+### The class: one mark, two halves, two mechanisms
+
+This has now happened twice, so it is written as a rule rather than as two incidents. **The live swap
+split every mark in two** — a MapLibre layer for the circle, an HTML overlay for its label and its
+hit target — and anything that governed the mark when both halves were SVG now has to govern them
+BOTH, through two different mechanisms. Where it does not, nothing goes red and the map quietly
+disagrees with itself.
+
+| What governs a mark | The overlay half | The live half | Found by |
+|---|---|---|---|
+| size | CSS + the SVG viewBox | `circle-radius`, from the camera | the owner: a 36px circle on cartography 1.57× bigger |
+| membership of a filter | CSS `:has()` + `:checked` | `map.setFilter` | the owner: 6 of 13 labels hidden, 13 of 13 circles painted |
+
+**So: anything the CSS filter governs today needs a live counterpart, and the two are asserted equal
+rather than each asserted to have changed.** "The filter did something" passes while only one half
+moves — which is exactly the state this rule was written after.
+
+**The filter stays pure CSS and is not replaced.** That is what makes it work with JavaScript off.
+The live layer *additionally* listens for `change` on the radio group and calls `setFilter` with the
+same slug the CSS selector quotes — one vocabulary (`slugOf`), three readers (the radio's id, the
+selector, the layer filter), which is what `assertDistinctSlugs` already exists to keep true.
+
+**With JavaScript off, the degraded state is chosen rather than inherited**, and it is coherent: the
+CSS still narrows the labels, the hit targets and the accessible table, while the fallback plate
+shows every circle, because a baked raster cannot be filtered. A static picture under a filtered
+label set tells the reader about a subset of the marks it draws. That is defensible; it is stated
+here so that a future reader meets a decision rather than an accident.
+
+**What is NOT governed by the selection, established by measurement rather than by reading the
+code** — clicking every chip in a real browser at 1600 × 900:
+
+- **The size legend does not change, and that is deliberate.** The reference circles stay 3,7 / 7,3 /
+  11,0 M in every filter state, because the RADIUS SCALE does not change under a filter. A legend
+  that shrank with the selection would tell a reader the circles had been resized, and comparing two
+  filter states would become impossible. The residue is real and is a cost, not a bug: under
+  "Central & Northern Europe", whose largest value is 3.9 M, the legend's biggest key names a circle
+  that is not on the page.
+- **The subject sentence survives every filter state**, including the two that exclude the subject:
+  "Paris — the largest metro area in this sample" is still printed under "Southern Europe". This is
+  B6.18b's furniture half, and it is deliberately NOT fixed here. Hiding it with one more CSS rule
+  would make the page consistent and the editorial problem invisible; the honest answer is that a
+  filter must not offer an option that excludes the subject, which is a decision about the beat, not
+  about this genre's code.
+- **The accessible region table is unverified live.** The CSS rule that narrows it exists and is the
+  same shape as the others, but this seed ships `regionTable: false`, so no table renders and the
+  measurement above counted zero rows in every state. A beat that turns the table on should be
+  driven before anyone claims the filter reaches it.
+
 ### The price, measured
 
 - **Payload.** `maplibre-gl@4.7.1` inlined is 803 KB of JS and 65.5 KB of CSS. Committed pages ran

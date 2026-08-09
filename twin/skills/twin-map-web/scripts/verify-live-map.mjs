@@ -183,6 +183,51 @@ export async function measureShape(browser, keyedPath, shape) {
   return { shape: shape.label, ...state, pointerReach };
 }
 
+/**
+ * Clicks every filter chip for real and counts BOTH halves of the mark at each state.
+ *
+ * The filter is pure CSS, which reaches the HTML overlay only; the circles are a MapLibre layer,
+ * which CSS cannot address. So this compares the two counts rather than checking that either
+ * changed — the trap is that "the filter did something" passes while only one half moves, which is
+ * exactly the state this was written after: 6 of 13 labels hidden, 13 of 13 circles still painted.
+ */
+export async function measureFilterStates(browser, keyedPath, shape) {
+  const page = await browser.newPage();
+  await page.setViewport({ width: shape.width, height: shape.height, deviceScaleFactor: 1 });
+  await page.goto(`file://${keyedPath}`, { waitUntil: "load" });
+  await page.waitForFunction("document.documentElement.classList.contains('mw-live')", { timeout: 30000 });
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  const chips = await page.evaluate(() =>
+    Array.from(document.querySelectorAll("input[name=mw-filter]")).map((input) => input.id),
+  );
+  const states = [];
+  for (const chip of chips) {
+    // A real click on the chip's own `<label>`, which is how a reader operates it — not
+    // `input.checked = true`, which would set the property without the `change` event the live
+    // layer listens for, and would therefore pass with the wiring removed.
+    await page.evaluate((id) => document.querySelector(`label:has(#${id})`).click(), chip);
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    states.push({
+      chip,
+      ...(await page.evaluate(() => {
+        const visible = (selector) =>
+          Array.from(document.querySelectorAll(selector)).filter((node) => node.offsetParent !== null).length;
+        return {
+          labels: visible(".point-label"),
+          buttons: visible(".pt"),
+          painted: window.__mwMap.getSource("mw-marks")._data.features.filter((feature) => {
+            const filter = window.__mwMap.getFilter("mw-marks");
+            return !filter || feature.properties.group === filter[2];
+          }).length,
+        };
+      })),
+    });
+  }
+  await page.close();
+  return { shape: shape.label, chips, states };
+}
+
 export async function verifyLiveMap({ htmlPath, key }) {
   // The plate's own ground scale, read out of the delivered page rather than passed in, so the
   // second opinion below is built from what actually shipped.
@@ -226,7 +271,31 @@ export async function verifyLiveMap({ htmlPath, key }) {
             `but a pointer stops reaching it at ${result.pointerReach.reach}px — the hit area is not the mark`,
         );
     }
-    return { results, failures };
+    // The filter, at one shape — it is a property of the page, not of the container.
+    const filtering = await measureFilterStates(browser, keyedPath, SHAPES[0]);
+    for (const state of filtering.states) {
+      if (state.labels !== state.painted)
+        failures.push(
+          `${filtering.shape}, filter ${state.chip}: ${state.labels} labels visible but ${state.painted} marks ` +
+            `painted — one half of the mark is following the filter and the other is not`,
+        );
+      if (state.buttons !== state.painted)
+        failures.push(
+          `${filtering.shape}, filter ${state.chip}: ${state.buttons} hit targets visible but ${state.painted} ` +
+            `marks painted — the keyboard path and the drawn map disagree about what is on the page`,
+        );
+    }
+    // Anti-vacuity, and it is the whole reason this is not just an equality: with the filter broken
+    // in BOTH halves at once, every count would be 13 and every equality above would hold. At least
+    // two distinct counts means the control actually narrows something.
+    const distinct = new Set(filtering.states.map((state) => state.painted));
+    if (filtering.chips.length > 1 && distinct.size < 2)
+      failures.push(
+        `${filtering.shape}: every filter state paints the same ${[...distinct][0]} marks across ` +
+          `${filtering.chips.length} chips — the filter is not narrowing anything, so the counts agreeing proves nothing`,
+      );
+
+    return { results, filtering, failures };
   } finally {
     await browser.close();
   }
@@ -246,7 +315,7 @@ if (import.meta.main) {
     console.log("no MAPTILER_KEY — the live map cannot be driven, so nothing was verified.");
     process.exit(0);
   }
-  const { results, failures } = await verifyLiveMap({ htmlPath, key });
+  const { results, filtering, failures } = await verifyLiveMap({ htmlPath, key });
   for (const result of results) {
     console.log(
       `${result.shape}  canvas ${result.canvas[0]}x${result.canvas[1]}  zoom ${result.zoom.toFixed(3)}  ` +
@@ -258,9 +327,17 @@ if (import.meta.main) {
           `reachable to ${result.pointerReach.reach}px`,
       );
   }
+  for (const state of filtering.states)
+    console.log(
+      `   filter ${state.chip.padEnd(34)} labels ${String(state.labels).padStart(2)}  ` +
+        `hit targets ${String(state.buttons).padStart(2)}  marks painted ${String(state.painted).padStart(2)}`,
+    );
   if (failures.length > 0) {
     for (const failure of failures) console.error(`FAIL ${failure}`);
     process.exit(1);
   }
-  console.log("the drawn mark matches its camera, nothing is cropped, and a pointer reaches the whole disc.");
+  console.log(
+    "the drawn mark matches its camera, nothing is cropped, a pointer reaches the whole disc, and both " +
+      "halves of every mark obey the same filter.",
+  );
 }

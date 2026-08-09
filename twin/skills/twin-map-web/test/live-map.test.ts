@@ -19,6 +19,7 @@ import {
   cameraScale,
   planIsUnkeyed,
   readLivePlan,
+  selectedGroup,
 } from "../assets/live-map.mjs";
 import {
   POINTER_TOLERANCE_PX,
@@ -89,6 +90,27 @@ describe("the live layer refuses to boot on a placeholder", () => {
     expect(
       planIsUnkeyed(readLivePlan({ getElementById: () => null } as never)),
     ).toBe(true);
+  });
+});
+
+describe("selectedGroup — the one selection both halves of a mark read", () => {
+  const doc = (id: string | null) =>
+    ({ querySelector: () => (id === null ? null : { id }) }) as never;
+
+  it("should read the checked chip's own slug, which is what the CSS selector quotes", () => {
+    expect(selectedGroup(doc("mw-filter-western-europe"))).toBe(
+      "western-europe",
+    );
+  });
+
+  it("should treat the reserved unfiltered option as no filter at all", () => {
+    // `mw-filter-all` is refused as a group slug at build time by `assertDistinctSlugs`, so it can
+    // only ever mean "every group".
+    expect(selectedGroup(doc("mw-filter-all"))).toBe(null);
+  });
+
+  it("should treat a page with no filter as no filter", () => {
+    expect(selectedGroup(doc(null))).toBe(null);
   });
 });
 

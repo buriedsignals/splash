@@ -65,6 +65,14 @@ the title makes. This seed's own thirteen points across three regions is close t
 for the test to pass — it demonstrates the mechanism, not evidence every beat needs one; a beat with
 one group renders no filter at all (`groupsOf(points).length <= 1`).
 
+**The filter is pure CSS and stays that way** — `:has()` + `:checked`, so it narrows the labels, the
+hit targets and the accessible table with JavaScript off. The live layer ADDITIONALLY calls
+`setFilter` on the same slug, because CSS cannot address a MapLibre layer: without it a reader who
+picks a region gets a narrowed label set over an unnarrowed map. With JavaScript off the fallback
+plate shows every circle under a filtered label set, which is a deliberate degraded state —
+`references/map-web-discipline.md`, "The class: one mark, two halves, two mechanisms", states it and
+states what the size legend and the subject sentence do NOT follow, and why.
+
 **Pan and zoom are no longer a per-beat decision** (ruling R1): every map × web beat is a live map a
 reader can move through. What IS per beat is `SEED.live` — set it `false` for a beat that must stay
 request-free (an offline archive, a CMS whose Content-Security-Policy refuses `api.maptiler.com`),
@@ -126,8 +134,8 @@ letterboxes, or leaves a gutter. Trust the picture.
 | Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, live tiles and the reversal that brought them, what must never become interactive |
 | Pure core | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG (baked generously — `1000`px, see the discipline file's "The plate strategy"), one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
-| Live map | `assets/live-map.mjs` | The second layer: boots MapLibre on MapTiler tiles, re-applies the beat's own water and label rules to the live style, fits the camera to the study set at runtime, sets the reader's leash from that fit, and sizes every mark from the CAMERA's ground scale rather than from the plate's box (`cameraScale`) |
-| Live-map proof | `scripts/verify-live-map.mjs` | Drives the live map at two container aspects and asserts three things that can come apart: mark size against an independent camera derivation, nothing cropped, and a real pointer reaching a mark's whole disc |
+| Live map | `assets/live-map.mjs` | The second layer: boots MapLibre on MapTiler tiles, re-applies the beat's own water and label rules to the live style, fits the camera to the study set at runtime, sets the reader's leash from that fit, sizes every mark from the CAMERA's ground scale rather than from the plate's box (`cameraScale`), and makes the live layer obey the same filter selection the CSS obeys (`selectedGroup`, `applyFilter`) |
+| Live-map proof | `scripts/verify-live-map.mjs` | Drives the live map at two container aspects and clicks every filter chip for real. Asserts what can come apart: mark size against an independent camera derivation, nothing cropped, a real pointer reaching a mark's whole disc, and BOTH halves of every mark obeying one filter — plus an anti-vacuity pin, because with the filter broken in both halves at once every count agrees |
 | Composition | `assets/MapWebSeed.tsx` | `MapWebSeed` — ONE fluid render: an SVG carrying only geometry (plate + decorative circles) plus an HTML overlay carrying every piece of furniture and every control (filter chips, point labels, hit-target buttons, legend, and, as a third layer that is a sibling of both map layers, the point labels and hit targets), inside a `.mw-stage` that bounds it to the window's leftover height — and `RegionTable` (the accessible table, opt-in) |
 | Interaction | `assets/interaction.mjs` | `initPoints`/`initAll` — hover/tap/keyboard per point, direct listeners on the HTML `.pt` buttons (no proximity resolver needed: each point is already a discrete, fixed-size target) |
 | Verify | `scripts/verify-interaction.mjs` | Drives the rendered beat in a real browser with REAL input: fit at four viewport sizes, `elementFromPoint` + a real pointer move per point checked against the sample data, a real click per filter chip, keyboard, and the no-JS pass. Mutation-proven to fail when the hover is swallowed, the filter selector is wrong, the fit is removed or the plate is stretched |

@@ -183,6 +183,18 @@ export function initLiveMap(win) {
     map.resize();
     leash(map, plan);
     applyMarkScale(map, doc, plan);
+    applyFilter(map, doc);
+  });
+
+  // One listener on the document rather than one per radio: the chips are a real `<fieldset>` of
+  // real radios, so `change` bubbles, and nothing here has to know how many groups a beat has.
+  doc.addEventListener("change", function (event) {
+    if (!event.target || event.target.name !== "mw-filter") return;
+    applyFilter(map, doc);
+    // A mark that has just been filtered away must not keep the tooltip it was showing.
+    const tooltip = doc.getElementById("tooltip");
+    if (tooltip) tooltip.hidden = true;
+    markActive(doc, null);
   });
 
   // The camera moved, not the container: the marks keep the pixel size they were fitted at (a
@@ -269,6 +281,45 @@ function wireHover(map, doc, win) {
     if (tooltip) tooltip.hidden = true;
     markActive(doc, null);
   });
+}
+
+/**
+ * THE ONE SELECTION BOTH HALVES READ.
+ *
+ * The filter is pure CSS — `:checked` + `:has()` — and that is deliberate: it is what makes the
+ * filter work with JavaScript disabled, and it is not being replaced. But CSS can only reach the
+ * HTML overlay. Once the circles became a MapLibre layer, a stylesheet had no way to speak to them,
+ * and the one rule that used to govern both halves governed one. Measured on the seed, clicking
+ * "Western Europe" in a real browser: 6 of 13 labels left, 6 of 13 hit targets left, and **all 13
+ * circles still painted**. Same shape as the mark radius — two halves of one mark driven by two
+ * mechanisms that diverged — and this is the second instance, so it is written into the discipline
+ * as a class rather than as an incident.
+ *
+ * `null` means the unfiltered option, whose id (`mw-filter-all`) is reserved and refused as a group
+ * slug by `assertDistinctSlugs` at build time.
+ */
+export function selectedGroup(doc) {
+  const checked = doc.querySelector("input[name=mw-filter]:checked");
+  if (!checked || checked.id === "mw-filter-all") return null;
+  return checked.id.replace(/^mw-filter-/, "");
+}
+
+/**
+ * Makes the live layer obey the same selection the CSS obeys. The features carry `group` as the
+ * SAME slug the radio's own id carries and the CSS selector quotes — one vocabulary, three readers,
+ * which is what `slugOf` and `assertDistinctSlugs` exist to keep true.
+ *
+ * WITH JAVASCRIPT OFF none of this runs, and that state is coherent rather than broken: the CSS
+ * still narrows the labels, the hit targets and the accessible table, and the fallback plate shows
+ * every circle because a baked raster cannot be filtered. A static picture under a filtered label
+ * set is a defensible degraded state — the reader sees every mark and is told about a subset — and
+ * it is chosen here deliberately, not inherited.
+ */
+export function applyFilter(map, doc) {
+  if (!map.getLayer("mw-marks")) return null;
+  const group = selectedGroup(doc);
+  map.setFilter("mw-marks", group === null ? null : ["==", ["get", "group"], group]);
+  return group;
 }
 
 /**
