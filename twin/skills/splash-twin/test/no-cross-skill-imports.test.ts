@@ -73,16 +73,20 @@
  *    startup. Closing it needs an AST with constant folding, or a runtime import hook — a different
  *    tool. The limit is deliberate, not an oversight, and it is the honest boundary of a text scan.
  *
- * 2. An INDIRECTION that never spells the sibling path in the literal at all. The literal is plain
+ * 2. An INDIRECTION that never spells the target path in the literal at all. The literal is plain
  *    text here, so this one is not obfuscation — it is simply invisible to a path scan:
  *      - a `package.json` `imports` alias, or a bundler/tsconfig path alias, that points into a
- *        skill. Today `twin/package.json` maps only `#shared/* -> ./shared/*`, which cannot reach
- *        `skills/`, so nothing in the tree uses this route — but add a mapping into `skills/` and
- *        this guard is blind to every import through it.
- *      - a symlink inside `shared/` (or anywhere outside `skills/`) whose target is a skill
- *        directory: the literal resolves outside `skills/`, and the guard compares paths, not
- *        inodes.
- *    Both are caught only by reviewing the alias table / the symlink, not by this test.
+ *        skill. A bare specifier is not a path and is dropped before resolution, so every import
+ *        through such an alias is invisible to the scan above.
+ *      - a symlink whose target is a skill directory: the literal resolves at the LINK's path, which
+ *        is outside the skill's own tree, and this scan compares paths, not inodes.
+ *    Neither is caught by the scan. The NAMED FAMILY of both — the one anybody would actually reach
+ *    for — is closed by the two `it` blocks at the bottom of this file: `shared/` holds directories
+ *    NAMED AFTER SKILLS containing byte-identical copies of skill files, so "why are these
+ *    duplicated, let us symlink them" is the most natural tidy-up someone will attempt, and it
+ *    defeats the scan silently. Those two tests assert `shared/` contains no symlink at all and that
+ *    the `imports` map has no target under `skills/`. A tsconfig/bundler alias, or a symlink planted
+ *    somewhere other than `shared/`, is still only caught by review.
  *
  * 3. Two narrower blind spots, named rather than left implicit:
  *      - a specifier containing WHITESPACE — the no-whitespace check that keeps prose out would
@@ -98,12 +102,13 @@
  * that much and no more.
  */
 import { describe, it, expect } from "bun:test";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
+const TWIN = resolve(SKILLS, "..");
 
 async function* sourceFiles(dir: string): AsyncGenerator<string> {
   for (const e of await readdir(dir, { withFileTypes: true })) {
@@ -351,6 +356,57 @@ describe("no import ever leaves the skill it was written in", () => {
         }
       }
     }
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * The named half of blind spot 2, closed without an AST.
+ *
+ * Neither of these can be seen by the scan above: an alias is a bare specifier, and a symlink is a
+ * path the scan resolves at the link, not at its target. Both are dormant today — which is exactly
+ * when to nail them down, because `shared/` already holds directories NAMED AFTER SKILLS whose files
+ * are byte-identical copies of skill files (that byte-identity is itself asserted elsewhere). The
+ * obvious tidy-up — "these are duplicated, symlink them" — would leave every guard in this repository
+ * green while a skill's code was loaded through a path no scan follows.
+ */
+describe("no indirection route into a skill", () => {
+  it("should keep shared/ free of symlinks", () => {
+    const SHARED = join(TWIN, "shared");
+    const links: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name);
+        // `Dirent.isSymbolicLink` and `lstatSync` agree, but lstat is the one that cannot be fooled
+        // by a readdir implementation that follows links, so the assertion is made on lstat.
+        if (lstatSync(p).isSymbolicLink()) links.push(relative(TWIN, p));
+        else if (e.isDirectory()) walk(p);
+      }
+    };
+    if (existsSync(SHARED)) walk(SHARED);
+    expect(links).toEqual([]);
+  });
+
+  it("should map no imports alias into skills/", async () => {
+    const manifest = JSON.parse(
+      await readFile(join(TWIN, "package.json"), "utf8"),
+    );
+    const offenders: string[] = [];
+    const inspect = (alias: string, target: unknown) => {
+      if (typeof target === "string") {
+        // Resolved against the package root, the way Node resolves a subpath imports target.
+        const resolved = resolve(TWIN, target.replace(/\*/g, ""));
+        if (resolved === SKILLS || resolved.startsWith(SKILLS + sep))
+          offenders.push(`${alias} → ${target}`);
+        return;
+      }
+      // Conditional exports ({ "bun": "./x", "default": "./y" }) — every branch is a real target.
+      if (target && typeof target === "object")
+        for (const [, nested] of Object.entries(target))
+          inspect(alias, nested);
+    };
+    for (const [alias, target] of Object.entries(manifest.imports ?? {}))
+      inspect(alias, target);
     expect(offenders).toEqual([]);
   });
 });
