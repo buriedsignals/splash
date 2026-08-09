@@ -237,7 +237,7 @@ un-renamed is the one shape that never resolves.
    | --- | --- |
    | `intake` | `twin-intake` |
    | `framing`, `storyboard` | `twin-storyboard` (which itself reads `twin-doctrine`'s reference set for the reference loop, movement ④) |
-   | `production` | the craft skill matching the chosen candidate's medium and genre — `twin-chart-beat` (`chart`, `static`), `twin-chart-web` (`chart`, `web`), `twin-chart-video` (`chart`, `video`), `twin-map-beat` (`map`, `static` or `video`); `twin-dw-beat` instead of `twin-chart-beat` when the slot's `vehicle` names the delegated Datawrapper path |
+   | `production` | the craft skill matching the chosen candidate's medium AND genre — the same pairs `twin-storyboard`'s `GENRE_CATALOG` records: `twin-chart-beat` (`chart`/`static`), `twin-chart-web` (`chart`/`web`), `twin-chart-video` (`chart`/`video`), `twin-map-beat` (`map`/`static`, `map`/`video`), `twin-map-web` (`map`/`web`), `twin-image-beat` (`image`/`static`), `twin-scrolly` (`chart`/`scrolly`, `map`/`scrolly`, `image`/`scrolly`); `twin-dw-beat` instead of `twin-chart-beat` when the slot's `vehicle` names the delegated Datawrapper path |
    | `delivery` | `twin-deliver` |
    | `done` | nothing — report completion and stop |
 

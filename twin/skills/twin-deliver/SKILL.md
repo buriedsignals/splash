@@ -18,8 +18,8 @@ else, into `exportDir`.
 **Four forms exist now, not two.** `owned-file` and `source-bundle` are files the newsroom keeps —
 every genre offers both. `embed` (a live Cloudflare Pages URL) and `cms-insertion` (a prepared
 insertion payload for We.Publish or Livingdocs) are NOT owned files — the newsroom gets a URL or a
-document, never a copy — and both are wired to the "web" genre only, where a beat's single
-self-contained HTML file is exactly what each needs. **`embed` is real and proven**: a live
+document, never a copy — and both are wired to the two genres that ship a single self-contained
+HTML page, "web" and "scrolly", which is exactly what each needs. **`embed` is real and proven**: a live
 deployment, fetched back byte-identical to what was sent (see "How it works" below). **`cms-insertion`
 is NOT proven against a live CMS** — no We.Publish or Livingdocs endpoint exists anywhere in this
 toolchain to call. It builds and guards a real mutation payload, documents it, and says so in the
@@ -65,7 +65,7 @@ order and a bad second choice silently wipes out a good first one.
 ## How it works (the shape)
 
 1. **`offerForms({medium, genre, env = process.env})`** looks `genre` up in `FORMS_BY_GENRE`. Three
-   genres are known today — `"static"`, `"web"`, `"video"` — any other genre throws rather than
+   genres are known today — `"static"`, `"web"`, `"video"`, `"scrolly"` — any other genre throws rather than
    returning an empty or partial list, so a caller can never mistake "no forms for this genre yet"
    for "this beat has nothing to deliver". For a known genre it returns every form in that genre's
    table, in the same order every time, each carrying an `id`, a `label`, and a `gives` long enough
@@ -145,8 +145,8 @@ const written = await materialise({
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| How many genres this skill knows how to deliver | `3` (`"static"`, `"web"`, `"video"` — everything else throws, in both `offerForms` and `materialise`) | `FORMS_BY_GENRE` |
-| How many forms each known genre offers | `2` for `"static"`/`"video"` (`owned-file`, `source-bundle`); `4` for `"web"` (adds `embed`, `cms-insertion`) | `FORMS_BY_GENRE` |
+| How many genres this skill knows how to deliver | `4` (`"static"`, `"web"`, `"video"`, `"scrolly"` — everything else throws, in both `offerForms` and `materialise`) | `FORMS_BY_GENRE` |
+| How many forms each known genre offers | `2` for `"static"`/`"video"` (`owned-file`, `source-bundle`); `4` for `"web"` and `"scrolly"` (adds `embed`, `cms-insertion`) | `FORMS_BY_GENRE` |
 | Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS_BY_GENRE` entries |
 | Which subdirectory of a beat never travels into the source-bundle form | `1` (`"renders"` — the other form's output) | `materialise` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |

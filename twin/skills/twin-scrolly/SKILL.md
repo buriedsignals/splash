@@ -1,6 +1,6 @@
 ---
 name: twin-scrolly
-description: Use to produce a scroll-driven interactive (scrollytelling) — a sticky graphic that fills the frame behind, with narrative prose stepping over it as the reader scrolls. A VEHICLE, not a fourth chart genre — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (a scene, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
+description: Use to produce a scroll-driven interactive (scrollytelling) — a sticky graphic that fills the frame behind, with narrative prose stepping over it as the reader scrolls. A VEHICLE, not a fourth chart genre — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
 ---
 
 # twin-scrolly — the graphic is the ground, the prose is pinned in a lane over it, drive a real browser to check both

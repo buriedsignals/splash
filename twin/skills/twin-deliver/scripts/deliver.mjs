@@ -62,6 +62,34 @@ export const FORMS_BY_GENRE = {
         "a prepared insertion payload for We.Publish or Livingdocs, guarded against ever replacing an article with a partial one — not yet wired to a live CMS, so nothing is inserted automatically (see references/cms-insertion.md)",
     },
   },
+  // A scrolly delivers one self-contained HTML page, exactly as "web" does — the scroll scaffold,
+  // its steps and its interaction are all inlined in that single file — so its forms are web's
+  // four, with the wording saying which kind of page it is. `offerForms` used to THROW on this
+  // genre while `twin-scrolly` shipped as a complete skill and `twin/MATRIX.md` recorded a real
+  // scrolly beat on disk: the producer existed, the delivery did not, and the journalist met the
+  // wall at the last phase.
+  scrolly: {
+    "owned-file": {
+      label: "The file itself",
+      gives:
+        "one self-contained HTML file the newsroom owns outright — the scroll-driven page, its steps and its sticky graphic all inlined, nothing else to run",
+    },
+    "source-bundle": {
+      label: "Runnable source",
+      gives:
+        "a folder with this beat's component and data, plus a real build.ts that bun install and bun run build actually execute",
+    },
+    embed: {
+      label: "Hosted embed",
+      gives:
+        "a live URL on Cloudflare Pages serving this scroll-driven page byte-for-byte, no newsroom hosting required",
+    },
+    "cms-insertion": {
+      label: "CMS insertion",
+      gives:
+        "a prepared insertion payload for We.Publish or Livingdocs, guarded against ever replacing an article with a partial one — not yet wired to a live CMS, so nothing is inserted automatically (see references/cms-insertion.md)",
+    },
+  },
   video: {
     "owned-file": {
       label: "The file itself",
