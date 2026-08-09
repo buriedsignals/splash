@@ -1,0 +1,20 @@
+{
+  "name": "splash-twin",
+  "description": "The doctrine twin: a prose-first rebuild of Splash, loaded from twin/ so it can never mix with the original in the same worktree. Entry point: the splash-twin skill.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Remy Dumas"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dataviz",
+    "data-journalism",
+    "newsroom",
+    "chart",
+    "map",
+    "scrollytelling",
+    "remotion",
+    "maplibre",
+    "visual-journalism"
+  ]
+}
