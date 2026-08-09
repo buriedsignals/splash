@@ -131,8 +131,20 @@ if (data[0].country !== BEAT.subjectCountry)
     `expected ${BEAT.subjectCountry} to rank first in ${YEARS[YEARS.length - 1]}, got ${data[0].country}`,
   );
 
+// The title said "almost entirely" — a render audit caught that this undersells what the data
+// actually shows: Iceland's own row is exactly 100 in every one of these nine years, not merely
+// close to it. Checked here (not assumed) so the wording tracks the data if the series ever
+// changes, instead of a hand-typed qualifier that quietly stops matching the numbers.
+const subjectRow = data.find((row) => row.country === BEAT.subjectCountry);
+const subjectAlwaysFull = subjectRow.values.every((v) => v === 100);
+const title = BEAT.title.replace(
+  "almost entirely",
+  subjectAlwaysFull ? "entirely" : "almost entirely",
+);
+
 const props = {
   ...BEAT,
+  title,
   years: YEARS,
   data,
   ...deriveFurniture(BEAT.ground),
