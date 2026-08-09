@@ -3,7 +3,12 @@
 // (`references/types/locator.md`: "position only").
 //
 // Usage:
-//   bun proof/map-geneva-locator/bake.mjs --size 496 --out /tmp/map-twin/geneva-locator-496
+// The plate is FROZEN BESIDE THE BEAT, for the same reason its data is: a basemap living in `/tmp`
+// cannot be committed, so the delivered artifact could not be reproduced or audited — and MapTiler
+// restyles, so a re-bake months later is a different picture under the same marks. The render calls
+// this bake only when the beat's own plate folder is empty.
+//
+//   bun proof/map-geneva-locator/bake.mjs --size 496   # → proof/map-geneva-locator/plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -35,7 +40,7 @@ const flag = (name, fallback) => {
 };
 
 const size = Number(flag("--size", "496"));
-const outDir = flag("--out", `/tmp/map-twin/geneva-locator-${size}`);
+const outDir = flag("--out", join(HERE, "plate"));
 const csvPath = flag("--data", join(HERE, "geneva-orgs.csv"));
 const settleMs = Number(flag("--settle", "15000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));

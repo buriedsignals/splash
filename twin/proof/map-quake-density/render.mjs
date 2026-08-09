@@ -3,8 +3,10 @@
 // Usage:
 //   bun proof/map-quake-density/render.mjs --still
 
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
-import { join, dirname } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
@@ -43,13 +45,28 @@ const flag = (name, fallback) => {
 
 const dataPath = flag("--data", join(HERE, "quakes-density.csv"));
 const outDir = flag("--out", join(HERE, "render"));
-const stillPlate = flag("--still-plate", "/tmp/map-twin/quake-density-836x480");
+// The plate is frozen BESIDE THE BEAT, exactly as the data is: `/tmp` cannot be committed, so a
+// render reading its basemap from there leaves an artifact nobody can reproduce or audit — and
+// MapTiler restyles, so a re-bake months later is a different picture under the same marks.
+const stillPlate = flag("--still-plate", join(HERE, "plate"));
 const wantStill = argv.includes("--still");
 
 const points = quakePointsFromCsv(await readFile(dataPath, "utf8"));
 console.log(`data: ${points.length} events, M${Math.min(...points.map((p) => p.mag)).toFixed(1)}+`);
 
+/** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. */
+function ensurePlate(plateDir) {
+  if (existsSync(join(plateDir, "geometry.json")) && existsSync(join(plateDir, "plate.png"))) return;
+  console.log(`no frozen plate at ${plateDir} — baking one there.`);
+  const result = spawnSync("bun", [join(HERE, "bake.mjs"), "--width", "836", "--height", "480", "--out", plateDir], {
+    cwd: resolve(HERE, "../../.."),
+    stdio: "inherit",
+  });
+  if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status}`);
+}
+
 async function plateOf(dir) {
+  ensurePlate(dir);
   const geometry = JSON.parse(await readFile(join(dir, "geometry.json"), "utf8"));
   const png = await readFile(join(dir, "plate.png"));
   return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };
@@ -78,8 +95,8 @@ if (wantStill) {
   if (!geometry.frameCorners || geometry.points.some((p) => p.i === undefined))
     throw new Error(
       "this plate predates the corrected bake (no frameCorners, or points with no source index). " +
-        "Re-bake: bun proof/map-quake-density/bake.mjs --width 836 --height 480 --out " +
-        "/tmp/map-twin/quake-density-836x480",
+        "Delete proof/map-quake-density/plate/ and re-run, or re-bake explicitly: " +
+        "bun proof/map-quake-density/bake.mjs --width 836 --height 480",
     );
   const members = cellMembers(geometry.points, hexSize);
   const subjectPlaces = members.get(subject.key).map((i) => points[i].place);

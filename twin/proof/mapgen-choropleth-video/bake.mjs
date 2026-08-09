@@ -10,8 +10,13 @@
 //       the map at, never a third size.
 //
 // Usage:
-//   bun proof/mapgen-choropleth-video/bake.mjs --size 496 --out /tmp/map-twin/choropleth-496
-//   bun proof/mapgen-choropleth-video/bake.mjs --size 620 --out /tmp/map-twin/choropleth-620
+// The plate is FROZEN BESIDE THE BEAT, for the same reason its data is: a basemap living in `/tmp`
+// cannot be committed, so the delivered artifact could not be reproduced or audited — and MapTiler
+// restyles, so a re-bake months later is a different picture under the same marks. The render calls
+// this bake only when the beat's own plate folder is empty.
+//
+//   bun proof/mapgen-choropleth-video/bake.mjs --size 496   # → proof/mapgen-choropleth-video/plate-496
+//   bun proof/mapgen-choropleth-video/bake.mjs --size 620   # → proof/mapgen-choropleth-video/plate-620
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -52,7 +57,7 @@ const flag = (name, fallback) => {
 };
 
 const size = Number(flag("--size", "620"));
-const outDir = flag("--out", `/tmp/map-twin/choropleth-${size}`);
+const outDir = flag("--out", join(HERE, `plate-${size}`));
 const shapesPath = flag("--shapes", join(HERE, "countries.geojson"));
 const settleMs = Number(flag("--settle", "20000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));

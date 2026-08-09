@@ -8,7 +8,12 @@
 // still draws at.
 //
 // Usage:
-//   bun proof/mapmore-dot-population/bake.mjs --size 860x760 --out /tmp/map-twin/mapmore-dot-860x760
+// The plate is FROZEN BESIDE THE BEAT, for the same reason its data is: a basemap living in `/tmp`
+// cannot be committed, so the delivered artifact could not be reproduced or audited — and MapTiler
+// restyles, so a re-bake months later is a different picture under the same marks. The render calls
+// this bake only when the beat's own plate folder is empty.
+//
+//   bun proof/mapmore-dot-population/bake.mjs --size 860x760   # → proof/mapmore-dot-population/plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -40,7 +45,7 @@ const flag = (name, fallback) => {
 };
 
 const [width, height] = flag("--size", "860x760").split("x").map(Number);
-const outDir = flag("--out", `/tmp/map-twin/mapmore-dot-${width}x${height}`);
+const outDir = flag("--out", join(HERE, "plate"));
 const countriesPath = flag("--countries", join(HERE, "countries.geojson"));
 const settleMs = Number(flag("--settle", "20000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));

@@ -3,7 +3,12 @@
 // (`geo-hex.ts`) — the bake only owns the camera and the projection.
 //
 // Usage:
-//   bun proof/map-quake-density/bake.mjs --size 900 --out /tmp/map-twin/quake-density-900
+// The plate is FROZEN BESIDE THE BEAT, for the same reason its data is: a basemap living in `/tmp`
+// cannot be committed, so the delivered artifact could not be reproduced or audited — and MapTiler
+// restyles, so a re-bake months later is a different picture under the same marks. The render calls
+// this bake only when the beat's own plate folder is empty.
+//
+//   bun proof/map-quake-density/bake.mjs --width 836 --height 480   # → proof/map-quake-density/plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -63,7 +68,7 @@ const flag = (name, fallback) => {
 
 const width = Number(flag("--width", "900"));
 const height = Number(flag("--height", "560"));
-const outDir = flag("--out", `/tmp/map-twin/quake-density-${width}`);
+const outDir = flag("--out", join(HERE, "plate"));
 const csvPath = flag("--data", join(HERE, "quakes-density.csv"));
 const settleMs = Number(flag("--settle", "20000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));

@@ -47,9 +47,17 @@ const BEAT = {
 // only the narrow layout scales it down.
 const PLATE_WIDTH = 836;
 const PLATE_HEIGHT = 520;
-const DEFAULT_PLATE_DIR = `/tmp/mapgen-hexgrid-web/plate-${PLATE_WIDTH}x${PLATE_HEIGHT}`;
+// FROZEN BESIDE THE BEAT, for the same reason its csv is: a basemap living in `/tmp` cannot be
+// committed, so the delivered html could not be reproduced or audited — and MapTiler restyles, so
+// a re-bake months later is a different picture under the same hex cells. `ensurePlate` below
+// bakes only when this folder is empty.
+const DEFAULT_PLATE_DIR = join(HERE, "plate");
 const DEFAULT_DATA_PATH = join(HERE, "quakes-density.csv");
-const DEFAULT_OUT_DIR = "/tmp/mapgen-hexgrid-web-render";
+// And the OUTPUT defaults beside the beat too — where `hex-grid.html` is actually committed. It
+// used to default to `/tmp/mapgen-hexgrid-web-render`, so running this script the obvious way
+// produced a fresh file nobody looks at, printed a path, exited zero, and left the committed one
+// stale: the presence of a file mistaken for the existence of a result.
+const DEFAULT_OUT_DIR = HERE;
 const OUTPUT_NAME = "hex-grid.html";
 // ===========================================
 

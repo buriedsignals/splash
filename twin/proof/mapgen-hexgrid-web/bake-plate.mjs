@@ -10,7 +10,12 @@
 // work on other beats never collides with it.
 //
 // Usage:
-//   bun proof/mapgen-hexgrid-web/bake-plate.mjs --width 836 --height 520 --out /tmp/mapgen-hexgrid-web/plate-836x520
+// The plate is FROZEN BESIDE THE BEAT, for the same reason its data is: a basemap living in `/tmp`
+// cannot be committed, so the delivered artifact could not be reproduced or audited — and MapTiler
+// restyles, so a re-bake months later is a different picture under the same marks. The render calls
+// this bake only when the beat's own plate folder is empty.
+//
+//   bun proof/mapgen-hexgrid-web/bake-plate.mjs --width 836 --height 520   # → proof/mapgen-hexgrid-web/plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -44,7 +49,7 @@ const flag = (name, fallback) => {
 
 const width = Number(flag("--width", "836"));
 const height = Number(flag("--height", "520"));
-const outDir = flag("--out", `/tmp/mapgen-hexgrid-web/plate-${width}x${height}`);
+const outDir = flag("--out", join(HERE, "plate"));
 const csvPath = flag("--data", join(HERE, "quakes-density.csv"));
 const settleMs = Number(flag("--settle", "20000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));

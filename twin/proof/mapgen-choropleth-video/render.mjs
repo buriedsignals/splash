@@ -13,6 +13,7 @@
 //   bun proof/mapgen-choropleth-video/render.mjs --video
 
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -63,8 +64,12 @@ const flag = (name, fallback) => {
 
 const dataPath = flag("--data", join(HERE, "co2-per-capita-2023.csv"));
 const outDir = flag("--out", join(HERE, "render"));
-const stillPlate = flag("--still-plate", "/tmp/map-twin/choropleth-496");
-const videoPlate = flag("--video-plate", "/tmp/map-twin/choropleth-620");
+// Both plates are frozen BESIDE THE BEAT, exactly as the csv and the geojson are: `/tmp` cannot be
+// committed, so a render reading its basemap from there leaves a still and an mp4 nobody can
+// reproduce or audit — and MapTiler restyles, so a re-bake months later is a different picture
+// under the same shapes.
+const stillPlate = flag("--still-plate", join(HERE, "plate-496"));
+const videoPlate = flag("--video-plate", join(HERE, "plate-620"));
 const wantStill = argv.includes("--still");
 const wantFinalFrame = argv.includes("--final-frame");
 const wantVideo = argv.includes("--video");
@@ -152,7 +157,22 @@ function altFor(geometry) {
 const furniture = deriveFurniture(BEAT.ground);
 const ramp = sequentialRamp(BEAT.ground, furniture.ink, CHOROPLETH_BREAKS.length + 1);
 
+/** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. The
+ *  size is read off the folder name, so `plate-496` and `plate-620` each rebuild themselves. */
+function ensurePlate(plateDir) {
+  if (existsSync(join(plateDir, "geometry.json")) && existsSync(join(plateDir, "plate.png"))) return;
+  const size = plateDir.match(/plate-(\d+)$/)?.[1];
+  if (!size) throw new Error(`cannot bake ${plateDir}: the folder name must end in plate-<size>`);
+  console.log(`no frozen plate at ${plateDir} — baking one there.`);
+  const result = spawnSync("bun", [join(HERE, "bake.mjs"), "--size", size, "--out", plateDir], {
+    cwd: resolve(HERE, "../../.."),
+    stdio: "inherit",
+  });
+  if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status}`);
+}
+
 async function plateOf(dir) {
+  ensurePlate(dir);
   const geometry = JSON.parse(await readFile(join(dir, "geometry.json"), "utf8"));
   const png = await readFile(join(dir, "plate.png"));
   return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };
