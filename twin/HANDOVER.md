@@ -416,10 +416,17 @@ named in a `SKILL.md` still exists in that shape is the next thing worth buildin
 
 ### The production sweep, and what only producing could find
 
-Eleven beats were produced from real data, each in its own `proof/<slug>/` with its source frozen
+Sixteen beats were produced from real data, each in its own `proof/<slug>/` with its source frozen
 beside it: **eight static chart types** (grouped bar, stacked bar, scatter, area, slope, histogram,
-waterfall, population pyramid) and **three map types** (proportional symbol with a video build,
-locator, hex grid). Plus `twin-image-beat`, a new medium, and `twin-scrolly` revised.
+waterfall, population pyramid), **three web** (bar, scatter, slope), **two video** (area, dumbbell),
+and **three map types** (proportional symbol with a video build, locator, hex grid). Plus
+`twin-image-beat`, a new medium, and `twin-scrolly` revised.
+
+**One shared bug surfaced only by reading a rendered tooltip:** the French number formatter `fr()`
+mis-grouped digits past one decimal place. It is shared, so it was wrong everywhere it was used —
+and no test noticed, because every copy agreed. Two independent agents also found the same data
+artefact (one country's 2022 life expectancy at 18.8 years against its own neighbouring years of
+40.3 and 57.4) and both excluded it rather than drawing it.
 
 **The type sheets earned themselves.** They are not decoration in the repository — they show up in
 the output. The pyramid's subtitle explains that sorting by size would destroy the shape the chart
