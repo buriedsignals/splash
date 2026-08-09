@@ -21,7 +21,9 @@ import {
 } from "#shared/twin-chart-beat/render-still.mjs";
 import {
   Co2HeatmapWeb,
+  DESKTOP_LAYOUT,
   LAYOUTS,
+  NARROW_LAYOUT,
   checkRampFloor,
 } from "./Co2HeatmapWeb.tsx";
 
@@ -182,25 +184,82 @@ ${inlineScript}
   return { outPath, cells: cells.length, countries: countries.length };
 }
 
+/** Every type size a layout declares, in one list — so a role added later is measured too. */
+function declaredTypeSizes(layout) {
+  return Object.values(layout)
+    .filter((v) => v && typeof v === "object" && typeof v.fontSize === "number")
+    .map((v) => v.fontSize);
+}
+
+/**
+ * THE RUNG BOUNDARY IS DERIVED, NOT PICKED — and the step in type size across it is a property of
+ * the two-rung pattern, not a defect in where the boundary sits. Both halves matter; read them
+ * together before moving anything here.
+ *
+ * THE BOUNDARY. Both rungs are ONE SVG scaled to the column, so every type size in a rung is
+ * multiplied by (column width / that rung's own design width), and a rung shown below its own
+ * legibility floor prints type nobody can read. The floor is 9px — the smallest size the narrow
+ * layout declares at its own design width. The desktop rung's smallest declared type is 12px, so it
+ * may be scaled to 9/12 = 0.75 and no further: 900 x 0.75 = 675px of column. At the 480px this file
+ * used to carry, the desktop rung was still on screen at scale 0.5344 — measured in Chrome at a
+ * 481px viewport: title 12.83px, source 6.95px, legend 6.41px, all below the floor and the smallest
+ * barely half. That move was right and is not in question.
+ *
+ * THE STEP ACROSS THE SEAM, and why moving the boundary can never close it. A rung's rendered type
+ * is a FIXED FRACTION of the column: the smallest role is 9/375 = 0.0240 narrow against 12/900 =
+ * 0.0133 desktop, the title 16/375 = 0.0427 against 24/900 = 0.0267. Those fractions do not depend
+ * on the column, so the step at the seam is their RATIO — 1.80x for the floor role, 1.60x for the
+ * title — **at every possible boundary**. Moving the boundary moves both sides together and leaves
+ * the ratio untouched. Measured in Chrome on both files rather than argued: pre-repair, seam at
+ * 480/481, title 20.48 -> 12.83 (1.596x); post-repair, seam at 675/676, title 28.80 -> 18.03
+ * (1.597x). The same step, in the same direction, before and after. What the move changed is the
+ * absolute sizes — nothing now renders under 9px, where 6.41px used to.
+ *
+ * A THIRD RUNG DOES NOT HELP, for the same arithmetic. Two rungs meet without a step only if they
+ * declare the same type-to-width fraction; a rung with the desktop rung's fraction hits the 9px
+ * floor at exactly the same column width the desktop rung does, so it can cover nothing new. To
+ * live below 675 a rung MUST carry a larger fraction — which is the step. The boundary exists
+ * precisely because the fraction has to change; a seam without a step is a contradiction in terms
+ * in this pattern.
+ *
+ * THE FIX THAT WAS TRIED AND REJECTED, so nobody spends the afternoon on it again. Capping the
+ * narrow rung at its own design width (`max-width: 375px`, the symmetry the desktop rung already
+ * has at 900) does close the seam almost exactly — measured: title 16.00 -> 18.03, +12.7% and
+ * upward as the window widens, floor role 9.00 -> 9.01, 0 collisions and no horizontal scroll at
+ * 375/430/480/600/674/675/676/700/800/900/1200. It was reverted after LOOKING at it: from 375px to
+ * 675px the graphic then sits in a 375px column with up to 300px of the window empty beside it,
+ * which is a permanent layout defect on every tablet and every half-width desktop window, traded
+ * for a jolt a reader only ever sees while dragging a window edge. `web-discipline.md` names that
+ * empty space as its own failure mode. The real answer is the fluid seed — words as HTML at a fixed
+ * px size over a geometry-only SVG, where nothing type-related scales with the column — and
+ * retrofitting the eleven web chart beats onto it is a known open item, not a seam repair.
+ */
+function rungBoundary(desktop, narrow) {
+  const floorPx = Math.min(...declaredTypeSizes(narrow));
+  const desktopFloorScale = floorPx / Math.min(...declaredTypeSizes(desktop));
+  if (desktopFloorScale >= 1)
+    throw new Error(
+      `the desktop rung is already at or below the ${floorPx}px floor at its own design width`,
+    );
+  return {
+    breakpointPx: Math.round(desktop.width * desktopFloorScale),
+    desktopCapPx: desktop.width,
+  };
+}
+
 function buildCss({ ink, muted, grid }) {
+  const { breakpointPx, desktopCapPx } = rungBoundary(DESKTOP_LAYOUT, NARROW_LAYOUT);
   return `
 :root { --ink: ${ink}; --muted: ${muted}; --grid: ${grid}; }
 * { box-sizing: border-box; }
 body { margin: 0; background: #FFFFFF; font-family: Helvetica, Arial, sans-serif; }
-.chart-figure { margin: 0; max-width: 900px; }
+.chart-figure { margin: 0; max-width: ${desktopCapPx}px; }
 svg.chart { display: block; width: 100%; height: auto; }
 svg.chart[data-layout="narrow"] { display: none; }
-/* THE BREAKPOINT IS DERIVED, NOT PICKED. Both rungs are one SVG scaled to the column, so every type
-   size in a rung is multiplied by (column width / that rung's own design width) — and a rung shown
-   below its own legibility floor prints type nobody can read. This beat's floor is 9px: the smallest
-   size the narrow layout declares at its own design width. The desktop rung's smallest declared type
-   is 12px, so it may be scaled to 9/12 = 0.75 and no further, which is 900 x 0.75 = 675px of column.
-   At the 480px this file used to carry, the desktop rung was still on screen at scale 0.5344 —
-   measured in Chrome at a 481px viewport: title 12.83px, source 6.95px, legend labels 6.41px, all of
-   it below the floor and the smallest of it barely half. Below 675 the narrow rung takes over; it is
-   scaled UP there, which moves every measured relationship in it proportionally and so cannot
-   introduce a collision the 375px geometry does not already have. */
-@media (max-width: 675px) {
+/* The boundary is derived from the two rungs' own declared type — see rungBoundary() in
+   render-web.mjs for the arithmetic, and for why the step in type size across this line is a
+   property of the two-rung pattern that moving the line cannot close. */
+@media (max-width: ${breakpointPx}px) {
   svg.chart[data-layout="desktop"] { display: none; }
   svg.chart[data-layout="narrow"] { display: block; }
 }
