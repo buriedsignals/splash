@@ -190,7 +190,17 @@ body { margin: 0; background: #FFFFFF; font-family: Helvetica, Arial, sans-serif
 .chart-figure { margin: 0; max-width: 900px; }
 svg.chart { display: block; width: 100%; height: auto; }
 svg.chart[data-layout="narrow"] { display: none; }
-@media (max-width: 480px) {
+/* THE BREAKPOINT IS DERIVED, NOT PICKED. Both rungs are one SVG scaled to the column, so every type
+   size in a rung is multiplied by (column width / that rung's own design width) — and a rung shown
+   below its own legibility floor prints type nobody can read. This beat's floor is 9px: the smallest
+   size the narrow layout declares at its own design width. The desktop rung's smallest declared type
+   is 12px, so it may be scaled to 9/12 = 0.75 and no further, which is 900 x 0.75 = 675px of column.
+   At the 480px this file used to carry, the desktop rung was still on screen at scale 0.5344 —
+   measured in Chrome at a 481px viewport: title 12.83px, source 6.95px, legend labels 6.41px, all of
+   it below the floor and the smallest of it barely half. Below 675 the narrow rung takes over; it is
+   scaled UP there, which moves every measured relationship in it proportionally and so cannot
+   introduce a collision the 375px geometry does not already have. */
+@media (max-width: 675px) {
   svg.chart[data-layout="desktop"] { display: none; }
   svg.chart[data-layout="narrow"] { display: block; }
 }

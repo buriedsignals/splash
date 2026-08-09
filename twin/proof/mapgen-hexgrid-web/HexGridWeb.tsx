@@ -76,7 +76,7 @@ export type WebLayout = {
   mapHeight: number;
   title: { fontSize: number; fontWeight: number; lead: number };
   source: { fontSize: number; fontWeight: number; lead: number };
-  caption: { fontSize: number; fontWeight: number };
+  caption: { fontSize: number; fontWeight: number; lead: number };
   note: { fontSize: number; lead: number };
   legendLabel: { fontSize: number };
   bottomPad: number;
@@ -227,7 +227,24 @@ export function HexGridWeb({
 
   const legendSwatch = layout.name === "desktop" ? 16 : 12;
   const legendY = mapY + mapHeight + 30;
-  const legendSwatchY = legendY + 16;
+  // The caption WRAPS, exactly like the title, the source and the caveat above it. It was the one
+  // reader-facing string in this frame drawn as a single unbreakable line, and it grew: driven at
+  // 375 CSS px, "Earthquakes per cell (count, not energy or magnitude) — aggregate mode: count" ran
+  // to a right edge of 414.64 against an SVG right edge of 359 — a 55.64px overrun into
+  // `overflow: hidden`, so the words "mode: count" were not merely cramped, they were GONE, and
+  // `document.scrollWidth` stayed at 375 so there was no scroll to recover them. The caption is the
+  // one place this type is required to state its aggregate mode (`references/types/hex-grid.md`),
+  // which makes it the worst string in the frame to lose. Everything below is positioned from the
+  // caption's own real bottom, the same way `mapY` is computed from the header's real bottom.
+  const captionLines = wrap(
+    legendCaption,
+    columnWidth,
+    layout.caption,
+    measure,
+  );
+  const captionBottom =
+    legendY + (captionLines.length - 1) * layout.caption.lead;
+  const legendSwatchY = captionBottom + 16;
 
   const caveatTop = legendSwatchY + legendSwatch + 26;
   const frameHeight =
@@ -318,15 +335,18 @@ export function HexGridWeb({
       {/* ── The legend: a horizontal row of swatches, each with its own printed count range, plus
           the aggregate-mode caption the type's own "one thing that goes wrong" requires stating
           explicitly, every time (`references/types/hex-grid.md`). ────────────────────────────── */}
-      <text
-        x={pad}
-        y={legendY}
-        fill={muted}
-        fontSize={layout.caption.fontSize}
-        fontWeight={layout.caption.fontWeight}
-      >
-        {legendCaption}
-      </text>
+      {captionLines.map((line, i) => (
+        <text
+          key={line}
+          x={pad}
+          y={legendY + i * layout.caption.lead}
+          fill={muted}
+          fontSize={layout.caption.fontSize}
+          fontWeight={layout.caption.fontWeight}
+        >
+          {line}
+        </text>
+      ))}
       {(() => {
         let x = pad;
         const y = legendSwatchY;
@@ -449,7 +469,7 @@ export const DESKTOP_LAYOUT: WebLayout = {
   mapHeight: 520,
   title: { fontSize: 20, fontWeight: 700, lead: 26 },
   source: { fontSize: 13, fontWeight: 400, lead: 17 },
-  caption: { fontSize: 12.5, fontWeight: 600 },
+  caption: { fontSize: 12.5, fontWeight: 600, lead: 17 },
   note: { fontSize: 11.5, lead: 15 },
   legendLabel: { fontSize: 11 },
   bottomPad: 40,
@@ -463,7 +483,7 @@ export const NARROW_LAYOUT: WebLayout = {
   mapHeight: 204,
   title: { fontSize: 15, fontWeight: 700, lead: 20 },
   source: { fontSize: 10.5, fontWeight: 400, lead: 14 },
-  caption: { fontSize: 10.5, fontWeight: 600 },
+  caption: { fontSize: 10.5, fontWeight: 600, lead: 14 },
   note: { fontSize: 10, lead: 13 },
   legendLabel: { fontSize: 9.5 },
   bottomPad: 28,

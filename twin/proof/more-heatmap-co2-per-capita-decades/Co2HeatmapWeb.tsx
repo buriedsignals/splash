@@ -80,6 +80,9 @@ export const NARROW_LAYOUT: WebLayout = {
 
 export const LAYOUTS: WebLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];
 
+/** Space between a row header's own right edge and the first cell of its row. */
+export const ROW_LABEL_GAP = 10;
+
 type Measure = (
   text: string,
   font: { fontSize: number; fontWeight?: number },
@@ -253,7 +256,22 @@ export function Co2HeatmapWeb({
   // fixed by deriving the gap from the legend's own type size instead of a fixed offset.
   const legendBottom = legendBaseline + layout.legend.fontSize + 4;
   const originY = legendBottom + Math.round(layout.axis.fontSize * 2.4);
-  const originX = pad + layout.rowLabelGutter;
+  // The row-header gutter is a MINIMUM (it also decides how much of the frame the grid gets), never
+  // the whole answer: the labels that live in it are right-anchored, so a gutter narrower than the
+  // widest of them pushes that one label out of the frame's left pad. Measured at 375: the narrow
+  // layout's literal 62 against a widest row label ("United Kingdom") of 64.05 put that label's left
+  // edge at x 1.95, where every other element in the frame sits at the 14px pad. The widest label is
+  // measured in the font it will be drawn in, and the gutter is raised to hold it whenever the
+  // literal is too small — the desktop layout's own 118 is already wider than its labels need and is
+  // left exactly as it was.
+  const widestRowLabel = Math.max(
+    ...countries.map((country) => measure(country, layout.axis)),
+  );
+  const rowLabelGutter = Math.max(
+    layout.rowLabelGutter,
+    widestRowLabel + ROW_LABEL_GAP,
+  );
+  const originX = pad + rowLabelGutter;
 
   const { grid, domain } = heatmapGeometry(
     cells,
@@ -396,7 +414,7 @@ export function Co2HeatmapWeb({
       {countries.map((country, row) => (
         <text
           key={country}
-          x={originX - 10}
+          x={originX - ROW_LABEL_GAP}
           y={
             originY +
             row * (layout.cellSize + layout.cellGap) +
