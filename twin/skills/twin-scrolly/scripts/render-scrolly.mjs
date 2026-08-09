@@ -176,7 +176,14 @@ body {
   color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.scrolly { max-width: 720px; margin: 0 auto; padding: 0 16px; }
+/* A comfortable reading measure (~640px, the classic editorial column width — well under the
+   ~75-character line-length ceiling even at the panel's own 17px prose), centred with \`margin: 0
+   auto\` — not the assembly's own graphic bleeding to whatever the window happens to be. The side
+   padding SCALES with the viewport (\`clamp\`) rather than sitting at a fixed 16px, so a realistic,
+   not-maximised desktop window (the common case a fixed 16px still let the column read as
+   edge-to-edge in, at anything under roughly 670px of window width) keeps a visible gutter on both
+   sides too, not only a viewport wide enough to hit the 640px ceiling with room to spare. */
+.scrolly { max-width: 640px; margin: 0 auto; padding: 0 clamp(16px, 6vw, 56px); }
 
 /* The header states the beat's own argument in full, unconditional and ahead of every step's own
    reveal — and, deliberately, ahead of the sticky graphic too: it sits in plain document flow,
@@ -225,6 +232,16 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   .step-frame { transition: opacity 0.3s ease; }
 }
+/* \`assets/interaction.mjs\`'s own \`initProgressiveCrossfade\` — the mechanism that makes the
+   graphic advance CONTINUOUSLY as the reader scrolls, gated entirely off under reduced motion — adds
+   this class only on that one path, and only once motion is confirmed allowed. It writes each
+   frame's own \`opacity\` directly, every animation frame, from the reader's actual scroll position;
+   the transition above would fight that by re-easing toward each new value instead of letting it
+   track the scroll 1:1, so this turns it off specifically where the continuous mechanism is doing
+   the animating itself. Higher specificity than the rule above regardless of source order, so this
+   wins whenever both are present in the stylesheet — see references/scrolly-discipline.md, "The
+   graphic advances continuously." */
+.scrolly--progressive .step-frame { transition: none; }
 
 .scrolly-steps {
   position: relative;

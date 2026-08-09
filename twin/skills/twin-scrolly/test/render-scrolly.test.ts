@@ -13,7 +13,11 @@ import {
   type ScrollyStepMeta,
 } from "../assets/ScrollySeed.tsx";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
-import { pickActiveStep } from "../assets/interaction.mjs";
+import {
+  pickActiveStep,
+  frameWeight,
+  computeFrameWeights,
+} from "../assets/interaction.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
 // nowhere in this file directly — kept anyway, the same default-timeout bump every other genre's
@@ -88,6 +92,79 @@ describe("pickActiveStep", () => {
 
   it("should return null for an empty entry list", () => {
     expect(pickActiveStep([])).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// frameWeight / computeFrameWeights — the continuous, scroll-linked crossfade the enhanced
+// (motion-allowed) path paints every animation frame, in place of `pickActiveStep`'s own discrete
+// binary switch. Pure, no DOM — see assets/interaction.mjs's own doc-comment on why
+// `initProgressiveCrossfade` itself is not unit-tested here.
+// ---------------------------------------------------------------------------
+
+describe("frameWeight — one step's own continuous crossfade weight", () => {
+  it("should be 1 when perfectly centred", () => {
+    expect(frameWeight(0, 400)).toBe(1);
+  });
+
+  it("should fall off linearly toward 0 as distance approaches spacing", () => {
+    expect(frameWeight(200, 400)).toBeCloseTo(0.5, 5);
+    expect(frameWeight(100, 400)).toBeCloseTo(0.75, 5);
+  });
+
+  it("should clamp to 0 at or beyond a full spacing away", () => {
+    expect(frameWeight(400, 400)).toBe(0);
+    expect(frameWeight(900, 400)).toBe(0);
+  });
+
+  it("should treat a negative distance the same as its magnitude", () => {
+    expect(frameWeight(-200, 400)).toBeCloseTo(frameWeight(200, 400), 5);
+  });
+
+  it("should fall back to all-or-nothing rather than dividing by zero when spacing is not positive", () => {
+    expect(frameWeight(0, 0)).toBe(1);
+    expect(frameWeight(5, 0)).toBe(0);
+    expect(frameWeight(0, -10)).toBe(1);
+  });
+});
+
+describe("computeFrameWeights — every step's own weight at once", () => {
+  it("should give a step exactly at the viewport centre a weight of 1", () => {
+    // viewportHeight 800 -> centre at 400; step 0's own centre sits exactly there.
+    const weights = computeFrameWeights([400, 1200], 800);
+    expect(weights[0]).toBe(1);
+  });
+
+  it("should split two steps evenly midway between their own centres", () => {
+    // viewportHeight 800 -> centre 400; steps centred at 100 and 700 -> spacing 600 each,
+    // both equidistant (300px) from the viewport centre.
+    const weights = computeFrameWeights([100, 700], 800);
+    expect(weights[0]).toBeCloseTo(0.5, 5);
+    expect(weights[1]).toBeCloseTo(0.5, 5);
+  });
+
+  it("should change continuously, not in one jump, as the reader scrolls a step toward the viewport centre", () => {
+    // Fixed viewport (800 -> centre 400); step 0's own centre approaches the viewport centre in
+    // even steps, exactly what scrolling looks like from a fixed step's own point of view (its
+    // document position never moves, its VIEWPORT position climbs steadily as the page scrolls).
+    // Step 1 rides along 600px behind it, so spacing stays constant at 600 throughout — isolating
+    // the one thing that should actually move the weight.
+    const samples = [700, 600, 500, 400].map(
+      (center0) => computeFrameWeights([center0, center0 + 600], 800)[0],
+    );
+    for (let i = 1; i < samples.length; i++) {
+      expect(samples[i]).toBeGreaterThan(samples[i - 1]);
+    }
+    expect(samples[0]).toBeGreaterThan(0);
+    expect(samples[samples.length - 1]).toBe(1);
+  });
+
+  it("should use whichever neighbour is closer for an unevenly spaced set of steps", () => {
+    // Steps at 0, 100, 1000: step 1's closer neighbour is step 0 (distance 100), not step 2
+    // (distance 900) — its own crossfade completes over the SHORT gap, not the long one.
+    const weights = computeFrameWeights([0, 100, 1000], 200);
+    // viewport centre = 100, exactly step 1's own centre.
+    expect(weights[1]).toBe(1);
   });
 });
 
