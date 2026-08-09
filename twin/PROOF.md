@@ -10,8 +10,9 @@ series for Switzerland, downloaded live from Our World in Data
 `source/article.md` was written here, honestly, as a journalist would write it from that series.
 Task 11 allows that; it is stated so nobody later mistakes it for a citation.
 
-Evidence in this folder: `proof/co2-suisse-still.png` (the final render), `proof/STORYBOARD.md`,
-`proof/BRIEF.md`, `proof/EmissionsLine.tsx` (the bespoke component). The Splash root itself lives
+Evidence in this folder: `proof/co2-suisse/co2-suisse-still.png` (the final render),
+`proof/co2-suisse/STORYBOARD.md`, `proof/co2-suisse/BRIEF.md`, `proof/co2-suisse/EmissionsLine.tsx`
+(the bespoke component). The Splash root itself lives
 outside the repo, in a temp directory, as required.
 
 ---

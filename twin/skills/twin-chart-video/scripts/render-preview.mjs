@@ -3,13 +3,14 @@
 //
 // A video seed's first frame is deliberately empty — the reference rule is laid down before any
 // data arrives. A preview rendered at frame 0 would be a blank image that passes every existence
-// test. This renders at frame 239 (CO2_TIMING.total - 1), the last frame, which shows the finished chart.
+// test. This renders at the LAST frame, which shows the finished chart.
 
 import { spawnSync } from "node:child_process";
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveFurniture } from "./render-still.mjs";
+import { CO2_TIMING } from "../assets/timing.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
@@ -26,8 +27,9 @@ if (!outDir.startsWith("/")) {
 const TARGET = join(outDir, "preview.png");
 const TEMP_PNG = join(dirname(TARGET), ".preview-temp.png");
 
-// CO2_TIMING.total is 240 frames, so the last frame is 239
-const LAST_FRAME = 239;
+// Derived, never typed: a journalist who lengthens a hold in `assets/timing.ts` gets a preview of
+// the new last frame, not a preview of frame 239 of a longer video.
+const LAST_FRAME = CO2_TIMING.total - 1;
 
 const rainfallRaw = JSON.parse(
   await readFile(join(HERE, "..", "assets", "sample-data", "rainfall.json"), "utf8"),
@@ -77,6 +79,11 @@ const result = spawnSync(binary, [
 ], { cwd: PACKAGE_ROOT, stdio: "inherit" });
 
 if (result.status !== 0) {
+  // Clean up before leaving, on this path too: a failed render used to leave preview-props.json
+  // behind, so a plain `bun test` (whose canon check spawns this script) dirtied the tree exactly
+  // when something had gone wrong and the tree most needed to be readable.
+  await rm(propsPath, { force: true });
+  if (outputPath === TEMP_PNG) await rm(TEMP_PNG, { force: true });
   console.error(`remotion still exited with ${result.status}`);
   process.exit(1);
 }

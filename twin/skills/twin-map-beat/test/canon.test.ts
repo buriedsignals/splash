@@ -1,5 +1,4 @@
 import { describe, it, expect } from "bun:test";
-import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 

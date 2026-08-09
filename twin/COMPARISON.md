@@ -398,7 +398,7 @@ beat copies the seed's shape rather than importing it:
 | File | Why it needed touching |
 | --- | --- |
 | `twin/skills/twin-chart-beat/assets/ChartSeed.tsx` | the seed itself |
-| `twin/proof/EmissionsLine.tsx` | its own copy of the tick arithmetic, plus a variant pinning the 1967 reference as the middle tick |
+| `twin/proof/co2-suisse/EmissionsLine.tsx` | its own copy of the tick arithmetic, plus a variant pinning the 1967 reference as the middle tick |
 | the Norway CO₂ trial beat (ephemeral root, outside this repo) | its own copy |
 | the migration trial beat (ephemeral root, outside this repo) | its own copy, plus a highlight sub-run |
 
