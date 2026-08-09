@@ -16,18 +16,222 @@
 body {
   margin: 0;
   background: var(--ground);
+  color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.chart-figure { margin: 0; max-width: 900px; }
-svg.chart { display: block; width: 100%; height: auto; }
-/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
-   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
-   media query only chooses which server-rendered frame is on screen. */
-svg.chart[data-layout="narrow"] { display: none; }
-@media (max-width: 480px) {
-  svg.chart[data-layout="desktop"] { display: none; }
-  svg.chart[data-layout="narrow"] { display: block; }
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
 }
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { max-width: 640px; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
+   for the test a beat applies before shipping one at all. Native radios: reachable and operable
+   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
+   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
+   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
+   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
+   every hover/focus answer honest regardless of which radio is checked. */
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
+   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
+   rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: three default blue dots with a bare word beside
+   each, indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with three identical unlit pills and a hidden
+   input, the entire block is dropped there and the reader gets the plain native radios above,
+   which state their own checked-ness without any help. That is the same engine in which this
+   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
+   the fallback is not a second design to maintain -- it is the design this genre already had.
+   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
+   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
+   announces it as a radio group, and the CSS-only dimming still fires with the inline script
+   absent. The input is made transparent and stretched over its own pill -- never display:none or
+   visibility:hidden, either of which would take it out of the focus order and out of the
+   accessibility tree.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrows it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
+   peak marker, the end point or any of the HTML furniture above, none of which carries a
+   data-period attribute at all and so can never match these selectors. :has() on the
+   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
+   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
+   supported in every evergreen browser this genre targets. */
+.chart-figure:has(#period-early:checked) .seg[data-period="late"],
+.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
+.chart-figure:has(#period-late:checked) .seg[data-period="early"],
+.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
+
 .pt { cursor: pointer; }
 .pt:hover, .pt:focus, .pt-active {
   fill: var(--muted);
@@ -57,10 +261,7 @@ svg.chart[data-layout="narrow"] { display: none; }
 </style>
 </head>
 <body>
-<figure class="chart-figure">
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="529" viewBox="0 0 900 529" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>Grouped bar chart of wind and solar shares of 2024 electricity generation for six countries. In France, Germany, Norway, Poland and Sweden, wind&#x27;s share is larger than solar&#x27;s. Switzerland is the reverse: solar 7.2%, wind 0.2%. Every bar&#x27;s exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="900" height="529" fill="#FFFFFF"></rect><text x="40" y="65" fill="#000000" font-size="25" font-weight="700">Switzerland is the outlier: everywhere else here, wind beats solar</text><text x="40" y="94" fill="#616161" font-size="14">Share of each country&#x27;s total electricity generation in 2024, from generation by source in terawatt-hours.</text><text x="40" y="116" fill="#616161" font-size="14">Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8</text><text x="40" y="135" fill="#616161" font-size="14">August 2026</text><rect x="40" y="151" width="12" height="12" fill="#0072B2"></rect><text x="58" y="161" fill="#000000" font-size="13" font-weight="600">Wind</text><rect x="106" y="151" width="12" height="12" fill="#E69F00"></rect><text x="124" y="161" fill="#000000" font-size="13" font-weight="600">Solar</text><g><line x1="79.14208984375" x2="860" y1="485" y2="485" stroke="#616161" stroke-width="1"></line><text x="69.14208984375" y="489" fill="#616161" font-size="13" text-anchor="end">0</text></g><g><line x1="79.14208984375" x2="860" y1="435" y2="435" stroke="#d1d1d1" stroke-width="1"></line><text x="69.14208984375" y="439" fill="#616161" font-size="13" text-anchor="end">5</text></g><g><line x1="79.14208984375" x2="860" y1="385.00000000000006" y2="385.00000000000006" stroke="#d1d1d1" stroke-width="1"></line><text x="69.14208984375" y="389.00000000000006" fill="#616161" font-size="13" text-anchor="end">10</text></g><g><line x1="79.14208984375" x2="860" y1="335" y2="335" stroke="#d1d1d1" stroke-width="1"></line><text x="69.14208984375" y="339" fill="#616161" font-size="13" text-anchor="end">15</text></g><g><line x1="79.14208984375" x2="860" y1="285" y2="285" stroke="#d1d1d1" stroke-width="1"></line><text x="69.14208984375" y="289" fill="#616161" font-size="13" text-anchor="end">20</text></g><g><line x1="79.14208984375" x2="860" y1="235" y2="235" stroke="#d1d1d1" stroke-width="1"></line><text x="69.14208984375" y="239" fill="#616161" font-size="13" text-anchor="end">25</text></g><g><line x1="79.14208984375" x2="860" y1="185" y2="185" stroke="#d1d1d1" stroke-width="1"></line><text x="69.14208984375" y="189" fill="#616161" font-size="13" text-anchor="end">30 %</text></g><g><rect x="79.14208984375" y="404.1320445726085" width="51.404825846354164" height="80.86795542739151" fill="#0072B2"></rect><rect x="134.54691569010416" y="440.73000106803374" width="51.404825846354164" height="44.269998931966256" fill="#E69F00"></rect><text x="104.84450276692708" y="398.1320445726085" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">8,1</text><text x="160.24932861328125" y="434.73000106803374" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">4,4</text><text x="132.54691569010416" y="505" fill="#616161" font-size="13" text-anchor="middle">France</text><rect class="bar-hit" x="79.14208984375" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="France, wind: 8,09% of generation, 45,4 TWh" data-detail="France · Wind 8,09% (45,4 TWh)"></rect><rect class="bar-hit" x="134.54691569010416" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="France, solar: 4,43% of generation, 24,9 TWh" data-detail="France · Solar 4,43% (24,9 TWh)"></rect></g><g><rect x="213.95174153645831" y="199.51037319300795" width="51.404825846354164" height="285.4896268069921" fill="#0072B2"></rect><rect x="269.3565673828125" y="335.5413415593057" width="51.404825846354164" height="149.4586584406943" fill="#E69F00"></rect><text x="239.6541544596354" y="193.51037319300795" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">28,5</text><text x="295.05898030598956" y="329.5413415593057" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">14,9</text><text x="267.3565673828125" y="505" fill="#616161" font-size="13" text-anchor="middle">Germany</text><rect class="bar-hit" x="213.95174153645831" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Germany, wind: 28,55% of generation, 141,6 TWh" data-detail="Germany · Wind 28,55% (141,6 TWh)"></rect><rect class="bar-hit" x="269.3565673828125" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Germany, solar: 14,95% of generation, 74,1 TWh" data-detail="Germany · Solar 14,95% (74,1 TWh)"></rect></g><g><rect x="348.76139322916663" y="392.0714785818853" width="51.404825846354164" height="92.92852141811471" fill="#0072B2"></rect><rect x="404.1662190755208" y="481.62656737317803" width="51.404825846354164" height="3.373432626821966" fill="#E69F00"></rect><text x="374.4638061523437" y="386.0714785818853" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">9,3</text><text x="429.8686319986979" y="475.62656737317803" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">0,3</text><text x="402.1662190755208" y="505" fill="#616161" font-size="13" text-anchor="middle">Norway</text><rect class="bar-hit" x="348.76139322916663" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Norway, wind: 9,29% of generation, 14,6 TWh" data-detail="Norway · Wind 9,29% (14,6 TWh)"></rect><rect class="bar-hit" x="404.1662190755208" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Norway, solar: 0,34% of generation, 0,5 TWh" data-detail="Norway · Solar 0,34% (0,5 TWh)"></rect></g><g><rect x="483.57104492187494" y="334.58168719498025" width="51.404825846354164" height="150.41831280501975" fill="#0072B2"></rect><rect x="538.9758707682291" y="382.397164768766" width="51.404825846354164" height="102.602835231234" fill="#E69F00"></rect><text x="509.273457845052" y="328.58168719498025" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">15,0</text><text x="564.6782836914062" y="376.397164768766" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">10,3</text><text x="536.9758707682291" y="505" fill="#616161" font-size="13" text-anchor="middle">Poland</text><rect class="bar-hit" x="483.57104492187494" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Poland, wind: 15,04% of generation, 25,9 TWh" data-detail="Poland · Wind 15,04% (25,9 TWh)"></rect><rect class="bar-hit" x="538.9758707682291" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Poland, solar: 10,26% of generation, 17,7 TWh" data-detail="Poland · Solar 10,26% (17,7 TWh)"></rect></g><g><rect x="618.3806966145833" y="250.03049665988962" width="51.404825846354164" height="234.96950334011038" fill="#0072B2"></rect><rect x="673.7855224609374" y="460.8350275922161" width="51.404825846354164" height="24.16497240778392" fill="#E69F00"></rect><text x="644.0831095377604" y="244.03049665988962" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">23,5</text><text x="699.4879353841145" y="454.8350275922161" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">2,4</text><text x="671.7855224609374" y="505" fill="#616161" font-size="13" text-anchor="middle">Sweden</text><rect class="bar-hit" x="618.3806966145833" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Sweden, wind: 23,50% of generation, 40,5 TWh" data-detail="Sweden · Wind 23,50% (40,5 TWh)"></rect><rect class="bar-hit" x="673.7855224609374" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Sweden, solar: 2,42% of generation, 4,2 TWh" data-detail="Sweden · Solar 2,42% (4,2 TWh)"></rect></g><g><rect x="753.1903483072915" y="482.7032027561567" width="51.404825846354164" height="2.2967972438432867" fill="#0072B2"></rect><rect x="808.5951741536456" y="412.778486665816" width="51.404825846354164" height="72.22151333418401" fill="#E69F00"></rect><text x="778.8927612304686" y="476.7032027561567" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">0,2</text><text x="834.2975870768228" y="406.778486665816" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">7,2</text><text x="806.5951741536456" y="505" fill="#616161" font-size="13" text-anchor="middle">Switzerland</text><rect class="bar-hit" x="753.1903483072915" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, wind: 0,23% of generation, 0,2 TWh" data-detail="Switzerland · Wind 0,23% (0,2 TWh)"></rect><rect class="bar-hit" x="808.5951741536456" y="185" width="51.404825846354164" height="300" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, solar: 7,22% of generation, 5,7 TWh" data-detail="Switzerland · Solar 7,22% (5,7 TWh)"></rect></g><g><line x1="806.5951741536456" x2="806.5951741536456" y1="193" y2="406.778486665816" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><text x="764.6899431049824" y="193" fill="#000000" font-size="13" font-weight="600" text-anchor="middle">Solar leads wind here — the only</text><text x="764.6899431049824" y="208" fill="#000000" font-size="13" font-weight="600" text-anchor="middle">reversal in this group</text></g></svg>
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="423" viewBox="0 0 360 423" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>Grouped bar chart of wind and solar shares of 2024 electricity generation for six countries. In France, Germany, Norway, Poland and Sweden, wind&#x27;s share is larger than solar&#x27;s. Switzerland is the reverse: solar 7.2%, wind 0.2%. Every bar&#x27;s exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="360" height="423" fill="#FFFFFF"></rect><text x="20" y="36" fill="#000000" font-size="16" font-weight="700">Switzerland is the outlier: everywhere</text><text x="20" y="57" fill="#000000" font-size="16" font-weight="700">else here, wind beats solar</text><text x="20" y="76" fill="#616161" font-size="11">Share of each country&#x27;s total electricity generation in 2024, from</text><text x="20" y="91" fill="#616161" font-size="11">generation by source in terawatt-hours.</text><text x="20" y="108" fill="#616161" font-size="11">Source: Ember, Energy Institute — Statistical Review of World</text><text x="20" y="122" fill="#616161" font-size="11">Energy (2025), via Our World in Data · 2024 generation,</text><text x="20" y="136" fill="#616161" font-size="11">extracted 8 August 2026</text><rect x="20" y="143" width="12" height="12" fill="#0072B2"></rect><text x="38" y="153" fill="#000000" font-size="11" font-weight="600">Wind</text><rect x="86" y="143" width="12" height="12" fill="#E69F00"></rect><text x="104" y="153" fill="#000000" font-size="11" font-weight="600">Solar</text><g><line x1="52.4169921875" x2="340" y1="389" y2="389" stroke="#616161" stroke-width="1"></line><text x="42.4169921875" y="393" fill="#616161" font-size="10" text-anchor="end">0</text></g><g><line x1="52.4169921875" x2="340" y1="315.6666666666667" y2="315.6666666666667" stroke="#d1d1d1" stroke-width="1"></line><text x="42.4169921875" y="319.6666666666667" fill="#616161" font-size="10" text-anchor="end">10</text></g><g><line x1="52.4169921875" x2="340" y1="242.33333333333334" y2="242.33333333333334" stroke="#d1d1d1" stroke-width="1"></line><text x="42.4169921875" y="246.33333333333334" fill="#616161" font-size="10" text-anchor="end">20</text></g><g><line x1="52.4169921875" x2="340" y1="169" y2="169" stroke="#d1d1d1" stroke-width="1"></line><text x="42.4169921875" y="173" fill="#616161" font-size="10" text-anchor="end">30 %</text></g><g><rect x="52.4169921875" y="329.69683268657957" width="16.631917317708332" height="59.30316731342043" fill="#0072B2"></rect><rect x="72.04890950520833" y="356.5353341165581" width="16.631917317708332" height="32.46466588344191" fill="#E69F00"></rect><text x="60.732950846354164" y="323.69683268657957" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">8,1</text><text x="80.3648681640625" y="350.5353341165581" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">4,4</text><text x="70.54890950520833" y="409" fill="#616161" font-size="10" text-anchor="middle">France</text><rect class="bar-hit" x="52.4169921875" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="France, wind: 8,09% of generation, 45,4 TWh" data-detail="France · Wind 8,09% (45,4 TWh)"></rect><rect class="bar-hit" x="72.04890950520833" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="France, solar: 4,43% of generation, 24,9 TWh" data-detail="France · Solar 4,43% (24,9 TWh)"></rect></g><g><rect x="102.68082682291666" y="179.64094034153914" width="16.631917317708332" height="209.35905965846086" fill="#0072B2"></rect><rect x="122.31274414062499" y="279.3969838101575" width="16.631917317708332" height="109.60301618984249" fill="#E69F00"></rect><text x="110.99678548177083" y="173.64094034153914" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">28,5</text><text x="130.62870279947916" y="273.3969838101575" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">14,9</text><text x="120.81274414062499" y="409" fill="#616161" font-size="10" text-anchor="middle">Germany</text><rect class="bar-hit" x="102.68082682291666" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Germany, wind: 28,55% of generation, 141,6 TWh" data-detail="Germany · Wind 28,55% (141,6 TWh)"></rect><rect class="bar-hit" x="122.31274414062499" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Germany, solar: 14,95% of generation, 74,1 TWh" data-detail="Germany · Solar 14,95% (74,1 TWh)"></rect></g><g><rect x="152.94466145833331" y="320.85241762671586" width="16.631917317708332" height="68.14758237328414" fill="#0072B2"></rect><rect x="172.57657877604166" y="386.5261494069972" width="16.631917317708332" height="2.473850593002794" fill="#E69F00"></rect><text x="161.26062011718747" y="314.85241762671586" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">9,3</text><text x="180.89253743489581" y="380.5261494069972" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">0,3</text><text x="171.07657877604166" y="409" fill="#616161" font-size="10" text-anchor="middle">Norway</text><rect class="bar-hit" x="152.94466145833331" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Norway, wind: 9,29% of generation, 14,6 TWh" data-detail="Norway · Wind 9,29% (14,6 TWh)"></rect><rect class="bar-hit" x="172.57657877604166" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Norway, solar: 0,34% of generation, 0,5 TWh" data-detail="Norway · Solar 0,34% (0,5 TWh)"></rect></g><g><rect x="203.20849609375" y="278.6932372763189" width="16.631917317708332" height="110.30676272368112" fill="#0072B2"></rect><rect x="222.84041341145834" y="313.75792083042836" width="16.631917317708332" height="75.24207916957164" fill="#E69F00"></rect><text x="211.52445475260416" y="272.6932372763189" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">15,0</text><text x="231.1563720703125" y="307.75792083042836" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">10,3</text><text x="221.34041341145834" y="409" fill="#616161" font-size="10" text-anchor="middle">Poland</text><rect class="bar-hit" x="203.20849609375" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Poland, wind: 15,04% of generation, 25,9 TWh" data-detail="Poland · Wind 15,04% (25,9 TWh)"></rect><rect class="bar-hit" x="222.84041341145834" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Poland, solar: 10,26% of generation, 17,7 TWh" data-detail="Poland · Solar 10,26% (17,7 TWh)"></rect></g><g><rect x="253.47233072916666" y="216.68903088391906" width="16.631917317708332" height="172.31096911608094" fill="#0072B2"></rect><rect x="273.104248046875" y="371.2790202342918" width="16.631917317708332" height="17.720979765708194" fill="#E69F00"></rect><text x="261.7882893880208" y="210.68903088391906" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">23,5</text><text x="281.4202067057292" y="365.2790202342918" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">2,4</text><text x="271.604248046875" y="409" fill="#616161" font-size="10" text-anchor="middle">Sweden</text><rect class="bar-hit" x="253.47233072916666" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Sweden, wind: 23,50% of generation, 40,5 TWh" data-detail="Sweden · Wind 23,50% (40,5 TWh)"></rect><rect class="bar-hit" x="273.104248046875" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Sweden, solar: 2,42% of generation, 4,2 TWh" data-detail="Sweden · Solar 2,42% (4,2 TWh)"></rect></g><g><rect x="303.7361653645833" y="387.3156820211816" width="16.631917317708332" height="1.6843179788183988" fill="#0072B2"></rect><rect x="323.36808268229163" y="336.0375568882651" width="16.631917317708332" height="52.9624431117349" fill="#E69F00"></rect><text x="312.0521240234375" y="381.3156820211816" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">0,2</text><text x="331.6840413411458" y="330.0375568882651" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">7,2</text><text x="321.86808268229163" y="409" fill="#616161" font-size="10" text-anchor="middle">Switzerland</text><rect class="bar-hit" x="303.7361653645833" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, wind: 0,23% of generation, 0,2 TWh" data-detail="Switzerland · Wind 0,23% (0,2 TWh)"></rect><rect class="bar-hit" x="323.36808268229163" y="169" width="16.631917317708332" height="220" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, solar: 7,22% of generation, 5,7 TWh" data-detail="Switzerland · Solar 7,22% (5,7 TWh)"></rect></g><g><line x1="321.86808268229163" x2="321.86808268229163" y1="177" y2="330.0375568882651" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><text x="242.50000131130219" y="177" fill="#000000" font-size="10" font-weight="600" text-anchor="middle">Solar leads wind here — the only reversal in</text><text x="242.50000131130219" y="192" fill="#000000" font-size="10" font-weight="600" text-anchor="middle">this group</text></g></svg>
-</figure>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#E69F00;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:12px;--label-weight:700;--note-size:13px"><div class="chart-header"><h2 class="chart-title">Switzerland is the outlier: everywhere else here, wind beats solar</h2><p class="chart-caveat">Share of each country&#x27;s total electricity generation in 2024, from generation by source in terawatt-hours.</p></div><div class="chart-legend" style="flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px 20px;margin:12px 0 14px;font-size:13px;font-weight:600;color:#000000"><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#0072B2"></span>Wind</span><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#E69F00"></span>Solar</span></div><p style="flex:0 0 auto;margin:0 0 8px auto;max-width:260px;text-align:right;line-height:1.25;font-size:13px;font-weight:600;color:#000000">Solar leads wind here — the only reversal in this group</p><div class="chart-plot" style="--y-gutter:36.900390625px;--x-axis-h:36px;aspect-ratio:736.900390625 / 436"><div class="y-axis"><span class="axis-label y" style="top:100%;color:#616161">0</span><span class="axis-label y" style="top:83.3%;color:#616161">5</span><span class="axis-label y" style="top:66.7%;color:#616161">10</span><span class="axis-label y" style="top:50%;color:#616161">15</span><span class="axis-label y" style="top:33.3%;color:#616161">20</span><span class="axis-label y" style="top:16.7%;color:#616161">25</span><span class="axis-label y" style="top:0%;color:#616161">30 %</span></div><svg xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 700 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Grouped bar chart of wind and solar shares of 2024 electricity generation for six countries. In France, Germany, Norway, Poland and Sweden, wind&#x27;s share is larger than solar&#x27;s. Switzerland is the reverse: solar 7.2%, wind 0.2%. Every bar&#x27;s exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus.</desc><rect x="0" y="0" width="700" height="400" fill="#FFFFFF"></rect><line x1="0" x2="700" y1="400" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="333.33333333333337" y2="333.33333333333337" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="266.6666666666667" y2="266.6666666666667" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="200" y2="200" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="133.33333333333334" y2="133.33333333333334" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="66.66666666666666" y2="66.66666666666666" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="700" y1="0" y2="0" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><g><rect x="0" y="292.1760594301447" width="47.833333333333336" height="107.82394056985532" fill="#0072B2"></rect><rect x="51.333333333333336" y="340.9733347573783" width="47.833333333333336" height="59.026665242621675" fill="#E69F00"></rect><rect class="bar-hit" x="0" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="France, wind: 8.09% of generation, 45.4 TWh" data-detail="France · Wind 8.09% (45.4 TWh)"></rect><rect class="bar-hit" x="51.333333333333336" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="France, solar: 4.43% of generation, 24.9 TWh" data-detail="France · Solar 4.43% (24.9 TWh)"></rect></g><g><rect x="120.16666666666667" y="19.347164257343906" width="47.833333333333336" height="380.65283574265607" fill="#0072B2"></rect><rect x="171.5" y="200.72178874574087" width="47.833333333333336" height="199.27821125425913" fill="#E69F00"></rect><rect class="bar-hit" x="120.16666666666667" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Germany, wind: 28.55% of generation, 141.6 TWh" data-detail="Germany · Wind 28.55% (141.6 TWh)"></rect><rect class="bar-hit" x="171.5" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Germany, solar: 14.95% of generation, 74.1 TWh" data-detail="Germany · Solar 14.95% (74.1 TWh)"></rect></g><g><rect x="240.33333333333334" y="276.09530477584707" width="47.833333333333336" height="123.90469522415293" fill="#0072B2"></rect><rect x="291.6666666666667" y="395.502089830904" width="47.833333333333336" height="4.497910169095974" fill="#E69F00"></rect><rect class="bar-hit" x="240.33333333333334" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Norway, wind: 9.29% of generation, 14.6 TWh" data-detail="Norway · Wind 9.29% (14.6 TWh)"></rect><rect class="bar-hit" x="291.6666666666667" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Norway, solar: 0.34% of generation, 0.5 TWh" data-detail="Norway · Solar 0.34% (0.5 TWh)"></rect></g><g><rect x="360.5" y="199.44224959330703" width="47.833333333333336" height="200.55775040669297" fill="#0072B2"></rect><rect x="411.8333333333333" y="263.196219691688" width="47.833333333333336" height="136.803780308312" fill="#E69F00"></rect><rect class="bar-hit" x="360.5" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Poland, wind: 15.04% of generation, 25.9 TWh" data-detail="Poland · Wind 15.04% (25.9 TWh)"></rect><rect class="bar-hit" x="411.8333333333333" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Poland, solar: 10.26% of generation, 17.7 TWh" data-detail="Poland · Solar 10.26% (17.7 TWh)"></rect></g><g><rect x="480.6666666666667" y="86.70732887985282" width="47.833333333333336" height="313.2926711201472" fill="#0072B2"></rect><rect x="532" y="367.7800367896214" width="47.833333333333336" height="32.21996321037858" fill="#E69F00"></rect><rect class="bar-hit" x="480.6666666666667" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Sweden, wind: 23.50% of generation, 40.5 TWh" data-detail="Sweden · Wind 23.50% (40.5 TWh)"></rect><rect class="bar-hit" x="532" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Sweden, solar: 2.42% of generation, 4.2 TWh" data-detail="Sweden · Solar 2.42% (4.2 TWh)"></rect></g><g><rect x="600.8333333333334" y="396.9376036748756" width="47.833333333333336" height="3.062396325124382" fill="#0072B2"></rect><rect x="652.1666666666667" y="303.7046488877547" width="47.833333333333336" height="96.29535111224533" fill="#E69F00"></rect><rect class="bar-hit" x="600.8333333333334" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, wind: 0.23% of generation, 0.2 TWh" data-detail="Switzerland · Wind 0.23% (0.2 TWh)"></rect><rect class="bar-hit" x="652.1666666666667" y="0" width="47.833333333333336" height="400" fill="transparent" tabindex="0" role="img" aria-label="Switzerland, solar: 7.22% of generation, 5.7 TWh" data-detail="Switzerland · Solar 7.22% (5.7 TWh)"></rect></g><line x1="650.4166666666667" x2="650.4166666666667" y1="0" y2="297.7046488877547" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line></svg><div class="overlay" aria-hidden="true"><span style="position:absolute;left:3.4%;top:73%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">8.1</span><span style="position:absolute;left:10.8%;top:85.2%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">4.4</span><span style="position:absolute;left:20.6%;top:4.8%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">28.5</span><span style="position:absolute;left:27.9%;top:50.2%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">14.9</span><span style="position:absolute;left:37.8%;top:69%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">9.3</span><span style="position:absolute;left:45.1%;top:98.9%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">0.3</span><span style="position:absolute;left:54.9%;top:49.9%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">15.0</span><span style="position:absolute;left:62.3%;top:65.8%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">10.3</span><span style="position:absolute;left:72.1%;top:21.7%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">23.5</span><span style="position:absolute;left:79.4%;top:91.9%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">2.4</span><span style="position:absolute;left:89.3%;top:99.2%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">0.2</span><span style="position:absolute;left:96.6%;top:75.9%;transform:translate(-50%, -100%) translateY(-4px);font-size:12px;font-weight:700;color:#000000;white-space:nowrap">7.2</span></div><div class="x-axis"><span class="axis-label x" style="left:7.1%;top:6px;white-space:nowrap;font-size:12px;color:#616161">France</span><span class="axis-label x" style="left:24.3%;top:22px;white-space:nowrap;font-size:12px;color:#616161">Germany</span><span class="axis-label x" style="left:41.4%;top:6px;white-space:nowrap;font-size:12px;color:#616161">Norway</span><span class="axis-label x" style="left:58.6%;top:22px;white-space:nowrap;font-size:12px;color:#616161">Poland</span><span class="axis-label x" style="left:75.8%;top:6px;white-space:nowrap;font-size:12px;color:#616161">Sweden</span><span class="axis-label x" style="left:92.9%;top:22px;white-space:nowrap;font-size:12px;color:#616161">Switzerland</span></div></div><p class="chart-source">Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8 August 2026</p></figure>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/twin-chart-web/assets/interaction.mjs

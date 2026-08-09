@@ -14,7 +14,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { contrast } from "../../skills/twin-chart-web/scripts/render-still.mjs";
-import { StackedBarWeb, LAYOUTS } from "./StackedBarWeb.tsx";
+import { StackedBarWeb, FRAME } from "./StackedBarWeb.tsx";
+// The beat's own number formatter, taking its locale from the language the page declares — the
+// same one the component labels every segment with, so the prose and the tooltips agree.
+import { formatNumber } from "./stacked-bar-geometry.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -71,9 +74,11 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   if (top.name !== "Norway") throw new Error(`expected Norway to lead renewables, got ${top.name}`);
   if (highestFossil.name !== "Poland") throw new Error(`expected Poland to lead fossil, got ${highestFossil.name}`);
 
-  const title = `${top.name} ran its grid on ${Math.round(top.renewables)}% renewables; ${highestFossil.name} leaned on fossil fuel`;
-  const subtitle = `${top.name} generated ${top.renewables.toFixed(0)}% of its electricity from renewables in 2024, the highest share of six countries compared here; ${highestFossil.name} leaned hardest on fossil fuel, at ${highestFossil.fossil.toFixed(0)}%.`;
-  const alt = `100%-stacked bar chart of six countries' 2024 electricity generation by source: renewables, nuclear, fossil. ${top.name} is ${top.renewables.toFixed(0)}% renewable, the highest of the group; ${highestFossil.name} draws ${highestFossil.fossil.toFixed(0)}% from fossil fuel, the highest fossil share. Every segment's exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus, including segments too thin to carry a printed label.`;
+  const title = `${top.name} ran its grid on ${formatNumber(top.renewables, 0)}% renewables; ${highestFossil.name} leaned on fossil fuel`;
+  const subtitle = `${top.name} generated ${formatNumber(top.renewables, 0)}% of its electricity from renewables in 2024, the highest share of six countries compared here; ${highestFossil.name} leaned hardest on fossil fuel, at ${formatNumber(highestFossil.fossil, 0)}%.`;
+  // grounded-by-hand: 100 — "100%-stacked" names the chart's construction (each column normalised
+  // to its own total), not a reading from data.csv. Every share in the sentence is interpolated.
+  const alt = `100%-stacked bar chart of six countries' 2024 electricity generation by source: renewables, nuclear, fossil. ${top.name} is ${formatNumber(top.renewables, 0)}% renewable, the highest of the group; ${highestFossil.name} draws ${formatNumber(highestFossil.fossil, 0)}% from fossil fuel, the highest fossil share. Every segment's exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus, including segments too thin to carry a printed label.`;
 
   const segmentInk = {
     renewables: contrast("#000000", COLOURS.renewables) >= contrast("#FFFFFF", COLOURS.renewables) ? "#000000" : "#FFFFFF",
@@ -83,7 +88,6 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: StackedBarWeb,
-    layouts: LAYOUTS,
     props: {
       countries,
       title,
@@ -92,6 +96,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       alt,
       ground: BEAT.ground,
       segmentInk,
+      frame: FRAME,
     },
     outDir,
     name,

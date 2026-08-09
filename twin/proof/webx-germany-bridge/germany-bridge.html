@@ -16,18 +16,222 @@
 body {
   margin: 0;
   background: var(--ground);
+  color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.chart-figure { margin: 0; max-width: 900px; }
-svg.chart { display: block; width: 100%; height: auto; }
-/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
-   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
-   media query only chooses which server-rendered frame is on screen. */
-svg.chart[data-layout="narrow"] { display: none; }
-@media (max-width: 480px) {
-  svg.chart[data-layout="desktop"] { display: none; }
-  svg.chart[data-layout="narrow"] { display: block; }
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
 }
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { max-width: 640px; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
+   for the test a beat applies before shipping one at all. Native radios: reachable and operable
+   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
+   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
+   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
+   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
+   every hover/focus answer honest regardless of which radio is checked. */
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
+   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
+   rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: three default blue dots with a bare word beside
+   each, indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with three identical unlit pills and a hidden
+   input, the entire block is dropped there and the reader gets the plain native radios above,
+   which state their own checked-ness without any help. That is the same engine in which this
+   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
+   the fallback is not a second design to maintain -- it is the design this genre already had.
+   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
+   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
+   announces it as a radio group, and the CSS-only dimming still fires with the inline script
+   absent. The input is made transparent and stretched over its own pill -- never display:none or
+   visibility:hidden, either of which would take it out of the focus order and out of the
+   accessibility tree.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrows it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
+   peak marker, the end point or any of the HTML furniture above, none of which carries a
+   data-period attribute at all and so can never match these selectors. :has() on the
+   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
+   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
+   supported in every evergreen browser this genre targets. */
+.chart-figure:has(#period-early:checked) .seg[data-period="late"],
+.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
+.chart-figure:has(#period-late:checked) .seg[data-period="early"],
+.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
+
 .pt { cursor: pointer; }
 .pt:hover, .pt:focus, .pt-active {
   fill: var(--muted);
@@ -57,10 +261,7 @@ svg.chart[data-layout="narrow"] { display: none; }
 </style>
 </head>
 <body>
-<figure class="chart-figure">
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="539" viewBox="0 0 900 539" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>Waterfall chart of Germany&#x27;s electricity generation, 2015 to 2024, in terawatt-hours: 639.2 TWh in 2015, plus 102.7 TWh from renewables, minus 91.8 TWh from the nuclear phase-out, minus 154.1 TWh from a falling fossil share, arriving at 496 TWh in 2024. Each of the three delta bars reveals, on hover, tap or keyboard focus, the exact running total Germany&#x27;s generation reached immediately after that step.</desc><rect x="0" y="0" width="900" height="539" fill="#FFFFFF"></rect><text x="40" y="64" fill="#000000" font-size="24" font-weight="700">Germany generated 143 fewer terawatt-hours in 2024 than in 2015</text><text x="40" y="91" fill="#616161" font-size="14">The nuclear phase-out and a falling fossil share together outweighed the renewables build-out — renewables alone grew, but not</text><text x="40" y="111" fill="#616161" font-size="14">enough to offset the other two.</text><text x="40" y="133" fill="#616161" font-size="14">Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026</text><rect x="40" y="147" width="12" height="12" fill="#0072B2"></rect><text x="58" y="157" fill="#000000" font-size="13" font-weight="600">Increase</text><rect x="128" y="147" width="12" height="12" fill="#D55E00"></rect><text x="146" y="157" fill="#000000" font-size="13" font-weight="600">Decrease</text><rect x="226" y="147" width="12" height="12" fill="#616161"></rect><text x="244" y="157" fill="#000000" font-size="13" font-weight="600">Total</text><g><line x1="82.10009765625" x2="860" y1="480" y2="480" stroke="#616161" stroke-width="1"></line><text x="72.10009765625" y="484" fill="#616161" font-size="13" text-anchor="end">0</text></g><g><line x1="82.10009765625" x2="860" y1="405" y2="405" stroke="#d1d1d1" stroke-width="1"></line><text x="72.10009765625" y="409" fill="#616161" font-size="13" text-anchor="end">200</text></g><g><line x1="82.10009765625" x2="860" y1="330" y2="330" stroke="#d1d1d1" stroke-width="1"></line><text x="72.10009765625" y="334" fill="#616161" font-size="13" text-anchor="end">400</text></g><g><line x1="82.10009765625" x2="860" y1="255" y2="255" stroke="#d1d1d1" stroke-width="1"></line><text x="72.10009765625" y="259" fill="#616161" font-size="13" text-anchor="end">600</text></g><g><line x1="82.10009765625" x2="860" y1="180" y2="180" stroke="#d1d1d1" stroke-width="1"></line><text x="72.10009765625" y="184" fill="#616161" font-size="13" text-anchor="end">800</text></g><line x1="216.880078125" x2="242.880078125" y1="240.3" y2="240.3" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><line x1="377.66005859375" x2="403.66005859375" y1="201.78749999999997" y2="201.78749999999997" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><line x1="538.4400390625001" x2="564.4400390625001" y1="201.78749999999997" y2="201.78749999999997" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><line x1="699.22001953125" x2="725.22001953125" y1="236.21249999999998" y2="236.21249999999998" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><g><rect x="82.10009765625" y="240.3" width="134.77998046875" height="239.7" fill="#616161"></rect><text x="149.490087890625" y="232.3" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">639.2</text><text x="149.490087890625" y="502" fill="#616161" font-size="12" text-anchor="middle">2015 total generation</text></g><g><rect x="242.880078125" y="201.78749999999997" width="134.77998046875" height="38.512500000000045" fill="#0072B2"></rect><text x="310.27006835937505" y="193.78749999999997" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">+102.7</text><text x="310.27006835937505" y="502" fill="#616161" font-size="12" text-anchor="middle">Renewables</text><rect class="step-hit" x="242.880078125" y="180" width="134.77998046875" height="300" fill="transparent" tabindex="0" role="img" aria-label="Renewables: +102.7 TWh — running total after this step: 741.9 TWh" data-detail="Renewables +102.7 TWh · running total: 741.9 TWh"></rect></g><g><rect x="403.66005859375" y="201.78749999999997" width="134.77998046875" height="34.42500000000001" fill="#D55E00"></rect><text x="471.050048828125" y="193.78749999999997" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">−91.8</text><text x="471.050048828125" y="502" fill="#616161" font-size="12" text-anchor="middle">Nuclear</text><rect class="step-hit" x="403.66005859375" y="180" width="134.77998046875" height="300" fill="transparent" tabindex="0" role="img" aria-label="Nuclear: −91.8 TWh — running total after this step: 650.1 TWh" data-detail="Nuclear −91.8 TWh · running total: 650.1 TWh"></rect></g><g><rect x="564.4400390625001" y="236.21249999999998" width="134.77998046875" height="57.78750000000002" fill="#D55E00"></rect><text x="631.8300292968751" y="228.21249999999998" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">−154.1</text><text x="631.8300292968751" y="502" fill="#616161" font-size="12" text-anchor="middle">Fossil fuel</text><rect class="step-hit" x="564.4400390625001" y="180" width="134.77998046875" height="300" fill="transparent" tabindex="0" role="img" aria-label="Fossil fuel: −154.1 TWh — running total after this step: 496 TWh" data-detail="Fossil fuel −154.1 TWh · running total: 496 TWh"></rect></g><g><rect x="725.22001953125" y="294" width="134.77998046875" height="186" fill="#616161"></rect><text x="792.610009765625" y="286" fill="#000000" font-size="13" font-weight="700" text-anchor="middle">496</text><text x="792.610009765625" y="502" fill="#616161" font-size="12" text-anchor="middle">2024 total generation</text></g></svg>
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="450" viewBox="0 0 360 450" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>Waterfall chart of Germany&#x27;s electricity generation, 2015 to 2024, in terawatt-hours: 639.2 TWh in 2015, plus 102.7 TWh from renewables, minus 91.8 TWh from the nuclear phase-out, minus 154.1 TWh from a falling fossil share, arriving at 496 TWh in 2024. Each of the three delta bars reveals, on hover, tap or keyboard focus, the exact running total Germany&#x27;s generation reached immediately after that step.</desc><rect x="0" y="0" width="360" height="450" fill="#FFFFFF"></rect><text x="20" y="36" fill="#000000" font-size="16" font-weight="700">Germany generated 143 fewer</text><text x="20" y="57" fill="#000000" font-size="16" font-weight="700">terawatt-hours in 2024 than in 2015</text><text x="20" y="76" fill="#616161" font-size="11">The nuclear phase-out and a falling fossil share together</text><text x="20" y="91" fill="#616161" font-size="11">outweighed the renewables build-out — renewables alone grew,</text><text x="20" y="106" fill="#616161" font-size="11">but not enough to offset the other two.</text><text x="20" y="123" fill="#616161" font-size="11">Source: Ember, Energy Institute — Statistical Review of World</text><text x="20" y="137" fill="#616161" font-size="11">Energy (2025), via Our World in Data · extracted 8 August 2026</text><rect x="20" y="144" width="12" height="12" fill="#0072B2"></rect><text x="38" y="154" fill="#000000" font-size="10" font-weight="600">Increase</text><rect x="108" y="144" width="12" height="12" fill="#D55E00"></rect><text x="126" y="154" fill="#000000" font-size="10" font-weight="600">Decrease</text><rect x="206" y="144" width="12" height="12" fill="#616161"></rect><text x="224" y="154" fill="#000000" font-size="10" font-weight="600">Total</text><g><line x1="52.22314453125" x2="340" y1="390" y2="390" stroke="#616161" stroke-width="1"></line><text x="42.22314453125" y="394" fill="#616161" font-size="9" text-anchor="end">0</text></g><g><line x1="52.22314453125" x2="340" y1="335" y2="335" stroke="#d1d1d1" stroke-width="1"></line><text x="42.22314453125" y="339" fill="#616161" font-size="9" text-anchor="end">200</text></g><g><line x1="52.22314453125" x2="340" y1="280" y2="280" stroke="#d1d1d1" stroke-width="1"></line><text x="42.22314453125" y="284" fill="#616161" font-size="9" text-anchor="end">400</text></g><g><line x1="52.22314453125" x2="340" y1="225" y2="225" stroke="#d1d1d1" stroke-width="1"></line><text x="42.22314453125" y="229" fill="#616161" font-size="9" text-anchor="end">600</text></g><g><line x1="52.22314453125" x2="340" y1="170" y2="170" stroke="#d1d1d1" stroke-width="1"></line><text x="42.22314453125" y="174" fill="#616161" font-size="9" text-anchor="end">800</text></g><line x1="101.778515625" x2="111.778515625" y1="214.22" y2="214.22" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><line x1="161.33388671875" x2="171.33388671875" y1="185.97749999999996" y2="185.97749999999996" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><line x1="220.88925781249998" x2="230.88925781249998" y1="185.97749999999996" y2="185.97749999999996" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><line x1="280.44462890625" x2="290.44462890625" y1="211.22249999999997" y2="211.22249999999997" stroke="#616161" stroke-width="1" stroke-dasharray="3 3"></line><g><rect x="52.22314453125" y="214.22" width="49.55537109375" height="175.78" fill="#616161"></rect><text x="77.000830078125" y="206.22" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">639.2</text><text x="77.000830078125" y="412" fill="#616161" font-size="9" text-anchor="middle">2015 total</text><text x="77.000830078125" y="424" fill="#616161" font-size="9" text-anchor="middle">generation</text></g><g><rect x="111.778515625" y="185.97749999999996" width="49.55537109375" height="28.242500000000035" fill="#0072B2"></rect><text x="136.556201171875" y="177.97749999999996" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">+102.7</text><text x="136.556201171875" y="412" fill="#616161" font-size="9" text-anchor="middle">Renewables</text><rect class="step-hit" x="111.778515625" y="170" width="49.55537109375" height="220" fill="transparent" tabindex="0" role="img" aria-label="Renewables: +102.7 TWh — running total after this step: 741.9 TWh" data-detail="Renewables +102.7 TWh · running total: 741.9 TWh"></rect></g><g><rect x="171.33388671875" y="185.97749999999996" width="49.55537109375" height="25.245000000000005" fill="#D55E00"></rect><text x="196.111572265625" y="177.97749999999996" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">−91.8</text><text x="196.111572265625" y="412" fill="#616161" font-size="9" text-anchor="middle">Nuclear</text><rect class="step-hit" x="171.33388671875" y="170" width="49.55537109375" height="220" fill="transparent" tabindex="0" role="img" aria-label="Nuclear: −91.8 TWh — running total after this step: 650.1 TWh" data-detail="Nuclear −91.8 TWh · running total: 650.1 TWh"></rect></g><g><rect x="230.88925781249998" y="211.22249999999997" width="49.55537109375" height="42.3775" fill="#D55E00"></rect><text x="255.66694335937498" y="203.22249999999997" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">−154.1</text><text x="255.66694335937498" y="412" fill="#616161" font-size="9" text-anchor="middle">Fossil fuel</text><rect class="step-hit" x="230.88925781249998" y="170" width="49.55537109375" height="220" fill="transparent" tabindex="0" role="img" aria-label="Fossil fuel: −154.1 TWh — running total after this step: 496 TWh" data-detail="Fossil fuel −154.1 TWh · running total: 496 TWh"></rect></g><g><rect x="290.44462890625" y="253.6" width="49.55537109375" height="136.4" fill="#616161"></rect><text x="315.22231445312497" y="245.6" fill="#000000" font-size="10" font-weight="700" text-anchor="middle">496</text><text x="315.22231445312497" y="412" fill="#616161" font-size="9" text-anchor="middle">2024 total</text><text x="315.22231445312497" y="424" fill="#616161" font-size="9" text-anchor="middle">generation</text></g></svg>
-</figure>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#D55E00;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:13px;--label-weight:700;--note-size:11px"><div class="chart-header"><h2 class="chart-title">Germany generated 143 fewer terawatt-hours in 2024 than in 2015</h2><p class="chart-caveat">The nuclear phase-out and a falling fossil share together outweighed the renewables build-out — renewables alone grew, but not enough to offset the other two.</p></div><div class="chart-legend" style="flex:0 0 auto;display:flex;flex-wrap:wrap;gap:6px 20px;margin:12px 0 14px;font-size:13px;font-weight:600;color:#000000"><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#0072B2"></span>Increase</span><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#D55E00"></span>Decrease</span><span style="display:inline-flex;align-items:center;gap:6px"><span aria-hidden="true" style="width:12px;height:12px;flex:0 0 auto;background:#616161"></span>Total</span></div><div class="chart-plot" style="--y-gutter:29.51171875px;--x-axis-h:46px;aspect-ratio:749.51171875 / 446"><div class="y-axis"><span class="axis-label y" style="top:100%;color:#616161">0</span><span class="axis-label y" style="top:75%;color:#616161">200</span><span class="axis-label y" style="top:50%;color:#616161">400</span><span class="axis-label y" style="top:25%;color:#616161">600</span><span class="axis-label y" style="top:0%;color:#616161">800</span></div><svg xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 720 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Waterfall chart of Germany&#x27;s electricity generation, 2015 to 2024, in terawatt-hours: 639.2 TWh in 2015, plus 102.7 TWh from renewables, minus 91.8 TWh from the nuclear phase-out, minus 154.1 TWh from a falling fossil share, arriving at 496.0 TWh in 2024. Each of the three delta bars reveals, on hover, tap or keyboard focus, the exact running total Germany&#x27;s generation reached immediately after that step.</desc><rect x="0" y="0" width="720" height="400" fill="#FFFFFF"></rect><line x1="0" x2="720" y1="400" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="300" y2="300" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="200" y2="200" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="100" y2="100" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="720" y1="0" y2="0" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="112.32000000000001" x2="151.92000000000002" y1="80.39999999999998" y2="80.39999999999998" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="264.24" x2="303.84000000000003" y1="29.049999999999976" y2="29.049999999999976" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="416.16" x2="455.76000000000005" y1="74.94999999999993" y2="74.94999999999993" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line x1="568.08" x2="607.6800000000001" y1="151.99999999999994" y2="151.99999999999994" stroke="#616161" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><g><rect x="0" y="80.39999999999998" width="112.32000000000001" height="319.6" fill="#616161"></rect></g><g><rect x="151.92000000000002" y="29.049999999999976" width="112.32000000000001" height="51.35" fill="#0072B2"></rect><rect class="step-hit" x="151.92000000000002" y="0" width="112.32000000000001" height="400" fill="transparent" tabindex="0" role="img" aria-label="Renewables: +102.7 TWh — running total after this step: 741.9 TWh" data-detail="Renewables +102.7 TWh · running total: 741.9 TWh"></rect></g><g><rect x="303.84000000000003" y="29.049999999999976" width="112.32000000000001" height="45.899999999999956" fill="#D55E00"></rect><rect class="step-hit" x="303.84000000000003" y="0" width="112.32000000000001" height="400" fill="transparent" tabindex="0" role="img" aria-label="Nuclear: −91.8 TWh — running total after this step: 650.1 TWh" data-detail="Nuclear −91.8 TWh · running total: 650.1 TWh"></rect></g><g><rect x="455.76000000000005" y="74.94999999999993" width="112.32000000000001" height="77.05000000000001" fill="#D55E00"></rect><rect class="step-hit" x="455.76000000000005" y="0" width="112.32000000000001" height="400" fill="transparent" tabindex="0" role="img" aria-label="Fossil fuel: −154.1 TWh — running total after this step: 496.0 TWh" data-detail="Fossil fuel −154.1 TWh · running total: 496.0 TWh"></rect></g><g><rect x="607.6800000000001" y="152" width="112.32000000000001" height="248" fill="#616161"></rect></g></svg><div class="overlay" aria-hidden="true"><span style="position:absolute;left:7.8%;top:20.1%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">639.2</span><span style="position:absolute;left:28.9%;top:7.3%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">+102.7</span><span style="position:absolute;left:50%;top:7.3%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">−91.8</span><span style="position:absolute;left:71.1%;top:18.7%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">−154.1</span><span style="position:absolute;left:92.2%;top:38%;transform:translate(-50%, -100%) translateY(-5px);font-size:13px;font-weight:700;color:#000000;white-space:nowrap">496.0</span></div><div class="x-axis"><span class="axis-label x" style="left:7.8%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">2015 total generation</span><span class="axis-label x" style="left:28.9%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">Renewables</span><span class="axis-label x" style="left:50%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">Nuclear</span><span class="axis-label x" style="left:71.1%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">Fossil fuel</span><span class="axis-label x" style="left:92.2%;width:max(15.6%, 60px);white-space:normal;text-align:center;line-height:1.15;font-size:11px;color:#616161">2024 total generation</span></div></div><p class="chart-source">Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026</p></figure>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/twin-chart-web/assets/interaction.mjs

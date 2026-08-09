@@ -8,13 +8,20 @@
 // exactly the shape it was built for. Only the `lang` repair this beat's own English words need is
 // patched in after `renderWeb` writes the file.
 //
+// SECOND BUILD: migrated to the genre's FLUID FRAME. `renderWeb` no longer takes a `layouts` array
+// (the two-rung design was overturned — see `WorldPopulationWeb.tsx`'s own doc-comment); this
+// runner hands it one component and one `frame`.
+//
 // Usage:  bun proof/webx-world-population/render-web.mjs [outDir] [--data <csv>]
 
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { WorldPopulationWeb, LAYOUTS } from "./WorldPopulationWeb.tsx";
+import { WorldPopulationWeb, FRAME } from "./WorldPopulationWeb.tsx";
+// The beat's own formatters, taking their locale from the language the page declares — the same
+// ones the component labels every reading with, so the prose and the axis cannot disagree.
+import { billions, formatNumber } from "./population-geometry.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -72,12 +79,11 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   if (!eightBillionRow) throw new Error("population never reaches 8 billion — claim would be false");
 
   const title = `World population passed 8 billion in ${eightBillionRow.year}`;
-  const limits = `${last.year}: ${(last.population / 1e9).toFixed(2)} billion — more than ${multiple.toFixed(1)}x its ${first.year} level of about ${(first.population / 1e9).toFixed(2)} billion.`;
-  const alt = `Filled area chart of world population, ${first.year} to ${last.year}. Population rises from about ${(first.population / 1e9).toFixed(2)} billion in ${first.year} to ${(last.population / 1e9).toFixed(2)} billion in ${last.year} (the latest year in this data), first crossing 1 billion in ${crossingRow.year} and 8 billion in ${eightBillionRow.year}. Every one of the ${data.length} annual readings has its own exact value on hover, tap or keyboard focus.`;
+  const limits = `${last.year}: ${billions(last.population, 2)} billion — more than ${formatNumber(multiple)}x its ${first.year} level of about ${billions(first.population, 2)} billion.`;
+  const alt = `Filled area chart of world population, ${first.year} to ${last.year}. Population rises from about ${billions(first.population, 2)} billion in ${first.year} to ${billions(last.population, 2)} billion in ${last.year} (the latest year in this data), first crossing 1 billion in ${crossingRow.year} and 8 billion in ${eightBillionRow.year}. Every one of the ${data.length} annual readings has its own exact value on hover, tap or keyboard focus.`;
 
   const { outPath } = await renderWeb({
     component: WorldPopulationWeb,
-    layouts: LAYOUTS,
     props: {
       data,
       title,
@@ -87,6 +93,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       ground: BEAT.ground,
       accent: BEAT.accent,
       crossing: { year: crossingRow.year, label: `passed 1 billion in ${crossingRow.year}` },
+      frame: FRAME,
     },
     outDir,
     name,

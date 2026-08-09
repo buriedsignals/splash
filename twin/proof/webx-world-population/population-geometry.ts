@@ -10,8 +10,39 @@ import { area, line } from "d3-shape";
 
 export type Reading = { year: number; population: number };
 
+/** The language this beat's own page declares (`<html lang="en">`, set by its runner) and the ONLY
+ *  thing the formatters below take their locale from. Named after the beat's declared language, not
+ *  after a formatter: this file used to reach for `toLocaleString("en-US")` at each call site, one
+ *  hard-coded locale per label, with nothing tying any of them to what the page says it is. */
+export const BEAT_LANG = "en";
+
+/** Billions to one decimal, grouped and pointed the way `BEAT_LANG` says. Through `Intl` rather
+ *  than `toFixed`, and that is not cosmetic: `toFixed` rounds the DOUBLE (it rounds 380.449999…
+ *  down to 380.4), while `Intl` rounds the decimal value the source published. The two disagree
+ *  whenever a figure lands just under a half. */
 export function billions(v: number, decimals = 1): string {
-  return (v / 1e9).toFixed(decimals);
+  return new Intl.NumberFormat(BEAT_LANG, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(v / 1e9);
+}
+
+/** Any plain number this beat prints in its prose (the multiple, for one), to `decimals` places, in
+ *  `BEAT_LANG`. Named for what it does rather than for a locale, so the name cannot go on meaning
+ *  something the body has stopped doing. */
+export function formatNumber(value: number, decimals = 1): string {
+  return new Intl.NumberFormat(BEAT_LANG, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+}
+
+/** A whole count of people, grouped the way `BEAT_LANG` says — the exact figure hover reveals, to
+ *  the nearest person as the source reports it. */
+export function formatInteger(v: number): string {
+  return new Intl.NumberFormat(BEAT_LANG, {
+    maximumFractionDigits: 0,
+  }).format(v);
 }
 
 /** Zero baseline — the bar family's rule, restated for a filled area's AREA rather than a bar's

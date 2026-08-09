@@ -11,9 +11,29 @@ import { line } from "d3-shape";
 
 export type Reading = { year: number; value: number };
 
-/** English, one decimal — this beat's own words are English throughout (`BRIEF.md`), unlike the
- *  co2-suisse/ranking beats' French-formatted numbers; there is no house convention forcing a
- *  French thousands/decimal style onto an English-language beat. */
+/** The language this beat's own page declares (`<html lang="en">`, set by its runner) and the ONLY
+ *  thing `formatNumber` below takes its locale from. `BRIEF.md` writes this beat in English
+ *  throughout, so "68.9" is what belongs under its prose; a French "68,9" on the axis beneath a
+ *  headline reading "rose 15.0 years" is two number systems in one frame. */
+export const BEAT_LANG = "en";
+
+/** One decimal, grouped and pointed the way `BEAT_LANG` says — named for what it does (format a
+ *  number for this beat) rather than for any one locale, so the name cannot go on meaning something
+ *  the body stopped doing. It replaces a function called `fr` that this beat called for its English
+ *  words: a shared repair moved every `fr` in the tree onto `Intl.NumberFormat("fr-FR")`, which was
+ *  right for the tree's French beats and wrong here, and the name is what hid it. */
+export function formatNumber(value: number, decimals = 1): string {
+  return new Intl.NumberFormat(BEAT_LANG, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+}
+
+/** The French formatter this beat no longer calls. Kept, and kept exported, for one reason only:
+ *  `skills/splash-twin/test/helper-parity.test.ts` cross-checks every `fr` copy in the tree against
+ *  every other to prove the rule has not silently drifted between them, and deleting this copy
+ *  would blind that guard rather than satisfy it — the same reason `ChartWebSeed.tsx` still exports
+ *  a `wrap` it no longer calls. This beat's own numbers go through `formatNumber` above. */
 export function fr(value: number, decimals = 1): string {
   return new Intl.NumberFormat("fr-FR", {
     minimumFractionDigits: decimals,

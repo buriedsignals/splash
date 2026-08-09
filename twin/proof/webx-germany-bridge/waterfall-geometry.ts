@@ -5,6 +5,28 @@
 
 import { scaleLinear } from "d3-scale";
 
+/** The language this beat's own page declares (`<html lang="en">`, set by its runner) and the ONLY
+ *  thing the formatters below take their locale from. Named after the beat's declared language, not
+ *  after a formatter: this beat used to reach for `toLocaleString("en-US")` at each call site, one
+ *  hard-coded locale per label, with nothing tying any of them to what the page says it is. */
+export const BEAT_LANG = "en";
+
+/** `decimals` places, grouped and pointed the way `BEAT_LANG` says. Through `Intl` rather than
+ *  `toFixed`, and that is not cosmetic: `toFixed` rounds the DOUBLE — it rounds 380.449999… down to
+ *  380.4 — while `Intl` rounds the decimal value the source published. */
+export function formatNumber(value: number, decimals = 1): string {
+  return new Intl.NumberFormat(BEAT_LANG, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+}
+
+/** A signed step, with a real minus sign (U+2212) rather than a hyphen — this is a number, and a
+ *  hyphen at a value label's own size reads as a dash. */
+export function formatSigned(value: number, decimals = 1): string {
+  return `${value > 0 ? "+" : "−"}${formatNumber(Math.abs(value), decimals)}`;
+}
+
 export type Step = {
   label: string;
   value: number;

@@ -5,6 +5,9 @@
 // countries x two years (2015, 2024); re-verified here (row count, 2024 slice = 6 countries)
 // rather than trusted on sight. Only the 2024 rows feed the beat, same as the static sibling.
 //
+// SECOND BUILD: migrated to the genre's FLUID FRAME — `renderWeb` no longer takes a `layouts`
+// array (the two-rung design was overturned; see `GroupedBarWeb.tsx`'s own doc-comment).
+//
 // After the skill's `renderWeb` writes the self-contained HTML, this runner appends this beat's
 // own interaction script (`./grouped-bar-interaction.mjs` — the skill's own nearest-point
 // `interaction.mjs` still runs first and is a harmless no-op, no `.pt` circles here) and patches
@@ -16,7 +19,10 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { GroupedBarWeb, LAYOUTS } from "./GroupedBarWeb.tsx";
+import { GroupedBarWeb, FRAME } from "./GroupedBarWeb.tsx";
+// The beat's own number formatter, taking its locale from the language the page declares — the
+// same one the component labels every bar with, so the prose and the bars agree.
+import { formatNumber } from "./grouped-bar-geometry.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -94,11 +100,10 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const title = "Switzerland is the outlier: everywhere else here, wind beats solar";
   const subtitle =
     "Share of each country's total electricity generation in 2024, from generation by source in terawatt-hours.";
-  const alt = `Grouped bar chart of wind and solar shares of 2024 electricity generation for six countries. In France, Germany, Norway, Poland and Sweden, wind's share is larger than solar's. Switzerland is the reverse: solar ${groups.find((g) => g.name === "Switzerland").solar.toFixed(1)}%, wind ${groups.find((g) => g.name === "Switzerland").wind.toFixed(1)}%. Every bar's exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus.`;
+  const alt = `Grouped bar chart of wind and solar shares of 2024 electricity generation for six countries. In France, Germany, Norway, Poland and Sweden, wind's share is larger than solar's. Switzerland is the reverse: solar ${formatNumber(groups.find((g) => g.name === "Switzerland").solar)}%, wind ${formatNumber(groups.find((g) => g.name === "Switzerland").wind)}%. Every bar's exact share and absolute terawatt-hour figure is available on hover, tap or keyboard focus.`;
 
   const { outPath } = await renderWeb({
     component: GroupedBarWeb,
-    layouts: LAYOUTS,
     props: {
       groups,
       title,
@@ -108,6 +113,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       calloutSubject: BEAT.calloutSubject,
       calloutText: BEAT.calloutText,
       ground: BEAT.ground,
+      frame: FRAME,
     },
     outDir,
     name,

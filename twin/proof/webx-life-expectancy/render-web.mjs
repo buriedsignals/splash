@@ -10,13 +10,20 @@
 // built for (one continuous axis, hover/tap/keyboard resolve by nearest x). Only the `lang` repair
 // this beat's own words need (English throughout) is patched in after `renderWeb` writes the file.
 //
+// SECOND BUILD: migrated to the genre's FLUID FRAME. `renderWeb` no longer takes a `layouts` array
+// (the two-rung design was overturned — see `LifeExpectancyWeb.tsx`'s own doc-comment); this runner
+// hands it one component and one `frame`.
+//
 // Usage:  bun proof/webx-life-expectancy/render-web.mjs [outDir] [--data <csv>]
 
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { LifeExpectancyWeb, LAYOUTS } from "./LifeExpectancyWeb.tsx";
+import { LifeExpectancyWeb, FRAME } from "./LifeExpectancyWeb.tsx";
+// The beat's own number formatter, taking its locale from the language the page declares — the
+// same one the component labels every reading with, so the prose and the axis can never disagree.
+import { formatNumber } from "./life-geometry.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -72,15 +79,18 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const crossing = readings.find((r) => r.value >= 80);
   if (!crossing) throw new Error("readings never reach 80 — claim would be false");
 
-  const title = `Life expectancy in Switzerland rose ${delta.toFixed(1)} years between ${first.year} and ${last.year}`;
-  const alt = `Line chart of life expectancy at birth in Switzerland, 1950 to 2023. The line rises from ${first.value.toFixed(1)} years in ${first.year} to ${last.value.toFixed(1)} years in ${last.year}, a gain of ${delta.toFixed(1)} years, first crossing 80 years in ${crossing.year}. Every one of the 74 annual readings, including two real dips around 2020 and 2022, has its own exact value on hover, tap or keyboard focus.`;
+  const title = `Life expectancy in Switzerland rose ${formatNumber(delta)} years between ${first.year} and ${last.year}`;
+  // Descriptive, not a claim: every value in it is read back off the frozen CSV the parser above
+  // already asserted (entity, row count, span), so it cannot drift from the file.
+  const caveat = `Life expectancy at birth in ${BEAT.subject}, ${first.year}–${last.year}. Annual readings.`;
+  const alt = `Line chart of life expectancy at birth in Switzerland, ${first.year} to ${last.year}. The line rises from ${formatNumber(first.value)} years in ${first.year} to ${formatNumber(last.value)} years in ${last.year}, a gain of ${formatNumber(delta)} years, first crossing 80 years in ${crossing.year}. Every one of the ${readings.length} annual readings, including two real dips around 2020 and 2022, has its own exact value on hover, tap or keyboard focus.`;
 
   const { outPath } = await renderWeb({
     component: LifeExpectancyWeb,
-    layouts: LAYOUTS,
     props: {
       data: readings,
       title,
+      caveat,
       source: BEAT.source,
       alt,
       subject: BEAT.subject,
@@ -88,6 +98,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       accent: BEAT.accent,
       referenceYear: first.year,
       crossingYear: crossing.year,
+      frame: FRAME,
     },
     outDir,
     name,
@@ -116,6 +127,6 @@ if (import.meta.main) {
 
   const { outPath, readings, delta, crossingYear } = await render({ dataPath, outDir });
   console.log(
-    `web beat → ${outPath}  [${readings} readings, +${delta.toFixed(1)} years, crossed 80 in ${crossingYear}]`,
+    `web beat → ${outPath}  [${readings} readings, +${formatNumber(delta)} years, crossed 80 in ${crossingYear}]`,
   );
 }

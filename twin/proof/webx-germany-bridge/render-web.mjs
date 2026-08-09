@@ -6,13 +6,19 @@
 // bridge's arithmetic is REPLAYED before rendering — `references/types/waterfall.md`'s own
 // non-negotiable check, and the same one the static sibling's own `render.mjs` runs.
 //
+// SECOND BUILD: migrated to the genre's FLUID FRAME — `renderWeb` no longer takes a `layouts`
+// array (the two-rung design was overturned; see `WaterfallWeb.tsx`'s own doc-comment).
+//
 // Usage:  bun proof/webx-germany-bridge/render-web.mjs [outDir] [--data <csv>]
 
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { WaterfallWeb, LAYOUTS } from "./WaterfallWeb.tsx";
+import { WaterfallWeb, FRAME } from "./WaterfallWeb.tsx";
+// The beat's own formatters, taking their locale from the language the page declares — the same
+// ones the component labels every bar with, so the prose and the bars agree.
+import { formatNumber } from "./waterfall-geometry.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -78,14 +84,13 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const closing = steps[steps.length - 1].value;
   const netChange = closing - opening;
 
-  const title = `Germany generated ${Math.abs(netChange).toFixed(0)} fewer terawatt-hours in 2024 than in 2015`;
+  const title = `Germany generated ${formatNumber(Math.abs(netChange), 0)} fewer terawatt-hours in 2024 than in 2015`;
   const subtitle =
     "The nuclear phase-out and a falling fossil share together outweighed the renewables build-out — renewables alone grew, but not enough to offset the other two.";
-  const alt = `Waterfall chart of Germany's electricity generation, 2015 to 2024, in terawatt-hours: ${opening} TWh in 2015, ${steps[1].value > 0 ? "plus" : "minus"} ${Math.abs(steps[1].value)} TWh from renewables, ${steps[2].value > 0 ? "plus" : "minus"} ${Math.abs(steps[2].value)} TWh from the nuclear phase-out, ${steps[3].value > 0 ? "plus" : "minus"} ${Math.abs(steps[3].value)} TWh from a falling fossil share, arriving at ${closing} TWh in 2024. Each of the three delta bars reveals, on hover, tap or keyboard focus, the exact running total Germany's generation reached immediately after that step.`;
+  const alt = `Waterfall chart of Germany's electricity generation, 2015 to 2024, in terawatt-hours: ${formatNumber(opening)} TWh in 2015, ${steps[1].value > 0 ? "plus" : "minus"} ${formatNumber(Math.abs(steps[1].value))} TWh from renewables, ${steps[2].value > 0 ? "plus" : "minus"} ${formatNumber(Math.abs(steps[2].value))} TWh from the nuclear phase-out, ${steps[3].value > 0 ? "plus" : "minus"} ${formatNumber(Math.abs(steps[3].value))} TWh from a falling fossil share, arriving at ${formatNumber(closing)} TWh in 2024. Each of the three delta bars reveals, on hover, tap or keyboard focus, the exact running total Germany's generation reached immediately after that step.`;
 
   const { outPath } = await renderWeb({
     component: WaterfallWeb,
-    layouts: LAYOUTS,
     props: {
       steps,
       title,
@@ -93,6 +98,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       source: BEAT.source,
       alt,
       ground: BEAT.ground,
+      frame: FRAME,
     },
     outDir,
     name,
@@ -133,5 +139,5 @@ if (import.meta.main) {
   const outDir = resolve(positional ?? flag("--out", DEFAULT_OUT_DIR));
 
   const { outPath, steps, netChange } = await render({ dataPath, outDir });
-  console.log(`web beat → ${outPath}  [${steps} steps, net ${netChange.toFixed(1)} TWh]`);
+  console.log(`web beat → ${outPath}  [${steps} steps, net ${formatNumber(netChange)} TWh]`);
 }
