@@ -376,7 +376,13 @@ function readExpression(
       i++;
       continue;
     }
-    if ((c === "," || c === "}" || c === ")") && depth === 0) break;
+    // `;` is a terminator too. It was missing, and the consequence was not a wider read but a
+    // SKIPPED claim: after `const title = "…";` the reader ran on past the semicolon, and the
+    // caller's `lastIndex = Math.max(…, end)` then jumped over the NEXT claim declaration
+    // entirely. Measured — a beat declaring `subtitle` immediately after `title` had its subtitle
+    // scanned by nothing, and a false figure planted in it left this guard green. Found by an
+    // agent writing a new beat, not by this file's own tests.
+    if ((c === "," || c === "}" || c === ")" || c === ";") && depth === 0) break;
     // A computed operand: an identifier, a call, a ternary. Consume to the next top-level
     // `+` or terminator and record it as a hole.
     sawSomething = true;
@@ -388,7 +394,7 @@ function readExpression(
         if (depth === 0) break;
         depth--;
       }
-      if (depth === 0 && (d === "," || (d === "+" && expr.trim()))) break;
+      if (depth === 0 && (d === "," || d === ";" || (d === "+" && expr.trim()))) break;
       expr += d;
       i++;
     }
