@@ -9,6 +9,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
+import { formatHandover } from "./format-handover.mjs";
 
 const REACT_VERSION = "^19.1.0";
 
@@ -30,8 +31,22 @@ export const FORMS_BY_GENRE = {
       label: "The file itself",
       gives: "a PNG and an SVG the newsroom owns outright, nothing else to run",
     },
+    // The follow-up this file's own comment promised. "static"/"video" were left without
+    // cms-insertion because it had not been proven for them; the `gives` below is the web row's
+    // wording VERBATIM, because nothing about how proven it is has changed — it is still UNPROVEN
+    // against a live CMS, and saying so identically is the honest way to widen it.
+    "cms-insertion": {
+      label: "CMS insertion",
+      gives:
+        "a prepared insertion payload for We.Publish or Livingdocs, guarded against ever replacing an article with a partial one — not yet wired to a live CMS, so nothing is inserted automatically (see references/cms-insertion.md)",
+    },
     "source-bundle": {
       label: "Runnable source",
+      // A DEVELOPER artifact. The owner names it in none of the three per-genre lists they asked
+      // for; it is kept, because it works and a newsroom with a developer wants it, and demoted, so
+      // the delivery question offers the journalist-facing forms as the real choice and mentions
+      // this one in a line below them.
+      audience: "developer",
       gives:
         "a folder with this chart's component and data, plus a real build.ts that bun install and bun run build actually execute",
     },
@@ -44,14 +59,14 @@ export const FORMS_BY_GENRE = {
     },
     "source-bundle": {
       label: "Runnable source",
+      audience: "developer",
       gives:
         "a folder with this beat's component and data, plus a real build.ts that bun install and bun run build actually execute",
     },
-    // The two forms that are NOT an owned file — a beat's single self-contained HTML file is
-    // exactly what a hosted embed needs (nothing to bundle, nothing to wrap) and exactly what a
-    // CMS insertion embeds — so both are wired to the "web" genre only tonight. "static"/"video"
-    // could plausibly host or insert their single owned file too; that is left to a follow-up
-    // rather than offered here without having been proven for those genres.
+    // The two forms that are NOT an owned file — the newsroom gets a URL or a document, never a
+    // copy. `embed` stays wired to the two genres that ship a PAGE ("web", "scrolly"), because a
+    // PNG and an mp4 are not pages. `cms-insertion` is now offered in every genre: it prepares a
+    // payload around ONE file, and `ownedFileForInsertion` says which file that is per genre.
     embed: {
       label: "Hosted embed",
       gives:
@@ -77,6 +92,7 @@ export const FORMS_BY_GENRE = {
     },
     "source-bundle": {
       label: "Runnable source",
+      audience: "developer",
       gives:
         "a folder with this beat's component and data, plus a real build.ts that bun install and bun run build actually execute",
     },
@@ -96,8 +112,14 @@ export const FORMS_BY_GENRE = {
       label: "The file itself",
       gives: "an mp4 the newsroom owns outright, nothing else to run",
     },
+    "cms-insertion": {
+      label: "CMS insertion",
+      gives:
+        "a prepared insertion payload for We.Publish or Livingdocs, guarded against ever replacing an article with a partial one — not yet wired to a live CMS, so nothing is inserted automatically (see references/cms-insertion.md)",
+    },
     "source-bundle": {
       label: "Runnable source",
+      audience: "developer",
       gives:
         "a folder with this beat's Remotion composition and data, plus a real build.ts that bun install and bun run build actually execute",
     },
@@ -228,10 +250,68 @@ async function singleOwnedFile(beatDir) {
   );
   if (entries.length !== 1) {
     throw new Error(
-      `expected exactly one file in ${join(beatDir, "renders")}, found ${entries.length} — "embed" and "cms-insertion" host or embed a single owned file, never a tree`,
+      `expected exactly one file in ${join(beatDir, "renders")}, found ${entries.length} — "embed" hosts a single owned file, never a tree`,
     );
   }
   return entries[0].name;
+}
+
+// Which of a beat's rendered files is the one to INSERT, per genre, in preference order. A static
+// beat legitimately holds two — `still.png` and `still.svg` — and `singleOwnedFile` refused that as
+// ambiguity, which is why cms-insertion could not be offered for static at all. It is not
+// ambiguity: for an insertion the vector is the answer and the raster is the fallback, and saying
+// so in a table is the difference between "two files" and a decision.
+//
+// `embed` keeps `singleOwnedFile`'s strictness, deliberately: a hosted page IS one file, and a beat
+// with two of them has not shipped what "one self-contained HTML file" promises.
+const INSERTION_PREFERENCE = {
+  static: [".svg", ".png"],
+  web: [".html"],
+  scrolly: [".html"],
+  video: [".mp4"],
+};
+
+export async function ownedFileForInsertion(beatDir, genre) {
+  const preference = INSERTION_PREFERENCE[genre];
+  if (!preference) {
+    throw new Error(
+      `no insertion preference for genre ${JSON.stringify(genre)} — known: ${Object.keys(INSERTION_PREFERENCE).join(", ")}`,
+    );
+  }
+  const names = (await readdir(join(beatDir, "renders"), { withFileTypes: true }))
+    .filter((e) => e.isFile())
+    .map((e) => e.name);
+
+  for (const extension of preference) {
+    const matches = names.filter((name) => name.toLowerCase().endsWith(extension));
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) {
+      throw new Error(
+        `two ${extension} files in ${join(beatDir, "renders")} (${matches.join(", ")}) — which one goes to the CMS is an editorial choice, not one this function may make`,
+      );
+    }
+  }
+  throw new Error(
+    `nothing in ${join(beatDir, "renders")} matches what a ${genre} beat inserts (${preference.join(" then ")}) — found ${names.length ? names.join(", ") : "nothing"}`,
+  );
+}
+
+// The delivery phase closes into a file, like every other phase. `HANDOVER.md` is written BESIDE
+// whatever form was chosen, naming each delivered file and its role, the placement read back from
+// the storyboard, the alt text, the credit line and the one caveat.
+//
+// It is written only when the caller hands in the payload, and that is not laziness: `formatHandover`
+// throws rather than render a document with a blank where the credit line should be, and every one
+// of its inputs is already recorded somewhere (placement and credit are hand fields 4 and 5, the
+// caveat is `limits`, the alt is in the component). A caller with nothing to hand in has not read
+// the storyboard back, and gets the delivery it asked for without a hand-over rather than a
+// hand-over full of holes.
+async function withHandover(written, { exportDir, genre, handover }) {
+  if (!handover) return written;
+  const path = join(exportDir, "HANDOVER.md");
+  await writeFile(path, formatHandover({ ...handover, genre, files: written }));
+  written.push(path);
+  return written;
 }
 
 export async function materialise({
@@ -243,6 +323,7 @@ export async function materialise({
   fetchFn = fetch,
   projectName,
   cms,
+  handover,
 }) {
   // Validate the {form, genre} PAIR, not the form id in isolation — a form id that exists for
   // some other genre must not be accepted here just because it happens to share a name. Reading
@@ -263,7 +344,7 @@ export async function materialise({
 
   if (form === "owned-file") {
     await copyTree(join(beatDir, "renders"), exportDir, written, { env });
-    return written;
+    return withHandover(written, { exportDir, genre, handover });
   }
 
   if (form === "embed") {
@@ -298,11 +379,11 @@ export async function materialise({
     const urlPath = join(exportDir, "EMBED_URL.txt");
     await writeFile(urlPath, `${url}\n`);
     written.push(urlPath);
-    return written;
+    return withHandover(written, { exportDir, genre, handover });
   }
 
   if (form === "cms-insertion") {
-    const fileName = await singleOwnedFile(beatDir);
+    const fileName = await ownedFileForInsertion(beatDir, genre);
     const insertionHtml = substituteKeys(await readFile(join(beatDir, "renders", fileName), "utf8"), env);
 
     // Without a live CMS to fetch a real article from, this form demonstrates its own mechanics
@@ -335,7 +416,7 @@ ${JSON.stringify(insertion, null, 2)}
     const docPath = join(exportDir, "CMS-INSERTION.md");
     await writeFile(docPath, doc);
     written.push(docPath);
-    return written;
+    return withHandover(written, { exportDir, genre, handover });
   }
 
   for (const entry of await readdir(beatDir, { withFileTypes: true })) {
@@ -371,5 +452,5 @@ ${JSON.stringify(insertion, null, 2)}
   );
   written.push(manifestPath);
 
-  return written;
+  return withHandover(written, { exportDir, genre, handover });
 }

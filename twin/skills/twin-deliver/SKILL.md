@@ -58,7 +58,8 @@ order and a bad second choice silently wipes out a good first one.
 | Layer | File | Role |
 | --- | --- | --- |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
-| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries |
+| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
+| Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/HANDOVER.md`: each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
 | CMS insertion mechanism | `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace` | Builds the We.Publish/Livingdocs mutation shape and the partial-article guard — pure, no network, UNPROVEN against a live CMS |
 | CMS doctrine | `references/cms-insertion.md` | Both mechanics in prose — We.Publish's `updateArticle` is total, Livingdocs' `insertComponent` is a genuine insertion — and what remains untested |
@@ -158,7 +159,8 @@ const written = await materialise({
 | Want | Knob | Where |
 | --- | --- | --- |
 | How many genres this skill knows how to deliver | `4` (`"static"`, `"web"`, `"video"`, `"scrolly"` — everything else throws, in both `offerForms` and `materialise`) | `FORMS_BY_GENRE` |
-| How many forms each known genre offers | `2` for `"static"`/`"video"` (`owned-file`, `source-bundle`); `4` for `"web"` and `"scrolly"` (adds `embed`, `cms-insertion`) | `FORMS_BY_GENRE` |
+| How many forms each known genre offers | `3` for `"static"`/`"video"` (`owned-file`, `cms-insertion`, `source-bundle`); `4` for `"web"` and `"scrolly"` (adds `embed`) | `FORMS_BY_GENRE` |
+| Which rendered file an insertion carries, per genre | `{static: [".svg", ".png"], web: [".html"], scrolly: [".html"], video: [".mp4"]}` — first extension with exactly one match wins | `INSERTION_PREFERENCE`, `scripts/deliver.mjs` |
 | Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS_BY_GENRE` entries |
 | Which subdirectory of a beat never travels into the source-bundle form | `1` (`"renders"` — the other form's output) | `materialise` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
@@ -167,6 +169,9 @@ const written = await materialise({
 
 ## Files
 
+- `scripts/format-handover.mjs` — `formatHandover`, which renders `export/HANDOVER.md` from a
+  closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
+  hand fields 4 and 5, the caveat is `limits`, the alt is in the component.
 - `scripts/deliver.mjs` — `offerForms`, `materialise`, `copyTree` (its recursive helper),
   `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), and the `BUILD_SCRIPT`
   template written into every `source-bundle` delivery.

@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtemp, mkdir, writeFile, rm, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { offerForms, materialise } from "../scripts/deliver.mjs";
+import {
+  offerForms,
+  materialise,
+  ownedFileForInsertion,
+} from "../scripts/deliver.mjs";
 
 let beatDir: string, exportDir: string;
 beforeEach(async () => {
@@ -54,11 +58,23 @@ describe("offerForms — Gate 3 before Gate 4", () => {
 });
 
 describe("offerForms", () => {
-  it("should offer the owned file and the source bundle for a static chart", () => {
+  it("should offer the owned file, a CMS insertion, and the source bundle for a static chart", () => {
     const ids = offerForms({ beatDir, medium: "chart", genre: "static" }).map(
       (f) => f.id,
     );
-    expect(ids).toEqual(["owned-file", "source-bundle"]);
+    expect(ids).toEqual(["owned-file", "cms-insertion", "source-bundle"]);
+  });
+
+  // The owner names source-bundle in none of the three per-genre lists they asked for: it is a
+  // developer artifact. It is KEPT, because it works and a newsroom with a developer wants it, and
+  // TAGGED, so the delivery question can offer the journalist-facing forms as the real choice and
+  // mention this one in a line below them.
+  it("should tag the source bundle as a developer artifact, in every genre, and tag nothing else", () => {
+    for (const genre of ["static", "web", "video", "scrolly"]) {
+      for (const form of offerForms({ beatDir, medium: "chart", genre, env: {} })) {
+        expect(form.audience).toBe(form.id === "source-bundle" ? "developer" : undefined);
+      }
+    }
   });
 
   it("should never offer an embed for a static beat", () => {
@@ -90,20 +106,23 @@ describe("offerForms", () => {
     expect(ids).toEqual(["owned-file", "source-bundle", "cms-insertion"]);
   });
 
-  it("should offer the owned file and the source bundle for a video chart", () => {
+  it("should offer the owned file, a CMS insertion, and the source bundle for a video chart", () => {
     const ids = offerForms({ beatDir, medium: "chart", genre: "video", env: {} }).map(
       (f) => f.id,
     );
-    expect(ids).toEqual(["owned-file", "source-bundle"]);
+    expect(ids).toEqual(["owned-file", "cms-insertion", "source-bundle"]);
   });
 
-  it("should never offer an embed or a CMS insertion for static or video — neither genre is wired to either form yet", () => {
+  // A hosted embed serves a PAGE. A static beat's PNG and a video beat's mp4 are not pages, so
+  // "embed" stays wired to the two genres that ship one. cms-insertion is different — it prepares a
+  // payload around a file, which those genres do have — and widening it was the follow-up this
+  // file's own comment had promised.
+  it("should never offer an embed for static or video — neither ships a page to host", () => {
     for (const genre of ["static", "video"]) {
       const ids = offerForms({ beatDir, medium: "chart", genre, env: {} }).map(
         (f) => f.id,
       );
       expect(ids).not.toContain("embed");
-      expect(ids).not.toContain("cms-insertion");
     }
   });
 
@@ -478,7 +497,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     expect(doc).toContain("real-article-id");
   });
 
-  it("should refuse to materialise cms-insertion when renders/ holds more than one file", async () => {
+  it("should refuse to materialise cms-insertion when renders/ holds two files of the genre's own kind", async () => {
     await writeFile(join(webBeatDir, "renders", "extra.html"), "<p>extra</p>");
     await expect(
       materialise({
@@ -488,7 +507,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
         exportDir: webExportDir,
         env: {},
       }),
-    ).rejects.toThrow("expected exactly one file");
+    ).rejects.toThrow(/two \.html files/);
   });
 
   it("should clear a previously materialised embed when cms-insertion is chosen next", async () => {
@@ -511,5 +530,106 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
     });
     const files = await readdir(webExportDir);
     expect(files).toEqual(["CMS-INSERTION.md"]);
+  });
+});
+
+// A static beat legitimately holds TWO rendered files -- still.png and still.svg -- and the
+// single-file guard read that as ambiguity, which is why cms-insertion could not be offered for
+// static at all. It is not ambiguity: for an insertion the vector is the answer and the raster is
+// the fallback, and a per-genre preference table is the difference between "two files" and a
+// decision.
+describe("ownedFileForInsertion — which file goes to the CMS", () => {
+  it("should pick the SVG from a static beat that holds both an SVG and a PNG", async () => {
+    expect(await ownedFileForInsertion(beatDir, "static")).toBe("still.svg");
+  });
+
+  it("should fall to the PNG when the beat rendered no vector", async () => {
+    await rm(join(beatDir, "renders", "still.svg"));
+    expect(await ownedFileForInsertion(beatDir, "static")).toBe("still.png");
+  });
+
+  it("should name what it found when nothing matches the genre's own kind", async () => {
+    await rm(join(beatDir, "renders", "still.svg"));
+    await rm(join(beatDir, "renders", "still.png"));
+    await expect(ownedFileForInsertion(beatDir, "static")).rejects.toThrow(
+      /found nothing/,
+    );
+  });
+
+  // Two candidates at the WINNING extension is a real editorial choice, and this function may not
+  // make it. Two at a lower-preference extension is not: the preferred one already answered.
+  it("should refuse two files at the extension it settled on", async () => {
+    await writeFile(join(beatDir, "renders", "other.svg"), "<svg/>");
+    await expect(ownedFileForInsertion(beatDir, "static")).rejects.toThrow(
+      /two \.svg files/,
+    );
+  });
+
+  it("should refuse a genre it holds no preference for rather than guess", async () => {
+    await expect(ownedFileForInsertion(beatDir, "print")).rejects.toThrow(
+      /no insertion preference/,
+    );
+  });
+});
+
+// The delivery phase closes into a file, like every other phase. What the journalist got before
+// this was two filenames and two sizes: no statement of which file goes where, no alt text, no
+// credit line, no restatement of the caveat the beat's own subtitle already carried.
+describe("HANDOVER.md — what the journalist actually receives", () => {
+  const handover = {
+    placement: "after the paragraph that first states the divergence, full width",
+    alt: "Three sponsors account for more of the melt than the Games themselves.",
+    credit: "Source: SGR / New Weather Institute, Olympics Torched (2026)",
+    caveat: "One report's figures; the derived third row is a subtraction, not a measurement.",
+  };
+
+  it("should be written beside the chosen form, naming every delivered file", async () => {
+    const written = await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir,
+      env: {},
+      handover,
+    });
+    const doc = await Bun.file(join(exportDir, "HANDOVER.md")).text();
+    for (const path of written) {
+      if (path.endsWith("HANDOVER.md")) continue;
+      expect(doc).toContain(path.split("/").pop()!);
+    }
+    expect(written).toContain(join(exportDir, "HANDOVER.md"));
+  });
+
+  it("should say which file goes to the CMS, not merely list them", async () => {
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir, env: {}, handover });
+    const doc = await Bun.file(join(exportDir, "HANDOVER.md")).text();
+    expect(doc).toContain("still.svg");
+    expect(doc).toContain("the one to give the CMS");
+  });
+
+  it("should read back the placement, the alt text, the credit line and the caveat", async () => {
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir, env: {}, handover });
+    const doc = await Bun.file(join(exportDir, "HANDOVER.md")).text();
+    expect(doc).toContain(handover.placement);
+    expect(doc).toContain(handover.alt);
+    expect(doc).toContain(handover.credit);
+    expect(doc).toContain(handover.caveat);
+  });
+
+  it("should be written for the source bundle too, not only the owned file", async () => {
+    const written = await materialise({
+      form: "source-bundle",
+      genre: "static",
+      beatDir,
+      exportDir,
+      env: {},
+      handover,
+    });
+    expect(written).toContain(join(exportDir, "HANDOVER.md"));
+  });
+
+  it("should not be written when the caller handed nothing back to read out", async () => {
+    const written = await materialise({ form: "owned-file", genre: "static", beatDir, exportDir, env: {} });
+    expect(written.some((p) => p.endsWith("HANDOVER.md"))).toBe(false);
   });
 });
