@@ -127,12 +127,15 @@ describe("matchConvention", () => {
 });
 
 describe("proposePalette", () => {
-  it("should offer the house option and the subject option, each with provenance and a measured ratio", () => {
+  // SUBJECT FIRST, house second — the owner's ruling (twin/FEEDBACK-2026-08-10.md, A8). A
+  // convention the reader already holds is doing work the legend would otherwise have to do, for
+  // THIS chart; looking like the rest of the masthead is what leads when there is no convention.
+  it("should offer the subject option first and the house option second, each with provenance and a measured ratio", () => {
     const p = proposePalette({
       newsroom: HEIDI,
       subject: "la part du solaire",
     });
-    expect(p.options.map((o) => o.id)).toEqual(["house", "subject"]);
+    expect(p.options.map((o) => o.id)).toEqual(["subject", "house"]);
     for (const o of p.options) {
       expect(o.provenance).toBeTruthy();
       expect(o.reasoning).toBeTruthy();
@@ -141,17 +144,34 @@ describe("proposePalette", () => {
     }
   });
 
-  it("should recommend the house option — a convention is a reason to depart, never an override", () => {
+  it("should recommend the subject option when a convention matches and it passes", () => {
     const p = proposePalette({
       newsroom: HEIDI,
       subject: "la part du solaire",
     });
+    expect(p.recommended).toBe("subject");
+    // And nothing is left unexplained: a convention DID match, so there is nothing to explain.
+    expect(p.noConventionReason).toBeNull();
+  });
+
+  // The common case, and the one the run hit: four conventions ship, so most subjects match none.
+  // One option with no explanation of why there is only one reads as a tool with nothing to say.
+  it("should say WHY the newsroom leads when no convention applies, rather than silently showing one option", () => {
+    const p = proposePalette({ newsroom: HEIDI, subject: "les glaciers et les sponsors des JO" });
+    expect(p.options.map((o) => o.id)).toEqual(["house"]);
     expect(p.recommended).toBe("house");
+    expect(p.noConventionReason).toBeTruthy();
+    expect(p.noConventionReason).toContain("newsroom");
+  });
+
+  it("should say so too when there was no subject to look a convention up by", () => {
+    const p = proposePalette({ newsroom: HEIDI });
+    expect(p.noConventionReason).toContain("No subject was given");
   });
 
   it("should keep the subject option's ground from NEWSROOM.md, and say so when there is none", () => {
     const withHouse = proposePalette({ newsroom: HEIDI, subject: "solar" });
-    expect(withHouse.options[1].ground).toBe("#FFFFFF");
+    expect(withHouse.options[0].ground).toBe("#FFFFFF");
     const without = proposePalette({ subject: "solar" });
     expect(without.options[0].provenance).toMatch(/default white/);
   });
@@ -161,7 +181,7 @@ describe("proposePalette", () => {
       newsroom: { brandColor: "#F2C744", ground: "#FFFFFF" },
       subject: "logement",
     });
-    const house = p.options[0];
+    const house = p.options.find((o) => o.id === "house")!;
     expect(house.accent).toBe("#F2C744"); // the brand survives, untouched
     expect(house.contrast.passes).toBe(false);
     expect(house.remedy?.accent).not.toBe("#F2C744");
@@ -188,7 +208,7 @@ describe("proposePalette", () => {
       newsroom: { brandColor: "#F2C744", ground: "#FFFFFF" },
       subject: "la part du solaire",
     });
-    expect(p.options[0].contrast.passes).toBe(false);
+    expect(p.options.find((o) => o.id === "house")!.contrast.passes).toBe(false);
     expect(p.recommended).toBe("subject");
   });
 

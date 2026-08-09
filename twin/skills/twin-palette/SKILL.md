@@ -1,6 +1,6 @@
 ---
 name: twin-palette
-description: Use to decide the two colours a beat is drawn in — the ground and the one accent that carries the argument. Proposes the newsroom's house colours and, when the subject carries a convention a reader already holds, that convention beside them; measures each against the WCAG non-text floor; records the journalist's answer in PALETTE.md. Every craft skill's own seed reads that file and refuses rather than default; a beat that reads it refuses rather than default; 54 of 70 shipped beats still name their colours as hex literals and are the migration debt this mechanism is closing.
+description: Use to decide the two colours a beat is drawn in — the ground and the one accent that carries the argument. Proposes the subject's own convention first when the subject carries one a reader already holds, the newsroom's house colours second, and says out loud when no convention applies; measures each against the WCAG non-text floor; records the journalist's answer in PALETTE.md. Every craft skill's own seed reads that file and refuses rather than default; a beat that reads it refuses rather than default; 54 of 70 shipped beats still name their colours as hex literals and are the migration debt this mechanism is closing.
 ---
 
 # twin-palette — propose the colours, measure them, let the journalist decide
@@ -72,20 +72,28 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
 
 ## How it works (the shape)
 
-1. **The house option, when there is one.** A `NEWSROOM.md` with both `brandColor` and `ground`
-   produces option one. A malformed hex in either field throws — a newsroom charter is validated
-   input, and quietly ignoring a broken value there would put a default into a published chart.
-2. **The subject option, when a convention applies.** `matchConvention` tests the subject line the
-   journalist wrote against a short table. It returns the single match, and **nothing when several
-   match**: a story about coal replacing hydro is not two accents, it is an editorial choice, and
-   returning the first table row would make that choice by table order, invisibly.
+1. **The subject option comes FIRST, when a convention applies.** `matchConvention` tests the
+   subject line the journalist wrote against a short table. It returns the single match, and
+   **nothing when several match**: a story about coal replacing hydro is not two accents, it is an
+   editorial choice, and returning the first table row would make that choice by table order,
+   invisibly. A convention the reader already holds — blue for water, green for renewables — is
+   doing work the legend would otherwise have to do, for THIS chart, which is why it leads.
+2. **The house option comes second, and it is what leads when no convention applies.** A
+   `NEWSROOM.md` with both `brandColor` and `ground` produces it. A malformed hex in either field
+   throws — a newsroom charter is validated input, and quietly ignoring a broken value there would
+   put a default into a published chart.
 3. **Both options are scored.** Contrast is measured accent-against-ground and compared to
    `NON_TEXT_CONTRAST_MIN`. A failing option keeps its place in the list, marked failing, with
    `adjustToContrast`'s nearest passing variant attached as a `remedy` — or `null`, honestly, when
    the ground leaves no room on either side.
-4. **The house option is recommended when it exists and passes.** A subject convention is a reason
-   to *depart* from the newsroom's identity, offered as such. It is never applied over the
+4. **The SUBJECT option is recommended when it exists and passes; the house option second.** An
+   earlier draft did the reverse, on the reasoning that a convention is a reason to *depart* from
+   the newsroom's identity; the owner's ruling inverts it. Neither is ever applied over the
    journalist's head, and the recommendation never falls to a failing option.
+   **And when NO convention applies, the proposal says so.** `noConventionReason` carries that
+   sentence and `formatProposal` prints it — because four conventions ship, so "none applies" is
+   the common case, and a one-option proposal with no explanation reads as a tool with nothing to
+   say rather than as a subject with no convention.
 5. **`formatProposal` renders the question**, always ending in a real ask, always carrying the
    escape branch — including when there is exactly one option, and including when every option
    fails. A proposal that cannot be refused is not a proposal, and the case where refusing matters
@@ -132,24 +140,24 @@ Subject read as: *La part du solaire dans le mix électrique suisse*
 
 ## The options
 
-**1. Heidi.news's house colours** — **recommended**
-
-  - Ground `#FFFFFF`, accent `#0B7A75`.
-  - Where from: NEWSROOM.md — brandColor: #0B7A75, ground: #FFFFFF
-  - Why: The chart reads as this newsroom's, beside everything else it publishes. …
-  - Measured: **5.18:1** accent against ground — clears the 3:1 floor.
-
-**2. the renewable generation convention**
+**1. the renewable generation convention** — **recommended**
 
   - Ground `#FFFFFF`, accent `#1B7F4B`.
   - Where from: references/subject-conventions.md — renewables; ground kept from NEWSROOM.md
   - Why: Green reads as renewable generation before the legend is read. …
   - Measured: **5.02:1** accent against ground — clears the 3:1 floor.
 
+**2. Heidi.news's house colours**
+
+  - Ground `#FFFFFF`, accent `#0B7A75`.
+  - Where from: NEWSROOM.md — brandColor: #0B7A75, ground: #FFFFFF
+  - Why: The chart reads as this newsroom's, beside everything else it publishes. …
+  - Measured: **5.18:1** accent against ground — clears the 3:1 floor.
+
 ## Your answer
 
-- **1** — Heidi.news's house colours
-- **2** — the renewable generation convention
+- **1** — the renewable generation convention
+- **2** — Heidi.news's house colours
 - **Something else — give me the two hex codes and I will use those.**
 ```
 

@@ -122,7 +122,7 @@ to state what the evidence proves, not what it would be more dramatic to imply.
 ## Copying a reference's styling instead of its information logic
 
 The single most common misreading of the reference loop (`reference-set.md`, and
-`twin-storyboard`'s movement ④). A journalist or a model shown "the FT treats this argument
+`twin-storyboard`'s movement ⑧). A journalist or a model shown "the FT treats this argument
 structure by establishing the distribution first, then adding the conclusion" can extract one of
 two things: the *information logic* (distribution before conclusion — a transferable sequencing
 rule, applicable to any dataset with that shape), or the *surface* (the FT's specific typeface, a

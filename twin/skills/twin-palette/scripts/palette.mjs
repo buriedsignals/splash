@@ -167,26 +167,12 @@ function scoreOption(option) {
 export function proposePalette({ newsroom, subject } = {}) {
   const options = [];
 
-  if (newsroom && newsroom.brandColor && newsroom.ground) {
-    for (const field of ["brandColor", "ground"]) {
-      if (!HEX.test(newsroom[field])) {
-        throw new Error(`newsroom.${field} must be #rrggbb, got ${JSON.stringify(newsroom[field])}`);
-      }
-    }
-    options.push(
-      scoreOption({
-        id: "house",
-        origin: "newsroom",
-        ground: newsroom.ground,
-        accent: newsroom.brandColor,
-        label: `${newsroom.name || "the newsroom"}'s house colours`,
-        reasoning:
-          "The chart reads as this newsroom's, beside everything else it publishes. This is the default whenever the subject carries no convention of its own.",
-        provenance: `NEWSROOM.md — brandColor: ${newsroom.brandColor}, ground: ${newsroom.ground}`,
-      }),
-    );
-  }
-
+  // SUBJECT FIRST. A convention the reader already holds — blue for water, green for renewables —
+  // is doing work the legend would otherwise have to do, for THIS chart, and that beats looking
+  // like the rest of the masthead. An earlier draft pushed house first and recommended house
+  // explicitly, on the reasoning that a subject convention is "a reason to DEPART from the house
+  // theme"; the owner's ruling inverts it (twin/FEEDBACK-2026-08-10.md, A8). House is what leads
+  // when the subject carries no convention, which is most of the time.
   const convention = matchConvention(subject);
   if (convention) {
     const ground = (newsroom && newsroom.ground) || "#FFFFFF";
@@ -205,18 +191,46 @@ export function proposePalette({ newsroom, subject } = {}) {
     );
   }
 
+  if (newsroom && newsroom.brandColor && newsroom.ground) {
+    for (const field of ["brandColor", "ground"]) {
+      if (!HEX.test(newsroom[field])) {
+        throw new Error(`newsroom.${field} must be #rrggbb, got ${JSON.stringify(newsroom[field])}`);
+      }
+    }
+    options.push(
+      scoreOption({
+        id: "house",
+        origin: "newsroom",
+        ground: newsroom.ground,
+        accent: newsroom.brandColor,
+        label: `${newsroom.name || "the newsroom"}'s house colours`,
+        reasoning:
+          "The chart reads as this newsroom's, beside everything else it publishes. This is what leads whenever the subject carries no convention of its own.",
+        provenance: `NEWSROOM.md — brandColor: ${newsroom.brandColor}, ground: ${newsroom.ground}`,
+      }),
+    );
+  }
+
   return {
     subject: subject || null,
     options,
-    // The house option is recommended when it exists and passes. A subject convention is a reason
-    // to DEPART from the house theme, offered as such — never applied over the journalist's head.
-    //
-    // When the house option FAILS, the recommendation falls to another option that passes, and to
-    // NOTHING if none does. It must never fall back to `options[0]` — an earlier draft did, which
-    // meant a brand colour measured at 1.61:1 was handed back marked "recommended" three lines
-    // under the words "FAILS the 3:1 floor". Recommending a colour this skill has just measured as
-    // unreadable is the one outcome worse than proposing nothing.
+    // SAID, not silently absent. `SUBJECT_CONVENTIONS` holds four entries, so "no convention
+    // applies" is the common case, not the exception — and in the run that meant exactly one
+    // option appeared with no explanation of why there was only one. A journalist reading a
+    // one-option proposal should know whether the subject was looked at and found nothing, or
+    // never looked at. Null when a convention DID match: there is nothing to explain.
+    noConventionReason: convention
+      ? null
+      : subject
+        ? "No convention applies to this subject, so the newsroom's colours lead. The conventions this skill will propose are the few a reader can be expected to already hold — see references/subject-conventions.md for why the list is short and what it would take to add one."
+        : "No subject was given to look a convention up by, so the newsroom's colours lead.",
+    // The SUBJECT option is recommended when it exists and passes; house second; any passing option
+    // third. It must never fall back to `options[0]` regardless of contrast — an earlier draft did,
+    // which meant a brand colour measured at 1.61:1 was handed back marked "recommended" three
+    // lines under the words "FAILS the 3:1 floor". Recommending a colour this skill has just
+    // measured as unreadable is the one outcome worse than proposing nothing.
     recommended:
+      options.find((o) => o.id === "subject" && o.contrast.passes)?.id ||
       options.find((o) => o.id === "house" && o.contrast.passes)?.id ||
       options.find((o) => o.contrast.passes)?.id ||
       null,

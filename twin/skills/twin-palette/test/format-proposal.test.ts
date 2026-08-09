@@ -26,8 +26,19 @@ describe("formatProposal — the passing case", () => {
     expect(text).toMatch(/Measured: \*\*5\.18:1\*\*/);
   });
 
-  it("should mark the recommendation", () => {
-    expect(text).toMatch(/house colours\*\* — \*\*recommended\*\*/);
+  it("should mark the recommendation — the subject convention, when one matched", () => {
+    expect(text).toMatch(/convention\*\* — \*\*recommended\*\*/);
+  });
+
+  // A one-option proposal with no explanation reads as a tool with nothing to say. The run
+  // produced exactly that: the subject matched none of the four conventions, one option appeared,
+  // and why was left for the operator to say out of band.
+  it("should say out loud when no convention applies to the subject", () => {
+    const noMatch = formatProposal(
+      proposePalette({ newsroom: HEIDI, subject: "les glaciers et les sponsors des JO" }),
+    );
+    expect(noMatch).toContain("No convention applies to this subject");
+    expect(noMatch).toContain("house colours");
   });
 
   it("should end in an answerable question that includes the escape branch", () => {

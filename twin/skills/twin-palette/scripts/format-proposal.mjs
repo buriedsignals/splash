@@ -56,7 +56,7 @@ function optionBlock(option, index, recommended) {
  * colours themselves do not measure up.
  */
 export function formatProposal(proposal) {
-  const { options, recommended, subject, escape } = proposal;
+  const { options, recommended, subject, escape, noConventionReason } = proposal;
 
   const head = [
     "# Colours for this beat",
@@ -65,6 +65,9 @@ export function formatProposal(proposal) {
   ];
 
   if (subject) head.push("", `Subject read as: *${subject}*`);
+  // Said out loud, because a one-option proposal with no explanation reads as a tool with nothing
+  // to say rather than as a subject with no convention. The run produced exactly that.
+  if (noConventionReason) head.push("", noConventionReason);
 
   if (options.length === 0) {
     return [

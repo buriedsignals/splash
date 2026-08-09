@@ -196,7 +196,7 @@ export function checkStoryboard(meta) {
 
     // A chosen treatment is only a real choice if it was verifiably picked from a shown list —
     // that is what stops the exchange from being disguised parameter collection (references/
-    // exchange.md, §③). A slot with `chosen` set but no `candidates` ever listed means the
+    // exchange.md, movement ⑩). A slot with `chosen` set but no `candidates` ever listed means the
     // proposal step was skipped, not that there was nothing to check membership against — so
     // this is malformed, not legitimate, and refuses on its own, distinct from a mismatch.
     if (!slot.chosen) continue;

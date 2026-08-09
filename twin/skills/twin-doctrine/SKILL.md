@@ -41,7 +41,7 @@ still be true after the next edit.
   once at install time — at the start of the beat brief that precedes any component, chart
   geometry, or render call. The doctrine is the frame the first sketch is drawn inside, not a
   style pass applied afterward.
-- `twin-storyboard`'s reference loop (movement ④ of `references/exchange.md`) draws its named
+- `twin-storyboard`'s reference loop (movement ⑧ of `references/exchange.md`) draws its named
   set from `reference-set.md` directly — when it shows a journalist "the Post treated this
   argument structure one way, Vox another," those are rows from this file.
 - **Live reference research** — going out and finding a new real treatment, with its own verified

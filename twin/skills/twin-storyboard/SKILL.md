@@ -7,10 +7,10 @@ description: Use to run the STORYBOARD phase of the doctrine twin — the editor
 
 ## Overview
 
-Runs the STORYBOARD phase: the six-movement editorial exchange (`references/exchange.md`) that
+Runs the STORYBOARD phase: the ten-movement editorial exchange (`references/exchange.md`) that
 turns an article's claims into an ordered list of **slots**, each carrying **one to n candidate
 treatments**, one of them **chosen**. This skill **proposes — it does not interrogate.** It gives
-back what it read, asks one question at a time, always with a recommendation attached — on the five
+back what it read, asks one question at a time, always with a recommendation attached — on the
 hand-of-the-journalist questions as much as on the slots, so an "I don't know" is met with a
 proposal to accept, adjust or reject, never silently logged as a blank — and never fills a field the
 journalist should have filled themselves. `scripts/storyboard.mjs` is the
@@ -64,7 +64,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Layer | File | Role |
 | --- | --- | --- |
 | Survey | `references/type-survey.md` | Every visual type this toolchain holds a sheet for — 32 chart, 8 map — each with its own opening sentence verbatim and the genres proven on disk for it. **Generated** by `twin/scripts/type-survey.mjs` from the two `references/types/` directories and `matrix.mjs`'s own beat reader; drift-checked by `test/type-survey.test.ts` |
-| Doctrine | `references/exchange.md` | The six movements of the editorial exchange, the five hand-of-the-journalist questions with their destinations, and the discipline list — what a conversation running this phase must actually do |
+| Doctrine | `references/exchange.md` | The ten movements of the editorial exchange **in the order they must happen** (restitution · takeaway **and its grounding** · the hand · the survey · medium · genre · size · the reference loop · palette · proposal and brief), the hand-of-the-journalist questions with their medium-neutral destinations, and the discipline list — what a conversation running this phase must actually do |
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Reachability | `scripts/genre-catalog.mjs` | `GENRE_CATALOG`, keyed on the **medium/genre PAIR**, and `genreGap(medium, genre)` — whether this kind of beat, in this genre, has both a producer and a delivery path. `genresFor(medium)` is what the genre gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
@@ -72,13 +72,17 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 
 ## How it works (the shape)
 
-1. **Restitution → the exchange runs** (`references/exchange.md`, movements ①–⑥): the claims read
-   back, the confirmed takeaway, the journalist's hand (five questions, each landing somewhere
-   named), the reference loop, the slots-and-candidates proposal, the beat brief. This is prose
-   conducted in conversation — this skill's reference is what governs it, not code.
+1. **Restitution → the exchange runs** (`references/exchange.md`, movements ①–⑩): the claims read
+   back, the confirmed takeaway **and its grounding at G1**, the journalist's hand (each question
+   landing somewhere named, and no destination presuming a medium), the survey of every type this
+   data could support, then the three sub-gates in order — **medium (G2a), genre (G2b), size
+   (G2c)** — the reference loop, the palette, the slots-and-candidates proposal, the beat brief.
+   The order is the argument: each movement depends on the one before it. This is prose conducted
+   in conversation — this skill's reference is what governs it, not code.
 2. **The exchange writes `STORYBOARD.md`**: YAML front matter (`takeaway`, the hand-of-the-journalist
-   fields, `slots: [{id, proves, medium, genre, candidates, chosen}, ...]`) above the prose the
-   journalist actually reads.
+   fields, the two recorded verdicts `grounding` and `reference`, and
+   `slots: [{id, proves, medium, genre, size, reachable, candidates, chosen}, ...]`) above the prose
+   the journalist actually reads.
 3. **`parseStoryboard`** reads that file back: a dependency-free reader for the narrow YAML subset
    in use here — scalars (quoted or bare, with `null`/`~` resolved to a real missing value), and a
    list of slot maps whose values are scalars or quote-aware inline string arrays (a comma inside

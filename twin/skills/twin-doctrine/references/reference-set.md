@@ -2,7 +2,7 @@
 
 Real, examined treatments of a named argument structure, each reduced to a **transferable
 information-design lesson** — never a styling description. This is what the reference loop
-(`twin-storyboard`'s movement ④) shows a journalist: not "here is a chart that looks nice," but
+(`twin-storyboard`'s movement ⑧) shows a journalist: not "here is a chart that looks nice," but
 "here is how a real newsroom sequenced this exact kind of evidence, and here is the rule you can
 lift out of it and apply to your own data." Copying the rule, not the surface, is the whole
 point — see `anti-patterns.md`'s closing entry.
