@@ -655,6 +655,36 @@ written here in his priority order so a fresh session picks them up without re-d
 8. **Complete the type × genre matrix.** Measured from the briefs: chart static 12 types, chart web
    15, chart video 12. Missing statics include heatmap, small multiples and bar-and-column; missing
    videos include line, lollipop and bar-and-column. Maps have six types spread across the genres.
+
+   **CLOSED 2026-08-09.** Two agents re-measured the matrix before touching it, and the paragraph
+   above was **wrong about the video genre**: it shipped **14** distinct types, not 12 — line and
+   lollipop were already done. The static count of 12 and the web count of 15 were right, and the
+   three missing statics were exactly the three named.
+
+   Static went **12 → 15** (heatmap, small multiples, bar-and-column). Video went **14 → 17**:
+   bar-and-column, the one type the web genre had and video did not, plus **bump** and **diverging
+   bar**, which NO genre carried — rank-over-time is the type motion earns most, and the deviation
+   family had never appeared at all.
+
+   **Three findings worth more than the counts.** (1) The heatmap first rendered as a **flat grey
+   slab** with every assertion true and every contrast check passing: the 3:1 pale floor on a light
+   ground leaves roughly 90 of 255 levels, and spending them linearly across a domain that runs to
+   87% while three quarters of readings sit under 25% put nearly everything in one grey — a 98%
+   collapse was invisible. Fixed at the SCALE (square-root position, monotonic, legend ticks on the
+   same transform so its uneven spacing shows the non-linearity), not by lowering the floor. The
+   tension is general to any luminance-encoded type on a light ground and is now written into
+   `twin-chart-beat/references/types/heatmap.md`; **no guard exists for "technically compliant and
+   visually flat"**. (2) In the bar-and-column video, frame 100 printed "3.19" above a column
+   standing at 2.15 — a label naming a height it had not reached, **invisible in the still** and
+   found only by extracting frames from the mp4. (3) In the diverging bar, the conclusion's dashed
+   rule struck through four value labels and turned Malta's "−3.39" into what reads as "+3.39": a
+   reader would have seen a country rise that fell. Not cosmetic — a claim defect, found by looking.
+
+   **And the class that came out of it, now being closed separately: every pre-existing video beat
+   has a BLANK frame 0** (measured: zero non-white pixels on `lollipop.mp4`, `line.mp4`,
+   `waterfall.mp4`). Frame 0 is the poster frame — the thumbnail a CMS or a social platform pulls.
+   The reveal sequence starts at 0, so everything gated on it is invisible in the one image a reader
+   sees before pressing play.
 9. **Re-verify every render, old and new.** The last audit covered 46 artifacts and found 11
    defective; the tree now holds 88.
 
