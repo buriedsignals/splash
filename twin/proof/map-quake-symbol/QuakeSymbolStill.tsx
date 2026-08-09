@@ -8,6 +8,7 @@
 import { Fragment } from "react";
 import { FONT_FAMILY, measureText } from "./render-still.mjs";
 import {
+  declutterLabels,
   drawOrder,
   labelPlacement,
   niceReferenceValues,
@@ -114,6 +115,36 @@ export function QuakeSymbolStill({
   const subject = geometry.points.find((p) => p.key === subjectKey);
   if (!subject) throw new Error(`no point for the subject ${subjectKey}`);
 
+  // Label declutter: the subject always wins (priority 0, it already carries the accent colour and
+  // bold weight — the one label this beat cannot afford to lose), the rest fall in behind it by
+  // descending magnitude, so where two circles' labels would collide, the bigger event's own number
+  // is the one a reader keeps. Same box math as the drawn label below (side/dy from `labelPlacement`,
+  // width from the same `measureText` call), or the declutter would be deciding against a box it
+  // never actually draws.
+  const shownLabels = declutterLabels(
+    geometry.points.map((p) => ({
+      ...p,
+      priority: p.key === subjectKey ? -1 : -p.mag,
+    })),
+    (p) => {
+      const { side, dy } = labelPlacement(p.px, p.py, geometry.frame);
+      const cx = p.px * scale;
+      const cy = p.py * scale;
+      const text = `M${p.mag}`;
+      const w = measureText(text, POINT_LABEL) + 4;
+      const dx =
+        side === "right"
+          ? radiusOf(p.mag) * scale + 6
+          : -(radiusOf(p.mag) * scale + 6);
+      return {
+        x: side === "right" ? cx + dx : cx + dx - w,
+        y: cy + dy - POINT_LABEL.fontSize,
+        width: w,
+        height: POINT_LABEL.fontSize + 4,
+      };
+    },
+  );
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -165,29 +196,33 @@ export function QuakeSymbolStill({
                 stroke={fill}
                 strokeWidth={1.4}
               />
-              <text
-                x={cx + dx}
-                y={cy + dy}
-                textAnchor={anchor}
-                fontSize={POINT_LABEL.fontSize}
-                fontWeight={isSubject ? 700 : POINT_LABEL.fontWeight}
-                stroke={ground}
-                strokeWidth={3}
-                strokeLinejoin="round"
-                fill="none"
-              >
-                {`M${point.mag}`}
-              </text>
-              <text
-                x={cx + dx}
-                y={cy + dy}
-                textAnchor={anchor}
-                fontSize={POINT_LABEL.fontSize}
-                fontWeight={isSubject ? 700 : POINT_LABEL.fontWeight}
-                fill={isSubject ? accent : ink}
-              >
-                {`M${point.mag}`}
-              </text>
+              {shownLabels.has(point.key) && (
+                <>
+                  <text
+                    x={cx + dx}
+                    y={cy + dy}
+                    textAnchor={anchor}
+                    fontSize={POINT_LABEL.fontSize}
+                    fontWeight={isSubject ? 700 : POINT_LABEL.fontWeight}
+                    stroke={ground}
+                    strokeWidth={3}
+                    strokeLinejoin="round"
+                    fill="none"
+                  >
+                    {`M${point.mag}`}
+                  </text>
+                  <text
+                    x={cx + dx}
+                    y={cy + dy}
+                    textAnchor={anchor}
+                    fontSize={POINT_LABEL.fontSize}
+                    fontWeight={isSubject ? 700 : POINT_LABEL.fontWeight}
+                    fill={isSubject ? accent : ink}
+                  >
+                    {`M${point.mag}`}
+                  </text>
+                </>
+              )}
             </Fragment>
           );
         })}

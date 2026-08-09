@@ -142,6 +142,41 @@ export function arrivalProgress(
   return Math.max(0, Math.min(1, (reveal - start) / WINDOW));
 }
 
+export type LabelBox = { x: number; y: number; width: number; height: number };
+
+/**
+ * Highest priority (lowest number) places first; a lower-priority label whose box would overlap an
+ * already-placed one is dropped. A physical copy of `map-geneva-locator/geo-locator.ts`'s own
+ * `declutterLabels` (same shape, not an import — a beat under `proof/` never reaches into a sibling
+ * beat at runtime), needed here because this beat's static genre labels EVERY point unconditionally
+ * (`QuakeSymbolStill.tsx`'s first version) while the video genre only ever labels its one subject —
+ * fine with 1 label, not with the 17 this study set actually has. Three real clusters (Kuril
+ * Islands, Sumatra, Solomon Islands/PNG) sit close enough that every point's own "M7.8"/"M7.9"-style
+ * label collided into an illegible stack, caught by looking at the rendered PNG. Same input always
+ * produces the same shown/hidden set, for the same reason the locator beat's own copy states it.
+ */
+export function declutterLabels<T extends { key: string; priority: number }>(
+  points: T[],
+  boxOf: (point: T) => LabelBox,
+): Set<string> {
+  const ordered = [...points].sort((a, b) => a.priority - b.priority);
+  const placed: LabelBox[] = [];
+  const shown = new Set<string>();
+  const overlaps = (a: LabelBox, b: LabelBox) =>
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y;
+
+  for (const point of ordered) {
+    const box = boxOf(point);
+    if (placed.some((p) => overlaps(p, box))) continue;
+    placed.push(box);
+    shown.add(point.key);
+  }
+  return shown;
+}
+
 /**
  * How many times more energy the subject released than a comparison event, from the moment
  * magnitude scale's own definition (each whole step is 10^1.5× the energy). Used to turn the
