@@ -34,16 +34,18 @@ body {
    themselves to their parent's own full width, all the way out to `body`. See
    references/scrolly-discipline.md, "The graphic fills the width it is given." */
 
-/* The comfortable reading measure (~640px, the classic editorial column width — well under the
-   ~75-character line-length ceiling) now lives HERE, not on `.scrolly` — the header is prose, not
-   the visual, and stays in a centred column even though the graphic beneath it goes full-bleed. The
-   side padding SCALES with the viewport (`clamp`) rather than sitting at a fixed 16px, so a
-   realistic, not-maximised desktop window still keeps a visible gutter on both sides. The header
+/* The header takes the same width as the graphic beneath it — no reading-measure cap. It used to
+   sit in a centred 640px column, and that was the mismatch the owner named: a title stopping at
+   640px above a full-bleed graphic reads as a broken box (see references/scrolly-discipline.md,
+   "The reading measure belongs to the prose"). What survives the reversal is the GUTTER: the side
+   padding SCALES with the viewport (`clamp`) rather than sitting at a fixed 16px, so the header
+   never touches the frame's own edge at any width, on a maximised desktop or a phone. The header
    states the beat's own argument in full, unconditional and ahead of every step's own reveal — and,
    deliberately, ahead of the sticky graphic too: it sits in plain document flow, scrolled past once,
-   so it is never the thing a step's prose panel has to be measured against. */
+   so it is never the thing a step's prose panel has to be measured against. The STEP PANEL keeps
+   its own measure (`.step-panel`, below): that is prose travelling OVER the graphic, not
+   furniture beside it, and the reversal does not reach it. */
 .scrolly-header {
-  max-width: 640px;
   margin: 0 auto 24px;
   padding: 4px clamp(16px, 6vw, 56px) 0;
 }

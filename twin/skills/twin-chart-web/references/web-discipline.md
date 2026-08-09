@@ -127,12 +127,32 @@ units> / <total height units>` once, from the real geometry and the real measure
 down to the `<svg>` itself. The alternative failure mode is exactly as real as the one this rewrite
 fixes: letting BOTH width and height float independently (e.g. a fixed-height plot stretched
 arbitrarily wide) turns a wide container into an unreadable letterbox strip. Tying height to width
-via `aspect-ratio` avoids both failure modes with one CSS property and no script. The two places a
-long line of prose genuinely does become unreadable at full bleed — the header block (title +
-caveat) and the source line — are the ONLY things given a reading-measure cap (`640px`, `render-web.mjs`'s
-`buildCss`); the chart frame itself is never capped, on purpose, because a line chart's own geometry
-does not have a "too wide to read" failure mode the way a paragraph does — it has an "empty space
-either side" failure mode instead, which is the one this rewrite closes.
+via `aspect-ratio` avoids both failure modes with one CSS property and no script. The chart frame
+itself is never capped, on purpose, because a line chart's own geometry does not have a "too wide to
+read" failure mode the way a paragraph does — it has an "empty space either side" failure mode
+instead, which is the one this rewrite closes.
+
+**The words take the same width as the graphic — the 640px cap is REVERSED (2026-08-10).** Until
+this date the header block (title + caveat) and the source line were the ONLY things given a
+reading-measure cap (`640px`, in `render-web.mjs`'s `buildCss`), on the argument that a long line of
+prose becomes unreadable at full bleed. That argument is not wrong about prose in the abstract. It
+was wrong about **what this genre is**. A chart-web beat is not a document: it is one graphic, and
+its title and its source are *furniture over that graphic*, not a paragraph beside it. At 1600px the
+title stopped in the left third of a chart running the full frame — which reads as a broken box, a
+layout that failed to stretch, not as a comfortable measure. The owner's feedback names exactly
+that: *the title and the description must take the full width too.*
+
+So the declaration is gone, and nothing in the chain from `.chart-figure` down caps a width any
+more. **The cost this accepts, named:** on a very wide desktop viewport a short title can now run as
+one long single line, at a measure longer than editorial prose would choose. **What bounds it
+instead is the container, not a rule in this file** — this artifact is delivered as an embed and
+sits inside the CMS's own article column (ruling R2, *"ça fonctionnera un peu comme un composant
+embed"*), which is already at a reading measure for the article's own body text. `width: 100%` means
+the beat inherits that bound for free, and gets the full frame when the frame genuinely is the whole
+page. A cap in `buildCss` could not have known which of those two it was in.
+
+What did NOT change: `.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }` — the
+window-fit rule below. Words are still never squeezed to make a chart fit; the chart is.
 
 **Cheap, not recomputed — the first build's own anti-pattern rule still holds.** Nothing about this
 redesign asks a script to measure anything on resize. The one thing this genre still measures in

@@ -105,7 +105,13 @@ describe("nothing caps the chart frame's own width", () => {
     expect(plotRule).toContain("width: 100%");
   });
 
-  it("should cap only the header block and the source line to a reading measure", () => {
+  // REVERSED 2026-08-10. This test used to assert the opposite — that the header block and the
+  // source line WERE capped to 640px. See references/web-discipline.md, "The words take the same
+  // width as the graphic": the title and the source are furniture over a graphic, not a paragraph
+  // beside it, and a title stopping at 640px above a chart running to 1600 reads as a broken box.
+  // The assertion is kept rather than deleted, pointed the other way, so nobody can reinstate the
+  // cap without this file going red and telling them where the argument is written down.
+  it("should cap neither the header block nor the source line — the words take the graphic's width", () => {
     const css = buildCss({
       ground: "#FFFFFF",
       accent: "#0B7A75",
@@ -113,7 +119,21 @@ describe("nothing caps the chart frame's own width", () => {
       muted: "#616161",
       grid: "#D1D1D1",
     });
-    expect(css).toContain(".chart-header, .chart-source { max-width: 640px; }");
+    // Every rule in the stylesheet whose selector list names the header or the source: none of
+    // them may declare a width cap. Written as a scan rather than a string match so that moving
+    // the declaration into another rule (`.chart-header { … }`, `.chart-title { … }` inside a
+    // grouped selector) does not slip past it.
+    const capped = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter(([, selector]) =>
+        /\.chart-(header|source|title|caveat)\b/.test(selector),
+      )
+      .filter(([, , body]) => /\bmax-width\b/.test(body))
+      .map(([, selector]) => selector.trim().split("\n").pop());
+    expect(capped).toEqual([]);
+    // What did NOT change: words are still never squeezed to make the chart fit.
+    expect(css).toContain(
+      ".chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }",
+    );
   });
 
   it("should carry no @media breakpoint — the redesign this file exists to prove has none", () => {

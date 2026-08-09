@@ -14,7 +14,11 @@ import {
   DrawnGraphicFrame,
   type ScrollyStepMeta,
 } from "../assets/ScrollySeed.tsx";
-import { deriveFacts, parseReadings, readStation } from "../assets/gauge-data.ts";
+import {
+  deriveFacts,
+  parseReadings,
+  readStation,
+} from "../assets/gauge-data.ts";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
 import { pickActiveStep } from "../assets/interaction.mjs";
 
@@ -382,7 +386,12 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(end).toBeGreaterThan(start);
     const mechanics = source.slice(start, end);
     expect(mechanics).not.toContain("frameKind");
-    for (const component of ["ImageFrame", "DrawnGraphicFrame", "MapFrame", "ChartFrame"])
+    for (const component of [
+      "ImageFrame",
+      "DrawnGraphicFrame",
+      "MapFrame",
+      "ChartFrame",
+    ])
       expect(mechanics).not.toContain(component);
   });
 
@@ -502,13 +511,19 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    const panelRule = html.slice(html.indexOf(".step-panel {"), html.indexOf(".step-panel p"));
+    const panelRule = html.slice(
+      html.indexOf(".step-panel {"),
+      html.indexOf(".step-panel p"),
+    );
     expect(panelRule).toContain("position: sticky");
     expect(panelRule).toContain("bottom:");
     // A `bottom` sticky offset can only ever shift a box UP, so the panel has to START at the
     // bottom of its step or the offset does nothing at all — measured in a real browser: with
     // `flex-start` the panel travelled from y=768 to y=-32 across one step.
-    const stepRule = html.slice(html.indexOf(".step {"), html.indexOf(".step-panel {"));
+    const stepRule = html.slice(
+      html.indexOf(".step {"),
+      html.indexOf(".step-panel {"),
+    );
     expect(stepRule).toContain("align-items: flex-end");
   });
 
@@ -580,10 +595,18 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).toContain("--graphic-h: 100vh");
   });
 
-  // Correction 6: "all web visuals must take the full width" — the reading-measure constraint
-  // must live on the PROSE (the header), never on `.scrolly` itself, or every child of `.scrolly`
-  // — including the sticky graphic — inherits a narrow column it should not have.
-  it("should carry the reading-measure max-width on the header, never on .scrolly itself", async () => {
+  // Correction 6: "all web visuals must take the full width" — nothing may constrain `.scrolly`
+  // itself to a narrow max-width, or every child of it — including the sticky graphic — inherits
+  // a narrow column it should not have.
+  //
+  // Correction 7 (2026-08-10) REVERSES the second half of what this test used to assert. It used
+  // to require `.scrolly-header { max-width: 640px }` — the sixth build's decision that the header
+  // and the step panel were one category, "the prose". They are not. The header sits ABOVE the
+  // graphic and frames it: it is furniture, and it takes the graphic's width, minus the gutter.
+  // The panel travels OVER the graphic and keeps its measure. See references/scrolly-discipline.md,
+  // "Sixth build → seventh build". The assertion is kept, pointed the other way, so reinstating the
+  // cap goes red here.
+  it("should cap neither .scrolly nor its header — only the step panel keeps a measure", async () => {
     const { outPath } = await renderScrolly({
       steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
       title: "t",
@@ -593,11 +616,14 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    // No rule constrains `.scrolly` itself to a narrow max-width — the sticky graphic (a
-    // descendant with no width rule of its own) must be free to size to the full page width.
     expect(html).not.toMatch(/\.scrolly\s*\{[^}]*max-width/);
-    // The header still carries its own comfortable measure.
-    expect(html).toMatch(/\.scrolly-header\s*\{[^}]*max-width:\s*640px/);
+    expect(html).not.toMatch(/\.scrolly-header\s*\{[^}]*max-width/);
+    // The gutter is what survives the reversal: full bleed, but never touching the edge.
+    expect(html).toMatch(/\.scrolly-header\s*\{[^}]*clamp\(16px, 6vw, 56px\)/);
+    // And the panel — prose over the graphic, not furniture beside it — still has its measure.
+    expect(html).toMatch(
+      /\.step-panel\s*\{[^}]*max-width:\s*min\(46ch, 100%\)/,
+    );
   });
 
   // Correction 1: "the graphic must be fixed; only the text moves" — no mechanism in the shipped

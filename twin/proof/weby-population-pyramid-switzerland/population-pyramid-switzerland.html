@@ -27,8 +27,10 @@ body {
    the height WITH the width, so a very wide container gets a taller chart rather than a flat,
    letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
    empty gutters, and the failure mode letting width AND height both float freely would risk
-   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
-   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+   instead. The header block and the source line USED to carry a 640px reading-measure cap; they
+   no longer do. A title that stops at 640px above a chart running to 1600 reads as a broken box,
+   not as a comfortable measure -- see references/web-discipline.md, "The words take the same width
+   as the graphic," for the reversal and what now bounds the line length instead.
 
    "Fills the container" is a claim about the FRAME's own edges, never about the content inside
    it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
@@ -60,7 +62,6 @@ body {
 /* Everything except the plot keeps its natural height: words are never squeezed to make a chart
    fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
 .chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
-.chart-header, .chart-source { max-width: 640px; }
 .chart-title {
   margin: 0 0 4px;
   font-size: var(--title-size);

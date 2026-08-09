@@ -194,9 +194,9 @@ prose — nobody had asked, since the third build set that rule for the assembly
 the graphic specifically should be narrow too. It should not: *all web visuals must take the full
 width* is a house-wide rule this genre had never actually satisfied for its own sticky ground. Fixed
 by MOVING the reading-measure constraint off `.scrolly` (now unconstrained — no `max-width`, no
-padding) and onto the two things that are actually prose: `.scrolly-header` (its own `max-width:
-640px; margin: 0 auto; padding: 0 clamp(16px, 6vw, 56px) 0` — the exact values `.scrolly` used to
-carry, simply relocated) and `.step` (`padding: 24px clamp(16px, 6vw, 56px)`, the gutter that used
+padding) and onto the two things that were then taken to be prose: `.scrolly-header` (its own
+`max-width: 640px; margin: 0 auto; padding: 0 clamp(16px, 6vw, 56px) 0` — the exact values
+`.scrolly` used to carry, simply relocated) and `.step` (`padding: 24px clamp(16px, 6vw, 56px)`, the gutter that used
 to come from `.scrolly`'s own padding, now supplying the panel's floor of breathing room directly,
 with `.step-panel`'s own `max-width: min(42ch, 100%)` and `.step`'s `justify-content: center`
 unchanged from the fourth round). `.scrolly-track`, `.scrolly-graphic`, `.scrolly-steps` and `.step`
@@ -233,6 +233,25 @@ This is purely a box-model change — it does not touch the sticky-graphic/negat
 the previous section describes, which is scoped to the VERTICAL relationship between
 `.scrolly-graphic` and `.scrolly-steps` and does not care how wide the column containing both of
 them is.
+
+**Sixth build → seventh build: the HEADER joined the graphic at full bleed; the PANEL did not
+(2026-08-10).** The sixth round moved the reading-measure cap onto "the two things that are actually
+prose" and treated the header and the step panel as one category. They are not one category, and the
+owner's feedback names the difference: *the title and the description must take the full width too*
+— "too", meaning *as the visual does*. The header sits ABOVE the graphic, in document flow, framing
+it; it is furniture over a visual, and a title stopping at 640px above a graphic running to 1600
+reads as a box that failed to stretch. So `.scrolly-header`'s `max-width: 640px` is **removed**. Its
+`clamp(16px, 6vw, 56px)` side padding stays and is the whole point of what survives: the header goes
+edge to edge but never *touches* the edge, at any viewport.
+
+**The step panel keeps its measure, and this section's argument for it stands unchanged.** The panel
+is a different thing in a different place: prose travelling OVER the sticky graphic, read a sentence
+at a time as the reader scrolls, a card floating on a ground. Its `max-width: min(46ch, 100%)` and
+`.step`'s `justify-content: center` are what make it read as a card rather than as a band of text
+laid across a picture — the "narrow, centred card on top of it" the measurements above describe.
+Widening it would not make it "match the graphic"; it would dissolve it into the graphic. So this
+round splits the sixth round's single category in two: **header = furniture, full bleed with a
+gutter; panel = prose over the ground, measured.**
 
 ## The graphic fills the viewport it is pinned in
 
