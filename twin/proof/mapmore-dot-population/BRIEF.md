@@ -1,7 +1,7 @@
 # Beat — five countries hold 54.9% of this map's population
 
 **Type:** dot density. **Medium/genre:** map / static. **Channel:** article web, over an 860 × 760
-baked plate (`/tmp/map-twin/mapmore-dot-860x760`).
+baked plate (`plate/`, frozen beside this brief).
 
 ## Claim
 
