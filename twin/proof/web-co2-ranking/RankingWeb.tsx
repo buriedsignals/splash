@@ -9,96 +9,91 @@
  * directly outside the bar"). Read `twin-chart-web/references/web-discipline.md` before changing
  * this file.
  *
- * Two layouts, not a continuous reflow (`web-discipline.md`, "Responsive behaviour"): each is its
- * own call to this component, SSR'd once at build time by `render-web.mjs` — this story's own
- * runner, which hands both to the `twin-chart-web` skill's generic `renderWeb`.
+ * MIGRATED TO THE FLUID FRAME. This file used to ship two pre-rendered widths (900px and 360px)
+ * swapped by a media query, handed to the skill's generic `renderWeb` as a `LAYOUTS` array. The
+ * owner overturned that design: one frame, filling its container continuously, fitting the visible
+ * window. The separation that makes it safe is the one `twin-chart-web/assets/ChartWebSeed.tsx`
+ * teaches — the `<svg>` carries GEOMETRY ONLY (bars, the zero baseline, the hit bands; no `<text>`
+ * at all), and every word is HTML at a FIXED pixel size, positioned by `%` over the same CSS grid
+ * the bars are drawn in. Geometry stretches; type does not.
  *
- * `deriveFurniture`/`measureText` are not called here — `render-web.mjs` derives the furniture and
- * measures every gutter in node, the same division `proof/co2-suisse/EmissionsWeb.tsx` keeps, and
- * passes the results in as props (`measure` below).
+ * A ranking chart's own shape needs TWO gutters around that geometry — the category names on the
+ * left, the printed value at each bar's end on the right — so `render-web.mjs` appends a third grid
+ * column for this beat. Both gutters are a fixed pixel width measured from the real strings, so the
+ * bars, and only the bars, absorb a wider or a narrower container. And ten rows of names need a real
+ * number of CSS pixels whatever the width, which is why the plot carries a measured `min-height`
+ * derived from the row this beat actually draws (`minPlotHeightPx`).
+ *
+ * `deriveFurniture`/`measureText` are not called here — `renderWeb` derives them once in node and
+ * threads them in as props (`ink`/`muted`/`measure`).
  *
  * This beat does NOT reuse the skill's `assets/interaction.mjs` — that script resolves a pointer to
  * the NEAREST of many points along one continuous axis, which fits a 75-reading line and does not
  * fit ten already-large, already-labelled bars (there is nothing to interpolate between; every row
  * is its own direct hit target). `render-web.mjs` still calls the skill's generic `renderWeb` (the
- * one way in — a story imports the skill's machinery, never the reverse) and lets it inline
- * `interaction.mjs` as usual: that script finds no `.pt` circles here and is a harmless no-op
- * (`initChart`'s own `if (points.length === 0) return;`). `render-web.mjs` then appends this beat's
- * own small script, `./bar-interaction.mjs`, as a second inline `<script>`, reusing the same shared
- * `#tooltip` element the skill's HTML wrapper already builds.
+ * one way in) and lets it inline `interaction.mjs` as usual: that script finds no `.pt` circles here
+ * and is a harmless no-op (`initChart`'s own `if (points.length === 0) return;`). `render-web.mjs`
+ * then appends this beat's own small script, `./bar-interaction.mjs`, as a second inline `<script>`,
+ * reusing the same shared `#tooltip` element the skill's HTML wrapper already builds.
  */
 
-import { rankingGeometry, fr, type Row } from "./bar-geometry";
+import { rankingGeometry, en, type Row } from "./bar-geometry";
 
 const UNIT = "t";
 
-// `RankingLayout` describes this beat's own two rungs — declared here rather than imported from
-// the skill's `WebLayout` (`twin-chart-web/assets/ChartWebSeed.tsx`) for the same reason
-// `EmissionsWeb.tsx` gives for its own copy: there is no `#shared/*` vendoring path for a
-// compile-time-only type, and a relative import reaching across the skill boundary hard-codes this
-// dev repository's own layout. Duplicate, do not link. The shape also genuinely differs — no
-// gridline/tick knobs, because a ranking bar chart's own value labels ARE the reading, not an axis.
-export type RankingLayout = {
-  name: "desktop" | "narrow";
+/** This genre's single fluid frame, in this beat's own shape. Declared here rather than imported
+ *  from the skill's seed for the reason that file's own doc-comment gives: a compile-time-only type
+ *  has no `#shared/*` vendoring path, and a relative import across the skill boundary hard-codes
+ *  this dev repository's own directory layout. Duplicate, do not link. The shape genuinely differs
+ *  too — no gridline or tick knobs, because a ranking bar chart's own value labels ARE the reading,
+ *  not an axis. */
+export type RankingFrame = {
+  /** The bar area's canonical width/height in SVG user units — NOT a rendered pixel size and NOT a
+   *  cap. It fixes the geometry's internal proportions, which become one `aspect-ratio`; the
+   *  browser stretches it from there. */
   width: number;
-  pad: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  subtitle: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
-  category: { fontSize: number };
-  value: { fontSize: number };
-  /** One row's own band height (bar + its share of the inter-bar gap). The frame's total height is
-   *  DERIVED from this times the row count, plus the header block's real height — never a fixed
-   *  constant guessed to be tall enough, the same principle `EmissionsWeb.tsx`'s `plotMinHeight`
-   *  states for its own frame. */
-  rowHeight: number;
-  /** Fraction of `rowHeight` left as the gap between bars — bar-and-column.md: "roughly a fifth to
-   *  a third of the band's width". */
+  height: number;
+  title: { fontSize: number; fontWeight: number };
+  subtitle: { fontSize: number; fontWeight: number };
+  source: { fontSize: number; fontWeight: number };
+  category: { fontSize: number; fontWeight: number };
+  value: { fontSize: number; fontWeight: number };
+  /** The CSS pixel line height one row's own label occupies, and the air below it, at the shortest
+   *  height this beat will render at — together they derive the plot's own `min-height` rather than
+   *  a constant guessed to be tall enough. */
+  rowLeadPx: number;
+  rowAirPx: number;
+  /** Fraction of a row's band left as the gap between bars — `bar-and-column.md`: "roughly a fifth
+   *  to a third of the band's width, so the bars read as discrete marks". */
   gapRatio: number;
-  bottomPad: number;
+  /** Air between a bar's own end and the value printed beyond it, and between a gutter and the
+   *  bars. */
+  gap: number;
 };
 
-export const DESKTOP_LAYOUT: RankingLayout = {
-  name: "desktop",
-  width: 900,
-  pad: 40,
-  title: { fontSize: 26, fontWeight: 700, lead: 34 },
-  subtitle: { fontSize: 14, fontWeight: 400, lead: 20 },
-  source: { fontSize: 14, fontWeight: 400, lead: 19 },
-  category: { fontSize: 15 },
-  value: { fontSize: 15 },
-  rowHeight: 42,
+export const FRAME: RankingFrame = {
+  width: 640,
+  height: 400,
+  title: { fontSize: 24, fontWeight: 700 },
+  subtitle: { fontSize: 14, fontWeight: 400 },
+  source: { fontSize: 13, fontWeight: 400 },
+  category: { fontSize: 14, fontWeight: 500 },
+  value: { fontSize: 14, fontWeight: 500 },
+  rowLeadPx: 18,
+  rowAirPx: 8,
   gapRatio: 0.3,
-  bottomPad: 30,
+  gap: 8,
 };
-
-export const NARROW_LAYOUT: RankingLayout = {
-  name: "narrow",
-  width: 360,
-  pad: 20,
-  title: { fontSize: 18, fontWeight: 700, lead: 24 },
-  subtitle: { fontSize: 12, fontWeight: 400, lead: 17 },
-  source: { fontSize: 12, fontWeight: 400, lead: 16 },
-  category: { fontSize: 12 },
-  value: { fontSize: 12 },
-  rowHeight: 34,
-  gapRatio: 0.3,
-  bottomPad: 20,
-};
-
-/** The two rungs, in render order — handed to the skill's generic `renderWeb`, which never imports
- *  `DESKTOP_LAYOUT`/`NARROW_LAYOUT` by name. */
-export const LAYOUTS: RankingLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];
 
 type Measure = (
   text: string,
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-/** Wrap on the measured width of the real string, never a character count — the same helper
- *  `EmissionsWeb.tsx` keeps for its own title/subtitle/source, duplicated here for the same reason
- *  its own doc-comment gives (no vendoring path, this is the cheapest thing there is to duplicate). */
-function wrap(
+/** Wrap on the measured width of the real string, never a character count. Kept and exported the
+ *  same way the other beats keep theirs — the browser wraps this beat's flowing header text itself,
+ *  so nothing here calls it. */
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },
@@ -116,6 +111,12 @@ function wrap(
   return line ? [...lines, line] : lines;
 }
 
+/** A coordinate as a percentage of the box it was drawn in — what lets an HTML label sit exactly
+ *  where the SVG put the mark it names, at any container width. */
+function pct(value: number, total: number): number {
+  return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
+}
+
 export function RankingWeb({
   data,
   title,
@@ -127,7 +128,7 @@ export function RankingWeb({
   accent,
   ink,
   muted,
-  layout,
+  frame,
   measure,
 }: {
   /** Already sorted descending by value — `bar-and-column.md`: "for a ranking, sort by value". This
@@ -147,7 +148,7 @@ export function RankingWeb({
   accent: string;
   ink: string;
   muted: string;
-  layout: RankingLayout;
+  frame: RankingFrame;
   measure: Measure;
 }) {
   if (data.length < 1)
@@ -155,176 +156,184 @@ export function RankingWeb({
       `a ranking beat needs at least one row, got ${data.length}`,
     );
 
-  const { width, pad } = layout;
-
-  const titleLines = wrap(title, width - pad * 2, layout.title, measure);
-  const titleBaseline = pad + layout.title.fontSize;
-  const subtitleLines = wrap(
-    subtitle,
-    width - pad * 2,
-    layout.subtitle,
-    measure,
-  );
-  const subtitleBaseline =
-    titleBaseline +
-    (titleLines.length - 1) * layout.title.lead +
-    Math.round(layout.title.lead * 0.9);
-  const sourceLines = wrap(source, width - pad * 2, layout.source, measure);
-  const sourceBaseline =
-    subtitleBaseline +
-    (subtitleLines.length - 1) * layout.subtitle.lead +
-    Math.round(layout.subtitle.lead * 1.1);
-
-  const plotTop =
-    sourceBaseline +
-    (sourceLines.length - 1) * layout.source.lead +
-    Math.round(layout.title.lead * 0.7);
-  // The frame's total height is derived, not guessed: header block (fixed above) + one band per
-  // row + the bottom margin — see `RankingLayout.rowHeight`'s own doc-comment.
-  const plotBottom = plotTop + data.length * layout.rowHeight;
-  const height = plotBottom + layout.bottomPad;
-
-  // Printed labels are rounded to one decimal — glanceable, the same precision the co2-suisse
-  // beat's own end label uses. Hover/focus reveals the PRECISE reading (`bar-interaction.mjs`,
-  // `data-detail` below) — the detail the rounded printed label omits, never the same number
+  // Printed labels are rounded to one decimal — glanceable. Hover/focus reveals the PRECISE reading
+  // (`data-detail` below), the detail the rounded printed label omits, never the same number
   // repeated (`web-discipline.md`, "What hover reveals").
-  const printedLabels = data.map((r) => `${fr(r.value, 1)} ${UNIT}`);
-  const preciseLabels = data.map((r) => `${fr(r.value, 4)} ${UNIT}`);
+  const printedLabels = data.map((r) => `${en(r.value, 1)} ${UNIT}`);
+  const preciseLabels = data.map((r) => `${en(r.value, 4)} ${UNIT}`);
 
-  const padding = {
-    top: plotTop,
-    right:
-      pad +
-      10 +
-      Math.max(...printedLabels.map((l) => measure(l, layout.value))),
-    bottom: layout.bottomPad,
-    left:
-      pad + 10 + Math.max(...data.map((r) => measure(r.name, layout.category))),
-  };
+  // Both gutters measured from the real strings at their own FIXED type size — never a guessed
+  // constant, and never resized on the fly.
+  const categoryGutterPx =
+    Math.ceil(Math.max(...data.map((r) => measure(r.name, frame.category)))) +
+    frame.gap +
+    2;
+  const valueGutterPx =
+    Math.ceil(Math.max(...printedLabels.map((l) => measure(l, frame.value)))) +
+    frame.gap +
+    2;
 
+  // Ten category names need a real number of CSS pixels down the left gutter, and that number does
+  // not shrink when the container does — so the plot carries a floor derived from the row this beat
+  // actually draws. Below it the names would collide at any width.
+  const minPlotHeightPx = data.length * (frame.rowLeadPx + frame.rowAirPx);
+
+  const rowHeight = frame.height / data.length;
   const g = rankingGeometry(data, {
-    width,
-    height,
-    padding,
-    rowHeight: layout.rowHeight,
-    gapRatio: layout.gapRatio,
+    width: frame.width,
+    height: frame.height,
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
+    rowHeight,
+    gapRatio: frame.gapRatio,
   });
 
+  const totalWidth = categoryGutterPx + frame.width + valueGutterPx;
+
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="chart"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
+    <figure
+      className="chart-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--accent" as string]: accent,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ["--title-size" as string]: `${frame.title.fontSize}px`,
+        ["--title-weight" as string]: frame.title.fontWeight,
+        ["--subtitle-size" as string]: `${frame.subtitle.fontSize}px`,
+        ["--source-size" as string]: `${frame.source.fontSize}px`,
+        ["--category-size" as string]: `${frame.category.fontSize}px`,
+        ["--category-weight" as string]: frame.category.fontWeight,
+        ["--value-size" as string]: `${frame.value.fontSize}px`,
+        ["--value-weight" as string]: frame.value.fontWeight,
+      }}
     >
-      {/* No root role="img" — this genre's one deliberate departure from the static genre's
-          accessibility pattern (`web-discipline.md`): that role would flatten every child into one
-          opaque image, silencing the ten per-row hit targets below. `<desc>` still carries the alt
-          text. */}
-      <desc>{alt}</desc>
-      <rect x={0} y={0} width={width} height={height} fill={ground} />
+      {/* A fixed row of air under the header: the top row's own name and value sit at the plot's
+          very top edge, and a label centred on that row reaches half a line above it. */}
+      <div className="chart-header" style={{ marginBottom: 18 }}>
+        <h2 className="chart-title">{title}</h2>
+        <p className="chart-caveat">{subtitle}</p>
+      </div>
 
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={titleBaseline + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {subtitleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={subtitleBaseline + i * layout.subtitle.lead}
-          fill={muted}
-          fontSize={layout.subtitle.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={sourceBaseline + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-
-      {/* The shared zero baseline — a plain solid rule, not a dashed reference: it is the axis
-          itself (bar-and-column.md's non-negotiable zero start), not a level somebody chose. */}
-      <line
-        x1={g.plot.left}
-        x2={g.plot.left}
-        y1={g.plot.top}
-        y2={g.plot.bottom}
-        stroke={muted}
-        strokeWidth={1}
-      />
-
-      {g.rows.map((row, i) => {
-        const isSubject = row.name === subject;
-        const fill = isSubject ? accent : muted;
-        return (
-          <g key={row.name}>
-            <text
-              x={g.plot.left - 10}
-              y={row.centerY + layout.category.fontSize * 0.35}
-              textAnchor="end"
-              fill={fill}
-              fontSize={layout.category.fontSize}
-              fontWeight={isSubject ? 700 : 500}
+      <div
+        className="chart-plot ranking-plot"
+        style={{
+          ["--y-gutter" as string]: `${categoryGutterPx}px`,
+          ["--r-gutter" as string]: `${valueGutterPx}px`,
+          ["--x-axis-h" as string]: "0px",
+          ["--min-plot-h" as string]: `${minPlotHeightPx}px`,
+          aspectRatio: `${totalWidth} / ${frame.height}`,
+        }}
+      >
+        <div className="y-axis">
+          {g.rows.map((row) => (
+            <span
+              key={row.name}
+              className="cat-label"
+              style={{
+                top: `${pct(row.centerY, frame.height)}%`,
+                color: row.name === subject ? accent : muted,
+                fontWeight:
+                  row.name === subject ? 700 : frame.category.fontWeight,
+              }}
             >
               {row.name}
-            </text>
+            </span>
+          ))}
+        </div>
+
+        {/* GEOMETRY ONLY below — no `<text>`. */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          viewBox={`0 0 ${frame.width} ${frame.height}`}
+          preserveAspectRatio="none"
+          fontFamily="Helvetica, Arial, sans-serif"
+        >
+          {/* No root role="img" — this genre's one deliberate departure from the static genre's
+              accessibility pattern: that role would flatten every child into one opaque image,
+              silencing the ten per-row hit targets below. `<desc>` still carries the alt text. */}
+          <desc>{alt}</desc>
+          <rect
+            x={0}
+            y={0}
+            width={frame.width}
+            height={frame.height}
+            fill={ground}
+          />
+
+          {/* The shared zero baseline — a plain solid rule, not a dashed reference: it is the axis
+              itself (bar-and-column.md's non-negotiable zero start), not a level somebody chose.
+              FIRST `<line>` in this svg on purpose: `bar-interaction.mjs` reads its own client rect
+              to find the plot's top edge, and flips the tooltip below the pointer rather than over
+              the header when the topmost row is hovered. */}
+          <line
+            x1={0}
+            x2={0}
+            y1={0}
+            y2={frame.height}
+            stroke={muted}
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+          />
+
+          {g.rows.map((row) => (
             <rect
+              key={row.name}
               x={row.x0}
               y={row.top}
               width={Math.max(row.barWidth, 0)}
               height={row.height}
-              fill={fill}
+              fill={row.name === subject ? accent : muted}
             />
-            <text
-              x={row.x1 + 10}
-              y={row.centerY + layout.value.fontSize * 0.35}
-              fill={fill}
-              fontSize={layout.value.fontSize}
-              fontWeight={isSubject ? 700 : 500}
-            >
-              {printedLabels[i]}
-            </text>
-            {/* Interaction layer: one direct hit target per row, spanning the full row band from
-                margin to margin — not the skill's shared nearest-point `.hit-area`, which resolves
-                many points along ONE continuous axis and has nothing to interpolate here (see this
-                file's own header doc-comment). `tabIndex={0}` and `aria-label` are baked in at
-                build time, so the row's PRECISE reading is reachable by plain Tab with no
-                dependency on `bar-interaction.mjs` running at all. */}
+          ))}
+
+          {/* Interaction layer: one direct hit target per row, spanning the full band — not the
+              skill's shared nearest-point `.hit-area`, which resolves many points along ONE
+              continuous axis and has nothing to interpolate here. `tabIndex={0}` and `aria-label`
+              are baked in at build time, so every row's PRECISE reading is reachable by plain Tab
+              with no dependency on `bar-interaction.mjs` running at all. */}
+          {g.rows.map((row, i) => (
             <rect
+              key={`hit-${row.name}`}
               className="row-hit"
-              x={pad}
-              y={g.plot.top + i * layout.rowHeight}
-              width={width - pad * 2}
-              height={layout.rowHeight}
+              x={0}
+              y={i * rowHeight}
+              width={frame.width}
+              height={rowHeight}
               fill="transparent"
+              pointerEvents="all"
               tabIndex={0}
               role="img"
               aria-label={`${row.name}: ${preciseLabels[i]}`}
               data-detail={`${row.name} · ${preciseLabels[i]}`}
             />
-          </g>
-        );
-      })}
-    </svg>
+          ))}
+        </svg>
+
+        {/* The printed values, each at its own bar's end — plain HTML in the overlay, which shares
+            the `<svg>`'s grid cell, so a value tracks its bar as the bars stretch. It reaches past
+            the cell's right edge into the value gutter reserved for it, which is why that gutter is
+            a real grid track rather than air the longest bar could eat. Unconditional: the rounded
+            reading is the argument and is never gated behind interaction. */}
+        <div className="overlay" aria-hidden="true">
+          {g.rows.map((row, i) => (
+            <span
+              key={`value-${row.name}`}
+              className="value-label"
+              style={{
+                left: `${pct(row.x1, frame.width)}%`,
+                top: `${pct(row.centerY, frame.height)}%`,
+                color: row.name === subject ? accent : muted,
+                fontWeight: row.name === subject ? 700 : frame.value.fontWeight,
+              }}
+            >
+              {printedLabels[i]}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <p className="chart-source">{source}</p>
+    </figure>
   );
 }

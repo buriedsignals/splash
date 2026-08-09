@@ -13,7 +13,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { makeBins } from "./histogram-geometry";
-import { HistogramWeb, LAYOUTS } from "./HistogramWeb.tsx";
+import { HistogramWeb, FRAME } from "./HistogramWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -83,9 +83,9 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: HistogramWeb,
-    layouts: LAYOUTS,
     props: {
       bins,
+      frame: FRAME,
       title,
       subtitle,
       source: BEAT.source,
@@ -118,7 +118,34 @@ async function repair(outPath) {
   // Widened and made internally scrollable rather than truncating what a reader can ask for.
   const ownCss = `
 .bin-hit { cursor: pointer; }
+/* A bin answering a pointer is the only sign of WHICH bin answered, so it is drawn — a tint, never
+   an opaque fill, so the bar and the median rule underneath stay visible. The shared stylesheet has
+   no rule for this class; nothing here overrides the genre. */
+svg.chart rect.bin-hit:hover, svg.chart rect.bin-hit.bin-active {
+  fill: var(--muted);
+  fill-opacity: 0.12;
+}
 .bin-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* The median's own label rides over its rule, in the plot's own overlay. */
+.median-label {
+  position: absolute;
+  transform: translateX(8px);
+  font-size: var(--note-size);
+  font-weight: var(--note-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 0 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.axis-title {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: var(--axis-title-size);
+  font-weight: var(--axis-title-weight);
+  color: var(--muted);
+}
+.x-axis-title { text-align: center; margin-top: 2px; }
 #tooltip { max-width: 320px; max-height: 220px; overflow-y: auto; }
 `;
   if (!html.includes("</style>")) throw new Error("renderWeb output has no </style> to repair");

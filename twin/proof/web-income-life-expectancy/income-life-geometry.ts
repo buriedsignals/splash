@@ -30,7 +30,7 @@ export type CountryRow = {
  */
 export function usd(value: number): string {
   const rounded = Math.round(value);
-  return "$" + rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/, ",");
+  return "$" + rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 /** One decimal place — the precision this dataset is actually reported at. */

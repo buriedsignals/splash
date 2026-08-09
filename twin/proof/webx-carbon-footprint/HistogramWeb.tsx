@@ -2,21 +2,32 @@
  * The web beat of "Six in ten countries emit under 4 tonnes of CO2 per person" — the interactive
  * genre.
  *
- * Written fresh from `twin-chart-web/assets/ChartWebSeed.tsx`'s two-layout / baked-in-interaction
- * shape, for a DIFFERENT mark family: contiguous, edge-to-edge bins
- * (`references/types/histogram.md`). Not imported from the static sibling
- * `proof/static-carbon-footprint-spread/CarbonFootprintHistogram.tsx` (single-layout, reaches for
- * `#shared/twin-chart-beat/render-still.mjs` directly).
+ * The question the brief poses by name for this type — "what does hovering a bin reveal that the
+ * bars do not already show?" — is answered with the one thing a histogram's bars genuinely cannot
+ * carry: WHICH countries fall in a given bin. The bar's height already states the count as a shape
+ * (and the axis lets a reader estimate it); what it cannot state is membership — a reader looking at
+ * the rightmost bar (36–40 t/capita) can see "a handful of countries" but has no way to know which
+ * ones without leaving the chart. Hover, tap or keyboard focus on any of the ten bins reveals its
+ * exact count AND the full, sorted list of countries in it — never the same count restated, and
+ * never fabricated (every name comes straight from the frozen CSV's own `Entity` column, grouped in
+ * `render-web.mjs`, not typed by hand).
  *
- * The question the task brief poses by name for this type — "what does hovering a bin reveal that
- * the bars do not already show?" — is answered here with the one thing a histogram's bars
- * genuinely cannot carry: WHICH countries fall in a given bin. The bar's height already states the
- * count as a shape (and the axis lets a reader estimate it); what it cannot state is membership —
- * a reader looking at the rightmost bar (24-40 t/capita) can see "a handful of countries" but has
- * no way to know which ones without leaving the chart. Hover, tap or keyboard focus on any of the
- * ten bins reveals its exact count AND the full, sorted list of countries in it — never the same
- * count restated, and never fabricated (every name comes straight from the frozen CSV's own
- * `Entity` column, grouped in `render-web.mjs`, not typed by hand).
+ * MIGRATED TO THE FLUID FRAME. This file used to ship two pre-rendered widths (900px and 360px)
+ * swapped by a media query. One frame now, filling its container continuously and fitting the
+ * visible window, by the separation `twin-chart-web/assets/ChartWebSeed.tsx` teaches: the `<svg>`
+ * carries GEOMETRY ONLY — the bars, the gridlines, the median rule, the bins' own hit targets, and
+ * no `<text>` at all — while every word is HTML at a FIXED pixel size, positioned by `%` over the
+ * same grid cell. Geometry stretches; type does not.
+ *
+ * THE AXIS THIS TYPE GETS WRONG, kept fixed through the migration: a histogram's x labels are
+ * BOUNDARIES BETWEEN bins, not marks on top of them. Each bin's label names its LOWER EDGE, so it is
+ * drawn at that edge (`left: pct(b.x)`), and the last bin's upper edge is printed once at the far
+ * right. Drawing an edge label at a bar's CENTRE — which this file and the static sibling
+ * independently did — puts the printed axis half a bin away from the median rule drawn beside it,
+ * and the chart then contradicts itself: the rule sits at 3.1 t while the axis says it sits at 5.
+ *
+ * `deriveFurniture`/`measureText` are not called here — `renderWeb` derives them once in node and
+ * threads them in as props (`ink`/`muted`/`grid`/`measure`).
  */
 
 import { histogramGeometry, type Bin } from "./histogram-geometry";
@@ -26,54 +37,47 @@ type Measure = (
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-export type WebLayout = {
-  name: "desktop" | "narrow";
+/** This genre's single fluid frame, in this beat's own shape — declared here, not imported from the
+ *  skill's seed: a compile-time-only type has no `#shared/*` vendoring path to travel by, and a
+ *  relative import across the skill boundary hard-codes this dev repository's own layout. */
+export type HistogramFrame = {
+  /** The plot rectangle's canonical width/height in SVG user units — NOT a rendered pixel size and
+   *  NOT a cap. It fixes the geometry's internal proportions, which become one `aspect-ratio`. */
   width: number;
-  pad: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  subtitle: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
+  height: number;
+  /** Fixed CSS pixel row below the plot, for the bin-edge labels. */
+  xAxisRowPx: number;
+  title: { fontSize: number; fontWeight: number };
+  subtitle: { fontSize: number; fontWeight: number };
+  source: { fontSize: number; fontWeight: number };
   axis: { fontSize: number };
   axisTitle: { fontSize: number; fontWeight: number };
   note: { fontSize: number; fontWeight: number };
   yTickHint: number;
-  plotMinHeight: number;
-  bottomPad: number;
 };
 
-export const DESKTOP_LAYOUT: WebLayout = {
-  name: "desktop",
-  width: 900,
-  pad: 40,
-  title: { fontSize: 25, fontWeight: 700, lead: 32 },
-  subtitle: { fontSize: 14, fontWeight: 400, lead: 20 },
-  source: { fontSize: 14, fontWeight: 400, lead: 19 },
-  axis: { fontSize: 13 },
+export const FRAME: HistogramFrame = {
+  // A tall canonical box on purpose. Height follows width in this genre, so a wide window clamps to
+  // the viewport regardless (the plot measured 669px at 1600x900 either way) while a narrow one gets
+  // exactly what this ratio hands it: at 820x420 a 375px phone drew a 161px plot, in which the tail
+  // bins — the whole point of a right-skewed distribution — were a one-pixel smear. Measured at
+  // three viewports, not reasoned about.
+  width: 820,
+  height: 620,
+  xAxisRowPx: 24,
+  title: { fontSize: 24, fontWeight: 700 },
+  subtitle: { fontSize: 14, fontWeight: 400 },
+  source: { fontSize: 13, fontWeight: 400 },
+  axis: { fontSize: 12 },
   axisTitle: { fontSize: 13, fontWeight: 600 },
   note: { fontSize: 13, fontWeight: 700 },
   yTickHint: 5,
-  plotMinHeight: 300,
-  bottomPad: 52,
 };
 
-export const NARROW_LAYOUT: WebLayout = {
-  name: "narrow",
-  width: 360,
-  pad: 20,
-  title: { fontSize: 16, fontWeight: 700, lead: 21 },
-  subtitle: { fontSize: 11, fontWeight: 400, lead: 15 },
-  source: { fontSize: 11, fontWeight: 400, lead: 14 },
-  axis: { fontSize: 10 },
-  axisTitle: { fontSize: 10, fontWeight: 600 },
-  note: { fontSize: 10, fontWeight: 700 },
-  yTickHint: 4,
-  plotMinHeight: 220,
-  bottomPad: 40,
-};
-
-export const LAYOUTS: WebLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];
-
-function wrap(
+/** Wrap on the measured width of the real string, never a character count. Kept and exported the
+ *  way every other beat keeps its copy; this component's header text is flowing HTML the browser
+ *  wraps itself, so nothing here calls it. */
+export function wrap(
   text: string,
   maxWidth: number,
   font: { fontSize: number; fontWeight: number },
@@ -91,6 +95,12 @@ function wrap(
   return line ? [...lines, line] : lines;
 }
 
+/** A coordinate as a percentage of the box it was drawn in — what lets an HTML label sit exactly at
+ *  the bin edge the geometry drew, and stay there as the browser stretches that box. */
+function pct(value: number, total: number): number {
+  return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
+}
+
 export function HistogramWeb({
   bins,
   title,
@@ -105,7 +115,7 @@ export function HistogramWeb({
   muted,
   grid,
   measure,
-  layout,
+  frame,
 }: {
   bins: Bin[];
   title: string;
@@ -120,219 +130,193 @@ export function HistogramWeb({
   muted: string;
   grid: string;
   measure: Measure;
-  layout: WebLayout;
+  frame: HistogramFrame;
 }) {
   if (bins.length < 3)
     throw new Error(
       `a histogram beat needs at least three bins to show a shape, got ${bins.length}`,
     );
 
-  const { width, pad } = layout;
-
-  const titleLines = wrap(title, width - pad * 2, layout.title, measure);
-  const titleBaseline = pad + layout.title.fontSize;
-  const subtitleLines = wrap(
-    subtitle,
-    width - pad * 2,
-    layout.subtitle,
-    measure,
-  );
-  const subtitleBaseline =
-    titleBaseline +
-    (titleLines.length - 1) * layout.title.lead +
-    Math.round(layout.title.lead * 0.9);
-  const sourceLines = wrap(source, width - pad * 2, layout.source, measure);
-  const sourceBaseline =
-    subtitleBaseline +
-    (subtitleLines.length - 1) * layout.subtitle.lead +
-    Math.round(layout.subtitle.lead * 1.1);
-
-  const plotTop =
-    sourceBaseline +
-    (sourceLines.length - 1) * layout.source.lead +
-    Math.round(layout.title.lead);
-  const plotBottom = plotTop + layout.plotMinHeight;
-  const height = plotBottom + layout.bottomPad;
-
-  const tickLabels = histogramGeometry(bins, {
-    width,
-    height,
-    padding: { top: 0, right: pad + 8, bottom: 0, left: pad },
-  })
-    .y.ticks(layout.yTickHint)
-    .map((v, i, all) => (i === all.length - 1 ? `${v} countries` : `${v}`));
-
-  const padding = {
-    top: plotTop,
-    right: pad + 8,
-    bottom: layout.bottomPad,
-    left:
-      pad + 10 + Math.max(...tickLabels.map((l) => measure(l, layout.axis))),
-  };
-
-  const { plot, bars, x, ticksY } = histogramGeometry(bins, {
-    width,
-    height,
-    padding,
+  const { plot, bars, x, y, ticksY } = histogramGeometry(bins, {
+    width: frame.width,
+    height: frame.height,
+    padding: { top: 0, right: 0, bottom: 0, left: 0 },
   });
+  void plot;
+
+  const tickLabels = y
+    .ticks(frame.yTickHint)
+    .map((v, i, all) => (i === all.length - 1 ? `${v} countries` : `${v}`));
+  const yGutterPx =
+    10 + Math.max(...tickLabels.map((l) => measure(l, frame.axis)));
+
   const medianX = x(median);
+  const lastEdge = bins[bins.length - 1].hi;
+
+  const totalWidth = yGutterPx + frame.width;
+  const totalHeight = frame.height + frame.xAxisRowPx;
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="chart"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
+    <figure
+      className="chart-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--accent" as string]: accent,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ["--title-size" as string]: `${frame.title.fontSize}px`,
+        ["--title-weight" as string]: frame.title.fontWeight,
+        ["--subtitle-size" as string]: `${frame.subtitle.fontSize}px`,
+        ["--source-size" as string]: `${frame.source.fontSize}px`,
+        ["--axis-size" as string]: `${frame.axis.fontSize}px`,
+        ["--axis-title-size" as string]: `${frame.axisTitle.fontSize}px`,
+        ["--axis-title-weight" as string]: frame.axisTitle.fontWeight,
+        ["--note-size" as string]: `${frame.note.fontSize}px`,
+        ["--note-weight" as string]: frame.note.fontWeight,
+      }}
     >
-      {/* No root role="img" — ten individually-focusable bins below need their own names. */}
-      <desc>{alt}</desc>
-      <rect x={0} y={0} width={width} height={height} fill={ground} />
+      {/* A fixed row of air under the header: the topmost y tick label sits half a line above the
+          plot's own top edge, and the median's own label sits inside it near the top. */}
+      <div className="chart-header" style={{ marginBottom: 18 }}>
+        <h2 className="chart-title">{title}</h2>
+        <p className="chart-caveat">{subtitle}</p>
+      </div>
 
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={titleBaseline + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {subtitleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={subtitleBaseline + i * layout.subtitle.lead}
-          fill={muted}
-          fontSize={layout.subtitle.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={sourceBaseline + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
+      <div
+        className="chart-plot histogram-plot"
+        style={{
+          ["--y-gutter" as string]: `${yGutterPx}px`,
+          ["--x-axis-h" as string]: `${frame.xAxisRowPx}px`,
+          aspectRatio: `${totalWidth} / ${totalHeight}`,
+        }}
+      >
+        <div className="y-axis">
+          {ticksY.map((tick, i) => (
+            <span
+              key={tick.value}
+              className="axis-label y"
+              style={{ top: `${pct(tick.y, frame.height)}%`, color: muted }}
+            >
+              {tickLabels[i]}
+            </span>
+          ))}
+        </div>
 
-      {ticksY.map((tick, i) => (
-        <g key={tick.value}>
-          <line
-            x1={plot.left}
-            x2={plot.right}
-            y1={tick.y}
-            y2={tick.y}
-            stroke={tick.value === 0 ? muted : grid}
-            strokeWidth={1}
+        {/* GEOMETRY ONLY below — no `<text>`. */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          viewBox={`0 0 ${frame.width} ${frame.height}`}
+          preserveAspectRatio="none"
+          fontFamily="Helvetica, Arial, sans-serif"
+        >
+          {/* No root role="img" — ten individually-focusable bins below need their own names. */}
+          <desc>{alt}</desc>
+          <rect
+            x={0}
+            y={0}
+            width={frame.width}
+            height={frame.height}
+            fill={ground}
           />
-          <text
-            x={plot.left - 10}
-            y={tick.y + 4}
-            fill={muted}
-            fontSize={layout.axis.fontSize}
-            textAnchor="end"
+
+          {ticksY.map((tick) => (
+            <line
+              key={tick.value}
+              x1={0}
+              x2={frame.width}
+              y1={tick.y}
+              y2={tick.y}
+              stroke={tick.value === 0 ? muted : grid}
+              strokeWidth={1}
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+
+          {/* Bars sit edge-to-edge — contiguous slices of one continuous variable, not discrete
+              categories (`references/types/histogram.md`). The 1-unit trim is in CANONICAL units, so
+              at a wide frame it stretches into a hairline gap and at a narrow one it all but
+              disappears; the bins still read as slices of one range either way. */}
+          {bars.map((b) => (
+            <rect
+              key={b.lo}
+              x={b.x}
+              y={b.y}
+              width={Math.max(b.width - 1, 0)}
+              height={b.height}
+              fill={muted}
+            />
+          ))}
+
+          <line
+            x1={medianX}
+            x2={medianX}
+            y1={0}
+            y2={frame.height}
+            stroke={accent}
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            vectorEffect="non-scaling-stroke"
+          />
+
+          {/* Interaction layer: one direct hit target per bin, `tabIndex={0}` and `aria-label` baked
+              in at build time — every bin's exact count AND the full list of member countries is
+              reachable with the script absent entirely. */}
+          {bars.map((b) => (
+            <rect
+              key={`hit-${b.lo}`}
+              className="bin-hit"
+              x={b.x}
+              y={0}
+              width={b.width}
+              height={frame.height}
+              fill="transparent"
+              pointerEvents="all"
+              tabIndex={0}
+              role="img"
+              aria-label={`${b.lo} to ${b.hi} tonnes: ${b.count} ${b.count === 1 ? "country" : "countries"} — ${b.entities.join(", ") || "none"}`}
+              data-detail={`${b.lo}–${b.hi} t: ${b.count} ${b.count === 1 ? "country" : "countries"} — ${b.entities.join(", ") || "none"}`}
+            />
+          ))}
+        </svg>
+
+        {/* The median's own label, in the overlay so it tracks its rule at any width. */}
+        <div className="overlay" aria-hidden="true">
+          <span
+            className="median-label"
+            style={{ left: `${pct(medianX, frame.width)}%`, top: "2%" }}
           >
-            {tickLabels[i]}
-          </text>
-        </g>
-      ))}
+            {medianLabel}
+          </span>
+        </div>
 
-      {/* Bars sit edge-to-edge — contiguous slices of one continuous variable, not discrete
-          categories (`references/types/histogram.md`). */}
-      {bars.map((b) => (
-        <rect
-          key={b.lo}
-          x={b.x}
-          y={b.y}
-          width={Math.max(b.width - 1, 0)}
-          height={b.height}
-          fill={muted}
-        />
-      ))}
-      {bars.map((b) => (
-        <text
-          key={`label-${b.lo}`}
-          // The label names the bin's LOWER EDGE (`b.lo`), so it is drawn at that edge. Found
-          // independently in this copy and in `static-carbon-footprint-spread`'s — the same line,
-          // the same defect, in two files with no shared code. A histogram's ticks are boundaries
-          // between bins, never marks on top of them.
-          x={b.x}
-          y={plot.bottom + 20}
-          fill={muted}
-          fontSize={layout.axis.fontSize}
-          textAnchor="middle"
-        >
-          {b.lo}
-        </text>
-      ))}
-      <text
-        x={plot.right}
-        y={plot.bottom + 20}
-        fill={muted}
-        fontSize={layout.axis.fontSize}
-        textAnchor="middle"
-      >
-        {bins[bins.length - 1].hi}
-      </text>
-      <text
-        x={(plot.left + plot.right) / 2}
-        y={height - Math.round(layout.bottomPad * 0.3)}
-        fill={muted}
-        fontSize={layout.axisTitle.fontSize}
-        fontWeight={layout.axisTitle.fontWeight}
-        textAnchor="middle"
-      >
+        {/* The x axis: one label per bin LOWER EDGE, drawn at that edge, plus the last bin's upper
+            edge at the far right. See this file's own doc-comment — a label naming an edge and drawn
+            at a centre is the defect this beat carried. */}
+        <div className="x-axis">
+          {bars.map((b) => (
+            <span
+              key={`tick-${b.lo}`}
+              className="axis-label x"
+              style={{ left: `${pct(b.x, frame.width)}%`, color: muted }}
+            >
+              {b.lo}
+            </span>
+          ))}
+          <span
+            className="axis-label x"
+            style={{ left: `${pct(x(lastEdge), frame.width)}%`, color: muted }}
+          >
+            {lastEdge}
+          </span>
+        </div>
+      </div>
+
+      <p className="axis-title x-axis-title">
         CO2 emissions per capita (tonnes/year)
-      </text>
+      </p>
 
-      <line
-        x1={medianX}
-        x2={medianX}
-        y1={plot.top}
-        y2={plot.bottom}
-        stroke={accent}
-        strokeWidth={2}
-        strokeDasharray="6 4"
-      />
-      <text
-        x={medianX + 8}
-        y={plot.top + 16}
-        fill={ink}
-        fontSize={layout.note.fontSize}
-        fontWeight={layout.note.fontWeight}
-      >
-        {medianLabel}
-      </text>
-
-      {/* Interaction layer: one direct hit target per bin, `tabIndex={0}` and `aria-label`
-          baked in at build time — every bin's exact count AND the full list of member countries
-          is reachable with the script absent entirely. */}
-      {bars.map((b) => (
-        <rect
-          key={`hit-${b.lo}`}
-          className="bin-hit"
-          x={b.x}
-          y={plot.top}
-          width={b.width}
-          height={plot.bottom - plot.top}
-          fill="transparent"
-          tabIndex={0}
-          role="img"
-          aria-label={`${b.lo} to ${b.hi} tonnes: ${b.count} ${b.count === 1 ? "country" : "countries"} — ${b.entities.join(", ") || "none"}`}
-          data-detail={`${b.lo}–${b.hi} t: ${b.count} ${b.count === 1 ? "country" : "countries"} — ${b.entities.join(", ") || "none"}`}
-        />
-      ))}
-    </svg>
+      <p className="chart-source">{source}</p>
+    </figure>
   );
 }

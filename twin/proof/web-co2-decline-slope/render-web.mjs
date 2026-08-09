@@ -21,7 +21,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { SlopeWeb, LAYOUTS } from "./SlopeWeb.tsx";
+import { SlopeWeb, FRAME } from "./SlopeWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -109,6 +109,57 @@ function inlineable(moduleSource) {
   return moduleSource.replace(/^export /gm, "");
 }
 
+/** This beat's own rules, appended after the genre's shared stylesheet — the shared sheet is
+ *  generic and stays that way; what a slopegraph needs on top of it lives here, beside the story.
+ *
+ *   1. A THIRD GRID COLUMN. The genre's grid is `[y-gutter] [plot]`; a slopegraph labels BOTH ends,
+ *      so it is `[left labels] [plot] [right labels]`. Both label tracks are a fixed pixel width
+ *      measured from the real strings (`SlopeWeb.tsx`'s `gutterPx`), so the plot — and only the
+ *      plot — absorbs a wider or a narrower container.
+ *   2. A MEASURED `min-height`. Ten label blocks down each side need a real number of CSS pixels,
+ *      and that number does not shrink with the container; `--min-plot-h` is derived in the
+ *      component from the label block it actually draws. Below it the rows would collide at any
+ *      width. A window too short for that is given a scrollbar rather than a collision, the same
+ *      trade the genre's own `PLOT_FLOOR_PX` makes.
+ *   3. THE HIT BANDS ARE RECTS, so the shared `.pt:hover { fill: var(--muted) }` rule would paint
+ *      an opaque block across the chart. Overridden here — higher specificity, no `!important` —
+ *      to a soft tint that shows which endpoint answered without hiding anything behind it. */
+const OWN_CSS = `
+.chart-plot.slope-plot {
+  grid-template-columns: var(--y-gutter) 1fr var(--r-gutter);
+  min-height: var(--min-plot-h);
+}
+.chart-plot.slope-plot .r-axis { grid-column: 3; grid-row: 1; position: relative; }
+.slope-label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--label-size);
+  line-height: var(--label-lead);
+  color: var(--ink);
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+.slope-label.left { right: 10px; align-items: flex-end; text-align: right; }
+.slope-label.right { left: 10px; align-items: flex-start; text-align: left; }
+.period-label {
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, -100%) translateY(-8px);
+  font-size: var(--period-size);
+  font-weight: var(--period-weight);
+  color: var(--ink);
+  white-space: nowrap;
+}
+svg.chart rect.pt { fill: transparent; cursor: pointer; }
+svg.chart rect.pt:hover, svg.chart rect.pt:focus, svg.chart rect.pt.pt-active {
+  fill: var(--muted);
+  fill-opacity: 0.14;
+  outline: none;
+}
+svg.chart rect.pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+`;
+
 export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const csv = await readFile(dataPath, "utf8");
   const data = countriesFromCsv(csv, { countries: BEAT.countries });
@@ -117,9 +168,9 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: SlopeWeb,
-    layouts: LAYOUTS,
     props: {
       data,
+      frame: FRAME,
       title: BEAT.title,
       limits: BEAT.limits,
       source: BEAT.source,
@@ -141,14 +192,32 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     join(HERE, "slope-interaction.mjs"),
     "utf8",
   );
-  const html = await readFile(outPath, "utf8");
+  let html = await readFile(outPath, "utf8");
   const withOwnScript = html.replace(
     "</body>",
     `<script>\n${inlineable(ownScriptSource)}\n</script>\n</body>`,
   );
   if (withOwnScript === html)
     throw new Error(`could not find </body> to inject slope-interaction.mjs into ${outPath}`);
-  await writeFile(outPath, withOwnScript);
+  html = withOwnScript;
+
+  // This beat's words are English throughout (`BEAT` above, from `BRIEF.md`), and `renderWeb`'s own
+  // shell hard-codes `lang="fr"` — the language every web beat built against it before this one was
+  // written in. A screen reader takes its pronunciation from that attribute, not from the words, so
+  // shipping the French tag over English prose is a defect, not a detail. A per-story repair, not a
+  // change to the skill: `renderWeb` takes no `lang` parameter to set correctly instead.
+  const langMarker = '<html lang="fr">';
+  if (!html.includes(langMarker))
+    throw new Error(
+      `expected renderWeb's own ${JSON.stringify(langMarker)} shell to repair to English — its HTML shape may have changed`,
+    );
+  html = html.replace(langMarker, '<html lang="en">');
+
+  if (!html.includes("</style>"))
+    throw new Error("renderWeb output has no </style> to append this beat's own rules to");
+  html = html.replace("</style>", `${OWN_CSS}</style>`);
+
+  await writeFile(outPath, html);
 
   return { outPath, countries: data.length };
 }

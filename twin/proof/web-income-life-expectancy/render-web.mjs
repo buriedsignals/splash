@@ -33,7 +33,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { IncomeLifeExpectancyWeb, LAYOUTS } from "./IncomeLifeExpectancyWeb.tsx";
+import { IncomeLifeExpectancyWeb, FRAME } from "./IncomeLifeExpectancyWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -53,8 +53,15 @@ export const BEAT = {
     "Cuba, at roughly an eighth of either country's income, comes within a few years of both.",
   source:
     "Source: UN World Population Prospects (2024) & World Bank, via Our World in Data · 2022 data",
-  alt: "Scatter plot of GDP per capita, log scale, against life expectancy at birth, for 164 countries in 2022. Switzerland (about $63,300 GDP per capita, 83.2 years) and the United States (about $58,500, 78.0 years) are highlighted: despite similar income, the United States trails Switzerland by about five years. Cuba (about $7,600, 77.6 years) is also highlighted, nearly matching the United States' life expectancy at roughly an eighth of its income. Most other countries form a rising cloud in which higher income tends to come with longer life expectancy, with these three points as the notable exceptions.",
+  // The alt text is NOT here. It states how many countries were plotted, which year they are, and
+  // the income and life expectancy of each of the three named points — every one of them a value
+  // in `data.csv`, so every one of them is read out of it in `describeNamedPoints` below rather
+  // than typed here where a re-export could move the points and leave the sentence behind.
 };
+
+/** The three points this beat names, and the only ones it labels. `IncomeLifeExpectancyWeb` throws
+ *  if the plotted data does not contain exactly these three. */
+const NAMED_CODES = ["CHE", "USA", "CUB"];
 
 const DEFAULT_DATA_PATH = join(HERE, "data.csv");
 const DEFAULT_OUT_DIR = "/tmp/web-twin";
@@ -108,22 +115,47 @@ function inlineable(moduleSource) {
   return moduleSource.replace(/^export /gm, "");
 }
 
-/** CSS appended after the skill's own generic stylesheet — see this file's header comment, item 2,
- *  for why a fill-swap-on-hover (the skill's own `.pt:hover { fill: var(--muted) }` rule) does
- *  nothing visible on a point that is already drawn in a real colour. `.pt-named` gets its own,
- *  higher-specificity rule so a named point's accent fill survives hover/focus/tap — the scatter
- *  doctrine's own rule that the accent stays reserved for the subject, interaction or not. */
+/** CSS appended after the skill's own generic stylesheet. Every rule here exists because this
+ *  beat's dots are HTML elements laid over the geometry rather than SVG circles inside it — the
+ *  fluid frame stretches its `viewBox`, and a stretched circle is an ellipse
+ *  (`IncomeLifeExpectancyWeb.tsx`'s own doc-comment carries the reasoning). So: the dot is
+ *  positioned and rounded here, hover/focus draws a RING around it rather than swapping a fill the
+ *  skill's own `.pt:hover { fill: ... }` rule cannot touch on an HTML element, and the named points
+ *  keep their accent through every state — the scatter doctrine's rule that the accent stays
+ *  reserved for the subject, interaction or not. The two axis titles and the three point labels are
+ *  words, so they are typed at a fixed pixel size here too. */
 const EXTRA_CSS = `
-.pt { stroke: none; }
-.pt:hover, .pt:focus, .pt-active {
-  stroke: var(--ink);
-  stroke-width: 1.5px;
+.pt {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
-.pt.pt-named:hover, .pt.pt-named:focus, .pt.pt-named.pt-active {
-  fill: var(--accent);
-  stroke: var(--ink);
-  stroke-width: 2px;
+.pt.pt-active, .pt:focus {
+  box-shadow: 0 0 0 2px var(--ground), 0 0 0 4px var(--ink);
 }
+.pt:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.point-label {
+  position: absolute;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 0 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+.point-label.anchor-middle { transform: translate(-50%, -50%); }
+.point-label.anchor-end { transform: translate(-100%, -50%); }
+.axis-title {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: var(--axis-title-size);
+  color: var(--muted);
+}
+.y-axis-title { margin-bottom: 8px; }
+.x-axis-title { text-align: center; margin-top: 2px; }
 `;
 
 async function patchForThisBeat(outPath) {
@@ -151,21 +183,64 @@ async function patchForThisBeat(outPath) {
   await writeFile(outPath, html);
 }
 
+/**
+ * Writes the alt text from the plotted rows: the count, the reference year the file itself carries,
+ * and each named point's own income and life expectancy. The two comparisons the sentence makes —
+ * the life-expectancy gap between the two rich peers, and Cuba's income as a fraction of the United
+ * States' — are computed here too, and the eighth is ASSERTED because the word "eighth" cannot
+ * carry an interpolation.
+ */
+export function describeNamedPoints(data, csv) {
+  const years = [...new Set(csv.trim().split(/\r?\n/).slice(1).map((l) => l.split(",")[2]))];
+  if (years.length !== 1) throw new Error(`expected one reference year in data.csv, got ${years.join(", ")}`);
+  const year = years[0];
+
+  const at = (code) => {
+    const row = data.find((r) => r.code === code);
+    if (!row) throw new Error(`data.csv carries no row for ${code}, which this beat names`);
+    return row;
+  };
+  const [rich, peer, poor] = NAMED_CODES.map(at);
+  const usd = (v) => `$${(Math.round(v / 100) * 100).toLocaleString("en-US")}`;
+  const years1 = (v) => v.toFixed(1);
+  const gap = rich.lifeExpectancy - peer.lifeExpectancy;
+  const incomeRatio = peer.gdp / poor.gdp;
+  if (Math.round(incomeRatio) !== 8)
+    throw new Error(
+      `the alt and the subtitle say "roughly an eighth", but ${peer.country} (${peer.gdp}) / ${poor.country} (${poor.gdp}) = ${incomeRatio.toFixed(2)}`,
+    );
+
+  return (
+    `Scatter plot of GDP per capita, log scale, against life expectancy at birth, for ${data.length} ` +
+    `countries in ${year}. ${rich.country} (about ${usd(rich.gdp)} GDP per capita, ` +
+    `${years1(rich.lifeExpectancy)} years) and the ${peer.country} (about ${usd(peer.gdp)}, ` +
+    `${years1(peer.lifeExpectancy)} years) are highlighted: despite similar income, the ` +
+    `${peer.country} trails ${rich.country} by about ${Math.round(gap)} years. ${poor.country} ` +
+    `(about ${usd(poor.gdp)}, ${years1(poor.lifeExpectancy)} years) is also highlighted, nearly ` +
+    `matching the ${peer.country}' life expectancy at roughly an eighth of its income. Most other ` +
+    `countries form a rising cloud in which higher income tends to come with longer life ` +
+    `expectancy, with these three points as the notable exceptions.`
+  );
+}
+
 export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const csv = await readFile(dataPath, "utf8");
   const data = rowsFromCsv(csv);
   if (data.length < 8)
     throw new Error(`need enough points for a cloud shape to read, got ${data.length}`);
 
+  const alt = describeNamedPoints(data, csv);
+  console.log(`alt: ${alt}`);
+
   const { outPath } = await renderWeb({
     component: IncomeLifeExpectancyWeb,
-    layouts: LAYOUTS,
     props: {
       data,
+      frame: FRAME,
       title: BEAT.title,
       subtitle: BEAT.subtitle,
       source: BEAT.source,
-      alt: BEAT.alt,
+      alt,
       ground: BEAT.ground,
       accent: BEAT.accent,
     },

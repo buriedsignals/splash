@@ -22,7 +22,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { EmissionsWeb, LAYOUTS } from "./EmissionsWeb.tsx";
+import { EmissionsWeb, FRAME } from "./EmissionsWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -94,9 +94,9 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: EmissionsWeb,
-    layouts: LAYOUTS,
     props: {
       data,
+      frame: FRAME,
       title: BEAT.title,
       source: BEAT.source,
       alt: BEAT.alt,

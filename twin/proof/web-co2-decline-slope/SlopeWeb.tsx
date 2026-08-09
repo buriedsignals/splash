@@ -6,23 +6,32 @@
  * Not a second chart: the coordinates come from `./slope-geometry.ts` (`slopeGeometry`, `fmt`), the
  * pure core this file and its own `render-web.mjs` share. What this file adds is the one thing a
  * static frame cannot have — every one of the twenty endpoints (ten countries × two periods)
- * answers hover, tap or keyboard focus with its exact country, period and value, none of it printed
- * twice by default. Read `twin-chart-web/references/web-discipline.md` before changing this file.
+ * answers hover, tap or keyboard focus with its exact country, period and value. Read
+ * `twin-chart-web/references/web-discipline.md` before changing this file.
  *
- * Two layouts, not a continuous reflow (`web-discipline.md`, "Responsive behaviour"): each is its
- * own call to this component, SSR'd once at build time by the `twin-chart-web` skill's generic
- * `renderWeb` — the HTML wrapper switches between the two pre-rendered SVGs with a CSS media query.
+ * MIGRATED TO THE FLUID FRAME. This file used to ship two pre-rendered widths (900px and 360px)
+ * swapped by a media query. The owner overturned that: one frame, filling its container
+ * continuously, fitting the visible window. The separation that makes it safe is the one
+ * `twin-chart-web/assets/ChartWebSeed.tsx` teaches — the `<svg>` carries GEOMETRY ONLY (no `<text>`
+ * at all), and every word is HTML at a FIXED pixel size, positioned by `%` over the same CSS grid
+ * the geometry is drawn in. Geometry stretches; type does not.
  *
- * `WebLayout` is declared fresh here, not imported from `EmissionsWeb.tsx` or the skill's own seed —
- * "duplicate, do not link", the same ruling `EmissionsWeb.tsx`'s own copy already documents. This
- * beat's `WebLayout` carries its own extra fields (`label`, `period`, `gap`, `labelGutterMaxWidth`,
- * `pointRadius`, `stroke`) that a continuous-time-series beat never needed — a slope chart's own
- * mechanics (two fixed columns, direct end labels needing de-collision) are not the CO₂ beat's.
+ * THE ONE THING THIS TYPE NEEDS THAT THE SEED DID NOT, and the reason this file adds two CSS rules
+ * of its own (appended by `render-web.mjs`, never edited into the skill): a slopegraph carries a
+ * label column on BOTH sides. The seed's grid is `[y-gutter] [plot]`; this beat's is
+ * `[left labels] [plot] [right labels]`, both label tracks a FIXED pixel width measured from the
+ * real strings, so the plot — and only the plot — absorbs every pixel of a wider or narrower
+ * container.
  *
- * `deriveFurniture`/`measureText` are not called here — they live in
- * `twin-chart-beat/scripts/render-still.mjs`, and `render-web.mjs`'s generic `renderWeb` derives
- * them once and threads them in as props (`ink`/`muted`/`grid`/`measure`), exactly as
- * `EmissionsWeb.tsx` documents for itself.
+ * AND THE ONE THING THAT CANNOT BE SOLVED BY STRETCHING: ten label blocks stacked down each side
+ * need a real number of CSS pixels, and that number does not shrink when the container does. The
+ * de-collision pass runs in canonical units, so the gap it guarantees is only worth its pixel value
+ * at a given rendered height — which is why `.chart-plot` gets a measured `min-height` here
+ * (`minPlotHeightPx` below), derived from the label block this beat actually draws rather than
+ * guessed. Below that height the labels would collide however wide the frame is.
+ *
+ * `deriveFurniture`/`measureText` are not called here — `renderWeb` derives them once in node and
+ * threads them in as props (`ink`/`muted`/`grid`/`measure`).
  */
 
 import { slopeGeometry, fmt, type Country } from "./slope-geometry";
@@ -32,97 +41,71 @@ type Measure = (
   font: { fontSize: number; fontWeight?: number },
 ) => number;
 
-// `WebLayout` describes this genre's own mechanics, adapted for a slope chart's own shape — see
-// this file's own header note on why it is not `EmissionsWeb.tsx`'s copy.
-export type WebLayout = {
-  name: "desktop" | "narrow";
+/** This genre's own single fluid frame, in this beat's own shape. Declared here rather than
+ *  imported from the skill's seed: a compile-time-only type has no `#shared/*` vendoring path, and
+ *  a relative import across the skill boundary hard-codes this dev repository's own layout.
+ *  Duplicate, do not link — the ruling this file's first build already documented for `WebLayout`. */
+export type SlopeFrame = {
+  /** The plot rectangle's canonical width/height in SVG user units — NOT a rendered pixel size and
+   *  NOT a cap. It fixes the geometry's own internal proportions (which become one `aspect-ratio`)
+   *  and the de-collision arithmetic below; the browser stretches it from there. */
   width: number;
-  pad: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  subtitle: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
-  /** The "1990" / "2024" captions above each column — without them the chart states direction with
+  height: number;
+  title: { fontSize: number; fontWeight: number };
+  subtitle: { fontSize: number; fontWeight: number };
+  source: { fontSize: number; fontWeight: number };
+  /** The "1990" / "2024" captions over each column — without them the chart states direction with
    *  no stated "from when to when," half the claim (`references/types/slope.md`). */
   period: { fontSize: number; fontWeight: number };
-  /** The direct end label — one line at the desktop width, wrapped onto as many lines as its own
-   *  widest piece needs at the narrow width (`labelGutterMaxWidth` below is the wrap width, not a
-   *  truncation limit: this genre's own doctrine says wrap or shrink, never truncate). */
+  /** The direct end label: country name, then its value on its own line. */
   label: { fontSize: number; fontWeight: number; lead: number };
-  /** Air between the plot's own column and where a label's text starts. */
+  /** Air between a label track and the plot's own column. */
   gap: number;
-  /** The width a label is wrapped against. At the desktop width this is generous enough that no
-   *  real label in this beat's own ten countries needs a second line; at the narrow width it is
-   *  deliberately tight, which is what forces "United Kingdom" onto two lines and drives the
-   *  measured gutter — see this file's own `SlopeWeb` doc-comment on the narrow-width decision. */
-  labelGutterMaxWidth: number;
-  /** Visible mark radius (drawn in the line's own colour) and invisible interactive overlay radius
-   *  (the tap/hover/focus target — larger, because unlike the CO₂ beat's 75 densely-packed points
-   *  along one curve, this beat has only twenty, isolated, discrete targets with no shared
-   *  nearest-point hit-area to help a touch reader land near one; see `slope-interaction.mjs`). */
+  /** Air between two neighbouring label blocks, in CSS pixels, at the shortest height this beat
+   *  will render at. It is what `minPlotHeightPx` buys: raise it and the rows breathe but the beat
+   *  needs a taller window before it fits; drop it to zero and ten blocks stack edge to edge. */
+  labelAirPx: number;
+  /** The width a NAME is wrapped against. Not a truncation limit: the gutter is sized to whatever
+   *  the real strings measure (see `gutterPx`), never the strings to the gutter — the "Interm."
+   *  warning `references/types/slope.md` gives for this exact chart type. */
+  labelWrapPx: number;
+  /** The share of the frame's own height the ten de-collided label rows may claim between them.
+   *  It is the whole trade this chart type makes in a fluid frame, in one number: push it towards 1
+   *  and the labels are guaranteed to clear each other in a shorter window, but the de-collision
+   *  pass spaces them so evenly that the row stops carrying its value; push it down and the rows
+   *  stay closer to their true positions but the plot needs to be taller before they separate.
+   *  `minPlotHeightPx` below is derived from it, not guessed. */
+  labelPacking: number;
+  /** Visible mark radius. */
   pointRadius: number;
-  hitRadius: number;
   stroke: { accent: number; muted: number };
-  /** The plot's own floor for usable height, independent of how many lines the header wraps to —
-   *  same derivation rule `EmissionsWeb.tsx` keeps: never a fixed guess that could clip. */
-  plotMinHeight: number;
-  bottomPad: number;
 };
 
-export const DESKTOP_LAYOUT: WebLayout = {
-  name: "desktop",
-  width: 900,
-  pad: 40,
-  title: { fontSize: 24, fontWeight: 700, lead: 30 },
-  subtitle: { fontSize: 14, fontWeight: 400, lead: 20 },
-  source: { fontSize: 13, fontWeight: 400, lead: 18 },
+export const FRAME: SlopeFrame = {
+  width: 620,
+  height: 480,
+  title: { fontSize: 24, fontWeight: 700 },
+  subtitle: { fontSize: 14, fontWeight: 400 },
+  source: { fontSize: 13, fontWeight: 400 },
   period: { fontSize: 14, fontWeight: 700 },
+  // 17px of lead for a 13px face: two lines per label (name, then value) is the block this beat's
+  // vertical budget is built around — see `minPlotHeightPx`.
   label: { fontSize: 13, fontWeight: 600, lead: 17 },
-  gap: 12,
-  // Generous on purpose: at 900px wide, even "United Kingdom 10.49 t" (the widest label this beat
-  // ever draws) measures well under this, so every label renders on one line — the wrap machinery
-  // below is exercised for real only at the narrow width, not skipped at this one.
-  labelGutterMaxWidth: 220,
+  gap: 10,
+  labelAirPx: 8,
+  // Wide enough that "United Kingdom", the longest name this beat draws, stays on ONE line at 13px
+  // — measured, not assumed (`measure` is asserted against it below). A name that does not fit
+  // still wraps rather than being cut, and widens its own gutter.
+  labelWrapPx: 112,
+  labelPacking: 0.85,
   pointRadius: 3.5,
-  hitRadius: 8,
   stroke: { accent: 3, muted: 1.5 },
-  plotMinHeight: 460,
-  bottomPad: 40,
 };
 
-export const NARROW_LAYOUT: WebLayout = {
-  name: "narrow",
-  width: 360,
-  pad: 16,
-  title: { fontSize: 17, fontWeight: 700, lead: 22 },
-  subtitle: { fontSize: 11, fontWeight: 400, lead: 15 },
-  source: { fontSize: 11, fontWeight: 400, lead: 14 },
-  period: { fontSize: 12, fontWeight: 700 },
-  label: { fontSize: 11, fontWeight: 600, lead: 14 },
-  gap: 6,
-  // NARROW-WIDTH DECISION (documented inline per this beat's own brief): 360px minus two outer
-  // margins minus two label gutters leaves very little for the plot itself once ten labels are
-  // involved. 64px is tight enough that every ordinary single-word name ("Sweden", "Germany") wraps
-  // onto its own line above the value, and "United Kingdom" — the widest label this beat draws —
-  // wraps onto two lines of its own on top of that, rather than being shrunk further or truncated.
-  // "Switzerland" alone (11 letters, no internal space to break on) still measures wider than this
-  // cap; the gutter is sized to whatever the real strings measure (see `SlopeWeb`'s own
-  // `labelBlockWidth`), not clamped to this number, so that single un-splittable name simply widens
-  // its own gutter rather than being cut — the gutter is sized to the label, never the label to the
-  // gutter, per `references/types/slope.md`'s own "Interm." warning.
-  labelGutterMaxWidth: 64,
-  pointRadius: 3,
-  hitRadius: 7,
-  stroke: { accent: 2.5, muted: 1.25 },
-  // Ten categories' worth of two-to-three-line label blocks, de-collided, need real vertical room —
-  // this is the beat this genre's own doctrine calls "genuinely tight" at the narrow width, and the
-  // number below is set generous, then verified (not guessed and left unchecked) by driving a real
-  // browser at ~375px and confirming nothing clips.
-  plotMinHeight: 850,
-  bottomPad: 28,
-};
-
-export const LAYOUTS: WebLayout[] = [DESKTOP_LAYOUT, NARROW_LAYOUT];
-
+/** Wrap on the measured width of the real string, never a character count. Splits on the literal
+ *  ASCII space only, never the general `\s` class — `labelLines` below joins a value to its unit
+ *  with a U+00A0 NO-BREAK SPACE precisely so this split point cannot strand a bare "t" on a line of
+ *  its own, which is what a plain-space join did on this beat's first narrow render. */
 export function wrap(
   text: string,
   maxWidth: number,
@@ -131,12 +114,6 @@ export function wrap(
 ): string[] {
   const lines: string[] = [];
   let line = "";
-  // Splits on the literal ASCII space only, never the general `\s` class — `labelLines` below
-  // glues a value to its unit with a U+00A0 NO-BREAK SPACE precisely so this split point does not
-  // see it as a break, and a wrapped label can never strand a bare "t" on its own line the way a
-  // plain-space join did on the first render of this beat's narrow layout (caught by looking at the
-  // actual wrapped output, not by reading the markup — the same discipline this genre's own gotcha
-  // note names).
   for (const word of text.split(/ +/)) {
     const trial = line ? `${line} ${word}` : word;
     if (line && measure(trial, font) > maxWidth) {
@@ -147,23 +124,66 @@ export function wrap(
   return line ? [...lines, line] : lines;
 }
 
-/** The one direct end label: country name and value together, e.g. "United Kingdom" / "10.49 t" —
- *  wrapped as ordinary prose against `layout.labelGutterMaxWidth`, so a short label ("Spain 4.60 t")
- *  naturally stays on one line while a long one wraps, with no separate code path for either case.
- *  The value and its unit are joined with a NO-BREAK SPACE (` `), not a plain one, so the wrap
- *  pass above can split a long label between the country name and its value, but never between the
- *  value and "t" — see `wrap`'s own comment for the failure this fixed. */
+const UNIT = "t";
+
+/** How much of the plot's own width each endpoint's interactive band claims, inward from its own
+ *  column. Anchored INSIDE the frame rather than centred on the column, because an SVG clips to its
+ *  `viewBox`: a band centred on the 2024 column had half its width — including the pixel a reader
+ *  aims at — outside the frame, and every one of that column's ten readings answered nothing when
+ *  a real pointer was driven at it. Caught by driving a browser; a bounding box alone still
+ *  reported the band as present and the right size. */
+const BAND_SHARE = 0.18;
+
+/** The one direct end label, as lines: the country's name (wrapped if it must be), then its value
+ *  on its own last line. Two lines rather than one run-on string, because the fluid frame's label
+ *  tracks are fixed-width columns and a one-line "United Kingdom 10.49 t" would need a 170px
+ *  gutter on both sides — at 375px that leaves the plot itself under 50px. */
 function labelLines(
-  country: Country,
+  name: string,
   value: number,
-  layout: WebLayout,
+  frame: SlopeFrame,
   measure: Measure,
 ): string[] {
-  const text = `${country.name} ${fmt(value)} ${UNIT}`;
-  return wrap(text, layout.labelGutterMaxWidth, layout.label, measure);
+  return [
+    ...wrap(name, frame.labelWrapPx, frame.label, measure),
+    `${fmt(value)} ${UNIT}`,
+  ];
 }
 
-const UNIT = "t";
+/**
+ * Slide one column's de-collided label rows back inside the frame, as a block.
+ *
+ * `decollide` enforces spacing between NEIGHBOURS and knows nothing of the plot's own [0, height]:
+ * this beat's real data puts six of its ten 2024 values inside 1.5 t of each other, right at the
+ * range's floor, so pushing them apart sends the lowest rows past the bottom edge — clipped, and
+ * (since the interactive band lives at the row, not at the mark) unreachable. Shifting the whole
+ * column by one offset preserves every gap and every ordering the de-collision just established;
+ * only the block's position moves, and the dashed leader from each mark to its own row makes the
+ * displacement visible rather than silent. It throws instead of clipping if the block is genuinely
+ * taller than the frame, because a label a reader cannot see is worse than a build that stops.
+ */
+function fitColumn(
+  rows: number[],
+  half: number,
+  height: number,
+  columnName: string,
+): number[] {
+  const lo = Math.min(...rows) - half;
+  const hi = Math.max(...rows) + half;
+  if (hi - lo > height + 1)
+    throw new Error(
+      `the ${columnName} column's label block is ${(hi - lo).toFixed(1)} canonical units tall, more than the frame's own ${height} — lower FRAME.labelPacking or raise FRAME.height`,
+    );
+  const shift = lo < 0 ? -lo : hi > height ? height - hi : 0;
+  return rows.map((r) => r + shift);
+}
+
+/** A coordinate as a percentage of the box it was drawn in — the step that lets an HTML label sit
+ *  on the exact row the SVG geometry put its mark on, and keep sitting there as the browser
+ *  stretches that box. */
+function pct(value: number, total: number): number {
+  return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
+}
 
 export function SlopeWeb({
   data,
@@ -177,14 +197,13 @@ export function SlopeWeb({
   muted,
   highlighted,
   periodLabels,
-  layout,
+  frame,
   measure,
 }: {
   data: Country[];
   title: string;
   /** The caveat under the title — unit, scope, and the "every one fell" fact the direct labels
-   *  alone cannot state on their own. See `information-architecture.md`'s "Subtitle" zone, the same
-   *  zone the co2-suisse beat's own `limits` prop fills. */
+   *  alone cannot state. `information-architecture.md`'s "Subtitle" zone. */
   limits: string;
   source: string;
   alt: string;
@@ -194,11 +213,10 @@ export function SlopeWeb({
   muted: string;
   /** The one line this beat accents — Germany, per `BRIEF.md`. At most one hue total
    *  (`references/types/slope.md`): the United Kingdom, the claim's own comparison, stays plain
-   *  muted like the other eight, per `BRIEF.md`'s own permitted fallback — "let the end labels carry
-   *  the comparison" rather than introduce a second visual tier this doctrine does not call for. */
+   *  muted like the other eight, and the end labels carry the comparison instead. */
   highlighted: string;
   periodLabels: { p1990: string; p2024: string };
-  layout: WebLayout;
+  frame: SlopeFrame;
   measure: Measure;
 }) {
   if (data.length < 2)
@@ -206,357 +224,300 @@ export function SlopeWeb({
       "a slope beat needs at least two categories, got " + data.length,
     );
 
-  const { width, pad } = layout;
-
-  const titleLines = wrap(title, width - pad * 2, layout.title, measure);
-  const titleBaseline = pad + layout.title.fontSize;
-  const limitsLines = wrap(limits, width - pad * 2, layout.subtitle, measure);
-  const limitsBaseline =
-    titleBaseline +
-    (titleLines.length - 1) * layout.title.lead +
-    Math.round(layout.title.lead * 0.9);
-  const sourceLines = wrap(source, width - pad * 2, layout.source, measure);
-  const sourceBaseline =
-    limitsBaseline +
-    (limitsLines.length - 1) * layout.subtitle.lead +
-    Math.round(layout.subtitle.lead * 1.1);
-  const periodBaseline =
-    sourceBaseline +
-    (sourceLines.length - 1) * layout.source.lead +
-    Math.round(layout.title.lead);
-
-  // Every label this layout will ever draw, wrapped once, up front — this is what both the shared
-  // gutter width AND the shared label-block height (the de-collision `minGap`) are measured from.
-  // One shared gutter for both columns (not a separate left/right measurement), the same choice
-  // `static-renewables-shift`'s own proven slope beat makes for its single frame.
-  const allLabelLines = data.flatMap((d) => [
-    labelLines(d, d.v1990, layout, measure),
-    labelLines(d, d.v2024, layout, measure),
+  // Every label this frame will draw, wrapped once, up front: both the gutter WIDTH and the label
+  // BLOCK HEIGHT that drives the de-collision are measured from these, never guessed.
+  const allLabels = data.flatMap((d) => [
+    labelLines(d.name, d.v1990, frame, measure),
+    labelLines(d.name, d.v2024, frame, measure),
   ]);
-  const gutterWidth = Math.max(
-    ...allLabelLines.flatMap((lines) =>
-      lines.map((line) => measure(line, layout.label)),
-    ),
+  const gutterPx =
+    Math.ceil(
+      Math.max(
+        ...allLabels.flatMap((lines) =>
+          lines.map((line) => measure(line, frame.label)),
+        ),
+      ),
+    ) + 2;
+  const maxLabelLines = Math.max(...allLabels.map((l) => l.length));
+  const labelBlockPx = maxLabelLines * frame.label.lead;
+
+  // THE VERTICAL BUDGET, derived rather than picked. Label rows are de-collided in CANONICAL units
+  // (`minGapCanonical`), but what a reader sees is that gap times the plot's RENDERED height over
+  // the canonical height. So the smallest rendered height at which neighbouring labels still clear
+  // each other is fixed by the ratio between the two, and that is the number `.chart-plot`'s own
+  // `min-height` gets. Below it a narrow window would stack ten labels into a space that cannot
+  // hold them, whatever the frame's width.
+  const minGapCanonical = Math.floor(
+    (frame.height * frame.labelPacking) / data.length,
   );
-  const maxLabelLineCount = Math.max(...allLabelLines.map((l) => l.length));
-  // The de-collision minimum gap is sized to the TALLEST label block this layout will actually draw
-  // (three lines, at the narrow width, because "United Kingdom" wraps to two and the value adds a
-  // third) plus a small buffer — every shorter block still gets at least this much room, which is
-  // generous rather than exact, and never collides.
-  const minLabelGap = maxLabelLineCount * layout.label.lead + 6;
-  // The interaction layer's own hit circles are placed at the de-collided label row, not the true
-  // point (see the interaction layer's own comment for why) — which only works if two adjacent hit
-  // circles in the same column can never touch. `decollide` guarantees `minLabelGap` between
-  // neighbours; this fails loud, at build time, if a future layout tuning ever violates that,
-  // rather than silently reintroducing the "hover Germany, see Norway" bug this beat's own first
-  // render caught.
-  if (minLabelGap < layout.hitRadius * 2)
+  if (minGapCanonical < 1)
     throw new Error(
-      `minLabelGap (${minLabelGap}) must be >= 2x hitRadius (${layout.hitRadius * 2}) or de-collided hit circles can overlap`,
+      `${data.length} label rows cannot be de-collided inside ${frame.height} canonical units at ${frame.labelPacking} packing — raise FRAME.height`,
     );
+  const minPlotHeightPx = Math.ceil(
+    ((labelBlockPx + frame.labelAirPx) * frame.height) / minGapCanonical,
+  );
 
-  const padding = {
-    left: pad + gutterWidth + layout.gap,
-    right: pad + gutterWidth + layout.gap,
-  };
-  const plotTop = periodBaseline + Math.round(layout.period.fontSize * 1.4);
-  const plotBottom = plotTop + layout.plotMinHeight;
-  const height = plotBottom + layout.bottomPad;
-
-  const plot = {
-    left: padding.left,
-    right: width - padding.right,
-    top: plotTop,
-    bottom: plotBottom,
-  };
-
-  const { lines } = slopeGeometry(data, {
-    x1990: plot.left,
-    x2024: plot.right,
-    top: plot.top,
-    bottom: plot.bottom,
-    minGap: minLabelGap,
+  const { lines: raw } = slopeGeometry(data, {
+    x1990: 0,
+    x2024: frame.width,
+    top: 0,
+    bottom: frame.height,
+    minGap: minGapCanonical,
   });
 
-  // `decollide` pushes label rows apart with no knowledge of the plot's own [top, bottom] — it
-  // only enforces relative spacing between neighbours, not absolute bounds. This beat's real data
-  // has its two closest values sitting right at the range's own floor (Sweden/Switzerland, both
-  // ~3.59 t in 2024), which is exactly the shape that can push a de-collided row (and the
-  // interaction layer's hit circle now living at that row — see the interaction layer's own
-  // comment) past the SVG's own bottom edge, clipped and unreachable, a defect a static PNG review
-  // would never show and only driving a real browser at 375px caught the first time this beat was
-  // rendered. `valueDomain`'s own generous padding is the fix; this is the fail-loud tripwire that
-  // catches it again if a future data change (a closer tie, one more category) ever outruns that
-  // padding, rather than silently shipping a clipped, unreachable point.
-  const labelExtent = lines.flatMap((l) => [l.labelY1990, l.labelY2024]);
-  const halfBlock = (maxLabelLineCount * layout.label.lead) / 2;
-  const minReached = Math.min(...labelExtent) - halfBlock;
-  const maxReached = Math.max(...labelExtent) + halfBlock;
-  if (minReached < plot.top - 1 || maxReached > plot.bottom + 1)
-    throw new Error(
-      `[${layout.name}] a label/hit-target lands outside the plot (reached ${minReached.toFixed(1)}..${maxReached.toFixed(1)}, plot is ${plot.top}..${plot.bottom}) — widen valueDomain's padFraction or grow plotMinHeight`,
-    );
+  const halfRow = minGapCanonical / 2;
+  const left = fitColumn(
+    raw.map((l) => l.labelY1990),
+    halfRow,
+    frame.height,
+    periodLabels.p1990,
+  );
+  const right = fitColumn(
+    raw.map((l) => l.labelY2024),
+    halfRow,
+    frame.height,
+    periodLabels.p2024,
+  );
+  const lines = raw.map((l, i) => ({
+    ...l,
+    labelY1990: left[i],
+    labelY2024: right[i],
+  }));
 
-  // Germany drawn last so its accent line and dots are never visually crossed by a muted neighbour
-  // — the one line this chart wants the eye to land on stays on top.
+  // Germany drawn last so its accent line and dots are never crossed by a muted neighbour.
   const ordered = [
     ...lines.filter((l) => l.name !== highlighted),
     ...lines.filter((l) => l.name === highlighted),
   ];
 
+  const totalWidth = gutterPx + frame.gap + frame.width + frame.gap + gutterPx;
+
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      className="chart"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
+    <figure
+      className="chart-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--accent" as string]: accent,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ["--title-size" as string]: `${frame.title.fontSize}px`,
+        ["--title-weight" as string]: frame.title.fontWeight,
+        ["--subtitle-size" as string]: `${frame.subtitle.fontSize}px`,
+        ["--source-size" as string]: `${frame.source.fontSize}px`,
+        ["--label-size" as string]: `${frame.label.fontSize}px`,
+        ["--label-weight" as string]: frame.label.fontWeight,
+        ["--label-lead" as string]: `${frame.label.lead}px`,
+        ["--period-size" as string]: `${frame.period.fontSize}px`,
+        ["--period-weight" as string]: frame.period.fontWeight,
+      }}
     >
-      {/* No root role="img" (unlike the static genre): that role would flatten every descendant
-          into one opaque image, silencing the twenty individually-focusable, individually-labelled
-          endpoints below. `<desc>` still carries the alt text — the same departure
-          `EmissionsWeb.tsx` documents (`web-discipline.md`, "One deliberate departure"). */}
-      <desc>{alt}</desc>
-      <rect x={0} y={0} width={width} height={height} fill={ground} />
+      {/* The header block, with a fixed row of air beneath it: the period captions sit ABOVE the
+          plot's own top edge (they caption its two columns, so they must line up with them), and
+          without this gap they print straight through the caveat at a narrow width. Fixed pixels,
+          because a caption is furniture and furniture in this genre does not stretch. */}
+      <div className="chart-header" style={{ marginBottom: 26 }}>
+        <h2 className="chart-title">{title}</h2>
+        <p className="chart-caveat">{limits}</p>
+      </div>
 
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={titleBaseline + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {limitsLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={limitsBaseline + i * layout.subtitle.lead}
-          fill={muted}
-          fontSize={layout.subtitle.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={sourceBaseline + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-
-      {/* Each period needs its own caption — a slope chart with unlabelled ends states direction
-          with no stated "from when to when," half the claim (`references/types/slope.md`).
-          Unconditional, in ink: this is essential furniture, never gated behind interaction. */}
-      <text
-        x={plot.left}
-        y={periodBaseline}
-        fill={ink}
-        fontSize={layout.period.fontSize}
-        fontWeight={layout.period.fontWeight}
-        textAnchor="middle"
+      <div
+        className="chart-plot slope-plot"
+        style={{
+          ["--y-gutter" as string]: `${gutterPx + frame.gap}px`,
+          ["--r-gutter" as string]: `${gutterPx + frame.gap}px`,
+          ["--x-axis-h" as string]: "0px",
+          ["--min-plot-h" as string]: `${minPlotHeightPx}px`,
+          aspectRatio: `${totalWidth} / ${frame.height}`,
+        }}
       >
-        {periodLabels.p1990}
-      </text>
-      <text
-        x={plot.right}
-        y={periodBaseline}
-        fill={ink}
-        fontSize={layout.period.fontSize}
-        fontWeight={layout.period.fontWeight}
-        textAnchor="middle"
-      >
-        {periodLabels.p2024}
-      </text>
+        {/* Left label track — grid column 1. Right-aligned against the plot's own 1990 column. */}
+        <div className="y-axis">
+          {lines.map((l) => (
+            <span
+              key={`left-${l.name}`}
+              className="slope-label left"
+              style={{ top: `${pct(l.labelY1990, frame.height)}%` }}
+            >
+              {labelLines(l.name, l.v1990, frame, measure).map((line, i) => (
+                <span
+                  key={line + i}
+                  className="line"
+                  style={{
+                    fontWeight:
+                      l.name === highlighted ? 700 : frame.label.fontWeight,
+                  }}
+                >
+                  {line}
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
 
-      {ordered.map((l) => {
-        const isAccent = l.name === highlighted;
-        const stroke = isAccent ? accent : muted;
-        const strokeWidth = isAccent
-          ? layout.stroke.accent
-          : layout.stroke.muted;
-        const startLines = labelLines(
-          { name: l.name, v1990: l.v1990, v2024: l.v2024 },
-          l.v1990,
-          layout,
-          measure,
-        );
-        const endLines = labelLines(
-          { name: l.name, v1990: l.v1990, v2024: l.v2024 },
-          l.v2024,
-          layout,
-          measure,
-        );
-        const startBaselines = centeredBaselines(
-          l.labelY1990,
-          startLines.length,
-          layout.label.lead,
-        );
-        const endBaselines = centeredBaselines(
-          l.labelY2024,
-          endLines.length,
-          layout.label.lead,
-        );
-        const startDisplaced = Math.abs(l.y1990 - l.labelY1990) > 1;
-        const endDisplaced = Math.abs(l.y2024 - l.labelY2024) > 1;
+        {/* GEOMETRY ONLY below — no `<text>`. */}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          viewBox={`0 0 ${frame.width} ${frame.height}`}
+          preserveAspectRatio="none"
+          fontFamily="Helvetica, Arial, sans-serif"
+        >
+          {/* No root role="img": that role would flatten every descendant into one opaque image,
+              silencing the twenty individually-focusable endpoints below. `<desc>` still carries
+              the alt text. */}
+          <desc>{alt}</desc>
+          <rect
+            x={0}
+            y={0}
+            width={frame.width}
+            height={frame.height}
+            fill={ground}
+          />
 
-        return (
-          <g key={l.name}>
-            <line
-              x1={l.x1990}
-              y1={l.y1990}
-              x2={l.x2024}
-              y2={l.y2024}
-              stroke={stroke}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-            />
-            <circle
-              cx={l.x1990}
-              cy={l.y1990}
-              r={layout.pointRadius}
-              fill={stroke}
-            />
-            <circle
-              cx={l.x2024}
-              cy={l.y2024}
-              r={layout.pointRadius}
-              fill={stroke}
-            />
+          {ordered.map((l) => {
+            const isAccent = l.name === highlighted;
+            const stroke = isAccent ? accent : muted;
+            const startDisplaced = Math.abs(l.y1990 - l.labelY1990) > 1;
+            const endDisplaced = Math.abs(l.y2024 - l.labelY2024) > 1;
+            return (
+              <g key={l.name}>
+                <line
+                  x1={l.x1990}
+                  y1={l.y1990}
+                  x2={l.x2024}
+                  y2={l.y2024}
+                  stroke={stroke}
+                  strokeWidth={
+                    isAccent ? frame.stroke.accent : frame.stroke.muted
+                  }
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                {/* A short leader only where the de-collision pass actually moved a label away from
+                    its own true point, so a nudged label never reads as ambiguous about which point
+                    it names. Drawn as a two-segment polyline out to the frame edge, because the
+                    label itself now lives outside the `viewBox` entirely. */}
+                <polyline
+                  points={`${l.x1990},${l.y1990} ${l.x1990},${l.labelY1990} ${l.x1990 - 8},${l.labelY1990}`}
+                  fill="none"
+                  stroke={stroke}
+                  strokeWidth={1}
+                  strokeDasharray="2 2"
+                  opacity={startDisplaced ? 1 : 0}
+                  vectorEffect="non-scaling-stroke"
+                />
+                <polyline
+                  points={`${l.x2024},${l.y2024} ${l.x2024},${l.labelY2024} ${l.x2024 + 8},${l.labelY2024}`}
+                  fill="none"
+                  stroke={stroke}
+                  strokeWidth={1}
+                  strokeDasharray="2 2"
+                  opacity={endDisplaced ? 1 : 0}
+                  vectorEffect="non-scaling-stroke"
+                />
+                <circle
+                  cx={l.x1990}
+                  cy={l.y1990}
+                  r={frame.pointRadius}
+                  fill={stroke}
+                  vectorEffect="non-scaling-stroke"
+                />
+                <circle
+                  cx={l.x2024}
+                  cy={l.y2024}
+                  r={frame.pointRadius}
+                  fill={stroke}
+                  vectorEffect="non-scaling-stroke"
+                />
+              </g>
+            );
+          })}
 
-            {/* A short dashed leader only where the de-collision pass actually moved a label away
-                from its own true point — the same convention `static-renewables-shift`'s own slope
-                beat draws, so a nudged label never reads as ambiguous about which point it names. */}
-            <line
-              x1={l.x1990 - layout.gap / 2}
-              y1={l.y1990}
-              x2={l.x1990 - layout.gap / 2}
-              y2={l.labelY1990}
-              stroke={stroke}
-              strokeWidth={1}
-              strokeDasharray="2 2"
-              opacity={startDisplaced ? 1 : 0}
-            />
-            <line
-              x1={l.x2024 + layout.gap / 2}
-              y1={l.y2024}
-              x2={l.x2024 + layout.gap / 2}
-              y2={l.labelY2024}
-              stroke={stroke}
-              strokeWidth={1}
-              strokeDasharray="2 2"
-              opacity={endDisplaced ? 1 : 0}
-            />
+          {/* Interaction layer: every one of the twenty endpoints, drawn LAST so nothing sits on top
+              of a target. Each is a BAND, not a circle — under `preserveAspectRatio="none"` a
+              circle becomes an ellipse whose horizontal radius collapses with the frame, which at
+              375px left a 4px-wide target; a band keeps a real target at every width.
+              `tabIndex={0}` and `aria-label` are baked in at build time, so every reading is
+              reachable with the inline script absent entirely.
 
-            {/* Value labels stay in page ink, never the line's own accent, even on Germany's own
-                line — the exact WCAG contrast trap `references/types/slope.md` names for this chart
-                type ("The accessibility trap"). Weight, not colour, marks the accented line. */}
-            {startLines.map((line, i) => (
-              <text
-                key={line + i}
-                x={l.x1990 - layout.gap}
-                y={startBaselines[i]}
-                fill={ink}
-                fontSize={layout.label.fontSize}
-                fontWeight={isAccent ? 700 : layout.label.fontWeight}
-                textAnchor="end"
-              >
-                {line}
-              </text>
-            ))}
-            {endLines.map((line, i) => (
-              <text
-                key={line + i}
-                x={l.x2024 + layout.gap}
-                y={endBaselines[i]}
-                fill={ink}
-                fontSize={layout.label.fontSize}
-                fontWeight={isAccent ? 700 : layout.label.fontWeight}
-                textAnchor="start"
-              >
-                {line}
-              </text>
-            ))}
-          </g>
-        );
-      })}
+              Positioned at the DE-COLLIDED row, not the true point: two countries can sit a couple
+              of units apart at their true position (Sweden and Switzerland's 2024 values are
+              3.5916543 and 3.5946856 — effectively one point), and this beat's first render caught
+              exactly that failure, hovering Germany and being told about Norway. The de-collision
+              pass guarantees `minGapCanonical` between neighbouring rows, so bands of half that
+              height can never overlap. The visible dot stays at the TRUE position; only the
+              reader's target moved, to where the readable label already drew their eye. */}
+          {lines.flatMap((l) => [
+            <rect
+              key={`${l.name}-1990-hit`}
+              className="pt"
+              x={l.x1990}
+              y={l.labelY1990 - halfRow}
+              width={frame.width * BAND_SHARE}
+              height={minGapCanonical}
+              fill="transparent"
+              pointerEvents="all"
+              tabIndex={0}
+              role="img"
+              aria-label={`${l.name}, ${periodLabels.p1990}: ${fmt(l.v1990)} ${UNIT}`}
+              data-detail={`${l.name} · ${periodLabels.p1990} · ${fmt(l.v1990)} ${UNIT}`}
+            />,
+            <rect
+              key={`${l.name}-2024-hit`}
+              className="pt"
+              x={l.x2024 - frame.width * BAND_SHARE}
+              y={l.labelY2024 - halfRow}
+              width={frame.width * BAND_SHARE}
+              height={minGapCanonical}
+              fill="transparent"
+              pointerEvents="all"
+              tabIndex={0}
+              role="img"
+              aria-label={`${l.name}, ${periodLabels.p2024}: ${fmt(l.v2024)} ${UNIT}`}
+              data-detail={`${l.name} · ${periodLabels.p2024} · ${fmt(l.v2024)} ${UNIT}`}
+            />,
+          ])}
+        </svg>
 
-      {/* Interaction layer: every one of the twenty endpoints, not just Germany's — invisible at
-          rest, `tabIndex={0}` and its own `aria-label`/`data-detail` baked in at build time (so a
-          keyboard/screen-reader user reaches every reading with the inline script absent entirely —
-          `web-discipline.md`, "Keyboard and touch"). Drawn last so nothing else on the frame can sit
-          on top of a target and block it. Wired by this beat's OWN `slope-interaction.mjs`, not the
-          skill's shared `assets/interaction.mjs` — see this beat's own `render-web.mjs` for why: a
-          nearest-point-by-x hit area cannot discriminate between ten points that all share one
-          column's fixed x.
+        {/* The period captions, over the two columns they name — plain HTML in the overlay, which
+            shares the `<svg>`'s own grid cell, so "1990" stays over the 1990 column at any width.
+            Unconditional furniture, never gated behind interaction. */}
+        <div className="overlay">
+          <span className="period-label" style={{ left: "0%" }}>
+            {periodLabels.p1990}
+          </span>
+          <span className="period-label" style={{ left: "100%" }}>
+            {periodLabels.p2024}
+          </span>
+        </div>
 
-          Positioned at the DE-COLLIDED label row (`labelY*`), not the true data point (`y*`): two
-          countries can sit only a few pixels apart at their true position (Sweden/Switzerland's
-          2024 values are 3.5916543 vs 3.5946856 — effectively the same point), and this beat's own
-          first render caught exactly the failure that leaves unfixed — hovering Germany's own 2024
-          dot showed Norway's detail, because their true points sit ~4px apart and the hit circles
-          (`hitRadius`) fully overlapped there. The de-collision pass already guarantees every label
-          row in one column clears at least `minLabelGap` from its neighbour, and `minLabelGap` is
-          always sized well above `hitRadius * 2` (see `SlopeWeb`'s own gutter/gap maths), so hit
-          circles placed at that same row can never overlap. The visible dot two lines above stays
-          at the TRUE position regardless — only the reader's actual click/hover target moved,
-          exactly where the readable label already drew their eye. */}
-      {lines.flatMap((l) => [
-        <circle
-          key={`${l.name}-1990`}
-          className="pt"
-          cx={l.x1990}
-          cy={l.labelY1990}
-          r={layout.hitRadius}
-          fill="transparent"
-          stroke="none"
-          pointerEvents="all"
-          tabIndex={0}
-          role="img"
-          aria-label={`${l.name}, ${periodLabels.p1990}: ${fmt(l.v1990)} ${UNIT}`}
-          data-detail={`${l.name} · ${periodLabels.p1990} · ${fmt(l.v1990)} ${UNIT}`}
-        />,
-        <circle
-          key={`${l.name}-2024`}
-          className="pt"
-          cx={l.x2024}
-          cy={l.labelY2024}
-          r={layout.hitRadius}
-          fill="transparent"
-          stroke="none"
-          pointerEvents="all"
-          tabIndex={0}
-          role="img"
-          aria-label={`${l.name}, ${periodLabels.p2024}: ${fmt(l.v2024)} ${UNIT}`}
-          data-detail={`${l.name} · ${periodLabels.p2024} · ${fmt(l.v2024)} ${UNIT}`}
-        />,
-      ])}
-    </svg>
+        {/* Right label track — grid column 3. */}
+        <div className="r-axis">
+          {lines.map((l) => (
+            <span
+              key={`right-${l.name}`}
+              className="slope-label right"
+              style={{ top: `${pct(l.labelY2024, frame.height)}%` }}
+            >
+              {labelLines(l.name, l.v2024, frame, measure).map((line, i) => (
+                <span
+                  key={line + i}
+                  className="line"
+                  style={{
+                    fontWeight:
+                      l.name === highlighted ? 700 : frame.label.fontWeight,
+                  }}
+                >
+                  {line}
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <p className="chart-source">{source}</p>
+    </figure>
   );
-}
-
-/** Vertical centring for a text block of `count` stacked lines around `centerY`, first baseline to
- *  last — SVG `y` is a baseline, not a box centre, so the first baseline sits half the block's
- *  height above `centerY`, nudged down by a fixed cap-height fraction of one line, same approach
- *  `EmissionsWeb.tsx`'s own single-line labels use implicitly (there `+ 4`/`+ 5` on one line only;
- *  here generalised to N lines because the narrow layout stacks up to three). */
-function centeredBaselines(
-  centerY: number,
-  count: number,
-  lineHeight: number,
-): number[] {
-  const totalHeight = count * lineHeight;
-  const first = centerY - totalHeight / 2 + lineHeight * 0.78;
-  return Array.from({ length: count }, (_, i) => first + i * lineHeight);
 }

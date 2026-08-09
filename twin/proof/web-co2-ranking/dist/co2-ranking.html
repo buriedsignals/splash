@@ -16,18 +16,222 @@
 body {
   margin: 0;
   background: var(--ground);
+  color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
-.chart-figure { margin: 0; max-width: 900px; }
-svg.chart { display: block; width: 100%; height: auto; }
-/* Two pre-rendered layouts (web-discipline.md, "Responsive behaviour") — the narrow one hidden
-   by default, swapped in below a fixed breakpoint. No layout is computed in the browser; the
-   media query only chooses which server-rendered frame is on screen. */
-svg.chart[data-layout="narrow"] { display: none; }
-@media (max-width: 480px) {
-  svg.chart[data-layout="desktop"] { display: none; }
-  svg.chart[data-layout="narrow"] { display: block; }
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
 }
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { max-width: 640px; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
+   for the test a beat applies before shipping one at all. Native radios: reachable and operable
+   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
+   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
+   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
+   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
+   every hover/focus answer honest regardless of which radio is checked. */
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
+   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
+   rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: three default blue dots with a bare word beside
+   each, indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with three identical unlit pills and a hidden
+   input, the entire block is dropped there and the reader gets the plain native radios above,
+   which state their own checked-ness without any help. That is the same engine in which this
+   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
+   the fallback is not a second design to maintain -- it is the design this genre already had.
+   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
+   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
+   announces it as a radio group, and the CSS-only dimming still fires with the inline script
+   absent. The input is made transparent and stretched over its own pill -- never display:none or
+   visibility:hidden, either of which would take it out of the focus order and out of the
+   accessibility tree.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrows it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
+   peak marker, the end point or any of the HTML furniture above, none of which carries a
+   data-period attribute at all and so can never match these selectors. :has() on the
+   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
+   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
+   supported in every evergreen browser this genre targets. */
+.chart-figure:has(#period-early:checked) .seg[data-period="late"],
+.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
+.chart-figure:has(#period-late:checked) .seg[data-period="early"],
+.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
+
 .pt { cursor: pointer; }
 .pt:hover, .pt:focus, .pt-active {
   fill: var(--muted);
@@ -52,15 +256,38 @@ svg.chart[data-layout="narrow"] { display: none; }
 }
 #tooltip[hidden] { display: none; }
 
+.chart-plot.ranking-plot {
+  grid-template-columns: var(--y-gutter) 1fr var(--r-gutter);
+  min-height: var(--min-plot-h);
+}
+.cat-label {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: var(--category-size);
+  font-weight: var(--category-weight);
+  white-space: nowrap;
+}
+.value-label {
+  position: absolute;
+  transform: translateY(-50%) translateX(8px);
+  font-size: var(--value-size);
+  font-weight: var(--value-weight);
+  white-space: nowrap;
+}
 .row-hit { cursor: pointer; }
+/* The row band answers a pointer anywhere along it; this is the only sign a reader gets of WHICH
+   row answered, so it is drawn rather than left to the tooltip alone — a tint, never an opaque
+   fill, so nothing the row already states is hidden behind it. */
+svg.chart rect.row-hit:hover, svg.chart rect.row-hit.row-active {
+  fill: var(--muted);
+  fill-opacity: 0.1;
+}
 .row-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 </style>
 </head>
 <body>
-<figure class="chart-figure">
-<svg xmlns="http://www.w3.org/2000/svg" width="900" height="627" viewBox="0 0 900 627" class="chart" data-layout="desktop" font-family="Helvetica, Arial, sans-serif"><desc>Bar chart ranking ten European countries by 2024 CO₂ emissions per capita, from Poland (7.1 t) at the top down to Sweden (3.6 t) at the bottom. Switzerland, highlighted as this story&#x27;s subject, sits second from the bottom at 3.6 t — essentially level with Sweden, and little more than half of Poland&#x27;s, the group&#x27;s highest.</desc><rect x="0" y="0" width="900" height="627" fill="#FFFFFF"></rect><text x="40" y="66" fill="#000000" font-size="26" font-weight="700">Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of</text><text x="40" y="100" fill="#000000" font-size="26" font-weight="700">ten major European economies</text><text x="40" y="131" fill="#616161" font-size="14">Essentially level with Sweden, and little more than half of Poland&#x27;s, the highest of the group.</text><text x="40" y="153" fill="#616161" font-size="14">Source: Global Carbon Budget (2025), via Our World in Data · 2024 data</text><line x1="155.75439453125" x2="155.75439453125" y1="177" y2="597" stroke="#616161" stroke-width="1"></line><g><text x="145.75439453125" y="203.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">Poland</text><rect x="155.75439453125" y="183.3" width="665.41015625" height="29.4" fill="#616161"></rect><text x="831.16455078125" y="203.25" fill="#616161" font-size="15" font-weight="500">7,1 t</text><rect class="row-hit" x="40" y="177" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Poland: 7,0801 t" data-detail="Poland · 7,0801 t"></rect></g><g><text x="145.75439453125" y="245.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">Germany</text><rect x="155.75439453125" y="225.3" width="636.1545546278955" height="29.4" fill="#616161"></rect><text x="801.9089491591455" y="245.25" fill="#616161" font-size="15" font-weight="500">6,8 t</text><rect class="row-hit" x="40" y="219" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Germany: 6,7688 t" data-detail="Germany · 6,7688 t"></rect></g><g><text x="145.75439453125" y="287.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">Norway</text><rect x="155.75439453125" y="267.3" width="626.6427576735534" height="29.4" fill="#616161"></rect><text x="792.3971522048034" y="287.25" fill="#616161" font-size="15" font-weight="500">6,7 t</text><rect class="row-hit" x="40" y="261" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Norway: 6,6676 t" data-detail="Norway · 6,6676 t"></rect></g><g><text x="145.75439453125" y="329.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">Austria</text><rect x="155.75439453125" y="309.3" width="580.8256543885282" height="29.4" fill="#616161"></rect><text x="746.5800489197782" y="329.25" fill="#616161" font-size="15" font-weight="500">6,2 t</text><rect class="row-hit" x="40" y="303" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Austria: 6,1801 t" data-detail="Austria · 6,1801 t"></rect></g><g><text x="145.75439453125" y="371.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">Italy</text><rect x="155.75439453125" y="351.3" width="478.1749449531386" height="29.4" fill="#616161"></rect><text x="643.9293394843886" y="371.25" fill="#616161" font-size="15" font-weight="500">5,1 t</text><rect class="row-hit" x="40" y="345" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Italy: 5,0879 t" data-detail="Italy · 5,0879 t"></rect></g><g><text x="145.75439453125" y="413.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">Spain</text><rect x="155.75439453125" y="393.3" width="432.22936686546404" height="29.4" fill="#616161"></rect><text x="597.983761396714" y="413.25" fill="#616161" font-size="15" font-weight="500">4,6 t</text><rect class="row-hit" x="40" y="387" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Spain: 4,5990 t" data-detail="Spain · 4,5990 t"></rect></g><g><text x="145.75439453125" y="455.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">United Kingdom</text><rect x="155.75439453125" y="435.3" width="425.348333501665" height="29.4" fill="#616161"></rect><text x="591.102728032915" y="455.25" fill="#616161" font-size="15" font-weight="500">4,5 t</text><rect class="row-hit" x="40" y="429" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="United Kingdom: 4,5258 t" data-detail="United Kingdom · 4,5258 t"></rect></g><g><text x="145.75439453125" y="497.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">France</text><rect x="155.75439453125" y="477.3" width="373.05323368069753" height="29.4" fill="#616161"></rect><text x="538.8076282119475" y="497.25" fill="#616161" font-size="15" font-weight="500">4,0 t</text><rect class="row-hit" x="40" y="471" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="France: 3,9694 t" data-detail="France · 3,9694 t"></rect></g><g><text x="145.75439453125" y="539.25" text-anchor="end" fill="#0B7A75" font-size="15" font-weight="700">Switzerland</text><rect x="155.75439453125" y="519.3" width="337.83944626586356" height="29.4" fill="#0B7A75"></rect><text x="503.59384079711356" y="539.25" fill="#0B7A75" font-size="15" font-weight="700">3,6 t</text><rect class="row-hit" x="40" y="513" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Switzerland: 3,5947 t" data-detail="Switzerland · 3,5947 t"></rect></g><g><text x="145.75439453125" y="581.25" text-anchor="end" fill="#616161" font-size="15" font-weight="500">Sweden</text><rect x="155.75439453125" y="561.3" width="337.55455550560754" height="29.4" fill="#616161"></rect><text x="503.30895003685754" y="581.25" fill="#616161" font-size="15" font-weight="500">3,6 t</text><rect class="row-hit" x="40" y="555" width="820" height="42" fill="transparent" tabindex="0" role="img" aria-label="Sweden: 3,5917 t" data-detail="Sweden · 3,5917 t"></rect></g></svg>
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="537" viewBox="0 0 360 537" class="chart" data-layout="narrow" font-family="Helvetica, Arial, sans-serif"><desc>Bar chart ranking ten European countries by 2024 CO₂ emissions per capita, from Poland (7.1 t) at the top down to Sweden (3.6 t) at the bottom. Switzerland, highlighted as this story&#x27;s subject, sits second from the bottom at 3.6 t — essentially level with Sweden, and little more than half of Poland&#x27;s, the group&#x27;s highest.</desc><rect x="0" y="0" width="360" height="537" fill="#FFFFFF"></rect><text x="20" y="38" fill="#000000" font-size="18" font-weight="700">Switzerland&#x27;s CO₂ emissions per</text><text x="20" y="62" fill="#000000" font-size="18" font-weight="700">capita are the second-lowest of ten</text><text x="20" y="86" fill="#000000" font-size="18" font-weight="700">major European economies</text><text x="20" y="108" fill="#616161" font-size="12">Essentially level with Sweden, and little more than half of</text><text x="20" y="125" fill="#616161" font-size="12">Poland&#x27;s, the highest of the group.</text><text x="20" y="144" fill="#616161" font-size="12">Source: Global Carbon Budget (2025), via Our World in</text><text x="20" y="160" fill="#616161" font-size="12">Data · 2024 data</text><line x1="114.603515625" x2="114.603515625" y1="177" y2="517" stroke="#616161" stroke-width="1"></line><g><text x="104.603515625" y="198.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">Poland</text><rect x="114.603515625" y="182.1" width="192.328125" height="23.799999999999997" fill="#616161"></rect><text x="316.931640625" y="198.2" fill="#616161" font-size="12" font-weight="500">7,1 t</text><rect class="row-hit" x="20" y="177" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Poland: 7,0801 t" data-detail="Poland · 7,0801 t"></rect></g><g><text x="104.603515625" y="232.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">Germany</text><rect x="114.603515625" y="216.1" width="183.87217500753803" height="23.799999999999997" fill="#616161"></rect><text x="308.47569063253803" y="232.2" fill="#616161" font-size="12" font-weight="500">6,8 t</text><rect class="row-hit" x="20" y="211" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Germany: 6,7688 t" data-detail="Germany · 6,7688 t"></rect></g><g><text x="104.603515625" y="266.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">Norway</text><rect x="114.603515625" y="250.1" width="181.12291418483125" height="23.799999999999997" fill="#616161"></rect><text x="305.72642980983125" y="266.2" fill="#616161" font-size="12" font-weight="500">6,7 t</text><rect class="row-hit" x="20" y="245" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Norway: 6,6676 t" data-detail="Norway · 6,6676 t"></rect></g><g><text x="104.603515625" y="300.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">Austria</text><rect x="114.603515625" y="284.1" width="167.88007819116245" height="23.799999999999997" fill="#616161"></rect><text x="292.48359381616245" y="300.2" fill="#616161" font-size="12" font-weight="500">6,2 t</text><rect class="row-hit" x="20" y="279" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Austria: 6,1801 t" data-detail="Austria · 6,1801 t"></rect></g><g><text x="104.603515625" y="334.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">Italy</text><rect x="114.603515625" y="318.1" width="138.21022976731183" height="23.799999999999997" fill="#616161"></rect><text x="262.81374539231183" y="334.2" fill="#616161" font-size="12" font-weight="500">5,1 t</text><rect class="row-hit" x="20" y="313" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Italy: 5,0879 t" data-detail="Italy · 5,0879 t"></rect></g><g><text x="104.603515625" y="368.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">Spain</text><rect x="114.603515625" y="352.1" width="124.93025980796611" height="23.799999999999997" fill="#616161"></rect><text x="249.5337754329661" y="368.2" fill="#616161" font-size="12" font-weight="500">4,6 t</text><rect class="row-hit" x="20" y="347" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Spain: 4,5990 t" data-detail="Spain · 4,5990 t"></rect></g><g><text x="104.603515625" y="402.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">United Kingdom</text><rect x="114.603515625" y="386.1" width="122.9413868812585" height="23.799999999999997" fill="#616161"></rect><text x="247.5449025062585" y="402.2" fill="#616161" font-size="12" font-weight="500">4,5 t</text><rect class="row-hit" x="20" y="381" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="United Kingdom: 4,5258 t" data-detail="United Kingdom · 4,5258 t"></rect></g><g><text x="104.603515625" y="436.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">France</text><rect x="114.603515625" y="420.1" width="107.82617049812336" height="23.799999999999997" fill="#616161"></rect><text x="232.42968612312336" y="436.2" fill="#616161" font-size="12" font-weight="500">4,0 t</text><rect class="row-hit" x="20" y="415" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="France: 3,9694 t" data-detail="France · 3,9694 t"></rect></g><g><text x="104.603515625" y="470.2" text-anchor="end" fill="#0B7A75" font-size="12" font-weight="700">Switzerland</text><rect x="114.603515625" y="454.1" width="97.64808463028595" height="23.799999999999997" fill="#0B7A75"></rect><text x="222.25160025528595" y="470.2" fill="#0B7A75" font-size="12" font-weight="700">3,6 t</text><rect class="row-hit" x="20" y="449" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Switzerland: 3,5947 t" data-detail="Switzerland · 3,5947 t"></rect></g><g><text x="104.603515625" y="504.2" text-anchor="end" fill="#616161" font-size="12" font-weight="500">Sweden</text><rect x="114.603515625" y="488.1" width="97.56574067260027" height="23.799999999999997" fill="#616161"></rect><text x="222.16925629760027" y="504.2" fill="#616161" font-size="12" font-weight="500">3,6 t</text><rect class="row-hit" x="20" y="483" width="320" height="34" fill="transparent" tabindex="0" role="img" aria-label="Sweden: 3,5917 t" data-detail="Sweden · 3,5917 t"></rect></g></svg>
-</figure>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#0B7A75;--ink:#000000;--muted:#616161;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--category-size:14px;--category-weight:500;--value-size:14px;--value-weight:500"><div class="chart-header" style="margin-bottom:18px"><h2 class="chart-title">Switzerland&#x27;s CO₂ emissions per capita are the second-lowest of ten major European economies</h2><p class="chart-caveat">Essentially level with Sweden, and little more than half of Poland&#x27;s, the highest of the group.</p></div><div class="chart-plot ranking-plot" style="--y-gutter:109px;--r-gutter:37px;--x-axis-h:0px;--min-plot-h:260px;aspect-ratio:786 / 400"><div class="y-axis"><span class="cat-label" style="top:5%;color:#616161;font-weight:500">Poland</span><span class="cat-label" style="top:15%;color:#616161;font-weight:500">Germany</span><span class="cat-label" style="top:25%;color:#616161;font-weight:500">Norway</span><span class="cat-label" style="top:35%;color:#616161;font-weight:500">Austria</span><span class="cat-label" style="top:45%;color:#616161;font-weight:500">Italy</span><span class="cat-label" style="top:55%;color:#616161;font-weight:500">Spain</span><span class="cat-label" style="top:65%;color:#616161;font-weight:500">United Kingdom</span><span class="cat-label" style="top:75%;color:#616161;font-weight:500">France</span><span class="cat-label" style="top:85%;color:#0B7A75;font-weight:700">Switzerland</span><span class="cat-label" style="top:95%;color:#616161;font-weight:500">Sweden</span></div><svg xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 640 400" preserveAspectRatio="none" font-family="Helvetica, Arial, sans-serif"><desc>Bar chart ranking ten European countries by 2024 CO₂ emissions per capita, from Poland (7.1 t) at the top down to Sweden (3.6 t) at the bottom. Switzerland, highlighted as this story&#x27;s subject, sits second from the bottom at 3.6 t — essentially level with Sweden, and little more than half of Poland&#x27;s, the group&#x27;s highest.</desc><rect x="0" y="0" width="640" height="400" fill="#FFFFFF"></rect><line x1="0" x2="0" y1="0" y2="400" stroke="#616161" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="0" y="6" width="640" height="28" fill="#616161"></rect><rect x="0" y="46" width="611.8615881313476" height="28" fill="#616161"></rect><rect x="0" y="86" width="602.7130201487275" height="28" fill="#616161"></rect><rect x="0" y="126" width="558.6455441311248" height="28" fill="#616161"></rect><rect x="0" y="166" width="459.91477872037467" height="28" fill="#616161"></rect><rect x="0" y="206" width="415.72373399417427" height="28" fill="#616161"></rect><rect x="0" y="246" width="409.10546808484435" height="28" fill="#616161"></rect><rect x="0" y="286" width="358.80737213446525" height="28" fill="#616161"></rect><rect x="0" y="326" width="324.9383009551151" height="28" fill="#0B7A75"></rect><rect x="0" y="366" width="324.6642893776673" height="28" fill="#616161"></rect><rect class="row-hit" x="0" y="0" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: 7.0801 t" data-detail="Poland · 7.0801 t"></rect><rect class="row-hit" x="0" y="40" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: 6.7688 t" data-detail="Germany · 6.7688 t"></rect><rect class="row-hit" x="0" y="80" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Norway: 6.6676 t" data-detail="Norway · 6.6676 t"></rect><rect class="row-hit" x="0" y="120" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Austria: 6.1801 t" data-detail="Austria · 6.1801 t"></rect><rect class="row-hit" x="0" y="160" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: 5.0879 t" data-detail="Italy · 5.0879 t"></rect><rect class="row-hit" x="0" y="200" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: 4.5990 t" data-detail="Spain · 4.5990 t"></rect><rect class="row-hit" x="0" y="240" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="United Kingdom: 4.5258 t" data-detail="United Kingdom · 4.5258 t"></rect><rect class="row-hit" x="0" y="280" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: 3.9694 t" data-detail="France · 3.9694 t"></rect><rect class="row-hit" x="0" y="320" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Switzerland: 3.5947 t" data-detail="Switzerland · 3.5947 t"></rect><rect class="row-hit" x="0" y="360" width="640" height="40" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Sweden: 3.5917 t" data-detail="Sweden · 3.5917 t"></rect></svg><div class="overlay" aria-hidden="true"><span class="value-label" style="left:100%;top:5%;color:#616161;font-weight:500">7.1 t</span><span class="value-label" style="left:95.6%;top:15%;color:#616161;font-weight:500">6.8 t</span><span class="value-label" style="left:94.2%;top:25%;color:#616161;font-weight:500">6.7 t</span><span class="value-label" style="left:87.3%;top:35%;color:#616161;font-weight:500">6.2 t</span><span class="value-label" style="left:71.9%;top:45%;color:#616161;font-weight:500">5.1 t</span><span class="value-label" style="left:65%;top:55%;color:#616161;font-weight:500">4.6 t</span><span class="value-label" style="left:63.9%;top:65%;color:#616161;font-weight:500">4.5 t</span><span class="value-label" style="left:56.1%;top:75%;color:#616161;font-weight:500">4.0 t</span><span class="value-label" style="left:50.8%;top:85%;color:#0B7A75;font-weight:700">3.6 t</span><span class="value-label" style="left:50.7%;top:95%;color:#616161;font-weight:500">3.6 t</span></div></div><p class="chart-source">Source: Global Carbon Budget (2025), via Our World in Data · 2024 data</p></figure>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/twin-chart-web/assets/interaction.mjs

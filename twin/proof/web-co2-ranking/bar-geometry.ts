@@ -9,19 +9,25 @@ import { scaleLinear } from "d3-scale";
 
 export type Row = { name: string; value: number };
 
-/** French: comma decimal, thin space for thousands — the same `fr()` convention every beat in this
- *  codebase uses for its numbers, independent of the chart's own display language (this beat's own
- *  title/labels are English, per `BRIEF.md`; only the number formatting follows this convention).
+/**
+ * English: full stop for the decimal, comma for thousands — because this beat is written in
+ * English. Its title, its subtitle, its ten category names and its source line are all English
+ * (`BRIEF.md`), and `render-web.mjs` ships the page as `<html lang="en">`.
  *
- *  Grouped on the INTEGER part only, unlike `proof/co2-suisse/crossing-geometry.ts`'s own copy of
- *  this helper, which applies its thousands-separator regex to the whole formatted string. That
- *  never surfaced there because every call in that beat uses `decimals = 1`, so the fractional part
- *  is always a single digit and can never match a run of three. This beat's own hover detail calls
- *  `fr(value, 4)` (`RankingWeb.tsx`, matching `BRIEF.md`'s own verified precision) — at four
- *  fractional digits the same regex mis-grouped the FRACTION too: `3,5947` came out as `3,5 947`,
- *  caught by driving the rendered file and reading the tooltip text, not by a unit test. */
-export function fr(value: number, decimals = 1): string {
-  return new Intl.NumberFormat("fr-FR", {
+ * IT USED TO BE CALLED `fr` AND IT USED TO RETURN FRENCH NUMBERS, under a comment claiming the
+ * convention was "independent of the chart's own display language". It is not independent: this
+ * beat printed "7,1 t" beside a bar in a sentence that says "second-lowest of ten major European
+ * economies", and its hover answered "3,5947 t" — a French decimal comma under English prose, which
+ * an English reader reads as a thousands separator. A number formatter takes its locale from the
+ * beat's own declared language, and a function's name says what it does; `fr` did neither.
+ *
+ * `Intl.NumberFormat` rather than a hand-rolled regex, for the reason the previous copy discovered
+ * the hard way: its own grouping regex mis-grouped the FRACTION at four decimal places
+ * (`3,5947` came out as `3,5 947`), caught by driving the rendered file and reading the tooltip,
+ * never by a test. The platform owns this rule; no beat needs its own implementation of it.
+ */
+export function en(value: number, decimals = 1): string {
+  return new Intl.NumberFormat("en-GB", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value);

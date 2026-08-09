@@ -17,13 +17,14 @@
 //
 // Second difference: the skill's own CSS toggles `.pt`'s FILL between transparent (rest) and muted
 // (hover/focus/active), because that genre's points are invisible until interacted with. This
-// beat's points are visibly drawn from the start (the cloud IS the argument) — see
-// `IncomeLifeExpectancyWeb.tsx`'s own doc-comment — so hover/focus here adds a STROKE ring via the
-// same `.pt-active` class name instead (CSS override lives in `render-web.mjs`'s own `EXTRA_CSS`,
-// appended after the skill's generic stylesheet). The class name and the DOM wiring shape below
-// otherwise follow `interaction.mjs` closely on purpose — same tooltip element, same
-// hover/tap/keyboard parity, same `data-detail`/`aria-label` discipline — so a reader who has used
-// the CO₂ beat meets the same interaction language here.
+// beat's points are visibly drawn from the start (the cloud IS the argument) and, since the fluid
+// frame stretches its `viewBox`, they are HTML elements rather than SVG circles that would render
+// as ellipses — see `IncomeLifeExpectancyWeb.tsx`'s own doc-comment. So hover/focus here draws a
+// RING around the dot via the same `.pt-active` class name (CSS override lives in
+// `render-web.mjs`'s own `EXTRA_CSS`, appended after the skill's generic stylesheet). The class name
+// and the DOM wiring shape below otherwise follow `interaction.mjs` closely on purpose — same
+// tooltip element, same hover/tap/keyboard parity, same `data-detail`/`aria-label` discipline — so a
+// reader who has used the CO₂ beat meets the same interaction language here.
 //
 // `nearestPointIndex` is exported and pure — no DOM — so it can be sanity-checked directly.
 // `initChart`/`initAll` are DOM wiring and are proven, per `twin-doctrine`'s own rule, by driving a
@@ -48,18 +49,33 @@ export function nearestPointIndex(pts, x, y) {
   return best;
 }
 
-/** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
- *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
- *  string, its own `aria-label`, and its own `data-x`/`data-y` (the same pixel coordinates it was
- *  drawn at, baked in server-side); this function never invents or recomputes any of them. */
-export function initChart(svg, tooltip) {
-  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+/** Wires one plot — its `.pt` dots, the `.hit-area` rectangle inside its `<svg>`, and the shared
+ *  tooltip element — to hover, tap and keyboard. Every dot already carries its own `data-detail`
+ *  string and its own `aria-label`, baked in server-side; this function never invents or recomputes
+ *  either.
+ *
+ *  The dots are HTML elements now, not SVG circles, and they are measured in SCREEN pixels rather
+ *  than read back as baked coordinates. Both follow from the fluid frame: the `<svg>` stretches with
+ *  `preserveAspectRatio="none"`, so a `<circle>` would render as an ellipse (see
+ *  `IncomeLifeExpectancyWeb.tsx`'s own doc-comment) — and once the frame's own x and y scales differ,
+ *  "nearest" measured in the geometry's canonical units is no longer "nearest" on the reader's
+ *  screen. The old copy inverse-transformed the pointer through `getScreenCTM()` and compared baked
+ *  `data-x`/`data-y`, which was exact only while the two scales matched. Measuring each dot's real
+ *  rect makes it exact at every width, at the cost of one measuring pass — taken once, and again on
+ *  resize, never per pointer move. */
+export function initChart(plot, tooltip) {
+  const points = Array.prototype.slice.call(plot.querySelectorAll(".pt"));
   if (points.length === 0) return;
-  const hitArea = svg.querySelector(".hit-area");
-  const coords = points.map((p) => ({
-    x: parseFloat(p.getAttribute("data-x")),
-    y: parseFloat(p.getAttribute("data-y")),
-  }));
+  const hitArea = plot.querySelector(".hit-area");
+  let coords = [];
+  function measure() {
+    coords = points.map((p) => {
+      const r = p.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
+  }
+  measure();
+  window.addEventListener("resize", measure);
 
   function clear() {
     points.forEach((p) => p.classList.remove("pt-active"));
@@ -83,13 +99,7 @@ export function initChart(svg, tooltip) {
   // exactly on a 2-3px circle — any tap inside the plot resolves to whichever of the ~164 dots is
   // actually closest to it.
   function fromPointer(evt) {
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return;
-    const svgPoint = svg.createSVGPoint();
-    svgPoint.x = evt.clientX;
-    svgPoint.y = evt.clientY;
-    const local = svgPoint.matrixTransform(ctm.inverse());
-    const i = nearestPointIndex(coords, local.x, local.y);
+    const i = nearestPointIndex(coords, evt.clientX, evt.clientY);
     show(points[i], evt.clientX, evt.clientY);
   }
 
@@ -131,7 +141,7 @@ export function initChart(svg, tooltip) {
   });
 
   document.addEventListener("pointerdown", function (evt) {
-    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    if (plot.contains(evt.target) || tooltip.contains(evt.target)) return;
     clear();
   });
 }
@@ -139,8 +149,8 @@ export function initChart(svg, tooltip) {
 export function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
-  document.querySelectorAll("svg.chart").forEach(function (svg) {
-    initChart(svg, tooltip);
+  document.querySelectorAll(".chart-plot").forEach(function (plot) {
+    initChart(plot, tooltip);
   });
 }
 

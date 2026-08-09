@@ -27,7 +27,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { RankingWeb, LAYOUTS } from "./RankingWeb.tsx";
+import { RankingWeb, FRAME } from "./RankingWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -86,9 +86,9 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 
   const { outPath } = await renderWeb({
     component: RankingWeb,
-    layouts: LAYOUTS,
     props: {
       data,
+      frame: FRAME,
       title: BEAT.title,
       subtitle: BEAT.subtitle,
       source: BEAT.source,
@@ -118,8 +118,39 @@ async function repair(outPath) {
   if (!html.includes("</body>")) throw new Error("renderWeb output has no </body> to repair");
   html = html.replace("</body>", `${ownScript}</body>`);
 
+  // This beat's own rules, after the genre's shared stylesheet. A ranking chart labels BOTH sides of
+  // its bars — the category on the left, the printed value at each bar's own end on the right — so
+  // the genre's `[y-gutter] [plot]` grid gains a third column here, both label tracks a fixed pixel
+  // width measured from the real strings. And ten rows of names need a real number of CSS pixels
+  // whatever the container's width, which is what `--min-plot-h` (derived in the component) buys.
   const ownCss = `
+.chart-plot.ranking-plot {
+  grid-template-columns: var(--y-gutter) 1fr var(--r-gutter);
+  min-height: var(--min-plot-h);
+}
+.cat-label {
+  position: absolute;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: var(--category-size);
+  font-weight: var(--category-weight);
+  white-space: nowrap;
+}
+.value-label {
+  position: absolute;
+  transform: translateY(-50%) translateX(8px);
+  font-size: var(--value-size);
+  font-weight: var(--value-weight);
+  white-space: nowrap;
+}
 .row-hit { cursor: pointer; }
+/* The row band answers a pointer anywhere along it; this is the only sign a reader gets of WHICH
+   row answered, so it is drawn rather than left to the tooltip alone — a tint, never an opaque
+   fill, so nothing the row already states is hidden behind it. */
+svg.chart rect.row-hit:hover, svg.chart rect.row-hit.row-active {
+  fill: var(--muted);
+  fill-opacity: 0.1;
+}
 .row-hit:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 `;
   if (!html.includes("</style>")) throw new Error("renderWeb output has no </style> to repair");
