@@ -1,0 +1,125 @@
+{
+  "data": [
+    {
+      "country": "Croatia",
+      "change": 0.031547699999999956
+    },
+    {
+      "country": "Cyprus",
+      "change": -0.5215905999999997
+    },
+    {
+      "country": "Portugal",
+      "change": -1.1269168999999999
+    },
+    {
+      "country": "Spain",
+      "change": -1.2698033000000004
+    },
+    {
+      "country": "Slovenia",
+      "change": -1.5377545999999995
+    },
+    {
+      "country": "Austria",
+      "change": -1.918126
+    },
+    {
+      "country": "Italy",
+      "change": -2.595734
+    },
+    {
+      "country": "Poland",
+      "change": -2.8091854000000005
+    },
+    {
+      "country": "Greece",
+      "change": -2.822743
+    },
+    {
+      "country": "Hungary",
+      "change": -2.9373825
+    },
+    {
+      "country": "France",
+      "change": -2.9599647
+    },
+    {
+      "country": "Ireland",
+      "change": -3.036577200000001
+    },
+    {
+      "country": "Sweden",
+      "change": -3.1170017000000003
+    },
+    {
+      "country": "Malta",
+      "change": -3.3940620000000004
+    },
+    {
+      "country": "Latvia",
+      "change": -3.9391201
+    },
+    {
+      "country": "Bulgaria",
+      "change": -4.0073924
+    },
+    {
+      "country": "Romania",
+      "change": -4.090568
+    },
+    {
+      "country": "Netherlands",
+      "change": -4.549607000000001
+    },
+    {
+      "country": "Belgium",
+      "change": -4.800862599999999
+    },
+    {
+      "country": "Lithuania",
+      "change": -5.285355000000001
+    },
+    {
+      "country": "Denmark",
+      "change": -5.655951
+    },
+    {
+      "country": "Finland",
+      "change": -6.114267000000001
+    },
+    {
+      "country": "Slovakia",
+      "change": -6.40117
+    },
+    {
+      "country": "Germany",
+      "change": -6.464432400000001
+    },
+    {
+      "country": "Czechia",
+      "change": -8.899782
+    },
+    {
+      "country": "Estonia",
+      "change": -17.397036
+    },
+    {
+      "country": "Luxembourg",
+      "change": -20.478130999999998
+    }
+  ],
+  "title": "Croatia is the only EU country emitting more CO₂ per person than in 1990",
+  "source": "Source: Global Carbon Budget (2025); population based on various sources (2024) – with major processing by Our World in Data · fossil fuels and industry only",
+  "caveat": "Croatia's rise is +0.03 tonnes per person — the only one, and a small one: 4.73 in 1990 against 4.76 in 2024. The other 26 member states all emit less per person than they did.",
+  "axisTitle": "Change in CO₂ emissions per person, 1990 to 2024, tonnes",
+  "subjectCountry": "Croatia",
+  "averageFall": -4.928096784615385,
+  "averageFallLabel": "Average of the 26 falls: −4.93",
+  "conclusion": "The other 26 cut theirs by 4.93 tonnes per person on average — Luxembourg by 20.48, the largest fall in the EU.",
+  "ground": "#FFFFFF",
+  "accent": "#0B7A75",
+  "ink": "#000000",
+  "muted": "#616161",
+  "grid": "#d1d1d1"
+}
