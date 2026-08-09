@@ -51,8 +51,15 @@ export const BEAT = {
     "Among the world's richest economies, the United States has one of the lowest life expectancies — years behind income-peer Switzerland.",
   subtitle:
     "Cuba, at roughly an eighth of either country's income, comes within a few years of both.",
-  source:
-    "Source: UN World Population Prospects (2024) & World Bank, via Our World in Data · 2022 data",
+  // The source line is NOT here either, and for the same reason the alt is not. It used to read
+  // "UN World Population Prospects (2024) & World Bank" — and the World Bank publishes NEITHER of
+  // the two GDP figures the headline leans on. Checked against the World Bank's own API on
+  // 2026-08-09: `NY.GDP.PCAP.PP.KD` returns `null` for Cuba in every year 2018–2022, and Taiwan
+  // (also plotted, at $53,143) is not a World Bank reporting economy at all. The x axis in this
+  // beat is OWID's Maddison Project Database column, as `owid-metadata.json` frozen beside this
+  // script says in its own words. Crediting an institution that does not publish the figure is
+  // this project's own worst class of claim — a reader who goes to check finds nothing there — so
+  // the credit is now BUILT from that frozen metadata by `creditFrom` below.
   // The alt text is NOT here. It states how many countries were plotted, which year they are, and
   // the income and life expectancy of each of the three named points — every one of them a value
   // in `data.csv`, so every one of them is read out of it in `describeNamedPoints` below rather
@@ -64,6 +71,10 @@ export const BEAT = {
 const NAMED_CODES = ["CHE", "USA", "CUB"];
 
 const DEFAULT_DATA_PATH = join(HERE, "data.csv");
+// The provider's own metadata for the grapher `data.csv` came from, frozen beside it on 2026-08-09
+// (`dateDownloaded` is inside the file). The credit is BUILT from this, never typed — see
+// `creditFrom` below.
+const DEFAULT_METADATA_PATH = join(HERE, "owid-metadata.json");
 // And the OUTPUT defaults beside the beat too — where this beat's html is actually committed. It
 // used to default to a scratch directory, so running this script the obvious way produced a fresh
 // file nobody looks at, printed a path, exited zero, and left the committed one stale.
@@ -193,10 +204,25 @@ async function patchForThisBeat(outPath) {
  * States' — are computed here too, and the eighth is ASSERTED because the word "eighth" cannot
  * carry an interpolation.
  */
+/** The one year this beat plots, read off the frozen file — the alt states it and the credit dates
+ *  itself by it, and neither may drift from the other. */
+export function referenceYear(csv) {
+  const years = [
+    ...new Set(
+      csv
+        .trim()
+        .split(/\r?\n/)
+        .slice(1)
+        .map((l) => l.split(",")[2]),
+    ),
+  ];
+  if (years.length !== 1)
+    throw new Error(`expected one reference year in data.csv, got ${years.join(", ")}`);
+  return years[0];
+}
+
 export function describeNamedPoints(data, csv) {
-  const years = [...new Set(csv.trim().split(/\r?\n/).slice(1).map((l) => l.split(",")[2]))];
-  if (years.length !== 1) throw new Error(`expected one reference year in data.csv, got ${years.join(", ")}`);
-  const year = years[0];
+  const year = referenceYear(csv);
 
   const at = (code) => {
     const row = data.find((r) => r.code === code);
@@ -226,6 +252,60 @@ export function describeNamedPoints(data, csv) {
   );
 }
 
+/**
+ * The credit, built from the provider's OWN metadata for the two columns this chart draws — frozen
+ * beside the beat as `owid-metadata.json`, exactly as `data.csv` is, so the sentence and the file
+ * that justifies it travel together and a reader can check one against the other.
+ *
+ * Two columns, two different answers, and the reason this is not one hand-typed line:
+ *
+ *   - The X AXIS is OWID's `GDP per capita` column, whose own `citationShort` reads "Bolt and van
+ *     Zanden – Maddison Project Database 2023". The World Bank appears nowhere in it, which is why
+ *     the old credit could name an institution that publishes neither Cuba's $7,649 nor Taiwan's
+ *     $53,143 — both plotted, and Cuba one of the three points the headline rests on.
+ *   - The Y AXIS is a long-run splice of four producers, and crediting all four for a single-year
+ *     2022 chart would be its own over-credit. OWID's own key description says which one supplies
+ *     the modern era — "From 1950 onward, we use the [United Nations World Population Prospects
+ *     (2024)]" — so the cut-over year is READ from that sentence and checked against the year the
+ *     frozen data actually carries. If OWID ever re-splices, or this beat is re-pointed at a
+ *     pre-1950 year, this throws instead of quietly crediting the wrong institution.
+ */
+export function creditFrom(metadata, year) {
+  const column = (name) => {
+    const found = metadata.columns?.[name];
+    if (!found?.citationShort)
+      throw new Error(
+        `owid-metadata.json has no citationShort for "${name}" — re-freeze it from the grapher's ` +
+          "own .metadata.json before shipping a credit built from it.",
+      );
+    return found;
+  };
+
+  const gdp = column("GDP per capita");
+  // "Bolt and van Zanden – Maddison Project Database 2023 – with minor processing by …"
+  const [gdpProducer, gdpDataset] = gdp.citationShort.split(" – ");
+  if (!gdpProducer || !gdpDataset)
+    throw new Error(`cannot read a producer and a dataset out of: ${gdp.citationShort}`);
+
+  const life = column("Period life expectancy at birth");
+  const era = String(life.descriptionKey).match(
+    /From (\d{4}) onward, we use the \[([^\]]+)\]/,
+  );
+  if (!era)
+    throw new Error(
+      "the life-expectancy column no longer states which producer covers the modern era — read " +
+        "its descriptionKey and credit the one that covers this beat's year by hand-checked name.",
+    );
+  const [, from, lifeProducer] = era;
+  if (Number(year) < Number(from))
+    throw new Error(
+      `this beat plots ${year}, before the ${from} cut-over at which OWID switches to ` +
+        `${lifeProducer} — the credit would name the wrong producer.`,
+    );
+
+  return `Source: ${lifeProducer} & ${gdpDataset} (${gdpProducer}), via Our World in Data · ${year} data`;
+}
+
 export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const csv = await readFile(dataPath, "utf8");
   const data = rowsFromCsv(csv);
@@ -235,6 +315,10 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const alt = describeNamedPoints(data, csv);
   console.log(`alt: ${alt}`);
 
+  const metadata = JSON.parse(await readFile(DEFAULT_METADATA_PATH, "utf8"));
+  const source = creditFrom(metadata, referenceYear(csv));
+  console.log(`source: ${source}`);
+
   const { outPath } = await renderWeb({
     component: IncomeLifeExpectancyWeb,
     props: {
@@ -242,7 +326,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       frame: FRAME,
       title: BEAT.title,
       subtitle: BEAT.subtitle,
-      source: BEAT.source,
+      source,
       alt,
       ground: BEAT.ground,
       accent: BEAT.accent,

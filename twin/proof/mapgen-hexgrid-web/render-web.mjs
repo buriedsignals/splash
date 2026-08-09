@@ -344,13 +344,33 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   const furniture = deriveFurniture(BEAT.ground);
   const ramp = sequentialRamp(BEAT.ground, furniture.ink, breaks.length + 1);
 
+  // ── What this plate actually holds, and what it therefore leaves out ────────────────────────────
+  // "The map holds 60°S–78°N" was typed. The corners MapLibre settled on are −64.478 / 79.847, so
+  // the sentence was 4.5° short at the south and 1.8° short at the north — and it said nothing at
+  // all about the events that fall outside the frame, under a source line reading "worldwide". Both
+  // now come off the plate's own `frameCorners` and off the difference between the rows parsed and
+  // the points the bake kept, the same way the sibling static beat `proof/map-quake-density` does
+  // it. The number a reader checks and the number the picture drew are the same number.
+  const { north, south } = geometry.frameCorners;
+  const latRange =
+    `${Math.abs(south).toFixed(0)}°${south < 0 ? "S" : "N"}–` +
+    `${Math.abs(north).toFixed(0)}°${north < 0 ? "S" : "N"}`;
+  const dropped = points.length - geometry.points.length;
+  console.log(
+    `plate ${geometry.frame.width}×${geometry.frame.height} holds ${latRange}; ` +
+      `${dropped} of ${points.length} events fall outside it`,
+  );
+
   const legendCaption = `${BEAT.legendCaption} — aggregate mode: ${BEAT.aggregateMode}`;
   const caveat =
     `This grid shades cells by COUNT of magnitude 4.0+ earthquakes, not by total energy released — a cell packed ` +
     `with many small quakes can outrank one with fewer, larger ones. Cell size (${hexSize.toFixed(0)}px) is chosen from ` +
     `point density and grows until the ${cells.length}-cell grid clears a fixed cap. The densest cell holds ` +
-    `${ratio.toFixed(1)}× the median non-empty cell's count. The map holds 60°S–78°N (Mercator distorts ` +
-    `the poles beyond usefulness at this scale).`;
+    `${ratio.toFixed(1)}× the median non-empty cell's count. The map holds ${latRange} (Mercator distorts ` +
+    // The locale is NAMED, not inherited from whichever machine runs the render: this page declares
+    // `lang="en"`, and a beat's numbers take their locale from the beat's own declared language.
+    `the poles beyond usefulness at this scale), and ${dropped.toLocaleString("en-US")} of the ` +
+    `${points.length.toLocaleString("en-US")} catalogued events fall outside it.`;
   const alt =
     `World map binned into a hexagonal grid, ${cells.length} non-empty cells. Cells are shaded by how many ` +
     `magnitude 4-or-greater earthquakes occurred there in 2024, from pale for a handful up to a dark cell in ` +

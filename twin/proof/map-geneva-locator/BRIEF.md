@@ -79,6 +79,8 @@ Closed in three parts, all in this beat's own folder:
   and measures its distance from the mean position of the other ten: **4.3 km**. The caveat and the
   alt are built from that, so the sentence can never name the wrong organisation, and the "in
   Cologny" that no committed data supported is gone.
+  **SUPERSEDED 2026-08-09 — see the next section.** Deriving it as "furthest EAST" produced a
+  sentence that was false of the very picture beside it.
 - **It is promoted to the top of the label priority.** The type's own doctrine says a declared
   priority is the correct lever for importance, and a beat that names an organisation in its
   furniture has declared it important. The promotion travels on the geometry the component draws;
@@ -97,6 +99,42 @@ giving up, which recovered a sixth label. Looking at the render killed it: "Unit
 Geneva", nudged down, began closer to the World Intellectual Property Organization's dot than to its
 own. A label that names the wrong marker is worse than a label that is missing, so the placement
 stayed tight.
+
+## The repair that introduced a new false claim — CLOSED 2026-08-09
+
+Deriving the outlier as "furthest east" fixed the missing label and broke the sentence. The caveat
+it built read *"the World Economic Forum's sits 4.3 km east of the other 10, **the one marker
+outside the cluster**"* — and the picture directly beside those words shows a SECOND marker alone in
+the southern third of the frame. Measured over `geneva-orgs.csv` with the same haversine the render
+uses: the International Civil Defence Organisation is **4.119 km** from the UN-system centroid
+against the WEF's **4.255 km**, and by distance to its own nearest neighbour it is **the most
+isolated marker on this map** — 3.317 km, against the WEF's 3.252. It is also orange, which is why
+the alt's *"other intergovernmental bodies in orange **nearby**"* was false as well: that adjective
+was attached to a COLOUR, and this tier contains the most separated marker in the set.
+
+**East is a direction; the claim was about separation.** Both are now derived from separation
+itself, with no typed threshold: take every marker's distance to its nearest neighbour, sort, and
+split at the single largest gap in that sorted list — one-dimensional natural breaks. On this data
+that gap is **2.290 km** wide (0.962 → 3.252), five times the next largest (0.437), and it puts
+exactly two markers on the far side. The cluster is then the other nine, its centre their mean
+position, and each apart marker's distance and 8-point compass heading are read off that centre:
+
+| marker | nearest neighbour | from cluster centre | heading |
+| --- | --- | --- | --- |
+| International Civil Defence Organisation | 3.317 km | 4.00 km | south (194.7°) |
+| World Economic Forum | 3.252 km | 4.18 km | east (92.1°) |
+| *the other nine* | ≤ 0.962 km | ≤ 1.28 km | — |
+
+`mustLabel` now carries BOTH keys, so the render refuses unless the picture labels both. The
+cluster's own anchor — the organisation nearest its centre, the United Nations Office at Geneva at
+0.247 km — is derived too, replacing a landmark that had been typed from memory.
+
+Mutation-checked in a COPY of the csv, never the committed one: moving the ICDO into the cluster
+turns the sentence into *"10 … sit together within 1.2 km … while 1 stands alone"*, naming the WEF
+only. That run also caught number agreement reading "1 stand … both labelled", so the singular and
+plural forms are derived from the count as well.
+
+Re-rendered and looked at: both named markers labelled, the words matching the frame.
 
 ## Source line
 

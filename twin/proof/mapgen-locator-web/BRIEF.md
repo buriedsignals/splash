@@ -8,7 +8,18 @@ always-rendered table of all eleven organisations.
 
 Eleven international organisations are headquartered in and around Geneva, in three declared tiers —
 4 UN-system agencies, 5 other intergovernmental bodies, 2 other international bodies — all inside
-4.4 km of the city centre, with the World Economic Forum the one outlier to the east, in Cologny.
+4.4 km of the city centre. Nine sit within 1.3 km of their common centre; **two** stand apart from
+that cluster, and they are not the same colour: the World Economic Forum (green) 4.18 km east, and
+the International Civil Defence Organisation (orange) 4.00 km south.
+
+*Corrected 2026-08-09.* This line used to read "with the World Economic Forum the one outlier to the
+east, in Cologny", and the rendered alt said the orange tier was "nearby". Both were false of the
+delivered picture: by distance to its own nearest neighbour the ICDO is the MOST isolated marker on
+this map (3.317 km, against the WEF's 3.252), and it is orange. Separation is now derived — every
+marker's nearest-neighbour distance, sorted, split at the single largest gap in that sorted list
+(2.290 km wide here, five times the next largest, putting exactly two markers on the far side) — and
+the caveat and alt are built from it. See `proof/map-geneva-locator/BRIEF.md` for the full table;
+the two beats share this csv byte for byte and now share the derivation.
 
 ## Exact values — computed 2026-08-09 from `geneva-orgs.csv` (11 rows, byte-identical to `proof/map-geneva-locator/geneva-orgs.csv`)
 

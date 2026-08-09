@@ -34,15 +34,13 @@ const BEAT = {
     "Source: Wikidata (query.wikidata.org/sparql), organisations within 6 km of central Geneva",
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
   legendCaption: "Category",
-  caveat:
-    "A locator marks position only — marker size does not encode a value. Coordinates are each " +
-    "organisation's own Wikidata point, not a street address; the World Economic Forum's is in " +
-    "Cologny, east of the main cluster.",
-  alt:
-    "Map of central Geneva. Eleven markers, all the same size, show international organisations " +
-    "headquartered in the city, coloured by category: UN system agencies in blue cluster around " +
-    "the Palais des Nations in the north, other intergovernmental bodies in orange nearby, and " +
-    "other international bodies in green including the World Economic Forum to the east in Cologny.",
+  // The caveat and the alt are NOT here. Both used to be typed, and both were false of the picture
+  // beside them: the alt called the orange tier "nearby" when the International Civil Defence
+  // Organisation — an orange marker — is by nearest-neighbour distance the most isolated marker on
+  // this map, and both sentences named the World Economic Forum as the eastern outlier while the
+  // declutter had dropped its label in BOTH layouts. They are now built in `describeSeparation`
+  // below, from the coordinates, and the marker keys they name are passed as `mustLabel` so the
+  // render throws rather than ship words the reader cannot check against the frame.
 };
 const PLATE_SIZE = 420; // this beat's own DESKTOP_LAYOUT.mapSize — see bake-plate.mjs's own header
 // FROZEN BESIDE THE BEAT, for the same reason its csv is: a basemap living in `/tmp` cannot be
@@ -187,6 +185,147 @@ svg.map[data-layout="narrow"] { display: none; }
 `.trim();
 }
 
+// ── Which markers stand apart, measured rather than described ────────────────────────────────────
+// A category is not a place: "other intergovernmental bodies in orange nearby" attached a distance
+// claim to a COLOUR, and that tier contains this map's most isolated marker. Separation is derived
+// here for every marker without a typed threshold — each marker's distance to its nearest
+// neighbour, sorted, split at the single LARGEST gap in that sorted list (one-dimensional natural
+// breaks). On this data the gap is 2.29 km wide (0.96 → 3.25), five times the next largest, and it
+// puts exactly two markers on the far side.
+const EARTH_KM = 6371;
+const RAD = Math.PI / 180;
+function greatCircleKm(aLat, aLon, bLat, bLon) {
+  const dLat = (bLat - aLat) * RAD;
+  const dLon = (bLon - aLon) * RAD;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(aLat * RAD) * Math.cos(bLat * RAD) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_KM * Math.asin(Math.sqrt(h));
+}
+
+const COMPASS = [
+  "north",
+  "north-east",
+  "east",
+  "south-east",
+  "south",
+  "south-west",
+  "west",
+  "north-west",
+];
+/** The 8-point compass direction of `to` seen from `from` — read off the bearing, never typed. */
+function headingFrom(from, to) {
+  const bearing =
+    (Math.atan2((to.lon - from.lon) * Math.cos(from.lat * RAD), to.lat - from.lat) / RAD + 360) %
+    360;
+  return COMPASS[Math.round(bearing / 45) % 8];
+}
+
+/**
+ * The whole geometry of the words: the cluster, the organisation it is centred on, the markers that
+ * stand outside it and how far and in which direction each one sits. Returns the caveat and the alt
+ * built from those measurements, plus the keys the picture must therefore label.
+ */
+export function describeSeparation(orgs) {
+  const nearest = orgs.map((o) => ({
+    org: o,
+    km: Math.min(
+      ...orgs.filter((x) => x.key !== o.key).map((x) => greatCircleKm(o.lat, o.lon, x.lat, x.lon)),
+    ),
+  }));
+  const byNearest = [...nearest].sort((a, b) => a.km - b.km);
+  let splitAt = byNearest.length;
+  let widestGap = -Infinity;
+  for (let i = 1; i < byNearest.length; i++) {
+    const gap = byNearest[i].km - byNearest[i - 1].km;
+    if (gap > widestGap) {
+      widestGap = gap;
+      splitAt = i;
+    }
+  }
+  const clustered = byNearest.slice(0, splitAt).map((x) => x.org);
+  const apartRows = byNearest.slice(splitAt);
+  if (apartRows.length === 0 || clustered.length === 0)
+    throw new Error("the nearest-neighbour split produced an empty side — check the coordinates.");
+
+  const centre = {
+    lat: clustered.reduce((sum, o) => sum + o.lat, 0) / clustered.length,
+    lon: clustered.reduce((sum, o) => sum + o.lon, 0) / clustered.length,
+  };
+  const clusterRadiusKm = Math.max(
+    ...clustered.map((o) => greatCircleKm(centre.lat, centre.lon, o.lat, o.lon)),
+  );
+  // Which organisation the cluster is centred ON, rather than a landmark typed from memory …
+  const anchor = clustered
+    .map((o) => ({ o, km: greatCircleKm(centre.lat, centre.lon, o.lat, o.lon) }))
+    .sort((a, b) => a.km - b.km)[0].o;
+  // … and the spread measured FROM THAT ANCHOR, because a radius around the centroid is not a
+  // radius around the organisation the sentence names.
+  const anchorRadiusKm = Math.max(
+    ...clustered.map((o) => greatCircleKm(anchor.lat, anchor.lon, o.lat, o.lon)),
+  );
+
+  const apart = apartRows
+    .map(({ org, km }) => ({
+      org,
+      nearestKm: km,
+      km: greatCircleKm(centre.lat, centre.lon, org.lat, org.lon),
+      heading: headingFrom(centre, org),
+    }))
+    // East first, so the words run left-to-right across the frame the reader is looking at.
+    .sort((a, b) => b.org.lon - a.org.lon);
+
+  const categoryCount = (name) => orgs.filter((o) => o.category === name).length;
+  const apartPhrase = (withCategory) => {
+    const parts = apart.map(
+      (a) =>
+        `the ${a.org.name}${withCategory ? ` (${a.org.category.toLowerCase()})` : ""} ` +
+        `${a.km.toFixed(1)} km ${a.heading}`,
+    );
+    return parts.length === 1
+      ? parts[0]
+      : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  };
+
+  // Number agreement follows the count, which follows the data — a mutation that moved one outlier
+  // back into the cluster printed "1 stand apart … both labelled" until this was derived too.
+  const lone = apart.length === 1;
+  const labelledClause = lone
+    ? "labelled on the map"
+    : apart.length === 2
+      ? "both labelled on the map"
+      : "all labelled on the map";
+
+  const caveat =
+    "A locator marks position only — marker size does not encode a value. Coordinates are each " +
+    `organisation's own Wikidata point, not a street address. ${clustered.length} of the ` +
+    `${orgs.length} sit within ${clusterRadiusKm.toFixed(1)} km of their common centre; ` +
+    `${apart.length} ${lone ? "stands" : "stand"} apart from that cluster: ${apartPhrase(false)}, ` +
+    `${labelledClause}.`;
+  const alt =
+    `Map of central Geneva. ${orgs.length} markers, all the same size, show international ` +
+    `organisations headquartered in the city, coloured by category: ${categoryCount("UN system")} ` +
+    `UN system agencies in blue, ${categoryCount("Other intergovernmental")} other ` +
+    `intergovernmental bodies in orange and ${categoryCount("Other international body")} other ` +
+    `international bodies in green. Colour is not position: ${clustered.length} of the markers, ` +
+    `from all three categories, sit together within ${anchorRadiusKm.toFixed(1)} km of the ` +
+    `${anchor.name}, while ${apart.length} ${lone ? "stands" : "stand"} alone in the frame and ` +
+    `${lone ? "is" : "are"} labelled beside ${lone ? "its own point" : "their own points"} — ` +
+    `${apartPhrase(true)} of that cluster.`;
+
+  return {
+    caveat,
+    alt,
+    apart,
+    clustered,
+    anchor,
+    widestGap,
+    clusterRadiusKm,
+    anchorRadiusKm,
+    mustLabel: apart.map((a) => a.org.key),
+  };
+}
+
 /** Bakes the plate if it is not already at `plateDir`. */
 async function ensurePlate(plateDir) {
   if (existsSync(join(plateDir, "geometry.json")) && existsSync(join(plateDir, "plate.png")))
@@ -227,19 +366,38 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   if (merged.length !== orgs.length)
     throw new Error(`merge dropped rows: ${orgs.length} orgs, ${merged.length} merged`);
 
+  const separation = describeSeparation(orgs);
+  console.log(
+    `separation: widest gap in nearest-neighbour distance is ${separation.widestGap.toFixed(2)} km — ` +
+      `${separation.clustered.length} clustered (within ${separation.clusterRadiusKm.toFixed(1)} km ` +
+      `of their centre, anchored on ${separation.anchor.name}), ${separation.apart.length} apart:`,
+  );
+  for (const a of separation.apart)
+    console.log(
+      `  ${a.org.name} — ${a.km.toFixed(2)} km ${a.heading} of the cluster centre, ` +
+        `nearest neighbour ${a.nearestKm.toFixed(2)} km, promoted to the front of the label priority.`,
+    );
+
+  // A beat that names an organisation in its furniture has declared it important, and the type's
+  // own doctrine says a declared priority is the correct lever for importance. The promotion
+  // travels on the geometry the component draws; the baked priorities on disk are left alone.
+  const apartKeys = new Set(separation.mustLabel);
+  const points = merged.map((p) => (apartKeys.has(p.key) ? { ...p, priority: -1 } : p));
+
   const { outPath } = await renderMapWeb({
     component: LocatorWeb,
     table: OrgTable,
     layouts: LAYOUTS,
     props: {
-      geometry: { ...geometry, points: merged },
+      geometry: { ...geometry, points },
       plate,
+      mustLabel: separation.mustLabel,
       title: BEAT.title,
       source: BEAT.source,
       basemapCredit: BEAT.basemapCredit,
       legendCaption: BEAT.legendCaption,
-      caveat: BEAT.caveat,
-      alt: BEAT.alt,
+      caveat: separation.caveat,
+      alt: separation.alt,
       ground: BEAT.ground,
     },
     outDir,

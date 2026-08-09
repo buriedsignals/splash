@@ -18,8 +18,17 @@ zone.
   magnitudes 4.0 → 7.5; every timestamp in 2024. Byte-identical to
   `proof/map-quake-density/quakes-density.csv` (copied, never imported — a beat does not reach into
   another beat's folder).
-- 44 of the 14,175 events fall outside the plate's own frame (poleward of it) and are dropped before
-  binning, which the frame note states as 60°S–78°N.
+- **118** of the 14,175 events fall outside the plate's own frame (poleward of it) and are dropped
+  before binning: the render logs `14057/14175 points on-frame`, and `plate/geometry.json` holds
+  exactly 14,057 points. The frame the plate settled on is **−64.478° to 79.847°**, which the caveat
+  now states as **64°S–80°N**, read off `frameCorners` at render time.
+
+  *Corrected 2026-08-09.* Both numbers in this bullet were wrong, and so was the sentence a reader
+  saw: the caveat typed "60°S–78°N" — 4.5° short at the south, 1.8° short at the north — and said
+  nothing at all about dropped events, under a source line reading "worldwide". The mechanism that
+  fixes it already existed one beat over (`proof/map-quake-density/render.mjs` derives its own
+  `latRange` from the same field) and had simply not travelled. Mutation-checked in a COPY of the
+  plate: setting `frameCorners` to −35.2 / 66.9 makes the delivered caveat read "35°S–67°N".
 
 ## Exact values — the render's own derivation, cross-checked 2026-08-09
 

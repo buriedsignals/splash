@@ -42,49 +42,151 @@ console.log(`data: ${orgs.length} organisations`);
 for (const category of new Set(orgs.map((o) => o.category)))
   console.log(`  ${category}: ${orgs.filter((o) => o.category === category).length}`);
 
-// ── The outlier the furniture talks about is found in the data, and then MADE VISIBLE ───────────
-// The caveat and the alt both singled out the World Economic Forum by name — and the declutter had
-// dropped its label, because priority runs category-rank then alphabetically and the WEF came last
-// of eleven. So the words pointed at a marker the picture never named, and a reader was sent
-// looking for something that was not there. Two changes: the outlier is now DERIVED (whichever
-// organisation sits furthest east, with its distance from the rest measured, so the sentence can
-// never name the wrong one), and it is PROMOTED to the top of the label priority — the type's own
-// doctrine says a declared priority is the correct lever for importance, and a beat that names an
-// organisation in its furniture has declared it important. `mustLabel` then makes the render throw
-// rather than ship the mismatch again.
-const outlier = orgs.reduce((east, o) => (o.lon > east.lon ? o : east));
-const others = orgs.filter((o) => o.key !== outlier.key);
-const meanLat = others.reduce((sum, o) => sum + o.lat, 0) / others.length;
-const meanLon = others.reduce((sum, o) => sum + o.lon, 0) / others.length;
+// ── Which markers stand apart is MEASURED, and then made visible ─────────────────────────────────
+// Two corrections live in this block, and both were words the picture beside them refuted.
+//
+// First: the caveat and the alt singled out the World Economic Forum by name while the declutter
+// had dropped its label, so the words pointed at a marker the picture never named. That was fixed
+// by deriving the marker instead of typing it — but it was derived as "whichever sits furthest
+// EAST", which is a direction, not a separation, and the sentence it produced ("the one marker
+// outside the cluster") was false in the delivered render: the International Civil Defence
+// Organisation sits alone in the southern third of the frame, and by distance to its own nearest
+// neighbour it is the MOST isolated marker on this map (3.32 km, against the WEF's 3.25).
+//
+// Second, and the reason the alt called the orange tier "nearby": that tier CONTAINS the ICDO.
+// A category is not a place, and no adjective about distance is safe to attach to one.
+//
+// So separation is now derived for every marker, without a typed threshold: take each marker's
+// distance to its nearest neighbour, sort them, and split at the single LARGEST gap in that sorted
+// list — one-dimensional natural breaks. Here that gap is 2.29 km wide (0.96 → 3.25), five times
+// the next largest, and it puts exactly two markers on the far side. Both are then PROMOTED to the
+// top of the label priority and passed as `mustLabel`, so the render throws rather than name in
+// words a marker the picture leaves anonymous.
 const EARTH_KM = 6371;
+const RAD = Math.PI / 180;
 function greatCircleKm(aLat, aLon, bLat, bLon) {
-  const rad = Math.PI / 180;
-  const dLat = (bLat - aLat) * rad;
-  const dLon = (bLon - aLon) * rad;
+  const dLat = (bLat - aLat) * RAD;
+  const dLon = (bLon - aLon) * RAD;
   const h =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos(aLat * rad) * Math.cos(bLat * rad) * Math.sin(dLon / 2) ** 2;
+    Math.cos(aLat * RAD) * Math.cos(bLat * RAD) * Math.sin(dLon / 2) ** 2;
   return 2 * EARTH_KM * Math.asin(Math.sqrt(h));
 }
-const outlierKm = greatCircleKm(meanLat, meanLon, outlier.lat, outlier.lon);
-console.log(
-  `outlier: ${outlier.name}, ${outlierKm.toFixed(1)} km east of the other ${others.length} — ` +
-    `promoted from label priority ${outlier.priority} to first.`,
+
+const COMPASS = [
+  "north",
+  "north-east",
+  "east",
+  "south-east",
+  "south",
+  "south-west",
+  "west",
+  "north-west",
+];
+/** The 8-point compass direction of `to` seen from `from` — read off the bearing, never typed. */
+function headingFrom(from, to) {
+  const bearing =
+    (Math.atan2((to.lon - from.lon) * Math.cos(from.lat * RAD), to.lat - from.lat) /
+      RAD +
+      360) %
+    360;
+  return COMPASS[Math.round(bearing / 45) % 8];
+}
+
+const nearest = orgs.map((o) => ({
+  org: o,
+  km: Math.min(
+    ...orgs.filter((x) => x.key !== o.key).map((x) => greatCircleKm(o.lat, o.lon, x.lat, x.lon)),
+  ),
+}));
+const byNearest = [...nearest].sort((a, b) => a.km - b.km);
+let splitAt = byNearest.length;
+let widestGap = -Infinity;
+for (let i = 1; i < byNearest.length; i++) {
+  const gap = byNearest[i].km - byNearest[i - 1].km;
+  if (gap > widestGap) {
+    widestGap = gap;
+    splitAt = i;
+  }
+}
+const clustered = byNearest.slice(0, splitAt).map((x) => x.org);
+const apartRows = byNearest.slice(splitAt);
+if (apartRows.length === 0 || clustered.length === 0)
+  throw new Error("the nearest-neighbour split produced an empty side — check the coordinates.");
+
+const centre = {
+  lat: clustered.reduce((sum, o) => sum + o.lat, 0) / clustered.length,
+  lon: clustered.reduce((sum, o) => sum + o.lon, 0) / clustered.length,
+};
+const clusterRadiusKm = Math.max(
+  ...clustered.map((o) => greatCircleKm(centre.lat, centre.lon, o.lat, o.lon)),
 );
+// Which organisation the cluster is centred ON, rather than a landmark typed from memory.
+const anchor = clustered
+  .map((o) => ({ o, km: greatCircleKm(centre.lat, centre.lon, o.lat, o.lon) }))
+  .sort((a, b) => a.km - b.km)[0].o;
+// Measured FROM THE ANCHOR, because that is what the alt says: a radius around the centroid is not
+// a radius around the organisation the sentence names, and the two differ here.
+const anchorRadiusKm = Math.max(
+  ...clustered.map((o) => greatCircleKm(anchor.lat, anchor.lon, o.lat, o.lon)),
+);
+const apart = apartRows.map(({ org, km }) => ({
+  org,
+  nearestKm: km,
+  km: greatCircleKm(centre.lat, centre.lon, org.lat, org.lon),
+  heading: headingFrom(centre, org),
+}));
+// East first, so the words run left-to-right across the frame the reader is looking at.
+apart.sort((a, b) => b.org.lon - a.org.lon);
+
+console.log(
+  `separation: widest gap in nearest-neighbour distance is ${widestGap.toFixed(2)} km — ` +
+    `${clustered.length} clustered (within ${clusterRadiusKm.toFixed(1)} km of their centre, ` +
+    `anchored on ${anchor.name}), ${apart.length} apart:`,
+);
+for (const a of apart)
+  console.log(
+    `  ${a.org.name} — ${a.km.toFixed(2)} km ${a.heading} of the cluster centre, ` +
+      `nearest neighbour ${a.nearestKm.toFixed(2)} km, promoted from label priority ${a.org.priority} to first.`,
+  );
 
 const categoryCount = (name) => orgs.filter((o) => o.category === name).length;
+/** "the World Economic Forum 4.2 km east" … joined with "and" for the last one. */
+const apartPhrase = (withCategory) => {
+  const parts = apart.map(
+    (a) =>
+      `the ${a.org.name}${withCategory ? ` (${a.org.category.toLowerCase()})` : ""} ` +
+      `${a.km.toFixed(1)} km ${a.heading}`,
+  );
+  return parts.length === 1
+    ? parts[0]
+    : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+};
+
+// Number agreement follows the count, which follows the data — a mutation that moved one outlier
+// back into the cluster printed "1 stand apart … both labelled" until this was derived too.
+const lone = apart.length === 1;
+const labelledClause = lone
+  ? "labelled on the map"
+  : apart.length === 2
+    ? "both labelled on the map"
+    : "all labelled on the map";
+
 const caveat =
   "A locator marks position only — marker size does not encode a value. Coordinates are the " +
-  `organisation's own Wikidata point, not a street address. The ${outlier.name}'s sits ` +
-  `${outlierKm.toFixed(1)} km east of the other ${others.length}, the one marker outside the ` +
-  "cluster, and is labelled on the map.";
+  `organisation's own Wikidata point, not a street address. ${clustered.length} of the ` +
+  `${orgs.length} sit within ${clusterRadiusKm.toFixed(1)} km of their common centre; ` +
+  `${apart.length} ${lone ? "stands" : "stand"} apart from that cluster: ${apartPhrase(false)}, ` +
+  `${labelledClause}.`;
 const alt =
   `Map of central Geneva. ${orgs.length} markers show international organisations headquartered in ` +
-  `the city, coloured by category: ${categoryCount("UN system")} UN system agencies in blue cluster ` +
-  `around the Palais des Nations in the north, ${categoryCount("Other intergovernmental")} other ` +
-  `intergovernmental bodies in orange nearby, and ${categoryCount("Other international body")} other ` +
-  `international bodies in green — among them the ${outlier.name}, the easternmost marker on the ` +
-  `map, ${outlierKm.toFixed(1)} km from the rest and labelled beside its own point.`;
+  `the city, coloured by category: ${categoryCount("UN system")} UN system agencies in blue, ` +
+  `${categoryCount("Other intergovernmental")} other intergovernmental bodies in orange and ` +
+  `${categoryCount("Other international body")} other international bodies in green. Colour is not ` +
+  `position: ${clustered.length} of the markers, from all three categories, sit together within ` +
+  `${anchorRadiusKm.toFixed(1)} km of the ${anchor.name}, while ${apart.length} ` +
+  `${lone ? "stands" : "stand"} alone in the frame and ${lone ? "is" : "are"} labelled beside ` +
+  `${lone ? "its own point" : "their own points"} — ${apartPhrase(true)} of that cluster.`;
 
 const furniture = deriveFurniture(BEAT.ground);
 
@@ -112,10 +214,11 @@ if (wantStill) {
   const { geometry, plate } = await plateOf(stillPlate);
   // The promotion travels on the geometry the component actually draws, so the declutter and the
   // drawing agree — the baked priority is left untouched on disk.
+  const apartKeys = new Set(apart.map((a) => a.org.key));
   const promoted = {
     ...geometry,
     points: geometry.points.map((p) =>
-      p.key === outlier.key ? { ...p, priority: -1 } : p,
+      apartKeys.has(p.key) ? { ...p, priority: -1 } : p,
     ),
   };
   const { pngPath } = await renderStill({
@@ -130,7 +233,7 @@ if (wantStill) {
       ...furniture,
       geometry: promoted,
       plate,
-      mustLabel: [outlier.key],
+      mustLabel: [...apartKeys],
     }),
     width: 900,
     height: 560,

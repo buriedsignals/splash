@@ -33,6 +33,7 @@ import {
   declutterLabels,
   labelSide,
   readingOrder,
+  type LabelBox,
   type OrgRow,
 } from "./geo-locator";
 
@@ -65,12 +66,9 @@ export type WebLayout = {
   bottomPad: number;
 };
 
-// ===== CONFIG — edit for your story =====
-const CAVEAT =
-  "A locator marks position only — marker size does not encode a value. Coordinates are each " +
-  "organisation's own Wikidata point, not a street address; the World Economic Forum's is in " +
-  "Cologny, east of the main cluster.";
-// =========================================
+// There is no fallback caveat here on purpose. There used to be, and it was the typed sentence the
+// render script has since replaced with a measured one — a default that says something false about
+// the data is worse than no default, because nothing makes it go red.
 
 export function wrap(
   text: string,
@@ -97,6 +95,121 @@ export function pointDetail(point: { name: string; category: string }): string {
   return `${point.name} — ${point.category}`;
 }
 
+export type LabelPlacement = {
+  /** The `x` the `<text>` is drawn at, with `anchor` deciding which end of the box it is. */
+  textX: number;
+  baselineY: number;
+  anchor: "start" | "middle" | "end";
+  box: LabelBox;
+  /** False when every candidate placement would cover another marker, or leave the plate. */
+  clears: boolean;
+};
+
+/**
+ * Where every label goes, in the DRAWN (scaled) frame at THIS layout's font size — so desktop and
+ * narrow can legitimately reach different answers, and so the declutter and the drawing read the
+ * same decision instead of each computing a side of their own.
+ *
+ * Four candidates in order: the edge-aware side, the other side, centred above, centred below. The
+ * first that stays inside the plate AND touches no other marker wins. A label crossing another
+ * marker is a real defect this beat shipped — see the caller's own comment — and no amount of
+ * label-vs-label declutter can see it, because a marker is not a label.
+ */
+export function labelPlacements(
+  points: (OrgRow & { px: number; py: number })[],
+  {
+    scale,
+    mapSize,
+    markerR,
+    font,
+    measure,
+  }: {
+    scale: number;
+    mapSize: number;
+    markerR: number;
+    font: { fontSize: number; fontWeight: number };
+    measure: Measure;
+  },
+): Map<string, LabelPlacement> {
+  const dots = points.map((p) => ({
+    key: p.key,
+    cx: p.px * scale,
+    cy: p.py * scale,
+  }));
+  const out = new Map<string, LabelPlacement>();
+
+  for (const p of points) {
+    const cx = p.px * scale;
+    const cy = p.py * scale;
+    const width = measure(p.name, font) + 10;
+    const height = font.fontSize + 4;
+    const preferred = labelSide(cx, mapSize);
+    const other = preferred === "right" ? "left" : "right";
+
+    const beside = (
+      side: "left" | "right",
+      dy: number,
+    ): Omit<LabelPlacement, "clears"> => {
+      const textX = side === "right" ? cx + markerR + 4 : cx - markerR - 4;
+      return {
+        textX,
+        baselineY: cy + 4 + dy,
+        anchor: side === "right" ? "start" : "end",
+        box: {
+          x: side === "right" ? textX : textX - width,
+          y: cy - font.fontSize / 2 - 2 + dy,
+          width,
+          height,
+        },
+      };
+    };
+    const centred = (dy: number): Omit<LabelPlacement, "clears"> => ({
+      textX: cx,
+      baselineY: cy + 4 + dy,
+      anchor: "middle",
+      box: {
+        x: cx - width / 2,
+        y: cy - font.fontSize / 2 - 2 + dy,
+        width,
+        height,
+      },
+    });
+
+    const stack = height + markerR;
+    const candidates = [
+      beside(preferred, 0),
+      beside(other, 0),
+      centred(-stack),
+      centred(stack),
+    ];
+    const fits = (c: Omit<LabelPlacement, "clears">) =>
+      c.box.x >= 0 &&
+      c.box.x + c.box.width <= mapSize &&
+      c.box.y >= 0 &&
+      c.box.y + c.box.height <= mapSize &&
+      !dots.some(
+        (d) =>
+          d.key !== p.key &&
+          d.cx + markerR + 2 > c.box.x &&
+          d.cx - markerR - 2 < c.box.x + c.box.width &&
+          d.cy + markerR + 2 > c.box.y &&
+          d.cy - markerR - 2 < c.box.y + c.box.height,
+      );
+
+    const chosen = candidates.find(fits);
+    // `clears: false` means no placement on this plate leaves the label off every other marker.
+    // The caller drops those labels rather than printing words across other organisations' dots —
+    // the marker is still named by hover, by keyboard focus and in the table, which is the whole
+    // point of this genre's two channels. On this data 7 of the 11 have no clear placement at
+    // either layout, which is a statement about how tight the cluster is, not about the words.
+    out.set(p.key, {
+      ...(chosen ?? candidates[0]),
+      clears: chosen !== undefined,
+    });
+  }
+  return out;
+}
+
 export function LocatorWeb({
   geometry,
   plate,
@@ -111,6 +224,7 @@ export function LocatorWeb({
   muted,
   measure,
   layout,
+  mustLabel = [],
 }: {
   geometry: {
     frame: { width: number; height: number };
@@ -129,6 +243,11 @@ export function LocatorWeb({
   muted: string;
   measure: Measure;
   layout: WebLayout;
+  /** Keys the furniture names in words, which must therefore be labelled in the picture — checked
+   *  per layout, because desktop and narrow keep different label sets. The delivered file named the
+   *  World Economic Forum in both its caveat and its alt while the declutter had dropped its label
+   *  in BOTH layouts, so a reader was sent looking for something that was not drawn. */
+  mustLabel?: string[];
 }) {
   if (geometry.points.length < 1)
     throw new Error(
@@ -145,7 +264,8 @@ export function LocatorWeb({
   const columnWidth = stacked ? width - pad * 2 : width - columnX - pad;
   const columnTop = stacked ? mapY + mapSize + 28 : mapY;
 
-  const CAVEAT_TEXT = caveat || CAVEAT;
+  if (!caveat.trim())
+    throw new Error("this beat draws no caveat of its own — pass one.");
   const titleLines = wrap(title, columnWidth, layout.title, measure);
   const sourceLines = wrap(
     `${source} · ${basemapCredit}`,
@@ -153,7 +273,7 @@ export function LocatorWeb({
     layout.source,
     measure,
   );
-  const caveatLines = wrap(CAVEAT_TEXT, columnWidth, layout.note, measure);
+  const caveatLines = wrap(caveat, columnWidth, layout.note, measure);
 
   const titleTop = columnTop + layout.title.fontSize;
   const sourceTop = titleTop + (titleLines.length - 1) * layout.title.lead + 26;
@@ -185,23 +305,42 @@ export function LocatorWeb({
       `the column does not fit: source ends at ${sourceBottom}, legend starts at ${legendTop}. Shorten the title or the source.`,
     );
 
-  // Declutter: a label's box, in the DRAWN (scaled) frame, at THIS layout's own font size — so
-  // desktop and narrow can legitimately keep different label sets (`references/types/locator.md`'s
-  // accessibility trap: the declutter only guarantees no label collides with ANOTHER label, so the
-  // side is edge-aware FIRST, computed against the mapSize this layout actually draws at, not the
-  // bake's own pixel space).
-  const shown = declutterLabels(geometry.points, (p) => {
-    const cx = p.px * scale;
-    const cy = p.py * scale;
-    const side = labelSide(cx, mapSize);
-    const w = measure(p.name, layout.pointLabel) + 10;
-    return {
-      x: side === "right" ? cx + markerR + 4 : cx - markerR - 4 - w,
-      y: cy - layout.pointLabel.fontSize / 2 - 2,
-      width: w,
-      height: layout.pointLabel.fontSize + 4,
-    };
+  // WHERE each label goes, decided ONCE and read by both the declutter and the drawing — they used
+  // to compute the side separately, which is how the two could ever disagree.
+  //
+  // The declutter only guarantees a label does not collide with another LABEL. It says nothing
+  // about a label crossing another MARKER, and on this plate that is not hypothetical: the World
+  // Economic Forum sits 105 px from the right edge of a 420 px map and its label needs 139, so the
+  // edge-aware side sends it back across the cluster and prints the words over three other
+  // organisations' dots. Placement now tries the edge-aware side, then the other side, then centred
+  // above and centred below, and takes the first candidate that stays inside the plate and clears
+  // every other marker. A marker with no clear placement is left UNLABELLED on the frame rather
+  // than printed across its neighbours — it keeps its hover, its keyboard focus and its row in the
+  // table, which is what the two-channel principle above is for.
+  const placements = labelPlacements(geometry.points, {
+    scale,
+    mapSize,
+    markerR,
+    font: layout.pointLabel,
+    measure,
   });
+  const placeable = geometry.points.filter(
+    (p) => placements.get(p.key)!.clears,
+  );
+  const shown = declutterLabels(placeable, (p) => placements.get(p.key)!.box);
+
+  const missing = mustLabel.filter((key) => !shown.has(key));
+  if (missing.length > 0) {
+    const named = missing
+      .map((key) => geometry.points.find((p) => p.key === key)?.name ?? key)
+      .join(", ");
+    throw new Error(
+      `the furniture names ${named}, but the ${layout.name} layout left ` +
+        `${missing.length === 1 ? "it" : "them"} unlabelled — either no placement clears the other ` +
+        "markers, or a higher-priority label took the space. Raise the priority, shorten the label, or stop " +
+        "naming it in the words.",
+    );
+  }
 
   const drawn = readingOrder(geometry.points);
 
@@ -232,9 +371,10 @@ export function LocatorWeb({
           const cx = point.px * scale;
           const cy = point.py * scale;
           const fill = CATEGORY_COLOUR[point.category] ?? muted;
-          const side = labelSide(cx, mapSize);
-          const labelX = side === "right" ? cx + markerR + 4 : cx - markerR - 4;
-          const anchor = side === "right" ? "start" : "end";
+          const placement = placements.get(point.key)!;
+          const labelX = placement.textX;
+          const labelY = placement.baselineY;
+          const anchor = placement.anchor;
           const detail = pointDetail(point);
           return (
             <Fragment key={point.key}>
@@ -252,7 +392,7 @@ export function LocatorWeb({
                 <>
                   <text
                     x={labelX}
-                    y={cy + 4}
+                    y={labelY}
                     textAnchor={anchor}
                     fontSize={layout.pointLabel.fontSize}
                     fontWeight={layout.pointLabel.fontWeight}
@@ -265,7 +405,7 @@ export function LocatorWeb({
                   </text>
                   <text
                     x={labelX}
-                    y={cy + 4}
+                    y={labelY}
                     textAnchor={anchor}
                     fontSize={layout.pointLabel.fontSize}
                     fontWeight={layout.pointLabel.fontWeight}

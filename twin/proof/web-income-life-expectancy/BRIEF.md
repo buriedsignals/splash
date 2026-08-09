@@ -10,8 +10,22 @@ log-scaled; life expectancy at birth on y; one dot per country; no forced zero o
 ## Data
 
 - Source: Our World in Data, `life-expectancy-vs-gdp-per-capita` grapher — life expectancy from
-  UN World Population Prospects (2024) / OWID, GDP per capita from World Bank / Maddison Project
-  Database, via Our World in Data.
+  UN World Population Prospects (2024) / OWID, GDP per capita from the **Maddison Project Database
+  2023** (Bolt and van Zanden), via Our World in Data.
+
+  *Corrected 2026-08-09.* This line said "World Bank / Maddison Project Database" and the rendered
+  credit named only the World Bank, which publishes **neither** GDP figure the headline leans on.
+  Checked against the World Bank's own API: `NY.GDP.PCAP.PP.KD` returns `null` for Cuba in every
+  year 2018–2022, and Taiwan (plotted at $53,143) is not a World Bank reporting economy at all.
+  OWID's own metadata for this grapher — now frozen beside the data as `owid-metadata.json`, fetched
+  the same day and byte-matching the live rows for Cuba, Switzerland, Taiwan and the United States —
+  gives the GDP column's `citationShort` as *"Bolt and van Zanden – Maddison Project Database 2023"*,
+  with no World Bank in it. The credit is now BUILT from that frozen file by `creditFrom` in
+  `render-web.mjs`, and only the life-expectancy producer that covers this beat's year is named:
+  OWID's own key description says *"From 1950 onward, we use the [United Nations World Population
+  Prospects (2024)]"*, so the cut-over year is read from that sentence and checked against the year
+  the frozen data carries. Mutation-checked: swapping the frozen GDP citation to a World Bank one
+  changes the rendered credit; deleting the cut-over sentence, or asking for a pre-1950 year, throws.
 - Fetched: `https://ourworldindata.org/grapher/life-expectancy-vs-gdp-per-capita.csv?csvType=filtered`
   — **note:** the `country=` entity filter has no effect on this particular grapher's CSV export
   (verified: filtered and unfiltered requests both return the same 165-country set) — this is NOT
