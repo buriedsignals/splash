@@ -109,7 +109,13 @@ function buildStepGroups({ viennaCountriesBefore, borderRunKm }) {
 }
 
 const argv = process.argv.slice(2);
-const outDir = resolve(argv.find((a) => !a.startsWith("--")) ?? "/tmp/scrolly-twin/mapmore-danube");
+// The default writes BESIDE THE BEAT, not to /tmp. It used to default to
+// `/tmp/scrolly-twin/mapmore-danube`, which meant running this script the obvious way — no
+// arguments — produced a fresh artifact somewhere nobody looks and left the committed one
+// untouched. Someone re-rendering after a fix would see a successful run, a printed path, and a
+// stale file still in the repository. That is this project's most-repeated failure wearing yet
+// another set of clothes: the presence of a file mistaken for the existence of a result.
+const outDir = resolve(argv.find((a) => !a.startsWith("--")) ?? join(HERE, "render"));
 const platePath = argv.includes("--plate")
   ? argv[argv.indexOf("--plate") + 1]
   : "/tmp/map-twin/mapmore-flow-900x420";
