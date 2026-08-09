@@ -45,9 +45,16 @@ const BEAT = {
     "other international bodies in green including the World Economic Forum to the east in Cologny.",
 };
 const PLATE_SIZE = 420; // this beat's own DESKTOP_LAYOUT.mapSize — see bake-plate.mjs's own header
-const DEFAULT_PLATE_DIR = `/tmp/map-twin-web-locator/plate-${PLATE_SIZE}`;
+// FROZEN BESIDE THE BEAT, for the same reason its csv is: a basemap living in `/tmp` cannot be
+// committed, so the delivered html could not be reproduced or audited — and MapTiler restyles, so
+// a re-bake months later is a different picture under the same markers. `ensurePlate` below bakes
+// only when this folder is empty.
+const DEFAULT_PLATE_DIR = join(HERE, "plate");
 const DEFAULT_DATA_PATH = join(HERE, "geneva-orgs.csv");
-const DEFAULT_OUT_DIR = "/tmp/map-web-locator-twin";
+// And the OUTPUT defaults beside the beat too — where `locator.html` is actually committed. It
+// used to default to `/tmp/map-web-locator-twin`, so running this script the obvious way produced
+// a fresh file nobody looks at, printed a path, exited zero, and left the committed one stale.
+const DEFAULT_OUT_DIR = HERE;
 const OUTPUT_NAME = "locator.html";
 // =========================================
 

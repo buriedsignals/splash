@@ -3,8 +3,10 @@
 // Usage:
 //   bun proof/mapmore-flow-danube/render.mjs --still
 
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, readFile } from "node:fs/promises";
-import { join, dirname } from "node:path";
+import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
@@ -60,8 +62,24 @@ const flag = (name, fallback) => {
 };
 
 const outDir = flag("--out", join(HERE, "render"));
-const stillPlate = flag("--still-plate", "/tmp/map-twin/mapmore-flow-900x420");
+// The plate is frozen BESIDE THE BEAT, exactly as the csv is: `/tmp` cannot be committed, so a
+// render reading its basemap from there leaves an artifact nobody can reproduce or audit — and
+// MapTiler restyles, so a re-bake months later is a different picture under the same marks.
+const PLATE_SIZE = "900x420";
+const stillPlate = flag("--still-plate", join(HERE, "plate"));
 const wantStill = argv.includes("--still");
+
+/** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. */
+function ensurePlate(plateDir) {
+  if (existsSync(join(plateDir, "geometry.json")) && existsSync(join(plateDir, "plate.png"))) return;
+  console.log(`no frozen plate at ${plateDir} — baking one there.`);
+  const result = spawnSync(
+    "bun",
+    [join(HERE, "bake.mjs"), "--size", PLATE_SIZE, "--out", plateDir],
+    { cwd: resolve(HERE, "../../.."), stdio: "inherit" },
+  );
+  if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status}`);
+}
 
 async function plateOf(dir) {
   const geometry = JSON.parse(await readFile(join(dir, "geometry.json"), "utf8"));
@@ -72,6 +90,7 @@ async function plateOf(dir) {
 await mkdir(outDir, { recursive: true });
 
 if (wantStill) {
+  ensurePlate(stillPlate);
   const { geometry, plate } = await plateOf(stillPlate);
 
   // The claim check: the title states the crossing order verbatim — assert it against what the

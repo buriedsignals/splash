@@ -8,6 +8,7 @@
 //   bun proof/mapgen-flowmap-video/render-map.mjs --video
 
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -73,14 +74,29 @@ const flag = (name, fallback) => {
 };
 
 const outDir = flag("--out", join(HERE, "render"));
-const platePath = flag("--plate", "/tmp/map-twin/mapgen-flowmap-video");
+// The plate is frozen BESIDE THE BEAT, exactly as the csv is: `/tmp` cannot be committed, so a
+// render reading its basemap from there leaves an mp4 nobody can reproduce or audit — and MapTiler
+// restyles, so a re-bake months later is a different picture under the same route.
+const platePath = flag("--plate", join(HERE, "plate"));
 const routePath = flag("--route", join(HERE, "danube-route.csv"));
 const countriesPath = flag("--countries", join(HERE, "countries.geojson"));
 const wantStill = argv.includes("--still");
 const wantFinalFrame = argv.includes("--final-frame");
 const wantVideo = argv.includes("--video");
 
+/** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. */
+function ensurePlate(plateDir) {
+  if (existsSync(join(plateDir, "geometry.json")) && existsSync(join(plateDir, "plate.png"))) return;
+  console.log(`no frozen plate at ${plateDir} — baking one there.`);
+  const result = spawnSync("bun", [join(HERE, "bake-plate.mjs"), "--out", plateDir], {
+    cwd: resolve(HERE, "../../.."),
+    stdio: "inherit",
+  });
+  if (result.status !== 0) throw new Error(`bake-plate.mjs exited with ${result.status}`);
+}
+
 async function plateOf(dir) {
+  ensurePlate(dir);
   const geometry = JSON.parse(await readFile(join(dir, "geometry.json"), "utf8"));
   const png = await readFile(join(dir, "plate.png"));
   return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };

@@ -14,7 +14,12 @@
 // folder, and `render.mjs` only calls this bake when that folder is EMPTY.
 //
 // Usage:
-//   bun proof/mapmore-flow-danube/bake.mjs --size 900x420   # → proof/mapmore-flow-danube/plate
+//   bun proof/mapmore-scrolly-danube/bake.mjs --size 900x420   # → proof/mapmore-scrolly-danube/plate
+//
+// This beat carries its OWN copy of this bake — as it already carries its own `danube-route.csv`,
+// `countries.geojson` and `geo-flow.ts` — because it used to read its plate out of
+// `proof/mapmore-flow-danube`'s `/tmp` namespace. A beat that resolves an input inside another
+// beat's scratch directory is reproducible only for as long as that other beat happens to have run.
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";

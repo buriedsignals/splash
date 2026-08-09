@@ -24,7 +24,7 @@
 // called at the exact size both `FlowMapStill.tsx` and `FlowMapVideo.tsx` draw at, 940×420).
 //
 // Usage:
-//   bun proof/mapgen-flowmap-video/bake-plate.mjs --out /tmp/map-twin/mapgen-flowmap-video
+//   bun proof/mapgen-flowmap-video/bake-plate.mjs   # → proof/mapgen-flowmap-video/plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -67,7 +67,7 @@ const flag = (name, fallback) => {
 };
 
 const { width, height } = MAP_SIZE;
-const outDir = flag("--out", `/tmp/map-twin/mapgen-flowmap-video`);
+const outDir = flag("--out", join(HERE, "plate"));
 const routePath = flag("--route", join(HERE, "danube-route.csv"));
 const countriesPath = flag("--countries", join(HERE, "countries.geojson"));
 const settleMs = Number(flag("--settle", "15000"));

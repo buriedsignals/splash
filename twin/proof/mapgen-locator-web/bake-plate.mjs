@@ -26,7 +26,7 @@
 // `mapmore-flow-danube/geo-flow.ts`'s own header for why).
 //
 // Usage:
-//   bun proof/mapgen-locator-web/bake-plate.mjs --size 420 --out /tmp/map-twin-web-locator/plate-420
+//   bun proof/mapgen-locator-web/bake-plate.mjs --size 420   # → proof/mapgen-locator-web/plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -61,7 +61,7 @@ const flag = (name, fallback) => {
 // 420 — this beat's own DESKTOP_LAYOUT.mapSize (LocatorWeb.tsx), not the 496 the web seed uses for
 // its own, different layout.
 const size = Number(flag("--size", "420"));
-const outDir = flag("--out", `/tmp/map-twin-web-locator/plate-${size}`);
+const outDir = flag("--out", join(HERE, "plate"));
 const csvPath = flag("--data", join(HERE, "geneva-orgs.csv"));
 const settleMs = Number(flag("--settle", "15000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));

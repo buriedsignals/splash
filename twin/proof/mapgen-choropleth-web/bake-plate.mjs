@@ -33,7 +33,7 @@
 // pattern `twin-map-web/assets/MapWebSeed.tsx` already proves for the symbol-map genre.
 //
 // Usage:
-//   bun proof/mapgen-choropleth-web/bake-plate.mjs --size 496 --out /tmp/map-twin/choropleth-web-496
+//   bun proof/mapgen-choropleth-web/bake-plate.mjs --size 496   # → proof/mapgen-choropleth-web/plate
 
 import { existsSync, readdirSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -76,7 +76,7 @@ const flag = (name, fallback) => {
 };
 
 const size = Number(flag("--size", "496"));
-const outDir = flag("--out", `/tmp/map-twin/choropleth-web-${size}`);
+const outDir = flag("--out", join(HERE, "plate"));
 const shapesPath = flag("--shapes", join(HERE, "countries.geojson"));
 const settleMs = Number(flag("--settle", "15000"));
 const keyPath = flag("--env", join(HERE, "../../.env"));

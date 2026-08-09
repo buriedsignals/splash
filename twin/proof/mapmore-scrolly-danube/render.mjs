@@ -11,6 +11,8 @@
 // Usage:
 //   bun proof/mapmore-scrolly-danube/render.mjs [outDir]
 
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -116,11 +118,29 @@ const argv = process.argv.slice(2);
 // stale file still in the repository. That is this project's most-repeated failure wearing yet
 // another set of clothes: the presence of a file mistaken for the existence of a result.
 const outDir = resolve(argv.find((a) => !a.startsWith("--")) ?? join(HERE, "render"));
+// The plate is frozen BESIDE THE BEAT for the same reason, and it is this beat's OWN copy. It used
+// to default to `/tmp/map-twin/mapmore-flow-900x420` — another beat's scratch directory — so the
+// scrolly could only be rebuilt on a machine where `mapmore-flow-danube` had recently been baked,
+// and nothing recorded which basemap the committed steps were drawn over.
+const PLATE_SIZE = "900x420";
 const platePath = argv.includes("--plate")
   ? argv[argv.indexOf("--plate") + 1]
-  : "/tmp/map-twin/mapmore-flow-900x420";
+  : join(HERE, "plate");
+
+/** Bakes the plate ONLY when the frozen one is absent — a warm run never touches the network. */
+function ensurePlate(plateDir) {
+  if (existsSync(join(plateDir, "geometry.json")) && existsSync(join(plateDir, "plate.png"))) return;
+  console.log(`no frozen plate at ${plateDir} — baking one there.`);
+  const result = spawnSync(
+    "bun",
+    [join(HERE, "bake.mjs"), "--size", PLATE_SIZE, "--out", plateDir],
+    { cwd: resolve(HERE, "../../.."), stdio: "inherit" },
+  );
+  if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status}`);
+}
 
 async function render() {
+  ensurePlate(platePath);
   const route = parseRouteCsv(await readFile(join(HERE, "danube-route.csv"), "utf8"));
   const collection = JSON.parse(await readFile(join(HERE, "countries.geojson"), "utf8"));
   const territories = collection.features.map((f) => ({

@@ -50,7 +50,11 @@ const SEED = {
     "outlined in ink, carries the lightest class at about 1.6 tonnes per person, the lowest.",
 };
 const PLATE_SIZE = 496;
-const DEFAULT_PLATE_DIR = `/tmp/map-twin/choropleth-web-${PLATE_SIZE}`;
+// FROZEN BESIDE THE BEAT, for the same reason its csv is: a basemap living in `/tmp` cannot be
+// committed, so the delivered html could not be reproduced or audited — and MapTiler restyles, so
+// a re-bake months later is a different picture under the same shapes. `ensurePlate` below bakes
+// only when this folder is empty.
+const DEFAULT_PLATE_DIR = join(HERE, "plate");
 const DEFAULT_VALUES_PATH = join(HERE, "co2-per-capita-2023.csv");
 const DEFAULT_OUT_DIR = join(HERE, "render");
 const OUTPUT_NAME = "choropleth.html";
