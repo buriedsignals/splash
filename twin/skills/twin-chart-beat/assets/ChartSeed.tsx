@@ -18,24 +18,84 @@ import {
   measureText,
   FONT_FAMILY,
 } from "../scripts/render-still.mjs";
+import { sizeFor } from "../scripts/sizes.mjs";
 
 type Reading = { year: number; value: number | null };
 type Padding = { top: number; right: number; bottom: number; left: number };
 
-const FRAME = { width: 900, height: 560 };
-const PAD = 40;
-const TITLE = { fontSize: 26, fontWeight: 700, lead: 34 };
-const SOURCE = { fontSize: 14, fontWeight: 400 };
-const AXIS = { fontSize: 13, fontWeight: 400 };
-/** How far below the plot's own floor an x-axis tick label's BASELINE sits. Named, because two
- *  places have to agree about it: the `<text y>` that draws the label, and `padding.bottom`, which
- *  has to reserve room for that label AND for the source line under it. When the source moved to
- *  the frame's bottom margin the first arithmetic tried kept this as a literal in one place only —
- *  and the rendered PNG showed "2016" and "2018" struck through by the source string. */
-const X_TICK_DROP = 24;
-/** The clear air between the bottom of the x-axis label band and the top of the source line. */
-const X_AXIS_TO_SOURCE_GAP = 8;
-const LABEL = { fontSize: 15, fontWeight: 600 };
+/**
+ * THE 900x560 TOKENS, KEPT AS THE BASE, AND `tokens(typeScale)` IS WHAT A SIZE MULTIPLIES.
+ *
+ * On "REPLACE ME. Do not parameterise me" above — adding `size` does not violate it, and the
+ * distinction is worth writing down. What that header forbids is a `variant` prop that turns one
+ * seed into a component library: a variant selects A DIFFERENT CHART. A size selects THE CANVAS
+ * THE SAME CHART IS DRAWN ON, and it is an externally recorded decision read out of
+ * `STORYBOARD.md` at gate 2c, exactly like the palette this seed already reads. The precedent is
+ * `readPalette`, including its failure mode: `sizeFor` throws naming the three it knows rather
+ * than defaulting, because a chart drawn at a size nobody chose looks deliberate.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, NOT ONLY THE FONT SIZES. This is the probe's own
+ * finding (`proof/static-carbon-footprint-spread/probe/VERDICT.md`) and it cost a rendered
+ * collision to learn: the named font constants are not a beat's whole 900x560 tuning. The bare
+ * literals inside the layout arithmetic — the gap under the header, the tick-label insets, the
+ * end-label air — are tuning too, and scaling the type while leaving them at their literal value
+ * collided the title into the subtitle at 1920x1080 by 1634 x 4.5 px. Integers throughout, so
+ * `measureText`'s cache keys stay stable.
+ */
+const BASE = {
+  PAD: 40,
+  TITLE: { fontSize: 26, fontWeight: 700, lead: 34 },
+  SOURCE: { fontSize: 14, fontWeight: 400 },
+  AXIS: { fontSize: 13, fontWeight: 400 },
+  LABEL: { fontSize: 15, fontWeight: 600 },
+  // The note that names a hole in the series. It was a bare `fontSize={12}` at the mark itself,
+  // and it survived the first three-size render of this seed as the ONE thing that did not grow:
+  // at 1920x1080 it read as a caption printed by mistake. No assertion saw it — it collided with
+  // nothing and was clipped by nothing. It was caught by opening the PNG, which is why the
+  // discipline says the render is opened and not that the suite is green.
+  GAP_NOTE: { fontSize: 12, fontWeight: 400 },
+  X_TICK_DROP: 24,
+  X_AXIS_TO_SOURCE_GAP: 8,
+  HEADER_TO_PLOT: 34,
+  END_LABEL_GUTTER: 12,
+  END_LABEL_AIR: 10,
+  Y_TICK_INSET: 10,
+  Y_TICK_BASELINE_NUDGE: 4,
+  MARK_BASELINE_NUDGE: 5,
+};
+
+export function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  return {
+    sp,
+    PAD: sp(BASE.PAD),
+    TITLE: { ...BASE.TITLE, fontSize: sp(BASE.TITLE.fontSize), lead: sp(BASE.TITLE.lead) },
+    SOURCE: { ...BASE.SOURCE, fontSize: sp(BASE.SOURCE.fontSize) },
+    AXIS: { ...BASE.AXIS, fontSize: sp(BASE.AXIS.fontSize) },
+    LABEL: { ...BASE.LABEL, fontSize: sp(BASE.LABEL.fontSize) },
+    GAP_NOTE: { ...BASE.GAP_NOTE, fontSize: sp(BASE.GAP_NOTE.fontSize) },
+    X_TICK_DROP: sp(BASE.X_TICK_DROP),
+    X_AXIS_TO_SOURCE_GAP: sp(BASE.X_AXIS_TO_SOURCE_GAP),
+    HEADER_TO_PLOT: sp(BASE.HEADER_TO_PLOT),
+    END_LABEL_GUTTER: sp(BASE.END_LABEL_GUTTER),
+    END_LABEL_AIR: sp(BASE.END_LABEL_AIR),
+    Y_TICK_INSET: sp(BASE.Y_TICK_INSET),
+    Y_TICK_BASELINE_NUDGE: sp(BASE.Y_TICK_BASELINE_NUDGE),
+    MARK_BASELINE_NUDGE: sp(BASE.MARK_BASELINE_NUDGE),
+  };
+}
+/**
+ * Two of the tokens above carry a defect in their history and keep it here.
+ *
+ * `X_TICK_DROP` — how far below the plot's floor an x-axis tick label's BASELINE sits. Named,
+ * because two places have to agree about it: the `<text y>` that draws the label, and
+ * `padding.bottom`, which reserves room for that label AND for the source line under it. When the
+ * source moved to the frame's bottom margin, the first arithmetic kept this as a literal in one
+ * place only — and the rendered PNG showed "2016" and "2018" struck through by the source string.
+ *
+ * `X_AXIS_TO_SOURCE_GAP` — the clear air between the bottom of that label band and the source's
+ * own ink.
+ */
 const UNIT = "mm"; // this story's unit. The next beat's is not mm — it rewrites this file.
 /** How many labelled y gridlines a STATIC frame asks for. d3 treats it as a hint and returns the
  *  round values that actually fall inside the fitted range, so the answer is rarely exactly this
@@ -222,6 +282,7 @@ export function ChartSeed({
   ground,
   accent,
   subject,
+  size,
 }: {
   data: Reading[];
   title: string;
@@ -230,9 +291,26 @@ export function ChartSeed({
   ground: string;
   accent: string;
   subject: string;
+  size: string;
 }) {
   const { ink, muted, grid } = deriveFurniture(ground);
-  const { width, height } = FRAME;
+  const { width, height, typeScale } = sizeFor(size);
+  const {
+    PAD,
+    TITLE,
+    SOURCE,
+    AXIS,
+    LABEL,
+    GAP_NOTE,
+    X_TICK_DROP,
+    X_AXIS_TO_SOURCE_GAP,
+    HEADER_TO_PLOT,
+    END_LABEL_GUTTER,
+    END_LABEL_AIR,
+    Y_TICK_INSET,
+    Y_TICK_BASELINE_NUDGE,
+    MARK_BASELINE_NUDGE,
+  } = tokens(typeScale);
 
   // The header is laid out first, because the plot starts where the header stops.
   const titleLines = wrap(title, width - PAD * 2, TITLE);
@@ -261,8 +339,8 @@ export function ChartSeed({
     // The plot starts below the LAST HEADER LINE, never below the source — that dependency is what
     // moving the source would otherwise have dragged the whole plot down the frame with it. The
     // header gives back the 26px it used to reserve to separate title from source.
-    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 34,
-    right: PAD + 12 + measureText(endLabel, LABEL),
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + HEADER_TO_PLOT,
+    right: PAD + END_LABEL_GUTTER + measureText(endLabel, LABEL),
     // And the floor is DERIVED from where the source now sits, not guessed: the x-axis label band
     // has to end above the source's own ink. Measured, not assumed — the first attempt reserved
     // `PAD + SOURCE.fontSize + 14` (68px, on the argument that a 14px line 40px above the floor
@@ -278,7 +356,7 @@ export function ChartSeed({
       X_AXIS_TO_SOURCE_GAP,
     left:
       PAD +
-      10 +
+      Y_TICK_INSET +
       Math.max(...tickLabels.map((label) => measureText(label, AXIS))),
   };
 
@@ -327,8 +405,8 @@ export function ChartSeed({
             strokeWidth={1}
           />
           <text
-            x={plot.left - 10}
-            y={tick.y + 4}
+            x={plot.left - Y_TICK_INSET}
+            y={tick.y + Y_TICK_BASELINE_NUDGE}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="end"
@@ -368,9 +446,9 @@ export function ChartSeed({
         <text
           key={gap.years[0]}
           x={gap.x}
-          y={gap.y + 5}
+          y={gap.y + MARK_BASELINE_NUDGE}
           fill={muted}
-          fontSize={12}
+          fontSize={GAP_NOTE.fontSize}
           textAnchor="middle"
         >
           {gap.years.length > 1
@@ -390,8 +468,8 @@ export function ChartSeed({
       />
       <circle cx={end!.x} cy={end!.y as number} r={4} fill={accent} />
       <text
-        x={plot.right + 10}
-        y={(end!.y as number) + 5}
+        x={plot.right + END_LABEL_AIR}
+        y={(end!.y as number) + MARK_BASELINE_NUDGE}
         fill={accent}
         fontSize={LABEL.fontSize}
         fontWeight={LABEL.fontWeight}

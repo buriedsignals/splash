@@ -3,6 +3,7 @@ import { mkdtemp, rm, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   contrast,
   deriveFurniture,
@@ -10,6 +11,7 @@ import {
   renderStill,
 } from "../scripts/render-still.mjs";
 import { ChartSeed, lineGeometry, yTickValues } from "../assets/ChartSeed.tsx";
+import { sizeFor } from "../scripts/sizes.mjs";
 import rainfall from "../assets/sample-data/rainfall.json";
 
 let outDir: string;
@@ -28,7 +30,13 @@ const LIGHT = {
   ground: "#FFFFFF",
   accent: "#0B7A75",
   subject: "Annemasse",
+  // Every fixture below draws at ONE size, so the numbers these tests assert stay the numbers a
+  // reader can check by hand. The size table's own guard lives in
+  // `splash-twin/test/size-table-parity.test.ts`; what these prove is that the seed reads it.
+  size: "landscape",
 };
+
+const FRAME = { width: 1920, height: 1080 };
 
 describe("deriveFurniture", () => {
   it("should put dark ink on a light ground", () => {
@@ -270,8 +278,7 @@ describe("renderStill", () => {
     const element = createElement(ChartSeed, LIGHT);
     const { svgPath, pngPath } = await renderStill({
       element,
-      width: 900,
-      height: 560,
+      ...FRAME,
       outDir,
       name: "still",
     });
@@ -283,6 +290,35 @@ describe("renderStill", () => {
     expect((await stat(pngPath)).size).toBeGreaterThan(2000);
   });
 
+  it("should refuse to draw at all when no size was chosen, naming the three it knows", () => {
+    // The `readPalette` failure mode on this axis: a chart drawn at a size nobody chose looks every
+    // bit as deliberate as one drawn in a colour nobody chose. There is no default to fall back to.
+    const { size, ...noSize } = LIGHT;
+    expect(() =>
+      renderToStaticMarkup(createElement(ChartSeed, noSize as typeof LIGHT)),
+    ).toThrow(/landscape, square, portrait/);
+  });
+
+  it("should draw every one of the three sizes at exactly the table's own pixels", () => {
+    // The seam `renderStill` states in the negative — the element decides the size and the
+    // rasteriser obeys — asserted in the positive, once, so a seed that quietly kept a FRAME
+    // constant beside the table cannot pass.
+    for (const size of ["landscape", "square", "portrait"]) {
+      const row = sizeFor(size);
+      const svg = renderToStaticMarkup(
+        createElement(ChartSeed, { ...LIGHT, size }),
+      );
+      expect([size, svg.slice(0, 200).match(/width="(\d+)"/)?.[1]]).toEqual([
+        size,
+        String(row.width),
+      ]);
+      expect([size, svg.slice(0, 200).match(/height="(\d+)"/)?.[1]]).toEqual([
+        size,
+        String(row.height),
+      ]);
+    }
+  });
+
   it("should not render a colour that was hard-coded rather than derived", async () => {
     const element = createElement(ChartSeed, {
       data: rainfall,
@@ -292,11 +328,11 @@ describe("renderStill", () => {
       ground: "#101820",
       accent: "#E6A700",
       subject: "Annemasse",
+      size: "landscape",
     });
     const { svgPath } = await renderStill({
       element,
-      width: 900,
-      height: 560,
+      ...FRAME,
       outDir,
       name: "dark",
     });
@@ -311,8 +347,7 @@ describe("renderStill", () => {
     const element = createElement(ChartSeed, { ...LIGHT, ground, accent });
     const { svgPath } = await renderStill({
       element,
-      width: 900,
-      height: 560,
+      ...FRAME,
       outDir,
       name: "palette",
     });
@@ -329,26 +364,39 @@ describe("renderStill", () => {
     expect(used.has(accent.toLowerCase())).toBe(true);
   });
 
-  it("should keep the end label inside the frame however wide the subject's name is", async () => {
-    const subject = "Annemasse-les-Voirons-sur-Arve";
-    const element = createElement(ChartSeed, { ...LIGHT, subject });
-    const { svgPath } = await renderStill({
-      element,
-      width: 900,
-      height: 560,
-      outDir,
-      name: "long-label",
-    });
-    const svg = await readFile(svgPath, "utf8");
+  // Run at ALL THREE sizes, because "the gutter is measured, never fixed" is the claim a size
+  // change is most likely to break and least likely to break visibly: a clipped end label at
+  // portrait looks like a design choice in a thumbnail. The label's own font size is read off the
+  // rendered markup rather than typed, so the assertion follows the type scale instead of pinning
+  // it — typing 15 here would have made this test pass at landscape by measuring the wrong string.
+  for (const size of ["landscape", "square", "portrait"]) {
+    it(`should keep the end label inside the frame however wide the subject's name is, at ${size}`, async () => {
+      const subject = "Annemasse-les-Voirons-sur-Arve";
+      const { width, height } = sizeFor(size);
+      const element = createElement(ChartSeed, { ...LIGHT, subject, size });
+      const { svgPath } = await renderStill({
+        element,
+        width,
+        height,
+        outDir,
+        name: `long-label-${size}`,
+      });
+      const svg = await readFile(svgPath, "utf8");
 
-    const label = `${subject} 604 mm`;
-    const match = svg.match(
-      new RegExp(`<text[^>]*\\bx="([\\d.]+)"[^>]*>${label}</text>`),
-    );
-    expect(match).not.toBeNull();
-    const width = measureText(label, { fontSize: 15, fontWeight: 600 });
-    expect(Number(match![1]) + width).toBeLessThanOrEqual(900);
-  });
+      const label = `${subject} 604 mm`;
+      const match = svg.match(
+        new RegExp(
+          `<text[^>]*\\bx="([\\d.]+)"[^>]*\\bfont-size="(\\d+)"[^>]*\\bfont-weight="(\\d+)"[^>]*>${label}</text>`,
+        ),
+      );
+      expect(match).not.toBeNull();
+      const inkWidth = measureText(label, {
+        fontSize: Number(match![2]),
+        fontWeight: Number(match![3]),
+      });
+      expect(Number(match![1]) + inkWidth).toBeLessThanOrEqual(width);
+    });
+  }
 
   it("should refuse a series with nothing to trace rather than draw a meaningless line", async () => {
     const element = createElement(ChartSeed, {
@@ -359,7 +407,7 @@ describe("renderStill", () => {
       ],
     });
     await expect(
-      renderStill({ element, width: 900, height: 560, outDir, name: "thin" }),
+      renderStill({ element, ...FRAME, outDir, name: "thin" }),
     ).rejects.toThrow("needs at least two readings");
   });
 
@@ -373,15 +421,14 @@ describe("renderStill", () => {
         outDir,
         name: "mismatch",
       }),
-    ).rejects.toThrow("drawn at 900x560");
+    ).rejects.toThrow("drawn at 1920x1080");
   });
 
   it("should carry its alt text as a desc, never as a root title", async () => {
     const element = createElement(ChartSeed, LIGHT);
     const { svgPath } = await renderStill({
       element,
-      width: 900,
-      height: 560,
+      ...FRAME,
       outDir,
       name: "alt",
     });

@@ -17,6 +17,14 @@ import {
   readPalette,
 } from "./render-still.mjs";
 import { ChartSeed } from "../assets/ChartSeed.tsx";
+import { sizeFor } from "./sizes.mjs";
+
+// The preview is a picture of the MECHANISM, so it is drawn at one size deliberately rather than
+// at whatever a beat happens to choose. Landscape, because that is the size a reader of this
+// skill's README is looking at it in. Pass `--size square|portrait` to look at the other two —
+// which is how the seed's own three renders were produced and opened.
+const sizeArg = process.argv.indexOf("--size");
+const SIZE = sizeArg !== -1 ? process.argv[sizeArg + 1] : "landscape";
 
 const HERE = import.meta.dirname;
 
@@ -53,10 +61,16 @@ const svg = renderToStaticMarkup(
     subject: "the sample town",
     ...furniture,
     measure: measureText,
+    size: SIZE,
   }),
 );
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: 900 } })
+// 1:1, because the frame IS the delivered pixel size — see references/static-discipline.md,
+// "Three export sizes, and the frame IS the delivered pixel size", for the measurement that
+// settled it and for the option that lost.
+const png = new Resvg(svg, {
+  fitTo: { mode: "width", value: sizeFor(SIZE).width },
+})
   .render()
   .asPng();
 

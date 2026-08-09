@@ -20,6 +20,9 @@ import {
   readPalette,
 } from "../../skills/twin-chart-beat/scripts/render-still.mjs";
 import { ChartSeed } from "../../skills/twin-chart-beat/assets/ChartSeed.tsx";
+import { sizeFor } from "../../skills/twin-chart-beat/scripts/sizes.mjs";
+
+const SIZE = "landscape";
 
 const HERE = import.meta.dirname;
 
@@ -59,10 +62,13 @@ const svg = renderToStaticMarkup(
     subject: "the sample town",
     ...deriveFurniture(ground),
     measure: measureText,
+    // This beat proves the PALETTE, not the frame, so it draws at one size deliberately —
+    // landscape, the size a reader opens a proof at. `sizeFor` throws rather than defaulting.
+    size: SIZE,
   }),
 );
 
-const png = new Resvg(svg, { fitTo: { mode: "width", value: 900 } }).render().asPng();
+const png = new Resvg(svg, { fitTo: { mode: "width", value: sizeFor(SIZE).width } }).render().asPng();
 await mkdir(join(HERE, "renders"), { recursive: true });
 const target = join(HERE, "renders", alt ? "alt-answer.png" : "house.png");
 await writeFile(target, png);
