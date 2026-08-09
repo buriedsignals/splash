@@ -422,6 +422,43 @@ pull back past the frame the title makes its claim about; `maxBounds` is `frameC
 the camera actually showed; `maxZoom` is derived per type in the geometry core
 (`maxZoomForStudySet`), never picked.
 
+### Two numbers describing one circle, and the box that is not the container's
+
+Found by the owner looking at the live map, then measured. **The mark radius and the camera were on
+two different scales.** The marks carry their radius in the bake's own frame units and the first
+live draft turned those into CSS pixels with `Math.min(w / frameW, h / frameH)` — correct for a
+raster plate, which must not be distorted and so fits by its tighter axis. A live map is not a
+plate: it has no aspect to preserve, and its camera is fitted to the study set at runtime. At
+1600 x 900 the canvas is 1566 x 583, so that rule gave 0.583 and drew Paris at 36px on cartography
+that had grown by more than half again — a small dark circle in the middle of the country it was
+supposed to cover, and a hover that only fired on the small one.
+
+**The rule, per mark type, because they are not the same:**
+
+| Type | At the fit | As the reader zooms | Why |
+|---|---|---|---|
+| Proportional symbol | ground-derived: `bake °/px ÷ live °/px` | **constant screen pixels** | a circle encodes a VALUE; growing it with zoom would make one number mean two things |
+| Choropleth | nothing to scale | — | the fill is the geometry and reprojects itself; only strokes and labels are screen-sized |
+| Dot density | ground-derived | **constant GROUND area**, so the radius interpolates exponentially with zoom (base 2) | a dot stands for people in a place; a field that thins out as you zoom reports a change that did not happen. This is the OPPOSITE rule, and it is why dot density is not shipped live yet |
+| Hex grid | nothing to scale | — | bins are emitted as geographic polygons and reproject correctly |
+
+**The same box turned up again in the leash.** `maxBounds` does not only stop panning: MapLibre also
+raises the minimum zoom so the viewport can never leave it. Set to the square plate's own
+`frameCorners` (47.8° of longitude) it forced zoom 4.526 on a 1566px-wide canvas, and at that zoom
+583px of height holds about 11° of latitude against the study set's 21 — **six of thirteen points
+cropped out of a beat whose title claims all of them.** The pan bound is now taken from the view the
+camera actually fitted to, after the fit, and released before any re-fit.
+
+**Guarded by `scripts/verify-live-map.mjs`**, at two container aspects because the defect is
+invisible when the container's aspect matches the plate's. It asserts three things that can come
+apart: the drawn radius against one derived independently from `degreesPerPixel` and the live zoom;
+every mark on screen; and how far a REAL pointer still reaches a mark, walked with `page.mouse.move`.
+
+**Its own first version was vacuous and that is recorded rather than tidied away.** It compared the
+drawn radius to where `queryRenderedFeatures` said the mark ended — the same number twice, because
+MapLibre hit-tests the circle it painted — and it passed against a copy with the defect deliberately
+put back.
+
 ### The price, measured
 
 - **Payload.** `maplibre-gl@4.7.1` inlined is 803 KB of JS and 65.5 KB of CSS. Committed pages ran

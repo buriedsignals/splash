@@ -56,19 +56,57 @@ export function planIsUnkeyed(plan) {
   return !plan || !plan.styleUrl || plan.styleUrl.indexOf(sentinel) >= 0;
 }
 
-/** The scale between the bake's own frame and the box the live map is drawn in. The marks carry
- *  their radius in FRAME units (the same number the SVG draws), so this is what turns them into the
- *  CSS pixels MapLibre wants — one sizing rule, seen at two sizes, never two rules.
+/**
+ * THE MARK'S SCALE COMES FROM THE CAMERA, NOT FROM THE BOX. This is the fix for a defect the owner
+ * found by looking at the live map, and it is worth the paragraph because the wrong answer looked
+ * right in code.
  *
- *  The SMALLER of the two ratios, not the width's. Web is a range of shapes rather than one size
- *  (ruling R2), and a 1566 x 583 container is 1.57x the frame's width but only 0.58x its height:
- *  scaling on width alone drew Paris at a 97px radius in a 583px-tall box, four circles overlapping
- *  into one grey mass. `min` is the same "fit, never stretch" arithmetic the plate's own viewport
- *  uses. */
-export function containerScale(plan, container) {
-  const width = container.clientWidth || plan.frame.width;
-  const height = container.clientHeight || plan.frame.height;
-  return Math.min(width / plan.frame.width, height / plan.frame.height);
+ * The marks carry their radius in the bake's own FRAME units — the same number the fallback SVG
+ * draws. The first version turned those into CSS pixels with `Math.min(w / frameW, h / frameH)`,
+ * which is the "fit, never stretch" arithmetic a RASTER PLATE needs: a plate must not be distorted,
+ * so it fits by its tighter axis.
+ *
+ * A live map is not a plate. It has no aspect to preserve, because the canvas IS the container —
+ * this file's own CSS says so (`html.mw-live .mw-viewport { aspect-ratio: auto !important }`) — and
+ * the camera is fitted to the study set at runtime rather than restored from the plate. So the two
+ * halves of one circle came apart: measured on the seed at 1600 x 900, the canvas is 1566 x 583, the
+ * camera fits ~32° of longitude across 1566px while the plate fitted ~48° across 1000px, and
+ * `Math.min` gave 0.583 — drawing Paris at 36px on cartography that had grown by 1.57x. A small dark
+ * circle sitting in the middle of the country it is supposed to cover.
+ *
+ * The honest quantity is GROUND: a mark covers the same piece of the world it covered when baked.
+ * `degreesPerPixel` is recorded in `geometry.json` by the bake (and only has been since the camera
+ * facts landed), so this is a ratio of two measured facts rather than another constant:
+ *
+ *     scale = bake degrees-per-pixel ÷ live degrees-per-pixel
+ *
+ * which is exactly `2 ** (liveZoom − bakeZoom)`, since `degreesPerPixel = 360 / (512 · 2**zoom)`.
+ * A camera zoomed one level further in than the plate's draws its marks twice as wide, and the
+ * symbols keep their relationship to the coastlines under them at every container shape.
+ *
+ * WHICH RULE EACH MARK TYPE TAKES, because they are not the same and getting them the same way
+ * round is the whole point:
+ *
+ *  - **Proportional symbol** (this seed): ground-derived AT THE FIT, then CONSTANT IN SCREEN PIXELS
+ *    as the reader zooms. A circle encodes a VALUE, not a ground area — growing it with zoom would
+ *    make the same number mean two different things at two zooms. So this is called on load and on
+ *    resize, both of which re-fit the camera, and never on `move`.
+ *  - **Choropleth**: the same. A region's fill is the geometry itself and reprojects on its own; the
+ *    only screen-sized things are strokes and labels.
+ *  - **Dot density**: THE OPPOSITE, and it is not shipped live yet for exactly this reason. A dot
+ *    stands for a fixed number of people in a fixed piece of ground, so its GROUND area must be
+ *    constant at every zoom or a reader watching the field thin out reads a change that did not
+ *    happen. Its radius has to interpolate exponentially with zoom (base 2), which is a
+ *    `["interpolate", ["exponential", 2], ["zoom"], …]` expression rather than the plain number
+ *    below.
+ *  - **Hex grid**: bins are emitted as geographic polygons, so they reproject correctly and need no
+ *    scale at all.
+ */
+export function cameraScale(plan, map) {
+  const liveDegreesPerPixel = 360 / (512 * Math.pow(2, map.getZoom()));
+  if (!(plan.degreesPerPixel > 0))
+    throw new Error("this plate predates the camera facts: re-bake it, or a mark has no scale to be drawn at");
+  return plan.degreesPerPixel / liveDegreesPerPixel;
 }
 
 /**
@@ -91,22 +129,23 @@ export function initLiveMap(win) {
     style: plan.styleUrl,
     // THE CAMERA IS FITTED AT RUNTIME, TO THE STUDY SET — not restored from the bake's own zoom.
     // Ruling R2: web is not a fourth export size, it is a RANGE, so the container's aspect is not
-    // known when the plate is baked. Fitting the bake's `frameCorners` (computed for a square frame)
+    // known when the plate is baked. Fitting the bake's `frameCorners` (computed for a SQUARE frame)
     // into a 1566 x 583 window is height-bound and crops six of the thirteen points out of the
     // picture — measured, in a real browser, and the reason this is a runtime fit.
     //
-    // `maxBounds` stays the extent the camera actually showed, so panning stops at the subject's
-    // area rather than wandering into an ocean the beat says nothing about. `minZoom` and `maxZoom`
-    // are set on `load`, once the fit has happened and there is a real zoom to bound.
+    // NO `maxBounds` HERE, and that omission is the fix for the same defect wearing its other face.
+    // `maxBounds` does not merely stop panning: MapLibre also raises the minimum zoom so the
+    // viewport can never leave the box. Set to the square plate's `frameCorners` (47.8° of longitude)
+    // it forced zoom 4.526 on a 1566px-wide canvas, and at that zoom 583px of height holds about 11°
+    // of latitude against the study set's 21 — so the leash cropped SIX OF THIRTEEN POINTS out of a
+    // beat whose title claims all of them. The plate's box is not the container's box, in the leash
+    // exactly as in the mark radius. The reader's bound is set on `load` instead, from the view the
+    // camera actually fitted to.
     bounds: [
       [plan.studyBounds.west, plan.studyBounds.south],
       [plan.studyBounds.east, plan.studyBounds.north],
     ],
     fitBoundsOptions: { padding: 48, animate: false },
-    maxBounds: [
-      [plan.maxBounds.west, plan.maxBounds.south],
-      [plan.maxBounds.east, plan.maxBounds.north],
-    ],
     maxZoom: 22,
     attributionControl: false,
   });
@@ -129,10 +168,12 @@ export function initLiveMap(win) {
         map.setLayoutProperty(layers[i].id, "visibility", "none");
 
     map.addSource("mw-marks", { type: "geojson", data: plan.marks.source });
-    const scale = containerScale(plan, container);
     const paint = {};
     for (const key in plan.marks.paint) paint[key] = plan.marks.paint[key];
-    paint["circle-radius"] = ["*", ["get", "r"], scale];
+    // Placeholder until the camera has actually been fitted — `applyMarkScale` on `load` is what
+    // sets the real number. Adding the layer with no radius at all would draw MapLibre's own
+    // default 5px for one frame, which is a visible flash of the wrong circle.
+    paint["circle-radius"] = ["*", ["get", "r"], cameraScale(plan, map)];
     map.addLayer({ id: "mw-marks", type: "circle", source: "mw-marks", paint: paint });
   });
 
@@ -141,16 +182,19 @@ export function initLiveMap(win) {
     doc.documentElement.classList.add("mw-live");
     map.resize();
     leash(map, plan);
-    reposition(map, doc, plan);
+    applyMarkScale(map, doc, plan);
   });
 
+  // The camera moved, not the container: the marks keep the pixel size they were fitted at (a
+  // circle encodes a value, not a ground area) and only their labels and hit targets follow.
   map.on("move", function () {
-    reposition(map, doc, plan);
+    reposition(map, doc, plan, map.__mwScale);
   });
+  // The container changed shape, so the camera re-fits and the marks are re-derived from it.
   map.on("resize", function () {
-    if (!map.getLayer("mw-marks")) return;
-    map.setPaintProperty("mw-marks", "circle-radius", ["*", ["get", "r"], containerScale(plan, container)]);
-    reposition(map, doc, plan);
+    if (!map.getLayer("mw-marks") || !doc.documentElement.classList.contains("mw-live")) return;
+    fitToStudy(map, plan);
+    applyMarkScale(map, doc, plan);
   });
 
   wireHover(map, doc, win);
@@ -177,6 +221,33 @@ export function leash(map, plan) {
   const studyLonSpan = Math.abs(plan.studyBounds.east - plan.studyBounds.west);
   map.setMinZoom(fitted);
   map.setMaxZoom(Math.max(fitted, fitted + Math.log2(visibleLonSpan / Math.max(studyLonSpan, 1e-6))));
+  // The pan bound is the view the camera FITTED TO, not the box the plate was baked in. At the
+  // minimum zoom that is the whole claim and there is nothing to pan to, which is correct; zoomed
+  // in, a reader moves within the subject's own area and no further. Set after the fit, because a
+  // bound set before it constrains the fit — which is how it came to crop the claim.
+  map.setMaxBounds(visible);
+}
+
+/**
+ * Re-fits the camera to the study set. Called when the CONTAINER changes shape, never when the
+ * reader moves: web is a range of shapes (R2), so a beat embedded in a CMS column that reflows has
+ * to answer the new shape with a new fit rather than with a cropped old one.
+ *
+ * The existing pan bound is released first. A `maxBounds` is a constraint on the fit as well as on
+ * the reader, so re-fitting inside the previous shape's bound would inherit exactly the crop this
+ * function exists to recompute away.
+ */
+export function fitToStudy(map, plan) {
+  map.setMaxBounds(null);
+  map.setMinZoom(0);
+  map.fitBounds(
+    [
+      [plan.studyBounds.west, plan.studyBounds.south],
+      [plan.studyBounds.east, plan.studyBounds.north],
+    ],
+    { padding: 48, animate: false },
+  );
+  leash(map, plan);
 }
 
 function wireHover(map, doc, win) {
@@ -200,12 +271,26 @@ function wireHover(map, doc, win) {
   });
 }
 
+/**
+ * Sets the drawn radius from the camera and remembers the number, so the label gutters and the hit
+ * targets are placed against the SAME scale the circles are drawn at. Two numbers describing one
+ * circle living apart is precisely the defect this function exists to make impossible: there is one
+ * place the scale is computed and one place it is stored.
+ */
+export function applyMarkScale(map, doc, plan) {
+  const scale = cameraScale(plan, map);
+  map.__mwScale = scale;
+  if (map.getLayer("mw-marks")) map.setPaintProperty("mw-marks", "circle-radius", ["*", ["get", "r"], scale]);
+  reposition(map, doc, plan, scale);
+  return scale;
+}
+
 /** Every `.pt` button and `.point-label` follows the camera. They were percentages of a fixed
  *  plate; live, `map.project` is what puts them where their point actually is. */
-export function reposition(map, doc, plan) {
+export function reposition(map, doc, plan, scale) {
   const byKey = {};
   for (const feature of plan.marks.source.features) byKey[feature.properties.key] = feature.geometry.coordinates;
-  const scale = containerScale(plan, doc.getElementById("mw-map"));
+  if (!(scale > 0)) scale = cameraScale(plan, map);
   const nodes = doc.querySelectorAll(".pt, .point-label");
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];

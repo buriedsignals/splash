@@ -128,9 +128,10 @@ export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
  */
 export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
   const corners = geometry.frameCorners;
-  if (!corners)
+  if (!corners || !(geometry.degreesPerPixel > 0))
     throw new Error(
-      "this plate predates the camera facts: re-bake it, or the live map has no bounds to be constrained to",
+      "this plate predates the camera facts: re-bake it, or the live map has neither bounds to be " +
+        "constrained to nor a ground scale to draw its marks at",
     );
   const lons = geometry.points.map((p) => p.lon);
   const lats = geometry.points.map((p) => p.lat);
@@ -140,6 +141,13 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
     styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
     waterFill,
     frame: geometry.frame,
+    // The bake's own ground-per-pixel. The live map derives every mark's drawn radius from the
+    // RATIO of this to its own, so a symbol covers the same piece of the world it covered on the
+    // plate whatever shape the reader's container is. Recorded by the bake only since the camera
+    // facts landed — before that there was nothing here to derive from, which is how the first live
+    // draft came to size its marks against the plate's box instead.
+    degreesPerPixel: geometry.degreesPerPixel,
+    metresPerPixel: geometry.metresPerPixel,
     maxBounds: corners,
     minZoom: geometry.zoom,
     maxZoom: maxZoomForStudySet(geometry.zoom, Math.abs(corners.east - corners.west), studyLonSpan),

@@ -72,7 +72,9 @@ and the page ships as the fallback layer alone, exactly as this genre worked bef
 
 The reader's leash is derived, never picked: `minZoom` is the zoom the camera fitted to at the
 reader's own container size, so the claim the title makes is always fully on screen; `maxBounds` is
-the extent the bake's camera actually showed; `maxZoom` comes from `maxZoomForStudySet` — for a
+**the view that fit actually produced**, set after it rather than before — set to the square plate's
+own corners instead, it raised MapLibre's minimum zoom and cropped six of thirteen points out of a
+beat whose title claims all of them; `maxZoom` comes from `maxZoomForStudySet` — for a
 proportional symbol, the zoom at which the study set stops filling the frame. A camera already tight
 on its subject therefore gets a short leash (measured on this seed: half a zoom level), which is the
 intended behaviour and not a defect. The accessible table reads no camera state at all, so panning
@@ -124,6 +126,8 @@ letterboxes, or leaves a gutter. Trust the picture.
 | Doctrine | `references/map-web-discipline.md` | Full width genuinely (one fluid render, `aspect-ratio` not `max-width`), the plate strategy, text-in-HTML-not-SVG, the accessibility answer, two channels not one, shared touch/hover targets, progressive enhancement via native `title`, filters, live tiles and the reversal that brought them, what must never become interactive |
 | Pure core | `assets/geo-symbol.ts` | `radiusScale` (equal-area, sqrt), `niceReferenceValues`, `drawOrder`/`readingOrder`, `labelPlacement`, `keepPoint`, `groupsOf`/`slugOf` (the filter's own shared vocabulary), `fr`. No browser, no rasteriser — this skill's OWN copy, trimmed to what a symbol map needs (no polygon join) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one plate PNG (baked generously — `1000`px, see the discipline file's "The plate strategy"), one `geometry.json` of projected points — this skill's OWN copy of the bake, no shapes/join (a point has neither) |
+| Live map | `assets/live-map.mjs` | The second layer: boots MapLibre on MapTiler tiles, re-applies the beat's own water and label rules to the live style, fits the camera to the study set at runtime, sets the reader's leash from that fit, and sizes every mark from the CAMERA's ground scale rather than from the plate's box (`cameraScale`) |
+| Live-map proof | `scripts/verify-live-map.mjs` | Drives the live map at two container aspects and asserts three things that can come apart: mark size against an independent camera derivation, nothing cropped, and a real pointer reaching a mark's whole disc |
 | Composition | `assets/MapWebSeed.tsx` | `MapWebSeed` — ONE fluid render: an SVG carrying only geometry (plate + decorative circles) plus an HTML overlay carrying every piece of furniture and every control (filter chips, point labels, hit-target buttons, legend, and, as a third layer that is a sibling of both map layers, the point labels and hit targets), inside a `.mw-stage` that bounds it to the window's leftover height — and `RegionTable` (the accessible table, opt-in) |
 | Interaction | `assets/interaction.mjs` | `initPoints`/`initAll` — hover/tap/keyboard per point, direct listeners on the HTML `.pt` buttons (no proximity resolver needed: each point is already a discrete, fixed-size target) |
 | Verify | `scripts/verify-interaction.mjs` | Drives the rendered beat in a real browser with REAL input: fit at four viewport sizes, `elementFromPoint` + a real pointer move per point checked against the sample data, a real click per filter chip, keyboard, and the no-JS pass. Mutation-proven to fail when the hover is swallowed, the filter selector is wrong, the fit is removed or the plate is stretched |
@@ -238,6 +242,8 @@ for its own generic function.
 | Live tiles on or off for this beat | `true` | `SEED.live`, `scripts/render-web.mjs` |
 | The MapTiler key placeholder the delivery substitutes | `__MAPTILER_KEY__` | `KEY_PLACEHOLDER`, `scripts/render-web.mjs` |
 | The padding the runtime fit leaves around the study set | `48px` | `fitBoundsOptions`, `assets/live-map.mjs` |
+| How far a drawn mark may sit from its camera-derived size | `1%` | `SCALE_TOLERANCE`, `scripts/verify-live-map.mjs` |
+| How far a pointer walk may differ from the drawn edge | `3px` | `POINTER_TOLERANCE_PX`, `scripts/verify-live-map.mjs` |
 | Whether the beat ships the accessible region table at all (opt-in — read the discipline file's "The accessibility question" first) | `false` | `regionTable`, `SEED` in `render-web.mjs` (the option on `renderMapWeb`) |
 | The smallest height the map is ever squeezed to before the page scrolls again | `180px` | `.mw-stage`'s `min-height`, `buildCss` in `render-web.mjs` |
 | The filter chip's own height (a pointer target, not a text row) | `32px` | `.mw-chip`'s `min-height`, `buildCss` in `render-web.mjs` |
