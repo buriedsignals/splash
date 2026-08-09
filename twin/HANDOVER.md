@@ -601,6 +601,41 @@ written here in his priority order so a fresh session picks them up without re-d
    to `helper-parity.test.ts`, and the threading itself — a duplicated `readPalette` in each craft
    skill plus a Quick start that calls it instead of showing hex literals. Then one real beat
    re-rendered under a real house profile, as proof.
+
+   **CLOSED 2026-08-09 (`850db5e5`).** All of the above shipped. `twin-palette` is a complete skill
+   — `format-proposal.mjs`, both `references/` files, `assets/PALETTE.example.md`, `SKILL.md`,
+   tests. `readPalette`/`parsePalette` are vendored into all six `render-still.mjs` copies (a beat
+   already imports that module to render at all; a second import path for two colours is one more
+   thing to get wrong), and `helper-parity.test.ts` gained a `contrast` family and a `parsePalette`
+   family across all seven copies — mutation-checked by relaxing the `origin` rule in one copy,
+   which turned it red and named the copy that drifted. `twin-chart-beat`'s Quick start calls
+   `readPalette` and names no hex.
+
+   **The proof is `proof/palette-proof/`**: the same render script, naming no hex value anywhere,
+   run under two recorded answers — teal on white (`origin: newsroom`), then amber on near-black
+   (`origin: journalist`), the furniture inverting with the ground because `deriveFurniture`
+   derives ink/muted/grid from whatever it is handed. Both PNGs were opened and looked at. Third
+   run: `PALETTE.md` moved aside, and the render THROWS naming every directory searched, rather
+   than producing a chart in a default colour.
+
+   **Two defects in the 2026-08-09 draft, both surfaced by the tests, both corrected against
+   measurement rather than reasoning.** (1) `proposePalette` recommended a FAILING option — with
+   only a failing house colour it fell back to `options[0]`, handing back a 1.61:1 brand marked
+   "recommended" three lines under the words "FAILS the 3:1 floor"; it now falls to another passing
+   option, and to nothing if none passes. (2) The claim that a mid-grey ground defeats
+   `adjustToContrast` was **false**. Swept over 4352 grounds: zero nulls at 3:1, zero at 4.5:1,
+   first at 5:1; the hardest ground is `#747474` at 3.0000809:1. The `null` branch exists for a
+   caller who raises `min`, not for a ground that defeats the default. That false claim had been
+   written into the code comment, a `references/` file AND the `SKILL.md` gotcha — one hand-written
+   assertion propagated three times, which is the prose-is-the-unguarded-surface lesson arriving in
+   documentation instead of in a chart title.
+
+   **What remains of this item, honestly bounded** (recorded in `proof/palette-proof/PROOF.md`):
+   only the STATIC chart genre has been re-rendered through a recorded answer. Web, video, map and
+   scrolly import the same vendored `readPalette` and are guarded for parity, but none has been
+   proven end to end. And `typefaces` — `NEWSROOM.md`'s third identity field — still reaches
+   nothing: the one font stack is `FONT_FAMILY` in `render-still.mjs`, and threading a newsroom's
+   own faces means shipping or resolving those faces, a different problem, not started.
 2. **A web beat must fit the visible window** — no scrolling inside the visual. Today width fills
    and height grows with it, so a wide viewport produces a beat taller than the screen.
 3. **Verify hovers really work**, in both web genres, by dispatching real pointer events at real
