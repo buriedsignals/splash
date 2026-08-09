@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Croatia is the only EU country emitting more CO₂ per person than in 1990</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  --ground: #FFFFFF;
+  --accent: #0B7A75;
+  --ink: #000000;
+  --muted: #616161;
+  --grid: #d1d1d1;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+/* THE FLUID FILL — the redesign this file exists to ship. .chart-figure and everything inside
+   .chart-plot take the FULL width of whatever contains them, edge to edge, no max-width cap and
+   no fixed rung to swap between. Height is never independently set on the plot: aspect-ratio
+   (set per-render on .chart-plot's own inline style, from the component's real geometry) grows
+   the height WITH the width, so a very wide container gets a taller chart rather than a flat,
+   letterboxed strip -- the failure mode capping the width would otherwise avoid at the cost of
+   empty gutters, and the failure mode letting width AND height both float freely would risk
+   instead. Only the two places a long line of prose would become unreadable at full bleed -- the
+   header block and the source line -- are given a reading-measure cap; the chart itself never is.
+
+   "Fills the container" is a claim about the FRAME's own edges, never about the content inside
+   it -- FRAME_PAD_PX is the fixed inner margin that keeps that distinction real: title, caveat,
+   filter, every axis label, the end label and the source line all sit inside it, so nothing ever
+   touches the frame's own edge at any width. box-sizing:border-box (above) is what makes width:100%
+   plus this padding still equal exactly 100% of the parent -- no overflow, no second width to
+   reconcile. */
+.chart-figure {
+  margin: 0;
+  width: 100%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  /* THE WINDOW FIT. A beat is one thing a reader looks at, not a document they scroll through:
+     the whole figure must be visible at once. Width filling its container and height following
+     from aspect-ratio was only half the rule -- at 1600x800 the measured figure came to 902px
+     against an 800px window (102px of it below the fold: the end label, the x-axis and the source
+     line), and at 1920x950 it came to 1051px against 950. Clamping here, rather than capping the
+     width or shortening the geometry, is what keeps the fill and the fit true at the same time.
+     max-height, never height: when the frame's natural height already fits (a tall window, a
+     narrow one), nothing changes at all and no empty space is reserved -- which matters because
+     this file is embedded inside an article as often as it is opened on its own.
+     Two declarations, not one: dvh is what a mobile browser's collapsing toolbar makes correct,
+     vh is what an engine without dvh still understands, and the later declaration simply wins
+     where it parses. */
+  max-height: 100vh;
+  max-height: 100dvh;
+}
+/* Everything except the plot keeps its natural height: words are never squeezed to make a chart
+   fit, the chart is. flex-shrink:0 is the half of that rule the browser does not default to. */
+.chart-header, .chart-filter, .chart-source { flex: 0 0 auto; }
+.chart-header, .chart-source { max-width: 640px; }
+.chart-title {
+  margin: 0 0 4px;
+  font-size: var(--title-size);
+  font-weight: var(--title-weight);
+  color: var(--ink);
+}
+.chart-caveat, .chart-source {
+  margin: 0;
+  font-size: var(--subtitle-size);
+  color: var(--muted);
+}
+.chart-source { font-size: var(--source-size); margin-top: 10px; }
+
+/* The filter -- see ChartWebSeed.tsx's own doc-comment, item 5, and SKILL.md's "When to use"
+   for the test a beat applies before shipping one at all. Native radios: reachable and operable
+   from the keyboard with no help from this stylesheet or the inline script, and the dimming rule
+   below is PURE CSS (:checked plus :has() on the enclosing figure) so it still works with the
+   script absent. Nothing here ever sets display:none / pointer-events:none / tabindex on a
+   reading -- filtering only ever dims, never removes, which is what keeps every point reachable and
+   every hover/focus answer honest regardless of which radio is checked. */
+.chart-filter {
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  font-size: var(--filter-size);
+}
+/* float:left is not a layout instruction here -- inside a flex container float is ignored
+   outright. It is the HTML rendering spec's own opt-out: only the first legend child that is
+   NOT floated or absolutely positioned becomes the "rendered legend" the browser lifts into the
+   fieldset's border. Floated, this one stays an ordinary child, which means the flex container
+   above can lay it out on the same line as the options. Without it the browser puts "Show" on a
+   row of its own -- verified in the render, and worth ~20px of the vertical budget the window-fit
+   rule above is spending. */
+.chart-filter legend { float: left; font-weight: 600; padding: 0; color: var(--ink); }
+.chart-filter .options { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.chart-filter label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
+.chart-filter input { cursor: pointer; margin: 0; }
+
+/* THE SEGMENTED CONTROL -- the considered treatment, layered ON TOP of the working native radios
+   above rather than replacing them. The owner's read of the first shipped filter was that plain
+   radios read as a placeholder, and they did: three default blue dots with a bare word beside
+   each, indistinguishable from an unfinished form.
+   Guarded on :has() on purpose, and the guard is the whole reason this is safe. The checked state
+   is expressed through :has() (the <input> is the thing that is :checked; the pill that must
+   change is its parent <label>), so an engine without :has() could not draw a checked pill at
+   all -- and rather than leave such an engine with three identical unlit pills and a hidden
+   input, the entire block is dropped there and the reader gets the plain native radios above,
+   which state their own checked-ness without any help. That is the same engine in which this
+   genre's dimming rule (.chart-figure:has(#period-early:checked) ...) could not work either, so
+   the fallback is not a second design to maintain -- it is the design this genre already had.
+   NOTHING here changes what the control IS: three <input type="radio"> elements in a named group
+   inside a <fieldset>/<legend>. Tab reaches the group, arrows move within it, a screen reader
+   announces it as a radio group, and the CSS-only dimming still fires with the inline script
+   absent. The input is made transparent and stretched over its own pill -- never display:none or
+   visibility:hidden, either of which would take it out of the focus order and out of the
+   accessibility tree.
+   The checked pill inverts to ink-on-ground rather than filling with the accent: the accent is
+   reserved for the subject (visual-system.md), and a control that borrows it would make the one
+   colour that means something in this frame also mean "you clicked here". ink/ground is the
+   maximum-contrast pair deriveFurniture already computed for this ground, so the inversion is
+   legible by construction at whatever ground a newsroom brings. Font weight deliberately does NOT
+   change between states -- a bolder checked label is wider, and the two unchecked pills beside it
+   would shift sideways every time the reader changed their mind.
+   NOT covered, stated rather than hidden: forced-colors / high-contrast mode, where the pill's
+   background is overridden by the OS and the checked state loses its only signal. Nothing else in
+   this genre honours forced colours either (the chart is SVG with explicit fills, which that mode
+   does not touch), so handling it here alone would be a half-measure -- see
+   references/web-discipline.md. */
+@supports selector(:has(*)) {
+  .chart-filter .options {
+    gap: 0;
+    padding: 2px;
+    border: 1px solid var(--grid);
+    border-radius: 999px;
+  }
+  .chart-filter label {
+    gap: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  .chart-filter label input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 999px;
+  }
+  .chart-filter label:hover { color: var(--ink); }
+  .chart-filter label:has(input:checked) { background: var(--ink); color: var(--ground); }
+  .chart-filter label:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+}
+.chart-plot .seg, .chart-plot .pt { opacity: 1; transition: opacity 120ms ease; }
+
+.chart-plot {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--y-gutter) 1fr;
+  grid-template-rows: 1fr var(--x-axis-h);
+  /* The one shrinkable item in the figure's column -- see .chart-figure's max-height above. Its
+     flex BASE size is still the canonical aspect-ratio (set per-render on this element's own
+     inline style, from the real geometry), so in a window with room the shape is exactly what it
+     always was, byte for byte. Only when the column overflows does 1 (flex-shrink) let this box
+     give the height back, and the <svg>'s own preserveAspectRatio="none" follows it down without
+     letterboxing or clipping -- the same stretch that already absorbs the gutter drift this
+     genre documents. A flatter plot is a real cost, paid knowingly: a slope read at a shallower
+     angle is still the same series, whereas a chart whose end label is below the fold is not a
+     chart the reader has seen.
+     min-height is BOTH the floor (see PLOT_FLOOR_PX) and the override of flexbox's own
+     min-height:auto, which would otherwise refuse to shrink this box below its content size and
+     re-open the overflow this whole rule exists to close. */
+  flex: 0 1 auto;
+  min-height: 120px;
+}
+.chart-plot .y-axis { grid-column: 1; grid-row: 1; position: relative; }
+svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: block; }
+/* pointer-events:none is load-bearing, not decoration: .overlay shares the exact grid cell the
+   svg's own .hit-area occupies, and a plain div with no pointer-events override intercepts every
+   mouse/touch event over the WHOLE plot before it ever reaches the svg beneath it -- caught only by
+   driving a real browser (page.mouse.move landed on .overlay, not the hit-area, and the tooltip
+   never appeared), never by the markup or a unit test. Inherited by every span inside it, which is
+   correct: none of them is a control. */
+.chart-plot .overlay { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+.chart-plot .x-axis { grid-column: 2; grid-row: 2; position: relative; }
+
+.axis-label {
+  position: absolute;
+  font-size: var(--axis-size);
+  white-space: nowrap;
+}
+.axis-label.y { right: 10px; transform: translateY(-50%); }
+.axis-label.x { top: 6px; transform: translateX(-50%); }
+
+.note, .end-label {
+  position: absolute;
+  font-size: var(--note-size);
+  white-space: nowrap;
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.note.reference-label { transform: translateY(-100%) translateY(-4px); }
+.note.peak-label.above { transform: translate(-50%, -100%) translateY(-6px); }
+.end-label {
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  transform: translate(-100%, -50%) translateX(-10px);
+}
+
+/* A radio-selected period dims the OTHER period's segments/points -- never the reference rule, the
+   peak marker, the end point or any of the HTML furniture above, none of which carries a
+   data-period attribute at all and so can never match these selectors. :has() on the
+   enclosing figure (rather than a sibling combinator, which cannot reach an <input> nested
+   inside a <label> inside the <fieldset>) is what makes this reach the plot at all -- broadly
+   supported in every evergreen browser this genre targets. */
+.chart-figure:has(#period-early:checked) .seg[data-period="late"],
+.chart-figure:has(#period-early:checked) .pt[data-period="late"] { opacity: 0.2; }
+.chart-figure:has(#period-late:checked) .seg[data-period="early"],
+.chart-figure:has(#period-late:checked) .pt[data-period="early"] { opacity: 0.2; }
+
+.pt { cursor: pointer; }
+.pt:hover, .pt:focus, .pt-active {
+  fill: var(--muted);
+  outline: none;
+}
+.pt:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+#tooltip {
+  position: fixed;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--muted);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+#tooltip[hidden] { display: none; }
+</style>
+<style>
+
+.chart-plot.diverging {
+  grid-template-columns: var(--y-gutter) var(--l-gutter) 1fr var(--r-gutter);
+  grid-template-rows: var(--note-row-h) 1fr var(--x-axis-h);
+}
+.chart-plot.diverging .note-row { grid-column: 3; grid-row: 1; position: relative; }
+.chart-plot.diverging .y-axis { grid-column: 1; grid-row: 2; }
+.chart-plot.diverging svg.chart { grid-column: 3; grid-row: 2; }
+.chart-plot.diverging .overlay { grid-column: 3; grid-row: 2; }
+.chart-plot.diverging .x-axis { grid-column: 3; grid-row: 3; }
+
+.chart-plot .y-axis .cat {
+  font-size: var(--cat-size);
+  font-weight: var(--cat-weight);
+  color: var(--ink);
+}
+.chart-plot .y-axis .cat.subject { font-weight: var(--cat-subject-weight); }
+
+.chart-plot .note-row .average-label {
+  position: absolute;
+  bottom: 2px;
+  transform: translateX(-50%);
+  font-size: var(--note-size);
+  font-weight: var(--note-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.chart-plot .overlay .value-label {
+  position: absolute;
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  color: var(--ink);
+  background: var(--ground);
+  padding: 0 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.chart-plot .overlay .value-label.negative { transform: translate(-100%, -50%) translateX(-6px); }
+.chart-plot .overlay .value-label.positive { transform: translateY(-50%) translateX(6px); }
+.chart-plot .overlay .subject-note {
+  position: absolute;
+  transform: translate(-100%, -50%) translateX(-18px);
+  font-size: var(--note-size);
+  font-weight: 400;
+  color: var(--ink);
+  padding: 0 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.chart-plot .overlay .on-band { background: var(--subject-band); }
+
+.chart-plot .x-axis .zero { color: var(--ink); font-weight: 600; }
+
+.row-hit { cursor: pointer; }
+.row-hit:hover, .row-hit:focus, .row-active {
+  fill: var(--muted);
+  fill-opacity: 0.12;
+  outline: none;
+}
+.row-hit:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+
+</style>
+</head>
+<body>
+<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#0B7A75;--ink:#000000;--muted:#616161;--subject-band:#e2efee;--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--label-size:13px;--label-weight:600;--note-size:12px;--note-weight:600;--cat-size:13px;--cat-weight:400;--cat-subject-weight:700"><div class="chart-header"><h2 class="chart-title">Croatia is the only EU country emitting more CO₂ per person than in 1990</h2><p class="chart-caveat">Croatia&#x27;s rise is +0.03 tonnes per person — the only one, and a small one: 4.73 in 1990 against 4.76 in 2024. The other 26 all emit less, by 4.93 tonnes on average. Hover, tap or tab to a row for its two readings.</p></div><div class="chart-plot diverging" style="--y-gutter:87.87939453125px;--l-gutter:51.6474609375px;--r-gutter:44.373046875px;--note-row-h:24px;--x-axis-h:26px;aspect-ratio:1003.89990234375 / 670;min-height:401px"><div class="note-row"><span class="note average-label" style="left:74.8%">Average of the 26 falls: −4.93</span></div><div class="y-axis"><span class="axis-label y cat subject" style="top:1.9%">Croatia</span><span class="axis-label y cat" style="top:5.6%">Cyprus</span><span class="axis-label y cat" style="top:9.3%">Portugal</span><span class="axis-label y cat" style="top:13%">Spain</span><span class="axis-label y cat" style="top:16.7%">Slovenia</span><span class="axis-label y cat" style="top:20.4%">Austria</span><span class="axis-label y cat" style="top:24.1%">Italy</span><span class="axis-label y cat" style="top:27.8%">Poland</span><span class="axis-label y cat" style="top:31.5%">Greece</span><span class="axis-label y cat" style="top:35.2%">Hungary</span><span class="axis-label y cat" style="top:38.9%">France</span><span class="axis-label y cat" style="top:42.6%">Ireland</span><span class="axis-label y cat" style="top:46.3%">Sweden</span><span class="axis-label y cat" style="top:50%">Malta</span><span class="axis-label y cat" style="top:53.7%">Latvia</span><span class="axis-label y cat" style="top:57.4%">Bulgaria</span><span class="axis-label y cat" style="top:61.1%">Romania</span><span class="axis-label y cat" style="top:64.8%">Netherlands</span><span class="axis-label y cat" style="top:68.5%">Belgium</span><span class="axis-label y cat" style="top:72.2%">Lithuania</span><span class="axis-label y cat" style="top:75.9%">Denmark</span><span class="axis-label y cat" style="top:79.6%">Finland</span><span class="axis-label y cat" style="top:83.3%">Slovakia</span><span class="axis-label y cat" style="top:87%">Germany</span><span class="axis-label y cat" style="top:90.7%">Czechia</span><span class="axis-label y cat" style="top:94.4%">Estonia</span><span class="axis-label y cat" style="top:98.1%">Luxembourg</span></div><svg xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 820 620" preserveAspectRatio="none"><desc>A diverging bar chart of the change in CO₂ emissions per person between 1990 and 2024 for all 27 EU member states, sorted from the largest rise to the largest fall. Exactly one bar points right of the zero line: Croatia, at +0.03 tonnes per person, drawn in the accent colour on a highlighted row. The other 26 point left, from Cyprus at −0.52 down to Luxembourg at −20.48. A dashed rule marks the average of those falls, −4.93. Every row is reachable by keyboard and reports its 1990 and 2024 readings unrounded.</desc><rect x="0" y="0" width="820" height="620" fill="#FFFFFF"></rect><rect x="0" y="0" width="820" height="22.962962962962962" fill="#e2efee"></rect><line x1="34.15020637399014" x2="34.15020637399014" y1="0" y2="620" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="226.3671469693439" x2="226.3671469693439" y1="0" y2="620" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="418.5840875646977" x2="418.5840875646977" y1="0" y2="620" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><rect x="803.0179687554053" y="4.362962962962963" width="1.2128004753640198" height="14.237037037037036" fill="#0B7A75"></rect><rect x="782.9662588803463" y="27.325925925925926" width="20.05170987505892" height="14.237037037037036" fill="#616161"></rect><rect x="759.6954649907651" y="50.288888888888884" width="43.322503764640146" height="14.237037037037036" fill="#616161"></rect><rect x="754.2024276586285" y="73.25185185185185" width="48.81554109677677" height="14.237037037037036" fill="#616161"></rect><rect x="743.9014718357189" y="96.21481481481482" width="59.11649691968637" height="14.237037037037036" fill="#616161"></rect><rect x="729.2787064761246" y="119.17777777777778" width="73.73926227928064" height="14.237037037037036" fill="#616161"></rect><rect x="703.2291591395373" y="142.1407407407407" width="99.78880961586799" height="14.237037037037036" fill="#616161"></rect><rect x="695.0233641247783" y="165.1037037037037" width="107.99460463062701" height="14.237037037037036" fill="#616161"></rect><rect x="694.5021640460152" y="188.06666666666663" width="108.51580470939007" height="14.237037037037036" fill="#616161"></rect><rect x="690.095033253739" y="211.02962962962962" width="112.9229355016663" height="14.237037037037036" fill="#616161"></rect><rect x="689.2268969745564" y="233.99259259259256" width="113.79107178084882" height="14.237037037037036" fill="#616161"></rect><rect x="686.2816529022841" y="256.9555555555556" width="116.73631585312114" height="14.237037037037036" fill="#616161"></rect><rect x="683.189862634502" y="279.9185185185185" width="119.82810612090327" height="14.237037037037036" fill="#616161"></rect><rect x="672.5387259892158" y="302.8814814814815" width="130.4792427661895" height="14.237037037037036" fill="#616161"></rect><rect x="651.5848459034725" y="325.84444444444443" width="151.4331228519328" height="14.237037037037036" fill="#616161"></rect><rect x="648.9602273767908" y="348.8074074074074" width="154.05774137861442" height="14.237037037037036" fill="#616161"></rect><rect x="645.7626755039541" y="371.77037037037036" width="157.25529325145112" height="14.237037037037036" fill="#616161"></rect><rect x="628.1156610651641" y="394.73333333333335" width="174.90230769024117" height="14.237037037037036" fill="#616161"></rect><rect x="618.4565445172742" y="417.6962962962963" width="184.56142423813105" height="14.237037037037036" fill="#616161"></rect><rect x="599.8310151433341" y="440.6592592592593" width="203.1869536120712" height="14.237037037037036" fill="#616161"></rect><rect x="585.584049279959" y="463.6222222222222" width="217.43391947544626" height="14.237037037037036" fill="#616161"></rect><rect x="567.9648294107789" y="486.5851851851852" width="235.0531393446264" height="14.237037037037036" fill="#616161"></rect><rect x="556.9353060292531" y="509.54814814814813" width="246.0826627261522" height="14.237037037037036" fill="#616161"></rect><rect x="554.5032850327092" y="532.5111111111111" width="248.51468372269608" height="14.237037037037036" fill="#616161"></rect><rect x="460.8801951542855" y="555.4740740740741" width="342.13777360111976" height="14.237037037037036" fill="#616161"></rect><rect x="134.21696168595903" y="578.437037037037" width="668.8010070694462" height="14.237037037037036" fill="#616161"></rect><rect x="15.769230769230807" y="601.4" width="787.2487379861744" height="14.237037037037036" fill="#616161"></rect><line x1="803.0179687554053" x2="803.0179687554053" y1="0" y2="620" stroke="#000000" stroke-width="2" vector-effect="non-scaling-stroke"></line><line class="average-rule" x1="613.5652313760914" x2="613.5652313760914" y1="0" y2="620" stroke="#000000" stroke-width="1.5" stroke-dasharray="8 5" vector-effect="non-scaling-stroke"></line><rect class="row-hit" x="0" y="0" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Croatia: 4.7331753 tonnes per person in 1990, 4.764723 in 2024, change +0.0315" data-country="Croatia" data-detail="Croatia · 1990: 4.7331753 · 2024: 4.764723 · change +0.0315 t per person"></rect><rect class="row-hit" x="0" y="22.962962962962962" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Cyprus: 5.8955126 tonnes per person in 1990, 5.373922 in 2024, change −0.5216" data-country="Cyprus" data-detail="Cyprus · 1990: 5.8955126 · 2024: 5.373922 · change −0.5216 t per person"></rect><rect class="row-hit" x="0" y="45.925925925925924" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Portugal: 4.5358243 tonnes per person in 1990, 3.4089074 in 2024, change −1.1269" data-country="Portugal" data-detail="Portugal · 1990: 4.5358243 · 2024: 3.4089074 · change −1.1269 t per person"></rect><rect class="row-hit" x="0" y="68.88888888888889" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Spain: 5.8688183 tonnes per person in 1990, 4.599015 in 2024, change −1.2698" data-country="Spain" data-detail="Spain · 1990: 5.8688183 · 2024: 4.599015 · change −1.2698 t per person"></rect><rect class="row-hit" x="0" y="91.85185185185185" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Slovenia: 7.556182 tonnes per person in 1990, 6.0184274 in 2024, change −1.5378" data-country="Slovenia" data-detail="Slovenia · 1990: 7.556182 · 2024: 6.0184274 · change −1.5378 t per person"></rect><rect class="row-hit" x="0" y="114.81481481481481" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Austria: 8.098238 tonnes per person in 1990, 6.180112 in 2024, change −1.9181" data-country="Austria" data-detail="Austria · 1990: 8.098238 · 2024: 6.180112 · change −1.9181 t per person"></rect><rect class="row-hit" x="0" y="137.77777777777777" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Italy: 7.68362 tonnes per person in 1990, 5.087886 in 2024, change −2.5957" data-country="Italy" data-detail="Italy · 1990: 7.68362 · 2024: 5.087886 · change −2.5957 t per person"></rect><rect class="row-hit" x="0" y="160.74074074074073" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Poland: 9.889295 tonnes per person in 1990, 7.0801096 in 2024, change −2.8092" data-country="Poland" data-detail="Poland · 1990: 9.889295 · 2024: 7.0801096 · change −2.8092 t per person"></rect><rect class="row-hit" x="0" y="183.7037037037037" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Greece: 8.133435 tonnes per person in 1990, 5.310692 in 2024, change −2.8227" data-country="Greece" data-detail="Greece · 1990: 8.133435 · 2024: 5.310692 · change −2.8227 t per person"></rect><rect class="row-hit" x="0" y="206.66666666666666" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Hungary: 7.0730515 tonnes per person in 1990, 4.135669 in 2024, change −2.9374" data-country="Hungary" data-detail="Hungary · 1990: 7.0730515 · 2024: 4.135669 · change −2.9374 t per person"></rect><rect class="row-hit" x="0" y="229.62962962962962" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="France: 6.9293327 tonnes per person in 1990, 3.969368 in 2024, change −2.9600" data-country="France" data-detail="France · 1990: 6.9293327 · 2024: 3.969368 · change −2.9600 t per person"></rect><rect class="row-hit" x="0" y="252.59259259259258" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Ireland: 9.3754015 tonnes per person in 1990, 6.3388243 in 2024, change −3.0366" data-country="Ireland" data-detail="Ireland · 1990: 9.3754015 · 2024: 6.3388243 · change −3.0366 t per person"></rect><rect class="row-hit" x="0" y="275.55555555555554" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Sweden: 6.708656 tonnes per person in 1990, 3.5916543 in 2024, change −3.1170" data-country="Sweden" data-detail="Sweden · 1990: 6.708656 · 2024: 3.5916543 · change −3.1170 t per person"></rect><rect class="row-hit" x="0" y="298.5185185185185" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Malta: 6.5977826 tonnes per person in 1990, 3.2037206 in 2024, change −3.3941" data-country="Malta" data-detail="Malta · 1990: 6.5977826 · 2024: 3.2037206 · change −3.3941 t per person"></rect><rect class="row-hit" x="0" y="321.48148148148147" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Latvia: 7.3912163 tonnes per person in 1990, 3.4520962 in 2024, change −3.9391" data-country="Latvia" data-detail="Latvia · 1990: 7.3912163 · 2024: 3.4520962 · change −3.9391 t per person"></rect><rect class="row-hit" x="0" y="344.44444444444446" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Bulgaria: 8.686779 tonnes per person in 1990, 4.6793866 in 2024, change −4.0074" data-country="Bulgaria" data-detail="Bulgaria · 1990: 8.686779 · 2024: 4.6793866 · change −4.0074 t per person"></rect><rect class="row-hit" x="0" y="367.4074074074074" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Romania: 7.695672 tonnes per person in 1990, 3.605104 in 2024, change −4.0906" data-country="Romania" data-detail="Romania · 1990: 7.695672 · 2024: 3.605104 · change −4.0906 t per person"></rect><rect class="row-hit" x="0" y="390.3703703703703" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Netherlands: 10.846517 tonnes per person in 1990, 6.29691 in 2024, change −4.5496" data-country="Netherlands" data-detail="Netherlands · 1990: 10.846517 · 2024: 6.29691 · change −4.5496 t per person"></rect><rect class="row-hit" x="0" y="413.3333333333333" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Belgium: 12.080694 tonnes per person in 1990, 7.2798314 in 2024, change −4.8009" data-country="Belgium" data-detail="Belgium · 1990: 12.080694 · 2024: 7.2798314 · change −4.8009 t per person"></rect><rect class="row-hit" x="0" y="436.2962962962963" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Lithuania: 9.67186 tonnes per person in 1990, 4.386505 in 2024, change −5.2854" data-country="Lithuania" data-detail="Lithuania · 1990: 9.67186 · 2024: 4.386505 · change −5.2854 t per person"></rect><rect class="row-hit" x="0" y="459.25925925925924" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Denmark: 10.402008 tonnes per person in 1990, 4.746057 in 2024, change −5.6560" data-country="Denmark" data-detail="Denmark · 1990: 10.402008 · 2024: 4.746057 · change −5.6560 t per person"></rect><rect class="row-hit" x="0" y="482.2222222222222" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Finland: 11.414846 tonnes per person in 1990, 5.300579 in 2024, change −6.1143" data-country="Finland" data-detail="Finland · 1990: 11.414846 · 2024: 5.300579 · change −6.1143 t per person"></rect><rect class="row-hit" x="0" y="505.18518518518516" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Slovakia: 11.683943 tonnes per person in 1990, 5.282773 in 2024, change −6.4012" data-country="Slovakia" data-detail="Slovakia · 1990: 11.683943 · 2024: 5.282773 · change −6.4012 t per person"></rect><rect class="row-hit" x="0" y="528.1481481481482" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Germany: 13.233256 tonnes per person in 1990, 6.7688236 in 2024, change −6.4644" data-country="Germany" data-detail="Germany · 1990: 13.233256 · 2024: 6.7688236 · change −6.4644 t per person"></rect><rect class="row-hit" x="0" y="551.1111111111111" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Czechia: 15.943747 tonnes per person in 1990, 7.043965 in 2024, change −8.8998" data-country="Czechia" data-detail="Czechia · 1990: 15.943747 · 2024: 7.043965 · change −8.8998 t per person"></rect><rect class="row-hit" x="0" y="574.074074074074" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Estonia: 23.5025 tonnes per person in 1990, 6.105464 in 2024, change −17.3970" data-country="Estonia" data-detail="Estonia · 1990: 23.5025 · 2024: 6.105464 · change −17.3970 t per person"></rect><rect class="row-hit" x="0" y="597.037037037037" width="820" height="22.962962962962962" fill="transparent" pointer-events="all" tabindex="0" role="img" aria-label="Luxembourg: 30.93778 tonnes per person in 1990, 10.459649 in 2024, change −20.4781" data-country="Luxembourg" data-detail="Luxembourg · 1990: 30.93778 · 2024: 10.459649 · change −20.4781 t per person"></rect></svg><div class="overlay" aria-hidden="true"><span class="note subject-note on-band" style="left:97.9%;top:1.9%">the only rise since 1990</span><span class="value-label positive on-band" style="left:98.1%;top:1.9%">+0.03</span><span class="value-label negative" style="left:95.5%;top:5.6%">−0.52</span><span class="value-label negative" style="left:92.6%;top:9.3%">−1.13</span><span class="value-label negative" style="left:92%;top:13%">−1.27</span><span class="value-label negative" style="left:90.7%;top:16.7%">−1.54</span><span class="value-label negative" style="left:88.9%;top:20.4%">−1.92</span><span class="value-label negative" style="left:85.8%;top:24.1%">−2.60</span><span class="value-label negative" style="left:84.8%;top:27.8%">−2.81</span><span class="value-label negative" style="left:84.7%;top:31.5%">−2.82</span><span class="value-label negative" style="left:84.2%;top:35.2%">−2.94</span><span class="value-label negative" style="left:84.1%;top:38.9%">−2.96</span><span class="value-label negative" style="left:83.7%;top:42.6%">−3.04</span><span class="value-label negative" style="left:83.3%;top:46.3%">−3.12</span><span class="value-label negative" style="left:82%;top:50%">−3.39</span><span class="value-label negative" style="left:79.5%;top:53.7%">−3.94</span><span class="value-label negative" style="left:79.1%;top:57.4%">−4.01</span><span class="value-label negative" style="left:78.8%;top:61.1%">−4.09</span><span class="value-label negative" style="left:76.6%;top:64.8%">−4.55</span><span class="value-label negative" style="left:75.4%;top:68.5%">−4.80</span><span class="value-label negative" style="left:73.2%;top:72.2%">−5.29</span><span class="value-label negative" style="left:71.4%;top:75.9%">−5.66</span><span class="value-label negative" style="left:69.3%;top:79.6%">−6.11</span><span class="value-label negative" style="left:67.9%;top:83.3%">−6.40</span><span class="value-label negative" style="left:67.6%;top:87%">−6.46</span><span class="value-label negative" style="left:56.2%;top:90.7%">−8.90</span><span class="value-label negative" style="left:16.4%;top:94.4%">−17.40</span><span class="value-label negative" style="left:1.9%;top:98.1%">−20.48</span></div><div class="x-axis"><span class="axis-label x" style="left:4.2%">−20</span><span class="axis-label x" style="left:27.6%">−15</span><span class="axis-label x" style="left:51%">−10</span><span class="axis-label x zero" style="left:97.9%">0</span></div></div><p class="chart-source">Source: Global Carbon Budget (2025); population based on various sources (2024) – with major processing by Our World in Data · fossil fuels and industry only</p></figure>
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+// twin/proof/webz-diverging-bar-eu-per-capita/diverging-interaction.mjs
+//
+// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs`, which resolves
+// a reading by NEAREST-x over one shared `.hit-area` because a line chart's readings are points on
+// a curve. Nothing to resolve here: this beat's 27 rows tile the plot's full height exactly (no
+// band padding, see `diverging-geometry.ts`), so the pointer is always inside exactly one row's own
+// rect. `render-web.mjs` inlines THIS file instead of the skill's own copy, the same swap
+// `weby-lollipop-co2-per-capita/render-web.mjs`'s `patchForThisBeat` performs for its own beat.
+//
+// Every `.row-hit` rect already carries its own `data-detail` string and its own `aria-label`,
+// baked in server-side by `DivergingBarWeb.tsx` — this script never invents or recomputes either,
+// and never formats a number. It only ever toggles a rect's own `row-active` class and the shared
+// `#tooltip`'s content and position; it has no code path that can reach the title, the caveat, the
+// source, a bar, the zero line, the average rule and its label, a country name, a printed value
+// label or the subject's annotation. That is `web-discipline.md`'s "What must not become
+// interactive", enforced by there being no such code rather than by a rule nobody re-reads.
+
+/** Wires one `<svg class="chart">` — its per-row `.row-hit` rects and the shared tooltip element —
+ *  to hover, tap and keyboard. */
+function initChart(svg, tooltip) {
+  const rows = Array.prototype.slice.call(svg.querySelectorAll(".row-hit"));
+  if (rows.length === 0) return;
+
+  function clear() {
+    rows.forEach((r) => r.classList.remove("row-active"));
+    tooltip.hidden = true;
+  }
+
+  function show(row, clientX, clientY) {
+    rows.forEach((r) => r.classList.toggle("row-active", r === row));
+    tooltip.textContent = row.getAttribute("data-detail");
+    tooltip.hidden = false;
+    const tw = tooltip.offsetWidth || 200;
+    const th = tooltip.offsetHeight || 28;
+    const x = Math.min(
+      Math.max(clientX - tw / 2, 8),
+      window.innerWidth - tw - 8,
+    );
+    const y = Math.max(clientY - th - 14, 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each row's
+  // own rect spans the row's FULL band height and the plot's full width, so a touch reader never
+  // has to land a tap on a bar that may be 1.3px long — anywhere in the row resolves to that row.
+  rows.forEach((row, i) => {
+    function fromPointer(evt) {
+      show(row, evt.clientX, evt.clientY);
+    }
+    row.addEventListener("pointerenter", fromPointer);
+    row.addEventListener("pointermove", fromPointer);
+    row.addEventListener("pointerdown", fromPointer);
+    // MOUSE AND PEN ONLY. A touch pointer is destroyed the instant the finger lifts and the browser
+    // fires `pointerleave` immediately after `pointerup` for it, so an unguarded handler wipes the
+    // tooltip a tap has just opened and the reading this beat's own alt text promises a tap reveals
+    // is never actually visible on a phone. A touch reader's tooltip is cleared by the
+    // document-level `pointerdown` below instead: it stays up until they tap somewhere else.
+    row.addEventListener("pointerleave", function (evt) {
+      if (evt.pointerType === "touch") return;
+      clear();
+    });
+
+    // Keyboard: every row's rect is already `tabIndex={0}` at build time and works with this script
+    // absent entirely — the invariant `web-discipline.md`, "Keyboard and touch", states. This layer
+    // adds the same detail box hover shows, plus ArrowUp/ArrowDown/Home/End to move between rows in
+    // their own printed (sorted) order without leaving focus.
+    row.addEventListener("focus", function () {
+      const rect = row.getBoundingClientRect();
+      show(row, rect.left + rect.width / 2, rect.top);
+    });
+    row.addEventListener("blur", clear);
+    row.addEventListener("keydown", function (evt) {
+      let nextIndex = null;
+      if (evt.key === "ArrowDown") nextIndex = Math.min(i + 1, rows.length - 1);
+      else if (evt.key === "ArrowUp") nextIndex = Math.max(i - 1, 0);
+      else if (evt.key === "Home") nextIndex = 0;
+      else if (evt.key === "End") nextIndex = rows.length - 1;
+      else if (evt.key === "Escape") {
+        clear();
+        row.blur();
+        return;
+      }
+      if (nextIndex !== null && nextIndex !== i) {
+        evt.preventDefault();
+        rows[nextIndex].focus();
+      }
+    });
+  });
+
+  document.addEventListener("pointerdown", function (evt) {
+    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    clear();
+  });
+}
+
+function initAll() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+  document.querySelectorAll("svg.chart").forEach(function (svg) {
+    initChart(svg, tooltip);
+  });
+}
+
+// Guarded rather than a bare top-level call: this file can also be imported in a context with no
+// `document`. In the browser the guard is always true, so the inlined `<script>` self-starts the
+// moment it is parsed, unchanged.
+if (typeof document !== "undefined") initAll();
+
+</script>
+</body>
+</html>
