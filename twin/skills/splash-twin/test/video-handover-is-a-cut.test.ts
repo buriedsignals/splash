@@ -34,7 +34,7 @@
  * is server-rendered at a chosen frame with the beat's own committed props, and the assertions
  * read opacities off the resulting document. It walks every `proof/<beat>` folder holding a
  * capitalised `…Video.tsx`, and takes no list:
- * a fourteenth crossfade in a beat written next month is the failure it exists to prevent.
+ * a thirty-eighth crossfade in a beat written next month is the failure it exists to prevent.
  *
  * WHAT IT CHECKS, exactly. Per beat: the frames of `reveal`, `subject` and `conclusion` (each
  * padded by one frame either side) plus frame 0, sampled at STEP. Every node's EFFECTIVE opacity
