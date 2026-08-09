@@ -128,6 +128,13 @@ const LABEL = { fontSize: 28, fontWeight: 600 };
 const NOTE = { fontSize: 22, fontWeight: 400 };
 const UNIT = "yrs";
 
+// The recovery-span bracket sits 44px above the higher of the subject/recovery points, and its
+// label another 12px above the bracket, with `NOTE.fontSize` (22) of its own text height on top of
+// that — the real vertical footprint the annotation needs, reserved out of the plotted data range
+// itself (`lifeExpectancyGeometry`'s `topReserve`) so the curve can never climb close enough to
+// `plot.top` to leave less room than that, whatever the data's own peak year happens to be.
+const RECOVERY_LABEL_RESERVE = 44 + 12 + NOTE.fontSize + 10;
+
 export type Reading = { year: number; value: number };
 
 /** English: one decimal, no thousands separator — every value in this series is under 100. */
@@ -153,6 +160,7 @@ export function lifeExpectancyGeometry(
     reference,
     subjectYear,
     recoveryYear,
+    topReserve = 0,
   }: {
     width: number;
     height: number;
@@ -160,6 +168,18 @@ export function lifeExpectancyGeometry(
     reference: number;
     subjectYear: number;
     recoveryYear: number;
+    // Pixels of the plot's own top edge the DATA CURVE never draws into — reserved for the
+    // recovery-span bracket + label that sits above the subject/recovery points. Without this, the
+    // curve's own peak can land close enough to `plot.top` that there is no longer 44+12px of real
+    // headroom above it, and the label's "stay above both points, but never above the ceiling"
+    // fallback (see `spanY` below) picks the ceiling — which, when the point is already nearly AT
+    // the ceiling, sits BELOW the point instead of above it, right in the path of the line
+    // approaching it. Caught by looking at the rendered PNG: "3 years to regain it" struck through
+    // by the final rising segment, in both the still and the video's own true final frame — 2023's
+    // value (83.95) is the series' own historical peak, close enough to the "niced" domain ceiling
+    // that the un-reserved plot left under 20px of headroom above it, far short of the ~56px the
+    // annotation needs.
+    topReserve?: number;
   },
 ) {
   const plot = {
@@ -181,7 +201,7 @@ export function lifeExpectancyGeometry(
   const ticksY = [ticks[0], reference, ticks[1]];
 
   const x = scaleLinear().domain([first, last]).range([plot.left, plot.right]);
-  const y = yDomain.range([plot.bottom, plot.top]);
+  const y = yDomain.range([plot.bottom, plot.top + topReserve]);
 
   const points = data.map((d) => ({ ...d, x: x(d.year), y: y(d.value) }));
   const subject = points.find((p) => p.year === subjectYear);
@@ -281,6 +301,7 @@ export function LifeExpectancyVideo({
     reference,
     subjectYear,
     recoveryYear,
+    topReserve: RECOVERY_LABEL_RESERVE,
   });
   const tickLabels = tickLabelsFor(g.ticksY.map((t) => t.value));
 
