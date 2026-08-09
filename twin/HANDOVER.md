@@ -455,6 +455,40 @@ one chart. `SKILL.md` now says the thing that matters — **if every step shows 
 reach for this; animate the beat instead.** A vehicle earns its existence only by carrying different
 media.
 
+### The count, measured on disk rather than reported
+
+At the close: **28 beat folders, 28 frozen CSVs** — every beat carries its own data — **32 PNGs, 6
+self-contained HTML files, 6 mp4s**. **32 chart type sheets and 8 map type sheets.** **14 skills**,
+up from 9: `twin-chart-web`, `twin-newsroom-charter`, `twin-image-beat`, `twin-map-web` and
+`twin-scrolly` are new. Suite 460 → **774 tests, 771 pass, 3 skip, 0 fail**, tree clean, 44 commits.
+
+**Why that paragraph says "measured on disk".** Folder counts were being reported as delivered work,
+and an audit found **five beats that declared a genre and had never produced its artifact** — two
+video beats with no mp4, a web beat with no HTML, and more. From the outside nothing distinguished
+them: same component, same render script, same frozen data, suite fully green. This is the same
+failure the whole week has produced in different clothes — the presence of a file mistaken for the
+existence of a result. All five were rendered and committed; the guard below now makes the class
+impossible to repeat.
+
+### The six mechanical guards, and why each exists
+
+Every one was born from a defect found this week, never from an intuition — and every one states in
+its own header what it does **not** catch, because a guard trusted beyond what it verifies is worse
+than none.
+
+| Guard | The defect that created it |
+|---|---|
+| no cross-skill imports | nine violations in shipped code, against the project's own rule |
+| seed renders standalone | a skill that did not build once copied — the premise, untested |
+| helper parity | ten copies of `wrap`/`measureText` that could drift silently |
+| preview freshness (`--check`) | a hand-made `preview.png` that had drifted from its seed |
+| `SKILL.md` matches code | seven false documentation claims surviving three sweeps |
+| beat produces its artifact | five beats counted as delivered with nothing rendered |
+
+The one class still unguarded is **prose assertions** — natural-language claims a structural scan
+cannot reach without unacceptable false positives. Three of the seven documentation defects were
+exactly that. It remains the softest surface in the project.
+
 ### A parallelism lesson worth keeping
 
 Up to six agents wrote into this one tree at once. Two failure modes appeared, neither obvious:
