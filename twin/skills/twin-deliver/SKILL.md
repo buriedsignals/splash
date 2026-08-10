@@ -50,14 +50,27 @@ until the choice does.
 
 ## The one gotcha that will waste your day (read first)
 
-**A second choice is not additive.** If a journalist materialises `owned-file` and then changes
-their mind and materialises `source-bundle` into the same `exportDir`, the first form's files do
-not linger. `materialise` clears `exportDir` before writing, every call, so the directory always
-holds exactly the most recently chosen form — never a mix of two. That clearing happens *after*
-`{form, genre}` is validated as a pair, in that order deliberately: a refused, unoffered
-`form` (see `materialise` refusing `"embed"`, or `"owned-file"` under a genre that never offered
-it) must not destroy a form that was already delivered by a previous, valid call. Swap that
-order and a bad second choice silently wipes out a good first one.
+**A second choice is not additive — and that wipe must never cross a beat.** If a journalist
+materialises `owned-file` and then changes their mind and materialises `source-bundle` into the same
+`exportDir`, the first form's files do not linger. `materialise` clears `exportDir` before writing,
+every call, so the directory always holds exactly the most recently chosen form — never a mix of two.
+That clearing happens *after* `{form, genre}` is validated as a pair, in that order deliberately: a
+refused, unoffered `form` (see `materialise` refusing `"embed"`, or `"owned-file"` under a genre that
+never offered it) must not destroy a form that was already delivered by a previous, valid call. Swap
+that order and a bad second choice silently wipes out a good first one.
+
+**The other half of it, and it was live: a story has more than one beat.** With one story-level
+`export/` shared by every beat, that same wipe reached ACROSS beats — delivering beat 2 destroyed
+beat 1's delivered files, silently, at the last phase of the journey, and the second delivery
+reported success. Nothing in this repository had ever put two beats in one story, so no test saw it.
+Two things close it, and both are code rather than convention:
+
+- **`exportDirFor(storyDir, beatName)`** is where a beat delivers: `export/<beat>/`. `whereIs` reads
+  the same shape, so a beat with a non-empty `export/<beat>/` is a beat that has been delivered.
+- **a `.delivered-from` receipt**, written into every export directory, naming the beat it came
+  from. `materialise` reads it BEFORE the wipe and throws when it names a different beat, so a
+  caller handing two beats the same directory is refused rather than obeyed. The receipt is a
+  dotfile because `export/<beat>/` is a directory the journalist opens; it is never in `written`.
 
 ## Architecture
 
@@ -65,6 +78,7 @@ order and a bad second choice silently wipes out a good first one.
 | --- | --- | --- |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
 | Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
+| Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/HANDOVER.md`: each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
 | Hosted embed mechanism | `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor` | The real Cloudflare Pages direct-upload sequence — proven live, not merely coded (see "How it works") |
 | CMS insertion mechanism | `scripts/cms-insert.mjs` — `buildInsertion`, `assertNotPartialReplace` | Builds the We.Publish/Livingdocs mutation shape and the partial-article guard — pure, no network, UNPROVEN against a live CMS |
@@ -95,7 +109,8 @@ order and a bad second choice silently wipes out a good first one.
    the **`{form, genre}` pair** against `FORMS_BY_GENRE[genre][form]` — the same table `offerForms`
    reads, so "not an offered form" can never drift from what was actually offered, and a form id
    that happens to exist under one genre is never accepted for a different genre just because the
-   id matches. It then clears and recreates `exportDir` (the gotcha above), and:
+   id matches. It then refuses if `exportDir` already carries another beat's `.delivered-from`
+   receipt, clears and recreates it (the gotcha above), writes this beat's own receipt, and:
    - `"owned-file"` copies every entry of `<beatDir>/renders/` into `exportDir`, walking any
      subdirectory with `copyTree` rather than handing a directory straight to `copyFile` (which
      throws on it).
@@ -137,7 +152,7 @@ order and a bad second choice silently wipes out a good first one.
 ## Quick start
 
 ```js
-import { offerForms, materialise } from "./scripts/deliver.mjs";
+import { offerForms, materialise, exportDirFor } from "./scripts/deliver.mjs";
 
 // `beatDir` is REQUIRED, and its APPROVED.md must exist: Gate 3 closes before Gate 4 opens, so a
 // form cannot be named before the journalist has seen the render.
@@ -154,7 +169,9 @@ const written = await materialise({
   form: chosenId, // must be one of forms[*].id
   genre: "web", // the same genre offerForms was called with
   beatDir: "stories/water-wars/beats/1-rainfall",
-  exportDir: "stories/water-wars/export",
+  // ONE DIRECTORY PER BEAT. `exportDirFor` is the answer; handing two beats the same directory
+  // throws rather than destroying the first one's delivery.
+  exportDir: exportDirFor("stories/water-wars", "1-rainfall"),
 });
 // `written` names exactly what left the beat directory — nothing more. For "embed" this is
 // `EMBED_URL.txt`; for "cms-insertion" it is `CMS-INSERTION.md`.
@@ -169,6 +186,8 @@ const written = await materialise({
 | Which rendered file an insertion carries, per genre | `{static: [".svg", ".png"], web: [".html"], scrolly: [".html"], video: [".mp4"]}` — first extension with exactly one match wins | `INSERTION_PREFERENCE`, `scripts/deliver.mjs` |
 | Shortest a `gives` description may read before the choice counts as uninformed | `5` words (`split(/\s+/).length > 4`, tested) | `FORMS_BY_GENRE` entries |
 | Which subdirectory of a beat never travels into the source-bundle form | `1` (`"renders"` — the other form's output) | `materialise` |
+| Where a beat's delivery lands | `export/<beat>/` — one directory per beat, never one per story | `exportDirFor`, `scripts/deliver.mjs` |
+| What names the beat a delivery came from | `1` file, `.delivered-from` — read before the wipe, so another beat's delivery is refused rather than destroyed | `DELIVERY_RECEIPT`, `scripts/deliver.mjs` |
 | How many files `renders/` may hold for "embed" or "cms-insertion" to accept it | `1` — more is refused as ambiguous, not guessed at | `singleOwnedFile` |
 | Which Cloudflare Pages project a beat's embed lands in by default | `"twin-deliver-proof"` (override with `materialise`'s own `projectName`) | `scripts/deploy-embed.mjs`, `DEFAULT_PROJECT_NAME` |
 | Which CMS kind `cms-insertion` demonstrates when the caller supplies none | `"we-publish"` (override with `materialise`'s own `cms` object) | `materialise`'s `"cms-insertion"` branch |
@@ -179,8 +198,9 @@ const written = await materialise({
   closed parameter set. Every input is already recorded elsewhere: `placement` and `credit` are
   hand fields 4 and 5, the caveat is `limits`, the alt is in the component.
 - `scripts/deliver.mjs` — `offerForms`, `materialise`, `copyTree` (its recursive helper),
-  `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), and the `BUILD_SCRIPT`
-  template written into every `source-bundle` delivery.
+  `singleOwnedFile` (the one-file guard `embed`/`cms-insertion` share), `exportDirFor` (the one
+  directory a beat delivers into), and the `BUILD_SCRIPT` template written into every
+  `source-bundle` delivery.
 - `scripts/deploy-embed.mjs` — `deployFile`, `resolveCloudflareCredentials`, `contentTypeFor`,
   and the header comment documenting the exact Cloudflare Pages call sequence, matched by hand
   against Wrangler's own source (`cloudflare/workers-sdk`) rather than guessed.
@@ -196,7 +216,9 @@ const written = await materialise({
   for real (`bun run build`, via the bundle's own `package.json`) and produces a bundled file, not
   just a promise, that `embed` is offered/withheld correctly across every combination of the two
   Cloudflare env vars, and that `materialise` for `embed`/`cms-insertion` writes exactly one file
-  each, refuses ambiguity, and — for `cms-insertion` — makes zero network calls.
+  each, refuses ambiguity, and — for `cms-insertion` — makes zero network calls. Its
+  "a story has more than one beat" block is the two-beat fixture nothing here had: it delivers two
+  approved beats and asserts the first one's files survive the second's delivery.
 - `test/deploy-embed.test.ts` — the Cloudflare direct-upload sequence against a fake of the real
   API (four calls in order, an already-existing project treated as success, a real failure
   surfaced with Cloudflare's own message) plus `contentTypeFor`/`resolveCloudflareCredentials`.

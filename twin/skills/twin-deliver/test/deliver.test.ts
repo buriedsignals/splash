@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, writeFile, rm, readdir } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, readdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   offerForms,
   materialise,
   ownedFileForInsertion,
+  exportDirFor,
 } from "../scripts/deliver.mjs";
 
 let beatDir: string, exportDir: string;
@@ -441,7 +442,10 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
       fetchFn: fakeCloudflare(),
     });
-    const files = await readdir(webExportDir);
+    // Dotfiles filtered: `materialise` leaves a `.delivered-from` receipt naming the beat, which
+    // is bookkeeping (it is what refuses a SECOND beat delivering over this one), not a delivered
+    // file. `written` below is the real "only one file was delivered" assertion, and it is unfiltered.
+    const files = (await readdir(webExportDir)).filter((f) => !f.startsWith("."));
     expect(files).toEqual(["EMBED_URL.txt"]);
     const url = await Bun.file(join(webExportDir, "EMBED_URL.txt")).text();
     expect(url.trim()).toBe("https://deadbeef.some-project.pages.dev");
@@ -475,7 +479,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
         throw new Error("cms-insertion must never call fetch");
       },
     });
-    const files = await readdir(webExportDir);
+    const files = (await readdir(webExportDir)).filter((f) => !f.startsWith("."));
     expect(files).toEqual(["CMS-INSERTION.md"]);
     const doc = await Bun.file(join(webExportDir, "CMS-INSERTION.md")).text();
     expect(doc).toContain("UNPROVEN");
@@ -519,7 +523,9 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       env: { CLOUDFLARE_ACCOUNT_ID: "acct", CLOUDFLARE_API_TOKEN: "tok" },
       fetchFn: fakeCloudflare(),
     });
-    expect(await readdir(webExportDir)).toEqual(["EMBED_URL.txt"]);
+    expect((await readdir(webExportDir)).filter((f) => !f.startsWith("."))).toEqual([
+      "EMBED_URL.txt",
+    ]);
 
     await materialise({
       form: "cms-insertion",
@@ -528,7 +534,7 @@ describe("materialise — hosted embed and CMS insertion (web genre)", () => {
       exportDir: webExportDir,
       env: {},
     });
-    const files = await readdir(webExportDir);
+    const files = (await readdir(webExportDir)).filter((f) => !f.startsWith("."));
     expect(files).toEqual(["CMS-INSERTION.md"]);
   });
 });
@@ -631,5 +637,101 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
   it("should not be written when the caller handed nothing back to read out", async () => {
     const written = await materialise({ form: "owned-file", genre: "static", beatDir, exportDir, env: {} });
     expect(written.some((p) => p.endsWith("HANDOVER.md"))).toBe(false);
+  });
+});
+
+// A STORY HAS MORE THAN ONE BEAT — and until this block existed, nothing in this repository put two
+// of them in one story. `materialise` clears its `exportDir` on every call (the gotcha above, and it
+// is right per beat); one story-level `export/` shared by every beat made that wipe reach ACROSS
+// beats, so DELIVERING THE SECOND BEAT DESTROYED THE FIRST — silently, at the last phase of the
+// journey, with the second delivery reporting success. Every other test in this file uses one beat
+// and one exportDir, which is exactly why the whole suite stayed green over it.
+//
+// RED, in a copy of the tree under /tmp, with the two mechanisms mutated back to the shape the
+// toolchain actually had — `exportDirFor` returning the story-level `join(storyDir, "export")`, and
+// `materialise` skipping the receipt check before its wipe:
+//
+//   688 |     expect(await readdir(exportDirFor(storyDir, "1-rainfall"))).toContain("still.png");
+//                                                                          ^
+//   error: expect(received).toContain(expected)
+//   Expected to contain: "still.png"
+//   Received: [ "Temperature.tsx", "package.json", "APPROVED.md", ".delivered-from", "build.ts" ]
+//
+//   (fail) a story has more than one beat > should keep the first beat's delivered files when a second beat delivers
+//   (fail) a story has more than one beat > should give each beat its own directory under export/
+//   (fail) a story has more than one beat > should refuse, rather than wipe, when another beat's delivery is already there
+//    47 pass, 3 fail
+describe("a story has more than one beat", () => {
+  let storyDir: string, beatTwo: string;
+
+  beforeEach(async () => {
+    storyDir = join(beatDir, "..");
+    beatTwo = join(storyDir, "2-temperature");
+    await mkdir(join(beatTwo, "renders"), { recursive: true });
+    await writeFile(join(beatTwo, "renders", "still.png"), "png-bytes-two");
+    await writeFile(join(beatTwo, "renders", "still.svg"), "<svg id='two'/>");
+    await writeFile(join(beatTwo, "Temperature.tsx"), "export const T = () => null;");
+    await writeFile(join(beatTwo, "APPROVED.md"), "seen at full size, approved");
+  });
+
+  it("should keep the first beat's delivered files when a second beat delivers", async () => {
+    await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir: exportDirFor(storyDir, "1-rainfall"),
+    });
+    await materialise({
+      form: "source-bundle",
+      genre: "static",
+      beatDir: beatTwo,
+      exportDir: exportDirFor(storyDir, "2-temperature"),
+    });
+
+    expect(await readdir(exportDirFor(storyDir, "1-rainfall"))).toContain("still.png");
+    expect(await readdir(exportDirFor(storyDir, "2-temperature"))).toContain("build.ts");
+  });
+
+  it("should give each beat its own directory under export/", async () => {
+    await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir,
+      exportDir: exportDirFor(storyDir, "1-rainfall"),
+    });
+    await materialise({
+      form: "owned-file",
+      genre: "static",
+      beatDir: beatTwo,
+      exportDir: exportDirFor(storyDir, "2-temperature"),
+    });
+
+    const delivered = (await readdir(join(storyDir, "export"))).sort();
+    expect(delivered).toEqual(["1-rainfall", "2-temperature"]);
+  });
+
+  // The mechanical half: `exportDirFor` tells a caller where a beat delivers, and the receipt makes
+  // the WRONG directory fail loudly instead of destroying what is already in it. A caller that hands
+  // two different beats the same directory is refused on the second call, before anything is wiped.
+  it("should refuse, rather than wipe, when another beat's delivery is already there", async () => {
+    const shared = join(storyDir, "export");
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir: shared });
+
+    await expect(
+      materialise({ form: "owned-file", genre: "static", beatDir: beatTwo, exportDir: shared }),
+    ).rejects.toThrow(/would destroy it/);
+
+    expect(await readdir(shared)).toContain("still.png");
+    expect(await readFile(join(shared, "still.png"), "utf8")).toBe("png-bytes");
+  });
+
+  it("should still let the same beat change its mind in its own directory", async () => {
+    const mine = exportDirFor(storyDir, "1-rainfall");
+    await materialise({ form: "owned-file", genre: "static", beatDir, exportDir: mine });
+    await materialise({ form: "source-bundle", genre: "static", beatDir, exportDir: mine });
+
+    const files = await readdir(mine);
+    expect(files).not.toContain("still.png");
+    expect(files).toContain("package.json");
   });
 });

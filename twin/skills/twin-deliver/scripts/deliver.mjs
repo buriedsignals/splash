@@ -6,7 +6,7 @@
 
 import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
@@ -296,6 +296,45 @@ export async function ownedFileForInsertion(beatDir, genre) {
   );
 }
 
+// A STORY HAS MORE THAN ONE BEAT, AND EACH DELIVERS SEPARATELY.
+//
+// `materialise` clears its `exportDir` on every call — deliberately, so a journalist changing their
+// mind never ends up with a mix of two forms. That is right per BEAT and catastrophic per STORY: with
+// one story-level `export/` shared by every beat, delivering beat 2 DESTROYED beat 1's delivered
+// files, silently, at the last phase of the journey. Nothing said so, no test put two beats in one
+// story, and the second delivery reported success over an export directory that had just lost half
+// its contents.
+//
+// So the export directory is per beat, and this function is where that fact lives — a caller asking
+// "where does this beat deliver" gets an answer from code rather than from a convention nobody wrote
+// down. `whereIs` reads the same shape: `export/<beat>/` non-empty means that beat is delivered.
+export function exportDirFor(storyDir, beatName) {
+  if (!storyDir) throw new Error("exportDirFor needs the story directory");
+  if (!beatName) throw new Error("exportDirFor needs the beat's own directory name");
+  return join(storyDir, "export", beatName);
+}
+
+// The receipt every delivery leaves behind, naming the beat it came from. It is the mechanical half
+// of the rule above: `exportDirFor` gives a caller the right directory, and this makes the WRONG one
+// fail loudly instead of destroying what is already there. A caller that hands two different beats
+// the same `exportDir` — the story-level `export/`, say — is refused on the second call rather than
+// wiping the first beat's delivery.
+//
+// A dotfile, because `export/` is a directory the journalist opens: the hand-over and the delivered
+// files are what they should see there.
+const DELIVERY_RECEIPT = ".delivered-from";
+
+async function refuseToWipeAnotherBeat(exportDir, beatDir) {
+  const beatName = basename(beatDir ?? "");
+  const previous = await readFile(join(exportDir, DELIVERY_RECEIPT), "utf8").catch(() => null);
+  if (previous !== null && previous.trim() && previous.trim() !== beatName) {
+    throw new Error(
+      `${exportDir} already holds the delivery of beat "${previous.trim()}" — materialising beat "${beatName}" here would destroy it. Each beat delivers into its own export/<beat>/ directory (see exportDirFor).`,
+    );
+  }
+  return beatName;
+}
+
 // The delivery phase closes into a file, like every other phase. `HANDOVER.md` is written BESIDE
 // whatever form was chosen, naming each delivered file and its role, the placement read back from
 // the storyboard, the alt text, the credit line and the one caveat.
@@ -334,12 +373,17 @@ export async function materialise({
     throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
   }
 
-  // A journalist can change their mind. exportDir may already hold a previous choice's
-  // files — clear it first so the chosen form is the ONLY thing delivered, never a mix of
+  // A journalist can change their mind about THIS BEAT. exportDir may already hold a previous
+  // choice's files — clear it first so the chosen form is the ONLY thing delivered, never a mix of
   // this choice and the last one. Validation above runs before this, so a rejected form never
   // destroys whatever was already delivered.
+  //
+  // A different BEAT's delivery is not a change of mind, and the wipe must never reach it: the
+  // receipt check refuses before anything is removed.
+  const beatName = await refuseToWipeAnotherBeat(exportDir, beatDir);
   await rm(exportDir, { recursive: true, force: true });
   await mkdir(exportDir, { recursive: true });
+  await writeFile(join(exportDir, DELIVERY_RECEIPT), `${beatName}\n`);
   const written = [];
 
   if (form === "owned-file") {
