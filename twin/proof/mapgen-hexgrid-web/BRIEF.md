@@ -1,8 +1,12 @@
 # Beat — 2024's earthquakes cluster on plate boundaries: the densest hex holds 1,374 of them (web)
 
 **Type:** hex grid (spatial bins). **Medium/genre:** map / web. **Channel:** article web, one
-self-contained `hex-grid.html`, two SSR'd layouts over one 836 × 520 baked plate, plus an
-always-rendered table of every non-empty cell.
+self-contained `hex-grid.html` — a LIVE MapTiler map (ruling R1) over one 836 × 520 baked plate that
+stays as the fallback layer, plus an always-rendered table of every non-empty cell.
+
+*Rebuilt 2026-08-10.* It used to be two SSR'd fixed-pixel layouts (900 px and 360 px) swapped by a
+media query, with no live map in the delivered file at all. Both are gone: see "R1 — the live
+layer" and "B5.1 — fitting the window" below.
 
 ## Claim
 
@@ -60,11 +64,117 @@ not just what colour it is.
 ## Interaction
 
 The full argument is in the SSR'd frame: title, legend, caveat, source and all 156 shaded cells are
-drawn unconditionally, so the claim survives with JavaScript off. Hover, tap and focus reveal one
-cell's own count. Nothing argument-bearing sits behind a control.
+drawn unconditionally, so the claim survives with JavaScript off, offline, and after a MapTiler key
+is rotated. Hover, tap and focus reveal one cell's own count. Nothing argument-bearing sits behind a
+control. There is no filter: a hex cell belongs to no group, so this beat has no orthogonal
+subsetting dimension to offer, and `map-web-discipline.md`'s "most beats do not need one" is
+answered by not having one.
 
 The table is the non-visual route: a map is spatial, a screen reader is not, and 156 rows ranked
 densest-first, each naming the regions its own events are catalogued under, are the answer.
+
+## R1 — the live layer, added 2026-08-10
+
+*"Une carte web qu'on ne peut pas parcourir est une image."* `AUDIT-W5-W6-map.md` §5.6 measured what
+that was worth here: the delivered `hex-grid.html` contained no `maplibregl`, no `api.maptiler.com`
+and no `NavigationControl`. The whole ruling was deletable in silence.
+
+The page now ships the seed's three layers: `#mw-map` (a live MapLibre map, swapped in on
+`map.on("load")`), `#mw-fallback` (the baked plate and its 156 hex `<path>`s, script-free and
+request-free), and `.mw-overlay` — a SIBLING of both, carrying one `<button class="pt">` per cell,
+which is the only thing that survives the swap and therefore the only place the keyboard path and
+the tooltip's own string may live. `live-map.mjs` is a byte-identical copy of
+`twin-map-web/assets/live-map.mjs`, line-1 path comment included; everything type-specific travels
+in the PLAN `render-web.mjs` writes into the page.
+
+- **The bins are geographic polygons.** `geo-hex.ts` bins in the PLATE's pixel space, so every
+  hexagon corner is unprojected with the same `pixelToLonLat` and the same recorded `frameCorners`
+  the beat already uses to say where its densest cell is. Consequence, stated in the caveat a reader
+  sees: a cell's ground footprint was fixed at bake time, so zooming in enlarges the cells, it does
+  not re-bin the data.
+- **Antimeridian.** 11 of the 156 rings run past ±180° (raw extent −200.15° to +200.12°). They are
+  emitted RAW, so each ring stays continuous with the frame's own linear pixel→longitude mapping.
+  Folding each corner independently would turn a small hexagon by the seam into a ring spanning the
+  world the wrong way. The ANCHORS are folded, because an anchor is a point and `map.project()` of
+  an unfolded −190° lands a hit target off the canvas.
+- **Verified, not assumed:** driven with a real key at five viewports, every bin that is on canvas
+  answers `queryRenderedFeatures` at its own anchor with its OWN key — 18/18, 7/7, 147/147, 99/99,
+  102/102, zero mis-hits. A ring that had wrapped the wrong way would answer for other cells' ground.
+- **The leash.** The seed's derivation (`log2(frameLonSpan ÷ studyLonSpan)`) yields **0** here,
+  because the study set IS the frame: a planet, 359.8° against 359.8°. A leash of zero is the one
+  outcome R1 exists to forbid, so the floor comes from the beat's own inner scale instead — one hex
+  cell is `hexSize × degreesPerPixel` = **11.87°** wide, and a reader must be able to bring one cell
+  up to half the frame's width, which is `log2(359.8 ÷ 23.74)` = **3.922 zoom levels**. The only
+  editorial number in it is the 2.
+- **The price, measured.** `hex-grid.html` goes from **436 KB to 1263 KB**: 869 KB of that is
+  maplibre-gl inlined (rather than fetched from a CDN, which would trade payload for a second
+  third-party host), and 129 KB is the plan — 156 hexagons twice over, once for the fill layer and
+  once for the edge layer, at four decimal places (~11 m, three orders of magnitude below one drawn
+  pixel at the tightest camera the leash allows). Collapsing the two layouts into one render gave
+  back the 156 duplicated hex paths and the second copy of every furniture string.
+
+## OPEN — the live camera crops the claim, and the fix is not in this beat
+
+Measured 2026-08-10 by tracing every camera call on the delivered page, at five viewports. **The
+live layer opens on a view its own fallback contradicts.**
+
+| viewport | live canvas | fitted zoom | delivered zoom | longitude actually shown |
+|---|---|---|---|---|
+| 1600 × 900 | 1566 × 715 | 0.960 | **2.417** | **206.2°** of 359.8, lat 20°S–59°N |
+| 1024 × 768 | 990 × 543 | 0.490 | **2.359** | **135.7°** |
+| 768 × 1024 | 734 × 752 | 0.555 | 0.555 | 351.4° |
+| 375 × 667 | 341 × 314 | −1.06 (floored to 0) | 0 | **239.8°** |
+| 375 × 812 | 341 × 459 | −1.06 (floored to 0) | 0 | **239.8°** |
+
+Two distinct causes, **both inside `skills/twin-map-web/assets/live-map.mjs`**, which this beat
+duplicates byte-for-byte and must not fork:
+
+1. **`leash()` ends with `map.setMaxBounds(map.getBounds())`.** When the fitted camera leaves
+   horizontal slack, `getBounds()` returns more than 360° of longitude; MapLibre's own
+   `getConstrained` clamps a longitude range to `[0, worldSize]` and then scales the camera up. The
+   trace shows that single call taking zoom 0.960 → 2.417 at 1600 × 900.
+   **And the slack is unavoidable for a 359.8° study set.** Avoiding the trigger needs the fitted
+   world to be at least as wide as the canvas. If longitude binds the fit, the world is exactly
+   `FIT_PADDING_PX × 2` = 96 px narrower than the canvas, always. If latitude binds, the world is
+   `(canvasH − 96) ÷ 0.6233`, and requiring that to be ≥ `canvasW` while it is also < `canvasW − 96`
+   is an empty condition. So there is no canvas size, and no choice of `studyBounds`, that avoids
+   it — it is a property of the leash, not of the beat.
+2. **`fitToStudy()` calls `map.setMinZoom(0)` before fitting.** A planet needs zoom −1.06 in a
+   341 px-wide box; the floor pins it at 0, where 512 px of world sits in a 341 px canvas and a
+   third of the globe is off-screen. Before the floor is applied the same fit reaches −1.279 (in the
+   trace, at the pre-swap container size), so MapLibre itself is willing.
+
+**Tried and reverted, because it measured worse rather than better:** keeping the plate's own aspect
+on the live viewport instead of the seed's `aspect-ratio: auto`. Canvas 1151 × 715, delivered zoom
+**3.849**, 56° of longitude. Recorded in `render-web.mjs`'s own CSS comment so nobody re-tries it.
+
+**Candidate fixes, for the owner of `live-map.mjs`:** skip `setMaxBounds` when the visible longitude
+span is ≥ 360° (there is no horizontal leash to set — the reader already has the whole planet), and
+let `fitToStudy` drop the minimum to MapLibre's own floor rather than 0. Both are one line, and both
+are outside this beat.
+
+`live: true` is shipped anyway rather than reverted: the committed artifact carries the R1b
+placeholder, so what anyone opens from this repository is the fallback, which is correct and
+complete at every viewport (verified with a real pointer: hovering a bin in the no-key page returns
+that bin's own reading). Turning the live layer off would re-open exactly the hole the audit found.
+
+## B5.1 — fitting the window
+
+Measured before: **5127 px of page in a 900 px window**, the widest visual using **56%** of the
+width — the worst offender in the tree. The cause was the two-rung layout: a 900 px-wide SVG poster
+with the title, source, legend and caveat drawn as `<text>` inside it, capped by `max-width: 900px`.
+
+After: the beat's own column is **exactly one window** at every tested viewport — 868 px at
+1600 × 900, 736 at 1024 × 768, 992 at 768 × 1024, 635 at 375 × 667, 780 at 375 × 812 (each the
+viewport height less the page's own 32 px of padding), with nothing scrolling inside the visual. The
+map now uses 72% of the width at 1600 (its own aspect is what stops it at 100%; the height binds),
+86% at 1024, 96% at 768, 91% at 375.
+
+**The page is still ~5186 px at 1600 × 900, and 4262 px of that is the table.** One row per
+non-empty cell, 156 rows, and it is deliberately not touched: collapsing it behind a disclosure
+widget is B5.2, the owner's own call, and `map-web-discipline.md`'s rule is "rendered plainly and
+visibly, never behind a toggle". Split per viewport: 868 + 4262 (1600 × 900) · 736 + 4277
+(1024 × 768) · 992 + 6789 (768 × 1024) · 635 + 12019 (375 × 667) · 780 + 12019 (375 × 812).
 
 ## Anti-patterns for this case
 

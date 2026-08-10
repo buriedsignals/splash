@@ -1,107 +1,102 @@
 /**
- * The web genre of "Where 2024's earthquakes clustered" — a HEX-GRID (spatial-binning) map beat,
- * the first one this project has built for the WEB genre (hex-grid existed only as static before
- * this beat: `proof/map-quake-density/HexGridStill.tsx`). Draws from the SAME baked-plate approach
- * every genre in this twin uses (`twin-doctrine/references/geo-discipline.md` rules 1, 2, 6, 7,
- * 12): the camera is spent ONCE by `bake-plate.mjs`, and this component draws an `<image>` and some
- * hex `<path>`s, never a live map.
+ * The web genre of "Where 2024's earthquakes clustered" — a HEX-GRID (spatial-binning) map beat.
  *
- * What this genre needs on top of the static frame — the same four things
- * `twin-map-web/assets/MapWebSeed.tsx`'s own header names for its point geometry, reworked for a
- * cell geometry that tiles the frame instead of floating points on it:
+ * RULING R1 (2026-08-10), retrofitted here 2026-08-10: **map × web is a LIVE MapTiler map** —
+ * *"une carte web qu'on ne peut pas parcourir est une image"*. The audit measured what the ruling
+ * was worth to a reader of THIS beat: `hex-grid.html` contained no `maplibregl`, no
+ * `api.maptiler.com` and no `NavigationControl` (`AUDIT-W5-W6-map.md` §5.6). It was a picture. So
+ * this component now ships the same THREE LAYERS `twin-map-web/assets/MapWebSeed.tsx` ships, in the
+ * same order and with the same reasons:
  *
- *   1. ONE component (`HexGridWeb`) called twice, once per `WebLayout` — both SSR'd at build time
- *      by `render-web.mjs`. No client-side layout math: a CSS media query alone swaps the two
- *      pre-rendered SVGs.
- *   2. `tabIndex={0}` and a per-cell `aria-label`, written on every NON-EMPTY cell at build time —
- *      not assembled by the inline script — so the no-JS frame is still keyboard-reachable, cell by
- *      cell, with the script absent entirely. Each cell also carries a nested `<title>`, which
- *      gives a native browser tooltip on hover even with the script absent. UNLIKE a symbol map's
- *      small circles, a hex cell's own visible fill IS its hit target — cells tile edge-to-edge
- *      with no gaps to miss, so no separate invisible larger hit shape is needed
- *      (`twin-map-beat/references/types/hex-grid.md`: cells "tessellate ... over the points' own
- *      bounding box").
- *   3. Nothing argument-bearing gated behind interaction. The title, the caveat, the source, and
- *      the class legend — WITH its printed numeric ranges and its explicit aggregate-mode caption,
- *      the type's own accessibility trap (`references/types/hex-grid.md`, "The accessibility
- *      trap") — are all drawn unconditionally. Hover and focus only ever add the per-cell EXACT
- *      count the legend's five class ranges can only bucket.
- *   4. A visible, always-rendered alternative to the spatial reading (`DensityTable`, below) — not
- *      a screen-reader-only trick, a real table any reader can use.
+ *   1. `#mw-map` — an empty box `live-map.mjs` fills with a live MapLibre map and swaps in on
+ *      `map.on("load")`. FIRST, and its own container rather than a wrapper around the fallback, so
+ *      the swap is one `hidden` flip and never a half-drawn state.
+ *   2. `#mw-fallback` — the baked plate and every non-empty cell as its own hex `<path>`, complete
+ *      and script-free: what a reader gets with JavaScript off, offline, or after MapTiler
+ *      invalidates the account's keys at 100% of its spending limit.
+ *   3. `.mw-overlay` — the per-cell hit targets, a SIBLING of both and never a child of either. The
+ *      seed's own header records why: its first live draft nested the overlay inside the fallback,
+ *      and hiding the fallback on `map.on("load")` took every Tab stop with it.
  *
- * THE ADAPTATION a hex-grid forces on `map-web-discipline.md`'s own accessibility answer: that
- * doctrine's "ordered, readable list of the regions and their values" assumes each row has a
- * meaningful NAME (`RegionTable`'s "Metro area" column). A hex cell has none — the type sheet
- * itself says a reader "can't name, can't look up" an arbitrary cell
- * (`references/types/hex-grid.md`, "When not to use it"). Reverse-geocoding a cell's CENTRE into a
- * place name is still rejected: it would invent a specificity the grid does not have.
+ * B5.1, and this beat was the worst offender in the tree: **5127 px of page in a 900 px window**,
+ * its widest visual using 56% of the width. The cause was the two-rung `layouts` API this file used
+ * to carry — a 900px `DESKTOP_LAYOUT` and a 360px `NARROW_LAYOUT`, each an entire SSR'd SVG poster
+ * with the title, the source, the legend and the caveat drawn as `<text>` inside it, swapped by a
+ * media query. That is not responsive (`map-web-discipline.md`, "Full width, genuinely"), it made
+ * the legend caption clip at 375px, and it fixed the frame's height at the plate's own aspect so the
+ * beat could never fit a window. It is replaced by the seed's own single fluid render: ONE SVG
+ * carrying only geometry (the plate `<image>` and the hex `<path>`s), every piece of furniture as
+ * plain HTML sized in fixed CSS pixels, and `render-web.mjs`'s `buildCss` bounding the whole column
+ * to one window (`.map-web` / `.mw-stage` / `.mw-viewport`).
  *
- * But the first version of this table drew the wrong conclusion from that, and shipped Rank /
- * Event count / Density class only — three facts that are real and checkable, and not one of them
- * spatial. On a map, whose entire subject is where, that left the table unable to answer the only
- * question a reader who cannot see it has. So there is now a fourth column, and it is neither a
- * guess nor a geocode: every event in the frozen catalogue carries USGS's OWN place string, so a
- * cell can be described by the regions ITS MEMBER EVENTS are filed under ("Fiji, Tonga"), computed
- * in `render-web.mjs` from the cell's members. That is a fact about the data, not a claim about
- * the cell's geometry, and the column header and the caption both say so. The sibling
- * `mapgen-choropleth-web`'s table carries names; this one now does too.
+ * WHAT A HEX GRID CHANGES ABOUT THE SEED'S OVERLAY, and it is one thing. The seed's marks are
+ * points, so its overlay carries a `.point-label` (a city name) and a `.pt` hit target per point.
+ * A hex cell has no name — the type sheet says a reader "can't name, can't look up" an arbitrary
+ * cell (`twin-map-beat/references/types/hex-grid.md`, "When not to use it") — so this beat renders
+ * NO `.point-label` at all, and its overlay is the hit targets alone. `live-map.mjs`'s
+ * `reposition()` walks `.pt, .point-label` and simply finds none of the latter.
  *
- * The rows stay in the same densest-first order a sighted reader's own eye takes across the shaded
- * field, and the same order the keyboard's Home/End uses across the map's own cells. This preserves
- * the doctrine's two-channel principle (an exact per-cell count on hover/focus for a reader who can
- * point at a pixel; the same distribution, complete and linear, for a reader who cannot).
+ * WHY THE HIT TARGET MOVED OUT OF THE SVG. It used to be the hex `<path>` itself, `tabIndex={0}`
+ * with its own `aria-label` — an exact hit shape, and the right answer while the plate was the
+ * display surface. It cannot stay there once the fallback is hidden: the plate's cells are
+ * plate-pixel geometry, and the moment the live camera differs from the bake's the paths are in the
+ * wrong place. So the keyboard path and the tooltip's own source move to HTML `<button>`s that
+ * `live-map.mjs` repositions with `map.project()` on every camera move, and the exact hit SHAPE is
+ * kept in both states by different means: live, `queryRenderedFeatures` answers anywhere inside the
+ * rendered polygon (which is what B6.14a asked for, "as soon as you enter the cell"); in the
+ * fallback, each button is `clip-path`ped to its own hexagon, so neighbouring buttons do not overlap
+ * the way their bounding boxes would (a pointy-top hexagon's box is 2·size tall against a 1.5·size
+ * row pitch — a quarter of every box belongs to the row above or below).
  *
- * This component never imports the rasteriser — `ink`/`muted`/`measure` are props, derived once in
- * node by `render-web.mjs`.
+ * The two capabilities the seed layers on top of that split apply here unchanged:
+ *   - Nothing argument-bearing gated behind interaction. The title, the source, the caveat and the
+ *     class legend — WITH its printed numeric ranges and its explicit aggregate-mode caption, the
+ *     type's own accessibility trap (`references/types/hex-grid.md`, "The accessibility trap") — are
+ *     all drawn unconditionally. Hover, focus and the live map only ever add the per-cell EXACT
+ *     count the legend's five class ranges can only bucket.
+ *   - A visible, always-rendered alternative to the spatial reading (`DensityTable`, below).
+ *   - NO FILTER. This study set has no orthogonal subsetting dimension a reader would want to
+ *     isolate — a hex cell belongs to no group — so this beat renders no `.mw-filter`, and its plan
+ *     declares no `filterProperty`. `map-web-discipline.md`'s own test for whether a beat needs one
+ *     ("most do not") is answered here by not having one.
+ *
+ * THE ADAPTATION `map-web-discipline.md`'s accessibility answer forces on this type: that doctrine's
+ * "ordered, readable list of the regions and their values" assumes each row has a meaningful NAME
+ * (`RegionTable`'s "Metro area" column). A hex cell has none, and reverse-geocoding a cell's CENTRE
+ * into a place name is rejected — it would invent a specificity the grid does not have. But the
+ * first version of this table drew the wrong conclusion from that and shipped Rank / Event count /
+ * Density class only: three facts that are real and checkable, and not one of them spatial, on a map
+ * whose entire subject is where. So there is a fourth column, and it is neither a guess nor a
+ * geocode: every event in the frozen catalogue carries USGS's OWN place string, so a cell can be
+ * described by the regions ITS MEMBER EVENTS are filed under ("Fiji, Tonga"), computed in
+ * `render-web.mjs` from the cell's members. That is a fact about the data, not a claim about the
+ * cell's geometry, and the column header and the caption both say so.
+ *
+ * This component never imports the rasteriser — `ink`/`muted` are props, derived once in node by
+ * `render-web.mjs`.
  */
 
-import { Fragment } from "react";
 import { binIndexUpperInclusive, hexCorners, type HexCell } from "./geo-hex.ts";
 
-type Measure = (
-  text: string,
-  font: { fontSize: number; fontWeight?: number },
-) => number;
-
-export type WebLayout = {
-  name: "desktop" | "narrow";
-  width: number;
-  pad: number;
-  /** The plate's own width/height inside this layout — NOT square (unlike the symbol seed's
-   *  `mapSize`): a world camera is wide, not square, so this genre's own layout type carries both
-   *  dimensions rather than one shared side. Both layouts draw from the ONE plate `bake-plate.mjs`
-   *  bakes at the DESKTOP layout's own size — the narrow layout only ever scales it DOWN, the same
-   *  "never upscale a raster" invariant `MapWebSeed.tsx`'s own `PLATE_SIZE` reuse follows. */
-  mapWidth: number;
-  mapHeight: number;
-  title: { fontSize: number; fontWeight: number; lead: number };
-  source: { fontSize: number; fontWeight: number; lead: number };
-  caption: { fontSize: number; fontWeight: number; lead: number };
-  note: { fontSize: number; lead: number };
-  legendLabel: { fontSize: number };
-  bottomPad: number;
-};
-
-export function wrap(
-  text: string,
-  maxWidth: number,
-  font: { fontSize: number; fontWeight: number },
-  measure: Measure,
-): string[] {
-  const lines: string[] = [];
-  let current = "";
-  for (const word of text.split(/\s+/)) {
-    const trial = current ? `${current} ${word}` : word;
-    if (current && measure(trial, font) > maxWidth) {
-      lines.push(current);
-      current = word;
-    } else current = trial;
-  }
-  return current ? [...lines, current] : lines;
-}
+// ===== Genre mechanics — not one story's numbers =====
+/** How much smaller than its own lattice cell a hexagon is DRAWN, so the field reads as a grid of
+ *  cells rather than one continuous stain. The bins themselves are unchanged — this is a drawing
+ *  gap, not a binning gap. Exported because `render-web.mjs`'s `livePlan` emits the SAME shrunk
+ *  hexagon as a geographic polygon: if the live layer and the plate disagreed about how big a cell
+ *  is drawn, the swap on `map.on("load")` would be visible. */
+export const HEX_DRAW_SHRINK = 0.97;
+/** The per-cell hit target's FLOOR, in real CSS pixels — not its size. The target is an HTML
+ *  `<button>` whose extent is the cell's own hexagon written as a percentage of the frame, so the
+ *  two scale together at every container width; `max()` keeps this floor for a cell too small to
+ *  hit. Measured on this beat: at 1600px wide the map box is ~884 CSS px and a cell's box is
+ *  ~50 × 58 px, comfortably above the floor; at 375px it is ~20 × 23 px, below it, and the floor is
+ *  what keeps the grid operable on a phone. The same number and the same reasoning as
+ *  `MapWebSeed.tsx`'s own `HIT_TARGET_PX`. */
+export const HIT_TARGET_PX = 28;
+// =======================================================
 
 /** The five fixed percentile bands `countBreaks` always produces (`geo-hex.ts`: four breaks at
- *  p50/p75/p90/p97 → five classes) — named here once, shared by the on-map legend, the per-cell
+ *  p50/p75/p90/p97 → five classes) — named here once, shared by the legend, the per-cell
  *  `aria-label`, and `DensityTable`, so a reader never sees two different phrasings of the same
  *  class. */
 const PERCENTILE_LABELS = [
@@ -134,7 +129,9 @@ export function densityClassLabel(index: number, breaks: number[]): string {
 }
 
 /** One cell's own detail string — rank, count, class — never a second formatting of the same
- *  numbers. */
+ *  numbers. The hit target's `aria-label`/`title`/`data-detail`, the live layer's tooltip (which
+ *  reads `data-detail` off the matching `.pt`) and the plan's own `detail` property are all this
+ *  one string. */
 export function cellDetail(
   cell: HexCell,
   rank: number,
@@ -142,6 +139,42 @@ export function cellDetail(
   breaks: number[],
 ): string {
   return `Rank ${rank} of ${total} — ${cell.count} earthquakes — ${densityClassLabel(binIndexUpperInclusive(cell.count, breaks), breaks)}`;
+}
+
+/** THE ONE PLACE A CELL'S COLOUR IS DECIDED. The SVG hex below and the live `fill` layer's own
+ *  `["get","color"]` both call this — never a second binning of the same count against the same
+ *  breaks. `map-web-discipline.md`'s "one mark, two halves, two mechanisms" is written after two
+ *  incidents of exactly that shape (a mark's SIZE, then its FILTER membership), so a third — its
+ *  COLOUR — is closed by construction rather than by remembering. */
+export function cellFill(
+  cell: HexCell,
+  breaks: number[],
+  ramp: string[],
+): string {
+  return ramp[binIndexUpperInclusive(cell.count, breaks)]!;
+}
+
+/** And the same for a cell's own edge: the subject cell carries the beat's single accent, every
+ *  other cell carries a hairline of the ground colour that separates it from its neighbours. Read
+ *  by the SVG `<path>` and by the plan's `line` layer alike. The widths are CSS pixels in both
+ *  (`geo-discipline`'s rule that a stroke is screen-sized, never ground-sized). */
+export function cellEdge(
+  cell: HexCell,
+  subjectKey: string,
+  accent: string,
+  ground: string,
+): { color: string; width: number } {
+  return cell.key === subjectKey
+    ? { color: accent, width: 2.4 }
+    : { color: ground, width: 0.6 };
+}
+
+/** The cells in the order everything reads them: densest first. The DOM order the keyboard's
+ *  Arrow/Home/End cycles through, the table's row order and the plan's own feature order are all
+ *  this one order, so a reader who tabs the map and a reader who reads the table are moving through
+ *  the same list. Hex cells never overlap, so this order affects nothing about paint correctness. */
+export function rankedCells(cells: HexCell[]): HexCell[] {
+  return [...cells].sort((a, b) => b.count - a.count);
 }
 
 export function HexGridWeb({
@@ -162,8 +195,6 @@ export function HexGridWeb({
   accent,
   ink,
   muted,
-  measure,
-  layout,
 }: {
   geometry: { frame: { width: number; height: number } };
   plate: string;
@@ -183,218 +214,153 @@ export function HexGridWeb({
   /** Derived from `ground` by `deriveFurniture` in whatever node runner calls this component. */
   ink: string;
   muted: string;
-  measure: Measure;
-  layout: WebLayout;
 }) {
   if (cells.length < 2)
     throw new Error(
       `a hex-grid map needs at least two nonempty cells, got ${cells.length}`,
     );
 
-  const { width, pad, mapWidth, mapHeight } = layout;
-  const scale = mapWidth / geometry.frame.width;
-  // Same order as `DensityTable`'s own rows — densest first — so the DOM order the keyboard's
-  // Arrow/Home/End cycles through (`interaction.mjs`, unchanged) matches the table's rank order.
-  // Hex cells never overlap (unlike a symbol map's circles), so this order affects nothing about
-  // paint correctness, only tab order.
-  const ranked = [...cells].sort((a, b) => b.count - a.count);
+  const { frame } = geometry;
+  const ranked = rankedCells(cells);
   const total = ranked.length;
 
-  const subject = cells.find((c) => c.key === subjectKey);
-  if (!subject) throw new Error(`no cell for the subject ${subjectKey}`);
+  if (!ranked.some((c) => c.key === subjectKey))
+    throw new Error(`no cell for the subject ${subjectKey}`);
 
-  const mapX = pad;
-  const columnWidth = width - pad * 2;
-
-  const titleLines = wrap(title, columnWidth, layout.title, measure);
-  const sourceLines = wrap(
-    `${source} · ${basemapCredit}`,
-    columnWidth,
-    layout.source,
-    measure,
-  );
-  const caveatLines = wrap(caveat, columnWidth, layout.note, measure);
-
-  const titleTop = pad + layout.title.fontSize;
-  const sourceTop = titleTop + (titleLines.length - 1) * layout.title.lead + 20;
-  const sourceBottom =
-    sourceTop + (sourceLines.length - 1) * layout.source.lead;
-  // Computed FROM the wrapped header's own real bottom, never a fixed guess — a title or a source
-  // line that wraps to more lines than the layout's designer assumed must push the map down with
-  // it, not clip under it. This is exactly the bug this beat's own first render caught: a fixed
-  // formula for `mapY`, written before the wrap was known, undercounted a two-line title.
-  const mapY = sourceBottom + 18;
-
-  const legendSwatch = layout.name === "desktop" ? 16 : 12;
-  const legendY = mapY + mapHeight + 30;
-  // The caption WRAPS, exactly like the title, the source and the caveat above it. It was the one
-  // reader-facing string in this frame drawn as a single unbreakable line, and it grew: driven at
-  // 375 CSS px, "Earthquakes per cell (count, not energy or magnitude) — aggregate mode: count" ran
-  // to a right edge of 414.64 against an SVG right edge of 359 — a 55.64px overrun into
-  // `overflow: hidden`, so the words "mode: count" were not merely cramped, they were GONE, and
-  // `document.scrollWidth` stayed at 375 so there was no scroll to recover them. The caption is the
-  // one place this type is required to state its aggregate mode (`references/types/hex-grid.md`),
-  // which makes it the worst string in the frame to lose. Everything below is positioned from the
-  // caption's own real bottom, the same way `mapY` is computed from the header's real bottom.
-  const captionLines = wrap(
-    legendCaption,
-    columnWidth,
-    layout.caption,
-    measure,
-  );
-  const captionBottom =
-    legendY + (captionLines.length - 1) * layout.caption.lead;
-  const legendSwatchY = captionBottom + 16;
-
-  const caveatTop = legendSwatchY + legendSwatch + 26;
-  const frameHeight =
-    caveatTop + (caveatLines.length - 1) * layout.note.lead + layout.bottomPad;
+  // The hexagon actually drawn, and its own bounding box, in the bake's own frame units. A
+  // pointy-top hexagon of side `size` is `√3·size` wide and `2·size` tall — the two numbers the
+  // overlay's own buttons are sized from, and the same shape `livePlan` unprojects into geographic
+  // polygons.
+  const drawnSize = hexSize * HEX_DRAW_SHRINK;
+  const cellWidth = Math.sqrt(3) * drawnSize;
+  const cellHeight = 2 * drawnSize;
 
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={width}
-      height={frameHeight}
-      viewBox={`0 0 ${width} ${frameHeight}`}
-      className="map"
-      data-layout={layout.name}
-      fontFamily="Helvetica, Arial, sans-serif"
-    >
-      {/* No root role="img" — the same one deliberate departure the chart genre's own doctrine
-          names (`web-discipline.md`): that role would flatten every child into one opaque image,
-          silencing the per-cell paths below. `<desc>` still carries the alt text. */}
-      <desc>{alt}</desc>
-      <defs>
-        <clipPath id="plate-clip">
-          <rect x={0} y={0} width={mapWidth} height={mapHeight} />
-        </clipPath>
-      </defs>
-      <rect x={0} y={0} width={width} height={frameHeight} fill={ground} />
+    <div className="map-web">
+      <p className="mw-title">{title}</p>
+      <p className="mw-source">{`${source} · ${basemapCredit}`}</p>
 
-      {titleLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={titleTop + i * layout.title.lead}
-          fill={ink}
-          fontSize={layout.title.fontSize}
-          fontWeight={layout.title.fontWeight}
+      {/* The stage: the one box handed whatever vertical room the window has left once every piece
+          of furniture above and below has taken its own (`render-web.mjs`'s `buildCss`,
+          `.mw-stage`). The viewport inside it keeps the bake's own aspect EXACTLY while the
+          fallback is what is showing — a stretched plate is a lie about distance and shape
+          (`geo-discipline.md`) and is never one of the outcomes. Live, the canvas IS the container
+          and the CSS releases the aspect. */}
+      <div className="mw-stage">
+        <div
+          className="mw-viewport"
+          style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
         >
-          {line}
-        </text>
-      ))}
-      {sourceLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={sourceTop + i * layout.source.lead}
-          fill={muted}
-          fontSize={layout.source.fontSize}
-        >
-          {line}
-        </text>
-      ))}
+          {/* LAYER 2 — the live MapTiler map (R1). */}
+          <div id="mw-map" className="mw-live-map" />
 
-      {/* ── The map: the baked plate, and every NON-EMPTY cell as its own hex <path>, filled by
-          class, and its own hit target (no separate invisible shape — cells tile with no gaps to
-          miss). ─────────────────────────────────────────────────────────────────────────────── */}
-      <g transform={`translate(${mapX},${mapY})`} clipPath="url(#plate-clip)">
-        <image href={plate} x={0} y={0} width={mapWidth} height={mapHeight} />
-        {ranked.map((cell, i) => {
-          const rank = i + 1;
-          const isSubject = cell.key === subjectKey;
-          const classIndex = binIndexUpperInclusive(cell.count, breaks);
-          const fill = ramp[classIndex]!;
-          const corners = hexCorners(
-            cell.cx * scale,
-            cell.cy * scale,
-            hexSize * scale * 0.97,
-          );
-          const d = `M${corners.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L")}Z`;
-          const detail = cellDetail(cell, rank, total, breaks);
-          return (
-            <path
-              key={cell.key}
-              className="pt"
-              d={d}
-              fill={fill}
-              stroke={isSubject ? accent : ground}
-              strokeWidth={isSubject ? 2.4 : 0.6}
-              tabIndex={0}
-              role="img"
-              aria-label={detail}
-              data-key={cell.key}
-              data-detail={detail}
+          {/* LAYER 1 — the baked plate and its cells. Geometry only: no `<text>` anywhere inside
+              this SVG, because text in a fluid SVG scales with the geometry
+              (`map-web-discipline.md`, "Text is HTML, not SVG") — which is exactly how this beat's
+              own legend caption came to be clipped at 375px. `role="group"`, not `role="img"`: an
+              `img` role would flatten the children into one opaque image. */}
+          <div id="mw-fallback" className="mw-fallback">
+            <svg
+              className="map"
+              viewBox={`0 0 ${frame.width} ${frame.height}`}
+              preserveAspectRatio="xMidYMid meet"
+              role="group"
+              aria-label={alt}
             >
-              <title>{detail}</title>
-            </path>
-          );
-        })}
-      </g>
+              <defs>
+                <clipPath id="plate-clip">
+                  <rect x={0} y={0} width={frame.width} height={frame.height} />
+                </clipPath>
+              </defs>
+              <g clipPath="url(#plate-clip)">
+                <image
+                  href={plate}
+                  x={0}
+                  y={0}
+                  width={frame.width}
+                  height={frame.height}
+                />
+                {ranked.map((cell) => {
+                  const corners = hexCorners(cell.cx, cell.cy, drawnSize);
+                  const d = `M${corners.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join("L")}Z`;
+                  const edge = cellEdge(cell, subjectKey, accent, ground);
+                  return (
+                    <path
+                      key={cell.key}
+                      d={d}
+                      fill={cellFill(cell, breaks, ramp)}
+                      stroke={edge.color}
+                      strokeWidth={edge.width}
+                      // Decorative geometry, exactly like the seed's own `<circle>`s: the reading,
+                      // the keyboard path and the pointer target all live on the overlay's button
+                      // for this cell, which is the only one of the three that survives the live
+                      // swap. `data-key` stays so a person auditing the file can pair a drawn
+                      // hexagon with its own button and its own plan feature.
+                      data-key={cell.key}
+                    />
+                  );
+                })}
+              </g>
+            </svg>
+          </div>
 
-      {/* ── The legend: a horizontal row of swatches, each with its own printed count range, plus
-          the aggregate-mode caption the type's own "one thing that goes wrong" requires stating
-          explicitly, every time (`references/types/hex-grid.md`). ────────────────────────────── */}
-      {captionLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={legendY + i * layout.caption.lead}
-          fill={muted}
-          fontSize={layout.caption.fontSize}
-          fontWeight={layout.caption.fontWeight}
-        >
-          {line}
-        </text>
-      ))}
-      {(() => {
-        let x = pad;
-        const y = legendSwatchY;
-        return ramp.map((shade, i) => {
-          const label = classRangeLabel(i, breaks);
-          const labelWidth = measure(label, layout.legendLabel);
-          const node = (
-            <Fragment key={shade}>
-              <rect
-                x={x}
-                y={y}
-                width={legendSwatch}
-                height={legendSwatch}
-                fill={shade}
-                stroke={muted}
-                strokeWidth={0.5}
+          {/* LAYER 3 — the overlay: one hit target per non-empty cell, a SIBLING of the two map
+              layers and never a child of either, because it belongs to BOTH. It is the only
+              keyboard path to the data. Positioned in PERCENTAGES here, which is what the fallback
+              needs; `live-map.mjs` repositions the same nodes with `map.project()` on every camera
+              move, which is what the live map needs. No `.point-label` — a hex cell has no name to
+              print (see this file's own header). */}
+          <div className="mw-overlay">
+            {ranked.map((cell, i) => {
+              const detail = cellDetail(cell, i + 1, total, breaks);
+              return (
+                <button
+                  key={cell.key}
+                  type="button"
+                  className="pt"
+                  style={{
+                    left: `${(cell.cx / frame.width) * 100}%`,
+                    top: `${(cell.cy / frame.height) * 100}%`,
+                    width: `max(${HIT_TARGET_PX}px, ${(cellWidth / frame.width) * 100}%)`,
+                    height: `max(${HIT_TARGET_PX}px, ${(cellHeight / frame.height) * 100}%)`,
+                  }}
+                  aria-label={detail}
+                  // The native, no-JS tooltip: this string is readable on hover with the inline
+                  // script absent entirely, exactly as it was when it lived in the path's `<title>`.
+                  title={detail}
+                  data-key={cell.key}
+                  data-detail={detail}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* The legend: entirely HTML, fixed-CSS-pixel swatches — a schematic class scale that reads
+          the same size regardless of how big the map itself is drawn, and that can no longer be
+          clipped by an SVG frame the way its caption was at 375px. The aggregate-mode caption the
+          type's own "one thing that goes wrong" requires stating explicitly is the caption here,
+          wrapping as normal prose. */}
+      <div className="mw-legend">
+        <p className="mw-legend-caption">{legendCaption}</p>
+        <div className="mw-legend-marks">
+          {ramp.map((shade, i) => (
+            <div key={shade} className="mw-legend-item">
+              <span
+                className="mw-legend-swatch"
+                style={{ background: shade }}
               />
-              <text
-                x={x + legendSwatch + 4}
-                y={y + legendSwatch - 4}
-                fill={muted}
-                fontSize={layout.legendLabel.fontSize}
-              >
-                {label}
-              </text>
-            </Fragment>
-          );
-          x +=
-            legendSwatch +
-            4 +
-            labelWidth +
-            (layout.name === "desktop" ? 22 : 14);
-          return node;
-        });
-      })()}
+              <span className="mw-legend-value">
+                {classRangeLabel(i, breaks)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
 
-      {caveatLines.map((line, i) => (
-        <text
-          key={line}
-          x={pad}
-          y={caveatTop + i * layout.note.lead}
-          fill={muted}
-          fontSize={layout.note.fontSize}
-        >
-          {line}
-        </text>
-      ))}
-    </svg>
+      <p className="mw-caveat">{caveat}</p>
+    </div>
   );
 }
 
@@ -406,9 +372,16 @@ export function HexGridWeb({
  * first row" carries the same meaning it does in `RegionTable`, and the order matches both the
  * map's own densest-first visual reading and the keyboard's Home/End cycling order.
  *
- * Rendered ONCE by `render-web.mjs` (not per layout — the same rows do not need saying twice), as
- * plain semantic HTML with real `<th scope="row">`/`<th scope="col">` so a screen reader's own
- * table navigation works on it, exactly the reasoning `RegionTable` gives for its own shape.
+ * Rendered ONCE by `render-web.mjs`, as plain semantic HTML with real `<th scope="row">`/`<th
+ * scope="col">` so a screen reader's own table navigation works on it, exactly the reasoning
+ * `RegionTable` gives for its own shape.
+ *
+ * IT SITS BELOW THE FITTED COLUMN, and that is a stated cost rather than an oversight. The beat
+ * itself — title, source, map, legend, caveat — fits one window (B5.1). This table's 156 rows do
+ * not, and the page scrolls by their height. Turning them into a disclosure widget is B5.2, the
+ * owner's own call, and it is deliberately not taken here: "rendered plainly and visibly, never
+ * behind a toggle" is the discipline's own rule, and the reader who most needs this table is the
+ * one an extra interaction step costs most.
  */
 export function DensityTable({
   cells,
@@ -426,7 +399,7 @@ export function DensityTable({
   ink: string;
   muted: string;
 }) {
-  const ranked = [...cells].sort((a, b) => b.count - a.count);
+  const ranked = rankedCells(cells);
   return (
     <table className="density-table" style={{ color: ink, borderColor: muted }}>
       <caption>
@@ -460,33 +433,3 @@ export function DensityTable({
     </table>
   );
 }
-
-export const DESKTOP_LAYOUT: WebLayout = {
-  name: "desktop",
-  width: 900,
-  pad: 32,
-  mapWidth: 836,
-  mapHeight: 520,
-  title: { fontSize: 20, fontWeight: 700, lead: 26 },
-  source: { fontSize: 13, fontWeight: 400, lead: 17 },
-  caption: { fontSize: 12.5, fontWeight: 600, lead: 17 },
-  note: { fontSize: 11.5, lead: 15 },
-  legendLabel: { fontSize: 11 },
-  bottomPad: 40,
-};
-
-export const NARROW_LAYOUT: WebLayout = {
-  name: "narrow",
-  width: 360,
-  pad: 16,
-  mapWidth: 328,
-  mapHeight: 204,
-  title: { fontSize: 15, fontWeight: 700, lead: 20 },
-  source: { fontSize: 10.5, fontWeight: 400, lead: 14 },
-  caption: { fontSize: 10.5, fontWeight: 600, lead: 14 },
-  note: { fontSize: 10, lead: 13 },
-  legendLabel: { fontSize: 9.5 },
-  bottomPad: 28,
-};
-
-export const LAYOUTS = [DESKTOP_LAYOUT, NARROW_LAYOUT];

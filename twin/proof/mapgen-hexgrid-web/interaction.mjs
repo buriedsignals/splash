@@ -7,25 +7,25 @@
 // of `twin-map-web/assets/interaction.mjs` — nothing under a beat may import out of a skill or
 // another beat.
 //
-// ADAPTATION FOR A HEX-GRID (polygon hit targets, not point circles): a hex cell's own visible fill
-// IS its hit target — cells tile the frame edge-to-edge with no gaps between them, unlike a symbol
-// map's small circles floating in open water, so there is no separate, larger invisible hit shape
-// to wire here (`HexGridWeb.tsx`'s own header comment: "cells tile edge-to-edge with no gaps to
-// miss"). That turns out to need ZERO code changes to the mechanics below: every `.pt` element,
-// whatever shape it is, already gets hover, tap and keyboard wired identically — `show()` reads
-// `data-detail` off whichever element fired the event, and `getBoundingClientRect()` works the same
-// on an SVG `<path>` as it does on a `<circle>`. The only thing that changed in adapting this file
-// is this header comment.
+// EVERYTHING BELOW THIS HEADER IS THE SEED'S FILE, BYTE FOR BYTE, and it converged back to it when
+// ruling R1 was retrofitted into this beat (2026-08-10). It had forked: while the hit target was the
+// hex `<path>` itself, `initAll` walked `svg.map` and `initMap` took an `<svg>` argument. The live
+// swap ends that — a plate-pixel path is in the wrong place the moment the camera differs from the
+// bake's — so this beat's hit targets are now HTML `<button class="pt">`s in the overlay, exactly
+// the seed's own markup, and the seed's own wiring is exactly the wiring they need. The fork bought
+// nothing: `show()` always read `data-detail` off whichever element fired, and
+// `getBoundingClientRect()` works the same on a `<path>` as on a `<button>`.
 //
-// `initMap`/`initAll` are DOM wiring and are NOT unit-tested here: per `twin-doctrine`'s own
+// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `twin-doctrine`'s own
 // verification rule, an interactive genre is verified by driving a real browser, not by asserting
-// against a DOM emulation nobody looked at.
+// against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 
-/** Wires one `<svg class="map">` — its `.pt` cells and the shared tooltip element — to hover, tap
- *  and keyboard. Every cell already carries its own `data-detail` string and its own `aria-label`;
- *  this function never invents either. */
-export function initMap(svg, tooltip) {
-  const points = Array.prototype.slice.call(svg.querySelectorAll(".pt"));
+/** Wires every `.pt` button on the page to hover, tap and keyboard, sharing the one tooltip
+ *  element. Every point already carries its own `data-detail` string and its own `aria-label`;
+ *  this function never invents either — and never needs to know which points a filter has hidden:
+ *  a hidden point (`display: none`, the CSS filter's own doing) is unreachable by Tab automatically,
+ *  the same native behaviour that makes this file need no filter-awareness of its own. */
+export function initPoints(points, tooltip) {
   if (points.length === 0) return;
 
   function clear() {
@@ -45,9 +45,9 @@ export function initMap(svg, tooltip) {
     tooltip.style.top = y + "px";
   }
 
-  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each hex
-  // cell IS its own hit target (no proximity resolver or separate hit shape needed — see this
-  // file's own header note).
+  // Hover and tap share one path: pointer events fire for mouse, pen and touch alike. Each point
+  // is already its own fixed-size hit target (MapWebSeed.tsx's own `HIT_TARGET_PX`), so no
+  // proximity resolution is needed the way the chart genre's shared `.hit-area` overlay needs one.
   points.forEach((point, i) => {
     point.addEventListener("pointerenter", function (evt) {
       show(point, evt.clientX, evt.clientY);
@@ -57,10 +57,11 @@ export function initMap(svg, tooltip) {
     });
     point.addEventListener("pointerleave", clear);
 
-    // Keyboard: every cell is already `tabIndex={0}` at build time (works with this script absent
-    // entirely — see the seed's own doc-comment). This layer adds the same detail box hover shows,
-    // plus Left/Right/Home/End to move between cells without leaving focus, in the same
-    // densest-first order the accessible table below the map also reads in.
+    // Keyboard: a <button> is already natively focusable and reachable with the script absent
+    // entirely (works with JS off, exactly like the `title` attribute's own native tooltip — see
+    // MapWebSeed.tsx's own doc-comment). This layer adds the same detail box hover shows, plus
+    // Left/Right/Home/End to move between points without leaving focus, in the same largest-first
+    // order the accessible table below the map also reads in.
     point.addEventListener("focus", function () {
       const rect = point.getBoundingClientRect();
       show(point, rect.left + rect.width / 2, rect.top);
@@ -87,7 +88,7 @@ export function initMap(svg, tooltip) {
   });
 
   document.addEventListener("pointerdown", function (evt) {
-    if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    if (points.some((p) => p.contains(evt.target)) || tooltip.contains(evt.target)) return;
     clear();
   });
 }
@@ -95,12 +96,11 @@ export function initMap(svg, tooltip) {
 export function initAll() {
   const tooltip = document.getElementById("tooltip");
   if (!tooltip) return;
-  document.querySelectorAll("svg.map").forEach(function (svg) {
-    initMap(svg, tooltip);
-  });
+  const points = Array.prototype.slice.call(document.querySelectorAll(".pt"));
+  initPoints(points, tooltip);
 }
 
-// Guarded rather than a bare top-level call: this file is also imported directly by a future test
-// in a context with no `document`. In the browser the guard is always true, so the inlined
-// `<script>` still self-starts the moment it is parsed, unchanged.
+// Guarded rather than a bare top-level call: this file is also imported directly by
+// `test/render-web.test.ts` in a context with no `document`. In the browser the guard is always
+// true, so the inlined `<script>` still self-starts the moment it is parsed, unchanged.
 if (typeof document !== "undefined") initAll();
