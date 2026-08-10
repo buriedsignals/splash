@@ -1,5 +1,9 @@
 # One line, four readings — life expectancy in Switzerland, 1876–2023
 
+**Type:** line (single series, one picture read four ways). **Medium/genre:** chart / **scrolly**.
+**Channel:** article web, one self-contained page — no export frame, because the scroll IS the
+artifact.
+
 A scroll-driven interactive. **One chart. The steps do not swap pictures — they interrogate the same
 picture**, and the scroll drives it: a run of the line lifted into the accent, a band called out
 behind it, and finally both axes flying in on the last twelve years.

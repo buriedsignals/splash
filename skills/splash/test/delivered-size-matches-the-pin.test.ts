@@ -20,6 +20,30 @@
  * grow. When it reaches zero, `renderStill`'s `scale` default of 2 retires with it and the two
  * rasterisers in `chart-beat` become one.
  *
+ * ── WHY ONE COUNT BECAME TWO, 2026-08-10 ──────────────────────────────────────────────────────
+ *
+ * The count was 43, then 40, and most of what it counted was never going to move. **A web beat
+ * takes no export size at all** — ruling R2's whole point is that a web chart fills the container
+ * the newsroom gives it, so a pinned 1920x1080 would be a lie about a fluid frame — and **a scrolly
+ * exports no frame**: its artifact is a page that is scrolled, and there is nothing whose IHDR
+ * could be read. 29 of the 40 were one of those two. A number mixing "not done" with "not
+ * applicable" cannot say when the work is finished, and this one would have bottomed out in the
+ * high twenties and stayed there for ever, reading like a backlog.
+ *
+ * So the beats are SPLIT, and the split is derived from each beat's OWN GENRE rather than from a
+ * list of names — a list stops covering whatever is added after it is written, which is the same
+ * argument that made this a count in the first place. Every `BRIEF.md` in this corpus states its
+ * medium and genre in its own first paragraph; `genreOf` reads that line, and a brief it cannot
+ * read is a FAILURE naming the beat, never a silent "not applicable". Two beats had no such line
+ * and one wrote it in prose no parser could take; all three were fixed in the brief, not exempted
+ * here.
+ *
+ * `BEATS_OWING_A_PIN` is now the number that means something: beats whose delivered artifact IS a
+ * frame — a PNG or an mp4 with fixed dimensions — and which have not pinned one. It reaches zero
+ * when the migration is done. The other count is reported for the record and asserted from the
+ * OTHER side: a genre that exports no frame must not pin one either, so the ratchet cannot be
+ * gamed by pinning a size onto a web beat.
+ *
  * ── THE MUTATIONS ─────────────────────────────────────────────────────────────────────────────
  * In an rsync of the tree under `/tmp/w4c3mut/`, never in this working tree. Baseline 4 pass/0 fail.
  *
@@ -31,6 +55,23 @@
  *                                                                  ratchet, so it cannot go
  *                                                                  vacuously green
  *   a pinned beat's BRIEF names a size the table does not have RED 2/2
+ *
+ * And for the split, in an rsync under `/tmp/mut-split/`:
+ *
+ *   `BEATS_OWING_A_PIN` lowered by one                         RED, listing the beats that owe
+ *   the genre line deleted from one BRIEF                      RED naming that beat as
+ *                                                                  unclassifiable — NOT a quiet
+ *                                                                  promotion to "not applicable"
+ *   a web beat given `size: landscape`                         RED from the other side
+ *   `scrolly` added to the frame-exporting set                 RED twice — the seven scrollys are
+ *                                                                  suddenly owed a pin they can
+ *                                                                  never deliver, AND the genre is
+ *                                                                  now on both sides at once. The
+ *                                                                  second assertion was written
+ *                                                                  because this mutation reddened
+ *                                                                  only the ratchet on its first
+ *                                                                  run, leaving the classification
+ *                                                                  claiming to be complete.
  */
 import { describe, it, expect } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -40,24 +81,78 @@ import {
   parseBriefFrontMatter,
   readPngSize,
 } from "../../chart-beat/scripts/sizes.mjs";
+import { GENRE_CATALOG } from "../../storyboard/scripts/genre-catalog.mjs";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
 
 /**
- * How many beat directories still carry no pinned size. MAY ONLY GO DOWN.
+ * How many beats that SHOULD pin an export size still have not. MAY ONLY GO DOWN, AND IT REACHES
+ * ZERO — which the count it replaces never could.
  *
- * Measured 2026-08-11: 76 beats hold a `BRIEF.md`, and the count below is what remains unpinned as
- * four lots migrate in parallel. The rest are the migration — the remaining chart statics, the
- * remaining chart videos, the chart webs, the map and image genres, and the scrollys, which have no
- * export size at all and are the reason this is a count of what is UNPINNED rather than a count of
- * what is wrong.
+ * Measured 2026-08-10 off the tree: 76 beats hold a `BRIEF.md`; 47 of them deliver a frame (25
+ * static, 22 video) and 29 do not (22 web, 7 scrolly). Of the 39 unpinned, **10 owe a pin** and 29
+ * are the genres that take none. Those 10 are the migration that is actually left: the remaining
+ * map statics and map videos, `vidz-diverging-bar-eu-per-capita`, and `co2-suisse`.
  *
- * It is re-measured off the tree rather than decremented by hand each time, because four lots are
- * migrating in parallel: a number typed from a stale read could go UP, which is the one thing a
+ * It is re-measured off the tree rather than decremented by hand each time, because several lots
+ * migrate in parallel: a number typed from a stale read could go UP, which is the one thing a
  * ratchet exists to forbid.
  */
-const UNPINNED_BEATS = 40;
+const BEATS_OWING_A_PIN = 10;
+
+/**
+ * Which genres deliver a FRAME — an artifact with fixed pixel dimensions that a pinned size can be
+ * checked against, by reading the file's own bytes.
+ *
+ * Stated as a fact about the two genres rather than as a list of beats, and asserted below to cover
+ * every genre `GENRE_CATALOG` knows, so a genre added to the catalog cannot default into "takes no
+ * size" without somebody deciding it here.
+ *
+ *   static — a PNG. `readPngSize` reads its IHDR.
+ *   video  — an mp4. Its dimensions come from `ffprobe`, and `assertDeliveredSize` takes them.
+ *   web    — NO. Ruling R2: a web chart fills the container the newsroom gives it, so a pinned
+ *            1920x1080 would be a claim about a frame that does not exist. `web-frame-is-fluid`
+ *            is the guard for that genre, and it asserts the opposite property.
+ *   scrolly— NO. The artifact is a page that is scrolled. There is no frame to measure.
+ */
+const GENRES_EXPORTING_A_FRAME = new Set(["static", "video"]);
+
+/** The other side of the same decision, written out rather than inferred as "everything else", so a
+ *  new genre in the catalog belongs to neither set until somebody says which. */
+const TAKES_NO_SIZE = new Set(["web", "scrolly"]);
+
+/** Every genre the storyboard's own catalog can reach, medium stripped off the pair key. */
+const KNOWN_GENRES = new Set(
+  Object.keys(GENRE_CATALOG).map((pair) => pair.slice(pair.indexOf("/") + 1)),
+);
+
+/**
+ * THE BEAT'S GENRE, READ OUT OF THE BEAT'S OWN BRIEF.
+ *
+ * Every `BRIEF.md` in this corpus opens by naming its medium and its genre — `**Medium/genre:**
+ * chart / static`, `**Medium / genre:** chart / **web**`, and in one French brief `**Médium /
+ * genre :** chart / static`. The spelling wanders, the fact does not, so this reads the paragraph
+ * rather than a fixed column: it takes everything up to the next blank line (a brief that wraps
+ * mid-phrase is common and cost the first version of this reader two wrong answers), strips the
+ * bold markers, and takes the first word after the slash.
+ *
+ * Returns `null` when it cannot find one, and every caller treats `null` as a FAILURE naming the
+ * beat. That is the whole reason this is a derivation and not an exemption list: an unreadable
+ * brief must never be promoted to "this beat takes no size".
+ */
+export function genreOf(brief: string): string | null {
+  const marker =
+    /\*\*\s*M[ée]d[iy]?um\s*\/?\s*genre\s*:?\s*\*\*\s*:?\s*([\s\S]*?)(?:\n\s*\n|$)/i.exec(
+      brief,
+    );
+  if (!marker) return null;
+  const paragraph = marker[1].replace(/\*\*/g, " ").replace(/\s+/g, " ");
+  const afterSlash = paragraph.split("/")[1];
+  if (!afterSlash) return null;
+  const word = /[A-Za-z]+/.exec(afterSlash)?.[0]?.toLowerCase() ?? null;
+  return word && KNOWN_GENRES.has(word) ? word : null;
+}
 
 function beatDirs(): string[] {
   if (!existsSync(PROOF)) return [];
@@ -78,14 +173,23 @@ function pngsUnder(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const beats = beatDirs().map((dir) => ({
-  dir,
-  label: relative(TWIN, dir),
-  pinned:
-    parseBriefFrontMatter(readFileSync(join(dir, "BRIEF.md"), "utf8"))?.size ??
-    null,
-}));
+const beats = beatDirs().map((dir) => {
+  const brief = readFileSync(join(dir, "BRIEF.md"), "utf8");
+  return {
+    dir,
+    label: relative(TWIN, dir),
+    pinned: parseBriefFrontMatter(brief)?.size ?? null,
+    genre: genreOf(brief),
+  };
+});
 const pinned = beats.filter((b) => b.pinned !== null);
+const unclassified = beats.filter((b) => b.genre === null);
+const owesAPin = beats.filter(
+  (b) => b.pinned === null && GENRES_EXPORTING_A_FRAME.has(b.genre!),
+);
+const takesNoSize = beats.filter(
+  (b) => b.genre !== null && !GENRES_EXPORTING_A_FRAME.has(b.genre),
+);
 
 describe("a beat that pins an export size delivers a file that measures it", () => {
   it("should find the beats and the pins, so nothing below can go vacuously green", () => {
@@ -143,14 +247,68 @@ describe("a beat that pins an export size delivers a file that measures it", () 
     expect(wrong).toEqual([]);
   });
 
-  it("should have no more unpinned beats than the ratchet allows", () => {
-    // The migration, as a number that may only go down. Lower it in the same commit that migrates a
-    // beat; there is no way to raise it without this line appearing in the diff.
-    const unpinned = beats.filter((b) => b.pinned === null);
-    expect([unpinned.length <= UNPINNED_BEATS, unpinned.length]).toEqual([
+  it("should read a genre out of every brief, so nothing is quietly excused", () => {
+    // The load-bearing half of the split. A beat whose genre cannot be read is NOT "not
+    // applicable" — it is unclassifiable, and it fails here by name until its own brief says what
+    // it is. Without this the ratchet below could be walked to zero by deleting a line.
+    expect(unclassified.map((b) => b.label)).toEqual([]);
+  });
+
+  it("should classify every genre the catalog can reach as exporting a frame or not", () => {
+    // So a genre added to `GENRE_CATALOG` cannot default into "takes no size" unnoticed: it turns
+    // this red until somebody decides which side it is on.
+    const undecided = [...KNOWN_GENRES].filter(
+      (g) => !GENRES_EXPORTING_A_FRAME.has(g) && !TAKES_NO_SIZE.has(g),
+    );
+    expect(undecided).toEqual([]);
+    // And it cannot be on BOTH sides. Without this the two sets can be widened until every genre
+    // is in each of them and every assertion above goes quietly green — which is exactly what the
+    // "scrolly exports a frame" mutation did before this line: it turned the ratchet red, where it
+    // belongs, but left the classification itself claiming to be complete.
+    const both = [...KNOWN_GENRES].filter(
+      (g) => GENRES_EXPORTING_A_FRAME.has(g) && TAKES_NO_SIZE.has(g),
+    );
+    expect(both).toEqual([]);
+  });
+
+  it("should have no more beats OWING a pin than the ratchet allows", () => {
+    // The migration that is actually left, as a number that may only go down — and one that
+    // REACHES ZERO, unlike the count of everything unpinned, which mixed the work with the 29
+    // beats that will never take a size. Lower it in the same commit that migrates a beat; there
+    // is no way to raise it without this line appearing in the diff.
+    expect([
+      owesAPin.length <= BEATS_OWING_A_PIN,
+      owesAPin.length,
+      owesAPin.map((b) => `${b.label} (${b.genre})`),
+    ]).toEqual([
       true,
-      unpinned.length,
+      owesAPin.length,
+      owesAPin.map((b) => `${b.label} (${b.genre})`),
     ]);
+  });
+
+  it("should let no frameless genre pin a size it cannot deliver", () => {
+    // The split asserted from the OTHER side, which is what stops the ratchet being gamed: pinning
+    // `size: landscape` onto a web beat would drop it out of the count above while delivering
+    // nothing measurable. A web chart fills its container (R2) and a scrolly exports no frame.
+    const wrong = takesNoSize
+      .filter((b) => b.pinned !== null)
+      .map((b) => `${b.label} (${b.genre}) pins ${b.pinned}`);
+    expect(wrong).toEqual([]);
+  });
+
+  it("should report the split, so the two numbers are on the record", () => {
+    const unpinned = beats.filter((b) => b.pinned === null);
+    console.log(
+      `size pins: ${beats.length} beats — ${pinned.length} pinned, ${unpinned.length} not. ` +
+        `Of those ${unpinned.length}: ${owesAPin.length} owe a pin ` +
+        `(${owesAPin.map((b) => b.label.replace("proof/", "")).join(", ") || "none"}), ` +
+        `${unpinned.length - owesAPin.length} take no export size at all ` +
+        `(web fills its container, a scrolly exports no frame).`,
+    );
+    expect(owesAPin.length + (unpinned.length - owesAPin.length)).toBe(
+      unpinned.length,
+    );
   });
 });
 

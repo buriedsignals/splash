@@ -1,8 +1,9 @@
 # Beat — Poland emits 2.10× as much CO₂ per person as Sweden
 
-**Type:** choropleth. **Medium/genre:** map / video (with a static frame from the same component
-family: `render/static.png` at 900 × 560 over a 496 px plate; `render/choropleth.mp4` at
-1080 × 1080, 30 fps, 240 frames = 8.0 s over a 620 px plate).
+**Type:** choropleth. **Medium/genre:** map / static **and** map / video — two genres from one
+folder, with a static frame from the same component family: `render/static.png` at 900 × 560 over a
+496 px plate; `render/choropleth.mp4` at 1080 × 1080, 30 fps, 240 frames = 8.0 s over a 620 px
+plate.
 
 ## Claim
 
