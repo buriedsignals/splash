@@ -88,7 +88,16 @@ const SEED = {
 const PLATE_SIZE = 1000;
 const DEFAULT_PLATE_DIR = `/tmp/map-twin-web/plate-${PLATE_SIZE}`;
 const DEFAULT_DATA_PATH = join(HERE, "../assets/sample-data/regions.json");
-const DEFAULT_OUT_DIR = "/tmp/map-web-twin";
+// The seed's own rendered beat lands in this skill's `output-proof/`, beside the preview it already
+// ships, and is COMMITTED — carrying the placeholder, never a key (R1b).
+//
+// It used to default to `/tmp/map-web-twin`, and that is the defect this line closes rather than a
+// tidying: with no live page anywhere in the repository, the one guard that drives the live layer
+// (`test/live-map.test.ts`) was gated on `/tmp/mw-live/population.html` — a path NO script in this
+// tree produces. It existed on one machine because somebody rendered it by hand. On a fresh clone
+// the guard printed "live map not driven" and passed, so the whole live layer could be deleted in
+// silence. A guard has to point at a file the repository itself makes.
+const DEFAULT_OUT_DIR = join(HERE, "..", "output-proof");
 const OUTPUT_NAME = "population.html";
 // =========================================
 
@@ -415,7 +424,6 @@ body {
   }
   .mw-chip:has(input:checked) { font-weight: 700; }
 }
-.mw-zoom-toggle-label { display: inline-block; font-size: 13px; margin: 0 0 8px; cursor: pointer; }
 /* The stage: the leftover height, and the container the map is measured against. 'container-type:
    size' is what lets the viewport below bound itself by the stage's HEIGHT as well as its width —
    CSS has no other way to say "as wide as you like, but never taller than the room left". */

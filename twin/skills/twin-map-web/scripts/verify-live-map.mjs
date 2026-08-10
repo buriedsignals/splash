@@ -308,7 +308,7 @@ if (import.meta.main) {
     const at = argv.indexOf(name);
     return at >= 0 ? argv[at + 1] : fallback;
   };
-  const htmlPath = flag("--html", "/tmp/mw-live/population.html");
+  const htmlPath = flag("--html", join(import.meta.dirname, "..", "output-proof", "population.html"));
   // The Splash root's own `.env` — the same file `recordKey` writes into. See `splash-root.mjs`
   // for why a fixed three-level climb was the wrong shape.
   const envPath = splashEnvPath(import.meta.dirname);

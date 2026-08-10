@@ -4,6 +4,16 @@
 // `references/map-web-discipline.md`'s "Verification" section has always demanded in prose and that
 // nothing mechanical performed until this file existed.
 //
+// WHICH LAYER IT DRIVES, said before anything else because it was not said for a while and the
+// audit had to measure it: THE FALLBACK. Ruling R1 made map × web a live MapTiler map in two
+// layers, and the page rendered here carries the R1b placeholder rather than a key, so the live
+// layer never boots and every check below is about the baked plate, its circles and its HTML
+// overlay. That is a layer worth guarding — it is what a reader gets offline, with JavaScript off
+// and on the day a key is rotated — but it is not the beat's live map, and this file must never be
+// read as proving one. The live map's own probe is `scripts/verify-live-map.mjs`, run from
+// `test/live-map.test.ts` against a keyed copy in a temp directory. §0 below asserts the reading
+// rather than trusting it.
+//
 // WHY REAL INPUT, AND WHY THAT IS THE WHOLE POINT. This genre already shipped one defect of exactly
 // the shape this file exists to catch: an HTML overlay without `pointer-events: none` sat on top of
 // the map and swallowed every hover, while keyboard focus still worked perfectly — because
@@ -188,6 +198,33 @@ const browser = await puppeteer.launch({
 
 try {
   const page = await browser.newPage();
+
+  // ── 0. WHICH LAYER AM I MEASURING? ───────────────────────────────────────────────────────────
+  // Asked first, and answered out loud, because the honest answer is "the fallback" and for a while
+  // nothing said so. Ruling R1 made this genre a live MapTiler map; the page rendered here carries
+  // the R1b PLACEHOLDER instead of a key, so `planIsUnkeyed` is true, `initLiveMap` returns at once
+  // and `html.mw-live` is never set. Every check below therefore describes layer 1 — the baked
+  // plate, its SVG circles, its HTML overlay — which is exactly the layer that has to keep working
+  // offline, with JavaScript off, and on the day a key is rotated.
+  //
+  // What it is NOT is a check of the live map. That is `scripts/verify-live-map.mjs`, driven from
+  // `test/live-map.test.ts` against a KEYED temp copy. The audit found this file described as the
+  // genre's behaviour check while it silently measured the other layer, so this assertion pins the
+  // reading: if a keyed page were ever driven here, the aspect check at §1 would be asserting the
+  // plate's shape against a canvas the ruling deliberately lets fill its container, and would fail
+  // for the wrong reason.
+  await page.setViewport({ width: VIEWPORTS[0].w, height: VIEWPORTS[0].h, deviceScaleFactor: 1 });
+  await page.goto(url, { waitUntil: "load" });
+  const layer = await page.evaluate(() => ({
+    live: document.documentElement.classList.contains("mw-live"),
+    hasLivePlan: !!document.getElementById("mw-live-plan"),
+    fallbackShown: !document.getElementById("mw-fallback")?.hidden,
+  }));
+  check(
+    "layer: this file drives the FALLBACK, and the page it drives still has a live layer to fall back FROM",
+    layer.hasLivePlan && !layer.live && layer.fallbackShown,
+    `live plan present ${layer.hasLivePlan}, html.mw-live ${layer.live}, fallback shown ${layer.fallbackShown}`,
+  );
 
   // ── 1. FIT: the beat is one window tall, at every width, and the plate keeps its own shape ────
   for (const { w, h } of VIEWPORTS) {
