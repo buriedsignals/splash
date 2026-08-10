@@ -1128,6 +1128,15 @@ panned or zoomed would have their view taken back by the next step — worse tha
 gesture. The map is constructed `interactive: false`: no drag, no wheel, no double-click zoom, no
 keyboard pan, no touch, no control widget. **Do not "fix" this by adding controls.**
 
+**And `interactive: false` is load-bearing beyond the ruling, which is the thing to check if anyone
+ever reaches for `true`.** A live map fills the frame, so the reader's pointer naturally RESTS on
+it — and an interactive MapLibre canvas swallows the wheel. The piece would then refuse to scroll
+at exactly the position a reader is most likely to be pointing at. Verified rather than reasoned:
+a real `Input.dispatchMouseEvent` wheel (not `scrollTop =`, which bypasses hit testing) dispatched
+25 times with the pointer at (300, 600), in the middle of the map, moved the scrollport **0 → 3000
+px** and `data-progress` **0.0000 → 2.4688** on both live map scrollys tested, with the map's own
+zoom moving only because the scroll took it there.
+
 **The map takes the whole frame.** Live tiles fill the container edge to edge, which is what makes
 the full-width instruction free: what the beat DRAWS stays at the plate's own fitted scale, so
 nothing it counts is cropped, while the ground under it reaches every edge. One consequence to check
