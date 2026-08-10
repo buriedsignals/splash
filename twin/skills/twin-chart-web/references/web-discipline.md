@@ -765,3 +765,50 @@ pure `nearestIndex` helper, that the `<svg>` carries no `<text>`, that the share
 DOM wiring in `assets/interaction.mjs`'s `initChart`, the fluid stretch at a real container width,
 and the filter's own keyboard/no-JS behaviour are proven, or not, by opening the rendered file at
 several widths and using it.
+
+## The entrance, and the one thing it may never become
+
+**The owner asked for an entrance animation for the whole graphic and, asked what style, answered
+*"dans le même style que la vidéo"*.** That answer decides the design: the web entrance **replays
+the video's own choreography** — `twin-chart-video/assets/timing.ts`'s five leading events, in its
+order, under its ordering rule — rather than inventing a second animation grammar that would drift
+from the first. The vocabulary is not decoration on this decision, it *is* the decision: borrowing
+it is what makes the entrance carry the ARGUMENT'S order. An entrance that fades the whole figure in
+as one layer is `motion-grammar.md`'s first anti-pattern, "motion added for energy", with a CSS
+property attached — and `web-entrance-is-an-addition.test.ts` refuses it mechanically by requiring
+at least three distinct delays.
+
+**The contract is copied, not imported** (`assets/entrance.ts`), because nothing under a skill may
+import out of it. What was copied verbatim, what was deliberately changed (`hold` dropped,
+milliseconds not frames, motion ÷3 and the two pauses ÷5) and why is written in that file's own
+header, event by event, with each video ancestor beside it.
+
+**The mechanism belongs to the BEAT; the contract owns only when and in what order.** A line's
+reveal is a head advancing along its own path, a bar chart's is bars growing from a baseline, a
+pyramid's is two rows meeting. `ChartWebSeed.tsx` demonstrates one; it is not a general animator,
+for the same reason nothing else in this genre is.
+
+**Three rules that are not negotiable, and the last one is not a nicety.**
+
+1. **SSR ships the settled page and every keyframe runs *to* it.** The animation takes something
+   away and gives it back. With the script absent there is no `entered` class, no animation, and the
+   complete graphic — driven: 0 animations, `transform: none`, minimum layer opacity 1.
+2. **The trigger is the reader's view, never the load.** An embed sits below the fold of an article;
+   an entrance that plays on load plays to nobody, and that is worse than a static chart.
+3. **`prefers-reduced-motion: reduce` gives the finished graphic instantly, with no motion at all.**
+   Not an animation that completes in 0ms — the keyframes and their rules live entirely inside
+   `@media (prefers-reduced-motion: no-preference)`, so under `reduce` there is nothing to resolve.
+   This is `twin-scrolly`'s precedent (put the animated property out of reach rather than overriding
+   it back), and it is the one place in this genre where "degrade gracefully" is a legal expectation.
+
+**Measured, not chosen: the reveal is a clip wipe and not a `stroke-dashoffset`.** A probe drove the
+dash form under this genre's own `vector-effect="non-scaling-stroke"` and
+`preserveAspectRatio="none"`: **99 % drawn at t=0 and 80 % at the end** — the two coordinate spaces
+disagree. The wipe tracked the clock exactly, and on a series monotone in x it is the same picture,
+frame for frame, as the video's `drawnSoFar`.
+
+**Verification is `scripts/verify-entrance.mjs`, and it measures GEOMETRY twice** — the clip's own
+`scaleX` out of the computed matrix, and how many of the beat's segments are hit-testable at their
+own midpoints through `elementsFromPoint`. An opacity fade over a finished picture reports every
+segment hittable from the first sample; that is the failure this project already met on the scrolly,
+and it is the signature these two instruments exist to tell apart.

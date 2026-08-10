@@ -141,6 +141,12 @@ async function renderWeb({ component, props, outDir, name }) {
   // driven guard walks a real browser for.
   assertOneVocabulary(markup, filterIndex);
 
+  // THE ENTRANCE IS READ OFF THE MARKUP, never passed in. A beat declares an entrance the same way
+  // it declares a filter — by DOING it, here by tagging its own layers with `data-entrance-motion`
+  // — and a beat that declares none gets no keyframes, no rules and no class ever added. See
+  // `buildCss`'s own `entranceRules`.
+  const declaresEntrance = /\sdata-entrance-motion="/.test(markup);
+
   const interactionSource = await readFile(
     join(HERE, "../assets/interaction.mjs"),
     "utf8",
@@ -154,7 +160,7 @@ async function renderWeb({ component, props, outDir, name }) {
 <title>${escapeHtml(props.title)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-${buildCss({ ground: props.ground, accent: props.accent, ...furniture, filter: props.filter ?? null })}
+${buildCss({ ground: props.ground, accent: props.accent, ...furniture, filter: props.filter ?? null, entrance: declaresEntrance })}
 </style>
 </head>
 <body>
@@ -340,7 +346,89 @@ const FILTER_CHROME_CSS = `
 }
 `.trim();
 
-function buildCss({ ground, accent, ink, muted, grid, filter = null }) {
+/**
+ * THE ENTRANCE — the whole of it, and it is emitted ONLY for a beat that declared layers.
+ *
+ * The design, in one paragraph. SSR ships the SETTLED page, exactly as it did before this existed:
+ * every keyframe below runs *to* the state the element already has, so the finished graphic is what
+ * the file contains and the animation only ever takes something away and gives it back. An
+ * `IntersectionObserver` (`assets/interaction.mjs`'s `initEntrance`) adds ONE class to the figure
+ * when it enters the viewport; CSS gives each LAYER its own delay, read off the entrance contract
+ * (`assets/entrance.ts`) and written on the element as a custom property by the component. **No
+ * JavaScript writes an opacity, a transform or a length.** With the script absent: no class, no
+ * animation, the complete page. Under `prefers-reduced-motion: reduce`: the whole block below does
+ * not exist, so there is no `animation-name` to resolve and the change is instant in every engine
+ * with no branch anywhere.
+ *
+ * WHY THE KEYFRAMES ARE INSIDE THE MEDIA QUERY TOO, and not just the rules that use them. This is
+ * `twin-scrolly`'s precedent, argued in `skills/twin-scrolly/references/scrolly-discipline.md`: put
+ * the animated property itself out of reach under `reduce`, rather than overriding it back with a
+ * second rule. A `@media (prefers-reduced-motion: reduce) { * { animation: none } }` reset is the
+ * other way people write this, and it is worse — it depends on a cascade nobody can see, it can be
+ * outweighed, and it leaves an `animation-name` resolving on the element for anything that asks.
+ * Here, under `reduce`, the guard's own assertion is literally true: nothing animates because
+ * nothing that animates was ever defined.
+ *
+ * THE THREE MOTIONS, and the reason there are exactly three:
+ *
+ *   - `fade` — a layer of FURNITURE arriving, or a LABEL arriving on the mark it names. Opacity
+ *     only, which composites and never reflows.
+ *   - `wipe` — `transform: scaleX()` from the element's own origin. Used by the reference rule
+ *     (which is a `<line>` starting at x=0, so scaling it IS advancing its far end — the video's
+ *     `interpolate(referenceProgress, [0, 1], [plot.left, plot.right])`, expressed as a transform)
+ *     and by the reveal (a `<rect>` inside a `<clipPath>`, at x=0, whose growth uncovers the curve
+ *     left to right — the video's `drawnSoFar`, expressed as a clip).
+ *   - `land` — `transform: scale()` on the SUBJECT, from nothing to its full size. The component
+ *     guarantees the origin by drawing the mark at (0,0) inside a translated `<g>`, so there is no
+ *     `transform-box`/percentage question to get wrong at two different engine versions.
+ *
+ * `transform-box: view-box` with `transform-origin: 0 0` is stated on both transform motions rather
+ * than left to the initial value, which has changed in Chrome's own lifetime (`border-box` then
+ * `view-box`) and resolves `0 0` to two different points under `fill-box`. Both elements are
+ * authored at their own local origin, so `0 0` is the left edge of the wipe and the centre of the
+ * subject — but only if the box is the view box, so it is said.
+ *
+ * ONLY `opacity` AND `transform` ARE ANIMATED. Nothing here animates a width, a height, a length,
+ * an inset or a `stroke-dashoffset` — the first four because they are layout and would move the
+ * words around the graphic, and the last because it was MEASURED not to work: a probe drove
+ * `pathLength="1"` + `stroke-dasharray: 1` + an animated `stroke-dashoffset` on a path carrying this
+ * genre's own `vector-effect="non-scaling-stroke"`, under this genre's own
+ * `preserveAspectRatio="none"`, and the line was already 99 % drawn at t=0 and had reached only 80 %
+ * at the end. The two coordinate spaces disagree. The wipe was driven in the same probe and tracked
+ * the clock exactly (9 % / 24 % / 50 % / 75 % / 99 % at 200/500/1000/1500/2000ms).
+ */
+function entranceCss() {
+  return `
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes chart-entrance-fade { from { opacity: 0; } }
+  @keyframes chart-entrance-wipe { from { transform: scaleX(0); } }
+  @keyframes chart-entrance-land { from { transform: scale(0); } }
+
+  /* One class, added once, by an IntersectionObserver — never on load. An embed can sit far below
+     the fold of an article, and an entrance nobody watched is a worse artifact than a static one.
+     \`backwards\` and not \`forwards\`: the element holds the keyframe's FROM state through its own
+     delay (without it every layer would be fully drawn until its turn came, which is no entrance at
+     all), and once the animation is over the element returns to its own settled style rather than
+     being frozen at a computed value. */
+  .chart-figure.entered [data-entrance-motion] {
+    animation-duration: var(--e-dur);
+    animation-delay: var(--e-delay);
+    animation-timing-function: var(--e-ease, linear);
+    animation-fill-mode: backwards;
+  }
+  .chart-figure.entered [data-entrance-motion="fade"] { animation-name: chart-entrance-fade; }
+  .chart-figure.entered [data-entrance-motion="wipe"] { animation-name: chart-entrance-wipe; }
+  .chart-figure.entered [data-entrance-motion="land"] { animation-name: chart-entrance-land; }
+  .chart-figure.entered [data-entrance-motion="wipe"],
+  .chart-figure.entered [data-entrance-motion="land"] {
+    transform-box: view-box;
+    transform-origin: 0 0;
+  }
+}
+`.trim();
+}
+
+function buildCss({ ground, accent, ink, muted, grid, filter = null, entrance = false }) {
   // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
   // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
   // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
@@ -350,6 +438,11 @@ function buildCss({ ground, accent, ink, muted, grid, filter = null }) {
   // declaration, which is what makes "removable" literal.
   const filterChrome = filter ? FILTER_CHROME_CSS : "";
   const filterRules = filterCss(filter, { scope: FILTER_SCOPE, idPrefix: FILTER_ID_PREFIX });
+  // THE SAME GATE THE FILTER PAYS, for the same reason. `entrance` is not a flag a runner sets: it
+  // is read back off the SSR'd markup by `renderWeb` below — true only when the beat's own
+  // component actually tagged layers. A beat that tags none ships not one byte of the block above,
+  // which is the difference between a genre a beat may decline and a genre every page pays for.
+  const entranceRules = entrance ? entranceCss() : "";
   return `
 :root {
   --ground: ${ground};
@@ -514,6 +607,8 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 #tooltip[hidden] { display: none; }
 
 ${filterRules}
+
+${entranceRules}
 `.trim();
 }
 

@@ -439,7 +439,10 @@ describe("the filter — declared by the beat, default view complete, native con
   // copy with the ring deleted).
   it("should wrap the three options in one .options track without leaving the fieldset", () => {
     const markup = renderSeed();
-    expect(markup).toContain('<fieldset class="chart-filter">');
+    // The class, not the whole opening tag: the fieldset is also an `establish` layer of the
+    // entrance (`assets/entrance.ts`) and carries its `data-entrance*` attributes now, which a
+    // string equality on the tag would report as the control having disappeared.
+    expect(markup).toMatch(/<fieldset class="chart-filter"[ >]/);
     expect(markup).toContain("<legend>Show</legend>");
     expect(markup).toContain('<div class="options">');
     // Three native radios in one named group — the thing that makes this a radio group to a

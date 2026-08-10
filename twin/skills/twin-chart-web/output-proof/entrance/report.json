@@ -1,0 +1,465 @@
+{
+ "file": "/tmp/entrance-verify/rainfall.html",
+ "passes": {
+  "1280x800/playing": {
+   "fronts": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0.041,
+    0.194,
+    0.348,
+    0.539,
+    0.692,
+    0.846,
+    0.998,
+    1,
+    1,
+    1,
+    1
+   ],
+   "hits": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    3,
+    5,
+    7,
+    9,
+    10,
+    10,
+    10,
+    10,
+    10
+   ],
+   "samples": [
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 0,
+     "animations": 13,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 0.842198,
+     "animations": 13,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 7,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 7,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 7,
+     "entered": true
+    },
+    {
+     "scaleX": 0.041,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.194,
+     "segsHit": 2,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.348,
+     "segsHit": 3,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.539,
+     "segsHit": 5,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.692,
+     "segsHit": 7,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 3,
+     "entered": true
+    },
+    {
+     "scaleX": 0.846,
+     "segsHit": 9,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 3,
+     "entered": true
+    },
+    {
+     "scaleX": 0.998,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 3,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 10.6,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 2,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 11.5,
+     "endLabelOpacity": 0.453566,
+     "headerOpacity": 1,
+     "animations": 1,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 11.5,
+     "endLabelOpacity": 0.964328,
+     "headerOpacity": 1,
+     "animations": 1,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 11.5,
+     "endLabelOpacity": 1,
+     "headerOpacity": 1,
+     "animations": 0,
+     "entered": true
+    }
+   ]
+  },
+  "1280x800/reduced-motion": {
+   "first": {
+    "scaleX": 1,
+    "segsHit": 10,
+    "segsTotal": 10,
+    "dotWidth": 11.5,
+    "endLabelOpacity": 1,
+    "headerOpacity": 1,
+    "animations": 0,
+    "entered": false
+   },
+   "later": {
+    "scaleX": 1,
+    "segsHit": 10,
+    "segsTotal": 10,
+    "dotWidth": 11.5,
+    "endLabelOpacity": 1,
+    "headerOpacity": 1,
+    "animations": 0,
+    "entered": true
+   }
+  },
+  "1280x800/no-js": {
+   "entered": false,
+   "animations": 0,
+   "transform": "none",
+   "minOpacity": 1,
+   "segs": 10,
+   "endLabelOpacity": 1
+  },
+  "375x812/playing": {
+   "fronts": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0.021,
+    0.174,
+    0.327,
+    0.5,
+    0.653,
+    0.806,
+    0.96,
+    1,
+    1,
+    1,
+    1
+   ],
+   "hits": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    3,
+    5,
+    7,
+    8,
+    10,
+    10,
+    10,
+    10,
+    10
+   ],
+   "samples": [
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 0,
+     "animations": 13,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 0.783908,
+     "animations": 13,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 7,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 7,
+     "entered": true
+    },
+    {
+     "scaleX": 0,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 7,
+     "entered": true
+    },
+    {
+     "scaleX": 0.021,
+     "segsHit": 0,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.174,
+     "segsHit": 2,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.327,
+     "segsHit": 3,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.5,
+     "segsHit": 5,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 5,
+     "entered": true
+    },
+    {
+     "scaleX": 0.653,
+     "segsHit": 7,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 4,
+     "entered": true
+    },
+    {
+     "scaleX": 0.806,
+     "segsHit": 8,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 3,
+     "entered": true
+    },
+    {
+     "scaleX": 0.96,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 0,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 3,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 2.3,
+     "endLabelOpacity": 0,
+     "headerOpacity": 1,
+     "animations": 2,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 2.7,
+     "endLabelOpacity": 0.31097,
+     "headerOpacity": 1,
+     "animations": 1,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 2.7,
+     "endLabelOpacity": 0.938508,
+     "headerOpacity": 1,
+     "animations": 1,
+     "entered": true
+    },
+    {
+     "scaleX": 1,
+     "segsHit": 10,
+     "segsTotal": 10,
+     "dotWidth": 2.7,
+     "endLabelOpacity": 1,
+     "headerOpacity": 1,
+     "animations": 0,
+     "entered": true
+    }
+   ]
+  },
+  "375x812/reduced-motion": {
+   "first": {
+    "scaleX": 1,
+    "segsHit": 10,
+    "segsTotal": 10,
+    "dotWidth": 2.7,
+    "endLabelOpacity": 1,
+    "headerOpacity": 1,
+    "animations": 0,
+    "entered": false
+   },
+   "later": {
+    "scaleX": 1,
+    "segsHit": 10,
+    "segsTotal": 10,
+    "dotWidth": 2.7,
+    "endLabelOpacity": 1,
+    "headerOpacity": 1,
+    "animations": 0,
+    "entered": true
+   }
+  },
+  "375x812/no-js": {
+   "entered": false,
+   "animations": 0,
+   "transform": "none",
+   "minOpacity": 1,
+   "segs": 10,
+   "endLabelOpacity": 1
+  }
+ }
+}

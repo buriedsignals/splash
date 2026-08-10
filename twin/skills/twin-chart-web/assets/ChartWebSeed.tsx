@@ -77,6 +77,19 @@ import { scaleLinear } from "d3-scale";
 // the mark, the segment arriving at it, its hit target and anything a later beat adds are hidden or
 // shown together by construction rather than by four hand-written selectors kept in step.
 import { attrsFor } from "./filter.ts";
+// The entrance contract, vendored into this skill (`./entrance.ts`) and never imported from
+// `twin-chart-video`, whose vocabulary it copies. The component's job here is to decide WHICH
+// element belongs to which of the five events and — for the two labels — to derive the instant the
+// mark they name arrives, from this beat's own geometry. It never types a delay.
+import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceClipId,
+  entranceLayer,
+} from "./entrance.ts";
 
 type Reading = { year: number; value: number };
 type Measure = (
@@ -335,7 +348,12 @@ export function wrap(
 ): string[] {
   const lines: string[] = [];
   let line = "";
-  for (const word of breakLongTokens(text.split(/\s+/), maxWidth, font, measure)) {
+  for (const word of breakLongTokens(
+    text.split(/\s+/),
+    maxWidth,
+    font,
+    measure,
+  )) {
     const joiner = line.endsWith("-") ? "" : " ";
     const trial = line ? `${line}${joiner}${word}` : word;
     if (line && measure(trial, font) > maxWidth) {
@@ -508,6 +526,94 @@ export function ChartWebSeed({
   const totalWidth = yGutterPx + frame.width;
   const totalHeight = frame.height + frame.xAxisRowPx;
 
+  // ── THE ENTRANCE. Five events, in the video's own order, read off `./entrance.ts`.
+  //
+  // Everything below decides WHICH element belongs to which event. Two of them are DERIVED from
+  // this beat's own geometry rather than chosen, and those two are the label rule
+  // (`twin-doctrine/references/motion-grammar.md`: "a label's reveal gates on its own mark, never
+  // on a master clock"):
+  //
+  //   - the reference LABEL follows its rule at 0.55 of `reference` — the video's own knob, the
+  //     same number, because the thing it is timing is the same thing;
+  //   - the peak LABEL waits for the wipe's head to reach the peak's own x, and then the video's
+  //     own 0.06-of-the-reveal lag on top. `peakPoint.x / frame.width` is where the head is when it
+  //     passes that year, so the delay moves if the data does.
+  //
+  // The two labels that are NOT derived are the two that do not name a mark: the title is
+  // furniture and establishes with the axis (the video's first build put it on the conclusion and
+  // played seven of its eight seconds under an empty band), and the end label IS the conclusion —
+  // the subject's own value, stated once the point carrying it has landed, which the contract's
+  // ordering rule already guarantees because `conclusion.start` is `subject`'s end.
+  const revealHeadAt = (x: number) =>
+    atProgress(WEB_ENTRANCE.reveal, x / frame.width);
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const referenceRuleLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const referenceLabelLayer = entranceLayer("reference", "fade", {
+    delay: atProgress(WEB_ENTRANCE.reference, 0.55),
+    duration: LABEL_FADE_MS,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  // LINEAR, and it is the one easing choice that is not a matter of taste. The video's own
+  // `drawnSoFar` states it: the reveal is linear because the x axis IS time, and easing it would
+  // make some years occupy more screen time than others. A wipe across that same axis inherits both
+  // the rule and the reason — and, on an irregularly spaced series, obeys it more literally than
+  // the video does, because the wipe advances at a constant pace in x while `drawnSoFar` advances
+  // at a constant pace in READING INDEX. On this beat's eleven annual readings the two coincide.
+  const revealLayer = entranceLayer("reveal", "wipe", {
+    delay: WEB_ENTRANCE.reveal.start,
+    duration: WEB_ENTRANCE.reveal.duration,
+    ease: ENTRANCE_EASING.LINEAR,
+  });
+  const peakMarkLayer = peakPoint
+    ? entranceLayer("reveal", "fade", {
+        delay: revealHeadAt(peakPoint.x),
+        duration: LABEL_FADE_MS,
+        ease: ENTRANCE_EASING.ARRIVE,
+      })
+    : null;
+  const peakLabelLayer = peakPoint
+    ? entranceLayer("reveal", "fade", {
+        delay: revealHeadAt(peakPoint.x) + 0.06 * WEB_ENTRANCE.reveal.duration,
+        duration: LABEL_FADE_MS,
+        ease: ENTRANCE_EASING.ARRIVE,
+      })
+    : null;
+  const subjectLayer = entranceLayer("subject", "land", {
+    delay: WEB_ENTRANCE.subject.start,
+    duration: WEB_ENTRANCE.subject.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const conclusionLayer = entranceLayer("conclusion", "fade", {
+    delay: WEB_ENTRANCE.conclusion.start,
+    duration: WEB_ENTRANCE.conclusion.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  // Unique per beat, because two of these files can land in one article — see `entranceClipId`.
+  const revealClipId = entranceClipId(title);
+  // Asserted here rather than left to a reader: a derived delay can overrun the ceiling even when
+  // the contract itself does not, because half of them come from the data. `endOf` is the contract's
+  // own arithmetic; the peak label is the latest thing this beat derives.
+  const lastDerivedEnd = peakLabelLayer
+    ? revealHeadAt(peakPoint!.x) +
+      0.06 * WEB_ENTRANCE.reveal.duration +
+      LABEL_FADE_MS
+    : 0;
+  if (lastDerivedEnd > endOf(WEB_ENTRANCE.conclusion))
+    throw new Error(
+      `the peak label's derived arrival ends at ${Math.round(lastDerivedEnd)}ms, after the ` +
+        `conclusion at ${endOf(WEB_ENTRANCE.conclusion)}ms — a note would appear after the ` +
+        `sentence that closes the argument`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -532,7 +638,11 @@ export function ChartWebSeed({
         ["--filter-size" as string]: `${frame.filter.fontSize}px`,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{CAVEAT}</p>
       </div>
@@ -545,7 +655,11 @@ export function ChartWebSeed({
           `<fieldset>` a given `<input>` sits — a plain sibling combinator could not reach past the
           `<label>` wrapping each one. */}
       {filterOptions.length > 0 && (
-        <fieldset className="chart-filter">
+        <fieldset
+          className="chart-filter"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           <legend>{FILTER_LEGEND}</legend>
           {/* One wrapper around the options — the element the shared stylesheet draws the segmented
               control's own outer track on (`.chart-filter .options`), so the pills read as one
@@ -589,7 +703,11 @@ export function ChartWebSeed({
           aspectRatio: `${totalWidth} / ${totalHeight}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {tickValues.map((value, i) => (
             <span
               key={value}
@@ -629,24 +747,36 @@ export function ChartWebSeed({
             fill={ground}
           />
 
-          {tickValues.map((value) =>
-            // The reference's own row gets no regular gridline — the dashed reference rule below
-            // already marks this height; a second, plain line here would read as clutter.
-            value === referenceValue ? null : (
-              <line
-                key={value}
-                x1={0}
-                x2={frame.width}
-                y1={y(value)}
-                y2={y(value)}
-                stroke={grid}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
-              />
-            ),
-          )}
+          {/* The gridlines are FURNITURE and arrive with the axis labels beside them, on one
+              clock — one `<g>` rather than a fade per line, which is the video's own rule ("title,
+              source, axis, ticks, gridlines — one fade, together, then still forever"). */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {tickValues.map((value) =>
+              // The reference's own row gets no regular gridline — the dashed reference rule below
+              // already marks this height; a second, plain line here would read as clutter.
+              value === referenceValue ? null : (
+                <line
+                  key={value}
+                  x1={0}
+                  x2={frame.width}
+                  y1={y(value)}
+                  y2={y(value)}
+                  stroke={grid}
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ),
+            )}
+          </g>
 
+          {/* THE REFERENCE, laid down left to right before the evidence — `transform: scaleX()`
+              from this line's own x1 of 0, which is the video's
+              `interpolate(referenceProgress, [0, 1], [plot.left, plot.right])` written as a
+              transform. `vector-effect="non-scaling-stroke"` keeps the dash pattern in screen units
+              while it grows, so the dashes do not compress as the line lengthens. */}
           <line
+            {...referenceRuleLayer.attrs}
+            style={referenceRuleLayer.vars}
             x1={0}
             x2={frame.width}
             y1={referenceY}
@@ -657,23 +787,48 @@ export function ChartWebSeed({
             vectorEffect="non-scaling-stroke"
           />
 
-          {segs.map((seg) => (
-            <path
-              key={`${seg.a.year}-${seg.b.year}`}
-              className="seg"
-              // A segment belongs to the reading it ARRIVES at, so hiding a reading hides the line
-              // that reaches it and the reader is never left a stroke pointing at nothing. Both
-              // halves get the vocabulary from the same call, which is the point: there is no
-              // second place to remember.
-              {...attrsFor(filterIndex, String(seg.b.year))}
-              d={`M ${seg.a.x} ${seg.a.y} L ${seg.b.x} ${seg.b.y}`}
-              fill="none"
-              stroke={accent}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* THE REVEAL. The curve is uncovered left to right by a clip whose rect grows from x=0
+              — the same picture, frame for frame, as the video's `drawnSoFar` partial path, since
+              the years ascend so the head advances monotonically in x. A CLIP and not a
+              `stroke-dashoffset`: a probe drove the dash form under this genre's own
+              `vector-effect="non-scaling-stroke"` and `preserveAspectRatio="none"` and it was 99 %
+              drawn at t=0 — the two coordinate spaces disagree. See `render-web.mjs`'s
+              `entranceCss`.
+              ONLY THE VISIBLE STROKE IS CLIPPED. The `.pt` targets and the `.hit-area` below sit
+              outside it, so hover, tap and keyboard answer for every reading from the first
+              millisecond: the entrance is an addition to a page that already works, never a gate
+              in front of it. */}
+          <defs>
+            <clipPath id={revealClipId}>
+              <rect
+                {...revealLayer.attrs}
+                style={revealLayer.vars}
+                x={0}
+                y={0}
+                width={frame.width}
+                height={frame.height}
+              />
+            </clipPath>
+          </defs>
+          <g clipPath={`url(#${revealClipId})`}>
+            {segs.map((seg) => (
+              <path
+                key={`${seg.a.year}-${seg.b.year}`}
+                className="seg"
+                // A segment belongs to the reading it ARRIVES at, so hiding a reading hides the line
+                // that reaches it and the reader is never left a stroke pointing at nothing. Both
+                // halves get the vocabulary from the same call, which is the point: there is no
+                // second place to remember.
+                {...attrsFor(filterIndex, String(seg.b.year))}
+                d={`M ${seg.a.x} ${seg.a.y} L ${seg.b.x} ${seg.b.y}`}
+                fill="none"
+                stroke={accent}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </g>
 
           {/* THE ANNOTATIONS CARRY THE VOCABULARY, and that is a correction the first render of
               this rework earned by being looked at. An annotation on a LEVEL (the reference rule
@@ -685,8 +840,15 @@ export function ChartWebSeed({
               contain. That is the reader-facing contradiction this rework exists to prevent, one
               layer up from the marks. Under the DIMMING this genre used to do it read as merely
               faint; hiding makes it visible, which is the argument for hiding. */}
-          {peakPoint && (
+          {/* The peak MARK is outside the reveal's clip and fades in at the instant the head
+              passes its own x — the video's mechanism exactly (its peak marker is an opacity gated
+              on a computed fraction of the reveal, not a clipped shape). A circle uncovered by a
+              vertical wipe would arrive as two half-moons, which is the head's look on a stroke and
+              nothing's look on a dot. */}
+          {peakPoint && peakMarkLayer && (
             <circle
+              {...peakMarkLayer.attrs}
+              style={peakMarkLayer.vars}
               {...attrsFor(filterIndex, String(PEAK_YEAR))}
               cx={peakPoint.x}
               cy={peakPoint.y}
@@ -694,13 +856,21 @@ export function ChartWebSeed({
               fill={muted}
             />
           )}
-          <circle
-            {...attrsFor(filterIndex, String(end.year))}
-            cx={end.x}
-            cy={end.y}
-            r={4}
-            fill={accent}
-          />
+          {/* THE SUBJECT, landing as its own event once the curve has reached it. Drawn at (0, 0)
+              inside a `<g>` carrying the translate, so `transform: scale()` grows it about its own
+              centre with no `transform-origin` percentage and no `transform-box` question — the
+              two things that resolve differently across engine versions. */}
+          <g transform={`translate(${end.x} ${end.y})`}>
+            <circle
+              {...subjectLayer.attrs}
+              style={subjectLayer.vars}
+              {...attrsFor(filterIndex, String(end.year))}
+              cx={0}
+              cy={0}
+              r={4}
+              fill={accent}
+            />
+          </g>
 
           {/* Interaction layer — items 2 and 3 of this file's own doc-comment, plus the filter's
               own `data-period`. Every reading is `tabIndex={0}` with its own `aria-label`/
@@ -745,8 +915,10 @@ export function ChartWebSeed({
             the one box this genre allows, same reasoning as the `#tooltip` it already carries. */}
         <div className="overlay" aria-hidden="true">
           <span
+            {...referenceLabelLayer.attrs}
             className="note reference-label"
             style={{
+              ...referenceLabelLayer.vars,
               left: "0%",
               top: `${pct(referenceY, frame.height)}%`,
               color: muted,
@@ -754,11 +926,13 @@ export function ChartWebSeed({
           >
             {REFERENCE_LABEL}
           </span>
-          {peakPoint && (
+          {peakPoint && peakLabelLayer && (
             <span
+              {...peakLabelLayer.attrs}
               {...attrsFor(filterIndex, String(PEAK_YEAR))}
               className="note peak-label above"
               style={{
+                ...peakLabelLayer.vars,
                 left: `${pct(peakPoint.x, frame.width)}%`,
                 top: `${pct(peakPoint.y, frame.height)}%`,
                 color: muted,
@@ -768,9 +942,11 @@ export function ChartWebSeed({
             </span>
           )}
           <span
+            {...conclusionLayer.attrs}
             {...attrsFor(filterIndex, String(end.year))}
             className="end-label"
             style={{
+              ...conclusionLayer.vars,
               left: `${pct(end.x, frame.width)}%`,
               top: `${pct(end.y, frame.height)}%`,
               color: accent,
@@ -780,7 +956,11 @@ export function ChartWebSeed({
           </span>
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {xTicks.map((year) => (
             <span
               key={year}
@@ -793,7 +973,13 @@ export function ChartWebSeed({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
