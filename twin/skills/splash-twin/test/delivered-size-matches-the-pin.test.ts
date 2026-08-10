@@ -47,10 +47,11 @@ const PROOF = join(TWIN, "proof");
 /**
  * How many beat directories still carry no pinned size. MAY ONLY GO DOWN.
  *
- * Measured 2026-08-11: 76 beats hold a `BRIEF.md`; four pin a size. The rest are the migration —
- * the remaining chart statics, the chart videos, the chart webs, the map and image genres, and the
- * scrollys, which have no export size at all and are the reason this is a count of what is
- * UNPINNED rather than a count of what is wrong.
+ * Measured 2026-08-11: 76 beats hold a `BRIEF.md`, and the count below is what remains unpinned as
+ * four lots migrate in parallel. The rest are the migration — the remaining chart statics, the
+ * remaining chart videos, the chart webs, the map and image genres, and the scrollys, which have no
+ * export size at all and are the reason this is a count of what is UNPINNED rather than a count of
+ * what is wrong.
  *
  * It is re-measured off the tree rather than decremented by hand each time, because four lots are
  * migrating in parallel: a number typed from a stale read could go UP, which is the one thing a
