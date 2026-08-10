@@ -169,6 +169,29 @@ extended here to a chart. That is the "adapt cheaply" this genre requires, and i
 claim from "adapt without a client-side layout engine recomputing gutters and tick counts," which
 this file continues to reject exactly as its first build did.
 
+**"Decided once" is about the ARITHMETIC, never about the answer — and this genre shipped that
+confusion once.** Deciding a type size or a tick *density* once is right: those are properties of
+the type, and the type does not stretch. Deciding a *de-collision* once is not, because whether two
+labels collide is a function of the width, and this genre has no single width. Measured on
+`proof/webz-bump-emitter-rank`: its year-tick filter was evaluated server-side at
+`NARROWEST_VIEWPORT_PX = 375` — a 205px plot — and the tick it dropped there was dropped at every
+width, so a 3265px ultrawide axis read `1990 … 2015 2024` with a 797px hole in it where every other
+gap was 431px. The owner found it by opening the file.
+
+**The correction is a threshold, not a live measurement.** The de-collision arithmetic still runs
+ONCE, in node, from the measured strings — but it computes, per candidate, *the width below which
+that candidate has no room*, and every candidate is emitted. One `@container` rule per threshold
+then hides it exactly there and nowhere else. Nothing is recomputed on resize, no script writes a
+layout value, and the axis is still correct with JavaScript off — the anti-pattern rule above is
+untouched. `BumpWeb.tsx`'s `yearTickPlan`/`tickVisibilityCss` is the worked example, including why
+its packing pins the first and last tick and why a tick that would flicker back off as the plot
+grows throws rather than shipping a rule that lies about it. `fluid-decisions-are-retaken.test.ts`
+walks every delivered `.html` at 375 and 1600 and fails a beat that leaves a member of its own axis
+run missing where the member's own position has room for it.
+
+The residue, named: only the AXIS form of this is mechanised. A crossing caption's side and a peak
+label's parked corner are still decided at one width in the beats that have them.
+
 **The one accepted tradeoff, named rather than hidden.** The y-axis gutter is a FIXED pixel width
 (content-measured, not scaled) inside a CSS grid whose other column is `1fr`. As the total frame
 grows from 375px to 1600px, that fixed gutter is a shrinking fraction of the whole — which means the

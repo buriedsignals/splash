@@ -142,6 +142,14 @@ const MARK_INSET_Y = 10;
  * the width. Both axes are ordinal: there is no domain to fit and no zero to anchor, which is
  * exactly what makes this type unable to show magnitude.
  */
+export function xOfColumn(
+  index: number,
+  columns: number,
+  width: number,
+): number {
+  return MARK_INSET_X + (index / (columns - 1)) * (width - MARK_INSET_X * 2);
+}
+
 export function bumpGeometry(
   tracks: Track[],
   years: number[],
@@ -150,8 +158,7 @@ export function bumpGeometry(
 ) {
   const yOfRank = (rank: number) =>
     MARK_INSET_Y + ((rank - 1) / (rankRows - 1)) * (height - MARK_INSET_Y * 2);
-  const xOfIndex = (index: number) =>
-    MARK_INSET_X + (index / (years.length - 1)) * (width - MARK_INSET_X * 2);
+  const xOfIndex = (index: number) => xOfColumn(index, years.length, width);
   const lines = tracks.map((t) => ({
     ...t,
     points: t.ranks.map((rank, i) => ({ x: xOfIndex(i), y: yOfRank(rank) })),
@@ -197,6 +204,158 @@ const CAPTION_CLEARANCE_PX = 10;
  *  where the geometry put the mark it names, at any container width. */
 function pct(value: number, total: number): number {
   return total === 0 ? 0 : Math.round((value / total) * 1000) / 10;
+}
+
+/** Air a year label keeps from its nearest drawn neighbour, edge to edge, in CSS pixels. */
+const TICK_AIR_PX = 6;
+/** The widest plot this scan is asked about, in CSS pixels. Stated rather than guessed: the widest
+ *  viewport `twin-chart-web/scripts/verify-web.mjs` drives is 3440, so the plot column can never
+ *  exceed it — doubled, so the ceiling is never itself the answer. */
+const TICK_SCAN_CEILING_PX = 6880;
+
+export type YearTick = {
+  year: number;
+  index: number;
+  /** The plot width, in CSS pixels, AT OR BELOW which this tick has no room and is hidden. `0` means
+   *  it is drawn at every width this beat ships to. Consumed as one `@container` threshold — see
+   *  `tickVisibilityCss`. */
+  hideAtOrBelowPx: number;
+};
+
+/**
+ * WHICH YEARS THE AXIS PRINTS, AS A FUNCTION OF HOW WIDE THE PLOT ACTUALLY IS.
+ *
+ * THE DEFECT THIS REPLACES, which the owner reported by opening the file: the first build took this
+ * decision ONCE, server-side, at the narrowest viewport this genre verifies at — and then shipped
+ * that one answer to every width. 2020 collides with 2024 on a 205px phone plot, so 2020 was dropped
+ * from the markup entirely and a 3440px screen showed a 797px hole in an otherwise five-yearly axis.
+ * The rule was right; the coordinate system was wrong. Nothing here is decided at one width any
+ * more: every candidate tick is emitted, each carrying the width below which it genuinely has no
+ * room, and one `@container` rule per threshold hides it there and nowhere else. No script writes a
+ * layout value, so the axis is still correct with JavaScript off.
+ *
+ * THE PACKING RULE, in priority order, which is the whole of it:
+ *   1. The FIRST and LAST year are pinned. They are the window this beat's own subtitle states
+ *      ("1990–2024") and the last is the column every end label sits in; dropping either would
+ *      leave the claim's own span unlocatable. They are asserted to clear each other, and the build
+ *      stops rather than shipping two overlapping pinned ticks.
+ *   2. Every year on the `yearTickEvery` grid is then offered left to right, and accepted only if it
+ *      clears EVERY already-accepted tick by its own measured label width plus `TICK_AIR_PX`.
+ * Left to right rather than right to left because a right-to-left walk drops the FIRST year — the
+ * one the window is named for — which was measured on this beat's own numbers before this rule was
+ * settled: at a 205px plot it kept 1995, 2005, 2015, 2024 and lost 1990.
+ *
+ * THE SCAN, and why it is a scan. A tick's threshold is not a closed form: whether 2005 has room
+ * depends on whether 2000 was accepted, which depends on the width. So the packing is simply run at
+ * every integer width from `narrowestPlotPx` to the ceiling and the last width at which each tick is
+ * rejected is recorded. It also ASSERTS what the `@container` form requires and cannot express
+ * otherwise: that a tick, once drawn, stays drawn as the plot grows. A tick that flickered back off
+ * would throw here, naming itself, rather than shipping a rule that lies about it.
+ */
+export function yearTickPlan(
+  years: number[],
+  frame: BumpFrame,
+  measure: Measure,
+  narrowestPlotPx: number,
+): YearTick[] {
+  const lastIndex = years.length - 1;
+  const pinned = new Set([0, lastIndex]);
+  const candidates = years
+    .map((year, index) => ({ year, index }))
+    .filter(
+      ({ year, index }) =>
+        pinned.has(index) || year % frame.yearTickEvery === 0,
+    );
+  const need =
+    Math.max(...years.map((y) => measure(String(y), frame.axis))) + TICK_AIR_PX;
+  /** A column's x as a fraction of the plot's own width — the geometry is stretched, so a distance
+   *  in CSS pixels is that fraction times the rendered plot width and nothing else. */
+  const fractionOf = (index: number) =>
+    xOfColumn(index, years.length, frame.width) / frame.width;
+
+  if ((fractionOf(lastIndex) - fractionOf(0)) * narrowestPlotPx < need)
+    throw new Error(
+      `${years[0]} and ${years[lastIndex]} are the two pinned ticks and they do not clear each other ` +
+        `at the narrowest plot this beat ships to (${Math.floor(narrowestPlotPx)}px): they sit ` +
+        `${((fractionOf(lastIndex) - fractionOf(0)) * narrowestPlotPx).toFixed(1)}px apart and need ${need.toFixed(1)}px`,
+    );
+
+  /** The ticks a plot `plotPx` wide can hold, by the priority rule above. */
+  const acceptedAt = (plotPx: number): Set<number> => {
+    const accepted = candidates
+      .map((c, k) => k)
+      .filter((k) => pinned.has(candidates[k].index));
+    for (let k = 0; k < candidates.length; k++) {
+      if (pinned.has(candidates[k].index)) continue;
+      const clears = accepted.every(
+        (a) =>
+          Math.abs(
+            fractionOf(candidates[a].index) - fractionOf(candidates[k].index),
+          ) *
+            plotPx >=
+          need,
+      );
+      if (clears) accepted.push(k);
+    }
+    return new Set(accepted);
+  };
+
+  const hideAtOrBelowPx = candidates.map(() => 0);
+  const shownBelowPx = candidates.map(() => 0);
+  for (
+    let plotPx = Math.max(1, Math.floor(narrowestPlotPx));
+    plotPx <= TICK_SCAN_CEILING_PX;
+    plotPx++
+  ) {
+    const accepted = acceptedAt(plotPx);
+    for (let k = 0; k < candidates.length; k++) {
+      if (accepted.has(k)) {
+        if (shownBelowPx[k] === 0) shownBelowPx[k] = plotPx;
+      } else {
+        if (shownBelowPx[k] !== 0)
+          throw new Error(
+            `the ${candidates[k].year} tick is drawn at a ${shownBelowPx[k]}px plot and hidden again ` +
+              `at ${plotPx}px — one @container threshold cannot express that, and a rule that ` +
+              `claimed to would be lying about this axis`,
+          );
+        hideAtOrBelowPx[k] = plotPx;
+      }
+    }
+  }
+
+  return candidates.map((c, k) => ({
+    ...c,
+    hideAtOrBelowPx: hideAtOrBelowPx[k],
+  }));
+}
+
+/** The container name the thresholds below are written against — declared on `.x-axis`, which IS
+ *  the plot column (grid track 2 of `.bump-plot`), so a query on it is a query on the exact width
+ *  the packing arithmetic above is expressed in. */
+const TICK_CONTAINER = "bump-x-axis";
+
+/**
+ * The tick plan as CSS, emitted INSIDE the figure by the component that derived it.
+ *
+ * It lives here, and not in this beat's own appended stylesheet, for one reason: the thresholds are
+ * derived from the measured width of the real year strings and from the gutters this component
+ * measures off the real country names. A second copy of that arithmetic in the runner is a copy that
+ * drifts, and the twin's rule for a value nobody chose is that it must be derived once. A `<style>`
+ * in the body is valid HTML, it is inert without JavaScript, and every selector is prefixed with
+ * this beat's own plot class so it cannot reach another figure on the same page.
+ */
+export function tickVisibilityCss(ticks: YearTick[]): string {
+  const rules = ticks
+    .filter((t) => t.hideAtOrBelowPx > 0)
+    .map(
+      (t) =>
+        `@container ${TICK_CONTAINER} (max-width: ${t.hideAtOrBelowPx}px) {\n` +
+        `  .bump-plot .axis-label.x[data-year="${t.year}"] { display: none; }\n}`,
+    );
+  return [
+    `.bump-plot .x-axis { container-type: inline-size; container-name: ${TICK_CONTAINER}; }`,
+    ...rules,
+  ].join("\n");
 }
 
 export function BumpWeb({
@@ -289,24 +448,14 @@ export function BumpWeb({
     (userUnits / frame.width) * narrowestPlotPx;
 
   /**
-   * Year ticks: every `yearTickEvery` years, plus the final year — a bump chart's last column is the
-   * one its end labels sit in, so leaving it unlabelled would be leaving the beat's own closing rank
-   * unlocatable. That extra tick is also the one collision this axis can produce: 2020 and 2024 are
-   * four columns apart, which is 25px on the phone frame against a ~26px label, and the two read as
-   * one number. The regular tick that would collide is dropped rather than the final one, measured
-   * at the narrow width above rather than eyeballed at the wide one.
+   * Year ticks: every `yearTickEvery` years, plus the first and last — a bump chart's last column is
+   * the one its end labels sit in, and its first is the one the window is named for, so leaving
+   * either unlabelled would leave the beat's own span unlocatable. EVERY candidate is emitted here;
+   * which of them a given width has room for is `yearTickPlan`'s answer, carried into the page as
+   * one `@container` threshold per tick rather than baked at one width. See that function's own
+   * comment for the defect this replaces — it is the one the owner reported.
    */
-  const yearLabelPx = Math.max(
-    ...years.map((y) => measure(String(y), frame.axis)),
-  );
-  const finalTickPx = pxAt(g.xOfIndex(lastIndex));
-  const yearTicks = years
-    .map((year, i) => ({ year, i }))
-    .filter(({ year, i }) => {
-      if (i === lastIndex) return true;
-      if (year % frame.yearTickEvery !== 0) return false;
-      return finalTickPx - pxAt(g.xOfIndex(i)) >= yearLabelPx + 6;
-    });
+  const yearTicks = yearTickPlan(years, frame, measure, narrowestPlotPx);
 
   /**
    * A crossing's caption, in the corridor the crossing itself opened.
@@ -424,6 +573,14 @@ export function BumpWeb({
         ["--note-size" as string]: `${frame.note.fontSize}px`,
       }}
     >
+      {/* The tick plan, as the only thing in this genre that a static stylesheet cannot hold: one
+          `@container` threshold per year, derived from the measured strings above. `dangerouslySet`
+          because React escapes `"` in a text child and the attribute selectors carry quotes; the
+          content is this component's own numbers and years, never a caller's string. */}
+      <style
+        dangerouslySetInnerHTML={{ __html: tickVisibilityCss(yearTicks) }}
+      />
+
       <div className="chart-header">
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
@@ -634,12 +791,13 @@ export function BumpWeb({
         </div>
 
         <div className="x-axis">
-          {yearTicks.map(({ year, i }) => (
+          {yearTicks.map(({ year, index }) => (
             <span
               key={year}
               className="axis-label x"
+              data-year={year}
               style={{
-                left: `${pct(g.xOfIndex(i), frame.width)}%`,
+                left: `${pct(g.xOfIndex(index), frame.width)}%`,
                 color: muted,
               }}
             >
