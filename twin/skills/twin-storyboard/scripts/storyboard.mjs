@@ -47,7 +47,7 @@ export const EXPORT_SIZES = ["landscape", "square", "portrait"];
 // EVERY slot, so a correct `genre: web` slot could not close gate 2 without naming a size that will
 // never be used, and a wrong one closed it by naming one. Both are the same defect: the toolchain
 // asking a question whose answer it will ignore.
-const SIZED_GENRES = ["static", "video"];
+export const SIZED_GENRES = ["static", "video"];
 
 /**
  * `null` when this GENRE and this SIZE go together; otherwise the one line the gate refuses in.

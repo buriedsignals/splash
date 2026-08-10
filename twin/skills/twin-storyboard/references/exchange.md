@@ -24,15 +24,26 @@ One non-skippable question: *if the reader keeps one sentence from this visual, 
 Confirmed **verbatim** and written into `STORYBOARD.md`'s `takeaway:` field. It is the only anchor
 that later makes a drifting title detectable — the twin's predecessor's most recurrent failure.
 
-**Then ground it, here, before anything is picked.** Run `groundTakeaway` (`scripts/ground-claim.mjs`)
-against the frozen profile and record the verdict as `grounding:`. Three values close this gate:
-`supported`, `unverifiable`, or `overridden — "<reason>"`. **`contradicted` is not a closing value**:
-a claim the data refutes is either corrected with the journalist, or overridden by them with a
-reason they give. In the run this fired nine movements too late — after the slot had been pinned —
-so the journalist was asked to dispose of a dispute about a choice they had already made.
+**Then ground it, here, before anything is picked.** Run `resolveGrounding(takeaway, profile)`
+(`scripts/propose.mjs`) against the frozen profile and record `groundingScalar(resolved)` as
+`grounding:`. Three values close this gate: `supported`, `unverifiable`, or
+`overridden — "<reason>"`. **`contradicted` is not a closing value**: a claim the data refutes is
+either corrected with the journalist, or overridden by them with a reason THEY give —
+`groundingScalar` throws rather than manufacture one. In the run this fired nine movements too late
+— after the slot had been pinned — so the journalist was asked to dispose of a dispute about a
+choice they had already made.
 
-Whichever verdict lands, say what the check could and could not see. An `unverifiable` claim is
-information, not a refusal, and it must not be presented as one.
+**How the many become the one.** `groundTakeaway` returns a verdict PER CLAIM and `grounding:` is a
+single word, so the collapse is written down rather than left to whoever is running the exchange:
+**any refuted claim → `contradicted`** · **at least one confirmed and none refuted → `supported`** ·
+**nothing placeable at all → `unverifiable`**. So `supported` means "every claim this check could
+resolve, it resolved in favour", NOT "every number was verified" — a takeaway carrying five numbers
+typically resolves one and cannot place four, because every bare integer is range-tested, years and
+counts included.
+
+Whichever verdict lands, say what the check could and could not see — `resolved.detail` carries
+both halves. An `unverifiable` claim is information, not a refusal, and it must not be presented as
+one.
 
 ## ③ The journalist's hand — four questions, each with a destination
 
@@ -102,47 +113,58 @@ the journalist disposes of in one move, exactly as movement ⑧ already does for
 exchange did not have: forty type sheets ship in this toolchain and the conversation had never heard
 of one of them, so the run offered three candidates that were three variants of the same bar.
 
-Read `references/type-survey.md` — generated from the type sheets themselves — and name, for this
-story's frozen profile:
+Read `references/type-survey.md` — generated from the type sheets themselves, and read back by
+`typeSurvey()` (`scripts/propose.mjs`) — and name, for this story's frozen profile:
 
 - the types the profile **could** support, each with what that type is for, in one line;
 - a type the profile **cannot** supply the shape for, said as *not applicable, and why* (a slope
   needs exactly two moments; a bump needs a rank per period; a choropleth needs a region key);
-- of each remaining type, whether it is **reachable** — `genreGap(medium, genre)`
-  (`scripts/genre-catalog.mjs`) for the pair, and `capabilityGap(capabilities, medium)` for the
-  environment. A medium closed by a missing key is said HERE, with what would open it, not three
-  movements later.
+- of each remaining type, whether it is **reachable** — `proposeMediums({capabilities})` and
+  `proposeGenres({medium, capabilities})` (`scripts/propose.mjs`) run `genreGap` and
+  `capabilityGap` for you and hand back every row with its own refusal attached. A medium closed by
+  a missing key is said HERE, with what would open it, not three movements later.
 
-Genuinely different ways of seeing the same numbers, not three treatments of one. If the honest
-answer is that this data supports two ways of seeing and no more, say two.
+Genuinely different ways of seeing the same numbers, not three treatments of one. `assertDistinctWays`
+refuses a candidate set whose candidates all name the same type — the run offered three and all
+three were stacked-or-grouped bars of the same three numbers. If the honest answer is that this data
+supports two ways of seeing and no more, say two: what is refused is not "fewer than three", it is
+several labels over one idea.
 
 ## ⑤ The medium — G2a
 
 *Which KIND of visual is this?* Chart, map, or image — validated by the journalist before anything
 narrower is discussed, because everything narrower depends on it. Carry a recommendation, with the
-reason, drawn from ④.
+reason, drawn from ④. `proposeMediums({capabilities})` is the honest list: each medium with the
+genres it reaches, the type sheets this toolchain holds for it, and — if the environment has closed
+it — the sentence saying so.
 
 Lands in the slot's `medium:`.
 
 ## ⑥ The genre — G2b
 
 *Static, web, video, or scrolly?* Offered **only where reachable for the medium just chosen** —
-`genresFor(medium)` is the honest list, and a genre absent from it is named as absent rather than
-quietly omitted (`image` reaches `static` and `scrolly`; it has no web or video producer, and the
-journalist hears that here).
+`proposeGenres({medium, capabilities})` returns all four with a `reachable` flag and a `why`, so a
+genre this medium cannot reach is named as absent rather than quietly omitted (`image` reaches
+`static` and `scrolly`; it has no web or video producer, and the journalist hears that here).
 
-Record `genre:` and, once `genreGap` and `capabilityGap` both return `null` for the pair,
-`reachable: yes`. **That recorded verdict is what both Gate-2 readings check.** Neither gate re-runs
-these checks — see `scripts/storyboard.mjs`'s header for why that matters.
+Record `genre:` and take `reachable:` from **`confirmReachable({medium, genre, capabilities})`** —
+the one function that produces that `"yes"`, and only after `genreGap` and `capabilityGap` have both
+returned `null`. It throws the refusal otherwise, so an unreachable pair cannot be handed a yes to
+write down. **That recorded verdict is what both Gate-2 readings check**, and neither gate re-runs
+the check — see `scripts/storyboard.mjs`'s header for why that matters. Until `propose.mjs` existed
+nothing called either gap function at all, and `reachable:` was a field the gates read and no code
+wrote.
 
 ## ⑦ The size — G2c
 
 *Portrait, square, or landscape* for a static or a video; **fluid** for a web or a scrolly page,
 which fills whatever container the CMS gives it and is not a fourth size.
 
-Where the reachable set has **one member, state it and say so** — "this ships landscape; portrait and
-square are not built yet" — rather than staging a question with one answer. Where it has more, ask.
-Either way `size:` is recorded, so widening the set later widens a set and re-plumbs nothing.
+`proposeSizes(genre)` (`scripts/propose.mjs`) is the reachable set. Where it has **one member,
+state it and say so** — "this ships landscape; portrait and square are not built yet" — rather than
+staging a question with one answer. Where it has more, ask. Where it is EMPTY the genre takes no
+size at all and none is recorded. Either way widening the set later widens a set and re-plumbs
+nothing.
 
 ## ⑧ The reference loop, shown
 
@@ -174,7 +196,11 @@ Lands in `PALETTE.md`.
 ## ⑩ The storyboard proposal, and the beat brief
 
 Slots and candidates, presented **as readable narrative, not a table of specs**: what each proves,
-its medium, its genre, its size, and one line of why. The journalist drops, reorders, adds, vetoes.
+its medium, its genre, its size, and one line of why. `formatCandidates({medium, candidates,
+capabilities})` (`scripts/propose.mjs`) renders that list FROM the verdicts — each candidate carries
+the type sheet's own purpose sentence verbatim and the reason THIS story is worth seeing that way,
+which is required, because a candidate with no reason is a name in a list. A candidate whose pair the
+catalog refuses cannot be rendered at all. The journalist drops, reorders, adds, vetoes.
 Then it is written — `checkStoryboard` in `scripts/storyboard.mjs` is exactly this gate,
 machine-checked: every slot needs a `chosen` candidate that is one of its own `candidates`, or gate
 2 has not actually closed no matter what the conversation implied.

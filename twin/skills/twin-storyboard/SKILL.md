@@ -68,6 +68,7 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
 | Reader + gate | `scripts/storyboard.mjs` | `parseStoryboard(text)` splits front matter from prose; `checkStoryboard(meta)` — **one argument** — returns the list of reasons Gate 2 has not closed (empty means it has), reading only RECORDED scalars. `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` are exported so the parity test can drive off them |
 | Claim grounding | `scripts/ground-claim.mjs` | `groundTakeaway(takeaway, profile)` checks the confirmed takeaway's own numbers and year comparisons against the frozen data profile — a number is placed in a column's range **or** against a column's `sum` (a part-to-whole total), and a number it can place in neither is `unverifiable`, never `contradicted`. Not a fact-checker, not a conformance engine, one narrow class of error |
 | Reachability | `scripts/genre-catalog.mjs` | `GENRE_CATALOG`, keyed on the **medium/genre PAIR**, and `genreGap(medium, genre)` — whether this kind of beat, in this genre, has both a producer and a delivery path. `genresFor(medium)` is what the genre gate (G2b) may offer. `image/web` and `image/video` are absent on purpose: no producer exists, and an absent row is what the journalist is told at the gate rather than at the last phase |
+| Proposal | `scripts/propose.mjs` | **Where the four verdicts are actually called.** `resolveGrounding` runs `groundTakeaway` at G1 and collapses its ARRAY of claim verdicts into the one `grounding:` scalar (`groundingScalar` refuses to close on `contradicted` without the journalist's own override reason); `proposeMediums` / `proposeGenres` / `proposeSizes` compute what may be offered at ⑤ / ⑥ / ⑦, each row carrying its refusal; `confirmReachable` is the ONE function that returns the `"yes"` a slot's `reachable:` records, and only after `genreGap` and `capabilityGap` both return `null`; `assertDistinctWays` refuses a candidate set that is one idea wearing three labels, and `formatCandidates` renders the menu FROM those options, so an unreachable pair cannot be offered |
 | Capability gate | `scripts/capability-gap.mjs` | `capabilityGap(capabilities, medium)` says whether a chosen slot's medium is one the environment can actually honour — a **carried copy** of `splash-twin`'s own function (see Files below), not an import |
 
 ## How it works (the shape)
@@ -142,6 +143,34 @@ and if you touch `where.mjs`'s sentinel list, mirror the change here.
    resolve to a single value column, and phrasing shapes this function does not parse, comes back
    `unverifiable` with a reason, never silently `supported`.
 
+6. **`propose.mjs` is the seam that consults all of the above**, and until it existed there was
+   none: `grep -rn "genreGap(\|capabilityGap(\|groundTakeaway(" skills/` returned four lines and
+   all four were the definitions. `grounding:` and `reachable:` were recorded scalars both gates
+   checked and no code produced — not trusted verdicts, unwritten ones. Each phase now calls the
+   verdict it owns:
+
+   - **G1** — `resolveGrounding(takeaway, profile)`, then `groundingScalar(resolved)` for the field.
+     `groundTakeaway` returns one verdict PER CLAIM and `grounding:` is a single word, so the
+     collapse is stated rather than left to the model: **any refuted claim → `contradicted`**
+     (which never closes G1 — correct it, or record the journalist's override with their reason);
+     **at least one confirmed and none refuted → `supported`**; **nothing placeable → `unverifiable`**.
+     `supported` therefore means "every claim this check could resolve, it resolved in favour", not
+     "every number was verified" — the detail names how many could not be placed, and that half is
+     said out loud, because an unverifiable claim is information, not a refusal.
+   - **④ ⑤** — `typeSurvey()` reads the generated survey back, and `proposeMediums({capabilities})`
+     marks a medium the environment has closed AT THE MEDIUM QUESTION, with what would open it.
+   - **⑥** — `proposeGenres({medium, capabilities})` returns every genre in the vocabulary, each
+     marked reachable or not AND CARRYING ITS REFUSAL, so an absent pair is named rather than
+     quietly omitted. `confirmReachable({medium, genre, capabilities})` then produces the recorded
+     `"yes"`, or throws the refusal the journalist hears.
+   - **⑦** — `proposeSizes(genre)`: the three export sizes for a static or a video, none for a page
+     that fills its container.
+   - **⑩** — `assertDistinctWays(candidates)` refuses a set whose candidates all name the same type
+     (the run offered three and all three were bars of the same three numbers), and
+     `formatCandidates` renders the menu from the computed options — every candidate carrying the
+     type sheet's own purpose sentence verbatim and the caller's reason why THIS story is worth
+     seeing that way. A candidate whose pair the catalog refuses cannot be rendered at all.
+
 ## Quick start
 
 ```js
@@ -191,6 +220,7 @@ if (errors.length > 0) {
 | How many numeric columns a comparison claim may resolve to before it is ambiguous | `1` (`findValueColumn`'s `candidates.length === 1` — more or fewer and the comparison comes back `unverifiable`, never guessed) | `scripts/ground-claim.mjs` |
 | How far around a "highest/lowest ... ever" phrase this looks for the year to anchor on | `80` characters each side | `scripts/ground-claim.mjs`'s `SUPERLATIVE_EVER_RE` handling |
 | How far a rounded total may sit from its column's exact sum and still resolve | `AGGREGATE_TOLERANCE` = `0.01` (relative, with an absolute floor of 0.5) | `scripts/ground-claim.mjs` |
+| Fewest genuinely different ways of seeing the data a candidate set must offer | `2` (`assertDistinctWays`'s `min` — two honest ways beat three labels over one idea; fewer is allowed when that is the honest answer) | `scripts/propose.mjs` |
 
 ## Files
 
@@ -203,10 +233,15 @@ if (errors.length > 0) {
   this skill may not read `twin-chart-beat/references/types/` — that path resolves inside another
   skill — which is the same reason `twin/MATRIX.md` is generated rather than hand-kept.
 - `scripts/storyboard.mjs` — `parseStoryboard`, `checkStoryboard`.
-- `scripts/ground-claim.mjs` — `groundTakeaway`, the claim-grounding guard `checkStoryboard` calls
-  when given a profile.
-- `scripts/capability-gap.mjs` — `capabilityGap(capabilities, medium)`, the guard `checkStoryboard`
-  calls when given `capabilities`. This is a **carried copy** of `splash-twin`'s own
+- `scripts/propose.mjs` — `resolveGrounding`, `groundingScalar`, `typeSurvey`, `readTypeSurvey`,
+  `proposeMediums`, `proposeGenres`, `proposeSizes`, `confirmReachable`, `assertDistinctWays`,
+  `formatCandidates`. The one file that CALLS `groundTakeaway`, `genreGap` and `capabilityGap`.
+- `scripts/ground-claim.mjs` — `groundTakeaway`, the claim-grounding guard the **G1 phase** calls
+  through `propose.mjs`'s `resolveGrounding`. `checkStoryboard` does NOT call it and takes no
+  profile: it reads the recorded `grounding:` scalar, which is what stops the two gates diverging.
+- `scripts/capability-gap.mjs` — `capabilityGap(capabilities, medium)`, the guard the **G2b phase**
+  calls through `propose.mjs` (`proposeMediums`, `proposeGenres`, `confirmReachable`), never
+  `checkStoryboard`, which takes no `capabilities` argument either. This is a **carried copy** of `splash-twin`'s own
   `capabilityGap` (`skills/splash-twin/scripts/preflight.mjs`), not an import — a skill directory
   has to stay copy-pasteable on its own, the same rule `genre-catalog.mjs` follows for
   `twin-deliver`'s `FORMS_BY_GENRE`. **Do not delete it as duplication**: `test/capability-gap-parity.test.ts`
@@ -216,6 +251,12 @@ if (errors.length > 0) {
   `null`/`~` sentinel resolution described in the gotcha above, and the medium/capability gate.
 - `test/ground-claim.test.ts` — `bun:test` coverage for `groundTakeaway`, including the real
   Norway/Swiss cases from `twin/TRIAL-THREE-BEATS.md` that motivated it.
+- `test/propose.test.ts` — `bun:test` coverage for the proposal seam, opening with the walking
+  guard that gives this file its reason to exist: each of `groundTakeaway`, `genreGap` and
+  `capabilityGap` must be called by a script other than its own definition. It strips comments
+  before scanning, because its first draft stayed green through the mutation that deleted all three
+  calls — `propose.mjs`'s header quotes the grep that found the hole, so the literals were sitting
+  in a comment.
 - `test/capability-gap-parity.test.ts` — asserts this skill's `capabilityGap` copy agrees with
   `splash-twin`'s original across the full `{map, datawrapper, hostedEmbed} × {open, closed,
   absent}` matrix (the one place a cross-skill import is legitimate: a `test/` directory asserting
