@@ -1,3 +1,8 @@
+---
+size: landscape
+type: scatter
+---
+
 # Beat — beyond $30,000, income buys far less extra life expectancy
 
 **Type:** scatter. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
@@ -30,3 +35,24 @@ ISO code (drops continents/income-group aggregates), year 2021.
 first pass toward this beat would have plotted 2022 uncritically; switched to 2021, where the
 minimum across all 165 countries is a plausible 40.3, and the render script now throws if any
 future refresh reintroduces a reading under 35.
+
+## Size — 2026-08-11
+
+**Pinned: landscape (1920 x 1080)**, in the front matter, read by `readPinnedSize`, verified from the
+delivered PNG's own IHDR. It shipped 1800 x 1120 before.
+
+**Square and portrait are refused by `type-at-size.mjs` itself**, and this one is a NAMED refusal
+rather than an unmeasured one: rotating a scatter violates conventions of reading direction (Horak
+et al. §2.4.2), so it has no twin form; and what a phone frame runs out of budget on for a
+165-point cloud is DENSITY, not aspect. Neither has been measured, so nothing is drawn.
+
+**Two things the bigger frame changed, both real:**
+- The dot radii (3.5 / 4.5) were bare numbers. A mark's size is a frame quantity like any other —
+  left at their 900px value on a 1920px frame the cloud would have thinned to specks. They scale.
+- The named-point nudges (`dx`, `dy`) arrive from the runner in the 900-wide frame this beat was
+  tuned at. Read raw on a 1920px frame, a 26px leader would have parked every named country's word
+  on top of its own dot. They are read at the row's own scale. (This beat currently names no points,
+  so the fix is dormant until it does — recorded rather than left as a trap.)
+- `Y_TICK_HINT` is a COUNT, and the first pass of this migration scaled it with everything else:
+  five gridlines became eleven. It is deliberately outside the scaling helper now, with the reason
+  written beside it.

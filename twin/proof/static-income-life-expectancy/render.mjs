@@ -8,7 +8,20 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { IncomeLifeExpectancyScatter } from "./IncomeLifeExpectancyScatter.tsx";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+import {
+  TYPE,
+  IncomeLifeExpectancyScatter,
+  rungsFor,
+} from "./IncomeLifeExpectancyScatter.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -68,8 +81,32 @@ async function main() {
     stopAt: join(HERE, ".."),
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing. Before this the size was two literals below and `renderStill` compared them
+  // against each other, so they agreed by construction and the delivered PNG was a size nobody
+  // chose.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name = flag === -1 ? "static-income-life-expectancy-still" : `static-income-life-expectancy-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all.
+  const form = assertTypeMayEnter(TYPE, size, { what: "static-income-life-expectancy" });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+  const rungs = rungsFor(size);
+  console.log(
+    rungs.length
+      ? `removal ladder at ${size}: ${rungs.join("; ")}`
+      : `removal ladder at ${size}: no rung fires`,
+  );
 
-  const { pngPath } = await renderStill({
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(IncomeLifeExpectancyScatter, {
       points,
       title: `Beyond roughly ${usd(HIGH_INCOME_LO)} a person, extra income buys far less extra life expectancy`,
@@ -79,13 +116,25 @@ async function main() {
       ground,
       accent,
       highlighted: [],
+      size,
     }),
-    width: 900,
-    height: 560,
-    outDir: HERE,
-    name: "static-income-life-expectancy-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  console.log(`ladder in the artifact: ${/data-ladder="([^"]*)"/.exec(svg)?.[1] ?? "(absent)"}`);
+  assertTypeFloor(svg, size, { what: "static-income-life-expectancy" });
+  assertWithinStage(svg, size, { what: "static-income-life-expectancy" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file — now open it and look at it.`);
 }
 
 main();
