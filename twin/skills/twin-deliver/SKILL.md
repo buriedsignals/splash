@@ -190,6 +190,25 @@ not deliver their own work past. The recommendation is now actually MADE, in the
 keeps: `formatHandover` renders it from a **closed** four-state vocabulary (an unknown state throws
 rather than silently saying nothing), so it can never be forgotten and can never become free text.
 
+### A refusal states the situation. It never names a way around itself.
+
+Every refusal in this path — and there are twenty — stops and informs, and nothing more. It says what
+happened and what the situation is; it does not offer a second route to the same delivery.
+
+That is not a style note. The refusal this skill used to raise over the MapTiler key ended with *"…or
+unset `MAPTILER_KEY` for this delivery and the page will ship its complete fallback layer"*, and in
+the owner's run the model read it, took that route, and said so: *"Je livre par la voie que le refus
+lui-même désigne."* A gate that supplies its own bypass is not a gate — it is a suggestion with extra
+steps, and the next reader is always in a hurry.
+
+Two things that are NOT this, because the line is fine: restating the CONDITION the gate waits on
+("this beat has not been approved yet — show it first") closes the gate rather than going round it,
+and naming the CORRECT api ("each beat delivers into its own `export/<beat>/` directory") is where
+the work belongs, not a way to skip a check. The offence is specifically *this refusal stands, and
+here is how to get the artifact out anyway*. `test/refusals-name-no-detour.test.ts` triggers every
+refusal in this path for real, reads the four scripts' `throw`s statically as well, and reddens on
+all three shapes the offer usually takes.
+
 **Say it in the conversation too, in the journalist's own terms**, at the moment the delivery lands:
 which key their page carries and what it costs them. Never as a refusal, never with a route around
 one — the state is a fact about their file, and the decision to create a restricted key is theirs.
@@ -270,6 +289,9 @@ const written = await materialise({
   each, refuses ambiguity, and — for `cms-insertion` — makes zero network calls. Its
   "a story has more than one beat" block is the two-beat fixture nothing here had: it delivers two
   approved beats and asserts the first one's files survive the second's delivery.
+- `test/refusals-name-no-detour.test.ts` — every refusal in this path, triggered for real and read
+  from the source, asserted to name no alternative delivery route; plus the historical sentence the
+  run followed, kept as the proof the detector can see the defect it was written for.
 - `test/deploy-embed.test.ts` — the Cloudflare direct-upload sequence against a fake of the real
   API (four calls in order, an already-existing project treated as success, a real failure
   surfaced with Cloudflare's own message) plus `contentTypeFor`/`resolveCloudflareCredentials`.
