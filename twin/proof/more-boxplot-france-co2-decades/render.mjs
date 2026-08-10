@@ -8,6 +8,15 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { DecadeBoxplot, summarizeDecade } from "./DecadeBoxplot.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -114,7 +123,33 @@ async function main() {
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
-  const { pngPath } = await renderStill({
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1
+      ? "more-boxplot-france-co2-decades-still"
+      : `more-boxplot-france-co2-decades-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all. A box plot has no twin form — transposing it
+  // would put a continuous value axis on a band scale — and NO aspect range has been measured for
+  // it. A box plot's argument is a shape (where the median sits in the box, how far the whiskers
+  // run), and the portrait probe proved no clipping or collision counter here can see that shape
+  // being destroyed. So it refuses, naming the measurement that is missing.
+  const form = assertTypeMayEnter("boxplot", size, {
+    what: "more-boxplot-france-co2-decades",
+  });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(DecadeBoxplot, {
       decades,
       title: `France's per-capita CO₂ emissions peaked in the ${peakDecade.label} and have fallen in every decade since`,
@@ -123,13 +158,24 @@ async function main() {
       alt: `Box plot of France's annual per-capita CO2 emissions by decade, ${decadeFrom} to ${decadeTo}, in tonnes per capita. The median rises from ${summaries[0].median.toFixed(2)} in the ${summaries[0].label} to a peak of ${peakDecade.median.toFixed(2)} in the ${peakDecade.label}, then falls every decade after that to ${summaries[summaries.length - 1].median.toFixed(2)} in the ${summaries[summaries.length - 1].label} (n=${summaries[summaries.length - 1].n}, a partial decade covering 2020-2024 only; every other decade shown is a full n=10). ${outlierCount === 0 ? "No decade produced a Tukey outlier." : summaries.filter((s) => s.outliers.length > 0).map((s) => `${s.label} has ${s.outliers.length} outlier reading${s.outliers.length > 1 ? "s" : ""} beyond the whisker: ${s.outliers.map((v) => v.toFixed(1)).join(", ")}, from the tail end of the prior decade's higher emissions.`).join(" ")}`,
       ground,
       accent,
+      size,
     }),
-    width: 900,
-    height: 560,
-    outDir: HERE,
-    name: "more-boxplot-france-co2-decades-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "more-boxplot-france-co2-decades" });
+  assertWithinStage(svg, size, { what: "more-boxplot-france-co2-decades" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file`);
   if (lastFull) console.log(`partial decade in the data: ${lastFull.label} (n=${lastFull.n})`);
 }
 

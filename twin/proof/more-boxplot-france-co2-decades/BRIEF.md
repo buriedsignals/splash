@@ -1,7 +1,16 @@
+---
+size: landscape
+type: boxplot
+---
+
 # Beat — France's per-capita CO₂ emissions peaked in the 1970s
 
-**Type:** box plot. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560 (the
-default frame — 8 decade-boxes fit it without crowding, no per-story override needed).
+**Type:** box plot. **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize`. The `900 x 560` frame this beat used to
+state in prose is gone — it was a third statement of a size nothing downstream read, beside the
+component's own `const FRAME` and the two literals in the render script.
 
 ## Claim
 
@@ -62,3 +71,37 @@ like it might be floating in the gap between the 1970s and 1980s boxes rather th
 its own box — a crop of that region confirmed it is in fact centred exactly on the 1980s box, one
 tick above its whisker top, which is correct; no fix was needed, but it would not have been
 confirmed without zooming into the actual pixels.
+
+## The three export sizes — one ships, two are refused by the TYPE
+
+Rendered at all three and opened. **Landscape 1920x1080 is what this beat delivers.** Portrait and
+square are refused before a single mark is drawn, by `assertTypeMayEnter` rather than by anything
+this beat measures:
+
+> `boxplot cannot be drawn at portrait. no aspect range has been measured for "boxplot" at a tall
+> frame, and it is not a band-scale type with a twin form. … It ships at: landscape.`
+
+That is the right refusal and it is worth being explicit about why, because a box plot *looks* like
+a band-scale type — eight decades on a category axis — and transposing it is the move that would
+suggest itself. It is not available: the axis that would be rotated is the **value** axis, which is
+a continuum, and a distribution's whole argument is a SHAPE — where the median sits inside the box,
+how far each whisker runs, whether the 1980s outlier stands clear of its box. The portrait probe
+measured a histogram going from 2.35:1 to 0.54:1 with **zero clipped runs and zero collisions**, so
+nothing in this toolchain could tell a reader the shape had been destroyed. Until somebody renders
+this type's stretch arm at the accepted frames and records the extremes in `MEASURED_ASPECT`, a tall
+box plot is an aspect nobody chose.
+
+## What landscape cost — one legibility defect the migration surfaced
+
+Two of this beat's tokens were **11 px**, under the seed's smallest (12). The table's multipliers are
+derived so that a 12 px token clears each row's floor — 26/12 = 2.2 at landscape — so an 11 lands at
+**24.2 px against a 26 px floor**, and `assertTypeFloor` refuses it off the rendered markup. The two
+are the `n=10` counts under each decade and the outlier's own value label, which is to say: the two
+smallest things on the chart were the count that stops a five-point box reading as a ten-point one,
+and the number naming the one reading that sits outside its whisker. Both were raised to 12; the
+floor is never lowered. The delivered SVG now carries four sizes — 26, 29, 31, 53 — and its smallest
+is exactly on the floor.
+
+The credit also WRAPS now (one 900 px line, several at a wider frame's type scale), and the
+two-line category band under the plot is derived from where the credit sits rather than from a
+literal, so the `n=` row cannot land on the source.

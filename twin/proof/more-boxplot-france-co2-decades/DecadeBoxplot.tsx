@@ -9,6 +9,12 @@
  * decades keep their own chronological order (this is a time-ordered categorical axis, not one
  * sorted by median); and the 2020s box carries a visibly smaller n (5, a partial decade) printed
  * under its own category label rather than left looking equivalent to the other seven full ones.
+ *
+ * A box plot's argument is a SHAPE — where the median sits inside the box, how long the whiskers
+ * run — so it is exactly the type the portrait probe proved no counter in this project can protect.
+ * `type-at-size.mjs` carries no measured aspect range for it and it is not a band-scale type with a
+ * twin form, so it REFUSES portrait and square outright, naming the measurement that is missing.
+ * That refusal is the beat's answer at those two sizes; see `BRIEF.md`.
  */
 
 import { extent, quantile } from "d3-array";
@@ -18,22 +24,94 @@ import {
   measureText,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
 
 export type DecadeReadings = { label: string; values: number[] };
 
-const FRAME = { width: 900, height: 560 };
-const PAD = 40;
-const TITLE = { fontSize: 24, fontWeight: 700, lead: 30 };
-const SOURCE = { fontSize: 14, fontWeight: 400 };
-const AXIS = { fontSize: 13, fontWeight: 400 };
-const CATEGORY_LABEL = { fontSize: 13, fontWeight: 600 };
-const N_LABEL = { fontSize: 11, fontWeight: 400 };
-const OUTLIER_LABEL = { fontSize: 11, fontWeight: 600 };
+/**
+ * THE 900x560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more: the frame is `sizeFor(size)`'s, and `size` is the decision
+ * gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs`. Before this the size was
+ * stated three times as literals — here and twice in the render script — and `renderStill` compared
+ * two of them against each other, so a journalist pinning `portrait` got this beat's landscape
+ * frame back in silence.
+ *
+ * TWO TOKENS ARE RAISED FROM 11 TO 12, and it is a legibility fix rather than a tidy-up. The table's
+ * multipliers are derived so that the SEED's smallest token — 12 — clears each row's floor
+ * (`sizes.mjs`: 26/12 = 2.2 at landscape). A beat carrying an 11 lands at 24.2 px against a 26 px
+ * floor, and `assertTypeFloor` refuses it off the rendered markup. The floor is never lowered, so
+ * the token comes up to the smallest the scale was derived for.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts — the box's own strokes and the outlier
+ * dot's radius included, because a 1.5 px stroke on a 1920 px frame is a hairline.
+ *
+ * `PAD` is the one that does NOT go through it — a frame's margin is proportional to the CANVAS,
+ * not to the type (`frameInsetFor`).
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 30 },
+  SOURCE: { fontSize: 14, fontWeight: 400, lead: 20 },
+  AXIS: { fontSize: 13, fontWeight: 400 },
+  CATEGORY_LABEL: { fontSize: 13, fontWeight: 600 },
+  N_LABEL: { fontSize: 12, fontWeight: 400 },
+  OUTLIER_LABEL: { fontSize: 12, fontWeight: 600 },
+  HEADER_TO_PLOT: 30,
+  /** Room to the right of the plot for an outlier label sitting beside its dot. */
+  OUTLIER_LABEL_GUTTER: 40,
+  OUTLIER_LABEL_GAP: 9,
+  OUTLIER_BASELINE_NUDGE: 4,
+  CATEGORY_DROP: 22,
+  CATEGORY_TO_N: 4,
+  AXIS_TO_CATEGORY: 6,
+  AXIS_TO_SOURCE: 10,
+  Y_TICK_INSET: 10,
+  Y_TICK_BASELINE_NUDGE: 4,
+  WHISKER_STROKE: 1.5,
+  BOX_STROKE: 1.5,
+  MEDIAN_STROKE: 2.5,
+  OUTLIER_DOT: 4,
+};
 /** Static genre density (`static-discipline.md`, "Axis density") — enough gridlines that a reader
  *  scrutinising the frame can put a number on any box edge, not the two-or-three-tick floor a
  *  motion beat would use. */
 const Y_TICK_HINT = 6;
 const UNIT = "t CO₂ per capita";
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    CATEGORY_LABEL: f(BASE.CATEGORY_LABEL) as typeof BASE.CATEGORY_LABEL,
+    N_LABEL: f(BASE.N_LABEL) as typeof BASE.N_LABEL,
+    OUTLIER_LABEL: f(BASE.OUTLIER_LABEL) as typeof BASE.OUTLIER_LABEL,
+    HEADER_TO_PLOT: sp(BASE.HEADER_TO_PLOT),
+    OUTLIER_LABEL_GUTTER: sp(BASE.OUTLIER_LABEL_GUTTER),
+    OUTLIER_LABEL_GAP: sp(BASE.OUTLIER_LABEL_GAP),
+    OUTLIER_BASELINE_NUDGE: sp(BASE.OUTLIER_BASELINE_NUDGE),
+    CATEGORY_DROP: sp(BASE.CATEGORY_DROP),
+    CATEGORY_TO_N: sp(BASE.CATEGORY_TO_N),
+    AXIS_TO_CATEGORY: sp(BASE.AXIS_TO_CATEGORY),
+    AXIS_TO_SOURCE: sp(BASE.AXIS_TO_SOURCE),
+    Y_TICK_INSET: sp(BASE.Y_TICK_INSET),
+    Y_TICK_BASELINE_NUDGE: sp(BASE.Y_TICK_BASELINE_NUDGE),
+    WHISKER_STROKE: BASE.WHISKER_STROKE * typeScale,
+    BOX_STROKE: BASE.BOX_STROKE * typeScale,
+    MEDIAN_STROKE: BASE.MEDIAN_STROKE * typeScale,
+    OUTLIER_DOT: sp(BASE.OUTLIER_DOT),
+  };
+}
 
 /**
  * Pure statistics: one decade's raw readings to its five-number summary plus its Tukey outliers.
@@ -161,6 +239,7 @@ export function DecadeBoxplot({
   alt,
   ground,
   accent,
+  size,
 }: {
   decades: DecadeReadings[];
   title: string;
@@ -168,6 +247,8 @@ export function DecadeBoxplot({
   alt: string;
   ground: string;
   accent: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
 }) {
   if (decades.length < 3)
     throw new Error(
@@ -176,17 +257,49 @@ export function DecadeBoxplot({
     );
 
   const { ink, muted, grid } = deriveFurniture(ground);
-  const { width, height } = FRAME;
+  const { width, height, typeScale } = sizeFor(size);
+  // The band this beat may draw in. At portrait the platform reserves 14% at the top and 35% at the
+  // foot; content there is at RISK OF BEING COVERED, which no clipping counter can see. This beat
+  // refuses portrait outright (see the file header), so the branch is here for one reason: nothing
+  // in this component may assume the frame IS the stage.
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const {
+    TITLE,
+    SOURCE,
+    AXIS,
+    CATEGORY_LABEL,
+    N_LABEL,
+    OUTLIER_LABEL,
+    HEADER_TO_PLOT,
+    OUTLIER_LABEL_GUTTER,
+    OUTLIER_LABEL_GAP,
+    OUTLIER_BASELINE_NUDGE,
+    CATEGORY_DROP,
+    CATEGORY_TO_N,
+    AXIS_TO_CATEGORY,
+    AXIS_TO_SOURCE,
+    Y_TICK_INSET,
+    Y_TICK_BASELINE_NUDGE,
+    WHISKER_STROKE,
+    BOX_STROKE,
+    MEDIAN_STROKE,
+    OUTLIER_DOT,
+  } = tokens(typeScale);
+  const contentTop = stage.reserved ? stage.top : PAD;
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
 
   const summaries = decades.map((d) => summarizeDecade(d.label, d.values));
   const allValues = decades.flatMap((d) => d.values);
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
+  const titleBaseline = contentTop + TITLE.fontSize;
+  // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
   // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
-  // "The source on the frame's bottom margin."
-  const sourceBaseline = height - PAD;
+  // "The source on the frame's bottom margin." It WRAPS now: one 900px line becomes several at a
+  // wider frame's type scale, and an unwrapped credit ran off the frame.
+  const sourceLines = wrap(source, width - PAD * 2, SOURCE);
+  const sourceBaseline = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
 
   // Both gutters are measured from the widest string that will actually be drawn in them, never
   // a fixed constant (`static-discipline.md`, "Gutters are measured, never fixed").
@@ -199,7 +312,9 @@ export function DecadeBoxplot({
     i === all.length - 1 ? `${v} ${UNIT}` : `${v}`,
   );
   const leftGutter =
-    PAD + 10 + Math.max(...tickLabels.map((label) => measureText(label, AXIS)));
+    PAD +
+    Y_TICK_INSET +
+    Math.max(...tickLabels.map((label) => measureText(label, AXIS)));
 
   // The x-axis carries two lines per category: the decade, and its own n — the honest reading of
   // "show the n somewhere" (`boxplot.md`), since a box drawn from 5 points looks exactly like one
@@ -208,19 +323,18 @@ export function DecadeBoxplot({
   const categoryLines = summaries.map((s) => [s.label, `n=${s.n}`]);
 
   const padding = {
-    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 30,
-    right: PAD + 40, // room for an outlier label sitting to the right of its dot
-    // Grown by the source block's own height plus clear air: the source now sits on the
-    // frame's bottom margin, so the axis band beneath the plot has to end above its ink.
+    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + HEADER_TO_PLOT,
+    // Room for an outlier label sitting to the right of its dot.
+    right: PAD + OUTLIER_LABEL_GUTTER,
+    // Derived from where the credit now sits, not from a constant: the two-line category band
+    // under the plot's floor has to end above the credit's first line of ink.
     bottom:
-      PAD +
-      AXIS.fontSize +
-      6 +
+      height -
+      (sourceBaseline - SOURCE.fontSize - AXIS_TO_SOURCE) +
+      AXIS_TO_CATEGORY +
       CATEGORY_LABEL.fontSize +
-      4 +
-      N_LABEL.fontSize +
-      SOURCE.fontSize +
-      10,
+      CATEGORY_TO_N +
+      N_LABEL.fontSize,
     left: leftGutter,
   };
 
@@ -230,8 +344,9 @@ export function DecadeBoxplot({
     padding,
   });
 
-  const categoryBaselineTop = plot.bottom + 22;
-  const categoryBaselineBottom = categoryBaselineTop + N_LABEL.fontSize + 4;
+  const categoryBaselineTop = plot.bottom + CATEGORY_DROP;
+  const categoryBaselineBottom =
+    categoryBaselineTop + N_LABEL.fontSize + CATEGORY_TO_N;
 
   return (
     <svg
@@ -257,9 +372,17 @@ export function DecadeBoxplot({
           {line}
         </text>
       ))}
-      <text x={PAD} y={sourceBaseline} fill={muted} fontSize={SOURCE.fontSize}>
-        {source}
-      </text>
+      {sourceLines.map((line, i) => (
+        <text
+          key={line}
+          x={PAD}
+          y={sourceBaseline + i * SOURCE.lead}
+          fill={muted}
+          fontSize={SOURCE.fontSize}
+        >
+          {line}
+        </text>
+      ))}
 
       {ticksY.map((tick, i) => (
         <g key={tick.value}>
@@ -272,8 +395,8 @@ export function DecadeBoxplot({
             strokeWidth={1}
           />
           <text
-            x={plot.left - 10}
-            y={tick.y + 4}
+            x={plot.left - Y_TICK_INSET}
+            y={tick.y + Y_TICK_BASELINE_NUDGE}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="end"
@@ -293,7 +416,7 @@ export function DecadeBoxplot({
             y1={b.yWhiskerLo}
             y2={b.yWhiskerHi}
             stroke={accent}
-            strokeWidth={1.5}
+            strokeWidth={WHISKER_STROKE}
           />
           <line
             x1={b.boxLeft + (b.boxRight - b.boxLeft) * 0.22}
@@ -301,7 +424,7 @@ export function DecadeBoxplot({
             y1={b.yWhiskerLo}
             y2={b.yWhiskerLo}
             stroke={accent}
-            strokeWidth={1.5}
+            strokeWidth={WHISKER_STROKE}
           />
           <line
             x1={b.boxLeft + (b.boxRight - b.boxLeft) * 0.22}
@@ -309,7 +432,7 @@ export function DecadeBoxplot({
             y1={b.yWhiskerHi}
             y2={b.yWhiskerHi}
             stroke={accent}
-            strokeWidth={1.5}
+            strokeWidth={WHISKER_STROKE}
           />
 
           {/* Box: Q1 to Q3, one hue (`boxplot.md`: one hue for a single-group comparison). Fill is
@@ -322,7 +445,7 @@ export function DecadeBoxplot({
             fill={accent}
             fillOpacity={0.22}
             stroke={accent}
-            strokeWidth={1.5}
+            strokeWidth={BOX_STROKE}
           />
 
           {/* Median: in ink, never the box's own fill or stroke colour (`boxplot.md`). */}
@@ -332,7 +455,7 @@ export function DecadeBoxplot({
             y1={b.yMedian}
             y2={b.yMedian}
             stroke={ink}
-            strokeWidth={2.5}
+            strokeWidth={MEDIAN_STROKE}
           />
 
           {/* Outliers: individual dots beyond the whisker, never folded into a stretched whisker
@@ -340,11 +463,11 @@ export function DecadeBoxplot({
               — once a decade carries many, `boxplot.md` says drop the per-point labels. */}
           {b.outlierPoints.map((pt) => (
             <g key={pt.value}>
-              <circle cx={b.cx} cy={pt.y} r={4} fill={accent} />
+              <circle cx={b.cx} cy={pt.y} r={OUTLIER_DOT} fill={accent} />
               {b.outlierPoints.length <= 3 && (
                 <text
-                  x={b.cx + 9}
-                  y={pt.y + 4}
+                  x={b.cx + OUTLIER_DOT + OUTLIER_LABEL_GAP}
+                  y={pt.y + OUTLIER_BASELINE_NUDGE}
                   fill={ink}
                   fontSize={OUTLIER_LABEL.fontSize}
                   fontWeight={OUTLIER_LABEL.fontWeight}
