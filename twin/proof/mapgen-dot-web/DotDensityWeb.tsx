@@ -17,12 +17,29 @@
  * never grows or shrinks with the container. The plate keeps its baked aspect at every width, scaled
  * uniformly and never stretched.
  *
- * THE ONE CONTROL, and the test it had to pass. 42 pointer targets on a continental map is the
- * density case `map-web-discipline.md`'s "Pan and zoom" describes: measured at 375px wide, most
- * countries' 28px targets overlap a neighbour's. So this beat ships the bounded zoom — one checkbox,
- * one fixed multiplier a reader cannot exceed, pure CSS (`:has()`), no live tiles and no script. The
- * unzoomed default is not a preview: it is the whole claim, at the same completeness a beat with no
- * control at all would ship.
+ * REAL ZOOM AND PAN, FROM MAPTILER, CONSTRAINED TO THIS MAP'S OWN AREA — ruling R1, 2026-08-10:
+ * *"une carte web qu'on ne peut pas parcourir est une image"*. The beat ships in three layers, the
+ * same three `twin-map-web/assets/MapWebSeed.tsx` ships:
+ *
+ *   1. `#mw-map` — an empty box that `live-map.mjs` fills with a live MapLibre map and swaps in ONLY
+ *      on `map.on("load")`;
+ *   2. `#mw-fallback` — this SSR'd plate, its country outlines and its 2,996 dots, complete and
+ *      script-free: what a reader gets with JavaScript off, offline, or after the account's keys are
+ *      invalidated at 100 % of its spending limit;
+ *   3. `.mw-overlay` — the five direct labels and the 42 hit targets, a SIBLING of both and never a
+ *      child of either, because it belongs to both. Nested inside the fallback it would be hidden
+ *      with it, and every label and every Tab stop would leave at the moment the live map arrived.
+ *
+ * The bounded `ZOOM_SCALE` checkbox this beat used to put ABOVE the map is GONE (B6.14b asked for its
+ * removal by name: *"the out-of-map button should not exist. Use MapTiler's controls, constrained to
+ * our subject's area."*). A reader now zooms with MapTiler's own `NavigationControl`, leashed to the
+ * study set by `live-map.mjs`.
+ *
+ * 42 pointer targets on a continental map is the density case `map-web-discipline.md`'s "Pan and
+ * zoom" describes, and the live map answers it twice over: the reader can zoom in, AND a hover no
+ * longer has to find a 28 px disc at a country's own anchor — an invisible `fill` layer of the same
+ * country polygons answers a pointer ANYWHERE inside the country (B6.14a). The `.pt` buttons below
+ * stay for keyboard reach and for their `aria-label`; live, only their pointer-events go.
  */
 
 import { Fragment } from "react";
@@ -42,15 +59,15 @@ export const NAMED = ["DEU", "GBR", "FRA", "ITA", "ESP"];
  *  0.77px speckle here, because this plate is baked at 1000px and drawn at 666 in a 1600px window.
  *  0.002 of the frame is 2px baked, ~1.3px drawn at 1600 and ~0.6px at 375 — a texture at the sizes
  *  a reader actually sees rather than at the size the plate was baked at. */
-const DOT_RADIUS_FRACTION = 0.002;
+export const DOT_RADIUS_FRACTION = 0.002;
 /** The per-country hit target's diameter, in real CSS pixels — an HTML `<button>`, never an SVG
  *  shape sized in frame units, which would shrink to a few physical pixels at 375px wide. */
 const HIT_TARGET_PX = 28;
-/** The one bounded zoom step. A reader cannot go past it, so the plate never degrades into blur, and
- *  it is a fixed multiplier rather than a gesture with no ceiling. 2.2x is the measured choice: at
- *  375px wide it takes the drawn map from ~290px to ~640px, which is what separates the Benelux
- *  targets from each other rather than merely making the map bigger. */
-export const ZOOM_SCALE = 2.2;
+/* THE BOUNDED ZOOM STEP IS GONE. `ZOOM_SCALE = 2.2` grew a raster plate inside a scrollable box and
+   put an out-of-map checkbox above the beat reading "Zoom in (2,2×, bounded) — then scroll or use the
+   arrow keys to pan". Ruling R1 (2026-08-10) replaced it with MapTiler's own zoom and pan, leashed to
+   the study set (`live-map.mjs`), and B6.14b asked for exactly that removal. The plate is still baked
+   and still shipped — as the FALLBACK layer, not as the display surface. */
 // ===========================
 
 /** One country's own detail string: the ONE implementation the hit target's `aria-label`,
@@ -93,7 +110,6 @@ export function DotDensityWeb({
   ink,
   muted,
   landFill,
-  zoomable = true,
 }: {
   geometry: { frame: { width: number; height: number } };
   plate: string;
@@ -114,7 +130,6 @@ export function DotDensityWeb({
   muted: string;
   /** A light neutral land fill, derived from ground and ink by the runner. */
   landFill: string;
-  zoomable?: boolean;
 }) {
   const { frame } = geometry;
   if (countries.length < 2)
@@ -132,30 +147,21 @@ export function DotDensityWeb({
       <p className="mw-title">{title}</p>
       <p className="mw-source">{`${source} · ${basemapCredit}`}</p>
 
-      {zoomable && (
-        <label className="mw-zoom-toggle-label" htmlFor="mw-zoom-toggle">
-          <input
-            type="checkbox"
-            id="mw-zoom-toggle"
-            className="mw-zoom-toggle"
-          />
-          {` Zoom in (${en(ZOOM_SCALE)}×, bounded) — then scroll or use the arrow keys to pan`}
-        </label>
-      )}
-
       <div className="mw-stage">
         <div
           className="mw-viewport"
           style={{ aspectRatio: `${frame.width} / ${frame.height}` }}
-          {...(zoomable
-            ? {
-                tabIndex: 0,
-                "aria-label":
-                  "Pannable map area — scroll or use the arrow keys to pan when zoomed in.",
-              }
-            : {})}
         >
-          <div className="mw-zoomable">
+          {/* LAYER 1 — the live MapTiler map (R1). Empty and invisible until `live-map.mjs` gets a
+              `map.on("load")`; a style failure, a dead key, no network or no JavaScript at all leaves
+              layer 2 below exactly where it is. Its OWN container, never a wrapper around the
+              fallback, so the swap is one `hidden` flip and never a half-drawn state. */}
+          <div id="mw-map" className="mw-live-map" />
+
+          {/* LAYER 2 — the baked plate, complete and script-free. The rule this genre has always
+              stated survives verbatim, read against this layer: the unzoomed state is not a preview
+              of the real view, it IS the full claim. */}
+          <div id="mw-fallback" className="mw-fallback">
             {/* Geometry only: the plate, the study countries' own outlines, and the dots. No text —
                 see this file's own header note. */}
             <svg
@@ -209,14 +215,29 @@ export function DotDensityWeb({
                 ))}
               </g>
             </svg>
+          </div>
 
+          {/* LAYER 3 — the overlay: the five direct labels and the 42 hit targets. A SIBLING of the
+              two map layers, never a child of either, because it belongs to BOTH: it is the only
+              keyboard path to the data and the only place any country's name is written. Positioned
+              in PERCENTAGES here, which is what the fallback plate needs; `live-map.mjs` repositions
+              these same nodes with `map.project()` on every camera move, which is what the live map
+              needs — reading each node's own `data-key` against the plan's `anchors`. */}
+          <div className="mw-overlay">
             {/* The five clouds the claim names, labelled directly on their own dots — HTML,
                 positioned by percentage, sized in fixed CSS pixels. Drawn unconditionally: they are
-                the claim, not an interaction result, and no control on this page can remove them. */}
+                the claim, not an interaction result, and no control on this page can remove them.
+
+                `data-key` and nothing else: a label here sits ON its own cloud (the transform centres
+                it on the anchor), not BESIDE a symbol, so there is no flipped side, no gutter and no
+                vertical nudge to carry — `live-map.mjs`'s `reposition` reads `data-side`/`data-gap`/
+                `data-dy` when a beat has them and centres on the projected anchor when it does not,
+                which is exactly this beat's own placement seen at two sizes. */}
             {named.map((c) => (
               <span
                 key={c.key}
                 className="point-label subject"
+                data-key={c.key}
                 style={{
                   left: `${(c.anchor[0] / frame.width) * 100}%`,
                   top: `${(c.anchor[1] / frame.height) * 100}%`,
@@ -230,7 +251,12 @@ export function DotDensityWeb({
             {/* The interaction layer: one HTML <button> per country, at its own cloud's anchor.
                 `title` gives a native tooltip with no script at all; `aria-label`/`data-detail` are
                 baked into the markup rather than assembled by the inline script, so the no-JS page is
-                still keyboard-reachable and still announces the value. */}
+                still keyboard-reachable and still announces the value.
+
+                LIVE, these stop being what a POINTER talks to (CSS drops their pointer-events) and
+                the country's own polygon answers instead, anywhere inside it — B6.14a, closed by
+                construction rather than by growing this disc. They keep every Tab stop, every
+                `aria-label` and their `data-detail`, which is the string the live tooltip reads. */}
             {targets.map((c) => (
               <button
                 key={c.key}
@@ -341,7 +367,10 @@ export function CountryTable({
       </thead>
       <tbody>
         {rows.map((c) => (
-          <tr key={c.key} className={NAMED.includes(c.key) ? "subject" : undefined}>
+          <tr
+            key={c.key}
+            className={NAMED.includes(c.key) ? "subject" : undefined}
+          >
             <th scope="row">{c.name}</th>
             <td>{en(c.population, 0)}</td>
             <td>{en(c.dots.length, 0)}</td>

@@ -1,10 +1,12 @@
 // twin/proof/mapgen-dot-web/render-web.mjs
 //
 // The WEB genre of the dot-density map: the same 42-country World Bank file
-// `proof/mapmore-dot-population` ships as a still, turned into ONE self-contained HTML file — one
-// fluid SVG carrying geometry only (plate, outlines, ~3,000 dots), one HTML overlay carrying every
-// word and the bounded zoom control, the accessible table this beat opts into, one inlined
-// interaction script, and no external request once the plate is inlined as a data URI.
+// `proof/mapmore-dot-population` ships as a still, turned into ONE self-contained HTML file — a LIVE
+// MapTiler map (ruling R1) over a complete baked fallback: one fluid SVG carrying geometry only
+// (plate, outlines, ~3,000 dots), one HTML overlay carrying every word and every hit target, the
+// accessible table this beat opts into, one inlined interaction script, one inlined maplibre-gl and
+// the plan the live layer reads. The page makes exactly one external request, to api.maptiler.com;
+// with no network, no key or no JavaScript it renders the fallback complete.
 //
 // This is this beat's OWN copy of `twin-map-web/scripts/render-web.mjs`'s machinery, adapted to a
 // type that skill's seed does not carry. Nothing here imports out of a skill or across beats, except
@@ -21,6 +23,7 @@
 // Usage:  bun proof/mapgen-dot-web/render-web.mjs [outDir] [--data <csv>]
 
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -29,13 +32,22 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { deriveFurniture } from "./render-still.mjs";
-import { DotDensityWeb, CountryTable, NAMED, ZOOM_SCALE } from "./DotDensityWeb.tsx";
+import {
+  DotDensityWeb,
+  CountryTable,
+  NAMED,
+  DOT_RADIUS_FRACTION,
+  countryDetail,
+} from "./DotDensityWeb.tsx";
 import {
   parsePopulationCsv,
   joinPopulation,
   chooseDotValue,
   scatterInParts,
   partsInFrame,
+  pointInRings,
+  pixelToLonLat,
+  mercatorFrameHeightPx,
   cloudAnchor,
   shapeAnchor,
   fillTightness,
@@ -44,18 +56,35 @@ import {
 } from "./geo-dot.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+// Resolved through node's own module resolution, never by a relative path into `node_modules`. A
+// package name is the honest way to say "this comes from a dependency", and it is what a copy of
+// this beat with its own `bun install` would resolve too.
+const requireFrom = createRequire(import.meta.url);
+const MAPLIBRE_JS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js");
+const MAPLIBRE_CSS = requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css");
 
 // ===== CONFIG — this beat's own story =====
 const BEAT = {
   source: "Source: World Bank Open Data, indicator SP.POP.TOTL (population, total), 2023",
   basemapCredit: "basemap © MapTiler, © OpenStreetMap",
 };
+/** The cartographic blue `bake.mjs` forces onto `dataviz-light`'s grey water before it captures the
+ *  plate, repeated here because the LIVE style needs the same correction applied to the same two
+ *  layers (`live-map.mjs`'s `style.load` handler). If the live map and its own fallback disagree
+ *  about the colour of water the swap is visible, and on a dot beat the correction is load-bearing
+ *  rather than cosmetic: the dots are the only ink over most of the frame, so a grey sea reads as
+ *  "no data here" instead of "no land here". It must equal `bake.mjs`'s own literal. */
+const WATER_FILL = "#aac9e0";
 const PLATE_SIZE = "1000x1000";
 // FROZEN BESIDE THE BEAT, for the same reason the csv is: a basemap living in `/tmp` cannot be
 // committed, so the delivered html could be neither reproduced nor audited. `ensurePlate` bakes only
 // when this folder is empty.
 const DEFAULT_PLATE_DIR = join(HERE, "plate");
 const DEFAULT_DATA_PATH = join(HERE, "population-europe-2023.csv");
+// The same shapes the bake projected into the plate's pixel space, read here in their own lon/lat:
+// the live map answers a hover with the COUNTRY's own polygon, and a polygon in plate pixels is of
+// no use to a camera the reader is moving. Joined by `ADM0_A3`, exactly as `bake.mjs` joins it.
+const DEFAULT_COUNTRIES_PATH = join(HERE, "countries.geojson");
 // And the OUTPUT lands beside the beat, where `dot-population.html` is committed — never a scratch
 // directory, which would print a path, exit zero and leave the committed artifact stale.
 const DEFAULT_OUT_DIR = HERE;
@@ -66,11 +95,316 @@ const ALIAS = { KOS: "XKX" };
 // ==========================================
 
 /**
+ * R1b — THE KEY NEVER ENTERS THE REPOSITORY. R1 accepted the key being visible to a reader of a
+ * published article; it did not accept an unbounded public leak, and the two are different
+ * exposures. This beat COMMITS its rendered HTML beside itself and the FJM deliverable is an MIT
+ * open-source release, so a real key here would be scanned by bots within minutes of the push and
+ * would survive in the history after any later removal. `twin-deliver` substitutes the real key at
+ * the moment the file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts`
+ * reddens if one ever reaches a tracked file.
+ *
+ * The delivered key should be a SECOND, origin-restricted MapTiler key, not the development one:
+ * MapTiler's documented mitigation for a client-side key is Allowed HTTP origins, enforced
+ * server-side, and an account's DEFAULT key cannot be restricted — a dedicated one has to be created
+ * (docs.maptiler.com/cloud/api/authentication-key/).
+ */
+export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
+
+/**
+ * How many decimals a lon/lat carries into the page. DERIVED, not picked: at this plate's own
+ * `degreesPerPixel` (0.0672) one thousandth of a degree is 1/67 of a plate pixel — a hundredth of
+ * the 0.6px gap `bake.mjs` already thins its own outlines to, and a five-hundredth of one dot's own
+ * 2px radius. Full float precision would spend 210 KB of the page saying nothing a reader or a
+ * pointer can tell apart.
+ */
+const LON_LAT_DECIMALS = 3;
+
+/**
+ * THE SMALLEST RADIUS THE LIVE FIELD MAY BE DRAWN AT, in CSS pixels — the floor under the
+ * ground-area rule, and the fix for a defect that removed this beat's entire encoding at phone width.
+ *
+ * `radius: "ground"` is right and is not in question: a dot stands for a fixed number of people in a
+ * fixed piece of ground, so its ground area must not change with zoom. What it has no answer for is
+ * the bottom end. The live camera fits the study set inside the CONTAINER, and at 375 x 812 that
+ * container is 341 x 352 with `live-map.mjs`'s own 48px of padding on each side, so the fit lands at
+ * zoom 1.390 against a bake at 3.388 — a drawn radius of 0.50px. MapLibre's circle shader feathers a
+ * circle's edge by about a pixel, so a sub-pixel disc does not shrink, it VANISHES.
+ *
+ * Measured in Chrome, dot ink isolated by toggling the layer so the basemap, the outlines and the
+ * labels cancel exactly (mean red-channel deficit over 2–14°E / 45–53°N, against the SAME box in the
+ * fallback plate, which draws the same field as SVG and is the picture this must not disagree with):
+ *
+ *   375 x 812 — plate 0.1856 · live, no floor 0.0119 (6% of the plate: an empty map under a legend
+ *               that says 2,996 dots) · floor 0.8px 0.0598 · floor 1px 0.1156 · **floor 1.25px
+ *               0.1999** · floor 1.5px 0.2749.
+ *   1600 x 900 — the ground radius is already 1.24px, so the floor changes the field by 2%
+ *               (0.0926 → 0.0948) and the encoding stays ground-true.
+ *
+ * 1.25px is therefore not a taste: it is the radius at which the live field deposits the ink the
+ * plate's own field deposits, at the width where the ground rule falls below it. It binds only below
+ * zoom 2.710 (`bakeZoom + log2(floor / r)`), which is the phone; every wider container and every
+ * zoom a reader moves into is drawn at the true ground size.
+ *
+ * WHAT IT COSTS, said in the beat's own caveat rather than only here: where the floor binds, a dot
+ * covers more ground than it stands for, so the field reads a little denser than it is.
+ */
+const DOT_RADIUS_FLOOR_PX = 1.25;
+
+/**
+ * The ground-area rule with that floor: constant radius up to the zoom where the ground radius
+ * reaches the floor, then doubling per zoom level exactly as `live-map.mjs`'s own
+ * `groundRadiusExpression` does.
+ *
+ * WHY THIS LAYER DECLARES ITS OWN `circle-radius` INSTEAD OF `radius: "ground"`. The shared boot
+ * script is a byte-identical copy in every map × web beat and its ground mode has no floor, and a
+ * floor cannot be wrapped around it from outside: MapLibre refuses a `["zoom"]` expression nested
+ * inside `["max", …]` — measured, and it fails SILENTLY (`setPaintProperty` was a no-op and five
+ * different floors all rendered identically, which is how this nearly shipped unfloored twice). So
+ * the whole expression is built here, top-level, and `live-map.mjs` copies the layer's own paint
+ * verbatim because the layer declares no `radius`.
+ *
+ * THE COST OF THAT, stated rather than discovered: this is the one place in this beat where a rule
+ * the shared boot script owns is re-implemented. If `groundRadiusExpression` changes there, this
+ * does not follow. The two agree today — same `["exponential", 2]`, same 6-level span, same
+ * `r · 2^(zoom − bakeZoom)` above the floor.
+ */
+function groundRadiusWithFloor(bakeZoom, radius, floorPx) {
+  const span = 6;
+  // The zoom at which the honest ground radius reaches the floor. Below it the radius is held; above
+  // it the floor is irrelevant and the expression is the ground rule itself.
+  const floorZoom = bakeZoom + Math.log2(floorPx / radius);
+  return [
+    "interpolate",
+    ["exponential", 2],
+    ["zoom"],
+    0,
+    floorPx,
+    floorZoom,
+    floorPx,
+    floorZoom + span,
+    floorPx * 2 ** span,
+  ];
+}
+
+/**
+ * The plan the live layer reads out of the page: the style URL with its placeholder, the camera
+ * facts the bake recorded, the reader's leash, and this beat's own two layers.
+ *
+ * BOTH LAYERS ARE THE SAME MARKS THE FALLBACK DRAWS, read back through the projection that drew
+ * them — never a second scatter and never a second join:
+ *
+ *   1. `mw-countries`, a `fill` of the study countries' own polygons in real lon/lat, painted the
+ *      SAME land fill and outline the SVG paints. It is what closes B6.14a — *"hover/tooltip must
+ *      fire as soon as you enter the country, not only over its capital"* — because a MapLibre fill
+ *      answers a pointer ANYWHERE inside the polygon, which is what those words mean. The 28px disc
+ *      at the country's anchor stops being what a pointer talks to (CSS drops its pointer-events),
+ *      so this is closed by construction rather than by growing a target.
+ *
+ *      It is painted rather than invisible, and that is deliberate: the fallback draws every country
+ *      with a light land fill and a muted outline, and `live-map.mjs` hides the basemap's own borders
+ *      exactly as the bake hid them, so an INVISIBLE hover layer would swap a map with country edges
+ *      for a map without any — the same "the live map and its fallback are one cartography" rule the
+ *      water fill is set by. One layer serves both, which also keeps 210 KB of polygon from being
+ *      shipped twice.
+ *
+ *   2. `mw-dots`, the 2,996 dots as `radius: "ground"`. A dot stands for a fixed number of people in
+ *      a fixed piece of ground, so its GROUND area must not change: `live-map.mjs` builds it an
+ *      exponential-base-2 interpolation off `bakeZoom`, so `r` is read as the radius the plate drew
+ *      at the zoom the plate was baked at. `r` comes from `DOT_RADIUS_FRACTION`, the same constant
+ *      the SVG's own `<circle>`s are drawn from — never a second radius computation.
+ *
+ *      ONE FEATURE PER COUNTRY, geometry `MultiPoint`, not one feature per dot. Nothing here is
+ *      per-dot: every dot stands for the same number of people (that IS the encoding), hover is off
+ *      on this layer, and `r` is one number for the whole field. Measured: 2,996 point features cost
+ *      285 KB of page against 49 KB this way.
+ */
+export function livePlan({
+  geometry,
+  countries,
+  boundaries,
+  accent,
+  muted,
+  landFill,
+  waterFill,
+}) {
+  const corners = geometry.frameCorners;
+  if (!corners || !(geometry.degreesPerPixel > 0))
+    throw new Error(
+      "this plate predates the camera facts: re-bake it, or the live map has neither bounds to be " +
+        "constrained to nor a ground scale to draw its dots at",
+    );
+  const round = (v) => Number(v.toFixed(LON_LAT_DECIMALS));
+  const at = (point) => {
+    const { lon, lat } = pixelToLonLat(
+      point[0],
+      point[1],
+      corners,
+      geometry.frame,
+    );
+    return [round(lon), round(lat)];
+  };
+
+  // The study set's own footprint: the countries that carry a value, as they are actually DRAWN.
+  // Clamped to the frame the plate was baked at, because `bake.mjs` keeps a ring whose bbox comes
+  // within 40px of the frame rather than cutting it at the edge — Iceland's own outline reaches a
+  // quarter of a degree past the west edge, and a leash that let the reader out there would be a
+  // leash around a place this map does not draw.
+  let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
+  for (const country of countries)
+    for (const part of boundaries.get(country.key))
+      for (const ring of part)
+        for (const [lon, lat] of ring) {
+          if (lon < west) west = lon;
+          if (lon > east) east = lon;
+          if (lat < south) south = lat;
+          if (lat > north) north = lat;
+        }
+  const studyBounds = {
+    west: Math.max(west, corners.west),
+    east: Math.min(east, corners.east),
+    south: Math.max(south, corners.south),
+    north: Math.min(north, corners.north),
+  };
+
+  const anchors = {};
+  for (const country of countries) anchors[country.key] = at(country.anchor);
+
+  return {
+    styleUrl: `https://api.maptiler.com/maps/${geometry.style}/style.json?key=${KEY_PLACEHOLDER}`,
+    waterFill,
+    frame: geometry.frame,
+    // The bake's own ground-per-pixel and the camera it was baked at. `live-map.mjs` derives every
+    // drawn radius from the RATIO of the first to its own, and interpolates a ground-constant dot
+    // off the second.
+    degreesPerPixel: geometry.degreesPerPixel,
+    metresPerPixel: geometry.metresPerPixel,
+    bakeZoom: geometry.zoom,
+    studyBounds,
+    // THE FLOOR UNDER THE READER'S LEASH, and it is derived from THIS beat's own claim rather than
+    // from its frame.
+    //
+    // `twin-map-web`'s seed derives it as the headroom its plate holds over its study set
+    // (`maxZoomForStudySet` minus the bake's zoom). That is the right quantity for a plate baked
+    // wider than its subject, and it is worth **0.032 of a zoom level** here — because `bake.mjs`
+    // deliberately chose its camera AS the study set's own mainland extent (67.19° of frame over
+    // 65.72° of study set). Measured on the page, the runtime fit alone gives 1.37 zoom levels at
+    // 1600 x 900 but **0.20 at 768 x 1024** — a factor of 1.15, which is not a map a reader can move
+    // through, and moving through it is the whole of ruling R1.
+    //
+    // The obvious dot-map derivation does not exist, and that is worth writing down rather than
+    // trying: for a GROUND-CONSTANT field there is no zoom at which the dots "stop merging". Dots and
+    // spacing scale together by construction, so the texture is scale-invariant and a density-derived
+    // bound would be a number that means nothing. What zooming a dot map buys is the COASTLINE under
+    // the field — which cloud is Belgium's and which is the Netherlands'.
+    //
+    // So the bound is the claim's: the title names five countries, and a reader may go in until the
+    // smallest of those five fills the frame. Past that the comparison the title makes is off screen,
+    // which is exactly the seed's own reasoning ("the zoom at which the study set stops filling the
+    // frame") read against the study set this beat's own sentence is about. Germany is the smallest of
+    // the five in longitude (9.16° against the frame's 67.19°), so: 2.875 zoom levels, at every
+    // container shape. It also carries the dots back over their floor — past zoom 2.710 the field is
+    // ground-true again — so a phone reader can reach the honest encoding rather than only the
+    // floored one.
+    minZoomHeadroom: Math.max(
+      0,
+      Math.log2(
+        Math.abs(corners.east - corners.west) /
+          Math.min(
+            ...NAMED.map((key) => {
+              const lons = boundaries
+                .get(key)
+                .flat(2)
+                .map(([lon]) => lon);
+              return Math.max(...lons) - Math.min(...lons);
+            }),
+          ),
+      ),
+    ),
+    anchors,
+    layers: [
+      {
+        id: "mw-countries",
+        type: "fill",
+        data: {
+          type: "FeatureCollection",
+          features: countries.map((country) => ({
+            type: "Feature",
+            geometry: {
+              type: "MultiPolygon",
+              coordinates: boundaries.get(country.key),
+            },
+            properties: {
+              key: country.key,
+              name: country.name,
+              // The same string the country's own `.pt` button and its table row carry, from the
+              // same one implementation. `live-map.mjs` reads the button's `data-detail` when there
+              // is one and this when there is not, so the two can never state different numbers.
+              detail: countryDetail({
+                name: country.name,
+                population: country.population,
+                dots: country.dots.length,
+              }),
+            },
+          })),
+        },
+        paint: { "fill-color": landFill, "fill-outline-color": muted },
+        hover: true,
+      },
+      {
+        id: "mw-dots",
+        type: "circle",
+        data: {
+          type: "FeatureCollection",
+          features: countries
+            .filter((country) => country.dots.length > 0)
+            .map((country) => ({
+              type: "Feature",
+              geometry: {
+                type: "MultiPoint",
+                coordinates: country.dots.map(at),
+              },
+              properties: {
+                key: country.key,
+                r: geometry.frame.width * DOT_RADIUS_FRACTION,
+              },
+            })),
+        },
+        paint: {
+          "circle-color": accent,
+          // The ground rule WITH its floor, declared here rather than as `radius: "ground"` — see
+          // `groundRadiusWithFloor` for why the shared boot script cannot carry the floor and what
+          // that costs.
+          "circle-radius": groundRadiusWithFloor(
+            geometry.zoom,
+            geometry.frame.width * DOT_RADIUS_FRACTION,
+            DOT_RADIUS_FLOOR_PX,
+          ),
+        },
+        // The dots do not answer a pointer, and this is the type's own rule rather than an
+        // omission: a dot is not a place (its position inside its country is random) and it carries
+        // no value of its own, so a tooltip on one would answer a question the encoding cannot ask.
+        // The COUNTRY answers, underneath.
+        hover: false,
+      },
+    ],
+  };
+}
+
+/**
  * SSRs the map component once, SSRs the table when the beat asked for it, wraps both in one
  * self-contained HTML file and writes it. Generic across map-web beats: it knows nothing of this
  * story's own countries.
  */
-async function renderMapWeb({ component, table, props, outDir, name, regionTable = false }) {
+async function renderMapWeb({
+  component,
+  table,
+  props,
+  outDir,
+  name,
+  regionTable = false,
+  live = false,
+  plan = null,
+}) {
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = regionTable
@@ -79,6 +413,16 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
 
   const interactionSource = await readFile(join(HERE, "interaction.mjs"), "utf8");
   const inlineScript = inlineable(interactionSource);
+
+  // maplibre-gl inlined rather than loaded from a CDN. A `<script src>` would trade payload for a
+  // SECOND third-party host; inlining keeps the count at one — api.maptiler.com — which is the
+  // honest reading of R1. Measured 2026-08-10: 803 KB of JS and 65.5 KB of CSS.
+  const liveBlock = live
+    ? `<style>\n${await readFile(MAPLIBRE_CSS, "utf8")}\n</style>\n` +
+      `<script type="application/json" id="mw-live-plan">${JSON.stringify(plan).replace(/</g, "\\u003c")}</script>\n` +
+      `<script>\n${await readFile(MAPLIBRE_JS, "utf8")}\n</script>\n` +
+      `<script>\n${inlineable(await readFile(join(HERE, "live-map.mjs"), "utf8"))}\n</script>`
+    : "";
 
   const html = `<!doctype html>
 <html lang="en">
@@ -99,6 +443,7 @@ ${tableHtml}
 <script>
 ${inlineScript}
 </script>
+${liveBlock}
 </body>
 </html>
 `;
@@ -159,17 +504,6 @@ body {
 .map-web > *:not(.mw-stage) { flex: 0 0 auto; }
 .mw-title { font-size: 21px; font-weight: 700; margin: 0 0 4px; }
 .mw-source { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
-/* The zoom control: a real checkbox, hit by CSS only. Its label is a pointer target in its own
-   right through the native <label> association, and Tab reaches it with no script. */
-.mw-zoom-toggle-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  margin: 0 0 10px;
-  cursor: pointer;
-  min-height: 28px;
-}
 /* The stage: the leftover height, and the container the map is measured against. 'container-type:
    size' is what lets the viewport bound itself by the stage's HEIGHT as well as its width. */
 .mw-stage { flex: 1 1 auto; container-type: size; min-height: 180px; }
@@ -184,15 +518,38 @@ body {
   /* Flush left, not centred: when the window's HEIGHT bounds the map the leftover room is
      horizontal, and a centred map floats away from the title, the control and the legend. */
   margin-inline: 0 auto;
-  /* Unzoomed, a country label may spill past the frame rather than lose a letter — the plate and its
-     dots are already clipped by the SVG's own clipPath. Zoomed, the box must clip, and the rule at
-     the bottom of this sheet switches it to 'auto'. */
+  /* A country label may spill past the frame rather than lose a letter — the plate and its dots are
+     already clipped by the SVG's own clipPath. Live, the rule below takes over and this becomes
+     'hidden': a map the reader pans must clip. */
   overflow: visible;
   border: 1px solid var(--muted);
 }
-.mw-viewport[tabindex] { outline-offset: 2px; }
-.mw-viewport[tabindex]:focus-visible { outline: 2px solid var(--ink); }
-.mw-zoomable { position: relative; width: 100%; height: 100%; }
+/* The three layers occupy the SAME box, the live one underneath. It is laid out from the first frame
+   rather than revealed later, because a container with no size is a map with no size: MapLibre reads
+   the box at construction, and a display:none container gives it 0x0 and a canvas nothing ever
+   paints into. Invisible-but-laid-out, then, and the swap is one flip of the fallback's own hidden
+   attribute. */
+.mw-fallback, .mw-live-map, .mw-overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mw-live-map { z-index: 0; }
+.mw-fallback { z-index: 1; background: var(--ground); }
+.mw-fallback[hidden] { display: none; }
+/* The overlay is a SIBLING of both map layers and is never hidden with either: it carries the five
+   country names and all 42 Tab stops, so hiding it with the fallback would take the whole keyboard
+   path away at the moment the live map arrives. Found by looking at the live page, not by an
+   assertion. */
+.mw-overlay { z-index: 2; pointer-events: none; }
+.mw-overlay .pt { pointer-events: auto; }
+/* Live, the canvas is what a pointer talks to, and the country's own polygon is what answers — a
+   fill layer fires anywhere inside the country rather than over a 28px disc at its anchor, which is
+   what B6.14a asked for. The buttons stay in the DOM, still Tab-reachable and still carrying their
+   own aria-label; only their pointer-events go. */
+html.mw-live .mw-overlay .pt { pointer-events: none; }
+/* B5.1, and the conflict that dissolves with the ruling. The viewport keeps the PLATE's aspect,
+   because scaling a raster non-uniformly is a lie about distance and shape. A LIVE map has no plate
+   aspect to preserve — the canvas IS the container and the camera fills it — so live, the map takes
+   the whole stage. The fallback keeps its aspect-ratio, unchanged, because it is still a plate. */
+html.mw-live .mw-viewport { overflow: hidden; width: 100%; height: 100%; aspect-ratio: auto !important; }
+.maplibregl-canvas-container canvas { outline: none; }
 svg.map { display: block; width: 100%; height: 100%; }
 /* Furniture, in HTML: font-size is a fixed CSS number on every rule below, so it never tracks the
    container's width the way an SVG <text> inside a scaling viewBox would. */
@@ -229,16 +586,6 @@ svg.map { display: block; width: 100%; height: 100%; }
 .mw-legend-item { display: flex; align-items: center; gap: 6px; }
 .mw-legend-value { font-size: 13px; font-weight: 700; color: var(--ink); }
 .mw-caveat { font-size: 11.5px; color: var(--muted); margin: 6px 0 12px; }
-/* The bounded zoom: unchecked (the default), the frame shows exactly the full claim. Checked, the
-   viewport becomes natively scrollable and its content grows by the one fixed, capped factor — a
-   reader cannot go further, so the plate never degrades into unreadable blur, and panning is native
-   browser scroll rather than a pan handler this genre would have to write. No JavaScript is involved
-   in any of it: ':has()' reads the checkbox directly. */
-.map-web-page:has(#mw-zoom-toggle:checked) .mw-viewport { overflow: auto; }
-.map-web-page:has(#mw-zoom-toggle:checked) .mw-zoomable {
-  width: ${ZOOM_SCALE * 100}%;
-  height: ${ZOOM_SCALE * 100}%;
-}
 #tooltip {
   position: fixed;
   max-width: 260px;
@@ -306,10 +653,90 @@ async function loadPlate(plateDir) {
   return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };
 }
 
-async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
+/**
+ * Every study country's own polygon in real lon/lat, keyed by `ADM0_A3` — the SAME key `bake.mjs`
+ * reads out of the same file, so the live map's hover targets and the plate's own outlines are one
+ * join rather than two.
+ *
+ * Parts the camera can never show are dropped, on the same rule `partsInFrame` applies in pixel
+ * space and for a stronger reason here: `live-map.mjs` leashes the reader inside the study bounds,
+ * so a French overseas department or an Azorean island in this collection would be 90 KB of polygon
+ * describing a place no reader of this page can reach.
+ */
+function boundariesInFrame(collection, frameCorners) {
+  const partsOf = (geometry) =>
+    geometry.type === "MultiPolygon"
+      ? geometry.coordinates
+      : [geometry.coordinates];
+  const round = (v) => Number(v.toFixed(LON_LAT_DECIMALS));
+  const inFrame = (part) => {
+    const outer = part[0] ?? [];
+    if (outer.length < 3) return false;
+    const lons = outer.map((p) => p[0]);
+    const lats = outer.map((p) => p[1]);
+    return (
+      Math.max(...lons) >= frameCorners.west &&
+      Math.min(...lons) <= frameCorners.east &&
+      Math.max(...lats) >= frameCorners.south &&
+      Math.min(...lats) <= frameCorners.north
+    );
+  };
+  const all = new Map();
+  const drawn = new Map();
+  for (const feature of collection.features) {
+    const parts = partsOf(feature.geometry);
+    all.set(feature.properties.ADM0_A3, parts);
+    drawn.set(
+      feature.properties.ADM0_A3,
+      parts
+        .filter(inFrame)
+        .map((part) =>
+          part.map((ring) => ring.map(([lon, lat]) => [round(lon), round(lat)])),
+        ),
+    );
+  }
+  return { all, drawn };
+}
+
+/** A lon/lat bounding box for one shape's every part, grown by `pad` degrees on all four sides. */
+function boundsOfParts(parts, pad = 0) {
+  let west = Infinity, east = -Infinity, south = Infinity, north = -Infinity;
+  for (const part of parts)
+    for (const ring of part)
+      for (const [lon, lat] of ring) {
+        if (lon < west) west = lon;
+        if (lon > east) east = lon;
+        if (lat < south) south = lat;
+        if (lat > north) north = lat;
+      }
+  return { west: west - pad, east: east + pad, south: south - pad, north: north + pad };
+}
+
+async function render({
+  dataPath,
+  plateDir,
+  outDir,
+  countriesPath = DEFAULT_COUNTRIES_PATH,
+  name = OUTPUT_NAME,
+}) {
   await ensurePlate(plateDir);
   const { geometry, plate } = await loadPlate(plateDir);
   const frame = geometry.frame;
+
+  // ── The plate's camera is ONE Web-Mercator camera, or nothing below may be unprojected ────────
+  // The live layer reads the dots and the anchors back out of plate pixels with `pixelToLonLat`,
+  // which is only the inverse of the projection that made them if the recorded corners, the recorded
+  // frame and Web Mercator agree. They do to 1.1e-11 px on this frozen plate; there is no tolerance
+  // to tune, only floating point. Half a pixel of disagreement would already put a dot in the wrong
+  // country's polygon and answer a hover with the neighbour's population.
+  const impliedHeight = mercatorFrameHeightPx(geometry.frameCorners, frame.width);
+  if (Math.abs(impliedHeight - frame.height) > 0.5)
+    throw new Error(
+      `this plate's corners and its frame are not one Web-Mercator camera: ${frame.width}px wide over ` +
+        `${geometry.frameCorners.west}°–${geometry.frameCorners.east}° implies a ${impliedHeight.toFixed(3)}px-tall ` +
+        `frame, but the plate is ${frame.height}px. Unprojecting a dot back to lon/lat would put it somewhere ` +
+        `the plate never drew it.`,
+    );
 
   const rows = parsePopulationCsv(await readFile(dataPath, "utf8"));
   const shapeKeys = geometry.shapes.map((s) => s.key);
@@ -379,6 +806,56 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
       `${strays.reduce((s, c) => s + c.n, 0)} dots were scattered outside the frame and would be clipped away: ${strays.map((c) => `${c.name} ${c.n}`).join(", ")}`,
     );
 
+  // ── The live layer's own geography, and the check that it is the SAME geography ───────────────
+  const collection = JSON.parse(await readFile(countriesPath, "utf8"));
+  const { all: trueParts, drawn: boundaries } = boundariesInFrame(
+    collection,
+    geometry.frameCorners,
+  );
+  const missingShapes = countries.filter((c) => !boundaries.get(c.key)?.length);
+  if (missingShapes.length)
+    throw new Error(
+      `${missingShapes.length} countries have a plate outline but no lon/lat polygon in ${countriesPath}: ` +
+        `${missingShapes.map((c) => c.key).join(", ")} — the live map would draw a country a reader cannot hover.`,
+    );
+
+  // EVERY DOT LANDS IN ITS OWN COUNTRY, checked in lon/lat against the source geojson rather than
+  // against the pixel rings it was scattered in. This is the guard on `pixelToLonLat`: the dots are
+  // sampled in plate pixels and read back out, so a projection that is not the bake's own inverse
+  // moves them — a linear-in-latitude reading, for one, drifts by degrees and hands Denmark's dots
+  // to Germany, with nothing red and nothing visibly wrong in the picture.
+  //
+  // The bound is the BOUNDING BOX grown by one plate pixel, not the outline itself, and the reason
+  // is measured rather than lenient: the bake thins each ring to a 0.6px gap before the scatter runs,
+  // so a dot sampled inside the SIMPLIFIED outline can sit a fraction of a pixel outside the true
+  // coastline. On today's numbers exactly 3 of 2,996 do (Greece 1, the Netherlands 2), which is the
+  // simplification and not the projection; the finer count is printed below so a change in it is
+  // visible. One plate pixel of longitude is `degreesPerPixel`; used for latitude too, where one
+  // pixel is worth `degreesPerPixel · cos(lat)` degrees or less, so the bound is loose in the right
+  // direction.
+  const displaced = [];
+  let insideOutline = 0;
+  for (const country of countries) {
+    const parts = trueParts.get(country.key);
+    const box = boundsOfParts(parts, geometry.degreesPerPixel);
+    for (const dot of country.dots) {
+      const { lon, lat } = pixelToLonLat(dot[0], dot[1], geometry.frameCorners, frame);
+      if (lon < box.west || lon > box.east || lat < box.south || lat > box.north)
+        displaced.push(country.key);
+      if (parts.some((part) => pointInRings([lon, lat], part))) insideOutline++;
+    }
+  }
+  if (displaced.length)
+    throw new Error(
+      `${displaced.length} dots unproject outside their own country's bounding box: ` +
+        `${[...new Set(displaced)].join(", ")} — the live map's dots are not the plate's dots.`,
+    );
+  console.log(
+    `unprojection: the plate's corners imply a ${impliedHeight.toFixed(6)}px frame against ${frame.height}px baked; ` +
+      `${insideOutline} of ${totalDots} dots land inside their own country's true outline, ` +
+      `all ${totalDots} inside its bounding box.`,
+  );
+
   // The five the title names must also carry the five biggest CLOUDS — the same statement in the
   // currency the picture actually draws. It is checked rather than assumed, because rounding a
   // population to a dot count is not order-preserving in principle.
@@ -432,7 +909,10 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
   const caveat =
     `A dot's position inside its country is random, not an address: a TIGHTER fill means more people ` +
     `per square kilometre, not a bigger population — the tightest here are ${tightestNames.join(", ")}, ` +
-    `none of them among the ${namedNames.length}. Russia is not shown (almost none of its territory is ` +
+    `none of them among the ${namedNames.length}. Zoom in and every dot covers the exact piece of ground it ` +
+    `stands for; on a small screen a dot is held at ${en(DOT_RADIUS_FLOOR_PX, 2)} pixels so that the field ` +
+    `cannot disappear, and there it reads a little denser than the ground it covers. ` +
+    `Russia is not shown (almost none of its territory is ` +
     `in frame), nor are the micro-territories the World Bank does not report separately. ` +
     `${dotlessSentence} Where a country's own figure covers land outside this frame — French overseas ` +
     `departments, the Azores, the Canaries, Svalbard — its dots are drawn inside the territory shown.`;
@@ -466,7 +946,6 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
       ground: palette.ground,
       accent: palette.accent,
       landFill,
-      zoomable: true,
     },
     outDir,
     name,
@@ -474,6 +953,20 @@ async function render({ dataPath, plateDir, outDir, name = OUTPUT_NAME }) {
     // without spatial access to it has no legend entry, no axis and no label from which to recover a
     // single country's figure. The table is the only channel that carries all 42 readings.
     regionTable: true,
+    // Ruling R1: map × web is a LIVE MapTiler map. Set this false for a beat that must stay
+    // request-free (an offline archive, a CMS whose Content-Security-Policy refuses
+    // api.maptiler.com) — the page then ships as the fallback layer alone, which is exactly what it
+    // was before the ruling.
+    live: true,
+    plan: livePlan({
+      geometry,
+      countries,
+      boundaries,
+      accent: palette.accent,
+      muted: furniture.muted,
+      landFill,
+      waterFill: WATER_FILL,
+    }),
   });
   // The table and the map have to be reading the same order and the same numbers.
   const first = readingOrder(countries)[0];

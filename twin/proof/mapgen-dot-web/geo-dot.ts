@@ -106,7 +106,7 @@ export function pointInRing(point: Pt, ring: Ring): boolean {
 }
 
 /** `rings[0]` is the outer boundary, `rings[1..]` are holes to cut back out — the same convention
- *  every other beat in this twin uses for a baked polygon's ring list. 
+ *  every other beat in this twin uses for a baked polygon's ring list.
  *  @parity */
 export function pointInRings(point: Pt, rings: Ring[]): boolean {
   const [outer, ...holes] = rings;
@@ -118,7 +118,7 @@ export function pointInRings(point: Pt, rings: Ring[]): boolean {
 //    per region... never re-randomised on each render") ──────────────────────────────────────────
 
 /** FNV-1a, so a region's own key deterministically seeds its own scatter without depending on scan
- *  order or any global counter. 
+ *  order or any global counter.
  *  @parity */
 function hashSeed(key: string): number {
   let h = 0x811c9dc5;
@@ -129,7 +129,7 @@ function hashSeed(key: string): number {
   return h >>> 0;
 }
 
-/** mulberry32 — a small, deterministic PRNG: same seed, same sequence, every run. 
+/** mulberry32 — a small, deterministic PRNG: same seed, same sequence, every run.
  *  @parity */
 function mulberry32(seed: number): () => number {
   let a = seed;
@@ -274,6 +274,73 @@ export function partsInFrame(
 }
 
 /**
+ * A plate pixel back to the real lon/lat it stands for, using the plate's own TRUE frame corners
+ * (`bake.mjs`'s `frameCorners`, measured with `map.unproject()` after the camera settled — NOT the
+ * nominal `bounds` passed to `fitBounds`, which `fitBounds` widens on whichever axis does not bind).
+ * Longitude is linear in pixel-x under Web Mercator; latitude needs the inverse Mercator formula,
+ * because pixel-y is linear in Mercator-y and not in latitude itself.
+ *
+ * THE WEB GENRE NEEDS THIS AND THE OTHER TWO GENRES DO NOT. This beat's dots are rejection-sampled
+ * in the plate's own PIXEL space (`scatterInParts`), which is the only space the country outlines
+ * exist in after the bake; a live MapTiler map wants them in lon/lat. Nothing is re-scattered here —
+ * the dots are the same dots, read back through the same projection that made them, so the live
+ * field and the fallback field are one scatter seen twice rather than two scatters that can drift.
+ *
+ * Deliberately left OUT of `geo-parity.test.ts`'s tagged set, and that is a limitation rather than
+ * an oversight. `proof/mapgen-hexgrid-web/geo-hex.ts` and `proof/mapscrolly-quakes-three-ways/
+ * geo-hex.ts` already declare this function, byte-identical to this copy and untagged, and that
+ * walk's second assertion reddens every file declaring a name tagged ANYWHERE without carrying the
+ * tag itself — so tagging this one copy alone reddens two beats that are not this beat's to edit.
+ * Measured: doing it turned that suite from green to two failures naming exactly those two files.
+ * Tagging all three together is the right close, and it belongs to whoever owns all three.
+ */
+export function pixelToLonLat(
+  px: number,
+  py: number,
+  frameCorners: { west: number; north: number; east: number; south: number },
+  frame: { width: number; height: number },
+): { lon: number; lat: number } {
+  const { west, north, east, south } = frameCorners;
+  const lon = west + (px / frame.width) * (east - west);
+  const mercatorY = (lat: number) =>
+    Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+  const yNorth = mercatorY(north);
+  const ySouth = mercatorY(south);
+  const y = yNorth + (py / frame.height) * (ySouth - yNorth);
+  const lat = ((2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180) / Math.PI;
+  return { lon, lat };
+}
+
+/**
+ * The frame height a Web-Mercator camera showing exactly these corners MUST have, at the width it
+ * was baked at. This is the invariant `pixelToLonLat` above rests on, written so it can go red.
+ *
+ * Under Web Mercator, one pixel is worth `(east − west) / width` degrees of longitude everywhere in
+ * the frame, so the world is `360 / that` pixels around; the frame's own height is then the Mercator
+ * span of its two latitudes as a fraction of the whole world's `2π`. If the recorded corners, the
+ * recorded frame and Web Mercator do not agree, `pixelToLonLat` is putting the dots somewhere else
+ * than where the plate drew them — which is invisible in the picture until a reader hovers a country
+ * and is told about its neighbour.
+ *
+ * Measured on this beat's own frozen plate: the identity holds to 1.1e-11 px. There is no tolerance
+ * to tune here, only floating point.
+ */
+export function mercatorFrameHeightPx(
+  frameCorners: { west: number; north: number; east: number; south: number },
+  frameWidth: number,
+): number {
+  const mercatorY = (lat: number) =>
+    Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
+  const worldWidthPx =
+    360 / ((frameCorners.east - frameCorners.west) / frameWidth);
+  return (
+    ((mercatorY(frameCorners.north) - mercatorY(frameCorners.south)) /
+      (2 * Math.PI)) *
+    worldWidthPx
+  );
+}
+
+/**
  * Where a country's own pointer target and label sit: the DOT nearest the centre of that country's
  * largest landmass.
  */
@@ -338,7 +405,7 @@ export function readingOrder<T extends { population: number }>(rows: T[]): T[] {
 }
 
 /** The beat's own language is English (`lang="en"` on the page this feeds), so its numbers are
- *  English — the same `en` on `en-GB` `proof/web-co2-ranking/bar-geometry.ts` settled on. 
+ *  English — the same `en` on `en-GB` `proof/web-co2-ranking/bar-geometry.ts` settled on.
  *  @parity */
 export function en(value: number, decimals = 1): string {
   return new Intl.NumberFormat("en-GB", {
@@ -349,7 +416,7 @@ export function en(value: number, decimals = 1): string {
 
 // ── What a reader actually SEES: fill tightness, which is not the same quantity as the title's ──
 
-/** Signed shoelace area of one ring, in whatever units the ring's coordinates are in. 
+/** Signed shoelace area of one ring, in whatever units the ring's coordinates are in.
  *  @parity */
 function ringArea(ring: Ring): number {
   let a = 0;
@@ -359,7 +426,7 @@ function ringArea(ring: Ring): number {
   return a / 2;
 }
 
-/** True drawn area of a MultiPolygon in plate pixels: every part's outer ring, its holes removed. 
+/** True drawn area of a MultiPolygon in plate pixels: every part's outer ring, its holes removed.
  *  @parity */
 export function drawnAreaPx(parts: Ring[][]): number {
   let area = 0;

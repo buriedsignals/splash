@@ -83,12 +83,29 @@ from the ground and the ink.
 
 ## The controls, and the tests they had to pass
 
-- **Bounded zoom — SHIPPED, and it earns its place by measurement.** 42 pointer targets on a
-  continental map is exactly the density case: at 375 px only **31 of 42** answer a pointer at their
-  own centre. Checked, the same targets go to **39 of 42**. The multiplier is fixed at **2.2×** and a
-  reader cannot exceed it, so the plate never degrades into blur; it is pure CSS (`:has()` on a real
-  checkbox) plus native scrolling, so it needs no script and no live tiles. Unzoomed is not a
-  preview — it is the whole claim.
+- **Real zoom and pan, from MapTiler — SHIPPED (ruling R1, 2026-08-10).** The map is live and the
+  reader moves through it with MapTiler's own `NavigationControl`, leashed to this map's own area.
+  The bounded 2.2× checkbox this beat used to put above the map is **gone** (B6.14b asked for its
+  removal by name). Three layers in one file: `#mw-map` (live, swapped in only on `map.on("load")`),
+  `#mw-fallback` (the baked plate, complete and script-free) and `.mw-overlay` (the labels and the 42
+  hit targets, a sibling of both). No network, no key or no JavaScript leaves the fallback standing —
+  measured at every viewport below.
+- **Hover is the country, not a disc on its capital (B6.14a).** An invisible-to-the-reader `fill`
+  layer of the same 42 country polygons answers a pointer **anywhere inside the country**. Measured at
+  1600 × 900: walking out from France's own anchor, the country keeps answering to **32–56 px** in the
+  eight compass directions — the whole drawn country — where the old 28 px button answered to 14 px
+  and no further. At a zoom the reader reaches with the control, a probe **60 px** from the anchor
+  answers "France — 68,372,286 people, 344 dots" in all eight directions.
+- **The dots hold their GROUND, with a floor.** A dot stands for a fixed number of people in a fixed
+  piece of ground, so its radius doubles per zoom level rather than staying a fixed size on screen —
+  measured: the teal ink over a fixed 6–15° E / 47–55° N box is 0.248 at the fit and 0.224 nearly
+  three zoom levels in, while the same measurement with the radius pinned to a constant screen size
+  falls to 0.033. Below **1.25 px** the radius is held: at 375 × 812 the honest ground radius is
+  0.44 px and MapLibre's circle shader feathers a sub-pixel disc away entirely — measured, the dot ink
+  was **6 % of the fallback plate's** and the map showed no field at all under a legend claiming 2,996
+  dots. 1.25 px is the radius at which the live field deposits the ink the plate's own field deposits
+  (0.1999 against 0.1856; 1 px gives 0.1156, 1.5 px gives 0.2749). It binds below zoom 2.710 only, and
+  the caveat says what it costs: there the field reads a little denser than the ground it covers.
 - **Filter — NOT shipped.** The frozen data carries no dimension orthogonal to the encoded one.
   Grouping by region or by EU membership would mean typing a classification into 42 rows that nothing
   in the beat could check, which is how a beat ships a claim it cannot audit.
@@ -97,30 +114,40 @@ from the ground and the ink.
   no label from which to recover a single country's figure. Without the table they would have the dot
   value and nothing to apply it to. It also keeps the three countries that draw no dots at all.
 
-## What was verified by driving a real browser (1600×900, 1024×768, 375×812)
+## What was verified by driving a real browser, with a real key (2026-08-10)
 
-Real pointer moves at rounded integer coordinates, `document.elementFromPoint` at every target's own
-centre, a real click on the zoom control, real key presses, and a JavaScript-disabled pass.
+A keyed copy in a temp directory outside the repository (the committed file carries the placeholder,
+ruling R1b), real pointer moves at rounded integer coordinates, real clicks on MapTiler's own control,
+and a pass on the committed placeholder file with no key at all.
 
-- **Fit:** the whole beat inside the window at all three sizes (884/900, 752/768, 796/812); nothing
-  scrolls inside the visual.
-- **Plate:** baked aspect 1.0000, drawn aspect 1.0000 at every viewport — Δ 0.00000. Never stretched.
-- **Type:** title 21 px and country labels 12 px at all three widths; only the geometry scales.
-- **Content:** 2,996 dots, 5 labels and 42 table rows present at every width, and with JavaScript off.
-- **Hover:** 39/42, 39/42 and 31/42 countries answered a real pointer at their own centre (1600 /
-  1024 / 375). Every tooltip matched a figure recomputed from the frozen csv and the frozen plate.
-- **Zoom:** a real click on the label (30 px tall) checks the box, switches the viewport to
-  `overflow: auto` and grows the content from 298 px to 656 px (2.2×) — and takes reachability at
-  375 px from 31/42 to 39/42. It does the thing it claims to do.
-- **The two that stay covered are Kosovo (under North Macedonia's target) and Liechtenstein (under
+- **Live:** tiles load (36 responses, all 200, zero failed requests), both layers present, the
+  fallback hidden on `map.on("load")`, `NavigationControl` present and a real click on its `+` moves
+  the zoom by exactly one level.
+- **Fit:** the whole beat inside the window at 1600×900 (beat 868 of 868 available), 1024×768
+  (736/736), 768×1024 (992/992), 375×667 (635/635) and 375×812 (780/780); no horizontal page scroll
+  and nothing scrolls inside the visual at any of them. The page itself is 1906–2216 px tall because
+  the 42-row accessible table follows the beat in normal document flow — that is reading, not
+  scrolling inside the visual.
+- **Leash:** jumping the camera to 60° E / 20° N leaves the view inside the pan bound the fit set;
+  the reader has **2.875 zoom levels** of room at every container shape (derived: the frame's 67.19°
+  of longitude over Germany's 9.16°, the smallest of the five countries the title names).
+- **Hover:** the country answers anywhere inside its polygon (numbers above). Every tooltip matched a
+  figure recomputed from the frozen csv and the frozen plate.
+- **Dots:** 2,996 drawn from 39 `MultiPoint` features, ground-constant above 1.25 px (numbers above).
+- **Unprojection:** the plate's own corners imply a 1000.000000 px frame against the 1000 px baked —
+  the camera is one Web-Mercator camera, asserted before anything is drawn. 2,993 of 2,996 dots land
+  inside their own country's true lon/lat outline (the 3 are the bake's own 0.6 px ring thinning), and
+  all 2,996 inside its bounding box, which is what the render asserts.
+- **With the key removed** (the committed file, exactly as published): no live layer, the fallback
+  plate, its 42 outlines, its 2,996 dots, 5 labels, 42 hit targets and 42 table rows all render at
+  every one of the five viewports.
+- **Keyboard:** every `.pt` keeps its tab stop and its `aria-label` live — CSS drops only their
+  pointer-events — so Liechtenstein, which draws **no dots at all**, still answers "39,846 people,
+  0 dots" from focus.
+- **The two targets that stay covered are Kosovo (under North Macedonia's) and Liechtenstein (under
   Switzerland's)** — small countries beside larger neighbours. Targets are laid down smallest-first,
   so the covering target is always the more populous country, and both keep their tab stop and their
-  table row.
-- **Keyboard:** Tab reaches a country in three presses and its value is announced from focus alone;
-  Liechtenstein, which draws **no dots at all**, still answers "39,846 people, 0 dots" from focus.
-- **No JavaScript:** the map, the dots, the labels and the table all render, every target keeps its
-  native `title` (identical to its `aria-label`), and a real click on the zoom control still zooms —
-  the whole control is CSS.
+  table row. Live, hovering either country's own ground answers correctly regardless.
 
 ## Anti-patterns for this case
 
@@ -136,10 +163,18 @@ centre, a real click on the zoom control, real key presses, and a JavaScript-dis
 
 ## Found and NOT fixed
 
-- **The bounded zoom opens at the plate's north-west corner** — ocean and Iceland — and the reader
-  pans from there. A centred initial scroll position is not reachable in CSS: `scroll-snap-type:
-  proximity` with a centred snap target was tried in a real browser and left `scrollLeft` at 0, and
-  `mandatory` would snap back on every pan. Fixing it means script, which this control does not use.
+- **At 375 × 667 the live camera zooms out to a hemisphere.** Measured: the stage there is 341 × 178,
+  and `live-map.mjs`'s own `FIT_PADDING_PX = 48` takes 96 of those 178 px — 54 % of the height — so
+  `fitBounds` lands at zoom 0 and shows 240° of longitude with Europe as a blob and the five labels
+  stacked on each other. The fallback plate does not have this problem: it draws a 178 × 178 square of
+  Europe. The lever is the shared boot script's fixed padding (a fraction of the container rather than
+  48 px), and that file is a byte-identical copy in every map × web beat — not this beat's to change.
+  At 375 × 812 (a 341 × 310 stage) the same camera is fine: zoom 1.197, 105° of longitude.
+- **A wide, short window shows a lot of ocean.** Live, the canvas IS the container (the plate's aspect
+  is not preserved, by design), so a near-square subject in a 1566 × 702 box is height-bound: 170° of
+  longitude visible, Europe filling about a third of the width. The fallback letterboxes to 666 × 666
+  and fills about the same fraction of the width with white instead of sea, so this is a change of
+  what fills the spare room rather than a loss of the subject — but it is not the picture the plate is.
 - **The "United Kingdom" label's box overlaps Ireland** at every width. Its anchor is the dot nearest
   the centre of Great Britain, so the label's centre sits on UK ink, but a 110 px box on a 666 px map
   cannot avoid the neighbour.
