@@ -154,7 +154,14 @@ one inside `subject`, and the last frame of `hold` — read off `MAP_TIMING`.
   Supports `--check` mode for verification. Automakes the plate if missing.
 - `assets/geo.ts` — the pure core. Imported by both genres and by the tests.
 - `assets/Co2MapStill.tsx` — the static beat. **Replace per story.** Lays its column out from both
-  ends and throws if the two halves meet, because an overlap is what a reader sees first.
+  ends and throws if the two halves meet, because an overlap is what a reader sees first. **The
+  credit is the last line before the bottom margin** (`twin-chart-beat/references/static-discipline.md`,
+  "The source on the frame's bottom margin"), carrying the basemap credit with it, unsplit — so on
+  this genre it is never a translation of a `<text>`: the source joining the bottom half pushes the
+  whole bottom stack (caveat, no-data swatch, legend bar, caption) up by exactly the credit block's
+  own height, and the plate does not move. When the stack then stops fitting, the fix is to LOWER
+  `MAP_Y` — the header gave back the row the source used to occupy — and the beat's own fit guard
+  is what says by how much.
 - `assets/Co2MapVideo.tsx` — the video beat. **Replace per story.** Exports `arrivalProgress`.
 - `assets/timing.ts` — `MAP_TIMING`, and a re-export of the shared vocabulary.
 - `assets/Root.tsx`, `assets/index.ts` — the Remotion composition and entry point.
