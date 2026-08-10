@@ -197,6 +197,151 @@ export function lineWeight(measured, band = DRAWN_LINE_PX) {
   };
 }
 
+// ── THE REVEAL IS ONE PIECE, IT STARTS AT THE SOURCE, AND IT FINISHES ─────────────────────────
+//
+// The owner, 2026-08-10: *"la rivière s'arrête en plein milieu et ne finit jamais jusqu'à 9… ça
+// c'est l'étape 0 et on a deux bouts de ligne."* Two pieces with a hole between them, and a reveal
+// that never completes.
+//
+// **THE DEFECT WAS NOT FOUND IN THIS BUILD** — 1508 driven frames across five viewport shapes from
+// 375 to 3440 px, both directions, plus painted-pixel readings at DPR 1 and 2 and under
+// `prefers-reduced-motion`, every one of them a single painted run starting at the source and
+// reaching the end. And the dash cannot produce it as written: with `stroke-dasharray: L` (a single
+// value, so "dash L, gap L") and `stroke-dashoffset: h` in [0, L], the dash covers [-h, L-h] and
+// the NEXT one begins at 2L-h, which is >= L — exactly one dash intersects the path. The declared
+// L (1272.04) also agrees with the rendered `getTotalLength()` (1272.0430908203125) to 0.0031 user
+// units, and `getTotalLength` is in USER space, so the camera's CSS scale cannot stale it.
+//
+// It is guarded anyway, and this is the reason: **the invariant was not held by anything.** Every
+// guard this beat had was about the reveal's EXTENT (`revealSpan` — does it move forward, does it
+// span the piece) and none about its SHAPE. A repeating dash, a reveal from the wrong end, or a
+// reveal that stops short would all have passed. The two states this file could not tell apart are
+// the two the owner is describing, so they are now separated by measurement.
+//
+// THE THIRD STATE IS WHY THIS IS NOT NAIVE. A sample can be PAINTED, ABSENT, or hidden — under the
+// travelling prose card or a badge. Covering is explicitly ALLOWED by the vehicle's ninth
+// correction, so a hidden sample may neither bridge two painted runs nor count as a hole. It is
+// reported as `hidden` instead, because a card lying across the middle of the river is the one
+// mechanism in this beat that makes a single line LOOK like two pieces — measured on this build at
+// up to 0.53 of the river's length on a phone.
+
+// AND THE THIRD STATE IS WHERE THE REAL DEFECT TURNED OUT TO BE. Running this guard for the first
+// time measured, at 375 × 812, that the travelling prose card hides **the whole river — 1.00 of its
+// length — at the settled position of steps 2, 3 and 4**, against 0.08–0.20 at 1600 × 900 and
+// 1280 × 800. On a phone a reader at three of the four steps sees no river at all: a sliver of
+// Germany above the card and a sliver of Croatia and Serbia below it, with an opaque white block
+// between them. That is the owner's *"un bout … et un second bout … avec rien entre les deux"*,
+// produced by OCCLUSION and not by the dash. Covering a label is allowed; covering the SUBJECT
+// whole, at the position a step settles on, is not — so it is asserted rather than recorded.
+
+/** How complete the river must be by the last step, how far it may start from the source, and how
+ *  much of it the furniture may hide at a settled step. */
+export const REVEAL_SHAPE = { completeAt: 0.98, headWithin: 0.02, hiddenAtMost: 0.95 };
+
+/**
+ * The verdict on the painted shape of the reveal, one entry per measured position:
+ * `{ label, step, steps, reveal: { fragments, runs, firstPainted, firstAbsent, absent, hidden } }`.
+ */
+export function revealShape(measured, band = REVEAL_SHAPE) {
+  const problems = [];
+  for (const m of measured) {
+    const r = m.reveal;
+    if (!r) {
+      problems.push(`${m.label}: no painted reveal was measured at all`);
+      continue;
+    }
+    if (r.fragments > 1)
+      problems.push(
+        `${m.label}: the river is painted in ${r.fragments} pieces — ${JSON.stringify(r.runs)} of its own ` +
+          `length, with real gaps between them, where a progressive reveal must paint ONE prefix`,
+      );
+    // A reveal that starts away from the source. `firstPainted` null means nothing was painted at
+    // all, which only the last step can be judged on (early steps legitimately paint little and a
+    // card can hide all of it on a phone).
+    if (r.firstPainted !== null && r.firstAbsent !== null && r.firstAbsent < r.firstPainted)
+      problems.push(
+        `${m.label}: the river's first ${(r.firstPainted * 100).toFixed(0)}% is absent while later ` +
+          `stretches are painted — the reveal is not starting at the source`,
+      );
+    // THE SUBJECT MUST BE VISIBLE WHERE A STEP SETTLES. Checked before completeness, because a
+    // river the furniture hides whole cannot be measured for completeness and reporting "it never
+    // finishes" there would name the wrong defect.
+    if (r.hidden > band.hiddenAtMost)
+      problems.push(
+        `${m.label}: the prose card and badges hide ${(r.hidden * 100).toFixed(0)}% of the river at the ` +
+          `position this step settles on — a reader here sees no river at all, only what shows above and ` +
+          `below the card, which reads as two disconnected pieces`,
+      );
+    else if (m.step === m.steps) {
+      const end = r.runs.length ? r.runs[r.runs.length - 1][1] : 0;
+      if (end < band.completeAt)
+        problems.push(
+          `${m.label}: at the last step the river reaches only ${(end * 100).toFixed(1)}% of its own ` +
+            `length — the journey never finishes`,
+        );
+      if (r.absent > 0.005)
+        problems.push(
+          `${m.label}: at the last step ${(r.absent * 100).toFixed(1)}% of the river is still unpainted`,
+        );
+    }
+  }
+  return {
+    problems,
+    shape: measured.map((m) => ({
+      label: m.label,
+      step: m.step,
+      fragments: m.reveal ? m.reveal.fragments : null,
+      runs: m.reveal ? m.reveal.runs : null,
+      absent: m.reveal ? Number(m.reveal.absent.toFixed(3)) : null,
+      hiddenByFurniture: m.reveal ? Number(m.reveal.hidden.toFixed(3)) : null,
+    })),
+  };
+}
+
+// ── A LEADER IS A SHORT LINE FROM A DISPLACED BADGE BACK TO ITS OWN PLACE ─────────────────────
+//
+// Same report, same day: *"deux flèches rouges traversent tout le cadre en diagonale."* A leader
+// that spans the picture stops reading as "this label belongs to that point" and reads as an arrow
+// drawn across the map.
+//
+// MEASURED on this build, over 1508 driven frames at five viewport shapes: the leader path is
+// EMPTY at 1600x900, 1280x800, 375x812 and 1512x850 — no badge is ever displaced far enough to earn
+// one — and its longest segment is **9 px** at 2560x1440 and 3440x1440. The reported arrows are not
+// in this artifact. The bound is asserted anyway for the same reason as the reveal's shape: nothing
+// held it, and `avoidStripe` is free to grow a longer displacement the day the card's geometry
+// changes.
+//
+// The bound is a FRACTION OF THE FRAME'S OWN DIAGONAL rather than a pixel count, because "too long
+// to read as a pointer" is a proportion of the picture and this beat is drawn from 375 px to 3440.
+
+/** The longest a leader may be, as a fraction of the frame's diagonal. */
+export const LEADER_MAX_OF_DIAGONAL = 0.25;
+
+/** `measured` is one entry per position: `{ label, frame: {width, height}, leaders: [{len}] }`. */
+export function leaderLength(measured, bound = LEADER_MAX_OF_DIAGONAL) {
+  const problems = [];
+  const seen = [];
+  for (const m of measured) {
+    const diagonal = Math.hypot(m.frame.width, m.frame.height);
+    const limit = diagonal * bound;
+    for (const l of m.leaders ?? []) {
+      if (l.len > limit)
+        problems.push(
+          `${m.label}: a leader is ${l.len.toFixed(0)}px long across a ${diagonal.toFixed(0)}px frame ` +
+            `(${((l.len / diagonal) * 100).toFixed(0)}% of its diagonal, allowed ${(bound * 100).toFixed(0)}%) — ` +
+            `that reads as an arrow drawn across the map, not as a pointer from a label to its place`,
+        );
+    }
+    seen.push({
+      label: m.label,
+      leaders: (m.leaders ?? []).length,
+      longestPx: (m.leaders ?? []).reduce((a, l) => Math.max(a, l.len), 0),
+      limitPx: Number(limit.toFixed(0)),
+    });
+  }
+  return { problems, leaders: seen };
+}
+
 /** The whole verdict for one sweep. `stepCount` is how many narrative steps the piece has. */
 export function report(label, samples, stepCount) {
   const problems = [];

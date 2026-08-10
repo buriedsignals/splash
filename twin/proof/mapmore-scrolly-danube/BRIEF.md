@@ -106,6 +106,47 @@ that tracks the camera cannot pass it even if one width happens to land inside t
 `scroll.test.ts` is the mutation, with the red it produced; under it every other guard here, and
 every sweep, stays green.
 
+## The reveal's SHAPE is guarded now, and the phone defect it found (2026-08-10)
+
+The owner, after the stroke-width fix: *"la rivière s'arrête en plein milieu et ne finit jamais
+jusqu'à 9… ça c'est l'étape 0 et on a deux bouts de ligne."*
+
+**A repeating dash was the obvious suspect and it is not what is happening.** With
+`stroke-dasharray: L` (one value, so "dash L, gap L") and `stroke-dashoffset: h` in [0, L], the dash
+covers [-h, L-h] and the next one begins at 2L-h, which is ≥ L — exactly one dash intersects the
+path. The declared L (1272.04) also agrees with the rendered `getTotalLength()` (1272.0430908203125)
+to 0.0031 user units, and `getTotalLength` is USER space, so the camera's CSS scale cannot stale it.
+Looked for over **1508 driven frames at five viewport shapes from 375 to 3440 px, both directions**,
+plus painted-pixel readings at DPR 1 and 2 and under `prefers-reduced-motion`: every one a single
+painted run starting at the source. The painted prefix at 1600 × 900 is `[0, 0.36] → [0, 0.725] →
+[0, 0.98] → [0, 1]`, complete at the last step.
+
+**What IS happening, measured, is occlusion.** At **375 × 812 the travelling prose card hides the
+whole river — 1.00 of its length — at the settled position of steps 2, 3 and 4**, against 0.08–0.20
+at 1600 × 900 and 1280 × 800. A reader on a phone, at the position where the step's sentence lands,
+sees a sliver of Germany above the card and a sliver of Croatia and Serbia below it with an opaque
+white block between: *"un bout … et un second bout … avec rien entre les deux."* Same reported
+picture, different mechanism. **This is a real open defect and it is not fixed here** — the cause is
+the beat's 2.14 : 1 plate letterboxed into a 0.61 : 1 frame (a 175 px band of marks in a 617 px
+graphic) under a card that travels the whole height, which is the portrait/aspect chantier's
+territory and `twin-scrolly`'s, not this beat's. It is asserted rather than recorded, so it stays
+loud: `drive.mjs` is RED on this beat at 375 × 812 until it is answered.
+
+**The leaders were reported as arrows across the frame and are not in this artifact**: over the same
+1508 frames the leader path is EMPTY at 1600 × 900, 1280 × 800, 375 × 812 and 1512 × 850 — no badge
+is ever displaced far enough to earn one — and its longest segment is **9 px** at 2560 × 1440 and
+3440 × 1440. `avoidStripe` cannot produce a long one by construction: it moves a badge to the
+nearest clear centre against the card's own edges, so the displacement is bounded by the card.
+
+**Both invariants are now held on the PAINT** (`scroll-report.mjs`'s `revealShape` and
+`leaderLength`, fed by `drive.mjs`), because nothing held them: every guard this beat had was about
+the reveal's EXTENT — `revealSpan`, "the map only ever gains ground" — and none about its SHAPE, so
+a repeating dash, a reveal from the wrong end, or one that stops short were all green. Three sample
+states, not two: PAINTED, ABSENT, and hidden by furniture — a hidden sample may neither bridge two
+painted runs nor stand in for a hole, or the card crossing the line would invent this defect on
+every frame. M12 (a dash declared at half the path's length) and M13 (badges mirrored to the far
+side of the frame) are the mutations, with the red each produced.
+
 ## The reveal is continuous (2026-08-10)
 
 The vehicle was handed FOUR SSR'd pictures and swapped which one was painted, so between two steps

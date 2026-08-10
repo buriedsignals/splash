@@ -24,7 +24,7 @@ import { homedir } from "node:os";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
-import { lineWeight, report } from "./scroll-report.mjs";
+import { leaderLength, lineWeight, report, revealShape } from "./scroll-report.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FILE = "danube-scrolly.html";
@@ -266,13 +266,21 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
   const total = line.getTotalLength();
   const hidden = parseFloat(getComputedStyle(line).strokeDashoffset) || 0;
   const visible = Math.max(0, total - hidden);
+  // Only what is actually ON SCREEN occludes. The scaffold keeps ALL FOUR prose panels in the DOM
+  // and fades between them, so an unfiltered `.step-panel` query returns three invisible rectangles
+  // as well as the painted one — and on a phone, where the panels are edge to edge, their union
+  // covers the whole river and every measurement below reads "hidden". Found by running this guard
+  // for the first time: it reported 100% of the river hidden at 375px and a journey that never
+  // finishes, on a page whose river is drawn correctly.
   const occluders = [
     ...Array.from(document.querySelectorAll(".step-panel")),
-    ...Array.from(root.querySelectorAll("[data-badge]")).filter((el) => Number(getComputedStyle(el).opacity) > 0.05),
-  ].map((el) => {
-    const r = el.getBoundingClientRect();
-    return { left: r.left * ratio - 4, right: r.right * ratio + 4, top: r.top * ratio - 4, bottom: r.bottom * ratio + 4 };
-  });
+    ...Array.from(root.querySelectorAll("[data-badge]")),
+  ]
+    .filter((el) => Number(getComputedStyle(el).opacity) > 0.05 && getComputedStyle(el).visibility !== "hidden")
+    .map((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left * ratio - 4, right: r.right * ratio + 4, top: r.top * ratio - 4, bottom: r.bottom * ratio + 4 };
+    });
 
   const widths = [];
   let rejected = 0;
@@ -318,6 +326,55 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
     widths.push(sum / ratio);
   }
   widths.sort((a, b) => a - b);
+
+  // ── WHERE THE RIVER IS PAINTED ALONG ITS WHOLE LENGTH ────────────────────────────────────────
+  //
+  // The second thing this screenshot is asked, and a different question from the width: a
+  // progressive reveal must paint a PREFIX — one piece, starting at the source — and it must
+  // complete by the last step. Two pieces with a hole between them is the shape a repeating
+  // `stroke-dasharray` produces (a single value means "dash L, gap L, dash L…", so a second dash
+  // can reappear at the far end), and it is what the owner described. Measured on the paint rather
+  // than on the dash attribute, because the attribute is what would be believed.
+  //
+  // Three states per sample, and the third one matters: PAINTED, ABSENT, and UNKNOWN — occluded by
+  // the travelling prose card or a badge, or off the frame. **An unknown may not bridge two painted
+  // runs**, and it may not stand in for an absent one either: a card lying across the river hides
+  // it, which is a covering and not a hole, and counting it as a hole would invent this defect
+  // every time the card crosses the line.
+  const REVEAL_N = 200;
+  const state = [];
+  for (let k = 0; k <= REVEAL_N; k++) {
+    const here = toScreen(line.getPointAtLength((total * k) / REVEAL_N));
+    if (here.x < 0 || here.y < 0 || here.x >= width || here.y >= height) {
+      state.push(-1);
+      continue;
+    }
+    if (occluders.some((o) => here.x >= o.left && here.x <= o.right && here.y >= o.top && here.y <= o.bottom)) {
+      state.push(-1);
+      continue;
+    }
+    let best = 0;
+    for (let dx = -3; dx <= 3; dx++)
+      for (let dy = -3; dy <= 3; dy++) {
+        const a = coverageAt(here.x + dx, here.y + dy);
+        if (a !== null && a > best) best = a;
+      }
+    state.push(best > 0.4 ? 1 : 0);
+  }
+  // Painted runs, where a run ends only at a REAL absent sample.
+  const runs = [];
+  let open = null;
+  for (let k = 0; k <= REVEAL_N; k++) {
+    if (state[k] === 1 && open === null) open = k;
+    if (state[k] === 0 && open !== null) {
+      runs.push([open / REVEAL_N, (k - 1) / REVEAL_N]);
+      open = null;
+    }
+  }
+  if (open !== null) runs.push([open / REVEAL_N, 1]);
+  const firstAbsent = state.indexOf(0);
+  const firstPainted = state.indexOf(1);
+
   return {
     samples: widths.length,
     rejected,
@@ -326,6 +383,19 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
     drawnWidthPx: widths.length >= 20 ? widths[Math.floor(widths.length / 2)] : null,
     p10: widths.length ? Number(widths[Math.floor(widths.length * 0.1)].toFixed(2)) : null,
     p90: widths.length ? Number(widths[Math.floor(widths.length * 0.9)].toFixed(2)) : null,
+    reveal: {
+      fragments: runs.length,
+      runs: runs.map((r) => [Number(r[0].toFixed(3)), Number(r[1].toFixed(3))]),
+      // Painted before anything is absent = the reveal starts at the source. `-1` for either means
+      // the state never occurs, which the verdict reads rather than guesses at.
+      firstPainted: firstPainted < 0 ? null : firstPainted / REVEAL_N,
+      firstAbsent: firstAbsent < 0 ? null : firstAbsent / REVEAL_N,
+      absent: state.filter((s) => s === 0).length / (REVEAL_N + 1),
+      // How much of the river the travelling card and the badges hide at this position. Recorded,
+      // not failed on: the vehicle's ninth correction rules that covering is allowed. It is here
+      // because it is the one mechanism in this beat that can make the river LOOK like two pieces.
+      hidden: state.filter((s) => s === -1).length / (REVEAL_N + 1),
+    },
   };
 };
 
@@ -362,6 +432,10 @@ async function main() {
   const driven = [];
   /** One measured drawn-line weight per width, fed to `lineWeight` below. */
   const lineWeights = [];
+  /** The painted SHAPE of the reveal, at every step of every width, fed to `revealShape`. */
+  const revealShapes = [];
+  /** What the leaders connect, at every step of every width, fed to `leaderLength`. */
+  const leaderRuns = [];
 
   for (const size of SIZES) {
     const page = await browser.newPage();
@@ -411,6 +485,29 @@ async function main() {
       });
       const measured = await page.evaluate(MEASURE_LINE, `data:image/png;base64,${shot}`, accent, ground);
       perStep.push({ step: k + 1, ...measured });
+      revealShapes.push({
+        label: `${size.name} step ${k + 1}`,
+        step: k + 1,
+        steps: settles.length,
+        reveal: measured.reveal,
+      });
+      // The leaders, read off the DOM at the same instant — segment endpoints and lengths are in
+      // FRAME pixels there, which is the space the bound is stated in.
+      leaderRuns.push({
+        label: `${size.name} step ${k + 1}`,
+        ...(await page.evaluate(() => {
+          const root = document.querySelector('[data-visual="danube-route"]');
+          const box = root.getBoundingClientRect();
+          const d = root.querySelector("[data-part=leaders]")?.getAttribute("d") ?? "";
+          const leaders = d
+            .split("M")
+            .filter(Boolean)
+            .map((seg) => seg.split("L").map((p) => p.trim().split(/\s+/).map(Number)))
+            .filter(([a, b]) => a && b && a.length === 2 && b.length === 2)
+            .map(([a, b]) => ({ from: a, to: b, len: Math.hypot(b[0] - a[0], b[1] - a[1]) }));
+          return { frame: { width: box.width, height: box.height }, leaders };
+        })),
+      });
     }
     // The best-sampled step is the measurement for this width; the rest are recorded so a reader of
     // the report can see how much of the river each step actually leaves uncovered.
@@ -509,21 +606,31 @@ async function main() {
     // beat's subject is a line; that it is DRAWN at a thickness a reader can follow is the one
     // thing about it no attribute in the file can attest to.
     lineWeight: lineWeight(lineWeights),
+    // THE PAINTED SHAPE OF THE REVEAL — one piece, starting at the source, finished by the last
+    // step — and the length of every leader. Both were reported by the owner and neither was held
+    // by anything before; see the headers on the two functions for what was measured and what was
+    // not found.
+    revealShape: revealShape(revealShapes),
+    leaders: leaderLength(leaderRuns),
   };
   await writeFile(join(SHOT_DIR, "drive-report.json"), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary, null, 2));
   const failing = results.filter((r) => r.problems.length > 0);
-  const weightProblems = summary.lineWeight.problems;
+  const named = [
+    ["the drawn line", summary.lineWeight.problems],
+    ["the reveal's shape", summary.revealShape.problems],
+    ["the leaders", summary.leaders.problems],
+  ].filter(([, ps]) => ps.length > 0);
   // Exit non-zero rather than printing a wall of problems and reporting success — a run that says
   // "197 problems" and exits 0 is how a slideshow gets called a clean run in a commit message.
-  if (failing.length > 0 || weightProblems.length > 0)
+  if (failing.length > 0 || named.length > 0)
     throw new Error(
       [
         failing.length > 0
           ? `${failing.length} of ${results.length} sweeps have problems: ` +
             failing.map((r) => `${r.label} (${r.problems.length})`).join(", ")
           : null,
-        weightProblems.length > 0 ? `the drawn line: ${weightProblems.join("; ")}` : null,
+        ...named.map(([what, ps]) => `${what}: ${ps.join("; ")}`),
       ]
         .filter(Boolean)
         .join(" | "),

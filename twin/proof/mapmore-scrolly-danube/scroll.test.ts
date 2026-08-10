@@ -179,6 +179,36 @@
 //
 //       Every other guard in this file and every sweep in `drive.mjs` stays GREEN under M11, and so
 //       would any assertion on the markup: the file says `stroke-width="3.5"` throughout.
+//
+// M12 — `MapFrame.tsx`: the route's dash pattern is declared HALF the path's length
+//       (`strokeDasharray: routeLength / 2`), so it repeats — "dash L/2, gap L/2, dash L/2 …" — and
+//       a second dash reappears at the far end as soon as the offset is non-zero. This is the shape
+//       the owner reported (*"on a deux bouts de ligne"*) and the one a progressive reveal invites,
+//       because `stroke-dasharray` repeats infinitely and a single value means dash-then-gap.
+//       Re-rendered and re-driven in the copy:
+//
+//        error: the reveal's shape: 1600x900 step 1: the river's first 36% is absent while later
+//        stretches are painted — the reveal is not starting at the source; 1600x900 step 2: the
+//        river is painted in 3 pieces — [[0,0.145],[0.515,0.56],[0.64,1]] of its own length, with
+//        real gaps between them, where a progressive reveal must paint ONE prefix; 1600x900 step 3:
+//        the river is painted in 2 pieces — [[0,0.56],[0.98,1]] …; 1600x900 step 4: at the last
+//        step the river reaches only 56.0% of its own length — the journey never finishes
+//
+//       Every scroll sweep stays green under M12, and so does `revealSpan`: the beat's own
+//       "the map only ever gains ground" is about the reveal's EXTENT, and this is about its SHAPE.
+//
+// M13 — `route-drive.mjs`: every badge is mirrored to the far side of the frame
+//       (`frame.width - clamp(ax)`), i.e. the annotation placed away from what it annotates, which
+//       is what draws an arrow across the map rather than a pointer from a label to its place.
+//
+//        error: the leaders: 1600x900 step 3: a leader is 1196px long across a 1798px frame (67% of
+//        its diagonal, allowed 25%) — that reads as an arrow drawn across the map, not as a pointer
+//        from a label to its place
+//
+//       A first attempt at this mutation — `avoidStripe` throwing a STRADDLING badge to the far
+//       side — reddened only the unit test and left `drive.mjs` green, because no badge straddles a
+//       card edge at any driven width and the leader path is empty. Recorded because it is the
+//       shape of a mutation that looks sufficient and is not.
 
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -204,10 +234,14 @@ import {
 } from "./live-scroll-map.mjs";
 import {
   DRAWN_LINE_PX,
+  LEADER_MAX_OF_DIAGONAL,
+  REVEAL_SHAPE,
   fluidity,
+  leaderLength,
   lineWeight,
   progressDisagreement,
   report,
+  revealShape,
   revealSpan,
 } from "./scroll-report.mjs";
 
@@ -823,6 +857,234 @@ describe("the river is drawn at a width a reader can follow", () => {
 
   it("states its own band rather than hiding it in a comparison", () => {
     expect(DRAWN_LINE_PX).toEqual({ floor: 2, ceiling: 5, spread: 1.5 });
+  });
+});
+
+/**
+ * THE REVEAL IS ONE PIECE, IT STARTS AT THE SOURCE, AND IT FINISHES.
+ *
+ * The owner: *"la rivière s'arrête en plein milieu et ne finit jamais jusqu'à 9… ça c'est l'étape 0
+ * et on a deux bouts de ligne."* The defect was NOT found in this build — the header on
+ * `revealShape` records the 1508 driven frames it was looked for over, and why the dash as written
+ * cannot produce it. It is guarded because nothing held the invariant: every guard this beat had
+ * was about the reveal's EXTENT, none about its SHAPE, so a repeating dash, a reveal from the wrong
+ * end, or one that stops short would all have been green.
+ */
+describe("the painted reveal is one piece that starts at the source and finishes", () => {
+  const shape = (over: Record<string, unknown>) => ({
+    label: "1600x900 step 1",
+    step: 1,
+    steps: 4,
+    reveal: {
+      fragments: 1,
+      runs: [[0, 0.36]],
+      firstPainted: 0,
+      firstAbsent: 0.365,
+      absent: 0.63,
+      hidden: 0.02,
+      ...over,
+    },
+  });
+
+  it("passes a prefix that has not finished yet, on a step that is not the last", () => {
+    expect(revealShape([shape({})]).problems).toEqual([]);
+  });
+
+  it("catches the two-fragment reveal the owner described, and says where the pieces are", () => {
+    // A repeating `stroke-dasharray` gives exactly this: the head, a hole, and the tail of the
+    // previous repetition reappearing at the far end.
+    const verdict = revealShape([
+      shape({
+        fragments: 2,
+        runs: [
+          [0, 0.36],
+          [0.78, 1],
+        ],
+        absent: 0.4,
+      }),
+    ]);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems[0]).toContain("painted in 2 pieces");
+    expect(verdict.problems[0]).toContain("ONE prefix");
+  });
+
+  it("catches a reveal that paints from the wrong end", () => {
+    const verdict = revealShape([shape({ firstPainted: 0.5, firstAbsent: 0 })]);
+    expect(verdict.problems.join("\n")).toContain("not starting at the source");
+  });
+
+  it("catches a journey that never finishes, at the last step", () => {
+    const verdict = revealShape([
+      {
+        label: "1600x900 step 4",
+        step: 4,
+        steps: 4,
+        reveal: {
+          fragments: 1,
+          runs: [[0, 0.82]],
+          firstPainted: 0,
+          firstAbsent: 0.825,
+          absent: 0.17,
+          hidden: 0.01,
+        },
+      },
+    ]);
+    expect(verdict.problems.join("\n")).toContain("never finishes");
+    expect(verdict.problems.join("\n")).toContain("is still unpainted");
+  });
+
+  it("passes the last step when the river is complete", () => {
+    expect(
+      revealShape([
+        {
+          label: "1600x900 step 4",
+          step: 4,
+          steps: 4,
+          reveal: {
+            fragments: 1,
+            runs: [[0, 1]],
+            firstPainted: 0,
+            firstAbsent: null,
+            absent: 0,
+            hidden: 0.18,
+          },
+        },
+      ]).problems,
+    ).toEqual([]);
+  });
+
+  it("does NOT call a river the prose card partly lies across two pieces", () => {
+    // The point of the third state. Covering is what the vehicle's ninth correction allows; a
+    // hidden sample may neither bridge two runs nor stand in for a hole.
+    expect(
+      revealShape([
+        {
+          label: "375x812 step 4",
+          step: 4,
+          steps: 4,
+          reveal: {
+            fragments: 1,
+            runs: [[0, 1]],
+            firstPainted: 0,
+            firstAbsent: null,
+            absent: 0,
+            hidden: 0.53,
+          },
+        },
+      ]).problems,
+    ).toEqual([]);
+  });
+
+  it("catches the card hiding the SUBJECT whole, which is what the owner actually saw", () => {
+    // Measured on this build at 375x812, steps 2, 3 and 4: hidden 1.00.
+    const verdict = revealShape([
+      {
+        label: "375x812 step 2",
+        step: 2,
+        steps: 4,
+        reveal: {
+          fragments: 0,
+          runs: [],
+          firstPainted: null,
+          firstAbsent: null,
+          absent: 0,
+          hidden: 1,
+        },
+      },
+    ]);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems[0]).toContain("hide 100% of the river");
+    expect(verdict.problems[0]).toContain("two disconnected pieces");
+  });
+
+  it("does not also accuse a hidden river of never finishing — that would name the wrong defect", () => {
+    const verdict = revealShape([
+      {
+        label: "375x812 step 4",
+        step: 4,
+        steps: 4,
+        reveal: {
+          fragments: 0,
+          runs: [],
+          firstPainted: null,
+          firstAbsent: null,
+          absent: 0,
+          hidden: 1,
+        },
+      },
+    ]);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems.join()).not.toContain("never finishes");
+  });
+
+  it("says so rather than passing when nothing was measured", () => {
+    expect(
+      revealShape([{ label: "x", step: 1, steps: 4 }]).problems,
+    ).toHaveLength(1);
+  });
+
+  it("states its own thresholds", () => {
+    expect(REVEAL_SHAPE).toEqual({
+      completeAt: 0.98,
+      headWithin: 0.02,
+      hiddenAtMost: 0.95,
+    });
+  });
+});
+
+/**
+ * A LEADER IS A SHORT LINE FROM A DISPLACED BADGE BACK TO ITS OWN PLACE.
+ *
+ * Same report: *"deux flèches rouges traversent tout le cadre en diagonale."* Measured over 1508
+ * driven frames, the leader path is EMPTY at four of five viewport shapes and its longest segment
+ * is 9px at the other two — the reported arrows are not in this artifact. Bounded anyway, as a
+ * fraction of the frame's own diagonal, because "too long to read as a pointer" is a proportion of
+ * the picture and this beat is drawn from 375px to 3440px.
+ */
+describe("a leader is a pointer, not an arrow across the map", () => {
+  const frame = { width: 1600, height: 820 }; // diagonal 1798px, so the bound is 450px
+
+  it("passes the empty leader path this build actually draws", () => {
+    expect(
+      leaderLength([{ label: "1600x900 step 1", frame, leaders: [] }]).problems,
+    ).toEqual([]);
+  });
+
+  it("passes a short pointer from a displaced badge back to its country", () => {
+    expect(
+      leaderLength([{ label: "1600x900 step 1", frame, leaders: [{ len: 9 }] }])
+        .problems,
+    ).toEqual([]);
+  });
+
+  it("catches a leader that spans the frame, and reports it as a share of the diagonal", () => {
+    const verdict = leaderLength([
+      { label: "1600x900 step 1", frame, leaders: [{ len: 1400 }] },
+    ]);
+    expect(verdict.problems).toHaveLength(1);
+    expect(verdict.problems[0]).toContain("78% of its diagonal");
+    expect(verdict.problems[0]).toContain("arrow drawn across the map");
+  });
+
+  it("scales its bound with the frame rather than fixing a pixel count", () => {
+    // 300px is fine on a desktop and an arrow across a phone.
+    expect(
+      leaderLength([{ label: "wide", frame, leaders: [{ len: 300 }] }])
+        .problems,
+    ).toEqual([]);
+    expect(
+      leaderLength([
+        {
+          label: "phone",
+          frame: { width: 375, height: 617 },
+          leaders: [{ len: 300 }],
+        },
+      ]).problems,
+    ).toHaveLength(1);
+  });
+
+  it("states its own bound", () => {
+    expect(LEADER_MAX_OF_DIAGONAL).toBe(0.25);
   });
 });
 

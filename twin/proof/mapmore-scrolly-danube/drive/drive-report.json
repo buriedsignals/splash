@@ -1,5 +1,5 @@
 {
-  "file": "/private/tmp/danube-render/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
+  "file": "/private/tmp/danube-render2/proof/mapmore-scrolly-danube/render/danube-scrolly.html",
   "sweeps": [
     {
       "label": "1600x900 down",
@@ -241,21 +241,248 @@
     "widths": [
       {
         "label": "1600x900",
-        "drawnWidthPx": 3.69,
+        "drawnWidthPx": 3.7,
         "samples": 228,
         "rejected": 12
       },
       {
         "label": "1280x800",
-        "drawnWidthPx": 3.72,
-        "samples": 211,
-        "rejected": 29
+        "drawnWidthPx": 3.73,
+        "samples": 212,
+        "rejected": 28
       },
       {
         "label": "375x812",
         "drawnWidthPx": 3.99,
         "samples": 137,
         "rejected": 103
+      }
+    ]
+  },
+  "revealShape": {
+    "problems": [
+      "375x812 step 2: the prose card and badges hide 100% of the river at the position this step settles on — a reader here sees no river at all, only what shows above and below the card, which reads as two disconnected pieces",
+      "375x812 step 3: the prose card and badges hide 100% of the river at the position this step settles on — a reader here sees no river at all, only what shows above and below the card, which reads as two disconnected pieces",
+      "375x812 step 4: the prose card and badges hide 100% of the river at the position this step settles on — a reader here sees no river at all, only what shows above and below the card, which reads as two disconnected pieces"
+    ],
+    "shape": [
+      {
+        "label": "1600x900 step 1",
+        "step": 1,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            0.36
+          ]
+        ],
+        "absent": 0.532,
+        "hiddenByFurniture": 0.114
+      },
+      {
+        "label": "1600x900 step 2",
+        "step": 2,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            0.725
+          ]
+        ],
+        "absent": 0.274,
+        "hiddenByFurniture": 0.08
+      },
+      {
+        "label": "1600x900 step 3",
+        "step": 3,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            0.98
+          ]
+        ],
+        "absent": 0.02,
+        "hiddenByFurniture": 0.095
+      },
+      {
+        "label": "1600x900 step 4",
+        "step": 4,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "absent": 0,
+        "hiddenByFurniture": 0.104
+      },
+      {
+        "label": "1280x800 step 1",
+        "step": 1,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            0.36
+          ]
+        ],
+        "absent": 0.502,
+        "hiddenByFurniture": 0.164
+      },
+      {
+        "label": "1280x800 step 2",
+        "step": 2,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            0.725
+          ]
+        ],
+        "absent": 0.274,
+        "hiddenByFurniture": 0.129
+      },
+      {
+        "label": "1280x800 step 3",
+        "step": 3,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            0.98
+          ]
+        ],
+        "absent": 0.02,
+        "hiddenByFurniture": 0.144
+      },
+      {
+        "label": "1280x800 step 4",
+        "step": 4,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            1
+          ]
+        ],
+        "absent": 0,
+        "hiddenByFurniture": 0.204
+      },
+      {
+        "label": "375x812 step 1",
+        "step": 1,
+        "fragments": 1,
+        "runs": [
+          [
+            0,
+            0.41
+          ]
+        ],
+        "absent": 0.448,
+        "hiddenByFurniture": 0.343
+      },
+      {
+        "label": "375x812 step 2",
+        "step": 2,
+        "fragments": 0,
+        "runs": [],
+        "absent": 0,
+        "hiddenByFurniture": 1
+      },
+      {
+        "label": "375x812 step 3",
+        "step": 3,
+        "fragments": 0,
+        "runs": [],
+        "absent": 0,
+        "hiddenByFurniture": 1
+      },
+      {
+        "label": "375x812 step 4",
+        "step": 4,
+        "fragments": 0,
+        "runs": [],
+        "absent": 0,
+        "hiddenByFurniture": 1
+      }
+    ]
+  },
+  "leaders": {
+    "problems": [],
+    "leaders": [
+      {
+        "label": "1600x900 step 1",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 450
+      },
+      {
+        "label": "1600x900 step 2",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 450
+      },
+      {
+        "label": "1600x900 step 3",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 450
+      },
+      {
+        "label": "1600x900 step 4",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 450
+      },
+      {
+        "label": "1280x800 step 1",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 367
+      },
+      {
+        "label": "1280x800 step 2",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 367
+      },
+      {
+        "label": "1280x800 step 3",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 367
+      },
+      {
+        "label": "1280x800 step 4",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 367
+      },
+      {
+        "label": "375x812 step 1",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 181
+      },
+      {
+        "label": "375x812 step 2",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 181
+      },
+      {
+        "label": "375x812 step 3",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 181
+      },
+      {
+        "label": "375x812 step 4",
+        "leaders": 0,
+        "longestPx": 0,
+        "limitPx": 181
       }
     ]
   }
