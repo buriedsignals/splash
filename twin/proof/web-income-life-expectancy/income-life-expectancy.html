@@ -319,7 +319,7 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 <script>
 // twin/proof/web-income-life-expectancy/scatter-interaction.mjs
 //
-// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs`, the line-genre
+// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs`, the line-genre
 // skill's own copy. `render-web.mjs` inlines this one instead, the same way the skill's own
 // `renderWeb` inlines its own (see that file's doc-comment for exactly how and why).
 //
@@ -346,7 +346,7 @@ svg.chart { grid-column: 2; grid-row: 1; width: 100%; height: 100%; display: blo
 // reader who has used the CO₂ beat meets the same interaction language here.
 //
 // `nearestPointIndex` is exported and pure — no DOM — so it can be sanity-checked directly.
-// `initChart`/`initAll` are DOM wiring and are proven, per `twin-doctrine`'s own rule, by driving a
+// `initChart`/`initAll` are DOM wiring and are proven, per `doctrine`'s own rule, by driving a
 // real browser, never by asserting against an unwatched DOM emulation.
 
 /** Index of the point in `pts` (each `{x, y}` in the same pixel space the pointer position is

@@ -51,7 +51,7 @@ import {
   adjustToContrast,
   parsePalette,
   NON_TEXT_CONTRAST_MIN,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 
 const TWIN = join(import.meta.dirname, "..");
 const REPO = join(TWIN, "..");
@@ -255,7 +255,7 @@ function decode(path) {
  * spend a newsroom's tile quota to answer a question about colour.
  */
 function resolveChrome() {
-  // A DUPLICATE of the one in `twin-map-web/scripts/render-preview.mjs`, for the reason that file
+  // A DUPLICATE of the one in `map-web/scripts/render-preview.mjs`, for the reason that file
   // states about its own: this is a small helper and importing it would drag a script that launches
   // a browser the moment it loads. Puppeteer's own resolution finds nothing on a machine where
   // Chrome for Testing was installed outside its default cache, which is this machine.

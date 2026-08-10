@@ -1,6 +1,6 @@
 // twin/proof/webz-diverging-bar-eu-per-capita/diverging-interaction.mjs
 //
-// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs`, which resolves
+// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs`, which resolves
 // a reading by NEAREST-x over one shared `.hit-area` because a line chart's readings are points on
 // a curve. Nothing to resolve here: this beat's 27 rows tile the plot's full height exactly (no
 // band padding, see `diverging-geometry.ts`), so the pointer is always inside exactly one row's own

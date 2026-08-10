@@ -12,9 +12,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
-import { contrast } from "../../skills/twin-chart-web/scripts/render-still.mjs";
+import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { contrast } from "../../skills/chart-web/scripts/render-still.mjs";
 import { StackedBarWeb, FRAME } from "./StackedBarWeb.tsx";
 // The beat's own number formatter, taking its locale from the language the page declares — the
 // same one the component labels every segment with, so the prose and the tooltips agree.

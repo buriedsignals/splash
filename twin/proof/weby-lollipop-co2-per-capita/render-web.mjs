@@ -3,7 +3,7 @@
 // This beat's own WEB runner — the same shape `../co2-suisse/render-web.mjs` and
 // `../web-income-life-expectancy/render-web.mjs` both keep: the story's own constants, its own CSV
 // reader, its own component, handed to the genre's generic `renderWeb`. It lives here, beside the
-// story, not inside `skills/twin-chart-web/scripts/render-web.mjs` — that file's own header
+// story, not inside `skills/chart-web/scripts/render-web.mjs` — that file's own header
 // explains why: a skill directory that imports a story workspace does not build once copied, on its
 // own, into a journalist's root.
 //
@@ -26,8 +26,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { LollipopCo2Web, FRAME } from "./LollipopCo2Web.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -123,7 +123,7 @@ export function rowsFrom2024(csv) {
 }
 
 /** Strips the `export` keyword from each top-level declaration — the same transform
- *  `twin-chart-web/scripts/render-web.mjs`'s own `inlineable` applies to the skill's script, so
+ *  `chart-web/scripts/render-web.mjs`'s own `inlineable` applies to the skill's script, so
  *  this beat's `lollipop-interaction.mjs` (authored as an ES module for readability) can also run as
  *  a plain classic `<script>` — no `type="module"`, so it keeps working in a CMS iframe or
  *  sandboxed embed that restricts module scripts. */

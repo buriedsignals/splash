@@ -5,7 +5,7 @@
 // `<image>` and some `<path>`s — never a live map.
 //
 // This is `geo-discipline.md` rules 1, 2, 3, 4, 6, 7, 9, 11 and 12 in one script, the same list
-// `twin-map-beat/scripts/bake-plate.mjs` states for its own build:
+// `map-beat/scripts/bake-plate.mjs` states for its own build:
 //   1. the frame gate is `idle` OR a bounded settle, and it records which one fired;
 //   2. the plate is fixed, so the web genre never re-renders tiles per interaction and shimmers;
 //   3. the shapes are baked to ordered pixel rings HERE — a provider basemap serves administrative
@@ -22,7 +22,7 @@
 //      capture — see `geo-choropleth.ts`'s own `keepRing` doc-comment for why flattening a
 //      MultiPolygon's rings across DIFFERENT shapes (never within one shape's own parts) would be
 //      the trap, and why this file's own `ringsOf` (below) does not fall into it;
-//  12. the camera bounds below are the SAME box `twin-map-beat/scripts/bake-plate.mjs` uses for the
+//  12. the camera bounds below are the SAME box `map-beat/scripts/bake-plate.mjs` uses for the
 //      near-identical European CO₂ study set (Iceland and the Faroe Islands both need the -26° west
 //      edge; the box is near-square on purpose, so a landscape frame never smuggles in the
 //      mid-Atlantic and a third of North Africa the way a wider one would).
@@ -30,7 +30,7 @@
 // Baked at the EXACT pixel size `ChoroplethWeb.tsx`'s desktop layout displays it at (496), scaled
 // down uniformly for the narrow layout inside the SVG (`mapSize / geometry.frame.width`, applied to
 // both the plate `<image>` and every projected mark) — one plate, never baked twice, the same
-// pattern `twin-map-web/assets/MapWebSeed.tsx` already proves for the symbol-map genre.
+// pattern `map-web/assets/MapWebSeed.tsx` already proves for the symbol-map genre.
 //
 // Usage:
 //   bun proof/mapgen-choropleth-web/bake-plate.mjs --size 496   # → proof/mapgen-choropleth-web/plate
@@ -51,7 +51,7 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** The beat's camera and its anchors — the same near-square European box
- *  `twin-map-beat/scripts/bake-plate.mjs` uses for the near-identical study set (rule 12). */
+ *  `map-beat/scripts/bake-plate.mjs` uses for the near-identical study set (rule 12). */
 const BEAT = {
   bounds: [
     [-26, 36],

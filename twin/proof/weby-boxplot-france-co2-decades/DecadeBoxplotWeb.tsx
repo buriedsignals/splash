@@ -4,8 +4,8 @@
  * adds the one thing the static beat (`proof/more-boxplot-france-co2-decades/DecadeBoxplot.tsx`)
  * cannot: a reader who can ask any of the eight decade-boxes for its own exact five-number summary,
  * its own Tukey fence and its own outlier list, without anything the static frame already states
- * being gated behind that ask. Read `twin-chart-web/references/web-discipline.md` and
- * `twin-chart-beat/references/types/boxplot.md` before changing this file.
+ * being gated behind that ask. Read `chart-web/references/web-discipline.md` and
+ * `chart-beat/references/types/boxplot.md` before changing this file.
  *
  * MIGRATED TO THE FLUID FRAME (`web-discipline.md`, "Responsive behaviour", second build). This
  * beat used to ship two pre-rendered rungs — a 900px `DESKTOP_LAYOUT` and a 360px `NARROW_LAYOUT`

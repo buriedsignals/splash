@@ -3,12 +3,12 @@
  * line. Coordinates and number formatting come from `./income-life-geometry.ts`; this file adds the
  * one thing neither a static frame nor a video build has — a reader who can ask any of the ~164
  * dots what it is and get an exact answer back, without anything the static frame already states
- * being gated behind that ask. Read `twin-chart-web/references/web-discipline.md` and
- * `twin-chart-beat/references/types/scatter.md` before changing this file.
+ * being gated behind that ask. Read `chart-web/references/web-discipline.md` and
+ * `chart-beat/references/types/scatter.md` before changing this file.
  *
  * MIGRATED TO THE FLUID FRAME. This file used to ship two pre-rendered widths (900px and 360px)
  * swapped by a media query. One frame now, filling its container continuously and fitting the
- * visible window, by the separation `twin-chart-web/assets/ChartWebSeed.tsx` teaches: the `<svg>`
+ * visible window, by the separation `chart-web/assets/ChartWebSeed.tsx` teaches: the `<svg>`
  * carries GEOMETRY ONLY (gridlines and the three leader lines — no `<text>` at all), and every word
  * is HTML at a FIXED pixel size, positioned by `%` over the same grid cell. Geometry stretches;
  * type does not.
@@ -34,7 +34,7 @@ import { scaleLinear } from "d3-scale";
 // The filter vocabulary. `attrsFor` is the one call this component makes for it: spread on every
 // element drawn from a country — the dot, its leader line, its name — so a narrowed region takes
 // all three away together rather than leaving a word floating over the cloud.
-import { attrsFor } from "../../skills/twin-chart-web/assets/filter.ts";
+import { attrsFor } from "../../skills/chart-web/assets/filter.ts";
 import {
   logTicks,
   scatterGeometry,

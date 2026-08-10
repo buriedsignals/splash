@@ -45,7 +45,7 @@ always MapTiler. **The basemap is live.**
 
 ### The position that was overturned, kept verbatim
 
-> **This beat keeps the baked plate.** `twin-doctrine/references/geo-discipline.md` rule 2 is written
+> **This beat keeps the baked plate.** `doctrine/references/geo-discipline.md` rule 2 is written
 > for exactly this case: a moving camera needs a FIXED plate, and moves *within* it, because
 > re-rendering tiles per camera position resamples the basemap slightly differently every time and the
 > picture shimmers. That rule was written about a video's camera; a scroll-driven camera is the same
@@ -102,7 +102,7 @@ le scrolly, le scroll pilote et la map doit prendre toute la largeur."* The map 
 `NavigationControl`. This is a deliberate DIFFERENCE from map × web, where R1 requires the controls
 because there the reader IS the camera; here the scroll is, and a reader-moved camera would be taken
 back by the next step. Recorded as a distinction between the two genres in
-`twin-scrolly/references/scrolly-discipline.md`, so it is not later "fixed".
+`scrolly/references/scrolly-discipline.md`, so it is not later "fixed".
 
 **The map takes the whole frame.** Live tiles fill the container edge to edge, which is what makes
 that instruction free: the 41 shapes stay at the plate's own fitted scale under the same transform,
@@ -113,7 +113,7 @@ Over live tiles it drew its own two vertical edges: measured at reading 4, 1600�
 was visibly lighter inside the plate's band than outside it. The veil is a frame-level layer now.
 
 **The delivered file still carries no key.** R1b: the committed artifact holds the placeholder
-`__MAPTILER_KEY__` and `twin-deliver` substitutes at delivery, so a proof page never spends a
+`__MAPTILER_KEY__` and `deliver` substitutes at delivery, so a proof page never spends a
 newsroom's tile quota and no key survives in this repository's history.
 
 **What it costs, stated rather than discovered.** maplibre-gl is INLINED — a `<script src>` would
@@ -155,7 +155,7 @@ opening camera; `render.mjs` inlines the same file into the page to drive the re
   both travel with it.
 - **Highlighting is four opacity writes, not 41 fill rewrites**: one veil rectangle of the ground
   over the whole plate, and three groups of re-drawn paths above it that come back to full strength.
-- **Progress is READ, never re-derived.** `twin-scrolly` publishes `data-progress` on its own root on
+- **Progress is READ, never re-derived.** `scrolly` publishes `data-progress` on its own root on
   every scroll — the fractional index of the panel on the lane's centre line, interpolated between the
   two card centres that bracket it — and this driver reads it. It used to derive its own from panel
   overlaps against a band at the bottom `data-prose-lane`% of the scrollport, which was right while a
@@ -269,7 +269,7 @@ Screenshots in `drive/`: four settled cameras at each width, plus a **mid-flight
 ## Which vehicle these artifacts were built against — read this before re-rendering
 
 `render/one-map-four-readings.html` and every number above were produced against the **committed**
-`twin-scrolly` at **`6dcb5243`, the NINTH correction**, where the prose card is centred, opaque, and
+`scrolly` at **`6dcb5243`, the NINTH correction**, where the prose card is centred, opaque, and
 travels OVER the graphic. The previous round of this beat was built against the eighth and said so
 here; that round's own warning has now been discharged, and this is what it found:
 
@@ -332,7 +332,7 @@ request — is in the header, which under the fixed-page model never scrolls awa
 
 ## What the vehicle is missing — reported, not patched around
 
-Same finding as the sibling chart beat: `twin-scrolly`'s contract is N pictures with exactly one
+Same finding as the sibling chart beat: `scrolly`'s contract is N pictures with exactly one
 painted, and a beat whose visual is ONE persistent element has no way to declare it. The driver moves
 its own node out of the per-step stack on load and the scaffold gets empty wrappers for steps 2–4. It
 degrades correctly with no JavaScript, and it is a workaround for a missing mode.

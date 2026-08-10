@@ -1,7 +1,7 @@
 /**
  * The pure half of the hex-grid beat: csv parsing, axial hex binning (pointy-top, cube-rounded —
  * Red Blob Games' standard formulas), cell-size selection, and quantile class breaks. No browser,
- * no rasteriser. See `twin-map-beat/references/types/hex-grid.md`.
+ * no rasteriser. See `map-beat/references/types/hex-grid.md`.
  *
  * Binning is done PER POINT via `pixelToAxial` + cube rounding, not by pre-building a fixed
  * tessellation and testing point-in-cell membership — every real coordinate maps to exactly one

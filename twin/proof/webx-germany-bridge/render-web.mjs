@@ -14,8 +14,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { WaterfallWeb, FRAME } from "./WaterfallWeb.tsx";
 // The beat's own formatters, taking their locale from the language the page declares — the same
 // ones the component labels every bar with, so the prose and the bars agree.

@@ -28,7 +28,7 @@
  */
 
 // A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
-import type { BeatTiming } from "#shared/twin-chart-video/timing.ts";
+import type { BeatTiming } from "#shared/chart-video/timing.ts";
 
 export const SLOPE_TIMING: BeatTiming = {
   fps: 30,

@@ -3,7 +3,7 @@
 // This beat's own WEB runner — the same shape `../web-income-life-expectancy/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` both have: the story's own constants, its own CSV reader, its own
 // component, handed to the genre's generic machinery. It lives here, beside the story, not inside
-// `skills/twin-chart-web/scripts/render-web.mjs` — a skill directory that imports a story workspace
+// `skills/chart-web/scripts/render-web.mjs` — a skill directory that imports a story workspace
 // does not build once copied, on its own, into a journalist's root.
 //
 // Same deliberate departure `web-income-life-expectancy/render-web.mjs` documents: after calling
@@ -24,8 +24,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { summarizeDecade } from "./boxplot-geometry.ts";
 import { DecadeBoxplotWeb, FRAME } from "./DecadeBoxplotWeb.tsx";
 
@@ -64,7 +64,7 @@ export async function loadDecades(dataPath) {
   console.log(`read ${rows.length} raw rows from data.csv (full series, all years)`);
 
   // The OWID grapher CSV endpoint silently returns the entire global dataset with HTTP 200 unless
-  // `csvType=filtered` is on the URL (`twin-intake/references/ourworldindata-csv-filter-trap.md`).
+  // `csvType=filtered` is on the URL (`intake/references/ourworldindata-csv-filter-trap.md`).
   // The fetch URL already carries it; this is the second, independent check on the data itself.
   const entities = new Set(rows.map((r) => r.Entity));
   if (entities.size !== 1 || !entities.has("France"))
@@ -151,7 +151,7 @@ export async function loadDecades(dataPath) {
 }
 
 /** Strips the `export` keyword from each top-level declaration — same one-line transform
- *  `twin-chart-web/scripts/render-web.mjs`'s own `inlineable` applies, so this beat's own
+ *  `chart-web/scripts/render-web.mjs`'s own `inlineable` applies, so this beat's own
  *  `boxplot-interaction.mjs` (authored as an ES module for readability and its own direct
  *  importability) can also run as a plain classic `<script>` — no `type="module"`. */
 function inlineable(moduleSource) {

@@ -3,7 +3,7 @@
 **Medium/genre:** chart / web. **Type:** dumbbell (range plot). This is the WEB genre of the
 same claim the STATIC beat (`proof/more-dumbbell-life-expectancy-gains/`) already draws — its own
 fresh geometry and its own fresh component, not an import of that beat's files (a beat never
-imports another beat's files; `twin-chart-web/SKILL.md`'s "duplicate, do not link" ruling).
+imports another beat's files; `chart-web/SKILL.md`'s "duplicate, do not link" ruling).
 
 ## Claim
 

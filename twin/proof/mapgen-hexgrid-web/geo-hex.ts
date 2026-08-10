@@ -1,7 +1,7 @@
 /**
  * The pure half of this beat: csv parsing, axial hex binning (pointy-top, cube-rounded — Red Blob
  * Games' standard formulas), cell-size selection, and quantile class breaks. No browser, no
- * rasteriser. See `twin-map-beat/references/types/hex-grid.md`.
+ * rasteriser. See `map-beat/references/types/hex-grid.md`.
  *
  * This is this beat's OWN physical copy of `proof/map-quake-density/geo-hex.ts` — never imported
  * across `proof/` beats. The math is identical because the type's own rules do not change between

@@ -40,7 +40,7 @@ const MAP = 620;
 /** The plate's top edge. It came DOWN by 50px when the credit left the header for the frame's
  *  bottom margin: the header gave back the row the source used to occupy, and the bottom stack
  *  needed that room to hold the credit as well as the caveat. The same move the seed made
- *  (twin-map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
+ *  (map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
  *  own fit guard is what said so — it threw, by name, with the numbers in the message. */
 const MAP_Y = 250;
 const COLUMN = { x: MAP + PAD + 40, right: FRAME.width - PAD };
@@ -191,7 +191,7 @@ export function ChoroplethVideo({
   // visual, the same place on every graphic this project ships, and it carries the basemap credit
   // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
   // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
-  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  // map-beat/assets/Co2MapVideo.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;
@@ -370,7 +370,7 @@ export function ChoroplethVideo({
               // "pending" dots — visibly not a shade the ramp could have produced — until its own
               // window opens, then CUTS to its true colour. Never translucent against the basemap,
               // so it never reads lighter than the lightest filled class
-              // (`twin-map-beat/SKILL.md:194-203`). Drawn as two superimposed paths crossfading
+              // (`map-beat/SKILL.md:194-203`). Drawn as two superimposed paths crossfading
               // into each other, the dot texture and the true fill were both painted for the whole
               // of every country's window, which is that same defect with an extra layer.
               const trueFill = ramp[binIndexLowerInclusive(v, breaks)];

@@ -1,8 +1,8 @@
 /**
  * The web beat of "Switzerland's 2024 per-capita CO2 emissions were the 3rd-lowest of 15 European
  * peers" — a lollipop, not a line or a scatter. Coordinates and formatting come from
- * `./lollipop-geometry.ts`. Read `twin-chart-web/references/web-discipline.md` and
- * `twin-chart-beat/references/types/lollipop.md` before changing this file.
+ * `./lollipop-geometry.ts`. Read `chart-web/references/web-discipline.md` and
+ * `chart-beat/references/types/lollipop.md` before changing this file.
  *
  * MIGRATED TO THE FLUID FRAME (`web-discipline.md`, "Responsive behaviour", second build). This
  * beat used to ship two pre-rendered rungs — a 900px `DESKTOP_LAYOUT` and a 360px `NARROW_LAYOUT`,

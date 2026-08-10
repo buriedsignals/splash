@@ -10,7 +10,7 @@ warm one for solar, the shape the component argued for as `WIND_COLOUR` / `SOLAR
 file existed. Only one warm member sits in the set, so the "two warm hues adjacent" trap
 `references/types/grouped-bar.md` names (an orange next to a vermillion) cannot occur here.
 
-`twin-palette`'s subject option was checked and this is the MULTI-MATCH case: the subject is wind
+`palette`'s subject option was checked and this is the MULTI-MATCH case: the subject is wind
 and solar generation, so `renewables` fires on both series at once and `matchConvention` returns
 nothing when it cannot separate them. Nor could the house theme supply this beat alone — a grouped
 bar needs one ink per series and a recorded palette carries one accent. So a bespoke pair, recorded

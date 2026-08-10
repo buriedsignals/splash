@@ -39,7 +39,7 @@ Switzerland reversal is named directly with an ink annotation and leader line, n
 Ember & Energy Institute, Statistical Review of World Energy (2025), via Our World in Data ·
 `electricity-mix.csv`, filtered client-side to Switzerland, France, Germany, Norway, Poland,
 Sweden — the URL-level `country=` filter param does not reliably filter every OWID indicator
-variant (`twin-intake/references/ourworldindata-csv-filter-trap.md`), confirmed by checking
+variant (`intake/references/ourworldindata-csv-filter-trap.md`), confirmed by checking
 distinct entity counts before trusting any of tonight's fetches.
 
 ## What went wrong, caught by looking

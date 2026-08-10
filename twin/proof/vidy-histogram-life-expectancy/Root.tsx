@@ -13,7 +13,7 @@ import { Composition } from "remotion";
 import {
   EXPORT_SIZE_NAMES,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 import { HistogramVideo, type HistogramVideoProps } from "./HistogramVideo";
 import { HISTOGRAM_TIMING } from "./timing-contract";
 

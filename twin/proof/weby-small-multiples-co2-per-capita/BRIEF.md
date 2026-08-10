@@ -6,7 +6,7 @@ self-contained interactive HTML page, two responsive rungs (900px desktop, 360px
 This is the FIRST web-genre small-multiples beat. The only existing beat of this claim/data is a
 VIDEO build (`../more-small-multiples-co2-per-capita/`, a Remotion mp4) — read for its verified
 numbers and its panel-order reasoning, never imported (a beat never imports another beat's files,
-doubly so across genres; `twin-chart-web/SKILL.md`, "duplicate, do not link"). Everything here is
+doubly so across genres; `chart-web/SKILL.md`, "duplicate, do not link"). Everything here is
 written fresh, in this genre's own shape (`ChartWebSeed.tsx`'s `WebLayout`/two-layouts/SSR'd
 interaction pattern), generalised from one panel to four.
 

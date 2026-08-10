@@ -5,9 +5,9 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as documented in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md`.
+`skills/splash/assets/root-template/NEWSROOM.example.md`.
 
-`twin-palette`'s proposal for the subject line "where the population of Europe lives, one dot per
+`palette`'s proposal for the subject line "where the population of Europe lives, one dot per
 199 thousand people" returned **one** option — the house theme — because `matchConvention` fires on
 none of the four grounded conventions (renewables, fossil, water, heat). Population carries no
 colour a reader already holds; when no convention applies, the house theme wins.

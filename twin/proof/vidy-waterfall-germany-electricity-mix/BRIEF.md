@@ -117,7 +117,7 @@ beat uses the Okabe-Ito colour-universal-design palette's **blue** for increase 
 for decrease — two of the eight colours Okabe & Ito (2008) specifically selected because they stay
 mutually distinguishable under deuteranopia, protanopia and tritanopia, unlike a red/green pairing
 which collapses under the two most common forms of CVD. This codebase already treats Okabe-Ito as
-its reference safe palette (`twin-doctrine/references/visual-system.md` names "vermillion" by name
+its reference safe palette (`doctrine/references/visual-system.md` names "vermillion" by name
 as a mark colour used elsewhere in this corpus).
 
 - **Increase** — `#0072B2` (Okabe-Ito blue)
@@ -141,7 +141,7 @@ role colour, so contrast never depends on which of the three role colours happen
   put the most dramatic bar last for effect.
 - The value label for each step fades in early (within the first quarter of its own bar's local
   reveal window) and then rides the bar's growing tip as it extends, rather than gating on the last
-  slice of the bar's growth — `visual-system.md` and `twin-chart-beat/references/types/diverging-bar.md`
+  slice of the bar's growth — `visual-system.md` and `chart-beat/references/types/diverging-bar.md`
   both name the opposite (gate-on-last-slice) as an already-shipped-and-fixed defect: "a label that
   only appears once a bar is fully grown is a label that's absent for most of the time the bar is on
   screen."

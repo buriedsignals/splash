@@ -1,9 +1,9 @@
 // The runner for the ONE-CHART scrolly beat: a single line — life expectancy at birth in
 // Switzerland, one reading per year — and four successive READINGS of it, driven by the scroll.
 //
-// This file is a CONSUMER of `twin-scrolly`: it imports the skill's own generic `renderScrolly`
+// This file is a CONSUMER of `scrolly`: it imports the skill's own generic `renderScrolly`
 // (the media-agnostic scaffold above its CONFIG marker) and hands it steps. Nothing under
-// `twin-scrolly/` is edited by it.
+// `scrolly/` is edited by it.
 //
 // WHY THIS EARNS THE SCROLL, and why it is a different argument from the sibling
 // `scrolly-chart-eu-carbon`. That beat shows ONE subject through FOUR encodings, and the comparison
@@ -31,8 +31,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement, Fragment } from "react";
-import { deriveFurniture, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
+import { deriveFurniture, readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { ChartFrame } from "./ChartFrame.tsx";
 import {
   BAND_FILL,

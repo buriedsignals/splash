@@ -9,7 +9,7 @@
 //
 // WHY IT IS NOT IN `bun test`. It needs a real key and a real network — the committed artifact
 // carries the placeholder (R1b) and must never spend a newsroom's quota. It writes a KEYED COPY
-// into a `mkdtemp` outside the tree, exactly as `twin-map-web/scripts/verify-live-map.mjs` does, so
+// into a `mkdtemp` outside the tree, exactly as `map-web/scripts/verify-live-map.mjs` does, so
 // the live probe cannot defeat the key guard. What IS in `bun test` is the assertion that the
 // committed file contains the live layer at all — the guard `AUDIT-W5-W6-map.md` §5.6 found
 // missing, where the whole of R1 could be deleted in silence.

@@ -4,11 +4,11 @@ accent: "#3A3A3A"
 origin: subject
 ---
 
-The answer recorded for this beat: `twin-palette`'s **subject** option.
+The answer recorded for this beat: `palette`'s **subject** option.
 
 `matchConvention("coal's share of electricity")` returns exactly one grounded convention —
 `fossil` — and returns it alone, so there was nothing for the journalist to disambiguate. Its
-reasoning, from `twin-palette/references/subject-conventions.md`: near-black grey reads as coal,
+reasoning, from `palette/references/subject-conventions.md`: near-black grey reads as coal,
 the material's own colour, and it stays legible where a saturated hue would compete with the
 renewable green it is usually plotted against.
 

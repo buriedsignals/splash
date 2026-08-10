@@ -3,8 +3,8 @@
 // The one script this beat ships for its FALLBACK layer, inlined verbatim into the self-contained
 // HTML by `render-web.mjs` (which strips the `export` keyword from each top-level declaration so
 // this file can also sit as a plain classic `<script>` — no `type="module"`, no bundler). This is
-// THIS beat's own copy of `twin-map-web/assets/interaction.mjs`'s mechanics — a duplicate, never an
-// import across a beat or out of a skill (`splash-twin/test/no-cross-skill-imports.test.ts` fails
+// THIS beat's own copy of `map-web/assets/interaction.mjs`'s mechanics — a duplicate, never an
+// import across a beat or out of a skill (`splash/test/no-cross-skill-imports.test.ts` fails
 // loud on either) — with the one adjustment a choropleth needs.
 //
 // THE ADJUSTMENT, and it is the whole difference between a point beat and a polygon one. In the
@@ -23,7 +23,7 @@
 // JavaScript on but no key, no network, or a style that failed. It also owns the keyboard path in
 // BOTH states — the buttons keep their Tab stop when the live map swaps in.
 //
-// `initRegions`/`initAll` are DOM wiring and are NOT unit-tested here: per `twin-doctrine`'s own
+// `initRegions`/`initAll` are DOM wiring and are NOT unit-tested here: per `doctrine`'s own
 // verification rule, an interactive genre is verified by driving a real browser, not asserting
 // against a DOM emulation nobody looked at.
 

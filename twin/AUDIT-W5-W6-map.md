@@ -55,11 +55,11 @@ deleted from the rendered page and nothing in the suite goes red** — measured,
   walk working. All 20 tracked `geometry.json` carry `frameCorners`, `worldWidthPx`,
   `degreesPerPixel`, `metresPerPixel` with real values (`proof/mapvid-locator-geneva/plate/geometry.json`
   → `metresPerPixel: 20.0713` at zoom 11.398).
-- **T2's derivation is not cosmetic.** Extracted from `skills/twin-map-beat/scripts/bake-plate.mjs:152`
+- **T2's derivation is not cosmetic.** Extracted from `skills/map-beat/scripts/bake-plate.mjs:152`
   and run outside the tree: `minFrameHeightPx(900, 35, 66) = 129 px` where the constant it replaced
   said `Math.ceil(900 × 0.5685) = 512`. For the choropleth's own European band the old message
   demanded four times the height that actually fixes the frame. `0.5685` survives in the tree only as
-  prose and as one deliberate test comparison (`skills/splash-twin/test/bake-parity.test.ts:161`).
+  prose and as one deliberate test comparison (`skills/splash/test/bake-parity.test.ts:161`).
 - **T3's anti-vacuity pin is stronger than the spec's**, adding `cameraFacts` and
   `assertWorldFillsFrame` to the seven names (`bake-parity.test.ts:112-122`).
 - **T4 resolved `sequentialRamp` a third way** the spec did not offer: `from`/`to` became arguments,
@@ -73,7 +73,7 @@ deleted from the rendered page and nothing in the suite goes red** — measured,
 
 **Regressions / unnoticed drift**
 
-1. **`livePlan`'s three camera fields are dead.** `skills/twin-map-web/scripts/render-web.mjs:151-153`
+1. **`livePlan`'s three camera fields are dead.** `skills/map-web/scripts/render-web.mjs:151-153`
    writes `maxBounds`, `minZoom`, `maxZoom` into every live page. `grep "plan.maxBounds\|plan.minZoom\|plan.maxZoom"`
    returns nothing: `assets/live-map.mjs` recomputes all three at runtime in `leash()` (`:229-241`).
    Proved by mutation: replacing `maxBounds: corners` with a deliberately cropping box changed
@@ -104,7 +104,7 @@ deleted from the rendered page and nothing in the suite goes red** — measured,
    copies, e.g. `proof/map-quake-density/geo-hex.ts:227`) carries neither tag nor exemption and has
    no docblock at all; the reasoning for `>` versus `>=` lives only in a commit message.
 8. **`niceReferenceValues` was renamed, not reconciled toward the seed.** The seed's copy is now a
-   singleton at `skills/twin-map-web/assets/geo-symbol.ts:39` with no tag; the beats' variant became
+   singleton at `skills/map-web/assets/geo-symbol.ts:39` with no tag; the beats' variant became
    `halfMagnitudeReferenceValues` whose own docblock says it is "NOT what this beat's legend uses any
    more" — dead code kept alive.
 9. **The three untyped `simplifyRing`/`keepRing` transcriptions survive in the dot bakes**
@@ -116,7 +116,7 @@ deleted from the rendered page and nothing in the suite goes red** — measured,
 
 ### 1.4 `map-web-discipline.md` — was R1's reversal recorded, or the old argument quietly deleted?
 
-**Recorded, and close to honestly.** `skills/twin-map-web/references/map-web-discipline.md:357` is
+**Recorded, and close to honestly.** `skills/map-web/references/map-web-discipline.md:357` is
 retitled "— OVERTURNED 2026-08-10 by ruling R1"; `:362-382` keeps the overturned position as a
 blockquote headed "The position that was overturned, kept verbatim"; `:384-394` carries the ruling
 verbatim in the owner's own French; `:510-533` is the price list (payload, frozen archive, IP/CSP,
@@ -141,14 +141,14 @@ the best-executed doc work in the chantier.
 `:572` "a fixture with `zoomable: true`", which no longer exists, `:592`, `:601` "the zoom checkbox
 when present".
 
-**`twin-map-web/SKILL.md`**: `:48-57` is a properly reversed bullet quoting the old "zero external
+**`map-web/SKILL.md`**: `:48-57` is a properly reversed bullet quoting the old "zero external
 request" claim and stating that the file now requests `api.maptiler.com`. But **`:21` still says the
 component "draws an `<image>` and some `<circle>`s, never a live map"** — the exact line the spec
 named at §2.2, unrewritten and now false. `:97`, `:224` still tell a verifier to Tab to "the zoom
 checkbox"; `:318` still claims the unit suite covers "checkbox present/absent matching `zoomable`".
 
 **`geo-discipline.md` rule 12's second clause was not added.**
-`skills/twin-doctrine/references/geo-discipline.md:204-215` is byte-unchanged; the last commits
+`skills/doctrine/references/geo-discipline.md:204-215` is byte-unchanged; the last commits
 touching the file predate W5. The words "the geography, the study set, and the target aspect" appear
 nowhere in it.
 
@@ -161,22 +161,22 @@ R1b has four clauses. **Two exist, one is advice rather than a mechanism, one ha
 | Clause | State |
 |---|---|
 | committed artifacts carry a PLACEHOLDER | **mechanism yes, instance no** |
-| `twin-deliver` substitutes the real key at delivery | **yes** |
+| `deliver` substitutes the real key at delivery | **yes** |
 | a guard asserts no tracked file holds a real key | **yes, and it reddens — with three holes** |
 | the delivered key is a SECOND, domain-restricted key | **advice in a comment, not enforced** |
 
 **Clause 1 — placeholder.** `KEY_PLACEHOLDER = "__MAPTILER_KEY__"` at
-`skills/twin-map-web/scripts/render-web.mjs:121`, written into the style URL at `:141`. But **no
+`skills/map-web/scripts/render-web.mjs:121`, written into the style URL at `:141`. But **no
 tracked file in the repository contains it**, because no live page is committed:
 `grep -rl "api.maptiler.com" --include="*.html"` over `proof/` and `skills/` returns nothing, and
-`skills/twin-map-web/output-proof/` holds one file, `preview.png` — a picture of the *fallback*
+`skills/map-web/output-proof/` holds one file, `preview.png` — a picture of the *fallback*
 (square plate, no MapLibre controls; opened and looked at). The placeholder is correct and
 unexercised.
 
-**Clause 2 — delivery substitution.** Real: `skills/twin-deliver/scripts/deliver.mjs:216-222`
+**Clause 2 — delivery substitution.** Real: `skills/deliver/scripts/deliver.mjs:216-222`
 (`substituteKeys`), applied to every `.html` copied by `copyTree` (`:183`).
 
-**Clause 3 — the guard.** `skills/splash-twin/test/no-key-in-the-repository.test.ts`. It reads the
+**Clause 3 — the guard.** `skills/splash/test/no-key-in-the-repository.test.ts`. It reads the
 key out of `twin/.env`, scans `git ls-files` output, and its header names its own limits. Mutated in
 a copy at `<scratch>/mut` (§5.2): **it goes red on a tracked file carrying the key and stays green
 when the same file is untracked** — the distinction it exists to make. It also confirms `.env` is
@@ -335,13 +335,13 @@ motivation, recorded and not acted on.
 | `= 46` | `proof/map-quake-symbol/QuakeSymbolVideo.tsx:39` | biggest circle, video |
 | `STILL_MAX_RADIUS = 30` | `proof/map-quake-symbol/render.mjs:64` | biggest circle, runner |
 | `MARK_MAX_RADIUS_FRACTION = 0.045` | `proof/mapgen-symbol-web/QuakeSymbolWeb.tsx:59` | biggest circle, web |
-| `= 0.062` | `skills/twin-map-web/assets/MapWebSeed.tsx:79`, duplicated inline at `render-web.mjs:162` | biggest circle, seed |
+| `= 0.062` | `skills/map-web/assets/MapWebSeed.tsx:79`, duplicated inline at `render-web.mjs:162` | biggest circle, seed |
 | `margin = 170` ×3 | `map-geneva-locator/geo-locator.ts:121`, `mapvid-locator-geneva/…:121`, `mapgen-locator-web/…:136` | label flip |
 | `margin = 130` ×2 | `map-quake-symbol/geo-symbol.ts:197`, `mapgen-symbol-web/geo-symbol.ts:194` | label flip |
-| `margin = 90` | `skills/twin-map-web/assets/geo-symbol.ts:77` | label flip |
+| `margin = 90` | `skills/map-web/assets/geo-symbol.ts:77` | label flip |
 | `minSeparationPx: 14` | `proof/mapvid-locator-geneva/render.mjs:52,141` | how far apart two organisations are drawn |
 | `label: [20.3, 52.2]` | `proof/mapgen-choropleth-video/bake.mjs:42-47` | where "Poland" sits |
-| `label: [6.05, 46.62]` | `skills/twin-map-beat/scripts/bake-plate.mjs:45-50` | the seed's own label |
+| `label: [6.05, 46.62]` | `skills/map-beat/scripts/bake-plate.mjs:45-50` | the seed's own label |
 | `DOT_RADIUS_FRACTION = 0.002` | `proof/mapgen-dot-web/DotDensityWeb.tsx:45,124` | drawn dot size |
 | `[-60, 78]` pole clip | `proof/mapgen-hexgrid-web/bake-plate.mjs:34-35` | which latitudes exist |
 | `targetCells = 220` / `maxCells = 400` ×6 | `geo-hex.ts:195-196` | cell size, pinned to frame area |
@@ -375,7 +375,7 @@ ruling's own purpose is the one property no guard checks.
 
 ### 4.2 The `maxBounds` cropping class, swept
 
-**The defect and its fix are real.** Recorded verbatim at `skills/twin-map-web/assets/live-map.mjs:136-143`:
+**The defect and its fix are real.** Recorded verbatim at `skills/map-web/assets/live-map.mjs:136-143`:
 a `maxBounds` taken from the square plate's `frameCorners` (47.8° of longitude) raised MapLibre's
 minimum zoom to 4.526 on a 1566 px canvas, where 583 px of height held ~11° of latitude against the
 study set's 21 — **six of thirteen points off the canvas, in a beat whose title claims all thirteen**.
@@ -396,7 +396,7 @@ holds a `maxBounds` at all:
 
 | beat | live map | `maxBounds` in the artifact | points | outside |
 |---|---|---|---|---|
-| `twin-map-web` seed (`/tmp/mw-live/population.html`, untracked) | yes | runtime leash from the fitted view | 13 | **0** |
+| `map-web` seed (`/tmp/mw-live/population.html`, untracked) | yes | runtime leash from the fitted view | 13 | **0** |
 | `mapgen-symbol-web` | no | — | — | n/a |
 | `mapgen-dot-web` | no | — | — | n/a |
 | `mapgen-choropleth-web` | no | — | — | n/a |
@@ -404,7 +404,7 @@ holds a `maxBounds` at all:
 | `mapgen-locator-web` | no | — | — | n/a |
 
 `grep -c "api.maptiler.com\|maplibre\|mw-fallback\|mw-map"` is **0 on all five** committed proof
-pages, and `grep maxBounds` over the whole tree returns 6 files, all `twin-map-web` or docs. There is
+pages, and `grep maxBounds` over the whole tree returns 6 files, all `map-web` or docs. There is
 no second live instance to sweep because T14 never happened.
 
 **`minZoom` is the same defect in the other coordinate, and it is worse in the shipped beats.** For
@@ -492,16 +492,16 @@ quota-invalidation rehearsal passes.
 
 - **No guard pins the four camera keys in committed `geometry.json`**, which the spec named as T1's
   own in-task pin. `grep` for the key names across `*.test.ts` finds only a hand-built fixture at
-  `skills/twin-map-web/test/live-map.test.ts:42`.
+  `skills/map-web/test/live-map.test.ts:42`.
 - **Nothing asserts the two invariants are *called*.** `bake-parity` compares bodies. A bake that
   deletes its two call lines and keeps the functions stays green in both walks.
 - **`proof/mapscrolly-quakes-three-ways/plate/geometry.json` has no bake behind it** — that camera is
   outside `bake-parity` entirely.
 - **Four non-bake `.mjs` carry an un-unified `resolveChrome`** outside both walks
   (`proof/mapscrolly-one-map-europe-carbon/drive.mjs`, `proof/scrolly-one-chart-swiss-life-expectancy/drive.mjs`,
-  `skills/twin-chart-web/scripts/verify-web.mjs`, `skills/twin-scrolly/scripts/verify-scrolly.mjs`).
+  `skills/chart-web/scripts/verify-web.mjs`, `skills/scrolly/scripts/verify-scrolly.mjs`).
 - **`§7.5`'s inverted mirror does not exist.** The green side is kept
-  (`skills/twin-scrolly/test/seed-tracks.test.ts:381`). Nothing anywhere asserts a map-web page
+  (`skills/scrolly/test/seed-tracks.test.ts:381`). Nothing anywhere asserts a map-web page
   *contains* the style URL; `render-web.test.ts:317-322` asserts only the fallback half.
 - **`bun scripts/matrix.mjs --check` — §10's closing check — is RED in the tree today.** The drift is
   not W5/W6's: it names `portrait-aspect-probe`, `mapscrolly-one-map-europe-carbon` and
@@ -547,7 +547,7 @@ Exactly the three-way behaviour §4.1 specified, including the distinction betwe
 
 ### 5.4 The two camera invariants — **they fire, with messages that fix the frame**
 
-Functions extracted from `skills/twin-map-beat/scripts/bake-plate.mjs` and run outside the tree:
+Functions extracted from `skills/map-beat/scripts/bake-plate.mjs` and run outside the tree:
 
 - `assertCameraReachesBounds({west:-11,north:60,east:31,south:35}, [[-11,35],[31,66]], 900)` throws
   *"this plate crops the study area — north edge is 60.00°, asked for 66°. A 900px-wide frame needs at
@@ -579,11 +579,11 @@ Two findings, in order of weight.
 **(a) The entire live map can be deleted and nothing goes red.** In the mutation copy, changed
 `render-web.mjs:188` `const liveBlock = live ? …` to `const liveBlock = false ? …`, which strips
 maplibre-gl, the `mw-live-plan` JSON and the boot script from every rendered page. Ran
-`skills/twin-map-web/` plus `interaction-promises-are-kept.test.ts`: **354 pass / 0 fail.** The whole
+`skills/map-web/` plus `interaction-promises-are-kept.test.ts`: **354 pass / 0 fail.** The whole
 of R1 is removable in silence.
 
 **(b) The one guard that would have caught it is skipped by default.**
-`skills/twin-map-web/test/live-map.test.ts:151-153` gates the browser probe on a key **and** on
+`skills/map-web/test/live-map.test.ts:151-153` gates the browser probe on a key **and** on
 `existsSync("/tmp/mw-live/population.html")` — a path **no script produces**
 (`render-web.mjs:91` defaults to `/tmp/map-web-twin`; `verify-live-map.mjs:311` defaults to
 `/tmp/mw-live`). On this machine the file exists because someone rendered it by hand at 01:27 on
@@ -601,7 +601,7 @@ suite proves the fallback and calls it the beat.** Its "four mutation copies" pr
 (`SKILL.md:110-115`) is a proof about the pre-ruling page and was not re-earned.
 
 **(d) `markLayers` and `livePlan` have zero test coverage.** `grep livePlan|markLayers|maxZoomForStudySet`
-across `skills/twin-map-web/test/` returns nothing. `renderMapWeb`'s `live` parameter defaults to
+across `skills/map-web/test/` returns nothing. `renderMapWeb`'s `live` parameter defaults to
 `false` (`render-web.mjs:170`) and the test helper never passes it, so **no test in the suite ever
 assembles the live block**.
 

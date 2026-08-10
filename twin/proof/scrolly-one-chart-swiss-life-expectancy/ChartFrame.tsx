@@ -2,7 +2,7 @@
  * THE ONE CHART. Not one of four — the only picture this beat has, SSR'd once in its first state
  * and then driven by the reader's scroll through the other three.
  *
- * Three rules it keeps, inherited from `twin-scrolly/references/scrolly-discipline.md`:
+ * Three rules it keeps, inherited from `scrolly/references/scrolly-discipline.md`:
  *
  *   1. **Fitted, never cropped.** A chart is evidence. The frame is an HTML box laid out in
  *      fractions of whatever box the graphic gives it; the SVG inside carries GEOMETRY ONLY and

@@ -71,7 +71,7 @@ picked out by direct labels, at the end, on their own dot clusters — and the l
 centroid of the country's OWN drawn dots, so it can only ever land inside the cloud it names.
 
 `PALETTE.md` records why the house accent was taken rather than the static sibling's `#0072B2`: no
-`matchConvention` entry fits population, and the sibling's blue predates `twin-palette` entirely.
+`matchConvention` entry fits population, and the sibling's blue predates `palette` entirely.
 
 ## Reveal order (the edit)
 

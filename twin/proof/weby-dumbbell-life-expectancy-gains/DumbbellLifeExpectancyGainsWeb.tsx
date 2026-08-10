@@ -1,7 +1,7 @@
 /**
  * The web beat of "every one of these ten countries added years of life expectancy between 2000 and
  * 2023" — a dumbbell. Coordinates come from `./dumbbell-geometry.ts`. Read
- * `twin-chart-web/references/web-discipline.md` and `twin-chart-beat/references/types/dumbbell.md`
+ * `chart-web/references/web-discipline.md` and `chart-beat/references/types/dumbbell.md`
  * before changing this file.
  *
  * MIGRATED TO THE FLUID FRAME (`web-discipline.md`, "Responsive behaviour", second build). This

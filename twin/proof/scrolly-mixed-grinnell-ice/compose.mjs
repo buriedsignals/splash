@@ -21,7 +21,7 @@
 // step because there is only one of them.
 //
 // WHAT IS COPIED, AND FROM WHERE. Nothing is imported across a beat boundary (`no-cross-skill-
-// imports.test.ts` states the rule for skills; `twin-doctrine` states it for beats), so the parts
+// imports.test.ts` states the rule for skills; `doctrine` states it for beats), so the parts
 // below are COPIES, named here so the lineage is legible and so `scroll.test.ts` can check the two
 // that must not drift:
 //
@@ -93,7 +93,7 @@ export function stateAt(states, position, reduced) {
 // this number from panel overlaps against a band at the bottom of the scrollport; the vehicle's
 // eighth correction moved the prose into a travelling card and that derivation started returning 0
 // for most of every step, so the picture froze while every guard stayed green. The repair was not
-// better arithmetic — it was having ONE opinion. `twin-scrolly` publishes `data-progress` on its own
+// better arithmetic — it was having ONE opinion. `scrolly` publishes `data-progress` on its own
 // root on every scroll (the fractional index of the panel on the lane's centre line) and this reads
 // it. `data-prose-lane` is deliberately not read: bending that number to make a consumer's sums work
 // would be corrupting a value to fit its reader.
@@ -118,7 +118,7 @@ export function readProgress(source) {
   if (raw === null || raw === "" || !Number.isFinite(value))
     throw new Error(
       `this beat is driven by the scrolly scaffold's continuous signal and read ${JSON.stringify(raw)} ` +
-        `for data-progress on the nearest ancestor carrying it (twin-scrolly/assets/interaction.mjs ` +
+        `for data-progress on the nearest ancestor carrying it (scrolly/assets/interaction.mjs ` +
         `writes it on the .scrolly root on every scroll)`,
     );
   return value;
@@ -580,7 +580,7 @@ export function initMixedScrolly(root, config, states, onCamera) {
   const progressSource = progressSourceOf(root);
   if (!progressSource)
     throw new Error(
-      "no ancestor of this beat's visual carries data-progress — twin-scrolly's scaffold publishes it " +
+      "no ancestor of this beat's visual carries data-progress — scrolly's scaffold publishes it " +
         "on the .scrolly root, and this beat is driven by nothing else",
     );
 

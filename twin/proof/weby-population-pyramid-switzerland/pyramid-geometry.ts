@@ -5,7 +5,7 @@
  * `co2-suisse/crossing-geometry.ts`).
  *
  * Adapted from `proof/static-swiss-age-pyramid/SwissAgePyramid.tsx`'s own `pyramidGeometry` — NOT
- * imported from it (`twin-chart-web/SKILL.md`: a beat never imports another beat's files, "duplicate,
+ * imported from it (`chart-web/SKILL.md`: a beat never imports another beat's files, "duplicate,
  * do not link") — for this genre's own shape: `bandGutter` and `xTickHint` are now CALL-TIME
  * parameters instead of module-level constants, because the two `WebLayout` rungs this genre ships
  * (desktop/narrow) each need their own gutter width and tick density, not one frame's fixed numbers.

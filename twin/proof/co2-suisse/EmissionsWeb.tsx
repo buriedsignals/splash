@@ -3,16 +3,16 @@
  *
  * Not a second chart: the coordinates and the number formatting come from
  * `./crossing-geometry.ts`, the same pure core the static beat (`EmissionsLine.tsx`, this same
- * directory) and the video beat (`twin-chart-video/assets/EmissionsVideo.tsx`) already share. What
+ * directory) and the video beat (`chart-video/assets/EmissionsVideo.tsx`) already share. What
  * this file adds is the one thing neither of those genres has — a reader who can ask the chart a
  * question and get an answer back, without anything the static frame already states being gated
- * behind that ask. Read `twin-chart-web/references/web-discipline.md` for the rules this file is
+ * behind that ask. Read `chart-web/references/web-discipline.md` for the rules this file is
  * written under before changing it.
  *
  * MIGRATED TO THE FLUID FRAME. This file used to ship TWO pre-rendered widths (900px and 360px)
  * swapped by a CSS media query, and handed the skill's generic `renderWeb` a `LAYOUTS` array. The
  * owner overturned that design: a web beat fills its container continuously, and it fits the
- * visible window. Both are now true here, by the separation `twin-chart-web/assets/ChartWebSeed.tsx`
+ * visible window. Both are now true here, by the separation `chart-web/assets/ChartWebSeed.tsx`
  * teaches and this file follows:
  *
  *   1. The `<svg>` carries GEOMETRY ONLY — no `<text>` element at all. It is stretched by ordinary
@@ -29,14 +29,14 @@
  * label tracks the mark it names at any container width.
  *
  * `deriveFurniture` and `measureText` are not called here. They live in
- * `twin-chart-beat/scripts/render-still.mjs`, beside a native rasteriser
+ * `chart-beat/scripts/render-still.mjs`, beside a native rasteriser
  * (`EmissionsVideo.tsx`'s own doc-comment explains why that module cannot be imported from a file
  * meant to run anywhere but node) — `render-web.mjs` derives the furniture and measures the one
  * gutter this genre still measures (the y-axis label column) in node, and passes the results in as
  * props. `measure` below is that function, threaded in rather than imported.
  *
  * `wrap` is kept and still exported although this component no longer calls it (its furniture is
- * plain flowing HTML, which the browser wraps itself): `splash-twin/test/helper-parity.test.ts`
+ * plain flowing HTML, which the browser wraps itself): `splash/test/helper-parity.test.ts`
  * cross-checks this copy against every other `wrap` in the repository, and deleting it would blind
  * that guard rather than satisfy it.
  */
@@ -53,7 +53,7 @@ const UNIT = "Mt";
 
 /** `WebFrame` describes the GENRE's own mechanics — one continuously-fluid frame, its own tick
  *  hints, its own fixed type scale — rather than this story's numbers. It is declared here rather
- *  than imported from `twin-chart-web/assets/ChartWebSeed.tsx`: a compile-time-only type has no
+ *  than imported from `chart-web/assets/ChartWebSeed.tsx`: a compile-time-only type has no
  *  `#shared/*` vendoring path to travel by, and a relative import reaching from a story across the
  *  skill boundary hard-codes this dev repository's own directory layout, which a real Splash root
  *  does not guarantee. Duplicate, do not link — the same ruling this file's own first build already
@@ -108,7 +108,7 @@ type Measure = (
 /**
  * A WORD WIDER THAN ITS OWN MEASURE — hyphen-broken, never broken mid-syllable.
  *
- * Carried verbatim across the wrap family (`splash-twin/test/helper-parity.test.ts` compares them
+ * Carried verbatim across the wrap family (`splash/test/helper-parity.test.ts` compares them
  * case for case). `wrap` breaks between words, so a token wider than the measure was emitted whole
  * and ran off the frame — invisible at 900x560 and a 219px overflow the moment a phone frame put
  * 78px type on a 1080px canvas. A hyphen is already a break and already reads as one, so a

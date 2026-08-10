@@ -1,9 +1,9 @@
 // The runner for the IMAGE scrolly beat: four photographs of one glacier, taken from one summit
 // across 71 years, held in the same rectangle while the reader scrolls past them.
 //
-// This file is a CONSUMER of `twin-scrolly`: it imports the skill's own generic `renderScrolly` and
+// This file is a CONSUMER of `scrolly`: it imports the skill's own generic `renderScrolly` and
 // builds its own `steps` array from its own frame component (`ImageFrame.tsx`). Nothing under
-// `twin-scrolly/` is edited by it.
+// `scrolly/` is edited by it.
 //
 // WHAT THIS BEAT IS AND IS NOT, because it is the one of the three that cannot be finished without
 // a journalist. The vehicle, the track, the lane, the credit discipline and the ordering are all
@@ -23,10 +23,10 @@ import { createElement, Fragment } from "react";
 import {
   deriveFurniture,
   readPalette,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import { deriveSequenceFacts, readPhotographs } from "./photograph-data.ts";
 import { ImageSequence, PROSE_LANE } from "./ImageFrame.tsx";
-import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
+import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 

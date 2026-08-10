@@ -8,7 +8,7 @@ sections · every tuning knob a **number** with a named location · `references/
 `assets/` (one seed + sample-data + preview) · `output-proof` · **no cross-skill imports, helpers
 duplicated and guarded by `helper-parity.test.ts`** · nothing renders in a value nobody chose.
 
-**Work in flight, excluded from the findings by instruction:** `twin-palette` and the
+**Work in flight, excluded from the findings by instruction:** `palette` and the
 `readPalette`/`parsePalette` pair being vendored into the `render-still.mjs` copies. Where that work
 *reveals* a pre-existing structural hole, the hole is reported and the WIP is named as the messenger,
 not the defect. Those cases are marked **(WIP-revealed)**.
@@ -22,30 +22,30 @@ skill is.
 
 | Skill | 8 sections | Knobs all numbers | Knob "Where" names a file | `references/` | `scripts/` | `assets/` seed+data+preview | `output-proof` | Unguarded dup. helpers | False prose found |
 |---|---|---|---|---|---|---|---|---|---|
-| `splash-twin` | ✓ (+1 extra) | ✓ | ✗ 3 rows | ✗ absent | ✓ | ~ root-template, not a seed (n/a) | n/a produces nothing | — | — |
-| `twin-intake` | ✓ | ✗ **0 of 3** | ✗ **0 of 3** | ✓ (1 file) | ✓ | n/a | n/a | — | — |
-| `twin-storyboard` | ✓ | ✓ | ✗ 3 rows | ✓ | ✓ | n/a | n/a | — | ~ Files omits 2 shipped files |
-| `twin-doctrine` | ✓ | ✗ 1 row ("not a number") | ✗ 4 rows | ✓ (7 files) | ✓ | n/a | n/a | — | ✗ reference-doc count |
-| `twin-deliver` | ✓ | ✗ 2 string rows | ✗ 6 rows | ✓ | ✓ | n/a | n/a | — | — |
-| `twin-newsroom-charter` | ✓ | ✗ 3 list rows | ✓ | ✓ | ✓ | n/a | n/a | — | ✗ knob contradicted by code |
-| `twin-chart-beat` | ✓ | ✓ | ✗ 2 rows | ✓ | ✓ | ✓ | ✓ | — | ✗ **2** |
-| `twin-chart-web` | ✓ | ✓ | ✗ 1 row | ✓ | ✓ | ✓ | ✓ | ✗ tick helpers | — |
-| `twin-chart-video` | ✓ | ✓ | ✗ 6 rows | ✗ **absent** | ✓ | ✓ | ✓ | ✗ `fr`, geometry trio | ✗ **2** |
-| `twin-dw-beat` | ✓ | ✗ 3 rows | ✗ 5 rows | ✓ | ✓ | n/a (delegated render) | ✗ **gap** | — | ✗ "exactly four scripts" |
-| `twin-map-beat` | ✓ (+1 extra) | ✗ 1 row | ✗ 5 rows | ~ `types/` only | ✓ | ✓ | ✓ | ✗ bake helpers | ✗ **3** |
-| `twin-map-web` | ✓ | ✗ 4 rows | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ **rasteriser + 4 more** | ✗ 1 (WIP-revealed) |
-| `twin-image-beat` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ **rasteriser + `wrap`** | ✗ **3** |
-| `twin-scrolly` | ✓ | ✗ 4 rows | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ **rasteriser + 3 more** | — |
-| `twin-palette` (WIP) | ✓ | ✓ | ✓ | ✓ | ✓ | ~ example only, no preview | ✗ | — (WIP) | — (WIP) |
+| `splash` | ✓ (+1 extra) | ✓ | ✗ 3 rows | ✗ absent | ✓ | ~ root-template, not a seed (n/a) | n/a produces nothing | — | — |
+| `intake` | ✓ | ✗ **0 of 3** | ✗ **0 of 3** | ✓ (1 file) | ✓ | n/a | n/a | — | — |
+| `storyboard` | ✓ | ✓ | ✗ 3 rows | ✓ | ✓ | n/a | n/a | — | ~ Files omits 2 shipped files |
+| `doctrine` | ✓ | ✗ 1 row ("not a number") | ✗ 4 rows | ✓ (7 files) | ✓ | n/a | n/a | — | ✗ reference-doc count |
+| `deliver` | ✓ | ✗ 2 string rows | ✗ 6 rows | ✓ | ✓ | n/a | n/a | — | — |
+| `newsroom-charter` | ✓ | ✗ 3 list rows | ✓ | ✓ | ✓ | n/a | n/a | — | ✗ knob contradicted by code |
+| `chart-beat` | ✓ | ✓ | ✗ 2 rows | ✓ | ✓ | ✓ | ✓ | — | ✗ **2** |
+| `chart-web` | ✓ | ✓ | ✗ 1 row | ✓ | ✓ | ✓ | ✓ | ✗ tick helpers | — |
+| `chart-video` | ✓ | ✓ | ✗ 6 rows | ✗ **absent** | ✓ | ✓ | ✓ | ✗ `fr`, geometry trio | ✗ **2** |
+| `dw-beat` | ✓ | ✗ 3 rows | ✗ 5 rows | ✓ | ✓ | n/a (delegated render) | ✗ **gap** | — | ✗ "exactly four scripts" |
+| `map-beat` | ✓ (+1 extra) | ✗ 1 row | ✗ 5 rows | ~ `types/` only | ✓ | ✓ | ✓ | ✗ bake helpers | ✗ **3** |
+| `map-web` | ✓ | ✗ 4 rows | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ **rasteriser + 4 more** | ✗ 1 (WIP-revealed) |
+| `image-beat` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ **rasteriser + `wrap`** | ✗ **3** |
+| `scrolly` | ✓ | ✗ 4 rows | ✓ | ✓ | ✓ | ✓ | ✓ | ✗ **rasteriser + 3 more** | — |
+| `palette` (WIP) | ✓ | ✓ | ✓ | ✓ | ✓ | ~ example only, no preview | ✗ | — (WIP) | — (WIP) |
 
 **Headline counts.** All **15/15** `SKILL.md` files carry the eight canon sections under their canon
 names — that half of the canon holds completely, and no section is renamed or missing anywhere.
-**0 of 15** clear every canon rule at once. The two closest are `twin-image-beat` (perfect knob
+**0 of 15** clear every canon rule at once. The two closest are `image-beat` (perfect knob
 table, all four directories, but three false prose claims and two unguarded duplicates) and
-`twin-chart-web` (clean prose, one loose knob row, one duplicate family unguarded).
+`chart-web` (clean prose, one loose knob row, one duplicate family unguarded).
 
-Two skills carry a **ninth section** beyond the canon: `splash-twin` ("Preflight establishes what is
-possible…") and `twin-map-beat` ("What this beat found"). Both read as deliberate and neither
+Two skills carry a **ninth section** beyond the canon: `splash` ("Preflight establishes what is
+possible…") and `map-beat` ("What this beat found"). Both read as deliberate and neither
 displaces a canon section; recorded, not charged as a defect.
 
 ---
@@ -62,19 +62,19 @@ both.
 #### F1. There are NINE `render-still.mjs` copies, not six — and three are guarded by nothing
 
 `helper-parity.test.ts:61-102` imports six. `root-template-shared.test.ts:80` byte-compares three
-skill copies (`twin-chart-web`, `twin-chart-video`, `twin-map-beat`). The tree holds nine:
+skill copies (`chart-web`, `chart-video`, `map-beat`). The tree holds nine:
 
 | copy | `measureText` | `deriveFurniture` | `contrast` | guarded? |
 |---|---|---|---|---|
-| `twin-chart-beat/scripts/render-still.mjs` | — | — | — | canonical |
-| `twin-chart-video/scripts/render-still.mjs` | ✓ | ✓ | ✓ | yes |
-| `twin-chart-web/scripts/render-still.mjs` | ✓ | ✓ | ✓ | yes |
-| `twin-map-beat/scripts/render-still.mjs` | ✓ | ✓ | ✓ | yes |
-| `shared/twin-chart-beat/render-still.mjs` | ✓ | ✓ | ✓ | yes |
-| `splash-twin/assets/root-template/shared/twin-chart-beat/render-still.mjs` | ✓ | ✓ | ✓ | yes |
-| **`twin-image-beat/scripts/render-still.mjs`** | **:78** | **:60** | **:43** | **NO** |
-| **`twin-map-web/scripts/render-still.mjs`** | **:101** | **:70** | **:41** | **NO** |
-| **`twin-scrolly/scripts/render-still.mjs`** | **:105** | **:73** | **:40** | **NO** |
+| `chart-beat/scripts/render-still.mjs` | — | — | — | canonical |
+| `chart-video/scripts/render-still.mjs` | ✓ | ✓ | ✓ | yes |
+| `chart-web/scripts/render-still.mjs` | ✓ | ✓ | ✓ | yes |
+| `map-beat/scripts/render-still.mjs` | ✓ | ✓ | ✓ | yes |
+| `shared/chart-beat/render-still.mjs` | ✓ | ✓ | ✓ | yes |
+| `splash/assets/root-template/shared/chart-beat/render-still.mjs` | ✓ | ✓ | ✓ | yes |
+| **`image-beat/scripts/render-still.mjs`** | **:78** | **:60** | **:43** | **NO** |
+| **`map-web/scripts/render-still.mjs`** | **:101** | **:70** | **:41** | **NO** |
+| **`scrolly/scripts/render-still.mjs`** | **:105** | **:73** | **:40** | **NO** |
 
 Also unguarded inside those same nine files, in every copy: `luminance`, `mix`, `rasterise`,
 `renderStill`. `deriveFurniture` transitively exercises `mix`, so `mix` is covered by luck, not by
@@ -82,20 +82,20 @@ design; `rasterise` and `renderStill` are covered by nothing anywhere.
 
 **This is not hypothetical — the drift already happened, inside one day.** Measured from git:
 
-- `twin-map-web/scripts/render-still.mjs` was **byte-identical** to the canonical at its own commit
+- `map-web/scripts/render-still.mjs` was **byte-identical** to the canonical at its own commit
   `31aadd7b` (both `fe6ae497…`). It is not any more: the canonical is now `ff91eab2…` (222 lines)
   and this copy is still `fe6ae497…` (157 lines). **(WIP-revealed** — the palette commit `d3012f71`
   landed `readPalette`/`parsePalette` in exactly the six guarded copies and skipped these three,
   because nothing red says they exist.**)**
-- `twin-scrolly/scripts/render-still.mjs` was **never** byte-identical, not even at its own commit
+- `scrolly/scripts/render-still.mjs` was **never** byte-identical, not even at its own commit
   `29600f16` (`a4360c8b…` against `fe6ae497…`). It is a re-formatted copy carrying a reworded
   doc-comment. Behaviourally it still agrees — verified by extracting and normalising every function
   body — but nothing has ever checked that.
 
 **Correction needed.** Add the three copies to `helper-parity.test.ts`'s resvg family (`measureText`,
-`deriveFurniture`, `contrast`) and, for `twin-image-beat` and `twin-map-web` whose own `SKILL.md`
-claims byte-identity, to `root-template-shared.test.ts`'s `["twin-chart-web","twin-chart-video",
-"twin-map-beat"]` loop. `twin-scrolly`'s copy cannot join the byte-identical loop as written; either
+`deriveFurniture`, `contrast`) and, for `image-beat` and `map-web` whose own `SKILL.md`
+claims byte-identity, to `root-template-shared.test.ts`'s `["chart-web","chart-video",
+"map-beat"]` loop. `scrolly`'s copy cannot join the byte-identical loop as written; either
 re-sync it or add it to the behavioural family only, and correct the prose accordingly (see F8).
 
 #### F2. `fr()` — three copies in `skills/`, and one of them still carries the bug the handover says was fixed
@@ -106,9 +106,9 @@ used… and no test noticed, because every copy agreed." Two of the three copies
 
 | location | implementation |
 |---|---|
-| `skills/twin-map-beat/assets/geo.ts:422` | `Intl.NumberFormat("fr-FR", …)` |
-| `skills/twin-map-web/assets/geo-symbol.ts:98` | `Intl.NumberFormat("fr-FR", …)` |
-| **`skills/twin-chart-video/assets/EmissionsVideo.tsx:61-66`** | **`.replace(/\B(?=(\d{3})+(?!\d))/, " ")` — no `g` flag, run over a string that already carries the decimal comma** |
+| `skills/map-beat/assets/geo.ts:422` | `Intl.NumberFormat("fr-FR", …)` |
+| `skills/map-web/assets/geo-symbol.ts:98` | `Intl.NumberFormat("fr-FR", …)` |
+| **`skills/chart-video/assets/EmissionsVideo.tsx:61-66`** | **`.replace(/\B(?=(\d{3})+(?!\d))/, " ")` — no `g` flag, run over a string that already carries the decimal comma** |
 
 Executed, not read:
 
@@ -129,7 +129,7 @@ observable.
 
 #### F3. The chart seed's own inlined geometry — asserted guarded, guarded by nothing
 
-`twin-chart-video/assets/EmissionsVideo.tsx` inlines `crossingGeometry` (`:101`), `fr` (`:61`) and
+`chart-video/assets/EmissionsVideo.tsx` inlines `crossingGeometry` (`:101`), `fr` (`:61`) and
 `yTickValues` (`:92`) as a deliberate copy of `proof/co2-suisse/crossing-geometry.ts` (`:62`, `:20`,
 `:56`). The three pairs agree today — measured by normalised body comparison. `helper-parity.test.ts`
 imports **none of them**; it imports only `measureText` and `wrap` from that file. See F8/F9 for the
@@ -143,8 +143,8 @@ claims. Do not leave the sentence standing over an unwired guard.
 
 | function | copies |
 |---|---|
-| `yTickValues` | `twin-chart-beat/assets/ChartSeed.tsx:82` · `twin-chart-web/assets/ChartWebSeed.tsx:171` · `twin-chart-video/assets/EmissionsVideo.tsx:92` |
-| `xTickValues` | `twin-chart-beat/assets/ChartSeed.tsx:97` · `twin-chart-web/assets/ChartWebSeed.tsx:177` |
+| `yTickValues` | `chart-beat/assets/ChartSeed.tsx:82` · `chart-web/assets/ChartWebSeed.tsx:171` · `chart-video/assets/EmissionsVideo.tsx:92` |
+| `xTickValues` | `chart-beat/assets/ChartSeed.tsx:97` · `chart-web/assets/ChartWebSeed.tsx:177` |
 
 The bodies differ today. Some of that is genre-legitimate (the video's own axis rule is sparser by
 doctrine — `motion-grammar.md`), some may not be. Unlike `measureText`, nothing states which
@@ -157,8 +157,8 @@ deliberately not the sibling's.
 
 #### F5. `wrap` — an eleventh copy the guard cannot reach
 
-`twin-image-beat/assets/ImageBeatSeed.tsx:65` is byte-identical to
-`twin-chart-beat/assets/ChartSeed.tsx:192`'s `wrap` **except that it is not exported**, so
+`image-beat/assets/ImageBeatSeed.tsx:65` is byte-identical to
+`chart-beat/assets/ChartSeed.tsx:192`'s `wrap` **except that it is not exported**, so
 `helper-parity.test.ts` (which guards ten) cannot import it. The header comment on that test says
 "this sweep found ten"; there are eleven.
 
@@ -169,14 +169,14 @@ the test's own header count from ten to eleven.
 
 | function | copies | today |
 |---|---|---|
-| `escapeHtml` | `twin-chart-web/scripts/render-web.mjs:147` · `twin-map-web/scripts/render-web.mjs:139` · `twin-scrolly/scripts/render-scrolly.mjs:157` | identical (formatting aside) |
-| `inlineable` | `twin-chart-web/scripts/render-web.mjs:143` · `twin-map-web/scripts/render-web.mjs:135` · `twin-scrolly/scripts/render-scrolly.mjs:153` | identical |
-| `show` / `clear` | `twin-chart-web/assets/interaction.mjs:51`/`:46` · `twin-map-web/assets/interaction.mjs:32`/`:27` | identical |
-| `resolveChrome` | `twin-map-beat/scripts/bake-plate.mjs:74` · `twin-map-web/scripts/bake-plate.mjs:80` | identical |
-| `parseEnvFile` | `twin-map-beat/scripts/bake-plate.mjs:106` · `twin-map-web/scripts/bake-plate.mjs:106` | identical |
+| `escapeHtml` | `chart-web/scripts/render-web.mjs:147` · `map-web/scripts/render-web.mjs:139` · `scrolly/scripts/render-scrolly.mjs:157` | identical (formatting aside) |
+| `inlineable` | `chart-web/scripts/render-web.mjs:143` · `map-web/scripts/render-web.mjs:135` · `scrolly/scripts/render-scrolly.mjs:153` | identical |
+| `show` / `clear` | `chart-web/assets/interaction.mjs:51`/`:46` · `map-web/assets/interaction.mjs:32`/`:27` | identical |
+| `resolveChrome` | `map-beat/scripts/bake-plate.mjs:74` · `map-web/scripts/bake-plate.mjs:80` | identical |
+| `parseEnvFile` | `map-beat/scripts/bake-plate.mjs:106` · `map-web/scripts/bake-plate.mjs:106` | identical |
 
 None is guarded. `escapeHtml` deserves a second look on its own merits: none of the three copies
-escapes `"`, so an attribute value containing a quote is unescaped in all three. `twin-map-web`
+escapes `"`, so an attribute value containing a quote is unescaped in all three. `map-web`
 carried a separate `escapeAttr` earlier today and a concurrent edit removed it — only the comment at
 `scripts/render-web.mjs:193` explaining why it was needed survives. Whichever way that lands, the
 three copies should land the same way, and nothing makes them.
@@ -185,15 +185,15 @@ three copies should land the same way, and nothing makes them.
 `parseEnvFile` families to `helper-parity.test.ts` (test-only cross-skill imports are explicitly
 sanctioned by §6). Separately, settle attribute escaping once for all three genres.
 
-> Line numbers in this row were read while `twin-chart-web/{assets/ChartWebSeed.tsx,scripts/
-> render-web.mjs}` and `twin-map-web/{assets/MapWebSeed.tsx,scripts/render-web.mjs}` were
+> Line numbers in this row were read while `chart-web/{assets/ChartWebSeed.tsx,scripts/
+> render-web.mjs}` and `map-web/{assets/MapWebSeed.tsx,scripts/render-web.mjs}` were
 > uncommitted and being edited by another session. Re-derive them before acting.
 
 #### F7. `canon-shape.test.ts` only knows four craft skills
 
-`splash-twin/test/canon-shape.test.ts:6-11` hardcodes `CRAFT = ["twin-chart-beat","twin-chart-web",
-"twin-chart-video","twin-map-beat"]`. Seven skills now ship `assets/preview.png`: the four above plus
-`twin-image-beat`, `twin-map-web`, `twin-scrolly`. The output-proof/preview byte-identity assertion
+`splash/test/canon-shape.test.ts:6-11` hardcodes `CRAFT = ["chart-beat","chart-web",
+"chart-video","map-beat"]`. Seven skills now ship `assets/preview.png`: the four above plus
+`image-beat`, `map-web`, `scrolly`. The output-proof/preview byte-identity assertion
 therefore never runs for the three newest. Each of them has its own `test/canon.test.ts` with a
 `--check`, so this is a smaller hole than F1 — but it is the same class: a guard whose list was
 written once and never re-derived.
@@ -210,49 +210,49 @@ The handover names this the softest surface in the project, and states that
 in a section that guard does not read, and every one was checked against the code, not against
 another document.
 
-#### F8. `twin-chart-beat/SKILL.md:21-22` — "the rungs above it do not exist yet"
+#### F8. `chart-beat/SKILL.md:21-22` — "the rungs above it do not exist yet"
 
 > **SP1 scope: the static genre only.** Interactive and video chart beats are later sub-projects.
 > `renderStill` is the first rung of the render ladder; **the rungs above it do not exist yet.**
 
-`twin-chart-web` and `twin-chart-video` are complete, tested, documented, `output-proof`-carrying
+`chart-web` and `chart-video` are complete, tested, documented, `output-proof`-carrying
 skills in this same tree. This is the exact defect shape §11 records ("a dispatch table declaring two
 complete, tested skills do not exist yet") and it has survived into a different file. The frontmatter
 `description` repeats it: "SP1 covers the static genre only."
 
 **Correction needed.** Replace with: this skill is the **static** genre of a chart beat; the web
-genre is `twin-chart-web` and the video genre is `twin-chart-video`, both shipped. Update the
+genre is `chart-web` and the video genre is `chart-video`, both shipped. Update the
 frontmatter `description` in the same edit.
 
-#### F9. `twin-chart-beat/SKILL.md:59` — "the twin's one script with dependencies"
+#### F9. `chart-beat/SKILL.md:59` — "the twin's one script with dependencies"
 
 > `scripts/render-still.mjs` is the twin's one script with dependencies — `react-dom/server` and
 > `@resvg/resvg-js` …
 
 Measured: **22 scripts across 8 skills** import `react`, `react-dom/server`, `@resvg/resvg-js` or
 `puppeteer`. Two of them are in this very skill —
-`twin-chart-beat/scripts/inspect-render.mjs:37` and `twin-chart-beat/scripts/render-preview.mjs:11-13`.
+`chart-beat/scripts/inspect-render.mjs:37` and `chart-beat/scripts/render-preview.mjs:11-13`.
 
 The same false sentence is **vendored into all nine `render-still.mjs` copies** as the file's own
-header comment (`twin-chart-beat/scripts/render-still.mjs:3-4`): *"Every other script in this twin is
+header comment (`chart-beat/scripts/render-still.mjs:3-4`): *"Every other script in this twin is
 dependency-free; this one is not, and says so."*
 
 **Correction needed.** In `SKILL.md:59`, say it is the script whose dependencies a beat inherits when
-it imports `#shared/twin-chart-beat/render-still.mjs`, not that it is the only one. Correct the
+it imports `#shared/chart-beat/render-still.mjs`, not that it is the only one. Correct the
 vendored header comment at the canonical copy and re-run whatever re-vendors the other eight (the
 byte-identity guard will otherwise turn the six guarded copies red).
 
-#### F10. `twin-image-beat/SKILL.md:91, :93-94, :234-235` — three claims, all false
+#### F10. `image-beat/SKILL.md:91, :93-94, :234-235` — three claims, all false
 
 - `:91` — "`scripts/render-still.mjs` is this skill's **one script with dependencies**". Same defect
   as F9, locally: `scripts/render-preview.mjs:15-17` and `scripts/build-sample-photos.mjs:26` both
   import external dependencies.
 - `:93-94` — "**the three copies** are intentionally byte-similar". There are **nine** copies of that
-  file in the tree (F1). Even the three named — `twin-chart-beat`, `twin-image-beat`, `twin-scrolly`
-  — are not byte-similar today; `twin-image-beat`'s is 299 lines against the canonical 222 and
+  file in the tree (F1). Even the three named — `chart-beat`, `image-beat`, `scrolly`
+  — are not byte-similar today; `image-beat`'s is 299 lines against the canonical 222 and
   carries a rewritten doc-comment block.
 - `:234-235` (Files) — "`test/render-still.test.ts` — `deriveFurniture`/`contrast`/`measureText`
-  **parity with the sibling copies**". `twin-image-beat/test/render-still.test.ts` imports nothing
+  **parity with the sibling copies**". `image-beat/test/render-still.test.ts` imports nothing
   outside its own skill (checked: the only non-stdlib imports are `../assets/ImageBeatSeed.tsx` and
   `../scripts/render-still.mjs`). It cannot assert parity with a sibling it never loads. The section
   comment inside the test at `:22` — "same rule the sibling skills' own copies carry" — asserts the
@@ -263,12 +263,12 @@ the real count, or drop the number. Delete the parity claim at `:234-235` **or**
 wiring this skill into `helper-parity.test.ts` (F1) — and if the latter, move the claim to point at
 that file, since parity across skills cannot live in a skill-local test without a cross-skill import.
 
-#### F11. `twin-map-beat/SKILL.md:65` — claims a cross-skill runtime import that was deliberately removed
+#### F11. `map-beat/SKILL.md:65` — claims a cross-skill runtime import that was deliberately removed
 
 > | Contract | `assets/timing.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`,
-> `progressOf`) is **imported** from `twin-chart-video`, never re-implemented |
+> `progressOf`) is **imported** from `chart-video`, never re-implemented |
 
-It is not imported. `twin-map-beat/assets/timing.ts:17` re-exports from `./timing-contract`, a
+It is not imported. `map-beat/assets/timing.ts:17` re-exports from `./timing-contract`, a
 physical copy whose own doc-comment (`:5-9`) says so verbatim: *"A copy, not an import, because a
 skill never reaches across another skill's boundary at runtime."* The `SKILL.md` describes an
 architecture the project's §6 rule forbids and the code no longer has. A reader following the
@@ -276,16 +276,16 @@ sentence would "fix" the copy into an import and break `no-cross-skill-imports.t
 
 **Correction needed.** Rewrite the Role cell: the vocabulary is a **carried copy** in
 `assets/timing-contract.ts`, byte-guarded against its source by
-`splash-twin/test/root-template-shared.test.ts` — the same wording `twin-storyboard/SKILL.md:162-168`
+`splash/test/root-template-shared.test.ts` — the same wording `storyboard/SKILL.md:162-168`
 already uses correctly for `capability-gap.mjs`.
 
-#### F12. `twin-map-beat/SKILL.md:60` + `geo-discipline.md` §7 + both map seeds — a three-way contradiction about no-data
+#### F12. `map-beat/SKILL.md:60` + `geo-discipline.md` §7 + both map seeds — a three-way contradiction about no-data
 
-- `twin-map-beat/SKILL.md:60` summarises geo rule 7 as "**no-data as texture**".
-- `twin-doctrine/references/geo-discipline.md:96-99` was rewritten to the opposite and now states:
+- `map-beat/SKILL.md:60` summarises geo rule 7 as "**no-data as texture**".
+- `doctrine/references/geo-discipline.md:96-99` was rewritten to the opposite and now states:
   *"a flat, distinct grey is the third colour, not a third texture, **and it is what this project's
   own maps use**."*
-- Both shipped seeds still hatch. `twin-map-beat/assets/Co2MapStill.tsx:179-191` defines
+- Both shipped seeds still hatch. `map-beat/assets/Co2MapStill.tsx:179-191` defines
   `<pattern id="no-data" patternTransform="rotate(45)">` under a comment reading *"No-data is a
   TEXTURE, not another shade (`geo-discipline.md` rule 7)"* — citing the rule it contradicts — and
   applies it at `:122` and `:355`. `Co2MapVideo.tsx:262-267` does the same at 9px.
@@ -299,12 +299,12 @@ their comments, or restore the texture rule and correct `geo-discipline.md`'s cl
 summary cell follows whichever wins. **Do not fix only the prose** — the whole point of §7's rewrite
 was the render.
 
-#### F13. `twin-chart-video/SKILL.md:83` and `:101` — claim `helper-parity.test.ts` guards copies it never imports
+#### F13. `chart-video/SKILL.md:83` and `:101` — claim `helper-parity.test.ts` guards copies it never imports
 
-- `:83` (gotcha) — "with `splash-twin/test/helper-parity.test.ts` **keeping the copies in step**",
+- `:83` (gotcha) — "with `splash/test/helper-parity.test.ts` **keeping the copies in step**",
   said of the seed's inlined `fr`/`yTickValues`/`crossingGeometry`.
 - `:101` (Architecture, Geometry row) — "`proof/co2-suisse/crossing-geometry.ts` is the STORY's copy…
-  **the two are kept in step by `splash-twin/test/helper-parity.test.ts`**".
+  **the two are kept in step by `splash/test/helper-parity.test.ts`**".
 
 `helper-parity.test.ts` imports from `EmissionsVideo` exactly two names — `measureText` and `wrap`
 (`:106-109`). Neither `crossingGeometry` nor `fr` nor `yTickValues` appears anywhere in that file.
@@ -314,10 +314,10 @@ See F2: `fr` is in fact the one that has already drifted.
 sentences, or narrow both sentences to name only `measureText`/`wrap`. As written they are the exact
 failure mode §11 warns about: a guard trusted beyond what it verifies.
 
-#### F14. `twin-map-web/SKILL.md:111` and `:249-250` — "byte-identical copy" **(WIP-revealed)**
+#### F14. `map-web/SKILL.md:111` and `:249-250` — "byte-identical copy" **(WIP-revealed)**
 
 > `scripts/render-still.mjs` — `deriveFurniture`/`measureText`, a **byte-identical** copy of
-> `twin-chart-beat`'s own file, **kept in step by hand**
+> `chart-beat`'s own file, **kept in step by hand**
 
 It was byte-identical when committed and is not now (F1, with hashes). The claim is false today, and
 the phrase "kept in step by hand" is the honest description of why: no test enforces it. Because the
@@ -328,27 +328,27 @@ that will silently keep being wrong.
 true; change "kept in step by hand" to name the guard. If the copy is deliberately allowed to lag,
 say that instead and drop "byte-identical".
 
-#### F15. `twin-dw-beat/SKILL.md:18` — "The skill is exactly four scripts"
+#### F15. `dw-beat/SKILL.md:18` — "The skill is exactly four scripts"
 
-`twin-dw-beat/scripts/` holds **seven** `.mjs` files: `validate-spec`, `map-spec`, `csv`,
+`dw-beat/scripts/` holds **seven** `.mjs` files: `validate-spec`, `map-spec`, `csv`,
 `dw-client`, `produce`, `verify-range-annotation`, `prove-co2`. This skill's own Architecture table
 (`:88-96`) lists all seven, so the document contradicts itself two sections apart.
 
 **Correction needed.** "Four steps — validate, map, call, orchestrate — across seven scripts", or
 name the four and say the other three are the live-pin and the proof case.
 
-#### F16. `twin-doctrine/SKILL.md:10` and `:24` — the reference-document count is short by one
+#### F16. `doctrine/SKILL.md:10` and `:24` — the reference-document count is short by one
 
 `:10` opens "**Five** prose reference documents and one small mechanical check"; `:24` adds "**A
 sixth** document, `motion-grammar.md`". `references/` holds **seven**: the five named, plus
 `motion-grammar.md`, plus **`geo-discipline.md`** — which appears in the Files section (`:213`) and
-is cited by name from `twin-map-beat` and `twin-map-web`, but is absent from both the Overview count
+is cited by name from `map-beat` and `map-web`, but is absent from both the Overview count
 and the Architecture table (`:86-94`, which lists seven rows and still omits it).
 
 **Correction needed.** Say seven, and add a `| Geo | references/geo-discipline.md | … |` row to the
 Architecture table.
 
-#### F17. `twin-newsroom-charter` — a tuning knob the code overrides
+#### F17. `newsroom-charter` — a tuning knob the code overrides
 
 Knob row (`SKILL.md:165`): *"Which two hex values never count as a confident colour candidate |
 `#ffffff`, `#000000` | `isNeutralHex`, `extract.mjs`"*.
@@ -375,10 +375,10 @@ Overview promises. Add a test for a page whose only `theme-color` is `#ffffff`.
 The Files section is the skill's inventory; `skill-md-matches-code.test.ts` checks that every listed
 path resolves, never that every real file is listed.
 
-- `twin-storyboard/SKILL.md:156-177` omits `scripts/genre-catalog.mjs` and
+- `storyboard/SKILL.md:156-177` omits `scripts/genre-catalog.mjs` and
   `test/genre-catalog.test.ts` — both shipped, and `genre-catalog.mjs` is cited *by name* from
   `:165` inside another bullet, so the document knows it exists.
-- `twin-map-beat/SKILL.md:147-177` omits `scripts/render-still.mjs` and `assets/timing-contract.ts`
+- `map-beat/SKILL.md:147-177` omits `scripts/render-still.mjs` and `assets/timing-contract.ts`
   entirely — the file name `render-still.mjs` appears nowhere in that `SKILL.md`, and
   `timing-contract.ts` is the file F11's correction has to name.
 
@@ -392,7 +392,7 @@ which is a mechanical check with a low false-positive rate and would have caught
 
 The canon rule: *every tuning knob is a number, with a named location*.
 
-#### F19. `twin-intake` — no knob in the table is a knob
+#### F19. `intake` — no knob in the table is a knob
 
 | row | value | problem |
 |---|---|---|
@@ -413,33 +413,33 @@ appear.
 
 | skill | row | value | shape |
 |---|---|---|---|
-| `twin-doctrine` | whether a reference cell counts as linked | *"**not a number**"* | self-declared deviation |
-| `twin-deliver` | default Cloudflare Pages project | `"twin-deliver-proof"` | string |
-| `twin-deliver` | default CMS kind | `"we-publish"` | string |
-| `twin-dw-beat` | default reference-line style | `"solid"` | mode |
-| `twin-dw-beat` | zero-anchored axis types | `/bars\|column/i` | regex |
-| `twin-dw-beat` | force-attribution | always `false` | boolean |
-| `twin-newsroom-charter` | brand-colour hints | `brand`,`primary`,`accent` | list |
-| `twin-newsroom-charter` | ground-colour hints | `background`,`ground`,`surface`,`page` | list |
-| `twin-newsroom-charter` | never-confident hexes | `#ffffff`,`#000000` | list |
-| `twin-map-beat` | which basemap | `"dataviz-light"` | string |
-| `twin-map-web` | which basemap | `"dataviz-light"` + `#aac9e0` | string |
-| `twin-map-web` | bake namespace | `/tmp/map-twin-web` | path |
-| `twin-map-web` | the subject point | `"paris"` | string |
-| `twin-map-web` | filter dimension | `group` per point | field name |
-| `twin-scrolly` | sticky graphic width | *"whatever the ancestor chain gives it"* | prose |
-| `twin-scrolly` | panel max width | `min(42ch, 100%)` | CSS expression |
-| `twin-scrolly` | panel centring | `justify-content: center` | CSS mode |
-| `twin-scrolly` | drawn step variants | `{ waterLevelT, dayLabel }` | object map |
+| `doctrine` | whether a reference cell counts as linked | *"**not a number**"* | self-declared deviation |
+| `deliver` | default Cloudflare Pages project | `"deliver-proof"` | string |
+| `deliver` | default CMS kind | `"we-publish"` | string |
+| `dw-beat` | default reference-line style | `"solid"` | mode |
+| `dw-beat` | zero-anchored axis types | `/bars\|column/i` | regex |
+| `dw-beat` | force-attribution | always `false` | boolean |
+| `newsroom-charter` | brand-colour hints | `brand`,`primary`,`accent` | list |
+| `newsroom-charter` | ground-colour hints | `background`,`ground`,`surface`,`page` | list |
+| `newsroom-charter` | never-confident hexes | `#ffffff`,`#000000` | list |
+| `map-beat` | which basemap | `"dataviz-light"` | string |
+| `map-web` | which basemap | `"dataviz-light"` + `#aac9e0` | string |
+| `map-web` | bake namespace | `/tmp/map-twin-web` | path |
+| `map-web` | the subject point | `"paris"` | string |
+| `map-web` | filter dimension | `group` per point | field name |
+| `scrolly` | sticky graphic width | *"whatever the ancestor chain gives it"* | prose |
+| `scrolly` | panel max width | `min(42ch, 100%)` | CSS expression |
+| `scrolly` | panel centring | `justify-content: center` | CSS mode |
+| `scrolly` | drawn step variants | `{ waterLevelT, dayLabel }` | object map |
 
-`twin-doctrine`'s row is the honest one: it says outright that no threshold exists and refuses to
+`doctrine`'s row is the honest one: it says outright that no threshold exists and refuses to
 invent one. That is the right instinct with the wrong conclusion — the canon's answer to "this is not
 a number" is that it is not a knob.
 
-**Correction needed.** For each: either convert to the number behind it (`twin-newsroom-charter`'s
+**Correction needed.** For each: either convert to the number behind it (`newsroom-charter`'s
 three list rows become counts — `3` hint fragments, `4` hint fragments, `2` neutral hexes — with the
 list moved into the "Want" prose), or move the row out of Tuning knobs into Architecture/Files where
-a named constant belongs. `twin-scrolly`'s prose row and `twin-doctrine`'s "not a number" row should
+a named constant belongs. `scrolly`'s prose row and `doctrine`'s "not a number" row should
 simply be deleted from the table.
 
 #### F21. "Where" columns that name no file
@@ -447,18 +447,18 @@ simply be deleted from the table.
 `skill-md-matches-code.test.ts:156-160` already names this gap and counts seven such rows. The real
 count across the tree is higher — every row below names only a bare identifier or a document section:
 
-`splash-twin` 3 (`whereIs`; "this document, `Overview`"; "spec §8, `How it works` step 5") ·
-`twin-intake` 3 · `twin-storyboard` 3 (`checkStoryboard` ×2, `parseStoryboard`) · `twin-doctrine` 4
-(`checkReferenceSet` ×4) · `twin-deliver` 6 (`FORMS_BY_GENRE` ×3, `materialise` ×2, `singleOwnedFile`)
-· `twin-chart-beat` 2 (`deriveFurniture` ×2) · `twin-chart-video` 6 (`CO2_TIMING`) · `twin-map-beat`
-5 (`MAP_TIMING`) · `twin-dw-beat` 5 (`buildRangeAnnotation` ×4, `buildTextAnnotation`) ·
-`twin-chart-web` 1 ("the story's own composition file" — names no file at all, by construction).
+`splash` 3 (`whereIs`; "this document, `Overview`"; "spec §8, `How it works` step 5") ·
+`intake` 3 · `storyboard` 3 (`checkStoryboard` ×2, `parseStoryboard`) · `doctrine` 4
+(`checkReferenceSet` ×4) · `deliver` 6 (`FORMS_BY_GENRE` ×3, `materialise` ×2, `singleOwnedFile`)
+· `chart-beat` 2 (`deriveFurniture` ×2) · `chart-video` 6 (`CO2_TIMING`) · `map-beat`
+5 (`MAP_TIMING`) · `dw-beat` 5 (`buildRangeAnnotation` ×4, `buildTextAnnotation`) ·
+`chart-web` 1 ("the story's own composition file" — names no file at all, by construction).
 
 The convention in play is real — the file is named once, then carried by the reader down consecutive
 rows — but the guard explicitly refuses to follow it, so these rows are checked by nothing.
 
 **Correction needed.** Repeat the file in every row's Where column. It is redundant to a human and it
-is the only thing that puts the row inside the guard's stated scope. `twin-chart-web`'s row should
+is the only thing that puts the row inside the guard's stated scope. `chart-web`'s row should
 name `assets/ChartWebSeed.tsx` (the seed's own `.pt` radius) rather than "the story's own composition
 file".
 
@@ -466,9 +466,9 @@ file".
 
 ### SEV-4 — Canon directories
 
-#### F22. `twin-chart-video` has no `references/`
+#### F22. `chart-video` has no `references/`
 
-The only craft skill without one. Its doctrine lives in `twin-doctrine/references/motion-grammar.md`
+The only craft skill without one. Its doctrine lives in `doctrine/references/motion-grammar.md`
 and its Architecture row points there, which is a defensible delegation — but every other genre skill
 that leans on shared doctrine *also* carries its own genre discipline file
 (`static-discipline.md`, `web-discipline.md`, `map-web-discipline.md`, `scrolly-discipline.md`,
@@ -480,9 +480,9 @@ exists because of.
 **Correction needed.** Add `references/video-discipline.md` (or `seed-anatomy.md`, matching its
 siblings) carrying the gotcha and the ladder, and reduce the `SKILL.md` prose to a pointer.
 
-#### F23. `twin-dw-beat` has no `output-proof`
+#### F23. `dw-beat` has no `output-proof`
 
-Every other producing skill commits the artifact its own seed makes. `twin-dw-beat` produces real
+Every other producing skill commits the artifact its own seed makes. `dw-beat` produces real
 PNGs (`scripts/prove-co2.mjs` fetches Our World in Data and renders one live) and commits none. §11's
 ruling is explicit that "the artifact is the gate" — a delegated renderer does not exempt a producer
 from showing what it produces. Its lack of `assets/` **is** justified: the skill deliberately holds no
@@ -491,7 +491,7 @@ seed component, and its `SKILL.md` says so in the frontmatter.
 **Correction needed.** Commit `output-proof/co2.png` (the artifact `prove-co2.mjs` already produces)
 with a one-line note that it is a live Datawrapper export, not a local render.
 
-#### F24. `splash-twin` has no `references/`
+#### F24. `splash` has no `references/`
 
 The orchestrator's `SKILL.md` carries ~180 lines of doctrine prose — the four responsibilities, the
 capability model, the three newsroom outcomes, the never-list. That is exactly the material
@@ -503,10 +503,10 @@ own never-list); `assets/root-template/` is an install payload, correctly not a 
 establishes what is possible" section (the ninth, non-canon section) into
 `references/preflight-model.md` and leave a pointer. This would also restore the eight-section shape.
 
-Legitimately absent, charged as nothing: `assets/` and `output-proof` for `twin-intake`,
-`twin-storyboard`, `twin-doctrine`, `twin-deliver`, `twin-newsroom-charter`, `splash-twin` — none
-draws anything. `twin-map-beat`'s `references/` holds only `types/`, which is thin but not empty, and
-its genre doctrine genuinely lives in `twin-doctrine/references/geo-discipline.md` by design.
+Legitimately absent, charged as nothing: `assets/` and `output-proof` for `intake`,
+`storyboard`, `doctrine`, `deliver`, `newsroom-charter`, `splash` — none
+draws anything. `map-beat`'s `references/` holds only `types/`, which is thin but not empty, and
+its genre doctrine genuinely lives in `doctrine/references/geo-discipline.md` by design.
 
 ---
 
@@ -514,7 +514,7 @@ its genre doctrine genuinely lives in `twin-doctrine/references/geo-discipline.m
 
 The rule: *nothing renders in a colour, a value or a default nobody chose; a missing input THROWS.*
 
-#### F25. `twin-map-beat/scripts/render-preview.mjs:131` — a missing subject renders as zero
+#### F25. `map-beat/scripts/render-preview.mjs:131` — a missing subject renders as zero
 
 ```js
 subjectValue: values.get("CHE") ?? 0,
@@ -528,7 +528,7 @@ preview runner re-opens the hole one line before the render.
 **Correction needed.** `const subjectValue = values.get("CHE"); if (subjectValue === undefined) throw
 new Error("subject CHE carries no value — the join declared it and the data does not have it");`
 
-#### F26. `twin-map-beat/assets/Co2MapVideo.tsx:306` — a missing rank arrives first
+#### F26. `map-beat/assets/Co2MapVideo.tsx:306` — a missing rank arrives first
 
 ```js
 rank.get(shape.key) ?? 0,
@@ -540,7 +540,7 @@ map would state the opposite of the data, in motion, with nothing red.
 
 **Correction needed.** Throw naming the key, the same way `joinValues` does.
 
-#### F27. `twin-scrolly/scripts/render-scrolly.mjs:366` — an unknown step id renders the default frame
+#### F27. `scrolly/scripts/render-scrolly.mjs:366` — an unknown step id renders the default frame
 
 ```js
 const variant = DRAWN_VARIANTS[meta.id] ?? {};
@@ -555,9 +555,9 @@ the shape.
 **Correction needed.** `if (!(meta.id in DRAWN_VARIANTS)) throw new Error(...)`, matching the
 `frameKind` branch three lines below.
 
-#### F28. `twin-deliver` — two delivery defaults nobody chose
+#### F28. `deliver` — two delivery defaults nobody chose
 
-`scripts/deploy-embed.mjs:38` `DEFAULT_PROJECT_NAME = "twin-deliver-proof"` and `materialise`'s
+`scripts/deploy-embed.mjs:38` `DEFAULT_PROJECT_NAME = "deliver-proof"` and `materialise`'s
 `cms` default of `"we-publish"` are both documented as knobs, so they are chosen *by the skill*
 rather than nobody — but they are the two places where a silent default lands a journalist's work
 somewhere external: an embed deployed into a project named after this experiment, and a CMS payload
@@ -573,11 +573,11 @@ the deliverable.
 
 Excluded by instruction; listed so a later pass does not re-derive them.
 
-- `twin-palette` has no `assets/sample-data`, no `assets/preview.png` and no `output-proof`. Whether
-  a proposal skill needs a rendered proof is a real question (`twin-newsroom-charter`, its closest
+- `palette` has no `assets/sample-data`, no `assets/preview.png` and no `output-proof`. Whether
+  a proposal skill needs a rendered proof is a real question (`newsroom-charter`, its closest
   sibling, has none either and embeds its real output in Quick start instead) — worth settling for
   both at once.
-- `twin-palette/scripts/palette.mjs:192` — `const ground = (newsroom && newsroom.ground) || "#FFFFFF"`.
+- `palette/scripts/palette.mjs:192` — `const ground = (newsroom && newsroom.ground) || "#FFFFFF"`.
   A white ground default inside the skill that exists to stop unchosen colours reaching a render.
   Its provenance string is honest about it (`"the default white, because no NEWSROOM.md ground was
   given"`), so this is a proposal, not a render — but it is the one `||` in the tree that hands back
@@ -585,7 +585,7 @@ Excluded by instruction; listed so a later pass does not re-derive them.
 - `helper-parity.test.ts:91-102` — the block comment says "**readPalette**/`parsePalette`", but only
   `parsePalette` is imported and asserted. `readPalette` touches the filesystem, which is presumably
   why; the comment should say so.
-- `twin-palette/SKILL.md:155` and `twin-chart-beat/SKILL.md:110-130` — the Quick start imports
+- `palette/SKILL.md:155` and `chart-beat/SKILL.md:110-130` — the Quick start imports
   `readPalette` and destructures `{ ground, accent }`, then passes `ground: "#FFFFFF"` and
   `accent: "#0B7A75"` as literals with the `// from NEWSROOM.md` comment four lines below. The
   snippet currently contradicts itself; finishing the threading closes it.

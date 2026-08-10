@@ -2,7 +2,7 @@
 //
 // HOW FAR THE RECORDED PALETTE ACTUALLY REACHES, counted rather than claimed.
 //
-// `twin-palette/SKILL.md` states a reach; `AUDIT-W2-palette-credits.md` measured it and found the
+// `palette/SKILL.md` states a reach; `AUDIT-W2-palette-credits.md` measured it and found the
 // stated number and the real one had drifted twice (16 of 70 written where 20 of 75 was true — the
 // denominator moved when new beats landed the same day). So the number is produced by a script and
 // re-run, rather than typed into a document and left there.

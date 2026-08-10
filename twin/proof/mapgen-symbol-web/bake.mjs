@@ -8,7 +8,7 @@
 // re-bake months later is a different picture under the same circles. `render-web.mjs` calls this
 // only when `plate/` is empty; a warm run never touches the network.
 //
-// Two rules from `twin-doctrine/references/geo-discipline.md` that this bake, not the render, is
+// Two rules from `doctrine/references/geo-discipline.md` that this bake, not the render, is
 // responsible for:
 //   rule 1 — the frame gate is `idle` OR a bounded settle, and the geometry records which fired;
 //   rule 7 — water reads as a blue tint, never grey. `dataviz-light` paints water `hsl(240, 2%, 88%)`,

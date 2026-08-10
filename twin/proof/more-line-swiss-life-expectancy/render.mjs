@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -15,8 +15,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { LifeExpectancyLine } from "./LifeExpectancyLine.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -38,7 +38,7 @@ async function main() {
   console.log(`fetched: ${rows.length} rows from data.csv`);
 
   // The OWID grapher CSV endpoint silently returns the entire global dataset unless
-  // `csvType=filtered` is on the URL (`twin-intake/references/ourworldindata-csv-filter-trap.md`)
+  // `csvType=filtered` is on the URL (`intake/references/ourworldindata-csv-filter-trap.md`)
   // — checked here, not assumed, by looking at the actual distinct values the fetch returned.
   const entities = [...new Set(rows.map((r) => r.Entity))];
   if (entities.length !== 1 || entities[0] !== "Switzerland") {

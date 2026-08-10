@@ -1,5 +1,5 @@
-// A physical copy of the motion grammar's vocabulary (`twin-chart-video/assets/timing.ts` /
-// `twin-map-beat/assets/timing.ts`), not an import — a proof beat stays copy-pasteable on its own.
+// A physical copy of the motion grammar's vocabulary (`chart-video/assets/timing.ts` /
+// `map-beat/assets/timing.ts`), not an import — a proof beat stays copy-pasteable on its own.
 // Only the vocabulary is copied here; the beat's own edit lives in `timing.ts`.
 
 export type TimingEvent = {

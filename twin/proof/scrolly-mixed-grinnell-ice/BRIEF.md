@@ -78,7 +78,7 @@ domain, so **the handover is not a mechanism; it is the same lerp, on three more
 fractional position the whole composition is defined, and nothing can arrive half a step from its own
 sentence.
 
-- **Progress is READ, never re-derived.** `twin-scrolly` publishes `data-progress` on its own root on
+- **Progress is READ, never re-derived.** `scrolly` publishes `data-progress` on its own root on
   every scroll and this driver reads it. Both single-visual beats once derived their own from panel
   overlaps and froze when the vehicle moved the prose; the repair was having ONE opinion, and this
   beat starts from the repaired shape. Measured disagreement with the scaffold: **0.0005** at all

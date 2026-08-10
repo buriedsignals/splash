@@ -4,12 +4,12 @@ accent: "#1B7F4B"
 origin: subject
 ---
 
-The answer recorded for this beat: `twin-palette`'s **subject** option, taken over the house
+The answer recorded for this beat: `palette`'s **subject** option, taken over the house
 accent.
 
 `matchConvention("solar's share of electricity")` returns exactly one grounded convention —
 `renewables` — and returns it alone, so there was no ambiguity for the journalist to resolve.
-Its reasoning, from `twin-palette/references/subject-conventions.md`: green reads as renewable
+Its reasoning, from `palette/references/subject-conventions.md`: green reads as renewable
 generation before the legend is read, and a reader arrives already holding it. That is
 subject-fit in the sense this project means it (Lin, Fortuna, Kulkarni, Stone & Heer, *Selecting
 Semantically-Resonant Colors for Data Visualization*, EuroVis 2013), not a colour that felt right.

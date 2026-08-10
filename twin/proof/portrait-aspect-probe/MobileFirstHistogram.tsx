@@ -27,7 +27,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import type { Bin } from "./PortraitHistogram.tsx";
 
 /** Every rung of `MOBILE-FIRST-WIREFRAME.md` §4 that this type can offer. R0 (transpose) is absent

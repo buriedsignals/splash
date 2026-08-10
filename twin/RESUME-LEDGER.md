@@ -12,27 +12,31 @@ verified" rather than leaving it implied.
 
 The rename drops the `twin-` prefix and moves `twin/` to the repository root.
 
-| before | after |
+**Read this table with care: the rename has since been applied, so a mechanical sweep would flatten
+the two columns into one. The left column is written with a `T-` marker standing for the old
+`twin-` prefix, precisely so it survives.**
+
+| before (`T-` = the old `twin-` prefix) | after |
 |---|---|
-| `twin/skills/splash-twin` | `skills/splash` |
-| `twin/skills/twin-chart-beat` | `skills/chart-beat` |
-| `twin/skills/twin-chart-video` | `skills/chart-video` |
-| `twin/skills/twin-chart-web` | `skills/chart-web` |
-| `twin/skills/twin-deliver` | `skills/deliver` |
-| `twin/skills/twin-doctrine` | `skills/doctrine` |
-| `twin/skills/twin-dw-beat` | `skills/dw-beat` |
-| `twin/skills/twin-image-beat` | `skills/image-beat` |
-| `twin/skills/twin-intake` | `skills/intake` |
-| `twin/skills/twin-map-beat` | `skills/map-beat` |
-| `twin/skills/twin-map-web` | `skills/map-web` |
-| `twin/skills/twin-newsroom-charter` | `skills/newsroom-charter` |
-| `twin/skills/twin-palette` | `skills/palette` |
-| `twin/skills/twin-scrolly` | `skills/scrolly` |
-| `twin/skills/twin-storyboard` | `skills/storyboard` |
+| `twin/skills/splash-T-suffix` (`splash-twin`) | `skills/splash` |
+| `twin/skills/T-chart-beat` | `skills/chart-beat` |
+| `twin/skills/T-chart-video` | `skills/chart-video` |
+| `twin/skills/T-chart-web` | `skills/chart-web` |
+| `twin/skills/T-deliver` | `skills/deliver` |
+| `twin/skills/T-doctrine` | `skills/doctrine` |
+| `twin/skills/T-dw-beat` | `skills/dw-beat` |
+| `twin/skills/T-image-beat` | `skills/image-beat` |
+| `twin/skills/T-intake` | `skills/intake` |
+| `twin/skills/T-map-beat` | `skills/map-beat` |
+| `twin/skills/T-map-web` | `skills/map-web` |
+| `twin/skills/T-newsroom-charter` | `skills/newsroom-charter` |
+| `twin/skills/T-palette` | `skills/palette` |
+| `twin/skills/T-scrolly` | `skills/scrolly` |
+| `twin/skills/T-storyboard` | `skills/storyboard` |
 | `twin/proof/…`, `twin/shared/…`, `twin/scripts/…` | `proof/…`, `shared/…`, `scripts/…` |
-| `#shared/twin-chart-beat`, `#shared/twin-chart-video` | `#shared/chart-beat`, `#shared/chart-video` |
-| `splash-twin-doctor` | `splash-doctor` |
-| `~/.claude/skills/splash-twin` | `~/.claude/skills/splash` |
+| `#shared/T-chart-beat`, `#shared/T-chart-video` | `#shared/chart-beat`, `#shared/chart-video` |
+| the doctor binary, `splash-T-suffix-doctor` | `splash-doctor` |
+| `~/.claude/skills/splash-T-suffix` | `~/.claude/skills/splash` |
 
 ## The five chantiers, and where each stopped
 

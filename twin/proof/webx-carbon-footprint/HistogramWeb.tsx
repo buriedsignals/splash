@@ -14,7 +14,7 @@
  *
  * MIGRATED TO THE FLUID FRAME. This file used to ship two pre-rendered widths (900px and 360px)
  * swapped by a media query. One frame now, filling its container continuously and fitting the
- * visible window, by the separation `twin-chart-web/assets/ChartWebSeed.tsx` teaches: the `<svg>`
+ * visible window, by the separation `chart-web/assets/ChartWebSeed.tsx` teaches: the `<svg>`
  * carries GEOMETRY ONLY — the bars, the gridlines, the median rule, the bins' own hit targets, and
  * no `<text>` at all — while every word is HTML at a FIXED pixel size, positioned by `%` over the
  * same grid cell. Geometry stretches; type does not.

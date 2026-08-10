@@ -1,7 +1,7 @@
 // The bake for the flow-map (route) beat: one camera over the Danube corridor, one basemap
 // capture, the route line and the crossed territories' shapes all projected to pixel space.
 //
-// Two defects fixed here that `twin-map-beat/SKILL.md` and `map-quake-density/bake.mjs` both
+// Two defects fixed here that `map-beat/SKILL.md` and `map-quake-density/bake.mjs` both
 // flag as landmines for the next map beat: `dataviz-light` paints water GREY (breaks the
 // water/land/no-data colour discipline — `geo-discipline.md` rule 7 — so it is overridden below,
 // same fix as the hex-grid beat), and a plate baked at one size drawn into a differently-sized box

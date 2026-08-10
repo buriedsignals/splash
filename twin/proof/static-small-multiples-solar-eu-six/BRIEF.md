@@ -99,7 +99,7 @@ The **full** CSV was taken and filtered here rather than fetched with `country=`
 endpoint that parameter is not honoured: the same fetch with a twelve-country `country=` list
 returned all 190-odd entities with HTTP 200, and adding `csvType=filtered` returned every entity
 for a single year instead of a time series. That is the trap
-`twin-intake/references/ourworldindata-csv-filter-trap.md` documents, met twice while preparing
+`intake/references/ourworldindata-csv-filter-trap.md` documents, met twice while preparing
 this beat. `render.mjs` re-verifies the frozen file's distinct `Entity` values against the six it
 expects and throws on anything else, so the freeze cannot silently drift into the whole world.
 

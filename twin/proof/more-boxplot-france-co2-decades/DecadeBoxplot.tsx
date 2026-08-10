@@ -23,12 +23,12 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
+} from "#shared/chart-beat/sizes.mjs";
 
 export type DecadeReadings = { label: string; values: number[] };
 
@@ -295,7 +295,7 @@ export function DecadeBoxplot({
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = contentTop + TITLE.fontSize;
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
-  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md,
   // "The source on the frame's bottom margin." It WRAPS now: one 900px line becomes several at a
   // wider frame's type scale, and an unwrapped credit ran off the frame.
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);

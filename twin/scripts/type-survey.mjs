@@ -1,4 +1,4 @@
-// Regenerates `skills/twin-storyboard/references/type-survey.md` — every visual type this
+// Regenerates `skills/storyboard/references/type-survey.md` — every visual type this
 // toolchain holds a sheet for, what each is FOR in its own words, and which genres are proven on
 // disk for it.
 //
@@ -8,12 +8,12 @@
 // WHY THIS EXISTS. Forty type sheets ship in this repository (32 chart, 8 map), each answering
 // what its type is for and when not to reach for it, and `twin/MATRIX.md` records which of them
 // are proven in which genre. Measured before this file was written, `grep -rn "references/types"
-// skills/twin-storyboard/` and `grep -rn "MATRIX" skills/` BOTH returned nothing: the editorial
+// skills/storyboard/` and `grep -rn "MATRIX" skills/` BOTH returned nothing: the editorial
 // exchange had never heard of any of it. In the run that produced this work, three candidates were
 // offered and all three were stacked-or-grouped bars of the same three numbers.
 //
 // WHY IT IS GENERATED INTO THE SKILL rather than read from where it lives. A script inside
-// `twin-storyboard` may not read `twin-chart-beat/references/types/` — that path resolves inside
+// `storyboard` may not read `chart-beat/references/types/` — that path resolves inside
 // another skill and `no-cross-skill-imports.test.ts` flags it whatever it points at, because a
 // skill directory has to stay copy-pasteable on its own. Scripts under `twin/scripts/` are outside
 // `skills/` and may read the whole tree, so the twin's established answer applies: generate the
@@ -33,11 +33,11 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const TWIN = join(HERE, "..");
 const SKILLS = join(TWIN, "skills");
 
-// Where the sheets live, and the medium each set describes. `twin-map-web` and `twin-scrolly` hold
+// Where the sheets live, and the medium each set describes. `map-web` and `scrolly` hold
 // no sheets of their own: a map is a map whichever genre renders it.
 const SHEET_SETS = [
-  { medium: "chart", dir: join(SKILLS, "twin-chart-beat", "references", "types") },
-  { medium: "map", dir: join(SKILLS, "twin-map-beat", "references", "types") },
+  { medium: "chart", dir: join(SKILLS, "chart-beat", "references", "types") },
+  { medium: "map", dir: join(SKILLS, "map-beat", "references", "types") },
 ];
 
 const GENRES = ["static", "web", "video", "scrolly"];
@@ -108,7 +108,7 @@ function readSheets() {
       sheets.push({
         medium,
         title,
-        sheet: `${medium === "chart" ? "twin-chart-beat" : "twin-map-beat"}/references/types/${name}`,
+        sheet: `${medium === "chart" ? "chart-beat" : "map-beat"}/references/types/${name}`,
         aliases: aliasesFor(file, title),
         purpose: purposeSentence(text, file),
       });
@@ -180,7 +180,7 @@ function render(sheets, beats) {
   return lines.join("\n");
 }
 
-const target = join(SKILLS, "twin-storyboard", "references", "type-survey.md");
+const target = join(SKILLS, "storyboard", "references", "type-survey.md");
 const built = render(readSheets(), readBeats());
 
 if (process.argv.includes("--check")) {

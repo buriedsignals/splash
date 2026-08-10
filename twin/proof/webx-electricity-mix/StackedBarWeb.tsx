@@ -2,7 +2,7 @@
  * The web beat of "Norway ran its grid on 99% renewables; Poland leaned on fossil fuel" — the
  * interactive genre.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`twin-chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that
@@ -14,7 +14,7 @@
  * Written for a DIFFERENT mark family from the seed's line: one 100%-stacked column per country
  * (`references/types/stacked-bar.md`). Not imported from the static sibling
  * `proof/static-electricity-mix-source/ElectricityMixStack.tsx`, which bakes its words into SVG
- * `<text>` and reaches for `#shared/twin-chart-beat/render-still.mjs` directly.
+ * `<text>` and reaches for `#shared/chart-beat/render-still.mjs` directly.
  *
  * This is the type the brief calls out by name: a stacked bar's non-bottom segments float on a
  * moving floor, so their own thickness is genuinely hard to read off by eye

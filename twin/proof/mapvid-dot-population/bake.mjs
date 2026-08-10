@@ -30,7 +30,7 @@ import puppeteer from "puppeteer";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 // Europe, near-square once projected (geo-discipline.md rule 12) — the same bounds
-// `twin-map-beat`'s own choropleth seed uses, because this beat's study set is the same shape of
+// `map-beat`'s own choropleth seed uses, because this beat's study set is the same shape of
 // continent (holds Iceland whole, per that skill's own recorded defect fix).
 const BEAT = {
   bounds: [

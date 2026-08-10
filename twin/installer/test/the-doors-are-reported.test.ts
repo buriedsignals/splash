@@ -87,7 +87,7 @@ beforeAll(async () => {
     join(home, ".claude", "skills"),
   );
   writeFileSync(
-    join(home, ".agents", "skills", "twin-palette"),
+    join(home, ".agents", "skills", "palette"),
     "a file the journalist put here",
   );
 
@@ -173,19 +173,19 @@ describe("the doors the page reports", () => {
     expect(html).toContain("refused");
     expect(html).toContain("this skills directory is a symlink");
     expect(html).toContain("a real file is already there");
-    expect(html).toContain("twin-palette");
+    expect(html).toContain("palette");
   });
 
   it("should place nothing while rendering the report", () => {
     // The door directory that was refused must still be the journalist's own symlink, and the
     // collision must still be their file — the page reports, `place-skills.mjs` places.
-    expect(existsSync(join(lab, "someone-elses-skills", "splash-twin"))).toBe(
+    expect(existsSync(join(lab, "someone-elses-skills", "splash"))).toBe(
       false,
     );
     expect(
-      readFileSync(join(home, ".agents", "skills", "twin-palette"), "utf8"),
+      readFileSync(join(home, ".agents", "skills", "palette"), "utf8"),
     ).toBe("a file the journalist put here");
-    expect(existsSync(join(home, ".agents", "skills", "twin-map-beat"))).toBe(
+    expect(existsSync(join(home, ".agents", "skills", "map-beat"))).toBe(
       false,
     );
   });
@@ -204,11 +204,11 @@ describe("planPlacement, the report's own source", () => {
 
     const placed = planPlacement({ root, home: fresh, dryRun: false });
     expect(placed.results.some((r) => r.status === "linked")).toBe(true);
-    expect(existsSync(join(fresh, ".claude", "skills", "splash-twin"))).toBe(
+    expect(existsSync(join(fresh, ".claude", "skills", "splash"))).toBe(
       true,
     );
     expect(
-      existsSync(join(fresh, ".agents", "skills", "twin-palette", "SKILL.md")),
+      existsSync(join(fresh, ".agents", "skills", "palette", "SKILL.md")),
     ).toBe(true);
 
     // Idempotent: a correct link already in place is left alone and reported as `ok`.

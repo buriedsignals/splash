@@ -7,12 +7,12 @@
  * pure core this file and its own `render-web.mjs` share. What this file adds is the one thing a
  * static frame cannot have — every one of the twenty endpoints (ten countries × two periods)
  * answers hover, tap or keyboard focus with its exact country, period and value. Read
- * `twin-chart-web/references/web-discipline.md` before changing this file.
+ * `chart-web/references/web-discipline.md` before changing this file.
  *
  * MIGRATED TO THE FLUID FRAME. This file used to ship two pre-rendered widths (900px and 360px)
  * swapped by a media query. The owner overturned that: one frame, filling its container
  * continuously, fitting the visible window. The separation that makes it safe is the one
- * `twin-chart-web/assets/ChartWebSeed.tsx` teaches — the `<svg>` carries GEOMETRY ONLY (no `<text>`
+ * `chart-web/assets/ChartWebSeed.tsx` teaches — the `<svg>` carries GEOMETRY ONLY (no `<text>`
  * at all), and every word is HTML at a FIXED pixel size, positioned by `%` over the same CSS grid
  * the geometry is drawn in. Geometry stretches; type does not.
  *

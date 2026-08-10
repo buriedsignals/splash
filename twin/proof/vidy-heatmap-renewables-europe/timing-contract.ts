@@ -2,7 +2,7 @@
  * The timing contract for "Iceland has run almost entirely on renewable electricity every year
  * since 2016 — most of Europe is still catching up."
  *
- * Its own instance of `BeatTiming` (`#shared/twin-chart-video/timing.ts`). The argument here is a
+ * Its own instance of `BeatTiming` (`#shared/chart-video/timing.ts`). The argument here is a
  * GRID, not a traced series or a set of independent rows: eight countries (rows), nine years
  * 2016–2024 (columns, chronological), one cell per country×year, colour is the only value channel.
  * The shape that follows from `BRIEF.md`'s "The build":
@@ -41,7 +41,7 @@
  */
 
 // A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
-import type { BeatTiming } from "#shared/twin-chart-video/timing.ts";
+import type { BeatTiming } from "#shared/chart-video/timing.ts";
 
 export const HEATMAP_TIMING: BeatTiming = {
   fps: 30,

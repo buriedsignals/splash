@@ -5,14 +5,14 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`).
 
-`twin-palette`'s subject option was checked and does not apply. The subject is life expectancy at
+`palette`'s subject option was checked and does not apply. The subject is life expectancy at
 birth in Switzerland through the COVID-19 years; `matchConvention` holds four grounded conventions —
 renewables, fossil, water, heat — and none of them fires on it. Inventing a fifth for one beat would
 teach a reader a code that does not exist, which is the failure
-`twin-palette/references/subject-conventions.md` names. When no convention applies, the house theme
+`palette/references/subject-conventions.md` names. When no convention applies, the house theme
 wins.
 
 One accent for one series, drawn as a line that grows across the frame; the reference rule, the

@@ -1,7 +1,7 @@
 # The journalist test — first session
 
 Run 8 August 2026, following the protocol in `JOURNALIST-TEST.md`. One session, the editorial
-exchange only (movements ①–⑤ of `twin-storyboard/references/exchange.md`), Gate 2 closed into
+exchange only (movements ①–⑤ of `storyboard/references/exchange.md`), Gate 2 closed into
 `STORYBOARD.md`, production stalled by design, not faked.
 
 ## The stated limit — read this before the rest

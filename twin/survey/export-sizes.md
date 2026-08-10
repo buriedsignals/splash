@@ -11,7 +11,7 @@ half of A5 (size chosen after medium and genre). Nothing was changed; every clai
 
 1. **A beat's size is stated twice and derived nowhere.** In the static genre it is a `FRAME`
    constant inside the component *and* an argument to `renderStill`, which throws if they disagree
-   (`skills/twin-chart-beat/scripts/render-still.mjs:202-205`). In the video genre it is a `FRAME`
+   (`skills/chart-beat/scripts/render-still.mjs:202-205`). In the video genre it is a `FRAME`
    constant inside the composition *and* `width`/`height` on the `<Composition>` — with **no guard
    at all** between the two. Not one of the 76 beats under `proof/` renders its component more than
    once (measured: zero scripts contain two `renderStill({` calls).
@@ -28,7 +28,7 @@ half of A5 (size chosen after medium and genre). Nothing was changed; every clai
    guessing (`render-still.mjs:166-190`).
 4. **The fluid web frame already delivers most of B3.2** and the part it does not deliver is named in
    its own doctrine: *"Fitting and filling are two different rules; only the first is settled here"*
-   (`skills/twin-chart-web/references/web-discipline.md:245`). A "mobile version" is a **third** rule
+   (`skills/chart-web/references/web-discipline.md:245`). A "mobile version" is a **third** rule
    — re-deciding what is shown, not how big it is — and the genre currently has a test that forbids
    the mechanism (`test/seed-fluid-frame.test.ts:119-128`, `:322`, both assert no `@media`).
 5. **The original Splash gets the CONTRACT right and the RENDERING half-right.** Its channel table
@@ -41,15 +41,15 @@ half of A5 (size chosen after medium and genre). Nothing was changed; every clai
 
 ## 1. Where a beat's size is decided today
 
-### 1a. Static (`twin-chart-beat`, 37 beats calling `renderStill`)
+### 1a. Static (`chart-beat`, 37 beats calling `renderStill`)
 
 The frame is a module constant in the component:
 
-- `skills/twin-chart-beat/assets/ChartSeed.tsx:25` — `const FRAME = { width: 900, height: 560 };`
+- `skills/chart-beat/assets/ChartSeed.tsx:25` — `const FRAME = { width: 900, height: 560 };`
 - `proof/static-swiss-age-pyramid/SwissAgePyramid.tsx:26` — `{ width: 900, height: 820 }`, with its
   own header (`:11-14`) explaining the taller frame as *"a deliberate per-story choice
   (`static-discipline.md`'s FRAME is a named tuning knob, not a fixed constant)"*.
-- `skills/twin-chart-beat/SKILL.md:155` lists it as a tuning knob: `| The frame the seed draws in |
+- `skills/chart-beat/SKILL.md:155` lists it as a tuning knob: `| The frame the seed draws in |
   900 × 560 | FRAME, ChartSeed.tsx |`.
 
 The same numbers are restated in the beat's render script and checked:
@@ -59,7 +59,7 @@ proof/static-swiss-age-pyramid/render.mjs:77-78     width: 900,  height: 820,
 ```
 
 ```js
-// skills/twin-chart-beat/scripts/render-still.mjs:200-206
+// skills/chart-beat/scripts/render-still.mjs:200-206
 // The element declares its own frame. Rasterising at another width would silently scale the
 // chart — every measured gutter would still be correct, and every font size would be a lie.
 const drawn = { width: …, height: … };
@@ -82,19 +82,19 @@ One further fact the throw hides: **the delivered PNG is already 2× the declare
 canonical export size, and 900×560 is an aspect of 1.607 — neither 16:9 nor anything a platform
 asks for.
 
-### 1b. Video (`twin-chart-video`, 25 beats with a `Root.tsx`)
+### 1b. Video (`chart-video`, 25 beats with a `Root.tsx`)
 
 Stated **twice, with nothing between them**:
 
-- `skills/twin-chart-video/assets/Root.tsx:40-41` — `width={1080} height={1080}` on the
+- `skills/chart-video/assets/Root.tsx:40-41` — `width={1080} height={1080}` on the
   `<Composition>`.
-- `skills/twin-chart-video/assets/EmissionsVideo.tsx:42` — `const FRAME = { width: 1080, height: 1080 };`
+- `skills/chart-video/assets/EmissionsVideo.tsx:42` — `const FRAME = { width: 1080, height: 1080 };`
 
 And the composition reads Remotion's own config but **throws the size away**:
 
 ```
-skills/twin-chart-video/assets/EmissionsVideo.tsx:239   const { fps } = useVideoConfig();
-skills/twin-chart-video/assets/EmissionsVideo.tsx:240   const { width, height } = FRAME;
+skills/chart-video/assets/EmissionsVideo.tsx:239   const { fps } = useVideoConfig();
+skills/chart-video/assets/EmissionsVideo.tsx:240   const { width, height } = FRAME;
 ```
 
 This is uniform across the corpus: every one of the ~21 video beats destructures only `fps` from
@@ -103,9 +103,9 @@ e.g. `proof/vidy-pyramid-niger-population/PyramidVideo.tsx:253`,
 `proof/vidz-bump-emitter-rank/BumpVideo.tsx:221`). `useVideoConfig()` already returns `{width,
 height}`. **The video genre is one destructuring away from being size-driven** — and it currently
 has no guard that the `FRAME` constant and the `<Composition>` agree (no test in
-`skills/splash-twin/test/` mentions `Root.tsx` or `Composition`; searched).
+`skills/splash/test/` mentions `Root.tsx` or `Composition`; searched).
 
-The render script names no size at all: `skills/twin-chart-video/scripts/render-video.mjs:92-116`
+The render script names no size at all: `skills/chart-video/scripts/render-video.mjs:92-116`
 passes only an entry, a composition id and props.
 
 Sizes already in the video corpus: 1080×1080 (21 beats), 1080×1350 (3 — e.g.
@@ -114,13 +114,13 @@ Sizes already in the video corpus: 1080×1080 (21 beats), 1080×1350 (3 — e.g.
 (`proof/mapgen-flowmap-video/FlowMapStill.tsx:22`). So the genre **already ships three aspect
 ratios** — each one hand-tuned in its own component, none of them selectable.
 
-### 1c. Web (`twin-chart-web` / `twin-map-web`, 23 beats with `render-web.mjs`)
+### 1c. Web (`chart-web` / `map-web`, 23 beats with `render-web.mjs`)
 
 There is no export size. There is a **canonical geometry** whose only job is to fix proportions and
 tick density:
 
 ```ts
-// skills/twin-chart-web/assets/ChartWebSeed.tsx:615-629
+// skills/chart-web/assets/ChartWebSeed.tsx:615-629
 export const FRAME: WebFrame = { width: 820, height: 380, xAxisRowPx: 28, … yTickHint: 5, xTickHint: 6, … };
 ```
 
@@ -128,8 +128,8 @@ export const FRAME: WebFrame = { width: 820, height: 380, xAxisRowPx: 28, … yT
 one thing derived from it is the CSS box's aspect ratio:
 
 ```
-skills/twin-chart-web/assets/ChartWebSeed.tsx:356-357   totalWidth = yGutterPx + frame.width; totalHeight = frame.height + frame.xAxisRowPx;
-skills/twin-chart-web/assets/ChartWebSeed.tsx:428       aspectRatio: `${totalWidth} / ${totalHeight}`
+skills/chart-web/assets/ChartWebSeed.tsx:356-357   totalWidth = yGutterPx + frame.width; totalHeight = frame.height + frame.xAxisRowPx;
+skills/chart-web/assets/ChartWebSeed.tsx:428       aspectRatio: `${totalWidth} / ${totalHeight}`
 ```
 
 Everything else is CSS: `width: 100%` with no `max-width` on the frame
@@ -141,16 +141,16 @@ Everything else is CSS: `width: 100%` with no `max-width` on the frame
 The plate is baked **square, and only square**:
 
 ```
-skills/twin-map-beat/scripts/bake-plate.mjs:63    const size = Number(flag("--size", "620"));
-skills/twin-map-beat/scripts/bake-plate.mjs:158   await page.setViewport({ width: size, height: size, deviceScaleFactor: 2 });
-skills/twin-map-beat/scripts/bake-plate.mjs:216   clip: { x: 0, y: 0, width: size, height: size }
-skills/twin-map-beat/scripts/bake-plate.mjs:245   const frame = { width: size, height: size };
+skills/map-beat/scripts/bake-plate.mjs:63    const size = Number(flag("--size", "620"));
+skills/map-beat/scripts/bake-plate.mjs:158   await page.setViewport({ width: size, height: size, deviceScaleFactor: 2 });
+skills/map-beat/scripts/bake-plate.mjs:216   clip: { x: 0, y: 0, width: size, height: size }
+skills/map-beat/scripts/bake-plate.mjs:245   const frame = { width: size, height: size };
 ```
 
-Identically in `skills/twin-map-web/scripts/bake-plate.mjs:69, 134, 197, 216`, with
-`PLATE_SIZE = 1000` fixed at `skills/twin-map-web/scripts/render-web.mjs:72`. A single `--size N`
+Identically in `skills/map-web/scripts/bake-plate.mjs:69, 134, 197, 216`, with
+`PLATE_SIZE = 1000` fixed at `skills/map-web/scripts/render-web.mjs:72`. A single `--size N`
 flag cannot express a portrait or landscape camera. This is doctrine, not oversight —
-`skills/twin-doctrine/references/geo-discipline.md:204-215`, rule 12: *"the camera is chosen first,
+`skills/doctrine/references/geo-discipline.md:204-215`, rule 12: *"the camera is chosen first,
 from the geography and the study set, and the layout is built around the plate that comes back —
 text beside a square plate, not a plate stretched to fill a frame someone chose before looking."*
 
@@ -158,22 +158,22 @@ text beside a square plate, not a plate stretched to fill a frame someone chose 
 follows the geography; B2.1 says the frame is the journalist's export choice. Both cannot be true at
 once for a map. The resolution I would propose is *the plate's aspect follows the geography; the
 FRAME's aspect follows the export size; the plate is placed inside the frame by `fitBox`, never
-stretched* — which is exactly the primitive `twin-image-beat` already ships
-(`skills/twin-image-beat/scripts/render-still.mjs:254-267`, uniform `Math.min` scale with centring
+stretched* — which is exactly the primitive `image-beat` already ships
+(`skills/image-beat/scripts/render-still.mjs:254-267`, uniform `Math.min` scale with centring
 offsets). Not a decision I can make from a survey.
 
 ### 1e. Image, scrolly, Datawrapper — the three that already do it differently
 
-- **`twin-image-beat` derives its height.** `skills/twin-image-beat/assets/ImageBeatSeed.tsx:48-56`
+- **`image-beat` derives its height.** `skills/image-beat/assets/ImageBeatSeed.tsx:48-56`
   fixes only `FRAME_WIDTH = 900`; `:158` returns `{ width: FRAME_WIDTH, height, … }` where `height`
   is computed from the blocks. Its own comment at `:89` says the height is derived *"never a fixed
   constant the way the chart genre's `FRAME` is"*.
-- **`twin-scrolly` already models size as a RANGE.** `assets/ScrollySeed.tsx:150` declares
+- **`scrolly` already models size as a RANGE.** `assets/ScrollySeed.tsx:150` declares
   `ASPECT_ENVELOPE = { min: 0.42, max: 2.4 }` (tall phone .. 21:9 ultrawide) and `:164-181`
   `safeBand()` computes, with real arithmetic, the sub-rectangle of a cover-cropped design canvas
   (`FRAME = { width: 640, height: 900 }`, `:197`) guaranteed visible at **every** aspect in that
   envelope. This is the most advanced size thinking in the twin and nothing else reuses it.
-- **`twin-dw-beat` is already size-parameterised**, in one call site:
+- **`dw-beat` is already size-parameterised**, in one call site:
   `scripts/dw-client.mjs:58-60`, `exportChartPng(id, token, fetchFn, { width = 900, height, zoom = 2 })`.
   Datawrapper re-lays out server-side. This genre costs almost nothing.
 
@@ -183,9 +183,9 @@ whose height is **computed from its content**, including the number of wrapped c
 
 ### 1f. Where size is decided in the JOURNEY: nowhere
 
-`checkStoryboard` (`skills/twin-storyboard/scripts/storyboard.mjs:105-161`) validates a slot's
+`checkStoryboard` (`skills/storyboard/scripts/storyboard.mjs:105-161`) validates a slot's
 `id / proves / medium / genre / candidates / chosen`. `where.mjs`'s independent reading
-(`skills/splash-twin/scripts/where.mjs:116-141`) checks the same fields. **Neither knows the word
+(`skills/splash/scripts/where.mjs:116-141`) checks the same fields. **Neither knows the word
 "size."** `genre-catalog.mjs:21-25` carries three rows — `static`, `web`, `video` — each mapping to a
 producer and a delivery flag; no aspect anywhere. `grep -rn "portrait|landscape|square"` over
 `skills/` returns only prose in type sheets and the scrolly/image disciplines.
@@ -212,13 +212,13 @@ This is the crux. The honest taxonomy has **three** buckets, not two.
 All the **pure geometry**. Every beat separates it, and every one of these functions already takes
 `width`/`height`/`padding` as arguments rather than closing over `FRAME`:
 
-- `lineGeometry(data, {width, height, padding})` — `skills/twin-chart-beat/assets/ChartSeed.tsx:113-189`
+- `lineGeometry(data, {width, height, padding})` — `skills/chart-beat/assets/ChartSeed.tsx:113-189`
 - `pyramidGeometry(bands, {width, height, padding})` — `proof/static-swiss-age-pyramid/SwissAgePyramid.tsx:63-129`
 - `gridGeometry(…)` — `proof/static-small-multiples-solar-eu-six/SolarSmallMultiples.tsx:55+`
-- `chartGeometry(data, {width, height})` — `skills/twin-chart-web/assets/ChartWebSeed.tsx:208-224`
+- `chartGeometry(data, {width, height})` — `skills/chart-web/assets/ChartWebSeed.tsx:208-224`
 
 A d3 scale ranged onto a different box is correct by construction. This bucket is roughly the whole
-of what "geometry first, and pure" (`twin-chart-beat/SKILL.md:91-92`) bought, and it is the reason
+of what "geometry first, and pure" (`chart-beat/SKILL.md:91-92`) bought, and it is the reason
 the cost estimates below are as low as they are.
 
 ### Bucket B — must be RE-DERIVED, and already is (needs only the right inputs)
@@ -310,8 +310,8 @@ inherits that rule.
 ## 3. The web genre already fought this — what the fluid frame gives us toward B3.2
 
 `a1fc4d92` replaced two fixed rungs (900px / 360px, swapped by a media query) with one fluid frame.
-Read: `skills/twin-chart-web/references/web-discipline.md:82-188` and `:190-245`;
-`skills/twin-map-web/references/map-web-discipline.md:11-120`.
+Read: `skills/chart-web/references/web-discipline.md:82-188` and `:190-245`;
+`skills/map-web/references/map-web-discipline.md:11-120`.
 
 ### What it already gives
 
@@ -365,8 +365,8 @@ So:
 Two tests currently assert the genre's stylesheet contains **no `@media` at all**:
 
 ```
-skills/twin-chart-web/test/seed-fluid-frame.test.ts:119-128   it("should carry no @media breakpoint …")  expect(css).not.toContain("@media");
-skills/twin-chart-web/test/seed-fluid-frame.test.ts:322       expect(css).not.toContain("@media");   // inside the @supports test
+skills/chart-web/test/seed-fluid-frame.test.ts:119-128   it("should carry no @media breakpoint …")  expect(css).not.toContain("@media");
+skills/chart-web/test/seed-fluid-frame.test.ts:322       expect(css).not.toContain("@media");   // inside the @supports test
 ```
 
 Any mobile form that uses a width breakpoint turns those red. They are **not wrong** — they encode a
@@ -468,12 +468,12 @@ canonical channels, **failing closed on an unknown value** (`:122-139`).
    medium → genre → size. Both models are coherent; they differ in which is the free variable. The
    twin should take A5's order (the journalist's), and express the original's constraint as a
    **check** rather than a derivation: after medium + genre + size are chosen, refuse the pairs that
-   do not exist — `genreGap` already has exactly that shape (`twin-storyboard/scripts/genre-catalog.mjs:31-41`).
+   do not exist — `genreGap` already has exactly that shape (`storyboard/scripts/genre-catalog.mjs:31-41`).
 
 ### The architectural translation, stated against the branch's rule
 
 The original can hold one `channel-policy.ts` because `lib/core/` is importable by everything. The
-twin forbids that (`skills/splash-twin/test/no-cross-skill-imports.test.ts:1-12` — *"NO import may
+twin forbids that (`skills/splash/test/no-cross-skill-imports.test.ts:1-12` — *"NO import may
 leave it. Not 'may not re-enter another skill' — may not leave at all"*).
 
 **I do not think size needs a shared home, and here is the argument rather than the assumption.**
@@ -481,8 +481,8 @@ leave it. Not 'may not re-enter another skill' — may not leave at all"*).
 - The size table is **tiny and closed**: three or four rows of `{name, width, height}` plus a type
   scale. It is not an algorithm; it is a fact, of the same kind and size as
   `genre-catalog.mjs:21-25` (`GENRE_CATALOG`, three rows), which this project **already** duplicates
-  deliberately between `twin-storyboard` and `twin-deliver` and cross-checks by test
-  (`genre-catalog.mjs:8-20` states the reasoning; `skills/splash-twin/test/genre-shippability.test.ts`
+  deliberately between `storyboard` and `deliver` and cross-checks by test
+  (`genre-catalog.mjs:8-20` states the reasoning; `skills/splash/test/genre-shippability.test.ts`
   is the drift test, in both directions).
 - The precedent is therefore not merely available, it is the **exact same shape of fact** and the
   exact same guard.
@@ -527,7 +527,7 @@ Two deliberate departures from the original:
 
 1. **`typeScale` is per size AND per genre** — the pixel dimensions may be shared between static and
    video, the type scale may not (§2, C1). That is why the table is carried per skill rather than
-   being one identical set of numbers: `twin-chart-beat`'s square row and `twin-chart-video`'s square
+   being one identical set of numbers: `chart-beat`'s square row and `chart-video`'s square
    row will legitimately carry the same `width`/`height` and different `typeScale`. **The parity
    guard must therefore compare the dimensions across copies and NOT the scale** — a subtlety worth
    getting right before the first copy, or the guard is wrong from birth.
@@ -539,26 +539,26 @@ Two deliberate departures from the original:
 
 | skill | smallest change | guard | cost |
 |---|---|---|---|
-| **`twin-chart-beat`** | Seed: `FRAME` becomes `sizeFor(name)`; the component takes `size` as a prop and derives `PAD` / type tokens from `SIZES[name].typeScale`. `renderStill` **unchanged** — its throw already enforces the contract. Beat render scripts pass the chosen size instead of two literals. | existing `renderStill` throw (`render-still.mjs:202-205`); new walking `size-table-parity.test.ts` | **Medium-high.** ~15 static types × (edit + render + look) at 3 sizes. The edit is small; the looking is not. Bucket C3/C5 types (small multiples, calendar, treemap, waffle) need a real second layout, not a scale. |
-| **`twin-chart-video`** | Delete the `FRAME` constant; `const { fps, width, height } = useVideoConfig()`. `Root.tsx` registers three `<Composition>`s from `SIZES`, passing `typeScale` in `defaultProps`. | **New**: a test asserting no video composition declares its own `FRAME` (the constant is the drift risk, and there is no guard today). Plus `video-first-frame-not-empty.test.ts` already re-runs per artifact. | **Lowest of the three.** The genre is one destructuring from being size-driven, and Remotion registers extra compositions for free. Real cost is re-rendering 3× the mp4s and extracting frames — the handover's own lesson that a still does not prove a video (`HANDOVER.md:676-681`). |
-| **`twin-chart-web`** | **No size table.** Instead: `WebFrame` gains a narrow-form `aspect-ratio` and the per-size tick hints; the stylesheet gains ONE `@media` that switches custom properties. | Narrow `seed-fluid-frame.test.ts:119-128` and `:322` from "no `@media` at all" to "no `@media` may hide a chart layer". `verify-web.mjs` already drives seven viewports (`:62-70`). | **Low mechanically, medium editorially.** The fluid frame did the hard part. The work is C2/C6 decisions per type at phone width, verified by driving. **Plus the 4 un-retrofitted beats — do those first.** |
-| **`twin-map-beat`** | `bake-plate.mjs` accepts `--width`/`--height` instead of one `--size` (four lines: `:63, 158, 216, 245`). The still composes plate-into-frame via a `fitBox`-shaped uniform scale. | `render-preview.mjs --check`; a test that the plate's declared frame equals its own screenshot clip. | **Highest.** Requires ruling on geo rule 12 (`geo-discipline.md:204-215`) first, and re-baking every plate. This is also where B4.1 lands, so it should be surveyed as one piece with the map axis, not twice. |
-| **`twin-map-web`** | Same four-line bake change (`:69, 134, 197, 216`) plus `PLATE_SIZE` (`render-web.mjs:72`) becoming a pair. | `map-web-discipline.md:105-120`'s uniform-scale rule is already the invariant; `verify-interaction.mjs`. | **Medium.** But 3 of its beats are still two-rung — retrofit before resizing. |
-| **`twin-image-beat`** | Already derives its height (`ImageBeatSeed.tsx:48-56, 158`). Needs only `FRAME_WIDTH` → `SIZES[name].width`, and `BOX_HEIGHT` derived from the size rather than fixed at 420 (`:56`). `fitBox` (`render-still.mjs:254-267`) already does the uniform placement. | existing `render-still-parity.test.ts` walker covers `fitBox`. | **Lowest of all.** A photograph does not care about aspect; the box does, and the box is already computed. |
-| **`twin-scrolly`** | Arguably none. It already models size as an **envelope** (`ScrollySeed.tsx:150`) with derived safe areas (`:164-181`). If anything, the other genres should learn from it. | `seed-tracks.test.ts`, `render-scrolly.test.ts` | **Near zero for B2.1** (a scrolly has no export size). Its size problem is B5.1 (fit the window), a different axis. |
-| **`twin-dw-beat`** | One call site: `exportChartPng(…, { width, height })` (`dw-client.mjs:58-60`). | existing `test/` | **Near zero.** Datawrapper re-lays out server-side. |
+| **`chart-beat`** | Seed: `FRAME` becomes `sizeFor(name)`; the component takes `size` as a prop and derives `PAD` / type tokens from `SIZES[name].typeScale`. `renderStill` **unchanged** — its throw already enforces the contract. Beat render scripts pass the chosen size instead of two literals. | existing `renderStill` throw (`render-still.mjs:202-205`); new walking `size-table-parity.test.ts` | **Medium-high.** ~15 static types × (edit + render + look) at 3 sizes. The edit is small; the looking is not. Bucket C3/C5 types (small multiples, calendar, treemap, waffle) need a real second layout, not a scale. |
+| **`chart-video`** | Delete the `FRAME` constant; `const { fps, width, height } = useVideoConfig()`. `Root.tsx` registers three `<Composition>`s from `SIZES`, passing `typeScale` in `defaultProps`. | **New**: a test asserting no video composition declares its own `FRAME` (the constant is the drift risk, and there is no guard today). Plus `video-first-frame-not-empty.test.ts` already re-runs per artifact. | **Lowest of the three.** The genre is one destructuring from being size-driven, and Remotion registers extra compositions for free. Real cost is re-rendering 3× the mp4s and extracting frames — the handover's own lesson that a still does not prove a video (`HANDOVER.md:676-681`). |
+| **`chart-web`** | **No size table.** Instead: `WebFrame` gains a narrow-form `aspect-ratio` and the per-size tick hints; the stylesheet gains ONE `@media` that switches custom properties. | Narrow `seed-fluid-frame.test.ts:119-128` and `:322` from "no `@media` at all" to "no `@media` may hide a chart layer". `verify-web.mjs` already drives seven viewports (`:62-70`). | **Low mechanically, medium editorially.** The fluid frame did the hard part. The work is C2/C6 decisions per type at phone width, verified by driving. **Plus the 4 un-retrofitted beats — do those first.** |
+| **`map-beat`** | `bake-plate.mjs` accepts `--width`/`--height` instead of one `--size` (four lines: `:63, 158, 216, 245`). The still composes plate-into-frame via a `fitBox`-shaped uniform scale. | `render-preview.mjs --check`; a test that the plate's declared frame equals its own screenshot clip. | **Highest.** Requires ruling on geo rule 12 (`geo-discipline.md:204-215`) first, and re-baking every plate. This is also where B4.1 lands, so it should be surveyed as one piece with the map axis, not twice. |
+| **`map-web`** | Same four-line bake change (`:69, 134, 197, 216`) plus `PLATE_SIZE` (`render-web.mjs:72`) becoming a pair. | `map-web-discipline.md:105-120`'s uniform-scale rule is already the invariant; `verify-interaction.mjs`. | **Medium.** But 3 of its beats are still two-rung — retrofit before resizing. |
+| **`image-beat`** | Already derives its height (`ImageBeatSeed.tsx:48-56, 158`). Needs only `FRAME_WIDTH` → `SIZES[name].width`, and `BOX_HEIGHT` derived from the size rather than fixed at 420 (`:56`). `fitBox` (`render-still.mjs:254-267`) already does the uniform placement. | existing `render-still-parity.test.ts` walker covers `fitBox`. | **Lowest of all.** A photograph does not care about aspect; the box does, and the box is already computed. |
+| **`scrolly`** | Arguably none. It already models size as an **envelope** (`ScrollySeed.tsx:150`) with derived safe areas (`:164-181`). If anything, the other genres should learn from it. | `seed-tracks.test.ts`, `render-scrolly.test.ts` | **Near zero for B2.1** (a scrolly has no export size). Its size problem is B5.1 (fit the window), a different axis. |
+| **`dw-beat`** | One call site: `exportChartPng(…, { width, height })` (`dw-client.mjs:58-60`). | existing `test/` | **Near zero.** Datawrapper re-lays out server-side. |
 
 ### The journey change (A5's size half)
 
 Three edits, all small, all in the shape the codebase already uses:
 
 1. `STORYBOARD.md`'s slot gains `size:` beside `medium:` and `genre:`
-   (`twin-storyboard/scripts/storyboard.mjs:121-160`).
+   (`storyboard/scripts/storyboard.mjs:121-160`).
 2. `checkStoryboard` refuses a size the chosen genre cannot carry — mirroring the existing
    `if (slot.genre) { const gap = genreGap(slot.genre); … }` at `:147-150` exactly. The rule that
    makes A5's ordering work: **`genre: web` takes no size** (the original's
    `interactiveAspect: "responsive"` insight, §4); `static` and `video` require one.
-3. `where.mjs`'s `missingForGate2` (`skills/splash-twin/scripts/where.mjs:116-141`) learns the same
+3. `where.mjs`'s `missingForGate2` (`skills/splash/scripts/where.mjs:116-141`) learns the same
    rule independently — **and this is where A14 bites.** The two gates already diverged once on
    grounding (`twin/FEEDBACK-2026-08-10.md:38`). A new field is a new chance to diverge. Whoever adds
    `size` must add it to both readings **in the same commit** and extend the parity test in the same
@@ -569,7 +569,7 @@ Three edits, all small, all in the shape the codebase already uses:
 Do not add a `size` prop to the seeds and call it done. `ChartSeed.tsx:1-11` says *"REPLACE ME. Do
 not parameterise me"*, and `references/seed-anatomy.md` defends it. The seed should **demonstrate**
 reading a size from the table and deriving its frame from it — the same way its Quick start now
-demonstrates `readPalette` instead of naming a hex (`twin-chart-beat/SKILL.md:113-131`). The palette
+demonstrates `readPalette` instead of naming a hex (`chart-beat/SKILL.md:113-131`). The palette
 threading is the exact precedent to copy, including its failure mode: `readPalette` **throws naming
 every directory it searched** rather than defaulting (`render-still.mjs:98-123`). A beat with no size
 recorded should throw the same way, for the same reason — a chart silently produced at a size nobody
@@ -588,7 +588,7 @@ chose looks deliberate.
 | 5 | **Narrow the two `no @media` assertions, then the web mobile form (`--plot-aspect` + per-size tick hints)** | ~15 types × web | Medium | Delivers B3.2's remaining third. Do the assertion narrowing as its own commit with its reasoning, or it reads as a guard being deleted. |
 | 6 | **`size` in the storyboard slot + both gate readings + parity test, same commit** | the journey | Low | Cheap, and it is what makes size a *decision* rather than a constant. A14 risk if split across commits. |
 | 7 | **Maps: rectangular plates** | 6-8 map types × 3 genres | High | Requires ruling on geo rule 12 first and re-baking every plate. Overlaps B4.1 entirely — survey and spec as one piece with the map axis. |
-| 8 | **`twin-dw-beat`, `twin-image-beat`** | 2 skills | Near zero | Almost free; do them alongside whichever wave is running. |
+| 8 | **`dw-beat`, `image-beat`** | 2 skills | Near zero | Almost free; do them alongside whichever wave is running. |
 
 ---
 
@@ -613,7 +613,7 @@ chose looks deliberate.
   more.
 - **The geo rule 12 tension (§1d) is a ruling I flagged but could not make.** It is the one place
   where B2.1 contradicts existing written doctrine rather than merely extending it.
-- **`twin-scrolly`'s `safeBand` may be the better model for all of this**, and I have not thought it
+- **`scrolly`'s `safeBand` may be the better model for all of this**, and I have not thought it
   through far enough to say. It treats size as a range with a proven-visible sub-rectangle, which is
   a strictly stronger statement than "three sizes". If a spec author has time for one exploration,
   that is the one I would spend it on.

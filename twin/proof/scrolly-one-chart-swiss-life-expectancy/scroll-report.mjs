@@ -3,7 +3,7 @@
 // inside a Chrome session cannot be.
 //
 // A DUPLICATE of the sibling one-map beat's copy, not an import: a beat directory stays
-// copy-pasteable on its own (`twin-doctrine`, and `no-cross-skill-imports.test.ts` for the skills).
+// copy-pasteable on its own (`doctrine`, and `no-cross-skill-imports.test.ts` for the skills).
 // What differs between the two copies is only what a `paint` fingerprint is taken over — a chart's
 // polylines and ticks here, a camera transform and its labels there.
 //

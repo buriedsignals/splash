@@ -9,7 +9,7 @@ import { Composition } from "remotion";
 import {
   EXPORT_SIZE_NAMES,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 import { LollipopVideo, type LollipopVideoProps } from "./LollipopVideo";
 import { LOLLIPOP_TIMING } from "./timing-contract";
 

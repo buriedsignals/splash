@@ -18,11 +18,11 @@ because everything below has to be read against it.
 
 ## 0. The five things this establishes
 
-1. **Codex discovers all 15 twin skills**, namespaced `splash-twin:<id>`, and the namespace comes
+1. **Codex discovers all 15 twin skills**, namespaced `splash:<id>`, and the namespace comes
    from the twin's own `.claude-plugin/plugin.json`. Measured without spending a model turn, with an
    instrument the earlier survey did not know about (§1.1).
 2. **Gemini discovers all 15** through the flat door — and then, given a journalist's prompt that
-   named `splash-twin` explicitly, **activated the OTHER product's skill** (`splash`, from
+   named `splash` explicitly, **activated the OTHER product's skill** (`splash`, from
    `splash-merge`) and never touched a twin skill (§2.2). Two products in one flat directory, no
    namespace on this host.
 3. **On Codex, Gate 1 and Gate 2 closed into `STORYBOARD.md`, correctly and completely** — confirmed
@@ -37,7 +37,7 @@ because everything below has to be read against it.
 5. **Preflight was called wrongly, and reported a capability closed that is open.** The model ran
    `runPreflight({root, env: process.env})` and told the journalist the map capability was shut for
    want of a key that is present and answering 200. `installer/doctor.mjs:148-157` already carries a
-   comment predicting exactly this mistake; `splash-twin/SKILL.md` documents the signature without
+   comment predicting exactly this mistake; `splash/SKILL.md` documents the signature without
    the rule (§3.2).
 
 ---
@@ -55,19 +55,19 @@ in it. Run from `~/SplashTest`:
 
 | Group | Entries | Chars in the skills block |
 |---|---|---|
-| **twin, as `splash-twin:<id>`** | **15 / 15** | 6 968 (avg 465) |
+| **twin, as `splash:<id>`** | **15 / 15** | 6 968 (avg 465) |
 | original, as `splash:<id>` | 17 | 9 777 |
 | Codex's own `.system` skills | 5 | 2 345 |
 | **whole `<skills_instructions>` block** | **37** | **19 635** |
 
 Every twin entry resolves through the flat `~/.agents/skills` link to its real path — e.g.
-`- splash-twin:twin-chart-beat: … (file: /Users/rmdms/SplashTest/skills/twin-chart-beat/SKILL.md)`.
+`- splash:chart-beat: … (file: /Users/rmdms/SplashTest/skills/chart-beat/SKILL.md)`.
 **No truncation occurred**: Codex applies a *"2% skills context budget"* and emits *"Skill
 descriptions were shortened to fit"* when it bites; that string is absent. 37 skills fit.
 
 **The namespace is the plugin manifest doing work on a third host.** `strings` over the binary shows
 `.claude-plugin` 15 times and `.codex-plugin` 30 times, and the two namespaces observed
-(`splash-twin:` and `splash:`) are exactly the `name` fields of `~/SplashTest/.claude-plugin/plugin.json`
+(`splash:` and `splash:`) are exactly the `name` fields of `~/SplashTest/.claude-plugin/plugin.json`
 and `splash-merge/.claude-plugin/plugin.json`. So the manifest added on 2026-08-09 for the Claude
 door also gives Codex a namespace — and that namespace is the only thing keeping the two products
 apart on this host. Gemini has no equivalent (§2.2).
@@ -105,11 +105,11 @@ It did, every time.
 ### 1.3 The run, turn by turn
 
 Story: a short French article on Swiss night-train passengers plus a 7-row CSV, handed over by path.
-Prompt in a journalist's words, naming `splash-twin` and the root.
+Prompt in a journalist's words, naming `splash` and the root.
 
 | # | Journalist said | What Codex did | Where it stopped | `whereIs` after |
 |---|---|---|---|---|
-| 1 | "here's an article and some figures, make me a visual, ask me what you need" | read `splash-twin/SKILL.md`; ran preflight; `new-story.mjs`; `twin-intake` froze `article.md`, `data.csv`, `profile.json` | **asked for the single takeaway and stopped** | `framing`, missing `STORYBOARD.md` |
+| 1 | "here's an article and some figures, make me a visual, ask me what you need" | read `splash/SKILL.md`; ran preflight; `new-story.mjs`; `intake` froze `article.md`, `data.csv`, `profile.json` | **asked for the single takeaway and stopped** | `framing`, missing `STORYBOARD.md` |
 | 2 | confirmed the takeaway + the six hand fields | ran `resolveGrounding`, `proposeMediums`, `proposeGenres`, `proposePalette` | **asked to confirm the medium and stopped.** Said *"J'ai verrouillé votre message et les six éléments éditoriaux"* — **but wrote no file** (§3.4) | `framing`, missing `STORYBOARD.md` |
 | 3 | "yes, a chart" + genre/size/colours | wrote `STORYBOARD.md`, `PALETTE.md`, `BRIEF.md`, the component, `render-still.mjs`; rendered PNG+SVG | **surfaced the PNG and said *"Le rendu est en attente de votre approbation avant livraison"*** | `production`, "rendered but not approved" |
 | 4 | "the title is cut off; the thousands separators disagree" | split the title to 3 lines, unified to `206 000 / 48 000 / 268 000`, re-rendered | showed the new PNG | unchanged |
@@ -118,11 +118,11 @@ Prompt in a journalist's words, naming `splash-twin` and the root.
 Cost: 7 / 8 / 17 / 7 / 7 shell calls and 46k / 56k / 105k / 59k / 50k tokens per turn.
 
 Twin `SKILL.md` files opened across the run — **nested invocation is real on Codex, by its own
-file-locator mechanism**: `splash-twin` ×9, `twin-storyboard` ×7, `twin-palette` ×7, `twin-doctrine`
-×6, `twin-chart-beat` ×6, `twin-intake` ×4, and one read each of the eight it did not need.
+file-locator mechanism**: `splash` ×9, `storyboard` ×7, `palette` ×7, `doctrine`
+×6, `chart-beat` ×6, `intake` ×4, and one read each of the eight it did not need.
 
 The run produced a genuinely competent artifact. `STORYBOARD.md` carries a real `reference` drawn
-from `twin-doctrine`'s set (an ABC piece on a long noisy series read against an explicit historical
+from `doctrine`'s set (an ABC piece on a long noisy series read against an explicit historical
 anchor) and a `limits` field that survived into the rendered subtitle. `BRIEF.md` reasons about why
 columns beat a line for seven annual readings. None of that is host behaviour — it is the twin's
 prose working — but it is what the host executed.
@@ -154,7 +154,7 @@ under `~/.agents/skills`: the twin's 15 and the original's 17, **side by side wi
 (Contrast Codex, which separates them by plugin name.)
 
 The run then produced the finding this whole exercise exists to catch. The journalist's first
-sentence was *"J'ai splash-twin installé, mon dossier Splash est /Users/rmdms/SplashTest."* Gemini's
+sentence was *"J'ai splash installé, mon dossier Splash est /Users/rmdms/SplashTest."* Gemini's
 first action:
 
 ```
@@ -182,7 +182,7 @@ Two things follow, and they point opposite ways:
   context, and fired again *from within* an activated skill (`splash` → `splash-input`). That was
   untested before. It just happened to prove it on the other codebase.
 - **The flat door has no namespace, and the twin's entry point loses the name contest.** A journalist
-  asking for a visual, with `splash` and `splash-twin` both installed, got `splash`. Naming the twin
+  asking for a visual, with `splash` and `splash` both installed, got `splash`. Naming the twin
   in the prompt did not prevent it. On a machine with only the twin installed this cannot happen; on
   this machine — and on any machine where a newsroom tries both — it did, on the first attempt.
 
@@ -257,12 +257,12 @@ nothing was re-asked — and was never exercised on Gemini at all.
 Codex ran, unprompted:
 
 ```
-node -e 'import("./skills/splash-twin/scripts/preflight.mjs").then(async ({runPreflight,assertPreflightReady})=>{
+node -e 'import("./skills/splash/scripts/preflight.mjs").then(async ({runPreflight,assertPreflightReady})=>{
   const r = await runPreflight({root: process.cwd(), env: process.env}); … })'
 ```
 
 and reported to the journalist: *"Les cartes, Datawrapper et l'embed hébergé sont fermés faute de
-clés."* The map capability is **open** — `splash-twin-doctor` on the same root reports
+clés."* The map capability is **open** — `splash-doctor` on the same root reports
 `capability: map — MapTiler answered 200`, because `MAPTILER_KEY` is in `~/SplashTest/.env` at 0600.
 
 `runPreflight` does not read the root's `.env`; the caller must merge it. The doctor does
@@ -273,7 +273,7 @@ failure verbatim:
 > install… A journalist running this from inside any other checkout would be told their capabilities
 > were open on somebody else's key.
 
-**`splash-twin/SKILL.md` documents the signature `runPreflight({root, env, fetchFn})` and nowhere
+**`splash/SKILL.md` documents the signature `runPreflight({root, env, fetchFn})` and nowhere
 states what `env` must be.** The lesson lives in a comment in a file the orchestrating model never
 reads. This is host-independent — it will reproduce wherever a model calls preflight from prose — and
 it is the closest thing in this session to a defect the twin should fix.
@@ -292,7 +292,7 @@ It recovered by using `bun`. Nothing in the prose says "these scripts are Bun-on
 
 **Measured: `view_image` appears zero times in the model-visible prompt of a headless `codex exec`
 run.** The terminal rung of the render ladder — *"Now open pngPath and look at it"*
-(`twin-chart-beat/SKILL.md:148`), *"OPEN THE SCREENSHOTS AND LOOK"* (`twin-chart-web/SKILL.md:237`),
+(`chart-beat/SKILL.md:148`), *"OPEN THE SCREENSHOTS AND LOOK"* (`chart-web/SKILL.md:237`),
 seven skills in total — has no instrument on this host in this mode. What Codex did instead:
 
 - ran `inspectSvg`, the mechanical check — which reported real failures it then had to address:
@@ -346,7 +346,7 @@ in the installed root**, measured here:
   an installed root, not on a developer's checkout.
 - **#2 "preflight goes green where production fails."** Closed structurally — but replaced by a new
   shape of the same defect, this time in the *caller*, not the check (§3.2).
-- **#3 "no root resolution anywhere."** `skills/splash-twin/scripts/splash-root.mjs` now defines a
+- **#3 "no root resolution anywhere."** `skills/splash/scripts/splash-root.mjs` now defines a
   Splash root as the nearest ancestor declaring `#shared/*`, duplicated into every skill that needs
   it, and throws rather than guessing.
 

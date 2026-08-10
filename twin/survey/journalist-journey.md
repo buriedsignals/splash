@@ -4,7 +4,7 @@ Read-only survey. Nothing in this document proposes a change beyond naming the s
 per item; the specs come after.
 
 **Evidence base.** The twin's own tree at `experiment/doctrine-twin`, and the run transcript
-`/Users/rmdms/.claude/projects/-Users-rmdms-Sites-Professional-splash-twin-run/5564ead6-4924-4476-906c-1358c1f1925b.jsonl`
+`/Users/rmdms/.claude/projects/-Users-rmdms-Sites-Professional-splash-run/5564ead6-4924-4476-906c-1358c1f1925b.jsonl`
 (425 JSONL lines; the assistant-facing turns extracted and read in order). Transcript quotes below
 are cited as `[N]` where N is the JSONL line number of the block quoted, so any of them can be
 pulled back out of the file.
@@ -29,7 +29,7 @@ Seventeen numbered items collapse into **eight real ones**:
 | **Ⓒ The two gates** | A7, A14 | One bug, stated twice. A7 is the observation, A14 is the mechanism and the false green in the parity test. |
 | **Ⓓ Preflight is a report, not an offer** | A1, A2 | Both are "preflight states a fact and stops". Keys: states, never offers to fill. Newsroom identity: does not even state. Same seam, same phase, same one-question remedy shape. |
 | **Ⓔ The reference loop has neither material nor a gate** | A4, A15 | A15 is the missing row; A4 is that the loop has no question and no destination. Filling the hole without adding the question leaves the loop still not a loop. |
-| **Ⓕ Delivery is not a hand-over** | A9, A11 | The forms are wrong *and* nothing is said about the files that leave. Both live in `twin-deliver`, both are about what the journalist actually receives. |
+| **Ⓕ Delivery is not a hand-over** | A9, A11 | The forms are wrong *and* nothing is said about the files that leave. Both live in `deliver`, both are about what the journalist actually receives. |
 | **Ⓖ The visual is never shown** | A10 | Stands alone. |
 | **Ⓗ Audience** | A12 | Stands alone. |
 
@@ -37,8 +37,8 @@ A16 (dark-ground reserve wording) and A17 (accepted) are outside this axis.
 
 ### The phase order the journey should have
 
-Current, as documented — `skills/splash-twin/SKILL.md:200-211` and
-`skills/twin-storyboard/references/exchange.md:8-98`:
+Current, as documented — `skills/splash/SKILL.md:200-211` and
+`skills/storyboard/references/exchange.md:8-98`:
 
 ```
 preflight → intake → ① restitution → ② takeaway (G1)
@@ -91,9 +91,9 @@ Two things about that order are load-bearing and not obvious:
 
 ### A1 — missing keys are reported, never offered
 
-**Where it lives.** `skills/splash-twin/scripts/preflight.mjs:142-192` (`runPreflight`), whose
+**Where it lives.** `skills/splash/scripts/preflight.mjs:142-192` (`runPreflight`), whose
 `capabilities` rows are built by `checkCapability` (`preflight.mjs:136-140`) out of the probe
-results in `skills/splash-twin/scripts/keys.mjs:45-60`. The refusal strings are written there:
+results in `skills/splash/scripts/keys.mjs:45-60`. The refusal strings are written there:
 
 ```js
 // keys.mjs:45-47
@@ -122,8 +122,8 @@ option preview at `[2971]` ("Rappel environnement : embed hébergé = fermé
 > restreindrait la livraison. C'est faux ici — `embed` et `cms-insertion` sont câblés au genre
 > **web** uniquement. »
 
-Second, `DATAWRAPPER_TOKEN` closed the `twin-dw-beat` path silently for the whole story (`[1520]`:
-« Datawrapper est fermé cette session (pas de token) — la voie déléguée `twin-dw-beat` n'est pas
+Second, `DATAWRAPPER_TOKEN` closed the `dw-beat` path silently for the whole story (`[1520]`:
+« Datawrapper est fermé cette session (pas de token) — la voie déléguée `dw-beat` n'est pas
 offerte »), with no moment at which the journalist could have opened it.
 
 **What offering looks like without becoming an install wizard.** The reason strings already name
@@ -142,14 +142,14 @@ branches, never installs, and never blocks: `ready` still depends only on `depen
 
 ### A2 — preflight says nothing about the newsroom theme, credits or config
 
-**Where it lives.** `checkNewsroom` (`preflight.mjs:94-128`) and `skills/splash-twin/scripts/newsroom.mjs`.
+**Where it lives.** `checkNewsroom` (`preflight.mjs:94-128`) and `skills/splash/scripts/newsroom.mjs`.
 The four outcomes are `pass` / `missing` / `declined` / `fail`, and each returns a status plus a
 one-line `detail` — `"NEWSROOM.md is complete"` (`preflight.mjs:126`). **The parsed profile is
 discarded.** `runPreflight` puts only the status into `checks` (`preflight.mjs:145`).
 
 **What it does now.** When the profile passes, the journey says nothing at all — `SKILL.md:182`
 ("Preflight runs once, **silently when `ready`**"). In the run the profile passed at `[31]`, and
-the journalist heard about it for the first time nine phases later, from `twin-palette` at `[1994]`.
+the journalist heard about it for the first time nine phases later, from `palette` at `[1994]`.
 Two consequences, both visible in the transcript:
 
 1. The run root's `NEWSROOM.md` (`[27]`) itself records that **two of its six values are measured
@@ -163,15 +163,15 @@ Two consequences, both visible in the transcript:
    > « `NEWSROOM.md` ne porte pas de convention de crédit écrite, alors je propose à partir de la
    > source réelle plutôt que de dicter. »
 
-The `missing` branch — invoke `twin-newsroom-charter`, or record a decline — is documented
+The `missing` branch — invoke `newsroom-charter`, or record a decline — is documented
 (`SKILL.md:145-150, 193-196`) and real. What does not exist is a branch for **"a profile exists —
 here is what it says"**, and no branch at all mentions credits.
 
 **Smallest honest change.** `checkNewsroom` returns the parsed profile beside the status; the
 orchestrator's preflight step states it once — the six values, and which were measured versus
 assumed — and, on `missing`, offers the three branches by name: *derive it with
-`twin-newsroom-charter`* · *supply your own* (hand over
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md`, which already documents every field)
+`newsroom-charter`* · *supply your own* (hand over
+`skills/splash/assets/root-template/NEWSROOM.example.md`, which already documents every field)
 · *decline, recorded*. Credits are then a separate, honest sentence: `NEWSROOM.md` carries no credit
 convention, so credit is asked per story (it is already HAND field 5) — or a seventh field is added.
 Either is fine; silence is what is not.
@@ -182,7 +182,7 @@ Either is fine; silence is what is not.
 
 ### A3 — the five hand questions presume the KIND of visual
 
-**Where they live.** `skills/twin-storyboard/references/exchange.md:21-36`, the table of five
+**Where they live.** `skills/storyboard/references/exchange.md:21-36`, the table of five
 questions and their destinations. Reading the destination column:
 
 | # | exchange.md | Destination | Presumes? |
@@ -225,9 +225,9 @@ Subject is what the survey (step 5) and the palette (step 10) are *of*, so it mu
 
 ### A5 — the storyboard's three candidates are thin
 
-**Where it lives.** `exchange.md:86-93` (movement ⑤) and `skills/twin-storyboard/scripts/storyboard.mjs:105-161`
+**Where it lives.** `exchange.md:86-93` (movement ⑤) and `skills/storyboard/scripts/storyboard.mjs:105-161`
 (`checkStoryboard`). A slot is `{id, proves, medium, genre, candidates, chosen}`
-(`twin-storyboard/SKILL.md:78`). **Medium and genre are slot properties the proposal arrives
+(`storyboard/SKILL.md:78`). **Medium and genre are slot properties the proposal arrives
 carrying**; the only thing Gate 2 requires the journalist to choose is `chosen` from `candidates`
 (`storyboard.mjs:121-139`). There is no gate on medium and none on genre.
 
@@ -240,40 +240,40 @@ were never asked about. Three candidates, one way of seeing.
 **Four separate gaps, each with its evidence.**
 
 1. **No survey exists in the journey, although the material does.** There are **32 chart type
-   sheets** (`skills/twin-chart-beat/references/types/`, 33 files incl. `README.md`) and **8 map
-   type sheets** (`skills/twin-map-beat/references/types/`), each carrying what the type is for and
-   when not to reach for it (`types/README.md:1-7`). **`grep -rn "references/types" skills/twin-storyboard/`
+   sheets** (`skills/chart-beat/references/types/`, 33 files incl. `README.md`) and **8 map
+   type sheets** (`skills/map-beat/references/types/`), each carrying what the type is for and
+   when not to reach for it (`types/README.md:1-7`). **`grep -rn "references/types" skills/storyboard/`
    returns nothing** — the storyboard exchange has never heard of them.
 2. **A reachability map exists and is equally invisible.** `twin/MATRIX.md` is generated from the
    tree by `twin/scripts/matrix.mjs`, counts an artifact only when it exists on disk
    (`matrix.mjs:13-17`), and reports **17 chart types × 3 genres, all proven**, and **6 map types,
    5 of 6 proven in all three**. **`grep -rn "MATRIX" skills/` returns nothing.**
 3. **Genre reachability is checked, but only for charts.** `genreGap`
-   (`skills/twin-storyboard/scripts/genre-catalog.mjs:31-42`) reads `GENRE_CATALOG`
+   (`skills/storyboard/scripts/genre-catalog.mjs:31-42`) reads `GENRE_CATALOG`
    (`genre-catalog.mjs:21-25`):
 
    ```js
-   static: { producerSkill: "twin-chart-beat", delivered: true },
-   web:    { producerSkill: "twin-chart-web",  delivered: true },
-   video:  { producerSkill: "twin-chart-video", delivered: true },
+   static: { producerSkill: "chart-beat", delivered: true },
+   web:    { producerSkill: "chart-web",  delivered: true },
+   video:  { producerSkill: "chart-video", delivered: true },
    ```
 
    Three genres, three **chart** producers. A `medium: map` + `genre: web` slot passes `genreGap`
-   by naming `twin-chart-web` — the wrong producer. `twin-map-beat`, `twin-map-web`,
-   `twin-image-beat` and `twin-scrolly` are not reachable through this table at all. The guard that
-   keeps it honest, `skills/splash-twin/test/genre-shippability.test.ts:26-44`, checks that each
+   by naming `chart-web` — the wrong producer. `map-beat`, `map-web`,
+   `image-beat` and `scrolly` are not reachable through this table at all. The guard that
+   keeps it honest, `skills/splash/test/genre-shippability.test.ts:26-44`, checks that each
    `producerSkill` **exists on disk** and that `delivered: true` matches `FORMS_BY_GENRE` — it
    cannot see that the producer named is the wrong one for the medium, because medium is not in the
    table.
 4. **Scrolly is structurally unreachable, and image doubly so.** `genreGap("scrolly")` returns
    *"genre \"scrolly\" is not one this toolchain can produce or deliver yet"* (`genre-catalog.mjs:35-37`),
-   and `offerForms({genre: "scrolly"})` **throws** (`skills/twin-deliver/scripts/deliver.mjs:88-93`).
+   and `offerForms({genre: "scrolly"})` **throws** (`skills/deliver/scripts/deliver.mjs:88-93`).
    Yet `MATRIX.md:46` records a real scrolly beat (`mapmore-scrolly-danube`, flow/route × scrolly),
-   and `twin-scrolly` ships as a complete skill. For image: `capabilityGap(capabilities, "image")`
+   and `scrolly` ships as a complete skill. For image: `capabilityGap(capabilities, "image")`
    returns `null` — `capabilities` has only `map`/`datawrapper`/`hostedEmbed`
    (`preflight.mjs:147-178`), so an unknown medium is silently waved through
-   (`skills/twin-storyboard/scripts/capability-gap.mjs:15-22`), and then there is no genre it can
-   name. `twin-image-beat` appears nowhere in `MATRIX.md`.
+   (`skills/storyboard/scripts/capability-gap.mjs:15-22`), and then there is no genre it can
+   name. `image-beat` appears nowhere in `MATRIX.md`.
 
 **Smallest honest change.** Three moves, in order of size:
 
@@ -288,12 +288,12 @@ were never asked about. Three candidates, one way of seeing.
   and `genre-shippability.test.ts` walks the pairs. `scrolly` and `image` then appear as honest
   rows — some `delivered: false`, which is exactly what the journalist should be told at proposal
   time rather than at the last phase. This is the same defect `genre-catalog.mjs:12-16` was written
-  to close ("a journalist asked for a visual 'for the web' … `twin-deliver` threw at the very last
+  to close ("a journalist asked for a visual 'for the web' … `deliver` threw at the very last
   phase"), one dimension short.
 
 ### A8 — palette proposal order
 
-**Where it lives.** `skills/twin-palette/scripts/palette.mjs:167-225` (`proposePalette`).
+**Where it lives.** `skills/palette/scripts/palette.mjs:167-225` (`proposePalette`).
 
 ```js
 // palette.mjs:176 — house pushed FIRST
@@ -333,9 +333,9 @@ to one option: *"no convention applies to this subject, so the newsroom's colour
 
 ### A13 — `checkNumericRanges` has no notion of an aggregate
 
-**Where it lives.** `skills/twin-storyboard/scripts/ground-claim.mjs:260-294`, reached from
+**Where it lives.** `skills/storyboard/scripts/ground-claim.mjs:260-294`, reached from
 `groundTakeaway` (`ground-claim.mjs:296-308`, the push at `:305`), reached from `checkStoryboard`
-(`skills/twin-storyboard/scripts/storyboard.mjs:110-116`).
+(`skills/storyboard/scripts/storyboard.mjs:110-116`).
 
 **Exactly why it happens.** Two lines:
 
@@ -362,10 +362,10 @@ lands in that `else`. This is systematic, exactly as the owner says.
 
 **Two aggravating facts that make it worse than it looks.**
 
-1. `twin-intake`'s `profileTable` (`skills/twin-intake/scripts/profile.mjs:20-38`) emits
+1. `intake`'s `profileTable` (`skills/intake/scripts/profile.mjs:20-38`) emits
    `{rowCount, columns:[{name,type,missing,distinct,min,max}]}` — **no `rows`**. `groundTakeaway`'s
    own header (`ground-claim.mjs:19-22`) says row-level data is optional and that without it every
-   comparison claim returns `unverifiable`. So on a real twin-intake profile, `checkNumericRanges`
+   comparison claim returns `unverifiable`. So on a real intake profile, `checkNumericRanges`
    is the **only** check that ever fires — and it is the broken one.
 2. `NUMBER_RE = /-?\d+(?:\.\d+)?/g` (`ground-claim.mjs:34`) matches every bare integer in the
    sentence, so any year, count, percentage or ordinal in a takeaway is tested for membership in a
@@ -442,8 +442,8 @@ A5's reachability annotation, same step.
 
 | Gate | File | Skill |
 |---|---|---|
-| `whereIs` / `missingForGate2` | `skills/splash-twin/scripts/where.mjs:116-143, 154-178` | **`splash-twin`** |
-| `checkStoryboard` / `groundTakeaway` | `skills/twin-storyboard/scripts/storyboard.mjs:105-161`, `ground-claim.mjs:296` | **`twin-storyboard`** |
+| `whereIs` / `missingForGate2` | `skills/splash/scripts/where.mjs:116-143, 154-178` | **`splash`** |
+| `checkStoryboard` / `groundTakeaway` | `skills/storyboard/scripts/storyboard.mjs:105-161`, `ground-claim.mjs:296` | **`storyboard`** |
 
 **Different skills.** So the shared-module fix is not available: `no-cross-skill-imports.test.ts`
 forbids it, and `where.mjs:41-48` documents the choice in its own comment ("reimplemented here, not
@@ -470,11 +470,11 @@ and the operator named the class at `[1695]`:
 
 > « `where.mjs` ne lance jamais `groundTakeaway`. L'orchestrateur dispatcherait donc la production
 > contre un storyboard que le gardien du storyboard refuse. C'est exactement la classe de panne que
-> la section « the one gotcha » de `splash-twin/SKILL.md` dit prévenir — le test de parité couvre
+> la section « the one gotcha » de `splash/SKILL.md` dit prévenir — le test de parité couvre
 > `HAND`, les slots et les candidats, mais **pas** le grounding. »
 
 **Why the parity test gave a false green — the line that does it.**
-`skills/splash-twin/test/where.test.ts:325`:
+`skills/splash/test/where.test.ts:325`:
 
 ```ts
 const checkStoryboardClosed = checkStoryboard(meta).length === 0;
@@ -504,7 +504,7 @@ two independent implementations of the same rule agree."*
    `where.mjs:120-122` already does six times for HAND, and `storyboard.mjs:108` mirrors. The
    divergence class is then closed **by construction**: neither gate runs a check the other cannot.
    This is also the twin's own stated rule — "a gate closes into a file"
-   (`splash-twin/SKILL.md:26-29`).
+   (`splash/SKILL.md:26-29`).
 2. **Make the guard walk.** Call `checkStoryboard(meta, profile, capabilities)` with all three
    arguments, and generate the fixtures from **one complete template mutated field by field**,
    driving the field list off each side's own required-field constant, rather than from nine
@@ -518,7 +518,7 @@ two independent implementations of the same rule agree."*
 ### A4 — no useful references, and the journalist is never asked
 
 **Where it lives.** `exchange.md:72-84` (movement ④) and
-`skills/twin-doctrine/references/reference-set.md` (the seven-row table at `:84-92`).
+`skills/doctrine/references/reference-set.md` (the seven-row table at `:84-92`).
 
 **Three separate failures, all visible in the run.**
 
@@ -526,7 +526,7 @@ two independent implementations of the same rule agree."*
    examined treatments of a **named argument structure**"* — but the table's columns are
    `Reference | Moment | Transferable lesson` (`reference-set.md:84-85`). **There is no argument-structure
    column.** A conversation cannot look a structure up; it can only read seven long prose cells and
-   judge. `skills/twin-doctrine/scripts/check-reference-set.mjs` validates that each row has a link,
+   judge. `skills/doctrine/scripts/check-reference-set.mjs` validates that each row has a link,
    a locator and a lesson — it has no concept of structure either.
 2. **When the set misses, live search returns nothing usable.** Three searches at `[1440]`,
    `[1443]`, `[1482]` returned a BERT notebook, NGO PDFs and academic supply-chain papers
@@ -583,14 +583,14 @@ such.
 
 ## Ⓖ — A10: show the finished visual before discussing delivery
 
-**Where the gap lives.** `skills/splash-twin/SKILL.md:205` — the phase table's `production` row:
+**Where the gap lives.** `skills/splash/SKILL.md:205` — the phase table's `production` row:
 
 > `| production | Beat by beat: BRIEF.md written first, … checklist applied to the pixels. | G3, per beat | beats/<n>-<slug>/renders/* |`
 
 The gate closes into **the existence of a file**. Nobody is asked. `where.mjs:145-152` confirms it
 mechanically: `hasAnyRender` returns true when any `renders/` directory is non-empty, and
 `whereIs` then returns `delivery` (`where.mjs:175`). **Approval is not a condition of leaving
-production.** `twin-chart-beat/SKILL.md:137` — `// Now open pngPath and look at it.` — addresses
+production.** `chart-beat/SKILL.md:137` — `// Now open pngPath and look at it.` — addresses
 the *model*, not the journalist.
 
 **What the run did.** The renders were read into the model's context at `[2774]` and `[2891]`
@@ -623,7 +623,7 @@ a file — the same "a gate closes into a file" rule the other three gates alrea
 
 ### A9 — the delivery forms need re-contextualising
 
-**Where they live.** `skills/twin-deliver/scripts/deliver.mjs:26-76`, `FORMS_BY_GENRE`.
+**Where they live.** `skills/deliver/scripts/deliver.mjs:26-76`, `FORMS_BY_GENRE`.
 
 | genre | forms today | line | owner asks for |
 |---|---|---|---|
@@ -646,7 +646,7 @@ the earlier warning about a closed Cloudflare capability was irrelevant to a sta
 **Smallest honest change.** Add `cms-insertion` to the `static` and `video` tables with an honest
 `gives` (it is still UNPROVEN against a live CMS — `deliver.mjs`'s own `gives` string at `:59-62`
 already says so, and that wording should be reused verbatim). `singleOwnedFile` — the one-file
-guard `cms-insertion` shares with `embed` (`twin-deliver/SKILL.md`, Tuning knobs) — needs a decision
+guard `cms-insertion` shares with `embed` (`deliver/SKILL.md`, Tuning knobs) — needs a decision
 for `static`, where `renders/` legitimately holds **two** files (`still.png` + `still.svg`, seen at
 `[3269-3271]`) and would currently be refused as ambiguous. Then decide whether `source-bundle`
 remains a journalist-facing option or moves behind an explicit ask.
@@ -682,7 +682,7 @@ gives A12 its mechanism (below).
 
 ## Ⓗ — A12: the end-of-run report is developer feedback
 
-**Where the gap lives.** Nothing in the twin says who a message is for. `splash-twin/SKILL.md:243`
+**Where the gap lives.** Nothing in the twin says who a message is for. `splash/SKILL.md:243`
 says *"A missing prerequisite is **reported** and never designed around"* — reported to whom is
 unspecified, and the same sentence is repeated verbatim in `preflight.mjs:1`.
 
@@ -696,7 +696,7 @@ unspecified, and the same sentence is repeated verbatim in `preflight.mjs:1`.
 
 Those three paragraphs became feedback items A13, A14 and A15 — they are valuable, and they are for
 the maintainer. Earlier turns leak the same way: `[1620]` narrates reading `ground-claim.mjs`;
-`[1673-1695]` presents a two-row table of gate verdicts and cites `splash-twin/SKILL.md`'s gotcha
+`[1673-1695]` presents a two-row table of gate verdicts and cites `splash/SKILL.md`'s gotcha
 section; `[2840]`-`[2886]` walks the journalist through why `inspectSvg` measures painted pixels
 rather than markup; `[2908]` explains `#shared/*` resolution. And at `[1699]`, the journalist is
 asked to arbitrate an internal defect: « Gate 2 est contestée par un faux positif du contrôle de
@@ -705,8 +705,8 @@ filename.
 
 **Smallest honest change — and it can be mechanical.** A prose rule ("keep dev talk out") is the
 softest surface in this project by its own account. The twin already has the right pattern twice
-over: `twin-palette/scripts/format-proposal.mjs` and
-`twin-newsroom-charter/scripts/format-proposal.mjs` render the journalist-facing question from
+over: `palette/scripts/format-proposal.mjs` and
+`newsroom-charter/scripts/format-proposal.mjs` render the journalist-facing question from
 structured input, so nothing the function was not given can appear in it. Apply the same shape to
 the close: `export/HANDOVER.md` (A11) is generated by a `formatHandover(...)` that is **handed only
 journalist-facing data** — the delivered paths, the placement, the alt, the credit, the caveat. A

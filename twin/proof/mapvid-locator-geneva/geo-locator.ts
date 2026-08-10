@@ -1,7 +1,7 @@
 /**
  * The pure half of the locator beat: csv parsing, category colour, and a DETERMINISTIC
  * priority-ordered label declutter. No browser, no rasteriser.
- * See `twin-map-beat/references/types/locator.md`.
+ * See `map-beat/references/types/locator.md`.
  */
 
 export type OrgRow = {

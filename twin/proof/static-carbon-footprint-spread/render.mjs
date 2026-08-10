@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -15,8 +15,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { CarbonFootprintHistogram } from "./CarbonFootprintHistogram.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

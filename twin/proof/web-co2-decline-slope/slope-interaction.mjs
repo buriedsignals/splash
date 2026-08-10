@@ -1,6 +1,6 @@
 // twin/proof/web-co2-decline-slope/slope-interaction.mjs
 //
-// This beat's OWN interaction script — not the `twin-chart-web` skill's shared
+// This beat's OWN interaction script — not the `chart-web` skill's shared
 // `assets/interaction.mjs`. That file's `initChart` resolves a pointer to the nearest reading by X
 // alone, over one shared `.hit-area` rectangle: correct for a dense series where every point sits
 // at its own distinct X along one curve (the co2-suisse beat's 75 years), and wrong here — a slope

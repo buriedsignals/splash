@@ -1,8 +1,8 @@
 // The runner for the ONE-MAP scrolly beat: a single choropleth of Europe, and four successive
 // READINGS of it, the camera flown between them by the reader's scroll.
 //
-// This file is a CONSUMER of `twin-scrolly`: it imports the skill's own generic `renderScrolly` and
-// hands it steps. Nothing under `twin-scrolly/` is edited by it.
+// This file is a CONSUMER of `scrolly`: it imports the skill's own generic `renderScrolly` and
+// hands it steps. Nothing under `scrolly/` is edited by it.
 //
 // WHY THIS EARNS THE SCROLL, and why it is a different argument from the sibling
 // `mapscrolly-quakes-three-ways`. That beat shows one subject through FOUR encodings and the
@@ -32,8 +32,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement, Fragment } from "react";
-import { deriveFurniture, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
+import { deriveFurniture, readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { MapFrame } from "./MapFrame.tsx";
 import {
   CO2_BREAKS,
@@ -201,7 +201,7 @@ async function render() {
   //
   // The style URL carries the PLACEHOLDER, never a key (R1b): this file is committed, the release
   // is open source, and a pushed key is scanned within minutes and survives in the history.
-  // `twin-deliver` substitutes at delivery.
+  // `deliver` substitutes at delivery.
   //
   // The warm is the answer to the objection this beat used to keep the plate over: a reader
   // scrubbing fast meets tiles that have not arrived. The cameras are authored, so every one of

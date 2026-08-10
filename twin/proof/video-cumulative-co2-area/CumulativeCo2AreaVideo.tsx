@@ -5,11 +5,11 @@
  * Fourth beat written in this shape. Its own pure geometry below (no import of
  * `crossingGeometry`/`lifeExpectancyGeometry`/`migrationGeometry` — this beat's shape is
  * genuinely different from all three: an AREA, not a line, so the value axis is forced to zero
- * (`twin-chart-beat/references/types/area.md`: "the AREA is what a reader measures") rather than
+ * (`chart-beat/references/types/area.md`: "the AREA is what a reader measures") rather than
  * fitted to the readings the way a line's honest scale is (`anti-patterns.md`'s bar-half of the
  * zero-baseline rule, not the line-half)). Its own timing contract (`timing-contract.ts`), reusing
  * the browser-Canvas `measureText`/`wrap`/`drawnSoFar` shape from `EmissionsVideo.tsx` (duplicated,
- * not imported — this story lives outside `twin-chart-video`'s skill boundary, in `proof/`, and
+ * not imported — this story lives outside `chart-video`'s skill boundary, in `proof/`, and
  * the settled rule for a story that needs something a skill has is to duplicate it, not reach back
  * across the boundary).
  *
@@ -39,13 +39,13 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   assertTypeFloor,
   frameInsetFor,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 import { CUMULATIVE_CO2_AREA_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -154,7 +154,7 @@ export function drawnSoFar<T extends { x: number; y: number }>(
  *
  * The base numbers are the old 1080-square values re-expressed at the convention the table's
  * `typeScale` is written against — smallest token 12, so the row's own multiplier (2.5 landscape,
- * 3.0 square and portrait in `twin-chart-video`'s copy) lands the smallest drawn type exactly on
+ * 3.0 square and portrait in `chart-video`'s copy) lands the smallest drawn type exactly on
  * that row's legibility floor (30 and 36). The old values did NOT clear it: this beat drew its
  * axis at 22px on a 1080 frame, which is 7.3 CSS px on the phone a square post is read on, against
  * a 12 CSS px floor three independent sources converge on. The type is bigger now because it was
@@ -415,7 +415,7 @@ export function CumulativeCo2AreaVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves: it fades in with the title and is still there at
-  // the last frame. See twin-chart-beat/references/static-discipline.md, "The source on the
+  // the last frame. See chart-beat/references/static-discipline.md, "The source on the
   // frame's bottom margin".
   const sourceBaseline = height - PAD;
 

@@ -1,7 +1,7 @@
 /**
  * The pure half of THIS beat's flow-map (route): csv parsing, point-in-polygon, the ordered
  * territory-crossing computation, a point-on-feature anchor, and the cycling qualitative palette.
- * No browser, no rasteriser — same split as `twin-map-beat/assets/geo.ts` and
+ * No browser, no rasteriser — same split as `map-beat/assets/geo.ts` and
  * `map-quake-density/geo-hex.ts`, so this file can be imported by both the bake step (node) and a
  * test, without either dragging Chromium behind it.
  *
@@ -12,7 +12,7 @@
  * (the static beat computed them "for reporting only"; this beat's growing line and its
  * territory-arrival windows are driven by them).
  *
- * See `twin-map-beat/references/types/flow-map.md`, "The one thing that goes wrong": the order
+ * See `map-beat/references/types/flow-map.md`, "The one thing that goes wrong": the order
  * territories are crossed in must be each territory's FIRST entry point measured as arc-length from
  * the route's origin — computed here as "first index of appearance while walking the route in
  * order", which handles the one named exception (a territory the route starts inside gets stop
@@ -505,7 +505,7 @@ export function routeBBoxWithin(
   };
 }
 
-// ── Pixel-space ring culling and thinning, once baked (same construction as `twin-map-beat`'s own
+// ── Pixel-space ring culling and thinning, once baked (same construction as `map-beat`'s own
 //    `geo.ts` — written fresh here, per this project's own rule that a beat's pure core is its own,
 //    not imported across skills or beats) ────────────────────────────────────────────────────────
 

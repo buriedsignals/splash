@@ -27,7 +27,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 
 const FRAME = { width: 900, height: 560 };
 const PAD = 40;
@@ -53,7 +53,7 @@ const MIN_GRIDLINE_GAP_PX = 20;
 /**
  * A WORD WIDER THAN ITS OWN MEASURE — hyphen-broken, never broken mid-syllable.
  *
- * Carried verbatim across the wrap family (`splash-twin/test/helper-parity.test.ts` compares them
+ * Carried verbatim across the wrap family (`splash/test/helper-parity.test.ts` compares them
  * case for case). `wrap` breaks between words, so a token wider than the measure was emitted whole
  * and ran off the frame — invisible at 900x560 and a 219px overflow the moment a phone frame put
  * 78px type on a 1080px canvas. A hyphen is already a break and already reads as one, so a
@@ -145,7 +145,7 @@ export function EmissionsLine({
   const limitsBaseline =
     titleBaseline + (titleLines.length - 1) * TITLE.lead + 30;
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
-  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md,
   // "The source on the frame's bottom margin".
   const sourceBaseline = height - PAD;
 

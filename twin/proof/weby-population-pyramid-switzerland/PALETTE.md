@@ -18,7 +18,7 @@ making (the crossover band, where women start to outnumber men, is read across t
 walked off one accent differ only in lightness, which on a bar reads as emphasis. Two distinct hues
 is what the type needs, and which two is the newsroom's decision.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat), and this beat's subject — Switzerland's
 population by age and sex — fires none of them. No convention in that table proposes a pair, either;
 a categorical set is out of its scope by its own reference sheet.

@@ -4,7 +4,7 @@
  * right out of a zero line, rows sorted from the largest rise to the largest fall.
  *
  * Written fresh from `ChartSeed.tsx`'s shape against
- * `twin-chart-beat/references/types/diverging-bar.md`. It is NOT the video sibling's component with
+ * `chart-beat/references/types/diverging-bar.md`. It is NOT the video sibling's component with
  * the timing taken out: a video can spend ten seconds introducing the zero line, growing each bar
  * out of it and only then descending the average rule, so at no single instant does it hold every
  * word this frame has to hold at once. A still has one instant. Every consequence below follows
@@ -52,13 +52,13 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 
 export type Row = {
   country: string;
@@ -431,7 +431,7 @@ export function DivergingBarChange({
   const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
   // hangs off at the top, on the same x. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   // At portrait that bottom is the STAGE's, not the frame's: the platform's caption and progress
   // bar sit over the rest of the frame, and a covered credit is an attribution failure.
   const sourceTop = sourceBottom - (sourceLines.length - 1) * T.SOURCE.lead;

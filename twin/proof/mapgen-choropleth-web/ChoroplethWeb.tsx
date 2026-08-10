@@ -1,7 +1,7 @@
 /**
  * REPLACE ME. Do not parameterise me.
  *
- * The first WEB-genre choropleth this project has built (`twin-map-web/SKILL.md`'s own gap: "a map
+ * The first WEB-genre choropleth this project has built (`map-web/SKILL.md`'s own gap: "a map
  * beat could ship static or video, never a genuinely interactive one" — for the SYMBOL case; this
  * beat closes the CHOROPLETH cell of that same matrix). It draws a real claim: of the 41 European
  * countries this beat declares, the Faroe Islands' 2023 per-capita CO₂ emissions are the highest —
@@ -13,7 +13,7 @@
  *    MapTiler map with its own zoom and pan, leashed to the study area. The baked plate
  *    (`bake-plate.mjs`, `geo-discipline.md` rules 1-4, 6, 7, 9, 12) is still spent once and still
  *    shipped — as the FALLBACK layer, not as the display surface. So this component draws THREE
- *    layers in one box, exactly as `twin-map-web/assets/MapWebSeed.tsx` does:
+ *    layers in one box, exactly as `map-web/assets/MapWebSeed.tsx` does:
  *      - `#mw-map`, empty, FIRST — `live-map.mjs` (a byte-identical copy of the genre's own boot
  *        script, in this folder) fills it and swaps it in on `map.on("load")`;
  *      - `#mw-fallback`, the SSR'd plate `<image>` and the 41 `<path>`s — what a reader gets with
@@ -32,7 +32,7 @@
  *    scales with its container, every glyph is a fixed CSS pixel size, and `render-web.mjs`'s own
  *    `buildCss` gives the map whatever height the window has left after the furniture.
  *
- * What this genre adds on top of the static/video choropleth (`twin-map-beat/assets/Co2MapStill.tsx`,
+ * What this genre adds on top of the static/video choropleth (`map-beat/assets/Co2MapStill.tsx`,
  * `Co2MapVideo.tsx`) is every region's own EXACT value on demand, without spending the frame's fixed
  * room printing all 41 — and, because a map is a spatial medium and not every reader has spatial
  * access to it, the SAME 41 values again as an ordered, linear, always-rendered table (`RegionTable`
@@ -323,7 +323,7 @@ export function ChoroplethWeb({
                     strokeWidth={0.8}
                     strokeLinejoin="round"
                     // The DRAWN MARK, keyed. `interaction.mjs` forwards a pointer that lands here to
-                    // this region's own button, and `splash-twin`'s own
+                    // this region's own button, and `splash`'s own
                     // `interaction-promises-are-kept.test.ts` pairs mark and target by exactly this
                     // attribute when it probes four points inside the painted shape.
                     data-key={region.key}

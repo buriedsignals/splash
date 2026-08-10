@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -15,8 +15,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { DecadeBoxplot, summarizeDecade } from "./DecadeBoxplot.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -38,7 +38,7 @@ async function main() {
   console.log(`read ${rows.length} raw rows from data.csv (full series, all years)`);
 
   // The OWID grapher CSV endpoint silently returns the entire global dataset with HTTP 200 unless
-  // `csvType=filtered` is on the URL (`twin-intake/references/ourworldindata-csv-filter-trap.md`).
+  // `csvType=filtered` is on the URL (`intake/references/ourworldindata-csv-filter-trap.md`).
   // The fetch URL already carries it; this is the second, independent check on the data itself.
   const entities = new Set(rows.map((r) => r.Entity));
   if (entities.size !== 1 || !entities.has("France"))

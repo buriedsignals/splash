@@ -88,7 +88,7 @@ source=coal`, frozen as `data.csv` filtered locally to the twelve countries, 201
 The **full** CSV was taken and filtered here rather than fetched with `country=`. On this endpoint
 that parameter is not honoured — a twelve-country `country=` fetch returned all 190-odd entities
 with HTTP 200, and adding `csvType=filtered` returned every entity for a single year instead of a
-time series. That is `twin-intake/references/ourworldindata-csv-filter-trap.md`, met twice while
+time series. That is `intake/references/ourworldindata-csv-filter-trap.md`, met twice while
 preparing this beat. `render.mjs` re-checks the frozen file against the candidate list and throws
 on any stray entity or any missing year, because a heatmap has no honest way to draw a hole: at
 this density a missing cell reads as a low value.

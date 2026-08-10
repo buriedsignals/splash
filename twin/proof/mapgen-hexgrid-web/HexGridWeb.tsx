@@ -5,7 +5,7 @@
  * *"une carte web qu'on ne peut pas parcourir est une image"*. The audit measured what the ruling
  * was worth to a reader of THIS beat: `hex-grid.html` contained no `maplibregl`, no
  * `api.maptiler.com` and no `NavigationControl` (`AUDIT-W5-W6-map.md` §5.6). It was a picture. So
- * this component now ships the same THREE LAYERS `twin-map-web/assets/MapWebSeed.tsx` ships, in the
+ * this component now ships the same THREE LAYERS `map-web/assets/MapWebSeed.tsx` ships, in the
  * same order and with the same reasons:
  *
  *   1. `#mw-map` — an empty box `live-map.mjs` fills with a live MapLibre map and swaps in on
@@ -32,7 +32,7 @@
  * WHAT A HEX GRID CHANGES ABOUT THE SEED'S OVERLAY, and it is one thing. The seed's marks are
  * points, so its overlay carries a `.point-label` (a city name) and a `.pt` hit target per point.
  * A hex cell has no name — the type sheet says a reader "can't name, can't look up" an arbitrary
- * cell (`twin-map-beat/references/types/hex-grid.md`, "When not to use it") — so this beat renders
+ * cell (`map-beat/references/types/hex-grid.md`, "When not to use it") — so this beat renders
  * NO `.point-label` at all, and its overlay is the hit targets alone. `live-map.mjs`'s
  * `reposition()` walks `.pt, .point-label` and simply finds none of the latter.
  *

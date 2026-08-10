@@ -4,14 +4,14 @@
  * actually move through, with the baked plate kept as the layer underneath it.
  *
  * A locator has the least to say of any map type — position and, optionally, category, no magnitude
- * (`twin-map-beat/references/types/locator.md`). The one thing that goes wrong at this type is
- * marker SIZE implying importance, so unlike `twin-map-web/assets/MapWebSeed.tsx`'s
+ * (`map-beat/references/types/locator.md`). The one thing that goes wrong at this type is
+ * marker SIZE implying importance, so unlike `map-web/assets/MapWebSeed.tsx`'s
  * proportional-symbol circles (radius ∝ value), every marker here is drawn at the SAME fixed radius
  * — `MARKER_RADIUS_PX`, ONE number, read by the fallback SVG, by the live layer's own features and
  * by the hit target that derives from it. A declared `priority` field (never size) is what decides
  * which LABEL survives when markers crowd.
  *
- * THREE LAYERS IN ONE BOX (`twin-map-web/references/map-web-discipline.md`, "Pan and zoom", as
+ * THREE LAYERS IN ONE BOX (`map-web/references/map-web-discipline.md`, "Pan and zoom", as
  * overturned by R1) — the same order and the same three ids `MapWebSeed.tsx` uses, because the
  * genre's own boot script (`live-map.mjs`, a byte-identical copy in this folder) addresses them by
  * name:
@@ -44,8 +44,8 @@
  * box). `render-web.mjs`'s own `buildCss` is what bounds the whole beat to the reader's window.
  *
  * This is this beat's OWN copy of the genre's mechanics — nothing here imports
- * `twin-map-web/assets/MapWebSeed.tsx`, the same "a skill/beat builds after being copied alone" rule
- * that skill's own header states for its relationship to `twin-map-beat`.
+ * `map-web/assets/MapWebSeed.tsx`, the same "a skill/beat builds after being copied alone" rule
+ * that skill's own header states for its relationship to `map-beat`.
  */
 
 import {

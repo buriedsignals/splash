@@ -7,8 +7,8 @@ import {
   endOf,
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-video/timing.ts";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   contrastRatio,
   luminance,

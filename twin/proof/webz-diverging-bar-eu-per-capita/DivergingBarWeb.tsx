@@ -1,8 +1,8 @@
 /**
  * The WEB beat of "Croatia is the only EU country emitting more CO₂ per person than in 1990" — one
  * self-contained, fluid, interactive frame. Coordinates and formatting come from
- * `./diverging-geometry.ts`. Read `twin-chart-web/references/web-discipline.md` and
- * `twin-chart-beat/references/types/diverging-bar.md` before changing this file.
+ * `./diverging-geometry.ts`. Read `chart-web/references/web-discipline.md` and
+ * `chart-beat/references/types/diverging-bar.md` before changing this file.
  *
  * THE GOVERNING RULE, and every decision below follows from it: **the `<svg>` carries GEOMETRY
  * ONLY — not one `<text>` element.** Every word (title, caveat, source, the 27 country names, the

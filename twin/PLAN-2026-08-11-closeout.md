@@ -48,33 +48,33 @@ artifact wrong), and several guards cannot go red at all.
 
 | # | Chantier | Owns these files | Blocked by |
 |---|---|---|---|
-| **1** | **Live maps everywhere** — every map × web beat really uses MapTiler, always; controls and filters where useful; the out-of-map zoom button removed; the 9 committed HTMLs regenerated; the delivery key made real (second, domain-restricted) and its guard's three holes closed; the guard that stays green when the live layer is stripped made able to fail. | `skills/twin-map-web/*`, `proof/mapgen-*-web/`, `proof/mapmore-*-web/` | — |
-| **2** | **Furniture: credits at the bottom, then the typeface actually used** — canonical change in `twin-chart-beat`, vendored to every copy, all 64 components, genre by genre; `typefaces` threaded from `NEWSROOM.md` to every render with refusal before the render when a face cannot resolve; every affected proof re-rendered. | every `render-still.mjs`, the video components, `twin-map-beat`, `twin-image-beat`, `twin-dw-beat` | — |
-| **3** | **Export sizes honoured end to end** — the journalist's chosen size reaches the producer and the delivered file carries it; per-size type scale so portrait and square are legible on a phone (the mobile-first probe's budget); refusal when a type cannot enter a format; the size guard that cannot go red replaced. | `sizes.mjs` and its copies, `Root.tsx` compositions, the produce path, `twin-chart-web` responsive | 2 (shares renderers) |
-| **4** | **The journey, finished** — the four verdicts actually consulted; the phase check that reports "done" on an unapproved beat; the delivery folder that wipes the previous beat's; the proposal opened up to genuinely different visuals with a reason each, verified reachable. | `skills/twin-intake`, `skills/twin-storyboard`, `skills/splash-twin/scripts/{where,deliver,gate}.mjs` | — |
+| **1** | **Live maps everywhere** — every map × web beat really uses MapTiler, always; controls and filters where useful; the out-of-map zoom button removed; the 9 committed HTMLs regenerated; the delivery key made real (second, domain-restricted) and its guard's three holes closed; the guard that stays green when the live layer is stripped made able to fail. | `skills/map-web/*`, `proof/mapgen-*-web/`, `proof/mapmore-*-web/` | — |
+| **2** | **Furniture: credits at the bottom, then the typeface actually used** — canonical change in `chart-beat`, vendored to every copy, all 64 components, genre by genre; `typefaces` threaded from `NEWSROOM.md` to every render with refusal before the render when a face cannot resolve; every affected proof re-rendered. | every `render-still.mjs`, the video components, `map-beat`, `image-beat`, `dw-beat` | — |
+| **3** | **Export sizes honoured end to end** — the journalist's chosen size reaches the producer and the delivered file carries it; per-size type scale so portrait and square are legible on a phone (the mobile-first probe's budget); refusal when a type cannot enter a format; the size guard that cannot go red replaced. | `sizes.mjs` and its copies, `Root.tsx` compositions, the produce path, `chart-web` responsive | 2 (shares renderers) |
+| **4** | **The journey, finished** — the four verdicts actually consulted; the phase check that reports "done" on an unapproved beat; the delivery folder that wipes the previous beat's; the proposal opened up to genuinely different visuals with a reason each, verified reachable. | `skills/intake`, `skills/storyboard`, `skills/splash/scripts/{where,deliver,gate}.mjs` | — |
 | **5** | **The erroneous guards** — every guard the audits caught not going red, fixed and re-mutated; the stale `MATRIX.md` check wired into the suite; the spec header that records seven closed items falsely. | `test/*` across skills, `scripts/matrix.mjs` | — |
 | **6** | **Map scrolly navigation is a highlight** — the camera goes to what the step names; per type. | the map scrolly beats | the vehicle work in flight |
-| **8a** | **Per-beat defects, charts × web** — B6.1 (a missing x label), B6.2 (full available width), B6.6 (the widest band unreadable and off-centre), B6.9 (missing axis and connector lines, plus a hover tooltip on the connecting line), B6.15 (flow/route × web, the empty matrix cell). | `skills/twin-chart-web/*`, its proofs | — |
-| **8b** | **Per-beat defects, charts × static** — B6.3 and B6.5 (a dashed rule and its label unreadable over the bars; the pyramid's centre labels cut), B6.8 (axis and connector lines not drawn), and the mechanism all six annotation items share: an annotation placed and coloured **without reference to what it annotates**. The derivation exists in six places in the tree and none of the eight live sites calls it. | `skills/twin-chart-beat/assets/*.tsx`, its static proofs — **never `render-still.mjs`** | — |
+| **8a** | **Per-beat defects, charts × web** — B6.1 (a missing x label), B6.2 (full available width), B6.6 (the widest band unreadable and off-centre), B6.9 (missing axis and connector lines, plus a hover tooltip on the connecting line), B6.15 (flow/route × web, the empty matrix cell). | `skills/chart-web/*`, its proofs | — |
+| **8b** | **Per-beat defects, charts × static** — B6.3 and B6.5 (a dashed rule and its label unreadable over the bars; the pyramid's centre labels cut), B6.8 (axis and connector lines not drawn), and the mechanism all six annotation items share: an annotation placed and coloured **without reference to what it annotates**. The derivation exists in six places in the tree and none of the eight live sites calls it. | `skills/chart-beat/assets/*.tsx`, its static proofs — **never `render-still.mjs`** | — |
 | **8c** | **Per-beat defects, maps and video** — B6.4 and B6.7 (two label layers overlapping on the highlighted datum), B6.10 (a country label not centred on its shape), B6.13 (colours that do not work together, and the unbalanced empty space), B6.16 (a hexagon emphasised with nothing said about it), B6.17 (symbol overlap and size when close together). | map static/video components, chart video components | 2 (shares those files) |
-| **9** | **B4.1 — a map for ANY focus area**: the planet, several continents, one country, a region, a city. The largest single item in the owner's list; the audit measured the 138× extent gap still empty. | `skills/twin-map-beat`, the camera derivation | 1, 8c |
+| **9** | **B4.1 — a map for ANY focus area**: the planet, several continents, one country, a region, a city. The largest single item in the owner's list; the audit measured the 138× extent gap still empty. | `skills/map-beat`, the camera derivation | 1, 8c |
 | **7** | **Proofs refreshed** — every committed artifact regenerated so no stale or buggy proof survives; the 5 pre-fix mp4s first. | `proof/**` | 1, 2, 3 |
 
 ## The rename, decided by the owner 2026-08-11 — do NOT do it early
 
 The twin replaces Splash. At the moment the branch is merged toward `rd-dev`, **everything is renamed
-`splash-twin` → `splash` and `twin-*` → the product names**. Recorded here because it is the one task
+`splash` → `splash` and `twin-*` → the product names**. Recorded here because it is the one task
 that cannot be improvised at merge time.
 
 **Why it is not a find-and-replace.** The two trees coexist today *precisely because their ids are
-disjoint* — `splash-twin` + `twin-*` against `splash`, `chart-native`, … — which is what lets both be
+disjoint* — `splash` + `twin-*` against `splash`, `chart-native`, … — which is what lets both be
 installed on one machine without overwriting each other. Renaming makes them collide on:
 
 - the 15 skill ids and their front matter;
-- **both doors** — `~/.claude/skills/splash-twin` and the flat links in `~/.agents/skills`, which the
+- **both doors** — `~/.claude/skills/splash` and the flat links in `~/.agents/skills`, which the
   old product also occupies;
 - the env var names, the `#shared/*` resolution root, `.claude-plugin/plugin.json`, `SPLASH_*` vars;
-- `splash-twin-doctor` on `~/.local/bin`.
+- `splash-doctor` on `~/.local/bin`.
 
 So the rename needs a decision first: **what happens to an already-installed old Splash** — is it
 removed, left in place under its old name, or migrated — and at what moment its links come down.

@@ -6,7 +6,7 @@ origin: subject
 
 The answer recorded for this beat.
 
-`twin-palette`'s proposal was run for this beat's own subject line — *"life expectancy at birth in
+`palette`'s proposal was run for this beat's own subject line — *"life expectancy at birth in
 Switzerland, 1876 to 2023, and the two years it fell"* — and returned the house theme plus **no**
 grounded convention: `matchConvention` fires on `renewable`, `coal|fossil|oil`, `water` and
 `heat|temperature|warming`, and none of those words is in a subject about mortality. So the choice

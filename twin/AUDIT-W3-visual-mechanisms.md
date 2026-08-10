@@ -57,13 +57,13 @@ to measure (see § 5.2). The spec's polygon half (*"a real `<path>` hit region o
 geometry, with `pointer-events: fill`"*) was not built.
 
 **D3 — the E1 follow-on was not done. Unnoticed drift.** The spec (`:360`) asks that
-`skills/twin-chart-web/SKILL.md:15-17` be corrected to the measured counts. It still reads *"Fifteen
+`skills/chart-web/SKILL.md:15-17` be corrected to the measured counts. It still reads *"Fifteen
 beats ship through this skill … every one of them is on the fluid frame this skill now teaches."*
 23 `render-web.mjs` files live under `proof/`; four of them are two-rung.
 
 **D4 — B3.3 was settled elsewhere, and the spec's own proposal was never put to the owner.**
 The 640 px cap the spec discusses at `:759-779` was already reversed by W2
-(`38a0599f`; `skills/twin-chart-web/scripts/render-web.mjs:204` now reads *"no max-width cap"*). The
+(`38a0599f`; `skills/chart-web/scripts/render-web.mjs:204` now reads *"no max-width cap"*). The
 spec's alternative — `clamp()` on `--title-size` with the cap in `ch` — was neither built nor
 presented. **Improvement by another route**, but the spec section is stale.
 
@@ -91,7 +91,7 @@ is itself an undercount — see § 2.1.
 THIRTY-SEVEN distinct sites across TWELVE beats"*.
 
 **Reproduced.** `git archive 5873c5e0^` into `/tmp/w3audit/pre-fix`, with the guard file taken from
-`5873c5e0` itself, then `bun test skills/splash-twin/test/video-handover-is-a-cut.test.ts`:
+`5873c5e0` itself, then `bun test skills/splash/test/video-handover-is-a-cut.test.ts`:
 
 ```
  17 pass · 9 fail · Ran 26 tests
@@ -259,10 +259,10 @@ own survey lists 4.
 | site | evidence |
 |---|---|
 | `mapgen-choropleth-video/bake.mjs:42-47` | baked anchor `(389.2, 277.6)` vs Poland's bbox centre `(379.2, 280.0)` — **10 px east** on an 83.7 px shape; consumed by the still *and* the video |
-| **`skills/twin-map-beat/scripts/bake-plate.mjs:46-52`** | the seed every map beat is scaffolded from hand-types both anchors, under a comment claiming *"Data, not a pixel constant"* |
+| **`skills/map-beat/scripts/bake-plate.mjs:46-52`** | the seed every map beat is scaffolded from hand-types both anchors, under a comment claiming *"Data, not a pixel constant"* |
 | `static-swiss-age-pyramid` / `weby-population-pyramid-switzerland` | `x = plot.left` / `left:"0%", top:"0%"` — a 13.2 px stub and a label 208 units above its band |
 | `web-income-life-expectancy:109-111` | three hand-tuned `dx/dy` pairs |
-| `map-quake-symbol` / `mapgen-symbol-web` / `skills/twin-map-web` `geo-symbol.ts` | **three divergent copies** of one margin+`dy` ladder (130/90, `20/-12/5` vs `18/-10/4`), self-flagged `@parity-exempt` |
+| `map-quake-symbol` / `mapgen-symbol-web` / `skills/map-web` `geo-symbol.ts` | **three divergent copies** of one margin+`dy` ladder (130/90, `20/-12/5` vs `18/-10/4`), self-flagged `@parity-exempt` |
 
 The derivation the spec asks for **already exists in the tree** — `pointOnFeature` (a documented pole
 of inaccessibility) in three flow beats, dot-centroid in two, `bboxCenter` in two — and none of the
@@ -298,7 +298,7 @@ sibling**: `mapscrolly-quakes-three-ways/MapFrames.tsx:26-27` says so in prose. 
 ### 4.5 Two label layers overlapping (B6.4/B6.7's class) outside video
 
 The crossfade guard walks compositions with a frame only — its own blind spot 4. The corpus's only
-overlap guard for statics is `skills/twin-chart-beat/test/three-sizes-no-collision.test.ts`, and it
+overlap guard for statics is `skills/chart-beat/test/three-sizes-no-collision.test.ts`, and it
 renders **the seed**, at three sizes. **No guard measures label overlap in any of the 25 beat SVGs or
 29 delivered HTML.** No instance was found by eye in the beats opened for this audit; the class is
 unguarded rather than known-broken.
@@ -379,10 +379,10 @@ extended to catch it.**
 The project shipped this comparing signatures instead of bodies, so it was inert for every function
 with a destructured parameter. Two mutations:
 
-- semantic drift inside `measureTextBand` in the `twin-map-beat` copy → **RED**, naming
+- semantic drift inside `measureTextBand` in the `map-beat` copy → **RED**, naming
   `measureTextBand`;
 - semantic drift inside `readPalette(dir, { stopAt } = {})` — the destructured-signature case that
-  used to be invisible — in the `twin-chart-web` copy → **RED**, naming `readPalette`.
+  used to be invisible — in the `chart-web` copy → **RED**, naming `readPalette`.
 
 It compares bodies now. A comment-only change is normalised away, which is correct.
 Its remaining hole is architectural, not a bug: § 2.4's superset/subset rule.
@@ -393,7 +393,7 @@ Cannot go red. There is nothing to mutate.
 
 ### 5.5 Suite baseline
 
-`bun test skills/splash-twin/test/` on a clean `dd01abf0` copy: **1037 pass · 1 skip · 1 fail**. The
+`bun test skills/splash/test/` on a clean `dd01abf0` copy: **1037 pass · 1 skip · 1 fail**. The
 failure is `claims-grounded-in-data.test.ts:751` — 22 `proof/portrait-aspect-probe/*.png` with no
 producing script in their ancestry, from `e457813e`. Not a W3 regression; recorded because a red
 suite is where a green guard hides.
@@ -411,7 +411,7 @@ suite is where a green guard hides.
   exists. The class in § 4.3 is a floor, not a total.
 - **Web artifacts were not driven at 375 / 1400 / 3440.** E1's and D's proofs are stated from the
   delivered CSS and DOM, not from a browser at four widths.
-- **Three files are owned by concurrent agents** (`twin-scrolly`, `installer`, `newsroom.mjs`,
+- **Three files are owned by concurrent agents** (`scrolly`, `installer`, `newsroom.mjs`,
   `portrait-aspect-probe`) and were read but not measured; anything the scrolly does with these
   mechanisms is outside this audit.
 - **The `/tmp` mutations prove a guard reacts; they do not prove the fix is right.** M1 shows the

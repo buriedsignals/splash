@@ -35,7 +35,7 @@ doctrine).
   `https://ourworldindata.org/grapher/co-emissions-per-capita.csv?csvType=filtered&country=~CHE~DEU~FRA~ITA~ESP~GBR~POL~SWE~NOR~AUT~NLD~BEL~PRT~GRC~CZE~CHN~JPN~IND~IDN~SAU~KOR~THA~VNM~PAK~BGD~IRN~ISR~MYS~PHL~ZAF~NGA~EGY~KEN~ETH~GHA~MAR~DZA~TUN~CIV~SEN~TZA~USA~CAN~BRA~MEX~ARG~COL~CHL~PER~VEN~CUB~ECU~BOL`
   — verified effective: 7694 rows, **53 distinct entities** (matches the 53 ISO-3 codes requested,
   none dropped, no extra country leaked in — the OWID CSV filter trap
-  (`twin-intake/references/ourworldindata-csv-filter-trap.md`) checked and avoided).
+  (`intake/references/ourworldindata-csv-filter-trap.md`) checked and avoided).
 - `data.csv`: the raw, unedited fetch — every year OWID has for these 53 countries (1750–2024, same
   freeze-the-full-range convention `video-population-growth-dumbbell/BRIEF.md` used for its
   -10000–2023 export). The beat draws only **2023**, the latest year with a value for all 53
@@ -68,7 +68,7 @@ All values t CO₂ per person per year.
 
 Whisker rule stated explicitly: a whisker reaches the furthest observation still within 1.5× the
 interquartile range of its nearest quartile; anything beyond that fence is drawn as an individual
-outlier dot, never absorbed into a longer whisker (`twin-chart-beat/references/types/boxplot.md`).
+outlier dot, never absorbed into a longer whisker (`chart-beat/references/types/boxplot.md`).
 Every group here has 12–15 real countries feeding its box — thin enough that `n` is printed under
 every category label, per the type doctrine's "show the n, or the box plot lies about confidence."
 

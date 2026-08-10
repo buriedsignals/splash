@@ -1,7 +1,7 @@
 /**
  * The pure half of the proportional-symbol beat: csv parsing, the sqrt radius scale, draw order,
  * edge-aware label placement, and the claim check. No browser, no rasteriser — testable, and
- * importable by both the still and the video (`twin-map-beat/references/types/proportional-symbol.md`).
+ * importable by both the still and the video (`map-beat/references/types/proportional-symbol.md`).
  */
 
 

@@ -12,7 +12,7 @@ the SVG's `<text y>` against its `viewBox`, the HTML's DOM order — never a hex
 bundle.
 
 **The tree carries uncommitted work from another session** in W2-adjacent territory
-(`twin-palette/scripts/palette.mjs`, `twin-newsroom-charter/*`, `twin-scrolly/*`). It is noted where
+(`palette/scripts/palette.mjs`, `newsroom-charter/*`, `scrolly/*`). It is noted where
 it changes an answer; it changes none of the conclusions.
 
 **W2 landed in five commits:** `38a0599f` (§1), `15ffd373` (§2), `d78f9553` (§3.4.1), `1052d823`
@@ -23,7 +23,7 @@ it changes an answer; it changes none of the conclusions.
 ## 1. Was the spec followed?
 
 **§1 (B3.3) — followed, and improved.** The cap is gone from
-`skills/twin-chart-web/scripts/render-web.mjs` and from `.scrolly-header`; `.step-panel`'s
+`skills/chart-web/scripts/render-web.mjs` and from `.scrolly-header`; `.step-panel`'s
 `max-width: min(46ch, 100%)` is untouched (`render-scrolly.mjs:483`), as §1.2 required. Sixteen
 committed HTMLs were re-rendered — `640px` survives in them only inside the paragraph explaining its
 removal (`webx-carbon-footprint/carbon-footprint.html:30-31`). Both doc reversals landed
@@ -44,13 +44,13 @@ describes a placement that 55 of 64 components do not have.
 
 | # | Divergence | Verdict |
 |---|---|---|
-| D1 | §2.2 instructs `origin: subject` and calls it "the least false of the three". Implementation writes **`origin: newsroom`** and argues it from measurement: `#0B7A75`/`#FFFFFF` are `NEWSROOM.example.md`'s `brandColor`/`ground`, and `SUBJECT_CONVENTIONS` holds none of them (`skills/twin-chart-beat/PALETTE.md`, closing paragraph). | **Improvement.** It also retires §6's residue "`origin` has no honest value for a seed" — there was one, and nobody had looked. |
-| D2 | §1.4 says of B3.3 "**None, and none is warranted**… Do not invent a 'no `max-width` in `buildCss`' scan". Implementation adds one — but by **inverting the existing assertion** that used to demand the cap (`skills/twin-chart-web/test/seed-fluid-frame.test.ts:123-146`), scoped to rules whose selector names `.chart-header|source|title|caveat`, with no exemption list. Mutation M8 below reddens it. | **Improvement.** It avoids the exemption-list failure mode the spec feared, and it means nobody can silently reinstate the cap. |
+| D1 | §2.2 instructs `origin: subject` and calls it "the least false of the three". Implementation writes **`origin: newsroom`** and argues it from measurement: `#0B7A75`/`#FFFFFF` are `NEWSROOM.example.md`'s `brandColor`/`ground`, and `SUBJECT_CONVENTIONS` holds none of them (`skills/chart-beat/PALETTE.md`, closing paragraph). | **Improvement.** It also retires §6's residue "`origin` has no honest value for a seed" — there was one, and nobody had looked. |
+| D2 | §1.4 says of B3.3 "**None, and none is warranted**… Do not invent a 'no `max-width` in `buildCss`' scan". Implementation adds one — but by **inverting the existing assertion** that used to demand the cap (`skills/chart-web/test/seed-fluid-frame.test.ts:123-146`), scoped to rules whose selector names `.chart-header|source|title|caveat`, with no exemption list. Mutation M8 below reddens it. | **Improvement.** It avoids the exemption-list failure mode the spec feared, and it means nobody can silently reinstate the cap. |
 | D3 | §3.7 Guard A: "Walks every `.tsx` under `twin/`". Implementation sets `ROOTS = ["skills"]` (`credit-anchors-to-the-frame-bottom.test.ts:50`) and states the reason in its header. | **Regression against the spec's stated purpose**, honestly disclosed. See §4 hole H1 — the mutation is below and it stays green. |
 | D4 | §3.7 promises **three** guards. Only Guard A exists. Guard B (HTML byte order) and Guard C (SVG `y` in the bottom eighth) were not written; the guard's header defers C. | **Regression.** Both were cheap and both would have measured what a reader sees; I ran them by hand in minutes (§5). |
 | D5 | Guard A's spec text names `sourceBaseline`/`sourceTop`. Implementation also matches `sourceBottom` and **follows the chain** when `sourceTop` is derived from it (`:126-129`), recording in a comment that not following it let a mutation pass its own first draft. | **Improvement**, and an honestly reported near-miss. |
-| D6 | §2 claims "0 of 12 → 12 of 12" as its own work. Two of the eleven sites — `twin-map-beat/scripts/render-map.mjs:54` and `render-preview.mjs:104` — were switched by `dcc71f79`, a commit whose subject is about geometry-core naming (`git log -S readPalette` on those paths returns only `dcc71f79`). That commit added **no** `PALETTE.md`; `twin-map-beat/PALETTE.md` arrives one commit later in `15ffd373`. | **Unnoticed drift.** Between those two commits the map seed read an answer that did not exist and could only have thrown. `seed-renders-standalone.test.ts` lists `twin-map-beat` and has no skip condition, so the suite could not have been green there. |
-| D7 | `twin-palette/SKILL.md:112-114` records "12 of 12" seed runners and "16 of 70" beats; the session record says 11 of 12. | **Unnoticed drift**, minor and in the harmless direction. Measured today: **11 of 12 runners call `readPalette`**, the twelfth names no colour at all; **20 of 75 beats**, not 16 of 70 — the denominator moved when new beats landed the same day. |
+| D6 | §2 claims "0 of 12 → 12 of 12" as its own work. Two of the eleven sites — `map-beat/scripts/render-map.mjs:54` and `render-preview.mjs:104` — were switched by `dcc71f79`, a commit whose subject is about geometry-core naming (`git log -S readPalette` on those paths returns only `dcc71f79`). That commit added **no** `PALETTE.md`; `map-beat/PALETTE.md` arrives one commit later in `15ffd373`. | **Unnoticed drift.** Between those two commits the map seed read an answer that did not exist and could only have thrown. `seed-renders-standalone.test.ts` lists `map-beat` and has no skip condition, so the suite could not have been green there. |
+| D7 | `palette/SKILL.md:112-114` records "12 of 12" seed runners and "16 of 70" beats; the session record says 11 of 12. | **Unnoticed drift**, minor and in the harmless direction. Measured today: **11 of 12 runners call `readPalette`**, the twelfth names no colour at all; **20 of 75 beats**, not 16 of 70 — the denominator moved when new beats landed the same day. |
 | D8 | §1.3 says `web-discipline.md`'s other mentions of the source line are "about height, not width — leave them". `web-discipline.md:296` now asserts the cap is "**Not touched by this narrowing**" and that "its guard scans the whole stylesheet". | **Not a divergence after checking** — the sentence is about W4's `@media` narrowing, and thanks to D2 the guard it claims does exist and does scan the whole stylesheet. Verified, not assumed. |
 
 ---
@@ -61,7 +61,7 @@ describes a placement that 55 of 64 components do not have.
 
 | population | reaches a recorded palette | measured by |
 |---|---|---|
-| craft-skill seed runners | **11 of 12** call `readPalette`; the 12th, `twin-map-web/scripts/render-preview.mjs`, names no colour and delegates to `render-web.mjs` | walk of `skills/*/scripts/render-*.mjs` |
+| craft-skill seed runners | **11 of 12** call `readPalette`; the 12th, `map-web/scripts/render-preview.mjs`, names no colour and delegates to `render-web.mjs` | walk of `skills/*/scripts/render-*.mjs` |
 | craft skills holding their own answer | **7 of 7** `PALETTE.md` at skill root | `ls skills/*/PALETTE.md` |
 | `render-still.mjs` copies carrying `readPalette` | **9 of 22** (the 13 `proof/` map copies reach the shared one through `#shared/…`) | `find` + `grep -c "^export function readPalette"` |
 | beats under `proof/` | **20 of 75** | beats with a `BRIEF.md` whose own `.mjs` calls `readPalette(` |
@@ -78,7 +78,7 @@ honest.
 | chart video | ✅ `EmissionsVideo.tsx` | **0 of 16** | all 16 `vid*/video-*` components still derive `sourceBaseline` from a header rung |
 | chart web (fluid) | ✅ `ChartWebSeed.tsx` | **17 of 17**, already | in every shipped HTML the `chart-source` byte offset exceeds the first `<svg>`'s — Guard B's own measurement, run by hand |
 | map static + video | ✅ `Co2MapStill.tsx:147-148`, `Co2MapVideo.tsx`, guard re-pointed at `:170-174` | **0 of 16** | |
-| map × web | ❌ **seed not migrated** | 0 of 2 | `MapWebSeed.tsx:163` still renders `<p className="mw-source">` as the **second** child, under the title — and the committed `skills/twin-map-web/assets/preview.png` shows it there |
+| map × web | ❌ **seed not migrated** | 0 of 2 | `MapWebSeed.tsx:163` still renders `<p className="mw-source">` as the **second** child, under the title — and the committed `skills/map-web/assets/preview.png` shows it there |
 | scrolly | ❌ **seed not migrated** | 0 of 6 | `render-scrolly.mjs:140` draws `<p class="source">` inside `<header class="scrolly-header">` (`:138`); confirmed in the shipped artifact — in `scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html` the header opens at byte 20067 and `.scrolly-track` after it |
 | legacy two-rung (4) | — | **0 of 4** | `more-heatmap-co2-per-capita-decades/co2-heatmap.html` draws the source at y=143 of a 839-high viewBox; `mapgen-hexgrid-web` at y=98 of 794 |
 | image beat | n/a — per-photo credits only | — | as §6 records; still an editorial question |
@@ -96,10 +96,10 @@ asking — its artifact puts the credit at y=1872 of 1920
 ### B1.3 — the typeface. **Confirmed outstanding, and it is now the same shape the palette had.**
 
 `FONT_FAMILY = "Helvetica, Arial, sans-serif"` is a hard literal in every `render-still.mjs` copy
-(`skills/twin-chart-beat/scripts/render-still.mjs:26` and its six siblings) and in
+(`skills/chart-beat/scripts/render-still.mjs:26` and its six siblings) and in
 `EmissionsVideo.tsx:55`. There is no `TYPEFACE.md`, no `readTypeface`, nothing. Meanwhile
 `NEWSROOM.example.md` records `typefaces: "Source Serif, Source Sans"`,
-`twin-newsroom-charter/scripts/derive-charter.mjs:194` **measures** them off the newsroom's own site,
+`newsroom-charter/scripts/derive-charter.mjs:194` **measures** them off the newsroom's own site,
 and `newsroom.mjs:6` reads them back — and no render takes them. That is precisely the failure
 `readPalette`'s own header names: *"an instruction to copy by eye, which is exactly how a newsroom's
 identity gets collected and then never used"*. W2 removed it for colour and left it standing for
@@ -141,13 +141,13 @@ delivered, and the next beat can still arrive with the defect in it.
 
 ### H2 — a recorded house colour that fails the contrast floor is accepted in silence. *(confirmed at the rendered pixel)*
 
-`parsePalette` (`skills/twin-chart-beat/scripts/render-still.mjs:125-146`) validates hex shape and
+`parsePalette` (`skills/chart-beat/scripts/render-still.mjs:125-146`) validates hex shape and
 `origin`, and measures **nothing**. I wrote a `PALETTE.md` with `ground: "#FFFFFF"`, `accent:
 "#FFFF00"` (1.07:1) and rendered the static chart seed. It produced a clean PNG, no warning, no
 refusal — a nearly invisible line, and the beat's whole number, *"the sample town 604 mm"*, set in
 yellow on white. `/tmp/yellow/preview.png`, opened and looked at.
 
-The floor exists **only in the proposal**: `twin-palette/scripts/palette.mjs:37-43` holds the 3:1
+The floor exists **only in the proposal**: `palette/scripts/palette.mjs:37-43` holds the 3:1
 non-text minimum and `format-proposal.mjs:12-32` shows a failing option failing with the nearest
 passing variant beside it — and then deliberately lets the journalist take it anyway
 (`format-proposal.mjs:50-57`, "a proposal a journalist cannot refuse is not a proposal"). That is a
@@ -155,7 +155,7 @@ defensible design; the hole is that there is **no second line of defence at rend
 `PALETTE.md` written by hand, copied from another story, or produced by another path renders
 whatever it says.
 
-And there is such a path: **`twin-newsroom-charter` — the skill A2 sends the journalist to when they
+And there is such a path: **`newsroom-charter` — the skill A2 sends the journalist to when they
 have no profile — contains no contrast arithmetic at all.** `grep -rn "contrast\|luminance"` over
 the whole skill returns nothing. It measures a newsroom's site, proposes `brandColor` and `ground`,
 and never checks that the pair is legible together.
@@ -167,7 +167,7 @@ choose that no reader can see, and nothing in the tree fills that silence.
 
 `parsePalette` returns exactly `{ ground, accent, origin, source }`. I fed it a front matter carrying
 `secondary`, `tertiary` and `series`: they are parsed into the record and then **dropped without a
-word**. `twin-palette/SKILL.md:3` is honest about it — "the two colours a beat is drawn in" — but the
+word**. `palette/SKILL.md:3` is honest about it — "the two colours a beat is drawn in" — but the
 rest of the tree invites more: `NEWSROOM.example.md` documents `accents: "#C1440E, #1F6FB2"` as
 "a house palette is rarely one colour", and the uncommitted work in the tree adds `houseAccents()` to
 `palette.mjs` to offer every one of them as a proposal option. The chain therefore now **measures**
@@ -176,8 +176,8 @@ several house accents, **proposes** several, and can **record and render exactly
 What the reader gets meanwhile: `proof/vidx-stacked-bar-swiss-electricity/StackedBarVideo.tsx:367`
 builds its series fills as `[accent, muted, muted]` — series two and three are the same grey, on
 every multi-series type. And on a choropleth the accent never touches the data at all:
-`skills/twin-map-beat/assets/geo.ts:294-304` builds the ramp as `mixHex(ground, ink, …)`, ground to
-ink. The committed `skills/twin-map-beat/assets/preview.png` shows it — a grey Europe with one teal
+`skills/map-beat/assets/geo.ts:294-304` builds the ramp as `mixHex(ground, ink, …)`, ground to
+ink. The committed `skills/map-beat/assets/preview.png` shows it — a grey Europe with one teal
 word on it. **A newsroom can change its house colour and its choropleth stays grey.**
 
 ### H4 — a newsroom with several languages is recorded and then forgotten. *(confirmed)*
@@ -188,7 +188,7 @@ preflight reports it back. Downstream: **`grep -n "language" skills/*/scripts/re
 nothing.** No render takes a language. Every visible word is whatever the beat's author typed, and
 nothing checks it against what the newsroom said it publishes in.
 
-The concrete consequence is already in a seed: `skills/twin-chart-video/assets/EmissionsVideo.tsx:68`
+The concrete consequence is already in a seed: `skills/chart-video/assets/EmissionsVideo.tsx:68`
 hardcodes `new Intl.NumberFormat("fr-FR", …)`. Every video beat copied from it formats its numbers in
 French regardless of the article's language — the same class of defect as the hex literals W2 just
 removed, in the same file, and outside every guard W2 added (they match `ground|accent` only).
@@ -214,14 +214,14 @@ Baseline in the copy: **43 pass, 0 fail** across the two new guard files.
 
 | # | Guard | Mutation | Result |
 |---|---|---|---|
-| M1 | palette check 1 & 2 | restore `ground`/`accent` hex literals in `twin-chart-beat/scripts/render-preview.mjs` | **RED**, both checks, naming file and both values |
+| M1 | palette check 1 & 2 | restore `ground`/`accent` hex literals in `chart-beat/scripts/render-preview.mjs` | **RED**, both checks, naming file and both values |
 | M2 | palette check 2 | replace the read with `const GROUND_CONST = "#FFF" + "FFF"` (no `readPalette`) | **RED** — the laundered form is still caught, because the call is gone |
 | M2b | palette checks 1–3 | keep a **decoy** `readPalette(...)` call *and* launder the literal | **GREEN** — the guard's disclosed ceiling. It proves a runner *mentions* the mechanism, never that the value read is the value drawn |
-| M3 | palette check 3 | delete `skills/twin-scrolly/PALETTE.md` | **RED**, on both of that skill's runners |
-| M4 | palette check 3 | `origin: house` in `twin-map-beat/PALETTE.md` | **RED**, through the real `parsePalette`'s own throw |
+| M3 | palette check 3 | delete `skills/scrolly/PALETTE.md` | **RED**, on both of that skill's runners |
+| M4 | palette check 3 | `origin: house` in `map-beat/PALETTE.md` | **RED**, through the real `parsePalette`'s own throw |
 | M5 | Guard A | re-anchor `ChartSeed.tsx:323` to `titleBaseline + 26` | **RED**, naming the file, the rung and the expression |
 | M-scope | Guard A | add a new `proof/` component anchored to a header rung | **GREEN** — hole H1 |
-| M6 | `render-still-parity` | reword the throw message in the newly vendored `twin-scrolly/scripts/render-still.mjs:129` | **RED**, naming the file and the function `readPalette` |
+| M6 | `render-still-parity` | reword the throw message in the newly vendored `scrolly/scripts/render-still.mjs:129` | **RED**, naming the file and the function `readPalette` |
 | M7 | the re-pointed map guard | `LEGEND.barHeight: 200 → 400` in `Co2MapStill.tsx:43`, then render the seed | **RED** — throws at `:170`, with the new message naming the title and the legend. The baseline render at the same commit succeeds, so the throw is the mutation's |
 | M8 | the B3.3 guard (D2) | reinstate `.chart-header, .chart-source { max-width: 640px; }` in `buildCss` | **RED** — `should cap neither the header block nor the source line` |
 
@@ -240,12 +240,12 @@ inside it, `.scrolly-track` after). A byte offset is the same kind of evidence a
 
 ## 6. Artifacts opened
 
-- `skills/twin-chart-beat/assets/preview.png` — credit on the bottom margin, left-aligned with the
+- `skills/chart-beat/assets/preview.png` — credit on the bottom margin, left-aligned with the
   title, teal from `PALETTE.md`. Correct.
 - `proof/more-line-swiss-life-expectancy/…-still.png` — same, on a migrated beat.
-- `skills/twin-map-beat/assets/preview.png` — the column reads title / gap / legend / no-data /
+- `skills/map-beat/assets/preview.png` — the column reads title / gap / legend / no-data /
   caveat / **source last**, exactly as §3.3 specified. Also where H3 was seen: the ramp is grey.
-- `skills/twin-map-web/assets/preview.png` — the credit sits **under the title**. §3.4.5 open, at the
+- `skills/map-web/assets/preview.png` — the credit sits **under the title**. §3.4.5 open, at the
   pixel.
 - `/tmp/yellow/preview.png` — the seed rendered through a failing house accent, produced without a
   murmur. H2.
@@ -259,7 +259,7 @@ inside it, `.scrolly-track` after). A byte offset is the same kind of evidence a
 1. **Finish the two remaining seeds** — `MapWebSeed.tsx:163` and `render-scrolly.mjs:140`. They are
    §3.4.5 and §3.4.6, they are small, and until they land the seed argument that justifies the whole
    chantier is false for two genres.
-2. **Give `parsePalette` the 3:1 floor**, or `twin-newsroom-charter` a contrast check, or both. H2 is
+2. **Give `parsePalette` the 3:1 floor**, or `newsroom-charter` a contrast check, or both. H2 is
    the only finding here where a journalist ships something a reader cannot read, and the arithmetic
    already exists two files away (`palette.mjs:29-31`).
 3. **Point Guard A at `proof/` as a migration**, one genre at a time, so H1 closes as each genre

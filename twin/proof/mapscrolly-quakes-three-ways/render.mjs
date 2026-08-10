@@ -2,9 +2,9 @@
 // maps — raw dots, hexagons by count, proportional symbols for the largest events, and the same
 // hexagons by their strongest event.
 //
-// This file is a CONSUMER of `twin-scrolly`: it imports the skill's own generic `renderScrolly`
+// This file is a CONSUMER of `scrolly`: it imports the skill's own generic `renderScrolly`
 // (the media-agnostic scaffold above its CONFIG marker) and builds its own `steps` array from its
-// own frame components (`MapFrames.tsx`). Nothing under `twin-scrolly/` is edited by it.
+// own frame components (`MapFrames.tsx`). Nothing under `scrolly/` is edited by it.
 //
 // WHY THIS EARNS THE SCROLL. The vehicle's own rule is that a scrolly earns its keep by carrying
 // media a single beat cannot assemble, and refuses "the same picture, stepped". Every step here is
@@ -24,7 +24,7 @@ import { createElement, Fragment } from "react";
 import {
   deriveFurniture,
   readPalette,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   parseCsv,
   quakePointsFromCsv,
@@ -41,7 +41,7 @@ import {
   SymbolFrame,
   HexStrengthFrame,
 } from "./MapFrames.tsx";
-import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
+import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { WATER_FILL, keyPlaceholder } from "./live-scroll-map.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -168,7 +168,7 @@ async function render() {
   //
   // The style URL carries the PLACEHOLDER, never a key (R1b): this file is committed, the release
   // is open source, and a pushed key is scanned within minutes and survives in the history.
-  // `twin-deliver` substitutes at delivery.
+  // `deliver` substitutes at delivery.
   //
   // The camera is NOT in this plan, and that is the difference from the carbon beat's own. There
   // the four cameras are authored, so they are resolved in node and shipped. Here there is one

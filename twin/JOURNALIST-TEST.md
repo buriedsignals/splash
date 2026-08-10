@@ -26,13 +26,13 @@ pixel — but the agent answering them had read the doctrine that wrote them.
 
 ## Setup (about 20 minutes, done before they arrive)
 
-1. Copy `skills/splash-twin/assets/root-template/` to a folder, `bun install`, add a `.env` with the
+1. Copy `skills/splash/assets/root-template/` to a folder, `bun install`, add a `.env` with the
    keys, and write a real `NEWSROOM.md` for their newsroom — name, url, language, house colour,
    ground, typefaces.
 2. Run the preflight. It must be green before they sit down. Their first five minutes must not be
    spent watching an install.
 3. Ask them in advance for **one published article of their own with a dataset behind it**. Not a
-   demo, not something chosen to suit the tool. Freeze it with `twin-intake` beforehand so the
+   demo, not something chosen to suit the tool. Freeze it with `intake` beforehand so the
    session starts at the exchange, which is what is being tested.
 4. Have the run driven by whoever is hosting, with the journalist answering. They should not have to
    type into a terminal.

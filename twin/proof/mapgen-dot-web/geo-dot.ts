@@ -45,7 +45,7 @@ export function parsePopulationCsv(csv: string): PopulationRow[] {
 /**
  * `alias`: shape key → data key, where Natural Earth's shape code and the data source's own code
  * disagree — this beat's own single entry is Kosovo, `KOS` in Natural Earth, `XKX` at the World
- * Bank, the same class of mismatch `twin-map-beat/assets/geo.ts`'s own `CO2_ALIAS` documents for
+ * Bank, the same class of mismatch `map-beat/assets/geo.ts`'s own `CO2_ALIAS` documents for
  * Kosovo against OWID (`OWID_KOS` there, a third spelling again — three sources, three codes).
  
  *  @parity */

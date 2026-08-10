@@ -1,12 +1,12 @@
 // twin/proof/vidy-histogram-life-expectancy/render.mjs
 //
 // This story's own render script — the render ladder's second rung, same shape as
-// `twin-chart-video/scripts/render-video.mjs` and the other proof workspaces'
+// `chart-video/scripts/render-video.mjs` and the other proof workspaces'
 // (`readingsFromCsv`, then still-first, then mp4), its own story constants.
 //
 // `deriveFurniture` is imported from THIS SKILL's own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/…`
-// alias and not `twin-chart-beat`'s original, the same direction
+// (`skills/chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/…`
+// alias and not `chart-beat`'s original, the same direction
 // `../video-population-growth-dumbbell/render.mjs` takes.
 //
 // Usage:  bun proof/vidy-histogram-life-expectancy/render.mjs [--still-only] [--data <csv>] [--out <dir>]
@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 import {
   deriveFurniture,
   readPalette,
-} from "../../skills/twin-chart-video/scripts/render-still.mjs";
+} from "../../skills/chart-video/scripts/render-still.mjs";
 // The annotation-ink arithmetic, reached the way every static beat reaches it. It lives HERE and
 // not in `HistogramVideo.tsx` for a measured reason: it takes `contrast` from `render-still.mjs`,
 // which loads a native rasteriser, and Remotion's webpack cannot parse a `.node` binary — the
@@ -29,7 +29,7 @@ import {
   assertAnnotationReadsOverMarks,
   inkThatReadsOver,
   textContrastFloor,
-} from "#shared/twin-chart-beat/annotation-ink.mjs";
+} from "#shared/chart-beat/annotation-ink.mjs";
 // The VIDEO genre's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
 // question, which is craft-neutral and therefore has one copy for both genres.
 import {
@@ -37,8 +37,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { noteFor } from "./HistogramVideo.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -80,7 +80,7 @@ const BEAT = {
  * country with a disputed-but-real ISO situation, kept), and a second family of aggregates ships
  * with NO code at all ("Americas", "Land-locked Developing Countries (LLDC)", …), which the empty
  * check below also excludes. Verified by listing every 2023 entity/code pair from the frozen CSV
- * and reading the list by hand — `twin-intake/references/ourworldindata-csv-filter-trap.md`'s
+ * and reading the list by hand — `intake/references/ourworldindata-csv-filter-trap.md`'s
  * "always verify a fetched dataset by counting rows and checking the distinct values" applied to
  * an aggregate-vs-country distinction, not just a country filter.
  */

@@ -42,7 +42,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 // The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
@@ -51,12 +51,12 @@ import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
 // genres read one copy. A bump chart has no measured aspect range and no twin form — its x is
 // TIME, which resists rotation for the same reason a line's does — so the two phone frames are
 // refused here, by name, rather than drawn at a shape nobody measured.
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { BUMP_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -70,7 +70,7 @@ export const TYPE = "bump";
  * There is no `const FRAME` any more. The frame is `sizeFor(size)`'s, and `size` is the decision
  * gate 2c took, read out of this beat's own `BRIEF.md` and carried onto the composition by
  * `Root.tsx`. The shipped values were 1080-frame tuning, divided so the SMALLEST token lands at 12
- * — the number every row's `typeScale` in `twin-chart-video/scripts/sizes.mjs` is derived from.
+ * — the number every row's `typeScale` in `chart-video/scripts/sizes.mjs` is derived from.
  *
  * EVERY SPACING NUMBER GOES THROUGH `sp`. `PAD` is the one exception: a frame's margin is
  * proportional to the CANVAS, not to the type (`frameInsetFor`).
@@ -364,7 +364,7 @@ export function BumpVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
   // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
   // the furniture opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;
   const caveatLines = wrap(caveat, width - PAD * 2, CAVEAT);
   // The caveat keeps the air it always had above it, measured from the LAST TITLE line rather

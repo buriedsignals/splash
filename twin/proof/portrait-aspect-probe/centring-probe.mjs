@@ -38,7 +38,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
 import { extent } from "d3-array";
 import { scaleLinear } from "d3-scale";
-import { readPalette, FONT_FAMILY } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette, FONT_FAMILY } from "#shared/chart-beat/render-still.mjs";
 import { PortraitHistogram } from "./PortraitHistogram.tsx";
 import { PortraitLine } from "./PortraitLine.tsx";
 

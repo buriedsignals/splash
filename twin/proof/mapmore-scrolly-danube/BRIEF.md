@@ -142,7 +142,7 @@ produced by the overlay rather than by the dash. The owner ruled on it directly:
 So the river is drawn whole and the card travels over it, and **nothing here counts what the card
 takes away**. For one round this file did: a "what a reader can follow" measurement that subtracted
 the card and went red at all three widths. It is gone, and the rule now lives at the vehicle's level
-as the **tenth correction** in `twin-scrolly`'s `references/scrolly-discipline.md` — *a visual's own
+as the **tenth correction** in `scrolly`'s `references/scrolly-discipline.md` — *a visual's own
 state, and every assertion about it, are independent of the prose layer travelling over it* — so that
 no later beat rebuilds it. What survives is the distinction that instrument and subject are not the
 same thing: this probe reads composited pixels, so it must still know where the card is, or the

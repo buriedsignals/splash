@@ -18,7 +18,7 @@ this beat is a choice somebody made, and `journalist` is the honest word for it.
 
 **One of the three moved, and the measurement is why.** The beat drew Okabe–Ito orange `#E69F00`
 for "other intergovernmental", and on this white ground that measures **2.25:1** — under the 3:1
-floor WCAG 2.2 SC 1.4.11 sets for a mark a reader identifies data by. `twin-palette` would never
+floor WCAG 2.2 SC 1.4.11 sets for a mark a reader identifies data by. `palette` would never
 have recommended it; nothing measured it, because until 2026-08-10 nothing between the proposal and
 the render did. Recorded instead: `#C68900` at **3.01:1**, which is not an invented colour — it is
 `adjustToContrast` walking the beat's own orange toward the ink pole and stopping at the first step

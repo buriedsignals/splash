@@ -45,7 +45,7 @@ export type Corners = {
  * The radius a magnitude is drawn at.
  *
  * **Rooted in ENERGY, not in the magnitude number.** The proportional-symbol rule is that AREA is
- * proportional to the value (`twin-map-beat/references/types/proportional-symbol.md`, "don't
+ * proportional to the value (`map-beat/references/types/proportional-symbol.md`, "don't
  * linear-scale the radius"), so `r ∝ √value`. The trap here is choosing what "value" means: the
  * magnitude NUMBER is logarithmic, so `√m` over a 6.5–7.5 window varies by 4% and every circle
  * comes out the same size — an encoding that draws a magnitude 7.5 as if it were a 6.5. The value a

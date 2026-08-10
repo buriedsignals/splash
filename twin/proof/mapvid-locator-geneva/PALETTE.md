@@ -5,10 +5,10 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`). `origin: newsroom` says who chose them.
 
-`twin-palette`'s subject-fit branch was checked and does not apply: `matchConvention` holds
+`palette`'s subject-fit branch was checked and does not apply: `matchConvention` holds
 conventions for renewables, fossil fuel, water and heat, and this beat's subject — where
 international organisations sit relative to a city centre — matches none of them. When no convention
 applies, the house theme wins.
@@ -21,6 +21,6 @@ variable moves, and putting a second categorical hue underneath a moving state w
 hold two colour meanings at once on a mark that changes under them. The tiers are the static
 sibling's subject. The distance is this one's.
 
-Measured with `twin-palette`'s own `contrast`: `#0B7A75` on `#FFFFFF` is 5.18:1, well clear of the 3:1 floor WCAG 2.2 SC 1.4.11 sets for
+Measured with `palette`'s own `contrast`: `#0B7A75` on `#FFFFFF` is 5.18:1, well clear of the 3:1 floor WCAG 2.2 SC 1.4.11 sets for
 a non-text mark, and clear of 4.5:1 too, which matters because the accent also carries a line of
 text on this frame.

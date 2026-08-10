@@ -1,7 +1,7 @@
 // This story's own Remotion root — one composition, per the project's own rule that a story
 // workspace holds one story.
 import { Composition } from "remotion";
-import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/twin-chart-video/sizes.mjs";
+import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/chart-video/sizes.mjs";
 import {
   SmallMultiplesCo2Video,
   type SmallMultiplesCo2VideoProps,

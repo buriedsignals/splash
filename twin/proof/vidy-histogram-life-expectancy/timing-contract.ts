@@ -11,7 +11,7 @@
  * the dumbbell's:
  *
  * - `establish` brings up the title, source line, the bin-edge x-axis (the type's own requirement
- *   — `twin-chart-beat/references/types/histogram.md`: "the x-axis is the continuous variable
+ *   — `chart-beat/references/types/histogram.md`: "the x-axis is the continuous variable
  *   itself, in its real unit, with bin edges markable on it") and the zero baseline the count axis
  *   is read against — furniture, same 26-frame rhythm as every prior beat.
  * - `reference` draws the ONE thing every bar is read against: the vertical median line. Same
@@ -36,7 +36,7 @@
  */
 
 // A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
-import type { BeatTiming } from "#shared/twin-chart-video/timing.ts";
+import type { BeatTiming } from "#shared/chart-video/timing.ts";
 
 export const HISTOGRAM_TIMING: BeatTiming = {
   fps: 30,

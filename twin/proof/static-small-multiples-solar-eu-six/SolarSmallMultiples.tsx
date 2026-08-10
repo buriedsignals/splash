@@ -22,13 +22,13 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 
 export type Panel = {
   country: string;
@@ -357,7 +357,7 @@ export function SolarSmallMultiples({
     : subtitle;
   const subtitleLines = wrap(standfirst, width - PAD * 2, T.SUBTITLE);
   // THE T.SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
-  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md,
   // "The source on the frame's bottom margin".
   // The credit was drawn as ONE unwrapped line. At a 2.2x type scale it measures past the frame's
   // right margin, and an unwrapped constant is exactly what clips a credit in silence. It wraps on

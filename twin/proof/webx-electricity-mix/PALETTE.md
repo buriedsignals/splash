@@ -18,7 +18,7 @@ differ only in lightness, which is the one axis a stacked column already spends 
 distinct hues is what the type needs, and which three is the newsroom's decision, not the
 component's. Recording them is how that decision reaches the render.
 
-`twin-palette`'s subject option was checked and deliberately NOT taken, and this is the beat where
+`palette`'s subject option was checked and deliberately NOT taken, and this is the beat where
 that matters most. `matchConvention` would fire on BOTH `renewables` and `fossil` here — and it
 returns null on a multi-match precisely so no table picks which of two series carries the argument.
 The subject conventions also propose ONE accent against a ground, never a categorical set: they are

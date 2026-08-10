@@ -79,7 +79,7 @@ row-hit rects only ever toggle their own class and the shared `#tooltip`.
 
 Driven with Puppeteer (`node_modules/puppeteer`, already installed at `twin/node_modules`), launched
 against the system's own installed Chrome (`/Applications/Google Chrome.app` — the same prerequisite
-gap `twin-chart-beat/scripts/render-still.mjs`'s own header comment names for `@resvg/resvg-js`'s
+gap `chart-beat/scripts/render-still.mjs`'s own header comment names for `@resvg/resvg-js`'s
 rejected alternative; puppeteer's own bundled Chrome was not present in this sandbox's cache and had
 to be pointed at the system install instead) against the actual rendered
 `population-pyramid-switzerland.html`, `file://` protocol, headless.

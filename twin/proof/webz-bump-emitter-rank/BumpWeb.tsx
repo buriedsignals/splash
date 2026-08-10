@@ -184,7 +184,7 @@ export function assertLabelRowsAreDistinct(
     );
 }
 
-/** The narrowest viewport `twin-chart-web/scripts/verify-web.mjs` drives this genre at, and the two
+/** The narrowest viewport `chart-web/scripts/verify-web.mjs` drives this genre at, and the two
  *  halves of `FRAME_PAD_PX` the skill's own stylesheet puts inside it. Named here rather than
  *  written into an expression because they are the pair every collision decision below is made
  *  against — this genre ships ONE layout for every width, so the width where the room runs out is
@@ -209,7 +209,7 @@ function pct(value: number, total: number): number {
 /** Air a year label keeps from its nearest drawn neighbour, edge to edge, in CSS pixels. */
 const TICK_AIR_PX = 6;
 /** The widest plot this scan is asked about, in CSS pixels. Stated rather than guessed: the widest
- *  viewport `twin-chart-web/scripts/verify-web.mjs` drives is 3440, so the plot column can never
+ *  viewport `chart-web/scripts/verify-web.mjs` drives is 3440, so the plot column can never
  *  exceed it — doubled, so the ceiling is never itself the answer. */
 const TICK_SCAN_CEILING_PX = 6880;
 

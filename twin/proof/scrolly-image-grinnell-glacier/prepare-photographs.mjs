@@ -52,7 +52,7 @@ const photographs = readPhotographs(
 
 for (const p of photographs) {
   const res = await fetch(p.fileUrl, {
-    headers: { "user-agent": "splash-twin beat/1.0 (repeat-photography scrolly)" },
+    headers: { "user-agent": "splash beat/1.0 (repeat-photography scrolly)" },
   });
   if (!res.ok) throw new Error(`${p.fileUrl} → HTTP ${res.status}`);
   const original = Buffer.from(await res.arrayBuffer());

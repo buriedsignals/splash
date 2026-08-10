@@ -10,7 +10,7 @@ and any concurrent write becomes a conflict in the middle of a mechanical change
   the old `skills/` (chart-native, map-native, suggest-*, splash-*) is deleted. The site at the root
   (`index.html`, `docs/`, `demos/`) is untouched — GitHub Pages serves it from `main`, not `rd-dev`.
 - **Traces first.** The old Splash is already fully online: local `main` is an ancestor of
-  `origin/rd-dev`, both at `c19d7a99`. The twin was pushed to `origin/splash-twin` before the rename
+  `origin/rd-dev`, both at `c19d7a99`. The twin was pushed to `origin/splash` before the rename
   began. Push the branch again immediately before replacing `rd-dev`, so the pre-replacement tip
   stays reachable.
 
@@ -21,12 +21,12 @@ and any concurrent write becomes a conflict in the middle of a mechanical change
 1. **The 15 skill directories and their front-matter names.** Dropping the prefix gives:
    `chart-beat · chart-video · chart-web · deliver · doctrine · dw-beat · image-beat · intake ·
    map-beat · map-web · newsroom-charter · palette · scrolly · storyboard · splash`.
-2. **The doors and the doctor** — 12 occurrences of `splash-twin` and 6 of `splash-twin-doctor`
+2. **The doors and the doctor** — 12 occurrences of `splash` and 6 of `splash-doctor`
    across `installer/{install.sh,place-skills.mjs,configure.mjs,doctor.mjs}` and
    `.claude-plugin/plugin.json`. The Claude-family door becomes `~/.claude/skills/splash`; the flat
    links in `~/.agents/skills/` take the new ids; the binary on `~/.local/bin` becomes
    `splash-doctor`.
-3. **The shared import specifiers** — `#shared/twin-chart-beat` and `#shared/twin-chart-video`,
+3. **The shared import specifiers** — `#shared/chart-beat` and `#shared/chart-video`,
    which appear in beat sources *and* in the `imports` map of `package.json` and of the root
    template. Rename both halves or nothing resolves.
 4. **`shared/` and the root template's mirror of it**, whose directory names are part of the

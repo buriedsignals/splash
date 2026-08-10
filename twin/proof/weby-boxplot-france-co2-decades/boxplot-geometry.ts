@@ -2,14 +2,14 @@
  * Pure statistics + coordinates for the box plot web beat — France's per-capita CO2 emissions by
  * decade. Written fresh from `proof/more-boxplot-france-co2-decades/DecadeBoxplot.tsx`'s shape
  * (`references/types/boxplot.md`) — duplicated, not imported: a beat never imports another beat's
- * files (`twin-chart-web/SKILL.md`, "duplicate, do not link").
+ * files (`chart-web/SKILL.md`, "duplicate, do not link").
  *
  * Two differences from the static beat's own `summarizeDecade`/`boxplotGeometry`, both there
  * because this genre's hover/focus tooltip needs to say more than the static frame ever prints:
  *
  *   1. `summarizeDecade` here takes `{ year, value }` readings, not bare `number[]` — an outlier's
  *      own YEAR ("1 outlier: 9.54 t (1980)") is part of what hover reveals
- *      (`twin-chart-web/references/web-discipline.md`: "every reading gets an exact, on-demand
+ *      (`chart-web/references/web-discipline.md`: "every reading gets an exact, on-demand
  *      value"), and the static beat's summary never had to carry it because its own printed
  *      outlier label is just the value.
  *   2. `boxplotGeometry` returns each box's own band `x`/`width` (`bandLeft`/`bandWidth`), not just

@@ -7,12 +7,12 @@
 // installed on the machine this was written on:
 //
 //   | route                                            | Goose 1.45 | Claude Code | Gemini 0.50 |
-//   | one link `~/.claude/skills/splash-twin → <root>` |   15 ✔     |    15 ✔     |    0 ✘      |
+//   | one link `~/.claude/skills/splash → <root>` |   15 ✔     |    15 ✔     |    0 ✘      |
 //   | 15 flat links in `~/.agents/skills/`             |   15 ✔     |     n/a     |   15 ✔      |
 //
 // So TWO doors cover every host, and neither is redundant:
 //
-//   1. `~/.claude/skills/splash-twin → <root>` — ONE link. Claude Code and Claude Desktop read this
+//   1. `~/.claude/skills/splash → <root>` — ONE link. Claude Code and Claude Desktop read this
 //      directory, and Goose scans it too (it is among Goose's own discovery roots). The link points
 //      at the ROOT, not at `skills/`, because on this door Claude requires the plugin manifest:
 //      measured, a directory holding `skills/*` with no `.claude-plugin/plugin.json` loads NOTHING
@@ -233,7 +233,7 @@ export function planPlacement({ root, home, dryRun = false }) {
     );
   } else {
     const dir = openDoor({ dir: claudeDoor.dir(home), doorId: claudeDoor.id, record, dryRun });
-    if (dir) placeLink({ linkPath: join(dir, "splash-twin"), target: root, doorId: claudeDoor.id, record, dryRun });
+    if (dir) placeLink({ linkPath: join(dir, "splash"), target: root, doorId: claudeDoor.id, record, dryRun });
   }
 
   // Door 2 — the canonical agents store: Gemini and Codex read only this shape, Goose reads it too.

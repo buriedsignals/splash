@@ -47,17 +47,17 @@ than the key — §7 prices all of it.
 ### 1.1 Nineteen cameras, nineteen bakes, nothing compared
 
 Twelve `bake.mjs` under `proof/`, four `bake-plate.mjs` under `proof/`, three `bake-plate.mjs` under
-`skills/` (`twin-map-beat`, `twin-map-web`, `twin-scrolly`). 4,644 lines total. Shared function names
+`skills/` (`map-beat`, `map-web`, `scrolly`). 4,644 lines total. Shared function names
 across them: `resolveChrome` 19/19, `parseEnvFile` 19/19, `partsOf` 4, `ringsOf` 5, `simplifyRing` 3,
 `keepRing` 3.
 
 **Nothing walks them.** `render-still-parity.test.ts:68-87,149` walks the tree for files named
 exactly `render-still.mjs`; its own header names the hole at `:48-51`. `helper-parity.test.ts:61-132`
 imports a hand-written list in which **not one `geo-*` or `bake*` function appears**.
-`twin-map-beat/test/geo.test.ts` exercises only `../assets/geo` — the skill's own copy.
+`map-beat/test/geo.test.ts` exercises only `../assets/geo` — the skill's own copy.
 
 The emitted `geometry.json` spine is `frame, bounds, style, gatedBy, zoom` in 18 of 19
-(`twin-scrolly/scripts/bake-plate.mjs:214-219` has no `bounds` — it fixes a camera by centre + zoom,
+(`scrolly/scripts/bake-plate.mjs:214-219` has no `bounds` — it fixes a camera by centre + zoom,
 `CAMERA` at `:44`). Beyond that spine:
 
 | Fact | Present in | Absent from |
@@ -82,8 +82,8 @@ prose at `:41` and duplicated verbatim at `mapvid-hexgrid-quakes/bake.mjs:45,214
 
 ### 1.2 Eighteen geometry cores, and the fourteen names that already disagree
 
-Sixteen `proof/*/geo-*.ts` plus `twin-map-beat/assets/geo.ts` (427 lines) and
-`twin-map-web/assets/geo-symbol.ts` (125 lines). 6,453 lines. Guarded by nothing.
+Sixteen `proof/*/geo-*.ts` plus `map-beat/assets/geo.ts` (427 lines) and
+`map-web/assets/geo-symbol.ts` (125 lines). 6,453 lines. Guarded by nothing.
 
 A body-by-body comparison of every function name appearing in more than one file (brace-matched,
 comments stripped, whitespace normalised — the `render-still-parity.test.ts:89-106` method) finds
@@ -91,11 +91,11 @@ comments stripped, whitespace normalised — the `render-still-parity.test.ts:89
 
 | Name | Copies | Disagreement |
 |---|---|---|
-| `sequentialRamp` | 6 | `FROM/TO` = `0.1/0.78` in the three choropleth copies (`mapgen-choropleth-video/geo-choropleth.ts:262-263`, `mapgen-choropleth-web/geo-choropleth.ts:251-252`, `twin-map-beat/assets/geo.ts:291-292`) vs `0.14/0.82` in the three hex copies (`map-quake-density/geo-hex.ts:254-255`, `mapgen-hexgrid-web/geo-hex.ts:282-283`, `mapvid-hexgrid-quakes/geo-hex.ts:278-279`). Same name, same docstring (`geo-hex.ts:247` claims *"Same construction as the choropleth's ramp"*), different numbers |
+| `sequentialRamp` | 6 | `FROM/TO` = `0.1/0.78` in the three choropleth copies (`mapgen-choropleth-video/geo-choropleth.ts:262-263`, `mapgen-choropleth-web/geo-choropleth.ts:251-252`, `map-beat/assets/geo.ts:291-292`) vs `0.14/0.82` in the three hex copies (`map-quake-density/geo-hex.ts:254-255`, `mapgen-hexgrid-web/geo-hex.ts:282-283`, `mapvid-hexgrid-quakes/geo-hex.ts:278-279`). Same name, same docstring (`geo-hex.ts:247` claims *"Same construction as the choropleth's ramp"*), different numbers |
 | `binIndex` | 6 | **Semantic**: hex trio tests `value > breaks[i]`, choropleth trio tests `value >= breaks[i]` — different boundary membership |
-| `readingOrder` | 5 | Four different sort keys, one reversed: `b.value-a.value` (`mapgen-choropleth-web:350`, `twin-map-web:57`), `b.population-a.population` (`mapgen-dot-web:325`), **ascending** `a.priority-b.priority` (`mapgen-locator-web:170`), delegate to `drawOrder` on `.mag` (`mapgen-symbol-web:155`) |
+| `readingOrder` | 5 | Four different sort keys, one reversed: `b.value-a.value` (`mapgen-choropleth-web:350`, `map-web:57`), `b.population-a.population` (`mapgen-dot-web:325`), **ascending** `a.priority-b.priority` (`mapgen-locator-web:170`), delegate to `drawOrder` on `.mag` (`mapgen-symbol-web:155`) |
 | `en` | 4 | `"en-US"` in the two choropleth copies, `"en-GB"` in `mapgen-dot-web:331` and `mapgen-symbol-web:304` — **one project, two locales for the same numbers** |
-| `radiusScale` | 3 | d3 `scaleSqrt` in the two proof copies vs hand-rolled `Math.sqrt` in `twin-map-web/assets/geo-symbol.ts:32` |
+| `radiusScale` | 3 | d3 `scaleSqrt` in the two proof copies vs hand-rolled `Math.sqrt` in `map-web/assets/geo-symbol.ts:32` |
 | `niceReferenceValues` | 3 | Hard-coded `0.5` step (magnitude domain) vs `top/count` |
 | `simplifyRing` | 9 | 3 shapes: typed `Ring`, typed `PixelRing`, and untyped `.mjs` transcriptions inside three dot bakes |
 | `keepRing` | 9 | Same: 6 typed cores vs 3 untyped bake transcriptions |
@@ -204,7 +204,7 @@ than an accident.
 `:357-381` must be **rewritten, not edited quietly** (R1's own instruction). The section keeps the old
 argument verbatim as the position that was overturned, adds the ruling verbatim, and adds the price
 list from §7 — so a future reader meets a decision with its cost attached, not a tidied page. The
-same reversal is due in `twin-map-web/SKILL.md:21,48-51,63-73,124` and in its Tuning-knobs rows
+same reversal is due in `map-web/SKILL.md:21,48-51,63-73,124` and in its Tuning-knobs rows
 (`:229-232`), which `skill-md-matches-code.test.ts:538` will fail on the moment `ZOOM_SCALE`
 disappears — that red is expected, not discovered.
 
@@ -230,7 +230,7 @@ argument and becomes a payload argument (§7.1).
 | T10 | Locator camera validated against the subject's footprint | T11 | 3 locator bakes/cores |
 | T11 | **The two missing rungs, produced** | T12 | 2 new beats |
 | T12 | The target aspect enters the camera (R2, rule 12) | W4's map half | 14 bakes, 7 video Roots |
-| T13 | Live MapTiler in the web seed (R1) | T14 | `twin-map-web` |
+| T13 | Live MapTiler in the web seed (R1) | T14 | `map-web` |
 | T14 | The five web beats retrofitted, three of them off the two-rung API (B5.1) | — | 5 proof beats |
 | T15 | The two doctrine rewrites, and the SKILL.md that contradicts them | — | 2 references, 2 SKILL.md |
 
@@ -248,7 +248,7 @@ extent is a gate nobody has tested.
 
 `findAll(TWIN, "bake.mjs")` **and** `findAll(TWIN, "bake-plate.mjs")`. Keying on one name would miss
 four `proof/` files and all three skill seeds — the identical mistake to a hand-written import list,
-made with a walk. Canonical: `skills/twin-map-beat/scripts/bake-plate.mjs` (the richest skill copy;
+made with a walk. Canonical: `skills/map-beat/scripts/bake-plate.mjs` (the richest skill copy;
 a `proof/` canonical would invert the tree's own direction of authority).
 
 Compares **top-level `function NAME(…)` declarations only**, by the
@@ -346,7 +346,7 @@ mechanism exists to close.
   downstream "big enough / too big / too close together" decision actually needs, and the reason every
   one of them is a typed pixel constant today.
 
-**Copies: 19** (16 `proof/`, 3 `skills/`). ~10 lines each. `twin-scrolly/scripts/bake-plate.mjs`
+**Copies: 19** (16 `proof/`, 3 `skills/`). ~10 lines each. `scrolly/scripts/bake-plate.mjs`
 included: it has no `bounds`, but it has a camera, and the facts are derived from the map.
 
 **Guard:** T3's walk, once it exists; within T1, the pin is that all 19 committed `geometry.json`
@@ -373,7 +373,7 @@ the frame's width* AND *the frame must reach the bounds that were asked for*, an
 be satisfied by a plate that lies** (`renderWorldCopies: false` satisfies the first while dropping
 1,057 of 14,175 events).
 
-**Copies: 18.** `twin-scrolly/scripts/bake-plate.mjs` carries `@parity-exempt: this bake fixes its
+**Copies: 18.** `scrolly/scripts/bake-plate.mjs` carries `@parity-exempt: this bake fixes its
 camera by centre and zoom, not by bounds; there is no asked-for extent to fall short of` — an
 exemption written down, which is the point of the mechanism.
 
@@ -385,13 +385,13 @@ constant would produce at any other latitude range.
 
 Copy `clipToBBox` (`mapmore-flow-danube/geo-flow.ts:145-172`) and `pointOnFeature` (`:189`) — three
 byte-identical copies, already shipped, no new idea — into `geo-choropleth.ts` (**3 copies**:
-`mapgen-choropleth-video`, `mapgen-choropleth-web`, `twin-map-beat/assets/geo.ts`) and `geo-dot.ts`
+`mapgen-choropleth-video`, `mapgen-choropleth-web`, `map-beat/assets/geo.ts`) and `geo-dot.ts`
 (**3 copies**: `mapgen-dot-web`, `mapmore-dot-population`, `mapvid-dot-population`), tagged `@parity`.
 
 Then:
 
 - delete `anchors.label` from `mapgen-choropleth-video/bake.mjs:42-47` and
-  `twin-map-beat/scripts/bake-plate.mjs:45`; the anchor is computed from the subject's own clipped
+  `map-beat/scripts/bake-plate.mjs:45`; the anchor is computed from the subject's own clipped
   rings at bake time.
 - `textAnchor="end"` → `"middle"` at `ChoroplethStill.tsx:241,252,335` and
   `ChoroplethVideo.tsx:389,400,511,521`. **The end-anchor is half of B6.10**: with a derived interior
@@ -441,7 +441,7 @@ of the content while another dimension of the same content grows past it)"*.
 
 It is the same class as the flip margin, measured: `margin = 170` in the three `geo-locator.ts` copies
 (`:118`, `:133`, `:118`), `130` in the two `geo-symbol.ts` proof copies (`:191`, `:187`), `90` in
-`twin-map-web/assets/geo-symbol.ts:73`. Six values, none derived, for "how near the edge before I
+`map-web/assets/geo-symbol.ts:73`. Six values, none derived, for "how near the edge before I
 flip" — while `measureText` exists and is already parity-guarded.
 
 **So it is one piece of work, not two.** The reserve — legend box or label gutter — is measured
@@ -548,7 +548,7 @@ The mechanism, in the order it runs:
 3. What is left is the **stage**. `stageAspect = stageWidth / stageHeight`.
 4. The bake is called with `--width` / `--height` = the stage box. **Five of nineteen bakes already
    take `--width`/`--height`** (`map-quake-density`, `mapvid-hexgrid-quakes`, `mapgen-hexgrid-web`,
-   `twin-scrolly`, and `mapgen-dot-web`/`mapmore-*`/`mapvid-dot-population` via `--size WxH`); the
+   `scrolly`, and `mapgen-dot-web`/`mapmore-*`/`mapvid-dot-population` via `--size WxH`); the
    remaining fourteen take a square `--size N`. **This is a generalisation of a shape the tree already
    has, not a new one.**
 5. `fitBounds(studyBounds, { padding: 0 })` at that stage box; T2's two invariants assert the result.
@@ -578,7 +578,7 @@ existing "text beside a square plate" clause, now applied in both directions.
 compositions (`mapgen-choropleth-video/Root.tsx:52-53`, `map-quake-symbol/Root.tsx:31-32`,
 `mapvid-hexgrid-quakes/Root.tsx:50-51`, `mapgen-flowmap-video/Root.tsx:38-39`,
 `mapvid-locator-geneva/Root.tsx:54-55`, `mapvid-dot-population/Root.tsx:47-48`,
-`twin-map-beat/assets/Root.tsx:51-52`) — where the export-sizes survey also records that the
+`map-beat/assets/Root.tsx:51-52`) — where the export-sizes survey also records that the
 `<Composition>` dimensions and the component's own `FRAME` are declared twice with **no guard between
 them** (`survey/export-sizes.md:12-16`). That guard belongs to W4; this spec's map half must not
 introduce a third place to state the same number.
@@ -613,7 +613,7 @@ state is not a preview of the real view — it IS the full claim"*, now read as 
 ### 6.2 What the live map is made of
 
 - **Ground**: `https://api.maptiler.com/maps/${style}/style.json?key=…`, the same style the bake
-  already uses at `twin-map-web/scripts/bake-plate.mjs:149` — so the live ground and the fallback plate
+  already uses at `map-web/scripts/bake-plate.mjs:149` — so the live ground and the fallback plate
   are the same cartography, including rule 7's water override, which must be re-applied to the live
   style on `style.load` exactly as the bake applies it at `:175-176`. **If the live map and its own
   fallback disagree about the colour of water, the swap is visible and the beat is broken.**
@@ -713,7 +713,7 @@ R1 accepted the key being visible to a reader of a published article. **It did n
 public leak, and the two are different exposures.** So:
 
 - the committed proof artifact carries a documented placeholder token;
-- `twin-deliver`'s `owned-file` / `embed` / `cms-insertion` forms substitute the real key at delivery
+- `deliver`'s `owned-file` / `embed` / `cms-insertion` forms substitute the real key at delivery
   (`deliver.mjs:37-62` is where the web genre's forms live);
 - **a new guard** asserts that no tracked file under `twin/` contains the value of `twin/.env`'s
   `MAPTILER_KEY`. Mutation: write the key into a scratch file inside a copy of the tree and confirm the
@@ -755,10 +755,10 @@ only the root `skills/` tree. Two consequences:
 - **CSP and privacy.** Reader IP addresses reach MapTiler on every article view, and a newsroom CMS with
   a strict `Content-Security-Policy` may block `api.maptiler.com` outright. The fallback layer is what
   that newsroom sees.
-- **`twin-scrolly` is not affected and must not be.** `twin-scrolly/SKILL.md:45` states the map track
+- **`scrolly` is not affected and must not be.** `scrolly/SKILL.md:45` states the map track
   shows one baked plate because *"a scroll-driven `flyTo` would mean…"* — rule 2 (a moving camera needs
   a fixed plate) is untouched by R1, which is about a **reader-driven** camera. The assertion at
-  `twin-scrolly/test/seed-tracks.test.ts:380-381` (`expect(html).not.toContain("api.maptiler.com")`)
+  `scrolly/test/seed-tracks.test.ts:380-381` (`expect(html).not.toContain("api.maptiler.com")`)
   **stays green**, and its map × web mirror is inverted: the map-web page must contain the style URL
   **and** the fallback's `data:image/png;base64,` — one assertion proving the reversal landed, one
   proving the fallback did not get dropped on the way.

@@ -11,7 +11,7 @@ import {
   type LifeExpectancyVideoProps,
 } from "./LifeExpectancyVideo";
 import { LIFE_EXPECTANCY_TIMING } from "./timing-contract";
-import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/twin-chart-video/sizes.mjs";
+import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/chart-video/sizes.mjs";
 
 // A placeholder so `remotion compositions` can list this without a props file. Every real render
 // is driven by ./render.mjs, which reads the frozen CSV and passes the real props.

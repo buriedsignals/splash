@@ -9,7 +9,7 @@
  * / `dumbbellGeometry`. `FONT_FAMILY`, `measureText`, `wrap` and `en` ARE this story's own copies of
  * the other proof workspaces' functions of the same name — not an import from any of them, per the
  * duplicate-do-not-link rule (`../video-population-growth-dumbbell/DumbbellVideo.tsx`'s file
- * doc-comment explains why: this story lives outside `twin-chart-video`'s skill boundary, and the
+ * doc-comment explains why: this story lives outside `chart-video`'s skill boundary, and the
  * settled rule for a workspace that needs something a skill has is to duplicate it, not reach back
  * across the boundary).
  *
@@ -29,7 +29,7 @@
  * `timing-contract.ts`'s doc-comment for the frame numbers this produces.
  *
  * COLOUR: the population-pyramid type doctrine
- * (`twin-chart-beat/references/types/population-pyramid.md`) requires the two side colours to be a
+ * (`chart-beat/references/types/population-pyramid.md`) requires the two side colours to be a
  * CVD-safe pair, checked together, not assumed safe individually — `BRIEF.md` names the pair and
  * the check. Male is Okabe-Ito blue (`#0072B2`), female is Okabe-Ito vermillion (`#D55E00`): a
  * cool/warm pair, not the two adjacent warm hues `visual-system.md`'s "adjacency inside an
@@ -58,7 +58,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 // The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
@@ -67,12 +67,12 @@ import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
 // genres read one copy. A population pyramid has no measured aspect range at a tall frame — its
 // argument is the SHAPE of two mirrored distributions, exactly the property the portrait probe
 // proved no counter here can see — so the two phone frames are refused by name.
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { PYRAMID_TIMING } from "./timing-contract";
 
 /** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
@@ -97,7 +97,7 @@ export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
  * has, so a journalist who pinned any of the three sizes got 4:5 whatever they chose. The frame is
  * `sizeFor(size)`'s now, and `size` is the decision gate 2c took. The shipped values are divided so
  * the SMALLEST token lands at 12 — the number every row's `typeScale` in
- * `twin-chart-video/scripts/sizes.mjs` is derived from.
+ * `chart-video/scripts/sizes.mjs` is derived from.
  *
  * EVERY SPACING NUMBER GOES THROUGH `sp`, including the centre gutter and the spine's own clearance:
  * a clearance measured in 1080-frame pixels stops covering a label the moment the label grows.
@@ -402,7 +402,7 @@ export function PyramidVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = sourceBottom;
   // The legend keeps the air it always had above it, measured from the LAST HEADER line (the
   // note) rather than from the source, which is no longer in the header.

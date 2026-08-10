@@ -30,7 +30,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** The beat's camera and its label anchor — the journalist's frame, not a default. */
 const BEAT = {
-  // Same Europe camera this project's other Europe beats use (`twin-map-beat`'s own CO2
+  // Same Europe camera this project's other Europe beats use (`map-beat`'s own CO2
   // choropleth, `mapmore-dot-population`'s dot-density): near-square once projected (rule 12),
   // wide enough west to hold Iceland whole. Poland and Sweden both sit comfortably inside it —
   // Poland lon 14.1–24.1 / lat 49.0–54.8, Sweden lon 11.1–24.2 / lat 55.3–69.0.

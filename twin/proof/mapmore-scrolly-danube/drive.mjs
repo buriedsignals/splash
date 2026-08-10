@@ -279,7 +279,7 @@ const MEASURE_LINE = async (dataUrl, accent, ground) => {
   // river is drawn whole and the card passes in front of it; where it does, this probe cannot read
   // the pixel underneath, so those samples are marked UNOBSERVABLE and no assertion is made from
   // them either way. Nothing here counts what the card takes away, and nothing downstream may:
-  // `twin-scrolly`'s doctrine carries the rule.
+  // `scrolly`'s doctrine carries the rule.
   const boxOf = (el) => {
     const r = el.getBoundingClientRect();
     return { left: r.left * ratio - 4, right: r.right * ratio + 4, top: r.top * ratio - 4, bottom: r.bottom * ratio + 4 };

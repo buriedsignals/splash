@@ -40,7 +40,7 @@ const MAP = { width: 940, height: 540 };
  *  bottom margin: the header gave back the row the source used to occupy, and the bottom stack
  *  needed that room to hold the credit as well as the caveat. 62 rather than the family's 50
  *  because this beat's guard was still three pixels short at 50, and said so. The same move the seed made
- *  (twin-map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
+ *  (map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
  *  own fit guard is what said so — it threw, by name, with the numbers in the message. */
 const MAP_Y = 178;
 
@@ -203,7 +203,7 @@ export function HexGridVideo({
   // visual, the same place on every graphic this project ships, and it carries the basemap credit
   // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
   // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
-  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  // map-beat/assets/Co2MapVideo.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;

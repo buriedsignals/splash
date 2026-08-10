@@ -10,7 +10,7 @@
  * `dumbbellGeometry`. `FONT_FAMILY`, `measureText`, `wrap` and `en` ARE this story's own copies of
  * the other proof workspaces' functions of the same name — not an import from any of them, per the
  * duplicate-do-not-link rule (`../video-population-growth-dumbbell/DumbbellVideo.tsx`'s file
- * doc-comment explains why: this story lives outside `twin-chart-video`'s skill boundary, and the
+ * doc-comment explains why: this story lives outside `chart-video`'s skill boundary, and the
  * settled rule for a workspace that needs something a skill has is to duplicate it, not reach back
  * across the boundary). `drawnSoFar` is NOT copied here — nothing in this beat traces a
  * continuously-drawing path; every mark pops into place at a fixed coordinate.
@@ -55,13 +55,13 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   assertTypeFloor,
   frameInsetFor,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 import { BOXPLOT_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -409,7 +409,7 @@ export function BoxplotVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = height - PAD;
   // The axis unit keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.

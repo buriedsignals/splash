@@ -68,14 +68,14 @@ script (`bake.mjs` in 12 beats, `bake-plate.mjs` in 4) and a physical copy of th
 **Shared:** nothing, at runtime. And nothing at test time either. Measured:
 
 - No two `geo-*.ts` files in the tree are byte-identical — sixteen files, sixteen distinct md5s.
-- `skills/splash-twin/test/render-still-parity.test.ts` walks the tree, but only for files
+- `skills/splash/test/render-still-parity.test.ts` walks the tree, but only for files
   **named `render-still.mjs`**. Its own header names the hole at line 48-51: *"Anything about a
   helper duplicated in a file NOT named `render-still.mjs` … stays that way until someone does this
   same walk for them."*
-- `skills/splash-twin/test/helper-parity.test.ts` imports a hand-written list
+- `skills/splash/test/helper-parity.test.ts` imports a hand-written list
   (`helper-parity.test.ts:61-124`): `measureText`, `deriveFurniture`, `contrast`, `parsePalette`,
   `wrap`, and the video timing vocabulary. **Not one `geo-*` or `bake*` function appears in it.**
-- `skills/twin-map-beat/test/geo.test.ts:2-20` imports only `../assets/geo` — the skill's own copy.
+- `skills/map-beat/test/geo.test.ts:2-20` imports only `../assets/geo` — the skill's own copy.
   The sixteen `proof/` copies are exercised by nothing and compared to nothing.
 
 So: **the map camera and every geometry helper that depends on it are the largest unguarded
@@ -167,7 +167,7 @@ Three different answers to "how big is the biggest circle", in three copies:
 | static | `MAX_RADIUS = 30` (absolute px) | `map-quake-symbol/QuakeSymbolStill.tsx:25` |
 | video | `MAX_RADIUS = 46` (absolute px) | `map-quake-symbol/QuakeSymbolVideo.tsx:39` |
 | web | `MARK_MAX_RADIUS_FRACTION = 0.045` of frame width | `mapgen-symbol-web/QuakeSymbolWeb.tsx:59` |
-| web seed | `MARK_MAX_RADIUS_FRACTION = 0.062` | `skills/twin-map-web/assets/MapWebSeed.tsx:78` |
+| web seed | `MARK_MAX_RADIUS_FRACTION = 0.062` | `skills/map-web/assets/MapWebSeed.tsx:78` |
 
 All four are **frame-relative at best, and never data-relative**. `radiusScale(maxMag, maxRadiusPx)`
 (`geo-symbol.ts:117-120`) maps the largest value to that cap regardless of how close together the
@@ -223,7 +223,7 @@ a rendering choice at planet scale, they are a false statement.
 type where the brief's question ("a hex grid at city scale and at planet scale are not the same
 picture") already has a coded answer: the *picture* is the same — ~220 cells across the frame — at
 every extent. The type sheet says the same thing
-(`skills/twin-map-beat/references/types/hex-grid.md:44-51`).
+(`skills/map-beat/references/types/hex-grid.md:44-51`).
 
 Two residuals, both real:
 
@@ -307,7 +307,7 @@ this axis implies.
 > legend bins (×1.01 → ×131.7), and the stage itself, where a frame taller than
 > `width × 360 / lonSpan` is letterboxed and the freed height goes to furniture. The fourth, the
 > label layer, stays open and is named as such. All six rungs were driven at real MapTiler and the
-> captures committed: `skills/twin-map-beat/output-proof/extent-range/RANGE.md`.
+> captures committed: `skills/map-beat/output-proof/extent-range/RANGE.md`.
 
 ---
 
@@ -375,7 +375,7 @@ proof/mapgen-locator-web/geo-locator.ts:133        margin = 170
 proof/mapvid-locator-geneva/geo-locator.ts:118     margin = 170
 proof/map-quake-symbol/geo-symbol.ts:191           margin = 130   (labelPlacement)
 proof/mapgen-symbol-web/geo-symbol.ts:187          margin = 130
-skills/twin-map-web/assets/geo-symbol.ts:73        margin = 90
+skills/map-web/assets/geo-symbol.ts:73        margin = 90
 ```
 
 None is derived from anything. A label's box is measurable (`measureText` exists and is
@@ -393,7 +393,7 @@ one-edge check wearing a two-sided name. `geo-symbol.ts:187-196` adds a vertical
 (`dy`) but keeps the same one-sided horizontal test.
 
 **Also diverged, for the same reason:** `sequentialRamp`'s span is `FROM 0.1 / TO 0.78` in the three
-choropleth copies (`geo-choropleth.ts:262-263`, `skills/twin-map-beat/assets/geo.ts:291-292`) and
+choropleth copies (`geo-choropleth.ts:262-263`, `skills/map-beat/assets/geo.ts:291-292`) and
 `FROM 0.14 / TO 0.82` in the three hex copies (`geo-hex.ts:254-255`). Same function name, same
 docstring (*"Same construction as the choropleth's ramp"* — `geo-hex.ts:247`), different numbers. I
 **cannot establish** whether that is deliberate per-type tuning or drift; the comment claims sameness
@@ -407,7 +407,7 @@ resolve in writing. Flagged, not asserted.
 The brief's original phrasing (a shared layer) is not available on this branch and I am not proposing
 it. The twin's rule is that a skill stays copy-pasteable, so helpers are duplicated and kept in step
 by a **walking** parity test — the pattern `render-still-parity.test.ts` already demonstrates. So the
-question is: *what is the smallest identical change to `twin-map-beat`, `twin-map-web` and the
+question is: *what is the smallest identical change to `map-beat`, `map-web` and the
 map-video path, and what walk guards it?*
 
 I do **not** believe any part of this needs a different home. Everything below is arithmetic over
@@ -556,7 +556,7 @@ one.
 
 ## 6. What `geo-discipline.md` — including rule 7a — already settles
 
-Reading `twin/skills/twin-doctrine/references/geo-discipline.md` against this axis:
+Reading `twin/skills/doctrine/references/geo-discipline.md` against this axis:
 
 **Settled, and I found no gap:**
 
@@ -629,9 +629,9 @@ mechanism is the one this axis needs everywhere:
    not diagnose them further — they belong to whoever has the motion axis.
 6. **B6.16** (a highlighted hexagon with nothing said about it) is a furniture/editorial item, not
    camera. Noted and not investigated.
-7. **The map-video path has no skill of its own.** `twin-map-beat` holds both static and video seeds
+7. **The map-video path has no skill of its own.** `map-beat` holds both static and video seeds
    (`SKILL.md:20-23`, deliberately — *"they must not drift apart on the camera"*). So "the map-video
-   path" in §5 means `twin-map-beat/assets/Co2MapVideo.tsx` plus the six `proof/` video beats, and
+   path" in §5 means `map-beat/assets/Co2MapVideo.tsx` plus the six `proof/` video beats, and
    every step lands there as one more copy under the same walk. I believe that is right, but it means
    a `bake-parity` walk must cover `proof/` as well as `skills/` — which
    `render-still-parity.test.ts` already does, so the precedent exists.

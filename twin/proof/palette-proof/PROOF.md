@@ -34,7 +34,7 @@ The two PNGs were **opened and looked at**, not inferred from the exit code.
 **3. The refusal.** With `PALETTE.md` moved aside, `readPalette` throws:
 
 ```
-No PALETTE.md found for …/proof/palette-proof. Run twin-palette's proposal, let the journalist
+No PALETTE.md found for …/proof/palette-proof. Run palette's proposal, let the journalist
 choose, and record the answer. Looked in:
   …/proof/palette-proof/PALETTE.md
   …/proof/PALETTE.md
@@ -64,5 +64,5 @@ deliberate.
   and not yet built. The measurement's own headline: resvg accepts a custom face but **never errors
   on one it cannot resolve**, so a typeface answer's refusal has to happen before the render, not
   during it.
-- **Not the proposal itself.** That `twin-palette` proposes sensibly is covered by its own tests;
+- **Not the proposal itself.** That `palette` proposes sensibly is covered by its own tests;
   this proves only that an answer, once recorded, arrives intact in pixels.

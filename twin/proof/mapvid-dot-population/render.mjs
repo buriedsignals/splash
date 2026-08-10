@@ -26,7 +26,7 @@ import { fileURLToPath } from "node:url";
 import {
   deriveFurniture,
   readPalette,
-} from "../../skills/twin-map-beat/scripts/render-still.mjs";
+} from "../../skills/map-beat/scripts/render-still.mjs";
 import {
   chooseDotValue,
   joinPopulation,

@@ -1,12 +1,12 @@
 // twin/proof/vidy-heatmap-renewables-europe/render.mjs
 //
 // This story's own render script — the render ladder's second rung, same shape as
-// `twin-chart-video/scripts/render-video.mjs` and the other proof workspaces'
+// `chart-video/scripts/render-video.mjs` and the other proof workspaces'
 // (`readingsFromCsv`, then still-first, then mp4), its own story constants.
 //
 // `deriveFurniture` is imported from THIS SKILL's own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
-// alias, and not `twin-chart-beat`'s original. It supplies the NON-ramp colours (ink/muted/grid);
+// (`skills/chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
+// alias, and not `chart-beat`'s original. It supplies the NON-ramp colours (ink/muted/grid);
 // the sequential colour ramp itself is this beat's own `rampAnchors`/`rampColor`
 // (`HeatmapVideo.tsx`), derived from `ground` and `accent`, never from `deriveFurniture`.
 //
@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 import {
   deriveFurniture,
   readPalette,
-} from "../../skills/twin-chart-video/scripts/render-still.mjs";
+} from "../../skills/chart-video/scripts/render-still.mjs";
 // The VIDEO genre's own size table (landscape floor 30, type scale 2.5), and the type-vs-size
 // question, which is craft-neutral and therefore has one copy serving both genres.
 import {
@@ -27,8 +27,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");

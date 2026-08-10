@@ -28,7 +28,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import type { Reading } from "./PortraitLine.tsx";
 
 /** The scale, COPIED from `MobileFirstHistogram.tsx` rather than imported. That is the twin's

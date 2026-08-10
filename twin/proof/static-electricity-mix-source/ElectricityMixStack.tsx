@@ -16,13 +16,13 @@ import {
   contrast,
   assertLegible,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 
 export type Country = {
   name: string;
@@ -304,7 +304,7 @@ export function ElectricityMixStack({
   const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same inset the title
   // hangs off at the top, on the same x. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   // At portrait that bottom is the STAGE's: below it the platform's caption and progress bar sit
   // over the frame, and a covered credit is an attribution failure rather than a cosmetic one.
   const sourceBaseline =

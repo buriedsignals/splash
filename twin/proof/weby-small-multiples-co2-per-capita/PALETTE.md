@@ -5,10 +5,10 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as documented in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`). `origin: newsroom` says who chose them.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat), and this beat's subject — per-capita CO₂
 emissions in four European countries between 1950 and 2024 — fires none of them. When no convention
 applies, the house theme wins.

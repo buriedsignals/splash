@@ -3,7 +3,7 @@
  * rasteriser — this is what makes the join testable at all, and what lets the bake step (node) and
  * a test import it without either dragging a browser's runtime behind it.
  *
- * This is this beat's OWN physical copy of the relevant pieces of `twin-map-beat/assets/geo.ts`
+ * This is this beat's OWN physical copy of the relevant pieces of `map-beat/assets/geo.ts`
  * (`references/geo-discipline.md` rule 3's own header note: a beat carries its own copy, never an
  * import across proof/ beats or out of a skill — see `mapmore-flow-danube/geo-flow.ts`'s header for
  * the same rule stated there). Trimmed to what a WEB beat needs: no `revealOrder` (that is this
@@ -11,7 +11,7 @@
  * order" — a rule about a VIDEO's time axis; a static SVG has no frames to reveal across). Kept:
  * `scalePosition`, because this beat's own legend still places two named marks (the subject and the
  * comparison) on one continuous scale beside the discrete class bar, the same way
- * `twin-map-beat/assets/Co2MapStill.tsx` does.
+ * `map-beat/assets/Co2MapStill.tsx` does.
  */
 
 export type Ring = [number, number][];
@@ -89,7 +89,7 @@ export const CO2_2023_STUDY = [
 ] as const;
 
 /** Class boundaries in tonnes per person — the same six-class split
- *  `twin-map-beat/assets/geo.ts`'s own `CO2_BREAKS` uses for the same quantity (CO₂ per capita):
+ *  `map-beat/assets/geo.ts`'s own `CO2_BREAKS` uses for the same quantity (CO₂ per capita):
  *  under 2, then 2s, then 10 and over. Reused deliberately, not re-derived, because it is the same
  *  measured quantity and there is no reason for two different beats to draw two different class
  *  boundaries for it. */
@@ -417,7 +417,7 @@ export function simplifyRing(ring: Ring, minGap: number): Ring {
  * MultiPolygon PARTS into one undifferentiated list ahead of that decision — the trap named in
  * `geo-discipline.md` rule 11's own warning (a flattened ring list can misread one island's own
  * outer boundary as a hole of another part). This beat avoids that trap the same way
- * `twin-map-beat/scripts/bake-plate.mjs`'s own `ringsOf` and `mapmore-flow-danube/geo-flow.ts`'s
+ * `map-beat/scripts/bake-plate.mjs`'s own `ringsOf` and `mapmore-flow-danube/geo-flow.ts`'s
  * own `pointInGeometry` do: `bake-plate.mjs` in THIS folder keeps every shape's rings — flattened
  * across a MultiPolygon's own parts, but never across two DIFFERENT shapes — because the drawing
  * path below fills with `fill-rule="evenodd"`, which sums ray-crossings across every subpath

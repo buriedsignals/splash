@@ -40,7 +40,7 @@ const MAP_X = (FRAME.width - MAP.width) / 2;
 /** The plate's top edge. It came DOWN by 50px when the credit left the header for the frame's
  *  bottom margin: the header gave back the row the source used to occupy, and the bottom stack
  *  needed that room to hold the credit as well as the caveat. The same move the seed made
- *  (twin-map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
+ *  (map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
  *  own fit guard is what said so — it threw, by name, with the numbers in the message. */
 const MAP_Y = 195;
 
@@ -219,7 +219,7 @@ export function DotDensityVideo({
   // visual, the same place on every graphic this project ships, and it carries the basemap credit
   // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
   // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
-  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  // map-beat/assets/Co2MapVideo.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;

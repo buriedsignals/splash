@@ -21,8 +21,8 @@ answered with a shared runtime module.
 
 ## 1. The phase order — the contract every task below serves
 
-Current, as documented at `skills/splash-twin/SKILL.md:196-211` and
-`skills/twin-storyboard/references/exchange.md:8-98`:
+Current, as documented at `skills/splash/SKILL.md:196-211` and
+`skills/storyboard/references/exchange.md:8-98`:
 
 ```
 preflight → intake → ① restitution → ② takeaway (G1) → ③ hand (5 questions)
@@ -110,7 +110,7 @@ that exists; they do not invent one.
 
 ### Measured state
 
-`skills/twin-storyboard/scripts/ground-claim.mjs:260-292`, `checkNumericRanges`:
+`skills/storyboard/scripts/ground-claim.mjs:260-292`, `checkNumericRanges`:
 
 ```js
 // :278 — membership in a single column's [min, max]
@@ -130,13 +130,13 @@ takeaway lands in that `else`** — systematic, not an edge case. The run: `34` 
 `glace_fondue_mt`) reported `contradicted` at `[1652-1661]`.
 
 Two aggravating facts. `NUMBER_RE` (`:34`) matches every bare integer, so years, counts and ordinals
-are all range-tested. And `twin-intake`'s `profileTable` (`skills/twin-intake/scripts/profile.mjs:20-35`)
+are all range-tested. And `intake`'s `profileTable` (`skills/intake/scripts/profile.mjs:20-35`)
 emits no `rows`, so on a real profile `checkNumericRanges` is the **only** check that ever fires —
 and it was the broken one.
 
 ### The change, file by file
 
-1. `skills/twin-storyboard/scripts/ground-claim.mjs`
+1. `skills/storyboard/scripts/ground-claim.mjs`
    - `:285-291` — `verdict: "contradicted"` → `verdict: "unverifiable"`, detail rewritten to say what
      it is: *"could not be placed in any numeric column's range (…) — this check has no way to
      confirm or refute it"*. **Only a value that contradicts a fact this function DID establish stays
@@ -149,20 +149,20 @@ and it was the broken one.
      writing "34" against a sum of 33.8 still resolves. Add it to the skill's Tuning-knobs table.
    - Header comment: update the numbered claim-shape list (`:26-32`) with the aggregate shape, and
      state that an unplaceable number is now information, not a refusal.
-2. `skills/twin-intake/scripts/profile.mjs:20-35` — `profileTable` emits `sum` beside `min`/`max`
+2. `skills/intake/scripts/profile.mjs:20-35` — `profileTable` emits `sum` beside `min`/`max`
    for numeric columns (`sum: numbers.length ? numbers.reduce((a, b) => a + b, 0) : null`). One line.
    Nothing else in the tree reads a column object positionally; the added key is additive.
-3. `skills/twin-storyboard/SKILL.md` — the `groundTakeaway` paragraph in "How it works" (step 5) and
+3. `skills/storyboard/SKILL.md` — the `groundTakeaway` paragraph in "How it works" (step 5) and
    the Architecture row for `ground-claim.mjs`: name the aggregate check and the `unverifiable`
    rule. `skill-md-matches-code.test.ts` reads the Architecture File column and the Tuning-knobs
    Where column, so both must name real files.
-4. `skills/twin-intake/SKILL.md` — the profile shape statement gains `sum`.
+4. `skills/intake/SKILL.md` — the profile shape statement gains `sum`.
 
 Duplication: none. `ground-claim.mjs` exists once; `profileTable` exists once.
 
 ### The guard, and the mutation that reddens it
 
-`skills/twin-storyboard/test/ground-claim.test.ts` gains three cases, driven by the **real** run
+`skills/storyboard/test/ground-claim.test.ts` gains three cases, driven by the **real** run
 data rather than invented numbers (`emissions_tco2e` [600000, 930000], `glace_fondue_mt` [9, 14],
 `manteau_neigeux_km2` [1.5, 2.3], rows 14 / 11 / 9):
 
@@ -182,7 +182,7 @@ data rather than invented numbers (`emissions_tco2e` [600000, 930000], `glace_fo
 ### What T1 does not close
 
 `profileTable` still emits no `rows`, so every comparison shape in `ground-claim.mjs` (`:199`,
-`:203`) still returns `unverifiable` on a real twin-intake profile. That is now honest rather than
+`:203`) still returns `unverifiable` on a real intake profile. That is now honest rather than
 harmful — an unplaceable claim is reported as unplaceable — so freezing row-level data is a separate
 piece of work, named in §11.
 
@@ -196,8 +196,8 @@ piece of work, named in §11.
 
 | Gate | File | Skill |
 |---|---|---|
-| `whereIs` / `missingForGate2` | `skills/splash-twin/scripts/where.mjs:116-143, 154-178` | **`splash-twin`** |
-| `checkStoryboard` | `skills/twin-storyboard/scripts/storyboard.mjs:105-161` | **`twin-storyboard`** |
+| `whereIs` / `missingForGate2` | `skills/splash/scripts/where.mjs:116-143, 154-178` | **`splash`** |
+| `checkStoryboard` | `skills/storyboard/scripts/storyboard.mjs:105-161` | **`storyboard`** |
 
 Different skills, so a shared module is not available; `where.mjs:41-48` documents that choice in its
 own comment. `missingForGate2` has no `profile` and no `capabilities` argument, so it structurally
@@ -206,7 +206,7 @@ cannot run grounding (`storyboard.mjs:110-116`), `genreGap` (`:147-150`) or `cap
 The run put both verdicts side by side: `whereIs` → `phase: "production", missing: []`
 (`[1666-1670]`); `checkStoryboard` → Gate 2 not closed (`[1658-1661]`).
 
-**The false green is one line.** `skills/splash-twin/test/where.test.ts:325`:
+**The false green is one line.** `skills/splash/test/where.test.ts:325`:
 
 ```ts
 const checkStoryboardClosed = checkStoryboard(meta).length === 0;
@@ -222,7 +222,7 @@ opposite of what it does.
 
 **Part 1 — take the three expensive checks out of the re-derivation business.**
 
-1. `skills/twin-storyboard/scripts/storyboard.mjs`
+1. `skills/storyboard/scripts/storyboard.mjs`
    - `checkStoryboard(meta)` returns to **one argument**. Delete the `profile` block (`:110-116`) and
      the `capabilities` block (`:156-159`); delete the `genreGap` call (`:147-150`).
    - It instead checks the recorded scalars of §2: `grounding` present and in vocabulary,
@@ -232,18 +232,18 @@ opposite of what it does.
      `export const REQUIRED_SLOT_FIELDS = ["medium", "genre", "size", "reachable", "chosen"];`
    - `groundTakeaway`, `genreGap` and `capabilityGap` stay exported from this skill and are now
      called by the **phases** (G1 and G2b) rather than by the gate. Say so in the header comment.
-2. `skills/splash-twin/scripts/where.mjs`
+2. `skills/splash/scripts/where.mjs`
    - `missingForGate2` (`:116-143`) gains the same four scalars and the same slot fields, using the
      existing `hasScalarField` / `parseSlotsForGate` machinery — no new parsing.
    - Export the same two constants, spelled independently (this is the deliberate duplicate).
    - Update the mirror comment at `:41-48` to name the four new scalars.
-3. `skills/twin-storyboard/SKILL.md` and `skills/splash-twin/SKILL.md` — the Gate-2 rows and the
-   `checkStoryboard` signature descriptions. `skills/splash-twin/SKILL.md:205`'s phase table gains
+3. `skills/storyboard/SKILL.md` and `skills/splash/SKILL.md` — the Gate-2 rows and the
+   `checkStoryboard` signature descriptions. `skills/splash/SKILL.md:205`'s phase table gains
    the three sub-gates and the G3 row from T8.
 
 **Part 2 — make the guard walk.**
 
-4. `skills/splash-twin/test/where.test.ts` — delete the nine hand-written fixtures (`:276-313`) and
+4. `skills/splash/test/where.test.ts` — delete the nine hand-written fixtures (`:276-313`) and
    generate them: **one complete Gate-2 template, mutated field by field, with the field list read
    from both sides' exported constants** (union of `REQUIRED_SCALARS` and `REQUIRED_SLOT_FIELDS` from
    each gate). For each field, three fixtures: absent, bare-`null`, and (for slot fields) a value
@@ -279,41 +279,41 @@ and this task does not widen it. Named, not solved.
 
 ### Measured state
 
-`skills/twin-storyboard/scripts/genre-catalog.mjs:21-25`:
+`skills/storyboard/scripts/genre-catalog.mjs:21-25`:
 
 ```js
-static: { producerSkill: "twin-chart-beat", delivered: true },
-web:    { producerSkill: "twin-chart-web",  delivered: true },
-video:  { producerSkill: "twin-chart-video", delivered: true },
+static: { producerSkill: "chart-beat", delivered: true },
+web:    { producerSkill: "chart-web",  delivered: true },
+video:  { producerSkill: "chart-video", delivered: true },
 ```
 
 Three genres, three **chart** producers. A `medium: map` + `genre: web` slot passes `genreGap` by
-naming `twin-chart-web` — the wrong producer. `twin-map-beat`, `twin-map-web`, `twin-image-beat` and
-`twin-scrolly` are unreachable through this table. `genreGap("scrolly")` refuses outright (`:34-37`)
-and `offerForms({genre:"scrolly"})` throws (`skills/twin-deliver/scripts/deliver.mjs:88-93`) — yet
-`MATRIX.md:46` records a real scrolly beat (`mapmore-scrolly-danube`) and `twin-scrolly` ships as a
+naming `chart-web` — the wrong producer. `map-beat`, `map-web`, `image-beat` and
+`scrolly` are unreachable through this table. `genreGap("scrolly")` refuses outright (`:34-37`)
+and `offerForms({genre:"scrolly"})` throws (`skills/deliver/scripts/deliver.mjs:88-93`) — yet
+`MATRIX.md:46` records a real scrolly beat (`mapmore-scrolly-danube`) and `scrolly` ships as a
 complete skill whose seed carries four tracks including a chart and a map.
 
-`skills/splash-twin/test/genre-shippability.test.ts:24-44` already asserts, in both directions, that
+`skills/splash/test/genre-shippability.test.ts:24-44` already asserts, in both directions, that
 each `producerSkill` exists on disk and that `delivered: true` matches a real `FORMS_BY_GENRE` key.
 It is the right guard; it cannot see a wrong producer because **medium is not in the table**.
 
 ### The change, file by file
 
-1. `skills/twin-storyboard/scripts/genre-catalog.mjs` — `GENRE_CATALOG` keyed on the pair:
+1. `skills/storyboard/scripts/genre-catalog.mjs` — `GENRE_CATALOG` keyed on the pair:
 
    ```js
    export const GENRE_CATALOG = {
-     "chart/static":  { producerSkill: "twin-chart-beat",  delivered: true },
-     "chart/web":     { producerSkill: "twin-chart-web",   delivered: true },
-     "chart/video":   { producerSkill: "twin-chart-video", delivered: true },
-     "chart/scrolly": { producerSkill: "twin-scrolly",     delivered: true },
-     "map/static":    { producerSkill: "twin-map-beat",    delivered: true },
-     "map/web":       { producerSkill: "twin-map-web",     delivered: true },
-     "map/video":     { producerSkill: "twin-map-beat",    delivered: true },
-     "map/scrolly":   { producerSkill: "twin-scrolly",     delivered: true },
-     "image/static":  { producerSkill: "twin-image-beat",  delivered: true },
-     "image/scrolly": { producerSkill: "twin-scrolly",     delivered: true },
+     "chart/static":  { producerSkill: "chart-beat",  delivered: true },
+     "chart/web":     { producerSkill: "chart-web",   delivered: true },
+     "chart/video":   { producerSkill: "chart-video", delivered: true },
+     "chart/scrolly": { producerSkill: "scrolly",     delivered: true },
+     "map/static":    { producerSkill: "map-beat",    delivered: true },
+     "map/web":       { producerSkill: "map-web",     delivered: true },
+     "map/video":     { producerSkill: "map-beat",    delivered: true },
+     "map/scrolly":   { producerSkill: "scrolly",     delivered: true },
+     "image/static":  { producerSkill: "image-beat",  delivered: true },
+     "image/scrolly": { producerSkill: "scrolly",     delivered: true },
    };
    ```
 
@@ -321,23 +321,23 @@ It is the right guard; it cannot see a wrong producer because **medium is not in
    is what the journalist is told at the genre gate instead of at the last phase. Say so in the
    header. `genreGap(medium, genre)` takes the pair, and its refusal names both: *"map beats in the
    web genre are not one this toolchain can produce or deliver yet"*.
-2. `skills/twin-deliver/scripts/deliver.mjs:26-76` — `FORMS_BY_GENRE` gains a `scrolly` entry. A
+2. `skills/deliver/scripts/deliver.mjs:26-76` — `FORMS_BY_GENRE` gains a `scrolly` entry. A
    scrolly delivers one self-contained HTML page, exactly as `web` does, so its forms are `web`'s
    four (`owned-file`, `source-bundle`, `embed`, `cms-insertion`) with the `gives` strings rewritten
    to say "scroll-driven page". `offerForms` (`:88-98`) then stops throwing on `scrolly` with no
    other change.
-3. `skills/splash-twin/test/genre-shippability.test.ts` — walks **pairs**: for every
+3. `skills/splash/test/genre-shippability.test.ts` — walks **pairs**: for every
    `"<medium>/<genre>"` key, the producer directory exists on disk; `delivered: true` matches a real
    `FORMS_BY_GENRE[genre]` key; and, the reverse direction, every `FORMS_BY_GENRE` genre appears in
    at least one catalog pair marked delivered.
-4. `skills/twin-storyboard/scripts/storyboard.mjs` — the G2b phase (not the gate) calls
+4. `skills/storyboard/scripts/storyboard.mjs` — the G2b phase (not the gate) calls
    `genreGap(slot.medium, slot.genre)` and `capabilityGap(capabilities, slot.medium)`, and records
    `reachable: yes` or refuses the pair before it is ever offered.
-5. `skills/splash-twin/SKILL.md:222` — the production dispatch table gains `twin-map-web`,
-   `twin-image-beat` and `twin-scrolly`, which it does not name today.
-6. `skills/twin-storyboard/SKILL.md` — the Architecture row for `genre-catalog.mjs`.
+5. `skills/splash/SKILL.md:222` — the production dispatch table gains `map-web`,
+   `image-beat` and `scrolly`, which it does not name today.
+6. `skills/storyboard/SKILL.md` — the Architecture row for `genre-catalog.mjs`.
 
-Duplication: `GENRE_CATALOG` is, and stays, a reimplementation of `twin-deliver`'s knowledge —
+Duplication: `GENRE_CATALOG` is, and stays, a reimplementation of `deliver`'s knowledge —
 two copies, cross-checked by `genre-shippability.test.ts`, never imported. `capabilityGap` stays two
 copies (`preflight.mjs:213-217` and `capability-gap.mjs:20-24`), guarded by the existing
 `capability-gap-parity.test.ts`.
@@ -346,7 +346,7 @@ copies (`preflight.mjs:213-217` and `capability-gap.mjs:20-24`), guarded by the 
 
 `genre-shippability.test.ts` walking the pairs. **Mutations:**
 
-- point `"map/web"` at `twin-chart-web` → still green today (both directories exist); so add the
+- point `"map/web"` at `chart-web` → still green today (both directories exist); so add the
   third assertion the pair form makes possible: **the producer skill's own `SKILL.md` front-matter
   `name` must equal `producerSkill`, and its description must name the medium** — then the mutation
   reddens. Without that assertion this task's central claim is unguarded.
@@ -370,11 +370,11 @@ Both of these return **nothing**:
 
 ```
 grep -rn "MATRIX" skills/
-grep -rn "references/types" skills/twin-storyboard/
+grep -rn "references/types" skills/storyboard/
 ```
 
-`skills/twin-chart-beat/references/types/` holds 33 files (32 type sheets + README);
-`skills/twin-map-beat/references/types/` holds 9 (8 + README). Each sheet answers what the type is
+`skills/chart-beat/references/types/` holds 33 files (32 type sheets + README);
+`skills/map-beat/references/types/` holds 9 (8 + README). Each sheet answers what the type is
 for and when not to reach for it (`types/README.md:1-7`). `twin/MATRIX.md` is generated from the
 tree by `twin/scripts/matrix.mjs`, counts an artifact only when it exists on disk (`matrix.mjs:13-17`),
 and records 17 chart types × 3 genres plus 6 map types. **The exchange has never heard of any of it.**
@@ -383,7 +383,7 @@ of the same three numbers.
 
 ### The change, file by file
 
-A `twin-storyboard` script may not read `twin-chart-beat/references/types/` — that literal resolves
+A `storyboard` script may not read `chart-beat/references/types/` — that literal resolves
 inside another skill and `no-cross-skill-imports.test.ts` flags it whatever it points at. The twin's
 own answer to that is already on the shelf: **generate the material into the skill, and drift-check
 the copy.**
@@ -393,10 +393,10 @@ the copy.**
    may read the whole tree). It walks the 40 type sheets and, for each, emits one row:
    **medium · type · the sheet's own "What it is for" first sentence, verbatim · the genres proven on
    disk**, the last read exactly the way `matrix.mjs` reads them (an artifact exists, or the cell is
-   empty). It writes `skills/twin-storyboard/references/type-survey.md`.
-2. `skills/twin-storyboard/references/type-survey.md` — generated, header marked
+   empty). It writes `skills/storyboard/references/type-survey.md`.
+2. `skills/storyboard/references/type-survey.md` — generated, header marked
    **"Generated — do not edit by hand"**, same wording as `MATRIX.md`.
-3. `skills/twin-storyboard/references/exchange.md` — new movement between ③ and the proposal:
+3. `skills/storyboard/references/exchange.md` — new movement between ③ and the proposal:
    **⑤ The survey.** Not a question: the ground the medium question stands on. It lists the types the
    frozen profile could support (a type whose required shape the profile cannot supply is listed as
    *not applicable, and why*), each annotated *reachable* / *not reachable, and why* from
@@ -404,12 +404,12 @@ the copy.**
    recommendation") stands; what changes is that **a recommendation may not be drawn as a chart
    before a chart has been chosen** — add that as a discipline bullet, because the run drew bars five
    times before any medium existed (`[1182]`, `[1223]`, `[1318]`).
-4. `skills/twin-storyboard/SKILL.md` — Files section gains `references/type-survey.md` and names the
+4. `skills/storyboard/SKILL.md` — Files section gains `references/type-survey.md` and names the
    generator.
 
 ### The guard, and the mutation that reddens it
 
-`skills/twin-storyboard/test/type-survey.test.ts` runs `bun twin/scripts/type-survey.mjs --check` and
+`skills/storyboard/test/type-survey.test.ts` runs `bun twin/scripts/type-survey.mjs --check` and
 asserts a clean exit, plus asserts every type sheet on disk has a row. **Mutations:** add a type sheet
 without regenerating → red. Hand-edit a "for" sentence in the generated file → red.
 
@@ -426,7 +426,7 @@ the survey was *shown* would need a transcript check, which this branch has no m
 
 ### Measured state
 
-`skills/twin-storyboard/references/exchange.md:21-36`, five questions and their destinations:
+`skills/storyboard/references/exchange.md:21-36`, five questions and their destinations:
 
 | # | line | destination | presumes? |
 |---|---|---|---|
@@ -436,7 +436,7 @@ the survey was *shown* would need a transcript check, which this branch has no m
 | 4 | `:33` placement | "…**Also feeds channel and size**" | **yes, and worse** — it *decides* genre and size at movement ③ |
 | 5 | `:34` credit | the source line | no |
 
-Palette: `skills/twin-palette/scripts/palette.mjs:167-225`. House pushed first (`:176`), subject
+Palette: `skills/palette/scripts/palette.mjs:167-225`. House pushed first (`:176`), subject
 second and only on a match (`:190-206`), and `recommended` prefers house explicitly (`:219-222`).
 The comment at `:211-212` states the inverse of what the owner now asks for.
 `SUBJECT_CONVENTIONS` (`:98-131`) holds four entries; `matchConvention` (`:140-145`) returns nothing
@@ -444,7 +444,7 @@ when several match.
 
 ### The change, file by file
 
-1. `skills/twin-storyboard/references/exchange.md`
+1. `skills/storyboard/references/exchange.md`
    - Q1 destination → *"the one element the visual emphasises, whatever its medium."*
    - Q2 destination → *"the reference the reader measures against — the mechanism that carries it is
      chosen with the medium, not here."*
@@ -453,8 +453,8 @@ when several match.
      clause is **deleted from `:33`** and becomes movement ⑧, the size gate.
    - Movements renumbered: ① restitution · ② takeaway **+ grounding (G1)** · ③ hand (four questions)
      · ④ survey · ⑤ medium (G2a) · ⑥ genre (G2b) · ⑦ size (G2c) · ⑧ reference · ⑨ palette · ⑩ brief.
-     Renumber every cross-reference to a movement in `twin-storyboard/SKILL.md`,
-     `twin-doctrine/references/reference-set.md:1-8` and `storyboard.mjs`'s comments — grep for
+     Renumber every cross-reference to a movement in `storyboard/SKILL.md`,
+     `doctrine/references/reference-set.md:1-8` and `storyboard.mjs`'s comments — grep for
      `movement ` and for the circled digits.
 2. **The size gate, specified so it cannot offer what nothing renders.** The vocabulary is
    `portrait` / `square` / `landscape` for static and video, `fluid` for web and scrolly. Today only
@@ -462,23 +462,23 @@ when several match.
    **states** the size and names that one value is reachable, rather than asking, whenever the
    reachable set has one member; it asks when it has more. Either way it records `size:` on the slot,
    so W4 widens a set and re-plumbs nothing.
-3. `skills/twin-palette/scripts/palette.mjs` — move the subject push (`:190-206`) above the house
+3. `skills/palette/scripts/palette.mjs` — move the subject push (`:190-206`) above the house
    push (`:176`); invert `recommended` (`:219-222`) to prefer `subject` then `house` then any passing
    option; the escape branch stays third (`:223`). Rewrite the comment at `:211-212`, which states
    the old intent. When no convention matches, `proposePalette` returns a new field
    `noConventionReason` and `format-proposal.mjs` prints it as a sentence — *"no convention applies
    to this subject, so the newsroom's colours lead"* — rather than silently showing one option, which
    is what the run did at `[1976-1994]`.
-4. `skills/splash-twin/SKILL.md:196-211` — the phase table becomes §1's table.
-5. `skills/twin-palette/SKILL.md` — the proposal-order paragraph.
+4. `skills/splash/SKILL.md:196-211` — the phase table becomes §1's table.
+5. `skills/palette/SKILL.md` — the proposal-order paragraph.
 
 ### The guard, and the mutation that reddens it
 
-- `skills/twin-palette/test/palette.test.ts`: with a matching subject **and** a valid house profile,
+- `skills/palette/test/palette.test.ts`: with a matching subject **and** a valid house profile,
   `options[0].id === "subject"` and `recommended === "subject"`; with no match,
   `noConventionReason` is non-empty and `recommended === "house"`. **Mutation:** restore the original
   push order → red.
-- `skills/twin-storyboard/test/exchange-shape.test.ts` (new, cheap, text-level): `exchange.md` names
+- `skills/storyboard/test/exchange-shape.test.ts` (new, cheap, text-level): `exchange.md` names
   each of the ten movements exactly once as a heading, the hand table has **four** rows, and the
   string "channel and size" does not appear in the hand table. **Mutation:** re-add the clause to Q4
   → red. This is a prose guard and it is worth the twenty lines: A3 is a documentation defect and the
@@ -496,43 +496,43 @@ slot's `medium` scalar, which cannot be back-filled after the fact without leavi
 
 ### Measured state
 
-`skills/splash-twin/scripts/preflight.mjs:142-192`. `capabilities` rows are built by `checkCapability`
+`skills/splash/scripts/preflight.mjs:142-192`. `capabilities` rows are built by `checkCapability`
 (`:136-140`) out of `keys.mjs` probe results (`:45-60`), whose refusal strings already name the exact
 variable (`"MAPTILER_KEY is not set"`). `assertPreflightReady` (`:199-203`) never inspects
 `capabilities`; `capabilityGap` (`:213-217`) only formats a closed row. **There is no code path
 anywhere in the twin that accepts a key from a journalist.** In the run, `DATAWRAPPER_TOKEN` closed
-`twin-dw-beat` silently for the whole story (`[1520]`) with no moment at which it could have been
+`dw-beat` silently for the whole story (`[1520]`) with no moment at which it could have been
 opened.
 
 `checkNewsroom` (`:94-128`) **discards the parsed profile** — `runPreflight` puts only the status into
 `checks` (`:145`) — and `SKILL.md:182` says preflight runs "silently when `ready`". In the run the
-profile passed at `[31]` and the journalist heard about it nine phases later, from `twin-palette` at
+profile passed at `[31]` and the journalist heard about it nine phases later, from `palette` at
 `[1994]`. `newsroom.mjs:3` — `FIELDS = ["name","url","language","brandColor","ground","typefaces"]` —
 **has no credit field**, which the run hit exactly at `[1341]`.
 
 ### The change, file by file
 
-1. `skills/splash-twin/scripts/preflight.mjs`
+1. `skills/splash/scripts/preflight.mjs`
    - each capability definition in `runPreflight` (`:147-178`) gains a `fill` string: the env var
      name, where the key is obtained, and the file it goes in. `checkCapability` (`:136-140`) carries
      it onto the row.
    - `checkNewsroom` (`:94-128`) returns `profile` beside `status`/`detail` on the `pass` and `fail`
      branches, and `runPreflight` puts it into the `newsroom-profile` check. Nothing about `ready`
      changes: `blockers` (`:189`) is untouched.
-2. `skills/splash-twin/scripts/keys.mjs` — new `recordKey({ root, name, value })`: writes or replaces
+2. `skills/splash/scripts/keys.mjs` — new `recordKey({ root, name, value })`: writes or replaces
    one `NAME=value` line in the root `.env`, creating it if absent, returning nothing. **It never
    returns, logs or echoes the value.** Validate `name` against the `KEY_ALIASES` key set
    (`:12-17`) — an unknown name throws — so nothing a journalist pastes can name an arbitrary
    variable.
-3. `skills/splash-twin/scripts/newsroom.mjs:3` — a **seventh, optional** field `credit`: the
+3. `skills/splash/scripts/newsroom.mjs:3` — a **seventh, optional** field `credit`: the
    newsroom's standing credit convention. Optional, not required: `validateNewsroom` (`:27-36`) is
    unchanged, so every existing `NEWSROOM.md` and every `declined` stub stays valid.
    `parseNewsroom` already reads any front-matter key, so it needs no change.
-4. `skills/splash-twin/assets/root-template/NEWSROOM.example.md` — the `credit` line and its
+4. `skills/splash/assets/root-template/NEWSROOM.example.md` — the `credit` line and its
    one-line explanation, in the same shape as the six existing ones.
-5. `skills/splash-twin/SKILL.md:182` — preflight is **never silent**. Its step becomes:
+5. `skills/splash/SKILL.md:182` — preflight is **never silent**. Its step becomes:
    - **state** the six (or seven) profile values and which are present; on `missing`, offer the three
-     branches by name — derive it with `twin-newsroom-charter` · supply your own (hand over
+     branches by name — derive it with `newsroom-charter` · supply your own (hand over
      `NEWSROOM.example.md`) · decline, recorded;
    - **state** credits: the profile's `credit` if present, or plainly *"no house credit convention is
      recorded, so credit is asked per story"* (it is already hand field 5);
@@ -543,9 +543,9 @@ profile passed at `[31]` and the journalist heard about it nine phases later, fr
 
 ### The guard, and the mutation that reddens it
 
-`skills/splash-twin/test/preflight.test.ts`: every capability row carries a non-empty `fill` naming
+`skills/splash/test/preflight.test.ts`: every capability row carries a non-empty `fill` naming
 its own env var; a passing `newsroom-profile` check carries the parsed `profile`.
-`skills/splash-twin/test/keys.test.ts`: `recordKey` creates a `.env`, replaces an existing line
+`skills/splash/test/keys.test.ts`: `recordKey` creates a `.env`, replaces an existing line
 rather than appending a duplicate, throws on an unknown name, and — the case that matters — a probe
 run after `recordKey` reads the new value. **Mutations:** drop `fill` from one capability row → red;
 make `recordKey` append instead of replace → the duplicate-line case reddens.
@@ -562,7 +562,7 @@ Named, and it should be said to the journalist in the same turn that asks.
 
 ### Measured state
 
-`skills/twin-doctrine/references/reference-set.md:1-8` opens by promising *"a named argument
+`skills/doctrine/references/reference-set.md:1-8` opens by promising *"a named argument
 structure"* — and the table at `:84-92` has columns `Reference | Moment | Transferable lesson`.
 **There is no argument-structure column**, so the loop cannot look one up; it can only read seven long
 prose cells. `check-reference-set.mjs:63-74` validates link, locator and lesson, and has no concept of
@@ -574,30 +574,30 @@ movement in the journey with no question behind it** — every other one has one
 
 ### The change, file by file
 
-1. `skills/twin-doctrine/references/reference-set.md` — a fourth column, **Argument structure**,
+1. `skills/doctrine/references/reference-set.md` — a fourth column, **Argument structure**,
    first: a short lookup key per row (*"a profile whose two dimensions disagree"*, *"deviation from a
    local expected rank"*). Written from each row's existing lesson, not invented — the lessons already
    state the structure in prose. Update the file's own header paragraph, which claims the index that
    is about to exist.
-2. `skills/twin-doctrine/scripts/check-reference-set.mjs:63-74` — the row split now yields four cells;
+2. `skills/doctrine/scripts/check-reference-set.mjs:63-74` — the row split now yields four cells;
    a row is invalid when the structure cell is shorter than `MIN_STRUCTURE_CHARS = 12` (a new tuning
    knob, one number). `splitRow`/`tableRows`/`countReferenceRows` are unchanged.
-3. `skills/twin-storyboard/references/exchange.md` movement ⑧ (was ④) — **ends in a real question**,
+3. `skills/storyboard/references/exchange.md` movement ⑧ (was ④) — **ends in a real question**,
    and the answer lands in the `reference:` scalar of §2. "Both rejected" is recorded as
    `none — both rejected`, which gives `BRIEF.md` something to derive from and makes the rejection a
    fact rather than a loss.
-4. `skills/twin-doctrine/SKILL.md` — the reference-set description gains the column.
+4. `skills/doctrine/SKILL.md` — the reference-set description gains the column.
 
 **A15, scoped separately because it is research, not code.** One verified row for *"a total whose
 majority escapes the subject named in the title"*, found and checked to the file's own round-4 bar
 (`reference-set.md:33-44`: look at the real pixels **and** read the text beside them). The floor in
-`skills/twin-doctrine/test/reference-set.test.ts:94-110` moves from 7 to 8 **in the same commit as the
+`skills/doctrine/test/reference-set.test.ts:94-110` moves from 7 to 8 **in the same commit as the
 row**. If the bar cannot be met, the task ships nothing and the floor stays 7 — an unverified row is
 the exact failure that cut this file back twice, and shipping one to satisfy a number would repeat it.
 
 ### The guard, and the mutation that reddens it
 
-`skills/twin-doctrine/test/reference-set.test.ts`: `checkReferenceSet` rejects a fixture row with an
+`skills/doctrine/test/reference-set.test.ts`: `checkReferenceSet` rejects a fixture row with an
 empty structure cell, and the shipped file passes. Plus, from T2, `reference:` is now a required
 scalar in both gates, so its generated fixture already exists. **Mutation:** blank the structure cell
 of one shipped row → red.
@@ -608,7 +608,7 @@ of one shipped row → red.
 
 ### T8 (Ⓖ) — G3 becomes a real gate, and delivery cannot be discussed before it closes
 
-**Measured.** `skills/splash-twin/SKILL.md:205` — G3 closes into `beats/<n>-<slug>/renders/*`, the
+**Measured.** `skills/splash/SKILL.md:205` — G3 closes into `beats/<n>-<slug>/renders/*`, the
 existence of a file. `where.mjs:145-152`: `hasAnyRender` returns true when any `renders/` directory is
 non-empty, and `whereIs` then returns `delivery` (`:175`). **Approval is not a condition of leaving
 production.** In the run the renders were read into the model's context (`[2774]`, `[2891]`) and the
@@ -622,26 +622,26 @@ untidy one.
 
 **The change.**
 
-1. `skills/splash-twin/scripts/where.mjs` — a beat leaves `production` only when every beat directory
+1. `skills/splash/scripts/where.mjs` — a beat leaves `production` only when every beat directory
    holding renders also holds `APPROVED.md`. `hasAnyRender` (`:145-152`) becomes
    `beatsAwaitingApproval(storyDir)` returning the list; `whereIs` reports
    `{phase: "production", missing: ["beat 1-…: rendered but not approved"]}`. A directory read —
    exactly what this file already does — and it needs no slot↔beat mapping.
-2. `skills/splash-twin/SKILL.md:205` — the `production` row's gate closes into
+2. `skills/splash/SKILL.md:205` — the `production` row's gate closes into
    `beats/<n>-<slug>/APPROVED.md`, and the phase description says: **surface the artifact** (the file
    path to open for a static, the opened HTML for a web or scrolly beat, the mp4 for a video), ask
    approve-or-correct, and **say nothing about delivery**, because delivery's forms are `offerForms`'
    output and cannot be known before it runs.
-3. `skills/splash-twin/SKILL.md:239` never-list — one absolute: *"never state a delivery constraint
+3. `skills/splash/SKILL.md:239` never-list — one absolute: *"never state a delivery constraint
    that did not come from `offerForms`."*
-4. `skills/twin-deliver/scripts/deliver.mjs` — `offerForms` gains a required `beatDir` and **throws**
+4. `skills/deliver/scripts/deliver.mjs` — `offerForms` gains a required `beatDir` and **throws**
    when `beatDir/APPROVED.md` is absent: *"this beat has not been approved yet — show it first"*.
    That is the mechanical backstop: the wrong warning at `[2971]` was possible only because delivery
    was talked about without calling `offerForms`, and now calling it early fails loudly.
 
-**Guard + mutation.** `skills/splash-twin/test/where.test.ts` gains a phase case: renders present,
+**Guard + mutation.** `skills/splash/test/where.test.ts` gains a phase case: renders present,
 `APPROVED.md` absent → `production`; both present → `delivery`.
-`skills/twin-deliver/test/deliver.test.ts`: `offerForms` throws without `APPROVED.md`.
+`skills/deliver/test/deliver.test.ts`: `offerForms` throws without `APPROVED.md`.
 **Mutations:** restore `hasAnyRender` → the phase case reddens; delete the `APPROVED.md` check in
 `offerForms` → the deliver case reddens.
 
@@ -673,15 +673,15 @@ nothing reads it back.
    `audience: "developer"`, and the delivery question offers the journalist-facing forms as the real
    choice with source-bundle mentioned in one line below them.
 4. **`export/HANDOVER.md`**, new — the delivery phase closes into a file like every other phase. A new
-   `skills/twin-deliver/scripts/format-handover.mjs` exports `formatHandover({files, placement, alt,
+   `skills/deliver/scripts/format-handover.mjs` exports `formatHandover({files, placement, alt,
    credit, caveat, genre})` → markdown: each delivered file **named, with its role** ("the SVG is the
    one to give the CMS"), the placement read back from `STORYBOARD.md:placement`, the alt text read
    from the component, the credit line, and the one caveat the `limits` field carries. Every input is
    already recorded somewhere; nothing new is derived. `materialise` writes it beside the chosen
    form's own output.
-5. `skills/twin-deliver/SKILL.md` — Files, Tuning knobs (the preference table), and the forms table.
+5. `skills/deliver/SKILL.md` — Files, Tuning knobs (the preference table), and the forms table.
 
-**Guard + mutation.** `skills/twin-deliver/test/deliver.test.ts`: `ownedFileForInsertion` picks
+**Guard + mutation.** `skills/deliver/test/deliver.test.ts`: `ownedFileForInsertion` picks
 `still.svg` from a two-file static `renders/`, throws on an empty one, and throws on two `.html` files
 for `web`; `cms-insertion` materialises for `static` and `video`; `HANDOVER.md` exists after every
 form and names every path in `written`. **Mutations:** remove `.svg` from the static preference row →
@@ -697,8 +697,8 @@ maintainer**. Earlier turns leak the same way (`[1620]` narrates reading `ground
 `ground-claim.mjs` and `where.mjs` by filename.
 
 **The change.** A prose rule is the softest surface in this project by its own account, and the twin
-already has the right pattern twice over (`twin-palette/scripts/format-proposal.mjs`,
-`twin-newsroom-charter/scripts/format-proposal.mjs`): render the journalist-facing text from
+already has the right pattern twice over (`palette/scripts/format-proposal.mjs`,
+`newsroom-charter/scripts/format-proposal.mjs`): render the journalist-facing text from
 structured input, so nothing the function was not given can appear in it.
 
 1. `formatHandover` (T9) takes a **closed** parameter set. There is no free-text `notes` field, and
@@ -711,11 +711,11 @@ structured input, so nothing the function was not given can appear in it.
    **never** `export/`, never the conversation. This is what the run already did correctly twice
    (`groundingOverride` at `[1743]`, the latent-defect note in `BRIEF.md` at `[2931]`); what was wrong
    was repeating them to the journalist.
-4. `skills/splash-twin/SKILL.md:239` never-list — *"a defect in this toolchain is written to
+4. `skills/splash/SKILL.md:239` never-list — *"a defect in this toolchain is written to
    `NOTES-FOR-MAINTAINER.md` and never spoken to the journalist; a question to the journalist is never
    about our code."*
 
-**Guard + mutation.** `skills/twin-deliver/test/format-handover.test.ts`: a payload whose caveat
+**Guard + mutation.** `skills/deliver/test/format-handover.test.ts`: a payload whose caveat
 contains "ground-claim.mjs" throws; a clean payload renders and its output contains no `skills/` and
 no module extension. **Mutation:** delete the throw → the first case reddens.
 
@@ -746,7 +746,7 @@ no module extension. **Mutation:** delete the throw → the first case reddens.
    of the nine hand-written fixtures carries a `genre` at all. Same conclusion, and it strengthens the
    survey's own point: the *fixtures* are the second hole, independently of the call.
 2. **`genre-shippability.test.ts` widened to pairs still would not catch the wrong producer.** Both
-   `twin-chart-web` and `twin-map-web` exist on disk, so `"map/web" → twin-chart-web` passes the
+   `chart-web` and `map-web` exist on disk, so `"map/web" → chart-web` passes the
    existence assertion the survey proposes to keep. The pair form only becomes a real guard with the
    third assertion added in T3: the producer skill's own `SKILL.md` `name` must equal `producerSkill`
    and its description must name the medium. Without it, T3's central claim ships unguarded.

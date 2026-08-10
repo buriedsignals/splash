@@ -16,7 +16,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 
 export type Reading = { year: number; population: number };
 
@@ -148,7 +148,7 @@ export function WorldPopulationArea({
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline =
     height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
 

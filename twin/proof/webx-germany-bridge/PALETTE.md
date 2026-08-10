@@ -18,7 +18,7 @@ lightness is already doing nothing else, so a pale-blue/dark-blue pair would be 
 big step" rather than "up / down". Two distinct hues is what the type needs, and which two is the
 newsroom's decision.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat); this bridge's steps are renewables, the
 nuclear phase-out and a falling fossil share, so a convention lookup would fire on `renewables` AND
 `fossil` — a multi-match, which `matchConvention` deliberately answers with null so no table decides

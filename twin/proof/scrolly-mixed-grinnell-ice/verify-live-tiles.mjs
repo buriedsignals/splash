@@ -8,7 +8,7 @@
 // them. That is the correct behaviour and it is also why this script exists.
 //
 // WHAT IT DOES. Substitutes the real key into a COPY of the delivered file inside a `mkdtemp`
-// outside the tree — the same shape `twin-map-web/scripts/verify-live-map.mjs` and the sibling map
+// outside the tree — the same shape `map-web/scripts/verify-live-map.mjs` and the sibling map
 // scrolly use, so the live probe cannot defeat the key guard — serves it, drives the same continuous
 // scroll at three scrub speeds, and measures the owner's own two tests plus the one the warm exists
 // to answer:

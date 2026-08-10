@@ -10,7 +10,7 @@
 //
 // This file is a DUPLICATE of `proof/mapscrolly-one-map-europe-carbon/live-scroll-map.mjs`, adapted,
 // never an import of it: the twin duplicates helpers per beat (`no-cross-skill-imports.test.ts`) so
-// a beat directory stays copy-pasteable on its own. `twin-map-web/assets/live-map.mjs` is the map ×
+// a beat directory stays copy-pasteable on its own. `map-web/assets/live-map.mjs` is the map ×
 // web sibling of both and was READ, not imported.
 //
 // ── WHAT IS DIFFERENT HERE, AND IT IS THE WHOLE ADAPTATION ─────────────────────────────────────
@@ -58,7 +58,7 @@
  *  a blue tint, never the near-grey `dataviz-light` ships. */
 export const WATER_FILL = "#aac9e0";
 
-/** The delivery placeholder. R1b: the committed artifact never holds a real key — `twin-deliver`
+/** The delivery placeholder. R1b: the committed artifact never holds a real key — `deliver`
  *  substitutes at delivery. ASSEMBLED rather than written whole: this script is inside the file the
  *  substitution rewrites, so a literal here would become the key itself and the check below would
  *  refuse every delivered map. */

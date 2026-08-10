@@ -6,7 +6,7 @@ origin: subject
 
 The answer recorded for this beat.
 
-**Why the choice is made here rather than taken from the house theme.** `twin-palette`'s
+**Why the choice is made here rather than taken from the house theme.** `palette`'s
 `matchConvention` fires on `renewable`, `coal|fossil|oil`, `water` and `heat|temperature|warming`.
 This beat's subject line — *"four photographs of Grinnell Glacier, the park it sits in, and the
 world's reference glaciers, 1938 to 2023"* — contains none of them, so there is no grounded

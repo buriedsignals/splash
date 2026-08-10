@@ -4,7 +4,7 @@
  * No browser, no rasteriser, no DOM.
  *
  * This is this beat's OWN copy — `proof/map-quake-symbol/geo-symbol.ts` (the static/video sibling on
- * the same file) and `skills/twin-map-web/assets/geo-symbol.ts` (the genre's seed) each carry their
+ * the same file) and `skills/map-web/assets/geo-symbol.ts` (the genre's seed) each carry their
  * own, and a beat never reaches into a sibling beat or out of a skill at runtime. What is new here,
  * and exists nowhere else, is `arcOf` — the filter dimension, DERIVED from each event's own
  * coordinates rather than typed into a column, so a row cannot be filed under an arc the map does
@@ -124,7 +124,7 @@ export function yearWindow(rows: { time: string }[]): {
 
 /**
  * The radius scale: rooted at zero, radius ∝ √magnitude — an equal-AREA encoding
- * (`twin-map-beat/references/types/proportional-symbol.md`, "don't linear-scale the radius").
+ * (`map-beat/references/types/proportional-symbol.md`, "don't linear-scale the radius").
  * Magnitude is itself logarithmic, which this scale does NOT correct for: it draws circles
  * proportional to the reported magnitude number, USGS's own convention, and this beat's caveat says
  * so in words rather than leaving a reader to assume the circles are proportional to energy.

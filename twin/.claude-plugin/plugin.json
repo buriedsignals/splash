@@ -1,6 +1,6 @@
 {
-  "name": "splash-twin",
-  "description": "The doctrine twin: a prose-first rebuild of Splash, loaded from twin/ so it can never mix with the original in the same worktree. Entry point: the splash-twin skill.",
+  "name": "splash",
+  "description": "Splash: Visual journalism for every newsroom — a skill pack a newsroom installs and drives from its own AI assistant. Entry point: the splash skill.",
   "version": "0.1.0",
   "author": {
     "name": "Remy Dumas"

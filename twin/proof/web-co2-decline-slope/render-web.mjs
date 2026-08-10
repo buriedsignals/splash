@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the same shape `proof/co2-suisse/render-web.mjs` has: the story's
 // own constants, its own data reader, its own component, handed to the genre's generic machinery.
-// It lives here, beside the story, never inside the skill (`twin-chart-web/SKILL.md`, "Why
+// It lives here, beside the story, never inside the skill (`chart-web/SKILL.md`, "Why
 // `render-web.mjs` does not import a story's layouts" gives the reasoning this file also follows).
 //
 // One departure from the co2-suisse runner's own shape: after the skill's generic `renderWeb` has
@@ -20,8 +20,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { SlopeWeb, FRAME } from "./SlopeWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

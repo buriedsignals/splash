@@ -5,10 +5,10 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`).
 
-`twin-palette`'s subject option was checked and does not apply. The subject is the distribution of
+`palette`'s subject option was checked and does not apply. The subject is the distribution of
 CO₂ emissions per person across 213 countries; `matchConvention` returns nothing for it, because
 none of the four grounded conventions (renewables, fossil, water, heat) fires on CO₂ emissions as a
 phrase. When no convention applies, the house theme wins.

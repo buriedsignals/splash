@@ -9,7 +9,7 @@ The answer recorded for this beat: a bespoke pair the journalist chose — Okabe
 Okabe-Ito vermillion, the two values the component named as `COLOURS` before this file existed —
 kept over both the house accent and a subject convention.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat) and this beat's subject — life expectancy
 gained between 2000 and 2023 — fires none of them. And the house theme could not have supplied this
 beat on its own: `references/types/dumbbell.md` asks for exactly two hues, one per year, and a

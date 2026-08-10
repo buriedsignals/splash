@@ -46,7 +46,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import { DIVERGING_TIMING } from "./timing-contract";
 
 const FRAME = { width: 1080, height: 1350 };
@@ -233,7 +233,7 @@ export function DivergingBarVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = height - PAD - (sourceLines.length - 1) * sourceLead;
   const caveatLines = wrap(caveat, width - PAD * 2, CAVEAT);
   // The caveat keeps the air it always had above it, measured from the LAST TITLE line rather

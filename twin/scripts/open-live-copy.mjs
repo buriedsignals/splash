@@ -11,13 +11,13 @@
 // So this writes keyed copies OUTSIDE the repository, which is the same discipline every live probe
 // in this tree already keeps (`verify-live-map.mjs`, each beat's `verify-live-tiles.mjs`): the key
 // never lands anywhere `git` can see, so the live view cannot defeat the key guard
-// (`splash-twin/test/no-key-in-the-repository.test.ts`).
+// (`splash/test/no-key-in-the-repository.test.ts`).
 //
 // It also SERVES them, because `file://` is not good enough: MapLibre fetches its style and tiles
 // over the network, and a `file://` origin is opaque to CORS, so the map silently stays on the
 // fallback and the page looks broken in exactly the way it is not.
 //
-// This is what `twin-deliver` does for real, on the beat the journalist chose
+// This is what `deliver` does for real, on the beat the journalist chose
 // (`substituteKeys`, reading `MAPTILER_DELIVERY_KEY` before `MAPTILER_KEY`). This script is the
 // LOOK-AT-IT path, not the delivery path, and it deliberately reads the same two variables in the
 // same order so the two cannot disagree about which key a reader gets.
@@ -42,11 +42,11 @@ function flag(name, fallback) {
   return i >= 0 ? process.argv[i + 1] : fallback;
 }
 
-const outDir = resolve(flag("--out", "/tmp/splash-twin-live"));
+const outDir = resolve(flag("--out", "/tmp/splash-live"));
 const port = Number(flag("--port", 8765));
 const filters = process.argv.slice(2).filter((a) => !a.startsWith("--") && !/^\d+$/.test(a) && !a.startsWith("/"));
 
-/** The key, from the one home this tree keeps it in. Delivery key first, exactly as `twin-deliver`
+/** The key, from the one home this tree keeps it in. Delivery key first, exactly as `deliver`
  *  orders them: R1b's fourth clause is that what reaches a reader is a SECOND, origin-restricted
  *  key, and a look-at-it copy that used the development key would be rehearsing the wrong thing. */
 function readKey() {

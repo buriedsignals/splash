@@ -146,7 +146,7 @@ no words is a picture the reader is left to interpret alone).
   already contained, against `scrolly-discipline.md`'s own filing of a photograph under scenery
   (COVER at 1600 × 900 shows the middle 27% of a portrait photograph's height — four horizontal
   slices nobody chose); the ruling has now moved a photograph from scenery to evidence in that file
-  and in `twin-scrolly`'s seed, which was `object-fit: cover` until this round. What this beat did
+  and in `scrolly`'s seed, which was `object-fit: cover` until this round. What this beat did
   NOT do is fill: it fitted the picture into `CONTENT_TOP`, reserving 28% of every frame for a prose
   panel that has not parked there since the vehicle's eighth correction and cannot park anywhere
   since its ninth. **`PROSE_LANE` is 0 now**, and the picture grows until it meets the frame on
@@ -199,7 +199,7 @@ Rendered, then opened in Chrome and sampled at **25 scroll positions across the 
   still climbing from its document position below the header — normal `position: sticky` catch-up —
   and in that band the credit line, which is anchored in FRAME percentages, sits over the panel
   (1 sample at 1280 × 800, 1 at 375 × 812, first sample only). It never recurs. Same property as the
-  chart scrolly's; the fix belongs in `twin-scrolly`'s scaffold, which this beat does not edit.
+  chart scrolly's; the fix belongs in `scrolly`'s scaffold, which this beat does not edit.
 - **Reduced motion**: 12 positions, 0 intermediate opacities, computed `transition-duration: 0s`,
   active frame advancing 1938 → 1981 → 1998 → 2009.
 - **JavaScript disabled**: one server-rendered active frame and all four steps' prose in full

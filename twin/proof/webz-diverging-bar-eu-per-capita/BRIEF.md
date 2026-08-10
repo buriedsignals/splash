@@ -113,7 +113,7 @@ are 13px apart under a 13px type, which is the tightest leading in this corpus.
 
 ## Verification — driven in a real browser, then looked at
 
-`bun skills/twin-chart-web/scripts/verify-web.mjs --file diverging-bar-eu-per-capita.html --shots`
+`bun skills/chart-web/scripts/verify-web.mjs --file diverging-bar-eu-per-capita.html --shots`
 → **54 checks passed, 0 failed, 7 skipped** (every skip is a filter check, and this beat ships no
 filter). Then an independent probe at 1600 × 900, 1024 × 768 and 375 × 812, dispatching
 `page.mouse.move` at **rounded integer** client coordinates — fractional ones silently do nothing,

@@ -43,7 +43,7 @@ stylesheet — it follows the pointer, so it must not swallow its own trigger's 
 the wheel to the bin underneath; a keyboard reader's focus stays on the bin, never on the tooltip;
 and a finger dragging inside a fixed overlay fights the page scroll. The tallest list renders 502px
 tall, which sits inside the window at every viewport this genre targets, and
-`skills/splash-twin/test/interaction-promises-are-kept.test.ts` turns red if any delivered tooltip
+`skills/splash/test/interaction-promises-are-kept.test.ts` turns red if any delivered tooltip
 hides content again — by scrolling or by running off the window.
 
 ## Source line

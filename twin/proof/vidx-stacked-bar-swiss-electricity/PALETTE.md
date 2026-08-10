@@ -6,7 +6,7 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house palette in full, as it stands in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` — `brandColor: "#0B7A75"` plus
+`skills/splash/assets/root-template/NEWSROOM.example.md` — `brandColor: "#0B7A75"` plus
 `accents: "#C1440E, #1F6FB2"`, on `ground: "#FFFFFF"`. `origin: newsroom` says who chose them. The
 three measure 5.18:1, 5.12:1 and 5.28:1 against the ground, all clear of the 3:1 mark floor SC
 1.4.11 sets, and each reads apart from the other two on both of `seriesInks`'s measures.
@@ -27,7 +27,7 @@ the mapping band→colour is the one written here and nothing is invented. The h
 third band went with the grey: it existed only to separate two identical fills, and three distinct
 inks separate themselves.
 
-`twin-palette`'s subject-fit branch was checked and correctly declines to decide this one:
+`palette`'s subject-fit branch was checked and correctly declines to decide this one:
 `matchConvention` returns null on a multi-match, and a Swiss electricity mix hits `renewables` and
 `water` at once. Which band carries the argument is the journalist's decision, not a lookup table's
 — so the house palette wins, which is exactly this file.

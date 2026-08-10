@@ -12,13 +12,13 @@ import { fileURLToPath } from "node:url";
 import {
   deriveFurniture,
   readPalette,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
@@ -42,7 +42,7 @@ const BEAT = {
 };
 
 /** OWID's `co-emissions-per-capita` grapher CSV, four countries at once, `&csvType=filtered`
- *  (`twin-intake/references/ourworldindata-csv-filter-trap.md`) — verified below to contain only
+ *  (`intake/references/ourworldindata-csv-filter-trap.md`) — verified below to contain only
  *  these four entities before being trusted. */
 export function readingsByCountryFromCsv(csv, { countries, firstYear }) {
   const [header, ...rows] = csv.trim().split(/\r?\n/);

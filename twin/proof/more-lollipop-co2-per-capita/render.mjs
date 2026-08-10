@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -15,8 +15,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { LollipopCo2 } from "./LollipopCo2.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -60,7 +60,7 @@ async function main() {
   // The OWID grapher CSV endpoint silently returns the ENTIRE global dataset with HTTP 200
   // unless `&csvType=filtered` is present — verify the fetch actually filtered, by eye, rather
   // than trusting the URL parameter did what it looked like it did
-  // (`twin-intake/references/ourworldindata-csv-filter-trap.md`).
+  // (`intake/references/ourworldindata-csv-filter-trap.md`).
   const distinctCountries = [...new Set(rows.map((r) => r.Entity))].sort();
   console.log(`distinct Entity values (${distinctCountries.length}): ${distinctCountries.join(", ")}`);
   const expectedSorted = [...EXPECTED_COUNTRIES].sort();

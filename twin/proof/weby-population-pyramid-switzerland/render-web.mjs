@@ -3,7 +3,7 @@
 // This beat's own WEB runner — the same shape `../web-income-life-expectancy/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` both have: the story's own constants, its own CSV reader, its own
 // component, handed to the genre's generic `renderWeb`. It lives here, beside the story, not inside
-// `skills/twin-chart-web/scripts/render-web.mjs`, for the exact reason that file's own header
+// `skills/chart-web/scripts/render-web.mjs`, for the exact reason that file's own header
 // explains: a skill directory that imports a story workspace does not build once copied, on its
 // own, into a journalist's root.
 //
@@ -30,8 +30,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { FRAME, SwissAgePyramidWeb } from "./SwissAgePyramidWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

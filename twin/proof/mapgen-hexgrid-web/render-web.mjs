@@ -1,17 +1,17 @@
 // twin/proof/mapgen-hexgrid-web/render-web.mjs
 //
 // This beat's own WEB runner, and this beat's OWN physical copy of the web genre's machinery
-// (`renderHexGridWeb`, modelled on `twin-map-web/scripts/render-web.mjs`'s own `renderMapWeb`) —
+// (`renderHexGridWeb`, modelled on `map-web/scripts/render-web.mjs`'s own `renderMapWeb`) —
 // nothing in this file imports out of a skill or another `proof/` beat. Binning happens AFTER the
 // bake, from the baked points' own pixel coordinates, the same order
 // `proof/map-quake-density/render.mjs` follows for its own static genre
-// (`twin-map-beat/references/types/hex-grid.md`'s own cell-size rule: check the rendered cell
+// (`map-beat/references/types/hex-grid.md`'s own cell-size rule: check the rendered cell
 // count, never the config value alone).
 //
 // RULING R1 (2026-08-10), retrofitted here: the beat this writes is a LIVE MapTiler map with
 // MapTiler's own zoom and pan, constrained to the subject's area, over the SAME baked plate it
 // already shipped — which stays as the fallback layer (`live-map.mjs`, a byte-identical copy of
-// `twin-map-web/assets/live-map.mjs`, including its own line-1 path comment: a beat duplicates a
+// `map-web/assets/live-map.mjs`, including its own line-1 path comment: a beat duplicates a
 // helper, it does not fork it). What travels from here into the page is the PLAN — `livePlan`
 // below — because that file may not know what a beat draws.
 //
@@ -28,7 +28,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   HexGridWeb,
   DensityTable,
@@ -114,8 +114,8 @@ const OUTPUT_NAME = "hex-grid.html";
  * published article; it did not accept an unbounded public leak, and the two are different
  * exposures. Every map × web beat commits its rendered HTML, and the FJM deliverable is an MIT
  * open-source release, so a real key here would be scanned by bots within minutes of the push and
- * would survive in the history after any later removal. `twin-deliver` substitutes the real key at
- * the moment the file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts`
+ * would survive in the history after any later removal. `deliver` substitutes the real key at
+ * the moment the file goes to a newsroom; `splash/test/no-key-in-the-repository.test.ts`
  * reddens if one ever reaches a tracked file.
  *
  * The delivered key should be a SECOND, origin-restricted MapTiler key, not the development one:

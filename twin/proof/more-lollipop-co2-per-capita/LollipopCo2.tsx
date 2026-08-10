@@ -22,12 +22,12 @@ import {
   measureText,
   measureTextBand,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
+} from "#shared/chart-beat/sizes.mjs";
 
 export type Row = { country: string; value: number };
 
@@ -317,7 +317,7 @@ export function LollipopCo2({
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = contentTop + TITLE.fontSize;
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
-  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md,
   // "The source on the frame's bottom margin." At portrait that bottom is the STAGE's, not the
   // frame's: below 1248 is the platform's caption and progress bar, and a covered credit is an
   // attribution failure rather than a cosmetic one. It also WRAPS now — at a phone's type scale

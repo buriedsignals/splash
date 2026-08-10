@@ -12,7 +12,7 @@ import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import { FlowMapStill } from "./FlowMapStill.tsx";
 import { assertTerritoryFillsReadAsLand, territoryColour } from "./geo-flow.ts";
 
@@ -112,7 +112,7 @@ if (wantStill) {
 
   // The claim check: the title states the crossing order verbatim — assert it against what the
   // bake actually computed from the real route and the real shapes, not against what the title
-  // merely claims. `twin-map-beat/references/types/flow-map.md`'s own "one thing that goes wrong."
+  // merely claims. `map-beat/references/types/flow-map.md`'s own "one thing that goes wrong."
   if (geometry.crossings.length !== EXPECTED_ORDER.length || geometry.crossings.some((k, i) => k !== EXPECTED_ORDER[i]))
     throw new Error(
       `claim check failed: the title states the order ${EXPECTED_ORDER.join(" -> ")}, ` +

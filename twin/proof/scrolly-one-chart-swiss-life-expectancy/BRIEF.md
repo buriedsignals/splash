@@ -60,7 +60,7 @@ the first state; `render.mjs` inlines the same file into the page to drive every
 browser-only copy of the layout maths is how the pre-script picture and the driven picture drift
 apart, so there is not one.
 
-- **Progress is READ, never re-derived.** `twin-scrolly` publishes `data-progress` on its own root on
+- **Progress is READ, never re-derived.** `scrolly` publishes `data-progress` on its own root on
   every scroll — the fractional index of the panel on the lane's centre line, interpolated between
   the two card centres that bracket it — and this driver reads it. It used to derive its own from
   panel overlaps against a band at the bottom `data-prose-lane`% of the scrollport, which was right
@@ -172,7 +172,7 @@ Screenshots in `drive/`: four settled steps at each width, plus a **mid-flight**
 
 ## Which vehicle these artifacts were built against — read this before re-rendering
 
-`render/one-line-four-readings.html` and every number above were produced against the **committed** `twin-scrolly`,
+`render/one-line-four-readings.html` and every number above were produced against the **committed** `scrolly`,
 the eighth correction, where the prose travels in its own cell of the track's grid beside the graphic.
 While this round was being written a **ninth** correction was uncommitted in the working tree, putting
 the prose card back OVER the graphic as a full-frame layer that crosses everything and rests nowhere.
@@ -236,7 +236,7 @@ in two beats, against a validator that rejects 0, would collide with that head-o
 
 ## What the vehicle is missing — reported, not patched around
 
-`twin-scrolly`'s contract is **N pictures, exactly one painted**. A beat whose visual is ONE
+`scrolly`'s contract is **N pictures, exactly one painted**. A beat whose visual is ONE
 persistent element driven by the scroll has no way to say so, so this beat's driver moves its own
 node out of the per-step stack on load and hands the scaffold empty wrappers for steps 2–4. It works,
 it degrades correctly with no JavaScript, and it is a workaround for a missing declaration. The

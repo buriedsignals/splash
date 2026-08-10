@@ -2,7 +2,7 @@
  * "The Danube touches nine countries on its way to the Black Sea" — 960 × 780, one frame, no
  * order. A FLOW-MAP (route) beat: an ordered coordinate list drawn as one continuous path, with the
  * territories it geometrically intersects filled and numbered in the order it first enters each
- * one. See `twin-map-beat/references/types/flow-map.md`.
+ * one. See `map-beat/references/types/flow-map.md`.
  */
 
 import { Fragment } from "react";
@@ -121,7 +121,7 @@ export function FlowMapStill({
   // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
   // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
   // source block's own height; the plate is a fixed square and does not move. See
-  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  // map-beat/assets/Co2MapStill.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;

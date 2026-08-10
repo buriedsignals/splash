@@ -610,7 +610,7 @@ The third is the one nobody declared, and it is measurable:
 The measurements:
 
 - **80 test files.** Files that dispatch a pointer, touch or mouse event: **0**. Files that launch a
-  browser at all: **1** (`twin-map-web/test/standalone.test.ts`, and it checks self-containment, not
+  browser at all: **1** (`map-web/test/standalone.test.ts`, and it checks self-containment, not
   behaviour).
 - **9 delivered artifacts state, in the text a screen reader reads aloud, that every reading is
   "available on hover, tap or keyboard focus."** No guard can go red if that stops being true.

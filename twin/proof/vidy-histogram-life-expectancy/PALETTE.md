@@ -6,7 +6,7 @@ origin: journalist
 
 The answer recorded for this beat: the rust `#B5541E` the beat has always drawn its subject bin in,
 on a white ground. `origin: journalist` says who chose it — this is a bespoke mark colour picked
-for this beat, not the newsroom's house teal (`#0B7A75`) and not one of `twin-palette`'s four
+for this beat, not the newsroom's house teal (`#0B7A75`) and not one of `palette`'s four
 subject conventions. `matchConvention` was checked: the table holds renewables, fossil fuel, water
 and heat, and the distribution of national life expectancy matches none of them; `heat` is scoped
 to rising temperature, not to any warm-looking hue. Recording it as `journalist` says plainly that

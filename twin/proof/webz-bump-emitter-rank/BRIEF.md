@@ -45,7 +45,7 @@ its crossing marks at full strength, because "the accent stays reserved for the 
 notwithstanding" (`web-discipline.md`). That exemption is a CSS selector, not a script branch, so no
 code path can lose it.
 
-**No filter, deliberately.** `twin-chart-web/SKILL.md`'s three-part test: this series' only real
+**No filter, deliberately.** `chart-web/SKILL.md`'s three-part test: this series' only real
 dimension to narrow is time, and dimming a period would hide crossings — the argument itself —
 rather than let a reader explore past it. It fails part 2 outright. Most beats should not have one;
 this is one of them.
@@ -131,7 +131,7 @@ India's crossings: United Kingdom 1991 · Ukraine 1992 · Germany 1999 · Japan 
 
 `bun proof/webz-bump-emitter-rank/render-web.mjs`, then:
 
-1. `bun skills/twin-chart-web/scripts/verify-web.mjs --file proof/webz-bump-emitter-rank/bump-emitter-rank.html --shots`
+1. `bun skills/chart-web/scripts/verify-web.mjs --file proof/webz-bump-emitter-rank/bump-emitter-rank.html --shots`
    — **56 checks passed, 0 failed, 5 skipped** (the five are the filter's, which this beat does not
    ship). It fits all seven viewports from 3440 × 900 down to 375 × 812 with no scroll in either
    axis; 38 of the sampled readings answer a real pointer on their own mark and 38 answer mid-plot;

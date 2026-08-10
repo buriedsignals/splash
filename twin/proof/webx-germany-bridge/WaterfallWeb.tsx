@@ -2,7 +2,7 @@
  * The web beat of "Germany generated 143 fewer terawatt-hours in 2024 than 2015" — the interactive
  * genre.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`twin-chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that
@@ -14,7 +14,7 @@
  * Written for a DIFFERENT mark family from the seed's line: bars that float on a RUNNING TOTAL
  * (`references/types/waterfall.md`). Not imported from the static sibling
  * `proof/static-germany-electricity-bridge/ElectricityBridgeWaterfall.tsx`, which bakes its words
- * into SVG `<text>` and reaches for `#shared/twin-chart-beat/render-still.mjs` directly.
+ * into SVG `<text>` and reaches for `#shared/chart-beat/render-still.mjs` directly.
  *
  * What hover/tap/keyboard-focus adds, and what it deliberately does NOT touch: every bar already
  * prints its own signed delta (or, for the two total bars, its own absolute value) directly above

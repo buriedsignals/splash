@@ -1,7 +1,7 @@
 /**
  * PORTRAIT PROBE — the line, drawn two ways in the same 1080x1920 frame.
  *
- * A copy of `skills/twin-chart-beat/assets/ChartSeed.tsx` — the seed, which is the file every new
+ * A copy of `skills/chart-beat/assets/ChartSeed.tsx` — the seed, which is the file every new
  * line beat is written from, and the one the task names. Nothing ships from here and the seed is
  * not touched.
  *
@@ -24,7 +24,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import { clampPlotHeight, wrap, type Arm } from "./PortraitHistogram.tsx";
 
 export type Reading = { year: number; value: number | null };

@@ -12,7 +12,7 @@ import {
   renderStill,
   readPalette,
   seriesInks,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -20,8 +20,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { DumbbellLifeExpectancyGains } from "./DumbbellLifeExpectancyGains.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -55,7 +55,7 @@ async function main() {
   console.log(`read ${rows.length} rows from data.csv`);
 
   // The OWID grapher CSV endpoint silently returns the ENTIRE global dataset with HTTP 200
-  // unless csvType=filtered is on the URL (twin-intake's ourworldindata-csv-filter-trap.md).
+  // unless csvType=filtered is on the URL (intake's ourworldindata-csv-filter-trap.md).
   // Verify by eye rather than trust the parameter worked: count the distinct entities.
   const distinctEntities = [...new Set(rows.map((r) => r.Entity))].sort();
   console.log(`distinct entities (${distinctEntities.length}): ${distinctEntities.join(", ")}`);

@@ -2,7 +2,7 @@
  * "More than half of this map's population lives in five countries" — 920 × 1140, one frame, no
  * order. A DOT-DENSITY beat: one dot per fixed number of people, scattered inside each country's own
  * polygon, so density reads as texture rather than one flat colour per region (which is what a
- * choropleth would draw instead). See `twin-map-beat/references/types/dot-density.md`.
+ * choropleth would draw instead). See `map-beat/references/types/dot-density.md`.
  */
 
 import { Fragment } from "react";
@@ -188,7 +188,7 @@ export function DotDensityStill({
   // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
   // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
   // source block's own height; the plate is a fixed square and does not move. See
-  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  // map-beat/assets/Co2MapStill.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;

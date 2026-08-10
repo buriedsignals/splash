@@ -1,7 +1,7 @@
 /**
  * The web beat of "Switzerland is the outlier: solar beats wind" — the interactive genre.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`twin-chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that
@@ -14,7 +14,7 @@
  * (`references/types/grouped-bar.md`), a zero-anchored length encoding, a legend (the type's own
  * accepted exception to direct labelling). Not imported from the static sibling
  * `proof/static-wind-vs-solar/WindVsSolarBar.tsx`, which bakes its words into SVG `<text>` and
- * reaches for `#shared/twin-chart-beat/render-still.mjs` directly.
+ * reaches for `#shared/chart-beat/render-still.mjs` directly.
  *
  * This beat does NOT reuse the skill's `assets/interaction.mjs` — that script resolves a pointer to
  * the nearest of many points along ONE continuous axis, built for a line. Twelve already-large,

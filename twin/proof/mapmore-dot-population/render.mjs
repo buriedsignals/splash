@@ -12,7 +12,7 @@ import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 
 import { DotDensityStill, stillFrameHeight } from "./DotDensityStill.tsx";
 import {
@@ -102,7 +102,7 @@ if (wantStill) {
 
   // The claim check: the title states a specific share of the total. Assert it against the real,
   // frozen numbers — never against what the title merely says — the same discipline
-  // `twin-map-beat/assets/geo.ts`'s own `claimViolations` applies to the choropleth.
+  // `map-beat/assets/geo.ts`'s own `claimViolations` applies to the choropleth.
   const totalPopulation = rows.reduce((s, r) => s + r.population, 0);
   const top5Sum = TOP5.reduce((s, code) => s + byKey.get(code).population, 0);
   const top5Share = top5Sum / totalPopulation;

@@ -1,4 +1,4 @@
-// twin/skills/twin-map-web/assets/interaction.mjs
+// twin/skills/map-web/assets/interaction.mjs
 //
 // The one script the map-web genre ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-web.mjs` (which strips the `export` keyword from each top-level declaration so
@@ -12,7 +12,7 @@
 // does not give a `<button>` for free: a shared, positioned tooltip reading the point's own
 // `data-detail`, plus Arrow/Home/End cycling between points without leaving keyboard focus.
 //
-// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `twin-doctrine`'s own
+// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `doctrine`'s own
 // verification rule, an interactive genre is verified by driving a real browser, not by asserting
 // against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 

@@ -43,11 +43,11 @@
 // node by the beat's own test, and the whole file is inlined into the delivered HTML by
 // `render.mjs`, which strips the `export` keywords. Nothing here is imported from another skill or
 // another beat — the twin duplicates helpers (`no-cross-skill-imports.test.ts`).
-// `twin-map-web/assets/live-map.mjs` and the sibling's `live-scroll-map.mjs` were READ, not
+// `map-web/assets/live-map.mjs` and the sibling's `live-scroll-map.mjs` were READ, not
 // imported; what is shared with them is the vocabulary (a plan in a JSON literal, a placeholder
 // key, a layered page), not a line of code.
 
-/** The delivery placeholder. R1b: the committed artifact never holds a real key — `twin-deliver`
+/** The delivery placeholder. R1b: the committed artifact never holds a real key — `deliver`
  *  substitutes at delivery. ASSEMBLED rather than written whole: this script is inside the file the
  *  substitution rewrites, so a literal here would become the key itself and the check below would
  *  refuse every delivered map. */

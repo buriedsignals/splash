@@ -34,12 +34,12 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 import { MIGRATION_TIMING } from "./timing-contract";
 
 // Video-canvas helpers duplicated from EmissionsVideo.tsx — not shared because they are
@@ -398,7 +398,7 @@ export function MigrationVideo({
   const titleBaseline = contentTop + TITLE.fontSize;
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND, not under the title — the same edge the title hangs
   // off at the top, on the same x. It stays inside the furniture opacity group, so no timing
-  // contract moves. See twin-chart-beat/references/static-discipline.md, "The source on the frame's
+  // contract moves. See chart-beat/references/static-discipline.md, "The source on the frame's
   // bottom margin". It WRAPS now: one line at 22px is three at 36px.
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   const sourceBaseline = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;

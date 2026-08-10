@@ -2,7 +2,7 @@
 //
 // The bake for the locator-web beat: one camera over central Geneva, one basemap capture, the
 // eleven study-set points projected. No polygons, no join — a locator has neither
-// (`twin-map-beat/references/types/locator.md`: "position only").
+// (`map-beat/references/types/locator.md`: "position only").
 //
 // Baked at 420px square. That used to be "the exact pixel size this beat's own desktop `WebLayout`
 // displays the plate at", and those two fixed layouts are gone (B5.1): the plate is now drawn into
@@ -12,7 +12,7 @@
 // facts recorded below (`frameCorners`, `zoom`, `degreesPerPixel`, `metresPerPixel`) are what the
 // live map derives its own leash and mark scale from.
 //
-// This is `twin-doctrine/references/geo-discipline.md` rules 1, 2, 4, 6, 7 in one script (rule 3
+// This is `doctrine/references/geo-discipline.md` rules 1, 2, 4, 6, 7 in one script (rule 3
 // does not apply — nothing here is a polygon):
 //   1. the frame gate is `idle` OR a bounded settle, and it records which one fired;
 //   2. the plate is fixed, so both responsive layouts this genre ships never re-render tiles;
@@ -22,7 +22,7 @@
 //   7. water reads as a blue tint, never MapTiler's own near-grey — a point-based beat leaves
 //      nearly the whole plate exposed as basemap, so this matters MORE here than on a choropleth.
 //
-// This is this beat's OWN copy of the bake — never an import of `twin-map-web`'s or
+// This is this beat's OWN copy of the bake — never an import of `map-web`'s or
 // `proof/map-geneva-locator`'s own `bake.mjs` (a beat's pure core and its bake are its own; see
 // `mapmore-flow-danube/geo-flow.ts`'s own header for why).
 //

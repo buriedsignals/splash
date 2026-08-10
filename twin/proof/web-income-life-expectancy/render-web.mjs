@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the same shape `../co2-suisse/render-web.mjs` has: the story's own
 // constants, its own CSV reader, its own component, handed to the genre's generic machinery. It
-// lives here, beside the story, not inside `skills/twin-chart-web/scripts/render-web.mjs`, for the
+// lives here, beside the story, not inside `skills/chart-web/scripts/render-web.mjs`, for the
 // exact reason that file's own header explains: a skill directory that imports a story workspace
 // does not build once copied, on its own, into a journalist's root.
 //
@@ -32,8 +32,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { IncomeLifeExpectancyWeb, FRAME } from "./IncomeLifeExpectancyWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -127,7 +127,7 @@ export function rowsFromCsv(csv) {
 }
 
 /** Strips the `export` keyword from each top-level declaration — the same one-line transform
- *  `twin-chart-web/scripts/render-web.mjs`'s own `inlineable` applies to the skill's script, so this
+ *  `chart-web/scripts/render-web.mjs`'s own `inlineable` applies to the skill's script, so this
  *  beat's own `scatter-interaction.mjs` (authored as an ES module for readability, and so
  *  `nearestPointIndex` can be imported and read directly) can also run as a plain classic
  *  `<script>` — no `type="module"`, so it keeps working in a CMS iframe or sandboxed embed that
@@ -316,7 +316,7 @@ export function creditFrom(metadata, year) {
 /**
  * THIS BEAT DECLARES A FILTER, AND HERE IS WHY IT PASSES THE TEST MOST BEATS DO NOT.
  *
- * The test (`twin-chart-web/references/web-discipline.md`, "Filters"): a filter earns its place only
+ * The test (`chart-web/references/web-discipline.md`, "Filters"): a filter earns its place only
  * when the study set has a natural, ORTHOGONAL dimension a reader would plausibly want to isolate,
  * with enough groups and enough data per group that narrowing to one is a genuinely different
  * reading rather than a smaller version of the same one.

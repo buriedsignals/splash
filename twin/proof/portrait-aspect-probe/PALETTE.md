@@ -5,7 +5,7 @@ origin: newsroom
 ---
 
 The demonstration newsroom's own house colours, byte-for-byte the pair recorded in
-`skills/twin-chart-beat/PALETTE.md` and in `proof/static-bar-top-emitters-2024/PALETTE.md`
+`skills/chart-beat/PALETTE.md` and in `proof/static-bar-top-emitters-2024/PALETTE.md`
 (`NEWSROOM.example.md`'s `brandColor` / `ground`).
 
 This probe compares LAYOUTS, so the colours are held constant across every arm on purpose: if the

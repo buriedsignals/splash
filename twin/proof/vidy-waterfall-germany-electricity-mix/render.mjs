@@ -1,12 +1,12 @@
 // twin/proof/vidy-waterfall-germany-electricity-mix/render.mjs
 //
 // This story's own render script — the render ladder's second rung, same shape as
-// `twin-chart-video/scripts/render-video.mjs` and the other proof workspaces'
+// `chart-video/scripts/render-video.mjs` and the other proof workspaces'
 // (`readingsFromCsv`, then still-first, then mp4), its own story constants.
 //
 // `deriveFurniture` is imported from THIS SKILL's own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/…`
-// alias, and not `twin-chart-beat`'s original. A skill never imports another skill; a story never
+// (`skills/chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/…`
+// alias, and not `chart-beat`'s original. A skill never imports another skill; a story never
 // reaches into a skill's `assets/`, only its `scripts/` — same direction
 // `../video-population-growth-dumbbell/render.mjs` uses.
 //
@@ -20,7 +20,7 @@ import {
   deriveFurniture,
   readPalette,
   seriesInks,
-} from "../../skills/twin-chart-video/scripts/render-still.mjs";
+} from "../../skills/chart-video/scripts/render-still.mjs";
 // The VIDEO genre's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
 // question, which is craft-neutral and therefore has one copy for both genres.
 import {
@@ -28,8 +28,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");

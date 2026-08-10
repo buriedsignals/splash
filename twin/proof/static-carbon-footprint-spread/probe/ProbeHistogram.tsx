@@ -26,7 +26,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 
 export type Bin = { lo: number; hi: number; count: number };
 
@@ -183,7 +183,7 @@ export function ProbeHistogram({
     titleBaseline + (titleLines.length - 1) * TITLE.lead + sp(28);
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
   const sourceBaseline =
     height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
   // The plot starts below the LAST HEADER line, never below the source.

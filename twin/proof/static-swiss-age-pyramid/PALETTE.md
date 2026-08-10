@@ -9,7 +9,7 @@ The answer recorded for this beat: a bespoke pair the journalist chose — Okabe
 Okabe-Ito vermillion, the two values the component named as `COLOURS` before this file existed —
 kept over both the house accent and a subject convention.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat) and this beat's subject — Switzerland's
 population by age and sex — fires none of them. And a single accent could not have supplied this
 beat: the type is two back-to-back bar charts, one per group, so it needs two inks that a

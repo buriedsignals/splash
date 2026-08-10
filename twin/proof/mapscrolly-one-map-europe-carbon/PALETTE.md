@@ -5,9 +5,9 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as documented in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md`.
+`skills/splash/assets/root-template/NEWSROOM.example.md`.
 
-`twin-palette`'s proposal was run for this beat's own subject line — *"carbon dioxide emitted per
+`palette`'s proposal was run for this beat's own subject line — *"carbon dioxide emitted per
 person across 41 European countries in 2023"* — and returned **one** option, the house theme.
 `matchConvention` fires on none of the four grounded conventions: `renewable`, `coal|fossil|oil`,
 `water` and `heat|temperature|warming` are all absent from a subject about how much carbon each

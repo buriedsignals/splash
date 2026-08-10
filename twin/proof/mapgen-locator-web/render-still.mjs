@@ -1,4 +1,4 @@
-// twin/skills/twin-chart-beat/scripts/render-still.mjs
+// twin/skills/chart-beat/scripts/render-still.mjs
 //
 // Runs inside a Splash root: uses `react-dom/server` and `@resvg/resvg-js` from the root's
 // dependencies. Every other script in this twin is dependency-free; this one is not, and says so.
@@ -146,7 +146,7 @@ export async function renderStill({
   // The default stays 2 because the un-migrated statics are still drawn at 900x560 and its
   // neighbours, and retiring it for them would ship 900px stills. A beat that pins an export size
   // passes 1, and its delivered PNG then measures exactly what gate 2c chose. The remaining count
-  // is held by `splash-twin/test/delivered-size-matches-the-pin.test.ts` as a number that may only
+  // is held by `splash/test/delivered-size-matches-the-pin.test.ts` as a number that may only
   // go down — an inconsistency with a ratchet on it rather than an inconsistency.
   scale = 2,
 }) {

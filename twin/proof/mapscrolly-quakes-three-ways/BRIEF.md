@@ -172,7 +172,7 @@ browser resolved on the mark layer's own `getScreenCTM()`, and a disagreement ov
 refuses the live layer and brings the plate back. **Measured 0.000 px at all four widths, on every
 one of the 934 driven frames.**
 
-**R1b:** the committed HTML carries `__MAPTILER_KEY__` and never a key; `twin-deliver` substitutes
+**R1b:** the committed HTML carries `__MAPTILER_KEY__` and never a key; `deliver` substitutes
 at delivery. `verify-live-tiles.mjs` and `drive.mjs` both write a keyed copy into a `mkdtemp`
 OUTSIDE the tree.
 

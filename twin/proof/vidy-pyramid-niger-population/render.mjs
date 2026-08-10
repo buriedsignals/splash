@@ -1,11 +1,11 @@
 // twin/proof/vidy-pyramid-niger-population/render.mjs
 //
 // This story's own render script — the render ladder's second rung, same shape as
-// `../video-population-growth-dumbbell/render.mjs` and `twin-chart-video/scripts/render-video.mjs`
+// `../video-population-growth-dumbbell/render.mjs` and `chart-video/scripts/render-video.mjs`
 // (`readingsFromCsv`, then still-first, then mp4), its own story constants.
 //
-// `deriveFurniture` is imported from `twin-chart-video`'s own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — the same direction
+// `deriveFurniture` is imported from `chart-video`'s own copy
+// (`skills/chart-video/scripts/render-still.mjs`) by a relative path — the same direction
 // `../video-population-growth-dumbbell/render.mjs` uses, not the `#shared/…` alias: a story workspace
 // reaches a skill's script by relative path for the render-time-only node helpers, and consumes the
 // shared TYPE via `#shared/…` in the composition/timing files instead.
@@ -20,7 +20,7 @@ import {
   deriveFurniture,
   readPalette,
   seriesInks,
-} from "../../skills/twin-chart-video/scripts/render-still.mjs";
+} from "../../skills/chart-video/scripts/render-still.mjs";
 // The VIDEO genre's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
 // question, which is craft-neutral and therefore has one copy for both genres.
 import {
@@ -28,8 +28,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");

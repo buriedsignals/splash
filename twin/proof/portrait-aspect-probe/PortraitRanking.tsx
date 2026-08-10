@@ -26,7 +26,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import { clampPlotHeight, wrap } from "./PortraitHistogram.tsx";
 
 export type Row = { country: string; value: number };

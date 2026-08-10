@@ -13,7 +13,7 @@ male in Okabe-Ito blue `#0072B2` (5.19:1 against the ground), female in Okabe-It
 `origin: journalist` says who chose them. This is a bespoke CVD-safe pair, not the newsroom's house
 teal and not a subject convention: `matchConvention` holds renewables, fossil fuel, water and heat,
 and a population's age-and-sex structure matches none of them. The type doctrine
-(`twin-chart-beat/references/types/population-pyramid.md`) requires the two side colours to be
+(`chart-beat/references/types/population-pyramid.md`) requires the two side colours to be
 checked **together** rather than assumed safe individually, and this is a cool/warm pair — not the
 two adjacent warm hues `visual-system.md` warns about — and the same two the static Swiss pyramid
 beat uses for this type.

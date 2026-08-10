@@ -2,7 +2,7 @@
 //
 // This beat's own WEB runner — the shape every other beat in this genre uses: the story's own
 // constants, the story's own CSV reader, the story's own component, handed to the skill's generic
-// `renderWeb` (`skills/twin-chart-web/scripts/render-web.mjs`).
+// `renderWeb` (`skills/chart-web/scripts/render-web.mjs`).
 //
 // IT USED TO BE A SECOND COPY OF THAT FUNCTION, and that is the whole of B6.2. This file carried
 // its own `buildCss` — with `.chart-figure { max-width: 900px }` and a `@media` rung boundary —
@@ -34,8 +34,8 @@ import { fileURLToPath } from "node:url";
 import {
   readPalette,
   seriesInks,
-} from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+} from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { Co2HeatmapWeb, FRAME, checkRampFloor } from "./Co2HeatmapWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

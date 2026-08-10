@@ -10,7 +10,7 @@ named as `RAMP_LOW` and `RAMP_HIGH` before this file existed. Both are stops on 
 teal, but neither IS the house teal, so `origin: journalist` is the honest field: the newsroom's
 `brandColor` is `#0B7A75` and these are a pale and a deep pole chosen for this chart.
 
-`twin-palette`'s subject option was checked and does not apply. The subject is per-capita CO₂
+`palette`'s subject option was checked and does not apply. The subject is per-capita CO₂
 emissions by country and decade; `matchConvention` returns nothing for it, because none of the four
 grounded conventions (renewables, fossil, water, heat) fires on CO₂ emissions as a phrase.
 

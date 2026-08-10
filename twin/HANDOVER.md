@@ -15,11 +15,11 @@ Where the current state actually lives, in this order:
 | what was measured against those specs | the five `twin/AUDIT-*.md` |
 
 A concrete illustration of why that table exists, because this file caused it: §4 below said
-"**364 tests green**" for three days while `skills/splash-twin/test/` alone ran over a thousand, and
+"**364 tests green**" for three days while `skills/splash/test/` alone ran over a thousand, and
 §4 and §7 both called the reference set "4 rows" after it had grown to 7. Both are corrected in
 place below and dated. Do not add a new count here — add it to the thing that regenerates.
 
-Branch `experiment/doctrine-twin`, worktree `/Users/rmdms/Sites/Professional/splash-twin`,
+Branch `experiment/doctrine-twin`, worktree `/Users/rmdms/Sites/Professional/splash`,
 **never to be merged**. Written 2026-08-06 to 2026-08-08; numbers re-measured 2026-08-11.
 
 ---
@@ -119,23 +119,23 @@ per-type knowledge as prose · `assets/geometry/` holds pure functions only. The
 
 **How many tests are green: run `bun test` from `twin/`.** ~~364 tests green.~~ That number was
 written on 2026-08-08 and was still sitting here on 2026-08-11, by which time
-`skills/splash-twin/test/` **alone** ran 1,041 across 31 files. A count in a frozen document is a
+`skills/splash/test/` **alone** ran 1,041 across 31 files. A count in a frozen document is a
 claim that decays daily and that nobody re-measures — which is the same failure this file records
 under §11's "eleven orphan stills". No new number is written here on purpose.
 
 | Skill | State |
 |---|---|
-| `splash-twin` | orchestrator, preflight (probed keys, resolved deps), `whereIs`, story scaffolder |
-| `twin-intake` | freeze + RFC 4180 reader + profiler |
-| `twin-storyboard` | the six movements, `checkStoryboard`, **claim-grounding** |
-| `twin-doctrine` | editorial standard · visual system · information architecture · anti-patterns · motion grammar · geo discipline · reference set (**7 rows as of 2026-08-11 — 4 when this was written, and still the weak point**) |
-| `twin-chart-beat` | static, on d3 primitives + `inspect-render` (measures painted pixels) |
-| `twin-chart-video` | Remotion + d3, editable timing contract |
-| `twin-dw-beat` | Datawrapper, **with `range-annotations`** the engine's mapper does not expose |
-| `twin-map-beat` | MapTiler static + video, one baked camera |
-| `twin-deliver` | forms offered, waited on, only the chosen one built |
+| `splash` | orchestrator, preflight (probed keys, resolved deps), `whereIs`, story scaffolder |
+| `intake` | freeze + RFC 4180 reader + profiler |
+| `storyboard` | the six movements, `checkStoryboard`, **claim-grounding** |
+| `doctrine` | editorial standard · visual system · information architecture · anti-patterns · motion grammar · geo discipline · reference set (**7 rows as of 2026-08-11 — 4 when this was written, and still the weak point**) |
+| `chart-beat` | static, on d3 primitives + `inspect-render` (measures painted pixels) |
+| `chart-video` | Remotion + d3, editable timing contract |
+| `dw-beat` | Datawrapper, **with `range-annotations`** the engine's mapper does not expose |
+| `map-beat` | MapTiler static + video, one baked camera |
+| `deliver` | forms offered, waited on, only the chosen one built |
 
-**In flight when this was written** (results will land after): `twin-chart-web` (the interactive
+**In flight when this was written** (results will land after): `chart-web` (the interactive
 gap), the engine's interactive side for comparison, and an attempt to wire `infoviz.design` into the
 reference set.
 
@@ -215,7 +215,7 @@ up-front investment plus a modest marginal premium** — which amortises over st
 
 ## 7. What to do next, in order
 
-**1. Close the interactive gap** (in flight). `twin-chart-web` — D3, hover, keyboard, responsive,
+**1. Close the interactive gap** (in flight). `chart-web` — D3, hover, keyboard, responsive,
 self-contained HTML. It is the engine's DEFAULT format for an article-web channel, so it is
 potentially the most-used path and it was missing.
 
@@ -232,7 +232,7 @@ actually holds. `infoviz.design` (Buried Signals) is the candidate source.
 **3. Harvest `references/types/*.md`** — the ~41 type sheets. This is where the engine's real
 knowledge survives, as prose. Harvesting, not writing.
 
-**4. The remaining craft skills**, in this order of value: map interactive · `twin-image-beat` ·
+**4. The remaining craft skills**, in this order of value: map interactive · `image-beat` ·
 the assembly vehicles (`montage`, `scroll`).
 
 **5. The two doctrine debts still open:** the axis-density rule was fixed for static but the video
@@ -318,7 +318,7 @@ written down, and both had been guessed wrong first:
 **What now holds, each verified by attacking it, not by reading it.** One seed per genre a skill
 ships, marked verbatim, with sample data, a generated preview and an `output-proof`. Every preview
 regenerable and `--check`-guarded. Story artifacts live in `proof/<slug>/`. **No import leaves a
-skill** — `skills/splash-twin/test/no-cross-skill-imports.test.ts`, which took five fix rounds and
+skill** — `skills/splash/test/no-cross-skill-imports.test.ts`, which took five fix rounds and
 whose header states honestly what it cannot catch. **A skill copied alone still renders** —
 `seed-renders-standalone.test.ts` copies a skill into a temp root holding nothing else and renders
 its seed; proven by re-adding a `proof/` import and watching the isolated render fail. Duplication
@@ -340,7 +340,7 @@ substrate families.
    fonts, and the map one needs `MAPTILER_KEY` plus a warm `/tmp` plate cache — and hard-fails
    rather than skipping, unlike the `DATAWRAPPER_TOKEN` convention. On a fresh clone they go red for
    reasons that are not defects.
-4. **`twin-chart-video` is still CO₂-branded** — composition id, `BEAT`, filename — around a
+4. **`chart-video` is still CO₂-branded** — composition id, `BEAT`, filename — around a
    rainfall seed. This is believed to be *why* seven false documentation claims survived three
    sweeps: "EmissionsVideo" and "co2-suisse" make "shares geometry with `proof/co2-suisse`" read as
    plausible instead of obviously wrong.
@@ -365,7 +365,7 @@ A clean-room run — an operator allowed to read only documentation, never imple
 real article and real Swiss electricity data through the whole journey. It reached a delivered
 chart and produced **eleven findings**. The four that mattered:
 
-1. **Delivery knew only the `static` genre.** `twin-chart-web` and `twin-chart-video` were complete,
+1. **Delivery knew only the `static` genre.** `chart-web` and `chart-video` were complete,
    tested, documented skills whose output could not be delivered at all — `offerForms` threw. The
    journalist had asked for "the web". Nothing warned; the wall was hit at the last phase.
 2. **The newsroom's identity was collected and never used.** Preflight validated `NEWSROOM.md`;
@@ -390,7 +390,7 @@ chart and produced **eleven findings**. The four that mattered:
 - **`NEWSROOM.md` has three outcomes, not two:** valid, missing, or **declined**. A declined theme
   is a recorded choice, checked before validation — not a silent default. The anti-fallback rule
   exists so a visual never ships in a colour nobody chose; an explicit refusal is not that.
-- **`twin-newsroom-charter`** derives a charter by measuring the newsroom's own site, showing every
+- **`newsroom-charter`** derives a charter by measuring the newsroom's own site, showing every
   value beside the markup it was read from. Tested against four real newsrooms: two yielded a brand
   colour, and **nzz.ch yielded nothing and said so** — correctly rejecting a carousel library's
   default blue rather than presenting it as measured. That refusal is the skill's whole point.
@@ -401,7 +401,7 @@ chart and produced **eleven findings**. The four that mattered:
   works, and the first line of the file it emits. `assertNotPartialReplace` guards We.Publish's
   total-replace `updateArticle`: mutation-proven to refuse a dropped paragraph, an altered body, an
   empty previous body. When someone reaches a real CMS, the guard is already there.
-- **`twin-scrolly`**, the assembly vehicle. Proven by driving a browser: stepping, no-JS survival,
+- **`scrolly`**, the assembly vehicle. Proven by driving a browser: stepping, no-JS survival,
   reduced motion, 375px.
 - **22 per-type prose sheets** (16 chart, 6 map), each carrying what the type is for, when *not* to
   use it, the one thing that goes wrong, and its accessibility trap. Both READMEs name the 28 types
@@ -442,7 +442,7 @@ Sixteen beats were produced from real data, each in its own `proof/<slug>/` with
 beside it: **eight static chart types** (grouped bar, stacked bar, scatter, area, slope, histogram,
 waterfall, population pyramid), **three web** (bar, scatter, slope), **two video** (area, dumbbell),
 and **three map types** (proportional symbol with a video build, locator, hex grid). Plus
-`twin-image-beat`, a new medium, and `twin-scrolly` revised.
+`image-beat`, a new medium, and `scrolly` revised.
 
 **One shared bug surfaced only by reading a rendered tooltip:** the French number formatter `fr()`
 mis-grouped digits past one decimal place. It is shared, so it was wrong everywhere it was used —
@@ -481,8 +481,8 @@ media.
 
 At the close: **28 beat folders, 28 frozen CSVs** — every beat carries its own data — **32 PNGs, 6
 self-contained HTML files, 6 mp4s**. **32 chart type sheets and 8 map type sheets.** **14 skills**,
-up from 9: `twin-chart-web`, `twin-newsroom-charter`, `twin-image-beat`, `twin-map-web` and
-`twin-scrolly` are new. Suite 460 → **774 tests, 771 pass, 3 skip, 0 fail**, tree clean, 44 commits.
+up from 9: `chart-web`, `newsroom-charter`, `image-beat`, `map-web` and
+`scrolly` are new. Suite 460 → **774 tests, 771 pass, 3 skip, 0 fail**, tree clean, 44 commits.
 
 **Why that paragraph says "measured on disk".** Folder counts were being reported as delivered work,
 and an audit found **five beats that declared a genre and had never produced its artifact** — two
@@ -600,7 +600,7 @@ written here in his priority order so a fresh session picks them up without re-d
 1. **Colours must follow the newsroom theme or fit the subject — ground included — and be PROPOSED
    to the journalist, who accepts or chooses otherwise.** This is the biggest gap: `NEWSROOM.md`
    carries `brandColor`, `ground` and `typefaces`, preflight validates them, and **nothing threads
-   them into a render**. `twin-chart-beat`'s Quick start still shows them as literals with a
+   them into a render**. `chart-beat`'s Quick start still shows them as literals with a
    `// from NEWSROOM.md` comment — an instruction to copy by eye. Three parts: make the values
    reach the render; make the palette a proposal carrying its reasoning, with the journalist's
    answer recorded; keep the contrast guard firing, because a house brand colour can easily fail
@@ -608,7 +608,7 @@ written here in his priority order so a fresh session picks them up without re-d
    grounded convention (green for renewables, grey for coal), not a colour that "feels right" —
    when no convention applies, the house theme wins.
 
-   **Started 2026-08-09 (`d3012f71`).** `twin/skills/twin-palette/scripts/palette.mjs` exists and
+   **Started 2026-08-09 (`d3012f71`).** `twin/skills/palette/scripts/palette.mjs` exists and
    holds the whole mechanism: `proposePalette` (house option + subject option, each with its
    provenance, its reasoning and its measured contrast), `matchConvention` over a deliberately
    short table of conventions, `adjustToContrast` (a remedy shown beside a failing option, never
@@ -618,19 +618,19 @@ written here in his priority order so a fresh session picks them up without re-d
    is grounded on Lin, Fortuna, Kulkarni, Stone & Heer, *Selecting Semantically-Resonant Colors
    for Data Visualization*, Computer Graphics Forum 32(3), Proc. EuroVis 2013 — expert-chosen
    resonant colours measurably speed up chart reading. **What remains:** `format-proposal.mjs`
-   (the question the journalist answers, mirroring `twin-newsroom-charter`'s), the two
+   (the question the journalist answers, mirroring `newsroom-charter`'s), the two
    `references/` files, `assets/PALETTE.example.md`, `SKILL.md`, tests, a `contrast` family added
    to `helper-parity.test.ts`, and the threading itself — a duplicated `readPalette` in each craft
    skill plus a Quick start that calls it instead of showing hex literals. Then one real beat
    re-rendered under a real house profile, as proof.
 
-   **CLOSED 2026-08-09 (`850db5e5`).** All of the above shipped. `twin-palette` is a complete skill
+   **CLOSED 2026-08-09 (`850db5e5`).** All of the above shipped. `palette` is a complete skill
    — `format-proposal.mjs`, both `references/` files, `assets/PALETTE.example.md`, `SKILL.md`,
    tests. `readPalette`/`parsePalette` are vendored into all six `render-still.mjs` copies (a beat
    already imports that module to render at all; a second import path for two colours is one more
    thing to get wrong), and `helper-parity.test.ts` gained a `contrast` family and a `parsePalette`
    family across all seven copies — mutation-checked by relaxing the `origin` rule in one copy,
-   which turned it red and named the copy that drifted. `twin-chart-beat`'s Quick start calls
+   which turned it red and named the copy that drifted. `chart-beat`'s Quick start calls
    `readPalette` and names no hex.
 
    **The proof is `proof/palette-proof/`**: the same render script, naming no hex value anywhere,
@@ -695,7 +695,7 @@ written here in his priority order so a fresh session picks them up without re-d
    collapse was invisible. Fixed at the SCALE (square-root position, monotonic, legend ticks on the
    same transform so its uneven spacing shows the non-linearity), not by lowering the floor. The
    tension is general to any luminance-encoded type on a light ground and is now written into
-   `twin-chart-beat/references/types/heatmap.md`; **no guard exists for "technically compliant and
+   `chart-beat/references/types/heatmap.md`; **no guard exists for "technically compliant and
    visually flat"**. (2) In the bar-and-column video, frame 100 printed "3.19" above a column
    standing at 2.15 — a label naming a height it had not reached, **invisible in the still** and
    found only by extracting frames from the mp4. (3) In the diverging bar, the conclusion's dashed
@@ -744,10 +744,10 @@ its own lesson: unifying copies makes them consistent, not correct.
 
 **`helper-parity.test.ts` guarded six of twenty copies.** A hand-written import list cannot know
 about a file created after it was written. `render-still-parity.test.ts` now WALKS the tree and
-compares every `render-still.mjs` function by function — a superset (`twin-image-beat` adds six) and
+compares every `render-still.mjs` function by function — a superset (`image-beat` adds six) and
 a subset (every `proof/` copy carries no `readPalette`) are both legitimate; two copies of the same
 function disagreeing is not. Whitespace is stripped entirely rather than collapsed, because
-collapsing reported `twin-scrolly` as drifted twice and both were the formatter breaking a method
+collapsing reported `scrolly` as drifted twice and both were the formatter breaking a method
 chain across lines. **A guard a formatter can turn red is a guard someone disables.**
 
 **Two missing guards, not one — and the second is the harder half.** Of the false claims delivered
@@ -786,9 +786,9 @@ produced output byte-identical to what is committed** — so the fifteen artifac
 redesign had made unreproducible are both current and reproducible again.
 
 The input half of that class survives OUTSIDE `proof/`, and one instance is the exact shape that
-produced the invented migration series: `twin-chart-video/scripts/render-video.mjs`'s `--data`
+produced the invented migration series: `chart-video/scripts/render-video.mjs`'s `--data`
 defaults to `/tmp/video-twin/data.csv` — a renderer whose DATA default is a scratch file.
-`twin-map-beat/scripts/render-preview.mjs` compares its `--check` guard against a plate in `/tmp`.
+`map-beat/scripts/render-preview.mjs` compares its `--check` guard against a plate in `/tmp`.
 Both are named rather than fixed, because their skills were being edited concurrently.
 
 **"Eleven video beats commit a `<name>-still.png` that no script produces" — MEASURED, AND FALSE.**

@@ -270,7 +270,7 @@ sides, scored, and — for the two rounds where it mattered most — checked bli
 case above — the takeaway, the subject, the caveat, which moment to accent, which country is the
 comparison — was given by an agent playing a journalist, on both sides, identically scripted, on
 every one of the four shapes. The twin's one advantage that does not close with a mapper change or a
-registry field is the editorial exchange itself (`twin-storyboard`'s five questions, restitution, the
+registry field is the editorial exchange itself (`storyboard`'s five questions, restitution, the
 reference loop), and that is the one thing no pass of this document tests, because none of them used
 a real journalist. Whether a journalist who does not know this system finds that exchange useful or
 tedious is the only question left that this document cannot answer.
@@ -439,7 +439,7 @@ the engine's registry already equips.**
 The twin's advantage here is not cosmetic — it is in what order the pixels arrive.
 
 **`video-twin-final.png`** is the last frame of an eight-second, six-event build
-(`twin/skills/twin-chart-video/assets/timing.ts`, `CO2_TIMING`): the 1967 rule is laid down before
+(`twin/skills/chart-video/assets/timing.ts`, `CO2_TIMING`): the 1967 rule is laid down before
 any data is drawn (`reference`, frames 32–54), held alone for 18 frames so it can be read, then the
 curve draws 1950→2024 at a constant pace (`reveal`, frames 72–150), the 2024 point lands on its own
 (`subject`, frames 150–168), and only then is its value stated (`conclusion`, frames 168–192) before
@@ -467,9 +467,9 @@ only after its evidence is visible" to the title as well as to the value. That r
 not with the argument it labels.
 
 The doctrine was ambiguous on exactly this point and was corrected at its source, not just on the
-example: `twin-doctrine/references/motion-grammar.md`'s "the conclusion rule governs assertions,
+example: `doctrine/references/motion-grammar.md`'s "the conclusion rule governs assertions,
 not the title" (commit `55f39c3e`), followed by the video build itself
-(`fix(twin-chart-video): the title establishes with the furniture; the conclusion states the value`,
+(`fix(chart-video): the title establishes with the furniture; the conclusion states the value`,
 commit `be58d00f`). The title now comes up with the furniture at frame 0 — the video has a poster
 frame again — while the 2024 value stays the conclusion event, arriving at frame 168 once the point
 carrying it has landed. The final hold frame is byte-identical to before the fix; only the early
@@ -483,7 +483,7 @@ beat copies the seed's shape rather than importing it:
 
 | File | Why it needed touching |
 | --- | --- |
-| `twin/skills/twin-chart-beat/assets/ChartSeed.tsx` | the seed itself |
+| `twin/skills/chart-beat/assets/ChartSeed.tsx` | the seed itself |
 | `twin/proof/co2-suisse/EmissionsLine.tsx` | its own copy of the tick arithmetic, plus a variant pinning the 1967 reference as the middle tick |
 | the Norway CO₂ trial beat (ephemeral root, outside this repo) | its own copy |
 | the migration trial beat (ephemeral root, outside this repo) | its own copy, plus a highlight sub-run |

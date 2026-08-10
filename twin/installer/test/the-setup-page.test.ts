@@ -6,7 +6,7 @@
  * WHAT IT DEFENDS, and the mutation that reddens each — every one run in a copy under /tmp
  * (`/tmp/twin-mut`), never in this tree:
  *
- *   1. THE DERIVATION PROPOSES; IT NEVER WRITES. `twin-newsroom-charter`'s rule 2 is that
+ *   1. THE DERIVATION PROPOSES; IT NEVER WRITES. `newsroom-charter`'s rule 2 is that
  *      `deriveCharter` has no write path — and this page is its caller, so the rule has to hold
  *      here too. `/derive` is driven against a site that declares a full charter, and the root is
  *      then checked for a `NEWSROOM.md` and a `.env`: neither may exist. Only `/submit` writes.
@@ -234,7 +234,7 @@ describe("the CMS credential", () => {
   it("should offer exactly the CMS kinds the delivery form can build a mutation for", async () => {
     const html = await (await fetch(`${pageUrl}/`)).text();
     const { CMS_KINDS } = await import(
-      join(TWIN, "skills", "twin-deliver", "scripts", "cms-insert.mjs")
+      join(TWIN, "skills", "deliver", "scripts", "cms-insert.mjs")
     );
     const offered = [...html.matchAll(/<option value="([^"]+)">/g)].map(
       (m) => m[1],
@@ -304,7 +304,7 @@ describe("the CMS credential", () => {
       newsroomLanguages,
       newsroomAccents,
     } = await import(
-      join(TWIN, "skills", "splash-twin", "scripts", "newsroom.mjs")
+      join(TWIN, "skills", "splash", "scripts", "newsroom.mjs")
     );
     const profile = parseNewsroom(
       readFileSync(join(root, "NEWSROOM.md"), "utf8"),

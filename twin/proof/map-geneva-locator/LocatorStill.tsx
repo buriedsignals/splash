@@ -1,7 +1,7 @@
 /**
  * The static genre of "Geneva's international quarter" — 900 × 560, one frame, no order. A
  * LOCATOR beat: position and category only, no magnitude, no rate, no gradient. See
- * `twin-map-beat/references/types/locator.md`.
+ * `map-beat/references/types/locator.md`.
  */
 
 import { Fragment } from "react";
@@ -106,7 +106,7 @@ export function LocatorStill({
   // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
   // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
   // source block's own height; the plate is a fixed square and does not move. See
-  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  // map-beat/assets/Co2MapStill.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;

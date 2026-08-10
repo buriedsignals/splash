@@ -4,7 +4,7 @@
 // `../migration/render.mjs` have for the video genre: the story's own constants, the story's own
 // data reader, the story's own component, handed to the genre's generic machinery.
 //
-// It lives here, beside the story, and not inside `skills/twin-chart-web/scripts/render-web.mjs`,
+// It lives here, beside the story, and not inside `skills/chart-web/scripts/render-web.mjs`,
 // because that file used to import this story's component out of the skill — and a skill directory
 // that imports a story workspace does not build once it is copied on its own into a journalist's
 // root, which is the premise the whole twin rests on. The skill's own script now runs the skill's
@@ -21,8 +21,8 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { EmissionsWeb, FRAME } from "./EmissionsWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -55,7 +55,7 @@ export const BEAT = {
 };
 
 // The story's own frozen series, committed beside it — fetched from the OWID grapher endpoint
-// with `&csvType=filtered&country=~CHE` (see `twin-intake/references/ourworldindata-csv-filter-trap.md`
+// with `&csvType=filtered&country=~CHE` (see `intake/references/ourworldindata-csv-filter-trap.md`
 // for why that parameter is not optional), verified to contain only Switzerland before being
 // trusted. No longer `/tmp` — a story folder that only a previous run's scratch directory can
 // reproduce is not the self-contained folder this project promises.

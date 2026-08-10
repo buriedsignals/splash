@@ -25,7 +25,7 @@ axis zero-based, bars edge-to-edge.
   via Our World in Data.
 - Fetched: `https://ourworldindata.org/grapher/life-expectancy.csv?v=1&csvType=full` — no
   `country=` filter was applied (this beat wants every entity, not one), so the
-  `csvType=filtered` trap (`twin-intake/references/ourworldindata-csv-filter-trap.md`) does not
+  `csvType=filtered` trap (`intake/references/ourworldindata-csv-filter-trap.md`) does not
   apply here in its usual form; `csvType=full` was still passed for an explicit, checked fetch
   rather than relying on an implicit default.
 - `data.csv`: **21,565 rows**, columns `Entity,Code,Year,Life expectancy`, years **1543–2023**

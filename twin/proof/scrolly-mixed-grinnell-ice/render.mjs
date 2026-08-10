@@ -1,9 +1,9 @@
 // THE RUNNER FOR THE MIXED SCROLLY — three media in one story, and the scroll drives both which one
 // holds the screen and where the reader is INSIDE it.
 //
-// This file is a CONSUMER of `twin-scrolly`: it imports the skill's own generic `renderScrolly` (the
+// This file is a CONSUMER of `scrolly`: it imports the skill's own generic `renderScrolly` (the
 // media-agnostic scaffold above its CONFIG marker) and hands it steps. Nothing under
-// `twin-scrolly/` is edited by it.
+// `scrolly/` is edited by it.
 //
 // THE ARC, and why each medium is here rather than the other two:
 //
@@ -26,8 +26,8 @@ import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement, Fragment } from "react";
-import { deriveFurniture, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
+import { deriveFurniture, readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 import { MixedFrame, SSR_FRAME, creditForState } from "./MixedFrame.tsx";
 import {
   PROSE_LANE,
@@ -436,7 +436,7 @@ async function render() {
   //
   // The style URL carries the PLACEHOLDER, never a key (R1b): this file is committed, the release is
   // open source, and a pushed key is scanned within minutes and survives in the history.
-  // `twin-deliver` substitutes at delivery; `verify-live-tiles.mjs` beside this beat substitutes
+  // `deliver` substitutes at delivery; `verify-live-tiles.mjs` beside this beat substitutes
   // into a copy outside the tree to prove the layer is real.
   const warmViews = warmPositions(MAP_FROM, MAP_TO, WARM_SAMPLES_PER_LEG).map((p) => {
     const camera = resolveCamera(stateAt(states, p, false), WARM_FRAME);

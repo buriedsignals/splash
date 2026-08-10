@@ -1,6 +1,6 @@
 // twin/proof/weby-small-multiples-co2-per-capita/small-multiples-interaction.mjs
 //
-// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs`, the single-
+// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs`, the single-
 // panel line genre's own copy. `render-web.mjs` inlines this one instead (same substitution
 // pattern `web-income-life-expectancy/render-web.mjs`'s `patchForThisBeat` uses).
 //

@@ -2,10 +2,10 @@
 // growing slice of the route and a growing set of crossed territories, four narrative steps at a
 // time (geo-discipline.md rule 2: "move within the plate," never re-bake per step).
 //
-// This file is a CONSUMER of `twin-scrolly`: it imports the skill's own generic `renderScrolly`
+// This file is a CONSUMER of `scrolly`: it imports the skill's own generic `renderScrolly`
 // (the media-agnostic scaffold, above its CONFIG marker) and builds its own `steps` array from its
-// own frame component (`MapFrame.tsx`) — exactly the shape `twin-scrolly/SKILL.md`'s own "How it
-// works" describes for a real beat. Nothing under `twin-scrolly/` is edited by this file.
+// own frame component (`MapFrame.tsx`) — exactly the shape `scrolly/SKILL.md`'s own "How it
+// works" describes for a real beat. Nothing under `scrolly/` is edited by this file.
 //
 // TWO CHANGES OF 2026-08-10, both the owner's, both recorded in `BRIEF.md` with the argument they
 // overturned:
@@ -34,7 +34,7 @@ import { createElement, Fragment } from "react";
 import { deriveFurniture } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   assertTerritoryFillsReadAsLand,
   parseRouteCsv,
@@ -48,7 +48,7 @@ import {
 import { MapFrame } from "./MapFrame.tsx";
 import { MAX_SCALE, PROSE_LANE, containCamera } from "./route-drive.mjs";
 import { keyPlaceholder, viewForCamera } from "./live-scroll-map.mjs";
-import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
+import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Resolved through node's own module resolution, never by a relative path out of this beat —
@@ -323,7 +323,7 @@ async function render() {
   //
   // The style URL carries the PLACEHOLDER, never a key (R1b): this file is committed, the release
   // is open source, and a pushed key is scanned within minutes and survives in the history.
-  // `twin-deliver` substitutes at delivery.
+  // `deliver` substitutes at delivery.
   const nominalCamera = containCamera(NOMINAL_FRAME, geometry.frame, MAX_SCALE);
   const nominalView = viewForCamera(nominalCamera, NOMINAL_FRAME, geometry);
   const livePlan = {

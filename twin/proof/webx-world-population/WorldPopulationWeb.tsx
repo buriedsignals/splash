@@ -1,7 +1,7 @@
 /**
  * The web beat of "World population passed 8 billion in 2022" — the interactive genre.
  *
- * SECOND BUILD, migrated to the genre's FLUID FRAME (`twin-chart-web/assets/ChartWebSeed.tsx`,
+ * SECOND BUILD, migrated to the genre's FLUID FRAME (`chart-web/assets/ChartWebSeed.tsx`,
  * `references/web-discipline.md` "Responsive behaviour"). Its first build SSR'd two pre-rendered
  * rungs (900px and 360px) swapped by a media query; the owner overturned that in favour of one
  * continuously-adaptive frame, and `renderWeb` no longer accepts a `layouts` array. The split that
@@ -14,7 +14,7 @@
  * (`references/types/area.md`'s own non-negotiable — the fill's AREA is what a reader measures, so
  * unlike a line the value axis always includes zero). Not imported from the static sibling
  * `proof/static-world-population/WorldPopulationArea.tsx`, which bakes its words into SVG `<text>`
- * and reaches for `#shared/twin-chart-beat/render-still.mjs` directly.
+ * and reaches for `#shared/chart-beat/render-still.mjs` directly.
  *
  * What hover/tap/keyboard-focus adds: the frame prints the axis in billions to one decimal, plus
  * the crossing and end labels. None of the 224 individual annual readings between 1800 and 2023 has

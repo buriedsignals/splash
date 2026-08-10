@@ -21,7 +21,7 @@ import { createElement } from "react";
 import {
   renderStill,
   readPalette,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -29,8 +29,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { TYPE, DivergingBarChange, en, rungsFor } from "./DivergingBarChange.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

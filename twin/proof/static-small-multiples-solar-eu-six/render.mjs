@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   assertTypeFloor,
@@ -19,8 +19,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import {
   TYPE,
   rungsFor,
@@ -71,7 +71,7 @@ async function main() {
   console.log(`read ${rows.length} rows from data.csv`);
 
   // The OWID grapher endpoint returns the ENTIRE dataset with HTTP 200 when its `country=`
-  // parameter is not honoured (`twin-intake/references/ourworldindata-csv-filter-trap.md`) — it
+  // parameter is not honoured (`intake/references/ourworldindata-csv-filter-trap.md`) — it
   // was not honoured on this endpoint, which is why the freeze was filtered locally from the full
   // CSV. Verify the frozen file by eye rather than trusting that.
   const entities = [...new Set(rows.map((r) => r.Entity))].sort();

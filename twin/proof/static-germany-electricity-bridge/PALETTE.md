@@ -9,7 +9,7 @@ The answer recorded for this beat: a bespoke pair the journalist chose — Okabe
 Okabe-Ito vermillion, the two values the component named as `COLOURS` before this file existed —
 kept over both the house accent and a subject convention.
 
-`twin-palette`'s subject option was checked and, unusually, it is the MULTI-MATCH case that applies.
+`palette`'s subject option was checked and, unusually, it is the MULTI-MATCH case that applies.
 The subject is Germany's electricity bridge: the steps are a renewables build-out, a fossil decline
 and a nuclear phase-out, so both the `renewables` and the `fossil` conventions fire, and
 `matchConvention` returns nothing when several match — deliberately, because which series carries

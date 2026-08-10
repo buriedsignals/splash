@@ -5,12 +5,12 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours. `#C1440E` is the FIRST entry
-of `accents` in `skills/splash-twin/assets/root-template/NEWSROOM.example.md`
+of `accents` in `skills/splash/assets/root-template/NEWSROOM.example.md`
 (`accents: "#C1440E, #1F6FB2"`), drawn on the house `ground: "#FFFFFF"`. A house palette is rarely
 one colour, and a beat reaching for the newsroom's second recorded accent instead of its primary is
 still the newsroom choosing — hence `origin: newsroom`.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat), and this beat's subject — income against
 life expectancy across the world's economies — fires none of them. `#C1440E` is ALSO the value the
 `heat` convention carries, and that coincidence is worth naming so nobody later reads this beat as

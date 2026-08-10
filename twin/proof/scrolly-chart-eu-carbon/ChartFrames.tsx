@@ -4,10 +4,10 @@
  * They exist as four separate components on purpose. This beat's whole argument is that the answer
  * changes with the encoding, so a single parameterised "chart" component with a `kind` prop would
  * be the beat arguing against itself: four states of one chart is exactly the shape
- * `twin-scrolly/SKILL.md` tells you NOT to reach for this vehicle for.
+ * `scrolly/SKILL.md` tells you NOT to reach for this vehicle for.
  *
  * Three rules every frame below keeps, inherited from the vehicle's own discipline
- * (`twin-scrolly/references/scrolly-discipline.md`, "Two kinds of frame: scenery is cropped,
+ * (`scrolly/references/scrolly-discipline.md`, "Two kinds of frame: scenery is cropped,
  * evidence is fitted"):
  *
  *   1. **Fitted, never cropped.** A chart is EVIDENCE. Each frame is an HTML box laid out in
@@ -25,7 +25,7 @@
  *      that band was 28% of every frame spent on bare ground. What the card asks of a frame instead
  *      is a COMPOSITION rule: its own vertical edges cut a centred stripe out of the middle, so a
  *      FITTED frame keeps its axis furniture in the left and right gutters, which are outside that
- *      stripe at every width. See `twin-scrolly/references/scrolly-discipline.md`, "What the card
+ *      stripe at every width. See `scrolly/references/scrolly-discipline.md`, "What the card
  *      covers."
  *
  * No component here imports a rasteriser: `ink`, `muted`, `grid`, `accent` and `ground` are props,

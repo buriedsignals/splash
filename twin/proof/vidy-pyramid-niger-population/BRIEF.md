@@ -108,7 +108,7 @@ ratio against the 65+ population, the one fact the beat states in words rather t
 
 Two CVD-safe hues, checked as a pair — Okabe-Ito blue (`#0072B2`, male) and Okabe-Ito vermillion
 (`#D55E00`, female), a cool/warm pair, not the two adjacent warm hues
-`twin-doctrine/references/visual-system.md`'s "adjacency inside an already-safe palette" section
+`doctrine/references/visual-system.md`'s "adjacency inside an already-safe palette" section
 warns about. The same two hues `../static-swiss-age-pyramid/`'s static beat already uses for this
 type, chosen independently here for the same reason (an established, low-risk pair), not imported
 from that file. The mirrored left/right position already carries the male/female distinction on its

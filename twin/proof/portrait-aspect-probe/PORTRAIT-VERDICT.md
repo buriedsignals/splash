@@ -184,7 +184,7 @@ cheapest high-value thing left in W4.
 
 **The sheets are the right home for the RANGE. They are the wrong home for the mechanism.**
 
-The 40 sheets (32 in `twin-chart-beat/references/types/`, 8 in `twin-map-beat/references/types/`)
+The 40 sheets (32 in `chart-beat/references/types/`, 8 in `map-beat/references/types/`)
 are prose, not fields — their own README says each answers five questions: what it is for, when not
 to reach for it, the one thing that makes it lie, what the drawing needs, and the accessibility trap.
 An aspect range is a natural **sixth**, and it belongs beside "what the drawing needs" because that

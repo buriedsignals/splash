@@ -15,7 +15,7 @@
 // naming the missing measurement and the size that works — a stated refusal a journalist can read,
 // rather than a missing id and a listing that says nothing.
 import { Composition } from "remotion";
-import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/twin-chart-video/sizes.mjs";
+import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/chart-video/sizes.mjs";
 import {
   CumulativeCo2AreaVideo,
   type CumulativeCo2AreaVideoProps,

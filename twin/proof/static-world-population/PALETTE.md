@@ -5,13 +5,13 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`).
 
-`twin-palette`'s subject option was checked and does not apply. The subject is world population from
+`palette`'s subject option was checked and does not apply. The subject is world population from
 1800 to 2023; `matchConvention` holds four grounded conventions — renewables, fossil, water, heat —
 and none of them fires on it. Adding a fifth for one beat would teach a reader a code that does not
-exist, which is the failure `twin-palette/references/subject-conventions.md` names. When no
+exist, which is the failure `palette/references/subject-conventions.md` names. When no
 convention applies, the house theme wins.
 
 One accent carries the whole beat: the area fill at low opacity, the boundary line, and the end dot

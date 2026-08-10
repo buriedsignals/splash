@@ -1,8 +1,8 @@
 /**
  * The web beat of "Switzerland's population bulges in middle age, not among the youngest" — a
  * population pyramid. Coordinates come from `./pyramid-geometry.ts`. Read
- * `twin-chart-web/references/web-discipline.md` and
- * `twin-chart-beat/references/types/population-pyramid.md` before changing this file.
+ * `chart-web/references/web-discipline.md` and
+ * `chart-beat/references/types/population-pyramid.md` before changing this file.
  *
  * MIGRATED TO THE FLUID FRAME (`web-discipline.md`, "Responsive behaviour", second build). This
  * beat used to ship two pre-rendered rungs — a 900px `DESKTOP_LAYOUT` and a 360px `NARROW_LAYOUT`
@@ -70,7 +70,7 @@ const MIN_ROW_PX = 17;
  *  inset; the leader's own LENGTH is derived (see `peakAnnotation`) and is what used to be wrong. */
 const LEADER_X = 6;
 
-/** The narrowest viewport `twin-chart-web/scripts/verify-web.mjs` drives this genre at, and the two
+/** The narrowest viewport `chart-web/scripts/verify-web.mjs` drives this genre at, and the two
  *  halves of `FRAME_PAD_PX` the skill's own stylesheet puts inside it. Duplicated from the skill,
  *  not linked: a beat may not import a skill's internals, and a beat that silently tracked a change
  *  to them would be worse. */

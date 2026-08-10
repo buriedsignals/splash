@@ -8,7 +8,7 @@ zoom and pan, leashed to the study area — drawn from this beat's own 41 shapes
 496 px baked plate is still spent once and still shipped, as the **fallback layer**: what a reader
 gets with JavaScript off, offline, or on the day a key is rotated. The committed file carries the
 `__MAPTILER_KEY__` placeholder (**R1b** — the key never enters the repository), so opening it from
-this folder shows the plate and makes **zero** external requests; `twin-deliver` substitutes the key
+this folder shows the plate and makes **zero** external requests; `deliver` substitutes the key
 at delivery.
 
 The page also stopped SSR-ing two fixed 860 px layouts behind a media query (**B5.1**): one fluid
@@ -86,7 +86,7 @@ region's button by `interaction.mjs`; the six regions too small to point at keep
 layers, so the live swap does not take a single Tab stop with it.
 
 **No filter.** The 41 countries have no orthogonal subsetting dimension a reader would want to
-isolate, and `twin-map-web/SKILL.md`'s own test for adding one ("enough distinct groups, enough
+isolate, and `map-web/SKILL.md`'s own test for adding one ("enough distinct groups, enough
 points per group, a genuinely different reading") does not pass here. A filter to declutter would be
 argument-bearing content moved behind an interaction under another name.
 

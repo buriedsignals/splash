@@ -30,12 +30,12 @@ import {
   measureText,
   measureTextBand,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
+} from "#shared/chart-beat/sizes.mjs";
 
 export type Row = {
   country: string;
@@ -315,7 +315,7 @@ export function DumbbellLifeExpectancyGains({
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
   // hangs off at the top, on the same x, so a wrapped credit grows upward into the frame rather
-  // than downward out of it. See twin-chart-beat/references/static-discipline.md, "The source on
+  // than downward out of it. See chart-beat/references/static-discipline.md, "The source on
   // the frame's bottom margin." At portrait that bottom is the STAGE's, not the frame's: below 1248
   // is the platform's caption and progress bar, and a covered credit is an attribution failure
   // rather than a cosmetic one.

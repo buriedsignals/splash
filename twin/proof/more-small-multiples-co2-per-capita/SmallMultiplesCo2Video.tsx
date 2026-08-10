@@ -31,12 +31,12 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 import { SMALL_MULTIPLES_CO2_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -303,7 +303,7 @@ export function SmallMultiplesCo2Video({
     titleBaseline + (titleLines.length - 1) * TITLE.lead + TITLE_TO_LIMITS;
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND, not under the title — the same edge the title hangs
   // off at the top, on the same x. It stays inside the furniture opacity group, so no timing
-  // contract moves. See twin-chart-beat/references/static-discipline.md, "The source on the frame's
+  // contract moves. See chart-beat/references/static-discipline.md, "The source on the frame's
   // bottom margin". Both the credit and the limits line WRAP now: one line at 18px is three at
   // 40px, and both ran off the frame.
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);

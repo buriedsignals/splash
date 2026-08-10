@@ -84,7 +84,7 @@ The page now ships the seed's three layers: `#mw-map` (a live MapLibre map, swap
 request-free), and `.mw-overlay` — a SIBLING of both, carrying one `<button class="pt">` per cell,
 which is the only thing that survives the swap and therefore the only place the keyboard path and
 the tooltip's own string may live. `live-map.mjs` is a byte-identical copy of
-`twin-map-web/assets/live-map.mjs`, line-1 path comment included; everything type-specific travels
+`map-web/assets/live-map.mjs`, line-1 path comment included; everything type-specific travels
 in the PLAN `render-web.mjs` writes into the page.
 
 - **The bins are geographic polygons.** `geo-hex.ts` bins in the PLATE's pixel space, so every
@@ -126,7 +126,7 @@ live layer opens on a view its own fallback contradicts.**
 | 375 × 667 | 341 × 314 | −1.06 (floored to 0) | 0 | **239.8°** |
 | 375 × 812 | 341 × 459 | −1.06 (floored to 0) | 0 | **239.8°** |
 
-Two distinct causes, **both inside `skills/twin-map-web/assets/live-map.mjs`**, which this beat
+Two distinct causes, **both inside `skills/map-web/assets/live-map.mjs`**, which this beat
 duplicates byte-for-byte and must not fork:
 
 1. **`leash()` ends with `map.setMaxBounds(map.getBounds())`.** When the fitted camera leaves

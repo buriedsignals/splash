@@ -1,6 +1,6 @@
 // The proof that a newsroom's recorded colours actually reach a rendered chart.
 //
-// Before `twin-palette`, every beat named its colours as hex literals with a `// from NEWSROOM.md`
+// Before `palette`, every beat named its colours as hex literals with a `// from NEWSROOM.md`
 // comment beside them — an instruction to copy by eye. `NEWSROOM.md` was validated at preflight and
 // then never threaded anywhere. This file names NO hex. Both colours come from `readPalette`, and
 // the second render proves the same source file drives a completely different pair.
@@ -18,9 +18,9 @@ import {
   deriveFurniture,
   measureText,
   readPalette,
-} from "../../skills/twin-chart-beat/scripts/render-still.mjs";
-import { ChartSeed } from "../../skills/twin-chart-beat/assets/ChartSeed.tsx";
-import { sizeFor } from "../../skills/twin-chart-beat/scripts/sizes.mjs";
+} from "../../skills/chart-beat/scripts/render-still.mjs";
+import { ChartSeed } from "../../skills/chart-beat/assets/ChartSeed.tsx";
+import { sizeFor } from "../../skills/chart-beat/scripts/sizes.mjs";
 
 const SIZE = "landscape";
 

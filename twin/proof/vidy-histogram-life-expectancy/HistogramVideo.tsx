@@ -8,7 +8,7 @@
  * a copy of any prior beat's `crossingGeometry` / `migrationGeometry` / `lifeExpectancyGeometry` /
  * `dumbbellGeometry`. `FONT_FAMILY`, `measureText` and `wrap` ARE this story's own copies of the
  * other proof workspaces' functions of the same name — not an import from any of them, per the
- * duplicate-do-not-link rule (this story lives outside `twin-chart-video`'s skill boundary, and
+ * duplicate-do-not-link rule (this story lives outside `chart-video`'s skill boundary, and
  * the settled rule for a workspace that needs something a skill has is to duplicate it, not reach
  * back across the boundary). `drawnSoFar` is NOT copied here — nothing in this beat traces a
  * continuously-drawing path; every bar grows in place from a fixed baseline, so there is no
@@ -27,7 +27,7 @@
  * build with no order in it at all would have skipped a real one (the reference-then-evidence
  * pause, the subject's separation). This is the honest middle the data actually supports.
  *
- * COLOUR: the histogram type doctrine (`twin-chart-beat/references/types/histogram.md`) reserves
+ * COLOUR: the histogram type doctrine (`chart-beat/references/types/histogram.md`) reserves
  * a value label's accent for the median mark alone ("a color that's safe on a shape is not
  * automatically safe as a label... reserve the accent color for the mark itself, not the number
  * next to it") and caps the chart at one semantic accent overall (`motion-grammar.md`'s "the one
@@ -70,7 +70,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 // The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
@@ -79,14 +79,14 @@ import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
 // genres read one copy. A histogram's x is a CONTINUUM, so it has no twin form to transpose into;
 // what it has is a measured aspect range, and outside it the distribution stops being a shape.
 import {
   assertPlotAspect,
   assertTypeMayEnter,
-} from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/type-at-size.mjs";
 import { HISTOGRAM_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -101,7 +101,7 @@ export const TYPE = "histogram";
  * gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs` and carried onto the
  * composition by `Root.tsx`. The shipped values were 1080-frame tuning; they are divided by that
  * frame's own 1.20 over the 900-wide convention, so the smallest token lands at 12 — the number
- * every row's `typeScale` in `twin-chart-video/scripts/sizes.mjs` is derived from.
+ * every row's `typeScale` in `chart-video/scripts/sizes.mjs` is derived from.
  *
  * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts. `PAD` is the one exception: a frame's
  * margin is proportional to the CANVAS, not to the type (`frameInsetFor`).
@@ -409,7 +409,7 @@ export function HistogramVideo({
   const sourceLead = Math.round(SOURCE.fontSize * 1.5);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the same edge the title hangs off at the top, on
   // the same x. It stays inside the furniture opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   // At portrait that bottom is the STAGE's: below it sit the platform's caption and progress bar,
   // and a covered credit is an attribution failure rather than a cosmetic one.
   const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;

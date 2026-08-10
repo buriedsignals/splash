@@ -45,7 +45,7 @@
  */
 
 import { scaleLinear } from "d3-scale";
-import { contrast } from "#shared/twin-chart-beat/render-still.mjs";
+import { contrast } from "#shared/chart-beat/render-still.mjs";
 
 export type Cell = {
   country: string;

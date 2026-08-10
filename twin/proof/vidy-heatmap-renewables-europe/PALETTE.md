@@ -6,7 +6,7 @@ origin: subject
 
 The answer recorded for this beat: the green `#1E7B45` on a white ground. `origin: subject` says
 who chose it — this is a subject-fit departure from the newsroom's house teal (`#0B7A75`), and the
-subject is the one `twin-palette`'s table covers most directly: the share of electricity generated
+subject is the one `palette`'s table covers most directly: the share of electricity generated
 from **renewables**, where `matchConvention`'s `renewables` row argues green from evidence that
 readers already hold the association (Lin et al., EuroVis 2013). The convention's own accent is
 `#1B7F4B`; this beat draws a neighbouring green it has always drawn, and the recorded answer is

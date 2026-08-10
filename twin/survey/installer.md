@@ -20,7 +20,7 @@ Everything below is marked **measured** (I ran it, or read it at a named file:li
 returning `ready: true` — currently returns `ready: true` on a root that can render **one** of the
 four genres the twin ships.
 
-`splash-twin/SKILL.md:352-355` states the current install in its own words:
+`splash/SKILL.md:352-355` states the current install in its own words:
 
 > `assets/root-template/` — `package.json` …, `tsconfig.json`, `NEWSROOM.example.md` — copied into
 > a fresh Splash root. **This is the whole install: there is no separate installer script**, so what
@@ -311,7 +311,7 @@ right and the installer should not weaken it.
 **Two more the install must handle and `recordKey` currently cannot — measured:**
 
 - **`MAPTILER_DELIVERY_KEY`.** Ruling R1b requires a *second, domain-restricted* MapTiler key for
-  delivered files, and `twin-deliver/scripts/deliver.mjs:217` already reads it **before**
+  delivered files, and `deliver/scripts/deliver.mjs:217` already reads it **before**
   `MAPTILER_KEY`. It is **absent from `KEY_ALIASES`**, and `recordKey` throws on any name not in
   that map (`keys.mjs:50-54`). So the one code path that accepts a key from a journalist **refuses
   the key the owner's own ruling requires**. Small, sharp, and squarely an installer concern.
@@ -326,7 +326,7 @@ Six required fields (`assets/root-template/NEWSROOM.example.md`): `name`, `url`,
 `brandColor`, `ground`, `typefaces`, plus optional `credit` (the house credit convention, so a
 journalist is not asked to invent a credit line per story).
 
-**`twin-newsroom-charter` derives four of the six by measuring the newsroom's own website** — the
+**`newsroom-charter` derives four of the six by measuring the newsroom's own website** — the
 owner ran it against heidi.news and got name, language, brandColor and typefaces, each beside the
 declaration it was read from, with `ground` correctly refused rather than invented. The skill's own
 rules (`SKILL.md:20-40`) are exactly what an installer wants: every value ships with its evidence;
@@ -451,7 +451,7 @@ And the template omits most of the twin:
 Import counts under `twin/skills` + `twin/proof`: **81 files import `remotion`, 43 import
 `puppeteer`, 22 reference `maplibre`.**
 
-`root-template/shared/` vendors **one** craft skill — `twin-chart-beat`
+`root-template/shared/` vendors **one** craft skill — `chart-beat`
 (`render-still.mjs`, `inspect-render.mjs`). Fourteen other skills carry `scripts/`; the map, web,
 video, scrolly and deliver mechanisms are **not vendored, so nothing installs them and nothing
 checks for them.**
@@ -691,7 +691,7 @@ preflight is currently green on a root that cannot render three of four genres**
    exactly this step done in the other direction, where a root manifest folded last overrode an
    engine that had pinned deliberately.
 2. **Vendor every mechanism a beat runs**, into `root-template/shared/<skill>/`, the way
-   `twin-chart-beat` already is — map, web, video, scrolly, deliver. Physical checked-in copies, so
+   `chart-beat` already is — map, web, video, scrolly, deliver. Physical checked-in copies, so
    `cp -r root-template/` still carries them with no extra step, and the doctrine's
    duplicate-don't-import rule holds.
 3. **Stop trusting `Bun.resolveSync`** (`preflight.mjs:56`). Resolve **in the tree** the way the
@@ -721,7 +721,7 @@ neither it nor the `resolveSync` false-green.
 
 ### Step 2 — the two writes that finish the collection (also engine-free)
 
-- **Let `twin-newsroom-charter` land its confirmed proposal.** The derivation exists and the skill
+- **Let `newsroom-charter` land its confirmed proposal.** The derivation exists and the skill
   correctly refuses to write; the installer is the right owner for `NEWSROOM.md` after confirmation.
   This deletes the "nobody was told to rename `NEWSROOM.example.md`" trap (`SKILL.md:181-187`).
 - **A `splash-doctor`, modelled on `spotlight-doctor`** (`install-spotlight.sh:1470-1543`): check

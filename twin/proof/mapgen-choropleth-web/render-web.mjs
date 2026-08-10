@@ -1,6 +1,6 @@
 // twin/proof/mapgen-choropleth-web/render-web.mjs
 //
-// This beat's own third rung — the same role `twin-map-web/scripts/render-web.mjs` plays for the
+// This beat's own third rung — the same role `map-web/scripts/render-web.mjs` plays for the
 // symbol-map genre: bakes/loads the plate, joins the frozen csv to the shapes, checks the claim
 // against the ACTUAL joined values (not just asserting the title is true), and turns the result
 // into ONE self-contained HTML file — one fluid SVG (geometry only) plus its HTML overlay and HTML
@@ -34,7 +34,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import {
   ChoroplethWeb,
   RegionTable,
@@ -112,8 +112,8 @@ const COMPARISON_KEY = "ALB";
  * published article; it did not accept an unbounded public leak, and the two are different
  * exposures. Every map × web beat commits its rendered HTML, and the FJM deliverable is an MIT
  * open-source release, so a real key here would be scanned by bots within minutes of the push and
- * would survive in the history after any later removal. `twin-deliver` substitutes the real key at
- * the moment the file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts`
+ * would survive in the history after any later removal. `deliver` substitutes the real key at
+ * the moment the file goes to a newsroom; `splash/test/no-key-in-the-repository.test.ts`
  * reddens if one ever reaches a tracked file.
  *
  * The delivered key should be a SECOND, origin-restricted MapTiler key, not the development one:
@@ -126,7 +126,7 @@ export const KEY_PLACEHOLDER = "__MAPTILER_KEY__";
 /**
  * Reads the ACTUAL joined values and checks the claim against them — never just asserts the title
  * is true. Throws, loudly, naming exactly what failed, the same way
- * `twin-map-beat/assets/geo.ts`'s own `claimViolations` does for its own story.
+ * `map-beat/assets/geo.ts`'s own `claimViolations` does for its own story.
  */
 export function checkClaim(values) {
   const violations = [];

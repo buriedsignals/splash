@@ -29,7 +29,7 @@
  * graphic, so that every dot, hexagon and symbol sat above a band reserved for a prose panel parked
  * at the bottom. The ninth correction of the vehicle puts the prose card back OVER the visual and
  * lets it travel the whole height, so no band can be reserved from it (see
- * `twin-scrolly/references/scrolly-discipline.md`, "What the card covers") — and a band reserved
+ * `scrolly/references/scrolly-discipline.md`, "What the card covers") — and a band reserved
  * from nothing is 28% of every frame spent on bare ground. Fitted into the frame, the plate is
  * larger at every viewport and still whole, because FIT never crops.
  *
@@ -127,7 +127,7 @@ function PlateFrame({
           />
           {/* The live MapTiler map's own container. Empty here, and empty in the committed file:
               the map is constructed into it at boot, and only once the plan's key placeholder has
-              been substituted by `twin-deliver`.
+              been substituted by `deliver`.
 
               ITS BOX IS AN INLINE STYLE, and that is a defect this beat shipped for one render.
               maplibre-gl puts its own `.maplibregl-map { position: relative }` on this element, and

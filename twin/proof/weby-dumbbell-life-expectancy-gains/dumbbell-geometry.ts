@@ -7,7 +7,7 @@
 // font, no label — the same boundary the STATIC sibling's own `dumbbellGeometry`
 // (`proof/more-dumbbell-life-expectancy-gains/DumbbellLifeExpectancyGains.tsx`) keeps, rewritten
 // fresh here rather than imported: a beat never imports another beat's files
-// (`twin-chart-web/SKILL.md`'s "duplicate, do not link" ruling), and this genre's own hit-test
+// (`chart-web/SKILL.md`'s "duplicate, do not link" ruling), and this genre's own hit-test
 // needs the band's own top/bottom, which the static beat's geometry never had to return.
 
 import { extent } from "d3-array";

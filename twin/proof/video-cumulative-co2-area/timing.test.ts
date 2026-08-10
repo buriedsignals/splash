@@ -4,7 +4,7 @@ import {
   checkTiming,
   endOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import { CUMULATIVE_CO2_AREA_TIMING } from "./timing-contract";
 
 /**

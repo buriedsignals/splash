@@ -69,7 +69,7 @@ function linkResolvesTo(linkPath, expected) {
   }
 }
 
-const claudeDoor = join(HOME, ".claude", "skills", "splash-twin");
+const claudeDoor = join(HOME, ".claude", "skills", "splash");
 const claudeVerdict = linkResolvesTo(claudeDoor, ROOT);
 if (claudeVerdict === true) ok("door: Claude family + Goose", claudeDoor.replace(HOME, "~"));
 else bad("door: Claude family + Goose", `${claudeDoor.replace(HOME, "~")} — ${claudeVerdict}. Run: bun installer/place-skills.mjs`);
@@ -184,7 +184,7 @@ const CANONICAL_KEYS = [
 // the latter and missed both MapTiler and Datawrapper: what was actually set in the environment was
 // `VITE_MAPTILER_KEY`, an ALIAS the toolchain accepts. Re-implementing the alias table here would
 // be a second copy of a rule that already exists, and it would have drifted on its first day.
-const { resolveEnvKey } = await import(join(ROOT, "skills", "splash-twin", "scripts", "keys.mjs"));
+const { resolveEnvKey } = await import(join(ROOT, "skills", "splash", "scripts", "keys.mjs"));
 for (const name of CANONICAL_KEYS) {
   if (resolveEnvKey(process.env, name) && !resolveEnvKey(rootEnv, name))
     note(
@@ -195,7 +195,7 @@ for (const name of CANONICAL_KEYS) {
 
 let preflightFailed = false;
 try {
-  const { runPreflight } = await import(join(ROOT, "skills", "splash-twin", "scripts", "preflight.mjs"));
+  const { runPreflight } = await import(join(ROOT, "skills", "splash", "scripts", "preflight.mjs"));
   const report = await runPreflight({ root: ROOT, env: { ...process.env, ...rootEnv }, fetchFn: fetch });
   for (const check of report.checks) {
     if (check.status === "pass" || check.status === "declined") ok(`preflight: ${check.id}`, check.detail);

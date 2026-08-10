@@ -3,7 +3,7 @@
 // inside a Chrome session cannot be.
 //
 // A DUPLICATE of the sibling one-map beat's copy, not an import: a beat directory stays
-// copy-pasteable on its own (`twin-doctrine`, and `no-cross-skill-imports.test.ts` for the skills).
+// copy-pasteable on its own (`doctrine`, and `no-cross-skill-imports.test.ts` for the skills).
 // What differs between the two copies is only what a `paint` fingerprint is taken over — a camera
 // transform and its labels there, a growing line and nine arriving territories here.
 //
@@ -229,7 +229,7 @@ export function lineWeight(measured, band = DRAWN_LINE_PX) {
 //
 // This file carried such a reading for one round — a count of "what a reader can follow", which
 // subtracted the card and went red at all three widths — and it is gone. The rule now lives at the
-// vehicle's level, in `twin-scrolly`'s doctrine, so that no later beat rebuilds it: a visual's own
+// vehicle's level, in `scrolly`'s doctrine, so that no later beat rebuilds it: a visual's own
 // state, and every assertion about it, are independent of the prose layer travelling over it.
 //
 // What survives from that round is the assertion that was genuinely missing, and it is about the

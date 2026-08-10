@@ -36,7 +36,7 @@ name — except here one member IS the story, so it earns the one accent.
   `https://ourworldindata.org/grapher/life-expectancy-vs-gdp-per-capita.csv?csvType=filtered&country=~USA~CHE~DEU~FRA~GBR~JPN~CAN~AUS~SWE~NOR~NLD~ITA~ESP~KOR~SGP~IRL~DNK~FIN~BEL~AUT`
   — the `country` filter has **no effect** on this particular grapher (confirmed: the fetch returns
   all 165 countries present in its most recent year regardless of the filter — the same class of
-  trap `skills/twin-intake/references/ourworldindata-csv-filter-trap.md` documents, except here even
+  trap `skills/intake/references/ourworldindata-csv-filter-trap.md` documents, except here even
   `csvType=filtered` does not narrow the entity set, only the year). `data.csv` is the raw,
   unfiltered fetch: **165 rows** (166 with header), all one year (**2022**, OWID's latest year with
   complete coverage across this indicator at fetch time), 165 distinct countries — verified by

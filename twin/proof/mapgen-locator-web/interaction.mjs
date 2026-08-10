@@ -4,7 +4,7 @@
 // `render-web.mjs` (which strips the `export` keyword from each top-level declaration so this file
 // can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it keeps working
 // in a CMS iframe or a sandboxed embed that restricts module scripts). This is this beat's OWN copy
-// of `twin-map-web/assets/interaction.mjs` — nothing under `proof/` imports out of a skill or across
+// of `map-web/assets/interaction.mjs` — nothing under `proof/` imports out of a skill or across
 // beats. The genre's `live-map.mjs` sits beside it, byte-identical to the seed's; this file is the
 // half that is allowed to know what a locator is.
 //

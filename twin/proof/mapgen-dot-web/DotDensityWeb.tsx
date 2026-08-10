@@ -10,7 +10,7 @@
  * at once. The picture still states the claim without any interaction — the five clouds the title
  * names are labelled on the map — and the interaction supplies the precision the texture cannot.
  *
- * THE SPLIT THAT MAKES THIS RESPONSIVE (`twin-map-web/references/map-web-discipline.md`, "Full
+ * THE SPLIT THAT MAKES THIS RESPONSIVE (`map-web/references/map-web-discipline.md`, "Full
  * width, genuinely" and "Text is HTML, not SVG"): the SVG carries ONLY geometry — the baked plate
  * `<image>`, the country outlines and the dots — and every word plus every control is HTML over it,
  * positioned by PERCENTAGE so it tracks the geometry, at a font size fixed in CSS pixels so type
@@ -19,7 +19,7 @@
  *
  * REAL ZOOM AND PAN, FROM MAPTILER, CONSTRAINED TO THIS MAP'S OWN AREA — ruling R1, 2026-08-10:
  * *"une carte web qu'on ne peut pas parcourir est une image"*. The beat ships in three layers, the
- * same three `twin-map-web/assets/MapWebSeed.tsx` ships:
+ * same three `map-web/assets/MapWebSeed.tsx` ships:
  *
  *   1. `#mw-map` — an empty box that `live-map.mjs` fills with a live MapLibre map and swaps in ONLY
  *      on `map.on("load")`;

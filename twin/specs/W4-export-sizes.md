@@ -16,9 +16,9 @@ number differs from the survey's it is because I re-measured it, and the re-meas
 
 ## Scope, and the half that is not mine
 
-**Mine:** `twin-chart-beat` (17 chart statics), `twin-chart-video` (19 chart videos),
-`twin-chart-web` (18 chart webs), `twin-dw-beat` (1 call site), and the `size` field in the
-journey. Plus one free rider, `twin-image-beat`, argued in Task 8.
+**Mine:** `chart-beat` (17 chart statics), `chart-video` (19 chart videos),
+`chart-web` (18 chart webs), `dw-beat` (1 call site), and the `size` field in the
+journey. Plus one free rider, `image-beat`, argued in Task 8.
 
 **Not mine — the map half.** R2 settles the geo rule 12 tension by making the target aspect *an
 input the camera takes* (`FEEDBACK-2026-08-10.md:144-148`), which means every map size decision is
@@ -27,9 +27,9 @@ aspect ratio, and its collision with B2.1") and its §5 arrives at the same conc
 side. **The 6 map statics, 6 map videos and 5 map webs are W5's, and the three un-retrofitted
 map-web beats are W6's** (Task 7 argues why). This spec does not duplicate a line of it. What W5
 inherits from here is the `SIZES` table shape and its walking guard (Task 1), which is written to be
-copied into `twin-map-beat` and `twin-map-web` unchanged.
+copied into `map-beat` and `map-web` unchanged.
 
-`twin-scrolly` is out: a scrolly has no export size, and it already models size as an envelope
+`scrolly` is out: a scrolly has no export size, and it already models size as an envelope
 (`ScrollySeed.tsx:150`, `safeBand()` at `:164-181`) — its size problem is B5.1, a different axis.
 
 ---
@@ -42,9 +42,9 @@ copied into `twin-map-beat` and `twin-map-web` unchanged.
 script, and `renderStill` throws if they disagree:
 
 ```
-skills/twin-chart-beat/assets/ChartSeed.tsx:25          const FRAME = { width: 900, height: 560 };
+skills/chart-beat/assets/ChartSeed.tsx:25          const FRAME = { width: 900, height: 560 };
 proof/static-carbon-footprint-spread/render.mjs:85-86   width: 900, height: 560,
-skills/twin-chart-beat/scripts/render-still.mjs:196-206 renderStill({…width, height…}) → throws
+skills/chart-beat/scripts/render-still.mjs:196-206 renderStill({…width, height…}) → throws
                                                         "asked to render at WxH, but the element is drawn at W'xH'"
 ```
 
@@ -55,15 +55,15 @@ for three sizes. The component does.
 **Video.** Stated twice with **nothing between them**:
 
 ```
-skills/twin-chart-video/assets/Root.tsx:40-41            width={1080} height={1080}
-skills/twin-chart-video/assets/EmissionsVideo.tsx:42     const FRAME = { width: 1080, height: 1080 };
-skills/twin-chart-video/assets/EmissionsVideo.tsx:239    const { fps } = useVideoConfig();
+skills/chart-video/assets/Root.tsx:40-41            width={1080} height={1080}
+skills/chart-video/assets/EmissionsVideo.tsx:42     const FRAME = { width: 1080, height: 1080 };
+skills/chart-video/assets/EmissionsVideo.tsx:239    const { fps } = useVideoConfig();
 ```
 
 Line 239 is the whole of the video chantier: `useVideoConfig()` already returns `{width, height}`
 and every one of the 19 chart-video beats destructures only `fps` from it. There is no guard today
 that the `FRAME` constant and the `<Composition>` agree — measured: no test under
-`skills/splash-twin/test/` mentions `Root.tsx` or `Composition`.
+`skills/splash/test/` mentions `Root.tsx` or `Composition`.
 
 **Counts, re-measured 2026-08-10** (`proof/`, 76 beat directories):
 
@@ -90,7 +90,7 @@ and 900×560 is an aspect of 1.607 — neither 16:9 nor anything a platform asks
 
 ### 1c. Web already has most of B3.2, and names its own gap
 
-`skills/twin-chart-web/assets/ChartWebSeed.tsx:615-629` — `FRAME: WebFrame` is documented at
+`skills/chart-web/assets/ChartWebSeed.tsx:615-629` — `FRAME: WebFrame` is documented at
 `:84-90` as *"NOT a rendered pixel size and NOT a cap"*; its only rendered consequence is
 `aspectRatio: ${totalWidth} / ${totalHeight}` (`:428`). Everything else is CSS: `width: 100%` with no
 cap on the chart chain, `FRAME_PAD_PX = 24`, `max-height: 100dvh`, `PLOT_FLOOR_PX = 120`
@@ -107,8 +107,8 @@ first is settled here."*
 **(i) Two assertions forbid the mechanism rather than the pattern.**
 
 ```
-skills/twin-chart-web/test/seed-fluid-frame.test.ts:127   expect(css).not.toContain("@media");
-skills/twin-chart-web/test/seed-fluid-frame.test.ts:323   expect(css).not.toContain("@media");   // inside the @supports test
+skills/chart-web/test/seed-fluid-frame.test.ts:127   expect(css).not.toContain("@media");
+skills/chart-web/test/seed-fluid-frame.test.ts:323   expect(css).not.toContain("@media");   // inside the @supports test
 ```
 
 They encode a correct overturned decision (no fixed rungs) stated too broadly. What they mean to
@@ -123,9 +123,9 @@ exactly** — not a heatmap bug, an un-retrofitted beat. Three map-web beats are
 
 ### 1e. Size is nowhere in the journey
 
-`checkStoryboard` (`skills/twin-storyboard/scripts/storyboard.mjs:105-161`) validates
+`checkStoryboard` (`skills/storyboard/scripts/storyboard.mjs:105-161`) validates
 `id / proves / medium / genre / candidates / chosen`. `where.mjs`'s independent reading
-(`skills/splash-twin/scripts/where.mjs:116-141`) checks the same fields. **Neither knows the word
+(`skills/splash/scripts/where.mjs:116-141`) checks the same fields. **Neither knows the word
 "size."** `genre-catalog.mjs:21-25` carries three rows with no aspect anywhere. The size *is*
 recorded today — in prose, in `BRIEF.md`, checked by nothing
 (`proof/static-carbon-footprint-spread/BRIEF.md:3` — *"Channel: article web, 900 x 560"*). That is
@@ -181,8 +181,8 @@ this project drawing one chart type twice:
 
 Nothing scales at the frame's own 1.20×. A video types larger because it is watched small on a
 phone; a static types smaller because it sits in an article at reading distance. **A single scale
-number cannot express this** — which is precisely what the original tries. So `twin-chart-beat`'s
-`square` row and `twin-chart-video`'s `square` row will carry the **same** `width`/`height` and
+number cannot express this** — which is precisely what the original tries. So `chart-beat`'s
+`square` row and `chart-video`'s `square` row will carry the **same** `width`/`height` and
 **different** `typeScale`, deliberately, and the parity guard compares dimensions only.
 
 **A `typeScale` scales SPACING, not only type — the probe's correction.** The seven named
@@ -224,7 +224,7 @@ The branch forbids a shared module (`no-cross-skill-imports.test.ts:1-12`). Thre
 particular fact belongs in the carried form rather than earning an exception:
 
 1. It is **data of the same kind and size as `GENRE_CATALOG`** (three rows), which this project
-   *already* duplicates deliberately between `twin-storyboard` and `twin-deliver` and cross-checks
+   *already* duplicates deliberately between `storyboard` and `deliver` and cross-checks
    by test (`genre-catalog.mjs:8-20`; `genre-shippability.test.ts`, both directions). The precedent
    is not merely available, it is the identical shape of fact with the identical guard.
 2. The copies are cheap to guard **now**: `render-still-parity.test.ts` and
@@ -253,14 +253,14 @@ Cheapest-to-dearest, with the two ordering constraints that are not about cost.
 | # | Task | Depends on | Cost |
 |---|---|---|---|
 | **0** | **The probe: one histogram at three sizes, looked at** | — | half a day; **blocks 1-4** |
-| 1 | `SIZES` + `sizeFor` + the walking guard, in `twin-chart-beat` only | 0 | low |
+| 1 | `SIZES` + `sizeFor` + the walking guard, in `chart-beat` only | 0 | low |
 | 2 | Video: `useVideoConfig()`, three `<Composition>`s, a real rendered-size throw | 1 | low mechanically, 3× render time |
 | 3 | Static: `FRAME` → `sizeFor(name)`, type **and spacing** tokens from `typeScale` | 1 | **high** — revised up by Task 0; ~11 spacing literals per beat on the simplest type, plus a per-type portrait aspect decision |
-| 4 | `twin-dw-beat`: one call site | 1 | near zero |
+| 4 | `dw-beat`: one call site | 1 | near zero |
 | 5 | **Narrow the two `no @media` assertions** — its own commit, its own reasoning | — | low |
 | 6 | Web: the fill rule (`--plot-aspect`) + per-size content decisions | 5 | low mechanically, medium editorially |
 | 7 | Retrofit `more-heatmap-co2-per-capita-decades` onto the fluid frame | 5 | low; **do before 6 or 6 is done twice** |
-| 8 | `twin-image-beat` free rider | 1 | near zero |
+| 8 | `image-beat` free rider | 1 | near zero |
 | 9 | `size` in the storyboard slot + both gate readings + parity, **one commit** | W1's fix | low |
 
 **Constraint A — Task 0 blocks 1-4.** The survey rendered nothing; its bucket assignments are
@@ -344,19 +344,19 @@ portrait, the honest answer is that Task 3 costs more than "medium-high" and the
 
 | file | change | copies |
 |---|---|---|
-| `skills/twin-chart-beat/scripts/sizes.mjs` | **new.** `SIZES` (three rows) + `sizeFor(name)` which **throws naming the three names it knows** when handed anything else — the `readPalette` precedent (`render-still.mjs:98-123` throws naming every directory it searched rather than defaulting). A chart silently produced at a size nobody chose looks deliberate. | 1 of an eventual 5 |
-| `shared/twin-chart-beat/sizes.mjs` | **new**, mirror. `proof/` beats consume craft helpers through the `#shared/*` alias (`package.json:5-7`; 121 files under `proof/` import it), so the beat-facing copy must exist or every render script reaches across a skill boundary. | mirror |
-| `skills/twin-chart-beat/SKILL.md` | Tuning-knob rows. `| The frame the seed draws in | 900 × 560 | FRAME, ChartSeed.tsx |` becomes the `SIZES` row, and the `2` raster row goes or stays per Task 0. **Not optional:** `skill-md-matches-code.test.ts` checks a tuning-knob constant exists in the file its row names, and turns red otherwise. | 1 |
-| `skills/twin-doctrine/references/static-discipline.md` | Record the decision, the losing option and why — including the rasteriser choice. | 1 |
+| `skills/chart-beat/scripts/sizes.mjs` | **new.** `SIZES` (three rows) + `sizeFor(name)` which **throws naming the three names it knows** when handed anything else — the `readPalette` precedent (`render-still.mjs:98-123` throws naming every directory it searched rather than defaulting). A chart silently produced at a size nobody chose looks deliberate. | 1 of an eventual 5 |
+| `shared/chart-beat/sizes.mjs` | **new**, mirror. `proof/` beats consume craft helpers through the `#shared/*` alias (`package.json:5-7`; 121 files under `proof/` import it), so the beat-facing copy must exist or every render script reaches across a skill boundary. | mirror |
+| `skills/chart-beat/SKILL.md` | Tuning-knob rows. `| The frame the seed draws in | 900 × 560 | FRAME, ChartSeed.tsx |` becomes the `SIZES` row, and the `2` raster row goes or stays per Task 0. **Not optional:** `skill-md-matches-code.test.ts` checks a tuning-knob constant exists in the file its row names, and turns red otherwise. | 1 |
+| `skills/doctrine/references/static-discipline.md` | Record the decision, the losing option and why — including the rasteriser choice. | 1 |
 
 ### Task 2 — video (the cheapest real delivery)
 
 | file | change | copies |
 |---|---|---|
-| `skills/twin-chart-video/assets/EmissionsVideo.tsx:42, 239` | Delete `const FRAME`. `const { fps, width, height } = useVideoConfig();`. `PAD` and the type tokens derive from a `typeScale` prop. | **19 chart-video beats**, identically |
-| `skills/twin-chart-video/assets/Root.tsx:33-44` | Three `<Composition>`s from `SIZES`, ids `<beat>-landscape` / `-square` / `-portrait`, each passing its row's `typeScale` in `defaultProps`. Remotion registers extra compositions for free. | **19**, identically |
-| `skills/twin-chart-video/scripts/render-video.mjs:92-116` | Takes a size name, renders `${BEAT}-${size}`, and **after the mp4 exists, reads its real dimensions with `ffprobe` and throws** if they differ from the row. This is the twin's `assertRenderedSize` — the thing the static path has via `renderStill`'s throw and the video path has never had. **It holds for all three sizes**; the original exempting landscape (`produce.mjs:352-368`) is the mistake being avoided, not the model. | **19** |
-| `skills/twin-chart-video/scripts/sizes.mjs` + `shared/twin-chart-video/sizes.mjs` | the second copy of the table — same dimensions, **its own `typeScale`** | 2 |
+| `skills/chart-video/assets/EmissionsVideo.tsx:42, 239` | Delete `const FRAME`. `const { fps, width, height } = useVideoConfig();`. `PAD` and the type tokens derive from a `typeScale` prop. | **19 chart-video beats**, identically |
+| `skills/chart-video/assets/Root.tsx:33-44` | Three `<Composition>`s from `SIZES`, ids `<beat>-landscape` / `-square` / `-portrait`, each passing its row's `typeScale` in `defaultProps`. Remotion registers extra compositions for free. | **19**, identically |
+| `skills/chart-video/scripts/render-video.mjs:92-116` | Takes a size name, renders `${BEAT}-${size}`, and **after the mp4 exists, reads its real dimensions with `ffprobe` and throws** if they differ from the row. This is the twin's `assertRenderedSize` — the thing the static path has via `renderStill`'s throw and the video path has never had. **It holds for all three sizes**; the original exempting landscape (`produce.mjs:352-368`) is the mistake being avoided, not the model. | **19** |
+| `skills/chart-video/scripts/sizes.mjs` + `shared/chart-video/sizes.mjs` | the second copy of the table — same dimensions, **its own `typeScale`** | 2 |
 
 `ffprobe` is available: `video-first-frame-not-empty.test.ts` already drives `ffmpeg` over every
 `.mp4` under `proof/`.
@@ -365,7 +365,7 @@ portrait, the honest answer is that Task 3 costs more than "medium-high" and the
 
 | file | change | copies |
 |---|---|---|
-| `skills/twin-chart-beat/assets/ChartSeed.tsx:25, 21-30, 37, 43` | `const FRAME` → `const { width, height, typeScale } = sizeFor(size)`, where `size` is a prop. `PAD`, `TITLE`, `SOURCE`, `AXIS`, `LABEL` become integer-rounded functions of `typeScale` (integers, so `measureText`'s cache keys stay stable) — **and so does every bare spacing literal in the layout arithmetic**, through one `sp(v) = Math.round(v * typeScale)` helper. Task 0 measured eleven of those in the corpus's *simplest* static; leaving them at their 900×560 value while the type grows is what collides the header. `Y_TICK_HINT`/`X_TICK_HINT` become per-size values on the row. | **17 chart-static beats** |
+| `skills/chart-beat/assets/ChartSeed.tsx:25, 21-30, 37, 43` | `const FRAME` → `const { width, height, typeScale } = sizeFor(size)`, where `size` is a prop. `PAD`, `TITLE`, `SOURCE`, `AXIS`, `LABEL` become integer-rounded functions of `typeScale` (integers, so `measureText`'s cache keys stay stable) — **and so does every bare spacing literal in the layout arithmetic**, through one `sp(v) = Math.round(v * typeScale)` helper. Task 0 measured eleven of those in the corpus's *simplest* static; leaving them at their 900×560 value while the type grows is what collides the header. `Y_TICK_HINT`/`X_TICK_HINT` become per-size values on the row. | **17 chart-static beats** |
 | each beat's `render.mjs` (e.g. `proof/static-carbon-footprint-spread/render.mjs:85-86`) | `renderStill({ element, ...sizeFor(name), outDir, name })` — **one statement of the size instead of two**, which kills survey finding #1 at its source. `renderStill` itself is **unchanged**; its throw becomes the backstop it was written to be rather than the thing that has to agree with a literal. | 17 |
 | `proof/static-small-multiples-solar-eu-six/SolarSmallMultiples.tsx:41` | `const COLUMNS = 3` → chosen from the size's aspect: 3×2 at landscape, 2×3 at portrait. **The beat asks the size for its dimensions and decides its own packing** — `SIZES` must not learn how many columns a six-panel grid takes, or it stops being a table. Same shape for the heatmap and any other packing type. | per beat |
 
@@ -376,9 +376,9 @@ that turns one seed into a component library: a variant selects **a different ch
 `STORYBOARD.md`, exactly like the palette the seed already reads. The precedent is `readPalette`,
 including its failure mode.
 
-### Task 4 — `twin-dw-beat`
+### Task 4 — `dw-beat`
 
-One call site: `skills/twin-dw-beat/scripts/dw-client.mjs:58` already takes
+One call site: `skills/dw-beat/scripts/dw-client.mjs:58` already takes
 `{ width = 900, height, zoom = 2 }` and Datawrapper re-lays out server-side. Pass the row. Then
 **measure once** what Datawrapper actually returns for each size and pin the returned IHDR against
 it; do not assume it honours `height`. The table's copy here carries dimensions and needs no
@@ -386,7 +386,7 @@ it; do not assume it honours `height`. The table's copy here carries dimensions 
 
 ### Task 5 — narrow the two assertions. **Its own commit.**
 
-`skills/twin-chart-web/test/seed-fluid-frame.test.ts:127` and `:323`. Replace
+`skills/chart-web/test/seed-fluid-frame.test.ts:127` and `:323`. Replace
 `expect(css).not.toContain("@media")` with assertions on the **pattern**, and write the reasoning
 into the test's own header in the shape this suite uses:
 
@@ -407,9 +407,9 @@ that legible in the log.
 
 | file | change |
 |---|---|
-| `skills/twin-chart-web/assets/ChartWebSeed.tsx:615-629` | `WebFrame` gains a narrow-form aspect and narrow-form `yTickHint`/`xTickHint`. **No `SIZES` table here** — R2 is explicit that web is a range, not a fourth size, and the container is the CMS's. |
-| `skills/twin-chart-web/scripts/render-web.mjs:216-236` | The one `@media (max-width: …)` permitted by Task 5, setting `--plot-aspect` to the narrow value so a portrait window is **filled**, not merely fitted, plus the allowlisted tick-label drop. |
-| `skills/twin-chart-web/scripts/verify-web.mjs:62-70` | A new assertion at the phone viewport: the figure's height clears a floor as a fraction of the window. **The number comes from a measurement, not a guess** — today's measured baseline is a 153px plot in an 812px window (`web-discipline.md:242-245`); measure after the rule and pin what is achieved. |
+| `skills/chart-web/assets/ChartWebSeed.tsx:615-629` | `WebFrame` gains a narrow-form aspect and narrow-form `yTickHint`/`xTickHint`. **No `SIZES` table here** — R2 is explicit that web is a range, not a fourth size, and the container is the CMS's. |
+| `skills/chart-web/scripts/render-web.mjs:216-236` | The one `@media (max-width: …)` permitted by Task 5, setting `--plot-aspect` to the narrow value so a portrait window is **filled**, not merely fitted, plus the allowlisted tick-label drop. |
+| `skills/chart-web/scripts/verify-web.mjs:62-70` | A new assertion at the phone viewport: the figure's height clears a floor as a fraction of the window. **The number comes from a measurement, not a guess** — today's measured baseline is a 153px plot in an 812px window (`web-discipline.md:242-245`); measure after the rule and pin what is achieved. |
 | 18 chart-web beats | re-driven through `verify-web.mjs`, seven viewports each. |
 
 **Inherited rule, not re-litigated:** `preserveAspectRatio="none"` is a non-uniform scale and
@@ -443,7 +443,7 @@ none"*), and it belongs with whoever owns seed-to-copy parity. **W2 decides; if 
 claim it, Task 7 ships it.** It stays red until Task 7 and W6 both land, which is correct — a guard
 that describes the tree's real state is doing its job.
 
-### Task 8 — `twin-image-beat`, the free rider
+### Task 8 — `image-beat`, the free rider
 
 Not a chart, and nobody else owns it. It costs almost nothing and excluding it leaves the `SIZES`
 family with a gap in the one skill that already has the placement primitive: `ImageBeatSeed.tsx:48`
@@ -456,9 +456,9 @@ because a photograph has no camera. **Last, and droppable** if Task 3 overruns.
 
 | file | change |
 |---|---|
-| `skills/twin-storyboard/scripts/storyboard.mjs:105-161` | The slot gains `size:`. `checkStoryboard` refuses: a `size` the toolchain does not know (naming the three); `genre: static` or `video` with **no** size; and `genre: web` **with** a size — *web takes no size, it fills its container*, which is R2 written as a check. Shaped exactly like the existing `if (slot.genre) { const gap = genreGap(…) }` at `:147-150`. |
-| `skills/splash-twin/scripts/where.mjs:116-141` | `missingForGate2` learns the same rule **independently**, its text copied verbatim so a text comparison can hold the two readings together. |
-| `skills/splash-twin/test/where.test.ts` + the cross-check | extended **in the same commit**. |
+| `skills/storyboard/scripts/storyboard.mjs:105-161` | The slot gains `size:`. `checkStoryboard` refuses: a `size` the toolchain does not know (naming the three); `genre: static` or `video` with **no** size; and `genre: web` **with** a size — *web takes no size, it fills its container*, which is R2 written as a check. Shaped exactly like the existing `if (slot.genre) { const gap = genreGap(…) }` at `:147-150`. |
+| `skills/splash/scripts/where.mjs:116-141` | `missingForGate2` learns the same rule **independently**, its text copied verbatim so a text comparison can hold the two readings together. |
+| `skills/splash/test/where.test.ts` + the cross-check | extended **in the same commit**. |
 | each beat's `BRIEF.md` | the prose line stops being the only record. |
 
 The rule *"web takes no size"* is R2's own sentence and it is also the original's
@@ -472,7 +472,7 @@ the triple after the journalist has chosen it. `genreGap` already has that shape
 
 ## 5. The walking guard, and the mutation that reddens it
 
-**`skills/splash-twin/test/size-table-parity.test.ts`** — new.
+**`skills/splash/test/size-table-parity.test.ts`** — new.
 
 It **walks**, it never lists: `findAll(TWIN, "sizes.mjs")`, the same shape as
 `render-still-parity.test.ts:68-76`, so a copy added in Task 8 is guarded the moment it lands with
@@ -482,7 +482,7 @@ reserves for exactly this.
 
 **What it asserts:**
 
-1. **The premise, pinned rather than assumed** — `twin-chart-beat`'s copy exists and carries exactly
+1. **The premise, pinned rather than assumed** — `chart-beat`'s copy exists and carries exactly
    the three rows `landscape`, `square`, `portrait`. Without this, every comparison below can go
    vacuously green (`render-still-parity.test.ts:152-163` states the same discipline).
 2. **The walk finds at least as many copies as the tree has craft skills using the table.**
@@ -493,7 +493,7 @@ reserves for exactly this.
    A guard that forced static and video to share a type scale would force exactly the original's
    `scale: 1.7` defect, where square and portrait share a number that cannot be right for both.
 6. **A row's `typeScale`, where present, is a finite positive number** — the shape is checked even
-   though the value is not. `twin-dw-beat`'s copy legitimately has none (Datawrapper lays out type
+   though the value is not. `dw-beat`'s copy legitimately has none (Datawrapper lays out type
    server-side), so the assertion is *present-and-valid-or-absent*, not *required*.
 7. **Every dimension is an even integer** — the `tolerancePx` trap (`channel.ts:53-61`) named as a
    rule instead of a comment.
@@ -502,7 +502,7 @@ reserves for exactly this.
 
 | mutation | expected |
 |---|---|
-| `portrait.height: 1920` → `1922` in `twin-chart-video`'s copy only | **RED**, naming skill, row and field |
+| `portrait.height: 1920` → `1922` in `chart-video`'s copy only | **RED**, naming skill, row and field |
 | add a fourth row `feed:` to one copy only | **RED** on the row-set assertion |
 | delete `landscape` from one copy | **RED** on the row-set assertion |
 | `landscape.width: 1920` → `1921` in any copy | **RED** on the even-dimension assertion |
@@ -514,7 +514,7 @@ and a guard that happened.
 
 **Two more guards, each with its mutation:**
 
-- **`skills/splash-twin/test/video-size-comes-from-the-composition.test.ts`** (Task 2) — walks every
+- **`skills/splash/test/video-size-comes-from-the-composition.test.ts`** (Task 2) — walks every
   `*Video.tsx` under `proof/` and `skills/`, asserts each contains `useVideoConfig()` destructuring
   `width` and `height`, and contains **no** module-level `const FRAME = { width`. *Mutation:*
   re-introduce the `FRAME` constant in one beat → RED. This closes a drift that has **no guard at
@@ -536,7 +536,7 @@ and a guard that happened.
   asks for that cap to go. **Whoever owns B3.3 owns that line**; Task 5's narrowing must not re-pin
   it, and this is a live coordination item, not a residue I can quietly leave.
 - **B3.1** (an entrance animation for the whole web graphic) — a different axis entirely.
-- **`twin-scrolly`.** No export size. Its `ASPECT_ENVELOPE` + `safeBand()` (`ScrollySeed.tsx:150,
+- **`scrolly`.** No export size. Its `ASPECT_ENVELOPE` + `safeBand()` (`ScrollySeed.tsx:150,
   164-181`) is arguably a **stronger** model than three fixed sizes — it computes the sub-rectangle
   provably visible at every aspect in a range. Named, not adopted: R2 asked for three sizes and
   three sizes is what ships. If a later chantier wants one model for both, that is where it starts.
@@ -566,7 +566,7 @@ and a guard that happened.
 - **Print.** The original carries a fourth channel (`print-page`, 2480×1748). R2 named three; a
   fourth row is a decision nobody has taken.
 - **Whether a journalist can ask for two sizes of one beat.** Task 9 lets a slot pin one. Producing
-  the same beat at all three from one slot is a delivery question and belongs with `twin-deliver`.
+  the same beat at all three from one slot is a delivery question and belongs with `deliver`.
 
 ---
 
@@ -581,7 +581,7 @@ from the log.
 |---|---|---|---|
 | 0 | The probe | `W4 Task 0` | Answered question 4 TRUE. Findings and the revision they forced are in §4 Task 0 and §2. Artifacts: `proof/static-carbon-footprint-spread/probe/`. |
 | 1 | `SIZES` + `sizeFor` + the walking guard | `W4 Task 1` | Its own file, its own walker. Nine mutations; two deliberately green, both recorded in the guard's header. |
-| 4 | `twin-dw-beat` | `W4 Task 4` | Second copy of the table, no `typeScale`. The IHDR pin became a **check** — see below. |
+| 4 | `dw-beat` | `W4 Task 4` | Second copy of the table, no `typeScale`. The IHDR pin became a **check** — see below. |
 | 5 | Narrow the two `no @media` assertions | `W4 Task 5` | Seven mutations, six red. B3.3's 640px reversal deliberately untouched. |
 | 9 | `size` in both gate readings | `W4 Task 9` | One commit, parity guard extended in it. Closed a live defect: `web` could not pass gate 2 without naming a size it will never use. |
 | 3a | **The static SEED only** | `W4 Task 3 (the seed)` | `ChartSeed.tsx` reads `sizeFor(size)`; every spacing number scales. Rendered at three sizes and opened. |
@@ -594,7 +594,7 @@ from the log.
   portrait judgement for anything whose marks carry shape (§6's first residue), plus an opened
   render per beat per size — 51 renders. `render-still.mjs`'s `× 2` retires **with** this task, in
   the same step, because removing it while those seventeen frames are still 900×560 ships 900px
-  stills. Recorded in `twin-chart-beat/SKILL.md` so it is not a surprise.
+  stills. Recorded in `chart-beat/SKILL.md` so it is not a surprise.
 - **Task 2 — video, all nineteen beats. COLLISION, not cost.** Another agent is executing the
   visual-mechanisms spec in this same worktree and owns the video components' handover and
   annotation code; its in-flight `video-handover-is-a-cut.test.ts` is red against seven of the very
@@ -612,7 +612,7 @@ from the log.
   words as HTML at fixed sizes, one layout), and it is honest to say so rather than to half-do it.
   **Its `@media` is exactly what Task 5's narrowed assertion describes and it still contains the
   defect** — which is the coordination cost of leaving it, named rather than hidden.
-- **Task 8 — `twin-image-beat`.** The spec calls it "last, and droppable if Task 3 overruns"; Task 3
+- **Task 8 — `image-beat`.** The spec calls it "last, and droppable if Task 3 overruns"; Task 3
   overran, so it is dropped on the spec's own instruction. One measurement worth passing on, because
   it makes the estimate wrong too: this seed's frame height is **content-derived**
   (`ImageBeatSeed.tsx:155-156`, `lastBlock.creditTop + CREDIT.fontSize + PAD`), so changing
@@ -620,7 +620,7 @@ from the log.
   deliver one. Task 8 needs the same structural inversion as Task 3 — solve `BOX_HEIGHT` from the
   row's height and the block count — plus a loud refusal when N photographs cannot fit the size
   chosen. Not near-zero.
-- **`twin-dw-beat`'s measured IHDR pin.** The spec says "measure once what Datawrapper actually
+- **`dw-beat`'s measured IHDR pin.** The spec says "measure once what Datawrapper actually
   returns for each size and pin it; do not assume it honours `height`". There is no
   `DATAWRAPPER_TOKEN` on this branch, so there was nothing to measure with — and pinning a number
   nobody has seen is the reasoning-from-source this chantier exists to stop. It ships as

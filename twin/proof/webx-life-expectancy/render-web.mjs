@@ -21,8 +21,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { LifeExpectancyWeb, FRAME } from "./LifeExpectancyWeb.tsx";
 // The beat's own number formatter, taking its locale from the language the page declares — the
 // same one the component labels every reading with, so the prose and the axis can never disagree.
@@ -136,7 +136,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
 // which is what a tap-to-inspect control should do.
 //
 // Patched HERE, into the emitted HTML, rather than into the genre's shared
-// `twin-chart-web/assets/interaction.mjs`, because that file is outside this beat's scope and is
+// `chart-web/assets/interaction.mjs`, because that file is outside this beat's scope and is
 // being edited concurrently. It is an ANCHORED replacement, not a vendored copy of the whole
 // module: a copy would drift silently the moment the genre's script changed, whereas this throws
 // by name if the line it expects is no longer there.

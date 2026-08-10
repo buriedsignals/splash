@@ -26,7 +26,7 @@
 // than a basemap and it is named as such in `BRIEF.md`; it is not nothing, and it is honest about
 // being the beat's own drawing rather than somebody's tiles.
 
-/** The delivery placeholder. R1b: the committed artifact never holds a real key — `twin-deliver`
+/** The delivery placeholder. R1b: the committed artifact never holds a real key — `deliver`
  *  substitutes at delivery. ASSEMBLED rather than written whole, for the reason the sibling records:
  *  this script is inside the file the substitution rewrites, so a literal here would become the key
  *  itself and the check below would refuse every delivered map. */

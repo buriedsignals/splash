@@ -12,7 +12,7 @@
  * arrive; the accessible table below carries all seventeen at once. The picture states the claim;
  * the interaction supplies the precision the picture cannot.
  *
- * THE SPLIT THAT MAKES THIS RESPONSIVE (`twin-map-web/references/map-web-discipline.md`, "Full
+ * THE SPLIT THAT MAKES THIS RESPONSIVE (`map-web/references/map-web-discipline.md`, "Full
  * width, genuinely" and "Text is HTML, not SVG"): the SVG carries ONLY geometry — the baked plate
  * `<image>` and the value-sized `<circle>`s — and every word (title, source, legend, the subject's
  * own label, the caveat) plus every control (the per-point hit target, the filter chips) is HTML,

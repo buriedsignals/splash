@@ -7,7 +7,7 @@
  * beat directory has to build after being read on its own, and nothing under `proof/` may import
  * across beats). Same real data, same real geography, same deterministic rules — written fresh.
  *
- * See `twin-map-beat/references/types/locator.md`.
+ * See `map-beat/references/types/locator.md`.
  */
 
 export type OrgRow = {

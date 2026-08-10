@@ -2,8 +2,8 @@
  * The web beat of "Poland's per-capita CO2 emissions have overtaken Germany's, even as both have
  * fallen sharply since their 1979-80 peaks" — four small line panels on ONE shared, zero-based
  * scale. Coordinates come from `./small-multiples-geometry.ts`. Read
- * `twin-chart-web/references/web-discipline.md` and
- * `twin-chart-beat/references/types/small-multiples.md` before changing this file.
+ * `chart-web/references/web-discipline.md` and
+ * `chart-beat/references/types/small-multiples.md` before changing this file.
  *
  * MIGRATED TO THE FLUID FRAME (`web-discipline.md`, "Responsive behaviour", second build). This
  * beat used to ship two pre-rendered rungs — a 900px 2x2 grid and a 360px single column, swapped by

@@ -1,7 +1,7 @@
 /**
  * Beat: "Switzerland is the outlier — solar beats wind" (grouped bar).
  *
- * Written fresh from `twin-chart-beat/assets/ChartSeed.tsx`'s shape, not imported from it — this
+ * Written fresh from `chart-beat/assets/ChartSeed.tsx`'s shape, not imported from it — this
  * is a different mark family (two nested bands, a zero-anchored length encoding, a legend) with a
  * different chart-type sheet behind it (`references/types/grouped-bar.md`).
  *
@@ -30,13 +30,13 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 
 export type Group = { name: string; wind: number; solar: number };
 
@@ -339,7 +339,7 @@ export function WindVsSolarBar({
   // (this beat's runs to 96 characters) is exactly what an unwrapped constant clips silently.
   const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
-  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md,
   // "The source on the frame's bottom margin." At portrait that bottom is the STAGE's, not the
   // frame's: below 1248 is the platform's caption and progress bar, and a covered credit is an
   // attribution failure rather than a cosmetic one.

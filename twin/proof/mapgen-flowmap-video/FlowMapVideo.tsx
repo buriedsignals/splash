@@ -4,7 +4,7 @@
  * still cannot have: an ORDER. Every window below derives from `timing.ts`; there is no frame
  * literal in this file.
  *
- * The type sheet's own accessibility trap (`twin-map-beat/references/types/flow-map.md`, "The
+ * The type sheet's own accessibility trap (`map-beat/references/types/flow-map.md`, "The
  * accessibility trap"): "hasn't happened yet" must never read as a real value, or as simply absent.
  * So the FULL route is drawn from frame one — a thin, pale, DASHED, muted stroke, visibly distinct
  * from a real travelled leg — and the solid accent "travelled" stroke grows on top of it by REAL
@@ -189,7 +189,7 @@ export function FlowMapVideo({
   // visual, the same place on every graphic this project ships, and it carries the basemap credit
   // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
   // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
-  // twin-map-beat/assets/Co2MapVideo.tsx, which this is copied from.
+  // map-beat/assets/Co2MapVideo.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;

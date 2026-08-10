@@ -3,7 +3,7 @@
  *
  * The vocabulary is not redefined here: `BeatTiming`, `progressOf` and `checkTiming` are
  * `./timing-contract.ts`, a physical copy of the motion grammar's vocabulary
- * (`twin-chart-video/assets/timing.ts` → `twin-map-beat/assets/timing.ts` →
+ * (`chart-video/assets/timing.ts` → `map-beat/assets/timing.ts` →
  * `proof/map-quake-symbol/timing-contract.ts` → here). A copy, not an import, because a beat under
  * `proof/` never reaches into a sibling beat or a skill at runtime. What is local to a beat is its
  * EDIT, below.

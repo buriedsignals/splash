@@ -41,7 +41,7 @@ text. In particular:
 The **video** genre carries the same claim, in `proof/vidz-bar-column-top-emitters/`, written
 independently and in parallel by another hand from the same public dataset. Neither imports the
 other's files: this beat has its own frozen CSV, its own geometry and its own component, per
-`twin-chart-web/SKILL.md`'s "duplicate, do not link" ruling and the precedent
+`chart-web/SKILL.md`'s "duplicate, do not link" ruling and the precedent
 `weby-dumbbell-life-expectancy-gains` already sets for a claim drawn in two genres.
 
 The two are worth reading side by side precisely because they are the same argument in two media,
@@ -91,7 +91,7 @@ column.
 
 ## Colours
 
-`PALETTE.md`, `origin: newsroom` — the house ground and accent. `twin-palette`'s subject option
+`PALETTE.md`, `origin: newsroom` — the house ground and accent. `palette`'s subject option
 had nothing to offer: none of the four grounded conventions fires on "CO₂ emissions", and
 inventing a fifth for one beat would be a colour that feels right rather than one a reader
 already holds. `render.mjs` names no hex; both values arrive through `readPalette`.
@@ -106,7 +106,7 @@ The full CSV was taken deliberately rather than a `country=`-filtered one. The c
 **global ranking**, so it cannot be established from a hand-picked shortlist — a shortlist would
 mean the top ten had been decided before the data was read. The `country=` filter parameter is
 also unreliable on this endpoint family
-(`twin-intake/references/ourworldindata-csv-filter-trap.md`); a filtered fetch of a twenty-country
+(`intake/references/ourworldindata-csv-filter-trap.md`); a filtered fetch of a twenty-country
 shortlist was tried first and, separately, an `electricity-mix` fetch with the same parameter
 returned the entire world, which is exactly why the freeze keeps a full year rather than a
 selection.

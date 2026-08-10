@@ -6,9 +6,9 @@
 // control, the accessible table this beat opts into, one inlined interaction script, and no external
 // request once the plate is inlined as a data URI.
 //
-// This is this beat's OWN copy of `twin-map-web/scripts/render-web.mjs`'s machinery, adapted to this
+// This is this beat's OWN copy of `map-web/scripts/render-web.mjs`'s machinery, adapted to this
 // beat's component and its filter dimension. Nothing here imports out of a skill or across beats,
-// except `#shared/twin-chart-beat/render-still.mjs` for `readPalette` — the one module in this tree
+// except `#shared/chart-beat/render-still.mjs` for `readPalette` — the one module in this tree
 // that reads a recorded colour answer, which every genre draws from.
 //
 // EVERY NUMBER A READER SEES IS COMPUTED HERE, from the frozen csv, and printed to the console
@@ -27,7 +27,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import { deriveFurniture } from "./render-still.mjs";
 import { QuakeSymbolWeb, QuakeTable, SUBJECT_KEY, quakeDetail } from "./QuakeSymbolWeb.tsx";
 import {
@@ -84,8 +84,8 @@ const OUTPUT_NAME = "quake-symbol.html";
  * a published article; it did not accept an unbounded public leak, and the two are different
  * exposures. This beat COMMITS its rendered HTML and the FJM deliverable is an MIT open-source
  * release, so a real key here would be scanned by bots within minutes of the push and would survive
- * in the history after any later removal. `twin-deliver` substitutes the real key at the moment the
- * file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts` reddens if one ever
+ * in the history after any later removal. `deliver` substitutes the real key at the moment the
+ * file goes to a newsroom; `splash/test/no-key-in-the-repository.test.ts` reddens if one ever
  * reaches a tracked file.
  *
  * The delivered key is a SECOND, origin-restricted MapTiler key, not the development one: MapTiler's

@@ -1,7 +1,7 @@
 // twin/proof/life-expectancy/render.mjs
 //
 // This story's own render script — the render ladder's second rung, same shape as
-// `twin-chart-video/scripts/render-video.mjs` (`readingsFromCsv`, then still-first, then mp4),
+// `chart-video/scripts/render-video.mjs` (`readingsFromCsv`, then still-first, then mp4),
 // its own story constants. `readingsFromCsv` now reads OWID's own grapher columns
 // (`Year,Life expectancy`) rather than a hand-shaped `year,value` — the committed `data.csv` is
 // OWID's raw, unedited fetch, and a story folder should not reshape the source data it credits.
@@ -17,13 +17,13 @@ import { fileURLToPath } from "node:url";
 import {
   deriveFurniture,
   readPalette,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   assertDeliveredSize,
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");

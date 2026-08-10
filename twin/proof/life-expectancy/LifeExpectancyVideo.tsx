@@ -9,10 +9,10 @@
  *
  * `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` are this story's own copies of
  * `EmissionsVideo.tsx`'s functions of the same name, not an import from it — this story lives
- * outside `twin-chart-video`'s skill boundary now (`proof/life-expectancy/`), and the settled rule
+ * outside `chart-video`'s skill boundary now (`proof/life-expectancy/`), and the settled rule
  * for a story that needs something a skill has is to duplicate it, not reach back across the
  * boundary. The bodies are identical on purpose: both are the video genre's browser-Canvas text
- * measurer, not the static genre's resvg one (`#shared/twin-chart-beat/render-still.mjs`) — the
+ * measurer, not the static genre's resvg one (`#shared/chart-beat/render-still.mjs`) — the
  * two are not interchangeable, so vendoring the wrong one would silently mismeasure.
  *
  * THE MOTION PROBLEM: the confirmed subject is 2020, the dip — but 2020 sits four years before the
@@ -42,12 +42,12 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 import { LIFE_EXPECTANCY_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -409,7 +409,7 @@ export function LifeExpectancyVideo({
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND, not under the title — the same edge the title hangs
   // off at the top, on the same x. It stays inside the furniture opacity group, so no timing
   // contract moves: it fades in with the title and is still there at the last frame. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin". It
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin". It
   // WRAPS now: one line at 22px is three at 36px, and the credit ran off the frame.
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   const sourceBaseline = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;

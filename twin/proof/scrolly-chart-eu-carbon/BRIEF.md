@@ -12,7 +12,7 @@ came down; a RANKED BAR says the top is still three times the bottom; a SLOPE sa
 cutter is the country still at the top; a DOT PLOT says that, names removed, the union is one crowd
 and one outlier. Each is true. Each hides what the next one shows.
 
-## Why this earns the scroll — the test `twin-scrolly/SKILL.md` sets
+## Why this earns the scroll — the test `scrolly/SKILL.md` sets
 
 The vehicle's own rule: *"if every step would show the same chart, do not reach for this skill —
 animate the beat instead. A vehicle earns its existence only by carrying different media."* This
@@ -131,7 +131,7 @@ Three defects the tests did not see, all found by measuring bounding boxes:
   3100px at 375×812 (5.7%)**, and it never recurs. It is a property of the vehicle, not of this
   beat: the skill's own seed and `mapmore-scrolly-danube` both avoid it only because their first
   step is a COVER-cropped frame whose annotations sit high. Reported rather than patched — the fix
-  belongs in `twin-scrolly`'s scaffold, which this beat does not edit. Mitigated here by keeping the
+  belongs in `scrolly`'s scaffold, which this beat does not edit. Mitigated here by keeping the
   title and the credit short: trimming them took the band at 375px from 262px to 177px.
 - **Reduced motion**: 12 sampled positions, 0 intermediate opacities, computed
   `transition-duration: 0s`, and the active frame still advanced through all four steps.
@@ -143,7 +143,7 @@ Three defects the tests did not see, all found by measuring bounding boxes:
 ## Anti-patterns for this case
 
 - **Four states of one chart is not a scrolly.** If this beat's four steps had been one line chart
-  revealing a decade at a time, it would belong in `twin-chart-web` or `twin-chart-beat`, animated.
+  revealing a decade at a time, it would belong in `chart-web` or `chart-beat`, animated.
 - **Never let a step's prose claim something its own frame does not show.** Each paragraph names
   only what its own chart draws: the line step never names Luxembourg's rank, the ranked-bar step
   never names a change.

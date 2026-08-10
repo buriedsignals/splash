@@ -11,8 +11,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { makeBins } from "./histogram-geometry";
 import { HistogramWeb, FRAME } from "./HistogramWeb.tsx";
 
@@ -139,7 +139,7 @@ async function repair(outPath) {
   // the page. So the scroll is dropped rather than repaired — a promise no input mode could keep.
   // The whole list is now simply visible: tallest content is 502px (bin 0), which sits inside the
   // window at every viewport this genre targets, and
-  // `skills/splash-twin/test/interaction-promises-are-kept.test.ts` fails if any delivered tooltip
+  // `skills/splash/test/interaction-promises-are-kept.test.ts` fails if any delivered tooltip
   // ever hides content again, by scroll or by running off the window.
   const ownCss = `
 .bin-hit { cursor: pointer; }

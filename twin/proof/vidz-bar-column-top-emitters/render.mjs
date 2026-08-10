@@ -1,7 +1,7 @@
 // twin/proof/vidz-bar-column-top-emitters/render.mjs
 //
 // This story's own render script — the render ladder's second rung, same shape as
-// `twin-chart-video/scripts/render-video.mjs` and the other proof workspaces' (read the frozen CSV,
+// `chart-video/scripts/render-video.mjs` and the other proof workspaces' (read the frozen CSV,
 // derive every claim from it, render the final frame FIRST, then the mp4).
 //
 // EVERY NUMBER AND EVERY WORD OF THE TITLE IS COMPUTED HERE. Nothing about the ranking, the count
@@ -10,8 +10,8 @@
 // every one of them a value typed by hand instead of computed from the data.
 //
 // `deriveFurniture` and `readPalette` are imported from THIS SKILL's own copy
-// (`skills/twin-chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
-// alias, and not `twin-chart-beat`'s original.
+// (`skills/chart-video/scripts/render-still.mjs`) by a relative path — not the `#shared/*`
+// alias, and not `chart-beat`'s original.
 //
 // Usage:  bun proof/vidz-bar-column-top-emitters/render.mjs [--still-only] [--data <csv>] [--out <dir>]
 
@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import {
   deriveFurniture,
   readPalette,
-} from "../../skills/twin-chart-video/scripts/render-still.mjs";
+} from "../../skills/chart-video/scripts/render-still.mjs";
 // The VIDEO genre's own size table (landscape floor 30, type scale 2.5) and the type-vs-size
 // question, which is craft-neutral and therefore has one copy for both genres.
 import {
@@ -30,8 +30,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");

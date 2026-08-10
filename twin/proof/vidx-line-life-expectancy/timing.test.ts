@@ -5,7 +5,7 @@ import {
   endOf,
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import { LINE_TIMING } from "./timing-contract";
 
 /**

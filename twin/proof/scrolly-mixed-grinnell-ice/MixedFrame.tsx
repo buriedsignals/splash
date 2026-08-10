@@ -8,7 +8,7 @@
  * swap has nothing to interpolate. So the composition is ONE persistent element whose three layers
  * each carry their own presence, and the scroll drives all of it from one number.
  *
- * Rules kept, from `twin-scrolly/references/scrolly-discipline.md` and the owner's rulings:
+ * Rules kept, from `scrolly/references/scrolly-discipline.md` and the owner's rulings:
  *
  *   1. **The photograph is CONTAINED, never cropped** — the ratio is kept and it fills to whichever
  *      axis binds first. Four frames normalised to one box is the whole claim of a repeat-photography

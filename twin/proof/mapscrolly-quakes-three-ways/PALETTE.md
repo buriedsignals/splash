@@ -5,13 +5,13 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as documented in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md`.
+`skills/splash/assets/root-template/NEWSROOM.example.md`.
 
-`twin-palette`'s proposal was run for this beat's own subject line — *"every earthquake recorded
+`palette`'s proposal was run for this beat's own subject line — *"every earthquake recorded
 worldwide in 2024, drawn three different ways"* — and returned **one** option, the house theme:
 `matchConvention` fires on none of the four grounded conventions. An earthquake is not a warming
 story, and reaching for the `heat` convention's warm red because a quake feels violent is exactly
-the move `twin-palette/references/subject-conventions.md` refuses. When no convention applies, the
+the move `palette/references/subject-conventions.md` refuses. When no convention applies, the
 house theme wins. (`proof/mapgen-symbol-web` recorded the same answer for the same reason on the
 same catalogue.)
 

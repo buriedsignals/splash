@@ -2,9 +2,9 @@
 // member states, 1990 to 2024 — drawn FOUR different ways as the reader scrolls, because the
 // answer changes with the chart.
 //
-// This file is a CONSUMER of `twin-scrolly`: it imports the skill's own generic `renderScrolly`
+// This file is a CONSUMER of `scrolly`: it imports the skill's own generic `renderScrolly`
 // (the media-agnostic scaffold above its CONFIG marker) and builds its own `steps` array from its
-// own frame components (`ChartFrames.tsx`). Nothing under `twin-scrolly/` is edited by it.
+// own frame components (`ChartFrames.tsx`). Nothing under `scrolly/` is edited by it.
 //
 // WHY THIS EARNS THE SCROLL, stated here because the vehicle's own SKILL.md refuses the shape this
 // beat could easily have been: "if every step would show the same chart, do not reach for this
@@ -23,7 +23,7 @@ import { createElement } from "react";
 import {
   deriveFurniture,
   readPalette,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import { deriveFacts, parseReadings, bySeries, t, t2 } from "./carbon-data.ts";
 import {
   LineFrame,
@@ -31,7 +31,7 @@ import {
   SlopeFrame,
   DotStripFrame,
 } from "./ChartFrames.tsx";
-import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
+import { renderScrolly } from "../../skills/scrolly/scripts/render-scrolly.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 

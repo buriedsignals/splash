@@ -1,6 +1,6 @@
 // twin/proof/weby-population-pyramid-switzerland/pyramid-interaction.mjs
 //
-// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs` (the line
+// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs` (the line
 // genre's own copy, which resolves hover/tap by NEAREST-X over one shared `.hit-area` overlay) and
 // not `web-income-life-expectancy/scatter-interaction.mjs` (nearest-2D-point over one shared
 // overlay, for a cloud with no natural tiling). Neither mechanic fits here: `render-web.mjs`
@@ -20,7 +20,7 @@
 // a sighted reader would expect `ArrowUp`/`ArrowDown` to follow. `Home`/`End` jump to the oldest/
 // youngest band.
 //
-// `initChart`/`initAll` are DOM wiring and are proven, per `twin-doctrine`'s own rule, by driving a
+// `initChart`/`initAll` are DOM wiring and are proven, per `doctrine`'s own rule, by driving a
 // real browser, never by asserting against an unwatched DOM emulation.
 
 /** Wires one `.chart-plot` — its `.row-hit` elements and the shared tooltip — to hover, tap and

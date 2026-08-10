@@ -31,17 +31,17 @@
 //      a scrolly the scroll already drives the camera and a reader-moved camera would be overridden
 //      by the next step's flight. This is a DIFFERENCE from map × web, where R1 requires the
 //      controls; it is recorded as a distinction between the two genres in
-//      `twin-scrolly/references/scrolly-discipline.md` rather than left as an omission.
+//      `scrolly/references/scrolly-discipline.md` rather than left as an omission.
 //
 // ONE IMPLEMENTATION, USED TWICE, like `map-drive.mjs` beside it: the pure half is imported in node
 // by the beat's own test, and the whole file is inlined into the delivered HTML by `render.mjs`,
 // which strips the `export` keywords. Nothing here is imported from another skill or another beat —
-// the twin duplicates helpers (`no-cross-skill-imports.test.ts`). `twin-map-web/assets/live-map.mjs`
+// the twin duplicates helpers (`no-cross-skill-imports.test.ts`). `map-web/assets/live-map.mjs`
 // is the map × web sibling of this file and was READ, not imported; what is shared with it is the
 // vocabulary (a plan in a `<script type="application/json">`, a placeholder key, a two-layer page),
 // not a line of code.
 
-/** The delivery placeholder. R1b: the committed artifact never holds a real key — `twin-deliver`
+/** The delivery placeholder. R1b: the committed artifact never holds a real key — `deliver`
  *  substitutes at delivery. ASSEMBLED rather than written whole, for the reason `live-map.mjs`
  *  records: this script is inside the file the substitution rewrites, so a literal here would
  *  become the key itself and the check below would refuse every delivered map. */

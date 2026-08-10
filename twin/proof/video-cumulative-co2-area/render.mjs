@@ -1,7 +1,7 @@
 // twin/proof/video-cumulative-co2-area/render.mjs
 //
 // Fourth beat through the render ladder's second rung — same shape as
-// `twin-chart-video/scripts/render-video.mjs`, `../life-expectancy/render.mjs` and
+// `chart-video/scripts/render-video.mjs`, `../life-expectancy/render.mjs` and
 // `../migration/render.mjs` (`readingsFromCsv`, then still-first, then mp4), its own story
 // constants. See `render-video.mjs` for the doc-comment on why this runs in node
 // (`deriveFurniture`) and why the still is rendered before the mp4.
@@ -12,7 +12,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { deriveFurniture, readPalette } from "#shared/chart-beat/render-still.mjs";
 // The VIDEO genre's own size table (landscape floor 30, type scale 2.5), and the type-vs-size
 // question, which is craft-neutral and therefore has one copy serving both genres.
 import {
@@ -20,8 +20,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");

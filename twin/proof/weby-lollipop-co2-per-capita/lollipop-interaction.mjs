@@ -1,6 +1,6 @@
 // twin/proof/weby-lollipop-co2-per-capita/lollipop-interaction.mjs
 //
-// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs` (the line
+// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs` (the line
 // genre's nearest-by-x mechanic over one shared `.hit-area`) and not
 // `web-income-life-expectancy/scatter-interaction.mjs` (nearest-by-2D-distance over one shared
 // `.hit-area`). Neither generalises here: a lollipop's rows already tile the plot's full height as

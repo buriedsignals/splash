@@ -315,7 +315,7 @@ body {
 // the picture a reader meets before any script runs and the picture the scroll drives cannot drift
 // apart — which is the failure a second, browser-only copy of the layout maths would invite.
 //
-// WHY A DRIVER AT ALL, AND NOT FOUR STACKED FRAMES. `twin-scrolly`'s scaffold assembles N pictures
+// WHY A DRIVER AT ALL, AND NOT FOUR STACKED FRAMES. `scrolly`'s scaffold assembles N pictures
 // and swaps which one is painted. This beat is the other form: ONE picture, and the steps are
 // successive READINGS of it — a segment lifted, a band called out, the axes narrowed to a decade.
 // A swap cannot express that: the reader has to see the SAME line stay put while the thing they are
@@ -468,7 +468,7 @@ function readProgress(source) {
   if (raw === null || raw === "" || !Number.isFinite(value))
     throw new Error(
       `this beat is driven by the scrolly scaffold's continuous signal and read ${JSON.stringify(raw)} ` +
-        `for data-progress on the nearest ancestor carrying it (twin-scrolly/assets/interaction.mjs ` +
+        `for data-progress on the nearest ancestor carrying it (scrolly/assets/interaction.mjs ` +
         `writes it on the .scrolly root on every scroll)`,
     );
   return value;
@@ -711,7 +711,7 @@ function initChartScrolly(root, readings, states, marks) {
   const progressSource = progressSourceOf(root);
   if (!progressSource)
     throw new Error(
-      "no ancestor of this beat's visual carries data-progress — twin-scrolly's scaffold publishes it " +
+      "no ancestor of this beat's visual carries data-progress — scrolly's scaffold publishes it " +
         "on the .scrolly root, and this beat is driven by nothing else",
     );
 
@@ -880,17 +880,17 @@ function initChartScrolly(root, readings, states, marks) {
 </article>
 <script>
 (function () {
-// twin/skills/twin-scrolly/assets/interaction.mjs
+// twin/skills/scrolly/assets/interaction.mjs
 //
 // The one script this genre ships, inlined verbatim into the self-contained HTML by
 // `scripts/render-scrolly.mjs` (which strips the `export` keyword from each top-level declaration,
-// the same trick `twin-chart-web/scripts/render-web.mjs` already uses, so this file can also sit as
+// the same trick `chart-web/scripts/render-web.mjs` already uses, so this file can also sit as
 // a plain classic `<script>` — no `type="module"`, so it keeps working in a CMS iframe or a
 // sandboxed embed that restricts module scripts).
 //
 // `pickActiveStep` is exported and pure — no DOM — so it is unit-tested directly
 // (`test/render-scrolly.test.ts`). `initScrolly`/`initAll` are DOM wiring and are NOT unit-tested
-// here: per `twin-doctrine`'s own verification rule, an interactive genre is verified by driving a
+// here: per `doctrine`'s own verification rule, an interactive genre is verified by driving a
 // real browser, not by asserting against a DOM emulation nobody looked at
 // (`references/scrolly-discipline.md`, "Verification").
 //

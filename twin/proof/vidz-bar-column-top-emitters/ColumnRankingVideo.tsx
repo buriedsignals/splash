@@ -49,7 +49,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 // The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column. Same
@@ -59,13 +59,13 @@ import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size at all is a fact about the type, not about the craft, so
 // there is one copy of it and the video genre reads the same one the static genre does. Named here
-// rather than left implicit: `twin-chart-video` carries no `type-at-size.mjs` of its own, and
+// rather than left implicit: `chart-video` carries no `type-at-size.mjs` of its own, and
 // adding a second copy of a table whose contents are measured aspect ranges would be the drift the
 // carried-table discipline exists to prevent.
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 import { COLUMN_RANKING_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -84,7 +84,7 @@ export const TYPE = "column";
  *
  * The numbers below are the shipped 1080-frame values divided by that frame's own 1.20 over the
  * 900-wide convention every other craft skill's base is written at, so the smallest token lands at
- * 12 — the value `twin-chart-video/scripts/sizes.mjs` derives every row's `typeScale` from
+ * 12 — the value `chart-video/scripts/sizes.mjs` derives every row's `typeScale` from
  * (30 / 12 = 2.5 at landscape, 36 / 12 = 3.0 at the two phone frames). `CATEGORY_MIN_SIZE` is that
  * floor exactly: `fitCategorySize` may shrink a name down to it and no further, so a name that will
  * not fit reaches the refusal below instead of being drawn under the legibility floor.
@@ -423,7 +423,7 @@ export function ColumnRankingVideo({
   const sourceLead = Math.round(T.SOURCE.fontSize * 1.5);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
   // hangs off at the top, on the same x. It stays inside the furniture opacity group, so no timing
-  // contract moves. See twin-chart-beat/references/static-discipline.md, "The source on the frame's
+  // contract moves. See chart-beat/references/static-discipline.md, "The source on the frame's
   // bottom margin". At portrait that bottom is the stage's: below it sit the platform's caption and
   // progress bar, and a covered credit is an attribution failure, not a cosmetic one.
   const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;

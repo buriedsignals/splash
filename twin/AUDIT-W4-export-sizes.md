@@ -27,18 +27,18 @@ divergences are below; none is a regression except the last two.
 
 | Task | Commit | Evidence |
 |---|---|---|
-| 1 — `SIZES` + `sizeFor` + the walking guard | `a42717c4` | `skills/twin-chart-beat/scripts/sizes.mjs:58-80`; `skills/splash-twin/test/size-table-parity.test.ts` — §5 below |
-| 4 — `twin-dw-beat` | `ceaa25e0` | `skills/twin-dw-beat/scripts/produce.mjs:33-43, 76-82` |
-| 5 — narrow the two `no @media` assertions | `664ebde7` | `skills/twin-chart-web/test/seed-fluid-frame.test.ts:148-176, 195` |
-| 9 — `size` in both gate readings | `031818d2` | `skills/twin-storyboard/scripts/storyboard.mjs:33, 39, 50, 62-71`; `skills/splash-twin/scripts/where.mjs:64, 85-93` |
-| 3a — the static SEED only | `ee55c95a` | `skills/twin-chart-beat/assets/ChartSeed.tsx:21, 297` |
+| 1 — `SIZES` + `sizeFor` + the walking guard | `a42717c4` | `skills/chart-beat/scripts/sizes.mjs:58-80`; `skills/splash/test/size-table-parity.test.ts` — §5 below |
+| 4 — `dw-beat` | `ceaa25e0` | `skills/dw-beat/scripts/produce.mjs:33-43, 76-82` |
+| 5 — narrow the two `no @media` assertions | `664ebde7` | `skills/chart-web/test/seed-fluid-frame.test.ts:148-176, 195` |
+| 9 — `size` in both gate readings | `031818d2` | `skills/storyboard/scripts/storyboard.mjs:33, 39, 50, 62-71`; `skills/splash/scripts/where.mjs:64, 85-93` |
+| 3a — the static SEED only | `ee55c95a` | `skills/chart-beat/assets/ChartSeed.tsx:21, 297` |
 
 ### Divergences — improvements
 
 1. **The doctrine record landed in a different file than the spec named.** §4 Task 1 asks for
-   `skills/twin-doctrine/references/static-discipline.md`. That path does not exist and never did —
-   `skills/twin-doctrine/references/` holds seven files and none is `static-discipline.md`. The
-   record landed at `skills/twin-chart-beat/references/static-discipline.md:199-238`, which is where
+   `skills/doctrine/references/static-discipline.md`. That path does not exist and never did —
+   `skills/doctrine/references/` holds seven files and none is `static-discipline.md`. The
+   record landed at `skills/chart-beat/references/static-discipline.md:199-238`, which is where
    every other reference in the tree points (`SKILL.md:105`). The spec named the wrong path; the
    execution used the right one and did not say so.
 
@@ -61,19 +61,19 @@ divergences are below; none is a regression except the last two.
 ### Divergences — unnoticed drift
 
 5. **A fourth copy of the table exists that the spec did not foresee, and it forced a guard fix.**
-   `skills/splash-twin/assets/root-template/shared/twin-chart-beat/sizes.mjs` is byte-identical to
+   `skills/splash/assets/root-template/shared/chart-beat/sizes.mjs` is byte-identical to
    the canonical copy and is the one a `cp -r root-template/` install carries into a newsroom root.
    §4 Task 1 counts *"1 of an eventual 5"* plus one mirror; it does not mention the vendored copy.
    The guard's first mirror assertion failed on it and had to be anchored at `twin/shared/`
    (`size-table-parity.test.ts:163-176`).
 
 6. **The mirror the spec justified has no consumer, and the one beat that uses the table bypasses
-   it.** §4 Task 1 creates `shared/twin-chart-beat/sizes.mjs` because *"`proof/` beats consume craft
+   it.** §4 Task 1 creates `shared/chart-beat/sizes.mjs` because *"`proof/` beats consume craft
    helpers through the `#shared/*` alias … so the beat-facing copy must exist or every render script
    reaches across a skill boundary."* Measured today: **zero** files under `proof/` contain the
-   string `#shared/twin-chart-beat/sizes.mjs`, and the single beat that uses the table —
+   string `#shared/chart-beat/sizes.mjs`, and the single beat that uses the table —
    `proof/palette-proof/render.mjs:23` — imports
-   `../../skills/twin-chart-beat/scripts/sizes.mjs` directly, which is exactly the reach-across the
+   `../../skills/chart-beat/scripts/sizes.mjs` directly, which is exactly the reach-across the
    mirror exists to prevent. `no-cross-skill-imports.test.ts` cannot see it: its own header scopes it
    to *"every source file … under a skill"*, and `proof/` is not under a skill. The mirror assertion
    is written to fire only on `#shared/…` specifiers (`size-table-parity.test.ts:184-189`), so it
@@ -82,7 +82,7 @@ divergences are below; none is a regression except the last two.
 
 ### Divergences — regressions
 
-7. **`twin-chart-beat/SKILL.md`'s Quick start is now instructions that throw.** `:143-144` still
+7. **`chart-beat/SKILL.md`'s Quick start is now instructions that throw.** `:143-144` still
    passes `width: 900, height: 560` and passes no `size` prop, while the seed derives its frame from
    `sizeFor(size)` (`ChartSeed.tsx:297`). Run with exactly the Quick start's props:
 
@@ -98,8 +98,8 @@ divergences are below; none is a regression except the last two.
 8. **The doctrine states in the past tense a thing that is still true.**
    `static-discipline.md:206-207`: *"`rasterise` **used to** render at `fitTo: { mode: "width",
    value: width * 2 }`."* It still does, in all three copies —
-   `skills/twin-chart-beat/scripts/render-still.mjs:262`, `shared/twin-chart-beat/render-still.mjs:262`,
-   `skills/splash-twin/assets/root-template/shared/twin-chart-beat/render-still.mjs:262`. The
+   `skills/chart-beat/scripts/render-still.mjs:262`, `shared/chart-beat/render-still.mjs:262`,
+   `skills/splash/assets/root-template/shared/chart-beat/render-still.mjs:262`. The
    sequencing paragraph two lines below (`:219-221`) contradicts the tense and is the correct
    statement. The skill's tuning-knob row still carries `2` (`SKILL.md:168`), which is the honest
    half.
@@ -123,7 +123,7 @@ Method: `grep -rl renderStill proof --include="*.mjs"` filtered to beat scripts 
 `render-map.mjs`; the `render-still.mjs` hits are the parity copies of the helper); `find proof -name
 Root.tsx`; `find proof -name render-web.mjs`. Consumers of the table: `grep -rn "sizeFor" proof
 skills shared` — the only non-test consumers are `ChartSeed.tsx`, `render-preview.mjs`,
-`twin-dw-beat/produce.mjs` and `proof/palette-proof/render.mjs`.
+`dw-beat/produce.mjs` and `proof/palette-proof/render.mjs`.
 
 **What is left, per genre:**
 
@@ -136,14 +136,14 @@ skills shared` — the only non-test consumers are `ChartSeed.tsx`, `render-prev
   the same step, per `static-discipline.md:219-221`.
 - **Video, 19 beats.** `useVideoConfig()` still destructures only `fps`; every `*Video.tsx` keeps its
   own `const FRAME`; every `Root.tsx` registers exactly **one** `<Composition>` (measured: 27
-  `Root.tsx` in the tree, all with a single composition, e.g. `twin-chart-video/assets/Root.tsx:40-41`
+  `Root.tsx` in the tree, all with a single composition, e.g. `chart-video/assets/Root.tsx:40-41`
   `width={1080} height={1080}`). Neither guard §5 promises for this task exists:
   **`video-size-comes-from-the-composition.test.ts` is absent** from
-  `skills/splash-twin/test/` (32 files, listed), and `render-video.mjs` has no `ffprobe` rendered-size
+  `skills/splash/test/` (32 files, listed), and `render-video.mjs` has no `ffprobe` rendered-size
   throw. The spec records the reason (a file collision with the visual-mechanisms chantier), not a
   cost.
 - **Web, 18 beats.** Task 5 cleared the mechanism; **Task 6's fill rule is unwritten** — `buildCss`
-  (`skills/twin-chart-web/scripts/render-web.mjs:186`) contains no `@media` at all, so B3.2's second
+  (`skills/chart-web/scripts/render-web.mjs:186`) contains no `@media` at all, so B3.2's second
   half ("a mobile version") is still the honest gap `web-discipline.md:242-245` names. Task 7's
   retrofit is not done: `proof/more-heatmap-co2-per-capita-decades/render-web.mjs:256, 262` still
   carries `.chart-figure { max-width: …px }` and a `@media (max-width: …)` rung — the exact defect
@@ -157,14 +157,14 @@ skills shared` — the only non-test consumers are `ChartSeed.tsx`, `render-prev
 pyramid, small-multiples and diverging-bar statics at three sizes; `webx-carbon-footprint` at the
 phone viewport; the heatmap at 1400px). The only proof artifacts in the tree are row 0's probe
 (`proof/static-carbon-footprint-spread/probe/`, 8 PNG/SVG pairs) and the seed's own three renders
-(`skills/twin-chart-beat/output-proof/sizes/{landscape,square,portrait}.png` — IHDR verified
+(`skills/chart-beat/output-proof/sizes/{landscape,square,portrait}.png` — IHDR verified
 1920×1080, 1080×1080, 1080×1920).
 
 ---
 
 ## 3. What was built that the spec did not ask for
 
-1. **`skills/twin-chart-beat/test/three-sizes-no-collision.test.ts`** — a render-based guard that
+1. **`skills/chart-beat/test/three-sizes-no-collision.test.ts`** — a render-based guard that
    draws the seed at all three sizes, measures the real ink box of every `<text>` run with resvg, and
    refuses a run that crosses the frame edge or overlaps another. Not in the spec. Its own header
    says it exists because a mutation run came back green. It is genuinely capable of red (§5, M11e/f)
@@ -186,7 +186,7 @@ phone viewport; the heatmap at 1400px). The only proof artifacts in the tree are
    with its reason written at `:43-45`. Correct, and wider than asked.
 
 5. **`assertExportedSize` as an exported function** with its own test
-   (`twin-dw-beat/test/produce.test.ts` — *"should throw, naming both sizes, when Datawrapper returns
+   (`dw-beat/test/produce.test.ts` — *"should throw, naming both sizes, when Datawrapper returns
    something other than the row"*). See divergence 4.
 
 ---
@@ -239,17 +239,17 @@ Ordered by how quietly it fails.
 
 | # | site | what disagrees |
 |---|---|---|
-| 1 | `twin-chart-beat/SKILL.md:143-144` | Quick start passes `width: 900, height: 560` and no `size`. **Throws if followed** (run above). The instruction file for writing a new beat. |
+| 1 | `chart-beat/SKILL.md:143-144` | Quick start passes `width: 900, height: 560` and no `size`. **Throws if followed** (run above). The instruction file for writing a new beat. |
 | 2 | the 17 chart statics' `render.mjs` | frame stated twice as literals; delivered PNGs at 1800×1120 / 1800×1640 |
 | 3 | `render-still.mjs:262` × 3 copies | `× 2` raster, against `render-preview.mjs:71-73`'s 1×. **Two rasterisers in one skill, obeying different rules.** Noted at `SKILL.md:105-108`; mis-tensed at `static-discipline.md:206` |
 | 4 | `proof/palette-proof/render.mjs:23` | uses the table by reaching across a skill boundary; unguarded (divergence 6) |
-| 5 | `twin-chart-video/assets/Root.tsx:40-41` + `EmissionsVideo.tsx:42` + 19 beats | one composition, `FRAME` beside it, **no guard at all** |
-| 6 | `twin-image-beat/ImageBeatSeed.tsx:48, 56` | `FRAME_WIDTH = 900`; height content-derived at `:158` |
-| 7 | `twin-map-beat/assets/Co2MapStill.tsx`, `Co2MapVideo.tsx` | W5's, listed for completeness |
+| 5 | `chart-video/assets/Root.tsx:40-41` + `EmissionsVideo.tsx:42` + 19 beats | one composition, `FRAME` beside it, **no guard at all** |
+| 6 | `image-beat/ImageBeatSeed.tsx:48, 56` | `FRAME_WIDTH = 900`; height content-derived at `:158` |
+| 7 | `map-beat/assets/Co2MapStill.tsx`, `Co2MapVideo.tsx` | W5's, listed for completeness |
 
-`twin-chart-web`'s `WebFrame` and `PREVIEW_WIDTH = 900` (`ChartWebSeed.tsx:644`) are **not** on this
+`chart-web`'s `WebFrame` and `PREVIEW_WIDTH = 900` (`ChartWebSeed.tsx:644`) are **not** on this
 list: R2 makes web a range, and the frame there is documented as *"NOT a rendered pixel size and NOT
-a cap"*. `twin-scrolly`'s `FRAME` is out of scope by the spec's own §Scope.
+a cap"*. `scrolly`'s `FRAME` is out of scope by the spec's own §Scope.
 
 ### (c) The gate takes a decision nothing downstream reads — the sharpest one
 
@@ -262,7 +262,7 @@ literals in `render.mjs`**, so they agree by construction and the storyboard is 
 This is not confined to chart statics. `genre-catalog.mjs:35-44` lists ten medium × genre pairs;
 `SIZED_GENRES` requires a size of `static` and `video`, which is **six** of them —
 `chart/static`, `chart/video`, `map/static`, `map/video`, `image/static`, plus the dw path. Exactly
-**one** producer honours it (`twin-dw-beat`). The gate asks a question five of six producers ignore,
+**one** producer honours it (`dw-beat`). The gate asks a question five of six producers ignore,
 which is the same defect `storyboard.mjs:46-49` documents itself closing from the other side.
 
 **Measured on the tree's own artefacts.** The two `STORYBOARD.md` files in `proof/` were not updated
@@ -336,8 +336,8 @@ Injected into `buildCss`'s stylesheet (`render-web.mjs:196`), which is what the 
 
 | mutation | observed |
 |---|---|
-| `sizeGap` wording changed in `twin-storyboard` only | **RED** — *"gate 2c: both readings … string for string > web WITH a size"* |
-| `web` allowed to carry a size, `twin-storyboard` only | **RED** — 2 assertions |
+| `sizeGap` wording changed in `storyboard` only | **RED** — *"gate 2c: both readings … string for string > web WITH a size"* |
+| `web` allowed to carry a size, `storyboard` only | **RED** — 2 assertions |
 | the missing-size refusal dropped from `where.mjs` only | **RED** — 3 assertions |
 
 **Verdict: real.** The string-for-string cross-check is load-bearing; the two gates cannot diverge
@@ -346,7 +346,7 @@ silently on this field.
 ### Task 4's `assertExportedSize` — RED
 
 `if (got.width !== row.width || got.height !== row.height)` → `if (false)` reddens
-`twin-dw-beat/test/produce.test.ts`. **Verdict: real.** Note it has never run against the API — there
+`dw-beat/test/produce.test.ts`. **Verdict: real.** Note it has never run against the API — there
 is no `DATAWRAPPER_TOKEN` on this branch and the round-trip test skips.
 
 ### `three-sizes-no-collision.test.ts` — the guard is real, its mutation table is not
@@ -366,7 +366,7 @@ It cannot go red, and the arithmetic says why. `padding.bottom` is
 `plot.bottom + X_TICK_DROP` (`:422`). Substituting, the baseline is
 `height − PAD − SOURCE.fontSize − X_AXIS_TO_SOURCE_GAP` — **`X_TICK_DROP` cancels out entirely.**
 Un-scaling it moves the plot floor and moves nothing else. `git log ee55c95a..HEAD --
-skills/twin-chart-beat/assets/ChartSeed.tsx` is empty, so the seed has not changed since the guard
+skills/chart-beat/assets/ChartSeed.tsx` is empty, so the seed has not changed since the guard
 was written: the claim was already false when it was typed.
 
 Three further mutations, all recorded or implied as the class this guard exists for, all **GREEN**:
@@ -400,7 +400,7 @@ as unguarded today as §1a measured it before the chantier started.
 
 ## 6. Tree state at the time of this audit
 
-`bun test skills/twin-chart-beat skills/twin-dw-beat skills/splash-twin skills/twin-storyboard` —
+`bun test skills/chart-beat skills/dw-beat skills/splash skills/storyboard` —
 **1268 pass, 3 skip, 1 fail** (48 files, 131s). The one fail is
 `claims-grounded-in-data.test.ts:751` — *"should find a beat script in the ancestry of every rendered
 artifact under `proof/`"* — listing 22 PNGs under `proof/portrait-aspect-probe/`. That is the

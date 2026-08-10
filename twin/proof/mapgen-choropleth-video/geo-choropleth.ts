@@ -1,6 +1,6 @@
 /**
  * The pure half of this choropleth beat: the study set, the join, the classes, the ramp, the ring
- * arithmetic, the claim check. A physical copy of `twin-map-beat/assets/geo.ts`'s shape, adapted —
+ * arithmetic, the claim check. A physical copy of `map-beat/assets/geo.ts`'s shape, adapted —
  * not an import — because a skill never reaches across another skill's boundary at runtime, and a
  * proof beat under `proof/` stays copy-pasteable on its own the same way.
  *

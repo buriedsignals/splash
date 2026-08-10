@@ -4,7 +4,7 @@
  * `ChartWebSeed.tsx`'s own `chartGeometry` draws for a single panel.
  *
  * Written fresh for this beat, not imported from `../more-small-multiples-co2-per-capita/`: a
- * skill/beat never imports another beat's files (`twin-chart-web/SKILL.md`, "duplicate, do not
+ * skill/beat never imports another beat's files (`chart-web/SKILL.md`, "duplicate, do not
  * link"), and that beat is a different genre (video) besides. The SHAPE below intentionally
  * mirrors that video beat's own `panelGeometry` — same shared-domain rule, same panel-slot
  * origin math — because both are honest readings of `small-multiples.md`'s one non-negotiable

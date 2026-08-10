@@ -6,13 +6,13 @@
  * this file adds is the one thing a static frame cannot have — a reader who can ask a bar for its
  * PRECISE reading and get it back, on top of the rounded value every bar already prints
  * unconditionally (`references/types/bar-and-column.md`: "every bar carries its own value, printed
- * directly outside the bar"). Read `twin-chart-web/references/web-discipline.md` before changing
+ * directly outside the bar"). Read `chart-web/references/web-discipline.md` before changing
  * this file.
  *
  * MIGRATED TO THE FLUID FRAME. This file used to ship two pre-rendered widths (900px and 360px)
  * swapped by a media query, handed to the skill's generic `renderWeb` as a `LAYOUTS` array. The
  * owner overturned that design: one frame, filling its container continuously, fitting the visible
- * window. The separation that makes it safe is the one `twin-chart-web/assets/ChartWebSeed.tsx`
+ * window. The separation that makes it safe is the one `chart-web/assets/ChartWebSeed.tsx`
  * teaches — the `<svg>` carries GEOMETRY ONLY (bars, the zero baseline, the hit bands; no `<text>`
  * at all), and every word is HTML at a FIXED pixel size, positioned by `%` over the same CSS grid
  * the bars are drawn in. Geometry stretches; type does not.

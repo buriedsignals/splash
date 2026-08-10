@@ -10,7 +10,7 @@
 // first) — a 940×420 landscape box (aspect ≈2.24, close to the corridor's own real-world aspect at
 // this latitude, ≈2.18), with title above and the wrapped legend below.
 //
-// A SECOND deliberate simplification from the two-resolution convention `twin-map-beat/SKILL.md`
+// A SECOND deliberate simplification from the two-resolution convention `map-beat/SKILL.md`
 // documents (still @496, video @620): this beat's still (rung 1) and video (rungs 2–3) draw their
 // map box at the EXACT SAME pixel size, 940×420, so ONE bake serves both genres. Nothing in
 // `geo-discipline.md` rule 2 requires two resolutions — only that a plate is drawn at the exact size

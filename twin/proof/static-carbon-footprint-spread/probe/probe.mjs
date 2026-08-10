@@ -32,7 +32,7 @@ import { Resvg } from "@resvg/resvg-js";
 import {
   FONT_FAMILY,
   readPalette,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import { ProbeHistogram } from "./ProbeHistogram.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

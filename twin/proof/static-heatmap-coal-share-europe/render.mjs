@@ -11,7 +11,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/chart-beat/render-still.mjs";
 import { CoalShareHeatmap, formatCell } from "./CoalShareHeatmap.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

@@ -3,7 +3,7 @@
 // This beat's own WEB runner — same shape `../web-income-life-expectancy/render-web.mjs` and
 // `../co2-suisse/render-web.mjs` have: the story's own constants, its own CSV reader, its own
 // component and layouts, handed to the genre's generic `renderWeb`
-// (`twin-chart-web/scripts/render-web.mjs`), then PATCHED the same way
+// (`chart-web/scripts/render-web.mjs`), then PATCHED the same way
 // `web-income-life-expectancy/render-web.mjs`'s `patchForThisBeat` patches its own output — see
 // that file's own header comment for why the patch exists at all (nothing in the skill's own
 // `renderWeb` may import a story's files, so language and the inlined interaction script are
@@ -20,8 +20,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
-import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
+import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import { SmallMultiplesCo2Web, FRAME } from "./SmallMultiplesCo2Web.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));

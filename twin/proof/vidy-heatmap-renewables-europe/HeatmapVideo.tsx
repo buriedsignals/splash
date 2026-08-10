@@ -10,7 +10,7 @@
  * `FONT_FAMILY`, `measureText` and `wrap` ARE this story's own copies of the other proof
  * workspaces' functions of the same name — not an import from any of them, per the
  * duplicate-do-not-link rule (`../video-population-growth-dumbbell/DumbbellVideo.tsx`'s file
- * doc-comment explains why: this story lives outside `twin-chart-video`'s skill boundary, and the
+ * doc-comment explains why: this story lives outside `chart-video`'s skill boundary, and the
  * settled rule for a workspace that needs something a skill has is to duplicate it, not reach back
  * across the boundary).
  *
@@ -24,7 +24,7 @@
  * landed, and the beat closes by naming that fact in words and by fading in the grid's final-column
  * numbers, one per row, each labelled in a colour chosen by that cell's own fill.
  *
- * COLOUR: the heatmap type doctrine (`twin-chart-beat/references/types/heatmap.md`) requires a
+ * COLOUR: the heatmap type doctrine (`chart-beat/references/types/heatmap.md`) requires a
  * SEQUENTIAL ramp — luminance moving in one direction only, verified mechanically, not by eye —
  * and every stop clearing at least 3:1 contrast against the REAL ground the cells are drawn on,
  * not an assumed white. `rampAnchors` derives both ends from the ground actually passed in and
@@ -55,13 +55,13 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   assertTypeFloor,
   frameInsetFor,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 import { HEATMAP_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -457,7 +457,7 @@ export function HeatmapVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = height - PAD;
   // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
@@ -643,7 +643,7 @@ export function HeatmapVideo({
             outline — never two nodes, one over the other. Drawn as an outline grid under a
             separately-fading fill grid, every cell spent its column's window as a half-opaque
             colour over the ground, reading as a lighter class than the one the ramp assigned it —
-            the same defect `twin-map-beat/SKILL.md:194-203` records for a choropleth. */}
+            the same defect `map-beat/SKILL.md:194-203` records for a choropleth. */}
         {data.map((row, i) =>
           years.map((year, j) =>
             colOpacity[j] > 0 ? null : (

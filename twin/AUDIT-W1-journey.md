@@ -59,14 +59,14 @@ above a table of five rows. That is a live false statement in the one document t
 driven from. Filed as a hole (H6).
 
 **D3 — the phase table was not replaced by §1's table. UNNOTICED DRIFT, mostly harmless.**
-T5 item 4 required `splash-twin/SKILL.md:196-211`'s phase table to *become* §1's fifteen-row table.
+T5 item 4 required `splash/SKILL.md:196-211`'s phase table to *become* §1's fifteen-row table.
 Shipped (`SKILL.md:272-280`): the six phases `whereIs` recovers, with G1/G2a/G2b/G2c and G3 folded
 in and a stated reason for the fold. Reasonable. Two consequences are not harmless and are filed
 below: there is **no PREFLIGHT row** and **no G4** (see M2 and H1).
 
 **D4 — `checkStoryboard`'s docs were half-updated. REGRESSION (a false statement).**
 `storyboard.mjs:203` genuinely takes one argument, and the file header (`:8-19`) says so. But
-`twin-storyboard/SKILL.md:206-210` still reads *"`groundTakeaway`, the claim-grounding guard
+`storyboard/SKILL.md:206-210` still reads *"`groundTakeaway`, the claim-grounding guard
 `checkStoryboard` calls when given a profile"* and *"`capabilityGap` … the guard `checkStoryboard`
 calls when given `capabilities`"*. T2 item 3 asked for exactly these rows. Nothing in the tree
 catches it: `skill-md-matches-code.test.ts` reads the Architecture table's File column and the
@@ -74,7 +74,7 @@ Tuning-knobs Where column, not the Files section's prose.
 
 **D5 — the guard T1 promised is not the guard that fires. UNNOTICED DRIFT.**
 Spec §3: *"delete `sum` from `profileTable` → case 1 red (falls to `unverifiable`)"*. Measured (M2):
-`ground-claim.test.ts` stays **green**; only `twin-intake/test/profile.test.ts` reddens. The reason
+`ground-claim.test.ts` stays **green**; only `intake/test/profile.test.ts` reddens. The reason
 is that every `ground-claim.test.ts` fixture hand-builds its column objects (`:50`, `:84-99`) — the
 real `profileTable` is never in the loop. See H3: the seam that produced the original defect has no
 test at all.
@@ -118,7 +118,7 @@ Consistent with D3's fold, and stated there; recorded because §1 promises a pha
 `.env` / `NEWSROOM.md` and nothing recovers or checks that state.
 
 **M4 — the CLOSE phase (§1 row 15) exists only as a never-list bullet.**
-`splash-twin/SKILL.md:311-318` carries the rule. There is no phase, and
+`splash/SKILL.md:311-318` carries the rule. There is no phase, and
 `stories/<slug>/NOTES-FOR-MAINTAINER.md` is written by nothing in the tree — it is a convention the
 model is asked to honour. `formatHandover`'s throw is the only mechanical half, and it guards the
 delivered document, not the conversation.
@@ -187,7 +187,7 @@ later phase than the check that owns the question — on a new axis.
 ### H2 — `export/` is story-level and `materialise` wipes it every call.
 
 `deliver.mjs:341` — `rm(exportDir, {recursive:true, force:true})` on every `materialise`.
-`where.mjs:293` reads `<storyDir>/export`. `twin-deliver/SKILL.md:48-49` documents the wipe as a
+`where.mjs:293` reads `<storyDir>/export`. `deliver/SKILL.md:48-49` documents the wipe as a
 feature (a journalist changing their mind), and nothing anywhere states that `exportDir` should be
 per-beat. On a two-beat story delivering into one `export/`, **beat 2's delivery destroys beat 1's
 delivered files**. No test covers two beats delivering (`deliver.test.ts:11-17` uses one
@@ -197,7 +197,7 @@ delivered files**. No test covers two beats delivering (`deliver.test.ts:11-17` 
 
 `groundTakeaway` is only ever exercised against hand-built profile fixtures
 (`ground-claim.test.ts:50, 84-99`). `profileTable`'s real output has never been fed to it —
-confirmed: no `twin-storyboard` test imports `twin-intake`. The original defect was *systematic on a
+confirmed: no `storyboard` test imports `intake`. The original defect was *systematic on a
 real profile* because `profileTable` emits no `rows`, so `checkNumericRanges` was the only check that
 ever fired. T1 added `sum` on one side and a `sum` arm on the other and never joined them. M2 shows
 the consequence: deleting `sum` from `profileTable` leaves `ground-claim.test.ts` green.
@@ -206,7 +206,7 @@ the consequence: deleting `sum` from `profileTable` leaves `ground-claim.test.ts
 
 `groundTakeaway` returns an **array** of claims, each with its own verdict. `grounding:` is a
 **single** scalar with a three-value vocabulary. Neither the spec, `exchange.md:27-35`,
-`twin-storyboard/SKILL.md:120-145` nor any test states the rule. A real takeaway carrying five
+`storyboard/SKILL.md:120-145` nor any test states the rule. A real takeaway carrying five
 numbers typically returns one `supported` and four `unverifiable` (every bare integer is
 range-tested — `NUMBER_RE`, `ground-claim.mjs:47`). Which single word closes G1 is entirely the
 model's call, and `supported` is the one that lets it proceed. §4's "a recorded verdict is trusted"
@@ -256,7 +256,7 @@ installer chantier.
 
 ### H9 — the genre half of the producer table is unguarded.
 
-M7c: pointing `"map/web"` at `twin-map-beat` and `"chart/web"` at `twin-chart-video` leaves
+M7c: pointing `"map/web"` at `map-beat` and `"chart/web"` at `chart-video` leaves
 `genre-shippability.test.ts` **completely green** (34 pass, 0 fail). The third assertion
 (`:40-45`) proves the producer names *itself* and names the *medium*; nothing proves it produces the
 *genre*. Spec §12.2 identified exactly this hole for medium and closed it; the symmetric half was
@@ -311,9 +311,9 @@ untracked `proof/portrait-aspect-probe/*.png`. No W1 test is red in this tree.
 | M4 | `where.test.ts` | `where.mjs` drops `"grounding"` from `REQUIRED_SCALARS` only | **RED ×7** |
 | M5 | `where.test.ts` | `storyboard.mjs` drops `"reachable"` from `REQUIRED_SLOT_FIELDS` only | **RED ×3** |
 | M6 | `where.test.ts` | hard-code the fixture list **and** add a fifth scalar to both gates | **RED ×10**, incl. `should generate a fixture for every required field on both sides` **by name** |
-| M7 | `genre-shippability.test.ts` | `map/web` → `twin-chart-web` | **RED ×1** |
-| M7b | `genre-shippability.test.ts` | `map/scrolly` → `twin-chart-web`; `image/static` → `twin-chart-beat` | **RED ×2** |
-| M7c | `genre-shippability.test.ts` | `map/web` → `twin-map-beat`; `chart/web` → `twin-chart-video` | **GREEN — the hole (H9)** |
+| M7 | `genre-shippability.test.ts` | `map/web` → `chart-web` | **RED ×1** |
+| M7b | `genre-shippability.test.ts` | `map/scrolly` → `chart-web`; `image/static` → `chart-beat` | **RED ×2** |
+| M7c | `genre-shippability.test.ts` | `map/web` → `map-beat`; `chart/web` → `chart-video` | **GREEN — the hole (H9)** |
 | M8 | `genre-shippability.test.ts` | drop `scrolly` from `FORMS_BY_GENRE`, keep both catalog rows | **RED ×4** |
 | M9 | `type-survey.test.ts` | add a type sheet without regenerating | **RED ×2** |
 | M10 | `type-survey.test.ts` | hand-edit a purpose sentence in the generated file | **RED ×1** |
@@ -351,11 +351,11 @@ independently.
    about a gate, which is what W1 was for.
 2. **H5, H6, H7, D4** — four prose corrections, each currently a false statement to a model or a
    journalist: `exchange.md:140` (`fluid`), `exchange.md:37/40/97` (four → five),
-   `splash-twin/SKILL.md:127` (Cloudflare is probed), `twin-storyboard/SKILL.md:206-210`
+   `splash/SKILL.md:127` (Cloudflare is probed), `storyboard/SKILL.md:206-210`
    (`checkStoryboard` takes one argument).
 3. **H3** — one test feeding `profileTable`'s real output to `groundTakeaway`. It is the seam A13
    lived in and it is still untested.
-4. **H4** — state the collapse rule for `grounding:` in `exchange.md` and `twin-storyboard/SKILL.md`,
+4. **H4** — state the collapse rule for `grounding:` in `exchange.md` and `storyboard/SKILL.md`,
    or make `groundTakeaway` return the scalar.
 5. **M1/M2** — decide whether `HANDOVER.md` is optional or is G4. Both are defensible; the tree
    currently claims one and implements the other.

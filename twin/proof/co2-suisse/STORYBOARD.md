@@ -64,7 +64,7 @@ Confirmé verbatim, écrit tel quel dans `takeaway:`.
 
 ## ④ La boucle de références
 
-Le jeu de références livré (`twin-doctrine/references/reference-set.md`) **ne contient aucune ligne
+Le jeu de références livré (`doctrine/references/reference-set.md`) **ne contient aucune ligne
 sur cette structure d'argument** — une série temporelle longue relue contre un niveau historique.
 Ses quatre lignes portent sur des marques individuelles (NYT Upshot), des simulations répétées
 (Washington Post), un modèle 3D fixe (NYT Visual Investigations) et une carte synchronisée à un

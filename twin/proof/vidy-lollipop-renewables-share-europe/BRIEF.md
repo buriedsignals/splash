@@ -20,7 +20,7 @@ must include zero, full stop.
 - Source: Ember (2026) and the Energy Institute – Statistical Review of World Energy (2025), via Our
   World in Data, `electricity-mix` indicator (`metric=share_of_generation&source=renewables&frequency=annual`).
 - Fetched: `https://ourworldindata.org/grapher/electricity-mix.csv?v=1&csvType=filtered&useColumnShortNames=false&frequency=annual&metric=share_of_generation&source=renewables&country=~CHE~NOR~ISL~SWE~AUT~DNK~PRT~DEU~ESP~GBR~FRA~ITA~POL~NLD~FIN`
-- **A sharper version of the known OWID CSV filter trap** (`twin-intake/references/ourworldindata-csv-filter-trap.md`):
+- **A sharper version of the known OWID CSV filter trap** (`intake/references/ourworldindata-csv-filter-trap.md`):
   the classic `share-electricity-renewables` grapher slug now 301-redirects to a multi-dimensional
   "Data Explorer" indicator (`electricity-mix`), and for THAT kind of indicator `&csvType=filtered`
   **has no effect at all** — `&country=~CHE` and `&country=~CHE~NOR~ISL~...` both still returned
@@ -84,7 +84,7 @@ bold label) once every row — including its own — has already landed, never b
   `subject` event recolours it; painting it accent-coloured from the moment it lands during `reveal`
   would spend the one accent before the subject event earns it.
 - Value labels are always in page `ink`, never in `accent` — this type's own named, previously-shipped
-  WCAG failure (`twin-chart-beat/references/types/lollipop.md`): a saturated accent hue reads fine as
+  WCAG failure (`chart-beat/references/types/lollipop.md`): a saturated accent hue reads fine as
   a thin stem/dot but fails 4.5:1 as running text.
 - The category-label gutter is sized to the widest name actually drawn ("United Kingdom"), measured,
   not guessed — the same failure class as the dumbbell and slope beats' label gutters.

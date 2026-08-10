@@ -6,9 +6,9 @@
 // inlined interaction script, and — since ruling R1 (2026-08-10) — a LIVE MapTiler map layered
 // under all of it.
 //
-// This is this beat's OWN copy of `twin-map-web/scripts/render-web.mjs`'s machinery, adapted to this
+// This is this beat's OWN copy of `map-web/scripts/render-web.mjs`'s machinery, adapted to this
 // beat's own component (`LocatorWeb`) and table (`OrgTable`) — nothing here imports out of
-// `twin-map-web` or across beats (a beat's own render script is its own, the same rule
+// `map-web` or across beats (a beat's own render script is its own, the same rule
 // `geo-locator.ts`'s own header states for the pure core).
 //
 // THE TWO-RUNG `layouts` API IS GONE (B5.1). This script used to SSR one whole SVG frame per
@@ -49,7 +49,7 @@ import {
 } from "./geo-locator.ts";
 // `readPalette` and `seriesInks` come from the SHARED copy through the `#shared/…` subpath alias —
 // a beat is a story, not a skill, so it may reach out where a skill may not.
-import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Resolved through node's own module resolution, never by a relative path out of this beat.
@@ -120,8 +120,8 @@ const OUTPUT_NAME = "locator.html";
  * published article; it did not accept an unbounded public leak, and the two are different
  * exposures. Every map × web beat commits its rendered HTML, and the FJM deliverable is an MIT
  * open-source release, so a real key here would be scanned by bots within minutes of the push and
- * would survive in the history after any later removal. `twin-deliver` substitutes the real key at
- * the moment the file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts`
+ * would survive in the history after any later removal. `deliver` substitutes the real key at
+ * the moment the file goes to a newsroom; `splash/test/no-key-in-the-repository.test.ts`
  * reddens if one ever reaches a tracked file.
  *
  * The delivered key should be a SECOND, origin-restricted MapTiler key, not the development one:

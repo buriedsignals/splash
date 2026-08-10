@@ -5,15 +5,15 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as documented in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md`.
+`skills/splash/assets/root-template/NEWSROOM.example.md`.
 
-`twin-palette`'s proposal was run for this beat's own subject line — *"four photographs of Grinnell
+`palette`'s proposal was run for this beat's own subject line — *"four photographs of Grinnell
 Glacier from the same viewpoint, 1938 to 2009"* — and returned **one** option, the house theme:
 `matchConvention` fires on none of the four grounded conventions. `water` was the near miss and it
 does not fire, correctly: its own vocabulary is river, rainfall, flood, drought — a body of water as
 a SUBJECT to be encoded, not a lake that happens to appear in a photograph. Reaching for blue here
 because there is meltwater in the frame would be a colour chosen for what the picture looks like,
-which is the move `twin-palette/references/subject-conventions.md` refuses.
+which is the move `palette/references/subject-conventions.md` refuses.
 
 **And on this beat the accent has no job at all, which is worth stating rather than leaving as an
 absence.** The photographs are the entire visual; nothing on any frame encodes a value, so there is

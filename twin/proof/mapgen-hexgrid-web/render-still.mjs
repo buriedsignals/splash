@@ -1,8 +1,8 @@
 // twin/proof/mapgen-hexgrid-web/render-still.mjs
 //
 // Runs inside a Splash root: uses `react-dom/server` and `@resvg/resvg-js` from the root's
-// dependencies. This beat's own physical copy of `twin-map-web/scripts/render-still.mjs` —
-// a byte-identical copy of `twin-chart-beat`'s, kept in step by hand (a skill never imports another
+// dependencies. This beat's own physical copy of `map-web/scripts/render-still.mjs` —
+// a byte-identical copy of `chart-beat`'s, kept in step by hand (a skill never imports another
 // skill, and a proof beat never imports out of a skill or another proof beat either — every beat in
 // this twin carries its own copies of the plumbing it needs).
 //
@@ -149,7 +149,7 @@ export async function renderStill({
   // The default stays 2 because the un-migrated statics are still drawn at 900x560 and its
   // neighbours, and retiring it for them would ship 900px stills. A beat that pins an export size
   // passes 1, and its delivered PNG then measures exactly what gate 2c chose. The remaining count
-  // is held by `splash-twin/test/delivered-size-matches-the-pin.test.ts` as a number that may only
+  // is held by `splash/test/delivered-size-matches-the-pin.test.ts` as a number that may only
   // go down — an inconsistency with a ratchet on it rather than an inconsistency.
   scale = 2,
 }) {

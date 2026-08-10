@@ -23,7 +23,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 
 export type Bin = { lo: number; hi: number; count: number };
 export type Arm = "stretch" | "capped" | "furnished";

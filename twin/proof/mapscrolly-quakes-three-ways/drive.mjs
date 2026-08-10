@@ -85,7 +85,7 @@ function readKey() {
  *  the placeholder, so driving the committed file directly would drive a page with no live map on
  *  it and measure the fallback while calling it the map. A `mkdtemp` copy with the key substituted
  *  is the same page a newsroom is delivered, and the key never touches a tracked file — the same
- *  arrangement `verify-live-tiles.mjs` and `twin-map-web/scripts/verify-live-map.mjs` use.
+ *  arrangement `verify-live-tiles.mjs` and `map-web/scripts/verify-live-map.mjs` use.
  *  `--no-key` serves the committed file as it stands, which is how the FALLBACK is driven. */
 function servedCopy({ keyed }) {
   const dir = mkdtempSync(join(tmpdir(), "quakes-drive-"));

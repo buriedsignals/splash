@@ -3,7 +3,7 @@
  * genre.
  *
  * SECOND BUILD, migrated to the FLUID FRAME this genre now teaches
- * (`twin-chart-web/assets/ChartWebSeed.tsx`, `references/web-discipline.md` "Responsive
+ * (`chart-web/assets/ChartWebSeed.tsx`, `references/web-discipline.md` "Responsive
  * behaviour"). Its first build SSR'd two pre-rendered rungs (900px and 360px) swapped by a media
  * query; the owner overturned that in favour of one continuously-adaptive frame, and the genre's
  * `renderWeb` no longer accepts a `layouts` array at all. The split that makes a continuous fill
@@ -14,7 +14,7 @@
  *
  * Not imported from the static sibling `proof/more-line-swiss-life-expectancy/LifeExpectancyLine.tsx`
  * either: that file bakes its words into SVG `<text>` and reaches for
- * `#shared/twin-chart-beat/render-still.mjs` directly, neither of which fits this genre's
+ * `#shared/chart-beat/render-still.mjs` directly, neither of which fits this genre's
  * geometry-only / props-supplied-furniture shape.
  *
  * What hover/tap/keyboard-focus adds here: the frame prints exactly three numbers — the 1950

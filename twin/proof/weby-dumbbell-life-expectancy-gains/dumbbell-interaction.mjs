@@ -1,6 +1,6 @@
 // twin/proof/weby-dumbbell-life-expectancy-gains/dumbbell-interaction.mjs
 //
-// This beat's OWN interaction script — not `twin-chart-web/assets/interaction.mjs` (the line
+// This beat's OWN interaction script — not `chart-web/assets/interaction.mjs` (the line
 // genre's `nearestIndex`-by-x mechanic, wrong here) and not
 // `web-income-life-expectancy/scatter-interaction.mjs` (nearest-by-2D-distance over a shared
 // `.hit-area`, also wrong here). `render-web.mjs` inlines THIS file instead, the same way both of

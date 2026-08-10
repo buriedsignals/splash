@@ -3,8 +3,8 @@
  * formatting the axis and the per-point detail speak. No colour, no font, no React: the same split
  * `proof/co2-suisse/crossing-geometry.ts` keeps for its own (line) beat.
  *
- * Structurally different from that sibling module, and from `twin-chart-web/assets/ChartWebSeed.tsx`,
- * for the reason `twin-chart-beat/references/types/scatter.md` names as this chart type's whole
+ * Structurally different from that sibling module, and from `chart-web/assets/ChartWebSeed.tsx`,
+ * for the reason `chart-beat/references/types/scatter.md` names as this chart type's whole
  * point: BOTH axes here are measured values, not one measured value against time. x is GDP per
  * capita on a LOG scale (income is famously skewed — a linear axis crushes every poor country into
  * the left edge and hides the relationship's actual shape, the doctrine's own words); y is life

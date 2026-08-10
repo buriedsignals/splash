@@ -1,7 +1,7 @@
 // twin/proof/vidx-grouped-bar-co2-per-capita/render.mjs
 //
 // This story's own render script — the render ladder's second rung, same shape as
-// `twin-chart-video/scripts/render-video.mjs` and the other proof workspaces' (read the frozen
+// `chart-video/scripts/render-video.mjs` and the other proof workspaces' (read the frozen
 // CSV, still-first, then mp4), its own story constants.
 //
 // Usage:  bun proof/vidx-grouped-bar-co2-per-capita/render.mjs [--still-only] [--size <name>] [--data <csv>] [--out <dir>]
@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import {
   deriveFurniture,
   readPalette,
-} from "../../skills/twin-chart-video/scripts/render-still.mjs";
+} from "../../skills/chart-video/scripts/render-still.mjs";
 // The VIDEO genre's own size table (landscape floor 30, type scale 2.5), and the type-vs-size
 // question, which is craft-neutral and therefore has one copy serving both genres.
 import {
@@ -21,8 +21,8 @@ import {
   readPinnedSize,
   readPngSize,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");

@@ -8,7 +8,7 @@
  * `crossingGeometry` / `migrationGeometry` / `lifeExpectancyGeometry`. `FONT_FAMILY`, `measureText`
  * and `wrap` ARE this story's own copies of the other proof workspaces' functions of the same name
  * — not an import from any of them, per the duplicate-do-not-link rule (`../migration/MigrationVideo.tsx`'s
- * file doc-comment explains why: this story lives outside `twin-chart-video`'s skill boundary, and
+ * file doc-comment explains why: this story lives outside `chart-video`'s skill boundary, and
  * the settled rule for a workspace that needs something a skill has is to duplicate it, not reach
  * back across the boundary). `drawnSoFar` is NOT copied here — nothing in this beat traces a
  * continuously-drawing path; every mark pops into place at a fixed coordinate, so there is no
@@ -24,7 +24,7 @@
  * its own connector has landed, not before — `checkTiming`'s ordering rule makes that structurally
  * true, since `subject` cannot start until `reveal` (all ten rows) has fully finished.
  *
- * COLOUR: the dumbbell type doctrine (`twin-chart-beat/references/types/dumbbell.md`) caps colour
+ * COLOUR: the dumbbell type doctrine (`chart-beat/references/types/dumbbell.md`) caps colour
  * at exactly two hues, one per SERIES, reused on every row — that channel is already spent encoding
  * "2000 vs 2023" before Switzerland's own emphasis can use it. `visual-system.md`'s grammar gives
  * the natural assignment: 2000 is the series "the subject is compared against" (neutral, `muted`),
@@ -57,13 +57,13 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   assertTypeFloor,
   frameInsetFor,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 import { DUMBBELL_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -364,7 +364,7 @@ export function DumbbellVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves: it fades in with the title and is still there at
-  // the last frame. See twin-chart-beat/references/static-discipline.md, "The source on the
+  // the last frame. See chart-beat/references/static-discipline.md, "The source on the
   // frame's bottom margin".
   const sourceBaseline = height - PAD;
   // The legend keeps the air it always had above it, measured from the LAST TITLE line rather

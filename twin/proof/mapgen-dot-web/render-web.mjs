@@ -8,9 +8,9 @@
 // the plan the live layer reads. The page makes exactly one external request, to api.maptiler.com;
 // with no network, no key or no JavaScript it renders the fallback complete.
 //
-// This is this beat's OWN copy of `twin-map-web/scripts/render-web.mjs`'s machinery, adapted to a
+// This is this beat's OWN copy of `map-web/scripts/render-web.mjs`'s machinery, adapted to a
 // type that skill's seed does not carry. Nothing here imports out of a skill or across beats, except
-// `#shared/twin-chart-beat/render-still.mjs` for `readPalette` — the one module in this tree that
+// `#shared/chart-beat/render-still.mjs` for `readPalette` — the one module in this tree that
 // reads a recorded colour answer.
 //
 // EVERY NUMBER A READER SEES IS COMPUTED HERE, from the frozen csv and the frozen plate, and printed
@@ -30,7 +30,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import { deriveFurniture } from "./render-still.mjs";
 import {
   DotDensityWeb,
@@ -99,8 +99,8 @@ const ALIAS = { KOS: "XKX" };
  * published article; it did not accept an unbounded public leak, and the two are different
  * exposures. This beat COMMITS its rendered HTML beside itself and the FJM deliverable is an MIT
  * open-source release, so a real key here would be scanned by bots within minutes of the push and
- * would survive in the history after any later removal. `twin-deliver` substitutes the real key at
- * the moment the file goes to a newsroom; `splash-twin/test/no-key-in-the-repository.test.ts`
+ * would survive in the history after any later removal. `deliver` substitutes the real key at
+ * the moment the file goes to a newsroom; `splash/test/no-key-in-the-repository.test.ts`
  * reddens if one ever reaches a tracked file.
  *
  * The delivered key should be a SECOND, origin-restricted MapTiler key, not the development one:
@@ -264,7 +264,7 @@ export function livePlan({
     // THE FLOOR UNDER THE READER'S LEASH, and it is derived from THIS beat's own claim rather than
     // from its frame.
     //
-    // `twin-map-web`'s seed derives it as the headroom its plate holds over its study set
+    // `map-web`'s seed derives it as the headroom its plate holds over its study set
     // (`maxZoomForStudySet` minus the bake's zoom). That is the right quantity for a plate baked
     // wider than its subject, and it is worth **0.032 of a zoom level** here — because `bake.mjs`
     // deliberately chose its camera AS the study set's own mainland extent (67.19° of frame over

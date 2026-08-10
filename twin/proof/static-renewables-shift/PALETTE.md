@@ -5,12 +5,12 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`).
 
 **A subject convention DOES fire here, and it was not taken.** The subject is renewable
 electricity's share of generation, and `matchConvention` returns the `renewables` entry — green,
-`#1B7F4B` — alone and unambiguously. `twin-palette` offers a convention as a DEPARTURE from the
+`#1B7F4B` — alone and unambiguously. `palette` offers a convention as a DEPARTURE from the
 house theme, never as an override: the newsroom's identity is the default and a convention is a
 reason to leave it for one beat. That reason was not taken on this beat, and this file is where that
 shows. Recording it as `newsroom` says who chose, which is the point of the field; a journalist who

@@ -4,7 +4,7 @@
 // `render-web.mjs` (which strips the `export` keyword from each top-level declaration so this file
 // can also sit as a plain classic `<script>` — no `type="module"`, no bundler, so it keeps working
 // in a CMS iframe or a sandboxed embed that restricts module scripts). This beat's OWN physical copy
-// of `twin-map-web/assets/interaction.mjs` — nothing under a beat may import out of a skill or
+// of `map-web/assets/interaction.mjs` — nothing under a beat may import out of a skill or
 // another beat.
 //
 // EVERYTHING BELOW THIS HEADER IS THE SEED'S FILE, BYTE FOR BYTE, and it converged back to it when
@@ -16,7 +16,7 @@
 // nothing: `show()` always read `data-detail` off whichever element fired, and
 // `getBoundingClientRect()` works the same on a `<path>` as on a `<button>`.
 //
-// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `twin-doctrine`'s own
+// `initPoints`/`initAll` are DOM wiring and are NOT unit-tested here: per `doctrine`'s own
 // verification rule, an interactive genre is verified by driving a real browser, not by asserting
 // against a DOM emulation nobody looked at (`references/map-web-discipline.md`, "Verification").
 

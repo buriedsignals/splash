@@ -3,7 +3,7 @@
  * seconds, 30fps, 1080 × 1080.
  *
  * TYPE: slope (slopegraph). Its own pure geometry below (`slopeGeometry`, `deconflictLabels`) —
- * not imported from anywhere, because this story lives outside `twin-chart-video`'s skill
+ * not imported from anywhere, because this story lives outside `chart-video`'s skill
  * boundary (`proof/vidx-slope-child-mortality/`); the settled rule for a story that needs
  * something a skill has is to duplicate it, never reach back across the boundary. `FONT_FAMILY`,
  * `measureText`, `wrap` are this story's own copies of `EmissionsVideo.tsx`'s functions of the
@@ -33,13 +33,13 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 import {
   assertTypeFloor,
   frameInsetFor,
   sizeFor,
-} from "#shared/twin-chart-video/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-video/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 import { SLOPE_TIMING } from "./timing-contract";
 
 /** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
@@ -356,7 +356,7 @@ export function SlopeVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on
   // `height - PAD`, the same inset the title hangs off at the top, on the same x. It stays inside
   // the furniture opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
   // The caption keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.

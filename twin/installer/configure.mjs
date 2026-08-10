@@ -28,7 +28,7 @@
 // page asked the journalist for things it could have measured, and stayed silent about things it
 // had already decided for them:
 //
-//   A. **It offers the derivation.** `twin-newsroom-charter` reads a newsroom's own site and
+//   A. **It offers the derivation.** `newsroom-charter` reads a newsroom's own site and
 //      proposes the charter with the declaration each value was read from. The page used to merely
 //      NAME that skill in a sentence; now `POST /derive` runs it, and the proposal arrives WITH its
 //      evidence so the journalist confirms or corrects rather than accepting a black box. The
@@ -42,7 +42,7 @@
 //      do), never from a second list kept here, and it is asked in DRY-RUN: this page reports the
 //      doors, `place-skills.mjs` places them.
 //
-//   C. **It collects the CMS credential.** `twin-deliver` builds We.Publish and Livingdocs mutation
+//   C. **It collects the CMS credential.** `deliver` builds We.Publish and Livingdocs mutation
 //      shapes and sends neither, and there was nowhere for an endpoint or a token to live. Now
 //      there is, through the same `recordKey` path at `0600`. It is NOT probed and the field says
 //      so in its own help text: every other key here is verified against its real service first,
@@ -68,14 +68,14 @@ const HOME = resolve(flag("--home", homedir()));
 const IDLE_MS = Number(flag("--idle-ms", String(30 * 60 * 1000)));
 
 const { recordKey, probeMapTiler, probeDatawrapper, probeCloudflare } = await import(
-  join(ROOT, "skills", "splash-twin", "scripts", "keys.mjs")
+  join(ROOT, "skills", "splash", "scripts", "keys.mjs")
 );
 const { parseNewsroom, validateNewsroom } = await import(
-  join(ROOT, "skills", "splash-twin", "scripts", "newsroom.mjs")
+  join(ROOT, "skills", "splash", "scripts", "newsroom.mjs")
 );
 // The CMS kinds the delivery form actually knows how to build a mutation for — read from the file
 // that builds them, so the page can never offer a third kind nothing downstream can honour.
-const { CMS_KINDS, buildInsertion } = await import(join(ROOT, "skills", "twin-deliver", "scripts", "cms-insert.mjs"));
+const { CMS_KINDS, buildInsertion } = await import(join(ROOT, "skills", "deliver", "scripts", "cms-insert.mjs"));
 
 /**
  * What each offered CMS would actually be sent, ASKED OF THE BUILDER rather than described from
@@ -194,7 +194,7 @@ function httpUrl(raw) {
 // the language of a visual follow the ARTICLE and be confirmed with the journalist, and with one
 // recorded language that confirmation had nothing to check against. `accents` (beside, never
 // instead of, `brandColor`) because a house palette is rarely one colour: `brandColor` stays the
-// primary, and twin-palette scores every recorded accent against the ground, so a longer list is
+// primary, and palette scores every recorded accent against the ground, so a longer list is
 // not a way past the contrast floor. A `NEWSROOM.md` written before either field existed stays
 // valid and means exactly what it always meant — `newsroomLanguages`/`newsroomAccents` read both
 // shapes.
@@ -502,7 +502,7 @@ const askFor = (field) => `Give your ${labelOf(field).replace(/ \(optional\)$/, 
 const questionFor = (field) => `Your site does not declare it — ${askFor(field).replace(/^Give/, "give")}`;
 
 /**
- * Run `twin-newsroom-charter` against a site the journalist named, and hand back a proposal with
+ * Run `newsroom-charter` against a site the journalist named, and hand back a proposal with
  * its evidence. It WRITES NOTHING — that is the skill's own rule 2 and this is its caller, so the
  * rule has to hold here too; `/submit` remains the only path to disk.
  *
@@ -526,7 +526,7 @@ async function derive(payload) {
     // Loaded HERE rather than at startup, deliberately: a root missing this skill should cost the
     // journalist the derivation and a readable line saying so, not the whole setup page — the form
     // is what writes, and it must stay usable whatever the network or the tree does.
-    const { deriveCharter } = await import(join(ROOT, "skills", "twin-newsroom-charter", "scripts", "derive-charter.mjs"));
+    const { deriveCharter } = await import(join(ROOT, "skills", "newsroom-charter", "scripts", "derive-charter.mjs"));
     proposal = await deriveCharter({ url: checked.url, fetchFn: fetch });
   } catch (error) {
     // `deriveCharter` documents that it never throws. If that ever stops being true — or if the
@@ -676,7 +676,7 @@ async function submit(payload) {
   const given = NEWSROOM_FIELDS.filter((f) => (payload[f.name] ?? "").trim() !== "");
   if (given.length === 0) {
     lines.push(
-      "no newsroom profile given — preflight will report `newsroom-profile: missing`, which is the prompt to derive one with twin-newsroom-charter or to record a decline.",
+      "no newsroom profile given — preflight will report `newsroom-profile: missing`, which is the prompt to derive one with newsroom-charter or to record a decline.",
     );
     return { ok: true, lines };
   }

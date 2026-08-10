@@ -12,7 +12,7 @@ import { createElement } from "react";
 import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
-import { readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/render-still.mjs";
 import { HexGridStill, stillFrameHeight } from "./HexGridStill.tsx";
 import {
   cellMembers,

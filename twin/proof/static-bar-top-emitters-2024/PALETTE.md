@@ -7,7 +7,7 @@ origin: newsroom
 The answer recorded for this beat: the newsroom's own house colours, as documented in
 `NEWSROOM.example.md`.
 
-`twin-palette`'s subject option had nothing to offer here and said so. The subject is a country's
+`palette`'s subject option had nothing to offer here and said so. The subject is a country's
 share of global CO₂ emissions — `matchConvention` returns nothing for it, because none of the four
 grounded conventions (renewables, fossil, water, heat) fires on "CO₂ emissions" as a phrase, and
 inventing a fifth for this one beat would be a colour that "feels right" rather than one a reader

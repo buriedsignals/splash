@@ -9,7 +9,7 @@
  * `measureText`, `wrap` and `en` ARE this story's own copies of the other proof workspaces'
  * functions of the same name — not an import from any of them, per the duplicate-do-not-link rule
  * (`../video-population-growth-dumbbell/DumbbellVideo.tsx`'s file doc-comment explains why: this
- * story lives outside `twin-chart-video`'s skill boundary, and the settled rule for a workspace that
+ * story lives outside `chart-video`'s skill boundary, and the settled rule for a workspace that
  * needs something a skill has is to duplicate it, not reach back across the boundary). `drawnSoFar`
  * is NOT copied here — nothing in this beat traces a continuously-drawing path; every stem grows
  * toward a fixed final coordinate along one straight line, so there is no partial-path head to
@@ -24,7 +24,7 @@
  * already landed, never before — `checkTiming`'s ordering rule makes that structurally true, since
  * `subject` cannot start until `reveal` (all fourteen rows) has fully finished.
  *
- * COLOUR: the lollipop type doctrine (`twin-chart-beat/references/types/lollipop.md`) allows exactly
+ * COLOUR: the lollipop type doctrine (`chart-beat/references/types/lollipop.md`) allows exactly
  * ONE accent stem-and-dot, for the subject row, with every other row neutral. Unlike the dumbbell
  * (whose two hues were already spent encoding "2000 vs 2023" before Switzerland's own emphasis could
  * use a colour), this beat has no second series to encode — so EVERY row, including Switzerland's,
@@ -52,7 +52,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 // The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
@@ -61,11 +61,11 @@ import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
 // genres read one copy. A lollipop's category axis is NOMINAL, so a tall frame asks for its twin
 // FORM — rows running down the frame — which is the form this beat already draws.
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { LOLLIPOP_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -80,7 +80,7 @@ export const TYPE = "lollipop";
  * gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs` and carried onto the
  * composition by `Root.tsx`. The shipped values were 1080-frame tuning; they are divided so the
  * SMALLEST token lands at 12 — the number every row's `typeScale` in
- * `twin-chart-video/scripts/sizes.mjs` is derived from (30 / 12 = 2.5 at landscape, 36 / 12 = 3.0
+ * `chart-video/scripts/sizes.mjs` is derived from (30 / 12 = 2.5 at landscape, 36 / 12 = 3.0
  * at the two phone frames). The ramp flattens as a result: the floor binds the smallest token, and
  * a title that grew by the same factor would take a third of the frame before a mark was drawn.
  *
@@ -342,7 +342,7 @@ export function LollipopVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — the LAST line lands on `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = sourceBottom - (sourceLines.length - 1) * sourceLead;
   // The axis label keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.

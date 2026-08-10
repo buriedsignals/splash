@@ -2,7 +2,7 @@
  * The static genre of "the western Pacific's most powerful earthquake, 2005–2017" — 900 × 560,
  * one frame, no order. A PROPORTIONAL SYMBOL beat: circles sized by magnitude at each epicentre,
  * not a choropleth — there is no polygon, no join, no ramp. See
- * `twin-map-beat/references/types/proportional-symbol.md`.
+ * `map-beat/references/types/proportional-symbol.md`.
  */
 
 import { Fragment } from "react";
@@ -24,7 +24,7 @@ const MAP_X = FRAME.width - PAD - MAP;
 const COLUMN = { x: PAD, width: MAP_X - GUTTER - PAD };
 /**
  * THE SIZE OF THE BIGGEST MARK IS DERIVED, NOT TYPED (B6.17). The fraction is the seed's own
- * (`twin-map-web/assets/MapWebSeed.tsx`'s `MARK_MAX_RADIUS_FRACTION`); the floor is the smallest
+ * (`map-web/assets/MapWebSeed.tsx`'s `MARK_MAX_RADIUS_FRACTION`); the floor is the smallest
  * radius a reader can still resolve as a disc rather than a dot, and it is what actually decides
  * the answer for this value set; the ceiling is the share of the plate one mark may take before
  * the beat refuses to draw the set at all. See `energyRadiusScale`.
@@ -121,7 +121,7 @@ export function QuakeSymbolStill({
   // with it, unsplit. It used to hang directly under the title. This column is laid out from BOTH
   // ends, so the source joining the bottom half pushes the whole bottom stack up by exactly the
   // source block's own height; the plate is a fixed square and does not move. See
-  // twin-map-beat/assets/Co2MapStill.tsx, which this is copied from.
+  // map-beat/assets/Co2MapStill.tsx, which this is copied from.
   const sourceBottom = FRAME.height - PAD;
   const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
   const caveatBottom = sourceTop - SOURCE.fontSize - 12;

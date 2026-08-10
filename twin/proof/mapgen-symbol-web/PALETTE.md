@@ -5,14 +5,14 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as documented in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md`.
+`skills/splash/assets/root-template/NEWSROOM.example.md`.
 
-`twin-palette`'s proposal for the subject line "seventeen great earthquakes on the western Pacific
+`palette`'s proposal for the subject line "seventeen great earthquakes on the western Pacific
 rim, sized by magnitude" returned **one** option — the house theme — because `matchConvention`
 fires on none of the four grounded conventions (renewables, fossil, water, heat). An earthquake is
 not a warming story: reaching for the `heat` convention's warm red because a quake feels violent
 would be a colour that "feels right", which is exactly the move
-`twin-palette/references/subject-conventions.md` refuses. When no convention applies, the house
+`palette/references/subject-conventions.md` refuses. When no convention applies, the house
 theme wins.
 
 Measured against this ground: **5.18:1**, comfortably clear of the 3:1 floor a graphical object has

@@ -97,7 +97,7 @@ and the per-file breakdown is the important part:
 ```
 
 **Exactly two per `render-still.mjs`, and they must agree**: the probe inside `measureText`
-(`shared/twin-chart-beat/render-still.mjs:186`) and the rasteriser (`:217-218`). §4 below measures
+(`shared/chart-beat/render-still.mjs:186`) and the rasteriser (`:217-218`). §4 below measures
 what happens when they do not.
 
 That is a better seam than the survey's §6 hoped for: one new top-level function per copy —
@@ -224,8 +224,8 @@ Two consequences the spec has to carry:
 
 ### Method
 
-`/tmp/fontlab` again, with `shared/twin-chart-beat` and `skills/twin-chart-beat` as real copies.
-`FONT_FAMILY` swapped in `shared/twin-chart-beat/render-still.mjs:26` and three static beats
+`/tmp/fontlab` again, with `shared/chart-beat` and `skills/chart-beat` as real copies.
+`FONT_FAMILY` swapped in `shared/chart-beat/render-still.mjs:26` and three static beats
 re-rendered through **their own** `render.mjs`. Then an analyser
 (`bun /tmp/twinfont/collide.mjs <svg>`) re-measures every `<text>` node's ink box in the family the
 SVG declares and reports (a) anything outside the frame, (b) any two text boxes that overlap.
@@ -286,7 +286,7 @@ and not the other.
 
 ### Result C — the map genre has a loud guard with about two lines of headroom
 
-`skills/twin-map-beat/assets/Co2MapStill.tsx:155-159` throws when the header block meets the legend.
+`skills/map-beat/assets/Co2MapStill.tsx:155-159` throws when the header block meets the legend.
 I recomputed that arithmetic per face (`bun /tmp/twinfont/map-guard.mjs`), on the 308 px column:
 
 | strings | Helvetica | Verdana | Courier New |
@@ -465,7 +465,7 @@ Helvetica is a worse answer than either alone.
 ### Path C — one genre, proven, the way the palette was — **start here**
 
 The static chart genre only: recorded answer + resolver + the two resvg call sites in
-`shared/twin-chart-beat/render-still.mjs`, its walking guard and mutation, a refusal, and a
+`shared/chart-beat/render-still.mjs`, its walking guard and mutation, a refusal, and a
 `typeface-proof/` beside `palette-proof/` showing a house answer, a resolvable-but-not-house answer,
 and the refusal. **4–6 days.** It buys the two things that decide Path A's real cost — does the
 resolver's refusal read well to a journalist, and does the OFL notice obligation survive contact with
@@ -482,7 +482,7 @@ constant cannot express that. A function can, and the walking test guards it for
 
 ## 8. Where a measurement failed, or I did not take it
 
-- **I did not render a map beat with a swapped face.** `skills/twin-map-beat/scripts/render-preview.mjs`
+- **I did not render a map beat with a swapped face.** `skills/map-beat/scripts/render-preview.mjs`
   wants a pre-baked plate at `/tmp/map-twin/plate-900`, which needs the basemap step. §4-C recomputes
   the column invariant's arithmetic instead, on **representative** strings I wrote, not a shipped map
   beat's. The direction is certain; the 44 px is an order of magnitude.
@@ -496,7 +496,7 @@ constant cannot express that. A function can, and the walking test guards it for
 - **The 10-newsroom sample is a sample**, chosen for relevance (Swiss + French + one anglophone), not
   drawn at random. It is enough to refute "most newsrooms use a system face" and enough to establish
   that the pilot's own face is OFL. It is not a population estimate.
-- **`twin-dw-beat` is out of scope entirely** — Datawrapper renders its own furniture, and the
+- **`dw-beat` is out of scope entirely** — Datawrapper renders its own furniture, and the
   parent repository's note that a house theme was not reachable on its plan is a prior, not evidence
   about this tree.
 - **Everything measured here is macOS/arm64.** resvg's system-font enumeration and Chrome's fallback

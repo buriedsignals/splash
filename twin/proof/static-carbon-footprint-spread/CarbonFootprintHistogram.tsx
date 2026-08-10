@@ -14,20 +14,20 @@ import {
   measureText,
   measureTextBand,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { assertPlotAspect } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { assertPlotAspect } from "#shared/chart-beat/type-at-size.mjs";
 import {
   NON_TEXT_CONTRAST_FLOOR,
   inkBox,
   inkThatReadsOver,
   marksUnder,
   textContrastFloor,
-} from "#shared/twin-chart-beat/annotation-ink.mjs";
+} from "#shared/chart-beat/annotation-ink.mjs";
 
 export type Bin = { lo: number; hi: number; count: number };
 
@@ -245,7 +245,7 @@ export function CarbonFootprintHistogram({
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
   // hangs off at the top, on the same x. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
   // At portrait that bottom is the STAGE's, not the frame's: below 1248 is the platform's caption
   // and progress bar, and a covered credit is an attribution failure rather than a cosmetic one.
   const sourceBaseline =
@@ -303,7 +303,7 @@ export function CarbonFootprintHistogram({
   // against the white page it is nominally drawn on, and **1.20:1 against the `#616161` bar it
   // spends 97 % of its length inside**. It was not a faint rule, it was an invisible one, and
   // nothing could have said so, because the only contrast check in this file measures ink against
-  // the GROUND. See `twin-chart-beat/scripts/annotation-ink.mjs`.
+  // the GROUND. See `chart-beat/scripts/annotation-ink.mjs`.
   const barMarks = bars.map((b) => ({
     x: b.x,
     y: b.y,

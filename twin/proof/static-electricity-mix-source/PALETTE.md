@@ -9,7 +9,7 @@ The answer recorded for this beat: a bespoke set of three the journalist chose �
 bluish-green, blue and vermillion, the values the component named as `COLOURS` before this file
 existed — kept over both the house accent and a subject convention.
 
-`twin-palette`'s subject option was checked and this is the MULTI-MATCH case. The subject is a
+`palette`'s subject option was checked and this is the MULTI-MATCH case. The subject is a
 country's electricity mix split into renewables, nuclear and fossil, so both the `renewables` and
 the `fossil` conventions fire, and `matchConvention` returns nothing when several match —
 deliberately, because which series carries the argument is an editorial decision and not one a

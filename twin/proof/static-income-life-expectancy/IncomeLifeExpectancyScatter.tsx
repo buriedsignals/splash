@@ -20,13 +20,13 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 
 export type Point = {
   country: string;
@@ -268,7 +268,7 @@ export function IncomeLifeExpectancyScatter({
   const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
   // THE T.SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline =
     sourceBottom - (sourceLines.length - 1) * T.SUBTITLE.lead;
   // The plot starts below the LAST HEADER line, never below the source.

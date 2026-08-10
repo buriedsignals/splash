@@ -28,7 +28,7 @@ import {
   deriveFurniture,
   measureText,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 
 export type Row = {
   country: string;
@@ -284,7 +284,7 @@ export function CoalShareHeatmap({
   const subtitleTop = titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
   const subtitleLines = wrap(subtitle, width - PAD * 2, SUBTITLE);
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — `height - PAD`, the same inset the title
-  // hangs off at the top, on the same x. See twin-chart-beat/references/static-discipline.md,
+  // hangs off at the top, on the same x. See chart-beat/references/static-discipline.md,
   // "The source on the frame's bottom margin".
   const sourceBaseline = height - PAD;
 

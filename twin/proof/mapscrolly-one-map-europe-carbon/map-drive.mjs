@@ -153,7 +153,7 @@ export function readProgress(source) {
   if (raw === null || raw === "" || !Number.isFinite(value))
     throw new Error(
       `this beat is driven by the scrolly scaffold's continuous signal and read ${JSON.stringify(raw)} ` +
-        `for data-progress on the nearest ancestor carrying it (twin-scrolly/assets/interaction.mjs ` +
+        `for data-progress on the nearest ancestor carrying it (scrolly/assets/interaction.mjs ` +
         `writes it on the .scrolly root on every scroll)`,
     );
   return value;
@@ -325,7 +325,7 @@ export function initMapScrolly(root, states, labels, config, onCamera) {
   const progressSource = progressSourceOf(root);
   if (!progressSource)
     throw new Error(
-      "no ancestor of this beat's visual carries data-progress — twin-scrolly's scaffold publishes it " +
+      "no ancestor of this beat's visual carries data-progress — scrolly's scaffold publishes it " +
         "on the .scrolly root, and this beat is driven by nothing else",
     );
 

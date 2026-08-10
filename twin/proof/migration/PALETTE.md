@@ -5,10 +5,10 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`).
 
-`twin-palette`'s subject option was checked and does not apply. The subject is Switzerland's annual
+`palette`'s subject option was checked and does not apply. The subject is Switzerland's annual
 net migration balance; `matchConvention` returns nothing for it, because none of the four grounded
 conventions (renewables, fossil, water, heat) fires on migration as a phrase. When no convention
 applies, the house theme wins.

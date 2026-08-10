@@ -17,7 +17,7 @@ colour-vision deficiency. Two shades walked off one accent differ only in lightn
 type lightness reads as emphasis, not as "the earlier year". Two distinct hues is what the type
 needs, and which two is the newsroom's decision.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat), and this beat's subject — life expectancy at
 birth in 2000 against 2023 — fires none of them. Health was considered for a convention and left out
 for the reason `subject-conventions.md` gives: readers do not already hold the association.

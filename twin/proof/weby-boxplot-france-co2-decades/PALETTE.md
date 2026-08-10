@@ -7,7 +7,7 @@ origin: journalist
 The answer recorded for this beat: a bespoke accent the journalist chose — Okabe-Ito blue, the value
 this beat was already drawn in — kept over both the house teal and a subject convention.
 
-`twin-palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
+`palette`'s subject option was checked and has nothing to offer. `matchConvention` holds four
 grounded conventions (renewables, fossil, water, heat), and this beat's subject — the SPREAD of
 France's per-capita CO₂ readings within each decade — fires none of them. So the choice was between
 the house accent and the one already drawn, and the one already drawn is what is recorded here:

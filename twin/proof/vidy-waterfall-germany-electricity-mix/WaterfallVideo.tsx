@@ -10,7 +10,7 @@
  * `measureText` and `wrap` ARE this story's own copies of the other proof workspaces' functions of
  * the same name — not an import from any of them, per the duplicate-do-not-link rule
  * (`../video-population-growth-dumbbell/DumbbellVideo.tsx`'s file doc-comment explains why: this
- * story lives outside `twin-chart-video`'s skill boundary, and the settled rule for a workspace
+ * story lives outside `chart-video`'s skill boundary, and the settled rule for a workspace
  * that needs something a skill has is to duplicate it, not reach back across the boundary).
  * `drawnSoFar` is not copied here — nothing in this beat traces a continuously-drawing path; every
  * bar's edge interpolates between two fixed data values, so there is no partial-path head to
@@ -31,7 +31,7 @@
  * event, again a full bar from zero, so it can be compared directly against the opening bar's
  * height (`subject`). The net change is stated once the closing total is on screen (`conclusion`).
  *
- * COLOUR: the waterfall type doctrine (`twin-chart-beat/references/types/waterfall.md`) requires
+ * COLOUR: the waterfall type doctrine (`chart-beat/references/types/waterfall.md`) requires
  * THREE role colours — increase, decrease, total — where a dumbbell or a single-line beat only ever
  * needs one accent. `BRIEF.md` justifies the Okabe-Ito blue/vermillion pair (CVD-distinguishable,
  * never a plain red/green) and the neutral grey `total` colour (deliberately off that hue axis, so
@@ -43,13 +43,13 @@
  *
  * VALUE LABELS: never painted inside a bar's own fill — `waterfall.md` names this exact trap by
  * name (a white label on a bright decrease fill measuring under 4:1), and
- * `twin-doctrine/references/visual-system.md` independently documents the same defect having
+ * `doctrine/references/visual-system.md` independently documents the same defect having
  * shipped and been fixed on "waterfall's own value labels" before. Every value label here floats
  * just outside the bar's CURRENTLY-ANIMATING edge, in `ink`, computed against the page ground —
  * never inherited from whichever of the three role colours the bar underneath happens to be. Each
  * label fades in within the first quarter of its own bar's local reveal window and then RIDES the
  * growing tip's position as the bar continues to extend, rather than gating on the last slice of
- * the growth — `visual-system.md` and `twin-chart-beat/references/types/diverging-bar.md` both name
+ * the growth — `visual-system.md` and `chart-beat/references/types/diverging-bar.md` both name
  * the opposite (gate-on-last-slice) as an already-shipped-and-fixed defect: "a label that only
  * appears once a bar is fully grown is a label that's absent for most of the time the bar is on
  * screen."
@@ -67,7 +67,7 @@ import {
 import {
   progressOf,
   type BeatTiming,
-} from "#shared/twin-chart-video/timing.ts";
+} from "#shared/chart-video/timing.ts";
 // The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
@@ -76,12 +76,12 @@ import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-video/sizes.mjs";
+} from "#shared/chart-video/sizes.mjs";
 // Whether this TYPE may enter that size is a fact about the type, not about the craft, so both
 // genres read one copy. A waterfall has no measured aspect range at a tall frame and no twin form —
 // its bars sit on a RUNNING TOTAL, so rotating it would put a cumulative axis on a band scale — so
 // the two phone frames are refused by name rather than drawn at a shape nobody measured.
-import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+import { assertTypeMayEnter } from "#shared/chart-beat/type-at-size.mjs";
 import { WATERFALL_TIMING } from "./timing-contract";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
@@ -95,7 +95,7 @@ export const TYPE = "waterfall";
  * There is no `const FRAME` any more. The frame is `sizeFor(size)`'s, and `size` is the decision
  * gate 2c took, read out of this beat's own `BRIEF.md` and carried onto the composition by
  * `Root.tsx`. The shipped values were 1080-frame tuning, divided so the SMALLEST token lands at 12
- * — the number every row's `typeScale` in `twin-chart-video/scripts/sizes.mjs` is derived from.
+ * — the number every row's `typeScale` in `chart-video/scripts/sizes.mjs` is derived from.
  *
  * EVERY SPACING NUMBER GOES THROUGH `sp`, including the rotated label's own strip and its width
  * cap: those are measured in pixels of a frame, and leaving them at 1080 values while the type grew
@@ -413,7 +413,7 @@ export function WaterfallVideo({
   // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN, not under the title — `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. It stays inside the furniture
   // opacity group, so no timing contract moves. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline = sourceBottom;
   // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.

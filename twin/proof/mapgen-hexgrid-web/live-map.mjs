@@ -1,4 +1,4 @@
-// twin/skills/twin-map-web/assets/live-map.mjs
+// twin/skills/map-web/assets/live-map.mjs
 //
 // RULING R1 (2026-08-10), and the layer that keeps everything it did not ask to break.
 //
@@ -62,7 +62,7 @@ export function readLivePlan(doc) {
  *  key out of the repository, so the COMMITTED artifact is always in this state and its live layer
  *  never boots — which is exactly right: a proof artifact must not spend a newsroom's tile quota. */
 export function planIsUnkeyed(plan) {
-  // The sentinel is ASSEMBLED, never written whole. `twin-deliver` substitutes every occurrence of
+  // The sentinel is ASSEMBLED, never written whole. `deliver` substitutes every occurrence of
   // the placeholder in the delivered file, and this script is IN that file — a literal here would be
   // rewritten to the key itself, so the check would then read "does the style URL contain the key",
   // which is true, and every delivered map would refuse to boot. Found by driving the page in a real

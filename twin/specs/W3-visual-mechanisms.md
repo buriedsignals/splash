@@ -44,7 +44,7 @@ animation), and the slope's missing axes, which is a type sheet the artifact doe
 Every guard below reads a **rendered document**, never source text. Three instruments exist and two
 of them need nothing built:
 
-1. **Statics: the SVG is already committed.** `skills/twin-chart-beat/scripts/render-still.mjs:197-211`
+1. **Statics: the SVG is already committed.** `skills/chart-beat/scripts/render-still.mjs:197-211`
    SSRs the component and writes **both** `<name>.svg` and `<name>.png`. Measured: **24 committed
    `.svg` files, and every one of the 18 static chart and map beats has one.** So a walking guard
    over the static corpus can parse real geometry, real fills and real opacities today, with no
@@ -66,7 +66,7 @@ Recorded rather than silently fixed, because this project's rule is that any rep
 1. **The slope's connecting lines ARE rendered** (against B6.8 / B6.9). Ten `<line>` elements are in
    `proof/web-co2-decline-slope/co2-decline-slope.html`; the static PNG shows all six slopes;
    `RenewablesShiftSlope.tsx:252-267` draws them. **What is genuinely absent is the two vertical
-   axes**, which `skills/twin-chart-beat/references/types/slope.md` requires by name — *"Two vertical
+   axes**, which `skills/chart-beat/references/types/slope.md` requires by name — *"Two vertical
    axes — one per period"* (the "What the drawing actually needs" section, ~:36). The observation was
    right that something is missing; the diagnosis moves. Specified in § G's companion work.
 2. **The histogram's label overlap begins at frame 154, not 150.** `timing-contract.ts:47-48`:
@@ -121,7 +121,7 @@ with no title, no source and no basemap. Quake-symbol frame 40 is a plate, a leg
 empty rings.
 
 **Two rules in the doctrine already forbid this, and one correct implementation already exists.**
-`skills/twin-doctrine/references/motion-grammar.md:108` — *"A label's reveal gates on its own mark,
+`skills/doctrine/references/motion-grammar.md:108` — *"A label's reveal gates on its own mark,
 never on a master clock"* — and the anti-pattern list at `:153-166`, whose third entry (`:159`) is
 **"The accent before the thing it accents."** The map symbol gates one half of a single mark on the clock
 and the other half on the mark, which is that rule applied to a mark rather than a label, and it is
@@ -129,7 +129,7 @@ not written down that way. The correct pattern is at
 `proof/vidy-heatmap-renewables-europe/HeatmapVideo.tsx:462-505`: the empty outline grid sits inside
 `<g opacity={axisOpacity}>`, so frame 0 is title and source only. It never travelled to the maps.
 
-**The reasoning that must survive the fix.** `skills/twin-map-beat/SKILL.md:194-203` records why
+**The reasoning that must survive the fix.** `skills/map-beat/SKILL.md:194-203` records why
 `pending` exists: a country fading in from transparent showed the near-white basemap through a
 half-opaque fill and **read lighter than the lightest filled class — the opposite of the data.**
 "Empty at frame 0" must not be implemented by restoring that fade. The honest correction is a **hard
@@ -143,7 +143,7 @@ cut at the mark's own arrival**, never a softer crossfade.
 are git-tracked. Run the remaining ten with `--still-only` and commit the props file **inside the
 beat's own folder** — invariant 3. No component changes.
 
-**A0.2 — SSR a Remotion component at a chosen frame.** In `skills/splash-twin/test/`, a helper that
+**A0.2 — SSR a Remotion component at a chosen frame.** In `skills/splash/test/`, a helper that
 `mock.module("remotion", …)` re-exporting the real module with `useCurrentFrame` and
 `useVideoConfig` replaced by stubs reading a module-level frame and the beat's own `fps`.
 `interpolate`, `spring` and `Easing` stay real, so the guard evaluates the beat's actual arithmetic,
@@ -204,7 +204,7 @@ at frame 0 — the title and the source — and the map field is empty.**
 
 ## The walking guard
 
-`skills/splash-twin/test/video-handover-is-a-cut.test.ts` — new, walking, behavioural. It discovers
+`skills/splash/test/video-handover-is-a-cut.test.ts` — new, walking, behavioural. It discovers
 beats (`proof/*/[A-Z]*Video.tsx` — 25 today), reads each beat's committed props and its
 `timing-contract.ts`, SSRs the component at consecutive frames through the `reveal`, `subject` and
 `conclusion` windows plus frame 0, and asserts four things on the rendered document.
@@ -314,12 +314,12 @@ and changed it. What is missing is the *walking* half of the duplication contrac
 B6.2 is the last row: driven at 1400 px the heatmap occupies **645 px and stops**. Its own comment
 (`:233-235`) says *"The real answer is the fluid seed … retrofitting the eleven web chart beats onto
 it is a known open item"* — the retrofit landed on seventeen and left this one, plus three map beats
-nobody counted. Note also `skills/twin-chart-web/SKILL.md:15-17`: *"Fifteen beats ship through this
+nobody counted. Note also `skills/chart-web/SKILL.md:15-17`: *"Fifteen beats ship through this
 skill … every one of them is on the fluid frame"* — measured, eighteen hold a `render-web.mjs`,
 seventeen import the skill's `renderWeb`. The sentence is stale in both directions and
 `skill-md-matches-code.test.ts` checks signatures, not counts.
 
-**E2 — "the table is opt-in" reached the skill and 2 of 5 beats.** `skills/twin-map-web/scripts/render-web.mjs:66`
+**E2 — "the table is opt-in" reached the skill and 2 of 5 beats.** `skills/map-web/scripts/render-web.mjs:66`
 sets `regionTable: false` and `:86-94` documents it. Measured on the delivered HTML, **all five
 map-web beats still ship a rendered table**:
 
@@ -348,7 +348,7 @@ it is the sharper half.**
 - **E1** — port `mapgen-choropleth-web`, `mapgen-hexgrid-web`, `mapgen-locator-web` and
   `more-heatmap-co2-per-capita-decades` onto the fluid frame their siblings already run: one SSR, a
   container-query stage, no `layouts` array, no `@media (max-width:)` layout swap, no `max-width` on
-  the figure. `proof/mapgen-dot-web/render-web.mjs` and `skills/twin-chart-web/scripts/render-web.mjs`
+  the figure. `proof/mapgen-dot-web/render-web.mjs` and `skills/chart-web/scripts/render-web.mjs`
   are the two references. **Four beat-local copies edited; no skill changes.**
 - **E2** — the three private renderers gain the same `regionTable` option name and default the skill
   already carries. Whether it is then `true` or `false` per beat is the B5.2 decision below, and it
@@ -357,7 +357,7 @@ it is the sharper half.**
   `proof/static-swiss-age-pyramid/SwissAgePyramid.tsx`: measure each band label's own ascent and
   descent, mask the spine behind it, keep the clearance **binary** (present or absent, never faded).
   One beat-local copy, code that already exists and is already measured next door.
-- **E1 follow-on** — correct `skills/twin-chart-web/SKILL.md:15-17` to the measured counts.
+- **E1 follow-on** — correct `skills/chart-web/SKILL.md:15-17` to the measured counts.
 
 ## The walking guards
 
@@ -385,7 +385,7 @@ committed SVGs covers a rule that strikes through a label, and it is listed ther
   naming the file and the rule.
 - Delete the `regionTable` parameter from a fixed copy of `mapgen-locator-web/render-web.mjs` while
   still rendering the table → guard 2 red.
-- Add an option to `skills/twin-map-web/scripts/render-web.mjs`'s `renderMapWeb` signature and leave
+- Add an option to `skills/map-web/scripts/render-web.mjs`'s `renderMapWeb` signature and leave
   the beat copies alone → guard 3 red, naming every copy that lacks it. **Run this one in both
   directions** — a copy with an *extra* option must NOT be red, or the guard punishes the beat-local
   specialisation the branch's whole method depends on.
@@ -434,7 +434,7 @@ The video sibling is worse: `HistogramVideo.tsx:501-509` draws the median `strok
 bar. It reads in the delivered mp4 only because the median at 75.3 happens to land on the *accent*
 bar. Change the data and it disappears with nothing failing.
 
-`skills/twin-doctrine/references/visual-system.md:89-94` already states the rule — *"a label's ink is
+`skills/doctrine/references/visual-system.md:89-94` already states the rule — *"a label's ink is
 never inherited from the mark it names… computed against the real background the label sits on —
 every time, even when that background is a data mark instead of the page"* — and calls it *"the
 single most independently-rediscovered defect in this system's history"*. **It is written for TEXT.**
@@ -465,7 +465,7 @@ A dashed rule, a leader line and a hatch are not text, so nothing reaches them.
 
 **Leg 1 — one new assertion, in a file the walking guard already covers.** Add
 `assertAnnotationReadsOverMarks(annotation, fills)` to
-`skills/twin-chart-beat/scripts/render-still.mjs`: given an annotation's stroke and the set of fills
+`skills/chart-beat/scripts/render-still.mjs`: given an annotation's stroke and the set of fills
 its geometry crosses, throw unless every pair clears **3 : 1** (WCAG 2.2 SC 1.4.11, non-text). Then
 propagate it, by hand, into **22 copies of `render-still.mjs`** — and that is the leverage:
 `render-still-parity.test.ts` **already walks all 22 and compares function by function**, so the new
@@ -557,7 +557,7 @@ sit over Poland's mass, not its upper-right lobe.
 
 ## The measured state
 
-`skills/twin-map-web/assets/MapWebSeed.tsx:87` — `const HIT_TARGET_PX = 28;` — duplicated verbatim
+`skills/map-web/assets/MapWebSeed.tsx:87` — `const HIT_TARGET_PX = 28;` — duplicated verbatim
 at `proof/mapgen-dot-web/DotDensityWeb.tsx:48` and `proof/mapgen-symbol-web/QuakeSymbolWeb.tsx:66`.
 The button is positioned at the mark's own anchor by percentage and sized in fixed CSS pixels;
 `assets/interaction.mjs:45-56` binds `pointerenter`/`pointermove` to that button and nothing else —
@@ -571,7 +571,7 @@ country anchors; a probe 60 px inside France — whose polygon is ~120 px across
 returns `hidden: true`.
 
 **The rationale is on record and is sound as far as it goes.**
-`skills/twin-map-web/references/map-web-discipline.md:270` and its "Touch and hover share one target"
+`skills/map-web/references/map-web-discipline.md:270` and its "Touch and hover share one target"
 section: an SVG-scaled hit circle collapses to a few physical pixels at 375 px. The floor is right;
 being *only* a floor is the defect.
 
@@ -585,9 +585,9 @@ being *only* a floor is the defect.
   `pointer-events: fill`, not a square at an anchor;
 - the floor stays, and its reasoning stays: at 375 px a small mark still gets 28 px.
 
-Three copies: `skills/twin-map-web/assets/MapWebSeed.tsx`,
+Three copies: `skills/map-web/assets/MapWebSeed.tsx`,
 `proof/mapgen-dot-web/DotDensityWeb.tsx`, `proof/mapgen-symbol-web/QuakeSymbolWeb.tsx`. Plus the
-tuning-knob line at `skills/twin-map-web/SKILL.md:231`, which must stop calling 28 "the diameter".
+tuning-knob line at `skills/map-web/SKILL.md:231`, which must stop calling 28 "the diameter".
 
 **Sequencing with W6.** Ruling R1 puts map × web on live MapTiler, where marks become layer features
 and hit testing becomes `queryRenderedFeatures`. The rule above is identical in that world —
@@ -596,7 +596,7 @@ delivered page. **Make this edit inside W6 if W6 lands first; do not make it twi
 
 ## The walking guard
 
-**Extend `skills/splash-twin/test/interaction-promises-are-kept.test.ts`**, which already walks the
+**Extend `skills/splash/test/interaction-promises-are-kept.test.ts`**, which already walks the
 delivered corpus and dispatches real pointers — and which is **blind to this by construction**: its
 own header (`:38-44`) says marks are discovered by `data-detail` and probed **at that element's own
 centre**, which is the 28 px button's centre and always answers.
@@ -644,7 +644,7 @@ primitive. Build it once and both close.**
 ## The measured state
 
 Every web beat's hit surface is either **one `.hit-area` rect** with nearest-by-x resolution
-(`skills/twin-chart-web/assets/ChartWebSeed.tsx:548`, `proof/webz-bump-emitter-rank/BumpWeb.tsx:570`,
+(`skills/chart-web/assets/ChartWebSeed.tsx:548`, `proof/webz-bump-emitter-rank/BumpWeb.tsx:570`,
 and twelve more) or **per-point targets** (`proof/web-co2-decline-slope/SlopeWeb.tsx:480,494`; the
 `.pt` buttons in every map-web beat). `grep` for `pointerEvents="all"` returns **15 sites** (the
 survey said 16 — recount: 14 in `proof/`, 1 in the chart-web seed) and **not one is on a `<path>`,
@@ -671,8 +671,8 @@ A **hoverable line**, duplicated into both web genres in the form each needs:
    per-point tooltip cannot say. For a route: the segment's territory, its distance along the
    journey, and its position in the sequence.
 
-Copies: `skills/twin-chart-web/assets/ChartWebSeed.tsx` +
-`skills/twin-chart-web/assets/interaction.mjs`, `skills/twin-map-web/assets/MapWebSeed.tsx` +
+Copies: `skills/chart-web/assets/ChartWebSeed.tsx` +
+`skills/chart-web/assets/interaction.mjs`, `skills/map-web/assets/MapWebSeed.tsx` +
 `assets/interaction.mjs`, then `proof/web-co2-decline-slope/SlopeWeb.tsx` +
 `slope-interaction.mjs`. **Two skills, one beat**, and W8's flow/route beat consumes it as the
 fourth.
@@ -680,7 +680,7 @@ fourth.
 ## The companion work in the same beats — the slope's missing axes
 
 Not a hover item, but the same two files and the other half of B6.8/B6.9.
-`skills/twin-chart-beat/references/types/slope.md` requires *"Two vertical axes — one per period"*
+`skills/chart-beat/references/types/slope.md` requires *"Two vertical axes — one per period"*
 **by name**, and neither `proof/static-renewables-shift/RenewablesShiftSlope.tsx` nor
 `proof/web-co2-decline-slope/SlopeWeb.tsx` draws them — what look like axes in the delivered HTML
 (`.y-axis`, `.r-axis`) are label gutters. Draw the two rules, at the two period positions, in the
@@ -756,7 +756,7 @@ decision is still computed **once, server-side, at one width** — and that widt
   ~104 px from each neighbour. **The label is dropped at every width to satisfy 375 px.**
 - **B6.6, pyramid × web.** Same cause, fixed in § B: the peak label is parked at `0%,0%` because the
   narrow rung has 6 px of room beside the widest bar.
-- **B3.3, title width.** `skills/twin-chart-web/scripts/render-web.mjs:240` —
+- **B3.3, title width.** `skills/chart-web/scripts/render-web.mjs:240` —
   `.chart-header, .chart-source { max-width: 640px; }` — with a reading-measure argument at
   `:203-208`. One copy, inherited by all 17 fluid chart-web beats. **The map-web genre has no such
   cap**, which is why `dot-population.html`'s title does run full width. So B3.3 is chart-web only,
@@ -911,7 +911,7 @@ and the guard was right.
 ## B5.2 — the accessible table. Recommendation: **keep it, shorten it, and do not adopt the accordion.**
 
 The owner asks for **no table, or an accordion**.
-`skills/twin-map-web/references/map-web-discipline.md` argues both away in advance and the argument
+`skills/map-web/references/map-web-discipline.md` argues both away in advance and the argument
 should be visible before it is set aside:
 
 > A map is a spatial medium, and a screen-reader user has no spatial access to it. … A hover tooltip,
@@ -969,21 +969,21 @@ with the summary naming the row count so the announcement still carries the info
 ## B3.1 — an entrance animation: borrow the vocabulary, do not invent one
 
 **Nothing exists and no rule exists either way.** `grep` for `animation|@keyframes|transition|prefers-reduced-motion`
-across both web genres returns three hits, all functional: `skills/twin-chart-web/scripts/render-web.mjs:326`
+across both web genres returns three hits, all functional: `skills/chart-web/scripts/render-web.mjs:326`
 (a 120 ms transition on the filter pill), `:343` (120 ms on filtered marks), and `verify-web.mjs:699`
-waiting past it. `twin-map-web` has none. Neither discipline file contains the word "entrance". So
+waiting past it. `map-web` has none. Neither discipline file contains the word "entrance". So
 nothing has to be overturned — which makes this the cheapest item here to get right and the easiest
 to get wrong.
 
 **Borrow from two places that already exist.**
 
-- **The vocabulary, from `skills/twin-chart-video/assets/timing.ts`**: six named events in a fixed
+- **The vocabulary, from `skills/chart-video/assets/timing.ts`**: six named events in a fixed
   order — `establish · reference · reveal · subject · conclusion · hold` (`EVENT_ORDER`, `:47-55`),
   each documented in one line a non-programmer can read, with `checkTiming` (`:80-119`) enforcing
   that each event begins only once the previous finished. **Reuse the first five and drop `hold`** — a web beat's
   hold is the rest of its life. The journalist edits durations in one object, as `timing.ts` already
   promises.
-- **The mechanism, from `skills/twin-scrolly`** (`scripts/render-scrolly.mjs:287-293` and
+- **The mechanism, from `skills/scrolly`** (`scripts/render-scrolly.mjs:287-293` and
   `:377-383`, argued at `references/scrolly-discipline.md:440-485`, verified in a driven browser at
   `:481`): a **class toggle**, never a
   value written from time or scroll; the transition is **CSS and time-bounded**; and the animated

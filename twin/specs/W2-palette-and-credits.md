@@ -47,7 +47,7 @@ for f in skills/*/scripts/render-{preview,web,video,map,scrolly}.mjs; do
 ```
 
 **Twelve seed runners. Eleven name `#FFFFFF` / `#0B7A75` as literals. Zero call `readPalette`.**
-The twelfth, `skills/twin-map-web/scripts/render-preview.mjs`, names no colour at all because it
+The twelfth, `skills/map-web/scripts/render-preview.mjs`, names no colour at all because it
 delegates to `render-web.mjs`'s `render()` — it is not an exception to fix, it is a file with
 nothing to change. So the survey's "zero of 11" and my "zero of 12" are the same measurement
 counted with a different denominator; **zero is the number in both.**
@@ -56,25 +56,25 @@ The eleven, with the lines:
 
 | file | lines |
 |---|---|
-| `skills/twin-chart-beat/scripts/render-preview.mjs` | 35, 45 |
-| `skills/twin-chart-video/scripts/render-preview.mjs` | 41, 55 |
-| `skills/twin-chart-video/scripts/render-video.mjs` | 31, 32 |
-| `skills/twin-chart-web/scripts/render-preview.mjs` | 44, 54 |
-| `skills/twin-chart-web/scripts/render-web.mjs` | 67, 68 |
-| `skills/twin-image-beat/scripts/render-preview.mjs` | 38 |
-| `skills/twin-map-beat/scripts/render-preview.mjs` | 102, 126 |
-| `skills/twin-map-beat/scripts/render-map.mjs` | 54, 55 |
-| `skills/twin-map-web/scripts/render-web.mjs` | 47, 48 |
-| `skills/twin-scrolly/scripts/render-preview.mjs` | 42, 43 |
-| `skills/twin-scrolly/scripts/render-scrolly.mjs` | 394, 395 |
+| `skills/chart-beat/scripts/render-preview.mjs` | 35, 45 |
+| `skills/chart-video/scripts/render-preview.mjs` | 41, 55 |
+| `skills/chart-video/scripts/render-video.mjs` | 31, 32 |
+| `skills/chart-web/scripts/render-preview.mjs` | 44, 54 |
+| `skills/chart-web/scripts/render-web.mjs` | 67, 68 |
+| `skills/image-beat/scripts/render-preview.mjs` | 38 |
+| `skills/map-beat/scripts/render-preview.mjs` | 102, 126 |
+| `skills/map-beat/scripts/render-map.mjs` | 54, 55 |
+| `skills/map-web/scripts/render-web.mjs` | 47, 48 |
+| `skills/scrolly/scripts/render-preview.mjs` | 42, 43 |
+| `skills/scrolly/scripts/render-scrolly.mjs` | 394, 395 |
 
 Why this and not the 54 beats: **a seed is what a new beat is copied from.** Fix 54 beats and leave
 11 seeds, and beat 71 arrives with a hex literal in it. That is the owner's own feedback→system rule
 (`CLAUDE.md`, Conventions ★) applied to its own mechanism.
 
 Three `render-still.mjs` copies lack `readPalette`/`parsePalette` and are the reason three seed
-runners cannot call it today: `skills/twin-map-web/scripts/`, `skills/twin-scrolly/scripts/`,
-`skills/twin-image-beat/scripts/`. Beats reach the shared copy through the `#shared/…` subpath alias
+runners cannot call it today: `skills/map-web/scripts/`, `skills/scrolly/scripts/`,
+`skills/image-beat/scripts/`. Beats reach the shared copy through the `#shared/…` subpath alias
 (`proof/mapgen-dot-web/render-web.mjs:30`); a **skill** may not, because
 `no-cross-skill-imports.test.ts` resolves every string literal under `skills/` on disk and requires
 it to stay inside its own skill.
@@ -118,7 +118,7 @@ Two concentrated costs, both real:
 
 ### 0d. B3.3 — one line, 17 types
 
-`skills/twin-chart-web/scripts/render-web.mjs:240`:
+`skills/chart-web/scripts/render-web.mjs:240`:
 
 ```css
 .chart-header, .chart-source { max-width: 640px; }
@@ -149,12 +149,12 @@ The web genre is three populations, not one:
 Neither is caught by anything. `skill-md-matches-code.test.ts` checks that paths resolve and that
 named identifiers exist; it does not read a sentence about coverage.
 
-- `skills/twin-palette/SKILL.md:3` — *"Every render reads that file, and refuses rather than
+- `skills/palette/SKILL.md:3` — *"Every render reads that file, and refuses rather than
   default."* Measured: 15 of 70 beats, 0 of 12 seed runners.
-- `skills/twin-palette/SKILL.md:95` — *"**Every render reads it, and none defaults.**"* Same.
+- `skills/palette/SKILL.md:95` — *"**Every render reads it, and none defaults.**"* Same.
 - `proof/palette-proof/PROOF.md:49-51` — *"The web, video, map and scrolly genres import the same
-  vendored `readPalette` and are guarded for parity."* Measured: `twin-scrolly`, `twin-map-web` and
-  `twin-image-beat` do not carry `readPalette` at all, and `render-still-parity.test.ts:20-25`
+  vendored `readPalette` and are guarded for parity."* Measured: `scrolly`, `map-web` and
+  `image-beat` do not carry `readPalette` at all, and `render-still-parity.test.ts:20-25`
   explicitly permits that subset. The guard is not covering what the sentence says it covers.
 
 **Note the asymmetry, because it decides how each is treated.** B1.2's prose is a claim the code
@@ -167,7 +167,7 @@ state the real reach. B1.1's and B3.3's prose are **rules being reversed** — �
 
 ### 1.1 The change
 
-`skills/twin-chart-web/scripts/render-web.mjs:240` — delete the declaration.
+`skills/chart-web/scripts/render-web.mjs:240` — delete the declaration.
 
 ```css
 .chart-header, .chart-source { max-width: 640px; }     ← remove
@@ -185,7 +185,7 @@ a beat is a story, not a skill, so a beat importing this is legal and is how it 
 
 ### 1.2 Scrolly's header — in scope, and why
 
-`skills/twin-scrolly/scripts/render-scrolly.mjs:221`, `.scrolly-header { max-width: 640px; }`, caps
+`skills/scrolly/scripts/render-scrolly.mjs:221`, `.scrolly-header { max-width: 640px; }`, caps
 the scrolly's title and its `.source` while the graphic beneath goes full-bleed. That is the same
 mismatch the owner saw — B3.3's word is "**too**", meaning "as the visual does". Remove the
 `max-width` and keep the `padding: 4px clamp(16px, 6vw, 56px) 0` on the same rule, so the header
@@ -199,7 +199,7 @@ its measure on grounds B3.3 does not contradict.
 
 ### 1.3 The doc edit — this reverses a written rule
 
-`skills/twin-chart-web/references/web-discipline.md:130-135` currently defends the cap by name:
+`skills/chart-web/references/web-discipline.md:130-135` currently defends the cap by name:
 
 > The two places a long line of prose genuinely does become unreadable at full bleed — the header
 > block (title + caveat) and the source line — are the **ONLY** things given a reading-measure cap
@@ -216,7 +216,7 @@ sits in, per ruling R2 (*"ça fonctionnera un peu comme un composant embed"*).
 `web-discipline.md:207` and `:220` also mention the source line, in the window-fit mechanism. Both
 are about height, not width. **Leave them.**
 
-`skills/twin-scrolly/references/scrolly-discipline.md:167-198` (*"The reading measure belongs to the
+`skills/scrolly/references/scrolly-discipline.md:167-198` (*"The reading measure belongs to the
 prose; the graphic goes full-bleed"*) argues the 640px header across four build rounds. Its
 conclusion about the **step panel** stands; its conclusion about the **header** does not. Edit
 `:196-198` — the sentence that moves the constraint onto `.scrolly-header` — so the file records that
@@ -241,13 +241,13 @@ tooltip and on the step panel, so such a guard would need an exemption list, whi
 ### 2.1 Vendor `readPalette` and `parsePalette` into the three skills that lack them
 
 Copy both functions **verbatim** from the canonical
-`skills/twin-chart-beat/scripts/render-still.mjs:105-147` into:
+`skills/chart-beat/scripts/render-still.mjs:105-147` into:
 
 | copy | why it needs them |
 |---|---|
-| `skills/twin-map-web/scripts/render-still.mjs` | `render-web.mjs:47-48` names the pair |
-| `skills/twin-scrolly/scripts/render-still.mjs` | `render-scrolly.mjs:394-395` and `render-preview.mjs:42-43` name the pair |
-| `skills/twin-image-beat/scripts/render-still.mjs` | `render-preview.mjs:38` names `ground` |
+| `skills/map-web/scripts/render-still.mjs` | `render-web.mjs:47-48` names the pair |
+| `skills/scrolly/scripts/render-still.mjs` | `render-scrolly.mjs:394-395` and `render-preview.mjs:42-43` name the pair |
+| `skills/image-beat/scripts/render-still.mjs` | `render-preview.mjs:38` names `ground` |
 
 Each copy also needs the imports `parsePalette`/`readPalette` use (`existsSync`, `readFileSync`,
 `dirname`, `join`, `resolve` from `node:fs` / `node:path`) — present in most copies already; add
@@ -262,7 +262,7 @@ through `#shared/…`; a subset is explicitly fine (`render-still-parity.test.ts
 function (`:109-146`), normalising formatting. The three new copies are guarded **the moment they
 land**, with nobody wiring them up. **Mutation that reddens it:** in a copy of the tree outside the
 repository, change `` `No PALETTE.md found for ${start}.` `` to `` `No palette for ${start}.` `` in
-`skills/twin-scrolly/scripts/render-still.mjs` and run the suite — it must name that file and that
+`skills/scrolly/scripts/render-still.mjs` and run the suite — it must name that file and that
 function.
 
 ### 2.2 Give each craft skill its own recorded answer
@@ -271,16 +271,16 @@ function.
 parent, stopping at `stopAt` inclusive. So **one file per craft skill, at the skill root**:
 
 ```
-skills/twin-chart-beat/PALETTE.md
-skills/twin-chart-video/PALETTE.md
-skills/twin-chart-web/PALETTE.md
-skills/twin-map-beat/PALETTE.md
-skills/twin-map-web/PALETTE.md
-skills/twin-scrolly/PALETTE.md
-skills/twin-image-beat/PALETTE.md
+skills/chart-beat/PALETTE.md
+skills/chart-video/PALETTE.md
+skills/chart-web/PALETTE.md
+skills/map-beat/PALETTE.md
+skills/map-web/PALETTE.md
+skills/scrolly/PALETTE.md
+skills/image-beat/PALETTE.md
 ```
 
-Seven files, shaped on `skills/twin-palette/assets/PALETTE.example.md`, each carrying **exactly the
+Seven files, shaped on `skills/palette/assets/PALETTE.example.md`, each carrying **exactly the
 values that skill's runner names today** — `ground: "#FFFFFF"`, `accent: "#0B7A75"` — so the seed's
 pixels do not move. Below the front matter, one paragraph saying this is the skill's own
 demonstration answer and that a journalist's story root overrides it.
@@ -288,7 +288,7 @@ demonstration answer and that a journalist's story root overrides it.
 **`origin` is the one place this is awkward, and it should be named rather than smoothed over.**
 `parsePalette` accepts only `newsroom`, `subject` or `journalist` (`render-still.mjs:139-144`) and
 throws otherwise. Nobody chose a seed's colours. Write `origin: subject` — the teal is the emissions
-convention `twin-palette`'s own `subject-conventions.md` records, so it is the least false of the
+convention `palette`'s own `subject-conventions.md` records, so it is the least false of the
 three — and say so in the file's prose. A fourth value (`seed`) would be a `parsePalette` change
 rippling through all 22 copies plus every `PALETTE.md` reader; **out of scope, named in §6.**
 
@@ -306,7 +306,7 @@ const { ground, accent } = readPalette(join(HERE, "..", "assets"), {
 Import `readPalette` from the skill's **own** `./render-still.mjs`, never from `#shared` — a skill
 that reached outside itself would fail `no-cross-skill-imports.test.ts`.
 
-`skills/twin-map-web/scripts/render-preview.mjs` changes **nothing**: it names no colour and takes
+`skills/map-web/scripts/render-preview.mjs` changes **nothing**: it names no colour and takes
 what `render-web.mjs`'s `render()` resolves.
 
 **The values are identical, so every seed preview must come out byte-identical.** That is the
@@ -316,11 +316,11 @@ verification, and it is stronger than "the test passes": any pixel that moves me
 
 Nothing today covers "a seed runner reads a recorded palette". Worse,
 `seed-renders-standalone.test.ts:51-56` carries a **hand-written four-skill list**
-(`twin-chart-beat`, `twin-chart-web`, `twin-chart-video`, `twin-map-beat`) which omits exactly the
+(`chart-beat`, `chart-web`, `chart-video`, `map-beat`) which omits exactly the
 three skills this section fixes. That is the standing counter-example
 `PLAN-2026-08-10.md` names.
 
-**New file: `skills/splash-twin/test/seed-reads-a-recorded-palette.test.ts`.** It **walks**
+**New file: `skills/splash/test/seed-reads-a-recorded-palette.test.ts`.** It **walks**
 `skills/*/scripts/` for basenames matching `render-*.mjs` — a pattern, never a list — excludes
 `render-still.mjs` (the vendored library, whose `#000000`/`#FFFFFF` contrast poles at `:73` are
 assigned to `ink` and are not a palette), and asserts three things per runner:
@@ -334,7 +334,7 @@ assigned to `ink` and are not a palette), and asserts three things per runner:
    already reserves for exactly this (`genre-shippability.test.ts:1-9`, `where.test.ts`).
 
 Measured against the tree as it stands, this scan matches the eleven sites and **nothing else**. It
-does not reach `twin-palette/scripts/palette.mjs:102-126` (its subject-convention table, which is
+does not reach `palette/scripts/palette.mjs:102-126` (its subject-convention table, which is
 legitimately hexes — it is the *proposal source*), nor the sample-photo generators, nor
 `bake-plate.mjs`'s basemap paint, because none of those is a `render-*.mjs`.
 
@@ -342,14 +342,14 @@ legitimately hexes — it is the *proposal source*), nor the sample-photo genera
 
 | mutation | must fail on |
 |---|---|
-| restore `accent: "#0B7A75"` in `skills/twin-chart-beat/scripts/render-preview.mjs` | check 1, naming that file and line |
+| restore `accent: "#0B7A75"` in `skills/chart-beat/scripts/render-preview.mjs` | check 1, naming that file and line |
 | replace the `readPalette` call with `const ground = GROUND_CONST;` above it | check 2 |
-| delete `skills/twin-scrolly/PALETTE.md` | check 3 |
+| delete `skills/scrolly/PALETTE.md` | check 3 |
 | corrupt `origin:` to `origin: house` in any skill `PALETTE.md` | check 3, via `parsePalette`'s own throw |
 
 **Do not widen `seed-renders-standalone.test.ts`'s `CRAFT` list in this chantier.** It renders each
-skill in an isolated temp root and byte-compares against the shipped preview; adding `twin-map-web`,
-`twin-scrolly` and `twin-image-beat` pulls headless Chrome, a MapTiler key and minutes of wall clock
+skill in an isolated temp root and byte-compares against the shipped preview; adding `map-web`,
+`scrolly` and `image-beat` pulls headless Chrome, a MapTiler key and minutes of wall clock
 into the default suite. Check 3 above closes the specific hole (the copied directory carries its own
 answer) statically and for free. The widening is real work with a real runtime bill and belongs to
 whoever owns the suite's budget — §6.
@@ -360,11 +360,11 @@ Because §2.1–2.3 make the seeds true, two of the three claims stop being lies
 become claims about the beats. Correct all three to what is measured **after** this chantier lands
 (15 of 70 beats, 12 of 12 seed runners, 9 of 22 `render-still.mjs` copies):
 
-- `skills/twin-palette/SKILL.md:3` — the `description:` front-matter sentence. Replace *"Every render
+- `skills/palette/SKILL.md:3` — the `description:` front-matter sentence. Replace *"Every render
   reads that file, and refuses rather than default"* with the reach that is true: every craft
   skill's own seed reads it and refuses rather than default; a beat that reads it refuses rather
   than default; the beats still naming hexes are the migration debt, and name the count.
-- `skills/twin-palette/SKILL.md:95` — item 7, *"Every render reads it, and none defaults."* Same
+- `skills/palette/SKILL.md:95` — item 7, *"Every render reads it, and none defaults."* Same
   correction, and keep the `readPalette`-throws sentence that follows, which is true.
 - `proof/palette-proof/PROOF.md:49-51` — replace *"import the same vendored `readPalette`"* with what
   the parity guard actually proves: every copy that carries it is compared function-by-function
@@ -423,7 +423,7 @@ Nothing else moves. The `<text>` node itself keeps its `x`, its `fill={muted}` a
 
 ### 3.3 Where it is NOT a translation — the map column, 14 beats
 
-`twin-map-beat`'s column already lays out **from both ends and meets in the middle**
+`map-beat`'s column already lays out **from both ends and meets in the middle**
 (`Co2MapStill.tsx:134-149`): title hangs off the top; caveat, no-data swatch, legend bar and caption
 stack up from `FRAME.height - PAD`. The plate itself is a fixed square and does not move.
 
@@ -452,12 +452,12 @@ multiplier as §2, and the reason nothing else in W3–W8 should touch a compone
 
 | step | files | change |
 |---|---|---|
-| **3.4.1 seeds (5)** | `twin-chart-beat/assets/ChartSeed.tsx` · `twin-chart-video/assets/EmissionsVideo.tsx` (`:245`, `:254`, `:344`) · `twin-map-beat/assets/Co2MapStill.tsx` (`:141`, `:155-159`) · `twin-map-beat/assets/Co2MapVideo.tsx` (`:177`) · `twin-chart-web/assets/ChartWebSeed.tsx` (`ChartWebPreviewSvg`, `:646+`) | §3.2 arithmetic; §3.3 for the two map seeds |
+| **3.4.1 seeds (5)** | `chart-beat/assets/ChartSeed.tsx` · `chart-video/assets/EmissionsVideo.tsx` (`:245`, `:254`, `:344`) · `map-beat/assets/Co2MapStill.tsx` (`:141`, `:155-159`) · `map-beat/assets/Co2MapVideo.tsx` (`:177`) · `chart-web/assets/ChartWebSeed.tsx` (`ChartWebPreviewSvg`, `:646+`) | §3.2 arithmetic; §3.3 for the two map seeds |
 | **3.4.2 static chart beats (13)** | `proof/static-*/…Still.tsx` and the `more-*` stills | §3.2 |
 | **3.4.3 video beats (~21)** | `proof/vid{x,y,z}-*/…Video.tsx`, `proof/video-*/`, `proof/*/…Video.tsx` | §3.2. The source stays inside the furniture opacity group (`EmissionsVideo.tsx:274`) — `motion-grammar.md:66` calls the source line furniture and that is unchanged, so **no timing contract moves and `video-first-frame-not-empty.test.ts` is unaffected** |
 | **3.4.4 map stills and videos (14)** | `proof/map*/…Still.tsx`, `…Video.tsx` | §3.3 |
-| **3.4.5 fluid map-web (2)** | `skills/twin-map-web/assets/MapWebSeed.tsx` + `proof/mapgen-dot-web`, `proof/mapgen-symbol-web` | HTML, no arithmetic: move `<p class="mw-source">` to be the last child of `.map-web`. Measured today at byte 6896 vs `mw-title` at 6745 — it sits directly under the title |
-| **3.4.6 scrolly (2)** | `skills/twin-scrolly/scripts/render-scrolly.mjs:140` + the two beats | Move `.source` out of `.scrolly-header` into a `.scrolly-footer` after `.scrolly-track`, which is where a scroll story's credit conventionally sits |
+| **3.4.5 fluid map-web (2)** | `skills/map-web/assets/MapWebSeed.tsx` + `proof/mapgen-dot-web`, `proof/mapgen-symbol-web` | HTML, no arithmetic: move `<p class="mw-source">` to be the last child of `.map-web`. Measured today at byte 6896 vs `mw-title` at 6745 — it sits directly under the title |
+| **3.4.6 scrolly (2)** | `skills/scrolly/scripts/render-scrolly.mjs:140` + the two beats | Move `.source` out of `.scrolly-header` into a `.scrolly-footer` after `.scrolly-track`, which is where a scroll story's credit conventionally sits |
 | **3.4.7 legacy two-rung (4)** | `more-heatmap-co2-per-capita-decades`, `mapgen-choropleth-web`, `mapgen-hexgrid-web`, `mapgen-locator-web` | §3.2 arithmetic **inside their existing viewBox**. See §5 for why the layout migration itself is not here |
 | **3.4.8 fluid chart-web (17)** | — | **nothing.** Already the figure's last child |
 
@@ -481,7 +481,7 @@ delivered file), so the reading belongs there.
 
 ### 3.6 The doc edits — this reverses a written rule, in two files
 
-`skills/twin-chart-beat/references/static-discipline.md:139-151`, the section titled *"The source
+`skills/chart-beat/references/static-discipline.md:139-151`, the section titled *"The source
 under the header, not in a footer"*, states the current placement as doctrine with a stated reason
 (*"not cropped when somebody screenshots the top of the chart"*). **Rewrite the whole section.**
 Retitle it, keep what survives — reading size, muted ink, never 9px, never the bottom-right corner,
@@ -492,7 +492,7 @@ than robustness against a partial screenshot). Also fix `:146-150`, which descri
 title→subtitle→source stack "anchored at the top of the frame instead of the bottom" — after this,
 the stack is title→subtitle at the top and source at the bottom.
 
-`skills/twin-doctrine/references/information-architecture.md:56-70` is the section *"When a
+`skills/doctrine/references/information-architecture.md:56-70` is the section *"When a
 genre-scoped file disagrees with this stack"*, and **it cites this exact override as its worked
 example**, three times (`:64`, `:66`, `:67`). Its item 5 (`:45-50`) already puts the source at the
 bottom by default — so the *default* is what wins, and the example vanishes. **Do not delete the
@@ -510,7 +510,7 @@ B1.1 is per-component arithmetic. It is not a duplicated helper, so **no parity 
 `PLAN-2026-08-10.md`'s rule applies: this spec must add the guard. Three, in layers, each with a
 different blind spot, all walking.
 
-**Guard A — `skills/splash-twin/test/credit-anchors-to-the-frame-bottom.test.ts`.**
+**Guard A — `skills/splash/test/credit-anchors-to-the-frame-bottom.test.ts`.**
 Walks every `.tsx` under `twin/` (`node_modules`, `.git` excluded), finds every
 `const source(Baseline|Top) =` and reads its right-hand side to the terminating `;`. Asserts the
 expression **mentions the frame's height** (`height` or `FRAME.height`) with a subtraction, and
@@ -552,7 +552,7 @@ Not "the suite is green". Opened artifacts, at named sizes, with what to look at
 |---|---|---|---|
 | 1 | `proof/webx-carbon-footprint/carbon-footprint.html` | 1600 / 1024 / 768 / 375 px | the title's last word runs past the old 640px line at 1600; the source line likewise; the plot is pixel-unchanged; nothing overflows at 375 |
 | 2 | `proof/webz-bump-emitter-rank/bump.html` | 1600 / 375 | second of the 17 — proves it came from the shared CSS and not from one beat |
-| 3 | `skills/twin-chart-beat/assets/preview.png` + the six other seed previews | native | **byte-identical to what ships today.** `bun test seed-renders-standalone` asserts it for four of them; diff the other three by hand. Any moved pixel means a palette value drifted in §2.3 |
+| 3 | `skills/chart-beat/assets/preview.png` + the six other seed previews | native | **byte-identical to what ships today.** `bun test seed-renders-standalone` asserts it for four of them; diff the other three by hand. Any moved pixel means a palette value drifted in §2.3 |
 | 4 | `proof/static-carbon-footprint-spread/…-still.png` **and** `…-still.svg` | native, 900×560 | source on the frame's bottom margin, left-aligned with the title, not clipped, not overlapping the x-axis labels; the plot ~22px taller with no label collision introduced |
 | 5 | `proof/vidx-line-life-expectancy/…mp4` | frame 0, mid, last | the source visible at the bottom from the moment the furniture fades in, and still there at the last frame; the title unmoved |
 | 6 | `proof/mapgen-choropleth-video/…-still.png` | native | the column: title at top, then a gap, then legend / no-data / caveat / **source last**; the legend still fits; the re-pointed guard did not throw |
@@ -615,7 +615,7 @@ into W5/W6 or sequenced strictly after them.
 - **`origin` has no honest value for a seed.** §2.2 writes `origin: subject` and says why. A fourth
   value (`seed`) is a `parsePalette` change rippling through 22 `render-still.mjs` copies and every
   reader of a `PALETTE.md`.
-- **`twin-dw-beat` is untouched.** It names `#0B7A75` at `prove-co2.mjs:45` and
+- **`dw-beat` is untouched.** It names `#0B7A75` at `prove-co2.mjs:45` and
   `verify-range-annotation.mjs:25`. Its colour arrives through a Datawrapper spec field, not through
   a ground/accent pair — and DW has no ground at all this account can set (the parent repository
   measured `POST /v3/themes` → 401 and `metadata.publish.background` silently not rendering). Neither
@@ -623,7 +623,7 @@ into W5/W6 or sequenced strictly after them.
 - **`seed-renders-standalone.test.ts` keeps its four-skill hand-written list.** §2.4 explains the
   runtime cost of widening it and closes the specific hole statically instead. The list remains an
   instance of the pattern this branch names as its counter-example — recorded, not fixed.
-- **`twin-image-beat` has no story-level source line at all** (per-photo credits under each photo,
+- **`image-beat` has no story-level source line at all** (per-photo credits under each photo,
   `ImageBeatSeed.tsx:133-137`, `:236-243`). Whether B1.1 is already satisfied there or a line is
   missing is an editorial question for the owner, not a code one. §3 touches it only through §2.
 - **The layout migration of the four beats** — §5, W4.

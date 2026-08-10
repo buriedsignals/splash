@@ -30,7 +30,7 @@ export function formatNumber(value: number, decimals = 1): string {
 }
 
 /** The French formatter this beat no longer calls. Kept, and kept exported, for one reason only:
- *  `skills/splash-twin/test/helper-parity.test.ts` cross-checks every `fr` copy in the tree against
+ *  `skills/splash/test/helper-parity.test.ts` cross-checks every `fr` copy in the tree against
  *  every other to prove the rule has not silently drifted between them, and deleting this copy
  *  would blind that guard rather than satisfy it — the same reason `ChartWebSeed.tsx` still exports
  *  a `wrap` it no longer calls. This beat's own numbers go through `formatNumber` above. */

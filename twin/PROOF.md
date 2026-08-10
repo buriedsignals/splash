@@ -41,7 +41,7 @@ FAILS: Cannot find module '@resvg/resvg-js'
 ```
 
 `assets/root-template/package.json` declares react, react-dom and three d3 packages. It does not
-declare `@resvg/resvg-js`, which `twin-chart-beat/scripts/render-still.mjs` imports at module load
+declare `@resvg/resvg-js`, which `chart-beat/scripts/render-still.mjs` imports at module load
 and whose header says it comes "from the root's own dependencies". It does not. The check tests
 `node_modules` exists, not that the things the twin imports resolve. A journalist would hit this on
 their first chart, after being told the environment was fine. I ran `bun add @resvg/resvg-js` to
@@ -82,7 +82,7 @@ Played as a journalist with opinions, not a cooperative fixture. The load-bearin
 
 ## 4. The reference loop — where the doctrine was silent
 
-`twin-doctrine/references/reference-set.md` ships four rows: NYT Upshot dot-marks, the Washington
+`doctrine/references/reference-set.md` ships four rows: NYT Upshot dot-marks, the Washington
 Post's coronavirus simulations, an NYT 3D reconstruction, a Vox map cut. **Not one of them is a long
 time series read back against a historical level** — the argument structure I actually had. The set
 is honest about being four rows instead of six, and about owing a static in-article example; what it

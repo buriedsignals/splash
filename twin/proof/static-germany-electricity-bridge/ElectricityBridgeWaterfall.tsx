@@ -20,13 +20,13 @@ import {
   contrast,
   assertLegible,
   FONT_FAMILY,
-} from "#shared/twin-chart-beat/render-still.mjs";
+} from "#shared/chart-beat/render-still.mjs";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
-} from "#shared/twin-chart-beat/sizes.mjs";
-import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
+} from "#shared/chart-beat/sizes.mjs";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 
 export type Step = {
   label: string;
@@ -316,7 +316,7 @@ export function ElectricityBridgeWaterfall({
   const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
   // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same inset the title
   // hangs off at the top, on the same x. See
-  // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
+  // chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   // At portrait that bottom is the STAGE's, not the frame's.
   const sourceBaseline =
     sourceBottom - (sourceLines.length - 1) * T.SUBTITLE.lead;

@@ -13,7 +13,7 @@ import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` and `seriesInks` come from the SHARED copy through the `#shared/…` subpath alias —
 // a beat is a story, not a skill, so it may reach out where a skill may not. This beat's own
 // `render-still.mjs` is the rasteriser it renders through and carries neither.
-import { readPalette, seriesInks } from "#shared/twin-chart-beat/render-still.mjs";
+import { readPalette, seriesInks } from "#shared/chart-beat/render-still.mjs";
 import { LocatorStill } from "./LocatorStill.tsx";
 import { orgsFromCsv } from "./geo-locator.ts";
 

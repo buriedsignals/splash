@@ -16,7 +16,7 @@ two series. Two shades walked off one accent differ only in lightness, which on 
 as emphasis rather than as membership. Two hues that hold apart under every colour-vision deficiency
 is what the type needs.
 
-`twin-palette`'s subject option was checked and NOT taken. `matchConvention` would fire on
+`palette`'s subject option was checked and NOT taken. `matchConvention` would fire on
 `renewables` for this beat's subject — but it proposes ONE accent, and both series here ARE
 renewables (wind and solar), so a single renewables green cannot separate the two things this chart
 exists to compare. The recorded pair stands.

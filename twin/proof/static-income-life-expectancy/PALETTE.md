@@ -5,10 +5,10 @@ origin: newsroom
 ---
 
 The answer recorded for this beat: the newsroom's own house colours, as they stand in
-`skills/splash-twin/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
+`skills/splash/assets/root-template/NEWSROOM.example.md` (`brandColor: "#0B7A75"`,
 `ground: "#FFFFFF"`).
 
-`twin-palette`'s subject option was checked and does not apply. The subject here is the relation
+`palette`'s subject option was checked and does not apply. The subject here is the relation
 between income and life expectancy across 165 countries; `matchConvention` holds conventions for
 renewables, fossil fuel, water and heat, and none of them fires on it. When no convention applies,
 the house theme wins.
