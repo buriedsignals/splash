@@ -1,3 +1,8 @@
+---
+size: landscape
+type: bump
+---
+
 # Beat — India has risen from eighth to third among the world's biggest CO₂ emitters
 
 **Proves:** between 1990 and 2024 India moved from eighth to third in the world ranking of annual
@@ -126,3 +131,21 @@ each captioned year is locatable; and the sentence under the axis names the two 
 
 Computed by `render.mjs` and passed straight into the component's `<desc>`; it is echoed to the
 console on every render so it can be read beside the frame it describes.
+
+## Size — 2026-08-11
+
+**Pinned: landscape (1920 x 1080)**, in the front matter, read by `readPinnedSize`, verified from the
+delivered PNG's own IHDR. It shipped 1800 x 1440 before, from a `FRAME` constant this component
+EXPORTED so its own runner could repeat it — the two literals that agreed with each other, in their
+most explicit form. The export is gone.
+
+**Square and portrait are refused by `type-at-size.mjs`.** A bump chart's y axis is a rank, read top
+to bottom, and its x is time running left to right; it has no twin form (rotating it would put time
+on a vertical axis) and no aspect range has been measured for it. One probe run reverses that.
+
+**What the pinned frame changed.** Every spacing literal is named and scaled, including the two
+track weights and the terminal-dot halo — a 2.5px line and a 4px dot are 900px-frame quantities, and
+at 1920 they read as hairlines around specks. The beat also gained a rank-pitch floor: a bump's rows
+carry NAMES at both ends, so below one line of name type per rank row the terminal labels print
+through each other, and neither `assertTypeFloor` (which measures the type) nor `assertPlotAspect`
+(which never clamps an unmeasured type) can see that.

@@ -43,6 +43,12 @@ import {
   measureText,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 
 export type Track = {
   country: string;
@@ -59,23 +65,95 @@ export type Crossing = {
   drawn: boolean;
 };
 
-const FRAME = { width: 900, height: 720 };
-const PAD = 40;
+/** The type this beat draws, in `references/types/` vocabulary. `formForSize` answers for it, and
+ *  a size it refuses is refused by the runner before a mark is drawn. */
+export const TYPE = 'bump';
 
-const TITLE = { fontSize: 24, fontWeight: 700, lead: 30 };
-const CAVEAT = { fontSize: 15, fontWeight: 400, lead: 20 };
-const SOURCE = { fontSize: 14, fontWeight: 400, lead: 19 };
-const AXIS_TITLE = { fontSize: 13, fontWeight: 500 };
-const RANK_TICK = { fontSize: 13, fontWeight: 500 };
-const NAME = { fontSize: 13, fontWeight: 500 };
-const NAME_ACCENT = { fontSize: 13, fontWeight: 700 };
-const CROSSING = { fontSize: 12, fontWeight: 500 };
-const CONCLUSION = { fontSize: 14, fontWeight: 400, lead: 19 };
-const DOT_R = 4;
+/**
+ * THE 900-WIDE TUNING, KEPT AS THE BASE, WITH THE SIZE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more, and its absence is the point: the frame is `sizeFor(size)`'s,
+ * and `size` is the decision gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs`.
+ * Before this the size was stated TWICE as literals — once here and once in the render script — and
+ * `renderStill` compared them against each other, so they agreed by construction and nothing
+ * downstream of the gate ever read what the journalist chose.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts: the probe measured eleven bare
+ * literals in the layout arithmetic of the SIMPLEST static in this corpus, and scaling the type
+ * while leaving them collided the title into the subtitle at 1920x1080
+ * (`proof/static-carbon-footprint-spread/probe/VERDICT.md`). `PAD` is the one that does NOT go
+ * through it: a frame's margin is proportional to the CANVAS, not to the type — `frameInsetFor` in
+ * `sizes.mjs` states the split and argues it.
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 30 },
+  TITLE_TO_CAVEAT: 26,
+  CAVEAT_TO_AXIS_TITLE: 30,
+  AXIS_TITLE_TO_PLOT: 22,
+  YEAR_LABEL_DROP: 18,
+  CONCLUSION_GAP: 26,
+  SOURCE_AIR: 10,
+  CROSSING_INSET: 6,
+  HALO_R: 4,
+  TRACK_WIDTH: 2.5,
+  SUBJECT_TRACK_WIDTH: 4,
+  CAVEAT: { fontSize: 15, fontWeight: 400, lead: 20 },
+  SOURCE: { fontSize: 14, fontWeight: 400, lead: 19 },
+  AXIS_TITLE: { fontSize: 13, fontWeight: 500 },
+  RANK_TICK: { fontSize: 13, fontWeight: 500 },
+  NAME: { fontSize: 13, fontWeight: 500 },
+  NAME_ACCENT: { fontSize: 13, fontWeight: 700 },
+  CROSSING: { fontSize: 12, fontWeight: 500 },
+  CONCLUSION: { fontSize: 14, fontWeight: 400, lead: 19 },
+  DOT_R: 4,
+  GAP: 10,
+} as const;
 
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = (tok: { fontSize: number; fontWeight: number; lead?: number }) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    CAVEAT: f(BASE.CAVEAT) as typeof BASE.CAVEAT,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS_TITLE: f(BASE.AXIS_TITLE) as typeof BASE.AXIS_TITLE,
+    RANK_TICK: f(BASE.RANK_TICK) as typeof BASE.RANK_TICK,
+    NAME: f(BASE.NAME) as typeof BASE.NAME,
+    NAME_ACCENT: f(BASE.NAME_ACCENT) as typeof BASE.NAME_ACCENT,
+    CROSSING: f(BASE.CROSSING) as typeof BASE.CROSSING,
+    CONCLUSION: f(BASE.CONCLUSION) as typeof BASE.CONCLUSION,
+    TITLE_TO_CAVEAT: sp(BASE.TITLE_TO_CAVEAT),
+    CAVEAT_TO_AXIS_TITLE: sp(BASE.CAVEAT_TO_AXIS_TITLE),
+    AXIS_TITLE_TO_PLOT: sp(BASE.AXIS_TITLE_TO_PLOT),
+    YEAR_LABEL_DROP: sp(BASE.YEAR_LABEL_DROP),
+    CONCLUSION_GAP: sp(BASE.CONCLUSION_GAP),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    CROSSING_INSET: sp(BASE.CROSSING_INSET),
+    HALO_R: sp(BASE.HALO_R),
+    TRACK_WIDTH: Math.max(1, sp(BASE.TRACK_WIDTH)),
+    SUBJECT_TRACK_WIDTH: Math.max(1, sp(BASE.SUBJECT_TRACK_WIDTH)),
+    DOT_R: sp(BASE.DOT_R),
+    GAP: sp(BASE.GAP),
+  };
+}
+
+/** The removal ladder this beat runs, per size, recorded so the render can print it and the
+ *  artifact can carry it. At a phone frame the type floor is 36px, which triples the headline and
+ *  the credit; R3 fires before a mark is drawn. */
+export function rungsFor(size: string): string[] {
+  if (sizeFor(size).minTypePx < 36) return [];
+  return ["R3: the standfirst keeps its first sentence only"];
+}
+
+function firstSentence(text: string): string {
+  const stop = text.indexOf(". ");
+  return stop === -1 ? text : text.slice(0, stop + 1);
+}
 /** Air between a terminal dot and the name beside it, and between the rank column and the plot. */
-const GAP = 10;
-
 /** Wrap on the measured width of the real string, never on a character count. This story's own copy
  *  of the static family's `wrap` — duplicated, not linked, per this project's rule for anything with
  *  no `#shared/*` vendoring path. */
@@ -175,6 +253,8 @@ export type EmitterRankBumpProps = {
   conclusion: string;
   ground: string;
   accent: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
 };
 
 export function EmitterRankBump({
@@ -191,8 +271,15 @@ export function EmitterRankBump({
   conclusion,
   ground,
   accent,
+  size,
 }: EmitterRankBumpProps) {
-  const { width, height } = FRAME;
+  const { width, height, typeScale, minTypePx } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const rungs = rungsFor(size);
+  const contentTop = stage.reserved ? stage.top : PAD;
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
   const { ink, muted, grid } = deriveFurniture(ground);
 
   if (years.length < 3)
@@ -221,55 +308,71 @@ export function EmitterRankBump({
   // no longer part of it — it sits on the frame's own bottom margin, `static-discipline.md`,
   // "The source on the frame's bottom margin."
   const textWidth = width - PAD * 2;
-  const titleLines = wrap(title, textWidth, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  const caveatLines = wrap(caveat, textWidth, CAVEAT);
+  const titleLines = wrap(title, textWidth, T.TITLE);
+  const titleBaseline = contentTop + T.TITLE.fontSize;
+  const standfirst = rungs.some((r) => r.startsWith("R3"))
+    ? firstSentence(caveat)
+    : caveat;
+  const caveatLines = wrap(standfirst, textWidth, T.CAVEAT);
   const caveatBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 26;
-  const sourceLines = wrap(source, textWidth, SOURCE);
-  // The LAST source line lands on `height - PAD`; a wrapped credit grows upward into the frame.
-  const sourceBaseline = height - PAD - (sourceLines.length - 1) * SOURCE.lead;
+    titleBaseline + (titleLines.length - 1) * T.TITLE.lead + T.TITLE_TO_CAVEAT;
+  const sourceLines = wrap(source, textWidth, T.SOURCE);
+  // The LAST source line lands on the bottom of the band; a wrapped credit grows upward into the
+  // frame. At portrait that bottom is the STAGE's, not the frame's.
+  const sourceBaseline =
+    sourceBottom - (sourceLines.length - 1) * T.SOURCE.lead;
   // The axis title keeps the air it always had above it, measured from the LAST HEADER line
   // rather than from the source, which has left the header.
   const axisTitleBaseline =
-    caveatBaseline + (caveatLines.length - 1) * CAVEAT.lead + 30;
+    caveatBaseline +
+    (caveatLines.length - 1) * T.CAVEAT.lead +
+    T.CAVEAT_TO_AXIS_TITLE;
 
   // ── Gutters, every one measured against the strings that will actually sit in them.
   const rankColumn = Math.max(
     ...Array.from({ length: rankRows }, (_, i) =>
-      measureText(String(i + 1), RANK_TICK),
+      measureText(String(i + 1), T.RANK_TICK),
     ),
   );
   const nameColumn = Math.max(
     ...data.map((t) =>
       Math.max(
-        measureText(t.country, NAME),
-        measureText(t.country, NAME_ACCENT),
+        measureText(t.country, T.NAME),
+        measureText(t.country, T.NAME_ACCENT),
       ),
     ),
   );
 
-  const conclusionLines = wrap(conclusion, textWidth, CONCLUSION);
-  const yearLabelBlock = RANK_TICK.fontSize + 18;
-  const conclusionGap = 26;
+  const conclusionLines = wrap(conclusion, textWidth, T.CONCLUSION);
+  const yearLabelBlock = T.RANK_TICK.fontSize + T.YEAR_LABEL_DROP;
 
   const padding = {
-    top: axisTitleBaseline + 22,
-    right: PAD + nameColumn + DOT_R + GAP,
+    top: axisTitleBaseline + T.AXIS_TITLE_TO_PLOT,
+    right: PAD + nameColumn + T.DOT_R + T.GAP,
     // Grown by the source block's own height plus clear air: the conclusion line beneath the plot
     // has to end above the credit's ink, which now sits on the frame's bottom margin.
     bottom:
-      PAD +
-      conclusionLines.length * CONCLUSION.lead +
-      conclusionGap +
-      yearLabelBlock +
-      (sourceLines.length - 1) * SOURCE.lead +
-      SOURCE.fontSize +
-      10,
-    left: PAD + rankColumn + GAP + nameColumn + DOT_R + GAP,
+      height -
+      (sourceBaseline - T.SOURCE.fontSize - T.SOURCE_AIR) +
+      conclusionLines.length * T.CONCLUSION.lead +
+      T.CONCLUSION_GAP +
+      yearLabelBlock,
+    left: PAD + rankColumn + T.GAP + nameColumn + T.DOT_R + T.GAP,
   };
 
   const g = bumpGeometry(data, years, rankRows, { width, height, padding });
+
+  // THE LAST RUNG, FIRED RATHER THAN DESCRIBED. A bump has no measured aspect range and no twin
+  // form, so nothing in the toolchain clamps its plot; and its rows carry NAMES at both ends, so
+  // the floor that matters is one line of name type per rank row.
+  if (g.rowHeight < T.NAME.fontSize)
+    throw new Error(
+      `static-bump-emitter-rank: at ${size} the ${rankRows} rank rows get ` +
+        `${g.rowHeight.toFixed(1)}px of pitch each, under the ${T.NAME.fontSize}px one line of ` +
+        `name type occupies, so the terminal labels would be printed through each other.\n` +
+        `The ladder is spent: ${rungs.join("; ") || "no rung fires at this size"}.\n` +
+        `R9: this beat does not ship ${size}.`,
+    );
 
   // Year ticks: every fifth year, plus the last one when it is not already near a tick. Dense enough
   // that any year this frame names — the three crossing years — can be located on the axis, which is
@@ -307,8 +410,8 @@ export function EmitterRankBump({
           `crossing names ${c.country}, which this chart does not draw`,
         );
       const text = `passed ${c.country} · ${c.year}`;
-      const x = g.xOfIndex(at) + DOT_R + 6;
-      const w = measureText(text, CROSSING);
+      const x = g.xOfIndex(at) + T.DOT_R + T.CROSSING_INSET;
+      const w = measureText(text, T.CROSSING);
       if (x + w > g.plot.right)
         throw new Error(
           `the caption "${text}" would run ${Math.ceil(x + w - g.plot.right)}px past the plot's right edge`,
@@ -319,7 +422,7 @@ export function EmitterRankBump({
         x,
         y:
           g.yOfRank((subjectTrack.ranks[at] + passed.ranks[at]) / 2) +
-          CROSSING.fontSize * 0.34,
+          T.CROSSING.fontSize * 0.34,
         ringX: g.xOfIndex(at),
         ringY: g.yOfRank(subjectTrack.ranks[at]),
       };
@@ -333,6 +436,7 @@ export function EmitterRankBump({
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       fontFamily={FONT_FAMILY}
+      data-ladder={rungs.join("; ") || "none"}
     >
       {/* No root <title>: it becomes a cursor tooltip repeating what is already printed.
           role="img" + <desc> is the alt text (WCAG 1.1.1). */}
@@ -343,10 +447,10 @@ export function EmitterRankBump({
         <text
           key={text}
           x={PAD}
-          y={titleBaseline + i * TITLE.lead}
+          y={titleBaseline + i * T.TITLE.lead}
           fill={ink}
-          fontSize={TITLE.fontSize}
-          fontWeight={TITLE.fontWeight}
+          fontSize={T.TITLE.fontSize}
+          fontWeight={T.TITLE.fontWeight}
         >
           {text}
         </text>
@@ -355,9 +459,9 @@ export function EmitterRankBump({
         <text
           key={text}
           x={PAD}
-          y={caveatBaseline + i * CAVEAT.lead}
+          y={caveatBaseline + i * T.CAVEAT.lead}
           fill={muted}
-          fontSize={CAVEAT.fontSize}
+          fontSize={T.CAVEAT.fontSize}
         >
           {text}
         </text>
@@ -366,9 +470,9 @@ export function EmitterRankBump({
         <text
           key={text}
           x={PAD}
-          y={sourceBaseline + i * SOURCE.lead}
+          y={sourceBaseline + i * T.SOURCE.lead}
           fill={muted}
-          fontSize={SOURCE.fontSize}
+          fontSize={T.SOURCE.fontSize}
         >
           {text}
         </text>
@@ -379,8 +483,8 @@ export function EmitterRankBump({
         x={PAD}
         y={axisTitleBaseline}
         fill={muted}
-        fontSize={AXIS_TITLE.fontSize}
-        fontWeight={AXIS_TITLE.fontWeight}
+        fontSize={T.AXIS_TITLE.fontSize}
+        fontWeight={T.AXIS_TITLE.fontWeight}
       >
         {axisTitle}
       </text>
@@ -396,10 +500,10 @@ export function EmitterRankBump({
           />
           <text
             x={PAD + rankColumn}
-            y={g.yOfRank(rank) + RANK_TICK.fontSize * 0.34}
+            y={g.yOfRank(rank) + T.RANK_TICK.fontSize * 0.34}
             fill={muted}
-            fontSize={RANK_TICK.fontSize}
-            fontWeight={RANK_TICK.fontWeight}
+            fontSize={T.RANK_TICK.fontSize}
+            fontWeight={T.RANK_TICK.fontWeight}
             textAnchor="end"
           >
             {rank}
@@ -410,10 +514,10 @@ export function EmitterRankBump({
         <text
           key={`year-${year}`}
           x={g.xOfIndex(i)}
-          y={g.plot.bottom + 18 + RANK_TICK.fontSize}
+          y={g.plot.bottom + 18 + T.RANK_TICK.fontSize}
           fill={muted}
-          fontSize={RANK_TICK.fontSize}
-          fontWeight={RANK_TICK.fontWeight}
+          fontSize={T.RANK_TICK.fontSize}
+          fontWeight={T.RANK_TICK.fontWeight}
           textAnchor={
             i === 0 ? "start" : i === years.length - 1 ? "end" : "middle"
           }
@@ -432,7 +536,7 @@ export function EmitterRankBump({
               .join(" ")}
             fill="none"
             stroke={muted}
-            strokeWidth={2.5}
+            strokeWidth={T.TRACK_WIDTH}
             strokeLinejoin="round"
             strokeLinecap="round"
           />
@@ -447,7 +551,7 @@ export function EmitterRankBump({
           .join(" ")}
         fill="none"
         stroke={accent}
-        strokeWidth={4}
+        strokeWidth={T.SUBJECT_TRACK_WIDTH}
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -459,7 +563,7 @@ export function EmitterRankBump({
             key={`dot-${l.country}-${end}`}
             cx={p.x}
             cy={p.y}
-            r={DOT_R}
+            r={T.DOT_R}
             fill={i === subjectIndex ? accent : muted}
           />
         )),
@@ -472,17 +576,17 @@ export function EmitterRankBump({
           <circle
             cx={c.ringX}
             cy={c.ringY}
-            r={DOT_R + 4}
+            r={T.DOT_R + T.HALO_R}
             fill="none"
             stroke={accent}
-            strokeWidth={2.5}
+            strokeWidth={T.TRACK_WIDTH}
           />
           <text
             x={c.x}
             y={c.y}
             fill={muted}
-            fontSize={CROSSING.fontSize}
-            fontWeight={CROSSING.fontWeight}
+            fontSize={T.CROSSING.fontSize}
+            fontWeight={T.CROSSING.fontWeight}
           >
             {c.text}
           </text>
@@ -492,14 +596,14 @@ export function EmitterRankBump({
       {/* Both ends named — the still frame's answer to a reveal it does not have. */}
       {g.lines.map((l, i) => {
         const isSubject = i === subjectIndex;
-        const font = isSubject ? NAME_ACCENT : NAME;
+        const font = isSubject ? T.NAME_ACCENT : T.NAME;
         const first = l.points[0];
         const last = l.points[l.points.length - 1];
         return (
           <g key={`name-${l.country}`}>
             <text
-              x={first.x - DOT_R - GAP}
-              y={first.y + NAME.fontSize * 0.34}
+              x={first.x - T.DOT_R - T.GAP}
+              y={first.y + T.NAME.fontSize * 0.34}
               fill={ink}
               fontSize={font.fontSize}
               fontWeight={font.fontWeight}
@@ -508,8 +612,8 @@ export function EmitterRankBump({
               {l.country}
             </text>
             <text
-              x={last.x + DOT_R + GAP}
-              y={last.y + NAME.fontSize * 0.34}
+              x={last.x + T.DOT_R + T.GAP}
+              y={last.y + T.NAME.fontSize * 0.34}
               fill={ink}
               fontSize={font.fontSize}
               fontWeight={font.fontWeight}
@@ -527,11 +631,14 @@ export function EmitterRankBump({
           key={text}
           x={PAD}
           y={
-            g.plot.bottom + yearLabelBlock + conclusionGap + i * CONCLUSION.lead
+            g.plot.bottom +
+            yearLabelBlock +
+            T.CONCLUSION_GAP +
+            i * T.CONCLUSION.lead
           }
           fill={ink}
-          fontSize={CONCLUSION.fontSize}
-          fontWeight={CONCLUSION.fontWeight}
+          fontSize={T.CONCLUSION.fontSize}
+          fontWeight={T.CONCLUSION.fontWeight}
         >
           {text}
         </text>
@@ -540,4 +647,3 @@ export function EmitterRankBump({
   );
 }
 
-export { FRAME };
