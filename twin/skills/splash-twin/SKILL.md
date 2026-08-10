@@ -252,6 +252,7 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
 | Preflight | `scripts/preflight.mjs` | `runPreflight({root, env, fetchFn})` → `{ready, blockers, checks, capabilities}`. `ready` depends only on `dependencies` and `newsroom-profile` (`pass`/`declined`, never `missing`/`fail`); `capabilities.{map,datawrapper,hostedEmbed}` are probed but never block `ready`, and each row carries a `fill` naming what would open it. `checkNewsroom` carries the parsed `profile` on its check, so preflight can read the newsroom's identity back instead of discarding it. `assertPreflightReady(report)` is the mechanical stop; `capabilityGap(capabilities, medium)` is the seam a later phase reads before offering one. "Dependencies" covers both `bun install`-resolvable packages **and** the vendored craft files under the root's own `shared/` — a root missing either reports `fail`, naming what's missing |
 | Key probes | `scripts/keys.mjs` | `probeMapTiler`, `probeDatawrapper` — a real network call each; a present key that answers 403 fails, exactly the failure a presence check would have missed. `resolveEnvKey(env, canonical)` accepts the sibling engine's own key names as aliases before falling through to empty. `recordKey({root, name, value})` is the ONE path that accepts a key from a journalist: it writes or replaces a single line in the root `.env`, refuses a name this toolchain does not read, and never returns, logs or echoes the value |
 | Charter reader | `scripts/newsroom.mjs` | `parseNewsroom`, `validateNewsroom`, `isDeclinedProfile` — the front matter of `NEWSROOM.md` (name, url, languages/language, brandColor, accents, ground, typefaces, or a recorded `decision: declined`), plus `newsroomLanguages` / `newsroomAccents`, which read the plural and the singular alike so a profile written before either existed stays valid, and `OPTIONAL_FIELDS` — `credit`, `languages`, `language`, `accents` |
+| Maintainer notes | `scripts/notes.mjs` | `recordMaintainerNote({storyDir, phase, note})` — appends to `stories/<slug>/NOTES-FOR-MAINTAINER.md`, creating it with its own header. Refuses an empty note, a note with no phase, and any path inside `export/` (that directory is what the newsroom receives). The other end of `formatHandover`'s throw |
 | Workspace scaffolder | `scripts/new-story.mjs` | `slugify`, `createStory({root, title})` — the `stories/<slug>/{source,beats,export}` shape every later phase reads and writes into |
 
 ## How it works (the shape)
@@ -340,10 +341,14 @@ front matter, `bun` on a login shell's PATH, a browser — and then hands the la
      closing message was four fifths internals — three paragraphs naming our own files and their
      defects — and at one point the journalist was asked to arbitrate an internal defect, with
      options naming two of our modules. All of it was valuable, and none of it was theirs. Write it
-     to the story root, never to `export/`, never to the conversation. `formatHandover`
-     (`twin-deliver/scripts/format-handover.mjs`) is the mechanical half of this: it takes a closed
-     parameter set with no free-text field, and throws on any string naming one of our paths or
-     modules, so a maintainer-facing sentence physically cannot reach a delivered document.
+     to the story root, never to `export/`, never to the conversation. Two mechanical halves, and
+     the second one was missing until it was measured: `formatHandover`
+     (`twin-deliver/scripts/format-handover.mjs`) takes a closed parameter set with no free-text
+     field and throws on any string naming one of our paths or modules, so a maintainer-facing
+     sentence physically cannot reach a delivered document — and **`recordMaintainerNote`**
+     (`scripts/notes.mjs`) is where the refused sentence actually goes. Before it, that throw named
+     a file nothing in the tree wrote: a rule in prose, pointed at by a refusal that could not say
+     where to put what it had just refused.
    - It **never states a delivery constraint that did not come from `offerForms`.** Delivery's
      forms are that function's output; anything said about them before it runs is a guess. The run
      guessed twice, both times wrongly, once *inside* the Gate-3 approval question — and had to
@@ -407,6 +412,8 @@ if (missing.length > 0) {
   `decision: declined` in `NEWSROOM.md`'s own front matter — a different answer, not an invalid
   one).
 - `scripts/new-story.mjs` — `slugify`, `createStory`.
+- `scripts/notes.mjs` — `recordMaintainerNote`, the one path that writes
+  `stories/<slug>/NOTES-FOR-MAINTAINER.md`. It appends, because a run finds more than one defect.
 - `scripts/splash-root.mjs` — `splashRoot(startDir)`, `splashEnvPath(startDir)`: the nearest
   ancestor declaring `#shared/*`. Duplicated byte-for-byte into every craft skill that reads a key
   (never imported across a boundary), and guarded by `test/the-key-has-one-home.test.ts`.
