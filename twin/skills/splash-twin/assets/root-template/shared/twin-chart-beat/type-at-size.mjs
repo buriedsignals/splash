@@ -270,3 +270,51 @@ export const REMOVAL_LADDER = [
     loses: "the format",
   },
 ];
+
+/**
+ * REFUSE A PLOT STRETCHED OUT OF THE SHAPE ITS TYPE ARGUES IN.
+ *
+ * This is the probe's finding #1 made mechanical, and it is the single thing no counter in this
+ * project could see: every arm of `proof/portrait-aspect-probe/` scored ZERO clipped runs and ZERO
+ * collisions, including the three worst-reading ones, while a histogram's plot went from 2.35:1 to
+ * 0.54:1 and its tallest bar from 4.2:1 to 18.4:1. A distribution's argument is a shape.
+ *
+ * It caught a live one immediately. `static-carbon-footprint-spread` at 1080x1080, with its type at
+ * the phone's 36px floor, laid a three-line title, a four-line standfirst and a three-line credit
+ * into a 1080px frame and left the plot **915 x 30 px — 30:1**. The delivered PNG measured exactly
+ * the pinned size, every run cleared the type floor, and the picture was a row of overlapping
+ * labels where a chart should be. `assertDeliveredSize` and `assertTypeFloor` both passed it.
+ *
+ * The refusal names the ladder rather than a number, because "make it smaller" is the rule that
+ * fails at the moment it is needed: what recovers a plot is REMOVING something above it.
+ *
+ * A type with no measured range is not silently exempt — `formForSize` refuses it outright before a
+ * caller ever gets here.
+ */
+export function assertPlotAspect(plot, type, size, { what = "this render" } = {}) {
+  const form = formForSize(type, size);
+  if (form.verdict !== "clamp") return form;
+  const width = plot.right - plot.left;
+  const height = plot.bottom - plot.top;
+  if (height <= 0 || width <= 0)
+    throw new Error(
+      `${what}: the plot has no area at ${size} (${width} x ${height}). Everything above it — the ` +
+        `title, the standfirst, the credit — has taken the whole frame.`,
+    );
+  const aspect = width / height;
+  if (aspect >= form.aspect.min && aspect <= form.aspect.max) return form;
+  const ladder = aspect > form.aspect.max ? "too FLAT" : "too TALL";
+  throw new Error(
+    `${what}: the plot is ${ladder} at ${size} — ${width.toFixed(0)} x ${height.toFixed(0)} is ` +
+      `${aspect.toFixed(2)}:1, outside ${type}'s measured range ${form.aspect.min}:1 to ` +
+      `${form.aspect.max}:1 (${form.from}).\n` +
+      (aspect > form.aspect.max
+        ? `Nothing here is clipped and nothing collides — that is the point, and it is why no ` +
+          `counter in this project could see it before. Run the removal ladder: R2 (fewer value ` +
+          `ticks) is free, then R1 (the axis title), R3 (the standfirst's last sentence), R4 (the ` +
+          `annotations, last first). The last rung is to ship the other sizes and say why.`
+        : `A plot taller than its type's own range distorts the marks whose SHAPE is the argument. ` +
+          `Give the height back to the furniture, or ship a size whose frame it fits.`) +
+      (form.suspect ? `\nNote on this range: ${form.suspect}` : ""),
+  );
+}

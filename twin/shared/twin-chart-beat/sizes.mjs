@@ -17,7 +17,7 @@
 // parameterised by its caller, at which point it is no longer a table.
 //
 // WHAT IS NOT HERE, deliberately: which genres exist (that is `genre-catalog.mjs`'s question), and
-// which chart TYPES may enter which size (that is `portrait-form.mjs`'s question, in this same
+// which chart TYPES may enter which size (that is `type-at-size.mjs`'s question, in this same
 // skill). A size table that also gated would be the original Splash's one-table-two-jobs defect.
 // There is no `print` row either — the original carries a fourth channel (2480x1748); R2 named
 // three, and a fourth row is a decision nobody has taken.
@@ -75,7 +75,7 @@
 // not clipped — which is exactly why no counter in this project ever saw it.
 //
 // The band is therefore both a placement rule and a SIZE BUDGET: at a 36 px floor there are 979 px
-// to spend, and a beat can genuinely exceed them. `portrait-form.mjs` owns what a beat removes, in
+// to spend, and a beat can genuinely exceed them. `type-at-size.mjs` owns what a beat removes, in
 // what order, and when it refuses.
 //
 // `square` has NO stage: a feed post is not overlaid by the platform's chrome — the caption and the
@@ -228,6 +228,31 @@ export function assertTypeFloor(svg, name, { what = "this render" } = {}) {
   );
 }
 
+/**
+ * THE FRAME'S OWN MARGIN — the one spacing number that must NOT scale with the type.
+ *
+ * Everything a beat's `sp()` touches is a gap BETWEEN WORDS: leading, the air under the header, the
+ * drop to a tick baseline. Those are proportional to the type by definition. A frame's margin is
+ * proportional to the CANVAS, and the difference is invisible for exactly as long as `typeScale`
+ * happens to equal `width / 900` — which is what the shipped table carried, so nothing separated
+ * them. The moment portrait's scale rose to 3.0 to clear the phone's floor, a 40px margin became
+ * 120px on a 1080px frame: a quarter of the width spent on air before a word was drawn.
+ *
+ * `40 / 900` is this corpus's own accepted margin, read off the frame every static beat was tuned
+ * at. The floor under it is the mobile-first wireframe's, with its own reason: Meta reserves 6% =
+ * 65px each side of a 1080 story, and 2 x the smallest type is the next value up, "so the margin
+ * can never be thinner than the smallest word is tall."
+ *
+ * It lives here rather than in a component because every craft skill needs it and none of them may
+ * import another's — the same argument that carries the table itself.
+ */
+export const MARGIN_RATIO = 40 / 900;
+
+export function frameInsetFor(name) {
+  const row = sizeFor(name);
+  return Math.max(Math.round(MARGIN_RATIO * row.width), row.minTypePx * 2);
+}
+
 /** The width, in CSS px, the frame is read at — the divisor behind `minTypePx`. See the header. */
 export function viewedAtCssPx(name) {
   sizeFor(name); // validates the name, so this never answers for a size nobody exports
@@ -275,7 +300,7 @@ export function assertWithinStage(svg, name, { what = "this render" } = {}) {
         `${JSON.stringify(name)} reserves: ${outside.join("; ")}. The platform's profile row, ` +
         `caption, buttons and progress bar sit over the rest of the frame — content there is at ` +
         `risk of being COVERED, which no clipping counter can see. Fit the block to the band, or ` +
-        `run the removal ladder in portrait-form.mjs; the last rung is a stated refusal.` +
+        `run the removal ladder in type-at-size.mjs; the last rung is a stated refusal.` +
         (skipped ? ` (${skipped} rotated run(s) were not measured.)` : ""),
     );
   return stage;

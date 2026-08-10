@@ -18,7 +18,7 @@ import {
   measureText,
   FONT_FAMILY,
 } from "../scripts/render-still.mjs";
-import { sizeFor, stageFor } from "../scripts/sizes.mjs";
+import { frameInsetFor, sizeFor, stageFor } from "../scripts/sizes.mjs";
 
 type Reading = { year: number; value: number | null };
 type Padding = { top: number; right: number; bottom: number; left: number };
@@ -63,26 +63,6 @@ const BASE = {
   Y_TICK_BASELINE_NUDGE: 4,
   MARK_BASELINE_NUDGE: 5,
 };
-
-/**
- * THE ONE LITERAL THAT MUST NOT SCALE WITH THE TYPE, and finding it cost a set of rendered
- * collisions. Everything a `sp()` touches is a gap BETWEEN WORDS — leading, the air under the
- * header, the drop to a tick baseline — and those are proportional to the type by definition, which
- * is what `three-sizes-no-collision.test.ts`'s fourth assertion measures.
- *
- * `PAD` is not one of those. It is the frame's own margin, and it is proportional to the CANVAS.
- * Scaling it with the type is invisible while `typeScale` happens to equal `width / 900` — which is
- * exactly what the shipped table carried, so the probe never separated them. The moment portrait's
- * scale rose from 1.2 to 3.0 to clear the phone's legibility floor, a 40px margin became 120px on a
- * 1080px frame: a quarter of the width spent on air, before a single word was drawn.
- *
- * The floor under it is the mobile-first wireframe's own, with its own reason: Meta reserves 6% =
- * 65px each side of a 1080 story, and 2 x the smallest type is the next value up, "so the margin
- * can never be thinner than the smallest word is tall."
- */
-export function frameInset(width: number, minTypePx: number) {
-  return Math.max(Math.round((BASE.PAD * width) / 900), minTypePx * 2);
-}
 
 export function tokens(typeScale: number) {
   const sp = (v: number) => Math.round(v * typeScale);
@@ -422,7 +402,7 @@ export function ChartSeed({
   // `tokens()` still exports a type-proportional `PAD` for beats that separate WORDS with it. This
   // seed does not: everything it insets from the frame edge is canvas-proportional. See
   // `frameInset` for the collision that separated the two.
-  const INSET = frameInset(width, minTypePx);
+  const INSET = frameInsetFor(size);
   // The two edges everything hangs off. Where the platform reserves a band, ITS edge is the
   // margin — adding our own inset inside a 269px reserve would spend the budget twice.
   const contentTop = stage.reserved ? stage.top : INSET;

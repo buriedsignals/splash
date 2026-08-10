@@ -29,7 +29,10 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
-import { FONT_FAMILY } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  FONT_FAMILY,
+  readPalette,
+} from "#shared/twin-chart-beat/render-still.mjs";
 import { ProbeHistogram } from "./ProbeHistogram.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -218,6 +221,12 @@ async function main() {
     .filter((r) => Number(r["CO2 emissions per capita"]) >= topBin.lo)
     .map((r) => r.Entity);
 
+  // Every colour identical to the beat's own too, and read from the same place: the beat's
+  // `PALETTE.md`, one directory up. This copy still strokes the median rule in the accent (see this
+  // file's own frozen note), so it is the one caller that spends it — reading it rather than
+  // naming it keeps the probe measuring the beat's colours instead of a stale copy of them.
+  const { ground, accent } = readPalette(HERE, { stopAt: join(HERE, "..", "..") });
+
   // Every word identical to the beat's own render.mjs — a probe that shortened the title would be
   // measuring a different chart.
   const words = {
@@ -228,8 +237,8 @@ async function main() {
     source:
       "Source: Global Carbon Budget (2025), via Our World in Data · 2023 data, extracted 8 August 2026",
     alt: `Histogram of CO2 emissions per capita across ${values.length} countries in 2023, in ${BIN_WIDTH}-tonne bins from 0 to ${topBin.lo} and above. The distribution is heavily right-skewed: ${bins[0].count} countries sit in the 0-${BIN_WIDTH} tonne bin, more than any other bin; the rest thin out into a long tail, topped by ${topBinCountries.join(" and ")} alone above ${topBin.lo} tonnes, at ${Math.max(...values).toFixed(1)} tonnes. A dashed median line sits at ${med.toFixed(1)} tonnes.`,
-    ground: "#FFFFFF",
-    accent: "#0B7A75",
+    ground,
+    accent,
     median: med,
     medianLabel: `Median: ${med.toFixed(1)} t`,
   };

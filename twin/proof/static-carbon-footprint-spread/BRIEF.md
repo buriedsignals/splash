@@ -1,6 +1,16 @@
+---
+size: landscape
+type: histogram
+---
+
 # Beat — six in ten countries emit under 4 tonnes of CO2 per person
 
-**Type:** histogram. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
+**Type:** histogram. **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize`. The prose line used to be the only record
+of gate 2c's decision, checked by nothing, while the component carried its own `const FRAME` and the
+render script repeated the same two literals.
 
 ## Claim
 

@@ -7,7 +7,16 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { CarbonFootprintHistogram } from "./CarbonFootprintHistogram.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -65,7 +74,39 @@ async function main() {
     .filter((r) => Number(r["CO2 emissions per capita"]) >= topBin.lo)
     .map((r) => r.Entity);
 
-  const { pngPath } = await renderStill({
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing. Before this, the size was two literals below, and `renderStill` compared them
+  // against each other — so `size: portrait` on the slot produced an 1800x1120 PNG in silence.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS: the delivered file
+  // keeps the beat's own name and the pinned size, and an override says so on stdout and writes
+  // somewhere else. A flag that quietly redirected the deliverable would be the defect this whole
+  // seam exists to close, wearing a command-line argument.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1
+      ? "static-carbon-footprint-spread-still"
+      : `static-carbon-footprint-spread-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all. A histogram's x is a continuum, so it has no
+  // twin form to transpose into; what it has is a measured aspect range, and outside that range it
+  // stops being a distribution (`proof/portrait-aspect-probe/PORTRAIT-VERDICT.md`: 2.35:1 -> 0.54:1
+  // turned a right-skewed shape into one column beside nine slivers, with every counter green).
+  const form = assertTypeMayEnter("histogram", size, { what: "static-carbon-footprint-spread" });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(CarbonFootprintHistogram, {
       bins,
       title: "Six in ten countries emit under 4 tonnes of CO2 per person a year",
@@ -77,20 +118,37 @@ async function main() {
       // data rather than written out, because a hand-typed correction is the same defect with a
       // better number.
       alt: `Histogram of CO2 emissions per capita across ${values.length} countries in 2023, in ${BIN_WIDTH}-tonne bins from 0 to ${topBin.lo} and above. The distribution is heavily right-skewed: ${bins[0].count} countries sit in the 0-${BIN_WIDTH} tonne bin, more than any other bin; the rest thin out into a long tail, topped by ${topBinCountries.join(" and ")} alone above ${topBin.lo} tonnes, at ${Math.max(...values).toFixed(1)} tonnes. A dashed median line sits at ${med.toFixed(1)} tonnes.`,
-      ground: "#FFFFFF",
-      // No accent is passed. This beat's one annotation is the median rule, and it runs through
-      // the tallest bar, where `#0B7A75` measured 1.20:1 — see the component's own props comment
-      // and `references/types/histogram.md`'s amendment. The rule's ink is derived from the marks
-      // it crosses instead, which on this ground and these bars is near-black.
+      ground,
+      // The recorded accent is read and deliberately NOT passed. This beat's one annotation is the
+      // median rule, and it runs through the tallest bar, where the recorded accent measured
+      // 1.20:1 — see the component's own props comment and `references/types/histogram.md`'s
+      // amendment. The rule's ink is derived from the marks it crosses instead, which on this
+      // ground and these bars is near-black. PALETTE.md beside this file says the same thing in
+      // prose, so a newsroom changing its colour is told where that colour does and does not land.
       median: med,
       medianLabel: `Median: ${med.toFixed(1)} t`,
+      size,
     }),
-    width: 900,
-    height: 560,
-    outDir: HERE,
-    name: "static-carbon-footprint-spread-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself, and it is
+  // what catches a rasteriser scaling the frame (this corpus shipped 1800x1120 for a "900x560"
+  // beat) or a producer honouring width and dropping height.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "static-carbon-footprint-spread" });
+  assertWithinStage(svg, size, { what: "static-carbon-footprint-spread" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file`);
 }
 
 main();

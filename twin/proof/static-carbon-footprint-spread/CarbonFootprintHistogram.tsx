@@ -16,6 +16,12 @@ import {
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
 import {
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertPlotAspect } from "#shared/twin-chart-beat/type-at-size.mjs";
+import {
   NON_TEXT_CONTRAST_FLOOR,
   inkBox,
   inkThatReadsOver,
@@ -25,21 +31,82 @@ import {
 
 export type Bin = { lo: number; hi: number; count: number };
 
-const FRAME = { width: 900, height: 560 };
-const PAD = 40;
-const TITLE = { fontSize: 25, fontWeight: 700, lead: 32 };
-const SUBTITLE = { fontSize: 14, fontWeight: 400, lead: 20 };
-const SOURCE = { fontSize: 14, fontWeight: 400 };
-const AXIS = { fontSize: 13, fontWeight: 400 };
-const AXIS_TITLE = { fontSize: 13, fontWeight: 600 };
-const NOTE = { fontSize: 13, fontWeight: 700 };
-/** The median rule's own weight and dash. Its INK is not here — it is derived from the marks the
- *  rule crosses, which is the whole point (`annotation-ink.mjs`). */
-const MEDIAN_RULE = { width: 2, dash: "6 4" };
-/** The air between the median rule and its label, and between the label and the last bar it had to
- *  clear. One number, used for both, because it is the same gap doing the same job. */
-const MEDIAN_LABEL_GAP = 8;
+/**
+ * THE 900x560 TUNING, KEPT AS THE BASE, WITH THE SIZE AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more, and its absence is the point: the frame is
+ * `sizeFor(size)`'s, and `size` is the decision gate 2c took, read out of this beat's own
+ * `BRIEF.md` by `render.mjs`. Before this, the size was stated TWICE as literals — once here and
+ * once in the render script — and `renderStill` compared them against each other, so they agreed
+ * by construction and nothing downstream of the gate ever read what the journalist chose.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts. This beat is the one the probe
+ * measured: eleven bare literals in its layout arithmetic (`+ 28`, `+ 34`, `+ 8`, `+ 30`, `+ 10`,
+ * `+ 16`, `+ 20`, `+ 4`, `+ 8`, and the two inside the median-label placement) are 900x560 tuning
+ * under no name, and scaling the type while leaving them collided the title into the subtitle at
+ * 1920x1080 by 1634 x 4.5 px. `proof/static-carbon-footprint-spread/probe/VERDICT.md`.
+ *
+ * `PAD` is the one that does NOT go through it: a frame's margin is proportional to the CANVAS,
+ * not to the type — `frameInsetFor` in `sizes.mjs` states the split and why.
+ */
+const BASE = {
+  TITLE: { fontSize: 25, fontWeight: 700, lead: 32 },
+  SUBTITLE: { fontSize: 14, fontWeight: 400, lead: 20 },
+  SOURCE: { fontSize: 14, fontWeight: 400 },
+  AXIS: { fontSize: 13, fontWeight: 400 },
+  AXIS_TITLE: { fontSize: 13, fontWeight: 600 },
+  NOTE: { fontSize: 13, fontWeight: 700 },
+  /** The median rule's own weight and dash. Its INK is not here — it is derived from the marks the
+   *  rule crosses, which is the whole point (`annotation-ink.mjs`). */
+  MEDIAN_RULE: { width: 2, dash: "6 4" },
+  /** The air between the median rule and its label, and between the label and the last bar it had
+   *  to clear. One number, used for both, because it is the same gap doing the same job. */
+  MEDIAN_LABEL_GAP: 8,
+  TITLE_TO_SUBTITLE: 28,
+  HEADER_TO_PLOT: 34,
+  AXIS_TITLE_TO_SOURCE: 8,
+  X_TICK_DROP: 20,
+  X_LABEL_BAND: 30,
+  Y_TICK_INSET: 10,
+  Y_TICK_BASELINE_NUDGE: 4,
+  PLOT_RIGHT_AIR: 8,
+  MEDIAN_LABEL_DROP: 16,
+};
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SUBTITLE: f(BASE.SUBTITLE) as typeof BASE.SUBTITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    AXIS_TITLE: f(BASE.AXIS_TITLE) as typeof BASE.AXIS_TITLE,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    MEDIAN_RULE: { ...BASE.MEDIAN_RULE, width: sp(BASE.MEDIAN_RULE.width) },
+    MEDIAN_LABEL_GAP: sp(BASE.MEDIAN_LABEL_GAP),
+    TITLE_TO_SUBTITLE: sp(BASE.TITLE_TO_SUBTITLE),
+    HEADER_TO_PLOT: sp(BASE.HEADER_TO_PLOT),
+    AXIS_TITLE_TO_SOURCE: sp(BASE.AXIS_TITLE_TO_SOURCE),
+    X_TICK_DROP: sp(BASE.X_TICK_DROP),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    Y_TICK_INSET: sp(BASE.Y_TICK_INSET),
+    Y_TICK_BASELINE_NUDGE: sp(BASE.Y_TICK_BASELINE_NUDGE),
+    PLOT_RIGHT_AIR: sp(BASE.PLOT_RIGHT_AIR),
+    MEDIAN_LABEL_DROP: sp(BASE.MEDIAN_LABEL_DROP),
+  };
+}
+
+/** Five labelled gridlines in an article column; three where the frame is read on a phone. Ladder
+ *  rung R2 — the only rung that gives budget back without removing anything vertical. */
 const Y_TICK_HINT = 5;
+function yTickHintFor(size: string) {
+  return sizeFor(size).minTypePx >= 36 ? 3 : Y_TICK_HINT;
+}
 
 function wrap(
   text: string,
@@ -66,10 +133,13 @@ export function histogramGeometry(
     width,
     height,
     padding,
+    yTickHint = Y_TICK_HINT,
   }: {
     width: number;
     height: number;
     padding: { top: number; right: number; bottom: number; left: number };
+    /** Travels with the call, so the drawn gridlines and the measured labels are one list. */
+    yTickHint?: number;
   },
 ) {
   const plot = {
@@ -101,7 +171,7 @@ export function histogramGeometry(
     bars,
     x,
     y,
-    ticksY: y.ticks(Y_TICK_HINT).map((v) => ({ value: v, y: y(v) })),
+    ticksY: y.ticks(yTickHint).map((v) => ({ value: v, y: y(v) })),
   };
 }
 
@@ -114,6 +184,7 @@ export function CarbonFootprintHistogram({
   ground,
   median,
   medianLabel,
+  size,
 }: {
   bins: Bin[];
   title: string;
@@ -129,6 +200,8 @@ export function CarbonFootprintHistogram({
   // see it does not take one.
   median: number;
   medianLabel: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
 }) {
   if (bins.length < 3)
     throw new Error(
@@ -137,50 +210,90 @@ export function CarbonFootprintHistogram({
     );
 
   const { ink, muted, grid } = deriveFurniture(ground);
-  const { width, height } = FRAME;
+  const { width, height, typeScale } = sizeFor(size);
+  // The band this beat may draw in. At portrait the platform reserves 14% at the top and 35% at the
+  // foot; content there is at RISK OF BEING COVERED, which no clipping counter can see.
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const {
+    TITLE,
+    SUBTITLE,
+    SOURCE,
+    AXIS,
+    AXIS_TITLE,
+    NOTE,
+    MEDIAN_RULE,
+    MEDIAN_LABEL_GAP,
+    TITLE_TO_SUBTITLE,
+    HEADER_TO_PLOT,
+    AXIS_TITLE_TO_SOURCE,
+    X_TICK_DROP,
+    X_LABEL_BAND,
+    Y_TICK_INSET,
+    Y_TICK_BASELINE_NUDGE,
+    PLOT_RIGHT_AIR,
+    MEDIAN_LABEL_DROP,
+  } = tokens(typeScale);
+  const contentTop = stage.reserved ? stage.top : PAD;
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
+  const titleBaseline = contentTop + TITLE.fontSize;
   const limitsLines = wrap(limits, width - PAD * 2, SUBTITLE);
   const limitsBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 28;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + TITLE_TO_SUBTITLE;
   const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
-  // same inset the title hangs off at the top, on the same x. See
+  // THE SOURCE SITS ON THE BOTTOM OF THE BAND — the LAST line lands there, the same edge the title
+  // hangs off at the top, on the same x. See
   // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin."
+  // At portrait that bottom is the STAGE's, not the frame's: below 1248 is the platform's caption
+  // and progress bar, and a covered credit is an attribution failure rather than a cosmetic one.
   const sourceBaseline =
-    height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
+    sourceBottom - (sourceLines.length - 1) * SUBTITLE.lead;
   // The plot starts below the LAST HEADER line, never below the source: that dependency is what
   // would otherwise have dragged the whole plot down the frame with the credit.
   const plotTop =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 34;
-  // The x-axis title used to sit on `height - PAD` — the slot the credit now owns. The first
-  // render of this change put the two on top of each other, in the PNG, and that is what moved
-  // this from a literal to a derivation: the title sits directly ABOVE the credit block, clear of
-  // its first line's ink.
-  const axisTitleBaseline = sourceBaseline - SOURCE.fontSize - 8;
+    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + HEADER_TO_PLOT;
+  // The x-axis title used to sit on the frame's bottom margin — the slot the credit now owns. The
+  // first render of that change put the two on top of each other, in the PNG, and that is what
+  // moved this from a literal to a derivation: the title sits directly ABOVE the credit block,
+  // clear of its first line's ink.
+  const axisTitleBaseline =
+    sourceBaseline - SOURCE.fontSize - AXIS_TITLE_TO_SOURCE;
 
   const tickLabels = scaleLinear()
     .domain([0, Math.max(...bins.map((b) => b.count))])
     .nice()
-    .ticks(Y_TICK_HINT)
+    .ticks(yTickHintFor(size))
     .map((v, i, all) => (i === all.length - 1 ? `${v} countries` : `${v}`));
 
   const padding = {
     top: plotTop,
-    right: PAD + 8,
+    right: PAD + PLOT_RIGHT_AIR,
     // Derived from where the axis title now sits, not from a constant: the tick-label band (20px
     // below the plot's floor, plus its descender) has to end above the axis title's ink. The
     // arithmetic reproduces the old 83px exactly when the credit is absent — the whole reserve
     // simply follows the axis title up the frame.
-    bottom: height - axisTitleBaseline + AXIS_TITLE.fontSize + 30,
-    left: PAD + 10 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
+    bottom:
+      height - axisTitleBaseline + AXIS_TITLE.fontSize + X_LABEL_BAND,
+    left:
+      PAD +
+      Y_TICK_INSET +
+      Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 
   const { plot, bars, x, ticksY } = histogramGeometry(bins, {
     width,
     height,
     padding,
+    yTickHint: yTickHintFor(size),
+  });
+  // THE PLOT'S OWN SHAPE, refused before anything is drawn. At 1080x1080 with the type at the
+  // phone's floor, this beat's header and credit took the whole frame and left the plot 915 x 30 —
+  // 30:1 — with nothing clipped, nothing colliding and the delivered PNG at exactly the pinned
+  // size. A histogram at 30:1 is not a distribution.
+  assertPlotAspect(plot, "histogram", size, {
+    what: "static-carbon-footprint-spread",
   });
   const medianX = x(median);
 
@@ -219,7 +332,7 @@ export function CarbonFootprintHistogram({
   // a different median or a different distribution moves it without anyone retyping an offset.
   const labelBand = measureTextBand(medianLabel, NOTE);
   const labelWidth = measureText(medianLabel, NOTE);
-  const labelBaseline = plot.top + 16;
+  const labelBaseline = plot.top + MEDIAN_LABEL_DROP;
   let labelX = medianX + MEDIAN_LABEL_GAP;
   const labelBoxAt = (at: number) =>
     inkBox({
@@ -305,8 +418,8 @@ export function CarbonFootprintHistogram({
             strokeWidth={1}
           />
           <text
-            x={plot.left - 10}
-            y={tick.y + 4}
+            x={plot.left - Y_TICK_INSET}
+            y={tick.y + Y_TICK_BASELINE_NUDGE}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="end"
@@ -339,7 +452,7 @@ export function CarbonFootprintHistogram({
           // edge, which is why the last gap rendered half-width and the two labels collided at
           // 375px — the visible symptom of an axis that was wrong everywhere else too.
           x={b.x}
-          y={plot.bottom + 20}
+          y={plot.bottom + X_TICK_DROP}
           fill={muted}
           fontSize={AXIS.fontSize}
           textAnchor="middle"
@@ -349,7 +462,7 @@ export function CarbonFootprintHistogram({
       ))}
       <text
         x={plot.right}
-        y={plot.bottom + 20}
+        y={plot.bottom + X_TICK_DROP}
         fill={muted}
         fontSize={AXIS.fontSize}
         textAnchor="middle"

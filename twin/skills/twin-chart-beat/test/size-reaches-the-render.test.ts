@@ -30,6 +30,11 @@
  *   `assertWithinStage` returns early for every size                RED — 22/3
  *   `formForSize` clamps an unmeasured type with a borrowed range   RED — 23/2
  *   `formForSize` transposes the histogram too                      RED — 24/1
+ *   `assertPlotAspect` never refuses a ratio                        RED — 27/1
+ *   it drops the no-area check and divides anyway                   RED — 27/1
+ *   its refusal names a smaller type instead of a rung              RED — 27/1. "Make it smaller"
+ *        is the rule that fails at the moment it is needed, so the refusal is asserted to name the
+ *        ladder and asserted NOT to name the type.
  *   `assertDeliveredSize`'s message drops the pinned dimensions     RED — 24/1. A refusal that
  *        does not say what was expected sends the reader back to the code that wrote the file,
  *        which is the reading this whole seam exists to stop trusting.
@@ -62,11 +67,15 @@ import {
   BAND_SCALE_TYPES,
   MEASURED_ASPECT,
   REMOVAL_LADDER,
+  assertPlotAspect,
   assertTypeMayEnter,
   formForSize,
 } from "../scripts/type-at-size.mjs";
 
 const fsInject = { readFile, dirname, join };
+
+/** A plot rectangle of a given aspect, for the cases that are about the VERDICT and not the shape. */
+const flatFor = (aspect: number) => ({ left: 0, right: 100 * aspect, top: 0, bottom: 100 });
 
 describe("the pinned size reaching the producer", () => {
   it("should read the size out of the beat's own BRIEF, not out of the render script", async () => {
@@ -357,6 +366,45 @@ describe("whether a type can enter a size at all", () => {
 
   it("should give the map its own reason, because its aspect is a camera decision", () => {
     expect(formForSize("map", "portrait").reason).toContain("camera");
+  });
+
+  it("should refuse a plot stretched out of the shape its type argues in", () => {
+    // The probe's finding #1 as an assertion, and the one thing no counter in this project could
+    // see: zero clipped runs and zero collisions while a distribution's shape was destroyed.
+    // The live case that produced this guard, measured: `static-carbon-footprint-spread` at
+    // 1080x1080 with its type at the phone's floor left the plot 915 x 30 — the header and the
+    // credit had taken the frame — and the delivered PNG measured exactly the pinned size.
+    const flat = { left: 82, right: 997, top: 700, bottom: 730 };
+    let message = "";
+    try {
+      assertPlotAspect(flat, "histogram", "square");
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toContain("30.50:1");
+    expect(message).toContain("1.1:1 to 2.9:1");
+    // It names the LADDER, not a smaller number — what recovers a plot is removing what is above it.
+    expect(message).toContain("R2");
+    expect(message).not.toMatch(/reduce the (type|font)/i);
+  });
+
+  it("should refuse a plot with no area at all before it refuses its ratio", () => {
+    // The real first reading of the live case: `plot.bottom - plot.top` came back NEGATIVE, which
+    // an aspect ratio cannot describe and which a division would have turned into a plausible
+    // number with a minus sign on it.
+    expect(() =>
+      assertPlotAspect({ left: 82, right: 997, top: 700, bottom: 688 }, "histogram", "square"),
+    ).toThrow(/no area/);
+  });
+
+  it("should accept a plot inside its type's own measured range, at the size it was measured at", () => {
+    // 2.35:1 is this beat's own native landscape plot, and the range's own upper end is 2.9.
+    const native = { left: 0, right: 940, top: 0, bottom: 400 };
+    expect(assertPlotAspect(native, "histogram", "square").verdict).toBe("clamp");
+    // …and it says nothing at all where the verdict is not `clamp`: a transposed ranking is
+    // row-driven and HAS no aspect to hold, and landscape is the frame this corpus was accepted at.
+    expect(assertPlotAspect(flatFor(30), "ranking", "portrait").verdict).toBe("transpose");
+    expect(assertPlotAspect(flatFor(30), "histogram", "landscape").verdict).toBe("as-is");
   });
 
   it("should never carry a rung that makes something smaller", () => {

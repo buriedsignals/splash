@@ -632,7 +632,28 @@ export function measureTextBand(text, options) {
  * Render one React element to an SVG on disk and a PNG beside it. The PNG is the artifact the
  * checklist is applied to — the SVG is kept because a defect is easier to read in the markup.
  */
-export async function renderStill({ element, width, height, outDir, name }) {
+export async function renderStill({
+  element,
+  width,
+  height,
+  outDir,
+  name,
+  // HOW MANY DEVICE PIXELS PER FRAME PIXEL, and it is a migration rather than a preference.
+  //
+  // The frame IS the export size and it should be rasterised 1:1. Task 0 of the export-size spec
+  // measured that: resvg is a VECTOR rasteriser, so a 1920x1080 frame at 1x and a 960x540 frame at
+  // 2x are indistinguishable in their TYPE, and what actually differs is that at 2x every
+  // `strokeWidth` and `strokeDasharray` DOUBLES — a component asking for a 1px gridline is
+  // delivered a 2px one, and a `"6 4"` dash arrives as `"12 8"`. The rasteriser was taking a design
+  // decision the component believed it had taken.
+  //
+  // The default stays 2 because the un-migrated statics are still drawn at 900x560 and its
+  // neighbours, and retiring it for them would ship 900px stills. A beat that pins an export size
+  // passes 1, and its delivered PNG then measures exactly what gate 2c chose. The remaining count
+  // is held by `splash-twin/test/delivered-size-matches-the-pin.test.ts` as a number that may only
+  // go down — an inconsistency with a ratchet on it rather than an inconsistency.
+  scale = 2,
+}) {
   const svg = renderToStaticMarkup(element);
   if (!svg.startsWith("<svg")) throw new Error(`renderStill expects an element whose root is <svg>, got ${svg.slice(0, 40)}`);
 
@@ -647,15 +668,15 @@ export async function renderStill({ element, width, height, outDir, name }) {
   const svgPath = join(outDir, `${name}.svg`);
   const pngPath = join(outDir, `${name}.png`);
   await writeFile(svgPath, svg);
-  await writeFile(pngPath, rasterise(svg, width));
+  await writeFile(pngPath, rasterise(svg, width, scale));
   return { svgPath, pngPath };
 }
 
-/** 2× so the still survives being looked at closely, which is the whole point of looking. */
-function rasterise(svg, width) {
+/** `scale` device pixels per frame pixel — see `renderStill`, where the default is argued. */
+function rasterise(svg, width, scale = 2) {
   const image = new Resvg(svg, {
     font: { loadSystemFonts: true },
-    fitTo: { mode: "width", value: width * 2 },
+    fitTo: { mode: "width", value: width * scale },
   }).render();
   return image.asPng();
 }

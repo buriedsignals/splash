@@ -35,24 +35,19 @@
  *   `sp = (v) => v`                          RED 3/1   render guard GREEN — the whole drawing stays
  *                                                      at its 900x560 values on a bigger canvas,
  *                                                      which collides with nothing
- *   frameInset frozen at BASE.PAD            RED 3/1   render guard GREEN
- *   frameInset drops its 2x-type floor       RED 3/1
+ *   frameInsetFor frozen at a constant            RED 3/1   render guard GREEN
+ *   frameInsetFor drops its 2x-type floor       RED 3/1
  *   yTickHintFor always 5                    RED 3/1   render guard GREEN
  *   xTickHintFor always 6                    RED 3/1   render guard GREEN
  *
- *   frameInset rounds UP instead of down    GREEN      recorded rather than closed: the rounding
+ *   frameInsetFor rounds UP instead of down    GREEN      recorded rather than closed: the rounding
  *                                                      direction is not load-bearing, and pinning
  *                                                      it would calibrate the guard to a value
  *                                                      nobody measured.
  */
 import { describe, it, expect } from "bun:test";
-import {
-  frameInset,
-  tokens,
-  xTickHintFor,
-  yTickHintFor,
-} from "../assets/ChartSeed.tsx";
-import { SIZES, sizeFor } from "../scripts/sizes.mjs";
+import { tokens, xTickHintFor, yTickHintFor } from "../assets/ChartSeed.tsx";
+import { MARGIN_RATIO, SIZES, frameInsetFor, sizeFor } from "../scripts/sizes.mjs";
 
 const SCALES = Object.values(SIZES).map(
   (r) => (r as { typeScale: number }).typeScale,
@@ -103,15 +98,15 @@ describe("every number the seed draws with scales with its size", () => {
   it("should give the frame a margin proportional to the CANVAS, never to the type", () => {
     // The one literal that must NOT go through `sp`. At a 3.0 type scale a 40px margin becomes
     // 120px on a 1080 frame — a quarter of the width spent on air before a word is drawn.
-    const landscape = frameInset(1920, 26);
-    const portrait = frameInset(1080, 36);
-    expect(landscape / 1920).toBeCloseTo(40 / 900, 2);
+    const landscape = frameInsetFor("landscape");
+    const portrait = frameInsetFor("portrait");
+    expect(landscape / 1920).toBeCloseTo(MARGIN_RATIO, 2);
     // …with the mobile-first wireframe's floor under it, which is the binding constraint at 1080:
     // Meta reserves 6% = 65px, and 2 x the smallest type is the next value up, "so the margin can
     // never be thinner than the smallest word is tall."
     expect(portrait).toBe(72);
     expect(portrait).toBeGreaterThanOrEqual(36 * 2);
-    expect(frameInset(1080, 36)).toBeGreaterThan(Math.round((40 * 1080) / 900));
+    expect(portrait).toBeGreaterThan(Math.round(MARGIN_RATIO * 1080));
   });
 
   it("should thin the value axis exactly where the frame is read on a phone, and nowhere else", () => {
