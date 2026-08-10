@@ -652,6 +652,18 @@ beats:**
   what it has. The constructor still uses the ceiling because it has no canvas to measure yet, and
   `map.on("load")` re-fits with the padding the container earns.
 
+**One limit that is MapLibre's, not ours, and that a planet-extent beat runs into on a phone.**
+`proof/mapgen-hexgrid-web` at 375×812 shows **266° of its 359.8°** — a quarter of the world missing,
+and `maxBounds` then stops a reader panning to it. It is not the fit's arithmetic: for that canvas
+(343 × 461, padding 31) the two axes want `z_lon = −0.865` and `z_lat = +0.326`, so `fitBounds`
+should choose **−0.865**. The map sits at **−0.16**, and `log2(461 / 512) = −0.151` — MapLibre
+refuses to zoom out past the point where the world still fills the canvas VERTICALLY, and a tall
+narrow canvas hits that before it has room for 360° of longitude. The fallback plate has no such
+constraint and draws the whole planet. Recorded with the derivation rather than fixed, because the
+only fix is to stop giving a planet-extent beat the whole stage height on a phone — letterboxing the
+live canvas back to the plate's own aspect for world-extent beats — which is a design decision about
+what a world map is worth on a phone, not a bug to patch.
+
 **And one rule per mark type that only shows up at the bottom end.** A `radius: "ground"` layer — a
 dot standing for a fixed number of people in a fixed piece of ground — must keep its GROUND area, so
 its screen radius halves for every zoom level the reader pulls back. Below some radius a circle stops
