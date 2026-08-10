@@ -55,6 +55,13 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  WEB_ENTRANCE,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   boxplotGeometry,
   summarizeDecade,
   type DecadeReadings,
@@ -198,6 +205,63 @@ export function DecadeBoxplotWeb({
     bandPaddingInner: frame.bandPaddingInner,
     bandPaddingOuter: frame.bandPaddingOuter,
   });
+  // ── THE ENTRANCE, carried from `proof/vidy-boxplot-co2-by-continent`. "A box is a five-number
+  // mark, not one length" is exactly right and is not an obstacle there: **the box arrives as ONE
+  // event — whiskers, box, median, outlier dots and the category label together — and the five marks
+  // inside a box never cascade against each other.** Groups take overlapping slices of the reveal in
+  // the caller's own sort order, at this type's own overlap factor, 1.7.
+  //
+  // THE ORDER IS TIME, not median, because that is this beat's axis (`boxplot.md`: never resorted by
+  // median). The video's own groups cascade in ITS caller's order, median-ascending, for the same
+  // reason: the order the chart is already read in.
+  //
+  // TWO OF THE FIVE EVENTS ARE ABSENT HERE, and that is stated rather than faked.
+  //
+  //   - NO REFERENCE. This beat's settled page carries no level the decades are read against — its
+  //     own header says so ("no reference year and no peak callout") — and the entrance may not add
+  //     artwork: SSR ships the settled page and every keyframe runs *to* it. A rule invented for the
+  //     build would be a mark the reader keeps.
+  //   - NO SUBJECT, AND THIS ONE IS A MEASURED REFUSAL. The video lands its subject group in place
+  //     and adds a ring; this page has no ring at rest. The device the other beats here use —
+  //     lifting the subject's mark out so its own arrival is the emphasis — is available and is
+  //     WRONG on this type: the 1970s is the third of eight decades on a TIME axis, so a build that
+  //     assembled 1950, 1960, 1980, 1990 … and then filled 1970 in would make the sequence lie about
+  //     its own order for most of the entrance. The peak arrives in its place, in time, like every
+  //     other decade — which is also the answer `vidx-scatter-income-life-expectancy` gives when its
+  //     subject would otherwise be held back: "at its natural sorted position, not held back to last
+  //     for spectacle".
+  const BOXPLOT_OVERLAP = 1.7;
+  const windowFor = (label: string) =>
+    markEvent(
+      WEB_ENTRANCE.reveal,
+      boxes.findIndex((b) => b.label === label),
+      boxes.length,
+      BOXPLOT_OVERLAP,
+    );
+  /** One decade, one arrival — the whole five-number mark on one clock. `isTheMark` puts the name on
+   *  the box's own group; its outlier dots, outlier labels and axis label share the clock and carry
+   *  no `names`, because they are not gated ON the mark, they ARE it arriving. */
+  const boxLayer = (label: string, isTheMark: boolean) => {
+    const own = windowFor(label);
+    return entranceLayer("reveal", "fade", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      ...(isTheMark ? { mark: label } : {}),
+    });
+  };
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const lastBoxEnd = Math.max(...boxes.map((b) => endOf(windowFor(b.label))));
+  if (lastBoxEnd > endOf(WEB_ENTRANCE.reveal))
+    throw new Error(
+      `the last decade finishes arriving at ${lastBoxEnd}ms, past the reveal's own end at ` +
+        `${endOf(WEB_ENTRANCE.reveal)}ms`,
+    );
   const tickLabels = ticksY.map((t) => `${t.value}`);
 
   // Both fixed tracks, MEASURED from the real strings that will sit in them at their own fixed font
@@ -244,7 +308,11 @@ export function DecadeBoxplotWeb({
         ["--n-size" as string]: `${frame.nLabel.fontSize}px`,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{CAVEAT}</p>
       </div>
@@ -259,7 +327,11 @@ export function DecadeBoxplotWeb({
           minHeight: `${MIN_PLOT_PX}px`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticksY.map((tick, i) => (
             <span
               key={tick.value}
@@ -295,6 +367,7 @@ export function DecadeBoxplotWeb({
             fill={ground}
           />
 
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
           {ticksY.map((tick) => (
             <line
               key={tick.value}
@@ -308,8 +381,16 @@ export function DecadeBoxplotWeb({
             />
           ))}
 
+          </g>
+
+          {/* THE REVEAL — one decade, one arrival: whiskers, box and median together, never
+              cascading against each other. The video's own answer for this type. */}
           {boxes.map((b) => (
-            <g key={b.label}>
+            <g
+              key={b.label}
+              {...boxLayer(b.label, true).attrs}
+              style={boxLayer(b.label, true).vars}
+            >
               {/* Whisker: one vertical rule from the low fence-clipped reading to the high one,
                   drawn under the box so the box's own top/bottom edges read as the crisp Q1/Q3
                   line. */}
@@ -408,8 +489,10 @@ export function DecadeBoxplotWeb({
             b.outlierPoints.map((p) => (
               <span
                 key={`o-${b.label}-${p.year}`}
+                {...boxLayer(b.label, false).attrs}
                 className="outlier-dot"
                 style={{
+                  ...boxLayer(b.label, false).vars,
                   left: `${pct(b.cx, frame.width)}%`,
                   top: `${pct(p.y, frame.height)}%`,
                   width: `${OUTLIER_RADIUS * 2}px`,
@@ -425,8 +508,10 @@ export function DecadeBoxplotWeb({
               b.outlierPoints.map((p) => (
                 <span
                   key={`ol-${b.label}-${p.year}`}
+                  {...boxLayer(b.label, false).attrs}
                   className="outlier-label"
                   style={{
+                    ...boxLayer(b.label, false).vars,
                     left: `${pct(b.cx, frame.width)}%`,
                     top: `${pct(p.y, frame.height)}%`,
                   }}
@@ -445,8 +530,12 @@ export function DecadeBoxplotWeb({
           {boxes.map((b) => (
             <span
               key={b.label}
+              {...boxLayer(b.label, false).attrs}
               className="axis-label x cat-label"
-              style={{ left: `${pct(b.cx, frame.width)}%` }}
+              style={{
+                ...boxLayer(b.label, false).vars,
+                left: `${pct(b.cx, frame.width)}%`,
+              }}
             >
               <span className="decade">{b.label}</span>
               <span className="n">{`n=${b.n}`}</span>
@@ -455,7 +544,13 @@ export function DecadeBoxplotWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
