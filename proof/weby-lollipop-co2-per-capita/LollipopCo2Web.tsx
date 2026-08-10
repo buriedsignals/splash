@@ -61,6 +61,15 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   formatValue,
   formatValueFine,
   lollipopGeometry,
@@ -186,6 +195,112 @@ export function LollipopCo2Web({
   const totalWidth = yGutterPx + frame.width + rGutterPx;
   const totalHeight = frame.height + frame.xAxisRowPx;
 
+  // ── THE ENTRANCE. The five events of `chart-web/assets/entrance.ts`, in the video's own order,
+  // and the first beat in this genre whose reveal is NOT a clip wipe.
+  //
+  // WHY NOT, stated here because this beat is the one that paid for it. A wipe uncovers the finished
+  // picture left to right. On a line whose x axis is time that is the truth — it is the video's own
+  // `drawnSoFar`. Here every stem starts at the same zero, so at 40 % of the wipe all fifteen stems
+  // are 40 % of the plot long: **for two thirds of the build the chart says Poland and Switzerland
+  // are equal, which is the opposite of what the title says.** This beat was built that way once,
+  // driven green, and reverted on looking at it. Each stem now grows from the zero baseline to its
+  // OWN value, in the ranking's own order, so no intermediate frame states anything false.
+  //
+  // WHAT THIS BEAT DECIDED, the half no contract can decide for it:
+  //
+  //   - THE REFERENCE is the zero baseline. Not a default: this type's whole reading is a LENGTH
+  //     measured from zero (`chart-beat/references/types/lollipop.md`), so the floor has to be on
+  //     screen, alone, before a single stem is laid against it. It is laid DOWN — grown from the
+  //     plot's own top edge — the same gesture the video's reference rule makes.
+  //   - THE ORDER of the reveal is the ranking's own order, top row first. A ranking read from the
+  //     top down is the argument's order; any other sequence would be motion for energy.
+  //   - THE SUBJECT IS TAKEN OUT OF THE CASCADE. Switzerland is row 13 of 15, so in rank order its
+  //     stem would arrive third-from-last among fourteen others and land on nobody. It arrives after
+  //     every other row instead, as its own event — the video's "the one mark the takeaway is about,
+  //     landing as its own event" — and the cascade leaves its row empty until then, which is the
+  //     emphasis. Nothing about the SETTLED page changes to make this possible: no ring, no extra
+  //     mark, no recolour. The entrance is an addition.
+  //   - THE CONCLUSION is Switzerland's own printed value, stated once its stem has landed.
+  //
+  // Every dot and every value label is gated on ITS OWN mark, never on the master clock: the dot at
+  // 0.8 of its stem's window (with `ARRIVE` easing the stem is at 99 % of its length by then, so the
+  // head lands on the tip rather than floating ahead of a half-grown stem — a dot cannot ride a
+  // growing tip in CSS, which is handed one delay up front), the value label at the end of it. That
+  // is `doctrine/references/motion-grammar.md`'s label rule, as arithmetic, and it is what
+  // `verify-entrance.mjs` pairs by name and drives.
+  const subjectIndex = points.findIndex((p) => p.country === subject);
+  if (subjectIndex < 0)
+    throw new Error(
+      `the subject "${subject}" is not one of the ${points.length} rows this beat draws`,
+    );
+  const cascade = points.filter((p) => p.country !== subject);
+  /** One row's own window: the cascade rows share `reveal`; the subject owns `subject` outright. */
+  const windowFor = (country: string) => {
+    if (country === subject) return WEB_ENTRANCE.subject;
+    return markEvent(
+      WEB_ENTRANCE.reveal,
+      cascade.findIndex((p) => p.country === country),
+      cascade.length,
+    );
+  };
+  const eventFor = (country: string) =>
+    country === subject ? ("subject" as const) : ("reveal" as const);
+  const stemLayer = (country: string) => {
+    const own = windowFor(country);
+    return entranceLayer(eventFor(country), "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "x", origin: { x: zeroX, y: 0 }, key: country },
+    });
+  };
+  const dotLayer = (country: string) =>
+    entranceLayer(eventFor(country), "fade", {
+      delay: atProgress(windowFor(country), 0.8),
+      duration: LABEL_FADE_MS,
+      ease: ENTRANCE_EASING.ARRIVE,
+      names: country,
+    });
+  const valueLabelLayer = (country: string) =>
+    country === subject
+      ? entranceLayer("conclusion", "fade", {
+          delay: WEB_ENTRANCE.conclusion.start,
+          duration: WEB_ENTRANCE.conclusion.duration,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: country,
+        })
+      : entranceLayer("reveal", "fade", {
+          delay: atProgress(windowFor(country), 1),
+          duration: LABEL_FADE_MS,
+          ease: ENTRANCE_EASING.ARRIVE,
+          names: country,
+        });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const baselineLayer = entranceLayer("reference", "grow", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+    // No key: the floor is what the stems are MEASURED AGAINST, not one of the readings, and the
+    // instrument's "no frame shows the marks all equal" clause is computed over the keyed set.
+    grow: { axis: "y", origin: { x: zeroX, y: plot.top } },
+  });
+  // Asserted rather than left to a reader: every cascade delay is DERIVED from this beat's own row
+  // count, so the contract being legal is not the same claim as the page fitting inside the ceiling.
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((p) => atProgress(windowFor(p.country), 1) + LABEL_FADE_MS),
+  );
+  if (lastCascadeEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last cascading row's value label ends at ${lastCascadeEnd}ms, after the subject lands at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms — a row of the ranking would still be arriving while the ` +
+        `mark the takeaway is about is already there`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -209,7 +324,11 @@ export function LollipopCo2Web({
         ["--cat-weight" as string]: frame.category.fontWeight,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
       </div>
 
@@ -225,7 +344,11 @@ export function LollipopCo2Web({
           minHeight: `${rows.length * MIN_ROW_PX}px`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {points.map((p) => (
             <span
               key={p.country}
@@ -267,22 +390,32 @@ export function LollipopCo2Web({
               this genre allows), so a gridline passing behind a label is covered by the label's own
               backing rather than cut into segments in user units a fixed-pixel label cannot be
               measured against. */}
-          {ticks.map((tick) => (
-            <line
-              key={tick.value}
-              x1={tick.x}
-              x2={tick.x}
-              y1={plot.top}
-              y2={plot.bottom}
-              stroke={grid}
-              strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* Gridlines are FURNITURE and come up on ONE clock with the axis labels beside them —
+              the video's own rule: title, source, axis, ticks, gridlines arrive together and then
+              never move again. One `<g>`, not a fade per line. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
+            {ticks.map((tick) => (
+              <line
+                key={tick.value}
+                x1={tick.x}
+                x2={tick.x}
+                y1={plot.top}
+                y2={plot.bottom}
+                stroke={grid}
+                strokeWidth={1}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </g>
 
           {/* The zero baseline every stem starts from — the length-encoding floor this type
-              inherits from bars and is not allowed to relax (`references/types/lollipop.md`). */}
+              inherits from bars and is not allowed to relax (`references/types/lollipop.md`), and
+              for that reason this beat's REFERENCE: it is laid down, alone, before a single stem is
+              measured against it. Grown from the plot's own top edge, which is what `--e-oy` says.
+              `non-scaling-stroke` holds its 1px width while it lengthens. */}
           <line
+            {...baselineLayer.attrs}
+            style={baselineLayer.vars}
             x1={zeroX}
             x2={zeroX}
             y1={plot.top}
@@ -292,19 +425,27 @@ export function LollipopCo2Web({
             vectorEffect="non-scaling-stroke"
           />
 
-          {points.map((p) => (
-            <line
-              key={p.country}
-              x1={zeroX}
-              x2={p.dotX}
-              y1={p.rowY}
-              y2={p.rowY}
-              stroke={p.country === subject ? accent : muted}
-              strokeWidth={STEM_WIDTH}
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {/* THE REVEAL — each stem grows from the zero baseline to ITS OWN value, in the ranking's
+              own order, and Switzerland's arrives last as its own event. Not a clip: see the
+              entrance block above for the frame-by-frame reason. */}
+          {points.map((p) => {
+            const layer = stemLayer(p.country);
+            return (
+              <line
+                key={p.country}
+                {...layer.attrs}
+                style={layer.vars}
+                x1={zeroX}
+                x2={p.dotX}
+                y1={p.rowY}
+                y2={p.rowY}
+                stroke={p.country === subject ? accent : muted}
+                strokeWidth={STEM_WIDTH}
+                strokeLinecap="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            );
+          })}
 
           {/* Interaction layer — one hit-rect PER ROW, spanning the full plot width and that row's
               own band height, invisible at rest. `tabIndex`, `aria-label` and `data-detail` (the
@@ -346,34 +487,48 @@ export function LollipopCo2Web({
               everything else in this overlay, so they track the stretch without being deformed by
               it. The stem stays in the `<svg>`: its LENGTH is the reading, and
               `vector-effect="non-scaling-stroke"` already holds its thickness constant. */}
-          {points.map((p) => (
-            <span
-              key={`dot-${p.country}`}
-              className="dot"
-              style={{
-                left: `${pct(p.dotX, frame.width)}%`,
-                top: `${pct(p.rowY, frame.height)}%`,
-                width: `${DOT_RADIUS * 2}px`,
-                height: `${DOT_RADIUS * 2}px`,
-                background: p.country === subject ? accent : muted,
-              }}
-            />
-          ))}
-          {points.map((p) => (
-            <span
-              key={p.country}
-              className="value-label"
-              style={{
-                left: `${pct(p.dotX, frame.width)}%`,
-                top: `${pct(p.rowY, frame.height)}%`,
-              }}
-            >
-              {formatValue(p.value)}
-            </span>
-          ))}
+          {points.map((p) => {
+            const layer = dotLayer(p.country);
+            return (
+              <span
+                key={`dot-${p.country}`}
+                {...layer.attrs}
+                className="dot"
+                style={{
+                  ...layer.vars,
+                  left: `${pct(p.dotX, frame.width)}%`,
+                  top: `${pct(p.rowY, frame.height)}%`,
+                  width: `${DOT_RADIUS * 2}px`,
+                  height: `${DOT_RADIUS * 2}px`,
+                  background: p.country === subject ? accent : muted,
+                }}
+              />
+            );
+          })}
+          {points.map((p) => {
+            const layer = valueLabelLayer(p.country);
+            return (
+              <span
+                key={p.country}
+                {...layer.attrs}
+                className="value-label"
+                style={{
+                  ...layer.vars,
+                  left: `${pct(p.dotX, frame.width)}%`,
+                  top: `${pct(p.rowY, frame.height)}%`,
+                }}
+              >
+                {formatValue(p.value)}
+              </span>
+            );
+          })}
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticks.map((tick, i) => (
             <span
               key={tick.value}
@@ -386,7 +541,13 @@ export function LollipopCo2Web({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }

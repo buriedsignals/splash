@@ -382,7 +382,7 @@ const FILTER_CHROME_CSS = `
  * Here, under `reduce`, the guard's own assertion is literally true: nothing animates because
  * nothing that animates was ever defined.
  *
- * THE THREE MOTIONS, and the reason there are exactly three:
+ * THE FOUR MOTIONS, and the reason there are exactly four:
  *
  *   - `fade` — a layer of FURNITURE arriving, or a LABEL arriving on the mark it names. Opacity
  *     only, which composites and never reflows.
@@ -394,7 +394,17 @@ const FILTER_CHROME_CSS = `
  *   - `land` — `transform: scale()` on the SUBJECT, from nothing to its full size. The component
  *     guarantees the origin by drawing the mark at (0,0) inside a translated `<g>`, so there is no
  *     `transform-box`/percentage question to get wrong at two different engine versions.
+ *   - `grow` — ONE MARK growing from ITS OWN baseline to ITS OWN value, along the one axis that
+ *     encodes the reading. The bar family's reveal, and the reason a fourth motion exists at all:
+ *     the `wipe` above uncovers a picture left to right, which is the truth about a line whose x
+ *     axis is time and a LIE about a ranking, where it leaves every bar the same length for two
+ *     thirds of the build. Each mark carries its own `--e-delay` from `entrance.ts`'s `markEvent`,
+ *     so the cascade IS the argument's order. `--e-sx`/`--e-sy` pick the axis (the other stays at 1
+ *     — a bar's thickness carries no reading and must not animate) and `--e-ox`/`--e-oy` put the
+ *     origin on the mark's own baseline, which is the one point that must not move: a column's is
+ *     the plot floor, a diverging bar's is a centre line, a stem's is wherever zero landed.
  *
+
  * `transform-box: view-box` with `transform-origin: 0 0` is stated on both transform motions rather
  * than left to the initial value, which has changed in Chrome's own lifetime (`border-box` then
  * `view-box`) and resolves `0 0` to two different points under `fill-box`. Both elements are
@@ -416,6 +426,7 @@ function entranceCss() {
   @keyframes chart-entrance-fade { from { opacity: 0; } }
   @keyframes chart-entrance-wipe { from { transform: scaleX(0); } }
   @keyframes chart-entrance-land { from { transform: scale(0); } }
+  @keyframes chart-entrance-grow { from { transform: scale(var(--e-sx, 1), var(--e-sy, 1)); } }
 
   /* One class, added once, by an IntersectionObserver — never on load. An embed can sit far below
      the fold of an article, and an entrance nobody watched is a worse artifact than a static one.
@@ -432,10 +443,20 @@ function entranceCss() {
   .chart-figure.entered [data-entrance-motion="fade"] { animation-name: chart-entrance-fade; }
   .chart-figure.entered [data-entrance-motion="wipe"] { animation-name: chart-entrance-wipe; }
   .chart-figure.entered [data-entrance-motion="land"] { animation-name: chart-entrance-land; }
+  .chart-figure.entered [data-entrance-motion="grow"] { animation-name: chart-entrance-grow; }
   .chart-figure.entered [data-entrance-motion="wipe"],
   .chart-figure.entered [data-entrance-motion="land"] {
     transform-box: view-box;
     transform-origin: 0 0;
+  }
+  /* A grown mark states its OWN baseline, because there is no single one: a column grows up from
+     the plot floor, a diverging bar out from a centre line, a stem right from wherever the value
+     axis's zero landed. The fallback is the other two motions' own 0 0, so a missing pair is the
+     old behaviour rather than an undefined one — and entranceLayer refuses to emit a grow layer
+     without them, so the fallback is never what a delivered page runs. */
+  .chart-figure.entered [data-entrance-motion="grow"] {
+    transform-box: view-box;
+    transform-origin: var(--e-ox, 0) var(--e-oy, 0);
   }
 }
 `.trim();

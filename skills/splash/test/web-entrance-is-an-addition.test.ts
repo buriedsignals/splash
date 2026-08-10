@@ -44,6 +44,15 @@
  *   5. THE WHOLE ENTRANCE COMPLETES INSIDE `ENTRANCE_CEILING_MS`, measured on the layers the page
  *      actually ships rather than on the contract — half of a beat's delays are derived from its own
  *      geometry, so the contract passing is not the same claim.
+ *   0. (not in W3, and the newest) THE PER-MARK REVEAL'S VOCABULARY IS COMPLETE. A `grow` layer — the
+ *      bar family's reveal, one mark growing from its own baseline to its own value — carries an
+ *      axis and a baseline, and on the `reveal` event it carries its own KEY. `entranceLayer`
+ *      already refuses to build one without them; this reads them off the delivered FILE, because
+ *      three beats here patch their own HTML after it is rendered, and because a `grow` that lost
+ *      its `--e-sx` resolves its keyframe to `scale(1, 1)`: a mark drawn in full from the first
+ *      millisecond, with every other clause below green. Keys are unique, and every layer gated on
+ *      a mark's arrival names one that exists — that pairing is what makes the label rule checkable
+ *      at all, in this file and in `verify-entrance.mjs`.
  *   6. (not in W3) THE ORDER ON THE PAGE IS THE ORDER IN THE CONTRACT, and the LABEL RULE holds:
  *      no layer's delay precedes the delay of the event before it, and the conclusion — the
  *      subject's own value, in words — is measured to be invisible in a real browser while the mark
@@ -150,7 +159,6 @@ const ENTRANCE_PENDING = [
   "proof/webx-wind-vs-solar/wind-vs-solar.html",
   "proof/weby-boxplot-france-co2-decades/boxplot-france-co2-decades.html",
   "proof/weby-dumbbell-life-expectancy-gains/dumbbell-life-expectancy-gains.html",
-  "proof/weby-lollipop-co2-per-capita/lollipop-co2-per-capita.html",
   "proof/weby-population-pyramid-switzerland/population-pyramid-switzerland.html",
   "proof/weby-small-multiples-co2-per-capita/small-multiples-co2-per-capita.html",
   "proof/webz-diverging-bar-eu-per-capita/diverging-bar-eu-per-capita.html",
@@ -429,6 +437,61 @@ describe("the markup half: what a page that declares an entrance must already sa
           failures.push(
             `${name} has a layer at ${Math.min(...delays)}ms, before ${previousName}'s first at ` +
               `${Math.min(...previousDelays)}ms — the entrance does not carry the argument's order`,
+          );
+      }
+
+      // 8 (not in W3) — THE PER-MARK REVEAL'S OWN VOCABULARY, checked on the delivered page.
+      //
+      // `entrance.ts`'s `entranceLayer` refuses to build a `grow` layer without an axis, a baseline
+      // and — on the reveal — a key. That is a build-time throw in a component; this is the same
+      // rules read off the FILE, because a page is patched after it is rendered (three beats in this
+      // repository swap their own script into it, one rewrites its `<html lang>`) and because a
+      // `grow` whose `--e-sx`/`--e-sy` went missing resolves its keyframe to `scale(1, 1)`: a mark
+      // drawn in full from the first millisecond, with every other clause here green.
+      const motionOf = new Set(declared.map((l) => l.motion));
+      for (const motion of motionOf)
+        if (!["fade", "wipe", "land", "grow"].includes(motion))
+          failures.push(
+            `data-entrance-motion="${motion}" is not one of the four motions the stylesheet defines`,
+          );
+      for (const motion of motionOf)
+        if (!html.includes(`@keyframes chart-entrance-${motion}`))
+          failures.push(
+            `the page uses the ${motion} motion and ships no @keyframes chart-entrance-${motion}`,
+          );
+
+      const growTags = tagsCarrying(html, 'data-entrance-motion="grow"');
+      for (const tag of growTags) {
+        const key = /\sdata-entrance-key="([^"]*)"/.exec(tag);
+        const event = /\sdata-entrance="([a-z]+)"/.exec(tag);
+        for (const variable of ["--e-sx", "--e-sy", "--e-ox", "--e-oy"])
+          if (!new RegExp(`${variable}:`).test(tag))
+            failures.push(
+              `a grow layer (${event?.[1] ?? "?"}${key ? ` ${key[1]}` : ""}) ships no ${variable} — ` +
+                `its keyframe resolves to scale(1, 1) and the mark is drawn in full from the first ` +
+                `millisecond`,
+            );
+        if (event?.[1] === "reveal" && !key)
+          failures.push(
+            "a grow mark on the reveal carries no data-entrance-key — it is one of the readings " +
+              "the argument is about, and without a key it sits outside every per-mark check",
+          );
+      }
+      // A mark's own name is what pairs it with the layers gated on its arrival, so a duplicate or a
+      // dangling name silently turns the label rule off for the pair it belongs to.
+      const markKeys = growTags
+        .map((tag) => /\sdata-entrance-key="([^"]*)"/.exec(tag)?.[1])
+        .filter((k): k is string => k !== undefined);
+      if (new Set(markKeys).size !== markKeys.length)
+        failures.push(
+          `two marks share a data-entrance-key: ${markKeys.join(", ")}`,
+        );
+      for (const tag of tagsCarrying(html, "data-entrance-label")) {
+        const names = /\sdata-entrance-label="([^"]*)"/.exec(tag)?.[1];
+        if (names !== undefined && !markKeys.includes(names))
+          failures.push(
+            `a layer is gated on the arrival of "${names}", which no mark declares — the label ` +
+              `rule cannot be checked on it, in this test or in a browser`,
           );
       }
 

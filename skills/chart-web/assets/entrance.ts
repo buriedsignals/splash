@@ -76,6 +76,11 @@
  * two rows meeting in the middle. The video genre has exactly the same split — `timing.ts` holds the
  * edit, `EmissionsVideo.tsx` holds the drawing — and it is why neither file is parameterised into a
  * general animator. What the contract owns is WHEN each layer arrives and IN WHAT ORDER.
+ *
+ * What the contract DOES own, since a second mechanism landed, is the ARITHMETIC of a cascade
+ * (`markEvent` below): how one `reveal` window is divided among n marks so that they arrive in the
+ * argument's order and overlap into one continuous build. WHICH mark is index 0 is still the beat's
+ * call, and it is the editorial half.
  */
 
 /** One event of the entrance. `start` and `duration` are MILLISECONDS — see change 2 above. */
@@ -154,6 +159,70 @@ export function atProgress(event: EntranceEvent, fraction: number): number {
   return Math.round(
     event.start + Math.max(0, Math.min(1, fraction)) * event.duration,
   );
+}
+
+/**
+ * THE CASCADE'S OVERLAP FACTOR — how far into its successor's slot a mark's own growth runs.
+ *
+ * `1` would give n marks n disjoint slots, and the build would read as n discrete steps with a seam
+ * between each. Above `1` the slots overlap and it reads as one continuous cascade. The number is
+ * the video's own and is not invented here: six video beats in this repository carry the same
+ * three-line window function with this factor typed into it —
+ * `vidy-lollipop-renewables-share-europe` (1.6), `vidx-grouped-bar-co2-per-capita` (1.6),
+ * `vidx-stacked-bar-swiss-electricity` (1.6), `vidz-bar-column-top-emitters` (1.6),
+ * `vidy-boxplot-co2-by-continent` (1.7), `vidy-pyramid-niger-population` (1.8),
+ * `vidz-diverging-bar-eu-per-capita` (2.2). 1.6 is the one four of them chose, so it is the default
+ * here; the parameter exists because the other three had reasons (fewer, fatter marks want more
+ * overlap or the last one lands too late).
+ */
+export const MARK_OVERLAP = 1.6;
+
+/**
+ * ONE MARK'S OWN SLICE OF THE REVEAL, as an event in its own right.
+ *
+ * WHY THIS EXISTS AT ALL, and it is the whole reason a second reveal mechanism was built. The first
+ * one is a CLIP WIPE: one rect grows left to right and uncovers whatever is behind it. That is
+ * exactly right for a line whose x axis is time — it is the video's `drawnSoFar`, frame for frame —
+ * and it is WRONG FOR THE WHOLE BAR FAMILY, which was measured rather than reasoned: a lollipop
+ * entrance was built on the wipe, driven green, and reverted on looking at it. Every stem starts at
+ * the same zero baseline, so a wipe at 40 % leaves all fifteen stems 40 % of the plot long — for two
+ * thirds of the build the chart states that all fifteen countries are equal, which is the opposite
+ * of what a ranking claims. **An intermediate frame of a reveal is an assertion, and it has to be a
+ * true one.**
+ *
+ * So a bar, a stem, a band or a segment grows from ITS OWN baseline to ITS OWN value, and this is
+ * where it gets its own window. `span = 1/count`, `start = i * span`, `end = start + span * overlap`
+ * clamped to the end — the video's own `rowWindow`, in milliseconds, with `atProgress` doing the
+ * conversion so the two never disagree about where a fraction of `reveal` lands.
+ *
+ * The returned object is an `EntranceEvent` and not a `{ start, end }` pair ON PURPOSE: it is the
+ * same type every other layer takes, so `atProgress(mark, 0.7)` derives the instant this mark's own
+ * label may appear. That is the label rule — "a value label may not appear before the mark it names
+ * has arrived" — expressed against the mark's own clock rather than the master one, which is the
+ * distinction `doctrine/references/motion-grammar.md` makes and the thing an instrument can check.
+ *
+ * `duration` is floored at one millisecond because `checkEntrance` refuses zero, and a cascade over
+ * enough marks rounds a slot to nothing before it rounds it negative.
+ */
+export function markEvent(
+  reveal: EntranceEvent,
+  i: number,
+  count: number,
+  overlap: number = MARK_OVERLAP,
+): EntranceEvent {
+  if (!Number.isInteger(count) || count < 1)
+    throw new Error(`a cascade needs at least one mark, got count=${count}`);
+  if (!Number.isInteger(i) || i < 0 || i >= count)
+    throw new Error(`mark index ${i} is outside a cascade of ${count}`);
+  if (!(overlap >= 1))
+    throw new Error(
+      `overlap ${overlap} is under 1 — marks would leave a gap between them and the build would ` +
+        `read as ${count} discrete steps`,
+    );
+  const span = 1 / count;
+  const start = atProgress(reveal, i * span);
+  const end = atProgress(reveal, Math.min(1, i * span + span * overlap));
+  return { start, duration: Math.max(1, end - start) };
 }
 
 /**
@@ -300,9 +369,46 @@ export const LABEL_FADE_MS = 110;
  * (`splash/test/web-entrance-is-an-addition.test.ts`) asserts every `clipPath` id in a page is
  * unique and referenced rather than trusting 32 bits.
  */
-/** The three motions the shared stylesheet defines. See `render-web.mjs`'s `entranceCss` for what
- *  each one is for and why there are exactly three. */
-export type EntranceMotion = "fade" | "wipe" | "land";
+/** The four motions the shared stylesheet defines. See `render-web.mjs`'s `entranceCss` for what
+ *  each one is for and why there are exactly four. */
+export type EntranceMotion = "fade" | "wipe" | "land" | "grow";
+
+/** Which way a `grow` mark's own extent runs, and where its baseline is.
+ *
+ *  `axis` is the direction the LENGTH THAT ENCODES THE VALUE runs in — `x` for a horizontal bar or
+ *  a lollipop stem, `y` for a column. The other axis is left alone at 1, so a bar never gets thinner
+ *  while it grows longer: the thickness of a bar carries no reading and animating it would be motion
+ *  added for energy.
+ *
+ *  `origin` is the mark's own BASELINE, in the element's own coordinate system — the zero line the
+ *  length is measured from, which is the one point that must not move. Stated per mark rather than
+ *  taken from `0 0`, because a diverging bar's baseline is a centre line, a column's is the bottom
+ *  of the plot, and a stem's is wherever the value axis's zero landed. Measured, not assumed: with
+ *  `transform-box: view-box`, Chrome resolves a length `transform-origin` in the ELEMENT'S OWN local
+ *  coordinates (a `<line x1=100>` given `transform-origin: 100px 200px` and `scaleX(0.5)` keeps its
+ *  left end at 100 and halves its length — driven, not read off a spec). */
+export type GrowFrom = {
+  axis: "x" | "y";
+  origin: { x: number; y: number };
+  /**
+   * The mark's own name, unique within the page. It is what pairs this mark with any layer gated on
+   * its arrival — its own dot, its own value label — so the label rule can be DRIVEN in a browser:
+   * an instrument that only knows "some label is visible and some mark is still growing" cannot tell
+   * a cascade from a defect, because in a cascade the first row's label is legitimately painted
+   * while the last row's mark has not started.
+   *
+   * OPTIONAL, because a length that arrives is not always a DATUM. A lollipop's zero baseline is
+   * laid down the same way a stem is — it grows from the plot's own top edge — and it is the
+   * reference the stems are measured against, not one of them. A key is what says "this is one of
+   * the readings the argument is about", and the instrument's "no frame shows the marks all equal"
+   * clause is computed over exactly the keyed set, so putting the baseline in it would be comparing
+   * a rule against the values it measures.
+   *
+   * It is NOT optional on the `reveal` event — that is where the data arrives, and a keyless mark
+   * there would be a datum quietly outside the instrument. `entranceLayer` refuses it.
+   */
+  key?: string;
+};
 
 /**
  * One layer's own attributes and custom properties, ready for a component to put on an element.
@@ -320,20 +426,80 @@ export type EntranceMotion = "fade" | "wipe" | "land";
 export function entranceLayer(
   event: EntranceEventName,
   motion: EntranceMotion,
-  { delay, duration, ease }: { delay: number; duration: number; ease?: string },
+  {
+    delay,
+    duration,
+    ease,
+    grow,
+    names,
+  }: {
+    delay: number;
+    duration: number;
+    ease?: string;
+    /** Required by, and only legal on, `grow`. See `GrowFrom`. */
+    grow?: GrowFrom;
+    /** The `grow` mark whose value this layer STATES, if it is a label. Only legal on a layer that
+     *  is not itself a mark. */
+    names?: string;
+  } = { delay: 0, duration: 0 },
 ): {
   attrs: {
     "data-entrance": EntranceEventName;
     "data-entrance-motion": EntranceMotion;
+    "data-entrance-key"?: string;
+    "data-entrance-label"?: string;
   };
   vars: Record<string, string>;
 } {
+  // Fail loud rather than emit a layer that animates to nothing. A `grow` with no axis and no
+  // baseline renders as `scale(1, 1)` — a mark that is fully drawn from the first millisecond and
+  // then "animates" to itself, which is the one defect this motion exists to make impossible and
+  // the one every clause of the driven guard would report green on.
+  if ((motion === "grow") !== (grow !== undefined))
+    throw new Error(
+      motion === "grow"
+        ? `a grow layer must state its own axis, baseline and key — ${event} states none`
+        : `a ${motion} layer may not state a grow baseline; only grow scales about one`,
+    );
+  if (grow && names !== undefined)
+    throw new Error(
+      `a mark cannot also be a label: ${grow.key} names ${names}. A layer either IS a mark or ` +
+        `STATES one`,
+    );
+  // The data arrives on `reveal`, and every reading that arrives there has to be inside the
+  // instrument that checks no intermediate frame states something false about them. A keyless grow
+  // is legal elsewhere (a reference rule being laid down), never here.
+  if (grow && event === "reveal" && grow.key === undefined)
+    throw new Error(
+      `a grow mark on the reveal is one of the readings the argument is about and must carry its ` +
+        `own key — without one it is outside every per-mark check`,
+    );
   return {
-    attrs: { "data-entrance": event, "data-entrance-motion": motion },
+    attrs: {
+      "data-entrance": event,
+      "data-entrance-motion": motion,
+      // Emitted only when present, so a beat that declares no cascade ships no trace of one — the
+      // same "declared or absent" rule the entrance's own CSS is gated by.
+      ...(grow && grow.key !== undefined
+        ? { "data-entrance-key": grow.key }
+        : {}),
+      ...(names !== undefined ? { "data-entrance-label": names } : {}),
+    },
     vars: {
+      // `--e-delay` and `--e-dur` stay FIRST and adjacent: the markup guard reads the pair out of a
+      // rendered `style` attribute with one regex, and React writes a style object in its own
+      // insertion order.
       "--e-delay": `${Math.round(delay)}ms`,
       "--e-dur": `${Math.round(duration)}ms`,
       "--e-ease": ease ?? ENTRANCE_EASING.LINEAR,
+      ...(grow
+        ? {
+            "--e-sx": grow.axis === "x" ? "0" : "1",
+            "--e-sy": grow.axis === "y" ? "0" : "1",
+            "--e-ox": `${grow.origin.x}px`,
+            "--e-oy": `${grow.origin.y}px`,
+          }
+        : {}),
     },
   };
 }

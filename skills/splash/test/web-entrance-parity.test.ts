@@ -84,9 +84,12 @@ import {
 import {
   ENTRANCE_CEILING_MS,
   ENTRANCE_ORDER,
+  MARK_OVERLAP,
   WEB_ENTRANCE,
   atProgress,
   checkEntrance,
+  endOf,
+  markEvent,
   progressOf,
   type BeatEntrance,
 } from "../../chart-web/assets/entrance.ts";
@@ -485,6 +488,105 @@ describe("atProgress — the label rule's only tool, and its own claim", () => {
     expect(atProgress(WEB_ENTRANCE.reveal, 2)).toBe(
       WEB_ENTRANCE.reveal.start + WEB_ENTRANCE.reveal.duration,
     );
+  });
+});
+
+/**
+ * `markEvent` — the cascade's arithmetic, and the same kind of helper `atProgress` is: it has no
+ * ancestor in `timing.ts` to be compared against, because the video keeps this arithmetic in each
+ * BEAT (`vidy-lollipop-renewables-share-europe`'s `rowWindow`, six more like it) rather than in its
+ * contract. So what is asserted here is the shape those seven copies share and the claims the web
+ * copy's own doc-comment makes.
+ */
+describe("markEvent — the cascade the bar family's reveal is divided into", () => {
+  it("should be the video's own rowWindow, in milliseconds", () => {
+    // `span = 1/n`, `start = i * span`, `end = start + span * overlap` clamped — the three lines
+    // every one of those beats carries. Re-derived here against `reveal`'s own window rather than
+    // read back out of the function under test.
+    const reveal = WEB_ENTRANCE.reveal;
+    const mismatched: string[] = [];
+    for (const count of [1, 2, 3, 7, 14, 15, 21, 74])
+      for (let i = 0; i < count; i++) {
+        const span = 1 / count;
+        const expectedStart = Math.round(
+          reveal.start + i * span * reveal.duration,
+        );
+        const expectedEnd = Math.round(
+          reveal.start +
+            Math.min(1, i * span + span * MARK_OVERLAP) * reveal.duration,
+        );
+        const got = markEvent(reveal, i, count);
+        const want = {
+          start: expectedStart,
+          duration: Math.max(1, expectedEnd - expectedStart),
+        };
+        if (got.start !== want.start || got.duration !== want.duration)
+          mismatched.push(
+            `${i}/${count}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`,
+          );
+      }
+    expect(mismatched).toEqual([]);
+  });
+
+  it("should keep every mark inside the reveal it divides", () => {
+    // The cascade may not outrun its own event: a mark still growing after `reveal` has ended would
+    // be a reading arriving after the subject the takeaway is about, which the ordering rule exists
+    // to forbid and which no per-beat copy of this arithmetic states.
+    //
+    // The clamp is held in TWO places and one of them is redundant, which a mutation said out loud:
+    // deleting `markEvent`'s own `Math.min(1, …)` leaves this green, because `atProgress` clamps its
+    // fraction anyway. It goes red the moment the end stops being computed THROUGH `atProgress` —
+    // which is the mutation that matters, since that is what keeps the cascade and the label rule
+    // measuring against the same window.
+    const outside: string[] = [];
+    for (const count of [1, 3, 15, 40])
+      for (let i = 0; i < count; i++) {
+        const mark = markEvent(WEB_ENTRANCE.reveal, i, count);
+        if (
+          mark.start < WEB_ENTRANCE.reveal.start ||
+          endOf(mark) > endOf(WEB_ENTRANCE.reveal)
+        )
+          outside.push(`${i}/${count}: ${mark.start}..${endOf(mark)}`);
+      }
+    expect(outside).toEqual([]);
+  });
+
+  it("should overlap its neighbour rather than leaving a seam", () => {
+    // The whole reason the factor is above 1: n disjoint slots read as n discrete steps. Stated as
+    // the relation rather than as the number, so retuning the overlap cannot quietly cross 1.
+    const first = markEvent(WEB_ENTRANCE.reveal, 0, 8);
+    const second = markEvent(WEB_ENTRANCE.reveal, 1, 8);
+    expect(second.start).toBeLessThan(endOf(first));
+    expect(MARK_OVERLAP).toBeGreaterThan(1);
+  });
+
+  it("should emit an event its own contract check would accept", () => {
+    // A duration of zero is illegal to `checkEntrance`, and a cascade over enough marks rounds a
+    // slot down to nothing long before it rounds it negative — 40 marks over 870ms is a 21ms slot,
+    // 900 marks is under one. The floor is asserted at a count no beat will reach, on purpose.
+    for (const count of [1, 15, 900])
+      for (const i of [0, Math.floor(count / 2), count - 1]) {
+        const mark = markEvent(WEB_ENTRANCE.reveal, i, count);
+        expect([
+          count,
+          i,
+          Number.isInteger(mark.start),
+          mark.duration >= 1,
+        ]).toEqual([count, i, true, true]);
+      }
+  });
+
+  it("should refuse a cascade it cannot divide", () => {
+    expect(() => markEvent(WEB_ENTRANCE.reveal, 0, 0)).toThrow(
+      /at least one mark/,
+    );
+    expect(() => markEvent(WEB_ENTRANCE.reveal, 3, 3)).toThrow(
+      /outside a cascade/,
+    );
+    expect(() => markEvent(WEB_ENTRANCE.reveal, -1, 3)).toThrow(
+      /outside a cascade/,
+    );
+    expect(() => markEvent(WEB_ENTRANCE.reveal, 0, 3, 0.9)).toThrow(/under 1/);
   });
 });
 
