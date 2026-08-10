@@ -140,3 +140,71 @@ describe("a beat that pins an export size delivers a file that measures it", () 
     ]);
   });
 });
+
+/**
+ * THE OTHER HALF OF A PINNED SIZE: THE PLOT'S OWN SHAPE.
+ *
+ * `assertDeliveredSize` above holds the FRAME. It says nothing about what the frame did to the
+ * drawing inside it, and that is by design — a chart can measure exactly 1080x1080, clear every
+ * type floor, clip nothing and collide with nothing, and still have had its argument destroyed,
+ * which is `proof/portrait-aspect-probe/`'s founding finding. `assertPlotAspect` is the guard for
+ * that, and until 2026-08-11 **no video beat that pins a tall size called it**: the reason is
+ * recorded in `proof/life-expectancy/BRIEF.md`, which measured its own delivered square plot at
+ * 2.4:1 against a table that then recorded 0.8–1.8 for a line, so wiring the guard would have
+ * refused a delivered artifact. The range was re-measured first (`proof/aspect-range-probe/`).
+ *
+ * WHY THIS IS A WALK OVER BRIEFS AND NOT A LIST OF TWO BEATS. The population it defends is "beats
+ * whose pinned size is one `formForSize` does not exempt", and today that is exactly two — every
+ * other beat pins landscape, where the verdict is `as-is` and the guard is a documented no-op. A
+ * list of two names would stop describing the tree the moment a third beat pins square. The walk
+ * reads each brief's own `size:` and `type:` and asks the table, so a new tall pin arrives already
+ * guarded.
+ *
+ * THE MUTATIONS, in an rsync under `/tmp/.../mut4/`:
+ *
+ *   the `assertPlotAspect` call deleted from LifeExpectancyVideo.tsx    RED, naming the beat
+ *   the line's ceiling put back to 1.8 (the table, not the beat)        the RENDER refuses:
+ *        `life-expectancy: the plot is too FLAT at square — 808 x 402 is 2.01:1`. This is the
+ *        reading that proves the wiring is live rather than merely present.
+ *   the ceiling dropped to 1.0                                          `migration` refuses too:
+ *        `788 x 507 is 1.55:1` — its square plot sits inside both the old range and the new one,
+ *        which is why the first mutation does not reach it.
+ */
+import { formForSize } from "../../chart-beat/scripts/type-at-size.mjs";
+
+const EXEMPT_VERDICTS = new Set(["as-is", "transpose"]);
+
+const tallPins = beats
+  .filter((b) => b.pinned !== null)
+  .map((b) => {
+    const front = parseBriefFrontMatter(
+      readFileSync(join(b.dir, "BRIEF.md"), "utf8"),
+    );
+    return { ...b, type: front?.type ?? null };
+  })
+  .filter((b) => b.type !== null)
+  .filter((b) => !EXEMPT_VERDICTS.has(formForSize(b.type!, b.pinned!).verdict));
+
+describe("a beat pinned to a size its type does not walk through unclamped", () => {
+  it("should find the beats whose pinned size actually reaches the clamp", () => {
+    // Without this the assertion below goes vacuously green the day every brief loses its `type:`.
+    expect(tallPins.length).toBeGreaterThan(0);
+  });
+
+  for (const beat of tallPins) {
+    it(`should call assertPlotAspect somewhere in ${beat.label}`, () => {
+      const sources = readdirSync(beat.dir).filter(
+        (f) => f.endsWith(".tsx") || f.endsWith(".mjs"),
+      );
+      const calls = sources.filter((f) =>
+        /assertPlotAspect\s*\(/.test(readFileSync(join(beat.dir, f), "utf8")),
+      );
+      expect([beat.label, beat.type, beat.pinned, calls.length > 0]).toEqual([
+        beat.label,
+        beat.type,
+        beat.pinned,
+        true,
+      ]);
+    });
+  }
+});

@@ -135,3 +135,18 @@ centred on the plot's right edge and only its right half hangs outside.
 **Portrait renders and is not refused**, and the empty band at its foot is correct: the content sits
 inside Meta's published safe band (269–1248), and the 672 px below it is where the platform's
 caption, buttons and progress bar go.
+
+## The plot's own shape is now asked about, not only the frame's
+
+This beat and `../life-expectancy` are the only two in the corpus that pin a size `formForSize`
+does not exempt — everything else pins landscape, where the verdict is `as-is` and a clamp is a
+documented no-op. Until 2026-08-11 neither of them asked whether the plot the frame left them was a
+shape a line argues in: `assertPlotAspect` existed and reached no video beat, because wiring it
+while `MEASURED_ASPECT.line` recorded 0.8–1.8 would have refused the sibling beat's **delivered**
+artifact at 2.01:1.
+
+The range was re-measured first (`proof/aspect-range-probe/`, swept and opened, **0.7–3.6**), and
+both guards are now wired here against the size the composition was registered from. **This beat's
+square plot measures 788 x 507 — 1.55:1** — comfortably inside, so nothing it delivers changes. That
+it is wired rather than merely present was proved by mutation: with the ceiling dropped to 1.0 in a
+copy of the tree, this render refuses and names its own numbers.

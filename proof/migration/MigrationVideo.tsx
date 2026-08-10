@@ -40,7 +40,14 @@ import {
   sizeFor,
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
+import {
+  assertPlotAspect,
+  assertTypeMayEnter,
+} from "#shared/chart-beat/type-at-size.mjs";
 import { MIGRATION_TIMING } from "./timing-contract";
+
+/** The type this beat draws, in `references/types/` vocabulary — what `formForSize` answers for. */
+export const TYPE = "line";
 
 // Video-canvas helpers duplicated from EmissionsVideo.tsx — not shared because they are
 // browser-Canvas-based (document.createElement("canvas")), not the static-render resvg substrate.
@@ -457,6 +464,14 @@ export function MigrationVideo({
     subjectYears,
     bottomReserve: calloutBlockHeight + CALLOUT_DROP,
   });
+  // THE PLOT'S OWN SHAPE, REFUSED IF IT IS OUTSIDE WHAT A LINE ARGUES IN — the same wiring as
+  // `proof/life-expectancy`, and for the same reason. `assertPlotAspect` was written for the static
+  // path and reached no video beat that pins a tall size; there are exactly two, this and that one,
+  // because `formForSize` answers `as-is` at landscape and the guard is a documented no-op there.
+  // It could not be wired while `MEASURED_ASPECT.line` recorded 0.8-1.8, which would have refused a
+  // delivered artifact; the range was re-measured first (`proof/aspect-range-probe/`, 0.7-3.6).
+  assertTypeMayEnter(TYPE, size, { what: "migration" });
+  assertPlotAspect(g.plot, TYPE, size, { what: "migration" });
   const tickLabels = tickLabelsFor(g.ticksY.map((t) => t.value));
 
   // ── The edit. Six windows, all read off the timing contract — no frame literal below.

@@ -157,11 +157,25 @@ inside Meta's published safe band (269–1248), and the 672 px below it is where
 caption, buttons and progress bar go. A credit drawn there is at risk of being covered, which is an
 attribution failure rather than a cosmetic one.
 
-## A finding for the shared table, not fixed here
+## The finding this beat raised, and how it was closed
 
-The delivered square plot measures roughly **816 x 340, or 2.4:1**, and portrait's is 2.55:1 — both
-outside `MEASURED_ASPECT.line`'s recorded 0.8–1.8. No guard fires, because `assertPlotAspect` is not
-wired into the video path. Wiring it as the table stands would refuse this beat's own **delivered**
-artifact, so it was not wired: the range, not the beat, is what needs re-measuring. The same
-observation, from a different beat and a different genre, is recorded in
-`proof/more-line-swiss-life-expectancy/BRIEF.md`.
+The delivered square plot measures roughly **808 x 402, or 2.01:1**, and portrait's is 2.55:1 —
+both outside `MEASURED_ASPECT.line`'s then-recorded **0.8–1.8**. No guard fired, because
+`assertPlotAspect` was not wired into the video path, and wiring it as the table stood would have
+refused this beat's own **delivered** artifact. The order this beat argued for was: the range, not
+the beat, is what needs re-measuring.
+
+**That is what happened, 2026-08-11, and in that order.** `proof/aspect-range-probe/` swept a line
+across ten aspects at the article's regime and six more at the phone's, opened every arm, and
+corrected the range to **0.7–3.6** with both ends bracketed by an arm that reads and one that does
+not (`ASPECT-VERDICT.md` §6). Both of this beat's delivered plots sit inside it. So the guard is now
+wired here — `assertTypeMayEnter` and `assertPlotAspect`, both against the size the composition was
+registered from — and both delivered arms were re-rendered and pass.
+
+**It is wired, not merely present.** Run against a copy of the tree with the ceiling put back to
+1.8, this beat's square render REFUSES with `the plot is too FLAT at square — 808 x 402 is 2.01:1`.
+`proof/migration` is the only other beat in the corpus that pins a size `formForSize` does not
+exempt; its square plot is 1.55:1, inside both ranges, so it needs the ceiling dropped to 1.0 before
+it refuses — which it then does, naming `788 x 507`. Every other beat pins landscape, where the
+verdict is `as-is` and this guard is a documented no-op; `delivered-size-matches-the-pin.test.ts`
+walks the briefs rather than listing those two names, so a third tall pin arrives already guarded.

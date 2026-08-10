@@ -39,16 +39,20 @@ import {
   Easing,
 } from "remotion";
 // A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
-import {
-  progressOf,
-  type BeatTiming,
-} from "#shared/chart-video/timing.ts";
+import { progressOf, type BeatTiming } from "#shared/chart-video/timing.ts";
 import {
   frameInsetFor,
   sizeFor,
   stageFor,
 } from "#shared/chart-video/sizes.mjs";
+import {
+  assertPlotAspect,
+  assertTypeMayEnter,
+} from "#shared/chart-beat/type-at-size.mjs";
 import { LIFE_EXPECTANCY_TIMING } from "./timing-contract";
+
+/** The type this beat draws, in `references/types/` vocabulary — what `formForSize` answers for. */
+export const TYPE = "line";
 
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
@@ -490,6 +494,25 @@ export function LifeExpectancyVideo({
     recoveryYear,
     topReserve: RECOVERY_LABEL_RESERVE,
   });
+  // THE PLOT'S OWN SHAPE, REFUSED IF IT IS OUTSIDE WHAT A LINE ARGUES IN.
+  //
+  // `assertPlotAspect` was written for the static path and was never wired into the video one, and
+  // the reason was recorded in this beat's own BRIEF: the delivered square plot measures ~816 x 340
+  // = 2.4:1 and portrait's is 2.55:1, both outside the range the table then carried (0.8–1.8), so
+  // wiring it would have refused a DELIVERED artifact. That is the correct order — the range was
+  // the thing that needed re-measuring, not the beat.
+  //
+  // Re-measured 2026-08-11 (`proof/aspect-range-probe/ASPECT-VERDICT.md` §6, ten arms swept and
+  // opened at the article's regime and six more at the phone's): the range is 0.7–3.6, and both of
+  // this beat's delivered plots sit inside it. So the guard goes in, and what it now holds is the
+  // thing no counter here can see — a line's SLOPE, which an aspect change destroys while nothing
+  // clips and nothing collides.
+  //
+  // `assertTypeMayEnter` goes in beside it because the two answer different halves of the same
+  // question and this beat asked neither: may this type enter this size at all, and is the plot it
+  // got the shape the type argues in.
+  assertTypeMayEnter(TYPE, size, { what: "life-expectancy" });
+  assertPlotAspect(g.plot, TYPE, size, { what: "life-expectancy" });
   // TWO AXIS LABELS THAT SHARE INK ARE ONE UNREADABLE LABEL. This beat's y axis carries exactly
   // three values — the fitted floor, the 2019 reference, and the fitted ceiling — and the reference
   // (83.78) sits 0.22 years under the ceiling (84) on a 4.5-year range. At the shipped 22px type
