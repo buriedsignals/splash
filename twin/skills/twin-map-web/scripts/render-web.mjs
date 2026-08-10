@@ -34,7 +34,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, readPalette } from "./render-still.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
-import { groupsOf, markLayers, maxZoomForStudySet, slugOf } from "../assets/geo-symbol.ts";
+import { groupsOf, markLayers, maxZoomForStudySet, radiusScale, slugOf } from "../assets/geo-symbol.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Resolved through node's own module resolution, never by a relative path out of this skill.
@@ -175,15 +175,25 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
       south: Math.min(...lats),
       north: Math.max(...lats),
     },
-    // How far in the reader may go, at minimum, whatever the container's shape does to the fit.
-    // Derived: the headroom this plate's own frame had over its study set, which is the leash the
-    // beat was designed with. Without a floor, a tall narrow container can fit so tightly that the
-    // derived headroom is a fifth of a zoom level — a map you cannot move through, which is the one
-    // outcome ruling R1 exists to forbid.
+    // HOW FAR IN THE READER MAY GO, AT MINIMUM, whatever the container's shape does to the fit.
+    //
+    // `leash()` bounds a reader at the zoom where the study set stops filling the frame, which is
+    // right for someone looking at the whole claim and useless for someone trying to pull two
+    // overlapping marks apart. Measured on `proof/mapgen-symbol-web` before this floor existed:
+    // 1.58 zoom levels at 1600x900 and **0.33 at 768x1024** — a factor of 1.26, which is not a map
+    // you can move through, and moving through the map is the whole of ruling R1.
+    //
+    // TWO derivations, and the larger wins, because they answer two different readers:
+    //  - the headroom this plate's own frame held over its study set — how much room the beat was
+    //    designed with;
+    //  - the zoom at which the closest OVERLAPPING pair of marks separates — how much room this
+    //    beat's own data demands before a reader can tell two marks apart.
+    // Both are read off the beat's own frozen data. Neither is picked.
     minZoomHeadroom: Math.max(
       0,
       maxZoomForStudySet(geometry.zoom, Math.abs(corners.east - corners.west), studyLonSpan) -
         geometry.zoom,
+      separationHeadroom(geometry.points, radiusScale(maxValue, geometry.frame.width * 0.062)),
     ),
     // Where each `.pt` hit target and `.point-label` follows the camera to. Keyed exactly as the
     // markup's own `data-key`, so the live label and the fallback label are one placement seen at
@@ -203,6 +213,36 @@ export function livePlan({ geometry, subjectKey, accent, muted, waterFill }) {
       },
     ],
   };
+}
+
+/**
+ * The zoom headroom a reader needs before the two closest marks stop overlapping, in the plate's own
+ * frame units — read off the SAME radii the layer is drawn with, never a second sizing.
+ *
+ * A camera-scaled circle holds its screen size as the reader zooms (a circle encodes a value, not a
+ * ground area), so each doubling of zoom doubles the distance between two centres while the radii
+ * stay put: the pair separates once `distance x 2**h >= rA + rB`.
+ *
+ * Returns 0 when nothing overlaps, which is the honest answer rather than a floor of last resort: a
+ * study set drawn without collisions needs no extra leash, and `leash()`'s own frame-filling rule
+ * then governs alone. This seed is that case — thirteen metros spread across a continent — so the
+ * function is here as the canonical shape a beat copies, not as a number this seed needs.
+ */
+export function separationHeadroom(points, radiusOf) {
+  // MEASURED IN THE PLATE'S OWN PIXELS, on both sides of the ratio. The first draft of this compared
+  // a radius in frame units against a distance in DEGREES and reported 5.04 zoom levels for a study
+  // set whose marks do not overlap at all — a unit mismatch that produced a plausible-looking
+  // number, which is the worst kind. `px`/`py` are what the bake projected and what the SVG draws
+  // the circles at, so they are the one space where the two quantities are comparable.
+  let worst = 0;
+  for (let i = 0; i < points.length; i++)
+    for (let j = i + 1; j < points.length; j++) {
+      const gap = Math.hypot(points[i].px - points[j].px, points[i].py - points[j].py);
+      const touching = radiusOf(points[i].value) + radiusOf(points[j].value);
+      if (gap <= 0 || gap >= touching) continue;
+      worst = Math.max(worst, Math.log2(touching / gap));
+    }
+  return Math.round(Math.max(0, worst) * 1000) / 1000;
 }
 
 async function renderMapWeb({ component, table, props, outDir, name, regionTable = false, live = false, plan = null }) {

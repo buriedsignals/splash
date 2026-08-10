@@ -10,7 +10,7 @@ import {
   RegionTable,
   pointDetail,
 } from "../assets/MapWebSeed.tsx";
-import { renderMapWeb } from "../scripts/render-web.mjs";
+import { renderMapWeb, separationHeadroom } from "../scripts/render-web.mjs";
 import {
   radiusScale,
   niceReferenceValues,
@@ -499,5 +499,69 @@ describe("renderMapWeb", () => {
     expect(html).toContain("container-type: size");
     expect(html).toContain("width: min(100cqw, calc(100cqh * 1))");
     expect(html).toContain("height: calc(100svh - var(--page-pad) * 2)");
+  });
+});
+
+/**
+ * `separationHeadroom` — the floor under how far a reader may zoom in, and the one number in the
+ * live plan this seed's own data does not exercise.
+ *
+ * `leash()` bounds a reader where the study set stops filling the frame, which is right for someone
+ * looking at the whole claim and useless for someone trying to pull two overlapping marks apart:
+ * measured on `proof/mapgen-symbol-web` before the floor existed, 1.58 zoom levels at 1600x900 and
+ * **0.33 at 768x1024**, a factor of 1.26. This seed's thirteen metros do not overlap, so the
+ * function returns 0 for it and the frame-derived headroom governs alone — which is correct, and
+ * which is also why it needs a fixture that DOES overlap or nothing here would ever run its body.
+ *
+ * Its first draft compared a radius in frame units against a distance in DEGREES and reported 5.04
+ * zoom levels for this non-overlapping seed. The number looked plausible and was a unit mismatch.
+ */
+describe("separationHeadroom", () => {
+  const r = () => 10;
+
+  it("should ask for nothing when no two marks overlap", () => {
+    const apart = [
+      { px: 0, py: 0, value: 1 },
+      { px: 100, py: 0, value: 1 },
+    ];
+    expect(separationHeadroom(apart, r)).toBe(0);
+  });
+
+  it("should ask for exactly the doublings that pull the closest pair apart", () => {
+    // Two 10-unit radii touch at 20 units. At 5 units apart the reader needs 2 doublings, because a
+    // camera-scaled circle holds its screen size while the distance between two centres doubles per
+    // zoom level: 5 -> 10 -> 20.
+    const overlapping = [
+      { px: 0, py: 0, value: 1 },
+      { px: 5, py: 0, value: 1 },
+    ];
+    expect(separationHeadroom(overlapping, r)).toBe(2);
+  });
+
+  it("should answer for the WORST pair, not the first or the average", () => {
+    const mixed = [
+      { px: 0, py: 0, value: 1 },
+      { px: 10, py: 0, value: 1 },
+      { px: 12.5, py: 0, value: 1 },
+    ];
+    // The 0/10 pair needs 1 doubling; the 0/12.5 pair needs less; the 10/12.5 pair needs 3. A reader
+    // who can separate the worst pair can separate every pair.
+    expect(separationHeadroom(mixed, r)).toBe(3);
+  });
+
+  it("should measure in the plate's own pixels, so a mark's radius and a gap are comparable", () => {
+    // The unit-mismatch regression, pinned: `px`/`py` are the projected pixels the SVG draws the
+    // circles at. Feeding it degrees would make the same two marks report a wildly different number.
+    const inPixels = [
+      { px: 0, py: 0, value: 1 },
+      { px: 5, py: 0, value: 1 },
+    ];
+    const sameMarksInDegrees = [
+      { px: 0, py: 0, value: 1 },
+      { px: 0.05, py: 0, value: 1 },
+    ];
+    expect(separationHeadroom(inPixels, r)).not.toBe(
+      separationHeadroom(sameMarksInDegrees, r),
+    );
   });
 });
