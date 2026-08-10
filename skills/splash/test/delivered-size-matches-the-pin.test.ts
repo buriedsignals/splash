@@ -91,15 +91,15 @@ const PROOF = join(TWIN, "proof");
  * ZERO — which the count it replaces never could.
  *
  * Measured 2026-08-10 off the tree: 76 beats hold a `BRIEF.md`; 47 of them deliver a frame (25
- * static, 22 video) and 29 do not (22 web, 7 scrolly). Of the 39 unpinned, **10 owe a pin** and 29
- * are the genres that take none. Those 10 are the migration that is actually left: the remaining
- * map statics and map videos, `vidz-diverging-bar-eu-per-capita`, and `co2-suisse`.
+ * static, 22 video) and 29 do not (22 web, 7 scrolly). Of the 38 unpinned, **9 owe a pin** and 29
+ * are the genres that take none. Those 9 are the migration that is actually left: the remaining
+ * map statics and map videos, and `vidz-diverging-bar-eu-per-capita`.
  *
  * It is re-measured off the tree rather than decremented by hand each time, because several lots
  * migrate in parallel: a number typed from a stale read could go UP, which is the one thing a
  * ratchet exists to forbid.
  */
-const BEATS_OWING_A_PIN = 10;
+const BEATS_OWING_A_PIN = 9;
 
 /**
  * Which genres deliver a FRAME — an artifact with fixed pixel dimensions that a pinned size can be

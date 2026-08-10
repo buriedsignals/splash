@@ -1,7 +1,12 @@
+---
+size: landscape
+type: line
+---
+
 # Beat 1 — la courbe repasse sous 1967
 
 **Prouve :** que les émissions territoriales suisses de 2024 sont passées sous leur niveau de 1967.
-**Médium / genre :** chart / static. **Canal :** article web, 900 × 560.
+**Médium / genre :** chart / static. **Canal :** article web, 1920 × 1080.
 
 ## Hiérarchie de la preuve
 
@@ -34,3 +39,48 @@ Sous le titre, à taille de lecture, en muted.
 - **Pas d'axe à zéro forcé** : c'est une ligne ; la pente porte la valeur. Trois ticks étiquetés.
 - **Pas de légende** : deux étiquettes directes, l'une sur le trait, l'autre au bout de la courbe.
 - **Français partout**, y compris la virgule décimale et l'espace insécable des milliers.
+
+## Reproducibility and size — 2026-08-10
+
+*(This section is in English, like every other beat's; the beat's own editorial furniture — title,
+subtitle, labels, credit — stays French, as the anti-patterns above require.)*
+
+**This beat could not be reproduced, and it is the beat everything else was written against.**
+`co2-suisse-still.png` sat committed at 1800 × 1120 — a 900 × 560 element rasterised at
+`fitTo: width × 2`, the doubled-scale defect — beside a component, `EmissionsLine.tsx`, that **no
+script imported**. Only `render-web.mjs` existed, and it renders the WEB genre from
+`EmissionsWeb.tsx`. A rendered artifact with no producing script is precisely what
+`splash/test/claims-grounded-in-data.test.ts`'s ancestry check exists to forbid; this beat passed it
+only because a script for the *other* genre happened to sit in the same folder.
+
+**Given a runner, not superseded**, because everything it needs is committed and nothing had to be
+invented: `data.csv` holds the frozen OWID series, and `render.mjs` imports the journalist's own
+words from `BEAT` in `render-web.mjs` rather than retyping them, so the static and the web genre can
+never disagree about what this chart says.
+
+**Its claim is re-checked against the frozen file on every run**, because the claim is a CROSSING and
+a data refresh could break it silently:
+
+    1967: 32.5 Mt · peak 1973: 46.2 Mt · 2024: 32.1 Mt — crossing holds
+
+The runner refuses if 1967 is missing, if `BEAT.reference` drifts more than 0.05 Mt from the 1967
+reading it names, if 2024 is not under 1967, or if the peak marker names a year that is not the
+series' own peak.
+
+**Pinned: landscape (1920 × 1080)**, in the front matter, verified from the delivered PNG's own
+IHDR. Fifteen bare spacing literals, the line weight and both dot radii now scale with the row's
+`typeScale`; `Y_TICK_HINT` and `X_TICK_HINT` are COUNTS and deliberately do not.
+
+**A credit that ran off the frame, found by looking at another size.** The source was a single
+unwrapped `<text>`. It fits 1920 px and does not fit 1080: the square arm printed "Source : Global
+Carbon Budget 2025, via Our World in" and lost the rest at the frame edge. A clipped credit is an
+attribution failure, not a cosmetic one, so the source wraps like every other block.
+
+**What the square arm showed, and what was NOT done about it.** Unlike most types, a line is not
+refused at a tall frame — it has a measured range (0.7–3.6, `proof/aspect-range-probe/`) and
+`assertPlotAspect` clamps it. The square arm passes that clamp and is unpublishable: 74 annual
+readings in ~510 px of plot, the decade labels merged into one smear, and "Niveau de 1967" printing
+through the line it names. This is the standing finding `type-at-size.mjs` already records in the
+line's own `suspect` field — the failure travels with the plot's WIDTH against the ink drawn in it
+and is aspect-blind — so nothing here invents a tighter bound to hide it. The arm was rendered,
+looked at, and deleted; only landscape is delivered.

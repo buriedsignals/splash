@@ -1,7 +1,8 @@
-// The render ladder for the hex-grid beat. Static genre only.
+// The render ladder for the hex-grid beat. Static genre only — no video.
 //
 // Usage:
 //   bun proof/map-quake-density/render.mjs --still
+//   bun proof/map-quake-density/render.mjs --still --size square    # LOOKING, into sizes/
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -13,7 +14,18 @@ import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
-import { HexGridStill, stillFrameHeight } from "./HexGridStill.tsx";
+// The STATIC genre's size table — the same one every static chart beat reads, and deliberately not
+// a fourth copy of it. `minTypePx` is "12 CSS px at the distance this output is read", and a static
+// map sits in the same ~900px article column a static chart does.
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/chart-beat/sizes.mjs";
+import { HexGridStill } from "./HexGridStill.tsx";
 import {
   cellMembers,
   chooseHexSize,
@@ -55,8 +67,29 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size was a literal `900` in the component and a height this beat derived
+// from its own plate — so the frame followed the plate and the pin reached nothing.
+const pinnedSize = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+// compared. Deliberately NOT a way to change what this beat delivers: the delivered file keeps the
+// beat's own name and the pinned size, and an override says so on stdout and writes elsewhere.
+const sizeFlag = argv.indexOf("--size");
+const size = sizeFlag === -1 ? pinnedSize : argv[sizeFlag + 1];
+const { width: FRAME_WIDTH, height: FRAME_HEIGHT } = sizeFor(size);
+
 const dataPath = flag("--data", join(HERE, "quakes-density.csv"));
-const outDir = flag("--out", join(HERE, "render"));
+const outDir = flag(
+  "--out",
+  sizeFlag === -1 ? join(HERE, "render") : join(HERE, "sizes"),
+);
+const stem = sizeFlag === -1 ? "static" : `static-${size}`;
+if (sizeFlag !== -1)
+  console.log(
+    `LOOKING at ${size}; the pinned size stays ${pinnedSize} -> ${outDir}`,
+  );
+console.log(`pinned size: ${size} (${FRAME_WIDTH}x${FRAME_HEIGHT})`);
 // The plate is frozen BESIDE THE BEAT, exactly as the data is: `/tmp` cannot be committed, so a
 // render reading its basemap from there leaves an artifact nobody can reproduce or audit — and
 // MapTiler restyles, so a re-bake months later is a different picture under the same marks.
@@ -156,7 +189,7 @@ if (wantStill) {
     "the hex-density ramp",
   );
 
-  const { pngPath } = await renderStill({
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(HexGridStill, {
       geometry,
       plate,
@@ -179,16 +212,26 @@ if (wantStill) {
       // them. Derived from the cell's own members (`dominantRegions` above), never typed; the
       // component refuses to draw a ring whose note omits the count.
       subjectNote: `${subject.count.toLocaleString()} events · ${subjectWhere}`,
+      size,
     }),
-    width: 900,
-    height: stillFrameHeight({
-      plateHeight: geometry.frame.height,
-      caveat,
-      source: BEAT.source,
-      basemapCredit: BEAT.basemapCredit,
-    }),
+    width: FRAME_WIDTH,
+    height: FRAME_HEIGHT,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
     outDir,
-    name: "static",
+    name: stem,
   });
-  console.log(`still → ${pngPath}\nNow open it and look at it.`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: pngPath,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "map-quake-density" });
+  assertWithinStage(svg, size, { what: "map-quake-density" });
+  console.log(
+    `still → ${pngPath} at ${FRAME_WIDTH}x${FRAME_HEIGHT}, verified from the file\nNow open it and look at it.`,
+  );
 } else console.log("nothing asked for. Pass --still.");
