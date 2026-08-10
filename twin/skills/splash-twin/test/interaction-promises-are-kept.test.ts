@@ -142,12 +142,21 @@
  *   8a. A MARK WITH NO DRAWN SHAPE OF ITS OWN IS NOT EDGE-PROBED. Assertion 4b needs to find the
  *      mark in the page — a `[data-key]` inside the `<svg>` matching the hit element's key. Where a
  *      beat's hit element has no such twin, the mark is counted in the report as `no-drawn-mark`
- *      and nothing is asserted about it. `mapgen-dot-web` is the whole of that today: its hit
- *      elements sit at a country's anchor and the country's own polygon carries no key, so the
- *      defect the owner reported there — a probe 60px inside France answering nothing — is
- *      MEASURED BY NOBODY. Closing it means the polygon becoming the hit region, which is what
- *      ruling R1 rewrites that layer to do (`queryRenderedFeatures`), so it is deliberately left
- *      for that work rather than built twice.
+ *      and the edge assertion has nothing to iterate.
+ *
+ *      This used to say "`mapgen-dot-web` is the whole of that today", AND THAT WAS FALSE. Counted:
+ *      **5 of 29 delivered artifacts** carry any edge-measurable mark. `mapgen-dot-web` is one gap
+ *      and it is the owner's own B6.14a — its hit elements sit at a country's anchor and the
+ *      country's polygon carries no key, so a probe 60px inside France is MEASURED BY NOBODY, and
+ *      closing it means ruling R1's `queryRenderedFeatures` rewrite. The larger gap is the whole
+ *      CHART × WEB genre: seventeen artifacts, `grep -c data-key` = **0** in every one of them,
+ *      because that renderer's hit element is a transparent full-height `<rect class="bin-hit">`
+ *      and no drawn mark is keyed at all. The argument that the band is deliberately wider than
+ *      the mark it stands for is a good one and it is an argument, not a measurement.
+ *
+ *      What is fixed here is that none of this is silent any more: `EDGE_CENSUS` records the pair
+ *      per artifact with its reason and every artifact asserts against its row, so a vacuum that
+ *      grows, shrinks or moves turns red. See that table.
  *   8. IT REPORTS, BUT DOES NOT FAIL, a broken mode that was never promised. Measured today:
  *      `co2-suisse`, `web-income-life-expectancy` and `webz-bump-emitter-rank` all lose their
  *      tooltip when a finger lifts. None of them promises tap, so none of them fails — the contract
@@ -385,8 +394,7 @@ function aimAtMark(i: number) {
 function aimAtMarkEdges(i: number) {
   const INSET = 4;
   const hit = document.querySelectorAll("[data-detail]")[i] as
-    | HTMLElement
-    | undefined;
+    HTMLElement | undefined;
   if (!hit) return null;
   const key = hit.getAttribute("data-key");
   if (!key) return { derivable: false as const };
@@ -731,14 +739,190 @@ function summary(r: ArtifactReport): string {
     mode("tap"),
     mode("keyboard"),
     r.probesUnreachable ? `unreachable ${r.probesUnreachable}` : "",
-    r.edges.length ? `edges ${r.edges.filter((e) => !e.silent.length).length}/${r.edges.length}` : "",
+    r.edges.length
+      ? `edges ${r.edges.filter((e) => !e.silent.length).length}/${r.edges.length}`
+      : "",
     r.edgesUnderivable ? `no-drawn-mark ${r.edgesUnderivable}` : "",
   ]
     .filter(Boolean)
     .join(" · ");
 }
 
+/**
+ * THE EDGE PROBE'S OWN POPULATION, PINNED — because it was counted, printed, and asserted about
+ * nowhere.
+ *
+ * `report.edgesUnderivable` fed the summary line and nothing else: assertion 4b iterates
+ * `report.edges`, so on an artifact where that array is empty the assertion passed by having
+ * nothing to look at. Measured when this was written: **5 of 29 delivered artifacts** have any
+ * edge-derivable mark at all. The other 24 were green by vacuum, `mapgen-dot-web` — the one beat
+ * the owner reported for this mechanism (B6.14a) — among them.
+ *
+ * Making all 29 derivable is not this guard's work and cannot be: for the chart-web genre it means
+ * `twin-chart-web` emitting a `data-key` on its drawn marks, and for `mapgen-dot-web` it means
+ * ruling R1's `queryRenderedFeatures` rewrite. What IS this guard's work is that the vacuum stops
+ * being invisible. So each artifact records WHETHER any of its marks can be edge-measured at all,
+ * and how many marks were probed, with the reason — and asserts it, per artifact, below.
+ *
+ * What that buys, exactly:
+ *   - an artifact that STOPS being edge-measurable turns red instead of going quiet;
+ *   - a NEW artifact arrives with no row and turns red, so somebody has to say which of these
+ *     reasons it is;
+ *   - a row that is no longer true — an artifact that has BECOME measurable — turns red too, which
+ *     is how the two open items above will announce themselves when they land.
+ *
+ * IT RECORDS A BOOLEAN AND A COUNT, NOT THE EXACT SPLIT, and the reason is measured rather than
+ * assumed. `mapgen-choropleth-web` returns 1-of-3 measurable in one checkout of this tree and
+ * 2-of-3 in another — stable across repeated runs in each, different between them. That is the
+ * knife edge `aimAtMarkEdges` deliberately sits on: a concave country needs at least two of its
+ * four inset points to land on painted fill, and Iceland has fractionally more or less of its
+ * bounding box over open sea depending on where a fluid layout lands. Pinning the split would make
+ * this guard cry wolf on a correct artifact, which is the failure this file's own header spends a
+ * paragraph on. Whether an artifact can be measured AT ALL does not move.
+ *
+ * ITS OWN MUTATIONS, run in copies of the tree under /tmp on 2026-08-11, never here. Both of these
+ * were GREEN before this table existed — the first because assertion 4b had an empty array to
+ * iterate, the second because nothing counted the artifacts at all.
+ *
+ *   strip `data-key` off the drawn `<circle>`s of `quake-symbol.html`, leaving its hit buttons
+ *   keyed — i.e. arrive silently at `mapgen-dot-web`'s state:
+ *
+ *     Expected: "proof/mapgen-symbol-web/quake-symbol.html: some mark is edge-measurable, 3 probed"
+ *     Received: "proof/mapgen-symbol-web/quake-symbol.html: NO mark is edge-measurable, 3 probed"
+ *     (fail) … proof/mapgen-symbol-web/quake-symbol.html > should edge-probe as many of its marks
+ *            as its recorded census says
+ *      320 pass · 1 fail
+ *
+ *   a thirtieth delivered artifact appears with no row:
+ *
+ *     + "proof/fake-new-web/fake.html",
+ *     (fail) … > should hold an edge-probe census row for every artifact it drives, and none for
+ *            an artifact it does not
+ *     Expected: "proof/fake-new-web/fake.html has a census row: true"
+ *     Received: "proof/fake-new-web/fake.html has a census row: false"
+ *      330 pass · 2 fail
+ */
+const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
+  // ── map × web: the hit element's `data-key` names a drawn `<path>`/`<circle>`, so the probe
+  //    has a mark to measure. This is the population assertion 4b was written for.
+  "proof/mapgen-hexgrid-web/hex-grid.html": { measurable: true, probed: 3 },
+  "proof/mapgen-locator-web/locator.html": { measurable: true, probed: 3 },
+  "proof/mapgen-symbol-web/quake-symbol.html": { measurable: true, probed: 3 },
+  // One or two of its three probed countries are concave enough that fewer than two inset points
+  // land on painted mark — Iceland's bounding box is mostly open sea. Which of the two it is moves
+  // between checkouts, which is why this table records "measurable at all" and not the split.
+  "proof/mapgen-choropleth-web/render/choropleth.html": {
+    measurable: true,
+    probed: 3,
+  },
+  // ── the beat the owner reported. Its hit elements sit at a country's anchor and the country's
+  //    own polygon carries no key, so "a probe 60px inside France answers nothing" is measured by
+  //    nobody. Closing it is ruling R1's `queryRenderedFeatures` rewrite of that layer.
+  "proof/mapgen-dot-web/dot-population.html": { measurable: false, probed: 3 },
+  // ── chart × web: the genre emits NO `data-key` anywhere — 0 occurrences in every one of these
+  //    files. Its hit element is a transparent full-height band (`<rect class="bin-hit">`)
+  //    deliberately WIDER than the mark it stands for, so "the target is smaller than the mark"
+  //    cannot arise the way it did on the map genres. That is an argument about the renderer, not
+  //    a measurement: nothing here proves it, and until `twin-chart-web` keys its drawn marks
+  //    nothing can.
+  "proof/co2-suisse/co2.html": { measurable: false, probed: 3 },
+  "proof/more-heatmap-co2-per-capita-decades/co2-heatmap.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/web-co2-decline-slope/co2-decline-slope.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/web-co2-ranking/dist/co2-ranking.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/web-income-life-expectancy/income-life-expectancy.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/webx-carbon-footprint/carbon-footprint.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/webx-electricity-mix/electricity-mix.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/webx-germany-bridge/germany-bridge.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/webx-life-expectancy/life-expectancy.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/webx-wind-vs-solar/wind-vs-solar.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/webx-world-population/world-population.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/weby-boxplot-france-co2-decades/boxplot-france-co2-decades.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/weby-dumbbell-life-expectancy-gains/dumbbell-life-expectancy-gains.html":
+    { measurable: false, probed: 3 },
+  "proof/weby-lollipop-co2-per-capita/lollipop-co2-per-capita.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/weby-population-pyramid-switzerland/population-pyramid-switzerland.html":
+    { measurable: false, probed: 3 },
+  "proof/weby-small-multiples-co2-per-capita/small-multiples-co2-per-capita.html":
+    { measurable: false, probed: 3 },
+  "proof/webz-bump-emitter-rank/bump-emitter-rank.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/webz-diverging-bar-eu-per-capita/diverging-bar-eu-per-capita.html": {
+    measurable: false,
+    probed: 3,
+  },
+  // ── scrolly: no per-mark tooltip, so nothing is probed at all and nothing should be.
+  "proof/mapmore-scrolly-danube/render/danube-scrolly.html": {
+    measurable: false,
+    probed: 0,
+  },
+  "proof/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html": {
+    measurable: false,
+    probed: 0,
+  },
+  "proof/mapscrolly-quakes-three-ways/render/quakes-four-maps.html": {
+    measurable: false,
+    probed: 0,
+  },
+  "proof/scrolly-chart-eu-carbon/render/eu-carbon-four-charts.html": {
+    measurable: false,
+    probed: 0,
+  },
+  "proof/scrolly-image-grinnell-glacier/render/grinnell-glacier.html": {
+    measurable: false,
+    probed: 0,
+  },
+  "proof/scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html":
+    { measurable: false, probed: 0 },
+};
+
 describe("every delivered interactive artifact keeps the promise its own alt text makes", () => {
+  it("should hold an edge-probe census row for every artifact it drives, and none for an artifact it does not", () => {
+    const driven = REPORTS.map((r) => r.file).sort();
+    const recorded = Object.keys(EDGE_CENSUS).sort();
+    expect([
+      driven.filter((f) => !recorded.includes(f)),
+      recorded.filter((f) => !driven.includes(f)),
+    ]).toEqual([[], []]);
+  });
+
   it("should find delivered HTML to drive at all", () => {
     // Assertion 5's first half: a run that found nothing must be loud, not vacuously green.
     expect(`${FILES.length} delivered .html found under proof/`).toBe(
@@ -800,6 +984,22 @@ describe("every delivered interactive artifact keeps the promise its own alt tex
           );
         });
       }
+
+      it("should edge-probe as many of its marks as its recorded census says", () => {
+        const recorded = EDGE_CENSUS[report.file];
+        // The premise, pinned: without a row the assertion below would compare undefined to
+        // undefined. The roster check above is what catches that; this makes it local too.
+        expect(`${report.file} has a census row: ${!!recorded}`).toBe(
+          `${report.file} has a census row: true`,
+        );
+        expect(
+          `${report.file}: ${report.edges.length > 0 ? "some" : "NO"} mark is edge-measurable, ` +
+            `${report.edges.length + report.edgesUnderivable} probed`,
+        ).toBe(
+          `${report.file}: ${recorded.measurable ? "some" : "NO"} mark is edge-measurable, ` +
+            `${recorded.probed} probed`,
+        );
+      });
 
       it("should answer wherever its own mark is painted, not only at its centre", () => {
         const failed = report.edges.filter((e) => e.silent.length > 0);
