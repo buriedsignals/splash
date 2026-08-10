@@ -41,17 +41,22 @@
  * is its own `opacity` attribute times every ancestor `<g opacity>` — these components nest, and
  * reading the leaf alone would miss half the corpus.
  *
- *   1. NO CROSSFADING TEXT. Texts are grouped by baseline, banded at one line-height, and each
- *      one's slope is taken across consecutive sampled frames. It fails when one band, at one
- *      frame, holds a text whose opacity is FALLING and another whose opacity is RISING, both
- *      painted at >= PAINTED.
+ *   1. NO TWO PAINTED TEXTS SUPERIMPOSED. Texts are grouped by baseline, banded at one
+ *      line-height, paired only where their INK ACTUALLY OVERLAPS, and each one's slope is taken
+ *      across consecutive sampled frames. It fails when one band, at one frame, holds a text whose
+ *      opacity is RISING beside another painted text that is NOT rising with it — held or falling,
+ *      both at >= PAINTED.
  *
  *      The slope is what makes this precise and it was not obvious. A rule of "two painted texts
  *      in one band" fails a legitimate row of tick labels fading in together —
  *      `HeatmapVideo.tsx:463-476` fades fifteen column headers on one `axisOpacity`, all rising,
- *      all correct. A crossfade is the ONLY thing that puts a falling text and a rising text in
- *      the same band at the same frame. A cut puts one text in the band; opacities that sum to
- *      one with a hard boundary put one text in the band at every frame including the boundary.
+ *      all correct. So what is let through is a band whose texts MOVE TOGETHER. A cut puts one
+ *      text in the band; opacities that sum to one with a hard boundary put one text in the band
+ *      at every frame including the boundary.
+ *
+ *      It used to require one of the two to be FALLING, and that was a hole: mount both and HOLD
+ *      the outgoing one at 1.0 and nothing fired, while the reader sees a worse double exposure
+ *      than a fading one. See the mutation ledger at the foot of this header.
  *
  *   2. NO CROSSFADING SHAPE. Every `<path>`, `<circle>`, `<rect>`, `<line>` and `<ellipse>` is
  *      keyed by its geometry AND its place — `d`, or `cx|cy|r`, or `x|y|width|height`, plus the
@@ -72,8 +77,11 @@
  *      `map-quake-symbol`'s seventeen empty rings at frame 40.
  *
  *   3. FRAME 0 IS FURNITURE ONLY. At frame 0 every non-`<text>` node — including a plate `<img>`'s
- *      inline `style` opacity — is at effective opacity < PAINTED, and at least two `<text>` nodes
- *      are at >= 0.98. This closes blind spot 1 of `video-first-frame-not-empty.test.ts`, which
+ *      inline `style` opacity — is at effective opacity < PAINTED, at least two `<text>` nodes are
+ *      at >= 0.98, AND the largest type in the frame-0 document is one of them. The last of the
+ *      three is what makes the check about the TITLE rather than about a count: a source credit
+ *      that wraps onto two lines satisfies "at least two" on its own, so a poster frame with no
+ *      title passed. This closes blind spot 1 of `video-first-frame-not-empty.test.ts`, which
  *      its own header names: "WHAT is on frame 0 — only that something is." It does not replace
  *      that guard, which decodes the delivered mp4; it makes it specific, on the component.
  *
@@ -88,11 +96,13 @@
  *    the beat chose a good moment for it. That stays a person opening the mp4.
  * 4. THE STATIC AND WEB SIBLINGS. Only compositions with a frame are walked. The same defect in a
  *    static beat's SVG is not reachable from here.
- * 5. TWO TEXTS ON ONE BASELINE THAT ARE NOT AT THE SAME ANCHOR. Banding is by baseline and
- *    horizontal proximity (see `sameBand`), so a falling label on the far left and a rising one on
- *    the far right of the same row do not pair. That is deliberate — they are not superimposed and
- *    a reader does not see a duplicate — but it means a wide crossfade whose two halves are more
- *    than one string apart is not found.
+ * 5. TWO TEXTS ON ONE BASELINE WHOSE INK DOES NOT OVERLAP. Banding is by baseline and by measured
+ *    ink interval (see `sameBand`), so a label on the far left and one on the far right of the
+ *    same row do not pair. That is deliberate — they are not superimposed and a reader does not
+ *    see a duplicate — but it means a crossfade between two forms that do not share their anchor
+ *    is not found. It is also load-bearing in the other direction: a y-axis tick label and a long
+ *    conclusion sentence on the same baseline are not a defect, and the earlier "reach" heuristic,
+ *    derived from the LONGER of the two strings, reported them as one.
  * 6. GEOMETRY THAT MOVES. Assertion 2 keys on exact geometry. A crossfade between a shape and a
  *    slightly-offset copy of itself is a different key and is not paired.
  * 7. A LAYOUT MEASURED SOMEWHERE ELSE. Every beat's own `measureText` asks a browser canvas and
@@ -104,18 +114,51 @@
  *    guard loudly with the beat's own message; it is not silently swallowed.
  *
  * MUTATION-PROVED. The strongest available proof was used first: the guard was written BEFORE any
- * fix and printed thirty-seven sites red across twelve beats, each by name and frame, against the
- * tree as it stood — a mutation proof run on real defects rather than synthetic ones. They were
- * then fixed one beat at a time and the list shrank to zero. On top of that, three injected
- * mutations, each run in a copy of the tree under `/tmp` and never here (several agents share this
- * working tree):
+ * fix and printed its sites red across the corpus, each by name and frame, against the tree as it
+ * stood — a mutation proof run on real defects rather than synthetic ones. They were then fixed one
+ * beat at a time and the list shrank to zero. (The number recorded here was "thirty-seven across
+ * twelve beats"; re-running the shipped guard against `git archive 5873c5e0^` reproduces
+ * **36 sites across 9 beats**, which is what a reader should hold.)
+ *
+ * On top of that, the injected mutations below, each run in a copy of the tree under `/tmp` and
+ * never here (several agents share this working tree). The first three were recorded with the
+ * original guard; **two of those three did not reproduce**, and the two holes they exposed are
+ * closed above — the fourth, fifth and sixth rows are their replacements, re-run 2026-08-11 and
+ * pasted verbatim.
  *
  *   - `HistogramVideo.tsx`'s two `opacity={valueOpacity}` / `opacity={conclusionOpacity}` nodes
- *     restored -> red, naming `vidy-histogram-life-expectancy`, frame 156, and both strings.
- *   - `QuakeSymbolVideo.tsx`'s merged mark split back into an outline node and a fill node -> red,
+ *     restored -> RED, naming `vidy-histogram-life-expectancy`, frame 155, and both strings.
+ *   - `QuakeSymbolVideo.tsx`'s merged mark split back into an outline node and a fill node -> RED,
  *     naming the geometry key and the frame.
- *   - `ChoroplethVideo.tsx`'s title re-gated on `furniture` -> red on assertion 3, naming
- *     "frame 0 paints no text at full opacity".
+ *   - `ChoroplethVideo.tsx`'s title re-gated on `furniture` -> WAS GREEN. It is the reason the
+ *     largest-type check exists; see assertion 3. Now:
+ *
+ *       frame 0 draws its largest type (38px, "Poland's per-capita CO₂ emissions are more than"
+ *       at 0.000; "double Sweden's, despite both being EU member" at 0.000; "states." at 0.000)
+ *       below full opacity — the title is the poster frame's whole job and it must not be gated
+ *       on `establish`, whose progress at frame 0 is exactly 0
+ *
+ *   - pre-fix `LollipopVideo.tsx` with the accent stem's `strokeWidth` changed from 4 to 5 -> WAS
+ *     GREEN FOR THAT SITE (4 sites became 3, crossfade untouched). It is the reason the stroke rule
+ *     no longer compares widths. Now:
+ *
+ *       frame 185: 2 nodes share the geometry line:255.884|619.14|528.77|619.14@+0.00 at moving
+ *       opacities (1.000, 0.111) — 2 of them stroke it in an ink of their own (#616161 at 4 under
+ *       #0B7A75 at 5) and dissolve into each other.
+ *
+ *   - both of `HistogramVideo.tsx`'s labels mounted, with the OUTGOING one HELD at 1.0 instead of
+ *     faded -> WAS GREEN, 26 pass / 0 fail, while an SSR probe printed `1.000 "65"` over
+ *     `0.943 "65 countries, …"` — the owner's B6.4 exactly. It is the reason assertion 1 no longer
+ *     requires a fall. Now:
+ *
+ *       frame 155: two texts are painted over each other on baseline y≈372 — "65" is HELD at 1.000
+ *       while "65 countries, 75–80 years — the most of any span" is rising (0.111 → 0.213).
+ *
+ *   - the widened stroke rule, run against the corpus, found ONE real site nothing had seen:
+ *     `vidz-bump-emitter-rank` drew the subject's track twice — `#616161` at 3 held at 1.000 with
+ *     `#0B7A75` at 5 dissolving over it on `emphasis`, under a comment calling it "redrawn on top
+ *     in accent and heavier". It is now a cut (the neutral copy is unmounted at the same boundary
+ *     the accent copy is mounted), which keeps the z-order the type sheet asks for.
  */
 import { describe, it, expect, mock } from "bun:test";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
@@ -190,31 +233,199 @@ const { renderToStaticMarkup } = await import("react-dom/server");
 // ---------------------------------------------------------------------------------------------
 
 const HELVETICA_ADVANCE: Record<string, number> = {
-  " ": 278, "!": 278, '"': 355, "#": 556, $: 556, "%": 889, "&": 667, "'": 191,
-  "(": 333, ")": 333, "*": 389, "+": 584, ",": 278, "-": 333, ".": 278, "/": 278,
-  "0": 556, "1": 556, "2": 556, "3": 556, "4": 556, "5": 556, "6": 556, "7": 556,
-  "8": 556, "9": 556, ":": 278, ";": 278, "<": 584, "=": 584, ">": 584, "?": 556,
-  "@": 1015, A: 667, B: 667, C: 722, D: 722, E: 667, F: 611, G: 778, H: 722,
-  I: 278, J: 500, K: 667, L: 556, M: 833, N: 722, O: 778, P: 667, Q: 778, R: 722,
-  S: 667, T: 611, U: 722, V: 667, W: 944, X: 667, Y: 667, Z: 611, "[": 278,
-  "\\": 278, "]": 278, "^": 469, _: 556, "`": 333, a: 556, b: 556, c: 500,
-  d: 556, e: 556, f: 278, g: 556, h: 556, i: 222, j: 222, k: 500, l: 222, m: 833,
-  n: 556, o: 556, p: 556, q: 556, r: 333, s: 500, t: 278, u: 556, v: 500, w: 722,
-  x: 500, y: 500, z: 500, "{": 334, "|": 260, "}": 334, "~": 584,
+  " ": 278,
+  "!": 278,
+  '"': 355,
+  "#": 556,
+  $: 556,
+  "%": 889,
+  "&": 667,
+  "'": 191,
+  "(": 333,
+  ")": 333,
+  "*": 389,
+  "+": 584,
+  ",": 278,
+  "-": 333,
+  ".": 278,
+  "/": 278,
+  "0": 556,
+  "1": 556,
+  "2": 556,
+  "3": 556,
+  "4": 556,
+  "5": 556,
+  "6": 556,
+  "7": 556,
+  "8": 556,
+  "9": 556,
+  ":": 278,
+  ";": 278,
+  "<": 584,
+  "=": 584,
+  ">": 584,
+  "?": 556,
+  "@": 1015,
+  A: 667,
+  B: 667,
+  C: 722,
+  D: 722,
+  E: 667,
+  F: 611,
+  G: 778,
+  H: 722,
+  I: 278,
+  J: 500,
+  K: 667,
+  L: 556,
+  M: 833,
+  N: 722,
+  O: 778,
+  P: 667,
+  Q: 778,
+  R: 722,
+  S: 667,
+  T: 611,
+  U: 722,
+  V: 667,
+  W: 944,
+  X: 667,
+  Y: 667,
+  Z: 611,
+  "[": 278,
+  "\\": 278,
+  "]": 278,
+  "^": 469,
+  _: 556,
+  "`": 333,
+  a: 556,
+  b: 556,
+  c: 500,
+  d: 556,
+  e: 556,
+  f: 278,
+  g: 556,
+  h: 556,
+  i: 222,
+  j: 222,
+  k: 500,
+  l: 222,
+  m: 833,
+  n: 556,
+  o: 556,
+  p: 556,
+  q: 556,
+  r: 333,
+  s: 500,
+  t: 278,
+  u: 556,
+  v: 500,
+  w: 722,
+  x: 500,
+  y: 500,
+  z: 500,
+  "{": 334,
+  "|": 260,
+  "}": 334,
+  "~": 584,
 };
 
 const HELVETICA_BOLD_ADVANCE: Record<string, number> = {
-  " ": 278, "!": 333, '"': 474, "#": 556, $: 556, "%": 889, "&": 722, "'": 238,
-  "(": 333, ")": 333, "*": 389, "+": 584, ",": 278, "-": 333, ".": 278, "/": 278,
-  "0": 556, "1": 556, "2": 556, "3": 556, "4": 556, "5": 556, "6": 556, "7": 556,
-  "8": 556, "9": 556, ":": 333, ";": 333, "<": 584, "=": 584, ">": 584, "?": 611,
-  "@": 975, A: 722, B: 722, C: 722, D: 722, E: 667, F: 611, G: 778, H: 722,
-  I: 278, J: 556, K: 722, L: 611, M: 833, N: 722, O: 778, P: 667, Q: 778, R: 722,
-  S: 667, T: 611, U: 722, V: 667, W: 944, X: 667, Y: 667, Z: 611, "[": 333,
-  "\\": 278, "]": 333, "^": 584, _: 556, "`": 333, a: 556, b: 611, c: 556,
-  d: 611, e: 556, f: 333, g: 611, h: 611, i: 278, j: 278, k: 556, l: 278, m: 889,
-  n: 611, o: 611, p: 611, q: 611, r: 389, s: 556, t: 333, u: 611, v: 556, w: 778,
-  x: 556, y: 556, z: 500, "{": 389, "|": 280, "}": 389, "~": 584,
+  " ": 278,
+  "!": 333,
+  '"': 474,
+  "#": 556,
+  $: 556,
+  "%": 889,
+  "&": 722,
+  "'": 238,
+  "(": 333,
+  ")": 333,
+  "*": 389,
+  "+": 584,
+  ",": 278,
+  "-": 333,
+  ".": 278,
+  "/": 278,
+  "0": 556,
+  "1": 556,
+  "2": 556,
+  "3": 556,
+  "4": 556,
+  "5": 556,
+  "6": 556,
+  "7": 556,
+  "8": 556,
+  "9": 556,
+  ":": 333,
+  ";": 333,
+  "<": 584,
+  "=": 584,
+  ">": 584,
+  "?": 611,
+  "@": 975,
+  A: 722,
+  B: 722,
+  C: 722,
+  D: 722,
+  E: 667,
+  F: 611,
+  G: 778,
+  H: 722,
+  I: 278,
+  J: 556,
+  K: 722,
+  L: 611,
+  M: 833,
+  N: 722,
+  O: 778,
+  P: 667,
+  Q: 778,
+  R: 722,
+  S: 667,
+  T: 611,
+  U: 722,
+  V: 667,
+  W: 944,
+  X: 667,
+  Y: 667,
+  Z: 611,
+  "[": 333,
+  "\\": 278,
+  "]": 333,
+  "^": 584,
+  _: 556,
+  "`": 333,
+  a: 556,
+  b: 611,
+  c: 556,
+  d: 611,
+  e: 556,
+  f: 333,
+  g: 611,
+  h: 611,
+  i: 278,
+  j: 278,
+  k: 556,
+  l: 278,
+  m: 889,
+  n: 611,
+  o: 611,
+  p: 611,
+  q: 611,
+  r: 389,
+  s: 556,
+  t: 333,
+  u: 611,
+  v: 556,
+  w: 778,
+  x: 556,
+  y: 556,
+  z: 500,
+  "{": 389,
+  "|": 280,
+  "}": 389,
+  "~": 584,
 };
 
 function helveticaWidth(text: string, fontPx: number, bold: boolean): number {
@@ -232,7 +443,11 @@ const textMetricStub = {
         const m = /(\d+(?:\.\d+)?)px/.exec(String(this.font));
         const size = m ? Number.parseFloat(m[1]) : 16;
         return {
-          width: helveticaWidth(text, size, /^\s*[6-9]00\b/.test(String(this.font))),
+          width: helveticaWidth(
+            text,
+            size,
+            /^\s*[6-9]00\b/.test(String(this.font)),
+          ),
         };
       },
     }),
@@ -546,22 +761,38 @@ function geometryKey(n: Drawn): string | null {
   return null;
 }
 
+/** A text's horizontal ink interval, from its own anchor and its own measured advance. */
+function inkSpan(n: Drawn): [number, number] {
+  const w = helveticaWidth(
+    n.text,
+    n.fontSize,
+    Number.parseFloat(n.attrs["font-weight"] ?? "400") >= 600,
+  );
+  const anchor = n.attrs["text-anchor"] ?? "start";
+  const left =
+    anchor === "middle" ? n.x - w / 2 : anchor === "end" ? n.x - w : n.x;
+  return [left, left + w];
+}
+
 /**
- * Two texts are in one band when they share a baseline within one line-height AND sit close
- * enough horizontally to be superimposed. The horizontal test is what keeps a legitimate row of
- * labels — an axis, a legend — from pairing across the width of the frame; a crossfade always
- * shares an anchor, so it never needs the distance.
+ * Two texts are in one band when they share a baseline within one line-height AND THEIR INK
+ * ACTUALLY OVERLAPS. The horizontal test is what keeps a legitimate row of labels — an axis, a
+ * legend — from pairing across the width of the frame.
+ *
+ * It used to compare the two anchors against a `reach` derived from the LONGER of the two strings,
+ * which is not the same thing at all: a rising 38-character sentence "reached" far enough to band
+ * with a two-character y-axis tick label at the other end of the plot, on the opposite anchor.
+ * That cost nothing while assertion 1 also demanded one text be FALLING — no tick label falls —
+ * and it produced an immediate false report the moment a HELD text could pair. Overlapping
+ * intervals is what "superimposed" means, and both terms are already measurable here.
  */
 function sameBand(a: Drawn, b: Drawn): boolean {
   const lead = Math.max(a.fontSize, b.fontSize) * 0.7;
   if (Math.abs(a.y - b.y) > lead) return false;
   if (a.frameCtx !== b.frameCtx) return false;
-  // A rough advance width: 0.55em per character is the mid-range of Helvetica's own.
-  const reach =
-    Math.max(a.text.length, b.text.length) *
-    Math.max(a.fontSize, b.fontSize) *
-    0.55;
-  return Math.abs(a.x - b.x) <= Math.max(reach, 4);
+  const [al, ar] = inkSpan(a);
+  const [bl, br] = inkSpan(b);
+  return Math.min(ar, br) - Math.max(al, bl) > 0;
 }
 
 /** Every set of two or more painted nodes drawing the same geometry, in document order. */
@@ -632,26 +863,44 @@ const paintsStroke = (n: Drawn) =>
  *
  *   (a) two nodes paint the same INTERIOR — one fill dissolving into another composites to a
  *       third colour nobody chose, which is invariant 1;
- *   (b) two strokes of the SAME WIDTH — the same dissolve on the stroke channel.
+ *   (b) two nodes paint the same STROKE — the same dissolve on the stroke channel.
  *       `LollipopVideo.tsx:505-524`'s own comment calls it "cross-dissolved";
  *   (c) a stroke-only node painted AHEAD of the interior it surrounds — the container before its
  *       contents. `QuakeSymbolVideo.tsx:212-235` is this, and it is what a reader saw as
  *       seventeen empty rings.
+ *
+ * (b) USED TO REQUIRE THE TWO WIDTHS TO BE EQUAL, and that was a hole with a demonstration.
+ * Restoring the pre-fix `LollipopVideo.tsx` and changing only the accent stem's `strokeWidth` from
+ * 4 to 5 dropped that site out of the report — 4 sites became 3 — with the crossfade untouched. A
+ * plain thin stem handing over to a thicker accent stem is the same double exposure to a reader,
+ * and the spec this guard implements is absolute about it: "two nodes with an identical geometry
+ * key may never both be painted at effective opacity >= 0.02". The width equality was never an
+ * argument, only an artefact of the one corpus case it was read off.
+ *
+ * The legitimate stroke pairs are still let through, and NOT by this function: a settled casing
+ * under a line keeps a fixed opacity ratio every frame, and the caller's own ratio test skips it
+ * before it ever gets here (`mapgen-flowmap-video`'s 6px halo under its 3px accent is exactly
+ * that pair, at two DIFFERENT widths — so the old rule was not what was protecting it either).
  */
-function handoverReason(group: Drawn[]): string | null {
+function handoverReason(group: Drawn[], ground: string | null): string | null {
   const interiors = group.filter(paintsInterior);
   if (interiors.length >= 2)
     return `${interiors.length} of them paint the interior (fill ${interiors
       .map((n) => n.attrs.fill)
       .join(" over ")})`;
-  const strokes = group.filter(paintsStroke);
-  for (let i = 0; i < strokes.length; i++)
-    for (let j = i + 1; j < strokes.length; j++)
-      if (
-        (strokes[i].attrs["stroke-width"] ?? "") ===
-        (strokes[j].attrs["stroke-width"] ?? "")
-      )
-        return `two strokes of the same width (${strokes[i].attrs["stroke-width"]}) dissolve into each other`;
+  // Two INKS on one geometry. A stroke painted in the ground colour is a casing, not an ink: its
+  // job is to hold the mark off what is beneath it, and a casing under (or over) its own line is
+  // the corpus's own named legitimate pair. Everything else that carries a stroke is an ink, at
+  // any width.
+  const inkStrokes = group.filter(
+    (n) => paintsStroke(n) && (n.attrs.stroke ?? "").toLowerCase() !== ground,
+  );
+  if (inkStrokes.length >= 2) {
+    const drawn = inkStrokes.map(
+      (n) => `${n.attrs.stroke} at ${n.attrs["stroke-width"] ?? "(no width)"}`,
+    );
+    return `${inkStrokes.length} of them stroke it in an ink of their own (${drawn.join(" under ")}) and dissolve into each other`;
+  }
   if (interiors.length === 1) {
     const inside = interiors[0];
     const ahead = group.find(
@@ -784,6 +1033,11 @@ describe("a handover between two drawings of one object is a cut, never a crossf
       const timing = await loadTiming(beat.timingFiles);
       const Component = await loadComponent(beat.componentFile);
       const props = JSON.parse(readFileSync(beat.propsFile, "utf8"));
+      // The beat's OWN recorded ground, from its own committed props — the colour a casing is
+      // painted in. Read here rather than guessed off a background rect, because not every
+      // composition draws one.
+      const ground: string | null =
+        typeof props.ground === "string" ? props.ground.toLowerCase() : null;
       CONFIG = {
         fps: timing.fps,
         width: props.width ?? 1080,
@@ -839,13 +1093,31 @@ describe("a handover between two drawings of one object is a cut, never a crossf
             `and only the title and source drawn. e.g. ${sample.join("; ")}`,
         );
       }
-      const fullText = atZero.filter(
-        (n) => n.tag === "text" && n.opacity >= 0.98 && n.text,
-      );
+      const allText = atZero.filter((n) => n.tag === "text" && n.text);
+      const fullText = allText.filter((n) => n.opacity >= 0.98);
       if (fullText.length < 2)
         failures.push(
           `frame 0 paints ${fullText.length} text node(s) at full opacity — the title and the ` +
             `source must be legible on the poster frame, not gated on \`establish\``,
+        );
+      // "At least two texts" is met by a source credit that wraps onto two lines, so a poster
+      // frame carrying NO TITLE passed the count above. It was demonstrated: re-gating
+      // `ChoroplethVideo.tsx`'s `titleLines` on `furniture` — this guard's own third recorded
+      // proof — left it green, because the source line and its `OpenStreetMap` continuation are
+      // two texts. So the title is identified rather than counted, by the one property it has in
+      // every beat of this corpus: it is set in the LARGEST TYPE the frame-0 document carries.
+      // The gated node is still IN that document, at opacity 0 and at its own font size, so
+      // gating it is exactly what this sees.
+      const biggest = Math.max(0, ...allText.map((n) => n.fontSize));
+      const headline = allText.filter((n) => n.fontSize === biggest);
+      if (biggest > 0 && !headline.some((n) => n.opacity >= 0.98))
+        failures.push(
+          `frame 0 draws its largest type (${biggest}px, ${headline
+            .map((n) => `"${n.text}" at ${n.opacity.toFixed(3)}`)
+            .join(
+              "; ",
+            )}) below full opacity — the title is the poster frame's whole job and it ` +
+            `must not be gated on \`establish\`, whose progress at frame 0 is exactly 0`,
         );
 
       // --- assertions 1 and 2 ----------------------------------------------------------------
@@ -877,19 +1149,31 @@ describe("a handover between two drawings of one object is a cut, never a crossf
             const A = sloped[a];
             const B = sloped[b];
             if (!sameBand(A.node, B.node)) continue;
-            const falling =
-              A.slope < -SLOPE_EPSILON
-                ? A
-                : B.slope < -SLOPE_EPSILON
-                  ? B
-                  : null;
+            // The rule is the SPEC's rule — two drawings of one screen object may not both be
+            // painted — not "one is falling while the other rises". Requiring a fall was a hole
+            // with a demonstration: mount both of the histogram's labels and HOLD the outgoing
+            // one at 1.0 instead of fading it, and an SSR probe at frame 170 prints
+            //     1.000  "65"
+            //     0.943  "65 countries, 75-80 years — the most of any span"
+            // — the owner's B6.4 at its own anchor, and the guard reported 26 pass / 0 fail.
+            // A held duplicate is a WORSE double exposure than a fading one, and it was the one
+            // shape the pair test could not see.
+            //
+            // What still has to be let through is a band whose texts move TOGETHER: a legend row
+            // fading up on one clock is not a handover. So the report is "one is rising while
+            // another painted text in its band is not rising with it".
             const rising =
               A.slope > SLOPE_EPSILON ? A : B.slope > SLOPE_EPSILON ? B : null;
-            if (!falling || !rising || falling === rising) continue;
+            if (!rising) continue;
+            const other = rising === A ? B : A;
+            if (other.slope > SLOPE_EPSILON) continue;
+            const verb =
+              other.slope < -SLOPE_EPSILON
+                ? `is falling (${other.node.opacity.toFixed(3)} → ${(other.node.opacity + other.slope).toFixed(3)})`
+                : `is HELD at ${other.node.opacity.toFixed(3)}`;
             failures.push(
-              `frame ${f}: two texts crossfade on baseline y≈${Math.round(A.node.y)} — ` +
-                `"${falling.node.text}" is falling (${falling.node.opacity.toFixed(3)} → ` +
-                `${(falling.node.opacity + falling.slope).toFixed(3)}) while "${rising.node.text}" ` +
+              `frame ${f}: two texts are painted over each other on baseline y≈${Math.round(A.node.y)} — ` +
+                `"${other.node.text}" ${verb} while "${rising.node.text}" ` +
                 `is rising (${rising.node.opacity.toFixed(3)} → ` +
                 `${(rising.node.opacity + rising.slope).toFixed(3)}). Mount one or the other, ` +
                 `never both — \`{c > 0 ? <sentence/> : <short/>}\`.`,
@@ -920,7 +1204,7 @@ describe("a handover between two drawings of one object is a cut, never a crossf
             )
           )
             continue;
-          const reason = handoverReason(group);
+          const reason = handoverReason(group, ground);
           if (!reason) continue;
           failures.push(
             `frame ${f}: ${group.length} nodes share the geometry ${(geometryKey(group[0]) ?? "").slice(0, 80)} ` +

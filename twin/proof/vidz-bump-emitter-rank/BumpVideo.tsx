@@ -469,23 +469,32 @@ export function BumpVideo({
           ))
         : null}
 
-      {/* The race. Every line neutral, drawn on one clock. */}
+      {/* The race. Every line neutral, drawn on one clock — and the subject's own line is drawn
+          ONCE, here, only while it is still one of them. */}
       {reveal > 0
-        ? g.lines.map((l) => (
-            <path
-              key={`line-${l.country}`}
-              d={drawnSoFar(l.points, head)}
-              fill="none"
-              stroke={muted}
-              strokeWidth={3}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          ))
+        ? g.lines
+            .filter(
+              (l) => !(emphasis > 0 && l.country === subjectTrack.country),
+            )
+            .map((l) => (
+              <path
+                key={`line-${l.country}`}
+                d={drawnSoFar(l.points, head)}
+                fill="none"
+                stroke={muted}
+                strokeWidth={3}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            ))
         : null}
 
-      {/* The subject's line, redrawn on top in accent and heavier — the sheet's z-order rule, so a
-          crossing between the accent line and a background line reads as the accent line's. */}
+      {/* The subject's line, drawn LAST so a crossing between it and a background line reads as
+          the accent line's — the sheet's z-order rule. It is a CUT, not a redraw: the neutral copy
+          above is unmounted at the same boundary this one is mounted, so the two never composite.
+          Written as a redraw it was a 3px `muted` track held at 1.000 with a 5px `accent` track
+          dissolving over it, and a reader saw the two hues mix for the width of `emphasis`
+          (`video-handover-is-a-cut.test.ts`, frame 189). */}
       {emphasis > 0 ? (
         <path
           d={drawnSoFar(subjectTrack.points, head)}
@@ -494,7 +503,6 @@ export function BumpVideo({
           strokeWidth={5}
           strokeLinejoin="round"
           strokeLinecap="round"
-          opacity={emphasis}
         />
       ) : null}
 
@@ -570,7 +578,12 @@ export function BumpVideo({
             <text
               key={text}
               x={PAD}
-              y={g.plot.bottom + yearLabelBlock + conclusionGap + i * CONCLUSION.lead}
+              y={
+                g.plot.bottom +
+                yearLabelBlock +
+                conclusionGap +
+                i * CONCLUSION.lead
+              }
               fill={ink}
               fontSize={CONCLUSION.fontSize}
               fontWeight={CONCLUSION.fontWeight}
