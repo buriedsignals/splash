@@ -147,6 +147,11 @@ if (wantStill) {
       accent: BEAT.accent,
       ...furniture,
       subjectKey: subject.key,
+      // B6.16 — the ring's own words. The same two facts the alt string already carried and the
+      // plate did not: how many events the emphasised cell holds, and where the catalogue puts
+      // them. Derived from the cell's own members (`dominantRegions` above), never typed; the
+      // component refuses to draw a ring whose note omits the count.
+      subjectNote: `${subject.count.toLocaleString()} events · ${subjectWhere}`,
     }),
     width: 900,
     height: stillFrameHeight({

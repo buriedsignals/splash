@@ -23,6 +23,19 @@ const SOURCE = { fontSize: 13, fontWeight: 400, lead: 17 };
 const CAPTION = { fontSize: 12, fontWeight: 600 };
 const NOTE = { fontSize: 11.5, fontWeight: 400, lead: 15 };
 const LEGEND_LABEL = { fontSize: 11, fontWeight: 400 };
+/** The one sentence the ringed cell is allowed to spend on the plate. Bold, because it has to hold
+ *  its own against a shaded grid, and small, because the plate is the argument and this is a
+ *  caption on it. */
+const SUBJECT_NOTE = { fontSize: 13, fontWeight: 700 };
+/** The air between the ringed hexagon and its own words. */
+const SUBJECT_NOTE_GAP = 10;
+/**
+ * Helvetica's cap height, 717/1000 em, from Adobe's own AFM for the face this beat draws in (Arial,
+ * the substitute, is 716). It centres a line of type on a point rather than hanging it from its
+ * baseline. `dominant-baseline` is not used because resvg and Chrome do not agree on it and this
+ * project draws the same beats in both.
+ */
+const CAP_HEIGHT_EM = 0.717;
 
 export type HexGridStillProps = {
   geometry: { frame: { width: number; height: number } };
@@ -42,6 +55,8 @@ export type HexGridStillProps = {
   ink: string;
   muted: string;
   subjectKey: string;
+  /** What the emphasised cell IS. See `subjectNote`'s use below: the ring is a promise. */
+  subjectNote: string;
 };
 
 export function wrap(
@@ -138,6 +153,7 @@ export function HexGridStill({
   ink,
   muted,
   subjectKey,
+  subjectNote,
 }: HexGridStillProps) {
   const FRAME = {
     width: FRAME_WIDTH,
@@ -171,12 +187,54 @@ export function HexGridStill({
   const subject = cells.find((c) => c.key === subjectKey);
   if (!subject) throw new Error(`no cell for the subject ${subjectKey}`);
 
+  // EMPHASIS IS A PROMISE, AND THIS IS WHERE IT IS KEPT (B6.16).
+  //
+  // The ring below spends this beat's one accent on a single hexagon out of 150. Before this, the
+  // plate said nothing at all about which cell that was or why — its facts ("1,724 events",
+  // "Fiji", "Tonga") reached only `<desc>`, so a screen-reader user was told and a sighted reader
+  // was left with an orange outline and a question. The owner read it as odd, and it is: the rule
+  // was already WRITTEN and already applied in a sibling of this very family
+  // (`mapscrolly-quakes-three-ways/MapFrames.tsx`, "the cells the prose names are RINGED in the
+  // accent") and it never travelled to the beat that has no prose to lean on.
+  //
+  // So the note is required, and it is required to CARRY THE CELL'S OWN NUMBER — a sentence that
+  // did not would be a caption drifting away from the mark the moment the data moved.
+  const subjectCount = subject.count.toLocaleString();
+  if (!subjectNote.trim())
+    throw new Error(
+      `cell ${subjectKey} is ringed in the accent and nothing is said about it — a mark emphasised ` +
+        `without a word on the plate is the reader's question with no answer (its own facts are in ` +
+        `<desc>, which a sighted reader never sees). Pass subjectNote.`,
+    );
+  if (!subjectNote.includes(subjectCount))
+    throw new Error(
+      `the ringed cell holds ${subjectCount} events and its note does not say so: ${JSON.stringify(subjectNote)}. ` +
+        `A caption on an emphasised mark states that mark's own number, or it is decoration.`,
+    );
+
   const MAP = {
     x: MAP_X,
     y: MAP_Y,
     width: geometry.frame.width,
     height: geometry.frame.height,
   };
+
+  // Which side of the ringed hexagon the note stands on — measured against the plate, never typed.
+  // The plate is clipped, so a note that ran off its right edge would simply be cut in half.
+  const subjectNoteWidth = measureText(subjectNote, SUBJECT_NOTE);
+  const subjectNoteRightEdge =
+    subject.cx + hexSize + SUBJECT_NOTE_GAP + subjectNoteWidth;
+  const noteFitsRight = subjectNoteRightEdge <= MAP.width - 4;
+  const subjectNoteAnchor = noteFitsRight ? "start" : "end";
+  const subjectNoteX = noteFitsRight
+    ? subject.cx + hexSize + SUBJECT_NOTE_GAP
+    : subject.cx - hexSize - SUBJECT_NOTE_GAP;
+  if (!noteFitsRight && subjectNoteX - subjectNoteWidth < 4)
+    throw new Error(
+      `the ringed cell's note ("${subjectNote}", ${subjectNoteWidth.toFixed(0)}px) does not fit on ` +
+        `either side of it inside an ${MAP.width}px plate — the cell sits at x=${subject.cx.toFixed(0)}. ` +
+        `Shorten the note or rebake a wider plate; it must not be clipped.`,
+    );
 
   const legendSwatch = LEGEND_SWATCH;
   // At least one clear line of air below the map, never computed backwards from the caveat only —
@@ -257,6 +315,39 @@ export function HexGridStill({
             />
           );
         })}
+
+        {/* The ringed cell's own words, on the plate, beside the mark they belong to.
+            SIDE IS DERIVED, not typed: the note goes right of the hexagon when the plate has room
+            for it there and left when it does not, measured against the plate's own width in the
+            font it is really drawn in. It is vertically centred on the cell (baseline lifted half
+            a cap height), and it is drawn twice — a ground-coloured halo, then the ink — because
+            the thing underneath is a raster basemap whose colour nothing in this tree can measure,
+            and a halo is this corpus's own answer to that (see
+            `annotation-reads-over-what-it-crosses.test.ts`, which exempts a haloed label from its
+            strike check for the same reason). */}
+        <g
+          transform={`translate(${subjectNoteX},${subject.cy + (SUBJECT_NOTE.fontSize * CAP_HEIGHT_EM) / 2})`}
+        >
+          <text
+            textAnchor={subjectNoteAnchor}
+            fontSize={SUBJECT_NOTE.fontSize}
+            fontWeight={SUBJECT_NOTE.fontWeight}
+            stroke={ground}
+            strokeWidth={4}
+            strokeLinejoin="round"
+            fill="none"
+          >
+            {subjectNote}
+          </text>
+          <text
+            textAnchor={subjectNoteAnchor}
+            fontSize={SUBJECT_NOTE.fontSize}
+            fontWeight={SUBJECT_NOTE.fontWeight}
+            fill={ink}
+          >
+            {subjectNote}
+          </text>
+        </g>
       </g>
 
       {/* ── The legend: a horizontal row of swatches, each with its own printed count range ── */}
