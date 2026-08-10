@@ -173,6 +173,50 @@ drive the twin at all; interactive Codex (a TUI session may expose image viewing
 verdict 1); Codex's sandbox against the seven puppeteer scripts and the map bake's network fetch;
 Goose; Claude Desktop.
 
+### 6. The map genres on the export-size table — **SIX DELIVERED, FOUR REFUSE, and the four are one finding**
+
+Ten map beats, `map-geneva-locator` through `mapvid-locator-geneva`. The seam a map needed did not
+exist: `type-at-size.mjs` refuses `map` in writing and hands the target aspect to "the map chantier".
+It exists now — `skills/map-beat/scripts/stage.mjs`, carried in three copies, guarded by being
+DRIVEN against `assets/geo.ts` rather than compared as text.
+
+**Delivered, each measured from the artifact's own bytes at 1920x1080:** `map-geneva-locator`
+(846x846 map), `map-quake-density` (1213x697), `mapmore-dot-population` (809x714),
+`mapmore-flow-danube` (1015x474), `map-quake-symbol` (809x809, static only) and
+`mapgen-choropleth-video` (846x846, static only).
+
+**Refuse every row of the table:** `mapvid-hexgrid-quakes`, `mapvid-locator-geneva`,
+`mapvid-dot-population`, and the video halves of the two beats above. One cause, measured five times:
+at the video table's 30 px landscape floor these beats' WORDS fill the band — 879 px of 910, 1191 px,
+729 px even in the impossible limit where every string fits on one line — and the ladder's last rung
+before R9 costs the caveat, which on a map is the honesty line. **This does not come down by trying
+harder.** It comes down when those beats' words are shortened, which is an editorial decision.
+
+**Resume points:**
+
+1. **`shared/chart-video/sizes.mjs` contradicts itself** and nobody has decided which half is right.
+   Its header derives the 30 px landscape floor from "a phone turned sideways, ~800 dp", while
+   `viewedAtCssPx()` in the same file returns **900** for landscape, copied verbatim from
+   `chart-beat`. A refusal message that reads that function prints "900 dp" for a video.
+2. **`beat-genre-produces-artifact.test.ts` has no residue row for a beat whose video genre
+   legitimately refuses.** `mapgen-flowmap-video`, `mapgen-choropleth-video` and `map-quake-symbol`
+   each keep a committed 1080x1080 mp4 that no code path can now reproduce, because removing it
+   reddens that guard while keeping it leaves an artifact at a size the table does not carry. Their
+   pre-table 1080x1080 STILLS were removed (they would fail the pin). Named, not taken.
+3. **`map-quake-symbol`'s marks are 5.83x the nearest-neighbour ceiling, and the ratio is
+   scale-INVARIANT** — radii and gaps are both fractions of the plate, so drawing bigger moves it not
+   at all. Disclosed in the frame already (the caveat counts nine overlaps), but it is the one
+   encoding a bigger frame cannot help.
+4. **`mapmore-dot-population`'s five name plates erase 421 of 2,996 dots (14%)**, 22 of them
+   belonging to a country the plate does not name. The plate is opaque because a translucent one
+   measured 2.98:1. Whether a dot map should label its subjects some other way is a person's call.
+5. **`mapgen-choropleth-video`'s subject-label floor is not wired into the still.** The still passes
+   it at 0.76x by measurement, but by luck rather than by rule; ~10 lines, same import.
+
+**Not this lot's, but reddening beside it:** `proof/scrolly-mixed-grinnell-ice` (three failures) and
+`proof/portrait-aspect-probe` (the regeneration guard, 20 arms with no render script in ancestry).
+Both predate this work and belong to other sessions.
+
 ## Known before this interruption, and still open
 
 - **`co2-suisse`** — the project's first beat has no producing script and no front matter. Its
