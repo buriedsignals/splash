@@ -250,7 +250,10 @@ if (errors.length > 0) {
 - `test/storyboard.test.ts` — `bun:test` coverage, including a regression test locking the
   `null`/`~` sentinel resolution described in the gotcha above, and the medium/capability gate.
 - `test/ground-claim.test.ts` — `bun:test` coverage for `groundTakeaway`, including the real
-  Norway/Swiss cases from `twin/TRIAL-THREE-BEATS.md` that motivated it.
+  Norway/Swiss cases from `twin/TRIAL-THREE-BEATS.md` that motivated it, and — its last block — the
+  seam A13 actually lived in: `twin-intake`'s own `profileTable` output fed to the real check. Every
+  other fixture in that file hand-builds its columns, so deleting `sum` from `profileTable` used to
+  leave the whole file green while the defect it was written for came back.
 - `test/propose.test.ts` — `bun:test` coverage for the proposal seam, opening with the walking
   guard that gives this file its reason to exist: each of `groundTakeaway`, `genreGap` and
   `capabilityGap` must be called by a script other than its own definition. It strips comments

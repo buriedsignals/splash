@@ -1,5 +1,8 @@
 import { describe, it, expect } from "bun:test";
 import { groundTakeaway } from "../scripts/ground-claim.mjs";
+// The one cross-skill import a `test/` directory is allowed: the other half of the seam A13 lived
+// in. See the block at the bottom of this file for why it is here and what stayed green without it.
+import { profileTable } from "../../twin-intake/scripts/profile.mjs";
 
 // The real trial fixtures (docs: twin/TRIAL-THREE-BEATS.md). Column ranges come from the real
 // series; rows carry only the years the checks below actually need.
@@ -258,5 +261,60 @@ describe("groundTakeaway — 'highest/lowest ever' superlatives", () => {
     );
     const superlative = claims.find((c) => c.claim.includes("highest ever"));
     expect(superlative.verdict).toBe("supported");
+  });
+});
+
+// THE SEAM A13 ACTUALLY LIVED IN, and until this block existed it had no test at all.
+//
+// Every fixture above hand-builds its column objects, so `profileTable`'s REAL output had never
+// been fed to `groundTakeaway` — and `twin-storyboard` imported nothing from `twin-intake`. The
+// original defect was systematic ON A REAL PROFILE: `profileTable` emits no `rows`, so
+// `checkNumericRanges` was the only check that ever fired, and it was the broken one. The fix added
+// `sum` on one side and a `sum` arm on the other and never joined them. Measured: deleting `sum`
+// from `profileTable` left this whole file GREEN.
+//
+// A `test/` directory is the one place a cross-skill import is allowed, and only to assert that two
+// halves of one contract still meet — the same exception `splash-twin/test/where.test.ts` takes for
+// the two Gate-2 readings. Nothing in runtime code crosses here.
+//
+// RED, in a copy of the tree under /tmp, with `sum` deleted from `profileTable`:
+//
+//   310 |     expect(total!.verdict).toBe("supported");
+//                                    ^
+//   error: expect(received).toBe(expected)
+//   Expected: "supported"   Received: "unverifiable"
+//
+//   (fail) the real profileTable output, fed to the real grounding check > should confirm the run's own total against the column profileTable actually produces
+//   (fail) the real profileTable output, fed to the real grounding check > should carry a sum on every numeric column, which is the field the aggregate arm reads
+//    2 fail
+describe("the real profileTable output, fed to the real grounding check", () => {
+  // The Milan Cortina CSV, verbatim, as `twin-intake` would have parsed it.
+  const ROWS = [
+    ["acteur", "emissions_tco2e", "glace_fondue_mt", "manteau_neigeux_km2", "basis"],
+    ["Jeux (émissions officielles)", "930000", "14", "2.3", "publié"],
+    ["Eni", "700000", "11", "1.7", "publié"],
+    ["Stellantis + ITA Airways", "600000", "9", "1.5", "dérivé par soustraction"],
+  ];
+
+  it("should carry a sum on every numeric column, which is the field the aggregate arm reads", () => {
+    const profile = profileTable(ROWS);
+    const numeric = profile.columns.filter((c) => c.type === "number");
+    expect(numeric.length).toBe(3);
+    for (const column of numeric) expect(typeof column.sum).toBe("number");
+    expect(numeric.find((c) => c.name === "glace_fondue_mt")!.sum).toBe(34);
+  });
+
+  it("should confirm the run's own total against the column profileTable actually produces", () => {
+    const claims = groundTakeaway(OLYMPICS_TAKEAWAY, profileTable(ROWS));
+    const total = claims.find((c) => c.claim === "34");
+    expect(total!.verdict).toBe("supported");
+    expect(total!.detail).toContain("glace_fondue_mt");
+  });
+
+  // The takeaway that was REFUSED at [1652-1661] of the run, checked against the real profile
+  // rather than a fixture shaped to make it pass.
+  it("should refuse nothing in that takeaway, on the profile a real intake would hand it", () => {
+    const claims = groundTakeaway(OLYMPICS_TAKEAWAY, profileTable(ROWS));
+    expect(claims.some((c) => c.verdict === "contradicted")).toBe(false);
   });
 });
