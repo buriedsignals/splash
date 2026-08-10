@@ -33,8 +33,16 @@
  * next to it") and caps the chart at one semantic accent overall (`motion-grammar.md`'s "the one
  * semantic accent"). All eight bars share the SAME neutral fill (`muted`) — a histogram's bars are
  * one series, not several, so there is no second hue to assign the way the dumbbell split
- * 2000-vs-2023. The median rule is drawn in `muted` too (the dumbbell's own reference-line
- * colour). `accent` is spent exactly once: the subject bin's fill crossfades from `muted` to
+ * 2000-vs-2023. The median rule USED to be drawn in `muted` too, on the reasoning that a reference
+ * line borrows the furniture's neutral — and that produced a rule at **1.00:1 against the bars it
+ * crosses**, i.e. an invisible one, which is what the owner reported as B6.4a: extracting frame 131
+ * of the committed mp4 shows the dashed rule stopping dead at the top of the 75–80 bar. Its ink is
+ * now DERIVED from the marks it is drawn over (`annotation-ink.mjs`, SC 1.4.11's 3:1 for a non-text
+ * mark), exactly as the static sibling `../static-carbon-footprint-spread` derives its own. That
+ * answer is `#000000` at 3.39:1 over the `#616161` bars and 4.25:1 over the accent one — near-black
+ * rather than neutral-grey, which looks like a regression against the "furniture is muted" habit and
+ * is not one: a rule nobody can see is not carrying the furniture either.
+ * `accent` is spent exactly once: the subject bin's fill crossfades from `muted` to
  * `accent` once every bar has landed. Every text label — axis ticks, the median's caption, the
  * subject bin's count, the conclusion sentence — renders in `ink` or `muted`, never in `accent`,
  * per the type doctrine's own accessibility note: an Okabe-Ito-safe *mark* colour measured under
@@ -73,9 +81,16 @@ const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
 const SOURCE = { fontSize: 20, fontWeight: 400 };
 const AXIS_NOTE = { fontSize: 20, fontWeight: 600 };
 const TICK_LABEL = { fontSize: 19, fontWeight: 400 };
-const NOTE = { fontSize: 20, fontWeight: 400 };
+export const NOTE = { fontSize: 20, fontWeight: 400 };
 const VALUE_LABEL = { fontSize: 26, fontWeight: 700 };
 const CONCLUSION_LABEL = { fontSize: 24, fontWeight: 600 };
+/** The median rule's weight and dash. Its INK is deliberately NOT here: it is derived from the
+ *  marks the rule is drawn over, every render, which is the whole point of `annotation-ink.mjs`. */
+const MEDIAN_RULE = { width: 2, dash: "8 6" };
+/** The air between the median caption's baseline and the top of the plot. It is what keeps the
+ *  caption on the page rather than on a bar, and the assertion below measures it rather than
+ *  trusting it. */
+const MEDIAN_CAPTION_LIFT = 14;
 
 /**
  * The rendered width of a string in the font it will really be drawn in — this story's own copy
@@ -214,6 +229,8 @@ export type HistogramVideoProps = {
   muted: string;
   grid: string;
   referenceLabel: string; // e.g. "Median: 75.3 years"
+  /** The median rule's ink, derived by `render.mjs` against everything the rule is drawn over. */
+  medianRuleInk: string;
   medianValue: number;
   binWidth: number;
   domainStart: number;
@@ -233,6 +250,7 @@ export function HistogramVideo({
   ink,
   muted,
   referenceLabel,
+  medianRuleInk,
   medianValue,
   binWidth,
   domainStart,
@@ -319,6 +337,34 @@ export function HistogramVideo({
     [0, 1],
     { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
   );
+
+  // THE MEDIAN RULE'S INK IS DERIVED FROM THE MARKS IT IS DRAWN OVER, AND IT IS DERIVED IN NODE.
+  //
+  // `render.mjs` calls `annotation-ink.mjs`'s `inkThatReadsOver` and hands the answer down as a
+  // prop, for the same reason this file takes `ink`/`muted`/`grid` rather than deriving them:
+  // that module reaches `contrast` through `render-still.mjs`, which loads a native rasteriser no
+  // browser bundle can parse — measured, not assumed (webpack: "Module parse failed: Unexpected
+  // character" on the `.node` binary). One implementation of the rule, two genres.
+  //
+  // A MISSING VALUE THROWS rather than falling back to `muted`, which is what this beat drew before
+  // and is exactly the 1.00:1 defect: a fallback here would restore it silently.
+  if (!medianRuleInk)
+    throw new Error(
+      "no medianRuleInk was supplied — render.mjs derives it with inkThatReadsOver against this " +
+        "beat's own ground, bar fill and accent, and the rule cannot be drawn in a colour nobody chose",
+    );
+
+  // The caption is a POSITION decision before it is a colour one. It is drawn ABOVE `plot.top`,
+  // where the only thing under it is the page — which is what makes `muted` legitimate here while
+  // the rule below it cannot use `muted` at all. If a future layout drops it into the plot, this
+  // throws with the number that says so instead of quietly printing grey on grey.
+  const captionBaseline = g.plot.top - MEDIAN_CAPTION_LIFT;
+  if (captionBaseline + NOTE.fontSize * 0.25 > g.plot.top)
+    throw new Error(
+      `the median caption's baseline (${captionBaseline.toFixed(1)}) puts its descender inside the ` +
+        `plot (top ${g.plot.top.toFixed(1)}) — it would sit on a bar, and its ink is measured ` +
+        `against the page only. Raise MEDIAN_CAPTION_LIFT or ink it against the marks.`,
+    );
 
   // The reveal: ALL eight bars rise together, sharing ONE eased progress — see the file
   // doc-comment for why this is a single build rather than a per-bin cascade. Easing is legal
@@ -502,13 +548,13 @@ export function HistogramVideo({
             x2={medianX}
             y1={g.plot.top}
             y2={referenceY2}
-            stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            stroke={medianRuleInk}
+            strokeWidth={MEDIAN_RULE.width}
+            strokeDasharray={MEDIAN_RULE.dash}
           />
           <text
             x={medianX}
-            y={g.plot.top - 14}
+            y={captionBaseline}
             fill={muted}
             fontSize={NOTE.fontSize}
             textAnchor="middle"

@@ -16,6 +16,18 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveFurniture } from "../../skills/twin-chart-video/scripts/render-still.mjs";
+// The annotation-ink arithmetic, reached the way every static beat reaches it. It lives HERE and
+// not in `HistogramVideo.tsx` for a measured reason: it takes `contrast` from `render-still.mjs`,
+// which loads a native rasteriser, and Remotion's webpack cannot parse a `.node` binary — the
+// bundle fails with "Module parse failed: Unexpected character". Same split as `deriveFurniture`
+// above: the rule is computed once in node and travels as a prop.
+import {
+  NON_TEXT_CONTRAST_FLOOR,
+  assertAnnotationReadsOverMarks,
+  inkThatReadsOver,
+  textContrastFloor,
+} from "#shared/twin-chart-beat/annotation-ink.mjs";
+import { NOTE } from "./HistogramVideo.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
@@ -156,12 +168,53 @@ if (modalCount !== 65)
 
 const referenceLabel = `Median: ${medianValue.toFixed(1)} years`;
 
+const furniture = deriveFurniture(BEAT.ground);
+
+// B6.4a — THE MEDIAN RULE, INKED AGAINST WHAT IT IS DRAWN OVER.
+//
+// It used to be `stroke={muted}` over bars that are also `muted`: **1.00:1**, an invisible rule.
+// Extract frame 131 of the mp4 as it stood and the dashes stop dead at the top of the 75–80 bar.
+//
+// The set is this chart's WHOLE fill palette — the page, the neutral every bar wears, and the
+// accent the subject bin takes at its own boundary — rather than the marks a crossing test says
+// are under the rule right now. Two reasons, both deliberate:
+//
+//   - the ink must be ONE colour for the whole beat. The bars rise past the rule during `reveal`
+//     and the subject bin changes fill at `subject`; a rule that recomputed its colour as that
+//     happened would be a colour crossfade on the one mark every bar is read against.
+//   - the geometry lives in the component (`histogramGeometry` needs the wrapped title's height),
+//     and this script has the palette. Deriving against every fill that can appear under a rule
+//     spanning the plot's full height is the conservative answer, and it costs nothing: black
+//     clears all three.
+//
+// The answer is `#000000` — 3.39:1 over `#616161`, 4.25:1 over the accent, 21:1 over the page.
+// White is the alternative pole and reaches 1.00:1 on the page, so it loses.
+const medianRuleInk = inkThatReadsOver(
+  [BEAT.ground, furniture.muted, BEAT.accent],
+  NON_TEXT_CONTRAST_FLOOR,
+);
+assertAnnotationReadsOverMarks(
+  { what: "the median rule", colour: medianRuleInk },
+  [BEAT.ground, furniture.muted, BEAT.accent],
+  NON_TEXT_CONTRAST_FLOOR,
+);
+
+// The caption stays `muted`, and that is now a measured claim rather than a habit: it is drawn
+// above `plot.top` (the component throws if a future layout drops it into the plot), so the only
+// thing under it is the page, and `muted` is 6.19:1 there against a 4.5:1 floor.
+assertAnnotationReadsOverMarks(
+  { what: `the median caption "${referenceLabel}"`, colour: furniture.muted },
+  [BEAT.ground],
+  textContrastFloor(NOTE),
+);
+
 const props = {
   ...BEAT,
   readings,
   medianValue,
   referenceLabel,
-  ...deriveFurniture(BEAT.ground),
+  medianRuleInk,
+  ...furniture,
 };
 const propsPath = join(outDir, "histogram-props.json");
 await writeFile(propsPath, JSON.stringify(props, null, 2));
