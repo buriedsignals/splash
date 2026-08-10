@@ -154,7 +154,6 @@ const TWIN = join(new URL(".", import.meta.url).pathname, "../../..");
 const ENTRANCE_PENDING = [
   "proof/co2-suisse/co2.html",
   "proof/web-co2-decline-slope/co2-decline-slope.html",
-  "proof/webx-wind-vs-solar/wind-vs-solar.html",
   "proof/weby-small-multiples-co2-per-capita/small-multiples-co2-per-capita.html",
 ];
 

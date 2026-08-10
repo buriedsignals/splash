@@ -33,6 +33,15 @@
  */
 
 import {
+  ENTRANCE_EASING,
+  LABEL_FADE_MS,
+  WEB_ENTRANCE,
+  atProgress,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
+import {
   groupedBarGeometry,
   formatNumber,
   type Group,
@@ -166,6 +175,70 @@ export function GroupedBarWeb({
 
   const calloutBar = bars.find((b) => b.name === calloutSubject);
 
+  // ── THE ENTRANCE, carried from `proof/vidx-grouped-bar-co2-per-capita`, the grouped-bar video:
+  // each CATEGORY takes its own overlapping slice of the reveal (`categoryWindow`, factor 1.6) and
+  // its bars rise together from the shared zero — `interpolate(catProgress, [0, 1], [g.zeroY, top])`
+  // per bar, one clock per group, so a group's two bars are never ahead of each other.
+  //
+  // The zero rule is this beat's reference, laid down before any bar. The subject is the callout's
+  // own country: the video rings an already-landed column, this page has no ring at rest, so the
+  // subject's own arrival is the emphasis — its group is lifted out and lands last, with the callout
+  // that names it as the conclusion.
+  const cascade = bars.filter((b) => b.name !== calloutSubject);
+  const windowFor = (name: string) =>
+    name === calloutSubject
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.findIndex((b) => b.name === name),
+          cascade.length,
+        );
+  const eventFor = (name: string) =>
+    name === calloutSubject ? ("subject" as const) : ("reveal" as const);
+  const barLayer = (name: string, key: "wind" | "solar", baselineY: number) => {
+    const own = windowFor(name);
+    return entranceLayer(eventFor(name), "grow", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      grow: { axis: "y", origin: { x: 0, y: baselineY } },
+      mark: `${name}·${key}`,
+    });
+  };
+  const valueLabelLayer = (name: string, key: "wind" | "solar") =>
+    entranceLayer(eventFor(name), "fade", {
+      delay: atProgress(windowFor(name), 1),
+      duration: LABEL_FADE_MS,
+      ease: ENTRANCE_EASING.ARRIVE,
+      names: `${name}·${key}`,
+    });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const zeroRuleLayer = entranceLayer("reference", "wipe", {
+    delay: WEB_ENTRANCE.reference.start,
+    duration: WEB_ENTRANCE.reference.duration,
+    ease: ENTRANCE_EASING.ARRIVE,
+  });
+  const calloutLayer = () =>
+    entranceLayer("conclusion", "fade", {
+      delay: WEB_ENTRANCE.conclusion.start,
+      duration: WEB_ENTRANCE.conclusion.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      names: `${calloutSubject}·solar`,
+    });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((b) => atProgress(windowFor(b.name), 1) + LABEL_FADE_MS),
+  );
+  if (lastCascadeEnd > endOf(WEB_ENTRANCE.subject))
+    throw new Error(
+      `the last group's value labels end at ${lastCascadeEnd}ms, after the subject lands at ` +
+        `${endOf(WEB_ENTRANCE.subject)}ms`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -184,7 +257,11 @@ export function GroupedBarWeb({
         ["--note-size" as string]: `${frame.callout.fontSize}px`,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{subtitle}</p>
       </div>
@@ -195,7 +272,9 @@ export function GroupedBarWeb({
           each swatch at a hand-measured x. */}
       <div
         className="chart-legend"
+        {...furnitureLayer().attrs}
         style={{
+          ...furnitureLayer().vars,
           flex: "0 0 auto",
           display: "flex",
           flexWrap: "wrap",
@@ -242,7 +321,9 @@ export function GroupedBarWeb({
           names, directly under these words. */}
       {calloutBar && (
         <p
+          {...calloutLayer().attrs}
           style={{
+            ...calloutLayer().vars,
             flex: "0 0 auto",
             margin: "0 0 8px auto",
             maxWidth: "260px",
@@ -265,7 +346,11 @@ export function GroupedBarWeb({
           aspectRatio: `${yGutterPx + frame.width} / ${frame.height + frame.xAxisRowPx}`,
         }}
       >
-        <div className="y-axis">
+        <div
+          className="y-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticksY.map((tick, i) => (
             <span
               key={tick.value}
@@ -302,6 +387,7 @@ export function GroupedBarWeb({
             fill={ground}
           />
 
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
           {ticksY.map((tick) => (
             <line
               key={tick.value}
@@ -315,9 +401,14 @@ export function GroupedBarWeb({
             />
           ))}
 
+          </g>
+
+          {/* THE REVEAL — one clock per country, both bars rising together from the shared zero. */}
           {bars.map((b) => (
             <g key={b.name}>
               <rect
+                {...barLayer(b.name, "wind", b.wind.y + b.wind.height).attrs}
+                style={barLayer(b.name, "wind", b.wind.y + b.wind.height).vars}
                 x={b.wind.x}
                 y={b.wind.y}
                 width={b.wind.width}
@@ -325,6 +416,8 @@ export function GroupedBarWeb({
                 fill={colours.wind}
               />
               <rect
+                {...barLayer(b.name, "solar", b.solar.y + b.solar.height).attrs}
+                style={barLayer(b.name, "solar", b.solar.y + b.solar.height).vars}
                 x={b.solar.x}
                 y={b.solar.y}
                 width={b.solar.width}
@@ -364,6 +457,8 @@ export function GroupedBarWeb({
           {/* The callout's leader — geometry, so it lives here; its words are HTML below. */}
           {calloutBar && (
             <line
+              {...calloutLayer().attrs}
+              style={calloutLayer().vars}
               x1={calloutBar.groupCenter}
               x2={calloutBar.groupCenter}
               y1={0}
@@ -388,7 +483,9 @@ export function GroupedBarWeb({
             ].map(({ key, bar }) => (
               <span
                 key={`${b.name}-${key}`}
+                {...valueLabelLayer(b.name, key).attrs}
                 style={{
+                  ...valueLabelLayer(b.name, key).vars,
                   position: "absolute",
                   left: `${pct(bar.x + bar.width / 2, frame.width)}%`,
                   top: `${pct(bar.y, frame.height)}%`,
@@ -412,7 +509,11 @@ export function GroupedBarWeb({
             EVERY width. The box is exactly its own text, never a column-wide box: a wide box on the
             first and last groups pushes past the frame's edges and gives the document horizontal
             scroll. */}
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {bars.map((b, i) => (
             <span
               key={b.name}
@@ -431,7 +532,13 @@ export function GroupedBarWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
