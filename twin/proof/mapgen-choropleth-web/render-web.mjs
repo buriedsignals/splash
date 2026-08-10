@@ -256,6 +256,17 @@ export function cameraOf(geometry) {
  * Coordinates are rounded to 4 decimals: 0.0001° is 11m, and under a tenth of a pixel at the
  * deepest zoom this beat's own leash allows. Measured on this beat's 41 shapes: 279.7 KB at full
  * precision, 228.9 KB at 4dp.
+ *
+ * THE PART STRUCTURE IS KEPT, AND THAT IS THE ONE THING THIS MAY NOT COPY FROM THE BAKE. The bake
+ * FLATTENS a MultiPolygon's parts into one list of rings, and `geo-choropleth.ts`'s own `keepRing`
+ * doc-comment explains why that is safe there: an SVG `<path>` filled `evenodd` sums ray-crossings
+ * across every subpath and needs no outer/hole grouping. GeoJSON is not that. A `Polygon`'s FIRST
+ * ring is its exterior and every ring after it is a HOLE, so the same flattening turns the Faroe
+ * Islands' four other islands into holes cut out of the first one — measured on the live page at
+ * zoom 6.2: one island filled, four drawn as white outlines, on the beat whose entire claim is about
+ * the Faroe Islands. Every multi-part country in the study set (Greece, Italy, Denmark, the UK,
+ * Norway, Croatia, Spain, Estonia, Sweden) had the same wound. So each PART becomes its own polygon
+ * of a `MultiPolygon` here, culled on its own outer ring, and its holes travel with it.
  */
 export function liveRings(collection, keys, geometry) {
   const { project } = cameraOf(geometry);
@@ -270,19 +281,28 @@ export function liveRings(collection, keys, geometry) {
       `${missing.length} declared countries have no shape in countries.geojson: ${missing.join(", ")}`,
     );
 
-  const rings = new Map();
+  const round = (ring) =>
+    ring.map(([lon, lat]) => [Number(lon.toFixed(4)), Number(lat.toFixed(4))]);
+
+  const shapes = new Map();
   for (const key of keys) {
     const geom = byKey.get(key).geometry;
     const parts = geom.type === "MultiPolygon" ? geom.coordinates : [geom.coordinates];
     const kept = [];
-    for (const ring of parts.flat())
-      if (keepRing(ring.map(project), frame))
-        kept.push(ring.map(([lon, lat]) => [Number(lon.toFixed(4)), Number(lat.toFixed(4))]));
+    for (const part of parts) {
+      // The OUTER ring decides whether the part is in frame at all; its holes are inside it by
+      // construction and travel with it or not at all.
+      const [outer, ...holes] = part;
+      if (!outer || !keepRing(outer.map(project), frame)) continue;
+      kept.push([round(outer), ...holes.map(round)]);
+    }
     if (kept.length === 0)
-      throw new Error(`every ring of ${key} was culled out of frame — the live map would draw a hole`);
-    rings.set(key, kept);
+      throw new Error(
+        `every part of ${key} was culled out of frame — the live map would draw nothing where the plate draws a country`,
+      );
+    shapes.set(key, kept);
   }
-  return rings;
+  return shapes;
 }
 
 /**
@@ -337,7 +357,8 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
     anchors[region.key] = camera.unproject(region.anchor);
     features.push({
       type: "Feature",
-      geometry: { type: "Polygon", coordinates: own },
+      // MultiPolygon, always — see `liveRings`: a country's islands are PARTS, never holes.
+      geometry: { type: "MultiPolygon", coordinates: own },
       properties: {
         key: region.key,
         name: region.name,
@@ -352,8 +373,8 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
     });
     if (region.value === null) continue;
     // The study footprint is the footprint of the regions that actually carry a value…
-    for (const ring of own)
-      for (const [lon, lat] of ring) {
+    for (const [outer] of own)
+      for (const [lon, lat] of outer) {
         if (lon < west) west = lon;
         if (lon > east) east = lon;
         if (lat < south) south = lat;
@@ -384,7 +405,7 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
     if (!region) throw new Error(`no region ${key} to outline`);
     return {
       type: "Feature",
-      geometry: { type: "Polygon", coordinates: rings.get(key) },
+      geometry: { type: "MultiPolygon", coordinates: rings.get(key) },
       properties: { key, colour, detail: regionDetail(region) },
     };
   };
@@ -425,18 +446,27 @@ export function livePlan({ geometry, regions, rings, breaks, ground, ink, accent
       // then the colour itself. `hover: false` — an outline pixel is decoration, and the region
       // underneath it is what answers (the defect this beat already fixed once in the SVG, where
       // the Faroe Islands' own stroke covered nearly the whole shape and swallowed every hover).
+      //
+      // NO `line-join` HERE, and it is not an omission: `line-join` is a MapLibre LAYOUT property,
+      // and the LAYERS contract `live-map.mjs` reads carries `paint` only. Written as paint it is
+      // rejected — `layers.mw-claim.paint.line-join: unknown property` — and `addLayer` then drops
+      // THE WHOLE LAYER, so both claim outlines were simply absent from the live map while every
+      // test in this repository stayed green and the fallback still drew them. Found by opening the
+      // keyed page and looking for the accent outline that was not there. The SVG keeps its own
+      // `strokeLinejoin="round"`; the live outline takes MapLibre's default mitre, which at 2px on
+      // a coastline is not a difference a reader can see.
       {
         id: "mw-claim-halo",
         type: "line",
         data: claimOutlines,
-        paint: { "line-color": ground, "line-width": 4.2, "line-join": "round" },
+        paint: { "line-color": ground, "line-width": 4.2 },
         hover: false,
       },
       {
         id: "mw-claim",
         type: "line",
         data: claimOutlines,
-        paint: { "line-color": ["get", "colour"], "line-width": 2, "line-join": "round" },
+        paint: { "line-color": ["get", "colour"], "line-width": 2 },
         hover: false,
       },
     ],
