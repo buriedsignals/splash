@@ -812,3 +812,28 @@ frame for frame, as the video's `drawnSoFar`.
 own midpoints through `elementsFromPoint`. An opacity fade over a finished picture reports every
 segment hittable from the first sample; that is the failure this project already met on the scrolly,
 and it is the signature these two instruments exist to tell apart.
+
+**The copy is walked, in two halves, by `splash/test/web-entrance-parity.test.ts`.** A vendored copy
+with no parity walker is the drift this whole method depends on catching, and this one went a day
+without one. Half one compares `endOf` and `progressOf` as TEXT, normalised, with exactly one
+declared substitution (`EntranceEvent` for `TimingEvent`) that is itself asserted to be real. Half
+two runs the SAME sixteen fixtures through `checkTiming` and `checkEntrance` and makes the two agree
+about legality — because **a text comparison cannot see a rule whose meaning drifted while its
+letters stayed**. The verdicts cannot be compared sentence for sentence (the two word the same rule
+differently on purpose, and three rules are deliberately unshared), so each message is CLASSIFIED
+into a shared token or a named divergence — `hold`'s two rules, and `ENTRANCE_CEILING_MS` — and an
+unclassified message fails loudly rather than being dropped.
+
+Mutations, run in a copy under `/tmp`, never in the working tree:
+
+| mutation | what went red |
+| --- | --- |
+| `progressOf` loses its lower clamp in `entrance.ts` | the text half — `progressOf should be the same function in both files`, printing both normalised bodies. 27 pass / 1 fail |
+| `checkEntrance`'s ordering `<` becomes `<=` | **the text half stays green** and the fixture half goes red on 8 of 16 — `out-of-order:subject@1560<reveal@1560` on this genre's own edit, where the video reports nothing. 20 pass / 8 fail. This is the mutation that proves half two earns its place |
+| a new rule pushed into `checkEntrance` only | `unclassified: ["the reveal is 78ms, too short to read"]` — a rule that appeared on one side and nothing compares. 27 pass / 1 fail |
+
+Three things it provably does not catch, stated in its own header: a defect the two share (they are
+compared against each other, never against the truth); the PACE, which is an edit and not a formula;
+and `atProgress`, which has no video ancestor — its own claim,
+`progressOf(atProgress(e, f), e) === f`, is asserted directly instead, to within the half
+millisecond its rounding costs.
