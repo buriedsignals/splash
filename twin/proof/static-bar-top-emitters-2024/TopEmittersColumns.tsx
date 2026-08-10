@@ -23,6 +23,11 @@ import {
   measureText,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  NON_TEXT_CONTRAST_FLOOR,
+  assertAnnotationReadsOverMarks,
+  marksUnder,
+} from "#shared/twin-chart-beat/annotation-ink.mjs";
 
 export type Row = { country: string; value: number };
 
@@ -36,6 +41,9 @@ const VALUE_LABEL = { fontSize: 14, fontWeight: 600 };
 const CALLOUT = { fontSize: 14, fontWeight: 400, lead: 18 };
 /** The reference rule's dash, and the gap it keeps from the column tops it passes over. */
 const REFERENCE_DASH = "5 4";
+/** Its stroke weight — named because the crossing check needs the rule's real thickness to know
+ *  what it lies over, and a literal in two places is a literal that drifts. */
+const REFERENCE_RULE_WIDTH = 1.5;
 
 /** Pure geometry: rows (already ranked by the caller) to column rectangles. Knows no colour,
  *  no font and no label — the boundary `ChartSeed.tsx`'s `lineGeometry` draws. */
@@ -181,6 +189,35 @@ export function TopEmittersColumns({
   // "China's 12.3" over "12.3", found by opening the PNG, not by any test.
   const subjectColumn = columns.find((c) => c.country === subject)!;
   const calloutX = subjectColumn.x + subjectColumn.width + 14;
+
+  // The reference rule starts where the subject's own column ends, and whatever it still crosses
+  // is measured against the ink it is drawn in. See the drawing site below for the reasoning.
+  const referenceRule = {
+    x1: subjectColumn.x + subjectColumn.width,
+    box: {
+      x: subjectColumn.x + subjectColumn.width,
+      y: referenceY - REFERENCE_RULE_WIDTH / 2,
+      width: plot.right - (subjectColumn.x + subjectColumn.width),
+      height: REFERENCE_RULE_WIDTH,
+    },
+  };
+  assertAnnotationReadsOverMarks(
+    { what: `the ${subject} reference rule`, colour: accent },
+    [
+      ground,
+      ...marksUnder(
+        referenceRule.box,
+        columns.map((c) => ({
+          x: c.x,
+          y: c.y,
+          width: c.width,
+          height: c.height,
+          fill: c.country === subject ? accent : muted,
+        })),
+      ).map((m) => m.fill),
+    ],
+    NON_TEXT_CONTRAST_FLOOR,
+  );
   const calloutLines = wrap(callout.text, plot.right - calloutX, CALLOUT);
 
   return (
@@ -267,14 +304,25 @@ export function TopEmittersColumns({
 
       {/* The comparison the claim actually makes, drawn rather than asserted: the subject's own
           level carried across every other column so the reader can see how far below it they all
-          sit, captioned with the sum computed from the frozen data. */}
+          sit, captioned with the sum computed from the frozen data.
+
+          It used to start at `plot.left`, which ran it straight through the subject's OWN column —
+          accent on accent, 1.00:1, and in the committed PNG the first 7 % of the rule is simply
+          missing. It carried no information there either: the column's top IS the level. So it
+          starts where the subject's column ends, and the ink it is drawn in is CHECKED against
+          everything it still crosses (`annotation-ink.mjs`, SC 1.4.11's 3:1 for a non-text mark).
+          The accent survives that check on this data because the subject is also the tallest column,
+          so the trimmed rule meets nothing but the page. On data where it did not — a subject
+          overtaken by someone to its right — this THROWS at render rather than shipping an
+          invisible rule, which is the whole reason the check is an assertion here and a derivation
+          in `static-carbon-footprint-spread`, where the crossing is unavoidable. */}
       <line
-        x1={plot.left}
+        x1={referenceRule.x1}
         x2={plot.right}
         y1={referenceY}
         y2={referenceY}
         stroke={accent}
-        strokeWidth={1.5}
+        strokeWidth={REFERENCE_RULE_WIDTH}
         strokeDasharray={REFERENCE_DASH}
       />
       {calloutLines.map((line, i) => (
