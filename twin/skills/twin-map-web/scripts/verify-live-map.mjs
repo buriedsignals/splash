@@ -47,6 +47,7 @@ import { existsSync, readdirSync, readFileSync, mkdtempSync, writeFileSync } fro
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer";
+import { splashEnvPath } from "./splash-root.mjs";
 
 /** The two shapes. The first is wide enough that a square plate's scale and the camera's disagree
  *  by more than a third; the second is tall, so the disagreement reverses sign. One of them alone
@@ -308,7 +309,9 @@ if (import.meta.main) {
     return at >= 0 ? argv[at + 1] : fallback;
   };
   const htmlPath = flag("--html", "/tmp/mw-live/population.html");
-  const envPath = join(import.meta.dirname, "../../../.env");
+  // The Splash root's own `.env` — the same file `recordKey` writes into. See `splash-root.mjs`
+  // for why a fixed three-level climb was the wrong shape.
+  const envPath = splashEnvPath(import.meta.dirname);
   const env = existsSync(envPath) ? parseEnvFile(readFileSync(envPath, "utf8")) : {};
   const key = flag("--key", process.env.MAPTILER_KEY ?? env.MAPTILER_KEY);
   if (!key) {

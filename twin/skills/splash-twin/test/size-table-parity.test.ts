@@ -160,7 +160,14 @@ describe("the export-size table — every copy in the tree, discovered rather th
     const skillsWithCopy = new Set(
       skillCopies.map((p) => relative(join(TWIN, "skills"), p).split("/")[0]),
     );
-    for (const p of paths.filter((p) => p.includes(join("shared", "")))) {
+    // Anchored at `twin/shared/`, not "any path containing shared/". The loose form also matched
+    // `skills/splash-twin/assets/root-template/shared/…`, which is the VENDORED copy of this very
+    // mirror — the one a `cp -r root-template/` install carries into a newsroom's root. Its skill
+    // name came out as ".." and this assertion failed on a file that is byte-identical to the one
+    // it was checking. That copy has its own guards (`root-template-shared.test.ts`, and the
+    // whole-tree mirror assertion in `root-template-tells-the-truth.test.ts`).
+    const liveMirror = join(TWIN, "shared") + "/";
+    for (const p of paths.filter((p) => p.startsWith(liveMirror))) {
       const skill = relative(join(TWIN, "shared"), p).split("/")[0];
       expect([skill, "has a skill copy", skillsWithCopy.has(skill)]).toEqual([
         skill,

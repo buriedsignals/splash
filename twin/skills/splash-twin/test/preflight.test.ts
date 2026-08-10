@@ -63,12 +63,23 @@ async function declaredSharedFiles(): Promise<string[]> {
     );
 }
 
-// A stub module that Bun.resolveSync can actually resolve — a present
-// node_modules with unresolvable packages inside it is exactly the bug this
-// suite pins, so "installed" here means "resolvable", not "directory exists".
+// A stub package shaped the way `bun install` actually leaves one — a present node_modules with
+// nothing usable inside it is exactly the bug this suite pins, so "installed" here means "a real
+// package is there", not "a directory exists".
+//
+// The `package.json` is not decoration. This stub used to be an `index.js` alone, which Node's
+// resolver accepts and which therefore satisfied the old `Bun.resolveSync` check. `checkDependencies`
+// now looks for the package's own manifest in the root's OWN tree, because resolution walks up into
+// ancestor `node_modules` and reported a completely empty root as fully installed (see
+// `resolveDepInTree`'s header, and `preflight-resolves-in-the-tree.test.ts`). Every real package has
+// a manifest; a fixture that omitted it was modelling something npm never produces.
 async function installResolvableDependency(name: string): Promise<void> {
   const dir = join(root, "node_modules", name);
   await mkdir(dir, { recursive: true });
+  await writeFile(
+    join(dir, "package.json"),
+    JSON.stringify({ name, version: "0.0.0", main: "index.js" }),
+  );
   await writeFile(join(dir, "index.js"), "export default {};\n");
 }
 
@@ -473,17 +484,21 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
   it("should read a house credit convention when one is recorded, and stay valid without one", async () => {
     await writeFile(
       join(root, "NEWSROOM.md"),
-      complete.replace("---\n$", "") .replace(
-        'typefaces: "Source Serif"',
-        'typefaces: "Source Serif"\ncredit: "Source : {source} · Heidi.news"',
-      ),
+      complete
+        .replace("---\n$", "")
+        .replace(
+          'typefaces: "Source Serif"',
+          'typefaces: "Source Serif"\ncredit: "Source : {source} · Heidi.news"',
+        ),
     );
     const withCredit = await runPreflight({ root, env: {}, fetchFn: okFetch });
     expect(
       withCredit.checks.find((c) => c.id === "newsroom-profile")?.profile
         ?.credit,
     ).toContain("Heidi.news");
-    expect(withCredit.checks.find((c) => c.id === "newsroom-profile")?.status).toBe("pass");
+    expect(
+      withCredit.checks.find((c) => c.id === "newsroom-profile")?.status,
+    ).toBe("pass");
 
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const without = await runPreflight({ root, env: {}, fetchFn: okFetch });

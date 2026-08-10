@@ -1,6 +1,7 @@
 // Phase 0. Nothing here is worked around: a gap is reported, never designed around.
 
 import { readFile, readdir, stat } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseNewsroom, validateNewsroom, isDeclinedProfile } from "./newsroom.mjs";
@@ -45,20 +46,43 @@ async function declaredSharedFiles() {
 // directory (`#shared/<skill>/...`, mapped by the root's package.json `imports` field), so a
 // root missing it can build packages fine and still fail the only render it ships — exactly what
 // PROOF.md §1 caught this check reporting "pass" on.
+/**
+ * Whether `name` is installed in THIS root's own `node_modules` — not whether some resolver,
+ * somewhere, can find a copy of it.
+ *
+ * Do not simplify this back to `Bun.resolveSync(name, root)`. That is what this function replaced,
+ * and the reason is measured, on this machine, on Bun 1.3.5, not inherited from a report:
+ *
+ *   a root whose `node_modules/` was completely EMPTY reported all nine declared dependencies
+ *   RESOLVED, because `Bun.resolveSync` implements Node's resolution algorithm faithfully — and
+ *   Node's algorithm walks UP the directory chain. Every hit came from the developer's own
+ *   `twin/node_modules`, three levels above.
+ *
+ * Which means `checkDependencies` reported `dependencies: pass` and `runPreflight` reported
+ * `ready: true` for a root where nothing whatsoever was installed — the exact false green the whole
+ * check exists to prevent, and one only visible when the root sits underneath another JS project.
+ * A newsroom that puts its Splash root inside any checkout gets it; so does every test run in this
+ * repository, which is why it survived so long.
+ *
+ * The ORIGINAL Splash hit the same class through a different door (Bun's global install cache) and
+ * left the same instruction in its own fix, which is why this comment repeats it verbatim.
+ *
+ * Ambient resolution is the thing being refused, so this deliberately does NOT walk up: a Splash
+ * root is a package root with its own manifest and its own `bun install`. Borrowing a parent's tree
+ * is not a root that works, it is a root that happens to be sitting somewhere lucky, and it stops
+ * working the moment it is copied to the machine it was meant for.
+ */
+function resolveDepInTree(name, root) {
+  return existsSync(join(root, "node_modules", name, "package.json"));
+}
+
 async function checkDependencies(root) {
   if (!(await exists(join(root, "node_modules")))) {
     return { id: "dependencies", status: "missing", detail: "run bun install in the Splash root" };
   }
 
   const declared = await declaredDependencyNames();
-  const unresolvedPackages = declared.filter((name) => {
-    try {
-      Bun.resolveSync(name, root);
-      return false;
-    } catch {
-      return true;
-    }
-  });
+  const unresolvedPackages = declared.filter((name) => !resolveDepInTree(name, root));
 
   const declaredShared = await declaredSharedFiles();
   const missingShared = [];

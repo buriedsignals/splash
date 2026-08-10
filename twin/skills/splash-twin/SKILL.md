@@ -178,14 +178,44 @@ shared module, and this project follows the same shape rather than inventing a r
   or a profile short of one of the six required fields. This is the only newsroom outcome that
   blocks the session the same way `missing` does — the file is present and wrong, not merely unmade.
 
-**Installing a fresh root leaves it at `missing`, and that is the gap this closes.** The root
-template ships `NEWSROOM.example.md`, never `NEWSROOM.md` — nothing before this rebuild told anyone
-to rename it, so a freshly-installed root reliably failed preflight on a file nobody was ever told
-to create. The install step, made explicit: after copying `root-template/`, either
-`cp NEWSROOM.example.md NEWSROOM.md` and fill in the newsroom's own values, or leave it absent and
-let preflight's `newsroom-profile: missing` status be the prompt to invoke twin-newsroom-charter
-(derive or decline). Either path lands `NEWSROOM.md` in a resolved state; leaving the example file
-un-renamed is the one shape that never resolves.
+**Installing a fresh root leaves it at `missing` unless the installer answers it.** The root
+template ships `NEWSROOM.example.md`, never `NEWSROOM.md`, so a root created by hand reliably fails
+preflight on a file nobody was told to create. `installer/configure.mjs` closes that: the setup page
+collects the six fields and writes `NEWSROOM.md` itself, after validating it with this same reader.
+Leaving it blank there is also an answer — preflight then reports `missing`, which is the prompt to
+invoke twin-newsroom-charter (derive from the newsroom's own website, or record a decline). Either
+path lands `NEWSROOM.md` in a resolved state; the example file left un-renamed is the one shape that
+never resolves.
+
+## The install, and the one directory it all hangs off
+
+**A Splash root is ONE directory that is five things at once**, and it has to be, because each of
+the five resolves paths independently:
+
+| It is | Who depends on that |
+| --- | --- |
+| the package `bun install` runs in | every `import` in every beat |
+| the owner of the single `.env` | `recordKey`, and every producer that reads a key |
+| the `#shared/*` resolution root | every beat's craft import, at any depth |
+| the parent of `stories/` | `createStory`, `whereIs` |
+| what the hosts' symlinks point into | Goose, the Claude family, Gemini, Codex |
+
+They were not one directory before, and that is exactly how a producer came to read the DEVELOPER's
+`.env` while a journalist's key sat unread in their own root — both Bun and Node resolve a symlink
+before computing `import.meta.url`, so a symlinked install made the old fixed climb (`../../../.env`)
+land in the checkout. `scripts/splash-root.mjs` replaces the climb with a search for the nearest
+ancestor declaring `#shared/*`, which is correct in the checkout AND in an installed root, and
+throws rather than guessing when there is none. `test/the-key-has-one-home.test.ts` proves the
+producers and `recordKey` name the same file.
+
+Installing is therefore `installer/install.sh`, and it copies the template, the fifteen skills and
+the plugin manifest into that one root. It contains **no keys and receives none**: secrets are typed
+into `installer/configure.mjs`, a page served on 127.0.0.1, so nothing reaches shell history — and
+each key is PROBED against its real service before it is written, at `0600`. `installer/place-skills.mjs`
+then wires the two doors every host reads, and the generated `splash-twin-doctor`
+(`installer/doctor.mjs`) checks the wiring preflight structurally cannot see — the links, the skill
+front matter, `bun` on a login shell's PATH, a browser — and then hands the last word to
+`runPreflight` rather than re-deciding anything it owns.
 
 ## Architecture
 
@@ -349,10 +379,21 @@ if (missing.length > 0) {
   `decision: declined` in `NEWSROOM.md`'s own front matter — a different answer, not an invalid
   one).
 - `scripts/new-story.mjs` — `slugify`, `createStory`.
+- `scripts/splash-root.mjs` — `splashRoot(startDir)`, `splashEnvPath(startDir)`: the nearest
+  ancestor declaring `#shared/*`. Duplicated byte-for-byte into every craft skill that reads a key
+  (never imported across a boundary), and guarded by `test/the-key-has-one-home.test.ts`.
+- `../../installer/` — `install.sh` (one static, key-free script), `configure.mjs` (the 127.0.0.1
+  setup page: keys probed live, written at `0600`, never on a command line), `place-skills.mjs`
+  (the two doors), `doctor.mjs` (host wiring, then delegates to `runPreflight`).
 - `assets/root-template/` — `package.json` (declares the root's npm dependencies **and** its
-  `"imports": {"#shared/*": "./shared/*"}` subpath map), `tsconfig.json`, `NEWSROOM.example.md` —
-  copied into a fresh Splash root. This is the whole install: there is no separate installer
-  script, so what lands under this directory is exactly what a newsroom ends up with.
+  `"imports": {"#shared/*": "./shared/*"}` subpath map), `tsconfig.json`, `NEWSROOM.example.md`,
+  `shared/`. The template is the *manifest half* of the install; `installer/` (below) is the rest.
+  What the template declares is what `checkDependencies` validates a root against, which makes the
+  check circular by construction — so `test/root-template-tells-the-truth.test.ts` WALKS the tree
+  and asserts the template declares every package actually imported, vendors every `#shared/` file
+  actually imported, pins the same versions this repository pins, and declares whatever provides
+  each binary a script spawns. Before that guard the template declared six packages against nine
+  imported, and a fresh root reported `ready: true` while only the static chart genre could run.
 - `assets/root-template/shared/twin-chart-beat/{render-still.mjs,inspect-render.mjs}` — the
   vendored **mechanism** of `twin-chart-beat` (never its seed — that stays in the skill, read as
   documentation, not copied). Physical copies, checked in, so the plain `cp -r root-template/`

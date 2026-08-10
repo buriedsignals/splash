@@ -22,6 +22,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer";
+import { splashEnvPath } from "./splash-root.mjs";
 import { CO2_STUDY, keepRing, simplifyRing } from "../assets/geo.ts";
 
 /** The beat's camera and its anchors — the journalist's frame, not a default. */
@@ -64,7 +65,11 @@ const size = Number(flag("--size", "620"));
 const outDir = flag("--out", `/tmp/map-twin/plate-${size}`);
 const shapesPath = flag("--shapes", "/tmp/map-twin/ne50.geojson");
 const settleMs = Number(flag("--settle", "15000"));
-const keyPath = flag("--env", new URL("../../../.env", import.meta.url).pathname);
+// The Splash root's own `.env` — the same file `recordKey` writes a journalist's key into. This
+// used to be a fixed three-level climb (`../../../.env`), which is `twin/.env` in this checkout and
+// the DEVELOPER's `.env` anywhere the skills are installed as a symlink, because both Bun and Node
+// resolve the link before computing `import.meta.url`. See `splash-root.mjs`.
+const keyPath = flag("--env", splashEnvPath(import.meta.dirname));
 
 /**
  * Headless Chrome has to be FOUND before it can be gated (rule 6). puppeteer's own download is
