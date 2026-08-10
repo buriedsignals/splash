@@ -34,16 +34,133 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { STACKED_BAR_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
-const TITLE = { fontSize: 40, fontWeight: 700, lead: 52 };
-const SOURCE = { fontSize: 22, fontWeight: 400, lead: 28 };
-const AXIS = { fontSize: 22, fontWeight: 400 };
-const CATEGORY = { fontSize: 26, fontWeight: 600 };
-const LEGEND = { fontSize: 21, fontWeight: 600 };
-const TOTAL = { fontSize: 20, fontWeight: 600 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "stacked-bar";
+
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. It said `1080 x 1080` here while `Root.tsx` said
+ * `width={1080} height={1080}` two files away, with nothing between them, so `size: portrait` on
+ * the slot produced a square in silence (`specs/W4-export-sizes.md` §1a).
+ *
+ * Every spacing number goes through `sp`, not only the fonts — including the three that decide
+ * where a column's total is printed, which used to be module constants measured in pixels of a
+ * frame this beat no longer draws at. Two font sizes were not tokens at all (`fontSize={22}` at the
+ * reference label and `fontSize={26}` at the conclusion, written bare at the mark).
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's multiplier lands the smallest
+ * drawn type exactly on that row's legibility floor. The old values did not clear it: the column
+ * totals were 20px on a 1080 frame, 6.7 CSS px on the phone a square post is read on.
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 31 },
+  SOURCE: { fontSize: 13, fontWeight: 400, lead: 17 },
+  AXIS: { fontSize: 13, fontWeight: 400 },
+  CATEGORY: { fontSize: 16, fontWeight: 600 },
+  LEGEND: { fontSize: 13, fontWeight: 600 },
+  TOTAL: { fontSize: 12, fontWeight: 600 },
+  NOTE: { fontSize: 13, fontWeight: 400 },
+  CONCLUSION: { fontSize: 16, fontWeight: 700 },
+  TITLE_TO_LEGEND: 24,
+  CONCLUSION_RESERVE: 28,
+  CONCLUSION_TO_PLOT: 26,
+  LEGEND_SWATCH: 10,
+  LEGEND_TEXT_GAP: 14,
+  LEGEND_TEXT_LIFT: 2,
+  LEGEND_PITCH: 150,
+  PLOT_RIGHT_AIR: 12,
+  X_LABEL_BAND: 26,
+  SOURCE_AIR: 6,
+  Y_GUTTER_AIR: 12,
+  TICK_LABEL_INSET: 8,
+  TICK_BASELINE_NUDGE: 4,
+  CATEGORY_DROP: 22,
+  REFERENCE_LABEL_GAP: 7,
+  COLUMN_WASH_AIR: 6,
+  RING_INSET: 2,
+  TOTAL_GAP: 7,
+  TOTAL_INK: 12,
+  TOTAL_GRID_CLEAR: 4,
+  DASH_REFERENCE: [4, 3],
+};
+
+/** Strokes scale but are NOT rounded: a hairline that rounds up stops being a hairline. */
+const BASE_STROKE = { grid: 0.6, reference: 0.8, ring: 1.2 };
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    CATEGORY: f(BASE.CATEGORY) as typeof BASE.CATEGORY,
+    LEGEND: f(BASE.LEGEND) as typeof BASE.LEGEND,
+    TOTAL: f(BASE.TOTAL) as typeof BASE.TOTAL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    CONCLUSION: f(BASE.CONCLUSION) as typeof BASE.CONCLUSION,
+    TITLE_TO_LEGEND: sp(BASE.TITLE_TO_LEGEND),
+    CONCLUSION_RESERVE: sp(BASE.CONCLUSION_RESERVE),
+    CONCLUSION_TO_PLOT: sp(BASE.CONCLUSION_TO_PLOT),
+    LEGEND_SWATCH: sp(BASE.LEGEND_SWATCH),
+    LEGEND_TEXT_GAP: sp(BASE.LEGEND_TEXT_GAP),
+    LEGEND_TEXT_LIFT: sp(BASE.LEGEND_TEXT_LIFT),
+    LEGEND_PITCH: sp(BASE.LEGEND_PITCH),
+    PLOT_RIGHT_AIR: sp(BASE.PLOT_RIGHT_AIR),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    Y_GUTTER_AIR: sp(BASE.Y_GUTTER_AIR),
+    TICK_LABEL_INSET: sp(BASE.TICK_LABEL_INSET),
+    TICK_BASELINE_NUDGE: sp(BASE.TICK_BASELINE_NUDGE),
+    CATEGORY_DROP: sp(BASE.CATEGORY_DROP),
+    REFERENCE_LABEL_GAP: sp(BASE.REFERENCE_LABEL_GAP),
+    COLUMN_WASH_AIR: sp(BASE.COLUMN_WASH_AIR),
+    RING_INSET: sp(BASE.RING_INSET),
+    TOTAL_GAP: sp(BASE.TOTAL_GAP),
+    TOTAL_INK: sp(BASE.TOTAL_INK),
+    TOTAL_GRID_CLEAR: sp(BASE.TOTAL_GRID_CLEAR),
+    DASH_REFERENCE: BASE.DASH_REFERENCE.map(sp).join(" "),
+    STROKE: {
+      grid: st(BASE_STROKE.grid),
+      reference: st(BASE_STROKE.reference),
+      ring: st(BASE_STROKE.ring),
+    },
+  };
+}
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark
+ * — which this beat had two of. The still path reads the rendered SVG's `font-size` attributes; a
+ * video composition's markup only exists inside the browser Remotion drives, so the equivalent
+ * reading is the element tree, walked rather than listed.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
 const UNIT = "TWh";
@@ -128,12 +245,6 @@ export function stackedBarGeometry(
   };
 }
 
-/** Air between a column's own top and the baseline of the total printed above it. */
-const TOTAL_GAP = 12;
-/** The total label's own ink height above its baseline, at `TOTAL.fontSize`. */
-const TOTAL_INK = 20;
-/** Air the label keeps between its baseline and a gridline it would otherwise rest on. */
-const TOTAL_GRID_CLEAR = 7;
 
 /**
  * Where a column's own total is printed, given the gridlines it has to live among.
@@ -153,11 +264,20 @@ const TOTAL_GRID_CLEAR = 7;
 export function totalLabelBaseline(
   barTop: number,
   gridlineYs: number[],
+  /** All three in drawn pixels at THIS size — the air above the column, the label's own ink height
+   *  above its baseline, and the air it keeps off a gridline. They were module constants measured
+   *  in pixels of a 1080-square frame; an ink height that does not follow the type is a band this
+   *  function looks in that has nothing to do with where the glyphs are. */
+  {
+    gap,
+    ink,
+    gridClear,
+  }: { gap: number; ink: number; gridClear: number },
 ): number {
-  let baseline = barTop - TOTAL_GAP;
+  let baseline = barTop - gap;
   for (const gy of gridlineYs) {
-    if (gy <= baseline + 2 && gy >= baseline - TOTAL_INK)
-      baseline = Math.min(baseline, gy - TOTAL_GRID_CLEAR);
+    if (gy <= baseline + 2 && gy >= baseline - ink)
+      baseline = Math.min(baseline, gy - gridClear);
   }
   return baseline;
 }
@@ -231,6 +351,8 @@ export type StackedBarVideoProps = {
   referenceLabel: string;
   legendLabels: [string, string, string]; // ["Solar & wind", "Hydropower", "Nuclear & other"]
   subjectYear: number;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -248,11 +370,36 @@ export function StackedBarVideo({
   referenceLabel,
   legendLabels,
   subjectYear,
+  size,
   timing = STACKED_BAR_TIMING,
 }: StackedBarVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const { TITLE, SOURCE, AXIS, CATEGORY, LEGEND, TOTAL } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE, AND IN WHAT FORM — before anything is measured.
+  //
+  // A stacked bar's category axis is NOMINAL, so `formForSize` answers `transpose` at a square or
+  // tall frame: four stacked ROWS running down the frame, each year's name horizontal on one line.
+  // That is a different drawing, not a rescaling of this one, and this beat does not carry it. So
+  // the composition exists at all three sizes and the two it cannot draw refuse here, loudly,
+  // naming the rung — rather than squeezing four columns into 1080px, which clips nothing and
+  // collides with nothing.
+  const form = formForSize(TYPE, size);
+  if (form.verdict === "refuse")
+    throw new Error(
+      `vidx-stacked-bar-swiss-electricity: ${TYPE} cannot be drawn at ${size}. ${form.reason}`,
+    );
+  if (form.verdict === "transpose")
+    throw new Error(
+      `vidx-stacked-bar-swiss-electricity draws the COLUMN form, and ${size} asks for its twin ` +
+        `form instead — ladder rung R0. ${form.reason}\nCost of taking it: ${form.cost}\n` +
+        `This beat ships at landscape; the row form is a redraw, not a flag.`,
+    );
 
   const titleLines = wrap(title, width - PAD * 2, TITLE);
   const titleBaseline = PAD + TITLE.fontSize;
@@ -265,23 +412,24 @@ export function StackedBarVideo({
   // The legend keeps the air it always had above it, measured from the LAST TITLE line rather
   // than from the source, which is no longer in the header.
   const legendBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 40;
+    titleBaseline + (titleLines.length - 1) * TITLE.lead + T.TITLE_TO_LEGEND;
 
   // CONCLUSION_RESERVE: the conclusion's own banner row, reserved from frame 0 — same fix the
   // grouped-bar beat needed, for the same reason: four narrow columns leave no clear width beside
   // the subject segment for the stated finding without overlapping a neighbour.
-  const CONCLUSION_RESERVE = 46;
-  const referenceLabelWidth = measureText(referenceLabel, {
-    fontSize: 22,
-    fontWeight: 400,
-  });
+  const CONCLUSION_RESERVE = T.CONCLUSION_RESERVE;
+  const referenceLabelWidth = measureText(referenceLabel, T.NOTE);
   const padding = {
-    top: legendBaseline + CONCLUSION_RESERVE + 44,
-    right: PAD + 20 + referenceLabelWidth,
+    top: legendBaseline + CONCLUSION_RESERVE + T.CONCLUSION_TO_PLOT,
+    right: PAD + T.PLOT_RIGHT_AIR + referenceLabelWidth,
     // Grown by the credit block's own height plus clear air.
     bottom:
-      PAD + 44 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
-    left: PAD + 20 + measureText(fmt(reference * 1.05, 0), AXIS),
+      PAD +
+      T.X_LABEL_BAND +
+      (sourceLines.length - 1) * SOURCE.lead +
+      SOURCE.fontSize +
+      T.SOURCE_AIR,
+    left: PAD + T.Y_GUTTER_AIR + measureText(fmt(reference * 1.05, 0), AXIS),
   };
 
   const g = stackedBarGeometry(data, { width, height, padding, reference });
@@ -340,7 +488,7 @@ export function StackedBarVideo({
   const conclusionLabel = `Solar & wind: ${fmt(subjectShare)}% of the mix in ${subjectYear} — ${fmt(baseShare, 2)}% in ${baseYear.year}`;
   const conclusionBaseline = legendBaseline + CONCLUSION_RESERVE;
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -386,19 +534,19 @@ export function StackedBarVideo({
           // The swatch is the band's own ink, at full opacity. Three distinct inks separate
           // themselves; the half-opacity third swatch this used to carry existed only because two
           // of the three fills were the same furniture grey.
-          const lx = PAD + i * 250;
+          const lx = PAD + i * T.LEGEND_PITCH;
           return (
             <g key={label}>
               <rect
                 x={lx}
-                y={legendBaseline - 16}
-                width={16}
-                height={16}
+                y={legendBaseline - T.LEGEND_SWATCH}
+                width={T.LEGEND_SWATCH}
+                height={T.LEGEND_SWATCH}
                 fill={bandInks[i]}
               />
               <text
-                x={lx + 24}
-                y={legendBaseline - 3}
+                x={lx + T.LEGEND_TEXT_GAP}
+                y={legendBaseline - T.LEGEND_TEXT_LIFT}
                 fill={ink}
                 fontSize={LEGEND.fontSize}
                 fontWeight={LEGEND.fontWeight}
@@ -417,11 +565,11 @@ export function StackedBarVideo({
               y1={g.yScale(tick)}
               y2={g.yScale(tick)}
               stroke={grid}
-              strokeWidth={1.5}
+              strokeWidth={T.STROKE.grid}
             />
             <text
-              x={g.plot.left - 14}
-              y={g.yScale(tick) + 7}
+              x={g.plot.left - T.TICK_LABEL_INSET}
+              y={g.yScale(tick) + T.TICK_BASELINE_NUDGE}
               fill={muted}
               fontSize={AXIS.fontSize}
               textAnchor="end"
@@ -434,7 +582,7 @@ export function StackedBarVideo({
           <text
             key={d.year}
             x={g.columns.find((c) => c.year === d.year)!.x + g.columnWidth / 2}
-            y={g.plot.bottom + 36}
+            y={g.plot.bottom + T.CATEGORY_DROP}
             fill={
               d.year === subjectYear && subjectProgress > 0.5 ? accent : ink
             }
@@ -460,14 +608,14 @@ export function StackedBarVideo({
             y1={g.referenceY}
             y2={g.referenceY}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={T.STROKE.reference}
+            strokeDasharray={T.DASH_REFERENCE}
           />
           <text
-            x={g.plot.right + 12}
-            y={g.referenceY + 7}
+            x={g.plot.right + T.REFERENCE_LABEL_GAP}
+            y={g.referenceY + T.TICK_BASELINE_NUDGE}
             fill={muted}
-            fontSize={22}
+            fontSize={T.NOTE.fontSize}
             textAnchor="start"
             opacity={referenceLabelOpacity}
           >
@@ -479,9 +627,9 @@ export function StackedBarVideo({
       {/* Subject's highlight wash — behind the whole 2024 column. */}
       {highlightOpacity > 0 ? (
         <rect
-          x={subjectColumn.x - 10}
+          x={subjectColumn.x - T.COLUMN_WASH_AIR}
           y={g.plot.top}
-          width={g.columnWidth + 20}
+          width={g.columnWidth + 2 * T.COLUMN_WASH_AIR}
           height={g.plot.bottom - g.plot.top}
           fill={accent}
           opacity={highlightOpacity}
@@ -542,19 +690,27 @@ export function StackedBarVideo({
             />
             {isSubject && subjectSpring > 0 ? (
               <rect
-                x={col.x - 3}
-                y={solarWindY - 3}
-                width={col.width + 6}
-                height={g.zeroY - solarWindY + 6}
+                x={col.x - T.RING_INSET}
+                y={solarWindY - T.RING_INSET}
+                width={col.width + 2 * T.RING_INSET}
+                height={g.zeroY - solarWindY + 2 * T.RING_INSET}
                 fill="none"
                 stroke={ink}
-                strokeWidth={interpolate(subjectSpring, [0, 1], [0, 3])}
+                strokeWidth={interpolate(
+                  subjectSpring,
+                  [0, 1],
+                  [0, T.STROKE.ring],
+                )}
                 opacity={subjectSpring}
               />
             ) : null}
             <text
               x={col.x + col.width / 2}
-              y={totalLabelBaseline(nuclearOtherY, gridlineYs)}
+              y={totalLabelBaseline(nuclearOtherY, gridlineYs, {
+                gap: T.TOTAL_GAP,
+                ink: T.TOTAL_INK,
+                gridClear: T.TOTAL_GRID_CLEAR,
+              })}
               fill={ink}
               fontSize={TOTAL.fontSize}
               fontWeight={TOTAL.fontWeight}
@@ -574,7 +730,7 @@ export function StackedBarVideo({
         x={PAD}
         y={conclusionBaseline}
         fill={ink}
-        fontSize={26}
+        fontSize={T.CONCLUSION.fontSize}
         fontWeight={700}
         textAnchor="start"
         opacity={conclusionOpacity}
@@ -583,4 +739,17 @@ export function StackedBarVideo({
       </text>
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — read off the element
+  // tree rather than a list of tokens, so a size written bare at a mark cannot escape it. This beat
+  // had two.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidx-stacked-bar-swiss-electricity at ${size}` },
+  );
+
+  return drawing;
 }

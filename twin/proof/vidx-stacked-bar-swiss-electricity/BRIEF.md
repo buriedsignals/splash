@@ -1,4 +1,20 @@
+---
+size: landscape
+type: stacked-bar
+---
+
 # Beat — solar and wind went from almost nothing to 7% of Switzerland's electricity
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and what the other two sizes would cost.** A stacked bar's category axis is
+nominal, so `formForSize` answers `transpose` at a square or tall frame — four stacked columns
+become four stacked rows, a redraw this beat does not carry. Both refuse loudly, naming ladder
+rung R0, rather than squeezing four columns into 1080 px and clipping nothing. The 1080 x 1080
+this beat used to draw at was not a decision, it was a default.
 
 **Proves:** solar and wind supplied barely a hundredth of a percent of Switzerland's electricity
 generation in 2000 (0.01 TWh of 66.1 TWh) — by 2024 they supplied 7.5% of a larger total (5.84 TWh
