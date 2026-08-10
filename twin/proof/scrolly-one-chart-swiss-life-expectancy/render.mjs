@@ -82,7 +82,14 @@ function buildStates(facts) {
     y0: facts.decadeLo - decadePad,
     y1: facts.decadeHi + decadePad,
   };
-  const off = { hiFrom: facts.worst.year - 1, hiTo: facts.worst.year, hiOpacity: 0 };
+  // Reading 1's accent is a run of ZERO LENGTH, collapsed onto the year reading 2 is about, and
+  // fully transparent. Two things follow, and the second is the point. It is invisible at reading 1,
+  // exactly as before. And on the way to reading 2 its start travels back a year while its opacity
+  // comes up, so the accent DRAWS ITSELF along the segment the sentence names instead of switching
+  // on where it already was. The first frame of that transition and the last differ in the
+  // polyline's own points, not only in an alpha — which is the difference between a picture that
+  // evolves as the reader scrolls and four stills cross-fading.
+  const off = { hiFrom: facts.worst.year, hiTo: facts.worst.year, hiOpacity: 0 };
   return assertNumericStates([
     // 1 — the shape. No accent anywhere: this is the picture before any reading is asked of it.
     { ...full, ...off, bandFrom: facts.worst.year - 1, bandTo: facts.worst.year, bandOpacity: 0, markA: 0, markB: 0 },

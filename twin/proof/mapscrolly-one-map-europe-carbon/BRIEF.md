@@ -90,10 +90,27 @@ opening camera; `render.mjs` inlines the same file into the page to drive the re
   both travel with it.
 - **Highlighting is four opacity writes, not 41 fill rewrites**: one veil rectangle of the ground
   over the whole plate, and three groups of re-drawn paths above it that come back to full strength.
-- **Progress is the SAME fact the scaffold uses** — lane occupancy, with `t = 2·next/(active+next)`
-  reaching 1 exactly when the argmax flips. The camera finishes arriving on the frame the sentence
-  changes.
-- **Nothing depends on the document scrolling.** The scrollport is found by measurement.
+- **Progress is READ, never re-derived.** `twin-scrolly` publishes `data-progress` on its own root on
+  every scroll — the fractional index of the panel on the lane's centre line, interpolated between the
+  two card centres that bracket it — and this driver reads it. It used to derive its own from panel
+  overlaps against a band at the bottom `data-prose-lane`% of the scrollport, which was right while a
+  panel PARKED there and became meaningless the moment the vehicle's eighth correction moved the
+  prose into its own travelling column. **Measured on the delivered file at 1600×900 before the
+  repair: the scaffold's `data-progress` ran a clean 0 → 3 while this beat's `data-position` read
+  0.000 at seven probes of eleven and a whole integer at the other four.** Four stills and a fade.
+  The repair is having one opinion instead of two; `data-prose-lane` is deliberately no longer read,
+  because bending that number to make a consumer's sums work would be corrupting a value to fit its
+  reader.
+- **The camera is therefore always in motion.** With a continuous 0 → 3 the centre travels, the span
+  changes geometrically, the fit interpolates and the veil and the three highlight groups cross-fade,
+  every animation frame. Driven at three widths in both directions, **every frame on which the signal
+  moved and the step did not moved the camera's own transform** — 92/92, 81/81, 27/27.
+- **Nothing depends on the document scrolling**, or on the layout at all: the one number this beat
+  needs is on an ancestor element, so the vehicle can rearrange its own boxes without this driver
+  noticing — which is exactly what it failed to survive last time.
+- **A resize invalidates the camera**, which reading rather than deriving made necessary: the derived
+  number always changed when the scrollport did, and a published progress can be bit-identical across
+  a resize while the frame it resolves against is a different shape.
 
 ## Reduced motion
 
@@ -123,12 +140,39 @@ that are all the same colour.
 ## What was driven, and what it found
 
 `drive.mjs` scrolls the real file in real Chrome at 1600×900, 1280×800 and 375×812, **down and back
-up**, in 30 px increments with **no settle wait**. At each increment it records the driven position,
-the camera read off the element (centre, span, scale, whether the clamp bit, raster px per delivered
-px), which panel is painted, and every label's box.
+up**, in 30 px increments with **no settle wait**. At each increment it records the scaffold's
+published progress, this beat's echo of it, the camera read off the element (centre, span, scale,
+whether the clamp bit, raster px per delivered px), which step is painted, **a fingerprint of
+everything the driver wrote into the DOM**, and every label's box.
 
-Final run: **clean at all three widths in both directions**, position spanning the full 0 → 3 and
-3 → 0, one panel at a time, no label under a panel or off the frame, the document never scrolling.
+**The fingerprint is the assertion whose absence let a slideshow ship.** Every guard here used to be
+about ARRIVAL — the right camera, the right panel, no collision — and a camera that jumps between
+four positions satisfies all of them, because they only look at a settled state. `scroll-report.mjs`'s
+`fluidity` asks the other question: on the frames where the ACTIVE STEP does not change and the
+signal does, does the picture? Two fingerprints are taken, one over everything positional (the
+camera transform, each label's offset, the leader path) and one over that plus every opacity, so a
+step that merely cross-fades shows up as a gap between them rather than passing as motion. Frames
+where the signal itself is CLAMPED — the head and tail of the piece — are counted and exempted, and
+a held signal anywhere else is its own problem.
+
+Final run, on the delivered file at three widths in both directions, **0 problems**:
+
+| | 1600×900 | 1280×800 | 375×812 |
+| --- | --- | --- | --- |
+| samples per sweep | 99 | 87 | 31 |
+| progress span | 0 → 3 / 3 → 0 | 0 → 3 / 3 → 0 | 0 → 3 / 3 → 0 |
+| intra-step frames where the CAMERA moved | 92 / 92 | 81 / 81 | 27 / 27 |
+| frames where only an opacity moved | 0 | 0 | 0 |
+| clamped frames, exempted | 3 | 2 | 0 |
+| beat's position vs scaffold's progress, worst | 0.0005 | 0.0005 | 0.0004 |
+| painted step vs progress, worst | 0.49 | 0.51 | 0.49 |
+| tallest panel, as a fraction of the scrollport | 0.192 | 0.254 | 0.622 |
+
+The plate's own budget, over all **434 driven frames** rather than over the four authored cameras —
+because between two readings the camera passes through scales no authored state has: **1.00 raster
+pixels per delivered pixel at the deepest**, with the `MAX_SCALE` clamp biting on 89 of them. That
+field used to read `Math.min(...[].concat(...[]))`, which is `Infinity` and serialises as `null` —
+a measurement that measured nothing.
 
 What it found, in order:
 
@@ -142,9 +186,37 @@ What it found, in order:
 4. **The credit moved into the prose lane twice, in opposite directions**, while the header was being
    shortened — because it was positioned by a `top` percentage of a frame whose height changes with
    the header's own wrap. Anchored from the BOTTOM now.
+5. **The camera froze, and every guard stayed green.** The vehicle's eighth correction moved the
+   prose out of the graphic's box; this beat kept measuring panel overlaps against a band inside it,
+   found nothing there for most of every step, and published position 0. Measured above. Closed by
+   reading `data-progress`, and by an assertion that the beat's own published position and the
+   scaffold's differ by no more than rounding.
+6. **The credit sat in the middle of the map** — anchored above a prose lane nothing goes into any
+   more. At 1600×900 the box floated 235 px above the frame's floor, over the Atlantic; at 375×812
+   it covered the "Belgium 7.2" label outright and clipped "Luxembourg 10.3", **17 label-under-credit
+   collisions per sweep**. It is at the floor now, and `scroll-report.mjs` asserts on every frame
+   that nothing the frame annotates sits under it.
 
 Screenshots in `drive/`: four settled cameras at each width, plus a **mid-flight** frame at position
 2.5, which is where the camera is actually in motion and where a sampled probe never looks.
+
+## Which vehicle these artifacts were built against — read this before re-rendering
+
+`render/one-map-four-readings.html` and every number above were produced against the **committed** `twin-scrolly`,
+the eighth correction, where the prose travels in its own cell of the track's grid beside the graphic.
+While this round was being written a **ninth** correction was uncommitted in the working tree, putting
+the prose card back OVER the graphic as a full-frame layer that crosses everything and rests nowhere.
+The other four scrollies on disk were re-rendered against it; these two were not, so that this beat's
+delivered file and its measurements are reproducible from a state that exists in git.
+
+**The signal survives the change** — the ninth still writes `data-progress` on the same root at the
+same four decimals — and so does everything this round is about: driven against the ninth's render,
+the fluidity was 113/113, 99/99 and 82/82 intra-step frames moving the camera and 7-9 clamped frames exempted, the position-vs-progress disagreement 0.0005, the span a full
+0 → 3, all unchanged. What does NOT survive is `scroll-report.mjs`'s **collision** assertion: the
+eighth guaranteed a card could never reach a label, and the ninth deliberately trades that guarantee
+away, so the check fires on every frame of a ninth-correction render. Whoever re-renders these beats
+against the landed ninth has to replace that assertion with whatever the ninth guarantees instead —
+not delete it, and not widen it until it passes.
 
 ## JavaScript disabled
 
@@ -162,9 +234,32 @@ a reading is about (geo-discipline rule 8). Water and no-data are basemap doctri
 
 ## Credits
 
-At the **bottom of the visual**, above the prose lane, anchored from the bottom, on an opaque chip.
-Full provenance — indicator, shapes, basemap, capture size, and that the file makes no request — is in
-the header, which under the fixed-page model never scrolls away.
+At the **bottom of the visual** — the frame's own floor, 8 px up, anchored from the bottom, on an
+opaque chip. Full provenance — indicator, shapes, basemap, capture size, and that the file makes no
+request — is in the header, which under the fixed-page model never scrolls away.
+
+## The dead lane — measured, and deliberately NOT reclaimed here
+
+This frame still keeps `PROSE_LANE` — 36% of its own height — free of anything it ANNOTATES, for a
+prose panel that, since the vehicle's eighth correction, does not go there. On a map that costs less
+than it does on the chart sibling, because the plate keeps painting into it and cropping sea is not a
+loss. It is not free: at 375×812 the graphic is 352 px tall, the band takes 127 of them, the three
+Low Countries labels are clamped into what is left, and **"Belgium 7.2" is squeezed out from under
+"Luxembourg 10.3" — visible in `drive/375x812-step-3.png`, and present in the delivered file since
+the eighth correction shortened the graphic.**
+
+It is not reclaimed here, for two reasons that both point the same way. **It is a constant every beat
+carries its own copy of** — six of them — and the twin's rule is that a change true for many beats is
+made identically in each with a walking parity test, never in two of six. And the vehicle's
+`proseLane` parameter, validated `0 < x < 0.6` and emitted as `--prose-lane`, **cannot express
+"none"** without editing the scaffold. As this was written a NINTH correction was in flight doing
+exactly that reclamation vehicle-wide — its own `renderScrolly` already accepts `proseLane: 0`.
+Doing it here, in two beats, against a validator that rejects 0, would collide with that head-on.
+
+Two further residues at 375×812, both older than this round and both surfaced by opening the file:
+the **legend covers the "Netherlands 6.5" label** (the legend is fixed at the top-left and label
+placement does not know it is there), and the three Low Countries labels **stack** in a 225 px content
+band. Both are label-placement work on a short frame, not scroll work.
 
 ## What the vehicle is missing — reported, not patched around
 
@@ -188,3 +283,6 @@ degrades correctly with no JavaScript, and it is a workaround for a missing mode
 - `PALETTE.md` — the recorded colour answer and the reasoning behind it.
 - `render/one-map-four-readings.html` — the delivered file, self-contained, no key, no request.
 - `drive.mjs`, `drive/` — the browser run and what it saw, including `drive-report.json`.
+- `scroll-report.mjs` — the pure half of the driving: what a swept sample sequence MEANS.
+- `scroll.test.ts` — the guards on that, and on `readProgress`, each with the mutation that reddens
+  it pasted into the file's own header.

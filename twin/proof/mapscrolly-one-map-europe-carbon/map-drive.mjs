@@ -33,9 +33,18 @@
 
 // ── Placement, shared with the scaffold ────────────────────────────────────────────────────────
 
-/** The band at the BOTTOM of the graphic reserved for the pinned prose panel. `render.mjs` hands
- *  this same number to `renderScrolly` as `proseLane`. 0.36 rather than the vehicle's 0.28: at
- *  375x812 the tallest panel measures 0.28 of the scrollport and parks 0.06 above its floor. */
+/** The band at the BOTTOM of the graphic this frame keeps clear. `render.mjs` hands the same number
+ *  to `renderScrolly` as `proseLane`. 0.36 rather than the vehicle's 0.28: at 375x812 the tallest
+ *  panel measured 0.28 of the scrollport and parked 0.06 above its floor.
+ *
+ *  AND SINCE THE VEHICLE'S EIGHTH CORRECTION NOTHING GOES THERE. The prose moved into its own cell
+ *  of the track's grid, so the panel is no longer inside the graphic's box at any offset. This band
+ *  is now the bottom third of the PLATE — sea and land the camera still paints, which is why it
+ *  reads as less wasteful here than on the chart — but `CONTENT_TOP` still refuses to centre a
+ *  subject or place a label in it. Kept, for now, because reclaiming it is a change every beat's own
+ *  copy of this constant carries and the vehicle's `proseLane` parameter — validated `0 < x < 0.6`
+ *  and emitted as `--prose-lane` — cannot express "none" without editing the settled scaffold. Named
+ *  as residue in `BRIEF.md`, "The dead lane". */
 export const PROSE_LANE = 0.36;
 
 /** How much of the frame's own height the map's SUBJECT is centred in. The plate keeps painting
@@ -54,10 +63,6 @@ export const CONTENT_TOP = 1 - PROSE_LANE;
 export const MAX_SCALE = 2;
 
 // ── Interpolation ──────────────────────────────────────────────────────────────────────────────
-
-export function clamp01(t) {
-  return t < 0 ? 0 : t > 1 ? 1 : t;
-}
 
 export function lerp(a, b, t) {
   return a + (b - a) * t;
@@ -103,67 +108,57 @@ export function stateAt(states, position, reduced) {
   return lerpState(states[i], states[i + 1], ease(p - i));
 }
 
-// ── Where the reader is: the SAME fact the scaffold uses to decide which words are on screen ────
+// ── Where the reader is: READ off the scaffold, never re-derived ───────────────────────────────
 
 /**
- * The scaffold (`twin-scrolly/assets/interaction.mjs`) gives the step to whichever panel occupies
- * the most of the prose lane, measured over every panel on every scroll. This driver takes the
- * identical measurement and adds the continuous part:
+ * WHERE THE READER IS — the scaffold's own published number, taken as given.
  *
- *   index = argmax overlap                (identical, ties to the earlier panel)
- *   t     = 2 * next / (active + next)    (clamped to 0..1)
+ * THIS DRIVER USED TO DERIVE IT ITSELF, and the derivation is what froze the camera. It measured
+ * each panel's overlap with a band at the bottom `data-prose-lane`% of the scrollport and took the
+ * argmax plus `2·next/(active+next)`. Correct arithmetic for a vehicle where the panel PARKED in
+ * that band for the whole of its step. The vehicle's eighth correction moved the prose into its own
+ * cell of the track's grid, travelling the full height of it, so for most of every step NO panel is
+ * in that band, every overlap is 0, the argmax falls to index 0 and the expression returns 0.
  *
- * `t` reaches exactly 1 when the two overlaps are equal, which is exactly when the argmax flips and
- * the scaffold swaps the words — so the camera finishes arriving on the same frame the sentence
- * changes, by construction rather than by tuning, and the expression runs backwards unchanged when
- * the reader scrolls up.
+ * Measured on the delivered file at 1600x900 in Chrome before this change: the scaffold's own
+ * `data-progress` ran a clean 0 → 3 across the piece while this beat's `data-position` read 0.000
+ * at most probes and jumped to a whole integer at the rest. Four stills and a fade, which is what
+ * the owner reported: *"faut que ce soit fluide et que l'élément évolue au fur et à mesure du
+ * temps."*
+ *
+ * The repair is to stop having a second opinion. The vehicle publishes `data-progress` on the
+ * `.scrolly` root on every scroll — the fractional index of the panel on the lane's own centre
+ * line, interpolated between the two card centres that bracket it — and it is in lock-step with the
+ * scaffold's own `pickActiveStep` by construction. Consuming it makes the camera reaching a place
+ * and the sentence naming it one event without this file restating a measurement the vehicle owns.
+ *
+ * `data-prose-lane` is deliberately NOT read any more. It means what it means; bending it to make a
+ * consumer's arithmetic work would be corrupting a number to fit its reader.
  */
-export function measureProgress(overlaps) {
-  let index = 0;
-  for (let k = 1; k < overlaps.length; k++) if (overlaps[k] > overlaps[index]) index = k;
-  const active = overlaps[index];
-  const next = index + 1 < overlaps.length ? overlaps[index + 1] : 0;
-  const sum = active + next;
-  const t = sum > 0 ? clamp01((2 * next) / sum) : 0;
-  return index + t;
-}
-
-export function scrollportOf(el, view) {
-  let node = el.parentElement;
+export function progressSourceOf(el) {
+  let node = el;
   while (node) {
-    const overflow = view.getComputedStyle(node).overflowY;
-    if ((overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight + 1)
-      return node;
+    if (node.getAttribute && node.getAttribute("data-progress") !== null) return node;
     node = node.parentElement;
   }
   return null;
 }
 
-export function laneBandOf(port, panels, view, fallbackPercent) {
-  let node = panels[0];
-  let percent = null;
-  while (node && percent === null) {
-    const value = node.getAttribute && node.getAttribute("data-prose-lane");
-    if (value) percent = Number(value);
-    node = node.parentElement;
-  }
-  if (!percent) percent = fallbackPercent;
-  const box = port.getBoundingClientRect();
-  const offset = Number.parseFloat(view.getComputedStyle(panels[0]).bottom) || 0;
-  return {
-    top: box.bottom - (percent / 100) * box.height,
-    bottom: box.bottom - offset,
-  };
-}
-
-export function laneOverlap(panelBox, lane) {
-  return Math.max(0, Math.min(panelBox.bottom, lane.bottom) - Math.max(panelBox.top, lane.top));
-}
-
-export function findPanels(doc, root) {
-  return Array.from(doc.querySelectorAll("[data-step]")).filter(
-    (el) => !root.contains(el) && el.querySelector("p") && !el.querySelector("[data-step]"),
-  );
+/**
+ * The published position, or a throw naming what it looked for. A default here would be the defect
+ * back in a quieter costume: a camera that silently sits on state 0 forever looks exactly like a
+ * camera whose script never ran, which is how this beat shipped frozen with every guard green.
+ */
+export function readProgress(source) {
+  const raw = source == null ? null : source.getAttribute("data-progress");
+  const value = Number(raw);
+  if (raw === null || raw === "" || !Number.isFinite(value))
+    throw new Error(
+      `this beat is driven by the scrolly scaffold's continuous signal and read ${JSON.stringify(raw)} ` +
+        `for data-progress on the nearest ancestor carrying it (twin-scrolly/assets/interaction.mjs ` +
+        `writes it on the .scrolly root on every scroll)`,
+    );
+  return value;
 }
 
 // ── The camera ─────────────────────────────────────────────────────────────────────────────────
@@ -267,8 +262,15 @@ export function initMapScrolly(root, states, labels, config) {
   const view = doc.defaultView;
   detachVisual(root);
 
-  const panels = findPanels(doc, root);
-  if (panels.length < 2) return;
+  // Resolved once, AFTER the re-parent, and loudly: the whole of this camera's motion is one number
+  // the vehicle publishes, so an ancestor that does not carry it is not a degraded mode to paper
+  // over — it is this beat having no way to know where the reader is.
+  const progressSource = progressSourceOf(root);
+  if (!progressSource)
+    throw new Error(
+      "no ancestor of this beat's visual carries data-progress — twin-scrolly's scaffold publishes it " +
+        "on the .scrolly root, and this beat is driven by nothing else",
+    );
 
   const reduced = view.matchMedia("(prefers-reduced-motion: reduce)");
   const camera = root.querySelector("[data-part=camera]");
@@ -282,11 +284,7 @@ export function initMapScrolly(root, states, labels, config) {
 
   function paint() {
     queued = false;
-    const port = scrollportOf(panels[0], view);
-    if (!port) return;
-    const lane = laneBandOf(port, panels, view, PROSE_LANE * 100);
-    const overlaps = panels.map((p) => laneOverlap(p.getBoundingClientRect(), lane));
-    const position = measureProgress(overlaps);
+    const position = readProgress(progressSource);
     if (Math.abs(position - last) < 0.0005) return;
     last = position;
 
@@ -352,11 +350,22 @@ export function initMapScrolly(root, states, labels, config) {
     view.requestAnimationFrame(paint);
   }
 
+  // `capture: true` on the window catches a scroll from ANY scroller, including the inner column
+  // the fixed-page model actually scrolls. The scaffold listens on that column in the TARGET phase,
+  // so `data-progress` is already written for this frame by the time the rAF below runs.
   view.addEventListener("scroll", schedule, { capture: true, passive: true });
-  view.addEventListener("resize", schedule, { passive: true });
-  view.addEventListener("orientationchange", schedule, { passive: true });
-  if (reduced.addEventListener) reduced.addEventListener("change", () => { last = -1; schedule(); });
+  // `last` is INVALIDATED rather than merely re-scheduled on a size change, and for this beat it is
+  // load-bearing rather than tidy: `resolveCamera` resolves against the frame's own width and
+  // height, and a published progress can be bit-identical across a resize while the box it is drawn
+  // in is a different shape. Without this the camera would keep a scale computed for the old frame.
+  const invalidate = () => {
+    last = -1;
+    schedule();
+  };
+  view.addEventListener("resize", invalidate, { passive: true });
+  view.addEventListener("orientationchange", invalidate, { passive: true });
+  if (reduced.addEventListener) reduced.addEventListener("change", invalidate);
   doc.addEventListener("visibilitychange", schedule);
   schedule();
-  return { paint, panels };
+  return { paint };
 }

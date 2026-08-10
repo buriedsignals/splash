@@ -263,7 +263,9 @@ export function MapFrame({
         {/* No-data is its own colour and outside the ramp (geo-discipline rule 7). Nothing on
             this map is unmatched today — the join throws if anything is — so this key reads the
             ramp's own limits rather than standing for an absent country. */}
-        <div style={{ ...text(muted, 12), position: "static", marginTop: "7px" }}>
+        <div
+          style={{ ...text(muted, 12), position: "static", marginTop: "7px" }}
+        >
           <span
             style={{
               display: "inline-block",
@@ -288,10 +290,16 @@ export function MapFrame({
           // Anchored from the BOTTOM, not the top. A `top` percentage is a fraction of a frame whose
           // height changes with the header's own wrap at every width, so a credit that cleared the
           // lane at one width sat inside it at another — measured twice, in opposite directions,
-          // while the header was being shortened. From the bottom it clears the lane by a fixed
-          // margin at every width, and a credit that wraps to a second line grows UPWARD, away from
-          // the panel, instead of down into it.
-          bottom: `calc(${(1 - CONTENT_TOP) * 100}% + 8px)`,
+          // while the header was being shortened. From the bottom it grows UPWARD when it wraps.
+          //
+          // FROM THE FRAME'S OWN BOTTOM, not from the top of the prose lane — and that changed when
+          // the vehicle's eighth correction gave the prose its own cell of the track. Nothing goes
+          // in the lane any more, so a credit hovering above it is a credit floating in the MIDDLE
+          // of the map: measured on the delivered file at 1600x900, the box sat 235px above the
+          // frame's floor, over the Atlantic; at 375x812 it covered the "Belgium 7.2" label
+          // outright and clipped "Luxembourg 10.3". At the floor it is where this beat's own
+          // doc-comment always said it belonged — the bottom of the visual — at every width.
+          bottom: "8px",
           whiteSpace: "normal",
           background: ground,
           padding: "3px 6px",

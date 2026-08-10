@@ -14,24 +14,31 @@
 // or the rescale reads as a different chart rather than the same one seen closer. So the visual is
 // a single persistent element and the scroll drives its state continuously.
 //
-// NOTHING HERE DEPENDS ON THE DOCUMENT SCROLLING. Progress is read from where the PROSE PANELS
-// actually are in viewport coordinates (`measureProgress` below), which is true whether the page
-// scrolls, an inner container scrolls, or the panels are moved by something else entirely. The
-// scaffold is being rewritten to a fixed-page model while this beat is being built; a driver that
-// read `window.scrollY` would have been written against the model that is going away.
+// NOTHING HERE MEASURES THE PAGE, OR THE PROSE, OR ANYTHING ELSE. Since the vehicle's eighth
+// correction the scaffold PUBLISHES a continuous `data-progress` on its own root and this driver
+// reads it (`readProgress` below). It is true whether the document scrolls, an inner container
+// scrolls, or the panels are moved by something else entirely, and — the part that matters — the
+// beat can no longer hold a second, stale opinion about where the reader is. It held one; it froze
+// the picture; the measurement is in `readProgress`'s own comment.
 
 // ── Placement, shared with the scaffold ────────────────────────────────────────────────────────
 
-/** The band at the BOTTOM of the graphic reserved for the pinned prose panel. `render.mjs` hands
- *  this same number to `renderScrolly` as `proseLane`, so the lane the CSS reserves and the lane
- *  the frame keeps clear are one value, never two that can disagree.
+/** The band at the BOTTOM of the graphic this frame keeps clear. `render.mjs` hands the same number
+ *  to `renderScrolly` as `proseLane`, so the lane the vehicle declares and the lane the frame keeps
+ *  clear are one value, never two that can disagree.
  *
- *  0.36, not the vehicle's own 0.28 default: the lane has to be at least as tall as the TALLEST
+ *  0.36, not the vehicle's own 0.28 default: the lane had to be at least as tall as the TALLEST
  *  panel, and a panel's height is set by its words at the NARROWEST width. Measured at 375x812 with
  *  the 0.28 lane, the panel overhung it and sat on the x-axis labels and the credit at 47 scroll
- *  positions. Two things were changed together — this number, and the prose, which was cut to at
- *  most two sentences a step. `drive.mjs` reports the tallest measured panel as a fraction of the
- *  scrollport at every width, so the budget is a measurement rather than a hope. */
+ *  positions.
+ *
+ *  AND SINCE THE VEHICLE'S EIGHTH CORRECTION NOTHING GOES THERE. The prose moved into its own cell
+ *  of the track's grid, so the panel is no longer inside the graphic's box at any offset and this
+ *  band is empty ground — measured on the delivered file at 1600x900, 295px of an 820px graphic
+ *  under the credit. It is kept, for now, because reclaiming it is a change every beat's own copy of
+ *  this constant carries and the vehicle's `proseLane` parameter — validated `0 < x < 0.6` and
+ *  emitted as `--prose-lane` — cannot express "none" without editing the settled scaffold. Named as
+ *  residue in `BRIEF.md`, "The dead lane". */
 export const PROSE_LANE = 0.36;
 
 /** How much of the frame's own height the drawing may use, measured from the top. */
@@ -101,70 +108,61 @@ export function stateAt(states, position, reduced) {
   return lerpState(states[i], states[i + 1], ease(p - i));
 }
 
-// ── Where the reader is, read off the prose rather than off the page ───────────────────────────
+// ── Where the reader is: READ off the scaffold, never re-derived ───────────────────────────────
 
 /**
- * WHERE THE READER IS — measured with the SAME fact the scaffold uses to decide which words are on
- * screen, so the picture and the prose cannot disagree.
+ * WHERE THE READER IS — the scaffold's own published number, taken as given.
  *
- * The first build of this driver invented its own criterion: a step had "arrived" when its panel
- * reached its own parked position. Driven at 1600x900 that was wrong by a whole step for 27 of 99
- * scroll positions — the axis had finished flying to the last decade while the previous step's
- * sentence was still the one on screen. The cause was not the arithmetic: a `bottom`-sticky panel
- * parks as soon as its own step's box reaches the parking line, which happens long before that step
- * is the step being read, so "parked" is true of two panels at once for most of a step.
+ * THIS DRIVER USED TO DERIVE IT ITSELF, and the derivation is what froze the picture. It measured
+ * each panel's overlap with a band at the bottom `data-prose-lane`% of the scrollport, and took the
+ * argmax plus `2·next/(active+next)`. That was correct arithmetic for a vehicle where the panel
+ * PARKED in that band for the whole of its step. The vehicle's eighth correction moved the prose
+ * into its own cell of the track's grid, travelling the full height of it, so the band at the bottom
+ * of the scrollport stopped being where the words are: for most of every step NO panel is inside it,
+ * every overlap is 0, the argmax falls to index 0 and the expression returns 0.
  *
- * The scaffold's own rule (`twin-scrolly/assets/interaction.mjs`) is LANE OCCUPANCY: the step whose
- * panel covers the most of the prose lane is the active one, decided over every panel on every
- * scroll. It cannot oscillate, because occupancy changes monotonically as a panel enters and
- * leaves. This driver takes the identical measurement and adds only the continuous part:
+ * Measured on the delivered file at 1600x900, scrolling the real column in Chrome, before this
+ * change: the scaffold's own `data-progress` ran 0.0000 → 0.2527 → 0.5707 → 0.8886 → 1.2066 → …
+ * → 3.0000 while this beat's `data-position` read 0.000 at seven of eleven probes and 1.000, 2.000
+ * or 3.000 at the other four. A slideshow with a fade, which is exactly what the owner reported:
+ * *"faut que ce soit fluide et que l'élément évolue au fur et à mesure du temps."*
  *
- *   index = argmax overlap                       (identical to the scaffold, ties to the earlier)
- *   t     = 2 * next / (active + next)           (clamped to 0..1)
+ * The repair is not better arithmetic — it is to stop having a second opinion. Since the eighth
+ * correction the vehicle publishes the continuous signal itself, on the `.scrolly` root, every
+ * scroll: `data-progress`, the fractional index of the panel on the lane's own centre line,
+ * interpolated between the two card centres that bracket it. The scaffold's own `pickActiveStep`
+ * and that number are in lock-step by construction, so consuming it makes "the picture reaches the
+ * moment this sentence names" and "this sentence reaches the middle of its column" one event
+ * WITHOUT this file restating a measurement the vehicle already owns.
  *
- * `t` reaches exactly 1 at the moment the two overlaps are equal — which is exactly the moment the
- * argmax flips and the scaffold swaps the words. So the visual finishes arriving on the same frame
- * the sentence changes, by construction rather than by tuning, and the same expression runs
- * backwards without a special case when the reader scrolls back up.
+ * `data-prose-lane` is deliberately NOT read any more. It still says what it always said — the band
+ * a beat's own FRAME keeps clear — and bending it to make a consumer's arithmetic work would be
+ * corrupting a number to fit its reader.
  */
-export function measureProgress(overlaps) {
-  let index = 0;
-  for (let k = 1; k < overlaps.length; k++) if (overlaps[k] > overlaps[index]) index = k;
-  const active = overlaps[index];
-  const next = index + 1 < overlaps.length ? overlaps[index + 1] : 0;
-  const sum = active + next;
-  const t = sum > 0 ? clamp01((2 * next) / sum) : 0;
-  return index + t;
-}
-
-/**
- * The prose lane, in viewport coordinates, computed the way the scaffold computes it: a fraction of
- * the scrollport's height measured up from its bottom edge, with the bottom edge of the band at the
- * panels' own PARKING LINE rather than at the scrollport's floor. The fraction is read off
- * `data-prose-lane`, which the scaffold writes onto the root, so this beat never restates a number
- * the CSS already owns; the parking offset is read off the panel's computed `bottom`, which is a
- * `clamp()` and therefore different at every viewport.
- */
-export function laneBandOf(port, panels, view, fallbackPercent) {
-  let node = panels[0];
-  let percent = null;
-  while (node && percent === null) {
-    const value = node.getAttribute && node.getAttribute("data-prose-lane");
-    if (value) percent = Number(value);
+export function progressSourceOf(el) {
+  let node = el;
+  while (node) {
+    if (node.getAttribute && node.getAttribute("data-progress") !== null) return node;
     node = node.parentElement;
   }
-  if (!percent) percent = fallbackPercent;
-  const box = port.getBoundingClientRect();
-  const offset = Number.parseFloat(view.getComputedStyle(panels[0]).bottom) || 0;
-  return {
-    top: box.bottom - (percent / 100) * box.height,
-    bottom: box.bottom - offset,
-    height: box.height,
-  };
+  return null;
 }
 
-export function laneOverlap(panelBox, lane) {
-  return Math.max(0, Math.min(panelBox.bottom, lane.bottom) - Math.max(panelBox.top, lane.top));
+/**
+ * The published position, or a throw naming what it looked for. A default here would be the whole
+ * defect back again in a quieter form: a beat that silently renders state 0 forever looks exactly
+ * like a beat whose script never ran, which is how this one shipped frozen with every guard green.
+ */
+export function readProgress(source) {
+  const raw = source == null ? null : source.getAttribute("data-progress");
+  const value = Number(raw);
+  if (raw === null || raw === "" || !Number.isFinite(value))
+    throw new Error(
+      `this beat is driven by the scrolly scaffold's continuous signal and read ${JSON.stringify(raw)} ` +
+        `for data-progress on the nearest ancestor carrying it (twin-scrolly/assets/interaction.mjs ` +
+        `writes it on the .scrolly root on every scroll)`,
+    );
+  return value;
 }
 
 // ── Ticks ──────────────────────────────────────────────────────────────────────────────────────
@@ -273,17 +271,42 @@ export function chartGeometry(readings, state, marks) {
   const point = (year) => {
     const value = valueAt(readings, year);
     const x = sx(year);
-    // A mark whose year is outside the CURRENT domain is off the plot, and its annotation is off
-    // the screen with it. Measured on the first build: while the last step's axes fly in to the
-    // last twelve years, 1918 leaves the frame long before its own opacity has finished fading, and
-    // its label was found outside the viewport at 27 consecutive scroll positions. Faded out over
-    // the last `EDGE` viewBox units at either end, so it leaves with the plot rather than after it.
-    const EDGE = 70;
+    const y = sy(value);
+    // A mark whose year OR VALUE is outside the CURRENT domain is off the plot, and its annotation
+    // is off the plot with it. Measured on the first build: while the last step's axes fly in to
+    // the last twelve years, 1918 leaves the frame long before its own opacity has finished fading,
+    // and its label was found outside the viewport at 27 consecutive scroll positions. Faded out
+    // over the last `EDGE` of each axis, so it leaves with the plot rather than after it.
+    //
+    // THE VERTICAL HALF IS THE ONE THIS ROUND ADDS, and it took making the scrub continuous to see
+    // it: the fade was written against the X domain alone, and the last flight narrows BOTH. The
+    // y domain closes from 36.5–87.5 onto 82.4–84.2 several tenths of a step before x0 passes 1918,
+    // so the 1918 mark sinks straight out of the bottom of the plot while its own x is still
+    // comfortably inside and its opacity still above a half. Measured on this beat's own geometry:
+    // at position 2.40 the mark sits at y=568.6 in a 0..500 plot — 69 viewBox units below the floor,
+    // on the x-tick strip and level with the credit — at opacity 0.537. Frozen at state 0, as this
+    // beat shipped, nobody could see it; scrubbed, it is a dot and a label loose under the chart.
+    //
+    // `EDGE` is the same 7% of each axis rather than the same number on both, because the viewBox
+    // is 1000x500 and one constant would fade twice as fast vertically as horizontally.
+    //
+    // AND THE TWO AXES FADE ON DIFFERENT SIDES OF THEIR OWN EDGE, which is not an inconsistency but
+    // the difference between the two domains. The X domain ENDS ON A DATA YEAR — `x1` is
+    // `lastYear` — so a mark on the last reading sits exactly at `VIEWBOX.width` and has to be at
+    // full strength there; its fade therefore runs OUTSIDE the edge. Every Y domain this beat
+    // builds is PADDED away from its own extremes (8% on the full range, 22% on the decade), so no
+    // mark can legitimately sit on the floor or the ceiling, and the vertical fade runs INSIDE,
+    // reaching zero exactly at the edge. Below that floor is the x-tick strip and the credit, and a
+    // dot fading out over them is the defect this whole comment is about.
+    const EDGE_X = VIEWBOX.width * 0.07;
+    const EDGE_Y = VIEWBOX.height * 0.07;
     const inside = Math.min(
-      clamp01((x + EDGE) / EDGE),
-      clamp01((VIEWBOX.width + EDGE - x) / EDGE),
+      clamp01((x + EDGE_X) / EDGE_X),
+      clamp01((VIEWBOX.width + EDGE_X - x) / EDGE_X),
+      clamp01(y / EDGE_Y),
+      clamp01((VIEWBOX.height - y) / EDGE_Y),
     );
-    return { x: round(x), y: round(sy(value)), value, inside };
+    return { x: round(x), y: round(y), value, inside };
   };
 
   return {
@@ -368,47 +391,20 @@ export function detachVisual(root) {
     if (sibling !== root) sibling.style.pointerEvents = "none";
 }
 
-/**
- * The prose panels, found WITHOUT depending on a class name: every element carrying `data-step`
- * that holds a paragraph and does not itself contain another `data-step` element. The scaffold puts
- * `data-step` on the section, the panel and the frame wrapper; only the panel holds prose and is
- * innermost.
- */
-/**
- * The box the prose actually scrolls INSIDE — the nearest ancestor of a panel that has scroll
- * distance and is allowed to use it. Under the scaffold's fixed-page model that is the prose
- * column, not the window: the document has no scroll distance at all, and the reference height for
- * "how far has the next step come" is the column's height, which is the viewport MINUS the fixed
- * header. Measured rather than assumed, so this beat keeps working if the header's height changes
- * or if the model changes back.
- */
-export function scrollportOf(el, view) {
-  let node = el.parentElement;
-  while (node) {
-    const overflow = view.getComputedStyle(node).overflowY;
-    if ((overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight + 1)
-      return node;
-    node = node.parentElement;
-  }
-  return null;
-}
-
-export function findPanels(doc, root) {
-  return Array.from(doc.querySelectorAll("[data-step]")).filter(
-    (el) =>
-      !root.contains(el) &&
-      el.querySelector("p") &&
-      !el.querySelector("[data-step]"),
-  );
-}
-
 export function initChartScrolly(root, readings, states, marks) {
   const doc = root.ownerDocument;
   const view = doc.defaultView;
   detachVisual(root);
 
-  const panels = findPanels(doc, root);
-  if (panels.length < 2) return;
+  // Resolved once, AFTER the re-parent, and loudly: the whole of this beat's motion is one number
+  // the vehicle publishes, so an ancestor that does not carry it is not a degraded mode to paper
+  // over — it is this beat having no way to know where the reader is.
+  const progressSource = progressSourceOf(root);
+  if (!progressSource)
+    throw new Error(
+      "no ancestor of this beat's visual carries data-progress — twin-scrolly's scaffold publishes it " +
+        "on the .scrolly root, and this beat is driven by nothing else",
+    );
 
   const reduced = view.matchMedia("(prefers-reduced-motion: reduce)");
   const nodes = {
@@ -428,11 +424,7 @@ export function initChartScrolly(root, readings, states, marks) {
 
   function paint() {
     queued = false;
-    const port = scrollportOf(panels[0], view);
-    if (!port) return;
-    const lane = laneBandOf(port, panels, view, PROSE_LANE * 100);
-    const overlaps = panels.map((p) => laneOverlap(p.getBoundingClientRect(), lane));
-    const position = measureProgress(overlaps);
+    const position = readProgress(progressSource);
     if (Math.abs(position - lastPosition) < 0.0005) return;
     lastPosition = position;
     root.dataset.position = position.toFixed(3);
@@ -508,12 +500,23 @@ export function initChartScrolly(root, readings, states, marks) {
   }
 
   // `capture: true` on the window catches a scroll from ANY scroller, including an inner container
-  // — which is what the fixed-page model this scaffold is moving to actually scrolls.
+  // — which is what the fixed-page model this scaffold actually scrolls. The scaffold listens on
+  // that container in the TARGET phase, so it has already written the frame's `data-progress` by
+  // the time the `requestAnimationFrame` this schedules runs.
   view.addEventListener("scroll", schedule, { capture: true, passive: true });
-  view.addEventListener("resize", schedule, { passive: true });
-  view.addEventListener("orientationchange", schedule, { passive: true });
-  if (reduced.addEventListener) reduced.addEventListener("change", () => { lastPosition = -1; schedule(); });
+  // `lastPosition` is INVALIDATED rather than merely re-scheduled on a size change, and that is a
+  // consequence of reading progress instead of deriving it. The old measurement moved whenever the
+  // scrollport did, so a resize always produced a different number and always repainted. A
+  // published progress can be bit-identical across a resize while the frame it is drawn in is a
+  // different shape, and `paint`'s own no-op guard would skip the repaint.
+  const invalidate = () => {
+    lastPosition = -1;
+    schedule();
+  };
+  view.addEventListener("resize", invalidate, { passive: true });
+  view.addEventListener("orientationchange", invalidate, { passive: true });
+  if (reduced.addEventListener) reduced.addEventListener("change", invalidate);
   doc.addEventListener("visibilitychange", schedule);
   schedule();
-  return { paint, panels };
+  return { paint };
 }

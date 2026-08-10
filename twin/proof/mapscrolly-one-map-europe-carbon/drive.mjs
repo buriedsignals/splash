@@ -16,10 +16,19 @@
 // out of enter/exit events usually breaks, because "entered from below" and "entered from above"
 // are different events and only one of them is normally wired.
 //
-// What it records at every increment: the driven position, the driven state (published by the
-// driver onto the element, because a screenshot proves a frame exists and never proves which state
-// its geometry is in), which prose panel is actually painted, and the bounding boxes of everything
-// the frame annotates against the bounding box of the visible panel.
+// What it records at every increment: the scaffold's own published progress, the driven position,
+// the driven state (published by the driver onto the element, because a screenshot proves a frame
+// exists and never proves where the camera was pointing), WHICH STEP IS PAINTED, a fingerprint of
+// everything the driver actually wrote into the DOM, and the bounding boxes of everything the frame
+// annotates against the VISIBLE part of every prose panel.
+//
+// THE FINGERPRINT IS THIS ROUND'S ADDITION, and it is the assertion whose absence let a slideshow
+// ship. Every guard here used to be about ARRIVAL — the right camera, the right panel, no collision
+// — and every one of them is satisfied by a camera that jumps between four positions, because they
+// only ever look at a settled state. Two fingerprints are taken: `paintMoving` over everything
+// positional the driver writes (the camera's transform, each label's offset, the leader path) and
+// `paintAll` over that plus every opacity. `scroll-report.mjs`'s `fluidity` then asks the question
+// nothing here used to ask: on the frames where the ACTIVE STEP does not change, does the picture?
 //
 // Usage:  bun proof/mapscrolly-one-map-europe-carbon/drive.mjs
 
@@ -30,9 +39,11 @@ import { homedir } from "node:os";
 import { dirname, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
+import { report } from "./scroll-report.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FILE = "one-map-four-readings.html";
+const STEP_COUNT = 4;
 const RENDER_DIR = join(HERE, "render");
 const SHOT_DIR = join(HERE, "drive");
 
@@ -95,13 +106,40 @@ const PORT = () => {
 
 /** Everything the page can tell us about this instant, read in one round trip. */
 const SNAPSHOT = () => {
+  // djb2. A fingerprint has to be one number per frame or the report is bigger than the artifact.
+  const digest = (text) => {
+    let h = 5381;
+    for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
+    return h;
+  };
   const root = document.querySelector('[data-visual="one-map"]');
+  const scrolly = document.querySelector(".scrolly");
+  const column = document.querySelector(".scrolly-steps");
   const panels = Array.from(document.querySelectorAll("[data-step]")).filter(
     (el) => el.querySelector("p") && !el.querySelector("[data-step]"),
   );
-  const painted = panels
-    .map((p, i) => ({ i, opacity: Number(getComputedStyle(p).opacity), box: p.getBoundingClientRect() }))
-    .filter((p) => p.opacity > 0.5);
+  const activeFrame = document.querySelector(".step-frame.active");
+  const stepIds = Array.from(document.querySelectorAll(".step")).map((el) => el.getAttribute("data-step"));
+
+  // THE TWO FINGERPRINTS. `moving` is everything the driver writes that has a POSITION: the
+  // camera's own transform (the whole flight, in one string), every label's offset, and the leader
+  // path. `alpha` is every opacity it writes — the veil and the three highlight groups. A step that
+  // only cross-faded would move the second and not the first, and `scroll-report.mjs` reports that
+  // gap rather than counting it as motion.
+  const moving = [];
+  const alpha = [];
+  const put = (el, keys) => {
+    if (!el) return;
+    const style = getComputedStyle(el);
+    alpha.push(style.opacity);
+    for (const key of keys) moving.push(el.getAttribute(key) ?? style[key] ?? "");
+  };
+  put(root.querySelector("[data-part=camera]"), ["transform"]);
+  put(root.querySelector("[data-part=veil]"), []);
+  for (const key of ["A", "B", "C"]) put(root.querySelector(`[data-hi=${key}]`), []);
+  for (const el of root.querySelectorAll("[data-label]")) put(el, ["left", "top"]);
+  put(root.querySelector("[data-part=leaders]"), ["d"]);
+
   const marked = Array.from(root.querySelectorAll("[data-label],[data-part=credit]"))
     .map((el) => ({
       what: el.dataset.label !== undefined ? `label ${el.dataset.label}` : el.dataset.part,
@@ -114,6 +152,21 @@ const SNAPSHOT = () => {
   const port = window.__port ?? document.scrollingElement;
   const portBox = port.getBoundingClientRect ? port.getBoundingClientRect() : { height: window.innerHeight };
   const panelFraction = Math.max(...panels.map((p) => p.getBoundingClientRect().height)) / portBox.height;
+  // The VISIBLE part of each panel — its own rect clipped by the column that clips it on screen.
+  // A panel scrolled out of the top of that column keeps reporting a rect over the graphic; testing
+  // THAT against the map's labels invents a collision the box model already made impossible.
+  const columnBox = column.getBoundingClientRect();
+  const panelVisibleBoxes = panels
+    .map((p) => {
+      const r = p.getBoundingClientRect();
+      const left = Math.max(r.left, columnBox.left);
+      const right = Math.min(r.right, columnBox.right);
+      const top = Math.max(r.top, columnBox.top);
+      const bottom = Math.min(r.bottom, columnBox.bottom);
+      return right > left && bottom > top ? { left, right, top, bottom } : null;
+    })
+    .filter(Boolean);
+  const activeStep = activeFrame ? activeFrame.getAttribute("data-step") : null;
   return {
     panelFraction,
     portHeight: portBox.height,
@@ -123,21 +176,24 @@ const SNAPSHOT = () => {
     innerWidth: window.innerWidth,
     innerHeight: window.innerHeight,
     horizontal: document.documentElement.scrollWidth > window.innerWidth + 1,
+    // The scaffold's own published signal, and the beat's echo of it. Recorded separately on
+    // purpose: they must now be the same number, and their disagreement is the whole of the defect
+    // this round repairs.
+    progress: Number(scrolly?.dataset.progress ?? "NaN"),
     position: Number(root.dataset.position ?? "NaN"),
+    activeStep,
+    activeIndex: activeStep === null ? Number.NaN : stepIds.indexOf(activeStep),
     state: JSON.parse(root.dataset.state ?? "null"),
-    painted: painted.map((p) => p.i),
-    paintedBoxes: painted.map((p) => ({ ...p.box.toJSON() })),
+    paintMoving: digest(moving.join("|")),
+    paintAll: digest(moving.join("|") + "#" + alpha.join("|")),
+    panelVisibleBoxes,
     marked: marked.map((m) => ({ what: m.what, text: m.text, box: m.box.toJSON() })),
     graphic: graphic ? graphic.toJSON() : null,
-    graphicFullWidth: !!graphic && graphic.left <= 1 && graphic.right >= window.innerWidth - 1,
+    column: columnBox.toJSON(),
     rootBox: root.getBoundingClientRect().toJSON(),
     rootParentIsStack: root.parentElement ? root.parentElement.className : null,
   };
 };
-
-function overlaps(a, b) {
-  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-}
 
 async function sweep(page, direction) {
   const samples = [];
@@ -158,49 +214,14 @@ async function sweep(page, direction) {
   return samples;
 }
 
-function report(label, samples) {
-  const problems = [];
-  const positions = samples.map((s) => s.position);
-  for (let i = 1; i < positions.length; i++) {
-    const delta = positions[i] - positions[i - 1];
-    if (label.endsWith("down") && delta < -0.02)
-      problems.push(`position went BACKWARDS while scrolling down: ${positions[i - 1].toFixed(3)} -> ${positions[i].toFixed(3)}`);
-    if (label.endsWith("up") && delta > 0.02)
-      problems.push(`position went FORWARDS while scrolling up: ${positions[i - 1].toFixed(3)} -> ${positions[i].toFixed(3)}`);
-  }
-  let worstLag = 0;
-  for (const s of samples) {
-    if (!Number.isFinite(s.position)) problems.push("no driven position on the element — the driver did not run");
-    if (s.horizontal) problems.push(`the page scrolls horizontally at scrollY=${s.scrollY}`);
-    if (s.pageScrolls) problems.push(`the DOCUMENT itself has scroll distance at scrollY=${s.scrollY} — the page must not scroll`);
-    if (!s.graphicFullWidth) problems.push(`the graphic does not span the full viewport width at scrollY=${s.scrollY}`);
-    if (s.painted.length > 1) problems.push(`${s.painted.length} prose panels painted at once at scrollY=${s.scrollY}`);
-    for (const p of s.painted) worstLag = Math.max(worstLag, Math.abs(p - s.position));
-    for (const box of s.paintedBoxes)
-      for (const m of s.marked)
-        if (overlaps(m.box, box))
-          problems.push(`"${m.text}" (${m.what}) is under the prose panel at scrollY=${s.scrollY}`);
-    for (const m of s.marked)
-      if (m.box.left < -1 || m.box.top < -1 || m.box.right > s.innerWidth + 1 || m.box.bottom > s.innerHeight + 1)
-        problems.push(`"${m.text}" (${m.what}) leaves the viewport at scrollY=${s.scrollY}`);
-  }
-  return {
-    label,
-    samples: samples.length,
-    tallestPanelAsFractionOfPort: Number(Math.max(...samples.map((s) => s.panelFraction)).toFixed(3)),
-    portHeight: samples[0]?.portHeight ?? null,
-    span: [positions[0], positions[positions.length - 1]],
-    worstLag: Number(worstLag.toFixed(3)),
-    problems: [...new Set(problems)],
-  };
-}
-
 async function main() {
   const { server, port } = await serve(RENDER_DIR);
   const browser = await puppeteer.launch({ headless: true, executablePath: resolveChrome(), args: ["--no-sandbox", "--hide-scrollbars"] });
   await mkdir(SHOT_DIR, { recursive: true });
   const url = `http://127.0.0.1:${port}/${FILE}`;
   const results = [];
+  /** Every frame of every sweep, kept for the plate's resolution budget below. */
+  const driven = [];
 
   for (const size of SIZES) {
     const page = await browser.newPage();
@@ -209,15 +230,16 @@ async function main() {
 
     const down = await sweep(page, "down");
     const up = await sweep(page, "up");
-    results.push(report(`${size.name} down`, down));
-    results.push(report(`${size.name} up`, up));
+    driven.push(...down, ...up);
+    results.push(report(`${size.name} down`, down, STEP_COUNT));
+    results.push(report(`${size.name} up`, up, STEP_COUNT));
 
-    // One screenshot per step, taken at the scroll offset where that step's own panel is painted
-    // and the driver has settled on it — the frame a reader actually sits on to read.
-    const settles = [0, 1, 2, 3].map((k) => {
-      const hit = down.filter((s) => Math.abs(s.position - k) < 0.02);
-      return hit.length ? hit[Math.floor(hit.length / 2)].scrollY : null;
-    });
+    // One screenshot per step, at the sampled offset CLOSEST to that reading. A window of ±0.02 was
+    // the old rule and it does not survive a continuous signal: progress moves about 0.032 per 30px
+    // increment, so whether any sample lands inside a window that narrow is luck.
+    const settles = [0, 1, 2, 3].map((k) =>
+      down.reduce((best, s) => (Math.abs(s.progress - k) < Math.abs(best.progress - k) ? s : best), down[0]).scrollY,
+    );
     for (let k = 0; k < settles.length; k++) {
       if (settles[k] === null) continue;
       // A settle wait HERE only — the sweeps above deliberately have none. The panel's own fade is
@@ -228,7 +250,7 @@ async function main() {
     }
     // And one mid-flight, halfway through the axis flight of the last step — the moment a sampled
     // probe never looks at.
-    const flight = down.find((s) => s.position > 2.4 && s.position < 2.6);
+    const flight = down.find((s) => s.progress > 2.4 && s.progress < 2.6);
     if (flight) {
       await page.evaluate((y) => { (window.__port ?? document.scrollingElement).scrollTop = y; return new Promise((r) => requestAnimationFrame(() => r())); }, flight.scrollY);
       await page.screenshot({ path: join(SHOT_DIR, `${size.name}-midflight.png`) });
@@ -283,13 +305,32 @@ async function main() {
       everySampleIsOneOfTheFourStates: rmStates.size <= 4,
       discrete,
     },
-    camera: {
-      worstRasterPerPixel: Math.min(...[].concat(...[])) || null,
-    },
+    // THE PLATE'S BUDGET, over every frame actually driven rather than over the four authored
+    // cameras. It used to read `Math.min(...[].concat(...[]))`, which is `Infinity` and serialises
+    // as `null` — a field that reported nothing while looking like a measurement. It matters
+    // continuously now: between two readings the camera passes through scales no authored state
+    // has, and the deepest one on the whole path is what a reader's eye actually meets.
+    camera: (() => {
+      const states = driven.map((s) => s.state).filter(Boolean);
+      const perPixel = states.map((s) => s.rasterPerPixel).filter(Number.isFinite);
+      return {
+        framesMeasured: perPixel.length,
+        worstRasterPerPixel: perPixel.length ? Number(Math.min(...perPixel).toFixed(3)) : null,
+        clampedFrames: states.filter((s) => s.clamped === 1).length,
+      };
+    })(),
     noJs: nojsFacts,
   };
   await writeFile(join(SHOT_DIR, "drive-report.json"), JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary, null, 2));
+  const failing = results.filter((r) => r.problems.length > 0);
+  // Exit non-zero rather than printing a wall of problems and reporting success — a run that says
+  // "197 problems" and exits 0 is how a slideshow gets called a clean run in a commit message.
+  if (failing.length > 0)
+    throw new Error(
+      `${failing.length} of ${results.length} sweeps have problems: ` +
+        failing.map((r) => `${r.label} (${r.problems.length})`).join(", "),
+    );
 }
 
-await main();
+if (import.meta.main) await main();

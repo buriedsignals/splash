@@ -10,7 +10,19 @@
         0,
         3
       ],
-      "worstLag": 1,
+      "worstStepDrift": 0.493,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 2670
+      },
+      "fluidity": {
+        "intraStepFrames": 92,
+        "paintChanged": 92,
+        "geometryChanged": 92,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 3
+      },
       "problems": []
     },
     {
@@ -22,55 +34,115 @@
         3,
         0
       ],
-      "worstLag": 0,
+      "worstStepDrift": 0.508,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 463
+      },
+      "fluidity": {
+        "intraStepFrames": 92,
+        "paintChanged": 92,
+        "geometryChanged": 92,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 3
+      },
       "problems": []
     },
     {
       "label": "1280x800 down",
       "samples": 87,
-      "tallestPanelAsFractionOfPort": 0.183,
+      "tallestPanelAsFractionOfPort": 0.219,
       "portHeight": 720.5,
       "span": [
         0,
         3
       ],
-      "worstLag": 1,
+      "worstStepDrift": 0.494,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 1980
+      },
+      "fluidity": {
+        "intraStepFrames": 81,
+        "paintChanged": 81,
+        "geometryChanged": 81,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 2
+      },
       "problems": []
     },
     {
       "label": "1280x800 up",
       "samples": 87,
-      "tallestPanelAsFractionOfPort": 0.183,
+      "tallestPanelAsFractionOfPort": 0.219,
       "portHeight": 720.5,
       "span": [
         3,
         0
       ],
-      "worstLag": 0.036,
+      "worstStepDrift": 0.515,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 1903
+      },
+      "fluidity": {
+        "intraStepFrames": 81,
+        "paintChanged": 81,
+        "geometryChanged": 81,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 2
+      },
       "problems": []
     },
     {
       "label": "375x812 down",
-      "samples": 75,
-      "tallestPanelAsFractionOfPort": 0.255,
-      "portHeight": 617.5,
+      "samples": 32,
+      "tallestPanelAsFractionOfPort": 0.607,
+      "portHeight": 259.34375,
       "span": [
         0,
         3
       ],
-      "worstLag": 0.824,
+      "worstStepDrift": 0.542,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 780
+      },
+      "fluidity": {
+        "intraStepFrames": 28,
+        "paintChanged": 28,
+        "geometryChanged": 28,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 0
+      },
       "problems": []
     },
     {
       "label": "375x812 up",
-      "samples": 75,
-      "tallestPanelAsFractionOfPort": 0.255,
-      "portHeight": 617.5,
+      "samples": 32,
+      "tallestPanelAsFractionOfPort": 0.607,
+      "portHeight": 259.34375,
       "span": [
         3,
         0
       ],
-      "worstLag": 0.39,
+      "worstStepDrift": 0.542,
+      "progressDisagreement": {
+        "worst": 0.0005,
+        "at": 840
+      },
+      "fluidity": {
+        "intraStepFrames": 28,
+        "paintChanged": 28,
+        "geometryChanged": 28,
+        "fractionMoving": 1,
+        "alphaOnlyFrames": 0,
+        "signalHeldFrames": 0
+      },
       "problems": []
     }
   ],

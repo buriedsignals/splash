@@ -9,13 +9,13 @@
  *      stretches (`preserveAspectRatio="none"`). An axis label cropped is not a cosmetic loss.
  *   2. **Geometry stretches; type does not.** Every word is HTML at a fixed pixel size positioned
  *      in fractions over the same box, so a 14px tick is 14px at 375px and at 1600px.
- *   3. **Everything sits above `CONTENT_TOP`** — plot, ticks, annotations AND the credit — so the
- *      prose panel pinned in the bottom `PROSE_LANE` never covers any of it, at any viewport. Kept
- *      by construction, not checked afterwards.
+ *   3. **The drawing sits above `CONTENT_TOP`** — plot, ticks and annotations — a band this frame
+ *      keeps clear at its own bottom. The CREDIT does not: it is anchored to the frame's own floor,
+ *      inside that band, because since the vehicle's eighth correction nothing else goes there and
+ *      a credit hovering above an empty band ran through the x-axis labels at 375x812.
  *
- * The credit sits at the BOTTOM of the drawing, immediately above the prose lane (owner feedback
- * B1.1: the credit belongs at the bottom of the visual, never hanging under the header). Nothing is
- * below it except the band the prose owns.
+ * The credit sits at the BOTTOM of the visual (owner feedback B1.1: the credit belongs at the bottom
+ * of the visual, never hanging under the header). Nothing is below it.
  *
  * No colour is named here. `ground`, `ink`, `muted` and `accent` are props, derived in node by
  * `render.mjs` from the answer recorded in `PALETTE.md` beside this beat.
@@ -23,7 +23,6 @@
 
 import type { CSSProperties } from "react";
 import {
-  CONTENT_TOP,
   PLOT,
   VIEWBOX,
   X_SLOTS,
@@ -308,9 +307,17 @@ export function ChartFrame({
           right: pct(0.02),
           // Anchored from the BOTTOM, not the top: a `top` percentage is a fraction of a frame whose
           // height changes with the fixed header's own wrap at every width, so a credit that cleared
-          // the lane at one width sat inside it at another. From the bottom it clears the lane by a
-          // fixed margin everywhere, and a second line grows upward, away from the panel.
-          bottom: `calc(${((1 - CONTENT_TOP) * 100).toFixed(3)}% + 8px)`,
+          // the lane at one width sat inside it at another. From the bottom a second line grows
+          // upward, away from whatever is below.
+          //
+          // FROM THE FRAME'S OWN BOTTOM, not from the top of the prose lane — and that changed when
+          // the vehicle's eighth correction gave the prose its own cell of the track. Nothing goes
+          // in the lane any more, so a credit hovering above it is a credit floating in the middle
+          // of a white band; worse, at 375x812 the graphic is only 361px tall, the lane takes 130 of
+          // them, and a two-line credit pushed up out of the lane ran straight THROUGH the x-axis
+          // tick labels — 1880, 1900, 1920 and the rest, measured on the delivered file. At the
+          // floor it is where this beat's own doc-comment always said it belonged, at every width.
+          bottom: "8px",
           whiteSpace: "normal",
         }}
       >
