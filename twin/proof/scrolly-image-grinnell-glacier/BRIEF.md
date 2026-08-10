@@ -29,7 +29,7 @@ Exactly two things, and nothing else in this folder changes:
    licence, the source page, the original's URL, its dimensions and its sha256, and the delivered
    file's own dimensions and sha256.
 
-Everything else survives untouched: `ImageFrame.tsx` (the contained frame, the year, the credit on
+Everything else survives untouched: `ImageFrame.tsx` (the contained sequence, the wipe, the years, the credits on
 the photograph's own bottom margin), `photograph-data.ts` (the reader, the sequence facts, and the
 three assertions below), `prepare-photographs.mjs` (the normalisation), `render.mjs` (the four steps
 and their prose), and `PALETTE.md`. A journalist supplying eight photographs instead of four changes
@@ -55,15 +55,34 @@ computed from `photographs.csv`.
 
 ## Why this earns the scroll
 
-- **The frames are genuinely different states of one view** — which is the test the vehicle sets. A
-  reader who has just looked at 1938 and then meets 1981 in the same rectangle is doing the
-  comparison the beat is about, in the only way it can be done: by memory of the pixel that changed.
+- **The frames are genuinely different states of one view** — which is the test the vehicle sets.
+  And since 2026-08-10 the reader does not have to do the comparison from memory: **the scroll drags
+  the boundary between two photographs across the frame**, so 1938 and 1981 are on screen together,
+  aligned, for the whole of the transition between them.
+
+  **Why it changed.** Driven continuously — a per-frame recorder installed before the scroll was
+  touched, both directions, three widths — this beat measured **0 of 113, 0 of 97 and 0 of 78
+  intra-step frames on which any geometry moved.** About half of every sweep changed only an
+  opacity; the rest changed nothing at all. Four fixed pictures and a cross-fade, which is the
+  defect the owner reported on the sibling beats: *"faut que ce soit fluide et que l'élément évolue
+  au fur et à mesure du temps."* After the wipe: **112 of 113, 96 of 97, 77 of 78**, 0 frames where
+  only an opacity changed, in both directions.
+
+  **Why a WIPE and not a dissolve, which is an editorial decision rather than a graphics one.** A
+  cross-dissolve paints, for most of every transition, a picture that is **a photograph of no year**
+  — half the pixels 1938, half 1981, blended, with nothing telling the reader which is which. On a
+  beat whose whole claim is what a documentary photograph shows, that is a fabricated image however
+  well it reads. A wipe never blends: at every scroll position both halves of the frame are real,
+  unaltered photographs, the boundary is drawn as an explicit 2px rule, and **both years and both
+  credits are on screen, each attached to the half it belongs to**, for as long as both pictures
+  are. It is also the device this subject asks for — four frames from one summit, normalised to one
+  box, is exactly the case where every feature stays put while the ice leaves.
 - **What the scroll adds that a still could not.** One still is one year. A four-up grid is four
   photographs at a quarter of the size, and the eye compares them by travelling, which is the thing
   repeat photography is trying to avoid. Here every frame lands in the SAME rectangle at the SAME
   size — the sequence was normalised to one 820 × 1215 box for exactly that reason, and
   `deriveSequenceFacts` throws if any frame is delivered at a different size.
-- **What it adds that a video could not.** A crossfade decides how long the reader looks and takes
+- **What it adds that a video could not.** A video decides how long the reader looks and takes
   the comparison away from them; here they can hold a frame, scroll back, and hold it again. And a
   video carries no text: with JavaScript off this file still delivers all four paragraphs, all four
   credits and the first photograph.
@@ -122,15 +141,36 @@ no words is a picture the reader is left to interpret alone).
 
 ## The frame, and the three craft decisions in it
 
-- **CONTAINED, never cover-cropped.** `scrolly-discipline.md` files a photograph under scenery and
-  crops it, on the argument that no part of the image is a claim. Here the image IS the claim. COVER
-  at 1600 × 900 would show the middle 27% of a portrait photograph's height — four horizontal slices
-  nobody chose. Every frame is fitted whole into the content band above the prose lane.
+- **CONTAINED, never cover-cropped — and now FILLING the frame.** The owner's ruling of 2026-08-10:
+  *"Pour les scrolly images respecte le ratio mais remplis au max en largeur ou hauteur."* This beat
+  already contained, against `scrolly-discipline.md`'s own filing of a photograph under scenery
+  (COVER at 1600 × 900 shows the middle 27% of a portrait photograph's height — four horizontal
+  slices nobody chose); the ruling has now moved a photograph from scenery to evidence in that file
+  and in `twin-scrolly`'s seed, which was `object-fit: cover` until this round. What this beat did
+  NOT do is fill: it fitted the picture into `CONTENT_TOP`, reserving 28% of every frame for a prose
+  panel that has not parked there since the vehicle's eighth correction and cannot park anywhere
+  since its ninth. **`PROSE_LANE` is 0 now**, and the picture grows until it meets the frame on
+  whichever axis binds first — the height at 1600 × 900 and 1280 × 800, the width at 375 × 812.
+  **The letterbox on the other axis is the render's own `ground`**, the value every piece of this
+  page's furniture is derived from, so it is a colour someone chose rather than a default nobody
+  picked.
+
+  **What the centred card does to a contained portrait picture, measured rather than assumed.** The
+  vehicle's ninth correction sends a 409px opaque card down the middle of the frame. Against a
+  photograph 493px wide at 1600 × 900 that card's own vertical edges land INSIDE the picture: driven
+  continuously, both directions, the card covered part of the photograph on 93 of 126 frames
+  (worst 15.6% of its area) at 1600 × 900, 82 of 109 (21.9%) at 1280 × 800 and 67 of 88 (28.2%) at
+  375 × 812, with a longest run of 27 consecutive frames at 1600 × 900 where the card's edge sat
+  inside the picture rather than beyond it. Nothing on the photograph is TEXT, so none of that is
+  the "broken label" the ninth's own rule forbids — it is an opaque band across the middle of a
+  document. It is NOT worked around here by moving the picture off-centre: a centred card missing an
+  off-centre picture is the side-by-side arrangement the owner rejected, rebuilt by the back door.
+  Reported for a ruling, not patched.
 - **The furniture is sized to the PHOTOGRAPH, not to the frame.** The first build anchored the year
   to the frame's top-left and the credit to its bottom-left; at 1600 × 900 the contained photograph
   is 437 px wide in the middle of the screen and both labels sat stranded 600 px away across an empty
   field. Only looking at the render showed it. The column is now exactly as wide as the photograph
-  renders — `min(100vw − 32px, (0.72 × 100vh − 84px) × aspect)` — with the aspect passed in as a
+  renders — `min(frame width − 32px, (frame height − 104px) × aspect)`, measured off the box the visual actually got on every painted frame (a `vh` expression cannot know how many lines the page header wrapped to at this width; the CSS behind it is a deliberately conservative no-JS fallback) — with the aspect passed in as a
   prop derived from the CSV.
 - **A credit per photograph, on its own bottom margin.** Four photographs by four people cannot be
   credited by one line in a page header. The header carries the collection and the licence for the

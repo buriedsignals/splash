@@ -1058,15 +1058,27 @@ construction, which is what makes fading the others safe.
 
 ## Two kinds of frame: scenery is cropped, evidence is fitted
 
-**Not every medium wants the same treatment, and this is the rule that decides.** A photograph and a
-basemap are SCENERY: they read best full-bleed, and cropping them costs nothing, because no part of
-the image is a claim. A chart is EVIDENCE: cropping an axis label is not a cosmetic loss, it is a
+**Not every medium wants the same treatment, and this is the rule that decides.** A basemap is
+SCENERY: it reads best full-bleed, and cropping it costs nothing, because no part of the ground
+under a map is a claim. A chart is EVIDENCE: cropping an axis label is not a cosmetic loss, it is a
 chart that reads wrong.
 
-- **Cropped (`preserveAspectRatio="xMidYMid slice"` / `object-fit: cover`)** — the image track, the
-  drawn track, the map track. They fill the viewport edge to edge; anything they annotate goes
-  inside `safeBand()`, which is the rectangle guaranteed to survive the crop across
-  `ASPECT_ENVELOPE` AND to sit above the lane.
+**A PHOTOGRAPH MOVED FROM THE FIRST GROUP TO THE SECOND ON 2026-08-10, by the owner's ruling:**
+*"Pour les scrolly images respecte le ratio mais remplis au max en largeur ou hauteur."* The
+sentence this file used to make — that a photograph is scenery and "no part of the image is a
+claim" — is exactly backwards for the thing the image track exists to carry. A journalist's
+photograph IS the claim; it is a document, and a silent crop changes what it shows. Measured at
+1600x900, `object-fit: cover` on a portrait frame shows the middle 27% of its height, so a
+four-frame sequence is compared as four horizontal slices nobody chose. So a photograph now keeps
+its own ratio and is scaled up until it meets the frame on whichever axis binds first, and the other
+axis is letterboxed in the render's own `ground` — the value the whole page's furniture is derived
+from, so the letterbox is a colour someone chose rather than a default.
+
+- **Cropped (`preserveAspectRatio="xMidYMid slice"`)** — the drawn track and the map track. They
+  fill the viewport edge to edge; anything they annotate goes inside `safeBand()`, which is the
+  rectangle guaranteed to survive the crop across `ASPECT_ENVELOPE` AND to sit above the lane.
+- **Contained (`object-fit: contain`)** — the image track. Whole, at its own ratio, as large as the
+  binding axis allows.
 - **Fitted (an HTML box in percentages, or `meet`)** — the chart track. A fitted frame needs no
   aspect envelope at all: fitted height is always at most the box height and the fitted box is
   centred, so content ending at `CONTENT_TOP` of the viewBox lands at `H/2 + f·(CONTENT_TOP − 0.5)`

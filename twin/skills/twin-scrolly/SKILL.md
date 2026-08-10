@@ -169,9 +169,12 @@ identical treatment from the scaffold's point of view.
 2. **Write one component per frame kind.** No frame component imports the rasteriser —
    `ink`/`muted`/`grid` are props, derived once in node by whoever calls it. No frame knows about
    `.step-frame`, `active` or `aria-hidden`; those belong to the scaffold.
-3. **Decide, per frame, whether it is scenery or evidence.** Scenery (a photograph, a basemap) is
-   COVER-cropped and fills the frame; anything it annotates goes inside `safeBand()`. Evidence (a
-   chart) is FITTED and never cropped, its type at a fixed pixel size over stretched geometry.
+3. **Decide, per frame, whether it is scenery or evidence.** Scenery (a basemap, a drawn backdrop)
+   is COVER-cropped and fills the frame; anything it annotates goes inside `safeBand()`. Evidence (a
+   chart, and — since the owner's ruling of 2026-08-10 — a PHOTOGRAPH) is FITTED and never cropped:
+   *"respecte le ratio mais remplis au max en largeur ou hauteur"*. A chart's type sits at a fixed
+   pixel size over stretched geometry; a photograph is `object-fit: contain` and the letterbox is
+   the render's own `ground`.
    **Then place its labels against the CARD's own stripe**, which is the composition rule a card
    travelling over the frame imposes: on a FITTED frame keep the axis furniture in the gutters,
    which are outside the stripe at every width; on a CROPPED frame no placement is outside the

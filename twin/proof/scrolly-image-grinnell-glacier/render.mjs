@@ -19,13 +19,13 @@
 import { readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createElement } from "react";
+import { createElement, Fragment } from "react";
 import {
   deriveFurniture,
   readPalette,
 } from "#shared/twin-chart-beat/render-still.mjs";
 import { deriveSequenceFacts, readPhotographs } from "./photograph-data.ts";
-import { ImageFrame, PROSE_LANE } from "./ImageFrame.tsx";
+import { ImageSequence, PROSE_LANE } from "./ImageFrame.tsx";
 import { renderScrolly } from "../../skills/twin-scrolly/scripts/render-scrolly.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -78,6 +78,39 @@ async function render() {
     }),
   );
 
+  // ONE persistent visual, not four frames. The scroll drags the boundary between two photographs
+  // across it, so the picture changes on every animation frame the reader's thumb produces rather
+  // than cross-fading between four stills — see `wipe-drive.mjs` for the measurement that forced
+  // this and for why the device is a wipe rather than a dissolve.
+  const visual = createElement(ImageSequence, {
+    photographs,
+    // The aspect the frames were NORMALISED to, read off the sequence rather than typed —
+    // `deriveSequenceFacts` has already thrown if the four do not share one box.
+    aspect: facts.box.width / facts.box.height,
+    sources,
+    position: 0,
+    ground,
+    ink: furniture.ink,
+    muted: furniture.muted,
+  });
+
+  const driverSource = await readFile(join(HERE, "wipe-drive.mjs"), "utf8");
+  const boot =
+    driverSource.replace(/^export /gm, "") +
+    `\n;(function () {\n` +
+    `  if (window.__glacierStarted) return;\n` +
+    `  window.__glacierStarted = true;\n` +
+    // The script sits inside the GRAPHIC, which the scaffold emits BEFORE the prose column, so no
+    // panel exists yet when this tag is parsed.
+    `  function boot() {\n` +
+    `    var root = document.querySelector('[data-visual="glacier-wipe"]');\n` +
+    `    if (!root) return;\n` +
+    `    initImageWipe(root, ${photographs.length});\n` +
+    `  }\n` +
+    `  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);\n` +
+    `  else boot();\n` +
+    `})();\n`;
+
   const steps = photographs.map((p, i) => {
     const gap = i === 0 ? null : p.year - photographs[i - 1].year;
     const opening =
@@ -89,16 +122,15 @@ async function render() {
     return {
       id: String(p.year),
       prose: [`${opening} ${SEEN.get(p.year)}`],
-      frame: createElement(ImageFrame, {
-        photograph: p,
-        // The aspect the frames were NORMALISED to, read off the sequence rather than typed —
-        // `deriveSequenceFacts` has already thrown if the four do not share one box.
-        aspect: facts.box.width / facts.box.height,
-        src: sources[i],
-        ground,
-        ink: furniture.ink,
-        muted: furniture.muted,
-      }),
+      frame:
+        i === 0
+          ? createElement(
+              Fragment,
+              null,
+              visual,
+              createElement("script", { dangerouslySetInnerHTML: { __html: boot } }),
+            )
+          : createElement("div"),
     };
   });
 

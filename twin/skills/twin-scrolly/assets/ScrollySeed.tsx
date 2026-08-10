@@ -202,13 +202,24 @@ export const CHART_LAYOUT = {
 } as const;
 
 /**
- * The IMAGE track. A plain, full-bleed raster — this seed's own illustrated scene of a gauge
- * station, authored from flat shapes by `scripts/build-sample-photo.mjs` (nothing in this toolchain
- * fetches photographs, so there is nothing to credit and nothing that pretends to be a photograph
- * of the station this beat goes on to name).
+ * The IMAGE track. This seed's own illustrated scene of a gauge station, authored from flat shapes
+ * by `scripts/build-sample-photo.mjs` (nothing in this toolchain fetches photographs, so there is
+ * nothing to credit and nothing that pretends to be a photograph of the station this beat names).
  *
- * COVER-cropped and carrying no annotation of its own, so it needs no safe band: cropping scenery
- * costs nothing, cropping a label costs the reader the label.
+ * **CONTAINED, NEVER COVER-CROPPED — the owner's ruling of 2026-08-10:** *"Pour les scrolly images
+ * respecte le ratio mais remplis au max en largeur ou hauteur."* This track used to be
+ * `objectFit: "cover"`, on the argument recorded above it that "cropping scenery costs nothing,
+ * cropping a label costs the reader the label". That argument is right about a DRAWN backdrop and
+ * wrong about the thing this track exists to carry: a journalist's photograph is a document, and a
+ * silent crop changes what it shows. Measured at 1600x900 on a portrait frame, cover shows the
+ * middle 27% of its height — the reader compares four horizontal slices nobody chose.
+ *
+ * So the picture keeps its own ratio and is scaled up until it meets the frame on whichever axis
+ * binds first. **What fills the other axis is the render's own `ground`** — the same value every
+ * piece of this page's furniture is derived from (`deriveFurniture`), which is why it is the right
+ * answer rather than merely an available one: a letterbox in any other colour would be a colour
+ * nobody chose, and this project's first invariant is that nothing renders in a value nobody chose.
+ * `.scrolly-frame`'s own background already paints it, so the letterbox needs no rule of its own.
  *
  * `alt=""` on purpose: the wrapper `renderScrolly` puts every frame in is `aria-hidden` regardless
  * of kind, so a meaningful `alt` here would never reach a screen reader anyway; the argument this
@@ -222,7 +233,7 @@ export function ImageFrame({ src }: { src: string }) {
       style={{
         width: "100%",
         height: "100%",
-        objectFit: "cover",
+        objectFit: "contain",
         display: "block",
       }}
     />
