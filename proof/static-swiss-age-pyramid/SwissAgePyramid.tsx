@@ -21,11 +21,7 @@ import {
   measureTextBand,
   FONT_FAMILY,
 } from "#shared/chart-beat/render-still.mjs";
-import {
-  frameInsetFor,
-  sizeFor,
-  stageFor,
-} from "#shared/chart-beat/sizes.mjs";
+import { frameInsetFor, sizeFor, stageFor } from "#shared/chart-beat/sizes.mjs";
 import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
 import {
   inkBox,
@@ -37,7 +33,7 @@ export type Band = { ageBand: string; male: number; female: number };
 
 /** The type this beat draws, in `references/types/` vocabulary. `formForSize` answers for it, and
  *  a size it refuses is refused by the runner before a mark is drawn. */
-export const TYPE = 'population-pyramid';
+export const TYPE = "population-pyramid";
 
 /**
  * THE 900-WIDE TUNING, KEPT AS THE BASE, WITH THE SIZE ROW'S `typeScale` AS THE MULTIPLIER.
@@ -223,6 +219,10 @@ export function pyramidGeometry(
   return {
     plot,
     centerX,
+    // The band scale's own pitch, so the ROW BUDGET is read off the scale that placed the rows
+    // rather than recomputed from the plot's height by a caller that would have to know about
+    // `paddingInner`. `assertRowsFit` below is what consumes it.
+    step: y.step(),
     bars,
     ticksLeft: ticks.map((v) => ({
       value: v,
@@ -237,6 +237,53 @@ export function pyramidGeometry(
 
 function thousands(v: number): string {
   return Math.round(v / 1000).toLocaleString("en-US") + "k";
+}
+
+/**
+ * REFUSE ROWS THE READER CANNOT TELL APART. @parity
+ *
+ * Carried verbatim from `proof/more-lollipop-co2-per-capita/LollipopCo2.tsx` and
+ * `proof/more-dumbbell-life-expectancy-gains/DumbbellLifeExpectancyGains.tsx`, which is where this
+ * refusal was first written. Copied rather than imported, like every helper shared between beats
+ * here; the `@parity` tag is what marks it as a copy that must not drift.
+ *
+ * IT ARRIVES IN THIS BEAT BECAUSE THE TYPE CHANGED CLASS. `population-pyramid` joined
+ * `BAND_SCALE_TYPES` on 2026-08-11 (`proof/aspect-range-probe/ASPECT-VERDICT.md` §5), which is
+ * correct — it is row-driven, its category axis is ordinal age bands, and its twin form is the form
+ * it is already in — and it has one consequence that must not be left implicit: `formForSize` stops
+ * REFUSING it at square and portrait, so those two frames became reachable. Reachable is not the
+ * same as legible. The first square render made after that change was measured at exactly the
+ * pinned 1080x1080, cleared `assertTypeFloor`, and drew 21 age bands into about 90px of plot with
+ * the whole label column collapsed into a single black smudge, and **nothing threw**, because
+ * `assertPlotAspect` correctly declines to clamp a row-driven type and no other guard here reads a
+ * row pitch. This is that guard.
+ *
+ * The floor is MEASURED and not chosen: `measureTextBand` returns the real ascent and descent of
+ * the strings this beat actually draws, so the condition is exactly "two adjacent labels share ink"
+ * rather than a ratio somebody liked.
+ */
+export function assertRowsFit(
+  step: number,
+  names: string[],
+  label: { fontSize: number; fontWeight: number },
+  size: string,
+  { what = "this render" }: { what?: string } = {},
+) {
+  const bands = names.map((n) => {
+    const band = measureTextBand(n, label);
+    return { name: n, ink: band.ascent + band.descent };
+  });
+  const tallest = bands.reduce((a, b) => (b.ink > a.ink ? b : a));
+  if (step >= tallest.ink) return step;
+  throw new Error(
+    `${what}: ${names.length} rows at ${size} are pitched ${step.toFixed(1)}px apart, under the ` +
+      `${tallest.ink.toFixed(1)}px of ink one of their own names actually draws ("${tallest.name}" ` +
+      `at ${label.fontSize}px, ascent and descent measured, not estimated). Nothing is clipped and ` +
+      `nothing overflows the frame — the names simply run into each other, which is the band-scale ` +
+      `twin of the stretched plot no counter in this project could see. The ladder above this rung ` +
+      `is R8: carry fewer rows and SAY SO in the chart. This rung is R9 — the beat does not ship ` +
+      `${size}, and the journalist is offered the sizes it does.`,
+  );
 }
 
 export function SwissAgePyramid({
@@ -292,7 +339,9 @@ export function SwissAgePyramid({
     : limits;
   const limitsLines = wrap(standfirst, width - PAD * 2, T.SUBTITLE);
   const limitsBaseline =
-    titleBaseline + (titleLines.length - 1) * T.TITLE.lead + T.TITLE_TO_SUBTITLE;
+    titleBaseline +
+    (titleLines.length - 1) * T.TITLE.lead +
+    T.TITLE_TO_SUBTITLE;
   const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
   // THE T.SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. See
@@ -324,9 +373,19 @@ export function SwissAgePyramid({
   const bandGutter =
     Math.max(...bands.map((b) => measureText(b.ageBand, T.BAND_LABEL))) +
     T.LEGEND_SWATCH_TO_TEXT;
-  const { plot, centerX, bars, ticksLeft, ticksRight } = pyramidGeometry(
+  const { plot, centerX, step, bars, ticksLeft, ticksRight } = pyramidGeometry(
     bands,
     { width, height, padding, bandGutter },
+  );
+  // THE ROW BUDGET, refused before anything is drawn. A pyramid is a band-scale type, so
+  // `assertPlotAspect` never clamps it and nothing else in the toolchain looks at what a frame does
+  // to 21 rows. See `assertRowsFit`'s own note for the square render that made this necessary.
+  assertRowsFit(
+    step,
+    bands.map((b) => b.ageBand),
+    T.BAND_LABEL,
+    size,
+    { what: "static-swiss-age-pyramid" },
   );
 
   const peak = bars.find((b) => b.ageBand === peakBand);
@@ -439,7 +498,6 @@ export function SwissAgePyramid({
         ]
       : []),
   ];
-
 
   return (
     <svg
@@ -639,7 +697,9 @@ export function SwissAgePyramid({
               y={b.centerLabelY + T.LABEL_BASELINE_NUDGE}
               fill={isPeak && peakRungFired ? ink : muted}
               fontSize={T.BAND_LABEL.fontSize}
-              fontWeight={isPeak && peakRungFired ? 700 : T.BAND_LABEL.fontWeight}
+              fontWeight={
+                isPeak && peakRungFired ? 700 : T.BAND_LABEL.fontWeight
+              }
               textAnchor="middle"
             >
               {b.ageBand}

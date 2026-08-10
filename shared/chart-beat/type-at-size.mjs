@@ -78,7 +78,32 @@ export const BAND_SCALE_TYPES = [
   "lollipop",
   "dumbbell",
   "ranking",
+  // ADDED 2026-08-11, on renders rather than on the argument that it "looks like a bar chart".
+  // `proof/aspect-range-probe/` swept it like every other type, and the SHAPE of its failure is
+  // what decides it: it reads best at the tall frames (85.7px band pitch at 0.5:1, a textbook
+  // pyramid) and fails at the flat ones by running out of ROWS — 28.6px pitch at 1.5 and the band
+  // labels touch, 17.9px at 2.4 and "95-99" prints through "90-94". Nothing about a shape is
+  // distorted; a count of bands stops fitting. That is the bar family's own failure and no other
+  // kind's, which is what this list is for. Its category axis is ordinal age bands and it is
+  // already row-driven, so R0 is the IDENTITY for it — see `ALREADY_ROW_DRIVEN` below.
+  "population-pyramid",
 ];
+
+/**
+ * The band-scale types whose twin form is the form they are ALREADY IN.
+ *
+ * Every other member of the list above is drawn as columns and takes rows at a tall frame, so
+ * "transpose" is an instruction. A population pyramid is drawn as rows already: telling a producer
+ * to transpose it would be telling it to do what it does, and a verdict that reads as a change
+ * when nothing changes is how a caller ends up drawing a pyramid on its side. The VERDICT stays
+ * `transpose` — one vocabulary, and `assertPlotAspect` still correctly declines to clamp a
+ * row-driven type — and only the reason differs, which is the part a human reads.
+ *
+ * What actually bounds these types at a tall frame is their ROW BUDGET, which `assertRowsFit`
+ * measures off the labels' own ink. An aspect range cannot answer it: a row budget is a fact about
+ * a COUNT, and this file's ranges are facts about a shape.
+ */
+const ALREADY_ROW_DRIVEN = ["population-pyramid"];
 
 /**
  * Aspect ranges MEASURED by rendering, with where each came from. `plot width / plot height`.
@@ -199,17 +224,32 @@ export function formForSize(type, size) {
       reason: "landscape is the frame this corpus was designed and accepted at",
     };
   if (BAND_SCALE_TYPES.includes(key))
-    return {
-      verdict: "transpose",
-      reason:
-        `${key} has a nominal category axis, so it has a twin FORM: rows running down the frame, ` +
-        `every name horizontal on one line, read top to bottom. Row-driven layout has no aspect to ` +
-        `distort, so no clamp applies.`,
-      cost:
-        "an argument drawn ACROSS the columns degrades — a reference rule at one category's level " +
-        "becomes a vertical line hard against the frame edge, where it reads as a border. Redraw " +
-        "the comparison as a mark, not as a rule.",
-    };
+    return ALREADY_ROW_DRIVEN.includes(key)
+      ? {
+          verdict: "transpose",
+          alreadyInIt: true,
+          reason:
+            `${key} has a nominal category axis — so it is a band-scale type and no clamp applies — ` +
+            `and it is drawn as rows ALREADY, so its twin form is the form it is in. Nothing here ` +
+            `asks for a redraw: it reads best at a tall frame (measured, ` +
+            `proof/aspect-range-probe/ASPECT-VERDICT.md §5) and what bounds it is its ROW BUDGET, ` +
+            `which assertRowsFit measures off the labels' own ink.`,
+          cost:
+            "none at a tall frame. The cost is at a FLAT one, where this type has no twin form left " +
+            "to take and its rows run out — which landscape's `as-is` verdict does not see.",
+        }
+      : {
+          verdict: "transpose",
+          alreadyInIt: false,
+          reason:
+            `${key} has a nominal category axis, so it has a twin FORM: rows running down the frame, ` +
+            `every name horizontal on one line, read top to bottom. Row-driven layout has no aspect to ` +
+            `distort, so no clamp applies.`,
+          cost:
+            "an argument drawn ACROSS the columns degrades — a reference rule at one category's level " +
+            "becomes a vertical line hard against the frame edge, where it reads as a border. Redraw " +
+            "the comparison as a mark, not as a rule.",
+        };
   const measured = MEASURED_ASPECT[key];
   if (measured)
     return {

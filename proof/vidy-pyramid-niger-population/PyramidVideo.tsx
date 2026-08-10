@@ -55,10 +55,7 @@ import {
   useVideoConfig,
 } from "remotion";
 // A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
-import {
-  progressOf,
-  type BeatTiming,
-} from "#shared/chart-video/timing.ts";
+import { progressOf, type BeatTiming } from "#shared/chart-video/timing.ts";
 // The VIDEO genre's own size table — its landscape row carries a 30px legibility floor and a 2.5
 // type scale where the static skill's carries 26 and 2.2, because a 16:9 video is watched on a
 // phone turned sideways (~800 dp) and a static landscape sits in a ~900 px article column.
@@ -153,7 +150,9 @@ function tokens(typeScale: number) {
     NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
     LEGEND: f(BASE.LEGEND) as typeof BASE.LEGEND,
     BAND_LABEL: f(BASE.BAND_LABEL) as typeof BASE.BAND_LABEL,
-    BAND_LABEL_ACCENT: f(BASE.BAND_LABEL_ACCENT) as typeof BASE.BAND_LABEL_ACCENT,
+    BAND_LABEL_ACCENT: f(
+      BASE.BAND_LABEL_ACCENT,
+    ) as typeof BASE.BAND_LABEL_ACCENT,
     REFERENCE_LABEL: f(BASE.REFERENCE_LABEL) as typeof BASE.REFERENCE_LABEL,
     SUBJECT_LABEL: f(BASE.SUBJECT_LABEL) as typeof BASE.SUBJECT_LABEL,
     GUTTER_MARGIN: sp(BASE.GUTTER_MARGIN),
@@ -453,6 +452,31 @@ export function PyramidVideo({
 
   const g = pyramidGeometry(displayBands, { width, height, padding, gutter });
 
+  // THE ROW BUDGET THIS BEAT DOES NOT YET REFUSE, AND WHY NO NUMBER IS WRITTEN HERE.
+  //
+  // `population-pyramid` joined `BAND_SCALE_TYPES` on 2026-08-11 (measured:
+  // `proof/aspect-range-probe/ASPECT-VERDICT.md` §5 — it reads best at tall frames and fails at
+  // flat ones by running out of ROWS, which is the bar family's own failure mode and no other
+  // kind's). One consequence must not be left implicit: `assertTypeMayEnter` above stops REFUSING
+  // square and portrait, so both became reachable for this beat. **Reachable is not legible.**
+  //
+  // The sibling static closes the same gap with `assertRowsFit`, which compares the row pitch
+  // against the ink of the band labels. That guard cannot speak here, and this beat's own
+  // label-thinning rung is the reason: at square the stride reaches five, so the four labels that
+  // survive are comfortably clear of one another and a label-based check PASSES — while the bars,
+  // which are the argument, fall to 3.3px of band each. The square still was rendered and opened:
+  // 21 bar pairs in roughly 130px of plot.
+  //
+  // So the honest instrument is a floor on the BAR's own band, and it is deliberately not written
+  // yet, because the only two readings that exist bracket it far too loosely: **3.3px is
+  // unpublishable (opened) and 11.2px is this beat's own delivered, accepted landscape render**. A
+  // floor derived from the outline this beat draws (OUTLINE_PAD*2 + OUTLINE_STROKE*2 = 30px) was
+  // written, run, and DELETED — it refused the delivered artifact, which is precisely the mistake
+  // `MEASURED_ASPECT`'s own header warns about: a bound reasoned to rather than rendered. Closing
+  // it is one probe run in `proof/aspect-range-probe/`'s own shape, sweeping the bar band between
+  // those two readings. Until then this beat's pinned landscape is unaffected and the two other
+  // sizes draw a picture nobody should publish without anything saying so.
+
   // ── The edit. Six windows, all read off the timing contract — no frame literal below.
   const establish = progressOf(frame, timing.establish);
   const referenceProgress = progressOf(frame, timing.reference);
@@ -554,11 +578,14 @@ export function PyramidVideo({
   const labelStride = Math.max(
     1,
     Math.ceil(
-      (bandLabelBand.ascent + bandLabelBand.descent + SPINE_LABEL_CLEARANCE * 2) /
+      (bandLabelBand.ascent +
+        bandLabelBand.descent +
+        SPINE_LABEL_CLEARANCE * 2) /
         g.rowHeight,
     ),
   );
-  const labelledRow = (i: number) => i % labelStride === subjectIndex % labelStride;
+  const labelledRow = (i: number) =>
+    i % labelStride === subjectIndex % labelStride;
 
   const spineMaskId = "pyramid-spine-clearance";
   const labelClearances = g.rows.map((r) => {
@@ -791,7 +818,9 @@ export function PyramidVideo({
                   accented ? BAND_LABEL_ACCENT.fontSize : BAND_LABEL.fontSize
                 }
                 fontWeight={
-                  accented ? BAND_LABEL_ACCENT.fontWeight : BAND_LABEL.fontWeight
+                  accented
+                    ? BAND_LABEL_ACCENT.fontWeight
+                    : BAND_LABEL.fontWeight
                 }
                 textAnchor="middle"
                 opacity={labelOpacity}

@@ -43,13 +43,27 @@ delivered PNG's own IHDR. It shipped 1800 x 1640 before, a frame stated twice as
 agreed with each other. This beat's own prose used to argue for a per-story 900 x 820 frame chosen
 FOR 21 bands; both dimensions are pinned now, so the 21 bands get what is left of 1080 instead.
 
-**Square and portrait are refused by `type-at-size.mjs`.** A pyramid is a strong candidate for a
-tall frame — the C6 case in the spec's own proof table — and it is refused all the same, because
-nobody has measured an aspect range for it and `BAND_SCALE_TYPES` does not contain it. That is a
-gap worth naming rather than working around: the type sheet's vocabulary is
-`population-pyramid`, its category axis IS ordinal age bands and it is ALREADY row-driven, so it is
-arguably a band-scale type whose twin form is the form it is in. Adding it to that list is a change
-to a carried file that other lots hold, so it is reported, not made.
+**Square and portrait are refused — and since 2026-08-11 the refusal comes from a MEASUREMENT of
+this beat rather than from an absence in a table.** It used to read: `type-at-size.mjs` refuses the
+type because nobody had measured an aspect range for it and `BAND_SCALE_TYPES` did not contain it,
+which was a gap worth naming rather than working around. `proof/aspect-range-probe/` closed it by
+rendering: swept across aspects, a pyramid reads best at the tall frames (85.7px of band pitch at
+0.5:1, a textbook silhouette) and fails at the flat ones by **running out of rows** — 28.6px pitch
+at 1.5:1 and the band labels touch, 17.9px at 2.4:1 and "95-99" prints through "90-94". Nothing
+about a shape is distorted; a count of bands stops fitting, which is the bar family's own failure
+mode and no other kind's. So `population-pyramid` is now in `BAND_SCALE_TYPES`, its verdict at a
+tall frame is `transpose` with `alreadyInIt: true` (its twin form is the form it is in — nothing is
+asked to be redrawn), and no aspect range clamps it.
+
+**What that changed here, and the guard it required.** Square and portrait became REACHABLE, and
+reachable is not legible: the first square render made after the list changed measured exactly the
+pinned 1080x1080, cleared `assertTypeFloor`, drew 21 age bands into about 90px of plot with the
+whole band-label column collapsed into one black smudge, and **nothing threw** — `assertPlotAspect`
+correctly declines to clamp a row-driven type and nothing else here read a row pitch. This beat now
+carries `assertRowsFit` (`@parity` with `more-lollipop-co2-per-capita` and
+`more-dumbbell-life-expectancy-gains`, where it was first written), and it refuses both loudly with
+the measurement: **3.5px of pitch at square and 5.5px at portrait, against the 26.0px of ink "65-69"
+actually draws at a 36px floor.** Landscape is byte-identical.
 
 **Four things the pinned frame changed, every one found by looking:**
 

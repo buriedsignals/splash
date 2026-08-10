@@ -58,6 +58,15 @@
  *   a range's `from` set to "measured by eye"                       RED — 42/2, on both the
  *        `proof/` address and the probe name
  *
+ * THE PYRAMID AS A BAND-SCALE TYPE, same sandbox, baseline 45 pass / 0 fail:
+ *
+ *   `population-pyramid` removed from BAND_SCALE_TYPES everywhere   RED — 44/1
+ *   `population-pyramid` present in ONE copy only                   RED — 44/1, from the walking
+ *        byte-parity guard, which is the whole reason it was added
+ *   `ALREADY_ROW_DRIVEN` emptied, so the verdict tells a pyramid    RED — 44/1. A type drawn as
+ *        to redraw what is already rows                                   rows already must not be
+ *        handed an instruction to transpose, and must not be told it pays a cost it does not.
+ *
  *   `assertWithinStage` measures the baseline, not the ascent      GREEN — 25/0, and recorded as
  *        the known blind spot rather than closed by tightening a number nobody measured. The
  *        0.75 cap-height estimate is deliberately generous, so it refuses LESS, never more; a run
@@ -319,8 +328,36 @@ describe("whether a type can enter a size at all", () => {
     for (const type of BAND_SCALE_TYPES) {
       const form = formForSize(type, "portrait");
       expect([type, form.verdict]).toEqual([type, "transpose"]);
-      expect(form.cost).toContain("reads as a border");
+      // A type drawn as columns pays the known regression when it takes rows. A type drawn as rows
+      // ALREADY pays nothing at a tall frame — and saying it does would be a cost nobody incurs.
+      expect([type, form.cost]).toEqual([
+        type,
+        expect.stringContaining(
+          form.alreadyInIt ? "none at a tall frame" : "reads as a border",
+        ),
+      ]);
+      expect([type, typeof form.alreadyInIt]).toEqual([type, "boolean"]);
     }
+  });
+
+  it("should say TRANSPOSE for a pyramid without telling a producer to redraw what is already rows", () => {
+    // The decision, on renders: `proof/aspect-range-probe/ASPECT-VERDICT.md` §5 swept it like every
+    // other type and it reads best at the tall frames (85.7px band pitch at 0.5:1) and fails at the
+    // flat ones by RUNNING OUT OF ROWS — 28.6px pitch at 1.5 and the band labels touch, 17.9px at
+    // 2.4 and "95-99" prints through "90-94". Nothing about a shape is distorted; a count stops
+    // fitting. That is the bar family's own failure mode and no other kind's.
+    const form = formForSize("population-pyramid", "portrait");
+    expect(form.verdict).toBe("transpose");
+    expect(form.alreadyInIt).toBe(true);
+    expect(form.reason).toContain("the form it is in");
+    // It points at the instrument that CAN answer it, because an aspect range cannot read a count.
+    expect(form.reason).toContain("assertRowsFit");
+    // And square is reachable for it now, which is the whole practical effect of the line.
+    expect(formForSize("population-pyramid", "square").verdict).toBe(
+      "transpose",
+    );
+    // A pyramid is row-driven, so nothing clamps it — it must never be handed an aspect range.
+    expect(MEASURED_ASPECT["population-pyramid"]).toBeUndefined();
   });
 
   it("should NOT transpose a type whose category axis is a continuum", () => {
