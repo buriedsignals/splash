@@ -6,6 +6,13 @@
  * the one that reads the ARTIFACT. It parses every committed static SVG, works out what is really
  * underneath each dashed rule and each line of text, and measures the pair.
  *
+ * THREE ASSERTIONS, not one: a dashed rule must read against every mark it crosses (3:1); a line of
+ * text must read against every mark it sits on (4.5:1); and **no line may be drawn through a line
+ * of text.** The third exists for `12d2589d`'s defect — the age pyramid's zero spine ran through all
+ * 21 of its band labels, so "85-89" read "85+89" — which was repaired with, in that commit's own
+ * words, no guard of its own. This is that guard, and it looks at EVERY line, not only the dashed
+ * ones, because the spine is solid.
+ *
  * Measured on the corpus the day before it existed: **21 of the 32 dashed rules that cross a mark
  * at all were under the 3:1 floor**, worst at 1.20:1 (an accent rule spending 97 % of its length
  * inside a bar), and 23 texts sat on a mark they did not clear 4.5:1 against. Three chart beats
@@ -48,8 +55,15 @@
  *    `static-carbon-footprint-spread/probe/` both still carry the 1.20:1 median rule their beat has
  *    since fixed, and both say so in their own headers. Skipped by a mechanical rule — a path
  *    segment named `probe` or ending `-probe` — not by a list of files.
- * 4. **Non-dashed annotations.** Rules are discovered by `stroke-dasharray`, the spec's own
- *    selector. A solid leader or a hatch is invisible here; widen the selector when one ships.
+ * 4. **A non-dashed annotation's CONTRAST.** The contrast half discovers rules by `stroke-dasharray`,
+ *    the spec's own selector, so a solid leader's colour is unmeasured here. (The strike-through
+ *    half sees every line, dashed or not.) Widen the selector when a solid annotation ships.
+ * 4b. **A haloed label's strike.** A ground-coloured halo painted under the glyphs
+ *    (`paint-order="stroke"`) is this corpus's own answer to a rule crossing a label, and glyph-level
+ *    occlusion is not something this scan can compute — so a haloed label is exempt from the strike
+ *    check. M5 below proves the exemption tracks the real mechanism rather than hiding a defect. The
+ *    cost, named: a halo painted in a colour that does NOT match what the label sits on passes here
+ *    and still looks ragged. That has shipped in this very corpus, and a person looking caught it.
  * 5. **`opacity` below 1.** A partly transparent fill is not a background this can compute, and a
  *    rule at `opacity=0` is not drawn; both are skipped rather than guessed at.
  * 6. **Video and web.** No committed SVG per frame, no DOM here. The video path is covered by the
@@ -90,6 +104,38 @@
  * M3 is the one to read. Five findings, at 0 % and 4 % of a length — every one a segment ending
  * exactly on a bar's edge, with no interior area at all. A guard written the obvious way reports
  * all five as defects, and the beats it accuses are correct.
+ *
+ * M4 — the strike-through half. `static-swiss-age-pyramid`'s spine mask removed (one continuous
+ * line from `plot.top` to `plot.bottom`, the drawing `12d2589d` replaced) and the beat re-rendered:
+ *
+ *   + "…static-swiss-age-pyramid-still.svg: a #616161 line is drawn through "0-4" for 8px of its
+ *      own length, with nothing painted over it there — a rule may not strike a label it crosses"
+ *   … and one for every other band label: "5-9", "10-14", "15-19", "20-24", "25-29", "30-34",
+ *   "35-39", "40-44", "45-49", "50-54", "55-59", …
+ *   (fail) … should draw no line through a line of text
+ *
+ * M5 — aimed at the halo exemption (limit 4b), to prove it tracks the mechanism rather than hiding
+ * the defect. `static-diverging-bar-eu-per-capita`'s three `paintOrder="stroke"` haloes removed and
+ * the beat re-rendered:
+ *
+ *   + "…static-diverging-bar-eu-per-capita-still.svg: a #000000 line is drawn through "−3.94" for
+ *      10px …"   + the same for "−4.01", "−4.09", "−4.55"
+ *   (fail) … should draw no line through a line of text
+ *
+ * Those four labels are EXACTLY the ones that beat's own header names as the claim defect its video
+ * sibling shipped — the average rule at −4.93 striking "−3.94", "−4.01", "−4.09" and turning a minus
+ * into a plus. Put the halo back and the guard goes green, because the defect is really gone.
+ *
+ * TWO THINGS THIS HALF DELIBERATELY DOES NOT REPORT, each argued rather than tuned:
+ *
+ *   - a line COVERED where it meets the text — the pyramid draws its magnitude gridlines under its
+ *     bars, and a gridline hidden by an opaque bar strikes nothing;
+ *   - a line under the 3:1 visibility floor against the paper it crosses. A `#D1D1D1` gridline at
+ *     1.36:1 passing behind a bold value label cannot be mistaken for a glyph stroke; a `#616161`
+ *     spine at 6.19:1 through an 11px band label is what turned "85-89" into "85+89". That is the
+ *     floor already in `annotation-ink.mjs`, read the other way round. Without it this reports ten
+ *     gridline crossings in `static-wind-vs-solar`, `static-small-multiples-solar-eu-six` and
+ *     `more-dumbbell-life-expectancy-gains` that corrupt nothing — opened and looked at, all three.
  */
 import { describe, it, expect } from "bun:test";
 import { readFileSync, readdirSync } from "node:fs";
@@ -127,6 +173,8 @@ type Rule = {
   y2: number;
 };
 type Text = {
+  order: number;
+  haloed: boolean;
   content: string;
   fill: string;
   x: number;
@@ -180,6 +228,7 @@ function parse(svg: string) {
   const fontFamily = root["font-family"] || "Helvetica, Arial, sans-serif";
   const shapes: Shape[] = [];
   const rules: Rule[] = [];
+  const strokes: Rule[] = [];
   const texts: Text[] = [];
   let raster = false;
   let order = 0;
@@ -211,15 +260,21 @@ function parse(svg: string) {
           });
       }
       const stroke = normaliseColour(a.stroke);
-      if (a["stroke-dasharray"] && stroke && opacity > 0 && m[1] === "line") {
-        rules.push({
+      if (stroke && opacity > 0 && m[1] === "line") {
+        const line = {
           order,
           stroke,
           x1: +a.x1,
           y1: +a.y1,
           x2: +a.x2,
           y2: +a.y2,
-        });
+        };
+        // DASHED lines are the annotation layer, and go to the contrast check. EVERY line —
+        // gridline, axis, spine, connector — goes to the strike-through check, because the defect
+        // that check exists for was a SOLID one: the pyramid's zero spine drawn straight through
+        // all 21 of its band labels, so "85-89" read "85+89".
+        if (a["stroke-dasharray"]) rules.push(line);
+        strokes.push(line);
       }
       continue;
     }
@@ -228,6 +283,17 @@ function parse(svg: string) {
     const content = decodeEntities(m[4]);
     if (!fill || !content.trim()) continue;
     texts.push({
+      order,
+      // A ground-coloured halo painted UNDER the glyphs (`paint-order="stroke"`) is this corpus's
+      // own answer to a rule crossing a label — `static-diverging-bar-eu-per-capita` carries it,
+      // and its header records the claim defect in the video sibling that made it necessary. Glyph-
+      // level occlusion is not something this scan can compute, so a haloed label is exempt from
+      // the strike check. NAMED COST: a halo painted in a colour that does not match what the label
+      // actually sits on would pass here and still look ragged, which is a defect that has shipped
+      // in this very beat and was caught by a person looking, not by a scan.
+      haloed:
+        (a["paint-order"] || "").trim().startsWith("stroke") &&
+        !!normaliseColour(a.stroke),
       content,
       fill,
       x: +a.x,
@@ -237,7 +303,7 @@ function parse(svg: string) {
       fontWeight: Number(a["font-weight"] || 400),
     });
   }
-  return { shapes, rules, texts, raster, fontFamily };
+  return { shapes, rules, strokes, texts, raster, fontFamily };
 }
 
 /** The topmost filled shape containing a point — document order decides, as the painter does. */
@@ -314,13 +380,17 @@ for (const file of everySvg) {
 
 const ruleFindings: string[] = [];
 const textFindings: string[] = [];
+const strikeFindings: string[] = [];
 let rulesCrossingAMark = 0;
 let textsOnAMark = 0;
 
 for (const file of measurable) {
   const label = relative(TWIN, file);
   const svg = readFileSync(file, "utf8");
-  const { shapes, rules, texts, fontFamily } = parse(svg);
+  const { shapes, rules, strokes, texts, fontFamily } = parse(svg);
+  const drawnStrokes = strokes.filter((s) =>
+    [s.x1, s.y1, s.x2, s.y2].every((v) => Number.isFinite(v)),
+  );
 
   for (const rule of rules) {
     if ([rule.x1, rule.y1, rule.x2, rule.y2].some((v) => !Number.isFinite(v)))
@@ -387,12 +457,65 @@ for (const file of measurable) {
           s.circle.cx - s.circle.r < roomy.x + roomy.width &&
           roomy.y < s.circle.cy + s.circle.r &&
           s.circle.cy - s.circle.r < roomy.y + roomy.height,
+      ) &&
+      // …and the same generous box against every drawn LINE's own extent, for the strike-through
+      // check below. Same property: over-generous, so it can only skip a string no line comes near.
+      !drawnStrokes.some(
+        (l) =>
+          roomy.x < Math.max(l.x1, l.x2) + 1 &&
+          Math.min(l.x1, l.x2) - 1 < roomy.x + roomy.width &&
+          roomy.y < Math.max(l.y1, l.y2) + 1 &&
+          Math.min(l.y1, l.y2) - 1 < roomy.y + roomy.height,
       )
     )
       continue;
     const ink = measureInk(text.content, { ...text, fontFamily });
     if (!ink) continue;
     const box = inkBox({ x: text.x, y: text.y, anchor: text.anchor, ...ink });
+
+    // A LINE DRAWN THROUGH A LINE OF TEXT. The defect this half exists for is `12d2589d`'s: the age
+    // pyramid's zero spine ran from the top of the plot to the bottom, straight through all 21 of
+    // its band labels, so "85-89" read "85+89" and "100+" read "100|+". The commit that repaired it
+    // admits, in its own message, that it shipped with no guard of its own. This is that guard.
+    //
+    // It looks at EVERY line, not only the dashed ones — the spine is solid — and it asks whether
+    // the line is still VISIBLE where it meets the text: a gridline covered by an opaque bar drawn
+    // after it strikes nothing, and the pyramid draws its magnitude gridlines under its bars for
+    // exactly that reason. Visibility is decided by the same painter's rule as everything else
+    // here, restricted to shapes painted after the line.
+    for (const line of text.haloed ? [] : drawnStrokes) {
+      const length = Math.hypot(line.x2 - line.x1, line.y2 - line.y1);
+      const samples = Math.max(1, Math.min(1200, Math.ceil(length)));
+      let through = 0;
+      for (let i = 0; i < samples; i++) {
+        const t = (i + 0.5) / samples;
+        const px = line.x1 + (line.x2 - line.x1) * t;
+        const py = line.y1 + (line.y2 - line.y1) * t;
+        if (px <= box.x || px >= box.x + box.width) continue;
+        if (py <= box.y || py >= box.y + box.height) continue;
+        const covering = backgroundAt(shapes, px, py);
+        if (covering && covering.order > line.order) continue;
+        // A line only STRIKES a label if it can be mistaken for one of its glyph strokes, and a
+        // line under the 3:1 visibility floor against the paper it crosses cannot be. This is not a
+        // threshold picked to make the suite green — it is the floor already in `annotation-ink.mjs`
+        // read the other way round, and it is the difference between the two things this scan finds:
+        // a `#D1D1D1` gridline at 1.36:1 passing behind a bold value label (visible on close
+        // inspection, corrupting nothing) and a `#616161` spine at 6.19:1 running through an 11px
+        // band label, which is what turned "85-89" into "85+89".
+        const paper = backgroundAt(shapes, px, py)?.fill ?? "#FFFFFF";
+        if (worstContrast(line.stroke, [paper]).ratio < NON_TEXT_CONTRAST_FLOOR)
+          continue;
+        through += 1;
+      }
+      if (through > 0) {
+        strikeFindings.push(
+          `${label}: a ${line.stroke} line is drawn through "${text.content.slice(0, 60)}" for ` +
+            `${through}px of its own length, with nothing painted over it there — a rule may not ` +
+            `strike a label it crosses`,
+        );
+      }
+    }
+
     const columns = 40;
     const rows = 5;
     const onMark = new Map<string, number>();
@@ -457,5 +580,9 @@ describe("every committed chart still — an annotation reads against what it is
 
   it("should print no text on a mark it cannot be read against", () => {
     expect(textFindings).toEqual([]);
+  });
+
+  it("should draw no line through a line of text", () => {
+    expect(strikeFindings).toEqual([]);
   });
 });
