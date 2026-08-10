@@ -54,7 +54,13 @@ import {
 } from "#shared/chart-beat/render-still.mjs";
 
 const TWIN = join(import.meta.dirname, "..");
-const REPO = join(TWIN, "..");
+// ASKED for, not computed by counting `..` upwards. The product used to sit one level inside the
+// repository, so the repository was TWIN's parent; it is the repository itself now, and a hard-coded
+// climb pointed one level too high — `git archive` then ran outside the repo and extracted nothing,
+// which the walk reported as a missing directory rather than as a wrong root.
+const REPO = execFileSync("git", ["-C", TWIN, "rev-parse", "--show-toplevel"], {
+  encoding: "utf8",
+}).trim();
 // Outside the repository, always. `TWO_PALETTE_WORK` lets a second run — the one in the default
 // suite — take its own directory so two runs cannot overwrite each other's renders.
 const WORK = process.env.TWO_PALETTE_WORK || "/tmp/two-palette-proof";
@@ -131,7 +137,12 @@ function freshTree() {
       `git -C ${JSON.stringify(REPO)} archive HEAD | tar -x -C ${JSON.stringify(WORK)}`,
     ]);
   }
-  const tree = join(WORK, "twin");
+  // The archive used to unpack a `twin/` directory, because the product lived one level down. It
+  // is the repository itself now, so the extracted tree IS the workspace. Derived rather than
+  // named: whichever of the two holds `skills/`, so this keeps working from either shape.
+  const tree = existsSync(join(WORK, "twin", "skills"))
+    ? join(WORK, "twin")
+    : WORK;
   rmSync(join(tree, "node_modules"), { force: true });
   execFileSync("ln", ["-s", join(TWIN, "node_modules"), join(tree, "node_modules")]);
   // The MapTiler key never enters the copy: every map beat here renders from its own committed
