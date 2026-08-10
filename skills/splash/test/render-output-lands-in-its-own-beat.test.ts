@@ -106,6 +106,13 @@
  *   M3, rule 1 — replacing `const HERE = dirname(fileURLToPath(import.meta.url))` with
  *   `const HERE = "/tmp/video-twin"` turned rule 1 RED for that beat, closing the bypass that would
  *   otherwise have made rules 2 and 3 pass on a script writing entirely into a scratch directory.
+ *
+ *   M4-M7, 2026-08-11, after `absoluteLiterals` was narrowed so a self-closing SVG tag stops
+ *   reading as a path (see its own note — the first beat script to emit raw markup reported 26
+ *   absolute paths, every one of them `/>`). `proof/aspect-range-probe/render.mjs`'s `const OUT`
+ *   set to `/Users/somebody/scratch`, `/tmp/video-twin`, `/private/tmp/out` and `~/Downloads/x` in
+ *   turn: **RED on all four**, 2 pass / 2 fail each, against a 4-pass baseline. The narrowing
+ *   removes a character class that no path can begin with and nothing else.
  */
 import { describe, it, expect } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -349,12 +356,25 @@ function inline(
   return out;
 }
 
-/** String literals in an expression that name an absolute path. */
+/**
+ * String literals in an expression that name an absolute path.
+ *
+ * THE CHARACTER AFTER THE SLASH IS PART OF THE TEST, and it was not until 2026-08-11. This scan
+ * pairs up quote characters, so inside a template literal that emits markup the run between an
+ * attribute's closing `"` and the literal's own closing backtick is captured as a value of its own
+ * — and for a self-closing SVG tag that value is exactly `/>`. `proof/aspect-range-probe/render.mjs`
+ * is the first beat script in this corpus to build raw SVG, and it reported **26 absolute paths,
+ * every one of them `/>`**.
+ *
+ * The narrowing is deliberately the smallest one that cannot hide anything: a path's first segment
+ * begins with a word character, a dot or a `~`, never with `>`. `/Users/…`, `/tmp/…`, `/private/…`
+ * and `~/…` are all still caught, which the mutations at the foot of this file re-prove.
+ */
 function absoluteLiterals(expr: string): string[] {
   const out: string[] = [];
   for (const m of expr.matchAll(/["'`]([^"'`\n]*)["'`]/g)) {
     const v = m[1];
-    if (/^~?\/(?!\/)/.test(v) && !/^\/\//.test(v)) out.push(v);
+    if (/^~?\/[\w.~]/.test(v) && !/^\/\//.test(v)) out.push(v);
   }
   return out;
 }
