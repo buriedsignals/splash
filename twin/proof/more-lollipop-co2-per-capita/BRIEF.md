@@ -1,9 +1,16 @@
+---
+size: landscape
+type: lollipop
+---
+
 # Beat — Switzerland's per-capita CO2 emissions, 3rd-lowest of 15 European peers
 
-**Type:** lollipop. **Medium/genre:** chart / static. **Channel:** article web, 900 x 800 (taller
-than the 900x560 default — a per-story FRAME choice, 15 country rows need more vertical room than
-the default gives, mirroring the same reasoning `static-swiss-age-pyramid` used for its 21 age
-bands).
+**Type:** lollipop. **Medium/genre:** chart / static. **Size:** landscape (1920 x 1080).
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize`. The per-story `900 x 800` frame this beat
+used to state in prose is gone — it was a third statement of a size nothing downstream read, beside
+the component's own `const FRAME` and the two literals in the render script.
 
 ## Claim
 
@@ -65,3 +72,28 @@ Yes, twice, before any code was written:
    that before writing `LollipopCo2.tsx` meant the value-label colour was `ink` from the first
    draft, including on Switzerland's own row — there was never a moment where the accent teal was
    used for the "3.6 t" text, so this specific defect could not recur here.
+
+## The three export sizes — one ships, two are refused, and the refusal is measured
+
+Rendered at all three and opened. **Landscape 1920x1080 is what this beat delivers.** Portrait and
+square are refused by `assertRowsFit`, not by a preference:
+
+| size | frame the credit and header may use | title | credit | value axis | left for 15 rows | one name's ink |
+|---|---|---|---|---|---|---|
+| landscape | 910 px | 53 px x 3 lines = 251 | 31 px x 1 = 53 | 75 | **531 px → 35.4 px pitch** | 29.5 px |
+| square | 936 px | 72 px x 7 lines = 702 | 42 px x 3 = 192 | 102 | **−60 px** | 39.9 px |
+| portrait | 979 px (Meta's safe band) | 72 px x 7 = 702 | 42 px x 3 = 192 | 102 | **−17 px** | 39.9 px |
+
+At the phone's 36 px legibility floor the header, the credit and the value axis take the whole band
+**before a single row is drawn**, and the fifteen country names need 599 px of ink between them.
+Removing the credit and the axis entirely, and setting the title on one line, still leaves 570 px
+against 599 — so this is not a header that could be trimmed, it is a row count a 360 dp reading
+width cannot hold. Rung **R8** (carry fewer rows and say so) is the rung above the refusal and it is
+not available here: the claim *is* "3rd-lowest **of 15**", so dropping rows drops the claim —
+exactly the loss `type-at-size.mjs` records against R8 for a ranking. So **R9**: the beat ships
+landscape, and the journalist is offered it by name.
+
+**What landscape cost.** The 900 x 800 frame this beat was tuned at is 1.13:1; landscape is 1.78:1
+and its type is 2.2x. Fifteen rows that sat 39 px apart under 14 px names now sit 35.4 px apart
+under 31 px names — legible, and 6 px from the refusal. That margin is the finding: this frame is at
+its row limit, and `assertRowsFit` is where a sixteenth row arrives.

@@ -8,6 +8,15 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { LollipopCo2 } from "./LollipopCo2.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -123,7 +132,34 @@ async function main() {
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
-  const { pngPath } = await renderStill({
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing. Before this, the size was two literals below and one more inside the component,
+  // and `renderStill` compared two of them against each other — so `size: portrait` on the slot
+  // produced this beat's own 900x800 landscape frame, rasterised to 1800x1600, in silence.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1
+      ? "more-lollipop-co2-per-capita-still"
+      : `more-lollipop-co2-per-capita-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all. A lollipop's category axis is NOMINAL, so it
+  // is a band-scale type with a twin form — and this beat is already drawn in it, rows running down
+  // the frame with every country name horizontal on one line. Rung R0 therefore costs it nothing,
+  // and no aspect clamp applies. What a tall frame costs it is ROWS, which the component refuses.
+  const form = assertTypeMayEnter("lollipop", size, {
+    what: "more-lollipop-co2-per-capita",
+  });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(LollipopCo2, {
       rows: sorted,
       title: claim,
@@ -133,13 +169,26 @@ async function main() {
       ground,
       accent,
       subject,
+      size,
     }),
-    width: 900,
-    height: 800,
-    outDir: HERE,
-    name: "more-lollipop-co2-per-capita-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "more-lollipop-co2-per-capita" });
+  assertWithinStage(svg, size, { what: "more-lollipop-co2-per-capita" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file`);
 }
 
 function ordinalSuffix(n) {
