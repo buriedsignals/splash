@@ -97,6 +97,17 @@ function mix(ground, toward, ratio) {
  * for the better pole is L = 0.1791, where the pure pole still measures 4.58:1.
  *
  * `grid` is decoration, not text — it carries no contrast floor and must not shout.
+ *
+ * BOTH ARE DEFINED BY THEIR DIRECTION, WHICH IS THE GROUND'S — never by a lightness of their own.
+ * `muted` and `grid` are steps from the ground TOWARD the ink pole, so on a light ground they come
+ * out darker than the page and on a dark ground lighter than it. That is why the reserve — the
+ * neutral a beat holds its non-subject material in — may not be described as "a lighter tone" or
+ * "a grey": both name what happens on a white page, and on a dark ground the first is inverted and
+ * the second is merely lucky. The dark-ground render is where that shows (`proof/palette-proof`:
+ * the same script, one ground light and one `#12161C`, gives a grey source line in one and a
+ * LIGHT-grey one in the other). Say "a step toward the ink", or say "recedes toward the ground" —
+ * both hold on every ground a newsroom can record. `render-still.test.ts` asserts the direction on
+ * both poles, so a change that always lightens goes red instead of shipping an inverted reserve.
  */
 export function deriveFurniture(ground) {
   if (!HEX.test(ground)) throw new Error(`ground must be #rrggbb, got ${JSON.stringify(ground)}`);

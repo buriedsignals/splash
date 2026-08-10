@@ -21,6 +21,14 @@ Colour in this system is not "pick something that looks nice together." It is as
   something to be compared against — prior years, other countries, the rest of the distribution —
   is drawn in a muted, neutral tone. Neutral is the default state of a mark; colour is the
   exception, not the palette.
+
+  **And that neutral is named by its DIRECTION from the ground, never by a lightness.** The reserve
+  is a step from the newsroom's ground toward the ink pole (`deriveFurniture`'s `muted`), so it
+  comes out darker than a light page and lighter than a dark one. Calling it "a lighter tone" — or
+  "a grey" — describes what happens on white and inverts silently the first time a newsroom records
+  a dark ground, which `proof/palette-proof` renders side by side from one script. Write "a step
+  toward the ink", or "recedes toward the ground": both hold on every ground. `render-still.test.ts`
+  asserts the direction on both poles, so prose and pixels cannot drift apart on this one.
 - **One semantic accent is reserved for the subject.** The single series, bar, region or point
   that the confirmed takeaway is actually about gets the one saturated colour on the canvas. If
   two things are accented, the reader cannot tell which one the story is about — a repeated

@@ -61,6 +61,37 @@ describe("deriveFurniture", () => {
     );
   });
 
+  // A16. The reserve — the neutral a beat holds its non-subject material in — was described in a
+  // beat's own brief as "a lighter tone", which is only true of a white page: `muted` and `grid`
+  // are steps from the ground TOWARD the ink pole, so they darken a light ground and lighten a
+  // dark one. The dark-ground render is where the description inverts (`proof/palette-proof` puts
+  // a LIGHT-grey source line on `#12161C` from the same script that puts a grey one on white).
+  //
+  // MUTATION (in a copy under /tmp): make `deriveFurniture` always lighten — e.g. return
+  // `mix(ground, "#FFFFFF", …)` for `muted` and `grid` regardless of the pole. The dark-ground
+  // half of this stays green (lightening a dark ground is still lightening) and the LIGHT-ground
+  // half goes red, naming the ground it inverted on.
+  it("should move the reserve toward the ink, so it darkens a light ground and lightens a dark one", () => {
+    // "Lighter" measured rather than eyeballed: a lighter colour stands further from black. The
+    // assertions are STRICT in both directions — "not lighter" would be satisfied by a reserve
+    // equal to the ground, which is a reserve nobody can see.
+    const lighter = (a: string, b: string) =>
+      contrast(a, "#000000") > contrast(b, "#000000");
+
+    for (const light of ["#FFFFFF", "#F2E9DC"]) {
+      const onLight = deriveFurniture(light);
+      expect(lighter(light, onLight.muted)).toBe(true);
+      expect(lighter(light, onLight.grid)).toBe(true);
+    }
+
+    for (const dark of ["#12161C", "#0B2A3A"]) {
+      // #12161C is the alt newsroom's recorded ground, from proof/palette-proof
+      const onDark = deriveFurniture(dark);
+      expect(lighter(onDark.muted, dark)).toBe(true);
+      expect(lighter(onDark.grid, dark)).toBe(true);
+    }
+  });
+
   it("should give muted text enough contrast to be read, on every ground", () => {
     for (const ground of [
       "#FFFFFF",
