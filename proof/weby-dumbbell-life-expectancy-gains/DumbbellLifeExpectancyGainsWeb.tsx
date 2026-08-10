@@ -43,6 +43,13 @@
  * once in node by whatever runner calls it.
  */
 
+import {
+  ENTRANCE_EASING,
+  WEB_ENTRANCE,
+  endOf,
+  entranceLayer,
+  markEvent,
+} from "../../skills/chart-web/assets/entrance.ts";
 import { dumbbellGeometry, type Row } from "./dumbbell-geometry";
 
 const UNIT = "years";
@@ -210,6 +217,82 @@ export function DumbbellLifeExpectancyGainsWeb({
   const totalWidth = catGutterPx + leftGutterPx + frame.width + rightGutterPx;
   const totalHeight = frame.height + frame.xAxisRowPx;
 
+  // ── THE ENTRANCE, carried from `proof/video-population-growth-dumbbell`. It answers the question
+  // I had left open — a dumbbell's mark is a RANGE between two dots, so does it grow from one end or
+  // open from the middle? — by doing NEITHER: **the row arrives whole, by fading, on its own clock,
+  // in gap-size order.** `rowOpacity[i]` there drives the connector, the right dot, the category
+  // label and the value label together, and nothing inside a row cascades against anything else
+  // inside it. A range is not a length measured from a baseline, and the video does not pretend it
+  // is.
+  //
+  // THE ONE PART THAT COULD NOT BE COPIED, and the reason is DATA, not medium. The video batches all
+  // ten left dots into the first 5 % of its reveal because its series is INDEXED (every left dot is
+  // 100, one fact the reference rule has already stated once). This beat's left dots are ten
+  // different life expectancies. So the batch is not dropped, it is promoted: **the ten 2000 dots
+  // are this beat's REFERENCE** — the level every gain is measured from — arriving together as their
+  // own event, before a single connector. That keeps the video's structural claim (the "before" is
+  // stated once, ahead of the evidence) on data that is shaped differently.
+  //
+  // THE SUBJECT is the United States, the title's second clause and the surprising half of it. It is
+  // already LAST in gap order, so lifting it out of the cascade costs the reading nothing — largest
+  // gain still arrives first — and gives it the distinct arrival this genre uses for emphasis
+  // wherever the video uses a ring the settled page does not carry. Its 2023 figure is the
+  // conclusion.
+  const SUBJECT = dots[dots.length - 1].country;
+  const cascade = dots.filter((d) => d.country !== SUBJECT);
+  const windowFor = (country: string) =>
+    country === SUBJECT
+      ? WEB_ENTRANCE.subject
+      : markEvent(
+          WEB_ENTRANCE.reveal,
+          cascade.findIndex((d) => d.country === country),
+          cascade.length,
+        );
+  const eventFor = (country: string) =>
+    country === SUBJECT ? ("subject" as const) : ("reveal" as const);
+  /** THE ROW, as one arrival. The connector carries the row's own name because its LENGTH is the
+   *  reading; the right dot and the two labels beside it share the same clock and carry no `names`,
+   *  because they are not gated ON the mark — they ARE the mark arriving, exactly as the video's one
+   *  `rowOpacity[i]` drives all four. */
+  const rowLayer = (country: string, isTheMark: boolean) => {
+    const own = windowFor(country);
+    return entranceLayer(eventFor(country), "fade", {
+      delay: own.start,
+      duration: own.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      ...(isTheMark ? { mark: country } : {}),
+    });
+  };
+  const conclusionLayer = () =>
+    entranceLayer("conclusion", "fade", {
+      delay: WEB_ENTRANCE.conclusion.start,
+      duration: WEB_ENTRANCE.conclusion.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+      names: SUBJECT,
+    });
+  const furnitureLayer = () =>
+    entranceLayer("establish", "fade", {
+      delay: WEB_ENTRANCE.establish.start,
+      duration: WEB_ENTRANCE.establish.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  /** The ten 2000 dots and their figures — the level the gains are measured from, all on one clock.
+   *  See above for why this is an event here and 5 % of the reveal there. */
+  const beforeLayer = () =>
+    entranceLayer("reference", "fade", {
+      delay: WEB_ENTRANCE.reference.start,
+      duration: WEB_ENTRANCE.reference.duration,
+      ease: ENTRANCE_EASING.ARRIVE,
+    });
+  const lastCascadeEnd = Math.max(
+    ...cascade.map((d) => endOf(windowFor(d.country))),
+  );
+  if (lastCascadeEnd > WEB_ENTRANCE.subject.start)
+    throw new Error(
+      `the last cascading row finishes at ${lastCascadeEnd}ms, after the subject starts landing at ` +
+        `${WEB_ENTRANCE.subject.start}ms`,
+    );
+
   return (
     <figure
       className="chart-figure"
@@ -235,7 +318,11 @@ export function DumbbellLifeExpectancyGainsWeb({
         ["--legend-weight" as string]: frame.legend.fontWeight,
       }}
     >
-      <div className="chart-header">
+      <div
+        className="chart-header"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <h2 className="chart-title">{title}</h2>
         <p className="chart-caveat">{CAVEAT}</p>
       </div>
@@ -244,7 +331,11 @@ export function DumbbellLifeExpectancyGainsWeb({
           the two dot colours are the ONLY thing naming which series is which, on every single row
           (`references/types/dumbbell.md`, "The accessibility trap"). Plain HTML, outside the
           overlay and NOT `aria-hidden`, because nothing else in this frame states it. */}
-      <div className="chart-legend">
+      <div
+        className="chart-legend"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
         <span className="legend-key">
           <span
             className="legend-swatch"
@@ -275,11 +366,18 @@ export function DumbbellLifeExpectancyGainsWeb({
         }}
       >
         <div className="y-axis">
+          {/* The country name arrives with ITS OWN ROW, not with the furniture — the video's own
+              choice: `rowOpacity[i]` drives the category label together with the connector and the
+              right dot. */}
           {dots.map((d) => (
             <span
               key={d.country}
+              {...rowLayer(d.country, false).attrs}
               className="axis-label y cat"
-              style={{ top: `${pct(d.rowY, frame.height)}%` }}
+              style={{
+                ...rowLayer(d.country, false).vars,
+                top: `${pct(d.rowY, frame.height)}%`,
+              }}
             >
               {d.country}
             </span>
@@ -312,6 +410,7 @@ export function DumbbellLifeExpectancyGainsWeb({
 
           {/* Vertical gridlines on the shared value scale — decoration, not a competing mark. Their
               own tick VALUES are HTML, in the x-axis row below. */}
+          <g {...furnitureLayer().attrs} style={furnitureLayer().vars}>
           {ticksX.map((tick) => (
             <line
               key={tick.value}
@@ -325,11 +424,16 @@ export function DumbbellLifeExpectancyGainsWeb({
             />
           ))}
 
+          </g>
+
           {/* The connector reads as neutral scaffolding, not a third mark competing with the two
-              dots — its whole job is to make the gap visible as a length. */}
+              dots — its whole job is to make the gap visible as a length. It carries the row's own
+              NAME for the entrance: the gap is the reading, so the connector is the mark. */}
           {dots.map((d) => (
             <line
               key={d.country}
+              {...rowLayer(d.country, true).attrs}
+              style={rowLayer(d.country, true).vars}
               x1={d.x2000}
               x2={d.x2023}
               y1={d.rowY}
@@ -382,8 +486,10 @@ export function DumbbellLifeExpectancyGainsWeb({
           {dots.map((d) => (
             <span
               key={`d2000-${d.country}`}
+              {...beforeLayer().attrs}
               className="dot"
               style={{
+                ...beforeLayer().vars,
                 left: `${pct(d.x2000, frame.width)}%`,
                 top: `${pct(d.rowY, frame.height)}%`,
                 width: `${DOT_RADIUS * 2}px`,
@@ -395,8 +501,10 @@ export function DumbbellLifeExpectancyGainsWeb({
           {dots.map((d) => (
             <span
               key={`d2023-${d.country}`}
+              {...rowLayer(d.country, false).attrs}
               className="dot"
               style={{
+                ...rowLayer(d.country, false).vars,
                 left: `${pct(d.x2023, frame.width)}%`,
                 top: `${pct(d.rowY, frame.height)}%`,
                 width: `${DOT_RADIUS * 2}px`,
@@ -412,8 +520,10 @@ export function DumbbellLifeExpectancyGainsWeb({
           {dots.map((d) => (
             <span
               key={`l2000-${d.country}`}
+              {...beforeLayer().attrs}
               className="value-label left"
               style={{
+                ...beforeLayer().vars,
                 left: `${pct(d.x2000, frame.width)}%`,
                 top: `${pct(d.rowY, frame.height)}%`,
               }}
@@ -424,8 +534,16 @@ export function DumbbellLifeExpectancyGainsWeb({
           {dots.map((d) => (
             <span
               key={`l2023-${d.country}`}
+              {...(d.country === SUBJECT
+                ? conclusionLayer()
+                : rowLayer(d.country, false)
+              ).attrs}
               className="value-label right"
               style={{
+                ...(d.country === SUBJECT
+                  ? conclusionLayer()
+                  : rowLayer(d.country, false)
+                ).vars,
                 left: `${pct(d.x2023, frame.width)}%`,
                 top: `${pct(d.rowY, frame.height)}%`,
               }}
@@ -435,7 +553,11 @@ export function DumbbellLifeExpectancyGainsWeb({
           ))}
         </div>
 
-        <div className="x-axis">
+        <div
+          className="x-axis"
+          {...furnitureLayer().attrs}
+          style={furnitureLayer().vars}
+        >
           {ticksX.map((tick, i) => (
             <span
               key={tick.value}
@@ -448,7 +570,13 @@ export function DumbbellLifeExpectancyGainsWeb({
         </div>
       </div>
 
-      <p className="chart-source">{source}</p>
+      <p
+        className="chart-source"
+        {...furnitureLayer().attrs}
+        style={furnitureLayer().vars}
+      >
+        {source}
+      </p>
     </figure>
   );
 }
