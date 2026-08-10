@@ -303,13 +303,20 @@ export function DotDensityStill({
           const w = measureText(l.name, COUNTRY_LABEL);
           return (
             <g key={l.key}>
+              {/* THE NAME PLATE IS OPAQUE. It used to be `opacity={0.82}`, which let 18% of whatever
+                  it covered bleed through the words: measured, black on the dot ink showing through
+                  a plate is 2.98:1, against the 4.5:1 a 12.5px bold label owes. A plate exists to
+                  give a name one background — a plate you can see the data through has not given it
+                  one. It also made the label unmeasurable: `annotation-reads-over-what-it-crosses`
+                  skips any fill under `opacity: 1` rather than guessing at a composite (its own
+                  blind spot 5), so it read straight past this rect to the dots and reported the
+                  label as illegible. Opaque, the same scan reads 21:1 and it is true. */}
               <rect
                 x={l.anchor[0] - w / 2 - 4}
                 y={l.anchor[1] - 14}
                 width={w + 8}
                 height={16}
                 fill={ground}
-                opacity={0.82}
               />
               <text
                 x={l.anchor[0]}
