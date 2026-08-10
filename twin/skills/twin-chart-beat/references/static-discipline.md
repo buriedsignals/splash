@@ -203,8 +203,18 @@ Ruling R2: a static ships at **landscape 1920×1080** (YouTube, article web), **
 the slot. Web is not a fourth size — it fills whatever container the CMS gives it, which is the
 `twin-chart-web` genre's whole subject and not this one's. The table is `scripts/sizes.mjs`.
 
-**The rasteriser draws 1:1, and that is a decision with a loser.** `rasterise` used to render at
-`fitTo: { mode: "width", value: width * 2 }`, so a 900×560 element shipped an 1800×1120 PNG. The
+**The rasteriser is to draw 1:1, and that is a decision with a loser — and it HAS NOT HAPPENED
+YET.** Measured 2026-08-11: `rasterise` still renders at `fitTo: { mode: "width", value: width * 2 }`
+in all three copies (`skills/twin-chart-beat/scripts/render-still.mjs:436`,
+`shared/twin-chart-beat/render-still.mjs:436`,
+`skills/splash-twin/assets/root-template/shared/twin-chart-beat/render-still.mjs:436`), and the
+delivered stills carry it — `static-carbon-footprint-spread-still.png` is 1800×1120. This paragraph
+was written in the past tense before the change it describes was made, which is a doctrine file
+recording a decision as a fact; the sequencing note two paragraphs below is the correct statement
+and always was. The tuning-knob row in `SKILL.md:168` still carries `2`, which is the honest half.
+
+So, in the present tense: `rasterise` renders at `fitTo: { mode: "width", value: width * 2 }`, so a
+900×560 element ships an 1800×1120 PNG. The
 alternative on the table was to keep that: halve every frame (960×540 / 540×540 / 540×960) and let
 the 2× deliver the platform's pixels, which preserves crispness and keeps the type tokens near
 their tuned values. It lost, measured rather than argued

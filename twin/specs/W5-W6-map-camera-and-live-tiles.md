@@ -4,9 +4,18 @@
 requires it: both rewrite how a map web beat is built, and W4's map half waits on this spec's answer
 to "how does the target aspect enter the camera".
 
-**Feedback closed:** B4.1, B4.2, B5.1, B5.3, B6.10, B6.14, B6.17, B6.18a. **Rulings implemented:** R1
-(live tiles, the key in the delivered file) and R2's map half (three fixed export sizes for static
-and video, a range for web).
+**Feedback this spec SETS OUT TO CLOSE — not a record of what is closed:** B4.1, B4.2, B5.1, B5.3,
+B6.10, B6.14, B6.17, B6.18a. **Rulings this spec sets out to implement:** R1 (live tiles, the key in
+the delivered file) and R2's map half (three fixed export sizes for static and video, a range for
+web).
+
+> **What is actually closed lives in `FEEDBACK-2026-08-10.md`, and only there.** Read against that
+> file on 2026-08-11, **one** of the eight above is closed — B6.18a (`30e334bc`, both halves, in the
+> named beat, driven rather than reasoned). B4.1, B5.1 and B5.3 are **partial**; B4.2, B6.10, B6.14
+> and B6.17 are **open**. This line said "Feedback closed:" for a fortnight and was read as a record
+> of eight items nobody had shipped: a scope header in the past tense is the same failure as a
+> doctrine file asserting a placement 55 components do not have. A spec states an intention. The
+> status column states the fact.
 
 **Method, non-negotiable** (`PLAN-2026-08-10.md:7-21`): no change below is answered with a shared
 module. Every change is made identically in each copy, and a **walking** parity test — one that finds

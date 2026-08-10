@@ -5,9 +5,17 @@
  *
  * A growing-radius reveal would let a mid-grow circle read as a smaller REAL magnitude than a
  * fully-grown smaller circle beside it — the same trap `geo-discipline.md`'s choropleth reveal
- * fixed with its "pending" texture, here for size instead of fill. So radius is CONSTANT from frame
- * one: every point draws its true final circle as a thin outline immediately, and what animates is
- * only the FILL's opacity, at its own point's arrival window. Size never lies; only presence does.
+ * fixed with its "pending" texture, here for size instead of fill. So radius is CONSTANT: a circle
+ * is drawn at its true final size or it is not drawn at all, and what animates is only its
+ * OPACITY, over its own point's arrival window. Size never lies; only presence does.
+ *
+ * THIS PARAGRAPH USED TO DESCRIBE SOMETHING ELSE, and the behaviour it described has been gone
+ * since `5873c5e0`. It said every point drew "its true final circle as a thin outline immediately"
+ * and that only the fill's opacity animated. That is exactly the defect the owner reported as
+ * seventeen empty rings at frame 40: an outline on the master clock is the accent arriving before
+ * the thing it accents, and it let a reader read every magnitude before a single event had. There
+ * is now ONE circle per event carrying both its `stroke` and its `fill`, mounted only once
+ * `arrived > 0` (see the comment at the mark itself).
  */
 
 import { Fragment } from "react";
@@ -199,7 +207,11 @@ export function QuakeSymbolVideo({
   // radius and only take its fill at `subject`, which announced the whole finding before the
   // reveal had begun. The `subject` event is now what it says it is: the moment the mark it is
   // about takes the accent, not the moment it first exists.
-  const subjectArrived = arrivalProgress(order.length, order.length + 1, reveal);
+  const subjectArrived = arrivalProgress(
+    order.length,
+    order.length + 1,
+    reveal,
+  );
 
   return (
     <AbsoluteFill style={{ backgroundColor: ground, fontFamily: FONT_FAMILY }}>

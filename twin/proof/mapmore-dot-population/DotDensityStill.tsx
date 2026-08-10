@@ -1,5 +1,5 @@
 /**
- * "More than half of this map's population lives in five countries" — 920 × 1010, one frame, no
+ * "More than half of this map's population lives in five countries" — 920 × 1140, one frame, no
  * order. A DOT-DENSITY beat: one dot per fixed number of people, scattered inside each country's own
  * polygon, so density reads as texture rather than one flat colour per region (which is what a
  * choropleth would draw instead). See `twin-map-beat/references/types/dot-density.md`.
@@ -126,7 +126,6 @@ export function DotDensityStill({
   const studyKeyText = `Shaded: the ${studyCount} countries counted in that total. Unshaded land is outside this map — see the note below.`;
   const dotKeyText = `● 1 dot = ${dotValue.toLocaleString("en-US")} people  —  ${totalDots.toLocaleString("en-US")} dots drawn for ${totalPopulation.toLocaleString("en-US")} people`;
   const dotKeyLines = wrap(dotKeyText, FRAME.width - PAD * 2, DOT_KEY);
-
 
   const studyKeyY = dotKeyY + (dotKeyLines.length - 1) * 20 + 26;
   if (studyKeyY + 6 > caveatTop - NOTE.fontSize - 10)
@@ -278,12 +277,7 @@ export function DotDensityStill({
         stroke={muted}
         strokeWidth={0.6}
       />
-      <text
-        x={PAD + 22}
-        y={studyKeyY}
-        fill={muted}
-        fontSize={NOTE.fontSize}
-      >
+      <text x={PAD + 22} y={studyKeyY} fill={muted} fontSize={NOTE.fontSize}>
         {studyKeyText}
       </text>
 
