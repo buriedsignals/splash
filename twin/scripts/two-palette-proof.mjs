@@ -18,10 +18,11 @@
 // dot field. A run that changes the ground too would move the whole frame and prove nothing about
 // where the accent reaches.
 //
-// WHAT IT DOES NOT PROVE, stated. It cannot tell a beat whose data moved from a beat where only an
-// accent-coloured LABEL moved — both are "the palette reached something". The reported fraction is
-// what separates them by eye, and `MIN_MOVED` below is set from the measured distribution rather
-// than chosen: a label sits in the hundreds of pixels, a data field in the tens of thousands.
+// WHAT IT DOES NOT PROVE, stated. It cannot tell a beat whose whole data channel moved from a beat
+// where only an accent-coloured LABEL moved — both are "the palette reached the picture", which is
+// the question it is for. The two fractions printed beside every row are what separates them, and
+// they are reported rather than scored because neither denominator is right for the whole tree
+// (the argument is on `MIN_MOVED_PIXELS`).
 //
 // It runs in a pristine copy of HEAD under /tmp, never in this tree: it rewrites PALETTE.md files
 // and re-renders artifacts, and doing that here would fight whoever else is working.
@@ -58,20 +59,24 @@ const REPO = join(TWIN, "..");
 // suite — take its own directory so two runs cannot overwrite each other's renders.
 const WORK = process.env.TWO_PALETTE_WORK || "/tmp/two-palette-proof";
 
-/** How much of the beat's own INK has to move before this is called a pass.
+/** HOW MANY PIXELS HAVE TO MOVE, in absolute count, before this is called a pass — and the two
+ *  fractions are REPORTED rather than scored. Both denominators were tried and both are wrong for
+ *  half the tree, which is why neither is the verdict:
  *
- *  OF THE INK, not of the frame, and the first draft got that wrong in a way worth recording: it
- *  divided by the whole frame, and `weby-dumbbell-life-expectancy-gains` — where every one of the
- *  twenty dumbbell endpoints changed hue, which is the entire data channel — scored 0.195% and was
- *  reported STILL. The page is tall and mostly white, the dots are small, and the denominator was
- *  measuring the whitespace. Opening the pair is what caught it, which is the whole reason this
- *  script says "open a pair and look at them" when it finishes.
+ *    - Divide by the FRAME and a sparse chart disappears into its own whitespace.
+ *      `weby-dumbbell-life-expectancy-gains` — every one of twenty dumbbell endpoints changed hue,
+ *      which is that chart's entire data channel — scored 0.195% and was called STILL. Opening the
+ *      pair is what caught it, which is why this script's last line says to open one.
+ *    - Divide by the INK — everything the beat drew that is not its ground — and a MAP disappears
+ *      into its own basemap: the plate is ink by that definition, so a route or a marker set moves
+ *      1% of a picture it is the entire subject of. `mapmore-flow-danube` scored 1.2%.
  *
- *  So the denominator is the pixels the beat actually DREW — everything in the first render that
- *  is not its own ground. A sparse chart and a full-bleed choropleth are then measured on the same
- *  scale. Both numbers are printed, because the frame fraction is still what tells a reader how
- *  much of the picture they would notice changing. */
-const MIN_MOVED = 0.02;
+ *  So the verdict answers the question the guard is actually for — *did the recorded answer reach
+ *  the picture at all?* — and 200 pixels is comfortably above what a rasteriser's anti-aliasing can
+ *  produce and comfortably below the smallest real mark in this tree. The mutation it exists to
+ *  catch moves EXACTLY ZERO. How MUCH of the picture moved is a different question, and the two
+ *  fractions beside every row are the honest answer to it. */
+const MIN_MOVED_PIXELS = 200;
 
 /** Two palettes as far apart as the floor allows, on any ground.
  *
@@ -406,12 +411,12 @@ async function main() {
       console.log(`unmeasured  ${beat} — could not decode`);
       continue;
     }
-    const verdict = best.fraction >= MIN_MOVED ? "moved" : "STILL";
+    const verdict = best.moved >= MIN_MOVED_PIXELS ? "moved" : "STILL";
     rows.push({ beat, verdict, ...best });
     console.log(
       `${verdict === "moved" ? "moved      " : "STILL      "}${beat}  ` +
-        `${(best.fraction * 100).toFixed(1)}% of its ink ` +
-        `(${(best.frameFraction * 100).toFixed(2)}% of the frame) — ${best.name}`,
+        `${String(best.moved).padStart(7)} px — ${(best.fraction * 100).toFixed(1)}% of its ink, ` +
+        `${(best.frameFraction * 100).toFixed(2)}% of its frame — ${best.name}`,
     );
   }
 

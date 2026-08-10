@@ -42,7 +42,8 @@
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // Two renders of a real chart, plus the export of a clean tree to render them in. Measured at
@@ -52,7 +53,10 @@ setDefaultTimeout(180_000);
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const BEAT = "static-electricity-mix-source";
-const WORK = "/tmp/two-palette-proof-guard";
+// A workspace of this run's own. Two suites running at once in this shared tree would otherwise
+// wipe each other's export half way through — which happened, and looked exactly like a failure of
+// the thing under test.
+const WORK = mkdtempSync(join(tmpdir(), "two-palette-guard-"));
 
 describe("the recorded palette reaches the pixels, not just the source", () => {
   it("should redraw the beat's data ink when the recorded answer changes", () => {
@@ -75,16 +79,17 @@ describe("the recorded palette reaches the pixels, not just the source", () => {
     ]);
     expect([BEAT, run.status]).toEqual([BEAT, 0]);
 
-    // And the number, so a beat that moved by a single anti-aliased pixel could not pass as one
-    // whose whole data channel moved. The fraction is of the beat's own INK — every pixel it drew
-    // that is not its ground — because dividing by the frame measures the whitespace: a sparse
-    // dumbbell whose every endpoint changed hue scored 0.195% of its frame and was called STILL
-    // until the pair was opened and looked at. Measured on this beat: 91% of its ink.
+    // And the size, so a beat that moved by a handful of anti-aliased pixels could not pass as one
+    // whose whole data channel moved. The verdict itself is an absolute pixel count, because
+    // neither denominator is right for the whole tree — the argument is on `MIN_MOVED_PIXELS` in
+    // the script. Measured on this beat: 732,212 pixels, 91% of its ink, 36% of its frame.
     const report = JSON.parse(
       readFileSync(join(WORK, "report.json"), "utf8"),
-    ) as { beat: string; verdict: string; fraction: number }[];
+    ) as { beat: string; verdict: string; fraction: number; moved: number }[];
     const row = report.find((r) => r.beat === BEAT);
     expect([BEAT, row?.verdict]).toEqual([BEAT, "moved"]);
+    expect(row!.moved).toBeGreaterThan(100_000);
     expect(row!.fraction).toBeGreaterThan(0.5);
+    rmSync(WORK, { recursive: true, force: true });
   });
 });
