@@ -15,21 +15,101 @@ import {
   contrast,
   FONT_FAMILY,
 } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { formForSize } from "#shared/twin-chart-beat/type-at-size.mjs";
 
 export type Series = { name: string; start: number; end: number };
 
-const FRAME = { width: 900, height: 560 };
-const PAD = 40;
-const TITLE = { fontSize: 24, fontWeight: 700, lead: 30 };
-const SUBTITLE = { fontSize: 14, fontWeight: 400, lead: 20 };
-const SOURCE = { fontSize: 14, fontWeight: 400 };
-const PERIOD_LABEL = { fontSize: 14, fontWeight: 700 };
-const CATEGORY_LABEL = { fontSize: 13, fontWeight: 600 };
-const VALUE_LABEL = { fontSize: 13, fontWeight: 700 };
+/** The type this beat draws, in `references/types/` vocabulary. `formForSize` answers for it, and
+ *  a size it refuses is refused by the runner before a mark is drawn. */
+export const TYPE = 'slope';
+
+/**
+ * THE 900-WIDE TUNING, KEPT AS THE BASE, WITH THE SIZE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more, and its absence is the point: the frame is `sizeFor(size)`'s,
+ * and `size` is the decision gate 2c took, read out of this beat's own `BRIEF.md` by `render.mjs`.
+ * Before this the size was stated TWICE as literals — once here and once in the render script — and
+ * `renderStill` compared them against each other, so they agreed by construction and nothing
+ * downstream of the gate ever read what the journalist chose.
+ *
+ * EVERY SPACING NUMBER GOES THROUGH `sp`, not only the fonts: the probe measured eleven bare
+ * literals in the layout arithmetic of the SIMPLEST static in this corpus, and scaling the type
+ * while leaving them collided the title into the subtitle at 1920x1080
+ * (`proof/static-carbon-footprint-spread/probe/VERDICT.md`). `PAD` is the one that does NOT go
+ * through it: a frame's margin is proportional to the CANVAS, not to the type — `frameInsetFor` in
+ * `sizes.mjs` states the split and argues it.
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 30 },
+  TITLE_TO_SUBTITLE: 28,
+  SUBTITLE_TO_PERIOD: 34,
+  PERIOD_TO_PLOT: 20,
+  LABEL_GUTTER_AIR: 12,
+  PLOT_FLOOR_AIR: 20,
+  SOURCE_AIR: 10,
+  LEADER_INSET: 8,
+  LABEL_INSET: 12,
+  LABEL_BASELINE_NUDGE: 4,
+  DOT_R: 3.5,
+  LINE_WIDTH: 1.5,
+  ACCENT_LINE_WIDTH: 3,
+  SUBTITLE: { fontSize: 14, fontWeight: 400, lead: 20 },
+  SOURCE: { fontSize: 14, fontWeight: 400 },
+  PERIOD_LABEL: { fontSize: 14, fontWeight: 700 },
+  CATEGORY_LABEL: { fontSize: 13, fontWeight: 600 },
+  VALUE_LABEL: { fontSize: 13, fontWeight: 700 },
+  MIN_LABEL_GAP: 16,
+} as const;
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = (tok: { fontSize: number; fontWeight: number; lead?: number }) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SUBTITLE: f(BASE.SUBTITLE) as typeof BASE.SUBTITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    PERIOD_LABEL: f(BASE.PERIOD_LABEL) as typeof BASE.PERIOD_LABEL,
+    CATEGORY_LABEL: f(BASE.CATEGORY_LABEL) as typeof BASE.CATEGORY_LABEL,
+    VALUE_LABEL: f(BASE.VALUE_LABEL) as typeof BASE.VALUE_LABEL,
+    TITLE_TO_SUBTITLE: sp(BASE.TITLE_TO_SUBTITLE),
+    SUBTITLE_TO_PERIOD: sp(BASE.SUBTITLE_TO_PERIOD),
+    PERIOD_TO_PLOT: sp(BASE.PERIOD_TO_PLOT),
+    LABEL_GUTTER_AIR: sp(BASE.LABEL_GUTTER_AIR),
+    PLOT_FLOOR_AIR: sp(BASE.PLOT_FLOOR_AIR),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    LEADER_INSET: sp(BASE.LEADER_INSET),
+    LABEL_INSET: sp(BASE.LABEL_INSET),
+    LABEL_BASELINE_NUDGE: sp(BASE.LABEL_BASELINE_NUDGE),
+    DOT_R: Math.max(1, sp(BASE.DOT_R)),
+    LINE_WIDTH: Math.max(1, sp(BASE.LINE_WIDTH)),
+    ACCENT_LINE_WIDTH: Math.max(1, sp(BASE.ACCENT_LINE_WIDTH)),
+    MIN_LABEL_GAP: sp(BASE.MIN_LABEL_GAP),
+  };
+}
+
+/** The removal ladder this beat runs, per size, recorded so the render can print it and the
+ *  artifact can carry it. At a phone frame the type floor is 36px, which triples the headline and
+ *  the credit; R3 fires before a mark is drawn. */
+export function rungsFor(size: string): string[] {
+  if (sizeFor(size).minTypePx < 36) return [];
+  return ["R3: the standfirst keeps its first sentence only"];
+}
+
+function firstSentence(text: string): string {
+  const stop = text.indexOf(". ");
+  return stop === -1 ? text : text.slice(0, stop + 1);
+}
 /** The label's own line height, in px — the minimum vertical gap the de-collision pass enforces
  *  between two category labels stacked at the same end. */
-const MIN_LABEL_GAP = 16;
-
 function wrap(
   text: string,
   maxWidth: number,
@@ -48,7 +128,7 @@ function wrap(
 }
 
 /** Push apart label y-positions, closest pair first, until every neighbouring pair clears
- *  `MIN_LABEL_GAP` — a minimal de-collision pass, not a full force layout, because six categories
+ *  `T.MIN_LABEL_GAP` — a minimal de-collision pass, not a full force layout, because six categories
  *  never needs one. */
 function decollide(values: number[], minGap: number): number[] {
   const order = values.map((v, i) => i).sort((a, b) => values[a] - values[b]);
@@ -86,10 +166,16 @@ export function slopeGeometry(
     width,
     height,
     padding,
+    minLabelGap,
   }: {
     width: number;
     height: number;
     padding: { top: number; right: number; bottom: number; left: number };
+    /** One line of the label's own type — the minimum vertical gap the de-collision pass keeps
+     *  between two category labels stacked at the same end. Passed in rather than read from a
+     *  module constant, because it scales with the frame and this function is outside the
+     *  component that knows the scale. */
+    minLabelGap: number;
   },
 ) {
   const plot = {
@@ -106,8 +192,8 @@ export function slopeGeometry(
 
   const startYRaw = series.map((s) => y(s.start));
   const endYRaw = series.map((s) => y(s.end));
-  const startY = decollide(startYRaw, MIN_LABEL_GAP);
-  const endY = decollide(endYRaw, MIN_LABEL_GAP);
+  const startY = decollide(startYRaw, minLabelGap);
+  const endY = decollide(endYRaw, minLabelGap);
 
   const lines = series.map((s, i) => ({
     name: s.name,
@@ -130,6 +216,7 @@ export function RenewablesShiftSlope({
   startLabel,
   endLabel,
   unit,
+  size,
 }: {
   series: Series[];
   title: string;
@@ -142,6 +229,8 @@ export function RenewablesShiftSlope({
   startLabel: string;
   endLabel: string;
   unit: string;
+  /** The size gate 2c pinned, read from this beat's own `BRIEF.md`. Not a default. */
+  size: string;
 }) {
   if (series.length < 2)
     throw new Error(
@@ -149,47 +238,75 @@ export function RenewablesShiftSlope({
     );
 
   const { ink, muted, grid } = deriveFurniture(ground);
-  const { width, height } = FRAME;
-
-  const titleLines = wrap(title, width - PAD * 2, TITLE);
-  const titleBaseline = PAD + TITLE.fontSize;
-  const limitsLines = wrap(limits, width - PAD * 2, SUBTITLE);
+  const { width, height, typeScale, minTypePx } = sizeFor(size);
+  const stage = stageFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const rungs = rungsFor(size);
+  const contentTop = stage.reserved ? stage.top : PAD;
+  const sourceBottom = stage.reserved ? stage.bottom : height - PAD;
+  const titleLines = wrap(title, width - PAD * 2, T.TITLE);
+  const titleBaseline = contentTop + T.TITLE.fontSize;
+  const standfirst = rungs.some((r) => r.startsWith("R3"))
+    ? firstSentence(limits)
+    : limits;
+  const limitsLines = wrap(standfirst, width - PAD * 2, T.SUBTITLE);
   const limitsBaseline =
-    titleBaseline + (titleLines.length - 1) * TITLE.lead + 28;
-  const sourceLines = wrap(source, width - PAD * 2, SOURCE);
-  // THE SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
+    titleBaseline + (titleLines.length - 1) * T.TITLE.lead + T.TITLE_TO_SUBTITLE;
+  const sourceLines = wrap(source, width - PAD * 2, T.SOURCE);
+  // THE T.SOURCE SITS ON THE FRAME'S OWN BOTTOM MARGIN — the LAST line lands on `height - PAD`, the
   // same inset the title hangs off at the top, on the same x. See
   // twin-chart-beat/references/static-discipline.md, "The source on the frame's bottom margin".
   const sourceBaseline =
-    height - PAD - (sourceLines.length - 1) * SUBTITLE.lead;
+    sourceBottom - (sourceLines.length - 1) * T.SUBTITLE.lead;
   // The period labels keep the air they always had above them, measured from the LAST HEADER line
   // rather than from the source, which is no longer in the header.
   const periodBaseline =
-    limitsBaseline + (limitsLines.length - 1) * SUBTITLE.lead + 34;
+    limitsBaseline +
+    (limitsLines.length - 1) * T.SUBTITLE.lead +
+    T.SUBTITLE_TO_PERIOD;
 
   const widestLabel = Math.max(
     ...series.map((s) =>
-      measureText(`${s.name} ${s.start.toFixed(1)}${unit}`, CATEGORY_LABEL),
+      measureText(`${s.name} ${s.start.toFixed(1)}${unit}`, T.CATEGORY_LABEL),
     ),
     ...series.map((s) =>
-      measureText(`${s.name} ${s.end.toFixed(1)}${unit}`, CATEGORY_LABEL),
+      measureText(`${s.name} ${s.end.toFixed(1)}${unit}`, T.CATEGORY_LABEL),
     ),
   );
   const padding = {
-    top: periodBaseline + 20,
-    right: PAD + 12 + widestLabel,
+    top: periodBaseline + T.PERIOD_TO_PLOT,
+    right: PAD + T.LABEL_GUTTER_AIR + widestLabel,
     // Grown by the source block's own height plus clear air: the credit now sits on the frame's
     // bottom margin, so the band beneath the plot has to end above its ink.
     bottom:
-      PAD +
-      20 +
-      (sourceLines.length - 1) * SUBTITLE.lead +
-      SOURCE.fontSize +
-      10,
-    left: PAD + 12 + widestLabel,
+      height -
+      (sourceBaseline - T.SOURCE.fontSize - T.SOURCE_AIR) +
+      T.PLOT_FLOOR_AIR,
+    left: PAD + T.LABEL_GUTTER_AIR + widestLabel,
   };
 
-  const { plot, lines } = slopeGeometry(series, { width, height, padding });
+  const { plot, lines } = slopeGeometry(series, {
+    width,
+    height,
+    padding,
+    minLabelGap: T.MIN_LABEL_GAP,
+  });
+
+  // THE LAST RUNG, FIRED RATHER THAN DESCRIBED. A slope has no measured aspect range — its argument
+  // IS a gradient, and a plot squeezed flat or stretched tall states a different one — so
+  // `assertPlotAspect` cannot clamp it and `assertTypeFloor` measures the type rather than the room
+  // it has. What is measured here is the plot: below four lines of label type there is no gradient
+  // left to read.
+  if (plot.bottom - plot.top < T.MIN_LABEL_GAP * series.length)
+    throw new Error(
+      `static-renewables-shift: at ${size} the plot is ` +
+        `${(plot.bottom - plot.top).toFixed(0)}px tall and ${series.length} label rows need at ` +
+        `least ${(T.MIN_LABEL_GAP * series.length).toFixed(0)}px, so the de-collision pass would ` +
+        `push every label off its own line.\n` +
+        `The ladder is spent: ${rungs.join("; ") || "no rung fires at this size"}.\n` +
+        `R9: this beat does not ship ${size}.`,
+    );
 
   return (
     <svg
@@ -199,6 +316,7 @@ export function RenewablesShiftSlope({
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       fontFamily={FONT_FAMILY}
+      data-ladder={rungs.join("; ") || "none"}
     >
       <desc>{alt}</desc>
       <rect x={0} y={0} width={width} height={height} fill={ground} />
@@ -207,10 +325,10 @@ export function RenewablesShiftSlope({
         <text
           key={line}
           x={PAD}
-          y={titleBaseline + i * TITLE.lead}
+          y={titleBaseline + i * T.TITLE.lead}
           fill={ink}
-          fontSize={TITLE.fontSize}
-          fontWeight={TITLE.fontWeight}
+          fontSize={T.TITLE.fontSize}
+          fontWeight={T.TITLE.fontWeight}
         >
           {line}
         </text>
@@ -219,9 +337,9 @@ export function RenewablesShiftSlope({
         <text
           key={line}
           x={PAD}
-          y={limitsBaseline + i * SUBTITLE.lead}
+          y={limitsBaseline + i * T.SUBTITLE.lead}
           fill={muted}
-          fontSize={SUBTITLE.fontSize}
+          fontSize={T.SUBTITLE.fontSize}
         >
           {line}
         </text>
@@ -230,9 +348,9 @@ export function RenewablesShiftSlope({
         <text
           key={line}
           x={PAD}
-          y={sourceBaseline + i * SUBTITLE.lead}
+          y={sourceBaseline + i * T.SUBTITLE.lead}
           fill={muted}
-          fontSize={SOURCE.fontSize}
+          fontSize={T.SOURCE.fontSize}
         >
           {line}
         </text>
@@ -273,8 +391,8 @@ export function RenewablesShiftSlope({
         x={plot.left}
         y={periodBaseline}
         fill={ink}
-        fontSize={PERIOD_LABEL.fontSize}
-        fontWeight={PERIOD_LABEL.fontWeight}
+        fontSize={T.PERIOD_LABEL.fontSize}
+        fontWeight={T.PERIOD_LABEL.fontWeight}
         textAnchor="middle"
       >
         {startLabel}
@@ -283,8 +401,8 @@ export function RenewablesShiftSlope({
         x={plot.right}
         y={periodBaseline}
         fill={ink}
-        fontSize={PERIOD_LABEL.fontSize}
-        fontWeight={PERIOD_LABEL.fontWeight}
+        fontSize={T.PERIOD_LABEL.fontSize}
+        fontWeight={T.PERIOD_LABEL.fontWeight}
         textAnchor="middle"
       >
         {endLabel}
@@ -301,18 +419,18 @@ export function RenewablesShiftSlope({
               x2={l.end.x}
               y2={l.end.y}
               stroke={stroke}
-              strokeWidth={isAccent ? 3 : 1.5}
+              strokeWidth={isAccent ? T.ACCENT_LINE_WIDTH : T.LINE_WIDTH}
             />
-            <circle cx={l.start.x} cy={l.start.y} r={3.5} fill={stroke} />
-            <circle cx={l.end.x} cy={l.end.y} r={3.5} fill={stroke} />
+            <circle cx={l.start.x} cy={l.start.y} r={T.DOT_R} fill={stroke} />
+            <circle cx={l.end.x} cy={l.end.y} r={T.DOT_R} fill={stroke} />
             {/* Value label carries the number in ink, never the line's own accent — the same
                 escalated-contrast discipline as every other type in this set
                 (`visual-system.md`). A short leader connects the label to its true point when the
                 de-collision pass above has shifted it. */}
             <line
-              x1={l.start.x - 8}
+              x1={l.start.x - T.LEADER_INSET}
               y1={l.start.y}
-              x2={l.start.x - 8}
+              x2={l.start.x - T.LEADER_INSET}
               y2={l.start.labelY}
               stroke={stroke}
               strokeWidth={1}
@@ -320,20 +438,20 @@ export function RenewablesShiftSlope({
               opacity={Math.abs(l.start.y - l.start.labelY) > 1 ? 1 : 0}
             />
             <text
-              x={l.start.x - 12}
-              y={l.start.labelY + 4}
+              x={l.start.x - T.LABEL_INSET}
+              y={l.start.labelY + T.LABEL_BASELINE_NUDGE}
               fill={ink}
-              fontSize={CATEGORY_LABEL.fontSize}
-              fontWeight={isAccent ? 700 : CATEGORY_LABEL.fontWeight}
+              fontSize={T.CATEGORY_LABEL.fontSize}
+              fontWeight={isAccent ? 700 : T.CATEGORY_LABEL.fontWeight}
               textAnchor="end"
             >
               {l.name} {l.start.value.toFixed(1)}
               {unit}
             </text>
             <line
-              x1={l.end.x + 8}
+              x1={l.end.x + T.LEADER_INSET}
               y1={l.end.y}
-              x2={l.end.x + 8}
+              x2={l.end.x + T.LEADER_INSET}
               y2={l.end.labelY}
               stroke={stroke}
               strokeWidth={1}
@@ -341,11 +459,11 @@ export function RenewablesShiftSlope({
               opacity={Math.abs(l.end.y - l.end.labelY) > 1 ? 1 : 0}
             />
             <text
-              x={l.end.x + 12}
-              y={l.end.labelY + 4}
+              x={l.end.x + T.LABEL_INSET}
+              y={l.end.labelY + T.LABEL_BASELINE_NUDGE}
               fill={ink}
-              fontSize={CATEGORY_LABEL.fontSize}
-              fontWeight={isAccent ? 700 : CATEGORY_LABEL.fontWeight}
+              fontSize={T.CATEGORY_LABEL.fontSize}
+              fontWeight={isAccent ? 700 : T.CATEGORY_LABEL.fontWeight}
               textAnchor="start"
             >
               {l.name} {l.end.value.toFixed(1)}

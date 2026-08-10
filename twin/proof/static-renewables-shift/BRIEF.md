@@ -1,3 +1,8 @@
+---
+size: landscape
+type: slope
+---
+
 # Beat — Germany's renewable share nearly doubled in nine years
 
 **Type:** slope. **Medium/genre:** chart / static. **Channel:** article web, 900 x 560.
@@ -27,3 +32,23 @@ sit 1pp apart in 2015, and again in 2024) was worth verifying at the pixel level
 the algorithm — confirmed by looking that the two clustered pairs (Sweden/Switzerland at both
 ends, France/Poland at the 2024 end) separate cleanly with short leader lines rather than
 overlapping.
+
+## Size — 2026-08-11
+
+**Pinned: landscape (1920 x 1080)**, in the front matter, read by `readPinnedSize` and verified from
+the delivered PNG's own IHDR. It shipped 1800 x 1120 before.
+
+**Square and portrait are refused by `type-at-size.mjs`.** A slope's argument IS a gradient, and
+Horak et al. §2.4.2 names line-family types as the ones that resist rotation, so it has no twin
+form; no aspect range has been measured for it either. Refusing costs one probe run to reverse; a
+slope drawn at an angle nobody chose says a different thing about the same numbers.
+
+**What the migration touched, and what survived it.** The label gutter is still driven by the widest
+label MEASURED at the font it is drawn in — the repair that stopped this beat truncating a country
+name into its own data — and it re-derives at the new scale with no edit, which is the point of
+measuring rather than reserving. The de-collision pass's `MIN_LABEL_GAP` is one line of label type,
+so it scales with the frame and is passed into the geometry rather than read from a module constant
+the geometry cannot see the scale of. The dot radius and the two line weights were bare numbers and
+now scale: a 1.5px line on a 1920px frame is a hairline nobody asked for. The beat also gained a
+plot floor of its own — below one label row per series, the de-collision pass pushes every label off
+its own line, and no counter in this project sees that.
