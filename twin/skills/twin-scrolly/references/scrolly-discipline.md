@@ -65,7 +65,127 @@ fall outside the visible slice; a graphic that fills a 1600px-wide viewport does
 a defect can EXPOSE the next one; that is not a reason to distrust the fix, it is a reason to look
 again at the picture the fix produces before calling the round closed.
 
-## The one gotcha that will waste your day (read first)
+## The graphic is fixed and the page does not scroll (the seventh correction, and the one that
+## removed a mechanism rather than tuning it)
+
+**Read this before the two sections below it.** They describe the sticky model, in full, because
+five rounds of this file's own corrections are only legible against it — and because the defect it
+produced is the clearest thing in this project about the difference between *a check that passes*
+and *a page that works*. That model is gone. What follows here is what ships.
+
+**The owner's report, after driving the three new beats: `le scrolly est buggé pour tous`.** Not one
+beat — all of them, and the shipped seed with them. Two sentences of his named the model rather than
+a bug in it: *en scrolly le contenu ne doit pas bouger, donc pas avoir la possibilité de scroller
+dans la page. Seul le bloc texte explication bouge au scroll. Hors là on scroll d'abord dans la page
+qui fait disparaître le titre alors que ça devrait être fixe.*
+
+**What the sticky model could not avoid, however well it was tuned.** The DOCUMENT scrolled and the
+graphic was `position: sticky`, so:
+
+1. **The graphic arrived late.** Between scroll 0 and the moment its top reached `top: 0` it was
+   still climbing from below the header — ordinary sticky catch-up, not a bug in the CSS. In that
+   band its whole box hangs below the fold by the header's own height, which drags a FITTED frame's
+   content down into the pinned panel's lane. Measured on `scrolly-chart-eu-carbon`: 90px of a
+   3,330px track at 1600×900, and 177px of 3,100px at 375×812, where the phone's taller header
+   makes it worst. The seed and the Danube beat dodged it by accident of frame kind — their first
+   step is COVER-cropped with its annotations high — so the corpus had been lucky, not correct.
+2. **The title disappeared on the reader's first gesture**, because the header was in the document
+   that scrolled. That is the owner's own sentence, and no value of `--graphic-h` addresses it.
+3. **The component fought its host for the scroll.** Ruling R2 makes web an embed component; a
+   component that takes over an article's scroll is a nuisance in it.
+
+**The model that replaced it, in four rules.** `.scrolly` is a two-row grid exactly one frame tall
+(`grid-template-rows: auto minmax(0, 1fr)`), `html, body` are `height: 100%; overflow: hidden`, and:
+
+```css
+.scrolly-track  { position: relative; overflow: hidden; }              /* row 2: the frame */
+.scrolly-graphic{ position: absolute; inset: 0; z-index: 0; }          /* fixed. never moves. */
+.scrolly-steps  { position: absolute; inset: 0; z-index: 1; overflow-y: auto; }  /* the one scroller */
+.step           { min-height: 115%; }                                  /* % of the track, not vh */
+```
+
+The header is row 1, OUTSIDE the scroller, so it is fixed by construction rather than by a
+`position` keyword that has to be got right. The graphic is not positioned from the scroll at all,
+so it cannot lag behind it. The deliberate overlap this genre is built on survives unchanged — it is
+now two absolutely-positioned layers sharing one box instead of a negative margin cancelling a
+sticky reservation, which is the same picture with one fewer number to keep in step.
+
+**What this made unnecessary, and it is a long list**: `--graphic-h`; `.scrolly-steps`'s negative
+top margin; the whole sticky-reservation trick and the gotcha section that explains it; the approach
+band and every measurement of it; the un-pin band at the end of the track; and `115vh` versus the
+track's real height, which were the same number under the old model and are not under this one.
+
+**What it cost, and this is not free.** The graphic no longer fills the viewport's full height — it
+fills the viewport minus the fixed header, measured at 821px of 900 at 1600×900 and 588px of 812 at
+375×812. That is the price of a title that stays, and it is the shape the reader already saw at
+scroll 0 under the old model; what changed is that it now stays that way. Taking the scroll off the
+document also takes the reader's default keyboard scrolling with it, which is why `.scrolly-steps`
+carries `tabindex="0"` — a scroll container that cannot be focused cannot be driven by a keyboard,
+and losing Page Down would have been a real regression traded for a visual one.
+
+## The active step is decided from every panel, on every scroll — never from a delta
+
+**The second half of the same correction, and the one that had actually broken every beat.** The
+model above explains why the title moved and why a fitted frame's content sat in the lane. It does
+not explain the owner's other sentence — *les steps sont mal gérés, des charts/maps/images
+apparaissent au mauvais moment* — which contradicted a measurement taken the same week: 25 scroll
+positions, three widths, the active frame at exactly `opacity: 1` and every other at exactly `0`,
+25 out of 25.
+
+**Both were true, and the instrument is why.** Every round of this skill was verified by JUMPING to
+N discrete scroll offsets, waiting ~450ms for the page to settle, and reading the state. Driven
+CONTINUOUSLY instead — the only way a reader has ever met one of these — the same five pages at the
+same three widths measured:
+
+- **in FOURTEEN of the fifteen runs at least one step's frame was never painted at all.** On
+  `scrolly-chart-eu-carbon` at 1600×900 the sequence was `direction → level → change`, and `spread`
+  — the last step, with its own chart and its own paragraph — simply never appeared;
+- the graphic lagged the prose by up to **1,800px of a 3,300px track**;
+- roughly **45% of every animation frame the browser drew was a blend of two frames**, which is the
+  "permanent double exposure" a previous round of this file claims to have removed. It had come
+  back through a different door.
+
+**The cause: `pickActiveStep` decided from the delta set.** The old rule took the entries of the
+CURRENT `IntersectionObserver` callback — the panels whose ratio had just crossed one of
+`[0, 0.25, 0.5, 0.75, 1]` — and activated the best of those. A callback carrying one panel activated
+that panel unconditionally, whatever every other panel was doing. On a teleport the browser
+recomputes every panel at once, so the delta set IS the full state and the rule is accidentally
+right; on a continuous scroll the outgoing and incoming panels cross thresholds on alternating
+frames and the active class OSCILLATED between them — measured, on one boundary at 1600×900:
+`change` handed the class 8 times, `level` 5, `direction` 3. Each flip restarted the 0.3s opacity
+transition from wherever the last one had reached, so nothing ever finished arriving.
+
+**What ships instead is smaller, not larger.** There is no observer, no threshold list and no
+`rootMargin`. On every `scroll` of the prose column, measure where every panel currently is and give
+the step to whichever occupies the most of the lane. Lane occupancy changes monotonically as a panel
+enters and leaves, so the winner changes exactly once per boundary — a property of the rule, not a
+tuning of it, and true at any scroll speed and through any number of frames the browser skipped.
+
+**And which panel is PAINTED is a different decision from which frame is SHOWN.** This is the third
+piece, and it closes the last of the prose-over-annotation collisions. A `bottom`-sticky panel
+un-pins one panel-height BEFORE the next one parks, and spends that gap climbing up over the
+graphic — still `active`, still opaque, straight across the band the lane exists to keep clear. So
+`active` (which frame) is held across the gap, because the graphic is fixed and has nothing else to
+show; `in-lane` (which panel may be painted) is not. A panel that has left the lane is not painted,
+so it cannot cover anything. Leaving is a CUT and arriving is a fade, deliberately: a panel mid-fade
+is a translucent box over the graphic, harmless inside the lane and exactly the forbidden scrim
+outside it. Measured with a 0.12s exit, that was still 168px of track per boundary with prose over
+the tick labels; a cut is 0.
+
+**What that leaves, named rather than discovered later.** A panel taller than its lane can never be
+inside it, and every beat on disk has one at 375×812 (209px of prose plus a 32px offset against a
+177px lane) and most have one at 1280×800. Such a panel is painted anyway — a reader with a graphic
+and no words is worse than an overlap — and `scripts/verify-scrolly.mjs` reports the beat and the
+width every time. Two more residues belong to beats and not to this scaffold: the Danube beat's
+numbered badge "6" sits inside the lane at 1600×900 (2 animation frames of 229), and the Grinnell
+beat's photo-credit line sits inside it at 1280×800 (213 of 224). The vehicle cannot move a beat's
+own marks.
+
+## The one gotcha that wasted five rounds (historical — the model above replaced it)
+
+**Everything from here to "The prose lane" describes the STICKY model, which no longer ships.** It
+is kept because the corrections in it were each right about the thing they measured and wrong about
+the thing they did not, and that pattern is this file's most useful content. Read it as history.
 
 **`position: sticky` reserves its element's ORIGINAL layout box at its original document
 position.** This is a fact about how `sticky` works, not a bug — but this skill's first build
@@ -655,8 +775,32 @@ this seed.
 
 ## Verification
 
-Applied by driving a real browser, not by reading the markup or trusting a screenshot taken before
-scrolling. `twin-doctrine` states this as a universal rule, and this genre is the reason it exists
+**A SAMPLED PROBE IS NOT A WEAKER VERSION OF DRIVING; IT IS BLIND BY CONSTRUCTION, AND IT PASSED A
+VEHICLE THAT WAS BROKEN ON EVERY BEAT.** Every claim below the horizontal rule in this section was
+measured by jumping to N scroll offsets and reading the state after the page had settled. Every one
+of those numbers was true. The pages they were taken on never painted their last step for a reader
+who scrolled. The standing rule this bought:
+
+- **Install the recorder before you touch the scroll position, and read back every frame the
+  browser drew.** `scripts/verify-scrolly.mjs` runs a `requestAnimationFrame` recorder through a
+  continuous pass at one step per ~60 frames — derived from each beat's own step height, so a phone
+  and a desktop get the same dwell rather than the same pixel rate — and asserts, over every scrolly
+  on disk at 1600×900, 1280×800 and 375×812: the document has no scroll of its own; the graphic's
+  box and the header's box are identical at every recorded frame; every step's frame reaches
+  opacity 1, in the order the steps are declared; each step is handed `active` exactly once per
+  pass; the graphic settles to a clean 1/0 when the scroll stops; never two panels painted at once;
+  and no panel is painted while its top sits above the lane. `test/scroll-integrity.test.ts` walks
+  it, and names the three mutations that redden it.
+- **Ask what the instrument cannot see, and write the answer down.** That test's own header does.
+
+Measured this way, with the model and decision rule this file now describes, on all five scrollies
+on disk at three widths — 0 failures. The same instrument on the same beats before the correction:
+14 runs of 15 with a step's frame never painted, and oscillation on every boundary.
+
+---
+
+Older claims, kept for the history above and superseded wherever the two disagree. Applied by
+driving a real browser, not by reading the markup or trusting a screenshot taken before scrolling. `twin-doctrine` states this as a universal rule, and this genre is the reason it exists
 in the first place: this skill's own first build passed a static look at the rendered HTML (title
 present, every frame present, every `<p>` present, one `.active` class present) and still shipped
 the sticky-reservation defect this file describes — a defect visible only once a script actually

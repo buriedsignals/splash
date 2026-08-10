@@ -1,14 +1,14 @@
 ---
 name: twin-scrolly
-description: Use to produce a scroll-driven interactive (scrollytelling) — a sticky graphic that fills the frame behind, with narrative prose stepping over it as the reader scrolls. A VEHICLE, not a fourth chart genre — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
+description: Use to produce a scroll-driven interactive (scrollytelling) — a FIXED graphic that fills the frame behind, with narrative prose stepping over it as the reader scrolls the prose column (the page itself does not scroll). A VEHICLE, not a fourth chart genre — it ASSEMBLES DIFFERENT MEDIA behind one narrative; its seed carries four tracks (an IMAGE, a drawn diagram, a baked MAP and a real CHART). It does not invent a second drawing engine and it does not step a single chart through several states.
 ---
 
-# twin-scrolly — the graphic is the ground, the prose is pinned in a lane over it, drive a real browser to check both
+# twin-scrolly — the graphic is the fixed ground, the prose is pinned in a lane over it, drive a real browser through a CONTINUOUS scroll to check both
 
 ## Overview
 
 The scroll-driven vehicle. It does not hold a chart type and it is not a scrollytelling framework:
-it holds the **mechanism** — a sticky graphic that fills the frame behind the reader's own scroll,
+it holds the **mechanism** — a FIXED graphic that fills the frame behind the reader's own scroll,
 with a pinned panel of prose sitting OVER it as N narrative steps go by — and **one worked beat**
 that carries that mechanism with **four genuinely different media**.
 
@@ -49,23 +49,40 @@ this element got wrong. Read it before writing a second scrolly beat.
 
 ## The one gotcha that will waste your day (read first)
 
-**`position: sticky` with a `bottom` offset only ever shifts a box UP.** It clamps a box that would
-otherwise sit BELOW the offset line; it can never push one down. So a prose panel placed at the TOP
-of its step has nowhere to be shifted to and travels with the scroll exactly as if `position:
-sticky` were not there — the CSS looks right, the panel is not pinned, and every collision the
-pinning was meant to remove is still there. This was shipped and measured before it was caught: at
-1600×900 the panel moved from y=768 to y=−32 across one step. **The panel must sit at the BOTTOM of
-its step box (`align-items: flex-end`) for the offset to do anything at all.**
+**A SCROLLY CHECKED BY JUMPING TO SCROLL POSITIONS IS NOT CHECKED.** This genre shipped five rounds
+of corrections verified that way — teleport to 25 offsets, wait for the page to settle, read the
+state — and every number came back perfect: one frame at opacity 1, every other at 0, one panel at a
+time, all four steps in order, 25 out of 25, at three widths, on five beats. Driven CONTINUOUSLY
+instead, **fourteen of those fifteen runs never painted at least one step's frame at all**, and the
+graphic lagged the prose by up to 1,800px of a 3,300px track. The owner needed three words for it:
+*le scrolly est buggé pour tous*. A teleport hands an `IntersectionObserver` every panel in one
+callback, so a rule that decides from the delta set is accidentally right exactly under the
+instrument that checks it. **Install a `requestAnimationFrame` recorder BEFORE you touch the scroll
+position; `scripts/verify-scrolly.mjs` is that, and `test/scroll-integrity.test.ts` walks it over
+every scrolly on disk.**
 
-That matters because the pinned panel is what makes the vehicle's own deliberate overlap safe.
-`.scrolly-graphic` sits sticky at the top of `.scrolly-track`, reserving a box `--graphic-h` tall,
-and `.scrolly-steps` is given `margin-top: calc(-1 * var(--graphic-h))` to pull the prose column
-back UP over that exact reserved box on purpose. Prose and graphic share the same screen coordinates
-by design. What keeps that readable is not luck, it is a **lane**: `PROSE_LANE` reserves the bottom
-28% of the graphic for the panel, and every frame keeps everything it annotates above it —
+**THE GRAPHIC IS FIXED AND THE PAGE DOES NOT SCROLL.** `.scrolly` is a two-row grid exactly one
+frame tall, `html, body` are `overflow: hidden`, the header is row 1 (outside the scroller, so it
+cannot slide away), and inside row 2 the graphic and the prose column are two absolutely-positioned
+layers filling the same box. **The only element in the document with scroll distance is
+`.scrolly-steps`.** There is no `position: sticky` on the graphic, no `--graphic-h`, and no negative
+margin: nothing is positioned from the scroll, so nothing can lag behind it — and the component
+never steals its host article's scroll, which is what an embed must not do. The deliberate overlap
+is unchanged; it is expressed as a stack rather than as a reservation being cancelled.
+
+What keeps that overlap readable is not luck, it is a **lane**: `PROSE_LANE` reserves the bottom
+28% of the track for the panel, and every frame keeps everything it annotates above it —
 `safeBand()` for the frames that are COVER-cropped, `CONTENT_TOP` for the ones that are fitted. One
 number, written into the CSS as `--prose-lane` and onto the root as `data-prose-lane`, read by the
-frames, the scaffold and the interaction layer alike.
+frames, the scaffold and the interaction layer alike. **The panel still sits at the BOTTOM of its
+step box (`align-items: flex-end`) and is pinned there with a `bottom` sticky offset** — that offset
+only ever shifts a box UP, so a panel placed at the TOP of its step has nowhere to be shifted to and
+travels with the scroll as if the rule were absent.
+
+**Which frame is SHOWN and which panel is PAINTED are two decisions, not one.** A `bottom`-sticky
+panel un-pins one panel-height before the next one parks and spends that gap climbing over the
+graphic. So `active` (the frame) is held across the gap; `in-lane` (the panel) is not, and a panel
+that has left the lane stops being painted immediately — leaving is a cut, arriving is a fade.
 
 **Legibility is measured, not assumed from an opaque-looking panel.** Every panel is painted fully
 OPAQUE with the render's own `ground` — never a translucent scrim, whose effective colour would
@@ -78,21 +95,24 @@ driven browser.
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `references/scrolly-discipline.md` | The sticky-reservation fact and how the shipped remedy uses it on purpose; the prose lane and the two halves that must agree; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this genre does not attempt; verification |
+| Doctrine | `references/scrolly-discipline.md` | The fixed graphic and the page that does not scroll; why the active step is decided from every panel on every scroll and never from a delta; the prose lane and the two halves that must agree; the sticky model kept as history because five rounds of corrections are only legible against it; why scenery is cropped and evidence is fitted; a map track without a live map; what survives with JS off; reduced motion; what this genre does not attempt; verification |
 | Seed | `assets/ScrollySeed.tsx` | `STEPS_META` (the beat's four-step arc: id, `frameKind`, prose-as-a-function), the four frame components (`ImageFrame`, `DrawnGraphicFrame`, `MapFrame`, `ChartFrame`), and the placement constants: `PROSE_LANE`, `ASPECT_ENVELOPE`, `safeBand`, `SAFE_AREA`, `CONTENT_TOP`, `FRAME`, `CHART_LAYOUT` |
 | Seed data | `assets/gauge-data.ts` | `parseRdb`, `parseReadings`, `readStation`, `deriveFacts`, `group`, `dayAndMonth` — the beat's own reading layer. Nothing here draws; nothing that draws computes a fact |
-| Interaction | `assets/interaction.mjs` | `pickActiveStep` (pure, unit-tested) + `initScrolly` (observes each pinned PANEL through the lane, toggles `.active` on the matching step and frame, and adds `scrolly--live` so the one-panel-at-a-time CSS only ever applies where a script runs). `initAll` runs it |
+| Interaction | `assets/interaction.mjs` | `pickActiveStep` and `pickLanePanel` (both pure, both unit-tested) + `initScrolly` (on every scroll of the prose column, measures every panel against the lane, toggles `.active` on the winning step and frame and `in-lane` on the one panel that may be painted, and adds `scrolly--live` so the one-panel-at-a-time CSS only ever applies where a script runs). No `IntersectionObserver` — see the file's own header. `initAll` runs it |
 | Render | `scripts/render-scrolly.mjs` | **Above the CONFIG marker**: `renderScrolly({ steps, title, source, ground, outDir, name, proseLane })` — the genre's MEDIA-AGNOSTIC machinery. It SSRs each `frame`, wraps it generically, builds the overlap scaffold and the lane, measures panel contrast, inlines the interaction script. It never reads `frameKind` — `test/render-scrolly.test.ts` scans the function's own source to prove it. **Below the marker**: `SEED`, `DRAWN_VARIANT`, `buildFrame` (the ONE place that reads `frameKind`), `render` (this seed's own runner) |
 | Bake | `scripts/bake-plate.mjs` | One camera, one basemap capture, one projected pixel — run once, committed; the delivered HTML carries no key and makes no request |
 | Rasteriser | `scripts/render-still.mjs` | This skill's OWN copy of `deriveFurniture`/`contrast`/`measureText` — a skill never imports another skill's copy |
-| Test | `test/render-scrolly.test.ts` | The generic scaffold: media-agnostic by source-scan, panel contrast, overlap markup, the pinned lane, one-panel-at-a-time, well-formed markup at 4/6/8 steps, and the drawn frame's own safe placement parsed out of the rendered SVG |
+| Verify | `scripts/verify-scrolly.mjs` | The guard that watches a CONTINUOUS scroll: a `requestAnimationFrame` recorder installed before anything moves, then six assertions (the page never scrolls; the graphic and header never move; every step's frame is painted, in order; each step is handed `active` once; the graphic settles; one panel at a time, always inside the lane) plus reduced motion and JS-off. Runnable by hand on any rendered scrolly |
+| Test | `test/scroll-integrity.test.ts` | Walks `verify-scrolly.mjs` over the seed and every scrolly on disk at three widths; names the three mutations that redden it and what it provably does not catch |
+| Test | `test/render-scrolly.test.ts` | The generic scaffold: media-agnostic by source-scan, panel contrast, overlap markup, the fixed graphic and the one scroller, the pinned lane, one-panel-at-a-time, well-formed markup at 4/6/8 steps, and the drawn frame's own safe placement parsed out of the rendered SVG |
 | Test | `test/seed-tracks.test.ts` | The four tracks: `safeBand` checked against real box aspect ratios, `CONTENT_TOP` against fitted boxes, `MapFrame`/`ChartFrame` SSR, the data layer, and every figure the rendered beat says out loud recomputed from the frozen CSV |
 | Test | `test/canon.test.ts` | The canon's shape: `REPLACE ME` wording, the frozen files are real, the seed renders standalone into an empty directory, the seed still carries a map and a chart track, no registry/dispatcher, preview current |
 
-**Why the title and source live in the HTML `<header>`, ahead of the track entirely.** The header is
-the ONE piece of furniture that never sits over the graphic — plain document flow, scrolled past
-once, before `.scrolly-track` begins. The beat's argument is stated in full, unconditional, before
-any step's reveal.
+**Why the title and source live in the HTML `<header>`, in their own grid row.** The header is the
+ONE piece of furniture that never sits over the graphic, and — since the seventh correction — the
+one that never moves either: it is row 1 of `.scrolly`'s grid, OUTSIDE the element that scrolls, so
+the beat's argument stays on screen for the whole read instead of sliding away on the reader's first
+gesture. It is stated in full, unconditional, before any step's reveal and for the whole of it.
 
 **Why every frame is `aria-hidden`, and why that wrapper lives in `renderScrolly`.** The argument is
 carried by the unconditional header and every step's own prose, never exclusively by the graphic.
@@ -120,16 +140,19 @@ identical treatment from the scaffold's point of view.
 6. **Bake the default state server-side.** Exactly one frame is wrapped `active` by `renderScrolly`,
    never assigned by the script after load. The script only ever MOVES that class.
 7. **Write more than two steps** — two hides boundary bugs a middle step would catch.
-8. **Render the HTML, then DRIVE A REAL BROWSER**, sampling scroll position across the FULL
-   scrollable distance at several viewport sizes, and measure — do not eyeball:
+8. **Render the HTML, then DRIVE A REAL BROWSER through a CONTINUOUS scroll** — not a series of
+   jumps, which is what let a broken vehicle pass five rounds of review (see "The one gotcha").
+   `bun skills/twin-scrolly/scripts/verify-scrolly.mjs <file.html>` does it at all three widths.
+   Measure — do not eyeball:
    - the active frame settles at a clean `opacity: 1` (every other frame `0`) — never a blend;
    - **no annotation of the active frame overlaps any visible prose panel, at any sampled offset**
      — take the bounding boxes of both and test them for intersection, at the widest and narrowest
      aspects, not only the ones in between;
    - no annotation falls outside the viewport;
    - exactly ONE panel is painted at a time;
-   - the sticky graphic spans the full viewport WIDTH (`left === 0`, `right === innerWidth`) AND
-     HEIGHT (`height === innerHeight`) while pinned;
+   - the graphic spans the full viewport WIDTH (`left === 0`, `right === innerWidth`) and the full
+     height of its own track, and its box is IDENTICAL at every recorded frame;
+   - the document itself has no scroll distance, and the prose column has all of it;
    - the panel's own computed background and colour, and the contrast between them;
    - JavaScript disabled: the default frame and EVERY step's prose survive;
    - `prefers-reduced-motion: reduce`: every sampled opacity is exactly 0 or 1;
@@ -169,14 +192,15 @@ real beat writes its own runner in that same shape — never editing this skill'
 | The drawn frame's own design canvas | `640 × 900` | `FRAME`, `ScrollySeed.tsx` |
 | The chart's plot box and its geometry-only viewBox | `plot` / `viewBox` | `CHART_LAYOUT`, `ScrollySeed.tsx` |
 | The map plate's size and camera | `--width 1000 --height 640`, zoom `9` | `CAMERA`, `bake-plate.mjs` |
-| The sticky graphic's own height (it fills the full viewport on both axes, cropped never stretched) | `100vh` | `--graphic-h`, `buildCss`, `render-scrolly.mjs` |
-| How long a reader scrolls through one step — the same for every step, including the last | `115vh` | `.step` min-height, `buildCss`, `render-scrolly.mjs` |
+| The frame the graphic fills — the component's own height, minus the fixed header's row | `100%` of `.scrolly`, `grid-template-rows: auto minmax(0, 1fr)` | `.scrolly`, `buildCss`, `render-scrolly.mjs` |
+| How long a reader scrolls through one step — the same for every step, including the last, as a fraction of the TRACK (not the viewport) | `115%` | `.step` min-height, `buildCss`, `render-scrolly.mjs` |
 | How far the pinned panel sits above the viewport's bottom edge | `clamp(16px, 4vh, 40px)` | `.step-panel` bottom, `buildCss`, `render-scrolly.mjs` |
 | The prose panel's own max width | `min(46ch, 100%)` | `.step-panel`, `buildCss`, `render-scrolly.mjs` |
 | The header's own reading measure (the graphic does NOT share it) | `640px` | `.scrolly-header` max-width, `buildCss`, `render-scrolly.mjs` |
 | The header's and the step's own side gutter | `clamp(16px, 6vw, 56px)` | `buildCss`, `render-scrolly.mjs` |
 | The step-boundary swap's transition — the ONLY animated property, and only at a boundary | `0.3s` | `buildCss`, `render-scrolly.mjs` |
-| The band the IntersectionObserver watches — the lane itself, read off the markup | `data-prose-lane` | `initScrolly`, `interaction.mjs` |
+| The band the interaction layer measures every panel against — the lane itself, read off the markup, with the panel's own bottom offset taken off so "parked" is distinguishable from "already rising" | `data-prose-lane` | `initScrolly`, `interaction.mjs` |
+| How long a reader dwells on one step while the guard drives, in animation frames — derived from each beat's own step height so a phone and a desktop get the same dwell, never the same pixel rate | `60` | `FRAMES_PER_STEP`, `verify-scrolly.mjs` |
 | The WCAG floor `renderScrolly`'s own panel-contrast tripwire enforces | `4.5` | `renderScrolly`, `render-scrolly.mjs` |
 | The drawn step's own illustrated water level and day label (never a plotted value) | `{ waterLevelT, dayLabel }` | `DRAWN_VARIANT`, `render-scrolly.mjs` |
 
@@ -204,8 +228,9 @@ real beat writes its own runner in that same shape — never editing this skill'
 - `assets/sample-data/basin-photo.png` — the seed's illustrated scene, authored by
   `scripts/build-sample-photo.mjs` from flat shapes (nothing fetched, nothing to credit).
 - `assets/interaction.mjs` — the one script this genre ships, inlined verbatim. `pickActiveStep`
-  (pure, unit-tested) backs `initScrolly`, which observes each pinned panel through the lane and
-  adds `scrolly--live`.
+  and `pickLanePanel` (both pure, both unit-tested) back `initScrolly`, which measures every panel
+  against the lane on every scroll of the prose column and adds `scrolly--live`. Its header carries
+  the measurement that removed the `IntersectionObserver`.
 - `assets/preview.png` — the seed's `DrawnGraphicFrame` rendered standalone: the one frame this
   skill needs nothing else on disk to show. Regenerate with `bun scripts/render-preview.mjs`.
 - `scripts/render-scrolly.mjs` — `renderScrolly` (media-agnostic machinery) above the CONFIG marker;
@@ -216,14 +241,18 @@ real beat writes its own runner in that same shape — never editing this skill'
   `--out <dir>`; `--check` fails if the committed PNG has drifted from a fresh render.
 - `scripts/build-sample-photo.mjs` — generates `basin-photo.png` deterministically. Re-run only if
   the scene itself should change.
+- `scripts/verify-scrolly.mjs` — the continuous-scroll guard, runnable by hand on any rendered
+  scrolly: `bun skills/twin-scrolly/scripts/verify-scrolly.mjs <file.html> [--width=1600]`.
 - `scripts/render-still.mjs` — this skill's OWN copy of `deriveFurniture`/`contrast`/`measureText`.
 - `output-proof/preview.png` — the drawn frame, rendered from this skill's own data.
 - `output-proof/track-1-image.png`, `output-proof/track-2-drawn.png`, `output-proof/track-3-map.png`,
   `output-proof/track-4-chart.png`, `output-proof/track-4-chart-375.png` — the four tracks as a real
   browser rendered them at 1600×900, plus the chart at 375px: the evidence that this vehicle carries
   different media, taken from a driven page rather than described.
-- `test/render-scrolly.test.ts` — the generic scaffold, the pinned lane, and the drawn frame's own
-  placement parsed out of the rendered SVG.
+- `test/render-scrolly.test.ts` — the generic scaffold, the fixed graphic, the pinned lane, both
+  pure decision functions, and the drawn frame's own placement parsed out of the rendered SVG.
+- `test/scroll-integrity.test.ts` — the walking guard: `verify-scrolly.mjs` over the seed and every
+  scrolly on disk, at three widths, with its three mutations and its blind spots named.
 - `test/seed-tracks.test.ts` — the four tracks, both placement rules against real boxes, the data
   layer, and the rendered beat's own claims recomputed from the frozen file.
 - `test/canon.test.ts` — the canon's shape, including that the seed still carries a map and a chart.

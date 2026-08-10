@@ -145,7 +145,7 @@ ${buildCss({ ground, ...furniture, proseLane })}
 ${frameHtml}
       </div>
     </div>
-    <div class="scrolly-steps">
+    <div class="scrolly-steps" tabindex="0">
 ${stepsHtml}
     </div>
   </div>
@@ -190,24 +190,44 @@ function buildCss({ ground, ink, muted, grid, proseLane }) {
      frames compute their safe bands from (assets/ScrollySeed.tsx, \`PROSE_LANE\`), passed in rather
      than written twice: a lane the CSS reserves and the frames do not respect (or the reverse) is
      precisely the panel-over-annotation collision this constant exists to make impossible. */
-  --prose-lane: ${(proseLane * 100).toFixed(0)}vh;
+  --prose-lane: ${(proseLane * 100).toFixed(0)}%;
 }
 * { box-sizing: border-box; }
+/* THE PAGE DOES NOT SCROLL, and that is the whole model this genre now runs on. The component is
+   exactly one frame tall; the ONLY thing in the document with scroll distance is
+   \`.scrolly-steps\`, the prose column. See references/scrolly-discipline.md, "The graphic is fixed
+   and the page does not scroll," for the seventh correction that replaced the sticky model and for
+   the measurement that condemned it. This is also what makes the file safe to embed in a CMS
+   article: a component that scrolls its own prose never steals the host page's scroll. */
+html, body { height: 100%; }
 body {
   margin: 0;
+  overflow: hidden;
   background: var(--ground);
   color: var(--ink);
   font-family: Helvetica, Arial, sans-serif;
 }
 /* \`.scrolly\` itself carries NO width constraint — a sixth correction. The fourth build's fix
    constrained THIS element to a 640px reading measure, which centred it correctly but also capped
-   every child inside it, including the sticky GRAPHIC, to that same narrow column — a visual meant
-   to fill the frame it is pinned in, stranded in the middle of a wide page instead. The reading
-   measure now belongs to the two things that are actually PROSE — \`.scrolly-header\`, below, and
+   every child inside it, including the GRAPHIC, to that same narrow column — a visual meant to
+   fill the frame it sits in, stranded in the middle of a wide page instead. The reading measure now
+   belongs to the two things that are actually PROSE — \`.scrolly-header\`, below, and
    \`.step-panel\` (\`.step\`'s own \`justify-content: center\` already centres it, see "Measuring prose
    over the graphic") — never to \`.scrolly-track\`/\`.scrolly-graphic\`, which are left to size
    themselves to their parent's own full width, all the way out to \`body\`. See
-   references/scrolly-discipline.md, "The graphic fills the width it is given." */
+   references/scrolly-discipline.md, "The graphic fills the width it is given."
+
+   The HEIGHT rule is the SEVENTH correction, and it is a change of model rather than of a number.
+   \`.scrolly\` is a two-row grid exactly one frame tall: the header takes what it needs, and the
+   track takes everything left (\`minmax(0, 1fr)\` — never \`1fr\` alone, whose \`auto\` minimum
+   would let a tall track push the component past the frame and put the document back in the
+   scrolling business). Nothing in this grid ever moves. */
+.scrolly {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
 
 /* The header takes the same width as the graphic beneath it — no reading-measure cap. It used to
    sit in a centred 640px column, and that was the mismatch the owner named: a title stopping at
@@ -219,43 +239,52 @@ body {
    deliberately, ahead of the sticky graphic too: it sits in plain document flow, scrolled past once,
    so it is never the thing a step's prose panel has to be measured against. The STEP PANEL keeps
    its own measure (\`.step-panel\`, below): that is prose travelling OVER the graphic, not
-   furniture beside it, and the reversal does not reach it. */
+   furniture beside it, and the reversal does not reach it.
+
+   THE HEADER NEVER MOVES — a seventh correction, and the owner's own words: "on scroll d'abord
+   dans la page, ce qui fait disparaître le titre, alors que ça devrait être fixe." Under the
+   sticky model the header was the first casualty of the reader's first gesture: the DOCUMENT
+   scrolled, so the title slid away before the graphic had even finished arriving. It is now row 1
+   of \`.scrolly\`'s own grid, OUTSIDE the one element that scrolls, so it is fixed by construction
+   rather than by a \`position\` keyword that has to be got right. \`margin-bottom\` is gone with it:
+   the gap now belongs to the header's own padding, because a margin between two grid rows would
+   show the page's ground where the frame should start. */
 .scrolly-header {
-  margin: 0 auto 24px;
-  padding: 4px clamp(16px, 6vw, 56px) 0;
+  padding: 4px clamp(16px, 6vw, 56px) 14px;
 }
 .scrolly-header h2 { margin: 0 0 4px; font-size: 22px; line-height: 1.25; }
 .scrolly-header .source { margin: 0; font-size: 13px; color: var(--muted); }
 
-/* The overlap this genre's own gotcha describes is now DELIBERATE, not engineered away: the
-   graphic is the sticky ground, every step's own prose travels OVER it. \`position: sticky\`
-   reserves its element's ORIGINAL box at the top of \`.scrolly-track\` — the exact behaviour that
-   caused the original defect (see references/scrolly-discipline.md, "The one gotcha," for why).
-   The fix does not fight that behaviour, it uses it: \`.scrolly-steps\`'s negative top margin,
-   exactly \`--graphic-h\` tall, pulls the steps column back UP over that same reserved box on
-   purpose, so the sticky graphic and the scrolling prose occupy the same screen coordinates for as
-   long as the track has steps left to give.
+/* THE GRAPHIC IS FIXED. It does not stick, it does not catch up, and it does not unpin — it is
+   absolutely positioned to fill the track, and the track is a grid row that never moves. This is
+   the SEVENTH correction and it removes a mechanism rather than tuning one.
 
-   \`--graphic-h: 100vh\` — a FIFTH correction: the reader's own viewport is the frame the graphic is
-   pinned in, and the graphic should fill it, not sit as a capped, medium-sized band with empty page
-   below it. The previous \`min(70vh, 640px)\` was itself a leftover of the third build's
-   two-column-era sizing, never revisited once the graphic became the sticky ground — it read fine
-   in a screenshot taken AT that band's own edges, but left up to 30% of a real desktop viewport as
-   bare page below the graphic, which is exactly the "small and adrift" defect a full-viewport reader
-   actually sees. Filling the height does not distort anything: every frame this genre ships already
-   paints with \`object-fit: cover\` (\`ImageFrame\`) or \`preserveAspectRatio="xMidYMid slice"\`
-   (\`DrawnGraphicFrame\`) — cropping to whatever box it is given, never stretching — so a taller box
-   only changes how much of the artwork's own left/right edge is cropped away, the same trade-off
-   \`object-fit: cover\` already makes at every width this genre ships. See
-   references/scrolly-discipline.md, "The graphic fills the viewport it is pinned in." */
+   What it replaced, and why the replacement was not a tuning: every build up to the sixth pinned
+   the graphic with \`position: sticky; top: 0\` inside a track that began BELOW the header, and
+   pulled the prose column back over it with \`margin-top: calc(-1 * var(--graphic-h))\`. That is a
+   correct use of sticky and it produced three defects that no value of \`--graphic-h\` could fix:
+   the graphic spent the reader's first gesture CLIMBING to \`top: 0\` (so a FITTED frame's own
+   content hung below the fold, into the pinned panel's lane, measured at 90px of a 3330px track at
+   1600x900 and 177px of 3100 at 375x812); the header scrolled away with the document, which the
+   owner named directly; and the whole component fought the host page for the scroll, which a CMS
+   embed must never do. A graphic that is never positioned FROM the scroll cannot lag behind it.
+
+   \`.scrolly-graphic\` and \`.scrolly-steps\` are now two absolutely-positioned layers filling the
+   same track box — the deliberate overlap this genre is built on, expressed as a stack rather than
+   as a negative margin cancelling a reservation. \`--graphic-h\` is gone: the graphic's height is
+   the track's height, so there is no second number to keep in step with the first.
+
+   Filling the track does not distort anything: every frame this genre ships paints with
+   \`object-fit: cover\` (\`ImageFrame\`) or \`preserveAspectRatio\` (\`DrawnGraphicFrame\`) — cropping
+   to whatever box it is given, never stretching. See references/scrolly-discipline.md, "The graphic
+   is fixed and the page does not scroll." */
 .scrolly-track {
-  --graphic-h: 100vh;
   position: relative;
+  overflow: hidden;
 }
 .scrolly-graphic {
-  position: sticky;
-  top: 0;
-  height: var(--graphic-h);
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   z-index: 0;
 }
@@ -294,10 +323,23 @@ body {
   .step-frame { transition: opacity 0.3s ease; }
 }
 
+/* THE ONE SCROLLER IN THE DOCUMENT. Nothing else in the page has scroll distance — \`body\` is
+   \`overflow: hidden\` and exactly one frame tall — so the reader's wheel, finger and arrow keys
+   move THIS column and nothing else. The prose travels; the graphic and the header do not.
+
+   \`tabindex="0"\` on this element (written in the markup, not here) is not decoration and it is not
+   optional: taking the scroll off the document takes the reader's default keyboard scrolling with
+   it, and a scroll container that cannot be focused cannot be driven by a keyboard at all in every
+   browser. Focusing it restores Page Down / arrow / space over the prose — the same reach the
+   document used to give for free. See references/scrolly-discipline.md, "Keyboard and screen
+   readers reach every step." */
 .scrolly-steps {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  margin-top: calc(-1 * var(--graphic-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 /* Prose is ALWAYS in normal document flow — nothing here is display:none or visibility:hidden, and
    nothing removes a paragraph from the accessibility tree. A screen reader or keyboard user reaches
@@ -322,9 +364,16 @@ body {
    Every step is the same height, INCLUDING the last: a shorter final step ends the document while
    its own panel has already un-pinned and started riding up the screen, which puts the last step's
    prose back over the last step's graphic at the one scroll position a reader is guaranteed to
-   stop at. Measured: with a 96vh last step the final panel settled at y=35 of a 900px viewport. */
+   stop at. Measured: with a 96vh last step the final panel settled at y=35 of a 900px viewport.
+
+   \`115%\`, not \`115vh\` — a seventh correction, and the same fact stated for the new model: a step's
+   scroll distance is a multiple of the SCROLLPORT the prose scrolls inside, which is the track,
+   which is the viewport minus the fixed header. Under the sticky model those two were the same
+   number and the difference never showed; they are not the same number now, and \`vh\` here would
+   make every step slightly taller than the box it is read in — a drift that grows with the
+   header. */
 .step {
-  min-height: 115vh;
+  min-height: 115%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -366,22 +415,42 @@ body {
 }
 .step-panel p + p { margin-top: 10px; }
 
-/* ONE PANEL AT A TIME — the second half of the same correction. Two steps' panels used to be on
-   screen together through every transition, because the outgoing one is still riding up out of the
-   lane while the incoming one has already parked in it. That is unavoidable in a flow layout and it
-   is not fixed by geometry; it is fixed by PAINTING only the step the reader is on.
+/* ONE PANEL AT A TIME, AND ONLY WHILE IT IS IN THE LANE — the second half of the same correction,
+   and the part a seventh round had to widen. Two steps' panels are on screen together through every
+   transition, because the outgoing one is still riding up out of the lane while the incoming one
+   has already parked in it. That is unavoidable in a flow layout and it is not fixed by geometry;
+   it is fixed by PAINTING only the step whose panel is actually in the lane.
+
+   The class is \`in-lane\`, NOT \`active\`, and the difference is the whole fix. \`active\` says which
+   FRAME the graphic shows and is held across the gap between two steps, because the graphic is
+   fixed and has nothing else to show. \`in-lane\` says which PANEL may be painted, and a
+   \`bottom\`-sticky panel un-pins one panel-height before the next one parks — so for that gap the
+   outgoing prose was still \`active\`, still opaque, and climbing straight up over the graphic's own
+   labels. Every prose-over-annotation collision that survived the lane lived in exactly that gap:
+   measured across five beats at three widths, 20 to 56 animation frames per run, on the seed and on
+   the shipped Danube beat alike. Painting on \`in-lane\` closes it by construction — a panel that has
+   left the lane is not painted, so it cannot cover anything the lane was reserved to protect.
 
    \`.scrolly--live\` is added by \`assets/interaction.mjs\` at init, so this rule exists only where a
    script is actually running: with JavaScript off no panel is ever faded, every step's prose reads
    in flow, and the page degrades to exactly what it degraded to before. \`opacity\` (not
    \`display\`/\`visibility\`) is the deliberate choice — a faded panel stays in the accessibility tree
    and in the document, so a screen reader user still meets every step's words in order. */
-.scrolly--live .step:not(.active) .step-panel {
+.scrolly--live .step:not(.in-lane) .step-panel {
   opacity: 0;
   pointer-events: none;
 }
 @media (prefers-reduced-motion: no-preference) {
   .step-panel { transition: opacity 0.3s ease; }
+  /* LEAVING IS A CUT, ARRIVING IS A FADE, and the asymmetry is the point. A panel mid-fade is a
+     TRANSLUCENT box over the graphic — the one thing "Measuring prose over the graphic" rules out,
+     because a scrim's effective colour depends on whatever sits behind it and is therefore not a
+     measurable contrast at all. On the way IN that is harmless: the panel is inside the lane, over
+     nothing the graphic annotates. On the way OUT it is not: the panel is leaving the lane, so a
+     fade paints a semi-transparent box over exactly the band the lane exists to keep clear.
+     Measured with a 0.12s exit at 24px per animation frame, that was still 168px of the track per
+     boundary with prose over the graphic's own tick labels. A cut is 0. */
+  .scrolly--live .step:not(.in-lane) .step-panel { transition: opacity 0s; }
 }
 `.trim();
 }

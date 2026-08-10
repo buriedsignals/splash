@@ -20,7 +20,7 @@ import {
   readStation,
 } from "../assets/gauge-data.ts";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
-import { pickActiveStep } from "../assets/interaction.mjs";
+import { pickActiveStep, pickLanePanel } from "../assets/interaction.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
 // nowhere in this file directly — kept anyway, the same default-timeout bump every other genre's
@@ -87,63 +87,119 @@ async function seedFacts() {
 // driving a real browser, not by a test).
 // ---------------------------------------------------------------------------
 
-describe("pickActiveStep", () => {
-  it("should pick the intersecting entry with the largest ratio", () => {
-    const winner = pickActiveStep([
-      { stepId: "a", isIntersecting: true, intersectionRatio: 0.2 },
-      { stepId: "b", isIntersecting: true, intersectionRatio: 0.9 },
-      { stepId: "c", isIntersecting: true, intersectionRatio: 0.4 },
-    ]);
-    expect(winner).toBe("b");
-  });
+// A lane 100px tall parked at the bottom of a 400px-tall scrollport, with the panel's own 20px
+// bottom offset already taken off — exactly the band `initScrolly` computes and hands these two.
+const LANE = { top: 280, bottom: 380 };
+/** A panel of `height` whose bottom edge sits at `bottom`. */
+const at = (stepId: string, bottom: number, height = 80) => ({
+  stepId,
+  top: bottom - height,
+  bottom,
+});
 
-  it("should ignore entries that are not currently intersecting", () => {
-    const winner = pickActiveStep([
-      { stepId: "a", isIntersecting: false, intersectionRatio: 1 },
-      { stepId: "b", isIntersecting: true, intersectionRatio: 0.1 },
-    ]);
-    expect(winner).toBe("b");
-  });
-
-  it("should return null when nothing intersects", () => {
+describe("pickActiveStep — which FRAME the graphic shows", () => {
+  it("should pick the panel occupying most of the lane", () => {
     expect(
-      pickActiveStep([
-        { stepId: "a", isIntersecting: false, intersectionRatio: 0 },
-      ]),
-    ).toBeNull();
+      pickActiveStep([at("a", 300), at("b", 380), at("c", 460)], LANE),
+    ).toBe("b");
   });
 
-  it("should return null for an empty entry list", () => {
-    expect(pickActiveStep([])).toBeNull();
+  it("should ignore panels that do not reach the lane at all", () => {
+    expect(pickActiveStep([at("a", 100), at("b", 340)], LANE)).toBe("b");
   });
 
-  // Correction 2: "it must work for more than two steps" — pickActiveStep never reads the length
-  // of `entries` to decide how to behave (see its own doc-comment), but this locks that as a fact
-  // about the function, not an assumption about it, at exactly the counts the brief named.
+  it("should return null when no panel is in the lane", () => {
+    expect(pickActiveStep([at("a", 100), at("b", 900)], LANE)).toBeNull();
+  });
+
+  it("should return null for an empty list", () => {
+    expect(pickActiveStep([], LANE)).toBeNull();
+  });
+
+  // THE DEFECT THIS FUNCTION'S SIGNATURE EXISTS TO MAKE IMPOSSIBLE. The rule it replaced took the
+  // entries of one IntersectionObserver callback — the panels whose ratio had just crossed a
+  // threshold — and activated the best of THOSE. A callback carrying one panel therefore activated
+  // it whatever every other panel was doing, so on a continuous scroll the active step oscillated
+  // between the outgoing and incoming panel. This function cannot express that: it is handed every
+  // panel's current position and has nothing else to go on.
+  it("should decide from the full set, so a single moving panel cannot win over a parked one", () => {
+    const parked = at("parked", 380);
+    for (const bottom of [200, 240, 280, 320]) {
+      // The other panel is arriving; at no point does it take the step from the parked one until
+      // it genuinely occupies more of the lane.
+      expect(pickActiveStep([parked, at("arriving", bottom)], LANE)).toBe(
+        "parked",
+      );
+    }
+  });
+
+  it("should hand over exactly once as one panel replaces another, never flapping", () => {
+    // The outgoing panel rises out of the lane while the incoming one parks. Sampled across that
+    // whole crossing, the winner changes ONCE and never changes back.
+    const winners: (string | null)[] = [];
+    for (let rise = 0; rise <= 120; rise += 4)
+      winners.push(
+        pickActiveStep([at("out", 380 - rise), at("in", 500 - rise)], LANE),
+      );
+    const changes = winners.filter((w, i) => i > 0 && w !== winners[i - 1]);
+    expect(changes.length).toBe(1);
+    expect(winners[0]).toBe("out");
+    expect(winners[winners.length - 1]).toBe("in");
+  });
+
+  // Correction 2: "it must work for more than two steps" — this function never reads how many
+  // panels it was given, but this locks that as a fact rather than an assumption, at the counts
+  // the brief named, with the winner planted in the MIDDLE so a rule that only ever compares
+  // neighbours or checks the ends would fail.
   for (const n of [4, 6, 8]) {
-    it(`should still pick the single largest-ratio winner among ${n} intersecting entries`, () => {
-      const entries = Array.from({ length: n }, (_, i) => ({
-        stepId: `s${i}`,
-        isIntersecting: true,
-        intersectionRatio: (i + 1) / (n + 1), // strictly increasing — last entry is the winner
-      }));
-      expect(pickActiveStep(entries)).toBe(`s${n - 1}`);
-    });
-
-    it(`should pick the winner among ${n} entries regardless of which position in the array it sits at`, () => {
-      // The winner planted in the MIDDLE of the array, not at either end — a boundary-maths bug
-      // that only ever compares neighbours, or only ever checks the first/last entry, would miss
-      // this while still passing the "last entry wins" case above.
-      const entries = Array.from({ length: n }, (_, i) => ({
-        stepId: `s${i}`,
-        isIntersecting: true,
-        intersectionRatio: 0.1,
-      }));
+    it(`should find the winner among ${n} panels wherever it sits in the list`, () => {
+      const panels = Array.from({ length: n }, (_, i) => at(`s${i}`, 300));
       const middle = Math.floor(n / 2);
-      entries[middle].intersectionRatio = 0.99;
-      expect(pickActiveStep(entries)).toBe(`s${middle}`);
+      panels[middle] = at(`s${middle}`, 380);
+      expect(pickActiveStep(panels, LANE)).toBe(`s${middle}`);
     });
   }
+});
+
+describe("pickLanePanel — which PANEL may be painted", () => {
+  it("should paint a panel parked inside the lane", () => {
+    expect(pickLanePanel([at("a", 380)], LANE)).toBe("a");
+  });
+
+  // The whole point of the second decision: a panel that has begun climbing out of the lane is
+  // over the band every frame keeps its labels in, so it stops being painted THERE, not later when
+  // the next step wins the frame. Those two moments are one panel-height apart.
+  it("should stop painting a panel the moment it rises above the lane", () => {
+    // An 80px panel in a 100px lane may rise 20px before its own top crosses the lane's top; at
+    // 360 its top sits exactly on it, and one pixel further it is over the band the frames keep
+    // their labels in.
+    expect(pickLanePanel([at("a", 379)], LANE)).toBe("a");
+    expect(pickLanePanel([at("a", 361)], LANE)).toBe("a");
+    expect(pickLanePanel([at("a", 355)], LANE)).toBeNull();
+  });
+
+  it("should still paint a panel TALLER than the lane, while it is parked", () => {
+    // Measured on every beat on disk at 375x812: the prose is taller than the 28% reserved for it.
+    // Such a panel can never be inside the lane, and painting nothing would leave a reader with a
+    // graphic and no words — worse than the overlap. It stops being painted as soon as it rises.
+    const tall = at("tall", 380, 160);
+    expect(pickLanePanel([tall], LANE)).toBe("tall");
+    expect(pickLanePanel([at("tall", 360, 160)], LANE)).toBeNull();
+  });
+
+  it("should never paint two panels at once during a handover", () => {
+    for (let rise = 0; rise <= 160; rise += 4) {
+      const winner = pickLanePanel(
+        [at("out", 380 - rise), at("in", 540 - rise)],
+        LANE,
+      );
+      expect(["out", "in", null]).toContain(winner);
+    }
+  });
+
+  it("should return null between two steps rather than keep a stale panel painted", () => {
+    expect(pickLanePanel([at("out", 300), at("in", 520)], LANE)).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -445,9 +501,12 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).toContain("<h2>A generic two-step scrolly</h2>");
     expect(html).toContain("Test fixture");
 
-    // The interaction script is inlined, not fetched.
+    // The interaction script is inlined, not fetched — and it is the scroll-driven one. An
+    // IntersectionObserver in this file would be the delta-set rule coming back; see
+    // assets/interaction.mjs's own header for the measurement that removed it.
     expect(html).not.toContain("<script src=");
-    expect(html).toContain("IntersectionObserver");
+    expect(html).toContain('addEventListener("scroll"');
+    expect(html).not.toContain("IntersectionObserver");
 
     // Reduced motion is opt-in only — the transition sits behind the media query, never bare.
     const transitionIndex = html.indexOf("transition: opacity");
@@ -538,7 +597,9 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    expect(html).toContain(`--prose-lane: ${(PROSE_LANE * 100).toFixed(0)}vh`);
+    // A PERCENTAGE, not `vh`: the lane is a fraction of the TRACK the prose scrolls inside, which
+    // is the viewport minus the fixed header. Under the sticky model those were the same number.
+    expect(html).toContain(`--prose-lane: ${(PROSE_LANE * 100).toFixed(0)}%`);
     // The interaction layer observes that same lane, and reads it from the markup rather than
     // re-deriving it.
     expect(html).toContain(`data-prose-lane="${Math.round(PROSE_LANE * 100)}"`);
@@ -571,7 +632,10 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    expect(html).toContain(".scrolly--live .step:not(.active) .step-panel");
+    // `in-lane`, NOT `active`: which FRAME the graphic shows is held across the gap between two
+    // steps; which PANEL is painted is not, because a `bottom`-sticky panel un-pins one
+    // panel-height before the next one parks and spends that gap climbing over the graphic.
+    expect(html).toContain(".scrolly--live .step:not(.in-lane) .step-panel");
     expect(html).toMatch(/\.scrolly--live[^{]*\{[^}]*opacity: 0/);
     expect(html).not.toMatch(/\.step-panel[^{]*\{[^}]*display: none/);
     expect(html).not.toMatch(/\.step-panel[^{]*\{[^}]*visibility: hidden/);
@@ -580,19 +644,33 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).toContain('root.classList.add("scrolly--live")');
   });
 
-  // Correction 5: "the graphic should fill the height it is given" — the sticky graphic's own box
-  // must be sized to the full viewport it is pinned in, not a capped fraction of it.
-  it("should size the sticky graphic to the full viewport height, not a capped fraction of it", async () => {
+  // Correction 7: the graphic is FIXED and the page does not scroll. Correction 5 sized a sticky
+  // graphic to `--graphic-h: 100vh`; there is no sticky graphic and no `--graphic-h` any more, so
+  // this asserts the model that replaced it. The component is one frame tall, the graphic fills
+  // the track absolutely, and the only thing with scroll distance is the prose column.
+  it("should fix the graphic and take the scroll off the document", async () => {
     const { outPath } = await renderScrolly({
       steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
       title: "t",
       source: "s",
       ground: "#FFFFFF",
-      outDir: "/tmp/twin-scrolly-test-full-height",
+      outDir: "/tmp/twin-scrolly-test-fixed-graphic",
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    expect(html).toContain("--graphic-h: 100vh");
+    expect(html).toMatch(/body\s*\{[^}]*overflow: hidden/);
+    expect(html).toMatch(
+      /\.scrolly-graphic\s*\{[^}]*position: absolute;\s*inset: 0/,
+    );
+    expect(html).toMatch(/\.scrolly-steps\s*\{[^}]*overflow-y: auto/);
+    // The reader's keyboard follows the scroll: taking it off the document takes Page Down with
+    // it unless the new scroller can be focused.
+    expect(html).toContain('<div class="scrolly-steps" tabindex="0">');
+    // Nothing left of the sticky model, in a RULE — the doc-comments above `.scrolly-track` still
+    // describe what was removed and why, which is deliberate.
+    expect(html).not.toMatch(/\.scrolly-graphic\s*\{[^}]*position: sticky/);
+    expect(html).not.toMatch(/\.scrolly-steps\s*\{[^}]*margin-top/);
+    expect(html).not.toMatch(/\.scrolly-track\s*\{[^}]*--graphic-h/);
   });
 
   // Correction 6: "all web visuals must take the full width" — nothing may constrain `.scrolly`
