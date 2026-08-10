@@ -1,6 +1,5 @@
 /**
- * The video genre of "Poland emits more than double Sweden's per-capita CO2" — 8 seconds, 30fps,
- * 1080 × 1080.
+ * The video genre of "Poland emits more than double Sweden's per-capita CO2" — 8 seconds, 30fps.
  *
  * The plate and the parts come from the same bake the still draws (`bake.mjs`), and the classes,
  * the ramp and the scale come from the same `geo-choropleth.ts`. What this file adds is the one
@@ -10,6 +9,23 @@
  * Nothing here derives a furniture colour either — `deriveFurniture` sits beside a native
  * rasteriser that no browser bundle can load, so `render.mjs` calls it in node and passes
  * ink/muted/grid in as props. One implementation of the colour rule, two genres.
+ *
+ * ── THERE IS NO `const FRAME` HERE ANY MORE, AND NO `MAP = 620` EITHER ───────────────────────
+ *
+ * They used to read `{ width: 1080, height: 1080 }` and `620`, and `Root.tsx` registered ONE
+ * composition with the same two numbers typed a second time, so a journalist who pinned `landscape`
+ * at gate 2c had no composition to render at all. The frame is now `sizeFor(size)`'s — the VIDEO
+ * table's, not the static one's, because a landscape video is watched on a phone turned sideways
+ * (~800 dp) where the static's article-column floor of 26 px would be too small — and the map's box
+ * comes from `mapStageBox`, which keeps the committed plate's own aspect at every size.
+ *
+ * ── WHAT THE VIDEO TABLE COSTS THIS BEAT, MEASURED ──────────────────────────────────────────
+ *
+ * This beat was tuned at 1080 x 1080 with its smallest type at 17 px, which is 5.7 CSS px on the
+ * 360 dp phone a social video is watched on — roughly HALF the landscape row's 30 px floor. Raising
+ * it to the floor is the whole point of the migration, and it costs height: at landscape the title
+ * alone takes 280 px of the 830 px band. It still leaves a real map. At square and portrait it does
+ * not, and this file refuses there with the arithmetic rather than drawing a strip.
  */
 
 import { Fragment } from "react";
@@ -22,6 +38,18 @@ import {
   useCurrentFrame,
   useVideoConfig,
 } from "remotion";
+// A story consumes the root it lives in — `#shared/*`, not a relative path into a skill.
+import {
+  frameInsetFor,
+  sizeFor,
+  stageFor,
+} from "#shared/chart-video/sizes.mjs";
+import {
+  lonSpanOf,
+  mapStageBox,
+  typeScaleFor,
+} from "#shared/map-beat/stage.mjs";
+import { REMOVAL_LADDER } from "#shared/chart-beat/type-at-size.mjs";
 import {
   binIndexLowerInclusive,
   en,
@@ -29,30 +57,69 @@ import {
   revealOrder,
   scalePosition,
   subjectLabelAnchor,
+  subjectLabelHostWidth,
   type BakedShape,
   type JoinedRow,
 } from "./geo-choropleth.ts";
 import { CHOROPLETH_TIMING, progressOf, type BeatTiming } from "./timing.ts";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
-const MAP = 620;
-/** The plate's top edge. It came DOWN by 50px when the credit left the header for the frame's
- *  bottom margin: the header gave back the row the source used to occupy, and the bottom stack
- *  needed that room to hold the credit as well as the caveat. The same move the seed made
- *  (map-beat/assets/Co2MapVideo.tsx, MAP_Y 300 -> 250), for the same reason, and the beat's
- *  own fit guard is what said so — it threw, by name, with the numbers in the message. */
-const MAP_Y = 250;
-const COLUMN = { x: MAP + PAD + 40, right: FRAME.width - PAD };
+/**
+ * THE BEAT'S OWN TUNING, REBASED TO THE 900-WIDE CONVENTION THE TABLE MULTIPLIES.
+ *
+ * `sizes.mjs` publishes `typeScale` as a multiplier over a beat's 900 x 560 base tokens, so a beat
+ * carrying its 1080-frame tuning as the base would be scaled twice. Every number below is this
+ * beat's committed 1080 value x 900/1080, rounded to a whole point — the same picture, expressed in
+ * the units the table speaks. The smallest is 14, comfortably over the seed's 12, so
+ * `typeScaleFor` returns the row's own default and no token needs a multiplier of its own.
+ *
+ * And EVERY spacing number is in here, not only the fonts. The probe measured what happens
+ * otherwise: eleven bare literals in one beat's layout arithmetic collided a title into a subtitle
+ * at 1920 x 1080. `PAD` is the one exception, because a frame's margin is proportional to the
+ * CANVAS and not to the type (`frameInsetFor`, and `sizes.mjs` states the split).
+ */
+const BASE = {
+  TITLE: { fontSize: 32, fontWeight: 700, lead: 40 },
+  SOURCE: { fontSize: 16, fontWeight: 400, lead: 20 },
+  CAPTION: { fontSize: 15, fontWeight: 600 },
+  TICK: { fontSize: 14, fontWeight: 400 },
+  MARKER: { fontSize: 14, fontWeight: 600 },
+  MARKER_VALUE: { fontSize: 18, fontWeight: 700 },
+  NOTE: { fontSize: 14, fontWeight: 400, lead: 18 },
+  SUBJECT_LABEL: { fontSize: 18, fontWeight: 700 },
+  GUTTER: 33,
+  BAR_WIDTH: 22,
+  BAR_HEIGHT: 250,
+  TICK_LABEL_GAP: 10,
+  TICK_BASELINE_NUDGE: 5,
+  MARKER_GAP: 12,
+  MARKER_TEXT_GAP: 16,
+  MARKER_NAME_LIFT: 3,
+  MARKER_VALUE_DROP: 17,
+  MARKER_ARROW_LENGTH: 9,
+  MARKER_ARROW_HALF: 5,
+  BLOCK_AIR: 16,
+  CAPTION_TO_BAR: 18,
+  BAR_TO_CAVEAT: 34,
+  NO_DATA_GAP: 18,
+  NO_DATA_TILE: 8,
+  NO_DATA_SWATCH: { width: 20, height: 14, lift: 11, textX: 28 },
+  PENDING_TILE: 8,
+  PENDING_DOT: 1.1,
+  /** Drawn widths, not plate widths: each is divided by the plate scale at the mark, so what is
+   *  written here is what a viewer sees, and it has to grow with the frame like everything else. */
+  SHAPE_STROKE: 0.7,
+  SUBJECT_HALO_STROKE: 4.2,
+  SUBJECT_STROKE: 2.2,
+  SUBJECT_LABEL_HALO: 4.2,
+};
 
-const TITLE = { fontSize: 38, fontWeight: 700, lead: 48 };
-const SOURCE = { fontSize: 19, fontWeight: 400, lead: 24 };
-const CAPTION = { fontSize: 18, fontWeight: 600 };
-const TICK = { fontSize: 17, fontWeight: 400 };
-const MARKER = { fontSize: 17, fontWeight: 600 };
-const MARKER_VALUE = { fontSize: 21, fontWeight: 700 };
-const NOTE = { fontSize: 17, fontWeight: 400, lead: 22 };
-const SUBJECT_LABEL = { fontSize: 22, fontWeight: 700 };
+/** The smallest token this beat draws. `typeScaleFor` never returns less than the row's default. */
+const SMALLEST_BASE_TOKEN = Math.min(
+  BASE.TICK.fontSize,
+  BASE.MARKER.fontSize,
+  BASE.NOTE.fontSize,
+);
+
 /**
  * Helvetica's cap height, 717/1000 em, from Adobe's own AFM for the face this beat draws in (Arial,
  * the substitute, is 716). It puts a name's OPTICAL centre on a point rather than its baseline.
@@ -61,19 +128,33 @@ const SUBJECT_LABEL = { fontSize: 22, fontWeight: 700 };
  * differently in the two would be a defect nobody could see in either one alone.
  */
 const CAP_HEIGHT_EM = 0.717;
-const LEGEND = {
-  barWidth: 26,
-  barHeight: 300,
-  top: 372,
-  labelGap: 12,
-  markerGap: 14,
-};
 
 const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    sp,
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    CAPTION: f(BASE.CAPTION) as typeof BASE.CAPTION,
+    TICK: f(BASE.TICK) as typeof BASE.TICK,
+    MARKER: f(BASE.MARKER) as typeof BASE.MARKER,
+    MARKER_VALUE: f(BASE.MARKER_VALUE) as typeof BASE.MARKER_VALUE,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    SUBJECT_LABEL: f(BASE.SUBJECT_LABEL) as typeof BASE.SUBJECT_LABEL,
+  };
+}
 
 export type ChoroplethVideoProps = {
   geometry: {
     frame: { width: number; height: number };
+    frameCorners: { west: number; north: number; east: number; south: number };
     shapes: BakedShape[];
     anchors: Record<string, [number, number]>;
   };
@@ -96,6 +177,8 @@ export type ChoroplethVideoProps = {
   subjectValue: number;
   comparisonLabel: string;
   comparisonValue: number;
+  /** The export size gate 2c pinned, read from `BRIEF.md` by `render.mjs` and by `Root.tsx`. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -150,6 +233,34 @@ export function wrap(
   return current ? [...lines, current] : lines;
 }
 
+/**
+ * WHICH RUNGS OF THE SHARED LADDER THIS BEAT CAN ACTUALLY TAKE, as a sentence for the refusal.
+ *
+ * The ladder is shared data (`type-at-size.mjs`), and it is written for charts: most of its rungs
+ * remove something this beat does not have. A refusal that just said "run the ladder" would be
+ * advice; this walks the rungs and says, for each, what it removes HERE — because a rung that
+ * fires silently is a decision nobody took, and a rung that CANNOT fire is the reason the last one
+ * is reached.
+ */
+function ladderForThisBeat(): string {
+  const held: Record<string, string> = {
+    R0: "not a band-scale chart — a map has no twin form to transpose into",
+    R1: "no axis title: a choropleth's unit is stated in the legend caption, which is the key itself",
+    R2: "fewer ticks frees no band height — the class bar's floor is set by the number of CLASSES, not the number of labels",
+    R3: "no standfirst to shorten: this beat's only prose below the title is the caveat",
+    R4: "one annotation, the subject's own name on its own shape — it is drawn INSIDE the map box and frees no band height",
+    R5: "documented no-op",
+    R7: "no standfirst to remove",
+    R8: "reclassifying would shorten the legend, which is in the COLUMN beside the map, not in the band the title is taking",
+  };
+  return REMOVAL_LADDER.filter((rung) => held[rung.rung])
+    .map(
+      (rung) =>
+        `  ${rung.rung} (${rung.what.split(";")[0]}) — ${held[rung.rung]}`,
+    )
+    .join("\n");
+}
+
 export function ChoroplethVideo({
   geometry,
   plate,
@@ -171,51 +282,212 @@ export function ChoroplethVideo({
   subjectValue,
   comparisonLabel,
   comparisonValue,
+  size,
   timing = CHOROPLETH_TIMING,
 }: ChoroplethVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const scale = MAP / geometry.frame.width;
 
-  // ── Layout. Identical at every frame: the build changes what is VISIBLE, never where it sits, so
-  // nothing shifts when a late layer lands.
-  const titleLines = wrap(title, FRAME.width - PAD * 2, TITLE);
-  const sourceLines = wrap(
-    `${source} · ${basemapCredit}`,
-    FRAME.width - PAD * 2,
-    SOURCE,
+  const row = sizeFor(size);
+  const FRAME = { width: row.width, height: row.height };
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScaleFor(row, SMALLEST_BASE_TOKEN));
+  const sp = T.sp;
+  const GUTTER = sp(BASE.GUTTER);
+
+  // THE BAND, not the frame. Where the platform reserves part of the frame — portrait alone today —
+  // everything a viewer has to read lives inside it, because content outside it is at risk of being
+  // COVERED by the platform's own caption, buttons and progress bar, and no clipping counter can
+  // see that.
+  const band = stageFor(size);
+  const top = band.top + PAD;
+  const contentWidth = FRAME.width - PAD * 2;
+
+  // ── The credit: a strip across the foot of the frame, at the full content width ─────────────
+  // Measured FIRST, so everything else is laid out in what is left above it. `sourceBottom` names
+  // the BAND's bottom rather than the frame's, deliberately: at portrait the platform covers the
+  // frame's last 672 px, so a credit pinned to the frame's floor is a credit nobody can read — and
+  // a covered credit is an attribution failure, not a cosmetic one. Where no band is reserved,
+  // `band.top + band.height` IS the frame's height.
+  const sourceText = `${source} · ${basemapCredit}`;
+  const sourceLines = wrap(sourceText, contentWidth, T.SOURCE);
+  const sourceBottom = band.top + band.height - PAD;
+  const sourceTop = sourceBottom - (sourceLines.length - 1) * T.SOURCE.lead;
+  const bottom = sourceTop - T.SOURCE.fontSize - sp(BASE.BLOCK_AIR);
+  const contentHeight = bottom - top;
+
+  // ── The caveat: the strip directly above the credit, also at the full content width ─────────
+  // It is here rather than in the column beside the map, and the landscape render is what decided
+  // it: in a 1160px column the same sentence wraps to two lines and, with the legend above it,
+  // asked for 512px of a 460px band — the beat refused itself. Across 1750px it is ONE line, and
+  // the band that gives back is what the map is drawn in. A choropleth's caveat is a wide sentence
+  // and a narrow column is not where it belongs.
+  const caveatLines = wrap(caveat, contentWidth, T.NOTE);
+  const caveatBottom = bottom;
+  const caveatTop = caveatBottom - (caveatLines.length - 1) * T.NOTE.lead;
+  const caveatInkTop = caveatTop - T.NOTE.fontSize;
+
+  // ── The title: full content width, at the top. It is furniture — it says what the viewer is
+  // looking at, and a video whose first seconds carry no title has no poster frame ──────────────
+  const titleLines = wrap(title, contentWidth, T.TITLE);
+  const titleTop = top + T.TITLE.fontSize;
+  const titleBlock = T.TITLE.fontSize + (titleLines.length - 1) * T.TITLE.lead;
+  const middleTop =
+    titleTop + (titleLines.length - 1) * T.TITLE.lead + sp(BASE.BLOCK_AIR);
+  const middleBottom = caveatInkTop - sp(BASE.BLOCK_AIR);
+  const middleHeight = middleBottom - middleTop;
+
+  const value = new Map(rows.map((r) => [r.key, r.value]));
+  const anyNoData = rows.some((r) => r.value === null);
+  const markers = [
+    { label: comparisonLabel, value: comparisonValue, colour: ink },
+    { label: subjectLabel, value: subjectValue, colour: accent },
+  ];
+
+  // The legend's own width, measured in the fonts it is drawn in: a tick label stands to the bar's
+  // right and a marker's name and value stand end-anchored to its left.
+  const BAR_WIDTH = sp(BASE.BAR_WIDTH);
+  const widestTick = Math.max(
+    ...[0, ...breaks].map((tick) => measureText(en(tick, 0), T.TICK)),
   );
-  const caveatLines = wrap(caveat, FRAME.width - PAD * 2, NOTE);
-  const titleTop = PAD + TITLE.fontSize;
-  // THE SOURCE IS THE LAST LINE BEFORE THE BOTTOM MARGIN — the credit sits at the bottom of the
-  // visual, the same place on every graphic this project ships, and it carries the basemap credit
-  // with it, unsplit. It used to hang directly under the title. The bottom stack is laid out
-  // UPWARD from `FRAME.height - PAD`; the plate is fixed at MAP_Y and does not move. See
-  // map-beat/assets/Co2MapVideo.tsx, which this is copied from.
-  const sourceBottom = FRAME.height - PAD;
-  const sourceTop = sourceBottom - (sourceLines.length - 1) * SOURCE.lead;
-  const caveatBottom = sourceTop - SOURCE.fontSize - 12;
-  const caveatTop = caveatBottom - (caveatLines.length - 1) * NOTE.lead;
-  const noDataY = caveatTop - NOTE.fontSize - 22;
+  const widestMarker = Math.max(
+    ...markers.flatMap(({ label, value: v }) => [
+      measureText(label, T.MARKER),
+      measureText(en(v, 1), T.MARKER_VALUE),
+    ]),
+  );
+  const tickReserve = Math.ceil(
+    widestTick + sp(BASE.TICK_LABEL_GAP) + sp(BASE.BLOCK_AIR),
+  );
+  const markerReserve = Math.ceil(
+    widestMarker + sp(BASE.MARKER_GAP) + sp(BASE.MARKER_TEXT_GAP),
+  );
+  const legendRowWidth = markerReserve + BAR_WIDTH + tickReserve;
+  // A class bar is a SCALE: six classes have to be told apart and six ticks read beside them, so
+  // its floor is a tick PITCH that clears the tick's own line — 1.25 x the type, a normal line
+  // height, over labels that are single short numerals — and not a fraction of the frame.
+  const minBarHeight = ramp.length * Math.round(T.TICK.fontSize * 1.25);
+  const legendBlockMin =
+    T.CAPTION.fontSize + sp(BASE.CAPTION_TO_BAR) + minBarHeight;
 
-  const value = new Map(rows.map((row) => [row.key, row.value]));
+  // ── R9, STATED, WITH THE ARITHMETIC ─────────────────────────────────────────────────────────
+  //
+  // TWO FLOORS, both derived from this beat's own furniture rather than typed as a fraction of the
+  // frame, and the second one is the one the render found:
+  //
+  //  1. The map is never given more stage height than its geography can fill, and never less than
+  //     its own KEY is tall — a map smaller than the scale it is read against is a map whose
+  //     classes cannot be compared to it (`map-quake-density` states the same floor).
+  //  2. THE SUBJECT'S NAME HAS TO FIT INSIDE THE SUBJECT. This beat centres the name on the shape
+  //     (B6.10), so a name wider than the shape does not name it, it hides it — and what it hides
+  //     on a choropleth is the DATA, because the subject's own shade is what the legend's two
+  //     markers point at. See `subjectLabelHostWidth` for what the first landscape render measured.
+  const subjectShapeForFloor = geometry.shapes.find(
+    (shape) => shape.key === subject,
+  );
+  if (!subjectShapeForFloor)
+    throw new Error(`no shape for the subject ${subject}`);
+  const subjectPlateWidth = subjectLabelHostWidth(subjectShapeForFloor);
+  const subjectNameWidth = measureText(subjectLabel, T.SUBJECT_LABEL);
+  const minMapForName = Math.ceil(
+    (subjectNameWidth * geometry.frame.width) / subjectPlateWidth,
+  );
+  const mapAtThisBand = Math.min(contentWidth, middleHeight);
+  if (middleHeight < legendBlockMin || mapAtThisBand < minMapForName) {
+    const caveatBlockAtFull =
+      T.NOTE.fontSize + (caveatLines.length - 1) * T.NOTE.lead;
+    const sourceBlock =
+      T.SOURCE.fontSize + (sourceLines.length - 1) * T.SOURCE.lead;
+    const bandHeight = band.height - PAD * 2;
+    throw new Error(
+      `mapgen-choropleth-video (video) cannot be drawn at ${size} (${FRAME.width}x${FRAME.height}).\n` +
+        `THE WORDS. At ${size} the legibility floor is ${row.minTypePx}px — a ${FRAME.width}px ` +
+        `frame watched at ${size === "landscape" ? 900 : 360} CSS px — and that is what makes them ` +
+        `this tall: the title wraps to ${titleLines.length} lines and takes ${titleBlock}px of the ` +
+        `${bandHeight}px band, the credit ${sourceLines.length} lines and ${sourceBlock}px, the ` +
+        `caveat ${caveatBlockAtFull}px. That leaves ${middleHeight}px of band, so the square plate ` +
+        `is drawn ${mapAtThisBand}px wide.\n` +
+        `THE MAP THAT LEAVES. Its own legend is ${legendBlockMin}px tall` +
+        (middleHeight < legendBlockMin
+          ? ` — taller than the band itself, and a map smaller than the scale it is read against is not a map.\n`
+          : `, which the band clears.\n`) +
+        // Only stated where there is a band to draw in at all: below zero the shape has no width
+        // to compare a name against, and a ratio against a negative number is not a reading.
+        (mapAtThisBand > 0 && mapAtThisBand < minMapForName
+          ? `But "${subjectLabel}" measures ${Math.round(subjectNameWidth)}px at the ` +
+            `${T.SUBJECT_LABEL.fontSize}px this size's floor puts it at, against a subject drawn ` +
+            `${Math.round((subjectPlateWidth * mapAtThisBand) / geometry.frame.width)}px wide — ` +
+            `${((subjectNameWidth * geometry.frame.width) / (subjectPlateWidth * mapAtThisBand)).toFixed(2)}x ` +
+            `the shape's own width. The name and its halo would cover the subject's class colour ` +
+            `and its neighbours', and that colour is the evidence the two legend markers point at. ` +
+            `The name fits inside the shape from a ${minMapForName}px map; this band gives ` +
+            `${mapAtThisBand}px.\n`
+          : ``) +
+        `THE LADDER WAS RUN, and no rung above R9 fires on this beat:\n` +
+        `${ladderForThisBeat()}\n` +
+        `R4 is the only one that touches the name, and it does not reach this: dropping the ` +
+        `annotation frees no BAND height — the name is drawn inside the map box — so the plate is ` +
+        `still ${mapAtThisBand}px, and the beat's own alt says the subject is "outlined and named". ` +
+        `Even with the caveat AND the whole legend removed, the title and the credit alone take ` +
+        `${titleBlock + sourceBlock}px of the ${bandHeight}px band. Nothing in the ladder makes ` +
+        `type smaller.\n` +
+        `THE STATIC GENRE OF THIS BEAT SHIPS AT LANDSCAPE, from the same data and the same camera: ` +
+        `its own words are set at the static floor (26px, an article column) instead of this one, ` +
+        `which leaves it an 846px map. The video does not ship.`,
+    );
+  }
+
+  const stage = mapStageBox({
+    availableWidth: contentWidth,
+    availableHeight: middleHeight,
+    plateFrame: geometry.frame,
+    studyLonSpanDeg: lonSpanOf(geometry),
+  });
+  const MAP = stage.width;
+  const MAP_H = stage.height;
+
+  // ── THE FIGURE — the plate and its key — IS CENTRED IN WHAT THE WORDS LEFT ──────────────────
+  //
+  // The plate is square over 59° of longitude, so at a landscape frame it is bound by HEIGHT, and
+  // `mapStageBox` reports the leftover as `spareWidthPx`: 1282 px of it at 1920 x 1080. The key
+  // takes what it measures and no more, and the pair is then centred in the row, so the spare falls
+  // as margin on both sides rather than as one hole against the right rail. Giving the column ALL
+  // the leftover width — which is what "the column is what is left" would do — is how a 65 px bar
+  // ends up alone in the middle of a 1282 px field.
+  const figureWidth = MAP + GUTTER + legendRowWidth;
+  if (figureWidth > contentWidth)
+    throw new Error(
+      `the plate and its key do not fit side by side at ${size}: a ${MAP}px plate, a ${GUTTER}px ` +
+        `gutter and a ${legendRowWidth}px key are ${figureWidth}px of ${contentWidth}px.`,
+    );
+  const MAP_X = PAD + Math.round((contentWidth - figureWidth) / 2);
+  const MAP_Y = middleTop;
+  const scale = MAP / geometry.frame.width;
+  const COLUMN = { x: MAP_X + MAP + GUTTER, width: legendRowWidth };
+
+  const noDataY = middleBottom - sp(BASE.NO_DATA_GAP);
+
+  // The legend hangs off the top of the column, level with the plate's own top edge, and the bar
+  // takes the height the plate beside it has — one figure, one height — so the slack a bigger frame
+  // opens lands in ONE place, under the pair, where it reads as air rather than as a missing block.
+  const captionY = middleTop + T.CAPTION.fontSize;
+  const barTop = captionY + sp(BASE.CAPTION_TO_BAR);
+  const legendFloor = anyNoData ? noDataY : middleBottom;
+  const barAvailable = legendFloor - barTop;
+  if (barAvailable < minBarHeight)
+    throw new Error(
+      `the column does not fit at ${size}: the legend starts at ${barTop} and the band ends at ` +
+        `${legendFloor}, leaving ${barAvailable}px for a class bar whose own floor is ` +
+        `${minBarHeight}px (${ramp.length} classes at a ${T.TICK.fontSize}px tick).`,
+    );
+  const barHeight = Math.min(barAvailable, sp(BASE.BAR_HEIGHT));
+  const barBottom = barTop + barHeight;
+  const barX = COLUMN.x + markerReserve;
+  const atValue = (v: number) =>
+    barBottom - scalePosition(v, breaks) * barHeight;
+
   const order = revealOrder(rows);
   const rank = new Map(order.map((key, index) => [key, index]));
-  const anyNoData = rows.some((row) => row.value === null);
-
-  const barBottom = LEGEND.top + LEGEND.barHeight;
-  const barX = COLUMN.right - 46 - LEGEND.barWidth;
-  const atValue = (v: number) =>
-    barBottom - scalePosition(v, breaks) * LEGEND.barHeight;
-
-  // Loud, not silent: the plate's own floor and the bottom stack must not meet. The plate is
-  // fixed, so this is the one collision a longer source or caveat can actually cause — the same
-  // guard the seed carries, for the same reason.
-  if (noDataY - 17 < MAP_Y + MAP + 16)
-    throw new Error(
-      `the bottom stack does not fit: the plate ends at ${MAP_Y + MAP} and the stack starts at ${noDataY}. ` +
-        `Shorten the source or the caveat, or raise MAP_Y (${MAP_Y}).`,
-    );
 
   const subjectShape = geometry.shapes.find((shape) => shape.key === subject);
   if (!subjectShape) throw new Error(`no shape for the subject ${subject}`);
@@ -230,9 +502,7 @@ export function ChoroplethVideo({
   const reveal = progressOf(frame, timing.reveal);
   const conclusion = progressOf(frame, timing.conclusion);
 
-  // Furniture — title, source, basemap, the empty scale — comes up once, together, then never
-  // moves again. The title is furniture: it says what the reader is looking at, and a video whose
-  // first seconds carry no title has no poster frame.
+  // Furniture — the basemap, the empty scale — comes up once, together, then never moves again.
   const furniture = interpolate(establish, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
@@ -252,19 +522,9 @@ export function ChoroplethVideo({
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
 
-  const markers = [
-    {
-      label: comparisonLabel,
-      value: comparisonValue,
-      colour: ink,
-      opacity: referenceOpacity,
-    },
-    {
-      label: subjectLabel,
-      value: subjectValue,
-      colour: accent,
-      opacity: conclusionOpacity,
-    },
+  const shownMarkers = [
+    { ...markers[0]!, opacity: referenceOpacity },
+    { ...markers[1]!, opacity: conclusionOpacity },
   ];
 
   return (
@@ -275,10 +535,10 @@ export function ChoroplethVideo({
         src={plate}
         style={{
           position: "absolute",
-          left: PAD,
+          left: MAP_X,
           top: MAP_Y,
           width: MAP,
-          height: MAP,
+          height: MAP_H,
           opacity: furniture,
         }}
       />
@@ -291,19 +551,23 @@ export function ChoroplethVideo({
         <defs>
           <pattern
             id="no-data"
-            width={9}
-            height={9}
+            width={sp(BASE.NO_DATA_TILE)}
+            height={sp(BASE.NO_DATA_TILE)}
             patternUnits="userSpaceOnUse"
             patternTransform="rotate(45)"
           >
-            <rect width={9} height={9} fill={ground} />
+            <rect
+              width={sp(BASE.NO_DATA_TILE)}
+              height={sp(BASE.NO_DATA_TILE)}
+              fill={ground}
+            />
             <line
               x1={0}
               y1={0}
               x2={0}
-              y2={9}
+              y2={sp(BASE.NO_DATA_TILE)}
               stroke={muted}
-              strokeWidth={2.4}
+              strokeWidth={sp(2)}
             />
           </pattern>
           {/* A country that has not yet reached its own window in the reveal must not read as a
@@ -315,15 +579,24 @@ export function ChoroplethVideo({
               frame before a country's turn arrives. */}
           <pattern
             id="pending"
-            width={10}
-            height={10}
+            width={sp(BASE.PENDING_TILE)}
+            height={sp(BASE.PENDING_TILE)}
             patternUnits="userSpaceOnUse"
           >
-            <rect width={10} height={10} fill={ground} />
-            <circle cx={5} cy={5} r={1.3} fill={muted} />
+            <rect
+              width={sp(BASE.PENDING_TILE)}
+              height={sp(BASE.PENDING_TILE)}
+              fill={ground}
+            />
+            <circle
+              cx={sp(BASE.PENDING_TILE) / 2}
+              cy={sp(BASE.PENDING_TILE) / 2}
+              r={sp(BASE.PENDING_DOT)}
+              fill={muted}
+            />
           </pattern>
           <clipPath id="plate-clip">
-            <rect x={PAD} y={MAP_Y} width={MAP} height={MAP} />
+            <rect x={MAP_X} y={MAP_Y} width={MAP} height={MAP_H} />
           </clipPath>
         </defs>
 
@@ -333,7 +606,7 @@ export function ChoroplethVideo({
               opacity on a white ground at 0:00, before the basemap it sits on had appeared: a map
               of dashes with no title, no source and no land. ─────────────────────────────────── */}
         <g clipPath="url(#plate-clip)" opacity={furniture}>
-          <g transform={`translate(${PAD},${MAP_Y}) scale(${scale})`}>
+          <g transform={`translate(${MAP_X},${MAP_Y}) scale(${scale})`}>
             {geometry.shapes.map((shape) => {
               const v = value.get(shape.key);
               const arrived = arrivalProgress(
@@ -344,7 +617,7 @@ export function ChoroplethVideo({
               const d = pathFromParts(shape.parts);
               const stroke = {
                 stroke: ground,
-                strokeWidth: 0.8 / scale,
+                strokeWidth: sp(BASE.SHAPE_STROKE) / scale,
                 strokeLinejoin: "round" as const,
               };
 
@@ -370,9 +643,7 @@ export function ChoroplethVideo({
               // "pending" dots — visibly not a shade the ramp could have produced — until its own
               // window opens, then CUTS to its true colour. Never translucent against the basemap,
               // so it never reads lighter than the lightest filled class
-              // (`map-beat/SKILL.md:194-203`). Drawn as two superimposed paths crossfading
-              // into each other, the dot texture and the true fill were both painted for the whole
-              // of every country's window, which is that same defect with an extra layer.
+              // (`map-beat/SKILL.md:194-203`).
               const trueFill = ramp[binIndexLowerInclusive(v, breaks)];
               return (
                 <path
@@ -392,14 +663,14 @@ export function ChoroplethVideo({
                   d={pathFromParts(subjectShape.parts)}
                   fill="none"
                   stroke={ground}
-                  strokeWidth={5 / scale}
+                  strokeWidth={sp(BASE.SUBJECT_HALO_STROKE) / scale}
                   strokeLinejoin="round"
                 />
                 <path
                   d={pathFromParts(subjectShape.parts)}
                   fill="none"
                   stroke={accent}
-                  strokeWidth={2.6 / scale}
+                  strokeWidth={sp(BASE.SUBJECT_STROKE) / scale}
                   strokeLinejoin="round"
                 />
               </g>
@@ -408,15 +679,15 @@ export function ChoroplethVideo({
 
           {subjectSpring > 0 ? (
             <g
-              transform={`translate(${PAD + labelAt[0] * scale},${MAP_Y + labelAt[1] * scale + (SUBJECT_LABEL.fontSize * CAP_HEIGHT_EM) / 2})`}
+              transform={`translate(${MAP_X + labelAt[0] * scale},${MAP_Y + labelAt[1] * scale + (T.SUBJECT_LABEL.fontSize * CAP_HEIGHT_EM) / 2})`}
               opacity={subjectSpring}
             >
               <text
                 textAnchor="middle"
-                fontSize={SUBJECT_LABEL.fontSize}
-                fontWeight={SUBJECT_LABEL.fontWeight}
+                fontSize={T.SUBJECT_LABEL.fontSize}
+                fontWeight={T.SUBJECT_LABEL.fontWeight}
                 stroke={ground}
-                strokeWidth={5}
+                strokeWidth={sp(BASE.SUBJECT_LABEL_HALO)}
                 strokeLinejoin="round"
                 fill="none"
               >
@@ -424,8 +695,8 @@ export function ChoroplethVideo({
               </text>
               <text
                 textAnchor="middle"
-                fontSize={SUBJECT_LABEL.fontSize}
-                fontWeight={SUBJECT_LABEL.fontWeight}
+                fontSize={T.SUBJECT_LABEL.fontSize}
+                fontWeight={T.SUBJECT_LABEL.fontWeight}
                 fill={accent}
               >
                 {subjectLabel}
@@ -434,18 +705,17 @@ export function ChoroplethVideo({
           ) : null}
         </g>
 
-        {/* ── The title and the source: full opacity from frame 0, never gated on `establish`,
-              whose progress at frame 0 is exactly 0. They say what the reader is looking at, and
-              they are what makes the poster frame a frame rather than a blank. Every other video
-              beat in this corpus already draws them this way. ──────────────────────────────── */}
+        {/* ── The title and the credit: full opacity from frame 0, never gated on `establish`,
+              whose progress at frame 0 is exactly 0. They say what the viewer is looking at, and
+              they are what makes the poster frame a frame rather than a blank. ──────────────── */}
         {titleLines.map((line, i) => (
           <text
             key={line}
             x={PAD}
-            y={titleTop + i * TITLE.lead}
+            y={titleTop + i * T.TITLE.lead}
             fill={ink}
-            fontSize={TITLE.fontSize}
-            fontWeight={TITLE.fontWeight}
+            fontSize={T.TITLE.fontSize}
+            fontWeight={T.TITLE.fontWeight}
           >
             {line}
           </text>
@@ -454,23 +724,23 @@ export function ChoroplethVideo({
           <text
             key={line}
             x={PAD}
-            y={sourceTop + i * SOURCE.lead}
+            y={sourceTop + i * T.SOURCE.lead}
             fill={muted}
-            fontSize={SOURCE.fontSize}
+            fontSize={T.SOURCE.fontSize}
           >
             {line}
           </text>
         ))}
 
-        {/* ── The rest of the furniture — the legend and its caption — belongs to the field and
-              comes up with it. ─────────────────────────────────────────────────────────────── */}
+        {/* ── The rest of the furniture — the legend, its caption and the caveat — belongs to the
+              field and comes up with it. ───────────────────────────────────────────────────── */}
         <g opacity={furniture}>
           <text
             x={COLUMN.x}
-            y={LEGEND.top - 22}
+            y={captionY}
             fill={muted}
-            fontSize={CAPTION.fontSize}
-            fontWeight={CAPTION.fontWeight}
+            fontSize={T.CAPTION.fontSize}
+            fontWeight={T.CAPTION.fontWeight}
           >
             {legendCaption}
           </text>
@@ -478,36 +748,45 @@ export function ChoroplethVideo({
             <rect
               key={shade}
               x={barX}
-              y={barBottom - ((i + 1) * LEGEND.barHeight) / ramp.length}
-              width={LEGEND.barWidth}
-              height={LEGEND.barHeight / ramp.length}
+              y={barBottom - ((i + 1) * barHeight) / ramp.length}
+              width={BAR_WIDTH}
+              height={barHeight / ramp.length}
               fill={shade}
             />
           ))}
           {[0, ...breaks].map((tick, i) => (
             <text
               key={tick}
-              x={barX + LEGEND.barWidth + LEGEND.labelGap}
-              y={barBottom - (i * LEGEND.barHeight) / ramp.length + 6}
+              x={barX + BAR_WIDTH + sp(BASE.TICK_LABEL_GAP)}
+              y={
+                barBottom -
+                (i * barHeight) / ramp.length +
+                sp(BASE.TICK_BASELINE_NUDGE)
+              }
               fill={muted}
-              fontSize={TICK.fontSize}
+              fontSize={T.TICK.fontSize}
             >
               {en(tick, 0)}
             </text>
           ))}
 
           {anyNoData ? (
-            <g transform={`translate(${PAD},${noDataY})`}>
+            <g transform={`translate(${COLUMN.x},${noDataY})`}>
               <rect
                 x={0}
-                y={-13}
-                width={24}
-                height={17}
+                y={-sp(BASE.NO_DATA_SWATCH.lift)}
+                width={sp(BASE.NO_DATA_SWATCH.width)}
+                height={sp(BASE.NO_DATA_SWATCH.height)}
                 fill="url(#no-data)"
                 stroke={muted}
-                strokeWidth={0.6}
+                strokeWidth={sp(0.6)}
               />
-              <text x={34} y={0} fill={muted} fontSize={TICK.fontSize}>
+              <text
+                x={sp(BASE.NO_DATA_SWATCH.textX)}
+                y={0}
+                fill={muted}
+                fontSize={T.TICK.fontSize}
+              >
                 {noDataLabel}
               </text>
             </g>
@@ -516,9 +795,9 @@ export function ChoroplethVideo({
             <text
               key={line}
               x={PAD}
-              y={caveatTop + i * NOTE.lead}
+              y={caveatTop + i * T.NOTE.lead}
               fill={muted}
-              fontSize={NOTE.fontSize}
+              fontSize={T.NOTE.fontSize}
             >
               {line}
             </text>
@@ -528,31 +807,34 @@ export function ChoroplethVideo({
         {/* ── The two marks the argument is made of. The comparison (Sweden) arrives BEFORE the
               evidence and is left alone to be read; the subject's (Poland) own value only after
               the subject has landed. */}
-        {markers.map(({ label, value: v, colour, opacity }) =>
+        {shownMarkers.map(({ label, value: v, colour, opacity }) =>
           opacity > 0 ? (
             <g
               key={label}
-              transform={`translate(${barX - LEGEND.markerGap},${atValue(v)})`}
+              transform={`translate(${barX - sp(BASE.MARKER_GAP)},${atValue(v)})`}
               opacity={opacity}
             >
-              <path d="M0 0L-11 -6L-11 6Z" fill={colour} />
+              <path
+                d={`M0 0L${-sp(BASE.MARKER_ARROW_LENGTH)} ${-sp(BASE.MARKER_ARROW_HALF)}L${-sp(BASE.MARKER_ARROW_LENGTH)} ${sp(BASE.MARKER_ARROW_HALF)}Z`}
+                fill={colour}
+              />
               <text
-                x={-19}
-                y={-4}
+                x={-sp(BASE.MARKER_TEXT_GAP)}
+                y={-sp(BASE.MARKER_NAME_LIFT)}
                 textAnchor="end"
                 fill={colour}
-                fontSize={MARKER.fontSize}
-                fontWeight={MARKER.fontWeight}
+                fontSize={T.MARKER.fontSize}
+                fontWeight={T.MARKER.fontWeight}
               >
                 {label}
               </text>
               <text
-                x={-19}
-                y={20}
+                x={-sp(BASE.MARKER_TEXT_GAP)}
+                y={sp(BASE.MARKER_VALUE_DROP)}
                 textAnchor="end"
                 fill={colour}
-                fontSize={MARKER_VALUE.fontSize}
-                fontWeight={MARKER_VALUE.fontWeight}
+                fontSize={T.MARKER_VALUE.fontSize}
+                fontWeight={T.MARKER_VALUE.fontWeight}
               >
                 {en(v, 1)}
               </text>

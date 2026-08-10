@@ -185,7 +185,10 @@ export function joinValues(
  *  `breaks[i]`. That is what this beat's own legend prints — the tick row `[0, ...breaks]` labels
  *  each break as the foot of the class above it. The hex family bins the other way and says so in
  *  its own name. @parity */
-export function binIndexLowerInclusive(value: number, breaks: number[]): number {
+export function binIndexLowerInclusive(
+  value: number,
+  breaks: number[],
+): number {
   let index = 0;
   while (index < breaks.length && value >= breaks[index]!) index++;
   return index;
@@ -549,6 +552,45 @@ export function pointInRings(point: [number, number], rings: Ring[]): boolean {
 }
 
 /**
+ * The part of a shape a name is put on: the LARGEST by bounding-box area, so an exclave or an
+ * offshore island cannot take the name (Denmark's Bornholm, Italy's Sardinia, Greece's Crete are
+ * all in this beat's study set). Shared by the anchor below and by the width the name has to fit
+ * in, so the two can never answer for different parts of the same country.
+ *
+ *  @parity */
+function labelHostPart(shape: BakedShape): Ring[] {
+  if (shape.parts.length === 0)
+    throw new Error(`${shape.key} has no parts to anchor a label on`);
+  let best: { rings: Ring[]; area: number } | null = null;
+  for (const part of shape.parts) {
+    const box = boundingBoxOf(part);
+    const area = (box.maxX - box.minX) * (box.maxY - box.minY);
+    if (!best || area > best.area) best = { rings: part, area };
+  }
+  return best!.rings;
+}
+
+/**
+ * HOW WIDE THE SUBJECT IS, in the plate's own pixel space, across the part its name is centred on.
+ *
+ * The floor a caller derives from this is the one the landscape VIDEO render produced and no
+ * counter could see: at the 385 px the words left for the map, "Poland" measured 147 px against a
+ * country drawn 65 px wide — **2.26x the shape's own width** — so the name and its halo covered
+ * Poland's class colour and bled over Germany, Czechia and Belarus. Nothing was clipped, nothing
+ * collided, every type floor was cleared, and the mark the whole beat is about was painted out by
+ * its own label.
+ *
+ * A name wider than the shape it names does not name it, it hides it — and on a choropleth what it
+ * hides is the DATA, because the subject's shade is what the legend's markers point at. So this is
+ * measured and refused, and the refusal reports the map size that would let the name fit.
+ *
+ *  @parity */
+export function subjectLabelHostWidth(shape: BakedShape): number {
+  const box = boundingBoxOf(labelHostPart(shape));
+  return box.maxX - box.minX;
+}
+
+/**
  * The point a subject's own name should be centred on, in the plate's pixel space: the box centre
  * of the shape's LARGEST part, so an exclave or an offshore island cannot drag the name into the
  * sea (Denmark's Bornholm, Italy's Sardinia, Greece's Crete are all in this beat's study set).
@@ -562,15 +604,7 @@ export function pointInRings(point: [number, number], rings: Ring[]): boolean {
  *
  *  @parity */
 export function subjectLabelAnchor(shape: BakedShape): [number, number] {
-  if (shape.parts.length === 0)
-    throw new Error(`${shape.key} has no parts to anchor a label on`);
-  let best: { rings: Ring[]; area: number } | null = null;
-  for (const part of shape.parts) {
-    const box = boundingBoxOf(part);
-    const area = (box.maxX - box.minX) * (box.maxY - box.minY);
-    if (!best || area > best.area) best = { rings: part, area };
-  }
-  const rings = best!.rings;
+  const rings = labelHostPart(shape);
   const centre = bboxCenter(boundingBoxOf(rings));
   if (!pointInRings(centre, rings))
     throw new Error(
@@ -583,7 +617,7 @@ export function subjectLabelAnchor(shape: BakedShape): [number, number] {
 
 // ── Language ───────────────────────────────────────────────────────────────────────────────────
 
-/** This beat's readers write a decimal point. English only, project-wide, this branch. 
+/** This beat's readers write a decimal point. English only, project-wide, this branch.
  *  @parity */
 export function en(value: number, decimals = 1): string {
   return new Intl.NumberFormat("en-GB", {

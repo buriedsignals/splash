@@ -11,6 +11,7 @@
 //   bun proof/mapgen-choropleth-video/render.mjs --still
 //   bun proof/mapgen-choropleth-video/render.mjs --final-frame
 //   bun proof/mapgen-choropleth-video/render.mjs --video
+//   bun proof/mapgen-choropleth-video/render.mjs --still --size square   # LOOKING, into sizes/
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -22,6 +23,25 @@ import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
+// TWO SIZE TABLES, BECAUSE THIS BEAT SHIPS TWO GENRES FROM ONE FOLDER, and they are not the same
+// question. Both carry the same three frames; what differs is the legibility floor, because a
+// static map is read in a ~900px article column (floor 26) and a landscape VIDEO is watched on a
+// phone turned sideways, ~800dp (floor 30). Importing one table for both would silently hold the
+// video to the article's floor — the exact "one table, two jobs" defect `sizes.mjs` refuses in its
+// own header. The two are aliased at the import so no call site below can pick the wrong one by
+// accident.
+import {
+  assertDeliveredSize as assertStillSize,
+  assertTypeFloor as assertStillTypeFloor,
+  assertWithinStage as assertStillWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor as stillSizeFor,
+} from "#shared/chart-beat/sizes.mjs";
+import {
+  assertDeliveredSize as assertVideoSize,
+  sizeFor as videoSizeFor,
+} from "#shared/chart-video/sizes.mjs";
 import { ChoroplethStill } from "./ChoroplethStill.tsx";
 import {
   CHOROPLETH_BREAKS,
@@ -38,7 +58,7 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
-const COMPOSITION = "choropleth-co2";
+const BEAT_ID = "mapgen-choropleth-video";
 
 /** The story's own constants: the confirmed title, its source, its subject, its comparison. */
 // The colours are READ, not typed — see `PALETTE.md` beside this file.
@@ -74,8 +94,28 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size was two literals in each component and two more below, compared
+// against each other by `renderStill` — so they agreed by construction and the pin reached nothing.
+// One pin serves both genres: a beat is pinned, not a genre of it.
+const pinnedSize = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+// compared. Deliberately NOT a way to change what this beat delivers: the delivered files keep the
+// beat's own names and the pinned size, and an override says so on stdout and writes elsewhere.
+const sizeFlag = argv.indexOf("--size");
+const size = sizeFlag === -1 ? pinnedSize : argv[sizeFlag + 1];
+
 const dataPath = flag("--data", join(HERE, "co2-per-capita-2023.csv"));
-const outDir = flag("--out", join(HERE, "render"));
+const outDir = flag(
+  "--out",
+  sizeFlag === -1 ? join(HERE, "render") : join(HERE, "sizes"),
+);
+const stem = (name) => (sizeFlag === -1 ? name : `${name}-${size}`);
+if (sizeFlag !== -1)
+  console.log(
+    `LOOKING at ${size}; the pinned size stays ${pinnedSize} -> ${outDir}`,
+  );
 // Both plates are frozen BESIDE THE BEAT, exactly as the csv and the geojson are: `/tmp` cannot be
 // committed, so a render reading its basemap from there leaves a still and an mp4 nobody can
 // reproduce or audit — and MapTiler restyles, so a re-bake months later is a different picture
@@ -229,16 +269,40 @@ await mkdir(outDir, { recursive: true });
 
 // ── Rung 1: the still ──────────────────────────────────────────────────────────────────────────
 if (wantStill) {
+  // The STATIC genre's size table — the same one every static chart beat reads, and deliberately
+  // not a fourth copy of it. `minTypePx` is "12 CSS px at the distance this output is read", and a
+  // static map sits in the same ~900px article column a static chart does.
+  const { width, height } = stillSizeFor(size);
+  console.log(`still at ${size} (${width}x${height})`);
   const { geometry, plate } = await plateOf(stillPlate);
-  const { pngPath } = await renderStill({
-    element: createElement(ChoroplethStill, { ...shared, geometry, plate, alt: altFor(geometry) }),
-    width: 900,
-    height: 560,
+  const { pngPath, svgPath } = await renderStill({
+    element: createElement(ChoroplethStill, {
+      ...shared,
+      geometry,
+      plate,
+      alt: altFor(geometry),
+      size,
+    }),
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
     outDir,
-    name: "static",
+    name: stem("static"),
+  });
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertStillSize(readPngSize(await readFile(pngPath)), size, { what: pngPath });
+  const svg = await readFile(svgPath, "utf8");
+  assertStillTypeFloor(svg, size, { what: "mapgen-choropleth-video (static)" });
+  assertStillWithinStage(svg, size, {
+    what: "mapgen-choropleth-video (static)",
   });
   console.log(
-    `still → ${pngPath}  (${BEAT.subjectLabel} ${en(shared.subjectValue, 1)} · ` +
+    `still → ${pngPath} at ${width}x${height}, verified from the file  ` +
+      `(${BEAT.subjectLabel} ${en(shared.subjectValue, 1)} · ` +
       `${BEAT.comparisonLabel} ${en(shared.comparisonValue, 1)})\nNow open it and look at it.`,
   );
 }
@@ -252,38 +316,85 @@ function remotion(args) {
   return Math.round((Date.now() - started) / 1000);
 }
 
+/**
+ * The DELIVERED mp4's own dimensions, read out of the container by `ffprobe`.
+ *
+ * The video analogue of `readPngSize`, and it exists for the same reason: the only reading the code
+ * that wrote the file cannot make agree with itself. `Root.tsx` sizes the composition and the
+ * component draws into it, both from the same table — so they agree by construction, and an encoder
+ * that letterboxed, or a `--scale` left on a command line, would arrive in the newsroom unnoticed.
+ */
+function mp4Size(path) {
+  const probe = spawnSync(
+    "ffprobe",
+    [
+      "-v", "error",
+      "-select_streams", "v:0",
+      "-show_entries", "stream=width,height",
+      "-of", "csv=p=0",
+      path,
+    ],
+    { encoding: "utf8" },
+  );
+  if (probe.status !== 0)
+    throw new Error(`ffprobe could not read ${path}: ${probe.stderr}`);
+  const [width, height] = probe.stdout.trim().split(",").map(Number);
+  if (!Number.isFinite(width) || !Number.isFinite(height))
+    throw new Error(`ffprobe returned no dimensions for ${path}: ${probe.stdout}`);
+  return { width, height };
+}
+
 if (wantFinalFrame || wantVideo) {
+  // The VIDEO genre's own size table — landscape floor 30 against the static's 26, because a
+  // landscape video is watched on a phone turned sideways rather than read in an article column.
+  const { width, height } = videoSizeFor(size);
+  // `remotion still` / `remotion render` select a beat by composition id and nothing else, so the
+  // size travels in the id. `Root.tsx` builds one composition per row of the same table.
+  const composition = `${BEAT_ID}-${size}`;
+  console.log(`video at ${size} (${width}x${height}) — composition ${composition}`);
   const { geometry, plate } = await plateOf(videoPlate);
-  const propsPath = join(outDir, "video-props.json");
+  const propsPath = join(outDir, `${stem("video-props")}.json`);
   await writeFile(
     propsPath,
-    JSON.stringify({ ...shared, geometry, plate, alt: altFor(geometry) }),
+    JSON.stringify({ ...shared, geometry, plate, alt: altFor(geometry), size }),
   );
 
-  const framePath = join(outDir, "final-frame.png");
+  const framePath = join(outDir, `${stem("final-frame")}.png`);
   const stillSeconds = remotion([
     "still",
     ENTRY,
-    COMPOSITION,
+    composition,
     framePath,
     "--frame=-1",
     `--props=${propsPath}`,
     "--timeout=180000",
   ]);
-  console.log(`final frame (--frame=-1) → ${framePath}  [${stillSeconds}s]`);
+  // The final frame, measured from its own IHDR — not from the arguments that drew it.
+  assertVideoSize(readPngSize(await readFile(framePath)), size, {
+    what: framePath,
+  });
+  console.log(
+    `final frame (--frame=-1) → ${framePath}  [${stillSeconds}s], verified from the file`,
+  );
 
   if (wantVideo) {
-    const videoPath = join(outDir, "choropleth.mp4");
+    const videoPath = join(outDir, `${stem("choropleth")}.mp4`);
     const videoSeconds = remotion([
       "render",
       ENTRY,
-      COMPOSITION,
+      composition,
       videoPath,
       `--props=${propsPath}`,
       "--concurrency=1",
       "--timeout=180000",
     ]);
-    console.log(`video → ${videoPath}  [${videoSeconds}s]`);
+    // And the DELIVERED mp4, out of the container itself. This is the assertion the whole size
+    // decision rests on for the video genre: everything upstream of it agrees by construction.
+    assertVideoSize(mp4Size(videoPath), size, { what: videoPath });
+    console.log(
+      `video → ${videoPath}  [${videoSeconds}s], verified from the container\n` +
+        `Now extract frames with ffmpeg and look at them.`,
+    );
   }
 }
 

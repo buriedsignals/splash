@@ -1,5 +1,16 @@
 /**
- * The Remotion root: the one composition this beat ships.
+ * The Remotion root: ONE COMPOSITION PER EXPORT SIZE.
+ *
+ * That is the half of the size migration a component cannot do on its own. This file used to
+ * register a single composition with `width={1080} height={1080}` typed here, so a journalist who
+ * pinned `landscape` at gate 2c had no composition to render at all — whatever the component read.
+ * The list is built from the table's own row names, so a row added to `sizes.mjs` arrives here
+ * without anybody remembering to widen a list, and the id carries the size because
+ * `remotion still` / `remotion render` select a beat by composition id and nothing else.
+ *
+ * A size this beat cannot enter still gets a composition. It refuses inside `ChoroplethVideo`,
+ * loudly, with the arithmetic and the ladder in the message and the size that works named — a
+ * stated refusal a journalist can read, rather than a missing id and a listing that says nothing.
  *
  * Its duration and fps come from the timing contract — `durationInFrames` is
  * `CHOROPLETH_TIMING.total`, not a number typed here.
@@ -11,12 +22,14 @@
  */
 
 import { Composition } from "remotion";
+import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { ChoroplethVideo, type ChoroplethVideoProps } from "./ChoroplethVideo";
 import { CHOROPLETH_TIMING } from "./timing";
 
 const PLACEHOLDER: ChoroplethVideoProps = {
   geometry: {
     frame: { width: 620, height: 620 },
+    frameCorners: { west: -26, north: 68.2, east: 33, south: 33.4 },
     shapes: [],
     anchors: { label: [0, 0] },
   },
@@ -40,18 +53,27 @@ const PLACEHOLDER: ChoroplethVideoProps = {
   subjectValue: 7.3,
   comparisonLabel: "Sweden",
   comparisonValue: 3.5,
+  size: "landscape",
 };
 
 export function RemotionRoot() {
   return (
-    <Composition
-      id="choropleth-co2"
-      component={ChoroplethVideo}
-      durationInFrames={CHOROPLETH_TIMING.total}
-      fps={CHOROPLETH_TIMING.fps}
-      width={1080}
-      height={1080}
-      defaultProps={PLACEHOLDER}
-    />
+    <>
+      {EXPORT_SIZE_NAMES.map((name: string) => {
+        const { width, height } = sizeFor(name);
+        return (
+          <Composition
+            key={name}
+            id={`mapgen-choropleth-video-${name}`}
+            component={ChoroplethVideo}
+            durationInFrames={CHOROPLETH_TIMING.total}
+            fps={CHOROPLETH_TIMING.fps}
+            width={width}
+            height={height}
+            defaultProps={{ ...PLACEHOLDER, size: name }}
+          />
+        );
+      })}
+    </>
   );
 }
