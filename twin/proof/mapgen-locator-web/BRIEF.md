@@ -1,8 +1,10 @@
 # Beat — eleven international organisations in and around Geneva (web)
 
 **Type:** locator. **Medium/genre:** map / web. **Channel:** article web, one self-contained
-`locator.html`, two SSR'd layouts over one 420 px baked plate (`bake-plate.mjs --size 420`), plus an
-always-rendered table of all eleven organisations.
+`locator.html`: a LIVE MapTiler map (ruling R1) over one 420 px baked plate
+(`bake-plate.mjs --size 420`) kept as the script-free fallback layer, one HTML overlay of names and
+hit targets, and an always-rendered table of all eleven organisations. One render, no second layout
+— the two SSR'd `WebLayout` frames this beat used to ship were removed with B5.1.
 
 ## Claim
 
@@ -32,6 +34,8 @@ the two beats share this csv byte for byte and now share the derivation.
   small offset, not a separate district.
 - The rendered `locator.html` carries **11 table rows**, one per organisation, name and category —
   counted in the committed file, not assumed.
+- Closest pair: **ILO ↔ International Social Security Association, 13.3 m** — 0.53 px at the bake's
+  own 25.18 m per pixel, which is why the live camera and its derived headroom exist.
 
 ## Subject and accent
 
@@ -43,15 +47,41 @@ all the same size") because a reader's first instinct on a map of circles is to 
 ## Interaction
 
 Hover, tap and keyboard focus all reach the same eleven markers and reveal the same string; nothing
-argument-bearing is behind them. The title, the three-tier legend, the caveat, the source and every
-marker are drawn unconditionally in the SSR'd SVG, so the claim survives with JavaScript off.
+argument-bearing is behind them. The title, the colour key, the caveat, the source and every marker
+are drawn unconditionally, so the claim survives with JavaScript off, offline, and after a MapTiler
+key is rotated — that state is the baked plate, complete, with the table under it.
 
-The table is the part that matters for this type. A map is spatial and a screen reader has no
+**The map is live, and for this beat that is the point rather than a feature** (ruling R1,
+2026-08-10). `AUDIT-W5-W6-map.md` §4.2 measured the delivered page drawing **3 labels for 11
+organisations** while the family's video title says "All 11". The cause is not the label rule: the
+closest pair — the ILO and the International Social Security Association — is **13.3 m apart, which
+is 0.53 px** on this beat's own plate. No declutter separates two names that share a pixel; only a
+camera can. So every one of the eleven is an anchor in the live plan, the names and hit targets
+follow the camera, and the declutter is re-run against the boxes the browser actually measured at
+every camera move. Measured on the delivered file, driven with a real key:
+
+| view | labels a reader can read |
+|---|---|
+| the baked plate, script-free (was the whole beat) | **3 of 11** |
+| live, fitted view, 1600×900 | **8 of 11** |
+| live, fitted view, 375×812 | 4 of 11 |
+| live, zoomed onto the 13 m pair | **both**, 24 px apart |
+
+**The reader's leash is derived, not picked** (`render-web.mjs`'s `separationHeadroom`): the zoom at
+which that closest pair's two painted discs stop overlapping is 4.666 zoom levels above the bake's
+own, so that is the floor the plan carries — measured on the delivered page as a fitted 11.921 →
+maximum 16.587 at 1600×900 and 11.253 → 15.919 at 375×812. Panning is bounded to the view the camera
+fitted to: asked for Lausanne (6.63°E), the map stops at 6.23°E.
+
+The table is still the part that matters for this type. A map is spatial and a screen reader has no
 spatial access, so the eleven rows — **name and category, in the same order as keyboard Home/End** —
-are the non-visual route to the same content, always rendered, never a screen-reader-only trick.
-It is also what fixes the static sibling's gap: on the static frame only 5 of 11 markers are
-labelled, so the WEF that the caveat names by name has no visible label. Here every organisation is
-named.
+are the non-visual route to the same content, always rendered, never a screen-reader-only trick, and
+never narrowed by anything the map is not narrowed by. Whether it should be more compact than eleven
+full rows is B5.2, an open question for the owner; this beat does not answer it.
+
+The three-tier legend and the category filter are ONE control: each chip carries its category's own
+swatch, so the colour key is drawn unconditionally (it reads with JavaScript off and with `:has()`
+unsupported) and narrowing the map, its labels, its hit targets and the table is one radio away.
 
 ## Anti-patterns for this case
 
@@ -63,7 +93,12 @@ named.
   deterministic and order-stable so the same input always produces the same frame; the displaced
   positions are a legibility concession and not surveyed locations.
 - A marker near the right edge must flip its label side from its PROJECTED pixel, not from its
-  longitude — the WEF is this data's own case, and the plate width, not the data, decides.
+  longitude — the WEF is this data's own case, and the plate width, not the data, decides. Live, the
+  projected pixel changes with every pan, so the side is re-decided from the camera rather than
+  replayed from the plate.
+- Never size a locator's marker from the camera either. A pin is not a measurement: it holds the
+  same screen size at every zoom (`radius: "fixed"`), because there is no magnitude for a growing
+  circle to encode.
 - Do not gate the caveat behind interaction. "A locator marks position only" is the sentence that
   stops a reader inventing a magnitude, and it is drawn in the frame.
 

@@ -113,6 +113,22 @@ export const CATEGORY_ORDER = [
   "Other international body",
 ];
 
+/**
+ * A CSS-id-safe slug for a category name ("UN system" → "un-system") — used to build the filter
+ * radio's own `id`, the matching `:has(#id:checked)` selector, the `data-group` every marker, label,
+ * hit target and table row carries, and the `group` property the live layer's own `setFilter` reads.
+ * One vocabulary, four readers: the seed's own `render-web.mjs` records what happened the day the
+ * raw name and the slug were two vocabularies — an HTML-escaped `&amp;` inside a CSS string matched
+ * nothing, `:not(...)` matched everything, and one filter emptied the whole map.
+
+ *  @parity */
+export function slugOf(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 /** Okabe–Ito, the CVD-safe qualitative palette this project cycles categorical colour from. A
  *  locator draws NO value channel (`references/types/locator.md`: "no magnitude, no rate, no
  *  gradient") — category is the only thing colour is allowed to carry here. */
@@ -170,9 +186,8 @@ export function declutterLabels<T extends { key: string; priority: number }>(
 }
 
 /** Every point, priority order — the same order the accessible table and the keyboard's Home/End
- *  both use, so "the first row" means the same thing whichever the reader picks. 
+ *  both use, so "the first row" means the same thing whichever the reader picks.
  *  @parity-exempt: each beat reads its own data in its own order — value on a choropleth, population on a dot map, ascending priority on a locator. Four sorts, four beats, not four drifts. */
 export function readingOrder<T extends { priority: number }>(rows: T[]): T[] {
   return [...rows].sort((a, b) => a.priority - b.priority);
 }
-

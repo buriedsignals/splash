@@ -4,12 +4,13 @@
 // eleven study-set points projected. No polygons, no join — a locator has neither
 // (`twin-map-beat/references/types/locator.md`: "position only").
 //
-// Baked at the EXACT pixel size this beat's own desktop `WebLayout` displays the plate at (420px,
-// `LocatorWeb.tsx`'s `DESKTOP_LAYOUT.mapSize`) — not a larger size scaled down at draw time. The
-// narrow layout still reuses this ONE plate (`scale = mapSize / geometry.frame.width` at draw time
-// handles the further downscale to 324px cleanly, same as `twin-map-web`'s own seed), but the
-// desktop layout — the one most readers see first — gets the plate at its own true pixel size, no
-// scale factor between bake and draw for that layout.
+// Baked at 420px square. That used to be "the exact pixel size this beat's own desktop `WebLayout`
+// displays the plate at", and those two fixed layouts are gone (B5.1): the plate is now drawn into
+// ONE fluid box whose size the reader's window decides, so 420 is a resolution choice rather than a
+// match to a layout. It is also, since ruling R1, the FALLBACK layer rather than the display surface
+// — what a reader sees with JavaScript off, offline, or after a key is rotated — while the camera
+// facts recorded below (`frameCorners`, `zoom`, `degreesPerPixel`, `metresPerPixel`) are what the
+// live map derives its own leash and mark scale from.
 //
 // This is `twin-doctrine/references/geo-discipline.md` rules 1, 2, 4, 6, 7 in one script (rule 3
 // does not apply — nothing here is a polygon):
@@ -58,8 +59,8 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-// 420 — this beat's own DESKTOP_LAYOUT.mapSize (LocatorWeb.tsx), not the 496 the web seed uses for
-// its own, different layout.
+// 420 — this beat's own plate resolution (see the header note), not the 496 the web seed bakes for
+// its own, different frame.
 const size = Number(flag("--size", "420"));
 const outDir = flag("--out", join(HERE, "plate"));
 const csvPath = flag("--data", join(HERE, "geneva-orgs.csv"));
