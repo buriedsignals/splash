@@ -1,4 +1,31 @@
+---
+size: landscape
+type: line
+---
+
 # Beat — Switzerland has kept a longer life expectancy than France for over three decades
+
+**Size:** landscape (1920 x 1080). The front matter above is the record that counts — `render.mjs`
+reads it with `readPinnedSize`, and `Root.tsx` registers one composition per row of the table. The
+prose used to be the only record of gate 2c's decision, checked by nothing, while the component
+carried its own `const FRAME` and `Root.tsx` repeated the same two numbers.
+
+**Why landscape, and what the other two sizes cost.** A line resists rotation — its x axis is
+time, read left to right — so it has no twin form. What it has is the one MEASURED aspect range in
+this lot (0.8:1 to 1.8:1, `type-at-size.mjs`), so square and portrait are `clamp` rather than
+`refuse` and `assertPlotAspect` decides them at render time instead of a comment deciding them
+here. Landscape is pinned because it is R2's row for video and because a slope read at 16:9 is the
+shape this beat's claim was written against; the 1080 x 1080 it used to draw at was not a
+decision, it was a default.
+
+**What the two other sizes actually did, rendered rather than reasoned.** Portrait REFUSES, and the
+refusal is the guard's own: the plot comes back 285 x 1158 — 0.25:1 — because the two end labels
+need a gutter that is more than half of a 1080 px frame, and `assertPlotAspect` names the range it
+is outside. Square PASSES both guards at 0.83:1 and is still a chart nobody should publish: the
+render was opened, and the "80 years" reference label sits across both lines while the end labels
+overflow the plot to the frame's edge. That is a datum about the range and not only about this
+beat — 0.8 is the floor `type-at-size.mjs` carries with `suspect` set on it, learned from a square
+render that was already stretched. It is used as given here, and it is reported.
 
 **Proves:** since 1990, Switzerland's life expectancy at birth has stayed continuously above
 France's — both countries crossed 80 years, and by 2023 they sit within a year of each other.

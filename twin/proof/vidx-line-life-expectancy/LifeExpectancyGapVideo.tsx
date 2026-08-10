@@ -36,19 +36,127 @@ import {
   progressOf,
   type BeatTiming,
 } from "#shared/twin-chart-video/timing.ts";
+import {
+  assertTypeFloor,
+  frameInsetFor,
+  sizeFor,
+} from "#shared/twin-chart-video/sizes.mjs";
+import {
+  assertPlotAspect,
+  formForSize,
+} from "#shared/twin-chart-beat/type-at-size.mjs";
 import { LINE_TIMING } from "./timing-contract";
 
-const FRAME = { width: 1080, height: 1080 };
-const PAD = 72;
-const TITLE = { fontSize: 44, fontWeight: 700, lead: 56 };
-const SOURCE = { fontSize: 22, fontWeight: 400, lead: 28 };
-const AXIS = { fontSize: 22, fontWeight: 400 };
-const LABEL = { fontSize: 27, fontWeight: 600 };
-const NOTE = { fontSize: 22, fontWeight: 400 };
+/** The chart type this beat draws, in `references/types/` vocabulary. Read by `formForSize`. */
+const TYPE = "line";
+
+/**
+ * THE 900x560-CONVENTION BASE, WITH THE ROW'S `typeScale` AS THE MULTIPLIER.
+ *
+ * There is no `const FRAME` any more. It said `1080 x 1080` here while `Root.tsx` said
+ * `width={1080} height={1080}` two files away, with nothing between them, so `size: portrait` on
+ * the slot produced a square in silence (`specs/W4-export-sizes.md` §1a).
+ *
+ * Every spacing number goes through `sp`, not only the fonts — the air under the header, the tick
+ * inset, the lift of the reference label off its own rule. Scaling the type and leaving those at
+ * their 1080-square value is what collided the title into the subtitle on the static probe's first
+ * run.
+ *
+ * The base numbers are the old 1080-square values re-expressed at the convention the table's
+ * `typeScale` is written against — smallest token 12, so the row's multiplier lands the smallest
+ * drawn type exactly on that row's legibility floor. The old values did not clear it: the axis was
+ * 22px on a 1080 frame, 7.3 CSS px on the phone a square post is read on.
+ */
+const BASE = {
+  TITLE: { fontSize: 24, fontWeight: 700, lead: 31 },
+  SOURCE: { fontSize: 12, fontWeight: 400, lead: 15 },
+  AXIS: { fontSize: 12, fontWeight: 400 },
+  LABEL: { fontSize: 15, fontWeight: 600 },
+  NOTE: { fontSize: 12, fontWeight: 400 },
+  HEADER_TO_PLOT: 33,
+  END_LABEL_AIR: 9,
+  END_LABEL_NUDGE: 4,
+  X_LABEL_BAND: 24,
+  SOURCE_AIR: 5,
+  Y_TICK_INSET: 8,
+  TICK_BASELINE_NUDGE: 4,
+  X_TICK_DROP: 21,
+  REFERENCE_LABEL_INSET: 33,
+  REFERENCE_LABEL_LIFT: 8,
+  END_DOT_R: 3,
+  SUBJECT_R: 5,
+  DASH_REFERENCE: [4, 3],
+};
+
+/** Strokes scale but are NOT rounded: a hairline that rounds up stops being a hairline. */
+const BASE_STROKE = { grid: 0.6, reference: 0.8, context: 1.4, subject: 1.6 };
+
+function tokens(typeScale: number) {
+  const sp = (v: number) => Math.round(v * typeScale);
+  const st = (v: number) => Number((v * typeScale).toFixed(2));
+  const f = <T extends { fontSize: number; lead?: number }>(tok: T) => ({
+    ...tok,
+    fontSize: sp(tok.fontSize),
+    ...(tok.lead === undefined ? {} : { lead: sp(tok.lead) }),
+  });
+  return {
+    TITLE: f(BASE.TITLE) as typeof BASE.TITLE,
+    SOURCE: f(BASE.SOURCE) as typeof BASE.SOURCE,
+    AXIS: f(BASE.AXIS) as typeof BASE.AXIS,
+    LABEL: f(BASE.LABEL) as typeof BASE.LABEL,
+    NOTE: f(BASE.NOTE) as typeof BASE.NOTE,
+    HEADER_TO_PLOT: sp(BASE.HEADER_TO_PLOT),
+    END_LABEL_AIR: sp(BASE.END_LABEL_AIR),
+    END_LABEL_NUDGE: sp(BASE.END_LABEL_NUDGE),
+    X_LABEL_BAND: sp(BASE.X_LABEL_BAND),
+    SOURCE_AIR: sp(BASE.SOURCE_AIR),
+    Y_TICK_INSET: sp(BASE.Y_TICK_INSET),
+    TICK_BASELINE_NUDGE: sp(BASE.TICK_BASELINE_NUDGE),
+    X_TICK_DROP: sp(BASE.X_TICK_DROP),
+    REFERENCE_LABEL_INSET: sp(BASE.REFERENCE_LABEL_INSET),
+    REFERENCE_LABEL_LIFT: sp(BASE.REFERENCE_LABEL_LIFT),
+    END_DOT_R: sp(BASE.END_DOT_R),
+    SUBJECT_R: sp(BASE.SUBJECT_R),
+    DASH_REFERENCE: BASE.DASH_REFERENCE.map(sp).join(" "),
+    STROKE: {
+      grid: st(BASE_STROKE.grid),
+      reference: st(BASE_STROKE.reference),
+      context: st(BASE_STROKE.context),
+      subject: st(BASE_STROKE.subject),
+    },
+  };
+}
+
+/**
+ * Every `fontSize` the returned element tree actually carries, INCLUDING one written bare at a mark.
+ * The still path reads the rendered SVG's `font-size` attributes; a video composition's markup only
+ * exists inside the browser Remotion drives, so the equivalent reading is the element tree.
+ */
+function fontSizesIn(node: unknown, out: number[] = []): number[] {
+  if (Array.isArray(node)) {
+    for (const child of node) fontSizesIn(child, out);
+    return out;
+  }
+  if (!node || typeof node !== "object") return out;
+  const props = (node as { props?: Record<string, unknown> }).props;
+  if (!props) return out;
+  if (typeof props.fontSize === "number") out.push(props.fontSize);
+  fontSizesIn(props.children, out);
+  return out;
+}
 export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
 
 const UNIT = "years";
-const LABEL_GAP_MIN = 32; // px — roughly one label's own line-height; the collision floor.
+/**
+ * The collision floor between the two end-labels, DERIVED from the label's own drawn size rather
+ * than typed. It was `32` — "roughly one label's own line-height" said the comment, against a 27px
+ * label, which is 1.19 of it. At any other frame that literal is a floor for a type size the beat
+ * no longer draws: at landscape the label is 38px and two labels 32px apart would overlap while
+ * the guard called them clear. The ratio is the fact; the pixel was a coincidence.
+ */
+export function labelGapMinFor(labelFontSize: number): number {
+  return Math.round(labelFontSize * 1.2);
+}
 
 export type Reading = { year: number; value: number };
 
@@ -132,14 +240,15 @@ export function twoLineGeometry(
 export function nudgeLabels(
   cheY: number,
   fraY: number,
+  labelGapMin: number,
 ): { cheLabelY: number; fraLabelY: number } {
   const gap = Math.abs(fraY - cheY);
-  if (gap >= LABEL_GAP_MIN) return { cheLabelY: cheY, fraLabelY: fraY };
+  if (gap >= labelGapMin) return { cheLabelY: cheY, fraLabelY: fraY };
   const mid = (cheY + fraY) / 2;
   const [higherY, lowerY] = cheY < fraY ? [cheY, fraY] : [fraY, cheY]; // smaller y = higher on screen
   const spread = {
-    higher: mid - LABEL_GAP_MIN / 2,
-    lower: mid + LABEL_GAP_MIN / 2,
+    higher: mid - labelGapMin / 2,
+    lower: mid + labelGapMin / 2,
   };
   return cheY < fraY
     ? { cheLabelY: spread.higher, fraLabelY: spread.lower }
@@ -212,6 +321,8 @@ export type LifeExpectancyGapVideoProps = {
   grid: string;
   reference: number;
   referenceLabel: string;
+  /** The export size gate 2c pinned, recorded in this beat's own `BRIEF.md` front matter. */
+  size: string;
   timing?: BeatTiming;
 };
 
@@ -227,11 +338,29 @@ export function LifeExpectancyGapVideo({
   grid,
   reference,
   referenceLabel,
+  size,
   timing = LINE_TIMING,
 }: LifeExpectancyGapVideoProps) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const { width, height } = FRAME;
+  // The frame is the TABLE's, at the size the journalist pinned — never a constant in this file.
+  const { width, height, typeScale } = sizeFor(size);
+  const PAD = frameInsetFor(size);
+  const T = tokens(typeScale);
+  const { TITLE, SOURCE, AXIS, LABEL, NOTE } = T;
+
+  // WHETHER THIS TYPE MAY ENTER THIS SIZE, AND IN WHAT FORM — before anything is measured.
+  //
+  // A line's x axis is TIME, so it has no twin form: "line charts resist rotation, due to the
+  // convention that the horizontal axis represents time proceeding from left to right" (Horak et
+  // al. §2.4.2, quoted in `type-at-size.mjs`). What it has instead is a MEASURED aspect range, so
+  // `formForSize` answers `clamp` at a square or tall frame and `assertPlotAspect` below refuses a
+  // plot outside it. A line's argument is a slope, and a slope is an aspect ratio.
+  const form = formForSize(TYPE, size);
+  if (form.verdict === "refuse")
+    throw new Error(
+      `vidx-line-life-expectancy: ${TYPE} cannot be drawn at ${size}. ${form.reason}`,
+    );
 
   // ── Layout. Identical at every frame — the build changes what is visible, never where it sits.
   // Both title and source are WRAPPED, not trusted to fit — a bare `measureText` check against
@@ -254,18 +383,31 @@ export function LifeExpectancyGapVideo({
   );
   const padding = {
     // The plot starts below the LAST TITLE LINE, never below the source.
-    top: titleBaseline + (titleLines.length - 1) * TITLE.lead + 60,
+    top:
+      titleBaseline + (titleLines.length - 1) * TITLE.lead + T.HEADER_TO_PLOT,
     right:
       PAD +
-      16 +
+      T.END_LABEL_AIR +
       Math.max(measureText(cheLabel, LABEL), measureText(fraLabel, LABEL)),
     // Grown by the credit block's own height plus clear air.
     bottom:
-      PAD + 44 + (sourceLines.length - 1) * SOURCE.lead + SOURCE.fontSize + 10,
-    left: PAD + 14 + Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
+      PAD +
+      T.X_LABEL_BAND +
+      (sourceLines.length - 1) * SOURCE.lead +
+      SOURCE.fontSize +
+      T.SOURCE_AIR,
+    left:
+      PAD +
+      T.Y_TICK_INSET +
+      Math.max(...tickLabels.map((l) => measureText(l, AXIS))),
   };
 
   const g = twoLineGeometry(che, fra, { width, height, padding, reference });
+  // THE PLOT'S OWN SHAPE, refused before anything is drawn. At landscape this is a no-op — the
+  // verdict is `as-is` — and at a square or tall frame it is the assertion that stops a slope being
+  // rescaled into a different claim. No counter in this project can see that: the probe's arms
+  // scored zero clipped runs and zero collisions while a distribution was destroyed.
+  assertPlotAspect(g.plot, TYPE, size, { what: "vidx-line-life-expectancy" });
 
   // ── The edit. Six windows, all read off the timing contract.
   const establish = progressOf(frame, timing.establish);
@@ -330,15 +472,19 @@ export function LifeExpectancyGapVideo({
     fps,
     config: { damping: 200, stiffness: 120, mass: 0.7 },
   });
-  const subjectRadius = interpolate(subjectSpring, [0, 1], [0, 10]);
+  const subjectRadius = interpolate(subjectSpring, [0, 1], [0, T.SUBJECT_R]);
 
   const conclusionOpacity = interpolate(conclusion, [0, 1], [0, 1], {
     easing: Easing.out(Easing.cubic),
   });
 
-  const { cheLabelY, fraLabelY } = nudgeLabels(g.cheEnd.y, g.fraEnd.y);
+  const { cheLabelY, fraLabelY } = nudgeLabels(
+    g.cheEnd.y,
+    g.fraEnd.y,
+    labelGapMinFor(LABEL.fontSize),
+  );
 
-  return (
+  const drawing = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
@@ -388,12 +534,12 @@ export function LifeExpectancyGapVideo({
                 y1={tick.y}
                 y2={tick.y}
                 stroke={grid}
-                strokeWidth={1.5}
+                strokeWidth={T.STROKE.grid}
               />
             )}
             <text
-              x={g.plot.left - 14}
-              y={tick.y + 7}
+              x={g.plot.left - T.Y_TICK_INSET}
+              y={tick.y + T.TICK_BASELINE_NUDGE}
               fill={muted}
               fontSize={AXIS.fontSize}
               textAnchor="end"
@@ -406,7 +552,7 @@ export function LifeExpectancyGapVideo({
           <text
             key={tick.year}
             x={tick.x}
-            y={g.plot.bottom + 38}
+            y={g.plot.bottom + T.X_TICK_DROP}
             fill={muted}
             fontSize={AXIS.fontSize}
             textAnchor="middle"
@@ -425,16 +571,16 @@ export function LifeExpectancyGapVideo({
             y1={g.referenceY}
             y2={g.referenceY}
             stroke={muted}
-            strokeWidth={2}
-            strokeDasharray="8 6"
+            strokeWidth={T.STROKE.reference}
+            strokeDasharray={T.DASH_REFERENCE}
           />
           {/* Left-anchored, not centred: both lines cross 80 years around 2003–2007, roughly the
               plot's own middle (`BRIEF.md`'s exact values) — a centred label would sit directly
               on top of the crossing it is naming. Both series start well under 80 in 1990, so the
               left third of the rule is clear space for the whole life of this beat's data. */}
           <text
-            x={g.plot.left + 60}
-            y={g.referenceY - 14}
+            x={g.plot.left + T.REFERENCE_LABEL_INSET}
+            y={g.referenceY - T.REFERENCE_LABEL_LIFT}
             fill={muted}
             fontSize={NOTE.fontSize}
             textAnchor="start"
@@ -451,7 +597,7 @@ export function LifeExpectancyGapVideo({
           d={fraPath}
           fill="none"
           stroke={muted}
-          strokeWidth={3.5}
+          strokeWidth={T.STROKE.context}
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -460,14 +606,14 @@ export function LifeExpectancyGapVideo({
         <circle
           cx={g.fraEnd.x}
           cy={g.fraEnd.y}
-          r={6}
+          r={T.END_DOT_R}
           fill={muted}
           opacity={fraDotOpacity}
         />
       ) : null}
       <text
-        x={g.plot.right + 16}
-        y={fraLabelY + 8}
+        x={g.plot.right + T.END_LABEL_AIR}
+        y={fraLabelY + T.END_LABEL_NUDGE}
         fill={ink}
         fontSize={LABEL.fontSize}
         fontWeight={400}
@@ -482,7 +628,7 @@ export function LifeExpectancyGapVideo({
           d={chePath}
           fill="none"
           stroke={accent}
-          strokeWidth={4}
+          strokeWidth={T.STROKE.subject}
           strokeLinejoin="round"
           strokeLinecap="round"
         />
@@ -496,8 +642,8 @@ export function LifeExpectancyGapVideo({
         />
       ) : null}
       <text
-        x={g.plot.right + 16}
-        y={cheLabelY + 8}
+        x={g.plot.right + T.END_LABEL_AIR}
+        y={cheLabelY + T.END_LABEL_NUDGE}
         fill={ink}
         fontSize={LABEL.fontSize}
         fontWeight={LABEL.fontWeight}
@@ -507,4 +653,16 @@ export function LifeExpectancyGapVideo({
       </text>
     </svg>
   );
+
+  // EVERY TYPE SIZE THIS FRAME ACTUALLY DRAWS, against the row's own floor — read off the element
+  // tree rather than a list of tokens, so a size written bare at a mark cannot escape it.
+  assertTypeFloor(
+    fontSizesIn(drawing)
+      .map((px) => `font-size="${px}"`)
+      .join(" "),
+    size,
+    { what: `vidx-line-life-expectancy at ${size}` },
+  );
+
+  return drawing;
 }
