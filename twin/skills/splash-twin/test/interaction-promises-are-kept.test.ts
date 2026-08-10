@@ -913,9 +913,40 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
     { measurable: false, probed: 0 },
 };
 
+/**
+ * A BEAT NOBODY HAS COMMITTED YET IS NOT CENSUSED. Seven sessions share this worktree, and an
+ * in-flight `proof/<name>/` that git does not track shipped a delivered page within an hour of this
+ * table landing — reddening every other session for a beat that is not in the repository. Its
+ * artifact is still DRIVEN by every behavioural assertion in this file (hover, tap, keyboard, the
+ * tooltip, the edges): those measure the page and need no record. Only the census, which compares
+ * against something committed, skips it. Committing the beat brings it in, and then a missing row
+ * is a real red. This is the same rule, for the same reason, as `scripts/matrix.mjs`'s `--check`.
+ */
+const UNTRACKED_BEATS = new Set(
+  Bun.spawnSync(
+    [
+      "git",
+      "ls-files",
+      "--others",
+      "--directory",
+      "--exclude-standard",
+      "proof/",
+    ],
+    { cwd: TWIN },
+  )
+    .stdout.toString()
+    .split("\n")
+    .filter((line) => /^proof\/[^/]+\/$/.test(line.trim()))
+    .map((line) => line.trim().slice(0, -1)),
+);
+const inUntrackedBeat = (file: string) =>
+  [...UNTRACKED_BEATS].some((dir) => file.startsWith(`${dir}/`));
+
 describe("every delivered interactive artifact keeps the promise its own alt text makes", () => {
   it("should hold an edge-probe census row for every artifact it drives, and none for an artifact it does not", () => {
-    const driven = REPORTS.map((r) => r.file).sort();
+    const driven = REPORTS.map((r) => r.file)
+      .filter((f) => !inUntrackedBeat(f))
+      .sort();
     const recorded = Object.keys(EDGE_CENSUS).sort();
     expect([
       driven.filter((f) => !recorded.includes(f)),
@@ -986,6 +1017,7 @@ describe("every delivered interactive artifact keeps the promise its own alt tex
       }
 
       it("should edge-probe as many of its marks as its recorded census says", () => {
+        if (inUntrackedBeat(report.file)) return; // see UNTRACKED_BEATS above
         const recorded = EDGE_CENSUS[report.file];
         // The premise, pinned: without a row the assertion below would compare undefined to
         // undefined. The roster check above is what catches that; this makes it local too.
