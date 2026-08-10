@@ -1,0 +1,194 @@
+{
+  "file": "/Users/rmdms/Sites/Professional/splash-twin/twin/proof/mapscrolly-quakes-three-ways/render/quakes-four-maps.html",
+  "keyed": true,
+  "filmstrip": null,
+  "sweeps": [
+    {
+      "label": "1600x900 down",
+      "frames": 126,
+      "stepsSeen": [
+        "events",
+        "bins",
+        "biggest",
+        "strength"
+      ],
+      "worldCopies": [
+        "1@1320"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 0,
+      "problems": []
+    },
+    {
+      "label": "1600x900 up",
+      "frames": 126,
+      "stepsSeen": [
+        "strength",
+        "biggest",
+        "bins",
+        "events"
+      ],
+      "worldCopies": [
+        "1@1320"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 0,
+      "problems": []
+    },
+    {
+      "label": "1280x800 down",
+      "frames": 109,
+      "stepsSeen": [
+        "events",
+        "bins",
+        "biggest",
+        "strength"
+      ],
+      "worldCopies": [
+        "1@1135"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 0,
+      "problems": []
+    },
+    {
+      "label": "1280x800 up",
+      "frames": 109,
+      "stepsSeen": [
+        "strength",
+        "biggest",
+        "bins",
+        "events"
+      ],
+      "worldCopies": [
+        "1@1135"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 0,
+      "problems": []
+    },
+    {
+      "label": "768x1024 down",
+      "frames": 141,
+      "stepsSeen": [
+        "events",
+        "bins",
+        "biggest",
+        "strength"
+      ],
+      "worldCopies": [
+        "0@768"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 7,
+      "problems": []
+    },
+    {
+      "label": "768x1024 up",
+      "frames": 141,
+      "stepsSeen": [
+        "strength",
+        "biggest",
+        "bins",
+        "events"
+      ],
+      "worldCopies": [
+        "0@768"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 8,
+      "problems": []
+    },
+    {
+      "label": "375x812 down",
+      "frames": 91,
+      "stepsSeen": [
+        "events",
+        "bins",
+        "biggest",
+        "strength"
+      ],
+      "worldCopies": [
+        "0@375"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 8,
+      "problems": []
+    },
+    {
+      "label": "375x812 up",
+      "frames": 91,
+      "stepsSeen": [
+        "strength",
+        "biggest",
+        "bins",
+        "events"
+      ],
+      "worldCopies": [
+        "0@375"
+      ],
+      "fitDriftWorst": 0,
+      "framesWithMissingTiles": 0,
+      "ringCounts": [
+        0,
+        1
+      ],
+      "cardOverLegendFrames": 8,
+      "problems": []
+    }
+  ],
+  "reducedMotion": {
+    "samples": 126,
+    "stepsSeen": [
+      "events",
+      "bins",
+      "biggest",
+      "strength"
+    ],
+    "problems": []
+  },
+  "noJs": {
+    "activeFrames": 1,
+    "canvases": 0,
+    "plateIsInlineData": true,
+    "plateOpacity": 1,
+    "repeatLayers": 0,
+    "externalRequests": 0,
+    "paragraphs": 4
+  }
+}
