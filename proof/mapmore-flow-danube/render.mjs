@@ -2,10 +2,11 @@
 //
 // Usage:
 //   bun proof/mapmore-flow-danube/render.mjs --still
+//   bun proof/mapmore-flow-danube/render.mjs --still --size square    # LOOKING, into sizes/
 
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
@@ -13,6 +14,17 @@ import { deriveFurniture, renderStill } from "./render-still.mjs";
 // `readPalette` comes from the SHARED copy through the `#shared/…` subpath alias — a beat is a
 // story, not a skill, so it may reach out where a skill may not.
 import { readPalette } from "#shared/chart-beat/render-still.mjs";
+// The STATIC genre's size table — the same one every static chart beat reads, and deliberately not
+// a fourth copy of it. `minTypePx` is "12 CSS px at the distance this output is read", and a static
+// map sits in the same ~900px article column a static chart does.
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/chart-beat/sizes.mjs";
 import { FlowMapStill } from "./FlowMapStill.tsx";
 import { assertTerritoryFillsReadAsLand, territoryColour } from "./geo-flow.ts";
 
@@ -78,7 +90,26 @@ const flag = (name, fallback) => {
   return at >= 0 ? argv[at + 1] : fallback;
 };
 
-const outDir = flag("--out", join(HERE, "render"));
+// THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it in
+// its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if it is
+// missing. Before this the size was two literals in the component and two more below, compared
+// against each other by `renderStill` — so they agreed by construction and the pin reached nothing.
+const pinnedSize = await readPinnedSize(HERE, { readFile, dirname, join });
+// `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+// compared. Deliberately NOT a way to change what this beat delivers: the delivered file keeps the
+// beat's own name and the pinned size, and an override says so on stdout and writes elsewhere.
+const sizeFlag = argv.indexOf("--size");
+const size = sizeFlag === -1 ? pinnedSize : argv[sizeFlag + 1];
+const { width: FRAME_WIDTH, height: FRAME_HEIGHT } = sizeFor(size);
+
+const outDir = flag(
+  "--out",
+  sizeFlag === -1 ? join(HERE, "render") : join(HERE, "sizes"),
+);
+const stem = sizeFlag === -1 ? "static" : `static-${size}`;
+if (sizeFlag !== -1)
+  console.log(`LOOKING at ${size}; the pinned size stays ${pinnedSize} -> ${outDir}`);
+console.log(`pinned size: ${size} (${FRAME_WIDTH}x${FRAME_HEIGHT})`);
 // The plate is frozen BESIDE THE BEAT, exactly as the csv is: `/tmp` cannot be committed, so a
 // render reading its basemap from there leaves an artifact nobody can reproduce or audit — and
 // MapTiler restyles, so a re-bake months later is a different picture under the same marks.
@@ -104,7 +135,9 @@ async function plateOf(dir) {
   return { geometry, plate: `data:image/png;base64,${png.toString("base64")}` };
 }
 
-await mkdir(outDir, { recursive: true });
+// NO `mkdir` HERE. `renderStill` creates its own `outDir` after the element has rendered, so a run
+// that REFUSES a size leaves no directory behind — a `sizes/` that exists and is empty reads as a
+// looking arm somebody deleted the output of, rather than as a size this beat will not draw.
 
 if (wantStill) {
   ensurePlate(stillPlate);
@@ -135,7 +168,7 @@ if (wantStill) {
 
   const furniture = deriveFurniture(BEAT.ground);
 
-  const { pngPath } = await renderStill({
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(FlowMapStill, {
       geometry,
       plate,
@@ -149,11 +182,24 @@ if (wantStill) {
       alt: BEAT.alt,
       ground: BEAT.ground,
       ...furniture,
+      size,
     }),
-    width: 960,
-    height: 780,
+    width: FRAME_WIDTH,
+    height: FRAME_HEIGHT,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned. The
+    // default 2 belongs to the frames that have not moved to the table yet.
+    scale: 1,
     outDir,
-    name: "static",
+    name: stem,
   });
-  console.log(`still → ${pngPath}\nNow open it and look at it.`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, { what: pngPath });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "mapmore-flow-danube" });
+  assertWithinStage(svg, size, { what: "mapmore-flow-danube" });
+  console.log(
+    `still → ${pngPath} at ${FRAME_WIDTH}x${FRAME_HEIGHT}, verified from the file\nNow open it and look at it.`,
+  );
 } else console.log("nothing asked for. Pass --still.");
