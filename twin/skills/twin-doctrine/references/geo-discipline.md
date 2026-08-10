@@ -215,6 +215,26 @@ resolutions, one geometry.
 *Defect:* the first framing asked `fitBounds` for `[-11, 35] → [31, 66]` in a 900 × 560 frame and
 got a map spanning −30° to +45°, with the subject 40 px wide and Tunisia in shot.
 
+**Second clause, added 2026-08-10 under ruling R2** — *"trois tailles d'export fixes pour le static
+et la vidéo, et une PLAGE pour le web"*. Static and video have three fixed shapes and web fills
+whatever container a CMS gives it, so **the camera takes THREE inputs: the geography, the study set,
+and the target aspect.** The first clause above says "the layout adapts to the camera", and that
+stays true within one shape; it is not an answer to being asked for the same geography at 16:9, at
+9:16 and at 1:1, because the shape is now given rather than discovered.
+
+The cost of ignoring the third input is measured, not argued. `fitBounds` silently widens whichever
+axis does not bind: a Switzerland camera and a Lake Geneva camera each admit **≈2× the latitude
+their study set asked for in portrait** (×1.95 and ×2.08) against ×1.00 in landscape
+(`survey/map-camera.md`). On the web this is the same arithmetic wearing its other face — driving one
+live page at four viewports, a 1600×900 article column showed **3.2× the longitude the story asked
+for**, mostly ocean, while 768×1024 left the reader **0.27 of a zoom level** of room to move in.
+
+So a camera that takes an aspect owes two recorded numbers — how much longitude and how much latitude
+it ADMITTED beyond the study set — and a leash that answers the second case: the twin's map × web
+plans carry `minZoomHeadroom`, a derived floor under how far a reader can come in, because a fit that
+lands tight is a map you cannot move through. `admittedLonRatio`/`admittedLatRatio` are named here
+and **not yet recorded by any bake** — that is the open half of this clause, not a claim.
+
 ## An open problem this beat did not close: a legend can still clip a long unit word
 
 A proportional-symbol legend's box has been sized by a formula built from the widest circle diameter

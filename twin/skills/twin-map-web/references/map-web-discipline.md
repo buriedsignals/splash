@@ -569,9 +569,10 @@ exactly the tree the audit found.
 **The rules that already govern interaction here apply, and matter more with a zoom control than
 without:**
 
-- **Nothing argument-bearing lives only behind zoom.** The unzoomed state is not a "preview" of the
-  real view — it IS the full claim, at the same completeness every non-zoomable beat in this genre
-  ships. A reader who never touches the toggle must still get the point.
+- **Nothing argument-bearing lives only behind zoom.** The FITTED state is not a "preview" of the
+  real view — it IS the full claim, and `minZoom` is set to the zoom the camera actually fitted at,
+  so a reader can never pull back past it. A reader who never touches the control must still get
+  the point.
 - **Keyboard reaches the map** — MapLibre's own `NavigationControl` is a pair of real buttons, and
   every `.pt` hit target stays in the tab order in both states — **and the accessible table is
   untouched by the camera**: `RegionTable` reads no camera state at all, so panning (useless to a
@@ -580,17 +581,28 @@ without:**
 - **With JavaScript disabled, the default (unzoomed) view still renders complete** — trivially true
   here, since the entire mechanism, default state included, is CSS and native scroll, not script.
 
-**The test for whether a beat needs this at all — most do not, exactly as with filters.** Add
-pan-and-zoom only when the points are dense enough that the OVERVIEW scale makes them illegible or
-individually unreachable at the SMALLEST width this genre ships (375px) — an urban cluster, a metro
-transit map, several markers close enough to overlap at map scale — or when the story deliberately
-moves a reader's attention between distinct places at different scales. **This seed's own thirteen
-points are spread across a continent and stay legible and individually reachable at every tested
-width without zooming** (see the four screenshots in this skill's own verification proof) — so
-`zoomable` stays `false` for this seed's own data (`render-web.mjs`'s `SEED.zoomable`), matching the
-same "most beats do not need this" rule filters are held to. The mechanism itself is real and
-exercised directly by `test/render-web.test.ts` (a fixture with `zoomable: true`) so a future beat
-that DOES need it is not starting from nothing.
+**Pan and zoom are no longer a per-beat decision.** The paragraph that stood here asked each beat
+to earn a zoom control and concluded that this seed had not — `zoomable` stayed `false`, and
+`render-web.mjs` had a `SEED.zoomable` key. Ruling R1 removed the question: *a web map you cannot
+move through is a picture*, so every map × web beat is live and every one gets MapTiler's own
+control. There is no `zoomable` prop, no `mw-zoom-toggle`, and no out-of-map "Zoom in (2.2×,
+bounded)" button anywhere in this genre — B6.14b asked for that button's removal by name, and
+`test/render-web.test.ts` pins its absence rather than its default.
+
+**What IS per beat is `SEED.live`.** Set it `false` for a beat that must stay request-free — an
+offline archive, a CMS whose Content-Security-Policy refuses `api.maptiler.com` — and the page ships
+as the fallback layer alone, exactly as this genre worked before the ruling.
+
+**And what is per beat, and derived rather than picked, is HOW FAR IN.** `leash()` bounds the reader
+at the zoom where the study set stops filling the frame, which is right for someone looking at the
+whole claim and useless for someone trying to pull two overlapping marks apart. Measured on
+`proof/mapgen-symbol-web` before its floor existed: **1.58 zoom levels of headroom at 1600×900 and
+0.33 at 768×1024** — a factor of 1.26, which is not a map you can move through in any sense the
+ruling meant. So a plan may carry `minZoomHeadroom`, a FLOOR, and it must be derived from the beat's
+own data: for that beat it is the zoom at which the closest pair of events stops overlapping
+(`separationHeadroom` — a camera-scaled circle holds its screen size as the reader zooms, so each
+doubling doubles the distance between two centres while the radii stay put), which comes out at
+4.58 levels and is the same number at every container shape.
 
 ## What must not become interactive
 
@@ -608,8 +620,8 @@ needs to receive the beat's own argument lives only behind any of the three.
 The gotcha this skill's own `SKILL.md` names applies here in full: a static render can be checked
 with a PNG; the thing unique to THIS genre — does the beat genuinely fill its container at every
 width without distorting the plate, does the type stay one size while the geometry scales, does
-hovering point X show point X's own value, does Tab reach every point AND every control (filter
-radios, the zoom checkbox when present), does the accessible table read correctly and stay in step
+hovering point X show point X's own value, does Tab reach every point AND every control (the filter
+radios, MapLibre's own NavigationControl), does the accessible table read correctly and stay in step
 with a narrowed filter, does the map/legend/table survive script-off — is a *behaviour*, provable
 only by driving a real browser and using it, or by SCREENSHOTTING it at the actual widths a reader
 will see it at. A computed style value that disagrees with a screenshot means the value is measuring
@@ -618,7 +630,10 @@ the wrong box, not that the screenshot is wrong — trust the picture.
 A unit test (`test/render-web.test.ts`) covers what it honestly can: the SSR'd markup's structure
 (one `<svg>`, no `<text>` inside it, one HTML button/label per point, the exact formatted value
 baked into every `data-detail`, the filter fieldset present/absent matching the group count, the
-zoom checkbox present/absent matching the `zoomable` prop, the palette). It stops there on purpose.
+absence of any out-of-map zoom control, the palette). It stops there on purpose.
+`test/the-live-layer-is-in-the-artifact.test.ts` covers the one thing neither of those reached: that
+the renderer PUTS the live layer into the file it writes, and that every committed map-web page
+carries it. Before it existed, stripping the live block left 354 tests passing.
 
 **`scripts/verify-interaction.mjs` is the part a unit test cannot reach** — and `test/canon.test.ts`
 runs it, so it is part of `bun test` rather than a script someone has to remember, and it is the reason this
