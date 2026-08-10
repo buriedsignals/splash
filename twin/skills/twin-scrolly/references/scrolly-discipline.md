@@ -1096,11 +1096,51 @@ room, and `80,000` at 15px needs about 50px against 13% of a 375px phone, which 
 percentage-only gutter clips the widest tick label at exactly the width where legibility matters
 most.
 
-## A map track without a live map
+## A map on a scrolly is LIVE, and it has NO CONTROLS — the ruling of 2026-08-10
 
-The map track carries a plate BAKED once (`scripts/bake-plate.mjs`) and embedded as a data URI —
-there is no MapLibre, no tile request and no MapTiler key anywhere in the delivered file, the same
-invariant the sibling map genres keep. Two decisions are worth copying:
+**Read this before the section under it**, which describes the seed's own baked map track and is
+kept because the plate is still what sits under the tiles.
+
+The owner drove the three map scrollys on disk and reported the fact: *"j'ai l'impression que le
+scrolly map n'utilise pas MapTiler correctement, je ne vois aucun canvas dans le DOM. Or il faut
+tout le temps utiliser MapTiler."* He was right — `grep maplibregl` over every committed map-scrolly
+page returned 0, and there was no `<canvas>` in any of them. He had already ruled the same way for
+map × web (R1). **A map uses MapTiler, in every genre, including this one.**
+
+**The argument the plate was kept for was real, and it is answered rather than dismissed.** A free-pan
+map's set of camera positions is infinite, which is why R1 is unarguable there; a scrolly's cameras
+are AUTHORED — a handful of known positions on one continuous path — so a plate CAN hold them, and a
+reader mid-scrub can outrun a tile server, arriving at a reading as grey squares at the moment its
+own sentence names what to look at. Because the cameras are known at build time, they are **warmed**:
+every authored camera and the positions between them are walked through MapLibre's own tile cache
+before the live layer is revealed, and the baked plate stays UNDERNEATH the tiles as the fallback
+layer rather than instead of them. Measured on `mapscrolly-one-map-europe-carbon`, keyed copy, one
+localhost hop: the warm costs 10 cameras in 367–567 ms; at reading speed 13 of 126 animation frames
+still have a tile outstanding against **34 of 126 unwarmed**, and at a trackpad flick 0 of 10 against
+1 of 10. Settle is 1–4 ms either way. Those numbers are a fast network — a newsroom on a slow one
+gets the plate showing through until the tiles land, which is what the fallback layer is for.
+
+**NO CONTROLS, and no reader-driven camera at all**, which is a deliberate DIFFERENCE from map × web
+rather than an omission. The owner, same day: *"Pas de controls sur le scrolly, le scroll pilote et
+la map doit prendre toute la largeur."* R1 requires `NavigationControl` on a map × web page, because
+there the reader IS the camera. On a scrolly the scroll already drives the camera, so a reader who
+panned or zoomed would have their view taken back by the next step — worse than not offering the
+gesture. The map is constructed `interactive: false`: no drag, no wheel, no double-click zoom, no
+keyboard pan, no touch, no control widget. **Do not "fix" this by adding controls.**
+
+**The map takes the whole frame.** Live tiles fill the container edge to edge, which is what makes
+the full-width instruction free: what the beat DRAWS stays at the plate's own fitted scale, so
+nothing it counts is cropped, while the ground under it reaches every edge. One consequence to check
+when copying this: a veil or scrim that used to be a rectangle the size of the PLATE now draws its
+own edges, because the plate no longer covers everything the reader sees. Put it on the frame.
+
+## A map track without a live map (the seed's baked track, and the fallback layer under the tiles)
+
+The map track carries a plate BAKED once (`scripts/bake-plate.mjs`) and embedded as a data URI. Since
+the ruling above that plate is the FALLBACK layer rather than the whole map — what a reader gets with
+no script, no network, a rotated key or a blocked `api.maptiler.com` — and the committed artifact
+carries the `__MAPTILER_KEY__` placeholder, never a key (R1b); `twin-deliver` substitutes at
+delivery. Two decisions are worth copying:
 
 - **The camera is a centre and a zoom, not a bounds box**, so the marked point lands on the plate's
   own centre by construction. That is what makes "the marker is inside the safe band" a fact rather
