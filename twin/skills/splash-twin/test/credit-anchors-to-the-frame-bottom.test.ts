@@ -300,3 +300,148 @@ describe("the credit LANDS at the frame's bottom in the committed artifact", () 
     });
   }
 });
+
+/**
+ * GUARD B — the DOM order of a delivered HTML page.
+ *
+ * The spec (W2 §3.7) ordered three guards. A is above, C is above, and B was never written — the
+ * W2 audit ran it by hand instead, in minutes, and it is what established that the 17 fluid web
+ * beats are genuinely already correct rather than assumed to be, and that the scrolly pages are
+ * not. Doing it by hand once is what leaves a residue nobody re-measures.
+ *
+ * IT READS DOM ORDER, NEVER A BYTE OFFSET, and the audit's own near-miss is why. Comparing the
+ * credit's byte offset against the FIRST `<svg>` reports "bottom" on a scrolly page and is wrong:
+ * the first `<svg>` there is an inline glyph far above the track. A byte offset is the same class
+ * of evidence as a hex grepped out of a bundle. So the two things asked here are structural:
+ *
+ *   - the credit is not INSIDE the page header — `<header>…</header>` containing it is exactly the
+ *     placement B1.1 reverses, and it is how the scrolly seed still draws it;
+ *   - the credit comes after the visual it credits — after the last `</svg>` on the page.
+ *
+ * THE RESIDUE IS RECORDED, NOT SKIPPED. Eleven delivered pages fail one of those two today, and
+ * both populations are one un-migrated SEED apiece — W2 §3.4.5 (`MapWebSeed`/`render-web.mjs`, the
+ * credit under the title) and §3.4.6 (`render-scrolly.mjs:140`, the credit inside
+ * `<header class="scrolly-header">`). Neither is this chantier's file. Listing them here rather
+ * than narrowing the population means: a TWELFTH page cannot join them quietly, and the day either
+ * seed is migrated this turns red and asks for its rows to be struck.
+ *
+ * THE MUTATIONS THAT REDDEN IT, run in a copy of the tree under /tmp, never in this one. Baseline
+ * in the copy: 116 pass, 0 fail.
+ *
+ *   M-B1  a correct page moves its credit into a `<header>` (`webx-wind-vs-solar`):
+ *           + "its .chart-source sits INSIDE <header> — the placement B1.1 reverses",
+ *           (fail) … proof/webx-wind-vs-solar/wind-vs-solar.html should draw its credit after the
+ *                  visual and outside the page header
+ *           115 pass, 1 fail
+ *
+ *   M-B2  a RESIDUE page is fixed and its row is left behind (`mapgen-symbol-web`, credit moved to
+ *         the end of the body). The first draft of this guard stayed GREEN here, because the
+ *         excused branch discarded its own finding — which is the shape of a guard that cannot go
+ *         red, in the file that exists to stop them:
+ *           + "it is recorded as residue (map-web seed, §3.4.5) and is now CORRECT — strike its
+ *              row from CREDIT_NOT_AT_THE_BOTTOM so the next regression here is caught",
+ *           115 pass, 1 fail
+ */
+const CREDIT_NOT_AT_THE_BOTTOM: Record<string, string> = {
+  // W2 §3.4.5 — the map × web seed renders `<p class="mw-source">` as the second child, under the
+  // title. Five delivered pages inherit it.
+  "proof/mapgen-choropleth-web/render/choropleth.html": "map-web seed, §3.4.5",
+  "proof/mapgen-dot-web/dot-population.html": "map-web seed, §3.4.5",
+  "proof/mapgen-hexgrid-web/hex-grid.html": "map-web seed, §3.4.5",
+  "proof/mapgen-locator-web/locator.html": "map-web seed, §3.4.5",
+  "proof/mapgen-symbol-web/quake-symbol.html": "map-web seed, §3.4.5",
+  // W2 §3.4.6 — the scrolly seed draws `<p class="source">` inside `<header class="scrolly-header">`.
+  // Six delivered pages inherit it.
+  "proof/mapmore-scrolly-danube/render/danube-scrolly.html":
+    "scrolly seed, §3.4.6",
+  "proof/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html":
+    "scrolly seed, §3.4.6",
+  "proof/mapscrolly-quakes-three-ways/render/quakes-four-maps.html":
+    "scrolly seed, §3.4.6",
+  "proof/scrolly-chart-eu-carbon/render/eu-carbon-four-charts.html":
+    "scrolly seed, §3.4.6",
+  "proof/scrolly-image-grinnell-glacier/render/grinnell-glacier.html":
+    "scrolly seed, §3.4.6",
+  "proof/scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html":
+    "scrolly seed, §3.4.6",
+};
+
+/** A credit node: a block element whose class list carries a credit token. The class LIST is
+ *  tokenised, never substring-matched — `class="source"` and `class="chart-source"` are both
+ *  credits and `class="sourced-from-elsewhere"` is not. */
+const CREDIT_CLASS = /(^|\s)(chart-source|source|mw-source|credit)(\s|$)/;
+
+function creditNode(html: string): { at: number; className: string } | null {
+  for (const m of html.matchAll(
+    /<(?:p|div|figcaption|span)\b[^>]*\bclass="([^"]*)"[^>]*>/g,
+  ))
+    if (CREDIT_CLASS.test(m[1]!)) return { at: m.index!, className: m[1]! };
+  return null;
+}
+
+function insideHeader(html: string, at: number): boolean {
+  for (const m of html.matchAll(/<header\b[^>]*>/g)) {
+    const close = html.indexOf("</header>", m.index!);
+    if (m.index! < at && close > at) return true;
+  }
+  return false;
+}
+
+function* beatHtml(dir: string): Generator<string> {
+  if (!existsSync(dir)) return;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules" || entry.name === ".git") continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) yield* beatHtml(path);
+    else if (entry.name.endsWith(".html")) yield path;
+  }
+}
+
+const BEAT_HTML = beatDirs()
+  .flatMap((d) => [...beatHtml(d)])
+  .map((path) => ({ path, label: relative(TWIN, path) }))
+  .sort((a, b) => a.label.localeCompare(b.label));
+
+describe("the credit sits under the visual in a delivered HTML page", () => {
+  it("should find the delivered pages, and hold a residue row for each page that is not there yet", () => {
+    // Without this the whole block goes vacuously green if the walk breaks. Measured 2026-08-11:
+    // 29 delivered pages under beat folders, 18 correct, 11 residue.
+    expect(BEAT_HTML.length).toBeGreaterThanOrEqual(25);
+    const labels = BEAT_HTML.map((h) => h.label);
+    // A residue row for a page that no longer exists is a stale exemption, and it hides the next
+    // regression. It reddens here.
+    expect(
+      Object.keys(CREDIT_NOT_AT_THE_BOTTOM).filter((f) => !labels.includes(f)),
+    ).toEqual([]);
+  });
+
+  for (const { path, label } of BEAT_HTML) {
+    it(`${label} should draw its credit after the visual and outside the page header`, () => {
+      const html = readFileSync(path, "utf8");
+      const credit = creditNode(html);
+      if (!credit) return; // a fragment, a plate: nothing to place
+      const problems: string[] = [];
+      if (insideHeader(html, credit.at))
+        problems.push(
+          `its .${credit.className} sits INSIDE <header> — the placement B1.1 reverses`,
+        );
+      else if (credit.at < html.lastIndexOf("</svg>"))
+        problems.push(
+          `its .${credit.className} is written before the visual closes — the credit is above the graphic`,
+        );
+      // A recorded residue page is allowed to be wrong in the two ways above and in no other, and
+      // it is NOT allowed to be right: a row that has become stale hides the next regression on
+      // that page, so it reddens and asks to be struck.
+      const excused = CREDIT_NOT_AT_THE_BOTTOM[label];
+      const report = excused
+        ? problems.length === 0
+          ? [
+              `it is recorded as residue (${excused}) and is now CORRECT — strike its row from ` +
+                `CREDIT_NOT_AT_THE_BOTTOM so the next regression here is caught`,
+            ]
+          : []
+        : problems;
+      expect([label, report]).toEqual([label, []]);
+    });
+  }
+});
