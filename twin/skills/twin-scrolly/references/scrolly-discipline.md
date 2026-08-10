@@ -26,9 +26,15 @@ own full-bleed fix made ROUTINE rather than exceptional: a full-bleed graphic ge
 at the width/height extremes this genre's own full-bleed shape now guarantees it will actually meet,
 and `DrawnGraphicFrame`'s own annotations (a label, a tick, the reading dot) were never designed
 against that crop — see "Nothing annotated can be cropped," below, for the geometry and the
-mechanically-enforced `SAFE_AREA` that fixes it. Every rule below is either a decision this genre
-needed and the others did not, or an explicit inheritance from `twin-doctrine` stated so it is not
-silently assumed. Every section below describes the CURRENT code, not a remedy it once used and no
+mechanically-enforced `SAFE_AREA` that fixes it. REWRITTEN AN EIGHTH TIME against the round that reversed the SEVENTH's
+own prose-panel pin: the seventh correction stopped the panel travelling in order to stop it crossing
+the graphic's labels, and stopping it travelling is the defect the owner reported next — a scrolly
+whose prose does not scroll. The answer was not to un-pin it back into a shared box but to give the
+prose its OWN cell of the track, where it can travel the full height without ever meeting a label
+(see "The prose has its own space," at the top of this file, for the measurements, the two numbers
+that decide the split, and the band the frames now reserve for nothing). Every rule below is either a
+decision this genre needed and the others did not, or an explicit inheritance from `twin-doctrine`
+stated so it is not silently assumed. Every section below describes the CURRENT code, not a remedy it once used and no
 longer does — a stale section here is what this file's own corrections exist to stop being ("The one
 gotcha" and "Measuring prose over the graphic" are unchanged since the second build and remain
 accurate as written).
@@ -64,6 +70,204 @@ own width never got cropped hard enough for `DrawnGraphicFrame`'s own top-of-fra
 fall outside the visible slice; a graphic that fills a 1600px-wide viewport does, every time. Fixing
 a defect can EXPOSE the next one; that is not a reason to distrust the fix, it is a reason to look
 again at the picture the fix produces before calling the round closed.
+
+## The prose has its own space, and that is what lets it travel (the eighth correction)
+
+**Read this before every section below it.** The seventh correction, one section down, made the
+graphic fixed and took the scroll off the document — both of those ship, unchanged. What it ALSO did
+was pin each prose panel with a `bottom` sticky offset so it PARKED in a reserved band for the whole
+of its step. That is what this correction reverses, and the reversal is not a revert.
+
+**The owner's report, after driving the three beats the seventh correction shipped:** *le panel avec
+le texte ne bouge plus alors que l'effet c'est vraiment de les faire défiler au scroll vers le haut.*
+The panels do not move any more, and the whole effect is meant to be them scrolling UPWARD past the
+fixed graphic.
+
+**He is right, and every guard on this vehicle was green while it was true.** `scripts/
+verify-scrolly.mjs` asserted six things and each one was about WHICH step was painted. Not one asked
+whether the words MOVE. Run over the same shipped artifacts with the travel assertion added, it
+measured, on `scrolly-chart-eu-carbon` at 1600×900: the middle panels held ONE screen offset for 42%
+and 44% of every scroll-advancing animation frame, and the last panel for 78%, sweeping 187px of an
+821px track. On the Danube beat, 45% and 44%, and 218px of 836. That is a slideshow with a scrollbar.
+
+**Why the pin was there, because reverting it alone would re-open a real defect.** An OPAQUE panel
+travelling the full height of a box it SHARES with the graphic crosses every part of that graphic at
+some offset. Whatever rectangle a frame keeps its labels inside, the panel reaches it eventually —
+measured, before the pin: this seed's own "flood day" label reduced to "flo…" at 1600×900, 55% of the
+way through a step. Five rounds of safe areas did not fix it and could not: no reservation survives a
+travelling occluder.
+
+**So the prose gets its own space instead of a reservation inside the graphic's.** `.scrolly-track`
+is a two-cell grid and each cell clips its own content:
+
+```css
+.scrolly-track   { display: grid; grid-template-rows: minmax(0,1fr) var(--prose-band); }  /* phone */
+@media (min-width: 860px) {
+  .scrolly-track { grid-template-columns: minmax(0,1fr) var(--prose-col);
+                   grid-template-rows: minmax(0,1fr); }                                    /* desktop */
+}
+.step       { min-height: 115%; align-items: center; }   /* was flex-end, for the pin */
+.step-panel { /* no position, no offset — an ordinary flow box */ }
+```
+
+The panel is centred in a step 15% taller than the column it scrolls inside, so it crosses that
+column once per step: **it enters at the bottom edge, passes the middle, and leaves past the top,
+moving by exactly the reader's own scroll on every animation frame.** Nothing clamps it, because
+nothing needs to — the graphic is not underneath it. Measured after the change, on the same beat at
+the same width: 544px, 992px, 992px and 553px of travel per panel, and a held share of 0% everywhere.
+
+**This is NOT the two-column layout the third build shipped and the owner rejected.** That rejection
+is quoted below ("The one gotcha", the documented dead end): *"you solved the sticky-overlap bug by
+splitting into two columns, that avoids the problem rather than solving it, and it produces the wrong
+form."* What was wrong there was a NARROW graphic stranded in a wide viewport — the graphic and the
+prose each got a comfortable reading measure and the visual stopped filling anything. Here the
+graphic fills its own cell edge to edge, at 1160×821 of a 1600×900 viewport, and the prose column is
+the only thing taken off it. The form a reader meets is a full graphic with words travelling beside
+it, not a picture in a column.
+
+**How the two numbers were chosen — measured, not picked.** Both cells were driven at every width
+and the render opened at each:
+
+- **The prose column, `clamp(300px, 30%, 440px)`.** The floor is the panel's own measure: `.step`'s
+  gutter takes 32px and `min(46ch, 100%)` needs about 390px to read as a paragraph rather than a
+  ladder, so below roughly 300px the column stops being a column. The 30% is what leaves the graphic
+  the larger share at every desktop width; the 440px cap stops a 2560px monitor handing the prose a
+  third of the screen. Rendered: 440×821 at 1600×900, 384×721 at 1280×800.
+- **The graphic's floor, and therefore the breakpoint.** The frames are SSR'd at a fixed canvas and
+  COVER-cropped onto whatever box they get, so a NARROWER box crops them LESS, not more —
+  `safeBand`'s own `ASPECT_ENVELOPE` (`0.42`..`2.4`) covers everything from a tall phone to an
+  ultrawide, and the narrowest cell any width produces is 375×332 (aspect 1.13), well inside it. The
+  binding constraint is the FITTED chart frame instead: `CHART_LAYOUT`'s y-axis gutter is
+  `max(62px, 13%)`, and below 477px of width the percentage falls under the fixed floor and the
+  layout stops scaling. 300 + 477 = 777, so the two cells stop fitting side by side at about 800px;
+  **860px** is that with room for the gutters. Below it they stack.
+- **The prose band on a phone, `clamp(150px, 42%, 340px)`.** The open finding the previous round left
+  was that at 375×812 the prose needs 209px against a 177px lane. 42% of the track resolves to
+  **265px** on the seed, 271px on `scrolly-chart-eu-carbon`, 240px on the Grinnell beat — and the
+  tallest panel fits in every one of them, on all six beats on disk. **It resolves the finding; it
+  does not relocate it.** The guard reports the tallest panel against its band at every width and
+  says so when it does not fit; that note is silent on all six beats. The cost is paid by the
+  graphic, which gets 332-374px instead of the full track.
+
+**What it costs, stated rather than discovered later.** The graphic no longer spans the full viewport
+width on a desktop — it spans the viewport minus the prose column. "All web visuals take the full
+width", satisfied by the sixth correction, now holds only up to that column. The alternative is the
+parked panel the owner rejected, and this scaffold cannot have both.
+
+**What it removed.** `pickLanePanel`, the `in-lane` class and `.scrolly--live` are gone from
+`assets/interaction.mjs` and from the CSS. They existed because a `bottom`-sticky panel un-pinned one
+panel-height before the next one parked and spent that gap opaque and climbing over the graphic's
+labels — closed by not painting it. The prose is now clipped inside its own cell and cannot reach a
+label at any offset, so that rule has nothing to protect, and keeping it would do harm: the reader
+would watch the words they are reading DISSOLVE halfway up the column instead of scrolling out of it,
+which is the same defect the owner named wearing a different costume. **Two panels on screen through
+a boundary is not a bug in a scroll-driven piece; it is what a boundary looks like.**
+
+**The residue this correction does NOT close, and it is visible.** Every frame still reserves
+`PROSE_LANE` — 28% of its own height — at the bottom, through `safeBand()` and `CONTENT_TOP`, for a
+panel that no longer goes there. Nothing occupies that band any more: on the seed's own chart step at
+1600×900 it is roughly 230px of empty ground under the plot. Reclaiming it means changing
+`PROSE_LANE`/`CONTENT_TOP` and the chart layouts derived from them in the seed **and in every beat's
+own copy of those constants** — a per-beat change with its own guard to write, not a scaffold change,
+and deliberately not smuggled into this round. The scaffold still emits `--prose-lane` and
+`data-prose-lane` so the number a beat's frames computed from stays readable off the delivered file;
+no CSS rule reads it any more, and `assets/interaction.mjs` no longer reads it at all.
+
+**And the guard that was missing is the point of the round.** `scripts/verify-scrolly.mjs` gained two
+assertions and lost none: **F**, no panel is ever painted over the graphic (the visible part of every
+panel, clipped by the column that scrolls it, measured against the graphic's box — the structural
+claim of this correction, and impossible to satisfy under the model it replaced); and **G**, the
+prose travels — each panel must sweep a real distance across its column and must not HOLD one offset,
+measured as the share of scroll-advancing animation frames at which its own top did not move. Both
+are mutation-proved in `test/scroll-integrity.test.ts`'s own header, including the honest note that
+G's enter/leave halves do NOT fire under the pin; the held share is what discriminates.
+
+## The visual evolves as the reader scrolls — the vehicle publishes a CONTINUOUS signal, not only a step
+
+**The eighth correction's second half, and it is a missing SIGNAL rather than a tuning.** With the
+prose travelling again, the owner drove the two single-visual beats and reported the navigation
+itself: *"Pour le scrolly navigation, on y est pas du tout. Pourquoi tu ne suis pas un peu le principe
+d'une animation au scrolly, faut que ce soit fluide et que l'élément évolue au fur et à mesure du
+temps."*
+
+**He is right, and the reason is structural.** The vehicle published exactly two things a consumer
+could read: which step is `active`, and a 0.3s CSS transition that finishes precisely when that class
+moves. Between two boundaries NOTHING changed. A visual re-parented into the frame stack had nothing
+to scrub against, so however smoothly it could animate it could only ever CATCH UP at the handover —
+a slideshow with a fade, which is what the owner was looking at.
+
+**What ships: `data-progress`, on the same root that carries `data-prose-lane`, written on every
+scroll.** It is the FRACTIONAL INDEX of the prose panel sitting on the lane's own centre line —
+exactly `i` when panel `i`'s centre is on that line, exactly `i + 1` when panel `i + 1`'s is, a
+linear interpolation between the two card centres that bracket it, clamped to `0 … steps - 1`.
+`measureProgress(panels, lane)` in `assets/interaction.mjs` is the pure function, unit-tested; the
+scaffold draws nothing with it and never consumes it.
+
+**Why it is measured over the CARDS and not over the scroller's own `scrollTop`.** A raw
+`scrollTop / scrollHeight` fraction is cheaper, and it is the wrong number: it says how far the
+CONTAINER has moved, and the reader is looking at the words. Interpolating between card centres makes
+"the drawing reaches the moment this sentence names" and "this sentence reaches the middle of its
+column" the SAME event — at any panel height, any step height, on a phone and on a desktop. The scrub
+and the caption cannot drift apart because they are one measurement. **In our model the reference is
+the LANE's centre, not the viewport's**, because the document does not scroll and the prose travels
+inside its own cell; that is the coordinate that had to change when the idea was carried over.
+
+**It is in lock-step with `pickActiveStep` by construction, and the guard checks it.** For panels of
+equal height the max-overlap winner changes at exactly the moment progress passes `i + 0.5`: at
+`u = 0.5` the outgoing card's centre sits `0.075 × L` above the column's top and the incoming card's
+the same distance below its bottom, so their visible heights are equal. Measured across the seed and
+all six beats at three widths, the worst step-versus-progress drift is **0.50 to 0.54 of a step** —
+which is the crossover itself, not a drift. `scripts/verify-scrolly.mjs`'s assertion H fails above
+0.65.
+
+**What assertion H measures, and why it is the one whose absence let this ship.** Between two
+boundaries the discrete state is constant BY DEFINITION; if the continuous one is constant too, the
+element is not evolving, whatever else is green. So H counts the scroll-advancing animation frames on
+which the active step did NOT change, and requires progress to have moved on essentially all of them:
+measured, **6-8 still frames of 170-192** (the clamped ends), against **181 of 182 (99%)** under a
+mutation that quantises the signal to its own step. It also asserts the signal is present at all,
+never goes backwards on a forward pass, spans `0 … steps - 1`, and stays in lock-step.
+
+## One page, two inlined scripts, one global scope
+
+**`inlineable()` strips `export` from every top-level declaration, which makes every one of them a
+GLOBAL — and a beat that inlines a second script of its own lands in the same scope.** Both
+single-visual beats do exactly that: they re-parent their visual into the frame stack and scrub it
+themselves. When this scaffold gained a `measureProgress`, theirs — a different function, taking an
+array of lane overlaps rather than panels and a lane — was silently overwritten by whichever
+declaration the browser parsed last, and their paint loop threw
+`Cannot read properties of undefined (reading 'top')` on every animation frame of every scroll. It
+was found by driving one beat with `pageerror` wired up, not by any test.
+
+**The fix is one line and it is in `render-scrolly.mjs`: the inlined scaffold is wrapped in an IIFE**,
+so it declares nothing globally. Nothing about this scaffold was ever meant to be reachable from a
+beat's own script; the wrapper makes that true instead of merely intended. A beat's own inlined script
+is still global — that is the beat's business — but it can no longer be shadowed by the vehicle
+carrying it.
+
+**Standing rule for anything added to `assets/interaction.mjs`:** a page can carry more than one
+inlined script, and the vehicle must never be the one that breaks the beat. If the wrapper is ever
+removed, every name in that file becomes an API a beat can collide with.
+
+## A camera flight this vehicle does not own, and the trap it sets
+
+**Recorded rather than fixed, because cameras belong to the beats.** This scaffold owns the scroll,
+the step decision and the progress signal; it owns no camera. The seed's own map track is a plate
+BAKED once with no camera at runtime at all (see "A map track without a live map"), and the map beats
+that do fly a live camera do it in their own `map-drive.mjs`. So this is doctrine for the next person
+rather than a change here.
+
+**The trap.** A reader can scroll faster than a camera flight completes, so each step's flight
+INTERRUPTS the last one mid-air. If the new flight's floor is computed from the camera's LIVE zoom at
+the moment of interruption, that floor ratchets wider on every interruption — the camera drifts out
+and never reaches the target the beat named. The fix is to cap a flight's apex at the TIGHTER of its
+two endpoints with no added margin: the motion becomes monotonic, and interrupting it at any point
+leaves the next flight starting from a state the next cap still bounds. A camera that cannot ratchet
+cannot drift.
+
+**And with `data-progress` published, a beat has the alternative that avoids flights entirely**:
+derive the camera from progress on every frame instead of firing a transition at each boundary.
+A camera written as a function of a monotonic scrub has nothing to interrupt.
 
 ## The graphic is fixed and the page does not scroll (the seventh correction, and the one that
 ## removed a mechanism rather than tuning it)
@@ -161,8 +365,13 @@ the step to whichever occupies the most of the lane. Lane occupancy changes mono
 enters and leaves, so the winner changes exactly once per boundary — a property of the rule, not a
 tuning of it, and true at any scroll speed and through any number of frames the browser skipped.
 
-**And which panel is PAINTED is a different decision from which frame is SHOWN.** This is the third
-piece, and it closes the last of the prose-over-annotation collisions. A `bottom`-sticky panel
+**And which panel is PAINTED used to be a different decision from which frame is SHOWN — the eighth
+correction removed the second decision entirely. The paragraph below describes the seventh build and
+is kept because the reasoning is why the split exists.** With the prose in its own clipped cell there
+is nothing to withhold paint from, so `pickLanePanel`, `in-lane` and `.scrolly--live` are gone;
+`pickActiveStep` is the only decision left, and the lane it measures against is now the prose column
+itself rather than a band inside a shared box. Historically: this was the third
+piece, and it closed the last of the prose-over-annotation collisions. A `bottom`-sticky panel
 un-pins one panel-height BEFORE the next one parks, and spends that gap climbing up over the
 graphic — still `active`, still opaque, straight across the band the lane exists to keep clear. So
 `active` (which frame) is held across the gap, because the graphic is fixed and has nothing else to
@@ -637,7 +846,9 @@ changes per step is only which FRAME is on screen and which step's own prose the
 beside — never the beat's own argument, which the persistent header states in full before the reader
 has scrolled at all.
 
-## The prose lane, and why five rounds of collision patching did not fix the collision
+## The prose lane, and why five rounds of collision patching did not fix the collision (historical — the eighth correction replaced the pin)
+
+**The lane described below no longer places anything.** Its diagnosis is intact and is why the eighth correction did not simply revert the pin: a travelling opaque panel in a SHARED box reaches every label eventually. What changed is the answer — the prose got its own cell instead of a reserved band, so it can travel without ever meeting a label. Read this section for the defect; read "The prose has its own space" for what ships. The frames still keep `PROSE_LANE` clear, and nothing occupies it: see that section's own residue paragraph.
 
 **The panel used to TRAVEL. That is the whole defect, and no safe area could survive it.** Every
 build up to the fifth centred each step's panel inside its own step box (`align-items: center`), so
@@ -793,9 +1004,23 @@ who scrolled. The standing rule this bought:
   it, and names the three mutations that redden it.
 - **Ask what the instrument cannot see, and write the answer down.** That test's own header does.
 
-Measured this way, with the model and decision rule this file now describes, on all five scrollies
-on disk at three widths — 0 failures. The same instrument on the same beats before the correction:
-14 runs of 15 with a step's frame never painted, and oscillation on every boundary.
+Measured this way, with the model and decision rule this file now describes, on the seed and all
+six scrollies on disk at three widths — **0 failures**. The same instrument on the same beats before
+the seventh correction: 14 runs of 15 with a step's frame never painted, and oscillation on every
+boundary.
+
+- **Ask what the instrument does not ASSERT, not only what it cannot see.** That is the eighth
+  correction's own lesson and it cost a whole round: the recorder was right, the six assertions were
+  right, and the page had stopped moving. Every one of them was about WHICH step was painted. Run
+  over the shipped artifacts with assertion G added — travel per panel, and the share of
+  scroll-advancing animation frames at which a panel's own top did not move — the same instrument
+  produced 36 failures across two beats at three widths, on code that had been green all week. When
+  a human reports something the guard says is fine, the first question is not "is the measurement
+  wrong" but "what did nobody ask it".
+
+Measured after the eighth correction, on the seed and all six beats at three widths: 0 failures, and
+the travel each panel makes is REPORTED at every width — 528-992px per panel at 1600×900, 200-475px
+at 375×812, against 162-187px for the last panel and 42-80% held offsets before it.
 
 ---
 

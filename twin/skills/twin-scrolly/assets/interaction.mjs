@@ -16,6 +16,15 @@
 // each panel currently is and give the step to whichever panel occupies the most of the prose lane.
 // That is the whole of it. There is no observer, no threshold list and no rootMargin.
 //
+// AND SINCE THE EIGHTH CORRECTION THERE IS ONLY ONE DECISION LEFT. This file used to make two —
+// which FRAME the graphic shows, and which PANEL may be painted (`pickLanePanel`, the `in-lane`
+// class, `.scrolly--live`). The second existed because a `bottom`-sticky panel un-pinned one
+// panel-height before the next one parked and spent that gap opaque and climbing over the graphic's
+// own labels. The prose now travels in its own cell of the track's grid, clipped at that cell's own
+// edge, so it cannot reach the graphic at any offset and there is nothing left to withhold paint
+// from. The lane is no longer a band inside a shared box either: it is the scrollport itself, so
+// nothing here reads `data-prose-lane` or a panel's own `bottom` offset any more.
+//
 // WHY THERE IS NO INTERSECTIONOBSERVER ANY MORE, and this is the correction this file exists to
 // carry. Every build up to the sixth used one, and picked the winner out of the entries of the
 // CURRENT CALLBACK — the delta set, the panels whose ratio had just crossed one of
@@ -84,65 +93,67 @@ function laneOverlap(panel, lane) {
 }
 
 /**
- * Pure decision function, and the second half of the lane's contract: which panel may be PAINTED.
- * Same inputs as `pickActiveStep`, and deliberately a different answer.
+ * THE CONTINUOUS SIGNAL — the second thing this file publishes, and the one whose absence made a
+ * scroll-driven visual read as a slideshow with a fade.
  *
- * THE LANE IS A PROMISE IN BOTH DIRECTIONS. Every frame keeps what it annotates above the lane
- * (`safeBand`/`CONTENT_TOP`); this is what keeps the prose inside it. A panel is paintable only
- * while it occupies the lane as fully as its own height allows — so a panel on its way OUT, riding
- * up over the graphic as its step scrolls past, stops being painted the moment it leaves rather
- * than when the next step wins the frame. Those two moments are not the same: a `bottom`-sticky
- * panel un-pins one panel-height before the next one has parked, and that gap is where every
- * remaining prose-over-annotation collision lived. Measured on the shipped Danube beat at
- * 1600x900, 41% of the way down: the numbered badge "6" under a panel that had already climbed
- * 16px above the lane's own top edge.
+ * The owner, after driving the two single-visual beats: *"Pour le scrolly navigation, on y est pas
+ * du tout. Pourquoi tu ne suis pas un peu le principe d'une animation au scrolly, faut que ce soit
+ * fluide et que l'élément évolue au fur et à mesure du temps."* He is right, and it was a MISSING
+ * SIGNAL rather than a tuning problem: the vehicle published a step state and a boundary transition
+ * that finishes exactly when the step flips, so nothing a consumer could read CHANGED while the
+ * reader scrolled through the middle of a step. The visual caught up at the handover.
  *
- * A PANEL THAT DOES NOT FIT ITS LANE IS STILL PAINTED, and that fallback is deliberate rather than
- * a softening. Measured across the five beats on disk: a panel needs its own height PLUS its bottom
- * offset to sit inside the lane, and at 1280x800 that is 215px against a 202px lane, at 375x812
- * 241px against 177px — the reserved 28% is simply too small for three paragraphs at a phone's
- * measure. Refusing to paint such a panel would leave the reader with a graphic and no words at
- * all, which is worse than an overlap and is not what the lane was reserved to buy. So when nothing
- * fits, the panel closest to its parked position — the largest lane overlap — is painted anyway,
- * and `scripts/verify-scrolly.mjs` REPORTS the beat and the width where that happened. The lane is
- * either wide enough or the beat's prose is too long for it; both are facts about the beat, and the
- * vehicle's job is to make them visible rather than to hide them behind a blank frame.
+ * Returns the FRACTIONAL INDEX of the prose panel sitting on the lane's own centre line: exactly
+ * `i` when panel `i`'s centre is on that line, exactly `i + 1` when panel `i + 1`'s is, and a
+ * smooth interpolation in between. Range `0 … panels.length - 1`, clamped at both ends (before the
+ * first panel reaches the line and after the last one passes it there is nowhere further to go).
  *
- * Returns `null` only when no panel touches the lane at all — a real state, between two steps, and
- * the caller paints no panel rather than keeping a stale one on screen.
+ * WHY IT IS MEASURED OVER THE PANELS AND NOT OVER THE SCROLLER'S OWN `scrollTop`. A raw
+ * `scrollTop / scrollHeight` fraction is cheaper and is the wrong number: it says how far the
+ * CONTAINER has moved, and the reader is looking at the CARDS. Interpolating between the two card
+ * centres that bracket the line makes "the visual reaches the moment this sentence names" and "this
+ * sentence reaches the middle of its column" the same event, at any panel height and any step
+ * height, on a phone and on a desktop alike. The scrub and the caption cannot drift apart, because
+ * they are the same measurement.
+ *
+ * It is also, deliberately, in LOCK-STEP with `pickActiveStep` rather than a second opinion about
+ * the same thing: for panels of equal height the max-overlap winner changes at exactly the moment
+ * this function passes `i + 0.5` — the two rules meet, and `scripts/verify-scrolly.mjs` asserts
+ * that they stay met on every recorded animation frame rather than leaving it as an argument.
+ *
+ * `panels` is `{ stepId, top, bottom }[]` in document order; `lane` is `{ top, bottom }`. Same
+ * inputs as `pickActiveStep`, measured once by the caller and handed to both.
  */
-export function pickLanePanel(panels, lane) {
-  let winner = null;
-  for (const panel of panels) {
-    // Two ways to be eligible, and a panel on its way out satisfies neither.
-    //   - its top is not above the lane: it fits, and it is in. This is the promise.
-    //   - it is still at its parking line: it has not started to rise yet. This is what keeps a
-    //     panel TALLER than the lane paintable — such a panel's top is above the lane wherever it
-    //     stands, so the first clause can never hold for it, and only the second can.
-    const eligible =
-      panel.top >= lane.top - 1 || panel.bottom >= lane.bottom - 1;
-    if (!eligible) continue;
-    const overlap = laneOverlap(panel, lane);
-    if (overlap <= 0) continue;
-    if (!winner || overlap > winner.overlap)
-      winner = { stepId: panel.stepId, overlap: overlap };
-  }
-  return winner ? winner.stepId : null;
+export function measureProgress(panels, lane) {
+  if (panels.length === 0) return 0;
+  const line = (lane.top + lane.bottom) / 2;
+  const centres = panels.map(function (p) {
+    return (p.top + p.bottom) / 2;
+  });
+  // Panels are in document order, so their centres increase with index and the LAST one at or
+  // above the line is the one the reader is on.
+  let i = -1;
+  for (let k = 0; k < centres.length; k++) if (centres[k] <= line) i = k;
+  if (i < 0) return 0;
+  if (i >= centres.length - 1) return centres.length - 1;
+  const span = centres[i + 1] - centres[i];
+  if (!(span > 0)) return i;
+  const u = (line - centres[i]) / span;
+  return i + Math.max(0, Math.min(1, u));
 }
 
 /**
- * Wires one `.scrolly` root's steps to its frames by measuring THE PROSE LANE — the band at the
- * bottom of the track where `scripts/render-scrolly.mjs`'s own CSS pins each step's panel
- * (`--prose-lane`, mirrored onto the root as `data-prose-lane` so this script never has to parse a
- * CSS length).
+ * Wires one `.scrolly` root's steps to its frames by measuring THE PROSE COLUMN — the cell of the
+ * track's own grid that the prose travels in, beside the graphic on a wide viewport and below it on
+ * a phone (`scripts/render-scrolly.mjs`'s own `buildCss`). The column IS the lane: since the eighth
+ * correction the prose has its own space, so "in the lane" and "inside the element that scrolls"
+ * are the same rect, and there is no fraction to read off the markup and no offset to subtract.
  *
  * **What is measured is the PANEL, not the section.** An earlier build watched the `.step` sections
  * through a thin band at the middle of the screen, which asked "whose 115%-tall section crosses the
- * centre right now" — a different question from the one that matters, "whose words are in the lane
- * right now", with a different answer for a large fraction of every step. Measuring the pinned
- * panel makes the active step and the visible prose the same fact by construction, which is what
- * lets the CSS fade every panel that is not the active one without ever fading the one the reader
- * is actually reading.
+ * centre right now" — a different question from the one that matters, "whose words is the reader
+ * actually beside", with a different answer for a large fraction of every step. Measuring the panel
+ * makes the active step and the visible prose the same fact by construction.
  *
  * **The scroller is the prose column, never the document.** The page itself does not scroll (see
  * `references/scrolly-discipline.md`, "The graphic is fixed and the page does not scroll"), so the
@@ -170,9 +181,9 @@ export function initScrolly(root) {
     return;
 
   let currentFrame = null;
-  let currentPanel = null;
   /** Which frame the graphic shows. Held across the gap between two steps — the graphic is fixed,
-   *  so it holds the last thing the reader was told about until the next prose arrives. */
+   *  so it holds the last thing the reader was told about until the next prose arrives. Two
+   *  panels are on screen through a boundary and neither is hidden; only ONE decision is left. */
   function activate(stepId) {
     if (stepId === currentFrame) return;
     currentFrame = stepId;
@@ -183,37 +194,13 @@ export function initScrolly(root) {
       f.classList.toggle("active", f.getAttribute("data-step") === stepId),
     );
   }
-  /** Which panel is painted — a DIFFERENT fact from which frame is shown, and `null` between two
-   *  steps. See `pickLanePanel` for why the two decisions were split. */
-  function paint(stepId) {
-    if (stepId === currentPanel) return;
-    currentPanel = stepId;
-    steps.forEach((s) =>
-      s.classList.toggle("in-lane", s.getAttribute("data-step") === stepId),
-    );
-  }
-
-  // The lane, as a percentage of the track's own height. The fallback matches `renderScrolly`'s
-  // own default rather than a number invented here.
-  const lane = Number(root.getAttribute("data-prose-lane")) || 28;
-
-  // `.scrolly--live` is what turns on the CSS that paints only the active step's panel. It is added
-  // HERE, by the script, so that a page whose script never runs never hides a word: see
-  // `scripts/render-scrolly.mjs`'s own `buildCss` note on `.scrolly--live`.
-  root.classList.add("scrolly--live");
 
   function update() {
     const port = scroller.getBoundingClientRect();
-    // The lane's bottom edge for these two decisions is the PANEL'S OWN PARKING LINE, not the
-    // track's bottom edge — read off the CSS rather than restated here, because the offset is a
-    // `clamp()` that changes with the viewport. A panel parked in the lane has its bottom exactly
-    // on this line, which is what lets `pickLanePanel` tell "parked" from "already rising" without
-    // being told what the offset is.
-    const offset = parseFloat(getComputedStyle(panels[0]).bottom) || 0;
-    const laneBand = {
-      top: port.bottom - (lane / 100) * port.height,
-      bottom: port.bottom - offset,
-    };
+    // The lane is the scrollport itself — read live rather than cached, because a resize changes
+    // it and because on a phone it is a band whose height comes from a `clamp()` nobody here
+    // should be re-deriving.
+    const lane = { top: port.top, bottom: port.bottom };
     const measured = panels.map(function (p) {
       const r = p.getBoundingClientRect();
       return {
@@ -222,9 +209,13 @@ export function initScrolly(root) {
         bottom: r.bottom,
       };
     });
-    const next = pickActiveStep(measured, laneBand);
+    const next = pickActiveStep(measured, lane);
     if (next) activate(next);
-    paint(pickLanePanel(measured, laneBand));
+    // PUBLISHED, not consumed here. This scaffold draws nothing itself — it hands the number to
+    // whatever visual a beat re-parented into the frame stack, on the element a consumer can
+    // already find (the same root that carries `data-prose-lane`). Written every frame the reader
+    // scrolls, so a consumer's own rAF paint reads a value that is at most one frame old.
+    root.setAttribute("data-progress", measureProgress(measured, lane).toFixed(4));
   }
 
   // `scroll` fires at most once per animation frame in every engine, and it fires BEFORE the frame

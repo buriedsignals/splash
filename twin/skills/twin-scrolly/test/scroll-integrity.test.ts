@@ -1,79 +1,132 @@
 /**
  * WHAT THIS GUARD CATCHES, AND WHAT IT PROVABLY DOES NOT.
  *
- * It exists because every other check on this vehicle measured a page nobody had scrolled.
+ * It exists because every other check on this vehicle measured a page nobody had scrolled — and it
+ * grew an assertion because every check INCLUDING this one, for one round, measured which step was
+ * painted and never whether the words MOVE.
  *
- * The genre's own verification rule has always been "drive a real browser", and every round obeyed
- * it — by jumping to 25 discrete scroll offsets, waiting for the page to settle, and reading the
- * state. Measured that way on all five scrollies on disk, at 1600x900, 1280x800 and 375x812: 25
- * samples out of 25 with exactly one frame at opacity 1 and every other at exactly 0, one panel at
- * a time, every step in order. All of it true.
+ * ROUND ONE OF THIS FILE: THE INSTRUMENT. The genre's own verification rule has always been "drive
+ * a real browser", and every round obeyed it — by jumping to 25 discrete scroll offsets, waiting for
+ * the page to settle, and reading the state. Measured that way on all five scrollies on disk, at
+ * 1600x900, 1280x800 and 375x812: 25 samples out of 25 with exactly one frame at opacity 1 and every
+ * other at exactly 0, one panel at a time, every step in order. All of it true. The same five pages
+ * under a CONTINUOUS scroll: in FOURTEEN of those fifteen runs at least one step's frame was never
+ * painted at all; the graphic lagged the prose by up to 1,800px of a 3,300px track. A teleport hands
+ * an IntersectionObserver every panel in one callback, so the old delta-set rule was accidentally
+ * right exactly under the instrument that checked it, and wrong under a reader's wheel. A sampled
+ * probe is not a weaker version of this file; it is blind to a whole class of defect by
+ * construction.
  *
- * The same five pages under a CONTINUOUS scroll: in FOURTEEN of those fifteen runs at least one
- * step's frame was never painted at all; the graphic lagged the prose by up to 1,800px of a 3,300px
- * track; ~45% of every animation frame drawn was a blend of two frames rather than one image. The
- * owner reported it in three words — "le scrolly est buggé pour tous" — against a skill whose own
- * doctrine file said it had been measured. A teleport hands an IntersectionObserver every panel in
- * one callback, so the old delta-set rule was accidentally right exactly under the instrument that
- * checked it, and wrong under a reader's wheel. A sampled probe is not a weaker version of this
- * file; it is blind to a whole class of defect by construction.
+ * ROUND TWO: THE QUESTION. The fix for that round PINNED each prose panel with a `bottom` sticky
+ * offset, so it parked in a reserved band for the whole of its step and could not cross the
+ * graphic's own labels. Every assertion here went green and stayed green, because not one of them
+ * was about motion. The owner drove it: *"le panel avec le texte ne bouge plus alors que l'effet
+ * c'est vraiment de les faire défiler au scroll vers le haut."* Running THIS file's own recorder
+ * over those shipped artifacts, with assertion G added, measured what nobody had asked for: the
+ * middle panels held ONE screen offset for 42-45% of every scroll-advancing animation frame, and
+ * the last panel for 78%, sweeping 187px of an 821px track. A guard that only ever asks "which"
+ * cannot see a page that never moves.
  *
  * So `scripts/verify-scrolly.mjs` installs a `requestAnimationFrame` recorder BEFORE touching the
  * scroll position and reads back every frame the browser actually drew. This file walks it over
- * every scrolly on disk. What it asserts is listed in that script's own header (A-F); what it
+ * every scrolly on disk. What it asserts is listed in that script's own header (A-G); what it
  * reports without asserting is listed there too, with the reason.
  *
  * MUTATION-PROVED, because a test that stays green when the code is broken is worthless. All three
- * were run on a COPY of the skill and the beats under `/tmp`, never in this tree — several agents
- * share this working tree and one agent's mutation must not turn it red for everyone.
+ * were run on a COPY of the skill under `/tmp` (with `node_modules` symlinked in), never in this
+ * tree — several agents share this working tree and one agent's mutation must not turn it red for
+ * everyone.
  *
- *   1. THE DECISION LAYER. `assets/interaction.mjs` put back to the IntersectionObserver that
- *      picked its winner out of the current callback's entries. Red on all five beats at all three
- *      widths: "the active step OSCILLATED — level became active 5 times, direction 4 times", and
- *      "1 of 4 step frames were NEVER painted during a continuous scroll".
+ *   1. THE PANEL, PUT BACK ON A PIN. `.step` returned to `align-items: flex-end` and `.step-panel`
+ *      given back `position: sticky; bottom: clamp(16px, 4vh, 40px)` — the pair the seventh
+ *      correction shipped, reverted together because a `bottom` offset only ever shifts a box UP
+ *      and does nothing at all to a panel centred in its step. 14 failures across three widths:
  *
- *   2. THE MODEL. `body { overflow: hidden }` removed and `.scrolly-graphic` put back to
- *      `position: sticky; top: 0; height: 100vh` with the steps column's negative margin and
- *      `115vh` steps. Red at all three widths with "the DOCUMENT has 3320px of scroll; the
- *      component must own its own scroll", "3 of 4 step frames were NEVER painted", "@ reduce:
- *      only 1 of 4 frames were painted" and "@ no-JS: the prose column has no scroll distance, so
- *      the reader cannot reach step 2".
- *      WORTH KNOWING, because the first draft of this note claimed otherwise: assertions B and C
- *      (the graphic and the header never move) did NOT fire under this mutation, and it is not
- *      because they are weak. Putting the scroll back on the document leaves `.scrolly-steps` with
- *      no scroll distance at all, so the driver — which scrolls the prose column, because that is
- *      what a reader scrolls in the shipped model — moves nothing, and a graphic nobody scrolled
- *      past does not climb. B and C are proved by the third mutation below only in the sense that
- *      they hold; a mutation that reddens them specifically would have to keep the component
- *      scrolling its own prose while making the graphic move inside it. That is stated here rather
- *      than left as an implied claim.
+ *        FAIL @ 1600x900: panel record swept only 162px of a 821px lane — the prose is meant to
+ *          travel the full height of its own column, not to be revealed in place
+ *        FAIL @ 1600x900: panel record HELD one offset for 48 of 60 scroll-advancing frames (80%)
+ *          — a parked panel is a slideshow; the reader must see the words move past the graphic
+ *        FAIL @ 1600x900: panel where HELD one offset for 49 of 110 scroll-advancing frames (45%)
+ *        FAIL @ 375x812: panel instrument HELD one offset for 29 of 114 scroll-advancing frames (25%)
  *
- *   3. THE LANE. The panel's paint rule put back from `.step:not(.in-lane)` to
- *      `.step:not(.active)`, with its fade restored. Red: "a panel was painted 71px ABOVE the
- *      lane's own top, at 11 animation frames (first at scroll 208)" — the gap between a
- *      `bottom`-sticky panel un-pinning and the next one parking, which is where every surviving
- *      prose-over-annotation collision lived.
+ *      WORTH KNOWING, because the honest form of a mutation note is which sub-assertions did NOT
+ *      fire: G's enter/leave halves stayed green under this mutation. A pinned panel still arrives
+ *      from below the column and still leaves past its top — it simply stops for most of the way.
+ *      The HELD share is what discriminates, and the swept distance catches only the LAST panel,
+ *      whose step ends before it un-pins. Assertions A-F also stayed green, which is the point of
+ *      splitting them: the model, the fixed graphic and the step decisions were all still correct.
+ *
+ *   2. THE SPLIT, PUT BACK INTO ONE BOX. `.scrolly-graphic` and `.scrolly-steps` returned to
+ *      `position: absolute; inset: 0`, the shared-box model the eighth correction replaced. Red at
+ *      1600x900 on the assertion that is the whole claim of that correction:
+ *
+ *        FAIL: prose was painted OVER the graphic at 227/227 animation frames (first at scroll 0,
+ *          panel site at [1192,485,1568,617] against a graphic at [0,80,1600,821]) — the prose has
+ *          its own space; the two may never meet
+ *        note: prose covered a frame's own label at 9/227 frames — ["record:Oct"]
+ *
+ *      The note is the collision itself, back within nine animation frames of a four-step seed: a
+ *      travelling opaque panel over a chart's own x-axis label.
+ *
+ *   3. THE DECISION LAYER. `assets/interaction.mjs` put back to an IntersectionObserver that picks
+ *      its winner out of the current callback's entries — re-run under the new layout, because the
+ *      lane `pickActiveStep` is measured against changed with it. Still red:
+ *
+ *        FAIL @ 1600x900: the active step OSCILLATED — site became active 2 times, instrument 3
+ *          times, where 3 times, record 2 times; one continuous pass must hand each step the class
+ *          exactly once
+ *
+ *   4. THE CONTINUOUS SIGNAL, QUANTISED TO ITS OWN STEP. `data-progress` published as
+ *      `Math.round(measureProgress(...))` — the shape the vehicle had before it published anything
+ *      at all, where a consumer can only ever catch up at the handover. Red on the assertion the
+ *      owner's report is about:
+ *
+ *        FAIL @ 1600x900: progress did not move on 181 of 182 scroll-advancing frames INSIDE a step
+ *          (99%, longest still run 58 frames ending at scroll 1472, progress stuck at 1) — the
+ *          element must evolve as the reader scrolls, not catch up at the handover
+ *        FAIL @ 1600x900: the step and the progress drifted 1.00 steps apart at scroll 528 (step
+ *          instrument, progress 0) — a scrubbed visual and the words beside it must describe the
+ *          same moment
+ *
+ *      Green on this code: 6-8 still frames of 170-192, worst drift 0.50-0.54, which is the
+ *      max-overlap crossover itself rather than a drift.
+ *
+ *   5. THE SIGNAL NOT PUBLISHED AT ALL. The one `setAttribute` deleted:
+ *
+ *        FAIL @ 1600x900: no readable `data-progress` on 227/227 animation frames — a consumer has
+ *          nothing to scrub a visual against, so the visual can only ever catch up at a step
+ *          boundary
  *
  * WHAT IT PROVABLY DOES NOT CATCH — read this before trusting it for anything wider.
+ *
+ *   0. WHETHER A CONSUMER ACTUALLY USES THE SIGNAL. H proves `data-progress` is published, moves
+ *      inside a step and stays in lock-step with the words. It cannot prove any visual on the page
+ *      reads it — a beat that ignores it still passes every assertion here while looking exactly
+ *      like the slideshow the owner rejected. That proof belongs to the beat's own drive harness,
+ *      which reads the visual's OWN published state, and both single-visual beats have one.
  *
  *   1. WHETHER THE BEAT IS ANY GOOD. Four steps that arrive in order, over a graphic that never
  *      moves, can still be four charts nobody needed. Every assertion here is mechanical.
  *
- *   2. A FRAME THAT PLACES A MARK INSIDE THE LANE. The vehicle reserves the lane and keeps prose
- *      out of it; it cannot move a beat's own labels into the band above it. Three such residues
- *      are live as this lands and are REPORTED by every run rather than asserted: the Danube beat's
- *      numbered badge "6", the Grinnell beat's photo-credit line at 1280x800, and every beat's
- *      x-axis labels at 375x812 where the prose is simply taller than the lane it was given. Each
- *      one belongs to the beat, not to `renderScrolly`.
+ *   2. WHETHER THE SPLIT IS THE RIGHT SPLIT. F proves the prose never touches the graphic; nothing
+ *      here proves the graphic still has enough width to be read at, or that the prose column is
+ *      wide enough for a comfortable measure. The rendered size of each cell is REPORTED at every
+ *      width for exactly that reason, and choosing the numbers was done by opening the render.
  *
- *   3. ONE SPEED. The scroll is one step per ~60 animation frames, derived from each beat's own
+ *   3. THE BAND A BEAT'S FRAMES STILL RESERVE. `PROSE_LANE` keeps 28% of every frame's own height
+ *      clear at the bottom for a panel that no longer goes there. Nothing occupies it and nothing
+ *      here measures it: it is dead space in the graphic, named as residue in
+ *      `references/scrolly-discipline.md`, and reclaiming it is a change to every beat's own frame
+ *      components rather than to this scaffold.
+ *
+ *   4. ONE SPEED. The scroll is one step per ~60 animation frames, derived from each beat's own
  *      step height so a phone and a desktop get the same dwell. A defect that needs a slower read,
  *      a flick, or a reversal is not sampled. Reversing direction in particular is untested here.
  *
- *   4. TOUCH AND MOMENTUM. The scroll is written to `scrollTop`, not dispatched as a wheel or a
+ *   5. TOUCH AND MOMENTUM. The scroll is written to `scrollTop`, not dispatched as a wheel or a
  *      touch drag, so nothing about momentum, rubber-banding or `overscroll-behavior` is proved.
  *
- *   5. A BEAT WHOSE RENDERED HTML ON DISK IS STALE. This walks the artifacts as they stand. A beat
+ *   6. A BEAT WHOSE RENDERED HTML ON DISK IS STALE. This walks the artifacts as they stand. A beat
  *      rendered against an older scaffold and not re-rendered will fail here — that is the guard
  *      working, and the fix is to re-run the beat's own `render.mjs`, never to add it to a list.
  */

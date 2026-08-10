@@ -25,6 +25,16 @@
 // thinks after the dust has settled. A sampled probe is not a weaker version of this; it is blind
 // to a whole class of defect by construction, and it proved it.
 //
+// AND THEN IT WAS BLIND ANYWAY, FOR ONE ROUND, BECAUSE OF WHAT IT ASKED. Everything above is about
+// the INSTRUMENT. The round that fixed the instrument closed the last prose-over-annotation
+// collision by PINNING each panel in a reserved band — and every assertion in this file went green
+// and stayed green, because not one of them was about whether the words MOVE. The owner drove it:
+// "le panel avec le texte ne bouge plus alors que l'effet c'est vraiment de les faire défiler au
+// scroll vers le haut." Run over those same shipped artifacts with assertion G added, this file
+// measured the middle panels holding ONE screen offset for 42-45% of every scroll-advancing
+// animation frame and the last panel for 78%, sweeping 187px of an 821px track at 1600x900. A guard
+// that only ever asks WHICH step is showing cannot see a page that has stopped moving.
+//
 // WHAT IS ASSERTED (each one red-able — see `test/scroll-integrity.test.ts` for the mutations):
 //   A. THE PAGE DOES NOT SCROLL. `documentElement.scrollHeight <= clientHeight + 1`. The component
 //      owns its own scroll; a CMS embed that steals the host article's scroll is a nuisance, and
@@ -43,19 +53,40 @@
 //   D3. THE GRAPHIC SETTLES. When the scroll stops, exactly one frame is at 1 and every other at 0
 //      — never a resting double exposure, the defect a previous round removed and this one had to
 //      prove had not come back through the decision layer.
-//   E. ONE PANEL AT A TIME. Never two `.step-panel`s above opacity 0.05 in the same frame.
-//   F. A PAINTED PANEL IS INSIDE THE LANE. No panel is painted while its top edge sits above the
-//      lane's own top — the promise the frames' `safeBand`/`CONTENT_TOP` keep from the other side.
-//      Asserted only where the panel FITS the lane, because where it does not there is no position
-//      that satisfies it and painting nothing would be worse (see `pickLanePanel`). The fit itself
-//      is measured and reported for every beat and width, so a beat whose prose has outgrown its
-//      lane is visible rather than silently exempt.
+//   E. AT MOST TWO PANELS SHARE THE LANE. Two are on screen through every boundary — that is what
+//      travelling prose looks like — but three would mean the steps are shorter than the prose in
+//      them, and the reader is being handed a wall rather than a sequence.
+//   F. NO PANEL IS EVER PAINTED OVER THE GRAPHIC. The VISIBLE part of every panel (its box
+//      intersected with the prose column's own clip rect) is measured against the graphic's box, and
+//      the two must never meet. This is the structural claim of the eighth correction: the prose has
+//      its own space, so a collision is impossible by construction rather than avoided by a
+//      reservation. Under the model this replaced the two layers shared one box and this assertion
+//      cannot hold at all.
+//   G. THE PROSE TRAVELS, and this is the assertion that was missing. Every earlier check on this
+//      vehicle asked WHICH step was painted and none of them asked whether the words MOVE, so a
+//      panel parked motionless for the whole of its step passed everything. For each panel, over
+//      the frames where it shares the lane: it must sweep a real distance, and it must not HOLD one
+//      offset — measured as the fraction of scroll-advancing animation frames at which its own top
+//      did not move at all. It must also be seen entirely below the lane before it arrives (every
+//      panel but the first) and entirely above it after it leaves (every panel but the last).
+//   H. THE VISUAL EVOLVES BETWEEN BOUNDARIES, and this is the second assertion whose absence let a
+//      slideshow ship. The vehicle published a step state and a boundary transition that finishes
+//      exactly when the step flips, so a consumer had nothing to read while the reader scrolled
+//      through the MIDDLE of a step: "on y est pas du tout... faut que ce soit fluide et que
+//      l'élément évolue au fur et à mesure du temps." `data-progress` — the fractional index of the
+//      panel on the lane's centre line — is now published on every scroll, and this asserts that it
+//      is present, that it never goes backwards on a forward pass, that it spans the whole range,
+//      that it CHANGES on the frames where the active step does NOT (the discrete signal cannot be
+//      standing in for the continuous one), and that the two stay in LOCK-STEP: the active step is
+//      never more than half a step away from where the progress says the reader is, which is what
+//      keeps a scrubbed drawing and the caption beside it describing the same moment.
 //
-// WHAT IS REPORTED BUT NOT ASSERTED, and why: the census of prose-over-annotation collisions. What
-// remains after F is beat-level — a frame that places a mark inside the lane the vehicle reserved,
-// or prose too long for it — and the vehicle cannot move a beat's marks. Naming them per beat and
-// per width is the honest form; asserting zero here would either be a lie or a demand this file has
-// no authority to make.
+// WHAT IS REPORTED BUT NOT ASSERTED, and why: the census of prose-over-annotation collisions, kept
+// from the round before this one. F now makes it structurally empty at every width, so a non-zero
+// count is a fact about a beat whose own frame paints outside the graphic box, and the vehicle
+// cannot move a beat's marks. Also reported: whether the tallest panel FITS the band it travels in
+// — a panel taller than its own band is legible on the way through and never all at once, which is
+// a fact about that beat's prose and not something this file may assert away.
 //
 // Usage: bun skills/twin-scrolly/scripts/verify-scrolly.mjs <file.html> [more.html...] [--width=W]
 
@@ -130,9 +161,7 @@ function recorder() {
   const scroller = document.querySelector(".scrolly-steps");
   const graphic = document.querySelector(".scrolly-graphic");
   const header = document.querySelector(".scrolly-header");
-  const lanePct = Number(
-    document.querySelector(".scrolly").getAttribute("data-prose-lane"),
-  );
+  const root = document.querySelector(".scrolly");
 
   // Leaf text boxes inside each frame — what a reader would call a label. Precomputed once: the
   // SSR'd markup never changes, only which wrapper is visible.
@@ -164,40 +193,91 @@ function recorder() {
   window.__recording = true;
   (function tick() {
     if (!window.__recording) return;
+    // THE LANE IS THE PROSE COLUMN ITSELF — its whole box, not a band inside a shared one. Since
+    // the eighth correction the prose has its own space (a column beside the graphic on a wide
+    // viewport, a band below it on a phone), so "in the lane" and "inside the element that
+    // scrolls" are the same fact, read off the same rect.
     const port = scroller.getBoundingClientRect();
-    const laneTop = port.bottom - (lanePct / 100) * port.height;
+    const graphicBox = graphic.getBoundingClientRect();
+    const progressAttr = root.getAttribute("data-progress");
     const sample = {
       y: Math.round(scroller.scrollTop),
       graphic: box(graphic),
       header: box(header),
-      lane: [Math.round(laneTop), Math.round(port.bottom)],
+      // The CONTINUOUS signal, read as the consumer reads it: off the root, once per animation
+      // frame, never re-derived here. `null` when the attribute is absent, which is itself a
+      // failure — a consumer with nothing to scrub against is the defect this assertion exists for.
+      progress: progressAttr === null ? null : Number(progressAttr),
+      lane: [Math.round(port.top), Math.round(port.bottom)],
       frames: frames.map((f) => ({
         id: f.getAttribute("data-step"),
         o: Number(Number(getComputedStyle(f).opacity).toFixed(3)),
         active: f.classList.contains("active"),
       })),
+      // EVERY panel, every frame, whatever its opacity — the travel assertion is about geometry,
+      // and a check that only looked at painted panels would be blind to a panel hidden while it
+      // moves, which is exactly the shape a "fix" for this could take.
+      panels: [],
       painted: [],
+      overGraphic: [],
       collisions: [],
     };
     const visible = [];
     for (const p of panels) {
       const o = Number(getComputedStyle(p).opacity);
-      if (o <= PAINTED) continue;
       const r = p.getBoundingClientRect();
-      if (r.width === 0 || r.bottom <= port.top || r.top >= port.bottom) continue;
-      sample.painted.push({
-        id: p.getAttribute("data-step"),
+      const id = p.getAttribute("data-step");
+      sample.panels.push({
+        id: id,
         top: Math.round(r.top),
         bottom: Math.round(r.bottom),
-        aboveLane: Math.round(laneTop - r.top),
+        inLane: r.bottom > port.top && r.top < port.bottom,
       });
-      visible.push(r);
+      if (o <= PAINTED) continue;
+      if (r.width === 0 || r.bottom <= port.top || r.top >= port.bottom) continue;
+      // The panel as a READER sees it: its own box clipped by the column that scrolls it. A panel
+      // riding out of a phone's band has a rect that reaches into the graphic's box while nothing
+      // of it is painted there, so the raw rect would report a collision the reader never sees.
+      const clipped = {
+        left: Math.max(r.left, port.left),
+        right: Math.min(r.right, port.right),
+        top: Math.max(r.top, port.top),
+        bottom: Math.min(r.bottom, port.bottom),
+      };
+      if (clipped.right <= clipped.left || clipped.bottom <= clipped.top) continue;
+      sample.painted.push({
+        id: id,
+        top: Math.round(r.top),
+        bottom: Math.round(r.bottom),
+      });
+      if (hits(clipped, graphicBox))
+        sample.overGraphic.push({
+          id: id,
+          box: [
+            Math.round(clipped.left),
+            Math.round(clipped.top),
+            Math.round(clipped.right),
+            Math.round(clipped.bottom),
+          ],
+        });
+      visible.push(clipped);
     }
     for (const f of frames) {
       if (Number(getComputedStyle(f).opacity) <= PAINTED) continue;
       for (const el of labels.get(f)) {
-        const r = el.getBoundingClientRect();
-        if (r.width === 0 || r.height === 0) continue;
+        const raw = el.getBoundingClientRect();
+        if (raw.width === 0 || raw.height === 0) continue;
+        // Clipped by the GRAPHIC's own cell, for the same reason the panel is clipped by the prose
+        // column's: a label whose box runs past the cell is cut at that edge and painted nowhere.
+        // Measuring the raw rect reported four beats' photo credits as colliding with prose that
+        // was two hundred pixels away from anything the reader could see.
+        const r = {
+          left: Math.max(raw.left, graphicBox.left),
+          right: Math.min(raw.right, graphicBox.right),
+          top: Math.max(raw.top, graphicBox.top),
+          bottom: Math.min(raw.bottom, graphicBox.bottom),
+        };
+        if (r.right <= r.left || r.bottom <= r.top) continue;
         if (visible.some((v) => hits(r, v)))
           sample.collisions.push({
             frame: f.getAttribute("data-step"),
@@ -249,16 +329,19 @@ export async function verifyOne(page, file, { w, h }) {
   const shape = await page.evaluate(() => {
     const doc = document.scrollingElement;
     const scroller = document.querySelector(".scrolly-steps");
+    const graphic = document.querySelector(".scrolly-graphic");
     const port = scroller.getBoundingClientRect();
-    const lanePct = Number(
-      document.querySelector(".scrolly").getAttribute("data-prose-lane"),
-    );
     const panels = Array.from(document.querySelectorAll(".step-panel"));
+    const g = graphic.getBoundingClientRect();
     return {
       docScrollable: doc.scrollHeight - doc.clientHeight,
       horizontalOverflow: doc.scrollWidth - doc.clientWidth,
-      lane: Math.round((lanePct / 100) * port.height),
-      offset: parseFloat(getComputedStyle(panels[0]).bottom) || 0,
+      lane: Math.round(port.height),
+      laneWidth: Math.round(port.width),
+      graphicBox: [Math.round(g.width), Math.round(g.height)],
+      // Side by side, or stacked? Read off the two rects rather than off the media query, so the
+      // report says what the browser actually laid out.
+      split: g.right <= port.left + 1 ? "columns" : "rows",
       tallestPanel: Math.round(
         Math.max(...panels.map((p) => p.getBoundingClientRect().height)),
       ),
@@ -337,29 +420,169 @@ export async function verifyOne(page, file, { w, h }) {
       );
   }
 
-  // E — one panel at a time.
-  const doubled = rec.find((s) => s.painted.length > 1);
-  if (doubled)
+  // E — at most two panels share the lane. Two IS travel; three is a wall of prose.
+  const crowded = rec.find((s) => s.panels.filter((p) => p.inLane).length > 2);
+  if (crowded)
     failures.push(
-      `${where}: ${doubled.painted.length} panels painted at once at scroll ${doubled.y} — ` +
-        JSON.stringify(doubled.painted.map((p) => p.id)),
+      `${where}: ${crowded.panels.filter((p) => p.inLane).length} panels shared the lane at scroll ` +
+        `${crowded.y} — ${JSON.stringify(crowded.panels.filter((p) => p.inLane).map((p) => p.id))}; ` +
+        `a step must be taller than the prose in it`,
     );
 
-  // F — a painted panel is inside the lane, wherever the lane can hold it.
-  const fits = shape.tallestPanel + shape.offset <= shape.lane;
-  const escaped = rec
-    .flatMap((s) => s.painted.map((p) => ({ ...p, y: s.y })))
-    .filter((p) => p.aboveLane > 1);
-  if (fits && escaped.length)
+  // F — no panel is ever painted over the graphic. The eighth correction's whole claim.
+  const over = rec.filter((s) => s.overGraphic.length);
+  if (over.length)
     failures.push(
-      `${where}: a panel was painted ${Math.max(...escaped.map((p) => p.aboveLane))}px ABOVE the ` +
-        `lane's own top, at ${escaped.length} animation frames (first at scroll ${escaped[0].y}) — ` +
-        `the lane is what every frame keeps its labels clear of`,
+      `${where}: prose was painted OVER the graphic at ${over.length}/${rec.length} animation ` +
+        `frames (first at scroll ${over[0].y}, panel ${over[0].overGraphic[0].id} at ` +
+        `${JSON.stringify(over[0].overGraphic[0].box)} against a graphic at ` +
+        `${JSON.stringify(rec[0].graphic)}) — the prose has its own space; the two may never meet`,
     );
-  if (!fits)
+
+  // G — the prose TRAVELS. Measured only over the frames where the reader could see it, and only
+  // across scroll-advancing frames, so the recorder's own aliasing (two ticks at one scrollTop)
+  // cannot be mistaken for a panel holding still.
+  const travel = [];
+  for (const [i, id] of order.entries()) {
+    let minTop = Infinity;
+    let maxTop = -Infinity;
+    let advanced = 0;
+    let held = 0;
+    let seenBelow = false;
+    let seenAbove = false;
+    let prev = null;
+    for (const s of rec) {
+      const p = s.panels.find((q) => q.id === id);
+      if (!p) continue;
+      const laneTop = s.lane[0];
+      const laneBottom = s.lane[1];
+      if (p.top >= laneBottom) seenBelow = true;
+      if (p.bottom <= laneTop) seenAbove = true;
+      if (p.inLane) {
+        minTop = Math.min(minTop, p.top);
+        maxTop = Math.max(maxTop, p.top);
+        if (prev && prev.y !== s.y) {
+          advanced += 1;
+          if (Math.abs(p.top - prev.top) < 1) held += 1;
+        }
+      }
+      prev = { y: s.y, top: p.top };
+    }
+    const swept = maxTop === -Infinity ? 0 : maxTop - minTop;
+    const heldShare = advanced ? held / advanced : 1;
+    travel.push({ id, swept, held, advanced, heldShare, seenBelow, seenAbove, i });
+  }
+  const laneHeight = shape.lane;
+  for (const t of travel) {
+    if (t.swept < laneHeight * 0.5)
+      failures.push(
+        `${where}: panel ${t.id} swept only ${t.swept}px of a ${laneHeight}px lane — the prose is ` +
+          `meant to travel the full height of its own column, not to be revealed in place`,
+      );
+    if (t.heldShare > 0.15)
+      failures.push(
+        `${where}: panel ${t.id} HELD one offset for ${t.held} of ${t.advanced} scroll-advancing ` +
+          `frames (${Math.round(t.heldShare * 100)}%) — a parked panel is a slideshow; the reader ` +
+          `must see the words move past the graphic`,
+      );
+    if (t.i > 0 && !t.seenBelow)
+      failures.push(
+        `${where}: panel ${t.id} was never entirely below the lane — it did not ENTER from the ` +
+          `bottom edge, it appeared`,
+      );
+    if (t.i < order.length - 1 && !t.seenAbove)
+      failures.push(
+        `${where}: panel ${t.id} was never entirely above the lane — it did not LEAVE past the ` +
+          `top edge, it vanished`,
+      );
+  }
+  notes.push(
+    `${where}: ${shape.split} split — graphic ${shape.graphicBox.join("x")}, prose column ` +
+      `${shape.laneWidth}x${shape.lane}; travel per panel ` +
+      travel.map((t) => `${t.id} ${t.swept}px`).join(", "),
+  );
+  // H — the continuous signal. Read off the root exactly as a consumer reads it.
+  const missingProgress = rec.filter((s) => s.progress === null || Number.isNaN(s.progress));
+  if (missingProgress.length)
+    failures.push(
+      `${where}: no readable \`data-progress\` on ${missingProgress.length}/${rec.length} animation ` +
+        `frames — a consumer has nothing to scrub a visual against, so the visual can only ever ` +
+        `catch up at a step boundary`,
+    );
+  else {
+    const backwards = rec.find((s, i) => i > 0 && s.progress < rec[i - 1].progress - 0.001);
+    if (backwards)
+      failures.push(
+        `${where}: progress went BACKWARDS on a forward scroll — ` +
+          `${rec[rec.indexOf(backwards) - 1].progress} then ${backwards.progress} at scroll ${backwards.y}`,
+      );
+    const first = rec[0].progress;
+    const last = rec[rec.length - 1].progress;
+    const top = order.length - 1;
+    if (first > 0.15 || last < top - 0.15)
+      failures.push(
+        `${where}: progress spanned ${first.toFixed(2)}..${last.toFixed(2)} of an expected ` +
+          `0..${top} — the signal does not reach the ends of the piece`,
+      );
+    // THE ONE THAT MATTERS. Between two boundaries the discrete state is constant by definition;
+    // if the continuous one is constant too, the visual is a slideshow whatever else is true.
+    let between = 0;
+    let frozen = 0;
+    let worstStill = null;
+    let run = 0;
+    for (let i = 1; i < rec.length; i++) {
+      const prev = rec[i - 1];
+      const now = rec[i];
+      if (now.y === prev.y) continue;
+      const held = now.frames.find((f) => f.active);
+      const heldBefore = prev.frames.find((f) => f.active);
+      if (!held || !heldBefore || held.id !== heldBefore.id) {
+        run = 0;
+        continue;
+      }
+      between += 1;
+      if (Math.abs(now.progress - prev.progress) < 0.0005) {
+        frozen += 1;
+        run += 1;
+        if (!worstStill || run > worstStill.run) worstStill = { run: run, y: now.y, p: now.progress };
+      } else run = 0;
+    }
+    const frozenShare = between ? frozen / between : 1;
+    if (frozenShare > 0.15)
+      failures.push(
+        `${where}: progress did not move on ${frozen} of ${between} scroll-advancing frames INSIDE ` +
+          `a step (${Math.round(frozenShare * 100)}%` +
+          (worstStill
+            ? `, longest still run ${worstStill.run} frames ending at scroll ${worstStill.y}, ` +
+              `progress stuck at ${worstStill.p}`
+            : "") +
+          `) — the element must evolve as the reader scrolls, not catch up at the handover`,
+      );
+    // LOCK-STEP. The scrub and the caption must describe the same moment.
+    let worstDrift = null;
+    for (const s of rec) {
+      const active = s.frames.find((f) => f.active);
+      if (!active) continue;
+      const drift = Math.abs(s.progress - order.indexOf(active.id));
+      if (!worstDrift || drift > worstDrift.drift)
+        worstDrift = { drift: drift, y: s.y, id: active.id, progress: s.progress };
+    }
+    if (worstDrift && worstDrift.drift > 0.65)
+      failures.push(
+        `${where}: the step and the progress drifted ${worstDrift.drift.toFixed(2)} steps apart ` +
+          `at scroll ${worstDrift.y} (step ${worstDrift.id}, progress ${worstDrift.progress}) — ` +
+          `a scrubbed visual and the words beside it must describe the same moment`,
+      );
     notes.push(
-      `${where}: prose does not fit its lane — tallest panel ${shape.tallestPanel}px + ` +
-        `${Math.round(shape.offset)}px offset against a ${shape.lane}px lane. F is not asserted here.`,
+      `${where}: progress ${first.toFixed(2)}..${last.toFixed(2)}, still on ${frozen}/${between} ` +
+        `in-step frames, worst step/progress drift ${worstDrift ? worstDrift.drift.toFixed(2) : "n/a"}`,
+    );
+  }
+
+  if (shape.tallestPanel > shape.lane)
+    notes.push(
+      `${where}: the tallest panel (${shape.tallestPanel}px) is taller than the ${shape.lane}px ` +
+        `column it travels in, so it is legible on the way through and never all at once`,
     );
 
   // Reported, never asserted — see this file's own header.

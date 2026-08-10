@@ -20,7 +20,7 @@ import {
   readStation,
 } from "../assets/gauge-data.ts";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
-import { pickActiveStep, pickLanePanel } from "../assets/interaction.mjs";
+import { pickActiveStep, measureProgress } from "../assets/interaction.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
 // nowhere in this file directly — kept anyway, the same default-timeout bump every other genre's
@@ -87,8 +87,10 @@ async function seedFacts() {
 // driving a real browser, not by a test).
 // ---------------------------------------------------------------------------
 
-// A lane 100px tall parked at the bottom of a 400px-tall scrollport, with the panel's own 20px
-// bottom offset already taken off — exactly the band `initScrolly` computes and hands these two.
+// The lane, as `initScrolly` hands it over since the eighth correction: the prose column's own
+// scrollport, top to bottom. It is written here as a 100px band inside a larger coordinate space
+// because these are viewport coordinates and a panel is expected to be measured above and below it;
+// what the function is given is one rect and every panel's rect, and nothing else.
 const LANE = { top: 280, bottom: 380 };
 /** A panel of `height` whose bottom edge sits at `bottom`. */
 const at = (stepId: string, bottom: number, height = 80) => ({
@@ -96,6 +98,18 @@ const at = (stepId: string, bottom: number, height = 80) => ({
   top: bottom - height,
   bottom,
 });
+
+/** Slices ONE CSS rule's own declaration block out of the rendered stylesheet, so an assertion
+ *  about a rule cannot be satisfied by a doc-comment that mentions it. This file shipped a test for
+ *  six builds that passed on prose describing a deleted rule; see "should give the prose its own
+ *  cell", below. */
+function rule(html: string, selector: string): string {
+  const at = html.indexOf(`\n${selector} {`);
+  if (at < 0) throw new Error(`no \`${selector}\` rule in the rendered CSS`);
+  const open = html.indexOf("{", at);
+  const close = html.indexOf("}", open);
+  return html.slice(open + 1, close);
+}
 
 describe("pickActiveStep — which FRAME the graphic shows", () => {
   it("should pick the panel occupying most of the lane", () => {
@@ -161,45 +175,59 @@ describe("pickActiveStep — which FRAME the graphic shows", () => {
   }
 });
 
-describe("pickLanePanel — which PANEL may be painted", () => {
-  it("should paint a panel parked inside the lane", () => {
-    expect(pickLanePanel([at("a", 380)], LANE)).toBe("a");
+describe("measureProgress — the CONTINUOUS signal a consumer scrubs a visual against", () => {
+  // Panels in document order, centres 100px apart, in a lane whose centre line is at 330.
+  const cards = (...centres: number[]) =>
+    centres.map((c, i) => ({ stepId: `s${i}`, top: c - 20, bottom: c + 20 }));
+
+  it("should be exactly the index when that panel's own centre is on the line", () => {
+    expect(measureProgress(cards(330, 430, 530), LANE)).toBeCloseTo(0, 6);
+    expect(measureProgress(cards(230, 330, 430), LANE)).toBeCloseTo(1, 6);
+    expect(measureProgress(cards(130, 230, 330), LANE)).toBeCloseTo(2, 6);
   });
 
-  // The whole point of the second decision: a panel that has begun climbing out of the lane is
-  // over the band every frame keeps its labels in, so it stops being painted THERE, not later when
-  // the next step wins the frame. Those two moments are one panel-height apart.
-  it("should stop painting a panel the moment it rises above the lane", () => {
-    // An 80px panel in a 100px lane may rise 20px before its own top crosses the lane's top; at
-    // 360 its top sits exactly on it, and one pixel further it is over the band the frames keep
-    // their labels in.
-    expect(pickLanePanel([at("a", 379)], LANE)).toBe("a");
-    expect(pickLanePanel([at("a", 361)], LANE)).toBe("a");
-    expect(pickLanePanel([at("a", 355)], LANE)).toBeNull();
+  // THE LOCK-STEP PROPERTY, stated as a test rather than as an argument: a consumer scrubbing on
+  // this number reaches the moment a caption names exactly when that caption reaches the middle of
+  // its column. Interpolating a container's own scrollTop instead is what lets the two drift.
+  it("should interpolate smoothly and monotonically between two card centres", () => {
+    const seen: number[] = [];
+    for (let shift = 0; shift <= 100; shift += 5)
+      seen.push(measureProgress(cards(330 - shift, 430 - shift, 530 - shift), LANE));
+    expect(seen[0]).toBeCloseTo(0, 6);
+    expect(seen[seen.length - 1]).toBeCloseTo(1, 6);
+    expect(seen[10]).toBeCloseTo(0.5, 6);
+    for (let i = 1; i < seen.length; i++) expect(seen[i]).toBeGreaterThan(seen[i - 1]);
   });
 
-  it("should still paint a panel TALLER than the lane, while it is parked", () => {
-    // Measured on every beat on disk at 375x812: the prose is taller than the 28% reserved for it.
-    // Such a panel can never be inside the lane, and painting nothing would leave a reader with a
-    // graphic and no words — worse than the overlap. It stops being painted as soon as it rises.
-    const tall = at("tall", 380, 160);
-    expect(pickLanePanel([tall], LANE)).toBe("tall");
-    expect(pickLanePanel([at("tall", 360, 160)], LANE)).toBeNull();
+  it("should clamp before the first card arrives and after the last one passes", () => {
+    // Every centre still below the line: the reader has not reached the first card.
+    expect(measureProgress(cards(400, 500, 600), LANE)).toBe(0);
+    // Every centre above it: there is nowhere further to go.
+    expect(measureProgress(cards(100, 200, 300), LANE)).toBe(2);
   });
 
-  it("should never paint two panels at once during a handover", () => {
-    for (let rise = 0; rise <= 160; rise += 4) {
-      const winner = pickLanePanel(
-        [at("out", 380 - rise), at("in", 540 - rise)],
-        LANE,
-      );
-      expect(["out", "in", null]).toContain(winner);
+  it("should never move backwards as the cards travel up", () => {
+    let last = -1;
+    for (let shift = 0; shift <= 400; shift += 7) {
+      const now = measureProgress(cards(330 - shift, 430 - shift, 530 - shift), LANE);
+      expect(now).toBeGreaterThanOrEqual(last);
+      last = now;
     }
   });
 
-  it("should return null between two steps rather than keep a stale panel painted", () => {
-    expect(pickLanePanel([at("out", 300), at("in", 520)], LANE)).toBeNull();
+  it("should handle a degenerate page rather than throw", () => {
+    expect(measureProgress([], LANE)).toBe(0);
+    expect(measureProgress(cards(330), LANE)).toBe(0);
   });
+
+  // Nothing here reads a panel's HEIGHT: the signal is about where a card's centre is, so a beat
+  // whose steps carry two lines and five lines alike stays in step with its own words.
+  for (const n of [4, 6, 8]) {
+    it(`should resolve a fractional index among ${n} cards`, () => {
+      const centres = Array.from({ length: n }, (_, i) => 330 - 100 * 2 + i * 100);
+      expect(measureProgress(cards(...centres), LANE)).toBeCloseTo(2, 6);
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -524,7 +552,25 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(contrast(furniture.ink, "#FFFFFF")).toBeCloseTo(panelContrast, 5);
   });
 
-  it("should keep the sticky graphic and the scrolling prose in the SAME track — the overlap is deliberate, not avoided by a second column", async () => {
+  // THE EIGHTH CORRECTION, AND THIS TEST IS POINTED THE OTHER WAY ON PURPOSE. It used to assert
+  // that the graphic and the prose share ONE box and that `grid-template-columns` never appears —
+  // the third build had split them into two columns to dodge the sticky-overlap defect, and the
+  // owner rejected that: "you solved it by splitting into two columns, that avoids the problem
+  // rather than solving it." The seventh build kept them in one box and closed the collision by
+  // PARKING the panel instead. That parked the words, which the owner then rejected in turn: "le
+  // panel avec le texte ne bouge plus alors que l'effet c'est vraiment de les faire défiler."
+  //
+  // Both rejections stand, and the split that ships now satisfies both because it is a different
+  // split from the third build's: the graphic still fills its own cell edge to edge and the prose
+  // TRAVELS the full height of its own. What was rejected was a narrow graphic stranded beside a
+  // column, not the existence of a second cell.
+  //
+  // The stale assertion this replaces was ALSO vacuous, and that is worth recording: it asserted
+  // `margin-top: calc(-1 * var(--graphic-h))` was present, and it passed for six builds after that
+  // rule was deleted — because the string survived in a doc-comment explaining its removal. A CSS
+  // assertion that greps the whole stylesheet cannot tell a rule from a comment about a rule, so
+  // every assertion below slices the RULE out first.
+  it("should give the prose its own cell of the track, never a band inside the graphic's", async () => {
     const steps = [makeStep("a", ["a"]), makeStep("b", ["b"])];
     const { outPath } = await renderScrolly({
       steps,
@@ -535,11 +581,21 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    // The fix this correction shipped: the graphic sticks, the steps column is pulled back over
-    // it with a matching negative margin — never a `grid-template-columns` split.
-    expect(html).toContain("position: sticky");
-    expect(html).toContain("margin-top: calc(-1 * var(--graphic-h))");
-    expect(html).not.toContain("grid-template-columns");
+    const trackRule = rule(html, ".scrolly-track");
+    // Stacked is the DEFAULT — the arrangement with the least room to spare is the one that does
+    // not depend on a media query being understood.
+    expect(trackRule).toContain("display: grid");
+    expect(trackRule).toContain("grid-template-rows: minmax(0, 1fr) var(--prose-band)");
+    // Side by side once there is room, and only there.
+    expect(html).toContain("@media (min-width: 860px)");
+    expect(html).toContain("grid-template-columns: minmax(0, 1fr) var(--prose-col)");
+    // Nothing shares a box any more: neither cell is absolutely positioned over the other.
+    expect(rule(html, ".scrolly-graphic")).not.toContain("position: absolute");
+    expect(rule(html, ".scrolly-steps")).not.toContain("position: absolute");
+    // Each cell clips its own content — that is what makes "the prose never reaches the graphic" a
+    // fact about the box model rather than an intention.
+    expect(rule(html, ".scrolly-graphic")).toContain("overflow: hidden");
+    expect(rule(html, ".scrolly-steps")).toContain("overflow-y: auto");
   });
 
   // Correction 3: "the prose panel centred over the graphic rather than pinned left" — `.step`'s
@@ -557,10 +613,14 @@ describe("renderScrolly — the full self-contained page", () => {
     expect(html).toContain("justify-content: center");
   });
 
-  // The correction that ended five rounds of panel-over-annotation patching: the panel no longer
-  // travels with the scroll, it is PINNED in a reserved lane at the bottom of the graphic. Three
-  // facts, each one load-bearing and each one wrong in an earlier build.
-  it("should pin the prose panel in a lane instead of letting it travel with the scroll", async () => {
+  // THE EIGHTH CORRECTION, and the assertion that was missing when the seventh shipped. Every
+  // check on this vehicle asked WHICH step was painted; none asked whether the words MOVE. The
+  // panel is an ordinary flow box centred in a step taller than the column, so it crosses that
+  // column once per step under the reader's own scroll — nothing pins it, and `position: sticky`
+  // reappearing on it is the exact regression `scripts/verify-scrolly.mjs`'s assertion G measures
+  // in a driven browser (there: "panel record HELD one offset for 48 of 60 scroll-advancing
+  // frames").
+  it("should let the prose panel travel instead of pinning it", async () => {
     const { outPath } = await renderScrolly({
       steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
       title: "t",
@@ -570,20 +630,17 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    const panelRule = html.slice(
-      html.indexOf(".step-panel {"),
-      html.indexOf(".step-panel p"),
-    );
-    expect(panelRule).toContain("position: sticky");
-    expect(panelRule).toContain("bottom:");
-    // A `bottom` sticky offset can only ever shift a box UP, so the panel has to START at the
-    // bottom of its step or the offset does nothing at all — measured in a real browser: with
-    // `flex-start` the panel travelled from y=768 to y=-32 across one step.
-    const stepRule = html.slice(
-      html.indexOf(".step {"),
-      html.indexOf(".step-panel {"),
-    );
-    expect(stepRule).toContain("align-items: flex-end");
+    const panelRule = rule(html, ".step-panel");
+    expect(panelRule).not.toContain("position: sticky");
+    expect(panelRule).not.toContain("bottom:");
+    // Centred, not bottom-anchored: `flex-end` existed only so a `bottom` sticky offset had a box
+    // to clamp, and it is what left the panel parked at the foot of its step.
+    const stepRule = rule(html, ".step");
+    expect(stepRule).toContain("align-items: center");
+    expect(stepRule).not.toContain("align-items: flex-end");
+    // The step is taller than the column it scrolls inside, which is what gives the panel a full
+    // column's worth of travel per step.
+    expect(stepRule).toContain("min-height: 115%");
   });
 
   it("should reserve exactly the lane the seed's own frames keep clear", async () => {
@@ -597,11 +654,14 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    // A PERCENTAGE, not `vh`: the lane is a fraction of the TRACK the prose scrolls inside, which
-    // is the viewport minus the fixed header. Under the sticky model those were the same number.
+    // WHAT THIS NUMBER STILL MEANS, AND WHAT IT NO LONGER DOES. It is the band a beat's own frames
+    // keep clear at the bottom (`safeBand`/`CONTENT_TOP` in `assets/ScrollySeed.tsx`, and a copy of
+    // the same constant in every beat's own frame file). Until the eighth correction the scaffold
+    // PLACED the panel against it; the prose now has its own cell and places nothing against it, so
+    // the value is carried as a declaration of what the frames reserve rather than as a rule the
+    // CSS enforces. It is emitted, unchanged, because a beat's frames still compute from it — and
+    // because reclaiming that band is a change to every beat's own frames, not to this scaffold.
     expect(html).toContain(`--prose-lane: ${(PROSE_LANE * 100).toFixed(0)}%`);
-    // The interaction layer observes that same lane, and reads it from the markup rather than
-    // re-deriving it.
     expect(html).toContain(`data-prose-lane="${Math.round(PROSE_LANE * 100)}"`);
   });
 
@@ -619,10 +679,14 @@ describe("renderScrolly — the full self-contained page", () => {
     ).rejects.toThrow("proseLane");
   });
 
-  // One panel is PAINTED at a time, and only where a script is running — with JavaScript off no
-  // rule hides a word. `opacity`, never `display`/`visibility`: a faded panel stays in the
-  // accessibility tree, so a screen reader still meets every step's words in order.
-  it("should paint only the active step's panel, and only once the script has run", async () => {
+  // NO PANEL IS EVER HIDDEN, and this assertion is the seventh build's own pointed the other way.
+  // It used to require `.scrolly--live .step:not(.in-lane) .step-panel { opacity: 0 }` — a rule
+  // that existed because a parked panel un-pinned one panel-height before the next one parked and
+  // spent that gap opaque over the graphic's labels. The prose is now clipped inside its own cell
+  // and cannot reach a label at any offset, so the rule has nothing to protect; keeping it would
+  // make the reader watch the words they are reading DISSOLVE halfway up the column instead of
+  // scrolling out of it, which is the owner's own defect wearing a different costume.
+  it("should never hide a word — no rule fades, clips or removes a panel", async () => {
     const { outPath } = await renderScrolly({
       steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
       title: "t",
@@ -632,16 +696,18 @@ describe("renderScrolly — the full self-contained page", () => {
       name: "x.html",
     });
     const html = await readFile(outPath, "utf8");
-    // `in-lane`, NOT `active`: which FRAME the graphic shows is held across the gap between two
-    // steps; which PANEL is painted is not, because a `bottom`-sticky panel un-pins one
-    // panel-height before the next one parks and spends that gap climbing over the graphic.
-    expect(html).toContain(".scrolly--live .step:not(.in-lane) .step-panel");
-    expect(html).toMatch(/\.scrolly--live[^{]*\{[^}]*opacity: 0/);
+    // The SELECTORS, not the words: this file's own comments name both mechanisms in order to
+    // explain their removal, and a grep of the whole document cannot tell those apart.
+    expect(html).not.toContain(":not(.in-lane)");
+    expect(html).not.toContain(".scrolly--live .step");
+    expect(html).not.toContain('classList.add("scrolly--live")');
+    expect(html).not.toContain('classList.toggle("in-lane"');
+    expect(html).not.toMatch(/\.step-panel[^{]*\{[^}]*opacity/);
     expect(html).not.toMatch(/\.step-panel[^{]*\{[^}]*display: none/);
     expect(html).not.toMatch(/\.step-panel[^{]*\{[^}]*visibility: hidden/);
-    // The class is added by the script, never baked into the markup.
-    expect(html).not.toContain('class="scrolly scrolly--live"');
-    expect(html).toContain('root.classList.add("scrolly--live")');
+    // And every step's words are in the markup unconditionally, script or no script.
+    expect(html).toContain(">a<");
+    expect(html).toContain(">b<");
   });
 
   // Correction 7: the graphic is FIXED and the page does not scroll. Correction 5 sized a sticky
@@ -659,10 +725,11 @@ describe("renderScrolly — the full self-contained page", () => {
     });
     const html = await readFile(outPath, "utf8");
     expect(html).toMatch(/body\s*\{[^}]*overflow: hidden/);
-    expect(html).toMatch(
-      /\.scrolly-graphic\s*\{[^}]*position: absolute;\s*inset: 0/,
-    );
-    expect(html).toMatch(/\.scrolly-steps\s*\{[^}]*overflow-y: auto/);
+    // The graphic is a grid CELL now, not a layer over the prose — see "should give the prose its
+    // own cell", above, for the eighth correction that moved it. What is unchanged, and is what
+    // this test is for, is that nothing positions it from the scroll.
+    expect(rule(html, ".scrolly-graphic")).toContain("position: relative");
+    expect(rule(html, ".scrolly-steps")).toContain("overflow-y: auto");
     // The reader's keyboard follows the scroll: taking it off the document takes Page Down with
     // it unless the new scroller can be focused.
     expect(html).toContain('<div class="scrolly-steps" tabindex="0">');
