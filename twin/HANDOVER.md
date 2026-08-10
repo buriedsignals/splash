@@ -1,10 +1,26 @@
 # The doctrine twin — handover
 
-**Read this first.** It is the single document that lets someone resume without the conversation
-that produced the branch. Everything else is evidence it points at.
+**What this is: the branch's ORIGIN STORY, frozen. It is not a status report, and reading it as one
+will mislead you.** It says why the twin exists, what it decided and why, and what the first three
+days measured — and every one of those is still true. Its NUMBERS are not: they were written
+2026-08-06 to 2026-08-08 and the tree has moved every day since.
+
+Where the current state actually lives, in this order:
+
+| For | Read |
+|---|---|
+| what is true of the tree right now | `bun test` from `twin/`, and `twin/MATRIX.md` (generated; `bun run matrix:check` fails on drift) |
+| what the owner asked for and what is closed | `twin/FEEDBACK-2026-08-10.md` — the status column is the record, nothing else is |
+| what each chantier was told to do | `twin/specs/W*.md`, and `twin/PLAN-2026-08-11-closeout.md` for the order |
+| what was measured against those specs | the five `twin/AUDIT-*.md` |
+
+A concrete illustration of why that table exists, because this file caused it: §4 below said
+"**364 tests green**" for three days while `skills/splash-twin/test/` alone ran over a thousand, and
+§4 and §7 both called the reference set "4 rows" after it had grown to 7. Both are corrected in
+place below and dated. Do not add a new count here — add it to the thing that regenerates.
 
 Branch `experiment/doctrine-twin`, worktree `/Users/rmdms/Sites/Professional/splash-twin`,
-**never to be merged**. Written 2026-08-06 to 2026-08-08.
+**never to be merged**. Written 2026-08-06 to 2026-08-08; numbers re-measured 2026-08-11.
 
 ---
 
@@ -101,14 +117,18 @@ per-type knowledge as prose · `assets/geometry/` holds pure functions only. The
 
 ## 4. State — what is built
 
-**364 tests green.** `cd twin && bun test`.
+**How many tests are green: run `bun test` from `twin/`.** ~~364 tests green.~~ That number was
+written on 2026-08-08 and was still sitting here on 2026-08-11, by which time
+`skills/splash-twin/test/` **alone** ran 1,041 across 31 files. A count in a frozen document is a
+claim that decays daily and that nobody re-measures — which is the same failure this file records
+under §11's "eleven orphan stills". No new number is written here on purpose.
 
 | Skill | State |
 |---|---|
 | `splash-twin` | orchestrator, preflight (probed keys, resolved deps), `whereIs`, story scaffolder |
 | `twin-intake` | freeze + RFC 4180 reader + profiler |
 | `twin-storyboard` | the six movements, `checkStoryboard`, **claim-grounding** |
-| `twin-doctrine` | editorial standard · visual system · information architecture · anti-patterns · motion grammar · geo discipline · reference set (**4 rows — the weak point**) |
+| `twin-doctrine` | editorial standard · visual system · information architecture · anti-patterns · motion grammar · geo discipline · reference set (**7 rows as of 2026-08-11 — 4 when this was written, and still the weak point**) |
 | `twin-chart-beat` | static, on d3 primitives + `inspect-render` (measures painted pixels) |
 | `twin-chart-video` | Remotion + d3, editable timing contract |
 | `twin-dw-beat` | Datawrapper, **with `range-annotations`** the engine's mapper does not expose |
@@ -199,9 +219,11 @@ up-front investment plus a modest marginal premium** — which amortises over st
 self-contained HTML. It is the engine's DEFAULT format for an article-web channel, so it is
 potentially the most-used path and it was missing.
 
-**2. Grow the reference set — the single weakest thing in the project.** Four rows have now failed on
-**three consecutive real stories**, the third time with a real journalist rejecting both analogies
-offered. The design calls this quality lever number one; in practice it has never worked.
+**2. Grow the reference set — the single weakest thing in the project.** Four rows had failed on
+**three consecutive real stories** by the time this was written, the third time with a real
+journalist rejecting both analogies offered. The file holds **7 rows** as of 2026-08-11, indexed by
+argument structure — which is the change asked for below, half-made; the floor in
+`reference-set.test.ts` is still 7, and no fourth story has been run against it. The design calls this quality lever number one; in practice it has never worked.
 What it needs: retrieval **by argument structure**, not by chart type. "Bar chart" is useless at the
 moment of need; "a long series read against a historical level", "a profile of dimensions with an
 internal contradiction", "a ranking whose subject sits mid-table" are what the storyboard phase
