@@ -101,7 +101,7 @@ export function pointInRing(point: Pt, ring: Ring): boolean {
 }
 
 /** `rings[0]` is the outer boundary, `rings[1..]` are holes to cut back out — the same convention
- *  every other beat in this twin uses for a baked polygon's ring list. 
+ *  every other beat in this twin uses for a baked polygon's ring list.
  *  @parity */
 export function pointInRings(point: Pt, rings: Ring[]): boolean {
   const [outer, ...holes] = rings;
@@ -113,7 +113,7 @@ export function pointInRings(point: Pt, rings: Ring[]): boolean {
 //    per region... never re-randomised on each render") ──────────────────────────────────────────
 
 /** FNV-1a, so a region's own key deterministically seeds its own scatter without depending on scan
- *  order or any global counter. 
+ *  order or any global counter.
  *  @parity */
 function hashSeed(key: string): number {
   let h = 0x811c9dc5;
@@ -124,7 +124,7 @@ function hashSeed(key: string): number {
   return h >>> 0;
 }
 
-/** mulberry32 — a small, deterministic PRNG: same seed, same sequence, every run. 
+/** mulberry32 — a small, deterministic PRNG: same seed, same sequence, every run.
  *  @parity */
 function mulberry32(seed: number): () => number {
   let a = seed;
@@ -227,7 +227,7 @@ export function scatterInParts(
 
 // ── What a reader actually SEES: fill tightness, which is not the same quantity as the title's ──
 
-/** Signed shoelace area of one ring, in whatever units the ring's coordinates are in. 
+/** Signed shoelace area of one ring, in whatever units the ring's coordinates are in.
  *  @parity */
 function ringArea(ring: Ring): number {
   let a = 0;
@@ -237,7 +237,7 @@ function ringArea(ring: Ring): number {
   return a / 2;
 }
 
-/** True drawn area of a MultiPolygon in plate pixels: every part's outer ring, its holes removed. 
+/** True drawn area of a MultiPolygon in plate pixels: every part's outer ring, its holes removed.
  *  @parity */
 export function drawnAreaPx(parts: Ring[][]): number {
   let area = 0;
@@ -285,6 +285,215 @@ export function fillTightness<T extends { key: string; parts: Ring[][] }>(
     .sort((a, b) => b.dotsPerKilopixel - a.dotsPerKilopixel);
 }
 
+// ── The field has to keep reading as a FIELD OF DOTS at whatever size the frame gives it ─────────
+//
+// The plate used to be drawn 1:1 and the frame followed it, so the drawn dot radius was a constant
+// and no question arose. It is drawn INTO a pinned frame now, at whatever scale the geography and
+// the frame agree on, and a uniform enlargement scales the radius with everything else. Above some
+// radius the discs merge and the reader stops seeing dots at all — which on a dot map is not a
+// cosmetic loss, it is the loss of the ENCODING: one dot standing for a fixed number of people in a
+// fixed piece of ground.
+//
+// This beat's own physical copies of the two functions `map-beat/assets/geo.ts` states that in —
+// a copy, not an import, for the reason every other `geo-*.ts` in `proof/` records: a beat stays
+// copy-pasteable on its own and a pure geometry core imports nothing.
+
+/**
+ * Distances from every point to its nearest other point, in DRAWN pixels, sorted ascending — the
+ * input `markRadiusCeilingPx` needs, measured on the drawn field rather than guessed from the frame
+ * width. Squared distances are compared and the root is taken once per point, which is the same
+ * ordering and the same answer at a tenth of the cost over three thousand dots.
+ */
+export function nearestNeighbourPx(points: readonly Pt[]): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < points.length; i++) {
+    let best = Infinity;
+    const [xi, yi] = points[i]!;
+    for (let j = 0; j < points.length; j++) {
+      if (i === j) continue;
+      const dx = xi - points[j]![0];
+      const dy = yi - points[j]![1];
+      const d2 = dx * dx + dy * dy;
+      if (d2 < best) best = d2;
+    }
+    if (Number.isFinite(best)) out.push(Math.sqrt(best));
+  }
+  return out.sort((a, b) => a - b);
+}
+
+/**
+ * The biggest a mark may be drawn before the field stops reading as marks.
+ *
+ * Derived from the field's own MEDIAN nearest-neighbour distance, not its minimum. The minimum on
+ * this map is a pathological pair — two of Malta's dots land 0.2 px apart inside a 4 px island —
+ * and holding every dot on the map to that pair would shrink all 2,996 of them to nothing. At
+ * `median / 2` the TYPICAL pair of dots exactly touches and does not overlap; half the pairs are
+ * closer than the median by construction, and on a dot map that is not a defect but the picture's
+ * whole subject — where people are, dots crowd.
+ *
+ * The uniform-scale radius stays as the CEILING'S OTHER SIDE, so nothing ever gets bigger than a
+ * plain enlargement of the plate would have drawn it.
+ */
+export function markRadiusCeilingPx(
+  medianNearestNeighbourPx: number,
+  typedCeilingPx: number,
+): number {
+  if (!(medianNearestNeighbourPx > 0)) return typedCeilingPx;
+  return Math.min(typedCeilingPx, medianNearestNeighbourPx / 2);
+}
+
+/**
+ * The smallest radius a dot can be drawn at and still be a dot. The frame is rasterised 1:1 now
+ * (`renderStill`'s `scale: 1` — the frame IS the export size), so a radius under 1 px is a disc
+ * under two device pixels across: anti-aliasing turns it into a grey smudge, and a smudge encodes
+ * nothing. It is a floor, never a target: the radius is the uniform-scale one unless the field is
+ * too crowded to allow it.
+ */
+export const MIN_DOT_RADIUS_PX = 1;
+
+/** What the drawn field is, and the radius it admits: the median gap between neighbouring dots, the
+ *  ceiling half of it, and the radius actually drawn — the uniform-scale radius, capped. */
+export function dotFieldFacts(
+  drawnPoints: readonly Pt[],
+  uniformRadiusPx: number,
+): {
+  count: number;
+  medianNearestNeighbourPx: number;
+  ceilingPx: number;
+  uniformRadiusPx: number;
+  radiusPx: number;
+  capped: boolean;
+} {
+  const nn = nearestNeighbourPx(drawnPoints);
+  const median = nn.length > 0 ? nn[Math.floor(nn.length / 2)]! : 0;
+  const ceilingPx = markRadiusCeilingPx(median, Infinity);
+  const radiusPx = markRadiusCeilingPx(median, uniformRadiusPx);
+  return {
+    count: drawnPoints.length,
+    medianNearestNeighbourPx: median,
+    ceilingPx,
+    uniformRadiusPx,
+    radiusPx,
+    capped: radiusPx < uniformRadiusPx,
+  };
+}
+
+/**
+ * THE SAME QUESTION ASKED OF THE DELIVERED MARKUP, which is the only reading the code that drew the
+ * picture cannot make agree with itself — `assertDeliveredSize`'s move, applied to the mark instead
+ * of the frame. Every `<circle>` in this beat's SVG is a dot; the guard re-measures their own median
+ * gap and refuses a radius past half of it.
+ */
+export function assertDrawnDotsStillReadAsDots(
+  svg: string,
+  { what = "this render" }: { what?: string } = {},
+): {
+  count: number;
+  medianNearestNeighbourPx: number;
+  ceilingPx: number;
+  radiusPx: number;
+} {
+  const points: Pt[] = [];
+  const radii = new Set<number>();
+  for (const m of svg.matchAll(/<circle\b[^>]*>/g)) {
+    const tag = m[0];
+    const cx = Number(/\bcx="(-?[\d.]+)"/.exec(tag)?.[1]);
+    const cy = Number(/\bcy="(-?[\d.]+)"/.exec(tag)?.[1]);
+    const r = Number(/\br="([\d.]+)"/.exec(tag)?.[1]);
+    if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(r))
+      continue;
+    points.push([cx, cy]);
+    radii.add(r);
+  }
+  if (points.length === 0)
+    throw new Error(
+      `${what} draws no dots at all — a dot-density map with no <circle> in its own markup has lost its encoding, not its styling.`,
+    );
+  if (radii.size !== 1)
+    throw new Error(
+      `${what} draws its dots at ${radii.size} different radii (${[...radii].join(", ")}) — a dot map has one mark size, or size reads as a second variable nobody encoded.`,
+    );
+  const radiusPx = [...radii][0]!;
+  const nn = nearestNeighbourPx(points);
+  const medianNearestNeighbourPx = nn[Math.floor(nn.length / 2)]!;
+  const ceilingPx = medianNearestNeighbourPx / 2;
+  if (radiusPx > ceilingPx + 1e-9)
+    throw new Error(
+      `${what}: the drawn dots are r=${radiusPx} with a median nearest-neighbour gap of ` +
+        `${medianNearestNeighbourPx.toFixed(2)}px, so the typical pair OVERLAPS — past ` +
+        `${ceilingPx.toFixed(2)}px the field stops reading as dots and starts reading as a wash, ` +
+        `and a wash is a choropleth nobody chose. Measured from the delivered markup, not from the ` +
+        `numbers that drew it.`,
+    );
+  return {
+    count: points.length,
+    medianNearestNeighbourPx,
+    ceilingPx,
+    radiusPx,
+  };
+}
+
+// ── What the projection does to an AREA encoding at this extent ──────────────────────────────────
+
+/**
+ * How much more ground one drawn pixel covers at the frame's far latitude than at its near one —
+ * this beat's own physical copy of `map-beat/assets/geo.ts`'s function of the same name.
+ *
+ * A dot-density map is the family that arithmetic was written for: a dot stands for a fixed number
+ * of people in a fixed piece of GROUND, so anything that changes how much paper a piece of ground is
+ * drawn on changes what the reader measures. Here the camera runs 36°N to 67°N and the answer is
+ * 4.3 — the same figure `skills/splash/test/every-extent-band-is-produced.test.ts` records for this
+ * beat, computed rather than copied from it.
+ */
+export function mercatorAreaBias(corners: {
+  north: number;
+  south: number;
+}): number {
+  const clamp = (lat: number) => Math.min(Math.abs(lat), 85);
+  const far = Math.max(clamp(corners.north), clamp(corners.south));
+  const near =
+    corners.north * corners.south <= 0
+      ? 0
+      : Math.min(clamp(corners.north), clamp(corners.south));
+  const sec2 = (lat: number) => 1 / Math.cos((lat * Math.PI) / 180) ** 2;
+  return sec2(far) / sec2(near);
+}
+
+/**
+ * REFUSE A FRAME WHOSE CAVEAT HAS STOPPED SAYING WHAT THE PROJECTION DOES.
+ *
+ * `geo.ts`'s `assertAreaEncodingIsHonest` states the rule for a BINNED area encoding, where "enough
+ * to matter" can be measured against the beat's own legend breaks. A dot field has no bins, and the
+ * same rule reads more simply on it: the projection moves the drawn density of every country by the
+ * area bias, so at a bias this far above 1 a reader comparing a northern fill with a southern one is
+ * being invited to compare two different measurements.
+ *
+ * The test is the one `geo.ts` uses, verbatim — the caveat must NAME the thing. It lives here, in
+ * front of the layout, because the temptation the migration creates is precisely to shorten the
+ * caveat until the column fits: at a 26 px legibility floor this sentence costs four lines, and
+ * dropping it would make a refusal go away by making the picture dishonest.
+ */
+export const MAX_UNDISCLOSED_AREA_BIAS = 1.2;
+
+export function assertProjectionIsDisclosed(
+  corners: { north: number; south: number },
+  disclosed: string,
+  { what = "this beat" }: { what?: string } = {},
+): number {
+  const bias = mercatorAreaBias(corners);
+  if (bias <= MAX_UNDISCLOSED_AREA_BIAS) return bias;
+  if (/mercator|projection|latitude/i.test(disclosed)) return bias;
+  throw new Error(
+    `${what}: one drawn pixel covers ${bias.toFixed(1)}x more ground at ${corners.north.toFixed(0)}°N ` +
+      `than at ${corners.south.toFixed(0)}°N, and this is a DOT-DENSITY map — a dot is a fixed number ` +
+      `of people in a fixed piece of ground, so the projection alone spreads a northern country's ` +
+      `dots over ${bias.toFixed(1)}x more paper than a southern country's at the same people per ` +
+      `square kilometre. The caveat handed in mentions neither Mercator, the projection nor latitude, ` +
+      `so a reader comparing two fills is comparing two different measurements with nothing on the ` +
+      `frame to say so. This sentence is not a line to drop to make a column fit.`,
+  );
+}
+
 // ── The study area's own colour, and the two things it has to stay apart from ────────────────────
 
 /** The blue tint `bake.mjs` forces onto the basemap's water layers, because `dataviz-light` paints
@@ -322,7 +531,11 @@ export const STUDY_AREA_TINT_OPACITY = 0.16;
 
 /** @parity */
 function srgbChannels(hex: string): [number, number, number] {
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [
+    number,
+    number,
+    number,
+  ];
 }
 
 /** CIE L*a*b* (D65) from sRGB — the space the render audit measured this defect in. */
@@ -334,12 +547,13 @@ export function labOf(colour: string): [number, number, number] {
   const x = (r * 0.4124564 + g * 0.3575761 + b * 0.1804375) / 0.95047;
   const y = r * 0.2126729 + g * 0.7151522 + b * 0.072175;
   const z = (r * 0.0193339 + g * 0.119192 + b * 0.9503041) / 1.08883;
-  const f = (t: number) => (t > 216 / 24389 ? Math.cbrt(t) : (841 / 108) * t + 4 / 29);
+  const f = (t: number) =>
+    t > 216 / 24389 ? Math.cbrt(t) : (841 / 108) * t + 4 / 29;
   const [fx, fy, fz] = [f(x), f(y), f(z)];
   return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
 }
 
-/** ΔE76 — deliberately the metric the audit used, so numbers compare without a conversion. 
+/** ΔE76 — deliberately the metric the audit used, so numbers compare without a conversion.
  *  @parity */
 export function deltaE76(a: string, b: string): number {
   const [l1, a1, b1] = labOf(a);
@@ -349,13 +563,21 @@ export function deltaE76(a: string, b: string): number {
 
 /** What a tint actually looks like once laid over the plate — SVG's `fill-opacity` composites in
  *  sRGB, so this is plain interpolation of the 0..255 channels. */
-export function compositeOver(tint: string, backdrop: string, opacity: number): string {
+export function compositeOver(
+  tint: string,
+  backdrop: string,
+  opacity: number,
+): string {
   const t = srgbChannels(tint);
   const b = srgbChannels(backdrop);
   return (
     "#" +
     t
-      .map((v, i) => Math.round(v * opacity + b[i]! * (1 - opacity)).toString(16).padStart(2, "0"))
+      .map((v, i) =>
+        Math.round(v * opacity + b[i]! * (1 - opacity))
+          .toString(16)
+          .padStart(2, "0"),
+      )
       .join("")
       .toUpperCase()
   );
@@ -371,10 +593,12 @@ function relativeLuminance(hex: string): number {
 }
 
 /** WCAG 2.x contrast ratio. Kept local rather than imported from `render-still.mjs` so this pure
- *  core stays free of the native rasteriser. 
+ *  core stays free of the native rasteriser.
  *  @parity */
 export function wcagContrast(a: string, b: string): number {
-  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x) as [number, number];
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort(
+    (x, y) => y - x,
+  ) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
 }
 
@@ -410,7 +634,10 @@ export function dotInkThatReadsOn(
   studyLand: string,
   target: number = MIN_DOT_CONTRAST_SMALL,
 ): string {
-  const pole = wcagContrast("#000000", studyLand) >= wcagContrast("#FFFFFF", studyLand) ? "#000000" : "#FFFFFF";
+  const pole =
+    wcagContrast("#000000", studyLand) >= wcagContrast("#FFFFFF", studyLand)
+      ? "#000000"
+      : "#FFFFFF";
   for (let step = 0; step <= 100; step++) {
     const candidate = compositeOver(pole, accent, step / 100);
     if (wcagContrast(candidate, studyLand) >= target) return candidate;
@@ -471,7 +698,10 @@ export function assertStudyAreaReadsApart(
   if (outline !== undefined) {
     const onLand = wcagContrast(outline, studyLand);
     const onWater = wcagContrast(outline, WATER_TINT);
-    if (coastSeparation < deltaE76(LAND_TINT, WATER_TINT) && Math.min(onLand, onWater) < MIN_DOT_CONTRAST)
+    if (
+      coastSeparation < deltaE76(LAND_TINT, WATER_TINT) &&
+      Math.min(onLand, onWater) < MIN_DOT_CONTRAST
+    )
       throw new Error(
         `the coastline is carried by neither tone nor line: the study fill ${studyLand} sits ${coastSeparation.toFixed(2)} ΔE76 from the water, nearer than the bare land's own ${deltaE76(LAND_TINT, WATER_TINT).toFixed(2)}, and the outline ${outline} measures ${onLand.toFixed(2)}:1 against the fill and ${onWater.toFixed(2)}:1 against the water — under the ${MIN_DOT_CONTRAST}:1 floor.`,
       );

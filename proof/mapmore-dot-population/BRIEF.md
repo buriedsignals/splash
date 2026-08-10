@@ -1,7 +1,88 @@
+---
+size: landscape
+type: dot-density
+---
+
 # Beat — five countries hold 54.9% of this map's population
 
-**Type:** dot density. **Medium/genre:** map / static. **Channel:** article web, over an 860 × 760
-baked plate (`plate/`, frozen beside this brief).
+**Type:** dot density. **Medium/genre:** map / static. **Size:** landscape (1920 × 1080), over an
+860 × 760 baked plate (`plate/`, frozen beside this brief).
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize`. It used to say "article web", checked by
+nothing, while the component carried `FRAME_WIDTH = 920` and derived the height from its own plate —
+so the frame followed the plate and a journalist pinning a size at gate 2c reached nothing.
+
+## What each size does with this geography
+
+The plate is 860 × 760 (1.132:1) over 59.5° of longitude, and the map is drawn at the plate's own
+aspect at every size — never stretched, never cropped (`mapStageBox`). The title spans the content
+width at the top and the credit spans it at the foot; what is left between them is what the map and
+the text column divide.
+
+| size | delivered | the map | leftover |
+| --- | --- | --- | --- |
+| landscape 1920 × 1080 | **yes**, measured 1920 × 1080 from the PNG's own IHDR | 809 × 714, plate ×0.941 | 871 px of column |
+| square 1080 × 1080 | refused | — | — |
+| portrait 1080 × 1920 | refused | — | — |
+
+Nothing is letterboxed at landscape: the plate is bound by HEIGHT in a 1750 × 714 body band, so it
+takes 809 × 714 and the 871 px left on the other axis is the text column. `--size square` and
+`--size portrait` reproduce the refusals below and write to `sizes/`, never over the delivered file.
+
+Both refusals are the type floor's, not the geography's, and both are enormous rather than marginal:
+
+- **square** — the 36 px floor puts the title at 5 lines and the credit at 3, leaving **324 px** of
+  band for everything else. The column's three blocks need **2,043 px** at the 266 px this beat's
+  own longest unbreakable word allows; stacked at the full 936 px they still need 1,068 px, which
+  leaves **−846 px** of map.
+- **portrait** — the same, inside Meta's 979 px safe band rather than the whole frame: **223 px** of
+  band, **1,578 px** of column, **−947 px** of map.
+
+The caveat is what makes the column that tall, and it is not a line to drop: it names the exclusions
+an absence would otherwise read as a zero, and it carries the projection sentence below.
+
+## What the projection does to this encoding, and where that is written
+
+A dot is a fixed number of people in a fixed piece of GROUND, so how much paper a piece of ground is
+drawn on is part of the measurement — and Web Mercator's is not constant. Computed from the plate's
+own `frameCorners` (36.0°N → 67.0°N), the area bias is **×4.29**: one drawn square covers 4.3 times
+more ground at the top of the frame than at the bottom, so the same people per square kilometre are
+drawn 4.3 times more thinly in the north. The same figure `every-extent-band-is-produced.test.ts`
+records for this beat, derived rather than copied from it.
+
+That sentence is now **on the frame**, in the caveat, and in the alt text, which previously said "a
+tighter fill means more people per square kilometre" without the qualifier that makes it true. It is
+also mechanically held there: `assertProjectionIsDisclosed` (`geo-dot.ts`, the shape of `geo.ts`'s
+own `assertAreaEncodingIsHonest`) refuses to draw a caveat that mentions neither Mercator, the
+projection nor latitude — checked BEFORE the layout, because the temptation a fixed frame creates is
+to shorten the caveat until the column fits.
+
+## What the bigger frame broke, and what it cost
+
+**The dot radius.** The plate is no longer drawn 1:1, so the dots scale with it: at ×0.941 the
+uniform radius is 1.08 px. That is capped at **half the drawn field's own median nearest-neighbour
+gap** — measured 3.35 px, so a ceiling of 1.68 px, and the drawn radius sits at 64 % of it
+(`markRadiusCeilingPx`, the median rather than the minimum because one pathological pair of dots
+inside Malta would otherwise shrink all 2,996). The ceiling is also re-measured out of the delivered
+markup by `assertDrawnDotsStillReadAsDots`, and a plate too small for a 1 px disc is refused outright
+with the arithmetic (below ×0.564 of the plate, 485 px).
+
+**The five country name plates, which is what only looking could see.** Each name used to be centred
+on its own country's dot centroid — safe at 12.5 px, where the plate was ~80 px wide. At the 26 px
+floor the same plate is 2.3× wider, and a centroid is not a place. The position is now derived over a
+7 × 7 ladder across each country's own dot cloud, maximising how much of the box stands on the ground
+it names, under one constraint: **no plate may erase more than a sixth of the dots of a country it
+does not name.** Measured, the constraint is doing real work — unconstrained, "Germany" erases 26 of
+the Netherlands' 90 dots (29 %, out of the second-tightest fill on this map, which the alt text
+names) and "United Kingdom" erases 21 of Ireland's 27 (78 %). Delivered, they erase 16 of Poland's
+184 (9 %) and 4 of Ireland's 27 (15 %). Two other shapes of rule were tried and both walked the names
+into the sea, because water hides no dots.
+
+**Named, not fixed:** the five plates still erase **421 of the 2,996 dots**, 14 % of the field, of
+which only 22 belong to a country the plate does not name. That is the type floor's own arithmetic —
+the plate under a name is opaque for the measured reason below — and whether a dot map at this size
+should label its subjects some other way is a person's call.
 
 ## Claim
 
