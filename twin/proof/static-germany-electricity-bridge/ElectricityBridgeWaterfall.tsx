@@ -46,11 +46,6 @@ function oneDecimal(value: number): string {
   });
 }
 const LEGEND = { fontSize: 13, fontWeight: 600 };
-/** Increase/decrease deliberately NOT red/green — the pairing colour-vision deficiency confuses
- *  most (`references/types/waterfall.md`). Okabe-Ito blue and vermillion, still distinguishable to
- *  a deuteranope. Total bars use the page's own muted ink, not a third saturated hue — they are
- *  the frame the deltas hang from, not another category of change. */
-const COLOURS = { increase: "#0072B2", decrease: "#D55E00" };
 const BAR_GAP = 26;
 const Y_TICK_HINT = 5;
 
@@ -90,11 +85,15 @@ export function waterfallGeometry(
     height,
     padding,
     mutedFill,
+    increaseFill,
+    decreaseFill,
   }: {
     width: number;
     height: number;
     padding: { top: number; right: number; bottom: number; left: number };
     mutedFill: string;
+    increaseFill: string;
+    decreaseFill: string;
   },
 ) {
   const plot = {
@@ -136,7 +135,12 @@ export function waterfallGeometry(
       topValue = cursor + s.value;
       cursor = topValue;
     }
-    const fill = s.kind === "total" ? mutedFill : COLOURS[s.kind];
+    const fill =
+      s.kind === "total"
+        ? mutedFill
+        : s.kind === "increase"
+          ? increaseFill
+          : decreaseFill;
     return {
       label: s.label,
       value: s.value,
@@ -166,6 +170,8 @@ export function ElectricityBridgeWaterfall({
   source,
   alt,
   ground,
+  increaseFill,
+  decreaseFill,
 }: {
   steps: Step[];
   title: string;
@@ -173,6 +179,15 @@ export function ElectricityBridgeWaterfall({
   source: string;
   alt: string;
   ground: string;
+  /** One fill per direction of change. Deliberately NOT red/green — the pairing colour-vision
+   *  deficiency confuses most (`references/types/waterfall.md`) — and the two have to stay
+   *  distinguishable to a deuteranope. Total bars use the page's own muted ink, not a third
+   *  saturated hue: they are the frame the deltas hang from, not another category of change. They
+   *  arrive as props because they are the newsroom's recorded answer, read from `PALETTE.md` by
+   *  the runner — naming them here would put the answer back in the source, where no recorded
+   *  choice reaches it. */
+  increaseFill: string;
+  decreaseFill: string;
 }) {
   if (steps.length < 3)
     throw new Error(
@@ -230,6 +245,8 @@ export function ElectricityBridgeWaterfall({
     height,
     padding,
     mutedFill: muted,
+    increaseFill,
+    decreaseFill,
   });
 
   return (
@@ -284,7 +301,7 @@ export function ElectricityBridgeWaterfall({
         y={legendBaseline - 10}
         width={12}
         height={12}
-        fill={COLOURS.increase}
+        fill={increaseFill}
       />
       <text
         x={PAD + 18}
@@ -300,7 +317,7 @@ export function ElectricityBridgeWaterfall({
         y={legendBaseline - 10}
         width={12}
         height={12}
-        fill={COLOURS.decrease}
+        fill={decreaseFill}
       />
       <text
         x={PAD + 118}

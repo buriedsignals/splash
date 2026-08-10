@@ -8,7 +8,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  renderStill,
+  readPalette,
+  seriesInks,
+} from "#shared/twin-chart-beat/render-still.mjs";
 import { DumbbellLifeExpectancyGains } from "./DumbbellLifeExpectancyGains.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -120,6 +124,13 @@ async function main() {
     `rose from ${least.y2000.toFixed(1)} to ${least.y2023.toFixed(1)} years, the smallest gain ` +
     `(+${least.gap.toFixed(1)}).`;
 
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+  // One ink per year: the recorded accents in the order they were recorded, earlier year first.
+  const [startInk, endInk] = seriesInks(palette, 2);
+  console.log(`dot inks — 2000 ${startInk}, 2023 ${endInk}`);
+
   const { pngPath } = await renderStill({
     element: createElement(DumbbellLifeExpectancyGains, {
       rows: sorted,
@@ -127,7 +138,9 @@ async function main() {
       source:
         "Source: UN, World Population Prospects (2024), via Our World in Data · 2000 and 2023, extracted 8 August 2026",
       alt,
-      ground: "#FFFFFF",
+      ground,
+      startInk,
+      endInk,
     }),
     width: 900,
     height: 860,

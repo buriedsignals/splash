@@ -42,10 +42,6 @@ const BAND_LABEL = { fontSize: 11, fontWeight: 400 };
 const SPINE_LABEL_CLEARANCE = 2;
 const LEGEND = { fontSize: 13, fontWeight: 600 };
 const NOTE = { fontSize: 12, fontWeight: 700 };
-/** Two hues a colour-vision-deficient reader can tell apart, checked as a pair — the type's own
- *  accessibility note. The mirrored position already carries the group distinction; colour here
- *  is reinforcing it, not carrying it alone. */
-const COLOURS = { male: "#0072B2", female: "#D55E00" };
 /** The air between the peak band's bar tip and the start of the callout drawn inside it. */
 const PEAK_NOTE_INSET = 10;
 const BAND_GUTTER = 64;
@@ -153,6 +149,8 @@ export function SwissAgePyramid({
   ground,
   peakBand,
   peakLabel,
+  maleInk,
+  femaleInk,
 }: {
   bands: Band[];
   title: string;
@@ -162,6 +160,14 @@ export function SwissAgePyramid({
   ground: string;
   peakBand: string;
   peakLabel: string;
+  /** One hue per side. Two hues a colour-vision-deficient reader can tell apart, checked as a pair
+   *  — the type's own accessibility note. The mirrored position already carries the group
+   *  distinction; colour here is reinforcing it, not carrying it alone. They arrive as props
+   *  because they are the newsroom's recorded answer, read from `PALETTE.md` by the runner —
+   *  naming them here would put the answer back in the source, where no recorded choice reaches
+   *  it. */
+  maleInk: string;
+  femaleInk: string;
 }) {
   if (bands.length < 3)
     throw new Error(
@@ -256,7 +262,7 @@ export function SwissAgePyramid({
     return {
       x: box.x,
       baseline,
-      ink: inkThatReadsOver([COLOURS.male], textContrastFloor(NOTE)),
+      ink: inkThatReadsOver([maleInk], textContrastFloor(NOTE)),
     };
   })();
 
@@ -336,7 +342,7 @@ export function SwissAgePyramid({
         y={legendBaseline - 10}
         width={12}
         height={12}
-        fill={COLOURS.male}
+        fill={maleInk}
       />
       <text
         x={centerX - 202}
@@ -352,7 +358,7 @@ export function SwissAgePyramid({
         y={legendBaseline - 10}
         width={12}
         height={12}
-        fill={COLOURS.female}
+        fill={femaleInk}
       />
       <text
         x={centerX + 58}
@@ -436,14 +442,14 @@ export function SwissAgePyramid({
             y={b.y}
             width={b.male_.width}
             height={b.height}
-            fill={COLOURS.male}
+            fill={maleInk}
           />
           <rect
             x={b.female_.x}
             y={b.y}
             width={b.female_.width}
             height={b.height}
-            fill={COLOURS.female}
+            fill={femaleInk}
           />
           {/* The age band label sits in the reserved central gutter, never printed over a bar. */}
           <text

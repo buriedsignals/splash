@@ -117,14 +117,20 @@ export const FRAME: HeatmapFrame = {
 };
 
 /** Sequential ramp, single-hue (`heatmap.md`'s own rule against a multi-hue "lively" gradient):
- *  channel-wise linear interpolation between a pale tint and a deep pole of the house teal, so
- *  luminance moves in exactly one direction, start to finish — checked by the caller, not assumed,
- *  via `checkRampFloor` below. */
-// The obvious pale-tint low end (`#E3F2F0`) measured 1.15:1 against a white ground — it nearly
-// vanished, caught by `checkRampFloor` at build time before it was ever looked at. `#4A9C8F` is
-// the palest stop on this single hue that still clears the 3:1 shape floor against white.
-const RAMP_LOW = "#4A9C8F"; // pale pole, 3.3:1 against white — the low end
-const RAMP_HIGH = "#04241E"; // deep pole — the high end
+ *  channel-wise linear interpolation between a pale pole and a deep pole of ONE hue, so luminance
+ *  moves in exactly one direction, start to finish — checked by the caller, not assumed, via
+ *  `checkRampFloor` below.
+ *
+ *  Both poles arrive from the caller because they are the newsroom's recorded answer, read from
+ *  `PALETTE.md` by the runner. Naming them here would put the answer back in the source, where no
+ *  recorded choice reaches it — and this beat's whole quantitative channel is the ramp, so a colour
+ *  named here is a chart that ignores the newsroom entirely.
+ *
+ *  The floor is why the pale pole is not a pale TINT: the obvious one (`#E3F2F0`) measured 1.15:1
+ *  against a white ground and nearly vanished, caught by `checkRampFloor` at build time before it
+ *  was ever looked at. The pale pole a caller records has to be the palest stop on its hue that
+ *  still clears the 3:1 shape floor against the real ground. */
+export type Ramp = { low: string; high: string };
 
 function hexChannels(hex: string): [number, number, number] {
   return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [
@@ -149,8 +155,8 @@ function mixHex(a: string, b: string, t: number): string {
   );
 }
 
-export function rampColour(t: number): string {
-  return mixHex(RAMP_LOW, RAMP_HIGH, Math.max(0, Math.min(1, t)));
+export function rampColour(t: number, ramp: Ramp): string {
+  return mixHex(ramp.low, ramp.high, Math.max(0, Math.min(1, t)));
 }
 
 /** Every stop this beat actually draws must clear 3:1 against the page ground (the non-text
@@ -158,13 +164,13 @@ export function rampColour(t: number): string {
  *  assumed, because a ramp "checked on paper" and never re-measured against the real ground is
  *  exactly how this type has shipped an invisible low end before. Throws loud rather than
  *  rendering a cell nobody could see against the ground. */
-export function checkRampFloor(ground: string, steps = 9): void {
+export function checkRampFloor(ground: string, ramp: Ramp, steps = 9): void {
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    const c = contrast(rampColour(t), ground);
+    const c = contrast(rampColour(t, ramp), ground);
     if (c < 3) {
       throw new Error(
-        `heatmap ramp stop at t=${t.toFixed(2)} (${rampColour(t)}) measures ${c.toFixed(2)}:1 against ground ${ground}, under the 3:1 shape floor`,
+        `heatmap ramp stop at t=${t.toFixed(2)} (${rampColour(t, ramp)}) measures ${c.toFixed(2)}:1 against ground ${ground}, under the 3:1 shape floor`,
       );
     }
   }
@@ -178,6 +184,7 @@ export function heatmapGeometry(
   countries: string[],
   decades: number[],
   frame: HeatmapFrame,
+  ramp: Ramp,
 ) {
   const byKey = new Map(cells.map((c) => [`${c.country}|${c.decade}`, c]));
   const values = cells.map((c) => c.value);
@@ -194,7 +201,7 @@ export function heatmapGeometry(
         col,
         x: col * frame.cellSize,
         y: row * frame.cellSize,
-        fill: rampColour(t(cell.value)),
+        fill: rampColour(t(cell.value), ramp),
       };
     }),
   );
@@ -284,6 +291,7 @@ export function Co2HeatmapWeb({
   grid: gridColour,
   frame,
   measure,
+  ramp,
 }: {
   cells: Cell[];
   countries: string[];
@@ -298,6 +306,7 @@ export function Co2HeatmapWeb({
   grid: string;
   frame: HeatmapFrame;
   measure: Measure;
+  ramp: Ramp;
 }) {
   if (cells.length !== countries.length * decades.length)
     throw new Error(
@@ -309,7 +318,7 @@ export function Co2HeatmapWeb({
     domain,
     width: gridWidth,
     height: gridHeight,
-  } = heatmapGeometry(cells, countries, decades, frame);
+  } = heatmapGeometry(cells, countries, decades, frame, ramp);
 
   // The row-header gutter, measured from the real strings at their own FIXED type size — never a
   // guessed constant. The old build carried a literal (118 desktop / 62 narrow) and had to raise it
@@ -334,7 +343,7 @@ export function Co2HeatmapWeb({
   const minPlotHeightPx = countries.length * frame.minRowPx + frame.xAxisRowPx;
   const legendCaption = "t CO₂/capita, decade average";
   const rampStops = Array.from({ length: 12 }, (_, i) =>
-    rampColour(i / 11),
+    rampColour(i / 11, ramp),
   ).join(", ");
 
   return (

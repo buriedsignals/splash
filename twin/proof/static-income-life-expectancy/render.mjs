@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { IncomeLifeExpectancyScatter } from "./IncomeLifeExpectancyScatter.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +64,11 @@ async function main() {
     `$${HIGH_INCOME_LO}-$${HIGH_INCOME_HI}: ${highIncome.length} countries, life expectancy ${highIncomeLifeMin.toFixed(1)}-${highIncomeLifeMax.toFixed(1)}`,
   );
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+
   const { pngPath } = await renderStill({
     element: createElement(IncomeLifeExpectancyScatter, {
       points,
@@ -71,8 +76,8 @@ async function main() {
       limits: "165 countries with both measures in 2021. Correlation, not causation — health systems, conflict and disease all move independently of income too.",
       source: "Source: World Bank via Gapminder, UN WPP (2024), via Our World in Data · 2021 data, extracted 8 August 2026",
       alt: `Scatter plot of GDP per capita (log scale) against life expectancy at birth for 165 countries in 2021. Life expectancy rises steeply as income rises from a few hundred to about ten thousand dollars, then the slope flattens: from about ${usd(HIGH_INCOME_LO)} to ${usd(HIGH_INCOME_HI)} a person, life expectancy still varies, but across a narrower band, roughly ${highIncomeLifeMin.toFixed(0)} to ${highIncomeLifeMax.toFixed(0)} years.`,
-      ground: "#FFFFFF",
-      accent: "#0B7A75",
+      ground,
+      accent,
       highlighted: [],
     }),
     width: 900,

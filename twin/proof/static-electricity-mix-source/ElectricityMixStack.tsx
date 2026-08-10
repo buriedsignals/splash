@@ -32,14 +32,16 @@ const SOURCE = { fontSize: 14, fontWeight: 400 };
 const AXIS = { fontSize: 13, fontWeight: 400 };
 const SEGMENT_LABEL = { fontSize: 13, fontWeight: 700 };
 const LEGEND = { fontSize: 13, fontWeight: 600 };
-/** Renewables (bottom, the baseline reader compares across columns) is the cool green; nuclear a
- *  neutral blue; fossil the one warm hue — the same "only one warm member" discipline the grouped
- *  bar beat used, so no two adjacent segments are both warm. Okabe-Ito bluish-green / blue /
- *  vermillion. */
-const COLOURS = {
-  renewables: "#009E73",
-  nuclear: "#0072B2",
-  fossil: "#D55E00",
+/** One fill per stacked series, keyed by series. Renewables (bottom, the baseline a reader compares
+ *  across columns) is the cool green; nuclear a neutral blue; fossil the one warm hue — the same
+ *  "only one warm member" discipline the grouped bar beat used, so no two adjacent segments are
+ *  both warm. They arrive from the caller because they are the newsroom's recorded answer, read
+ *  from `PALETTE.md` by the runner — naming them here would put the answer back in the source,
+ *  where no recorded choice reaches it. */
+export type SeriesFills = {
+  renewables: string;
+  nuclear: string;
+  fossil: string;
 };
 /** A segment shorter than this, in px, does not get a printed value — the label itself would be
  *  taller than the band it sits in. */
@@ -83,10 +85,12 @@ export function stackedBarGeometry(
     width,
     height,
     padding,
+    fills,
   }: {
     width: number;
     height: number;
     padding: { top: number; right: number; bottom: number; left: number };
+    fills: SeriesFills;
   },
 ) {
   const plot = {
@@ -116,7 +120,7 @@ export function stackedBarGeometry(
           y: top,
           width: barWidth,
           height: bottom - top,
-          fill: COLOURS[key],
+          fill: fills[key],
         };
       },
     );
@@ -133,6 +137,7 @@ export function ElectricityMixStack({
   source,
   alt,
   ground,
+  fills,
 }: {
   countries: Country[];
   title: string;
@@ -140,6 +145,7 @@ export function ElectricityMixStack({
   source: string;
   alt: string;
   ground: string;
+  fills: SeriesFills;
 }) {
   if (countries.length < 2)
     throw new Error(
@@ -193,6 +199,7 @@ export function ElectricityMixStack({
     width,
     height,
     padding,
+    fills,
   });
 
   // Legend x positions are measured, not a fixed 240px step — a constant wide enough for
@@ -277,7 +284,7 @@ export function ElectricityMixStack({
               y={legendBaseline - 10}
               width={12}
               height={12}
-              fill={COLOURS[item.key]}
+              fill={fills[item.key]}
             />
             <text
               x={x + 18}

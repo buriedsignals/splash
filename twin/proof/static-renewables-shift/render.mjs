@@ -8,7 +8,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { RenewablesShiftSlope } from "./RenewablesShiftSlope.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -83,6 +83,11 @@ async function main() {
   if (ratio < 1.8 || ratio >= 2) throw new Error(`"nearly doubled" needs a ratio in [1.8, 2), got ${ratio.toFixed(2)}`);
   if (Number(END_YEAR) - Number(START_YEAR) !== 9) throw new Error(`"nine years" needs a nine-year span, got ${Number(END_YEAR) - Number(START_YEAR)}`);
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+
   const { pngPath } = await renderStill({
     element: createElement(RenewablesShiftSlope, {
       series,
@@ -90,8 +95,8 @@ async function main() {
       limits: `Share of each country's own total generation. ${flattest.name} was already near-total renewable in ${START_YEAR}, so it had almost no room left to climb.`,
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026",
       alt,
-      ground: "#FFFFFF",
-      accent: "#0B7A75",
+      ground,
+      accent,
       highlighted: biggestMover.name,
       startLabel: START_YEAR,
       endLabel: END_YEAR,

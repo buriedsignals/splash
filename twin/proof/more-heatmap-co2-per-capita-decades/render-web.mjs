@@ -31,6 +31,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  readPalette,
+  seriesInks,
+} from "#shared/twin-chart-beat/render-still.mjs";
 import { renderWeb } from "../../skills/twin-chart-web/scripts/render-web.mjs";
 import { Co2HeatmapWeb, FRAME, checkRampFloor } from "./Co2HeatmapWeb.tsx";
 
@@ -41,7 +45,18 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_OUT_DIR = HERE;
 const OUTPUT_NAME = "co2-heatmap.html";
 
-const GROUND = "#FFFFFF";
+const PALETTE = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(
+  "palette from " + PALETTE.source + " — ground " + PALETTE.ground +
+    ", accent " + PALETTE.accent + ", chosen by " + PALETTE.origin,
+);
+const GROUND = PALETTE.ground;
+/** The two poles of this beat's sequential ramp, in the order they were recorded: the pale end
+ *  first, the deep end second. `seriesInks` hands back the recorded accents in written order, so
+ *  the ramp a reader sees is the one the newsroom answered with. */
+const [RAMP_LOW, RAMP_HIGH] = seriesInks(PALETTE, 2);
+const RAMP = { low: RAMP_LOW, high: RAMP_HIGH };
+console.log("ramp poles — pale " + RAMP.low + ", deep " + RAMP.high);
 const DECADES = [1960, 1970, 1980, 1990, 2000, 2010, 2020];
 
 function parseCsv(text) {
@@ -139,7 +154,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
   const ALT =
     `A heatmap of average per-capita CO2 emissions, eight European countries by decade, 1960s to 2020s. Every country is lower in the 2020s than at its own peak decade. Poland (7.8 t) and Germany (7.5 t) are the highest 2020s emitters; Sweden (3.6 t) and Switzerland (3.8 t) are the lowest.`;
 
-  checkRampFloor(GROUND);
+  checkRampFloor(GROUND, RAMP);
 
   const { outPath } = await renderWeb({
     component: Co2HeatmapWeb,
@@ -153,6 +168,7 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
       alt: ALT,
       ground: GROUND,
       frame: FRAME,
+      ramp: RAMP,
     },
     outDir,
     name,

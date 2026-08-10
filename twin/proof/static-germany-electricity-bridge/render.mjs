@@ -8,7 +8,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  renderStill,
+  readPalette,
+  seriesInks,
+} from "#shared/twin-chart-beat/render-still.mjs";
 import { ElectricityBridgeWaterfall } from "./ElectricityBridgeWaterfall.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -95,6 +99,13 @@ async function main() {
     `${LAST_YEAR} — a net drop of ${twh(netChange)}.`;
   console.log(`alt: ${alt}`);
 
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+  // One fill per direction of change, in the order the accents were recorded.
+  const [increaseFill, decreaseFill] = seriesInks(palette, 2);
+  console.log(`bar fills — increase ${increaseFill}, decrease ${decreaseFill}`);
+
   const { pngPath } = await renderStill({
     element: createElement(ElectricityBridgeWaterfall, {
       steps,
@@ -102,7 +113,9 @@ async function main() {
       limits: "The nuclear phase-out and a falling fossil share together outweighed the renewables build-out — renewables alone grew, but not enough to offset the other two.",
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · extracted 8 August 2026",
       alt,
-      ground: "#FFFFFF",
+      ground,
+      increaseFill,
+      decreaseFill,
     }),
     width: 900,
     height: 560,

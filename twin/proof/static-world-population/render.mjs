@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { WorldPopulationArea } from "./WorldPopulationArea.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -47,6 +47,11 @@ async function main() {
   if (!eightBillion) throw new Error(`series never reaches 8 billion — got up to ${last.population.toLocaleString()}`);
   console.log(`crossed 8 billion in ${eightBillion.year} (${eightBillion.population.toLocaleString()})`);
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+
   const { pngPath } = await renderStill({
     element: createElement(WorldPopulationArea, {
       data,
@@ -54,8 +59,8 @@ async function main() {
       limits: "1800-1949 are HYDE/Gapminder historical estimates, not census counts; 1950 onward is the UN's own recorded and revised series.",
       source: "Source: HYDE (2023), Gapminder (2022) & UN World Population Prospects (2024), via Our World in Data · extracted 8 August 2026",
       alt: `Area chart of world population from 1800 to 2023, rising from about 1 billion to about 8.1 billion, passing 8 billion in ${eightBillion.year}, with the growth rate visibly steepening through the 20th century.`,
-      ground: "#FFFFFF",
-      accent: "#0B7A75",
+      ground,
+      accent,
       crossing: { year: crossing.year, population: crossing.population, label: `1 billion (${crossing.year})` },
     }),
     width: 900,

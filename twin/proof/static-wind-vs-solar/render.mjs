@@ -7,7 +7,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  renderStill,
+  readPalette,
+  seriesInks,
+} from "#shared/twin-chart-beat/render-still.mjs";
 import { WindVsSolarBar } from "./WindVsSolarBar.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -63,6 +67,13 @@ async function main() {
     `${outlier.name} is the reverse: solar ${outlier.solar.toFixed(1)}%, wind ${outlier.wind.toFixed(1)}%.`;
   console.log(`alt: ${alt}`);
 
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+  // One ink per series, in the order the accents were recorded: wind first, solar second.
+  const [windInk, solarInk] = seriesInks(palette, 2);
+  console.log(`bar inks — wind ${windInk}, solar ${solarInk}`);
+
   const { pngPath } = await renderStill({
     element: createElement(WindVsSolarBar, {
       groups,
@@ -70,7 +81,9 @@ async function main() {
       limits: `Share of each country's total electricity generation in ${LAST_YEAR}, from generation by source in terawatt-hours.`,
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8 August 2026",
       alt,
-      ground: "#FFFFFF",
+      ground,
+      windInk,
+      solarInk,
       calloutSubject: outlier.name,
       calloutText: "Solar leads wind here — the only reversal in this group",
     }),

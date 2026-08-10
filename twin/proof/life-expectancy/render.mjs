@@ -14,12 +14,22 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "#shared/twin-chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "life-expectancy";
+
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: join(HERE, ".."),
+});
+console.log(
+  "palette from " + paletteSource + " — ground " + ground + ", accent " + accent + ", chosen by " + origin,
+);
 
 /** The story's own constants — the journalist's words, from the CADRAGE exchange.
  *
@@ -34,10 +44,13 @@ const COMPOSITION = "life-expectancy";
  * source. The narrative survives unchanged: 2019 = 83.8 (reference, matches previously), 2020 dips
  * to 83.06, and 2023 (83.95) is the first year back above the 2019 level — but the real series has
  * no 2024 row yet, so "data 2024" is now "data 2023".
+ *
+ * `ground` and `accent` are no longer constants here: they are the newsroom's recorded answer, read
+ * from `PALETTE.md` beside this file.
  */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground,
+  accent,
   source: "Source: UN World Population Prospects (2024), via Our World in Data · data 2023",
   // The committed CSV is OWID's full series back to 1876 (its raw, unedited fetch) — this beat's
   // own window, same convention `co2-suisse/render-web.mjs` uses for its `firstYear`.

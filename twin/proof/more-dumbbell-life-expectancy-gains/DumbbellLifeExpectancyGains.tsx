@@ -40,10 +40,6 @@ const LEGEND = { fontSize: 13, fontWeight: 600 };
 const AXIS = { fontSize: 12, fontWeight: 400 };
 const CATEGORY_LABEL = { fontSize: 14, fontWeight: 600 };
 const VALUE_LABEL = { fontSize: 13, fontWeight: 600 };
-/** Two CVD-safe hues, capped at exactly two per `references/types/dumbbell.md` — this codebase's
- *  existing pair, one per year. Reused consistently across every row so a reader learns "which dot
- *  is which series" once and applies it to the whole chart. */
-const COLOURS = { y2000: "#0072B2", y2023: "#D55E00" };
 /** How many labelled value ticks a static frame asks for (`static-discipline.md`'s "Axis
  *  density" — conventional density for a static frame, not the sparse 2-3 tick motion rule). */
 const X_TICK_HINT = 5;
@@ -130,12 +126,22 @@ export function DumbbellLifeExpectancyGains({
   source,
   alt,
   ground,
+  startInk,
+  endInk,
 }: {
   rows: Row[];
   title: string;
   source: string;
   alt: string;
   ground: string;
+  /** The earlier year's dot colour, and the later year's. Two CVD-safe hues, capped at exactly two
+   *  per `references/types/dumbbell.md`, each reused consistently across every row so a reader
+   *  learns "which dot is which series" once and applies it to the whole chart. They arrive as
+   *  props because they are the newsroom's recorded answer, read from `PALETTE.md` by the runner —
+   *  naming them here would put the answer back in the source, where no recorded choice reaches
+   *  it. */
+  startInk: string;
+  endInk: string;
 }) {
   if (rows.length < 2)
     throw new Error(
@@ -230,7 +236,7 @@ export function DumbbellLifeExpectancyGains({
       {/* Load-bearing legend, not decorative: with no time-axis convention telling left from
           right, the two dot colours are the ONLY thing naming which series is which, on every
           single row (`references/types/dumbbell.md`, "The accessibility trap"). */}
-      <circle cx={PAD + 6} cy={legendBaseline - 4} r={6} fill={COLOURS.y2000} />
+      <circle cx={PAD + 6} cy={legendBaseline - 4} r={6} fill={startInk} />
       <text
         x={PAD + 18}
         y={legendBaseline}
@@ -244,7 +250,7 @@ export function DumbbellLifeExpectancyGains({
         cx={PAD + 90}
         cy={legendBaseline - 4}
         r={6}
-        fill={COLOURS.y2023}
+        fill={endInk}
       />
       <text
         x={PAD + 102}
@@ -305,8 +311,8 @@ export function DumbbellLifeExpectancyGains({
             strokeLinecap="round"
           />
 
-          <circle cx={d.x2000} cy={d.rowY} r={6} fill={COLOURS.y2000} />
-          <circle cx={d.x2023} cy={d.rowY} r={6} fill={COLOURS.y2023} />
+          <circle cx={d.x2000} cy={d.rowY} r={6} fill={startInk} />
+          <circle cx={d.x2023} cy={d.rowY} r={6} fill={endInk} />
 
           {/* Value labels on the OUTER side of each dot, in ink — never in either dot's own
               accent colour, which has previously failed WCAG contrast here

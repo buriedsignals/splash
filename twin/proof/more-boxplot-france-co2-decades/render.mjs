@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { DecadeBoxplot, summarizeDecade } from "./DecadeBoxplot.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -109,6 +109,11 @@ async function main() {
   const decadeTo = summaries[summaries.length - 1].label;
   const lastFull = summaries.find((s) => s.n < 10);
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+
   const { pngPath } = await renderStill({
     element: createElement(DecadeBoxplot, {
       decades,
@@ -116,8 +121,8 @@ async function main() {
       source:
         "Source: Global Carbon Budget 2025, via Our World in Data · France, 1950–2024, extracted 8 August 2026",
       alt: `Box plot of France's annual per-capita CO2 emissions by decade, ${decadeFrom} to ${decadeTo}, in tonnes per capita. The median rises from ${summaries[0].median.toFixed(2)} in the ${summaries[0].label} to a peak of ${peakDecade.median.toFixed(2)} in the ${peakDecade.label}, then falls every decade after that to ${summaries[summaries.length - 1].median.toFixed(2)} in the ${summaries[summaries.length - 1].label} (n=${summaries[summaries.length - 1].n}, a partial decade covering 2020-2024 only; every other decade shown is a full n=10). ${outlierCount === 0 ? "No decade produced a Tukey outlier." : summaries.filter((s) => s.outliers.length > 0).map((s) => `${s.label} has ${s.outliers.length} outlier reading${s.outliers.length > 1 ? "s" : ""} beyond the whisker: ${s.outliers.map((v) => v.toFixed(1)).join(", ")}, from the tail end of the prior decade's higher emissions.`).join(" ")}`,
-      ground: "#FFFFFF",
-      accent: "#0072B2",
+      ground,
+      accent,
     }),
     width: 900,
     height: 560,

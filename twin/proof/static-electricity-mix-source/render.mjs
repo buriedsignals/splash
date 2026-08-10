@@ -8,7 +8,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  renderStill,
+  readPalette,
+  seriesInks,
+} from "#shared/twin-chart-beat/render-still.mjs";
 import { ElectricityMixStack } from "./ElectricityMixStack.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -75,6 +79,21 @@ async function main() {
     `${mostFossil.name} the highest fossil share.`;
   console.log(`alt: ${alt}`);
 
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+  // One fill per stacked series, in the bottom-to-top order the columns are drawn in — which is
+  // the order the accents were recorded.
+  const [renewablesFill, nuclearFill, fossilFill] = seriesInks(palette, 3);
+  const fills = {
+    renewables: renewablesFill,
+    nuclear: nuclearFill,
+    fossil: fossilFill,
+  };
+  console.log(
+    `segment fills — renewables ${fills.renewables}, nuclear ${fills.nuclear}, fossil ${fills.fossil}`,
+  );
+
   const { pngPath } = await renderStill({
     element: createElement(ElectricityMixStack, {
       countries,
@@ -84,7 +103,8 @@ async function main() {
       limits: `Each column is 100% of that country's own ${YEAR} electricity generation; totals in TWh differ a lot between them.`,
       source: "Source: Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024 generation, extracted 8 August 2026",
       alt,
-      ground: "#FFFFFF",
+      ground,
+      fills,
     }),
     width: 900,
     height: 560,

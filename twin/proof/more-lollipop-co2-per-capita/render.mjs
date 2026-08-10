@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { LollipopCo2 } from "./LollipopCo2.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -118,6 +118,11 @@ async function main() {
   const claim = `Switzerland's 2024 per-capita CO₂ emissions were the ${rankFromBottom}${ordinalSuffix(rankFromBottom)}-lowest of these 15 European countries, at ${subjectRow.value.toFixed(1)} tonnes — less than half of ${highest.country}'s ${highest.value.toFixed(1)} tonnes.`;
   console.log(`claim: ${claim}`);
 
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+
   const { pngPath } = await renderStill({
     element: createElement(LollipopCo2, {
       rows: sorted,
@@ -125,8 +130,8 @@ async function main() {
       source:
         "Source: Global Carbon Budget 2025, via Our World in Data · 2024 data, extracted 8 August 2026",
       alt: `Lollipop chart ranking 2024 per-capita CO2 emissions across 15 European countries, highest to lowest. ${highest.country} is highest at ${highest.value.toFixed(1)} tonnes per capita. Switzerland, highlighted, is ${rankFromBottom}${ordinalSuffix(rankFromBottom)}-lowest at ${subjectRow.value.toFixed(1)} tonnes.`,
-      ground: "#FFFFFF",
-      accent: "#0B7A75",
+      ground,
+      accent,
       subject,
     }),
     width: 900,

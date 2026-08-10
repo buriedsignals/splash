@@ -7,7 +7,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
 import { LifeExpectancyLine } from "./LifeExpectancyLine.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -79,7 +79,11 @@ async function main() {
   console.log(`claim: ${claim}`);
 
   const endLabel = `Switzerland ${last.value.toFixed(1)} (${last.year})`;
-  const accent = "#0B7A75";
+
+  const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+    stopAt: join(HERE, ".."),
+  });
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
   const { pngPath } = await renderStill({
     element: createElement(LifeExpectancyLine, {
@@ -88,7 +92,7 @@ async function main() {
       source:
         "Source: UN, World Population Prospects (2024), via Our World in Data · Switzerland, 1950–2023, extracted 8 August 2026",
       alt: `Line chart of life expectancy at birth in Switzerland, 1950 to 2023. The line rises from ${first.value.toFixed(1)} years in ${first.year} to ${last.value.toFixed(1)} years in ${last.year}, a gain of ${delta.toFixed(1)} years, first crossing 80 years in ${crossing.year}. Two small real dips interrupt the climb around 2020 and 2022, the COVID-19 era.`,
-      ground: "#FFFFFF",
+      ground,
       accent,
       endLabel,
     }),

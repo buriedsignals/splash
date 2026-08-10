@@ -7,7 +7,11 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  renderStill,
+  readPalette,
+  seriesInks,
+} from "#shared/twin-chart-beat/render-still.mjs";
 import { SwissAgePyramid } from "./SwissAgePyramid.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -63,6 +67,13 @@ async function main() {
   }
   console.log(`female > male from ${crossover.ageBand} upward`);
 
+  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const { ground, accent, origin, source: paletteSource } = palette;
+  console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+  // One ink per side of the spine, in the order the accents were recorded.
+  const [maleInk, femaleInk] = seriesInks(palette, 2);
+  console.log(`side inks — male ${maleInk}, female ${femaleInk}`);
+
   const { pngPath } = await renderStill({
     element: createElement(SwissAgePyramid, {
       bands,
@@ -70,9 +81,11 @@ async function main() {
       limits: "Age bands run in their natural sequence, oldest at top — sorting by population size would destroy the shape this chart exists to show.",
       source: "Source: UN, World Population Prospects (2024), via Our World in Data · 2023 data, extracted 8 August 2026",
       alt: `Population pyramid of Switzerland by age and sex, ${YEAR}. The widest band is ${peak.ageBand} at ${peak.total.toLocaleString()} people, not the youngest band: 0-4 year-olds total ${youngest.total.toLocaleString()}, about ${youngestSharePct}% of the peak band's width. Women outnumber men in every band from ${crossover.ageBand} upward.`,
-      ground: "#FFFFFF",
+      ground,
       peakBand: peak.ageBand,
       peakLabel: `${peak.ageBand}: the widest band (${peak.total.toLocaleString()})`,
+      maleInk,
+      femaleInk,
     }),
     width: 900,
     height: 820,

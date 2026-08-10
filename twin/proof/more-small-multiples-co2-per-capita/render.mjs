@@ -9,16 +9,24 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "#shared/twin-chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "small-multiples-co2";
 
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: join(HERE, ".."),
+});
+console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
+
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground,
+  accent,
   title:
     "Poland's per-capita CO2 emissions have overtaken Germany's, even as both have fallen sharply since their 1979-80 peaks.",
   source:

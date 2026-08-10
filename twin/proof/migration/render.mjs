@@ -11,12 +11,22 @@ import { spawnSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  deriveFurniture,
+  readPalette,
+} from "#shared/twin-chart-beat/render-still.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
 const ENTRY = join(HERE, "index.ts");
 const COMPOSITION = "migration";
+
+const { ground, accent, origin, source: paletteSource } = readPalette(HERE, {
+  stopAt: join(HERE, ".."),
+});
+console.log(
+  "palette from " + paletteSource + " — ground " + ground + ", accent " + accent + ", chosen by " + origin,
+);
 
 /** The story's own constants — the journalist's words, from the CADRAGE exchange.
  *
@@ -28,10 +38,13 @@ const COMPOSITION = "migration";
  * 1998 is +1,177. The table only starts in 1991, so "since 1990" is narrowed to "since 1991" — the
  * window the committed data can actually stand behind. The credit itself was already the real
  * source and did not need to change, only the claim did.
+ *
+ * `ground` and `accent` are no longer constants here: they are the newsroom's recorded answer, read
+ * from `PALETTE.md` beside this file.
  */
 const BEAT = {
-  ground: "#FFFFFF",
-  accent: "#0B7A75",
+  ground,
+  accent,
   title: "Twice since 1991, more people left Switzerland than arrived.",
   source: "Source: Federal Statistical Office · data 2024",
   reference: 0,

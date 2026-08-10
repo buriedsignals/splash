@@ -36,11 +36,6 @@ const CALLOUT_LEAD = 16;
 const CALLOUT_DESCENDER = 0.3;
 /** Clear space between the callout block's bottom and the top of its leader. */
 const CALLOUT_LEADER_GAP = 8;
-/** Wind: a cool hue. Solar: a warm one. Only one warm member sits in this two-colour set, so the
- *  "two warm hues adjacent" trap the grouped-bar sheet names (an orange next to a vermillion)
- *  cannot occur here — Okabe-Ito blue and Okabe-Ito orange. */
-const WIND_COLOUR = "#0072B2";
-const SOLAR_COLOUR = "#E69F00";
 /** Y ticks the fitted, `.nice()`d domain is asked for — conventional static density, not the
  *  sparse floor/ceiling the motion genre would use. */
 const Y_TICK_HINT = 5;
@@ -140,6 +135,8 @@ export function WindVsSolarBar({
   ground,
   calloutSubject,
   calloutText,
+  windInk,
+  solarInk,
 }: {
   groups: Group[];
   title: string;
@@ -149,6 +146,13 @@ export function WindVsSolarBar({
   ground: string;
   calloutSubject: string;
   calloutText: string;
+  /** One ink per series. Wind: a cool hue. Solar: a warm one. Only one warm member sits in this
+   *  two-colour set, so the "two warm hues adjacent" trap the grouped-bar sheet names (an orange
+   *  next to a vermillion) cannot occur here. They arrive as props because they are the newsroom's
+   *  recorded answer, read from `PALETTE.md` by the runner — naming them here would put the answer
+   *  back in the source, where no recorded choice reaches it. */
+  windInk: string;
+  solarInk: string;
 }) {
   if (groups.length < 2)
     throw new Error(
@@ -285,7 +289,7 @@ export function WindVsSolarBar({
         y={legendBaseline - 10}
         width={12}
         height={12}
-        fill={WIND_COLOUR}
+        fill={windInk}
       />
       <text
         x={PAD + 18}
@@ -301,7 +305,7 @@ export function WindVsSolarBar({
         y={legendBaseline - 10}
         width={12}
         height={12}
-        fill={SOLAR_COLOUR}
+        fill={solarInk}
       />
       <text
         x={PAD + 92}
@@ -342,14 +346,14 @@ export function WindVsSolarBar({
             y={b.wind.y}
             width={b.wind.width}
             height={b.wind.height}
-            fill={WIND_COLOUR}
+            fill={windInk}
           />
           <rect
             x={b.solar.x}
             y={b.solar.y}
             width={b.solar.width}
             height={b.solar.height}
-            fill={SOLAR_COLOUR}
+            fill={solarInk}
           />
           {/* Value label carries the number in ink, never the bar's own hue — a mark colour
               checked for confusability with its neighbours is not the same as a label colour
