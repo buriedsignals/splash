@@ -271,6 +271,39 @@ function tagsCarrying(html: string, attribute: string): string[] {
   return out;
 }
 
+/** The properties each named `@keyframes chart-entrance-<motion>` block touches, per motion.
+ *
+ *  Needed because the union is not enough: a mutation swapped `chart-entrance-pop`'s own
+ *  `from { scale: 0 }` for `from { opacity: 0 }` and every clause stayed green — the page still
+ *  animated only allowed properties, the marks still arrived one at a time, and a scatter that pops
+ *  had silently become a scatter that fades. Each motion IS a property; that is what makes it a
+ *  motion rather than a name. */
+function animatedPropertiesByMotion(html: string): Map<string, string[]> {
+  const found = new Map<string, string[]>();
+  const re = /@keyframes\s+chart-entrance-([a-z]+)\s*\{([\s\S]*?)\}\s*\}/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html))) {
+    const props = new Set<string>();
+    for (const decl of m[2].split(";")) {
+      const name = decl.split(":")[0]?.trim().replace(/^.*\{/, "").trim();
+      if (name && !/^\d|^from$|^to$|^$/.test(name)) props.add(name);
+    }
+    found.set(m[1], [...props]);
+  }
+  return found;
+}
+
+/** What each motion IS, as the property it moves. `wipe`, `land` and `grow` are all `transform`
+ *  because they are all a scale about a stated origin; `pop` is the INDIVIDUAL `scale` property, so
+ *  it composes with an element's own `transform` instead of replacing it. */
+const MOTION_PROPERTY: Record<string, string> = {
+  fade: "opacity",
+  wipe: "transform",
+  land: "transform",
+  grow: "transform",
+  pop: "scale",
+};
+
 /** The properties every `@keyframes chart-entrance-*` block in the page touches. */
 function animatedProperties(html: string): string[] {
   const props = new Set<string>();
@@ -459,11 +492,23 @@ describe("the markup half: what a page that declares an entrance must already sa
           failures.push(
             `data-entrance-motion="${motion}" is not one of the five motions the stylesheet defines`,
           );
-      for (const motion of motionOf)
-        if (!html.includes(`@keyframes chart-entrance-${motion}`))
+      const byMotion = animatedPropertiesByMotion(html);
+      for (const motion of motionOf) {
+        const props = byMotion.get(motion);
+        if (props === undefined) {
           failures.push(
             `the page uses the ${motion} motion and ships no @keyframes chart-entrance-${motion}`,
           );
+          continue;
+        }
+        const expected = MOTION_PROPERTY[motion];
+        if (expected !== undefined && !props.includes(expected))
+          failures.push(
+            `@keyframes chart-entrance-${motion} moves ${props.join(", ") || "nothing"} and not ` +
+              `${expected} — a motion IS the property it moves, and swapping one for another is a ` +
+              `silent downgrade every other clause here passes`,
+          );
+      }
 
       const growTags = tagsCarrying(html, 'data-entrance-motion="grow"');
       for (const tag of tagsCarrying(html, 'data-entrance-motion="pop"'))
