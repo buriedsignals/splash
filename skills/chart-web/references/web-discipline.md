@@ -837,3 +837,75 @@ compared against each other, never against the truth); the PACE, which is an edi
 and `atProgress`, which has no video ancestor — its own claim,
 `progressOf(atProgress(e, f), e) === f`, is asserted directly instead, to within the half
 millisecond its rounding costs.
+
+### A clip is right for a line and wrong for the whole bar family
+
+**Measured, and paid for by a revert.** A lollipop entrance was built on the clip wipe above, driven
+green by both of the instruments above, and reverted on looking at it. Every stem starts at the same
+zero, so at 40 % of the wipe all fifteen stems are 40 % of the plot long: **for two thirds of the
+build the chart states that all fifteen countries are equal, which is the opposite of what its title
+says.** A clip uncovers a finished picture; that is the truth about a line whose x axis IS time, and
+a lie about anything whose reading is a LENGTH FROM A BASELINE.
+
+So the fourth motion is **`grow`**: one mark, scaling from **its own declared baseline** to **its own
+value**, along the one axis that carries its reading, on **its own delay**. The other axis stays at 1
+— a bar's thickness carries no reading and animating it would be motion added for energy. The
+cascade's arithmetic is `entrance.ts`'s `markEvent`, which is the video's own `rowWindow` (seven
+video beats here carry it as three typed lines) converted to milliseconds THROUGH `atProgress`, so
+the cascade and the label rule are measured against the same window. **Which mark is index 0 is the
+beat's own editorial call** and always will be — the contract owns the arithmetic, not the order.
+
+The baseline is stated per mark because there is no single one: a column's is the plot floor, a
+diverging bar's a centre line, a stem's wherever the value axis's zero landed. How it resolves was
+**measured, not read off a spec**: with `transform-box: view-box`, Chrome resolves a length
+`transform-origin` in the ELEMENT'S OWN local coordinates — a `<line x1="100">` given
+`transform-origin: 100px 200px` and `scaleX(0.5)` keeps its left end at 100 and halves its length.
+
+**A diverging bar is the type a clip cannot reveal at all**, which is worth stating separately: its
+bars grow left AND right out of the zero line, so a left-to-right wipe would build every one of them
+backwards — from its value toward the reference the value is measured from.
+
+### The third instrument, and the reading that makes it work
+
+Both instruments above read A CLIP, so neither could be pointed at a bar family beat. **A green
+instrument that cannot see the defect is the defect.** So a bar-family beat DECLARES ITS MARKS
+(`data-entrance-key`, written by `entranceLayer` when the beat asks for `grow`) and
+`verify-entrance.mjs` measures, per mark, per frame:
+
+- **its PAINTED EXTENT, in the same unit for every mark on the page** — the mark's own settled
+  geometry walked from its baseline toward its tip in FIXED STEPS OF USER UNITS, each step
+  hit-tested through `elementsFromPoint` at real client coordinates, mapped through the mark's
+  **parent** screen CTM (the parent's, because the mark's own carries the animation being measured);
+- **its own scale factor** off the computed transform matrix, on the axis it encodes along.
+
+**Fixed shared steps rather than each mark's own fraction is the whole point.** Under a clip every
+stem reports the identical painted extent in user units while their settled extents differ, and that
+is the sentence the tool has to be able to say before it can refuse it.
+
+Three clauses follow that the clip instruments cannot express — each mark's own extent GROWS; the
+marks do NOT all arrive on one clock; and **no frame shows the marks all equal unless they really
+are** (more than one step of extent, at least three marks and at least half of them, before an equal
+reading is called a claim rather than a coincidence). The label rule is paired mark by mark
+(`data-entrance-label` names a key), because in a cascade the first row's label is legitimately
+painted while the last row's mark has not started, and it asks BOTH instruments: the scale, which is
+exact at any size, and the painted extent, which is what catches a reveal that is not a per-mark
+growth at all.
+
+Mutations, run on the delivered artifact in a copy under `/tmp`, never in the working tree:
+
+| mutation | what went red |
+| --- | --- |
+| the marks put back under one clip — the reverted design, restored | *"at reading 6 all 15 visible marks were the same length (147.78 ×15) while their own values are not (738.9, 718.63, …) — an intermediate frame is an assertion, and this one says they are equal"*, plus *"no mark's own scale ran from nothing to whole"*. 8 failures |
+| every mark on the master clock (one delay, one duration) | *"the widest spread between the marks' own progress at any one reading was 0.04 — they arrive together, so the build states no order"*. 4 failures |
+| every value label on the master clock | the label rule, mark by mark: *"the label for Belgium was painted while its own mark was 350.98 of 738.9"*. 2 failures |
+| `--e-sx` stripped from every grow layer (tree copy) | the markup guard: *"its keyframe resolves to scale(1, 1) and the mark is drawn in full from the first millisecond"*. 19 pass / 1 fail |
+| a reveal mark's `data-entrance-key` dropped (tree copy) | *"a grow mark on the reveal … without a key it sits outside every per-mark check"*, and the label that named it goes dangling. 19 / 1 |
+| `markEvent`'s end computed outside `atProgress` | the parity test: the rowWindow comparison AND *"should keep every mark inside the reveal it divides"*. 31 / 2 |
+
+**Two things the beats taught the instrument, and both were false readings on settled pages.** The
+no-JS pass never scrolled, and `elementsFromPoint` answers about the VIEWPORT — it reported every
+mark at zero painted extent on a page that is in fact complete. And three checks were inventing
+their own tolerance from each mark's OWN settled length; six of the diverging bar's twenty-seven
+bars are shorter than the shared step (Croatia's is 1.2 user units against a step of 19.7) and were
+reported unfinished. **The reader publishes the step it used**, and every tolerance downstream is
+that number.
