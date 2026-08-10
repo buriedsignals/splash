@@ -60,12 +60,12 @@ until the choice does.
 
 **A second choice is not additive — and that wipe must never cross a beat.** If a journalist
 materialises `owned-file` and then changes their mind and materialises `source-bundle` into the same
-`exportDir`, the first form's files do not linger. `materialise` clears `exportDir` before writing,
-every call, so the directory always holds exactly the most recently chosen form — never a mix of two.
-That clearing happens *after* `{form, genre}` is validated as a pair, in that order deliberately: a
-refused, unoffered `form` (see `materialise` refusing `"embed"`, or `"owned-file"` under a genre that
-never offered it) must not destroy a form that was already delivered by a previous, valid call. Swap
-that order and a bad second choice silently wipes out a good first one.
+`exportDir`, the first form's files do not linger. `materialise` builds the complete replacement in a
+private sibling staging directory, including `HANDOVER.md`, and only then replaces `exportDir`. The
+directory therefore holds exactly the most recently completed form — never a mix of two — while a
+failed build, hand-over, copy, or remote deployment leaves the last good export intact. Validation
+of `{form, genre}`, the exact per-beat path, `APPROVED.md`, and the hand-over payload all happens
+before staging begins.
 
 **The other half of it, and it was live: a story has more than one beat.** With one story-level
 `export/` shared by every beat, that same wipe reached ACROSS beats — delivering beat 2 destroyed
@@ -73,8 +73,10 @@ beat 1's delivered files, silently, at the last phase of the journey, and the se
 reported success. Nothing in this repository had ever put two beats in one story, so no test saw it.
 Two things close it, and both are code rather than convention:
 
-- **`exportDirFor(storyDir, beatName)`** is where a beat delivers: `export/<beat>/`. `whereIs` reads
-  the same shape, so a beat with a non-empty `export/<beat>/` is a beat that has been delivered.
+- **`exportDirFor(storyDir, beatName)`** is where a beat delivers: `export/<beat>/`. The beat name
+  must be one path segment. `materialise` derives the same answer from the required
+  `stories/<slug>/beats/<beat>` source layout and refuses any other caller-supplied directory,
+  including a story-level path or symlink. `whereIs` reads the same per-beat shape.
 - **a `.delivered-from` receipt**, written into every export directory, naming the beat it came
   from. `materialise` reads it BEFORE the wipe and throws when it names a different beat, so a
   caller handing two beats the same directory is refused rather than obeyed. The receipt is a
@@ -85,7 +87,7 @@ Two things close it, and both are code rather than convention:
 | Layer | File | Role |
 | --- | --- | --- |
 | Menu | `scripts/deliver.mjs` — `FORMS_BY_GENRE`, `offerForms` | The forms one genre allows, and what each honestly gives; refuses before `beatDir/APPROVED.md` exists (Gate 3 before Gate 4) and filters `embed` out when no Cloudflare credential is present |
-| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Writes exactly the chosen form's files into `exportDir`, walking any subdirectory a beat carries. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
+| Materialiser | `scripts/deliver.mjs` — `materialise`, `copyTree`, `singleOwnedFile`, `ownedFileForInsertion` | Re-checks approval, derives and contains the per-beat export path, builds the complete chosen form in private staging, then replaces the previous export. `ownedFileForInsertion` decides WHICH rendered file an insertion carries, per genre, so a static beat's PNG-and-SVG pair stops reading as ambiguity |
 | The key | `scripts/deliver.mjs` — `carriesMapKey`, `substituteKeys`, `mapKeyState` | Ruling R1b: the real MapTiler key enters the file at delivery and nowhere earlier — and only for an artifact that actually carries the key slot (`carriesMapKey` reads the file, not the environment). `mapKeyState` names WHICH key went in; nothing here refuses |
 | Per-beat export | `scripts/deliver.mjs` — `exportDirFor`, the `.delivered-from` receipt | Each beat delivers into `export/<beat>/`, and `materialise` refuses to wipe a directory another beat already delivered into |
 | Hand-over | `scripts/format-handover.mjs` — `formatHandover` | `export/<beat>/HANDOVER.md`, **G4** — not an option: `materialise` refuses a delivery with no payload to read back. each delivered file with its role, the placement read back, the alt text, the credit line, the caveat. A CLOSED parameter set — there is no free-text field, and adding one is what this file exists to prevent — and it **throws** on any string naming one of our own paths or modules, so a maintainer-facing sentence cannot reach the journalist. A defect in this toolchain goes to `stories/<slug>/NOTES-FOR-MAINTAINER.md` |
@@ -117,12 +119,16 @@ Two things close it, and both are code rather than convention:
 2. **The conversation presents the list and waits.** This skill's code stops here; the doctrine
    of waiting is enforced by the calling conversation, the same way `storyboard` enforces
    its exchange in prose, not in code that could be skipped.
-3. **`materialise({form, genre, beatDir, exportDir, env, fetchFn, projectName, cms})`** validates
+3. **`materialise({form, genre, beatDir, exportDir, env, fetchFn, projectName, cms, handover})`** validates
    the **`{form, genre}` pair** against `FORMS_BY_GENRE[genre][form]` — the same table `offerForms`
    reads, so "not an offered form" can never drift from what was actually offered, and a form id
    that happens to exist under one genre is never accepted for a different genre just because the
-   id matches. It then refuses if `exportDir` already carries another beat's `.delivered-from`
-   receipt, clears and recreates it (the gotcha above), writes this beat's own receipt, and:
+   id matches. It independently requires `beatDir/APPROVED.md`, validates `handover`, derives the
+   one legal `export/<beat>/` directory from the beat path, and rejects path traversal, a broad
+   story-level destination, or symlinked delivery directories. It then builds the complete form in
+   a private staging directory. Only a successful build and hand-over replace the previous export;
+   failures remove staging and preserve the last good delivery. Inside staging it writes the beat's
+   receipt and:
    - `"owned-file"` copies every entry of `<beatDir>/renders/` into `exportDir`, walking any
      subdirectory with `copyTree` rather than handing a directory straight to `copyFile` (which
      throws on it).
@@ -307,6 +313,13 @@ const written = await materialise({
   // ONE DIRECTORY PER BEAT. `exportDirFor` is the answer; handing two beats the same directory
   // throws rather than destroying the first one's delivery.
   exportDir: exportDirFor("stories/water-wars", "1-rainfall"),
+  handover: {
+    language: "en",
+    placement: "After the paragraph that introduces the rainfall trend",
+    alt: "Annual rainfall falls across the four measured winters",
+    credit: "Source: newsroom rainfall analysis",
+    caveat: "Four winters are a short comparison window",
+  },
 });
 // `written` names exactly what left the beat directory — nothing more. For "embed" this is
 // `EMBED_URL.txt`; for "cms-insertion" it is `CMS-INSERTION.md`.

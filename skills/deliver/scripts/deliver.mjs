@@ -4,9 +4,10 @@
 // id that happens to exist under one genre is not automatically valid for another; the check
 // is always on the {form, genre} pair, never on the form id alone.
 
-import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { basename, join } from "node:path";
+import { randomUUID } from "node:crypto";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { deployFile, resolveCloudflareCredentials } from "./deploy-embed.mjs";
 import { buildInsertion } from "./cms-insert.mjs";
 import { formatHandover } from "./format-handover.mjs";
@@ -181,7 +182,9 @@ async function copyTree(srcDir, destDir, written, { env = process.env, states = 
   for (const entry of await readdir(srcDir, { withFileTypes: true })) {
     const srcPath = join(srcDir, entry.name);
     const destPath = join(destDir, entry.name);
-    if (entry.isDirectory()) {
+    if (entry.isSymbolicLink()) {
+      throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
+    } else if (entry.isDirectory()) {
       await copyTree(srcPath, destPath, written, { env, states });
     } else if (entry.name.endsWith(".html")) {
       const html = await readFile(srcPath, "utf8");
@@ -395,7 +398,92 @@ export async function ownedFileForInsertion(beatDir, genre) {
 export function exportDirFor(storyDir, beatName) {
   if (!storyDir) throw new Error("exportDirFor needs the story directory");
   if (!beatName) throw new Error("exportDirFor needs the beat's own directory name");
+  if (
+    typeof beatName !== "string" ||
+    beatName === "." ||
+    beatName === ".." ||
+    beatName.includes("/") ||
+    beatName.includes("\\") ||
+    beatName.includes("\0")
+  ) {
+    throw new Error(`beat name must be one path segment, got ${JSON.stringify(beatName)}`);
+  }
   return join(storyDir, "export", beatName);
+}
+
+async function optionalFile(path) {
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function optionalStat(path) {
+  try {
+    return await lstat(path);
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+// `beatDir` is not merely a source path: its `stories/<slug>/beats/<beat>` shape is the authority
+// from which the only legal export directory is derived. A caller may repeat that answer in
+// `exportDir` for compatibility, but cannot choose another recursive-delete target.
+async function deliveryPaths(beatDir, exportDir) {
+  if (!beatDir) throw new Error("materialise needs the beat directory");
+  if (!exportDir) throw new Error("materialise needs the export directory");
+
+  const resolvedBeat = resolve(beatDir);
+  const beatsDir = dirname(resolvedBeat);
+  if (basename(beatsDir) !== "beats") {
+    throw new Error(
+      `beat directory must have the stories/<slug>/beats/<beat> shape, got ${beatDir}`,
+    );
+  }
+
+  const beatStat = await lstat(resolvedBeat);
+  const beatsStat = await lstat(beatsDir);
+  const storyDir = dirname(beatsDir);
+  const storyStat = await lstat(storyDir);
+  const rendersDir = join(resolvedBeat, "renders");
+  const rendersStat = await lstat(rendersDir);
+  if (
+    beatStat.isSymbolicLink() ||
+    beatsStat.isSymbolicLink() ||
+    storyStat.isSymbolicLink() ||
+    rendersStat.isSymbolicLink()
+  ) {
+    throw new Error(`delivery refuses a symlinked beat directory: ${beatDir}`);
+  }
+  if (!rendersStat.isDirectory()) {
+    throw new Error(`delivery requires a real renders directory: ${rendersDir}`);
+  }
+
+  const beatName = basename(resolvedBeat);
+  const expected = resolve(exportDirFor(storyDir, beatName));
+  if (resolve(exportDir) !== expected) {
+    throw new Error(
+      `export directory must be ${expected} for beat ${JSON.stringify(beatName)}, got ${resolve(exportDir)}`,
+    );
+  }
+
+  const exportRoot = dirname(expected);
+  const exportRootStat = await optionalStat(exportRoot);
+  if (exportRootStat?.isSymbolicLink()) {
+    throw new Error(`delivery refuses a symlinked export root: ${exportRoot}`);
+  }
+  const exportStat = await optionalStat(expected);
+  if (exportStat?.isSymbolicLink()) {
+    throw new Error(`delivery refuses a symlinked export directory: ${expected}`);
+  }
+  if (exportStat && !exportStat.isDirectory()) {
+    throw new Error(`delivery refuses a non-directory export target: ${expected}`);
+  }
+
+  return { beatName, exportDir: expected, exportRoot };
 }
 
 // The receipt every delivery leaves behind, naming the beat it came from. It is the mechanical half
@@ -410,7 +498,7 @@ const DELIVERY_RECEIPT = ".delivered-from";
 
 async function refuseToWipeAnotherBeat(exportDir, beatDir) {
   const beatName = basename(beatDir ?? "");
-  const previous = await readFile(join(exportDir, DELIVERY_RECEIPT), "utf8").catch(() => null);
+  const previous = await optionalFile(join(exportDir, DELIVERY_RECEIPT));
   if (previous !== null && previous.trim() && previous.trim() !== beatName) {
     throw new Error(
       `${exportDir} already holds the delivery of beat "${previous.trim()}" — materialising beat "${beatName}" here would destroy it. Each beat delivers into its own export/<beat>/ directory (see exportDirFor).`,
@@ -434,12 +522,18 @@ async function refuseToWipeAnotherBeat(exportDir, beatDir) {
 // one of its inputs is ALREADY RECORDED (placement and credit are hand fields 4 and 5, the caveat is
 // `limits`, the alt is in the component), so a caller with nothing to hand in has not read the
 // storyboard back — and that is a refusal, not a delivery.
+const HANDOVER_REQUIRED =
+  "a delivery closes into export/<beat>/HANDOVER.md, like every other gate closes into a file — pass the hand-over payload (language, placement, alt, credit, and the caveat if the beat carries one). Every one of them is already recorded: language is STORYBOARD.md's `language:` field, placement and credit are hand fields 4 and 5, alt is in the component, the caveat is the limits field.";
+
+function validateHandover(handover, genre) {
+  if (!handover) throw new Error(HANDOVER_REQUIRED);
+  // Validate all journalist-facing fields before a build or remote deployment begins. The real
+  // document is rendered again with the delivered filenames and live-tile state inside staging.
+  formatHandover({ ...handover, genre, files: ["pending-delivery"], liveTiles: "none" });
+}
+
 async function withHandover(written, { exportDir, genre, handover, states = [] }) {
-  if (!handover) {
-    throw new Error(
-      "a delivery closes into export/<beat>/HANDOVER.md, like every other gate closes into a file — pass the hand-over payload (language, placement, alt, credit, and the caveat if the beat carries one). Every one of them is already recorded: language is STORYBOARD.md's `language:` field, placement and credit are hand fields 4 and 5, alt is in the component, the caveat is the limits field.",
-    );
-  }
+  if (!handover) throw new Error(HANDOVER_REQUIRED);
   const path = join(exportDir, "HANDOVER.md");
   await writeFile(
     path,
@@ -449,7 +543,7 @@ async function withHandover(written, { exportDir, genre, handover, states = [] }
   return written;
 }
 
-export async function materialise({
+async function materialiseInto({
   form,
   genre,
   beatDir,
@@ -469,10 +563,9 @@ export async function materialise({
     throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
   }
 
-  // A journalist can change their mind about THIS BEAT. exportDir may already hold a previous
-  // choice's files — clear it first so the chosen form is the ONLY thing delivered, never a mix of
-  // this choice and the last one. Validation above runs before this, so a rejected form never
-  // destroys whatever was already delivered.
+  // This function writes only into a new private staging directory. Clearing that directory keeps
+  // the chosen form internally exact; the public materialise wrapper publishes it only after the
+  // complete handover has been written.
   //
   // A different BEAT's delivery is not a change of mind, and the wipe must never reach it: the
   // receipt check refuses before anything is removed.
@@ -579,7 +672,9 @@ ${JSON.stringify(insertion, null, 2)}
     if (entry.name === "renders") continue;
     const srcPath = join(beatDir, entry.name);
     const destPath = join(exportDir, entry.name);
-    if (entry.isDirectory()) {
+    if (entry.isSymbolicLink()) {
+      throw new Error(`delivery refuses to follow a symbolic link in source material: ${srcPath}`);
+    } else if (entry.isDirectory()) {
       await copyTree(srcPath, destPath, written, { env, states });
     } else {
       await copyFile(srcPath, destPath);
@@ -609,4 +704,100 @@ ${JSON.stringify(insertion, null, 2)}
   written.push(manifestPath);
 
   return withHandover(written, { exportDir, genre, handover, states });
+}
+
+async function publishStagedDelivery(stagingDir, exportDir) {
+  const existing = await optionalStat(exportDir);
+  if (existing?.isSymbolicLink()) {
+    throw new Error(`delivery refuses a symlinked export directory: ${exportDir}`);
+  }
+  if (existing && !existing.isDirectory()) {
+    throw new Error(`delivery refuses a non-directory export target: ${exportDir}`);
+  }
+
+  const backupDir = join(dirname(exportDir), `.${basename(exportDir)}-previous-${randomUUID()}`);
+  let movedExisting = false;
+  try {
+    if (existing) {
+      await rename(exportDir, backupDir);
+      movedExisting = true;
+    }
+    await rename(stagingDir, exportDir);
+  } catch (error) {
+    if (movedExisting) {
+      try {
+        await rename(backupDir, exportDir);
+      } catch (restoreError) {
+        throw new AggregateError(
+          [error, restoreError],
+          `delivery replacement failed and the previous export could not be restored at ${exportDir}`,
+        );
+      }
+    }
+    throw error;
+  }
+
+  if (movedExisting) {
+    try {
+      await rm(backupDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      // `rm` may already have removed part of the backup. Rolling back to that directory would turn
+      // a cleanup problem into data loss. The new export is complete and canonical at this point;
+      // retain whatever backup remains and report its exact path for operator cleanup.
+      console.warn(
+        `delivery published at ${exportDir}, but its previous backup could not be fully removed at ${backupDir}: ${cleanupError.message}`,
+      );
+    }
+  }
+}
+
+/**
+ * Build a complete delivery in a private sibling directory, then publish it as one replacement.
+ * The caller repeats `exportDirFor(storyDir, beatName)` for compatibility, but `beatDir` derives
+ * and verifies that exact destination before any existing export is read or changed.
+ */
+export async function materialise(options) {
+  const { form, genre, beatDir, exportDir, handover } = options;
+  const forms = FORMS_BY_GENRE[genre];
+  if (!forms || !forms[form]) {
+    throw new Error(`${form} is not an offered form for genre ${JSON.stringify(genre)}`);
+  }
+
+  const paths = await deliveryPaths(beatDir, exportDir);
+  const approval = await optionalStat(join(beatDir, "APPROVED.md"));
+  if (!approval?.isFile()) {
+    throw new Error(
+      `this beat has not been approved yet — show it first: no APPROVED.md in ${beatDir}. Delivery cannot begin before the journalist has seen the render.`,
+    );
+  }
+  validateHandover(handover, genre);
+  await refuseToWipeAnotherBeat(paths.exportDir, beatDir);
+
+  await mkdir(paths.exportRoot, { recursive: true });
+  const exportRoot = await lstat(paths.exportRoot);
+  if (exportRoot.isSymbolicLink()) {
+    throw new Error(`delivery refuses a symlinked export root: ${paths.exportRoot}`);
+  }
+
+  const stagingDir = join(
+    paths.exportRoot,
+    `.${paths.beatName}-delivery-staging-${randomUUID()}`,
+  );
+  await mkdir(stagingDir);
+
+  try {
+    const stagedWritten = await materialiseInto({ ...options, exportDir: stagingDir });
+    await publishStagedDelivery(stagingDir, paths.exportDir);
+    return stagedWritten.map((path) => join(exportDir, relative(stagingDir, path)));
+  } catch (error) {
+    try {
+      await rm(stagingDir, { recursive: true, force: true });
+    } catch (cleanupError) {
+      throw new AggregateError(
+        [error, cleanupError],
+        `delivery failed and its staging directory could not be removed at ${stagingDir}`,
+      );
+    }
+    throw error;
+  }
 }

@@ -6,6 +6,7 @@ import {
   rm,
   readdir,
   readFile,
+  symlink,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -35,11 +36,12 @@ const handover = {
   caveat: "four winters is a short window",
 };
 
-let beatDir: string, exportDir: string;
+let tempRoot: string, storyDir: string, beatDir: string, exportDir: string;
 beforeEach(async () => {
-  const base = await mkdtemp(join(tmpdir(), "beat-"));
-  beatDir = join(base, "1-rainfall");
-  exportDir = join(base, "export");
+  tempRoot = await mkdtemp(join(tmpdir(), "beat-"));
+  storyDir = join(tempRoot, "story");
+  beatDir = join(storyDir, "beats", "1-rainfall");
+  exportDir = exportDirFor(storyDir, "1-rainfall");
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await mkdir(exportDir, { recursive: true });
   await writeFile(join(beatDir, "renders", "still.png"), "png-bytes");
@@ -54,7 +56,7 @@ beforeEach(async () => {
   await writeFile(join(beatDir, "APPROVED.md"), "seen at full size, approved");
 });
 afterEach(async () => {
-  await rm(join(beatDir, ".."), { recursive: true, force: true });
+  await rm(tempRoot, { recursive: true, force: true });
 });
 
 describe("offerForms — Gate 3 before Gate 4", () => {
@@ -229,6 +231,193 @@ describe("offerForms", () => {
 });
 
 describe("materialise", () => {
+  it("should enforce approval when materialise is called directly and preserve the last export", async () => {
+    await writeFile(join(exportDir, "previous.txt"), "last-good");
+    await rm(join(beatDir, "APPROVED.md"));
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir,
+        handover,
+      }),
+    ).rejects.toThrow(/APPROVED\.md/);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
+      "last-good",
+    );
+  });
+
+  it("should reject an export directory outside the story without touching it", async () => {
+    const outside = join(tempRoot, "outside");
+    await mkdir(outside);
+    await writeFile(join(outside, "sentinel.txt"), "keep-me");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir: outside,
+        handover,
+      }),
+    ).rejects.toThrow(/export directory/);
+
+    expect(await readFile(join(outside, "sentinel.txt"), "utf8")).toBe(
+      "keep-me",
+    );
+  });
+
+  it("should reject a symlinked export directory without touching its target", async () => {
+    const outside = join(tempRoot, "outside");
+    await mkdir(outside);
+    await writeFile(join(outside, "sentinel.txt"), "keep-me");
+    await rm(exportDir, { recursive: true });
+    await symlink(outside, exportDir, "dir");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir,
+        handover,
+      }),
+    ).rejects.toThrow(/symlink/);
+
+    expect(await readFile(join(outside, "sentinel.txt"), "utf8")).toBe(
+      "keep-me",
+    );
+  });
+
+  it("should reject a symlinked story directory without touching its target", async () => {
+    const realStory = join(tempRoot, "real-story");
+    const realBeat = join(realStory, "beats", "1-linked");
+    const linkedStory = join(tempRoot, "linked-story");
+    await mkdir(join(realBeat, "renders"), { recursive: true });
+    await writeFile(join(realBeat, "renders", "still.png"), "outside-render");
+    await writeFile(join(realBeat, "APPROVED.md"), "approved");
+    await symlink(realStory, linkedStory, "dir");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir: join(linkedStory, "beats", "1-linked"),
+        exportDir: exportDirFor(linkedStory, "1-linked"),
+        handover,
+      }),
+    ).rejects.toThrow(/symlink/);
+
+    expect(await readdir(realStory)).toEqual(["beats"]);
+  });
+
+  it("should reject a non-directory export target without replacing it", async () => {
+    await rm(exportDir, { recursive: true });
+    await writeFile(exportDir, "keep-me");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir,
+        handover,
+      }),
+    ).rejects.toThrow(/non-directory/);
+
+    expect(await readFile(exportDir, "utf8")).toBe("keep-me");
+  });
+
+  it("should refuse a symlink inside rendered source without reading its target", async () => {
+    const outside = join(tempRoot, "outside-render.txt");
+    await writeFile(outside, "private-data");
+    await symlink(outside, join(beatDir, "renders", "linked.png"));
+    await writeFile(join(exportDir, "previous.txt"), "last-good");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir,
+        handover,
+      }),
+    ).rejects.toThrow(/symbolic link/);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+  });
+
+  it("should refuse a symlinked renders directory without reading its target", async () => {
+    const outsideRenders = join(tempRoot, "outside-renders");
+    await mkdir(outsideRenders);
+    await writeFile(join(outsideRenders, "still.png"), "private-data");
+    await rm(join(beatDir, "renders"), { recursive: true });
+    await symlink(outsideRenders, join(beatDir, "renders"), "dir");
+    await writeFile(join(exportDir, "previous.txt"), "last-good");
+
+    await expect(
+      materialise({
+        form: "owned-file",
+        genre: "static",
+        beatDir,
+        exportDir,
+        handover,
+      }),
+    ).rejects.toThrow(/symlink/);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+  });
+
+  it("should refuse a symlink inside a source bundle without reading its target", async () => {
+    const outside = join(tempRoot, "outside-source.txt");
+    await writeFile(outside, "private-data");
+    await symlink(outside, join(beatDir, "linked-source.txt"));
+    await writeFile(join(exportDir, "previous.txt"), "last-good");
+
+    await expect(
+      materialise({
+        form: "source-bundle",
+        genre: "static",
+        beatDir,
+        exportDir,
+        handover,
+      }),
+    ).rejects.toThrow(/symbolic link/);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe("last-good");
+  });
+
+  it("should preserve the last good export when a replacement fails", async () => {
+    await rm(join(beatDir, "renders"), { recursive: true });
+    await mkdir(join(beatDir, "renders"));
+    await writeFile(join(beatDir, "renders", "index.html"), "<main>new</main>");
+    await writeFile(join(exportDir, "previous.txt"), "last-good");
+
+    await expect(
+      materialise({
+        form: "embed",
+        genre: "web",
+        beatDir,
+        exportDir,
+        handover,
+        env: {
+          CLOUDFLARE_ACCOUNT_ID: "account",
+          CLOUDFLARE_API_TOKEN: "token",
+        },
+        fetchFn: async () => {
+          throw new Error("network down");
+        },
+      }),
+    ).rejects.toThrow(/network down/);
+
+    expect(await readFile(join(exportDir, "previous.txt"), "utf8")).toBe(
+      "last-good",
+    );
+  });
+
   it("should write only the owned file when that form is chosen", async () => {
     const written = await materialise({
       form: "owned-file",
@@ -501,19 +690,21 @@ function fakeCloudflare() {
 }
 
 describe("materialise — hosted embed and CMS insertion (web genre)", () => {
-  let webBeatDir: string, webExportDir: string;
+  let webTempRoot: string, webBeatDir: string, webExportDir: string;
   beforeEach(async () => {
-    const base = await mkdtemp(join(tmpdir(), "web-beat-"));
-    webBeatDir = join(base, "1-rainfall-web");
-    webExportDir = join(base, "export");
+    webTempRoot = await mkdtemp(join(tmpdir(), "web-beat-"));
+    const webStoryDir = join(webTempRoot, "story");
+    webBeatDir = join(webStoryDir, "beats", "1-rainfall-web");
+    webExportDir = exportDirFor(webStoryDir, "1-rainfall-web");
     await mkdir(join(webBeatDir, "renders"), { recursive: true });
     await writeFile(
       join(webBeatDir, "renders", "rainfall.html"),
       "<!doctype html><html><body><h1>rainfall</h1></body></html>",
     );
+    await writeFile(join(webBeatDir, "APPROVED.md"), "seen at full size, approved");
   });
   afterEach(async () => {
-    await rm(join(webBeatDir, ".."), { recursive: true, force: true });
+    await rm(webTempRoot, { recursive: true, force: true });
   });
 
   it("should refuse to materialise the embed form without a Cloudflare credential", async () => {
@@ -813,11 +1004,11 @@ describe("HANDOVER.md — what the journalist actually receives", () => {
 //   (fail) a story has more than one beat > should refuse, rather than wipe, when another beat's delivery is already there
 //    47 pass, 3 fail
 describe("a story has more than one beat", () => {
-  let storyDir: string, beatTwo: string;
+  let multiBeatStoryDir: string, beatTwo: string;
 
   beforeEach(async () => {
-    storyDir = join(beatDir, "..");
-    beatTwo = join(storyDir, "2-temperature");
+    multiBeatStoryDir = join(beatDir, "..", "..");
+    beatTwo = join(multiBeatStoryDir, "beats", "2-temperature");
     await mkdir(join(beatTwo, "renders"), { recursive: true });
     await writeFile(join(beatTwo, "renders", "still.png"), "png-bytes-two");
     await writeFile(join(beatTwo, "renders", "still.svg"), "<svg id='two'/>");
@@ -836,21 +1027,21 @@ describe("a story has more than one beat", () => {
       form: "owned-file",
       genre: "static",
       beatDir,
-      exportDir: exportDirFor(storyDir, "1-rainfall"),
+      exportDir: exportDirFor(multiBeatStoryDir, "1-rainfall"),
       handover,
     });
     await materialise({
       form: "source-bundle",
       genre: "static",
       beatDir: beatTwo,
-      exportDir: exportDirFor(storyDir, "2-temperature"),
+      exportDir: exportDirFor(multiBeatStoryDir, "2-temperature"),
       handover,
     });
 
-    expect(await readdir(exportDirFor(storyDir, "1-rainfall"))).toContain(
+    expect(await readdir(exportDirFor(multiBeatStoryDir, "1-rainfall"))).toContain(
       "still.png",
     );
-    expect(await readdir(exportDirFor(storyDir, "2-temperature"))).toContain(
+    expect(await readdir(exportDirFor(multiBeatStoryDir, "2-temperature"))).toContain(
       "build.ts",
     );
   });
@@ -860,50 +1051,43 @@ describe("a story has more than one beat", () => {
       form: "owned-file",
       genre: "static",
       beatDir,
-      exportDir: exportDirFor(storyDir, "1-rainfall"),
+      exportDir: exportDirFor(multiBeatStoryDir, "1-rainfall"),
       handover,
     });
     await materialise({
       form: "owned-file",
       genre: "static",
       beatDir: beatTwo,
-      exportDir: exportDirFor(storyDir, "2-temperature"),
+      exportDir: exportDirFor(multiBeatStoryDir, "2-temperature"),
       handover,
     });
 
-    const delivered = (await readdir(join(storyDir, "export"))).sort();
+    const delivered = (await readdir(join(multiBeatStoryDir, "export"))).sort();
     expect(delivered).toEqual(["1-rainfall", "2-temperature"]);
   });
 
-  // The mechanical half: `exportDirFor` tells a caller where a beat delivers, and the receipt makes
-  // the WRONG directory fail loudly instead of destroying what is already in it. A caller that hands
-  // two different beats the same directory is refused on the second call, before anything is wiped.
-  it("should refuse, rather than wipe, when another beat's delivery is already there", async () => {
-    const shared = join(storyDir, "export");
-    await materialise({
-      form: "owned-file",
-      genre: "static",
-      beatDir,
-      exportDir: shared,
-      handover,
-    });
+  // The mechanical half: `exportDirFor` gives the only directory a beat may replace. A caller that
+  // hands materialise the story-level export directory is refused before that broad path is touched.
+  it("should refuse the story-level export directory before touching it", async () => {
+    const shared = join(multiBeatStoryDir, "export");
+    await mkdir(shared, { recursive: true });
+    await writeFile(join(shared, "sentinel.txt"), "keep-me");
 
     await expect(
       materialise({
         form: "owned-file",
         genre: "static",
-        beatDir: beatTwo,
+        beatDir,
         exportDir: shared,
         handover,
       }),
-    ).rejects.toThrow(/would destroy it/);
+    ).rejects.toThrow(/export directory/);
 
-    expect(await readdir(shared)).toContain("still.png");
-    expect(await readFile(join(shared, "still.png"), "utf8")).toBe("png-bytes");
+    expect(await readFile(join(shared, "sentinel.txt"), "utf8")).toBe("keep-me");
   });
 
   it("should still let the same beat change its mind in its own directory", async () => {
-    const mine = exportDirFor(storyDir, "1-rainfall");
+    const mine = exportDirFor(multiBeatStoryDir, "1-rainfall");
     await materialise({
       form: "owned-file",
       genre: "static",
@@ -922,6 +1106,14 @@ describe("a story has more than one beat", () => {
     const files = await readdir(mine);
     expect(files).not.toContain("still.png");
     expect(files).toContain("package.json");
+  });
+});
+
+describe("exportDirFor", () => {
+  it("should reject traversal, absolute, and multi-segment beat names", () => {
+    expect(() => exportDirFor(storyDir, "../outside")).toThrow(/beat name/);
+    expect(() => exportDirFor(storyDir, "/tmp/outside")).toThrow(/beat name/);
+    expect(() => exportDirFor(storyDir, "nested/beat")).toThrow(/beat name/);
   });
 });
 

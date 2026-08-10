@@ -119,11 +119,12 @@ const handover = {
   credit: "Source: MeteoSwiss, as of 2026-08-10",
 };
 
-let beatDir: string, exportDir: string;
+let tempRoot: string, storyDir: string, beatDir: string, exportDir: string;
 beforeEach(async () => {
-  const base = await mkdtemp(join(tmpdir(), "refusals-"));
-  beatDir = join(base, "1-rainfall");
-  exportDir = join(base, "export");
+  tempRoot = await mkdtemp(join(tmpdir(), "refusals-"));
+  storyDir = join(tempRoot, "story");
+  beatDir = join(storyDir, "beats", "1-rainfall");
+  exportDir = exportDirFor(storyDir, "1-rainfall");
   await mkdir(join(beatDir, "renders"), { recursive: true });
   await mkdir(exportDir, { recursive: true });
   await writeFile(join(beatDir, "renders", "still.png"), "png-bytes");
@@ -131,7 +132,7 @@ beforeEach(async () => {
   await writeFile(join(beatDir, "APPROVED.md"), "seen, approved");
 });
 afterEach(async () => {
-  await rm(join(beatDir, ".."), { recursive: true, force: true });
+  await rm(tempRoot, { recursive: true, force: true });
 });
 
 /** The message a call really produced, or `null` when it did not refuse at all. */
