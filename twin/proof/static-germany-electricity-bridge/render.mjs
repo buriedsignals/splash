@@ -13,7 +13,20 @@ import {
   readPalette,
   seriesInks,
 } from "#shared/twin-chart-beat/render-still.mjs";
-import { ElectricityBridgeWaterfall } from "./ElectricityBridgeWaterfall.tsx";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+import {
+  TYPE,
+  ElectricityBridgeWaterfall,
+  rungsFor,
+} from "./ElectricityBridgeWaterfall.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -105,8 +118,32 @@ async function main() {
   // One fill per direction of change, in the order the accents were recorded.
   const [increaseFill, decreaseFill] = seriesInks(palette, 2);
   console.log(`bar fills — increase ${increaseFill}, decrease ${decreaseFill}`);
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing. Before this the size was two literals below and `renderStill` compared them
+  // against each other, so they agreed by construction and the delivered PNG was a size nobody
+  // chose.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name = flag === -1 ? "static-germany-electricity-bridge-still" : `static-germany-electricity-bridge-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all.
+  const form = assertTypeMayEnter(TYPE, size, { what: "static-germany-electricity-bridge" });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+  const rungs = rungsFor(size);
+  console.log(
+    rungs.length
+      ? `removal ladder at ${size}: ${rungs.join("; ")}`
+      : `removal ladder at ${size}: no rung fires`,
+  );
 
-  const { pngPath } = await renderStill({
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(ElectricityBridgeWaterfall, {
       steps,
       title: `${entity} generated ${Math.round(Math.abs(netChange))} fewer terawatt-hours of electricity in ${LAST_YEAR} than in ${FIRST_YEAR}`,
@@ -116,13 +153,25 @@ async function main() {
       ground,
       increaseFill,
       decreaseFill,
+      size,
     }),
-    width: 900,
-    height: 560,
-    outDir: HERE,
-    name: "static-germany-electricity-bridge-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments — the PNG
+  // on disk. It is the one reading the code that wrote it cannot make agree with itself.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  console.log(`ladder in the artifact: ${/data-ladder="([^"]*)"/.exec(svg)?.[1] ?? "(absent)"}`);
+  assertTypeFloor(svg, size, { what: "static-germany-electricity-bridge" });
+  assertWithinStage(svg, size, { what: "static-germany-electricity-bridge" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file — now open it and look at it.`);
 }
 
 main();
