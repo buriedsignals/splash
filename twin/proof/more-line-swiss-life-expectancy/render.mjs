@@ -8,6 +8,15 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill, readPalette } from "#shared/twin-chart-beat/render-still.mjs";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
 import { LifeExpectancyLine } from "./LifeExpectancyLine.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -85,7 +94,31 @@ async function main() {
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
-  const { pngPath } = await renderStill({
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter; `readPinnedSize` throws naming every path it looked at if
+  // it is missing.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two, into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1
+      ? "more-line-swiss-life-expectancy-still"
+      : `more-line-swiss-life-expectancy-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  // …and whether this TYPE may enter that size at all. A line's x is a CONTINUUM, so it has no twin
+  // form to transpose into — rotating it would break the convention that time runs left to right.
+  // What it has is a measured aspect range, and the component holds the plot inside it.
+  const form = assertTypeMayEnter("line", size, {
+    what: "more-line-swiss-life-expectancy",
+  });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(LifeExpectancyLine, {
       readings,
       title: claim,
@@ -95,13 +128,24 @@ async function main() {
       ground,
       accent,
       endLabel,
+      size,
     }),
-    width: 900,
-    height: 560,
-    outDir: HERE,
-    name: "more-line-swiss-life-expectancy-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath}`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES. Not the element, not the arguments.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "more-line-swiss-life-expectancy" });
+  assertWithinStage(svg, size, { what: "more-line-swiss-life-expectancy" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file`);
 }
 
 main();
