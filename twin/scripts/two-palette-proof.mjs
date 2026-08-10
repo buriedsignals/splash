@@ -58,14 +58,20 @@ const REPO = join(TWIN, "..");
 // suite — take its own directory so two runs cannot overwrite each other's renders.
 const WORK = process.env.TWO_PALETTE_WORK || "/tmp/two-palette-proof";
 
-/** The fraction of a frame that has to move before this is called a pass.
+/** How much of the beat's own INK has to move before this is called a pass.
  *
- *  Set from the measured distribution rather than picked: across the beats this walks, a genuine
- *  data channel moves whole percent of the frame, while a beat where only an accent-coloured word
- *  or a single highlighted label moved lands two orders of magnitude below. 0.2% sits in the empty
- *  band between the two, and every beat's own fraction is printed so the band stays visible rather
- *  than becoming a number nobody re-checks. */
-const MIN_MOVED = 0.002;
+ *  OF THE INK, not of the frame, and the first draft got that wrong in a way worth recording: it
+ *  divided by the whole frame, and `weby-dumbbell-life-expectancy-gains` — where every one of the
+ *  twenty dumbbell endpoints changed hue, which is the entire data channel — scored 0.195% and was
+ *  reported STILL. The page is tall and mostly white, the dots are small, and the denominator was
+ *  measuring the whitespace. Opening the pair is what caught it, which is the whole reason this
+ *  script says "open a pair and look at them" when it finishes.
+ *
+ *  So the denominator is the pixels the beat actually DREW — everything in the first render that
+ *  is not its own ground. A sparse chart and a full-bleed choropleth are then measured on the same
+ *  scale. Both numbers are printed, because the frame fraction is still what tells a reader how
+ *  much of the picture they would notice changing. */
+const MIN_MOVED = 0.02;
 
 /** Two palettes as far apart as the floor allows, on any ground.
  *
@@ -166,23 +172,45 @@ function artifacts(dir, out = new Map(), root = dir) {
 
 /** Moved pixels between two rendered images. Identical bytes short-circuit to zero; otherwise both
  *  are decoded to RGBA and compared channel by channel. */
-function movedFraction(a, b) {
+export function movedFraction(a, b, ground) {
   const rawA = readFileSync(a);
   const rawB = readFileSync(b);
-  if (rawA.equals(rawB)) return { moved: 0, total: 1, identical: true };
   const pixelsA = decode(a);
   const pixelsB = decode(b);
-  if (!pixelsA || !pixelsB) return { moved: null, total: null, identical: false };
+  if (!pixelsA || !pixelsB) return { moved: null, identical: rawA.equals(rawB) };
   if (pixelsA.width !== pixelsB.width || pixelsA.height !== pixelsB.height)
-    return { moved: null, total: null, identical: false, note: "different size" };
+    return { moved: null, identical: false, note: "different size" };
+  const [gr, gg, gb] = ground ? channelsOf(ground) : [255, 255, 255];
   let moved = 0;
+  let inked = 0;
   const { data: da } = pixelsA;
   const { data: db } = pixelsB;
   for (let i = 0; i < da.length; i += 4) {
+    // "Inked" is anything the beat drew: a pixel that is not its own ground, within a tolerance
+    // that lets a rasteriser's anti-aliasing of a ground-coloured edge stay out of the count.
+    if (
+      Math.abs(da[i] - gr) > 6 ||
+      Math.abs(da[i + 1] - gg) > 6 ||
+      Math.abs(da[i + 2] - gb) > 6
+    )
+      inked++;
     if (da[i] !== db[i] || da[i + 1] !== db[i + 1] || da[i + 2] !== db[i + 2]) moved++;
   }
-  const total = pixelsA.width * pixelsA.height;
-  return { moved, total, identical: false };
+  const frame = pixelsA.width * pixelsA.height;
+  return {
+    moved,
+    inked,
+    frame,
+    fraction: inked > 0 ? moved / inked : 0,
+    frameFraction: moved / frame,
+    identical: rawA.equals(rawB),
+  };
+}
+
+/** #rrggbb to its three channels — a local copy, because this script imports the palette reader
+ *  from the shared module and that module keeps `channels` private. */
+function channelsOf(hex) {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 }
 
 /** RGBA for a PNG, through `sharp`-free means: resvg can rasterise an SVG but not decode a PNG, so
@@ -360,15 +388,18 @@ async function main() {
       console.log(`unmeasured  ${beat} — no comparable image among ${a.written.join(", ")}`);
       continue;
     }
+    const ground = parsePalette(
+      readFileSync(join(proof, beat, "PALETTE.md"), "utf8"),
+    ).ground;
     let best = null;
     for (const name of comparable) {
       const measured = movedFraction(
         join(WORK, "kept", "a", beat, name),
         join(WORK, "kept", "b", beat, name),
+        ground,
       );
       if (measured.moved === null) continue;
-      const fraction = measured.moved / measured.total;
-      if (!best || fraction > best.fraction) best = { name, fraction, ...measured };
+      if (!best || measured.fraction > best.fraction) best = { name, ...measured };
     }
     if (!best) {
       rows.push({ beat, verdict: "unmeasured", why: "could not decode" });
@@ -379,7 +410,8 @@ async function main() {
     rows.push({ beat, verdict, ...best });
     console.log(
       `${verdict === "moved" ? "moved      " : "STILL      "}${beat}  ` +
-        `${(best.fraction * 100).toFixed(2)}% of ${best.name}`,
+        `${(best.fraction * 100).toFixed(1)}% of its ink ` +
+        `(${(best.frameFraction * 100).toFixed(2)}% of the frame) — ${best.name}`,
     );
   }
 

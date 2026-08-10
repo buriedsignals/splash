@@ -76,12 +76,15 @@ describe("the recorded palette reaches the pixels, not just the source", () => {
     expect([BEAT, run.status]).toEqual([BEAT, 0]);
 
     // And the number, so a beat that moved by a single anti-aliased pixel could not pass as one
-    // whose whole data channel moved. Measured on this beat: about a fifth of the frame.
+    // whose whole data channel moved. The fraction is of the beat's own INK — every pixel it drew
+    // that is not its ground — because dividing by the frame measures the whitespace: a sparse
+    // dumbbell whose every endpoint changed hue scored 0.195% of its frame and was called STILL
+    // until the pair was opened and looked at. Measured on this beat: 91% of its ink.
     const report = JSON.parse(
       readFileSync(join(WORK, "report.json"), "utf8"),
     ) as { beat: string; verdict: string; fraction: number }[];
     const row = report.find((r) => r.beat === BEAT);
     expect([BEAT, row?.verdict]).toEqual([BEAT, "moved"]);
-    expect(row!.fraction).toBeGreaterThan(0.05);
+    expect(row!.fraction).toBeGreaterThan(0.5);
   });
 });
