@@ -152,6 +152,21 @@ luminance 0.18 precisely so both sides clear. The `null` branch exists for a cal
    `readPalette`, and a decoy call beside a laundered literal defeats it (the audit mutated it and
    watched it stay green). The mutation for the pixel proof is in its own header, with its RED.
 
+9. **A SCROLLY IS PHOTOGRAPHED AT EVERY READING, AND THE INSTRUMENT MEASURES ITSELF FIRST.** A
+   scrolly's picture is the scroll, so a shot taken where the page opens answers about one reading
+   and reports it as the beat: `scrolly-one-chart-swiss-life-expectancy` measured 0 px that way and
+   was called STILL, while its accent — measured at the reading that spends it — moves 34,532 px,
+   71% of its ink. The proof drives each page to the MIDPOINT of every step's own stretch of scroll
+   (never the edge, where the next frame is already active) and photographs only once three
+   consecutive frames are byte-identical — **never on a sleep**. A sleep is what produced the number
+   that got an earlier attempt thrown away: `mapscrolly-quakes-three-ways`, unmodified, read
+   **1,048,276 px — 75% of the viewport** between two runs of its own code. Settled, the same
+   reading is **1,763 px**, which is the one ring that beat draws in the accent. And because a guard
+   that can report a million pixels of noise would certify a beat drawing in no recorded colour at
+   all, one run's pages are now photographed TWICE: if the harness's own repeat of the same bytes
+   moves as far as the 200 px the verdict uses, the beat is reported **unmeasured** instead of
+   judged.
+
 ## Quick start
 
 ```js
