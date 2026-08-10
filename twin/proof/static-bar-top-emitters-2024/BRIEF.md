@@ -1,7 +1,17 @@
+---
+size: landscape
+type: column
+---
+
 # Beat — China emitted more CO₂ in 2024 than the next five countries put together
 
 **Type:** bar and column (ranking, vertical columns). **Medium/genre:** chart / static.
-**Channel:** article web, 900 x 560 (the default frame — ten columns fit it without crowding).
+**Channel:** article web — **size: landscape (1920 x 1080)**.
+
+The size is in the front matter above as well as in that sentence, and the front matter is the one
+that counts: `render.mjs` reads it with `readPinnedSize` and the delivered PNG is measured from its
+own bytes. Before this the frame was two literals that agreed with each other and the delivered file
+was 1800 x 1120 — a size nobody chose.
 
 ## Claim
 
@@ -110,3 +120,32 @@ the exit code was zero and the numbers were all correct. It was found by opening
 caption now starts clear of the subject's column, measured from that column's own right edge, and
 the redundant "China's 12.3 bn t —" opening was dropped since the column beneath it already says
 so.
+
+## What the other sizes do — rendered, opened, and refused
+
+**Landscape (1920 x 1080), the pin.** Columns, `as-is`. Two title lines, two standfirst lines, ten
+columns across a 1750px band, every value printed outside its own column at 31px — 13 CSS px in a
+900px article column. The reference rule still starts where China's own column ends and its ink is
+still checked against everything it crosses. No ladder rung fires.
+
+**Square and portrait: REFUSED at rung R9.** Both take the twin form — rows down the frame, each
+country's name horizontal on one line, which is the arm `PORTRAIT-VERDICT.md` would publish. The
+transpose's stated cost is paid rather than ignored: the reference RULE becomes a vertical line hard
+against the frame edge where it reads as a border (the probe's own arm C shows it at x=985 of 1080),
+so in the row form the comparison is redrawn as a **mark** — a tick across China's own bar at the
+point the next five add up to, inked against the fill it lies on.
+
+It is still not enough, and the arithmetic is worth recording because it is close:
+
+| ladder spent | portrait plot | band per row | floor |
+|---|---|---|---|
+| R3 (standfirst keeps one sentence) | 127 px | 12.7 px | 39 px |
+| R3 + R4 (the comparison keeps its mark, loses its caption) + R7 (the standfirst entirely) | 385 px | **38.5 px** | 39 px |
+
+The full ladder lands half a pixel short of the floor — so it was rendered anyway and opened, which
+is the only way to answer it. What that render shows: ten bars 28px thick carrying value labels 42px
+tall, so every number is bigger than the mark it belongs to; a 150px hole between the title and the
+plot where the standfirst used to be; and the unit — "billion tonnes", the only line that says what
+the numbers ARE — gone with R7. The picture that just clears the floor is not a picture worth
+shipping, so it is not committed (the precedent is the square render this corpus already refused).
+The beat ships landscape and says so.

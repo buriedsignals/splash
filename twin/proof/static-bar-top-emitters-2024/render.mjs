@@ -17,7 +17,21 @@ import {
   renderStill,
   readPalette,
 } from "#shared/twin-chart-beat/render-still.mjs";
-import { TopEmittersColumns, formatValue } from "./TopEmittersColumns.tsx";
+import {
+  assertDeliveredSize,
+  assertTypeFloor,
+  assertWithinStage,
+  readPinnedSize,
+  readPngSize,
+  sizeFor,
+} from "#shared/twin-chart-beat/sizes.mjs";
+import { assertTypeMayEnter } from "#shared/twin-chart-beat/type-at-size.mjs";
+import {
+  TYPE,
+  TopEmittersColumns,
+  formatValue,
+  rungsFor,
+} from "./TopEmittersColumns.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TOP_N = 10;
@@ -153,7 +167,35 @@ async function run() {
   });
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
 
-  const { pngPath } = await renderStill({
+  // THE JOURNALIST'S DECISION, READ RATHER THAN RETYPED. Gate 2c pins a size; this beat records it
+  // in its own `BRIEF.md` front matter. Before this the size was two literals below and
+  // `renderStill` compared them against each other, so `size: portrait` on the slot would have
+  // produced an 1800x1120 PNG in silence.
+  const pinned = await readPinnedSize(HERE, { readFile, dirname, join });
+  // `--size <name>` renders one of the OTHER two into `sizes/`, so all three can be opened and
+  // compared. It is deliberately not a way to change what this beat DELIVERS.
+  const flag = process.argv.indexOf("--size");
+  const size = flag === -1 ? pinned : process.argv[flag + 1];
+  const outDir = flag === -1 ? HERE : join(HERE, "sizes");
+  const name =
+    flag === -1
+      ? "static-bar-top-emitters-2024-still"
+      : `static-bar-top-emitters-2024-${size}`;
+  if (flag !== -1)
+    console.log(`LOOKING at ${size}; the pinned size stays ${pinned} -> ${outDir}`);
+  const form = assertTypeMayEnter(TYPE, size, {
+    what: "static-bar-top-emitters-2024",
+  });
+  console.log(`pinned size: ${size} — ${form.verdict}: ${form.reason}`);
+  const rungs = rungsFor(size);
+  console.log(
+    rungs.length
+      ? `removal ladder at ${size}: ${rungs.join("; ")}`
+      : `removal ladder at ${size}: no rung fires`,
+  );
+
+  const { width, height } = sizeFor(size);
+  const { pngPath, svgPath } = await renderStill({
     element: createElement(TopEmittersColumns, {
       rows: top,
       title,
@@ -165,13 +207,24 @@ async function run() {
       accent,
       subject,
       callout,
+      size,
     }),
-    width: 900,
-    height: 560,
-    outDir: HERE,
-    name: "static-bar-top-emitters-2024-still",
+    width,
+    height,
+    // 1:1 — the frame IS the export size, so the PNG on disk measures what gate 2c pinned.
+    scale: 1,
+    outDir,
+    name,
   });
-  console.log(`rendered -> ${pngPath} — now open it and look at it.`);
+
+  // THE DELIVERED FILE, MEASURED FROM ITS OWN BYTES.
+  assertDeliveredSize(readPngSize(await readFile(pngPath)), size, {
+    what: `${pngPath}`,
+  });
+  const svg = await readFile(svgPath, "utf8");
+  assertTypeFloor(svg, size, { what: "static-bar-top-emitters-2024" });
+  assertWithinStage(svg, size, { what: "static-bar-top-emitters-2024" });
+  console.log(`rendered -> ${pngPath} at ${width}x${height}, verified from the file — now open it and look at it.`);
 }
 
 main();
